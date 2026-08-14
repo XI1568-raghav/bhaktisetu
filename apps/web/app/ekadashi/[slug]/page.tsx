@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  const e = getEkadashi(slug);
  if (!e) return { title: 'Not found' };
  return {
-  title: `${e.name} — Story, Fasting Rules, Mantra & Benefits | Darshya`,
+  title: `${e.name} — Story, Fasting Rules, Mantra & Benefits`,
   description: `${e.name} (${e.sanskrit}) — ${e.paksha} ${e.masa} Ekadashi (${e.gregorianWindow}). Padma Purana story, fasting rules, permitted foods, mantra ${e.mantraEnglish}, benefits & who should observe.`,
   alternates: { canonical: `${BASE_URL}/ekadashi/${e.slug}` },
  };

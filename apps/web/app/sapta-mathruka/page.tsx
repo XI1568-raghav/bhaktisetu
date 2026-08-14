@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Sapta Matrika — 7 Mother Goddesses (Names, Mantras, Vahana, Weapons) | Darshya',
+  title: 'Sapta Matrika — 7 Mother Goddesses (Names, Mantras, Vahana, Weapons)',
   description:
     'All 7 Matrikas per Devi Mahatmya — Brahmani, Vaishnavi, Maheshwari, Indrani, Kaumari, Varahi, Chamunda. Each shakti emerged from a god to slay Raktabija and Andhakasura. Beej mantras, vahana, weapons, signature vrata.',
   alternates: { canonical: `${BASE_URL}/sapta-mathruka` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Sapta Matrika — 7 mother goddesses',
     description: 'Brahmani, Vaishnavi, Maheshwari, Indrani, Kaumari, Varahi, Chamunda — full Tantric grid.',
     url: `${BASE_URL}/sapta-mathruka`,

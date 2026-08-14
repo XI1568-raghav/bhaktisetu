@@ -2,48 +2,63 @@
 
 > Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last: 2026-08-07 (GTM Phase-0 deliverables shipped; muhurat layer coded, UNCOMMITTED).
 
-## HANDOFF Full Audit + Fix Engagement (2026-08-10) — ACTIVE, READ FIRST
+## 🔴 LIVE P0 — Sign in / Sign up: infinite spinner, no error (2026-08-11)
 
-> **Single source of truth: [`AUDIT.md`](AUDIT.md) (repo root).** Start at its `▶ RESUME HERE` block.
-> This entry is only a pointer so a compacted/fresh session finds it. Do not duplicate detail here.
+**Symptom (owner):** wrong password shows no error and the loader spins forever; same on Google sign-in.
 
-**Engagement:** full E2E audit of every role + fix pass. 58 findings tracked in `AUDIT.md` §12.
-**State 2026-08-11:** **57 of 58 fixed** (the one left, M-002, is deploy-only). Owner decisions applied:
-RV-04/S2C-15 without backfill · Supabase reset-email flow for A-002 · **Stripe removed entirely**.
-**Then an adversarial review of the fixes found 14 more defects — all fixed.** Two were P0s in live money
-paths: the RV-04 fix had made a **second payout rail live for money the legacy rail already paid**, and RV-01
-was **still live on the temple booking path** (`currency: 'USD'` on an INR amount → Razorpay asked for $10,000
-on a Rs 10,000 booking). Detail: `docs/audit/batch8-review-findings.md`.
-**Baseline that must not regress:** API `tsc` clean · web `tsc` clean · mobile `tsc` clean ·
-**1066/1066 API tests (83 files)** · **265/265 web tests (35 files)**.
-**Owner/config actions still open** (the reset flow is dead until the first two are done): Supabase Redirect
-URLs, Supabase Auth SMTP, delete the stale Stripe webhook endpoint. See `docs/audit/RESUME.md`.
+**ROOT-CAUSE CLASS FOUND AND FIXED (uncommitted).** Every auth call used a bare `fetch`, which has **no
+timeout** — 8 in `lib/auth-context.tsx` + 1 in `app/auth/callback/page.tsx`, zero `AbortController` between
+them. A stalled connection (flaky mobile, captive portal, half-open socket, cold Render dyno) means the
+promise never settles, so the line after the `await` — `setIsSubmitting(false)` — never runs and no error is
+ever set. Infinite spinner, no message, on BOTH doors: `signInWithCredentials` and the Google callback's
+`POST /auth/google/sync` (that page's only other state is a `Loader2`). That is the reported symptom exactly.
 
-**Two load-bearing invariants introduced — do not break:**
-1. `Commission.amount` = the PROVIDER's earning, `Commission.percentage` = the PLATFORM's take rate. One
-   column, one meaning; derive everything else via `apps/api/src/lib/commission-math.ts`.
-2. The two payout rails must stay mutually exclusive — `createPriestPayout` refuses when a `Commission`
+Fix: `fetchWithTimeout` + `isNetworkFailure` + `NETWORK_ERROR_MESSAGE` in `lib/api-config.ts` (20s budget),
+applied to all 9 call sites. Also corrected a misleading catch: a network failure used to answer
+**"Invalid email or password."**, sending users to reset a password that was never wrong. 9 regression tests
+in `__tests__/auth-fetch-timeout.test.ts`. Web tsc clean · 274/274 web tests (was 265).
+
+**⚠️ NOT CONFIRMED AS THE OWNER'S INSTANCE.** I could not reproduce on prod. End-to-end against
+darshya.online, both in a clean browser and with a stale `poojly_session`/`poojly_user` seeded: the button
+returns to "Sign In", the spinner clears, **"Invalid email or password" renders**, no JS errors. A
+browser-origin `POST /api/v1/auth/login` returned **401 in 1.1s** — CORS and the API are healthy. So the
+deployed code is correct for a healthy network; the fix hardens the failure mode that matches the report.
+
+**Still needed from owner to close:** does it still reproduce; on which network/device; and does the error
+now appear after this ships.
+
+**Separate latent hazard found while testing — not the cause, worth fixing:** `/auth/login` is served with
+`Cache-Control: s-maxage=31536000` (a **one-year** shared-cache lifetime on auth HTML) behind Cloudflare.
+`cf-cache-status: DYNAMIC` today, and all 18 referenced chunks resolve, so nothing is broken now — but any
+shared cache holding a pre-deploy shell would reference chunk URLs the new build no longer serves, hydration
+would silently never run, and every button would go dead with a spinner. Auth pages should not carry a
+one-year shared-cache header.
+
+## HANDOFF Full Audit + Fix Engagement — ✅ COMPLETE 2026-08-11
+
+> Shipped: merged `1715d4d6`, deployed to Render, live-verified. Full detail archived in
+> `docs/handoff.md`; master record is [`AUDIT.md`](AUDIT.md) + `docs/audit/`.
+
+**Result:** 57 of 58 findings fixed (the 58th was deploy-only), plus 14 further defects found by an
+adversarial review of the fixes themselves — including a P0 that the RV-04 fix had *created* (a second
+payout rail live for money the legacy rail already paid) and an ~83x NRI overcharge still live on the
+temple booking path. Stripe removed entirely; password reset shipped.
+
+**Baseline that must not regress:** API/web/mobile/api-client `tsc` clean · 1066/1066 API tests (83 files)
+· 265/265 web tests (35 files).
+
+**Two load-bearing invariants — do not break:**
+1. `Commission.amount` = the PROVIDER's earning, `Commission.percentage` = the PLATFORM's take rate.
+   One column, one meaning; derive everything else via `apps/api/src/lib/commission-math.ts`.
+2. The two payout rails stay mutually exclusive — `createPriestPayout` refuses when a `Commission`
    already owns the booking. Removing that guard double-pays every pandit.
 
-**Durable artefacts (all in-repo — nothing lives only in chat):**
-| File | What |
-|---|---|
-| `AUDIT.md` | Master findings table, per-finding prose, fix log (Batches 1-5), resume block |
-| `docs/audit/stage2-money-path-raw.md` | Money-path finder output, verbatim |
-| `docs/audit/stage2-reverify-results.md` | 22 confirmed / 6 refuted / 5 owner questions, with worked rupee numbers |
-| `docs/audit/stage2-reverify-worklist.json` | Machine-readable re-verify list |
-| `docs/audit/batch5-agent-fixes.md` | Batch-5 agent fix reports + cross-file/owner items |
-| `docs/audit/batch5-review.md` | Adversarial review of Batch 5 — **found 4 blocking issues tests missed** |
-| `docs/audit/batch8-review-findings.md` | Adversarial review of the 2026-08-11 fixes — **14 defects incl. 2 money P0s** |
-| `docs/audit/batch6-agent-fixes.md` | Batch-6 agent fix reports (25 findings) |
-| `docs/audit/open-worklist.json` | Open findings with file:line, for agent partitioning |
-
-**The four P0s (all fixed, none deployed):** A-001 `public/` served one level deep (Dockerfile `cp -r` nesting; proven live) · A-005 auth bypass (forge `email-<uuid>-<hex>` → any account incl. admin) · RV-01 NRI billed rupees as dollars (83.5×) · S2C-01 NRI checkout dead-end.
-
-**Load-bearing decisions made during this engagement:**
-- **Stripe REMOVED** entirely (owner directive; PayPal-via-Razorpay replaces it). Razorpay is the only gateway, INR the only currency. Never reintroduce Stripe/USD. **Done 2026-08-11**: the rail is gone from `gift-puja.ts`, `subscriptions.ts` and `/webhook/stripe`; `lib/stripe.ts` and the orphaned `lib/pricing.ts` (which held the `83.5` constant behind RV-01) are deleted; npm deps, CSP origins and the legal/marketing content pass are all done.
-- **`lib/slot-time.ts`** is the ONLY correct way to compare a booking date+slot. `scheduledDate` is a DATE (midnight); the time is in `scheduledTimeSlot` (IST).
-- **Migrations `20260810000000` + `20260810000100`** are written but NOT applied — additive enum values + a `priestId` index. Deliberately split so an `ALTER TYPE` failure cannot block the index (the failure class that cost this repo 2 months).
+**Open owner/config actions (outside the repo):**
+- **Supabase → Auth → URL Configuration**: add `https://darshya.online/auth/reset-password`. Without it
+  Supabase silently substitutes `SITE_URL` and the reset email lands on the homepage.
+- **Supabase → Auth → SMTP**: point at Resend. Built-in mailer is 2 emails/hour project-wide — see the
+  LIVE P0 above, which this may well be causing.
+- **Stripe dashboard**: delete the webhook endpoint for `/payments/webhook/stripe` (now 404s).
 
 ## HANDOFF Launch-Readiness Audit + Fix (added 2026-08-05)
 

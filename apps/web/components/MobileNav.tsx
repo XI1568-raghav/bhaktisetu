@@ -211,7 +211,7 @@ export function MobileNav() {
 function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="px-1 mb-2 text-[10px] font-semibold uppercase tracking-widest text-surface-400">
+      <p className="px-1 mb-2 text-xs font-semibold uppercase tracking-widest text-surface-400">
         {label}
       </p>
       <div className="space-y-0.5">{children}</div>

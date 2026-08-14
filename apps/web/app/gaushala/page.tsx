@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IMAGES } from "../../lib/images";
+import { getGaushalaImage, IMG_W } from "../../lib/images";
 import { ApprovedProvidersStrip } from "../../components/ApprovedProvidersStrip";
 import {
  Heart,
@@ -18,8 +18,22 @@ import {
  Leaf,
 } from "lucide-react";
 import Link from "next/link";
+import { COMPANY } from "../../lib/company";
+
+/**
+ * COM-02 (prod sweep 2026-08-12): every 80G claim on this page is gated on the
+ * one owner-controlled flag that records whether Darshya actually holds an
+ * 80G(5) certificate. It is false today, and `donationLegal.eightyGNumber` is
+ * null, so the receipt the donor receives is not an 80G instrument
+ * (apps/api/src/lib/pdf-receipt.ts says so on the PDF itself now). Selling
+ * "80G tax receipt" as a plan feature, badging "Save on income tax", and
+ * answering "Is my donation tax-deductible?" with "Yes!" was a tax
+ * misrepresentation to the donor. The copy returns the day the flag flips.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/gaushala' },
  title: "Gau Seva — Adopt a Cow",
  description:
  "Adopt a cow at a verified gaushala. Get monthly photo updates, visit anytime, and earn divine blessings. Support cow protection across India with Darshya.",
@@ -47,7 +61,7 @@ const gaushalas = [
  totalCows: 500,
  availableCows: 3,
  affiliation: "ISKCON-affiliated",
- image: IMAGES.gaushala['cow-shelter'],
+ image: getGaushalaImage('cow-shelter'),
  description:
  "One of the most revered gaushalas in Vrindavan, affiliated with ISKCON. Home to 500+ cows including rare indigenous breeds.",
  },
@@ -58,7 +72,7 @@ const gaushalas = [
  totalCows: 1200,
  availableCows: 5,
  affiliation: "Government Registered",
- image: IMAGES.gaushala['tharparkar-cow'],
+ image: getGaushalaImage('tharparkar-cow'),
  description:
  "A government-registered gaushala spanning 50 acres. Houses 1200+ rescued cows with modern veterinary facility.",
  },
@@ -69,7 +83,7 @@ const gaushalas = [
  totalCows: 350,
  availableCows: 4,
  affiliation: "Organic Products Certified",
- image: IMAGES.gaushala['gir-cow'],
+ image: getGaushalaImage('gir-cow'),
  description:
  "A heritage gaushala in Mathura, operating since 1952. Known for preserving rare Indian cow breeds and organic A2 products.",
  },
@@ -82,7 +96,7 @@ const featuredCows = [
  breed: "Gir",
  age: 5,
  gaushalaName: "Shri Krishna Gaushala",
- photo: IMAGES.gaushala['gir-cow'],
+ photo: getGaushalaImage('gir-cow'),
  healthStatus: "healthy",
  },
  {
@@ -91,7 +105,7 @@ const featuredCows = [
  breed: "Tharparkar",
  age: 3,
  gaushalaName: "Shri Krishna Gaushala",
- photo: IMAGES.gaushala['tharparkar-cow'],
+ photo: getGaushalaImage('tharparkar-cow'),
  healthStatus: "healthy",
  },
  {
@@ -100,7 +114,7 @@ const featuredCows = [
  breed: "Gir",
  age: 4,
  gaushalaName: "Kamdhenu Gaushala",
- photo: IMAGES.gaushala['gir-cow'],
+ photo: getGaushalaImage('gir-cow'),
  healthStatus: "healthy",
  },
  {
@@ -109,7 +123,7 @@ const featuredCows = [
  breed: "Kankrej",
  age: 6,
  gaushalaName: "Kamdhenu Gaushala",
- photo: IMAGES.gaushala['gir-cow'],
+ photo: getGaushalaImage('gir-cow'),
  healthStatus: "under_treatment",
  },
  {
@@ -118,7 +132,7 @@ const featuredCows = [
  breed: "Tharparkar",
  age: 2,
  gaushalaName: "Kamdhenu Gaushala",
- photo: IMAGES.gaushala['tharparkar-cow'],
+ photo: getGaushalaImage('tharparkar-cow'),
  healthStatus: "healthy",
  },
  {
@@ -127,7 +141,7 @@ const featuredCows = [
  breed: "Gir",
  age: 6,
  gaushalaName: "Gokul Gaushala",
- photo: IMAGES.gaushala['gir-cow'],
+ photo: getGaushalaImage('gir-cow'),
  healthStatus: "healthy",
  },
  {
@@ -136,7 +150,7 @@ const featuredCows = [
  breed: "Sahiwal",
  age: 4,
  gaushalaName: "Gokul Gaushala",
- photo: IMAGES.gaushala['sahiwal-cow'],
+ photo: getGaushalaImage('sahiwal-cow'),
  healthStatus: "healthy",
  },
  {
@@ -145,7 +159,7 @@ const featuredCows = [
  breed: "Red Sindhi",
  age: 9,
  gaushalaName: "Shri Krishna Gaushala",
- photo: IMAGES.gaushala['red-sindhi-cow'],
+ photo: getGaushalaImage('red-sindhi-cow'),
  healthStatus: "senior_care",
  },
 ];
@@ -193,7 +207,6 @@ const adoptionPlans = [
  "Unlimited visits",
  "Framed certificate with cow photo",
  "Monthly health report",
- "80G tax receipt",
  "Festival special updates",
  ],
  },
@@ -210,7 +223,6 @@ const adoptionPlans = [
  "Unlimited visits with family",
  "Premium framed certificate",
  "Monthly health report",
- "80G tax receipt",
  "Name plaque at gaushala",
  "Annual Gau Puja invitation",
  "Priority for new cow adoption",
@@ -229,7 +241,9 @@ const faqs = [
  },
  {
  q: "Is my donation tax-deductible?",
- a: "Yes! Donations under the Annual (Gau Raksha) and Lifetime (Gau Daan) plans are eligible for tax deduction under Section 80G of the Income Tax Act. You will receive a valid 80G receipt for your records.",
+ a: HAS_80G
+ ? "Yes. Donations under the Annual (Gau Raksha) and Lifetime (Gau Daan) plans are eligible for deduction under Section 80G of the Income Tax Act, and the receipt we email carries our registration number and PAN."
+ : "Not yet. Darshya does not hold a Section 80G registration today, so a donation made here cannot be claimed as a deduction. You will receive a receipt PDF by email as proof of your donation, and we will publish the registration number on this page the day it is issued.",
  },
  {
  q: "What happens if the cow I adopted passes away?",
@@ -251,21 +265,21 @@ function healthBadge(status: string) {
  switch (status) {
  case "healthy":
  return (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
  Healthy
  </span>
  );
  case "under_treatment":
  return (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
  Under Treatment
  </span>
  );
  case "senior_care":
  return (
- <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700">
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
  Senior Care
  </span>
@@ -342,8 +356,8 @@ export default function GaushalaPage() {
  },
  {
  icon: FileText,
- label: "Tax Receipt (80G)",
- sub: "Save on income tax",
+ label: HAS_80G ? "Tax Receipt (80G)" : "Donation Receipt",
+ sub: HAS_80G ? "Save on income tax" : "Emailed instantly as a PDF",
  },
  ].map((badge) => (
  <div
@@ -387,11 +401,16 @@ export default function GaushalaPage() {
  <div className="relative h-48 overflow-hidden">
  <img
  src={gs.image}
+ sizes="(max-width: 768px) 100vw, 380px"
+ width={500}
+ height={288}
+ loading="lazy"
+ decoding="async"
  alt={gs.name}
  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
  />
  <div className="absolute top-3 left-3">
- <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-[11px] font-semibold text-emerald-700">
+ <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-xs font-semibold text-emerald-700">
  <BadgeCheck className="w-3.5 h-3.5" />
  Verified
  </span>
@@ -413,14 +432,14 @@ export default function GaushalaPage() {
  <p className="text-lg font-bold text-surface-900">
  {gs.totalCows}+
  </p>
- <p className="text-[11px] text-surface-500">Total Cows</p>
+ <p className="text-xs text-surface-500">Total Cows</p>
  </div>
  <div className="h-8 w-px bg-surface-200" />
  <div className="text-center">
  <p className="text-lg font-bold text-emerald-600">
  {gs.availableCows}
  </p>
- <p className="text-[11px] text-surface-500">
+ <p className="text-xs text-surface-500">
  Available to Adopt
  </p>
  </div>
@@ -453,9 +472,24 @@ export default function GaushalaPage() {
  <h2 className="text-2xl font-semibold text-surface-800 mb-3">
  Cows Available for Adoption
  </h2>
+ {/* DF-08 (prod sweep 2026-08-12): these eight entries are the cow_00X
+     fixtures. The finding asked for them to be removed so "only real
+     adoptable cows are shown" — but there is no real adoptable inventory
+     to show: GET /gaushala/cows is served from the in-memory
+     gaushalaService fixture and GET /gaushala/:id deliberately returns
+     `cows: []` rather than grafting fixtures onto a real gaushala, so
+     deleting them leaves this page with nothing at all. What must not
+     happen is a donor reading a fixture as an animal they can adopt
+     today, so the listing says what it is. Replace this line the moment a
+     counted inventory endpoint exists. */}
  <p className="text-surface-600">
  Each cow has a unique story. Choose one to bring into your
  family and provide lifelong care.
+ </p>
+ <p className="text-sm text-surface-500 mt-2">
+ These are sample listings that show how adoption works. Your seva is
+ assigned to a real cow at a verified partner gaushala when your
+ contribution is confirmed.
  </p>
  </div>
  </div>
@@ -470,6 +504,10 @@ export default function GaushalaPage() {
  <div className="relative h-44 overflow-hidden">
  <img
  src={cow.photo}
+ width={330}
+ height={176}
+ loading="lazy"
+ decoding="async"
  alt={cow.name}
  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
  />
@@ -529,7 +567,7 @@ export default function GaushalaPage() {
  >
  {plan.popular && (
  <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
- <span className="px-3 py-1 bg-saffron-600 text-white text-[10px] font-semibold uppercase tracking-wider rounded-full">
+ <span className="px-3 py-1 bg-saffron-600 text-white text-xs font-semibold uppercase tracking-wider rounded-full">
  Most Popular
  </span>
  </div>
@@ -561,55 +599,75 @@ export default function GaushalaPage() {
  </li>
  ))}
  </ul>
- <button
- className={`w-full py-3 rounded-lg font-medium text-sm transition-all btn-press ${
+ {/* LC-09: was a bare <button> with no onClick inside a plain <div> —
+     all four tiers dead, with no wrapping link to fall back to. The
+     cow detail page already deep-links this way (app/gaushala/[id]/
+     page.tsx); the index grid was simply left behind. */}
+ <Link
+ href={`/donations?planId=${encodeURIComponent(plan.id)}`}
+ className={`w-full py-3 rounded-lg font-medium text-sm transition-all btn-press text-center ${
  plan.popular
  ? "bg-saffron-600 text-white hover:bg-saffron-700"
  : "bg-saffron-50 text-saffron-700 hover:bg-saffron-100"
  }`}
  >
  Select Plan
- </button>
+ </Link>
  </div>
  ))}
  </div>
  </div>
  </section>
 
- {/* ── Impact Stats ────────────────────────────────────────────────────────── */}
+ {/* ── What Gau Seva Funds ─────────────────────────────────────────────────── */}
+ {/* DF-05 / DF-08 (prod sweep 2026-08-12) — THE INVENTED SCOREBOARD IS GONE.
+
+     This section published four achievement figures as fact:
+       "5,000+ Cows Protected", "₹2Cr+ Donated by Devotees",
+       "100+ Partner Gaushalas", "25,000+ Happy Adopters"
+     on a platform with zero completed adoptions and three seeded gaushalas.
+     It is the same defect DF-05 filed for the homepage's "200+ temples"
+     against a catalogue of 20 — a number a devotee can disprove by clicking
+     through, on the one product where trust IS the proposition.
+
+     There is no counted source to replace them with: adoptions live in the
+     donations rail and nothing aggregates them for a public page. So this
+     states what a contribution BUYS, which is true today and needs no
+     counter. Put numbers back only when an endpoint counts them — see
+     lib/platform-stats.ts for the rule that governs published counts. */}
  <section className="py-16 lg:py-20 bg-[#2a2520] text-white">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
  <div className="text-center mb-12">
  <h2 className="text-2xl font-semibold mb-3">
- Our Collective Impact
+ What your gau seva pays for
  </h2>
  <p className="text-surface-400 max-w-xl mx-auto">
- Together, Darshya devotees are making a real difference in cow
- protection across India.
+ Every contribution goes to a verified gaushala and is receipted. Here is
+ what it covers.
  </p>
  </div>
 
  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
  {[
  {
- value: "5,000+",
- label: "Cows Protected",
+ value: "Fodder",
+ label: "Green fodder, dry chara and mineral feed",
  icon: Heart,
  },
  {
- value: "\u20B92Cr+",
- label: "Donated by Devotees",
- icon: IndianRupee,
- },
- {
- value: "100+",
- label: "Partner Gaushalas",
+ value: "Care",
+ label: "Veterinary visits, vaccination and treatment",
  icon: Shield,
  },
  {
- value: "25,000+",
- label: "Happy Adopters",
+ value: "Shelter",
+ label: "Shed upkeep, bedding and water",
  icon: Users,
+ },
+ {
+ value: "80G",
+ label: "Tax-deductible receipt on eligible donations",
+ icon: IndianRupee,
  },
  ].map((stat) => (
  <div key={stat.label} className="text-center">

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import { rightsContactEmail } from "../../../lib/company";
 
 
 export const metadata: Metadata = {
- title: "UK Privacy Notice | Darshya",
+ title: "UK Privacy Notice",
  description:
  "UK-specific privacy notice for Darshya users. Lawful basis, your UK GDPR rights, transfers, and how to contact us.",
  alternates: { canonical: "https://darshya.online/legal/privacy-uk" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "UK Privacy Notice | Darshya",
  description:
  "UK-specific privacy notice for Darshya users. Lawful basis, your UK GDPR rights, transfers, and how to contact us.",
@@ -45,7 +47,7 @@ export default function PrivacyUkPage() {
  Bhaktisetu Technologies Pvt Ltd (&quot;Darshya&quot;, &quot;we&quot;, &quot;our&quot;) is the
  controller of personal data we collect from UK residents. You can reach our
  privacy team at{" "}
- <a href="mailto:privacy@darshya.online">privacy@darshya.online</a>.
+ <a href={`mailto:${rightsContactEmail()}`}>{rightsContactEmail()}</a>.
  </p>
  <p>
  As we do not have a UK or EU establishment, we are in the process of
@@ -113,7 +115,7 @@ export default function PrivacyUkPage() {
  <li>object to processing including marketing (Art. 21).</li>
  </ul>
  <p>
- Email <a href="mailto:privacy@darshya.online">privacy@darshya.online</a>{" "}
+ Email <a href={`mailto:${rightsContactEmail()}`}>{rightsContactEmail()}</a>{" "}
  with the subject line &quot;UK DSAR&quot; or use the in-app request tool in your
  account settings. We respond within 30 days. There is no fee unless a
  request is manifestly unfounded or excessive.
@@ -136,7 +138,7 @@ export default function PrivacyUkPage() {
  Our services are not directed to children under 13. We do not knowingly
  collect personal data from children. If you believe a child has provided us
  data, contact{" "}
- <a href="mailto:privacy@darshya.online">privacy@darshya.online</a> and we
+ <a href={`mailto:${rightsContactEmail()}`}>{rightsContactEmail()}</a> and we
  will delete it.
  </p>
 

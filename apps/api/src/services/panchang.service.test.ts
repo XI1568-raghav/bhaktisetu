@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { prismaMock } from '../lib/__mocks__/prisma.js';
+// SCAL-08: the in-process cache fallback is real now, so a suite that asserts
+// on the query a service issues must start each test from a cold cache.
+import { __memoryCacheClear } from '../lib/cache.js';
 
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
@@ -9,6 +12,7 @@ let service: PanchangService;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __memoryCacheClear();
   service = new PanchangService();
 });
 

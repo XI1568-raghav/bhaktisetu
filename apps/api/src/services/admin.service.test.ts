@@ -64,7 +64,13 @@ describe('AdminService.getUsers', () => {
     expect(u2!.roles).toEqual(['DEVOTEE']);
   });
 
-  it('post-filters by role when filter present', async () => {
+  // SCAL-09 (2026-08-12): this used to assert the POST-pagination JS filter —
+  // i.e. it asserted the bug. Filtering after `skip/take` returns only the
+  // matches that happen to fall on the fetched page, next to a `total` from an
+  // unfiltered count. The role predicate now lives in the query, so the
+  // contract is "the where clause carries the role", not "the service drops
+  // rows the database already returned".
+  it('filters by role inside the query, so the page and the count agree', async () => {
     prismaMock.user.findMany.mockResolvedValue([
       {
         id: 'u-1',
@@ -74,25 +80,20 @@ describe('AdminService.getUsers', () => {
         subscriptionTier: null,
         createdAt: new Date(),
       },
-      {
-        id: 'u-2',
-        fullName: 'B',
-        email: 'b@e',
-        phone: '2',
-        subscriptionTier: null,
-        createdAt: new Date(),
-      },
     ]);
-    prismaMock.user.count.mockResolvedValue(2);
+    prismaMock.user.count.mockResolvedValue(1);
     prismaMock.userRoleAssignment.findMany.mockResolvedValue([
       { userId: 'u-1', role: 'PANDIT' },
-      { userId: 'u-2', role: 'STORE_OWNER' },
     ]);
 
     const out = await service.getUsers({ role: 'PANDIT' });
 
+    const listWhere = prismaMock.user.findMany.mock.calls[0]![0]!.where;
+    expect(listWhere.id).toEqual({ in: ['u-1'] });
+    expect(prismaMock.user.count.mock.calls[0]![0]!.where).toEqual(listWhere);
     expect(out.users).toHaveLength(1);
     expect(out.users[0]!.id).toBe('u-1');
+    expect(out.total).toBe(1);
   });
 
   it('throws on DB failure instead of serving mock data', async () => {
@@ -175,11 +176,18 @@ describe('AdminService.updateUser', () => {
 
 describe('AdminService.getDashboard', () => {
   it('returns aggregated counts + recent transactions', async () => {
+    // AO-04: headline revenue = captured marketplace payments + completed
+    // subscription charges. It used to sum ONLY the Transaction table, which
+    // nothing but subscription.service ever writes — so marketplace revenue
+    // was structurally Rs 0 and would have read Rs 0 on the day the platform
+    // took its first Rs 1,00,000.
+    prismaMock.payment.aggregate.mockResolvedValue({ _sum: { amount: 4500 } });
     prismaMock.user.count.mockResolvedValue(100);
-    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
-      { role: 'DEVOTEE' },
-      { role: 'DEVOTEE' },
-      { role: 'PANDIT' },
+    // SCAL-04: role counts come from groupBy now, not from reading every
+    // assignment row and tallying them in JS.
+    prismaMock.userRoleAssignment.groupBy.mockResolvedValue([
+      { role: 'DEVOTEE', _count: { _all: 2 } },
+      { role: 'PANDIT', _count: { _all: 1 } },
     ]);
     prismaMock.marketplaceSubscription.count.mockResolvedValue(8);
     prismaMock.transaction.findMany.mockResolvedValue([
@@ -213,12 +221,16 @@ describe('AdminService.getDashboard', () => {
     expect(out.totalUsers).toBe(100);
     expect(out.usersByRole).toEqual({ DEVOTEE: 2, PANDIT: 1 });
     expect(out.activeSubscriptions).toBe(8);
-    expect(out.totalRevenue).toBe(1500);
+    // Rs 4,500 captured marketplace payments + Rs 1,500 completed subscription
+    // charges. The marketplace half is the fix: this used to assert 1500,
+    // because the tile could only ever see subscriptions.
+    expect(out.totalRevenue).toBe(6000);
     expect(out.pendingApprovals).toBe(4);
     expect(out.recentTransactions).toHaveLength(2);
   });
 
   it('throws on DB failure instead of serving fake metrics', async () => {
+    prismaMock.payment.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
     // Changed 2026-07-17: the catch block used to return a mock dashboard
     // with 8 fake users + ₹125000 fake revenue, masking real DB outages.
     // Now it rethrows so the admin UI surfaces the real error.
@@ -229,6 +241,14 @@ describe('AdminService.getDashboard', () => {
 
 describe('AdminService.getRevenue', () => {
   it('aggregates paid + pending commissions and groups subs by plan/role', async () => {
+    // Totals come from groupBy/aggregate, NOT from the recent-rows findMany.
+    // They used to be summed from `take: 50`, so the founder's revenue number
+    // silently under-reported from the 51st commission onward.
+    prismaMock.commission.groupBy.mockResolvedValue([
+      // Rs 1,000 of provider earnings at a 20% take rate => Rs 250 platform cut.
+      { percentage: 0.2, _sum: { amount: 1000 } },
+    ]);
+    prismaMock.commission.aggregate.mockResolvedValue({ _sum: { amount: 500 } });
     prismaMock.commission.findMany.mockResolvedValue([
       {
         id: 'c1',
@@ -273,9 +293,14 @@ describe('AdminService.getRevenue', () => {
     expect(basicPandit?.totalAmount).toBe(1998);
   });
 
-  it('falls back to demo numbers on error', async () => {
-    prismaMock.commission.findMany.mockRejectedValue(new Error());
-    const out = await service.getRevenue();
-    expect(out.totalCommissions).toBeGreaterThan(0);
+  // Was: "falls back to demo numbers on error". It did — a hardcoded Rs 45,000
+  // of revenue with invented commission rows, on ANY DB failure. The founder's
+  // revenue dashboard showed a confident fiction whenever the database was
+  // unreachable, and the mobile admin error banner could never fire because the
+  // call always "succeeded". Fabricated money must never be indistinguishable
+  // from real money.
+  it('THROWS on a DB failure instead of fabricating revenue', async () => {
+    prismaMock.commission.groupBy.mockRejectedValue(new Error('db down'));
+    await expect(service.getRevenue()).rejects.toThrow('db down');
   });
 });

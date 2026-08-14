@@ -15,12 +15,24 @@ const REPLY_TO = process.env.RESEND_REPLY_TO ?? 'support@darshya.online';
 
 const resend = apiKey ? new Resend(apiKey) : null;
 
+/**
+ * SCAL-11: which allowance this mail is allowed to spend.
+ *
+ * `transactional` — a receipt, an 80G donation certificate, a password reset, a
+ * booking confirmation. Someone is waiting for it and there is no second copy.
+ * `bulk` — the weekly digest, drip and marketing. Valuable, but a day late is
+ * not a broken promise.
+ */
+export type EmailKind = 'transactional' | 'bulk';
+
 interface SendEmailParams {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
   attachments?: { filename: string; content: Buffer | string }[];
+  /** Defaults to `transactional` — an unlabelled mail is never yielded. */
+  kind?: EmailKind;
 }
 
 interface SendEmailResult {
@@ -28,12 +40,177 @@ interface SendEmailResult {
   skipped?: boolean;
   id?: string;
   error?: string;
+  /** SCAL-11: true when the provider refused because the daily budget is gone. */
+  rateLimited?: boolean;
+  /**
+   * SCAL-11: a BULK mail we declined to send so the day's remaining allowance
+   * stays available for receipts and password resets. Nothing was attempted and
+   * nothing is charged — the caller should retry on a later day rather than
+   * record a delivery.
+   */
+  deferred?: boolean;
+}
+
+// ─── SCAL-11: daily send budget ────────────────────────────────────────────
+//
+// Resend free is 100 emails/day (3,000/mo). docs/free-tier-budgets.md does the
+// arithmetic: at ~3 mails per signup that is ~33 signups a day, and the same
+// allowance has to cover welcome mails, booking receipts, 80G donation
+// receipts, password resets and referral notifications. It is the FIRST hard
+// business cap this platform hits — well before storage or rows.
+//
+// Before this, hitting it was silent: Resend answers 429, the catch below
+// folded it into an anonymous `{ ok:false, error }`, and no caller checks the
+// result. On the day a temple partnership lands, devotee number 34 simply
+// never receives the receipt that IS her proof of purchase, and the first
+// signal is a support ticket accusing the platform of fraud.
+//
+// So: count every attempt against the UTC day Resend resets on, name a 429 for
+// what it is, and announce the threshold BEFORE the cap bites. This does not
+// buy headroom — splitting drip/marketing traffic off Resend and budgeting the
+// paid tier are business calls — it makes the wall visible while there is
+// still time to act.
+//
+// Caveat, stated rather than hidden: this counter is per PROCESS. Render free
+// runs a single always-on API instance today, so it is accurate now; if the
+// API is ever scaled out, each instance counts only its own share and the
+// warning fires late. A shared counter needs Redis, which SCAL-08 records as
+// unconfigured.
+const DAILY_CAP = Number(process.env.RESEND_DAILY_CAP ?? 100);
+const WARN_AT = Number(process.env.RESEND_DAILY_WARN_AT ?? 70);
+
+/**
+ * SCAL-11, second half — how much of the day BULK mail may never touch.
+ *
+ * Instrumentation makes the wall visible; it does not decide who hits it first,
+ * and today that is decided by luck. The weekly digest fans out to every
+ * devotee from a single cron tick, so on any Sunday past 100 users it spends
+ * the whole day's allowance before a single booking is made. The receipt that
+ * IS the devotee's proof of purchase, and the 80G certificate that is a tax
+ * document, then come back 429 — silently, because no caller checks.
+ *
+ * Reserving 30 of 100 for transactional mail is roughly ten signups' worth at
+ * the doc's own "~3 mails per signup" arithmetic. It does not create headroom
+ * (that is the paid tier, an owner call); it decides who goes without when
+ * there is none, and a digest going out a day late is the correct answer to
+ * that question.
+ */
+const BULK_RESERVE = Number(process.env.RESEND_BULK_RESERVE ?? 30);
+
+interface EmailQuotaSnapshot {
+  /** UTC calendar day these counters belong to, YYYY-MM-DD. */
+  day: string;
+  attempted: number;
+  sent: number;
+  failed: number;
+  rateLimited: number;
+  cap: number;
+  warnAt: number;
+}
+
+const quota = {
+  day: '',
+  attempted: 0,
+  sent: 0,
+  failed: 0,
+  rateLimited: 0,
+  warned: false,
+  capAnnounced: false,
+  bulkDeferAnnounced: false,
+};
+
+function utcDay(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function rollDay(): void {
+  const today = utcDay();
+  if (quota.day === today) return;
+  quota.day = today;
+  quota.attempted = 0;
+  quota.sent = 0;
+  quota.failed = 0;
+  quota.rateLimited = 0;
+  quota.warned = false;
+  quota.capAnnounced = false;
+  quota.bulkDeferAnnounced = false;
+}
+
+/** Current day's send counters. Exported for ops surfaces and tests. */
+export function getEmailQuotaSnapshot(): EmailQuotaSnapshot {
+  rollDay();
+  return {
+    day: quota.day,
+    attempted: quota.attempted,
+    sent: quota.sent,
+    failed: quota.failed,
+    rateLimited: quota.rateLimited,
+    cap: DAILY_CAP,
+    warnAt: WARN_AT,
+  };
+}
+
+/** True when the provider's refusal is a quota refusal rather than a bad address. */
+function looksRateLimited(error: { message?: string; name?: string; statusCode?: number }): boolean {
+  if (error.statusCode === 429) return true;
+  return /429|rate limit|too many requests|daily quota|quota exceeded/i.test(
+    `${error.name ?? ''} ${error.message ?? ''}`,
+  );
+}
+
+function announceIfNearCap(): void {
+  if (!quota.warned && quota.sent >= WARN_AT) {
+    quota.warned = true;
+    console.warn(
+      `[email][SCAL-11] ${quota.sent}/${DAILY_CAP} Resend sends used on ${quota.day}. ` +
+        'Transactional receipts and password resets share this allowance — ' +
+        'pause any drip/digest sends now or they will consume the rest.',
+    );
+  }
+  if (!quota.capAnnounced && quota.sent >= DAILY_CAP) {
+    quota.capAnnounced = true;
+    console.error(
+      `[email][SCAL-11] Resend daily cap reached (${quota.sent}/${DAILY_CAP}) on ${quota.day}. ` +
+        'Further sends will be refused with 429 — booking receipts and password ' +
+        'resets are now failing for real users.',
+    );
+  }
+}
+
+/** The point past which bulk mail must yield to receipts and resets. */
+function bulkCeiling(): number {
+  return Math.max(0, DAILY_CAP - BULK_RESERVE);
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
   if (!resend) {
+    // No key configured — nothing was sent, so nothing is charged to the day.
     return { ok: false, skipped: true };
   }
+  rollDay();
+
+  // SCAL-11: bulk yields. Checked against `attempted` rather than `sent`
+  // because a mail Resend refused still consumed a request against the same
+  // daily budget, and a bulk retry storm must not be able to spend the reserve
+  // by failing repeatedly.
+  if (params.kind === 'bulk' && quota.attempted >= bulkCeiling()) {
+    if (!quota.bulkDeferAnnounced) {
+      quota.bulkDeferAnnounced = true;
+      console.warn(
+        `[email][SCAL-11] Bulk mail deferred on ${quota.day}: ${quota.attempted}/${DAILY_CAP} of the ` +
+          `Resend day is spent and the last ${BULK_RESERVE} are reserved for receipts, 80G ` +
+          'certificates and password resets. The digest will resume on the next day with quota.',
+      );
+    }
+    return {
+      ok: false,
+      skipped: true,
+      deferred: true,
+      error: `bulk send deferred — ${quota.attempted}/${DAILY_CAP} used, ${BULK_RESERVE} reserved for transactional mail`,
+    };
+  }
+
+  quota.attempted += 1;
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
@@ -44,9 +221,23 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       replyTo: REPLY_TO,
       attachments: params.attachments,
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      quota.failed += 1;
+      const rateLimited = looksRateLimited(error as { message?: string; name?: string });
+      if (rateLimited) {
+        quota.rateLimited += 1;
+        console.error(
+          `[email][SCAL-11] Resend refused a send as rate-limited on ${quota.day} ` +
+            `(subject: ${params.subject}). This mail was NOT delivered.`,
+        );
+      }
+      return { ok: false, error: error.message, rateLimited };
+    }
+    quota.sent += 1;
+    announceIfNearCap();
     return { ok: true, id: data?.id };
   } catch (err) {
+    quota.failed += 1;
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -148,6 +339,92 @@ export function bookingConfirmationEmail(params: {
       <a class="btn" href="https://darshya.online/bookings/${encodeURIComponent(bookingNumber)}">View booking</a>
     `),
     text: `Namaste ${devoteeName}, your puja is booked.\n\nBooking #${bookingNumber}\nPuja: ${pujaName}\nTemple: ${templeName}\nDate: ${scheduledDate}\nTime: ${scheduledTimeSlot}\n${panditText}Amount: ${amount}\n\nCancellation is open until 24 hours before the slot time.\nView at: https://darshya.online/bookings/${encodeURIComponent(bookingNumber)}`,
+  };
+}
+
+/**
+ * NOTIF-05 (2026-08-12): the email bookingConfirmationEmail PROMISES.
+ *
+ * Its body says, to every paying devotee: "The priest will perform the puja and
+ * upload a video proof. You'll receive an email when the recording is ready."
+ * No such template existed. The only thing that fired when a proof landed was a
+ * web-push — which needs a desktop browser with granted permission, i.e.
+ * essentially nobody in the NRI cohort that pays 9-10x precisely for this
+ * artefact. Video proof is business rule #1; this is the written half of it.
+ */
+export function videoReadyEmail(params: {
+  devoteeName: string;
+  pujaName: string;
+  templeName: string;
+  bookingNumber: string;
+  /** Deep link to the booking's video page. */
+  videoUrl: string;
+  priestName?: string | null;
+  performedOn?: string | null;
+}): { subject: string; html: string; text: string } {
+  const { devoteeName, pujaName, templeName, bookingNumber, videoUrl, priestName, performedOn } =
+    params;
+  const priestHtml = priestName ? `<strong>Pandit:</strong> ${esc(priestName)}<br>` : '';
+  const priestText = priestName ? `Pandit: ${priestName}\n` : '';
+  const performedHtml = performedOn ? `<strong>Performed on:</strong> ${esc(performedOn)}<br>` : '';
+  const performedText = performedOn ? `Performed on: ${performedOn}\n` : '';
+  return {
+    subject: `Your ${pujaName} video is ready`,
+    html: shell(`
+      <h1>Namaste ${esc(devoteeName)}, your puja video is ready</h1>
+      <p>The recording of your puja has been uploaded. It shows the sankalp taken in your name,
+      the ritual itself, and the prasad offering.</p>
+      <p><strong>Puja:</strong> ${esc(pujaName)}<br>
+      <strong>Temple:</strong> ${esc(templeName)}<br>
+      ${priestHtml}${performedHtml}
+      <strong>Booking:</strong> ${esc(bookingNumber)}</p>
+      <a class="btn" href="${esc(videoUrl)}">Watch your puja video</a>
+      <p style="font-size:12px;color:#999;">If the button doesn't work, paste this URL into your browser:<br>
+      <span style="word-break:break-all;">${esc(videoUrl)}</span></p>
+    `),
+    text: `Namaste ${devoteeName}, your puja video is ready.\n\nPuja: ${pujaName}\nTemple: ${templeName}\n${priestText}${performedText}Booking: ${bookingNumber}\n\nWatch it here: ${videoUrl}`,
+  };
+}
+
+/**
+ * NOTIF-04 (2026-08-12): the refund notice for the ADMIN refund rail.
+ *
+ * refund.service.processRefund has always had its own local refundSuccessEmail.
+ * The other rail — payment.service.processRefund, which is what the admin panel
+ * calls — sent nothing at all: no email, no push, no WhatsApp. A devotee
+ * refunded by an admin got their money back with zero written notice, and the
+ * predictable next step is a chargeback on a refund that was already paid.
+ *
+ * Fired from booking-notify.notifyRefundProcessed, which suppresses it when the
+ * caller reports it already sent one — so the two rails cannot double-email.
+ */
+export function refundProcessedEmail(params: {
+  devoteeName: string;
+  pujaName: string;
+  templeName: string;
+  bookingNumber: string;
+  /** Pre-formatted display amount, e.g. "₹1,100.50". Built from the stored Decimal, never a float. */
+  amount?: string | null;
+}): { subject: string; html: string; text: string } {
+  const { devoteeName, pujaName, templeName, bookingNumber, amount } = params;
+  const amountHtml = amount
+    ? `<p><strong>Amount refunded:</strong> ${esc(amount)}</p>`
+    : '<p>Your refund has been issued.</p>';
+  const amountText = amount ? `Amount refunded: ${amount}\n` : 'Your refund has been issued.\n';
+  return {
+    subject: `Refund processed for your ${pujaName} booking`,
+    html: shell(`
+      <h1>Namaste ${esc(devoteeName)}, your refund is on its way</h1>
+      ${amountHtml}
+      <p><strong>Puja:</strong> ${esc(pujaName)}<br>
+      <strong>Temple:</strong> ${esc(templeName)}<br>
+      <strong>Booking:</strong> ${esc(bookingNumber)}</p>
+      <p>The amount has been returned to the payment method you used. Banks typically take
+      5-7 business days to post it to your statement.</p>
+      <p style="font-size:12px;color:#999;">If you do not see it after 7 business days, reply to this
+      email with your booking number and we will trace it with the payment gateway.</p>
+    `),
+    text: `Namaste ${devoteeName}, your refund is on its way.\n\n${amountText}Puja: ${pujaName}\nTemple: ${templeName}\nBooking: ${bookingNumber}\n\nThe amount has been returned to your original payment method. Banks typically take 5-7 business days to post it.`,
   };
 }
 
@@ -270,14 +547,31 @@ export function supportTicketReplyEmail(params: {
   };
 }
 
+/**
+ * COM-02 (prod sweep 2026-08-12): `is80G` must mirror the attachment.
+ *
+ * This mail said "Your 80G tax receipt PDF is attached" for every donation,
+ * while the donee's 80G registration number and PAN are NULL for every donee on
+ * the platform — so the attachment is not an 80G instrument and the donor was
+ * being told it was. The PDF now states its own status
+ * (lib/pdf-receipt.ts is80GEligible); this copy has to agree with it, or the
+ * donor believes the email and files the deduction anyway.
+ */
 export function donationReceiptEmail(params: {
   donorName: string;
   amount: string;
   gaushalaName: string;
   receiptNumber: string;
   date: string;
+  is80G?: boolean;
 }): { subject: string; html: string; text: string } {
-  const { donorName, amount, gaushalaName, receiptNumber, date } = params;
+  const { donorName, amount, gaushalaName, receiptNumber, date, is80G = false } = params;
+  const attachmentLineHtml = is80G
+    ? 'Your 80G tax receipt PDF is attached to this email. Please retain it for your records.'
+    : 'Your donation receipt PDF is attached to this email. Please retain it for your records.';
+  const attachmentLineText = is80G
+    ? 'Your 80G tax receipt is attached.'
+    : 'Your donation receipt is attached.';
   return {
     subject: `Thank you — donation receipt for ${gaushalaName}`,
     html: shell(`
@@ -285,10 +579,10 @@ export function donationReceiptEmail(params: {
       <p>Your donation of <strong>${amount}</strong> to ${gaushalaName} has been received.</p>
       <p><strong>Receipt #:</strong> ${receiptNumber}<br>
       <strong>Date:</strong> ${date}</p>
-      <p>Your 80G tax receipt PDF is attached to this email. Please retain it for your records.</p>
+      <p>${attachmentLineHtml}</p>
       <p>The cows you support will be fed, sheltered, and cared for with your seva.</p>
       <a class="btn" href="https://darshya.online/gaushala">Visit gaushala</a>
     `),
-    text: `Thank you ${donorName}!\n\nYour donation of ${amount} to ${gaushalaName} has been received.\nReceipt #${receiptNumber} dated ${date}\n\nYour 80G tax receipt is attached.`,
+    text: `Thank you ${donorName}!\n\nYour donation of ${amount} to ${gaushalaName} has been received.\nReceipt #${receiptNumber} dated ${date}\n\n${attachmentLineText}`,
   };
 }

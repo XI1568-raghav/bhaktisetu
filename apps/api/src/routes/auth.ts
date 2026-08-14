@@ -718,19 +718,66 @@ export async function authRoutes(server: FastifyInstance) {
     if (demoAllowed) {
       const demo = DEMO_ACCOUNTS[emailLower];
       if (demo && demo.password === password) {
+        // AW-08 (prod sweep 2026-08-12, P1) — LOGIN AND THE MIDDLEWARE MUST
+        // AGREE ON THE IDENTITY.
+        //
+        // This used to answer 200 with a synthesised `id: "demo-<handle>"`
+        // regardless of whether the account existed. middlewares/auth.ts now
+        // fails closed (401) when a demo handle's User row is absent, so the
+        // two halves contradicted each other: astro@demo.com logged in
+        // successfully, the web app routed into /astrologer-portal, and every
+        // call inside it answered 401. Before that middleware fix the same
+        // synthetic non-UUID id reached Prisma and produced P2023/P2010 500s
+        // carrying the query, the SQL and the absolute source path.
+        //
+        // Resolve the row here and hand back its REAL uuid. If it is not
+        // seeded, refuse with the same sentence the middleware uses — a
+        // configuration problem must not present as a working session.
+        //
+        // A LOOKUP THAT THREW IS NOT A LOOKUP THAT MISSED. Swallowing the
+        // error into `null` would report "not seeded" whenever Postgres is
+        // merely unreachable, sending whoever hits it to re-run a seed that
+        // was never the problem. Observed for real on 2026-08-14: the local
+        // Postgres accepted TCP on 55432 but reset the wire protocol, and
+        // every demo login answered "is not seeded in this database".
+        let demoRow: Awaited<ReturnType<typeof prisma.user.findUnique>> | null = null;
+        try {
+          demoRow = await prisma.user.findUnique({ where: { email: emailLower } });
+        } catch (err) {
+          request.log.error({ err, email: emailLower }, 'demo login could not reach the database');
+          return reply.code(503).send({
+            error: 'ServiceUnavailable',
+            message: 'Sign-in is temporarily unavailable. Please try again in a moment.',
+          });
+        }
+        if (!demoRow) {
+          request.log.warn(
+            { event: 'demo_user_not_seeded', email: emailLower },
+            'demo login attempted for an account that is not seeded',
+          );
+          return reply.code(401).send({
+            error: 'Unauthorized',
+            message: `Demo account ${emailLower} is not seeded in this database. Run the demo seed before using this token.`,
+          });
+        }
+        if (demoRow.blocked) {
+          return reply
+            .code(403)
+            .send({ error: 'Forbidden', message: 'This account has been suspended.' });
+        }
         const { session } = makeDemoSession(emailLower);
         setAuthCookies(reply, session.accessToken, session.refreshToken);
         return reply.send({
           session,
           user: {
-            id: `demo-${emailLower.split('@')[0]}`,
-            email: emailLower,
-            fullName: demo.fullName,
+            id: demoRow.id,
+            email: demoRow.email ?? emailLower,
+            fullName: demoRow.fullName ?? demo.fullName,
             role: demo.role,
-            avatarUrl: null,
-            preferredLanguage: 'en',
-            subscriptionTier: 'free',
-            createdAt: new Date().toISOString(),
+            avatarUrl: demoRow.avatarUrl ?? null,
+            preferredLanguage: demoRow.preferredLanguage ?? 'en',
+            subscriptionTier: demoRow.subscriptionTier ?? 'free',
+            createdAt: (demoRow.createdAt ?? new Date()).toISOString(),
           },
         });
       }

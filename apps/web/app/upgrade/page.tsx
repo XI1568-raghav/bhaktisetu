@@ -117,10 +117,20 @@ function UpgradeInner() {
       // The NRI annual plan used to branch to /subscriptions/create-stripe-annual
       // (USD Stripe Checkout). That rail was removed 2026-08-11 — every plan now
       // goes through Razorpay in INR.
-      const isAutoRenew = planId === 'astro_monthly';
-      const endpoint = isAutoRenew
-        ? '/subscriptions/create'
-        : '/subscriptions/subscribe';
+      //
+      // PM-04 (prod sweep 2026-08-12): the endpoint used to be chosen by
+      // CADENCE — only `astro_monthly` went to /subscriptions/create; the ₹99
+      // pass and the ₹5,000 NRI annual went to /subscriptions/subscribe, which
+      // wrote an ACTIVE row and a COMPLETED ₹-transaction with no payment
+      // anywhere in between. It is chosen by PRICE now: anything that costs
+      // money goes to the rail that can take money, and /subscribe is left to
+      // the free tier it is safe for. The server enforces the same split (402
+      // from /subscribe for a priced plan), so a stale client cannot re-open
+      // the hole.
+      const price = PLAN_CARDS.find((p) => p.id === planId)?.price ?? 0;
+      const isPaid = price > 0;
+      const endpoint = isPaid ? '/subscriptions/create' : '/subscriptions/subscribe';
+      const isAutoRenew = isPaid;
 
       const body = { planId, role: 'DEVOTEE' };
 

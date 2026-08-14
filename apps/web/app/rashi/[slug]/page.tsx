@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!r) return { title: 'Rashi not found' };
   const cap = slug.charAt(0).toUpperCase() + slug.slice(1);
 
-  const title = `${r.sanskritEnglish} Rashi (${cap}) — Traits, Compatibility, Lucky Stone | Darshya`;
+  const title = `${r.sanskritEnglish} Rashi (${cap}) — Traits, Compatibility, Lucky Stone`;
   const description = `${r.sanskritEnglish} (${cap}) rashi profile: ${r.qualities.slice(0, 3).join(', ')}. Gemstone ${r.gemstone}, lucky day ${r.luckyDay}. Career, marriage compatibility, spiritual practice.`;
 
   return {

@@ -12,10 +12,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Choghadiya Today — Free Muhurat Calculator (8 Day + 8 Night Periods) | Darshya',
+ title: 'Choghadiya Today — Free Muhurat Calculator (8 Day + 8 Night Periods)',
  description: 'Free Vedic Choghadiya muhurat calculator. 8 day-periods (sunrise → sunset) + 8 night-periods (sunset → sunrise) classified as Amrit / Shubh / Labh (auspicious), Char (neutral), or Kaal / Rog / Udveg (inauspicious). Per weekday + city. Find shubh muhurat now.',
  alternates: { canonical: `${BASE_URL}/astrology/choghadiya` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Choghadiya Today — Free Muhurat Calculator',
   description: 'Live 16-period choghadiya muhurat. Sunrise/sunset per city + classification per Brihat Samhita. Find your next Amrit / Shubh / Labh window now.',
   url: `${BASE_URL}/astrology/choghadiya`,
@@ -129,7 +130,7 @@ export default function ChoghadiyaPage() {
        <div key={c.name} className={`rounded-xl border p-4 ${cls.border} ${cls.bg}`}>
         <div className="flex items-baseline justify-between gap-2">
          <p className="font-serif text-base font-semibold text-gray-900">{c.name}</p>
-         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${cls.pill}`}>{c.q}</span>
+         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${cls.pill}`}>{c.q}</span>
         </div>
         <p className="mt-1 text-xs text-gray-600">{c.ruler}</p>
         <p className="mt-2 text-xs text-gray-700">{c.for}</p>

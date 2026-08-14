@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Rudraksha Guide — All 14 Mukhi + 4 Special Varieties, Benefits, Mantras | Darshya',
+  title: 'Rudraksha Guide — All 14 Mukhi + 4 Special Varieties, Benefits, Mantras',
   description:
     'Complete shastra-based rudraksha guide: 14 mukhi (1-mukhi to 14-mukhi) plus Ganesh, Gauri-Shankar, Trijuti and Sawar special beads. Each with deity, planet, beej mantra, wearing day, benefits, energising ritual per Shiva Purana. Find which rudraksha to wear for your dosha.',
   alternates: { canonical: `${BASE_URL}/rudraksha` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Rudraksha Guide — 14 Mukhi + 4 Special Varieties',
     description: 'Deity, planet, mantra and wearing rules for every rudraksha mukhi per Shiva Purana.',
     url: `${BASE_URL}/rudraksha`,

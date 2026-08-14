@@ -99,7 +99,7 @@ export default function ApplicationsClient() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${filter === f ? 'bg-saffron-500 text-white border-saffron-500' : 'bg-white text-surface-700 border-surface-200'}`}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${filter === f ? 'bg-saffron-600 text-white border-saffron-600' : 'bg-white text-surface-700 border-surface-200'}`}
           >
             {f === 'all' ? `All (${items.length})` : `${f} (${items.filter((a) => a.status === f).length})`}
           </button>

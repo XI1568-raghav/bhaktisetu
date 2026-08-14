@@ -132,6 +132,44 @@ function serializeSession(s: any) {
   };
 }
 
+// AW-07 — the seat count a devotee-facing surface is allowed to publish.
+//
+// PAID + PENDING_PAYMENT both HOLD a seat, and this is the same set the enroll
+// handler's capacity gate counts. If a read endpoint counted anything else, the
+// catalog would advertise a seat /enroll then refuses with 409 "Session is
+// full" — the class of defect where the UI invites a payment the server has
+// already decided not to accept. Both the listing and the detail route include
+// this exact clause so they can never drift apart.
+const SEAT_HOLDING_STATUSES: ('PAID' | 'PENDING_PAYMENT')[] = ['PAID', 'PENDING_PAYMENT'];
+const seatCountInclude = {
+  instructor: { select: { id: true, fullName: true } },
+  _count: { select: { enrollments: { where: { status: { in: SEAT_HOLDING_STATUSES } } } } },
+};
+
+/**
+ * Strip the relation/aggregate scaffolding off a session row and replace it
+ * with the two public facts a devotee needs: who teaches it and how many seats
+ * are left. `roomUrl` is removed here unconditionally — a caller that is
+ * entitled to it re-attaches it after its own entitlement check.
+ */
+function publicSession(row: any) {
+  const { roomUrl: _omitRoomUrl, instructor, _count, ...rest } = row as {
+    roomUrl?: string | null;
+    instructor?: { id: string; fullName: string | null } | null;
+    _count?: { enrollments: number };
+  } & Record<string, unknown>;
+  void _omitRoomUrl;
+  const enrolledCount = _count?.enrollments ?? 0;
+  const capacity = Number((rest as { capacity?: unknown }).capacity ?? 0);
+  return {
+    ...serializeSession(rest),
+    instructorName: instructor?.fullName ?? null,
+    enrolledCount,
+    // Never negative: an over-held class reads "0 left", not "-3 left".
+    spotsLeft: Math.max(0, capacity - enrolledCount),
+  };
+}
+
 export async function wellnessSessionRoutes(server: FastifyInstance) {
   // POST /sessions — instructor creates a new session
   server.post(
@@ -236,7 +274,14 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
     }
   );
 
-  // GET /sessions — public; lists upcoming SCHEDULED + LIVE sessions
+  // GET /sessions — public; lists upcoming SCHEDULED + LIVE sessions.
+  //
+  // AW-07 (2026-08-12, P1): this is the ONLY read a devotee-facing catalog can
+  // build on, and it carried neither the instructor's name nor the seats left.
+  // A catalog then either omits both or invents them — and inventing them is
+  // exactly what /wellness shipped (six fictional classes, hardcoded "8 spots
+  // left", against a real table). Both facts are now real and derived here so
+  // no client re-implements the arithmetic.
   server.get('/sessions', async (request, reply) => {
     const sessions = await prisma.wellnessSession.findMany({
       where: {
@@ -245,22 +290,28 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       },
       orderBy: { scheduledAt: 'asc' },
       take: 200,
+      include: seatCountInclude,
     });
     // Strip roomUrl from public listing — only enrolled paid users / instructor see it.
-    const stripped = sessions.map((s) => {
-      const { roomUrl: _omitRoomUrl, ...rest } = s;
-      void _omitRoomUrl;
-      return serializeSession(rest);
-    });
+    const stripped = sessions.map(publicSession);
     return reply.send({ data: stripped });
   });
 
   // GET /sessions/:id — detail. roomUrl is gated.
+  //
+  // AW-07 remaining half (2026-08-14): this was a bare findUnique +
+  // serializeSession, so it carried neither instructorName nor spotsLeft — and
+  // ClassDetailClient, the ONLY devotee-facing enrolment surface, reads both.
+  // With spotsLeft absent its `isFull = spots === 0` was permanently false, so
+  // a class with zero seats rendered an enabled "Enrol — ₹1,000" button that
+  // POST /enroll then refused with 409. It now returns exactly what the
+  // listing returns (same include, same derivation) plus the gated roomUrl.
   server.get('/sessions/:id', async (request, reply) => {
     const params = sessionIdParams.safeParse(request.params);
     if (!params.success) return reply.code(400).send({ error: 'Invalid session id' });
     const session = await prisma.wellnessSession.findUnique({
       where: { id: params.data.id },
+      include: seatCountInclude,
     });
     if (!session) return reply.code(404).send({ error: 'Session not found' });
 
@@ -286,8 +337,10 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       }
     }
 
-    const out: { roomUrl?: string | null } & Record<string, unknown> = serializeSession(session);
-    if (!canSeeRoom) delete out.roomUrl;
+    // publicSession always drops roomUrl; it is re-attached only for a caller
+    // the server itself has decided is entitled to it.
+    const out: { roomUrl?: string | null } & Record<string, unknown> = publicSession(session);
+    if (canSeeRoom) out.roomUrl = (session as { roomUrl?: string | null }).roomUrl ?? null;
     return reply.send({ data: out });
   });
 

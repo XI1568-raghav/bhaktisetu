@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const n = getNavaratnaBySlug(slug);
   if (!n) return { title: 'Not found' };
   return {
-    title: `${n.englishName} (${n.hindiName}) — ${n.planet} Gem | Darshya`,
+    title: `${n.englishName} (${n.hindiName}) — ${n.planet} Gem`,
     description: `${n.englishName} / ${n.hindiName} / ${n.sanskritName} — sacred Vedic gem for ${n.planet}. Finger, metal, weight, day to wear, mantra, benefits, who-should-not-wear, side-effects, quality, price range.`,
     alternates: { canonical: `https://darshya.online/navaratna/${n.slug}` },
   };

@@ -1,7 +1,11 @@
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
+import {
+  reverseBookingLedger,
+  reduceBookingLedgerForPartialRefund,
+} from './ledger-reversal.service.js';
 import { cancellationService } from './cancellation.service.js';
 
 // Refund automation against Razorpay's REST API.
@@ -277,45 +281,44 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     // decision, not something a refund handler should do silently. Those surface
     // in the reconciliation warning below.
     //
-    // Partial refunds reverse proportionally is NOT attempted here: the ladder
-    // fractions are applied to the devotee side, and splitting a provider's
-    // earning mid-flight needs a policy decision. For a partial refund we leave
-    // the ledger untouched and flag it, rather than guess.
+    // DI-02 (2026-08-12): partial refunds now unwind PROPORTIONALLY.
+    //
+    // This block used to be full-refund-only "because splitting a provider's
+    // earning mid-flight needs a policy decision". It does not: the take-rate
+    // doctrine is a uniform 20/80, and applying it to the revenue actually
+    // RETAINED is the same rule, not a new one. Meanwhile the cancellation
+    // ladder (100/75/50/25/0) makes a fractional refund the NORMAL path — on a
+    // 75%-tier cancellation of a Rs 1,100 puja the devotee got Rs 825 back
+    // while the pandit kept the whole Rs 770 and the temple its Rs 55, so the
+    // platform collected Rs 275 and paid out Rs 825. Every mid-ladder
+    // cancellation was loss-making, silently.
     if (refundType === 'full') {
-      const reversed = await tx.commission.updateMany({
-        where: { bookingId, status: 'PENDING', payoutRequestId: null },
-        data: { status: 'REVERSED' },
+      // This logic used to live inline here, and payment.service's admin rail
+      // never got a copy — which is how a fully refunded booking still paid the
+      // pandit (~172% of booking value out the door, DI-01). It was extracted to
+      // ledger-reversal.service so both rails share ONE implementation, but only
+      // payment.service was switched over; this call site kept its duplicate
+      // until 2026-08-13. Two copies of a money-reversal rule is precisely the
+      // drift that module exists to prevent — do not re-inline it.
+      const reversal = await reverseBookingLedger(tx, bookingId, reason);
+      reversedCommissions = reversal.reversedCommissions;
+      reversedTemplePayouts = reversal.reversedTemplePayouts;
+    } else {
+      // `paidInr` is what was refundable before this call: the guards above
+      // reject a booking whose payment is already 'refunded', and this rail
+      // writes `refundAmount` rather than accumulating it.
+      const scaled = await reduceBookingLedgerForPartialRefund(tx, bookingId, {
+        refundAmount: new Prisma.Decimal(refundInr.toFixed(2)),
+        refundableBefore: new Prisma.Decimal(paidInr.toFixed(2)),
+        reason,
       });
-      const alreadySettled = await tx.commission.count({
-        where: { bookingId, OR: [{ status: 'PAID' }, { payoutRequestId: { not: null } }] },
-      });
-      if (alreadySettled > 0) {
-        // Cannot be undone automatically — the provider has been (or is being) paid.
-        await tx.pujaBooking.update({
-          where: { id: bookingId },
-          data: {
-            cancellationReason:
-              `[refunded][ledger-manual-review ${alreadySettled}] ${reason}`.slice(0, 500),
-          },
-        });
-      }
-      reversedCommissions = reversed.count;
-
-      // Temple share follows the same rule — pending only.
-      try {
-        const t = await tx.templePayout.updateMany({
-          where: { bookingId, status: 'pending' },
-          data: { status: 'reversed' },
-        });
-        reversedTemplePayouts = t.count;
-      } catch {
-        // TemplePayout may not carry a 'reversed' status in older deployments —
-        // never let ledger bookkeeping fail a refund that Razorpay already made.
-      }
+      reversedCommissions = scaled.scaledCommissions;
+      reversedTemplePayouts = scaled.scaledTemplePayouts;
     }
   });
 
   // Best-effort success email — never block on send failure.
+  let emailAlreadySent = false;
   if (booking.user.email) {
     try {
       const { subject, html, text } = refundSuccessEmail({
@@ -327,10 +330,45 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
         refundId: refund.id,
         refundType,
       });
-      await sendEmail({ to: booking.user.email, subject, html, text });
+      // Only a REAL send suppresses the notifier's own email leg. sendEmail
+      // returns {ok:false, skipped:true} when RESEND_API_KEY is unset — which
+      // is the current production state (NOTIF-03, owner-gated) — so trusting
+      // "we called sendEmail" here would suppress the fallback AND report a
+      // delivery that never happened. That conflation of skipped-with-sent is
+      // the root of this whole finding; do not reintroduce it.
+      const res = await sendEmail({ to: booking.user.email, subject, html, text });
+      emailAlreadySent = res.ok === true;
     } catch {
       // swallow — email failure must not undo refund
     }
+  }
+
+  // NOTIF-04 (2026-08-12): ANNOUNCE THE REFUND ON THE NON-EMAIL CHANNELS.
+  //
+  // The email above is gated twice — on the nullable User.email, then on
+  // RESEND_API_KEY inside sendEmail — so a phone-OTP devotee (the exact cohort
+  // the WhatsApp-first GTM targets) was told NOTHING on any channel when their
+  // money went back. Worst here on the cron path: processAutoRefunds calls this
+  // an hour after cancellation with no user-initiated trigger at all, so the
+  // first the devotee knows of it is their bank statement. The predictable next
+  // step is a chargeback on a refund that was already paid, which costs the
+  // platform the disputed amount plus the fee.
+  //
+  // notifyRefundProcessed was written for exactly this gap and had ZERO call
+  // sites. Fired AFTER the transaction commits — never inside it, a rolled-back
+  // refund must not have been announced — and awaited only so a throw cannot
+  // escape as an unhandled rejection. `emailAlreadySent` suppresses its email
+  // leg so this rail cannot double-email.
+  //
+  // Dynamic import for the same reason payment.service uses one: it keeps
+  // routes/notifications (and its web-push/FCM deps) out of this module's
+  // static graph.
+  try {
+    const { notifyRefundProcessed } = await import('./booking-notify.service.js');
+    await notifyRefundProcessed({ bookingId, amountInr: refundInr, emailAlreadySent });
+  } catch (err) {
+    // A notification must NEVER undo a refund Razorpay has already made.
+    console.warn('[refund.service] refund notification failed:', err);
   }
 
   return {

@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'The 6 Darshanas — Schools of Hindu Philosophy | Darshya',
+  title: 'The 6 Darshanas — Schools of Hindu Philosophy',
   description: 'Nyaya, Vaisheshika, Sankhya, Yoga, Purva Mimamsa, Vedanta — the six astika darshanas. Founders, central thesis, key concepts, pramanas, liberation paths.',
   alternates: { canonical: `${BASE_URL}/darshanas` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'The 6 Darshanas (Shad-Darshana)',
     description: 'Six orthodox schools of Hindu philosophy — Nyaya, Vaisheshika, Sankhya, Yoga, Purva Mimamsa, Vedanta — paired into 3 complementary couples.',
     url: `${BASE_URL}/darshanas`,
@@ -99,13 +100,13 @@ export default function DarshanasIndexPage() {
                 >
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs font-semibold text-gray-500">#{d.number}</span>
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">{d.approxDate}</span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{d.approxDate}</span>
                   </div>
                   <h3 className="mt-1 text-base font-semibold text-gray-900 group-hover:text-saffron-700">{d.name}</h3>
                   <p className="mt-0.5 font-serif text-sm text-gray-700">{d.sanskrit}</p>
                   <p className="mt-1 text-xs text-gray-500">Founder: {d.founder}</p>
                   <p className="mt-1 text-xs text-gray-500">Root text: {d.foundingText}</p>
-                  <p className="mt-2 rounded bg-saffron-50 px-2 py-1 text-[11px] font-medium text-saffron-900">{d.bestKnownFor}</p>
+                  <p className="mt-2 rounded bg-saffron-50 px-2 py-1 text-xs font-medium text-saffron-900">{d.bestKnownFor}</p>
                 </Link>
               ))}
             </div>

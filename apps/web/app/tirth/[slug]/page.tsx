@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = getTirtha(slug);
   if (!t) return { title: 'Not found' };
   return {
-    title: `${t.name} — Complete Pilgrim Guide | Darshya`,
+    title: `${t.name} — Complete Pilgrim Guide`,
     description: `${t.name} (${t.sanskrit}): darshan timings, how to reach, dress code, what to offer, ${t.primaryPujas.slice(0, 2).join(' & ')}. ${t.significance.slice(0, 100)}…`,
     alternates: { canonical: `${BASE_URL}/tirth/${t.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${t.name} — Pilgrim Guide`,
       description: t.significance,
       url: `${BASE_URL}/tirth/${t.slug}`,

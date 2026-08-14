@@ -200,3 +200,6 @@ export type PaginationInput = z.infer<typeof paginationSchema>;
 
 // ─── Reading Progress ────────────────────────
 export * from "./reading-progress.js";
+
+// ─── Delivery Address (country-aware, CM-06) ─
+export * from "./delivery-address.js";

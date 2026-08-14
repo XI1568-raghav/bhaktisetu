@@ -7,6 +7,8 @@ import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { sendWhatsappTemplate, whatsapp } from '../lib/whatsapp.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
+import { authenticateUser } from '../middlewares/auth.js';
+import { computeYatraTotalInr } from '../lib/yatra-pricing.js';
 
 /**
  * Yatra package commerce — inquiry intake (legacy) + real Razorpay checkout
@@ -61,7 +63,16 @@ const createOrderSchema = z.object({
   packageTier: z.enum(['economy', 'standard', 'premium']),
   startDate: z.string().min(1).max(40),
   travelersCount: z.number().int().min(1).max(50),
-  totalInr: z.number().int().min(500).max(2_000_000), // sanity bound; trust server price next iteration
+  // COM-05: `totalInr` used to BE the amount charged (floor ₹500), so a
+  // ₹2,98,000 package could be paid for with ₹500 — and /verify-payment
+  // signed off on it, because the HMAC is checked against a Razorpay order
+  // the server minted at the attacker's own figure. The price now comes from
+  // lib/yatra-pricing.ts. `totalInr` is accepted only for backward compat and
+  // ignored; `confirmTotalInr` is the number the client actually SHOWED the
+  // buyer — when it disagrees with the server price we refuse rather than
+  // charge a different amount than the screen promised.
+  totalInr: z.number().int().min(0).max(2_000_000).optional(),
+  confirmTotalInr: z.number().int().min(0).max(20_000_000).optional(),
   buyer: z.object({
     name: z.string().min(1).max(120),
     email: z.string().email(),
@@ -223,14 +234,42 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
   // pending_payment yatra_bookings row + returns a Razorpay order id + keyId
   // so the web checkout component can open the gateway dialog. Demo-mode
   // keys synthesize an order id so dev + smoke stays green w/o RZP creds.
-  server.post('/create-order', async (request, reply) => {
+  // COM-05: `authenticateUser` — this endpoint mints a real Razorpay order and
+  // a yatra_bookings row. It was public.
+  server.post('/create-order', { preHandler: [authenticateUser] }, async (request, reply) => {
     const parsed = createOrderSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });
     }
     const body = parsed.data;
+
+    // COM-05: server-authoritative price. The client's `totalInr` is not used.
+    const priced = computeYatraTotalInr(body.yatraSlug, body.packageTier, body.travelersCount);
+    if (!priced.ok) {
+      return reply.code(400).send({
+        error: priced.reason,
+        message:
+          priced.reason === 'unknown_package'
+            ? 'This yatra package is not available for online checkout.'
+            : 'Invalid traveller count.',
+      });
+    }
+    const serverTotalInr = priced.totalInr;
+    // Both sides of the contract: if the page showed the buyer a different
+    // number, do not quietly charge ours.
+    if (
+      typeof body.confirmTotalInr === 'number' &&
+      body.confirmTotalInr !== serverTotalInr
+    ) {
+      return reply.code(409).send({
+        error: 'price_mismatch',
+        message: 'The price changed while you were booking. Please review and try again.',
+        serverTotalInr,
+      });
+    }
+
     const reference = refId();
-    const amountInPaise = Math.round(body.totalInr * 100);
+    const amountInPaise = Math.round(serverTotalInr * 100);
 
     await ensureYatraBookingsTable();
 
@@ -271,7 +310,7 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
       body.packageTier,
       body.startDate,
       body.travelersCount,
-      body.totalInr,
+      serverTotalInr,
       body.buyer.name,
       body.buyer.email,
       body.buyer.phone,
@@ -287,6 +326,7 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
       yatraBookingId: row.id,
       reference: row.reference,
       amountInPaise,
+      amountInr: serverTotalInr,
       currency: 'INR',
       razorpayOrderId,
       razorpayKeyId: isDemoPayment ? null : razorpayKeyId,

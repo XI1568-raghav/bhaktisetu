@@ -14,6 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!a) return { title: 'Article not found' };
   return {
     title: `${a.frontmatter.title} — Sanatan Dharm`,
+    alternates: { canonical: `https://darshya.online/sanatan/${slug}` },
     description: a.frontmatter.summary,
   };
 }

@@ -1,7 +1,8 @@
 export const revalidate = 60;
 
 export const metadata = {
-  title: 'Status — Darshya',
+  alternates: { canonical: 'https://darshya.online/status' },
+  title: 'Status',
   description: 'Real-time uptime for Darshya services',
 };
 

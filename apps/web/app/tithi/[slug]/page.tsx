@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const t = getTithiBySlug(slug);
   if (!t) return { title: 'Tithi not found' };
   return {
-    title: `${t.name} (${t.sanskrit}) — Lunar Day, Deity, Vrata, Mantra | Darshya`,
+    title: `${t.name} (${t.sanskrit}) — Lunar Day, Deity, Vrata, Mantra`,
     description: `${t.name} tithi: presiding deity ${t.presidingDeity}. ${t.shuklaSignificance.slice(0, 110)}…`,
     alternates: { canonical: `https://darshya.online/tithi/${t.slug}` },
   };

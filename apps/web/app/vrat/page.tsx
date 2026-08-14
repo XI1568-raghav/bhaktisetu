@@ -7,7 +7,7 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Hindu Vrats Guide — Ekadashi, Karva Chauth, Shivratri, Navratri Fasting | Darshya',
+  title: 'Hindu Vrats Guide — Ekadashi, Karva Chauth, Shivratri, Navratri Fasting',
   description:
     'Complete guide to 10 most-observed Hindu vrats — Ekadashi, Pradosh, Maha Shivratri, Karva Chauth, Navratri, Janmashtami, Ganesh Chaturthi, Satyanarayan, Hartalika Teej, Somvar. Fasting rules, rituals, mantras.',
   alternates: { canonical: `${BASE_URL}/vrat` },

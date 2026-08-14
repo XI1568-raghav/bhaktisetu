@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
  UserCircle,
  Star,
@@ -17,6 +17,7 @@ import {
  XCircle,
  AlertCircle,
  Flame,
+ RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
@@ -45,31 +46,18 @@ interface PriestProfile {
  stats: { totalBookings: number; completedBookings: number };
 }
 
-// ─── Fallback ───────────────────────────────────────────────────
+// PJ-06 (2026-08-13): a hardcoded `fallbackProfile` used to live here and was
+// installed by a bare `catch`. Because a non-ok response threw, an ordinary
+// expired session — a 401 — painted a DIFFERENT PERSON onto the signed-in
+// pandit's own profile: another name, phone and email, an "approved / Aadhaar
+// verified" badge, a 4.8-star history he had not earned, and two temple
+// affiliations he had no connection to. The editable fields were seeded from
+// the same object, so pressing Save from that state wrote a stranger's identity
+// into his record. There is no honest fixture for "who is signed in" — the only
+// truthful answers are the server's row, an explicit error, or a re-auth
+// prompt, which is what this file now renders.
 
-const fallbackProfile: PriestProfile = {
- id: '1',
- userId: '1',
- displayName: 'Pandit Ramesh Sharma',
- bio: 'Experienced Vedic priest with deep knowledge of Shaiva and Vaishnava traditions. Specialized in Rudrabhishek, Satyanarayan Katha, and planetary pujas. Serving devotees at Kashi Vishwanath Temple for over 15 years with dedication and devotion.',
- avatarUrl: null,
- specializations: ['Rudrabhishek', 'Satyanarayan Katha', 'Maha Mrityunjay', 'Navgraha Puja', 'Ganesh Puja'],
- languages: ['Hindi', 'Sanskrit', 'English'],
- experienceYears: 15,
- aadhaarVerified: true,
- isVerified: true,
- verificationStatus: 'approved',
- ratingAvg: 4.8,
- ratingCount: 156,
- commissionRate: 0.70,
- status: 'active',
- user: { fullName: 'Ramesh Sharma', phone: '+91 98765 43210', email: 'pandit.ramesh@email.com' },
- temples: [
- { id: '1', name: 'Shri Kashi Vishwanath Temple', city: 'Varanasi', state: 'Uttar Pradesh', isPrimary: true },
- { id: '2', name: 'Trimbakeshwar Temple', city: 'Nashik', state: 'Maharashtra', isPrimary: false },
- ],
- stats: { totalBookings: 234, completedBookings: 218 },
-};
+const LOGIN_HREF = `/auth/login?redirect=${encodeURIComponent('/priest/profile')}`;
 
 const ALL_SPECIALIZATIONS = [
  'Rudrabhishek', 'Satyanarayan Katha', 'Maha Mrityunjay', 'Navgraha Puja',
@@ -101,6 +89,11 @@ function PriestProfilePageContent() {
  const [saved, setSaved] = useState(false);
  // P0 #pp-06 (2026-07-09): surface server errors instead of swallowing them.
  const [saveError, setSaveError] = useState<string | null>(null);
+ // PJ-06: the two honest failure states. `authExpired` is kept separate from
+ // `loadError` because 401 has a different remedy (sign in again) from every
+ // other failure (retry).
+ const [loadError, setLoadError] = useState<string | null>(null);
+ const [authExpired, setAuthExpired] = useState(false);
 
  // Editable fields
  const [displayName, setDisplayName] = useState('');
@@ -109,13 +102,22 @@ function PriestProfilePageContent() {
  const [selectedSpecs, setSelectedSpecs] = useState<string[]>([]);
  const [selectedLangs, setSelectedLangs] = useState<string[]>([]);
 
- useEffect(() => {
- async function fetchProfile() {
+ const fetchProfile = useCallback(async () => {
+ setLoading(true);
+ setLoadError(null);
+ setAuthExpired(false);
  try {
  const res = await fetch(`${API_BASE_URL}/priest/profile`, {
  headers: { Authorization: `Bearer ${session?.accessToken}` },
  });
- if (res.ok) {
+ if (res.status === 401 || res.status === 403) {
+ setProfile(null);
+ setAuthExpired(true);
+ return;
+ }
+ if (!res.ok) {
+ throw new Error(`Could not load your profile (HTTP ${res.status}).`);
+ }
  const data = await res.json();
  setProfile(data);
  setDisplayName(data.displayName);
@@ -123,22 +125,23 @@ function PriestProfilePageContent() {
  setExperienceYears(data.experienceYears);
  setSelectedSpecs(data.specializations);
  setSelectedLangs(data.languages);
- } else {
- throw new Error('API unavailable');
- }
- } catch {
- setProfile(fallbackProfile);
- setDisplayName(fallbackProfile.displayName);
- setBio(fallbackProfile.bio || '');
- setExperienceYears(fallbackProfile.experienceYears);
- setSelectedSpecs(fallbackProfile.specializations);
- setSelectedLangs(fallbackProfile.languages);
+ } catch (err) {
+ setProfile(null);
+ setLoadError(
+ err instanceof TypeError
+ ? 'Could not reach Darshya. Check your connection and try again.'
+ : err instanceof Error && err.message
+ ? err.message
+ : 'Could not load your profile. Please try again.',
+ );
  } finally {
  setLoading(false);
  }
- }
- fetchProfile();
  }, [session]);
+
+ useEffect(() => {
+ void fetchProfile();
+ }, [fetchProfile]);
 
  function toggleSpec(spec: string) {
  setSelectedSpecs((prev) =>
@@ -208,10 +211,58 @@ function PriestProfilePageContent() {
  );
  }
 
- if (!profile) return null;
+ // PJ-06: 401/403 has one correct remedy — re-authenticate — and the return
+ // path must come back here, not drop him on the home page wondering what
+ // happened.
+ if (authExpired) {
+ return (
+ <div className="max-w-lg mx-auto py-16 text-center">
+ <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-4" />
+ <h1 className="text-lg font-semibold text-surface-800">Your session has expired</h1>
+ <p className="text-sm text-surface-500 mt-2">
+ We could not confirm who you are, so we have not shown a profile. Sign in again to see
+ your own details.
+ </p>
+ <a
+ href={LOGIN_HREF}
+ className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ >
+ Sign in again
+ </a>
+ </div>
+ );
+ }
+
+ if (!profile) {
+ return (
+ <div className="max-w-lg mx-auto py-16 text-center">
+ <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+ <h1 className="text-lg font-semibold text-surface-800">We could not load your profile</h1>
+ <p className="text-sm text-surface-500 mt-2">
+ {loadError ?? 'Could not load your profile. Please try again.'}
+ </p>
+ <button
+ onClick={() => void fetchProfile()}
+ className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ >
+ <RefreshCw className="w-4 h-4" />
+ Try again
+ </button>
+ </div>
+ );
+ }
 
  const verificationBadge = getVerificationBadge(profile.verificationStatus);
  const VerifIcon = verificationBadge.icon;
+
+ // PJ-03: `commissionRate` is the PANDIT'S SHARE, not the platform's fee — the
+ // API reads it straight off Priest.commissionRate and booking.service resolves
+ // it as `priestShare`. Labelling it "Commission Rate: 80% of booking" read as
+ // Darshya taking 80%. Name both sides so the number cannot be misread; derive
+ // the platform take from the same value rather than printing a constant 20,
+ // so a negotiated rate never shows a split that does not add to 100.
+ const priestSharePct = Math.round(profile.commissionRate * 100);
+ const platformTakePct = 100 - priestSharePct;
 
  return (
  <div className="space-y-6 max-w-3xl">
@@ -443,8 +494,10 @@ function PriestProfilePageContent() {
  <h3 className="font-semibold text-surface-500 text-xs uppercase tracking-wider mb-3">Account Info (Read-only)</h3>
  <div className="grid grid-cols-2 gap-4 text-sm">
  <div>
- <p className="text-surface-400 text-xs">Commission Rate</p>
- <p className="font-medium text-surface-600">{(profile.commissionRate * 100).toFixed(0)}% of booking</p>
+ <p className="text-surface-400 text-xs">Your share of each booking</p>
+ <p className="font-medium text-surface-600">
+ You keep {priestSharePct}% · Darshya takes {platformTakePct}%
+ </p>
  </div>
  <div>
  <p className="text-surface-400 text-xs">Account Status</p>

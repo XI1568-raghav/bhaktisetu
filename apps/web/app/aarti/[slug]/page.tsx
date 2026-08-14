@@ -19,9 +19,9 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const a = getAarti(slug);
-  if (!a) return { title: 'Aarti — Darshya' };
+  if (!a) return { title: 'Aarti' };
   return {
-    title: `${a.name} Lyrics — Hindi + English + Meaning — Darshya`,
+    title: `${a.name} Lyrics — Hindi + English + Meaning`,
     description: `Full lyrics of ${a.name} in Devanagari and English transliteration with meaning. Sung ${a.whenSung.toLowerCase()}.`,
     alternates: { canonical: `https://darshya.online/aarti/${a.slug}` },
     openGraph: {

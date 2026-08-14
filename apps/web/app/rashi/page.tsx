@@ -8,7 +8,7 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '12 Rashis (Vedic Zodiac Signs) — Traits, Compatibility, Lucky Stones | Darshya',
+  title: '12 Rashis (Vedic Zodiac Signs) — Traits, Compatibility, Lucky Stones',
   description:
     'All 12 Vedic rashis (sidereal zodiac signs) — Mesha to Meena. Find your rashi traits, career, marriage compatibility, lucky gemstone, ruling planet, spiritual practice.',
   alternates: { canonical: `${BASE_URL}/rashi` },

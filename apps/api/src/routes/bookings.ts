@@ -4,13 +4,57 @@ import { BookingStatus, Prisma } from '@prisma/client';
 import {
   bookingService,
   BOOKING_STATUS_RESPONSE_INCLUDE,
+  PLATFORM_FEE_INR,
+  PRASAD_DELIVERY_FEE_INR,
+  DEFAULT_PRIEST_SHARE,
+  MY_BOOKINGS_VIEWS,
+  type MyBookingsView,
 } from '../services/booking.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
 import { paymentService } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
+import { hoursUntilSlot } from '../lib/slot-time.js';
+import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
+import { platformRateOf } from '../lib/commission-math.js';
+import { localizedError, pickLang } from '../lib/error-i18n.js';
+import {
+  deliveryAddressSchema,
+  deliveryCountryName,
+  type DeliveryAddress,
+} from '@poojly/shared';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
+
+// CM-06 (2026-08-13, P0): the prasad delivery address used to be validated
+// inline, twice, with two India-only regexes — /^\d{6}$/ for pincode and
+// /^[6-9]\d{9}$/ for phone. A Hoboken ZIP and a US mobile each returned HTTP
+// 400, so the NRI cohort the pricing doctrine is built on could not check out.
+// Both call sites now share `deliveryAddressSchema` from @poojly/shared, which
+// the web form validates against too — one source of truth so the two layers
+// cannot drift apart again.
+//
+// This changes the ADDRESS contract only. Billing is still `const currency =
+// 'INR'` through Razorpay for every country; no foreign-currency path is
+// reintroduced here (see RV-01).
+//
+// Builds the UserAddress row for a prasad delivery. UserAddress has no
+// recipient/phone columns, so the recipient name + a canonical E.164 number are
+// packed into `label` — previously as a hardcoded `+91-` literal, which
+// stamped an Indian dial code onto a Dubai number.
+function buildPrasadAddressRow(userId: string, addr: DeliveryAddress) {
+  return {
+    userId,
+    label: `${addr.fullName} (${addr.phone})`,
+    line1: addr.line1,
+    line2: addr.line2 ?? null,
+    city: addr.city,
+    state: addr.state,
+    pincode: addr.pincode,
+    country: deliveryCountryName(addr.country),
+  };
+}
 
 const createBookingSchema = z.object({
   templeId: z.string().uuid(),
@@ -54,14 +98,53 @@ const createBookingSchema = z.object({
 // userId) and self-assign as priest. Now `data` is a strict per-status
 // allowlist — only the fields relevant to each transition are accepted, and
 // the financial/identity denylist is never client-settable.
+// `videoUploadedAt` was in this allowlist and was client-settable (2026-08-11).
+// checkVideoProofGate below only ever inspects `videoProofUrl`, and
+// booking.service's FORBIDDEN_DATA_KEYS lists only the financial/identity
+// fields — so a devotee (who passes the isOwner branch of the authz check) on a
+// booking that already carried genuine proof could send
+// `{"status":"delivered","data":{"videoUploadedAt":"2020-01-01T00:00:00.000Z"}}`
+// and rewrite the server-stamped evidence timestamp to anything. GET
+// /bookings/:id/video then served the forged value, destroying the one artefact
+// that answers "was the puja performed on the booked day" in a chargeback.
+// The server already stamps it in booking.service.uploadVideoProof, so no
+// legitimate client ever needs to send it.
 const VIDEO_PROOF_FIELDS = z.object({
   videoProofUrl: z.string().url().max(2000).optional(),
-  videoUploadedAt: z.string().datetime().optional(),
 }).strict();
 
 // No user-mutable fields for these transitions — strict empty object rejects
 // any client-supplied data keys (replaces the old wide-open z.record(z.any())).
 const EMPTY_DATA = z.object({}).strict();
+
+/**
+ * The cancel/refund reason, normalised onto the column that actually exists.
+ *
+ * These variants used to accept `cancelReason` / `refundReason`. Neither is a
+ * PujaBooking column — the field is `cancellationReason` — and neither is in
+ * booking.service's FORBIDDEN_DATA_KEYS, so both survived sanitisation and were
+ * spread raw into `tx.pujaBooking.update`. The documented capability (an admin
+ * cancelling a booking WITH a reason) therefore threw a
+ * PrismaClientValidationError, the generic catch turned it into a 400, and the
+ * cancellation did not happen at all. The 400 body echoed `error.message`,
+ * which for a Prisma validation error is a multi-line dump of the PujaBooking
+ * model — internal schema disclosure on a trivially reachable path.
+ *
+ * Both legacy names are still accepted (older admin clients post them) and
+ * mapped onto `cancellationReason`, so nothing that worked before breaks and
+ * nothing that was silently discarded stays discarded. `refundReason` has no
+ * column of its own; it folds into the same field.
+ */
+const CANCELLATION_REASON_FIELDS = z
+  .object({
+    cancellationReason: z.string().max(500).optional(),
+    cancelReason: z.string().max(500).optional(),
+    refundReason: z.string().max(500).optional(),
+  })
+  .transform((v) => {
+    const reason = v.cancellationReason ?? v.cancelReason ?? v.refundReason;
+    return reason === undefined ? {} : { cancellationReason: reason };
+  });
 
 const updateBookingStatusDataSchema = z.discriminatedUnion('status', [
   // No user-mutable fields for these transitions.
@@ -76,14 +159,29 @@ const updateBookingStatusDataSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('completed'), priestId: z.string().uuid().optional(), data: VIDEO_PROOF_FIELDS.optional() }),
   z.object({ status: z.literal('video_uploaded'), priestId: z.string().uuid().optional(), data: VIDEO_PROOF_FIELDS.optional() }),
   z.object({ status: z.literal('delivered'), priestId: z.string().uuid().optional(), data: VIDEO_PROOF_FIELDS.optional() }),
-  z.object({ status: z.literal('cancelled'), priestId: z.string().uuid().optional(), data: z.object({ cancelReason: z.string().max(500).optional() }).optional() }),
-  z.object({ status: z.literal('refunded'), priestId: z.string().uuid().optional(), data: z.object({ refundReason: z.string().max(500).optional() }).optional() }),
+  z.object({ status: z.literal('cancelled'), priestId: z.string().uuid().optional(), data: CANCELLATION_REASON_FIELDS.optional() }),
+  z.object({ status: z.literal('refunded'), priestId: z.string().uuid().optional(), data: CANCELLATION_REASON_FIELDS.optional() }),
 ]);
 
 const updateBookingStatusSchema = updateBookingStatusDataSchema;
 
+/**
+ * `newDate` was `z.coerce.date()` while every create path uses the YYYY-MM-DD
+ * regex, so the two normalised differently (2026-08-11).
+ *
+ * `z.coerce.date()` happily accepts '2026-09-15T10:30:00+05:30' and epoch
+ * numbers, producing a NON-midnight Date. `scheduledDate` is `@db.Date`, and
+ * rescheduleBooking's capacity query filters on `scheduledDate: newDate` — so a
+ * non-midnight value matches zero existing rows, passes capacity trivially, and
+ * then writes a row that every availability reader misses (they all query
+ * `new Date('YYYY-MM-DD')` = UTC midnight). One reschedule silently oversells a
+ * 5-capacity slot to 6. This is the invisible-oversell failure the RV-10 note
+ * in booking.service says it closed for the slot STRING but left open for the
+ * date. Same shape as createBookingSchema now, converted with
+ * `new Date('YYYY-MM-DD')` in the handler so both paths land on UTC midnight.
+ */
 const rescheduleBookingSchema = z.object({
-  newDate: z.coerce.date(),
+  newDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   newTimeSlot: z.string().max(50).optional(),
 });
 
@@ -106,6 +204,39 @@ const submitReviewSchema = z
 const paramsWithId = z.object({
   id: z.string().uuid(),
 });
+
+/** Default page size for GET /bookings/my — also the devotee page's page size. */
+export const MY_BOOKINGS_PAGE_SIZE = 20;
+/** Hard ceiling so one client cannot pull an entire booking history in a page. */
+export const MY_BOOKINGS_MAX_LIMIT = 100;
+
+/**
+ * DB-01 (2026-08-12): GET /bookings/my read `page`/`limit` straight off the
+ * query string (`Number(limit) || 20`) and had no notion of which tab the
+ * caller was on. The devotee page sent neither, so it always received page 1
+ * of 20 and then presented those 20 rows as the devotee's whole history — 81
+ * bookings on the seeded account. Normalisation lives here as a pure function
+ * so the contract is unit-testable without booting Fastify.
+ */
+function parseMyBookingsQuery(query: {
+  view?: string;
+  page?: string;
+  limit?: string;
+}): { view: MyBookingsView; page: number; limit: number } {
+  const view = (MY_BOOKINGS_VIEWS as readonly string[]).includes(query.view ?? '')
+    ? (query.view as MyBookingsView)
+    : 'all';
+
+  const rawPage = Math.floor(Number(query.page));
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+
+  const rawLimit = Math.floor(Number(query.limit));
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0
+    ? Math.min(rawLimit, MY_BOOKINGS_MAX_LIMIT)
+    : MY_BOOKINGS_PAGE_SIZE;
+
+  return { view, page, limit };
+}
 
 // ─── Guards ─────────────────────────────────────────────────────────────────────
 //
@@ -179,6 +310,78 @@ function checkVideoProofGate(input: {
       `Video proof is mandatory before a booking can move to "${input.newStatus}". ` +
       'Upload the recording first (POST /priest/bookings/:id/video) or send ' +
       'data.videoProofUrl with this request.',
+  };
+}
+
+/**
+ * P0 (2026-08-11): who may drive WHICH transition, not just who may PATCH.
+ *
+ * The authz check below asked only `isOwner || isAdmin || isAssignedPriest` and
+ * then let every one of them request every status. The booking OWNER is a plain
+ * devotee, and `pending_payment -> confirmed` is a legal transition — which is
+ * precisely where booking.service.updateBookingStatus MINTS the Commission row
+ * and the TemplePayout. So:
+ *
+ *   1. book a Rs 10,000 puja via POST /bookings/from-offering (which pins
+ *      priestId at create time),
+ *   2. never pay,
+ *   3. `PATCH {"status":"confirmed"}`.
+ *
+ * updateBookingStatus writes Commission{ providerId: the pandit's User.id,
+ * amount: priestPayout = Rs 8,000, status: PENDING } — and per this project's
+ * ledger invariant `Commission.amount` is exactly what
+ * payout.service.getPayoutBalance pays out. A pandit colluding with (or
+ * identical to) the devotee mints Rs 8,000 of withdrawable balance per unpaid
+ * booking, unbounded, plus a TemplePayout for the temple on the same unpaid
+ * booking. The `-> refunded` variant is the mirror image: it marks a booking
+ * refunded with no Razorpay refund and no commission reversal (refund.service
+ * is the only writer that sets REVERSED), leaving a live PENDING commission on
+ * a booking the reports call refunded.
+ *
+ * The gate below is deliberately narrow rather than "devotees cannot PATCH":
+ *   • owner  → `cancelled` (their own exit) and `delivered` (acknowledging the
+ *     video they received; the proof gate above already forbids them attaching
+ *     the proof, and `delivered` is only reachable from `video_uploaded`, which
+ *     the pandit or an admin must have set, so no new payout is minted here).
+ *   • assigned pandit → the delivery statuses they actually perform.
+ *   • everything else — confirmed, priest_assigned, refunded, pending_payment —
+ *     is admin-only. Money-minting hops are not self-service.
+ *
+ * No shipping client is affected: the web/mobile devotee surfaces use
+ * /cancel, /reschedule, /request-refund and /review, and the pandit portal uses
+ * /priest/bookings/:id/*. Only the admin console PATCHes this endpoint.
+ */
+const OWNER_ALLOWED_TRANSITIONS: readonly BookingStatus[] = ['cancelled', 'delivered'];
+const ASSIGNED_PRIEST_ALLOWED_TRANSITIONS: readonly BookingStatus[] = [
+  'in_progress',
+  'completed',
+  'video_uploaded',
+  'delivered',
+  'cancelled',
+];
+
+function checkTransitionRole(input: {
+  newStatus: BookingStatus;
+  isOwner: boolean;
+  isAssignedPriest: boolean;
+  isAdmin: boolean;
+}): GateResult {
+  if (input.isAdmin) return { ok: true };
+  if (input.isAssignedPriest && ASSIGNED_PRIEST_ALLOWED_TRANSITIONS.includes(input.newStatus)) {
+    return { ok: true };
+  }
+  if (input.isOwner && OWNER_ALLOWED_TRANSITIONS.includes(input.newStatus)) {
+    return { ok: true };
+  }
+  return {
+    ok: false,
+    status: 403,
+    error: 'Forbidden',
+    message:
+      `You are not allowed to move this booking to "${input.newStatus}". ` +
+      'Devotees may cancel a booking (or confirm delivery); the assigned pandit ' +
+      'may record the puja through to delivery. Anything else is handled by the ' +
+      'Darshya team — contact support@darshya.online.',
   };
 }
 
@@ -331,19 +534,129 @@ async function notifyReassignment(args: {
  * if the statement cannot run we log and fall through to the re-check inside
  * the transaction, which still closes the multi-round-trip TOCTOU window that
  * made the plain count-then-create race reachable.
+ *
+ * MOVED to lib/priest-slot.ts (2026-08-11). Both functions lived here, so only
+ * this file's two callers took the lock while dispatch.service.accept — the
+ * pandit tapping the WhatsApp accept link — ran its identical conflict query
+ * with no lock at all. A lock only serialises the callers that agree to take
+ * it, so admin-vs-pandit was unserialised and both transactions could commit
+ * the same slot. Every priestId writer must now import the SAME key function;
+ * a lock on a re-derived key is the same as no lock.
  */
-type BookingTx = Prisma.TransactionClient;
 
-function priestSlotKey(priestId: string, scheduledDate: Date, slot: string): string {
-  return `puja-priest-slot:${priestId}:${scheduledDate.toISOString().slice(0, 10)}:${slot}`;
+/**
+ * The unpaid-hold TTL (2026-08-11).
+ *
+ * Every conflict/capacity predicate in this domain was
+ * `status: { notIn: ['cancelled','refunded'] }` with no age bound, and there is
+ * no expiry job for puja bookings (jobs/consultation-expire.ts covers only
+ * consultations) — so a `pending_payment` row held inventory forever. Two
+ * consequences, one hostile and one routine:
+ *
+ *   • Zero-cost calendar squatting. POST /from-offering against a competitor
+ *     pandit for every slot for the next 30 days, never pay, and that pandit's
+ *     calendar is permanently full (maxBookingsPerSlot defaults to 1) — a Rs 0
+ *     denial-of-supply against someone earning ~Rs 4,000 a booking.
+ *   • Every abandoned checkout. /create-order creates the booking BEFORE
+ *     createRazorpayOrder, so a closed tab or a failed order permanently burns
+ *     one of the offering's slots with no recovery path.
+ *
+ * Query-side only — no cron, no scheduled sweep (free-tier budget). A stale
+ * unpaid hold simply stops counting; the row is left alone so payment capture
+ * on a late webhook still finds it.
+ */
+const UNPAID_HOLD_MINUTES = 30;
+
+function unpaidHoldCutoff(now: Date = new Date()): Date {
+  return new Date(now.getTime() - UNPAID_HOLD_MINUTES * 60_000);
 }
 
-async function lockPriestSlot(tx: BookingTx, key: string): Promise<void> {
-  try {
-    await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', key);
-  } catch (err) {
-    console.warn('[bookings.route] priest slot advisory lock unavailable:', err);
+/**
+ * "This booking still holds its slot." Use INSTEAD of a bare
+ * `status: { notIn: [...] }` in every capacity/conflict predicate.
+ */
+function activeSlotHoldWhere(now?: Date): Prisma.PujaBookingWhereInput {
+  return {
+    AND: [
+      { status: { notIn: ['cancelled', 'refunded'] } },
+      { NOT: { status: 'pending_payment', createdAt: { lt: unpaidHoldCutoff(now) } } },
+    ],
+  };
+}
+
+/**
+ * The pandit's share of a puja price, and the split it implies.
+ *
+ * Two defects folded into one helper (2026-08-11):
+ *
+ *  1. FLOAT SUBTRACTION ON MONEY. The from-offering path computed the platform
+ *     side as `new Prisma.Decimal((1 - share).toString())` — for the 0.8 default
+ *     that string is literally '0.19999999999999996'. Decimal(10,2) rounds it
+ *     away on write today, so no rupee is currently wrong, but it violates the
+ *     project's own money rule and the moment anyone sums the un-rounded value
+ *     (or the column widens) the error becomes real. The subtraction is now done
+ *     in Decimal.
+ *  2. THE TWO SIDES DID NOT HAVE TO ADD UP. Computing each side independently
+ *     lets rounding drift them apart. The platform side is now the exact
+ *     complement, so priestPayout + platformCommission is always the puja price
+ *     — which matters because that sum is how writeTemplePayoutOnConfirm and
+ *     GET /:id/cancel-quote recover the fee-exclusive base.
+ */
+function resolvePriestShare(commissionRate: number | null | undefined): number {
+  return typeof commissionRate === 'number' && commissionRate > 0 && commissionRate <= 1
+    ? commissionRate
+    : DEFAULT_PRIEST_SHARE;
+}
+
+function splitPujaPrice(
+  pujaPrice: Prisma.Decimal,
+  share: number,
+): { priestPayout: Prisma.Decimal; platformCommission: Prisma.Decimal } {
+  const priestPayout = pujaPrice
+    .mul(new Prisma.Decimal(share.toString()))
+    .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+  return { priestPayout, platformCommission: pujaPrice.sub(priestPayout) };
+}
+
+/**
+ * Give a booking-create failure a status the wizard can act on (2026-08-11).
+ *
+ * POST /book and POST /create-order both answered a flat 400 for every
+ * non-Zod error, so "No availability for the selected slot", "This temple has
+ * not been verified yet" and "Invalid time slot" were indistinguishable from a
+ * malformed body. The web wizard therefore could not tell "retry with another
+ * slot" (recoverable in-page) from "your input is broken", and a devotee who
+ * lost a slot race got a generic validation toast and abandoned a checkout a
+ * slot re-pick would have saved.
+ *
+ * The five translated TEMPLE_NOT_VERIFIED strings in lib/error-i18n.ts had zero
+ * emitters anywhere in apps/api; this is the first one.
+ *
+ * String matching, reluctantly: booking.service throws bare `Error`s and lives
+ * in another module. The right shape is typed errors (SlotConflictError /
+ * CapacityError / TempleNotVerifiedError) thrown from the service and caught by
+ * `instanceof` here — this function is the seam that becomes those branches
+ * without changing either caller. Matching is anchored on the fixed prefix of
+ * each message, never on interpolated content.
+ */
+type BookingCreateFailure = {
+  status: 400 | 404 | 409;
+  code?: 'TEMPLE_NOT_VERIFIED' | 'SLOT_UNAVAILABLE' | 'PUJA_UNAVAILABLE';
+};
+
+function classifyCreateBookingError(message: string | undefined): BookingCreateFailure {
+  const m = message ?? '';
+  if (m.startsWith('This temple has not been verified yet')) {
+    return { status: 409, code: 'TEMPLE_NOT_VERIFIED' };
   }
+  if (m.startsWith('No availability for the selected slot') || m.startsWith('Invalid time slot')) {
+    return { status: 409, code: 'SLOT_UNAVAILABLE' };
+  }
+  if (m.startsWith('This puja offering is currently inactive')) {
+    return { status: 409, code: 'PUJA_UNAVAILABLE' };
+  }
+  if (m.includes('not found')) return { status: 404 };
+  return { status: 400 };
 }
 
 /** Thrown inside a slot transaction so the handler can answer 409, not a bare 400. */
@@ -401,6 +714,117 @@ function evaluatePriestSlot(input: {
   return { ok: true };
 }
 
+// ─── Order-creation bodies ──────────────────────────────────────────────────
+//
+// Both checkout entry points (`POST /create-order` for the temple wizard and
+// `POST /from-offering` for the pandit-direct flow) charge money, so their
+// bodies live at module scope and are exported through `__testing`: the
+// contract is pinned by unit tests instead of only by a booted server.
+
+const orderDevoteesSchema = z
+  .array(
+    z.object({
+      name: z.string().min(1),
+      gotra: z.string().optional(),
+      nakshatra: z.string().optional(),
+    }),
+  )
+  .min(1)
+  .max(5);
+
+// Past-date guard mirrors createBookingSchema. Without it, the web wizard
+// would happily create a Razorpay order for yesterday's puja, which the
+// booking service never validates again — payment captures, ledger writes,
+// then ops gets a confused devotee.
+const futureBookingDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+  .refine(
+    (d) => {
+      const requested = new Date(`${d}T00:00:00`);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return !Number.isNaN(requested.getTime()) && requested >= today;
+    },
+    { message: 'Cannot book a past date.' },
+  );
+
+/**
+ * DB-05 (prod sweep 2026-08-12): `prasadDelivery: true` with no
+ * `deliveryAddress` used to parse cleanly. The route only persisted an address
+ * `if (body.prasadDelivery && body.deliveryAddress)`, while
+ * booking.service.createBooking adds PRASAD_DELIVERY_FEE_INR on the boolean
+ * alone — so the devotee was charged ₹150 for a prasad courier with
+ * `prasadDeliveryAddressId = null`. Reproduced live against a booted API:
+ * a create-order body with `prasadDelivery: true` and no address key returned
+ * 201 / amount 130100 (₹1,100 + ₹51 + ₹150) and a booking row with a null
+ * address id. The web wizard validates the address client-side, so this was
+ * only reachable from the mobile app, a retried request, or any direct client.
+ *
+ * Money can never be taken for a delivery with nowhere to ship it, so the
+ * pairing is enforced in the schema — the request is rejected before any
+ * booking row or Razorpay order exists.
+ */
+function requirePrasadDeliveryAddress(
+  body: { prasadDelivery?: boolean; deliveryAddress?: unknown },
+  ctx: z.RefinementCtx,
+): void {
+  if (body.prasadDelivery && body.deliveryAddress == null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['deliveryAddress'],
+      message: 'A delivery address is required when prasad delivery is selected.',
+    });
+  }
+}
+
+// POST /create-order - Used by the web booking wizard
+// (apps/web/app/pujas/book/page.tsx). Combines the existing createBooking +
+// paymentService.createRazorpayOrder steps so the client makes ONE round-trip
+// to launch checkout. Body shape mirrors the web form rather than the legacy
+// POST /book schema.
+const createOrderBodySchema = z
+  .object({
+    pujaSlug: z.string().min(1),
+    templeOfferingId: z.string().uuid(),
+    scheduledDate: futureBookingDateSchema,
+    scheduledTime: z.string().min(1),
+    devotees: orderDevoteesSchema,
+    sankalp: z.string().optional(),
+    specialInstructions: z.string().optional(),
+    prasadDelivery: z.boolean().optional().default(false),
+    // CM-06: country-aware, shared with the web form. Was India-only.
+    deliveryAddress: deliveryAddressSchema.optional(),
+  })
+  .superRefine(requirePrasadDeliveryAddress);
+
+// Slot capacity (S2C-13, corrected 2026-08-10): if offering.availableSlots
+// is set, the scheduledTime must match one of the slots. INDEPENDENTLY of
+// that — availableSlots is nullable and unset by default — the pandit must
+// be free at (date, slot) and the offering must be under
+// maxBookingsPerSlot; both are re-checked under an advisory lock inside the
+// create transaction. See the block at step 6 of POST /from-offering.
+const fromOfferingBodySchema = z
+  .object({
+    offeringId: z.string().uuid(),
+    scheduledDate: futureBookingDateSchema,
+    scheduledTime: z.string().min(1),
+    devotees: orderDevoteesSchema,
+    sankalp: z.string().optional(),
+    specialInstructions: z.string().optional(),
+    prasadDelivery: z.boolean().optional().default(false),
+    // Accepted for backwards compatibility with older clients that still post
+    // 'USD'; it is an analytics hint only. It never changes the amount and
+    // never changes the gateway currency — `const currency = 'INR'` below is
+    // unconditional. The old comment here described this enum as a switch that
+    // "forces the NRI/USD path", which is an invitation to wire it back into
+    // the order currency; that path was RV-01 and is gone.
+    currency: z.enum(['INR', 'USD']).optional(),
+    // CM-06: country-aware, shared with the web form. Was India-only.
+    deliveryAddress: deliveryAddressSchema.optional(),
+  })
+  .superRefine(requirePrasadDeliveryAddress);
+
 // ─── Routes ─────────────────────────────────────────────────────────────────────
 
 export async function bookingRoutes(server: FastifyInstance) {
@@ -426,8 +850,23 @@ export async function bookingRoutes(server: FastifyInstance) {
             details: error.errors,
           });
         }
+        // A lost slot race is a 409 the wizard can recover from in-page; a
+        // malformed body is a 400 it cannot. See classifyCreateBookingError.
+        const failure = classifyCreateBookingError(error?.message);
+        if (failure.code) {
+          const lang = pickLang(
+            request.headers['accept-language'],
+            (request.query as Record<string, unknown> | undefined)?.lang as string | undefined,
+          );
+          const message = localizedError(failure.code, lang);
+          // `error` stays a STRING: shipping clients render it directly
+          // (`${body.error}`), so the standard `{error:{code,message}}` envelope
+          // would render "[object Object]" to a devotee. `code` carries the
+          // machine-readable half alongside it.
+          return reply.status(failure.status).send({ error: message, code: failure.code, message });
+        }
         server.log.error(error, 'Failed to create booking');
-        return reply.status(400).send({
+        return reply.status(failure.status).send({
           error: error.message || 'Failed to create booking',
         });
       }
@@ -441,27 +880,39 @@ export async function bookingRoutes(server: FastifyInstance) {
     async (request, reply) => {
       try {
         const userId = request.currentUser!.id;
-        const { status, dateFrom, dateTo, page, limit } = request.query as {
+        const query = request.query as {
           status?: string;
           dateFrom?: string;
           dateTo?: string;
           page?: string;
           limit?: string;
+          view?: string;
         };
+        const { status, dateFrom, dateTo } = query;
+        const { view, page, limit } = parseMyBookingsQuery(query);
 
+        // Returns { bookings, total, page, limit, totalPages, counts } — the
+        // per-tab `counts` are what the devotee page's chips render, so the
+        // list and its own header can no longer contradict each other.
         const result = await bookingService.getUserBookings(userId, {
           status: status as BookingStatus | undefined,
           dateFrom,
           dateTo,
-          page: Number(page) || 1,
-          limit: Math.min(Number(limit) || 20, 100),
+          page,
+          limit,
+          view,
         });
 
         return result;
       } catch (error: any) {
         server.log.error(error, 'Failed to fetch user bookings');
+        // SEC-04: never echo error.message to the client. server.setErrorHandler
+        // sanitises 5xx bodies in production, but it only fires for errors that
+        // PROPAGATE — this site catches and replies directly, so the guard never
+        // ran and a raw Prisma/driver message reached the caller. The detail is
+        // already in the log line above; the client gets a fixed string.
         return reply.status(500).send({
-          error: error.message || 'Failed to fetch bookings',
+          error: 'Failed to fetch bookings',
         });
       }
     }
@@ -484,6 +935,18 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         }
 
+        // Shape first, then validity. `new Date('2026-08-15T10:00:00')` and
+        // `new Date('Aug 15 2026')` both parse — in SERVER-LOCAL time — so the
+        // resulting instant does not equal the UTC-midnight values stored in
+        // the `@db.Date` column. checkSlotAvailability's groupBy then matches
+        // nothing and every slot is reported fully available, which is the same
+        // wrong-number-to-the-devotee failure by a different door. GET /slots
+        // already enforces this shape; this endpoint did not.
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          return reply.status(400).send({
+            error: 'Invalid date format. Use YYYY-MM-DD.',
+          });
+        }
         const parsedDate = new Date(date);
         if (isNaN(parsedDate.getTime())) {
           return reply.status(400).send({
@@ -508,8 +971,10 @@ export async function bookingRoutes(server: FastifyInstance) {
         return result;
       } catch (error: any) {
         server.log.error(error, 'Failed to check slot availability');
+        // SEC-04: see the note on the sibling handler above — this catch also
+        // replies directly, bypassing the global sanitiser.
         return reply.status(500).send({
-          error: error.message || 'Failed to check availability',
+          error: 'Failed to check availability',
         });
       }
     }
@@ -602,6 +1067,22 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         }
 
+        // P0 (2026-08-11): being ALLOWED to PATCH is not being allowed to make
+        // every move. The `confirmed` hop mints the pandit's Commission and the
+        // temple's TemplePayout; the `refunded` hop rewrites refund reporting.
+        // Neither is a devotee action. See checkTransitionRole.
+        const roleGate = checkTransitionRole({
+          newStatus: body.status as BookingStatus,
+          isOwner,
+          isAssignedPriest,
+          isAdmin,
+        });
+        if (!roleGate.ok) {
+          return reply
+            .status(roleGate.status)
+            .send({ error: roleGate.error, message: roleGate.message });
+        }
+
         // RV-08: business rule 1. Reject the transition before anything is
         // written — booking.service mints the pandit payout on the way through
         // video_uploaded/delivered, so an unproven flip is unrecoverable there.
@@ -667,7 +1148,9 @@ export async function bookingRoutes(server: FastifyInstance) {
                 priestId: newPriestId,
                 scheduledDate: booking.scheduledDate,
                 scheduledTimeSlot: booking.scheduledTimeSlot,
-                status: { notIn: ['cancelled', 'refunded'] },
+                // An abandoned, never-paid hold must not block a real
+                // assignment — see UNPAID_HOLD_MINUTES.
+                ...activeSlotHoldWhere(),
                 id: { not: id },
               },
               select: { bookingNumber: true },
@@ -709,18 +1192,82 @@ export async function bookingRoutes(server: FastifyInstance) {
 
             const newPriestUser = await tx.priest.findUnique({
               where: { id: newPriestId },
-              select: { userId: true },
+              select: { userId: true, commissionRate: true },
             });
+
+            // ── ...and re-price it for the pandit who will actually earn it ──
+            //
+            // Second-pass finding (2026-08-11): the block above repointed
+            // `Commission.providerId` but left `amount` and `percentage` at the
+            // OLD pandit's numbers, and never touched the booking's own
+            // priestPayout / platformCommission. Both writers derive the split
+            // from the INDIVIDUAL pandit's commissionRate (booking.service
+            // createBooking and /from-offering below), so those numbers are
+            // pandit-specific by design.
+            //
+            // Rs 10,000 booking confirmed with Pandit A on a negotiated 0.85
+            // share → amount Rs 8,500, percentage 0.1500. Reassign to Pandit B
+            // on 0.70 and B is credited Rs 8,500 instead of Rs 7,000: the
+            // platform is Rs 1,500 short and the ledger claims a 15% take rate
+            // that matches no party. Reversed rates under-pay the new pandit by
+            // the same mechanism.
+            //
+            // The base is the FEE-EXCLUSIVE puja price, recovered exactly the
+            // way writeTemplePayoutOnConfirm recovers it: priestPayout +
+            // platformCommission. priceAmount also carries the Rs 51 platform
+            // fee and the Rs 150 prasad fee, which no pandit has a claim on.
+            const money = await tx.pujaBooking.findUnique({
+              where: { id },
+              select: { priestPayout: true, platformCommission: true, priceAmount: true },
+            });
+            const pujaPrice = new Prisma.Decimal(money?.priestPayout ?? 0).add(
+              new Prisma.Decimal(money?.platformCommission ?? 0),
+            );
+            const split = splitPujaPrice(
+              pujaPrice,
+              resolvePriestShare(newPriestUser?.commissionRate),
+            );
+
             if (newPriestUser?.userId) {
               await tx.commission.updateMany({
                 where: { bookingId: id, status: 'PENDING', payoutRequestId: null },
-                data: { providerId: newPriestUser.userId },
+                data: {
+                  providerId: newPriestUser.userId,
+                  // amount = the PROVIDER's earning, percentage = the PLATFORM's
+                  // take rate. lib/commission-math.ts — one column, one meaning;
+                  // never back-solved inline.
+                  amount: split.priestPayout,
+                  // `percentage` MUST use the same denominator the minting
+                  // writers use — the fee-INCLUSIVE priceAmount
+                  // (booking.service updateBookingStatus and
+                  // payment.service.writePujaCommissionOnConfirm both do).
+                  // Using the fee-exclusive puja price here made a no-op
+                  // reassignment silently restate the row: on a Rs 1,100 puja
+                  // + Rs 51 fee the rate moved 0.2354 -> 0.2000, and since
+                  // commission-math derives gross and platformCut FROM this
+                  // rate, /admin/commissions and platform revenue both dropped
+                  // ~Rs 51 (19%) for that booking. `amount` was never wrong, so
+                  // nobody was mispaid — but it broke "one column, one meaning".
+                  //
+                  // The SPLIT still runs on the fee-exclusive puja price above:
+                  // no pandit has a claim on the platform fee or the prasad
+                  // pass-through. Only the reported rate is expressed against
+                  // the same base as the mint.
+                  percentage: platformRateOf(
+                    new Prisma.Decimal(money?.priceAmount ?? 0).sub(split.priestPayout),
+                    new Prisma.Decimal(money?.priceAmount ?? 0),
+                  ),
+                },
               });
             }
 
             return tx.pujaBooking.update({
               where: { id },
-              data: { priestId: newPriestId },
+              data: {
+                priestId: newPriestId,
+                priestPayout: split.priestPayout,
+                platformCommission: split.platformCommission,
+              },
               include: BOOKING_STATUS_RESPONSE_INCLUDE,
             });
           });
@@ -741,6 +1288,26 @@ export async function bookingRoutes(server: FastifyInstance) {
         const panditAlreadyTarget =
           isAdmin && !!targetPandit && (reassigned?.priestId ?? booking.priestId) === targetPandit;
 
+        // Tell everyone a REAL reassignment affects — on BOTH paths.
+        //
+        // This call used to sit inside the pure-reassignment branch below, so it
+        // only fired when the PATCH did not move the status. The commonest admin
+        // action is `PATCH {status:'priest_assigned', priestId: X}` on a
+        // `confirmed` booking — a legal transition — which sets `reassigned` and
+        // then falls through to updateBookingStatus, where the notifier never
+        // ran. That is exactly the silent swap the notifier was written to close:
+        // the outgoing pandit is never told he lost the job and may still turn up
+        // at the devotee's home, while the incoming one only finds out by opening
+        // the portal. Hoisted here so it fires once per real reassignment
+        // regardless of whether the status also moved. Fire-and-forget by
+        // contract — a notification failure must never undo a committed write.
+        if (reassigned) {
+          void notifyReassignment({
+            booking: reassigned,
+            previousPriestId: booking.priestId,
+          }).catch(() => undefined);
+        }
+
         if (
           panditAlreadyTarget &&
           isPureReassignment({
@@ -750,18 +1317,7 @@ export async function bookingRoutes(server: FastifyInstance) {
             hasData: !!suppliedData && Object.keys(suppliedData).length > 0,
           })
         ) {
-          if (reassigned) {
-            // Real change — tell the people it affects. Every other assignment
-            // path notifies (priest.service accept/release, dispatch.service),
-            // and a silent swap means the devotee's app still names the old
-            // pandit, who may still turn up, while the new one only finds out
-            // by opening the portal.
-            void notifyReassignment({
-              booking: reassigned,
-              previousPriestId: booking.priestId,
-            }).catch(() => undefined);
-            return { booking: reassigned };
-          }
+          if (reassigned) return { booking: reassigned };
           // Retry of an already-applied reassignment: re-read so the response
           // shape matches the first call exactly.
           const current = await prisma.pujaBooking.findUnique({
@@ -796,6 +1352,21 @@ export async function bookingRoutes(server: FastifyInstance) {
         }
         if (error.message?.includes('Invalid status transition')) {
           return reply.status(409).send({ error: error.message });
+        }
+        // A Prisma validation error's `message` is a multi-line dump of the
+        // model's available arguments. Echoing it (which the generic branch
+        // below does) leaks the PujaBooking schema to any caller who can
+        // provoke one — the `cancelReason` bug above did exactly that. Fixed
+        // message here; the detail goes to the log, where it belongs.
+        if (
+          error instanceof Prisma.PrismaClientValidationError ||
+          error?.name === 'PrismaClientValidationError'
+        ) {
+          server.log.error(error, 'Rejected booking update payload');
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: 'That update could not be applied. Please check the fields you sent.',
+          });
         }
         server.log.error(error, 'Failed to update booking status');
         return reply.status(400).send({
@@ -891,7 +1462,8 @@ export async function bookingRoutes(server: FastifyInstance) {
         const result = await bookingService.rescheduleBooking(
           id,
           userId,
-          body.newDate,
+          // UTC midnight, exactly like the create paths — see the schema note.
+          new Date(body.newDate),
           body.newTimeSlot
         );
 
@@ -928,8 +1500,9 @@ export async function bookingRoutes(server: FastifyInstance) {
   //   • now < scheduledDate - 24h
   //
   // Schema gap: no REFUND_REQUESTED status. We tag the booking with
-  // status='cancelled' + cancellationReason='[refund-requested] <reason>'
-  // and let processAutoRefunds (master-cron) pick it up after 1h.
+  // status='cancelled' + cancellationReason=`${REFUND_REQUESTED_MARKER} <reason>`
+  // (lib/refund-marker.ts — shared with the consumer) and let processAutoRefunds
+  // (master-cron) pick it up after 1h.
   server.post(
     '/:id/request-refund',
     { preHandler: [authenticateUser] },
@@ -967,13 +1540,28 @@ export async function bookingRoutes(server: FastifyInstance) {
             .send({ error: 'Booking has not been paid yet.' });
         }
 
-        // Cancellation must be >24h before scheduled time.
-        const slotHour = Number((booking.scheduledTimeSlot ?? '00:00').split(':')[0] ?? 0);
-        const slotMin = Number((booking.scheduledTimeSlot ?? '00:00').split(':')[1] ?? 0);
-        const scheduledAt = new Date(booking.scheduledDate);
-        scheduledAt.setHours(slotHour, slotMin, 0, 0);
-        const cutoff = new Date(scheduledAt.getTime() - 24 * 60 * 60 * 1000);
-        if (Date.now() >= cutoff.getTime()) {
+        // Cancellation must be >24h before the scheduled slot INSTANT.
+        //
+        // This was hand-rolled here (2026-08-11 fix): `Number(slot.split(':')[0])`
+        // fed into `setHours`, which is SERVER-LOCAL — UTC on Render — applied to
+        // a UTC-midnight DATE column while slots are IST. An 18:00 IST slot
+        // resolved to 18:00 UTC = 23:30 IST, putting the cutoff 5.5 hours late,
+        // so a devotee could open a refund request 5.5h INSIDE the no-refund
+        // window (on a Rs 10,000 booking, the difference between the 50% tier and
+        // being refused, after the pandit was already dispatched).
+        //
+        // Worse, `scheduledTimeSlot` is attacker-controlled: POST /from-offering
+        // accepts `scheduledTime: z.string().min(1)` and skips the whitelist
+        // entirely when the offering has no availableSlots, so 'anytime' is
+        // storable. `Number('anytime')` is NaN, `Date.now() >= NaN` is false, and
+        // the 24h guard NEVER fired — a `delivered` booking could be force-
+        // cancelled by the devotee after the puja was performed.
+        //
+        // lib/slot-time.ts is the only correct way to compare a booking
+        // date+slot (cancelBooking and rescheduleBooking both already use it),
+        // and its null-slot fallback keeps the strict midnight behaviour for
+        // unparseable legacy data instead of disabling the guard.
+        if (hoursUntilSlot(booking.scheduledDate, booking.scheduledTimeSlot) < 24) {
           return reply
             .status(409)
             .send({ error: 'Refund requests are not allowed within 24 hours of scheduled time.' });
@@ -985,7 +1573,12 @@ export async function bookingRoutes(server: FastifyInstance) {
           data: {
             status: 'cancelled' satisfies BookingStatus,
             cancelledAt: new Date(),
-            cancellationReason: `[refund-requested] ${reason}`.slice(0, 500),
+            // The marker is shared with refund.service's `startsWith` query via
+            // lib/refund-marker.ts. It was a string literal here: identical
+            // today, but changing the constant would silently stop this
+            // endpoint's rows from ever being picked up — a fresh recurrence of
+            // RV-07, where that query matched zero rows for months.
+            cancellationReason: `${REFUND_REQUESTED_MARKER} ${reason}`.slice(0, 500),
           },
           select: { id: true, status: true, cancellationReason: true, cancelledAt: true },
         });
@@ -1058,6 +1651,32 @@ export async function bookingRoutes(server: FastifyInstance) {
           // a worse tier than policy (and a negative hoursUntilSlot for a
           // same-day slot, which falls through every tier to the 25% floor).
           scheduledTimeSlot: booking.scheduledTimeSlot,
+          // ⚠ OWNER DECISION PENDING — do not change this in isolation.
+          //
+          // cancellation.service documents the ladder as applying to the PUJA
+          // price, excluding the Rs 51 platform fee and Rs 150 prasad fee
+          // ("refunded in full only when the pandit is at fault"). By that
+          // contract this should pass priestPayout + platformCommission, and a
+          // 2026-08-11 pass changed it to exactly that.
+          //
+          // It was reverted the same day because it moved ONLY the quote. The
+          // two paths that actually move money still bill the ladder against
+          // `priceAmount`:
+          //     services/refund.service.ts  (processAutoRefunds cron)
+          //     services/payment.service.ts (admin ladder refund)
+          // so the devotee was QUOTED Rs 825 and PAID Rs 975.75 on a Rs 1,100
+          // puja + Rs 201 of fees — the quote and the payout disagreeing by
+          // Rs 150.75, which is the one thing a refund screen must never do.
+          //
+          // Aligning the executors instead would have been the other way to
+          // restore agreement, but that SILENTLY REDUCES every customer's
+          // refund by the fee component. That is a policy call with real
+          // customer-trust consequences and belongs to the founder, not to a
+          // refactor. Quoting on `priceAmount` keeps quote == payout and keeps
+          // today's (more generous) behaviour until that call is made.
+          //
+          // To action it later: change this line AND both executors above in
+          // ONE commit, and update the refunds policy page copy with it.
           pujaPriceInr: Number(booking.priceAmount),
           totalPaidInr: Number(booking.priceAmount),
         });
@@ -1127,7 +1746,10 @@ export async function bookingRoutes(server: FastifyInstance) {
         where: {
           templePujaOfferingId: offering.id,
           scheduledDate,
-          status: { notIn: ['cancelled', 'refunded'] },
+          // Abandoned checkouts stop consuming inventory after
+          // UNPAID_HOLD_MINUTES — /create-order creates the booking BEFORE the
+          // Razorpay order, so every closed tab used to burn a slot forever.
+          ...activeSlotHoldWhere(),
         },
         _count: { id: true },
       });
@@ -1167,57 +1789,8 @@ export async function bookingRoutes(server: FastifyInstance) {
     }
   });
 
-  // POST /create-order - Used by the web booking wizard
-  // (apps/web/app/pujas/[slug]/book/page.tsx). Combines the existing
-  // createBooking + paymentService.createRazorpayOrder steps so the client
-  // makes ONE round-trip to launch checkout. Body shape mirrors the web
-  // form rather than the legacy POST /book schema.
-  const createOrderBodySchema = z.object({
-    pujaSlug: z.string().min(1),
-    templeOfferingId: z.string().uuid(),
-    // Past-date guard mirrors createBookingSchema. Without it, the web
-    // wizard / Stripe NRI path would happily create a Razorpay order for
-    // yesterday's puja, which the booking service never validates again
-    // — payment captures, ledger writes, then ops gets a confused devotee.
-    scheduledDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
-      .refine(
-        (d) => {
-          const requested = new Date(`${d}T00:00:00`);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          return !Number.isNaN(requested.getTime()) && requested >= today;
-        },
-        { message: 'Cannot book a past date.' },
-      ),
-    scheduledTime: z.string().min(1),
-    devotees: z
-      .array(
-        z.object({
-          name: z.string().min(1),
-          gotra: z.string().optional(),
-          nakshatra: z.string().optional(),
-        }),
-      )
-      .min(1)
-      .max(5),
-    sankalp: z.string().optional(),
-    specialInstructions: z.string().optional(),
-    prasadDelivery: z.boolean().optional().default(false),
-    deliveryAddress: z
-      .object({
-        fullName: z.string().min(1),
-        line1: z.string().min(1),
-        line2: z.string().optional(),
-        city: z.string().min(1),
-        state: z.string().min(1),
-        pincode: z.string().regex(/^\d{6}$/),
-        phone: z.string().regex(/^[6-9]\d{9}$/),
-      })
-      .optional(),
-  });
-
+  // POST /create-order — body schema is `createOrderBodySchema` at module
+  // scope (exported through `__testing`).
   server.post(
     '/create-order',
     { preHandler: [authenticateUser] },
@@ -1250,29 +1823,37 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         }
 
-        // 2. Optional: persist a delivery address if prasad requested.
+        // 2. Persist the delivery address if prasad was requested. The schema
+        // has already guaranteed an address is present whenever
+        // body.prasadDelivery is true (requirePrasadDeliveryAddress).
         let prasadAddressId: string | undefined;
         if (body.prasadDelivery && body.deliveryAddress) {
           // UserAddress has no dedicated recipient/phone columns. We pack
           // them into `label` so the priest can still reach the devotee
           // when the prasad is dispatched. Schema cleanup is tracked but
-          // this row keeps the data round-trippable.
+          // this row keeps the data round-trippable. See
+          // buildPrasadAddressRow — it also persists the real country, which
+          // used to be silently left at the "India" column default.
           const addr = await prisma.userAddress.create({
-            data: {
-              userId,
-              label: `${body.deliveryAddress.fullName} (+91-${body.deliveryAddress.phone})`,
-              line1: body.deliveryAddress.line1,
-              line2: body.deliveryAddress.line2 ?? null,
-              city: body.deliveryAddress.city,
-              state: body.deliveryAddress.state,
-              pincode: body.deliveryAddress.pincode,
-            },
+            data: buildPrasadAddressRow(userId, body.deliveryAddress),
             select: { id: true },
           }).catch(() => null);
-          prasadAddressId = addr?.id;
+          // DB-05: the write used to be allowed to fail silently, and the
+          // booking was still created with prasadDeliveryRequested = true —
+          // which is what booking.service charges PRASAD_DELIVERY_FEE_INR on.
+          // The ₹150 would have been taken with nowhere to ship to. Fail the
+          // request instead: no booking row, no Razorpay order, no charge.
+          if (!addr) {
+            return reply.status(500).send({
+              error: 'Could not save your prasad delivery address. Please try again.',
+            });
+          }
+          prasadAddressId = addr.id;
         }
 
-        // 3. Create the booking (status pending_payment).
+        // 3. Create the booking (status pending_payment). The prasad fee rides
+        // on `prasadDeliveryRequested`, so it is only ever true alongside a
+        // persisted address id.
         const booking = await bookingService.createBooking({
           userId,
           templeId: offering.templeId,
@@ -1283,7 +1864,7 @@ export async function bookingRoutes(server: FastifyInstance) {
           devoteeNames: body.devotees,
           sankalpDetails: body.sankalp,
           specialInstructions: body.specialInstructions,
-          prasadDeliveryRequested: body.prasadDelivery,
+          prasadDeliveryRequested: body.prasadDelivery && !!prasadAddressId,
           prasadDeliveryAddressId: prasadAddressId,
         });
 
@@ -1308,8 +1889,19 @@ export async function bookingRoutes(server: FastifyInstance) {
             details: error.errors,
           });
         }
+        // Same classification as POST /book — this is the path the web wizard
+        // actually uses, so it is the one that most needs a distinguishable 409.
+        const failure = classifyCreateBookingError(error?.message);
+        if (failure.code) {
+          const lang = pickLang(
+            request.headers['accept-language'],
+            (request.query as Record<string, unknown> | undefined)?.lang as string | undefined,
+          );
+          const message = localizedError(failure.code, lang);
+          return reply.status(failure.status).send({ error: message, code: failure.code, message });
+        }
         server.log.error(error, 'Failed to create booking order (web shape)');
-        return reply.status(400).send({
+        return reply.status(failure.status).send({
           error: error.message || 'Failed to create booking order',
         });
       }
@@ -1342,56 +1934,8 @@ export async function bookingRoutes(server: FastifyInstance) {
   // note lives with the pricing block below; this comment is kept only to stop
   // the deleted behaviour being re-implemented from a stale instruction.
   //
-  // Slot capacity (S2C-13, corrected 2026-08-10): if offering.availableSlots
-  // is set, the scheduledTime must match one of the slots. INDEPENDENTLY of
-  // that — availableSlots is nullable and unset by default — the pandit must
-  // be free at (date, slot) and the offering must be under
-  // maxBookingsPerSlot; both are re-checked under an advisory lock inside the
-  // create transaction. See the block at step 6.
-  const fromOfferingBodySchema = z.object({
-    offeringId: z.string().uuid(),
-    scheduledDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
-      .refine(
-        (d) => {
-          const requested = new Date(`${d}T00:00:00`);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          return !Number.isNaN(requested.getTime()) && requested >= today;
-        },
-        { message: 'Cannot book a past date.' },
-      ),
-    scheduledTime: z.string().min(1),
-    devotees: z
-      .array(
-        z.object({
-          name: z.string().min(1),
-          gotra: z.string().optional(),
-          nakshatra: z.string().optional(),
-        }),
-      )
-      .min(1)
-      .max(5),
-    sankalp: z.string().optional(),
-    specialInstructions: z.string().optional(),
-    prasadDelivery: z.boolean().optional().default(false),
-    // Force the NRI/USD path even when user.isNri is false. Lets the web
-    // booking page expose a "Pay in USD" toggle for travellers without
-    // flipping the persistent profile flag.
-    currency: z.enum(['INR', 'USD']).optional(),
-    deliveryAddress: z
-      .object({
-        fullName: z.string().min(1),
-        line1: z.string().min(1),
-        line2: z.string().optional(),
-        city: z.string().min(1),
-        state: z.string().min(1),
-        pincode: z.string().regex(/^\d{6}$/),
-        phone: z.string().regex(/^[6-9]\d{9}$/),
-      })
-      .optional(),
-  });
+  // Body schema is `fromOfferingBodySchema` at module scope (exported through
+  // `__testing`); the slot-capacity rules it pairs with are enforced at step 6.
   // NRI multiplier for priest-offering pricing. Business rule #2 (NRI
   // pricing 9-10× domestic) — we pick 9x as the lower bound; temple-side
   // offerings already use PujaType.nriPrice which is set explicitly.
@@ -1497,17 +2041,45 @@ export async function bookingRoutes(server: FastifyInstance) {
         // explicit server-quoted amount the client renders before payment.
         // `body.currency` is still accepted (older clients post 'USD') but is
         // now only an NRI hint for analytics — it never changes the amount.
+        //
+        // FEES (2026-08-11). This path set `priceAmount = basePrice` while
+        // accepting `prasadDelivery` and a full delivery address, and persisting
+        // prasadDeliveryRequested — so every pandit-direct booking with prasad
+        // requested promised a physical dispatch and collected Rs 0 for it: the
+        // platform absorbed Rs 150 of shipping plus the Rs 51 platform fee on
+        // every such order. Worse, the whole fee-free amount was then split
+        // 80/20, so the pandit was paid a share of money that was supposed to be
+        // platform revenue. Same leak P0 #PBO-3 fixed on the temple path
+        // (booking.service createBooking), never applied here. Both constants
+        // are imported from booking.service, which documents them as the single
+        // source of truth for the amounts.
+        //
+        // The 80/20 split stays on `basePrice` ONLY — the fees are platform
+        // revenue / prasad pass-through, not part of the pandit's earned split.
+        //
+        // ⚠ "Displayed price MUST equal charged price" (above) still holds and
+        // is now a SHIP BLOCKER on this path: apps/web/app/checkout/offering/
+        // page.tsx renders `offering.basePrice` alone, so it must render the
+        // `priceBreakdown` this endpoint returns (base + Rs 51 + Rs 150) before
+        // this goes live — exactly the breakdown the temple wizard already
+        // shows. A Rs 51 surprise at the Razorpay sheet is nothing like RV-01's
+        // 83.5x, but it is the same class of defect and must not ship.
         const basePrice = new Prisma.Decimal(offering.basePrice.toString());
-        const priceAmount = basePrice;
+        const platformFee = new Prisma.Decimal(PLATFORM_FEE_INR);
+        const prasadFee = body.prasadDelivery
+          ? new Prisma.Decimal(PRASAD_DELIVERY_FEE_INR)
+          : new Prisma.Decimal(0);
+        const priceAmount = basePrice.add(platformFee).add(prasadFee);
         const currency = 'INR';
         // Honour the pandit's own commissionRate (their share); default 80/20
         // (booking revamp take-rate cut — see booking.service DEFAULT_PRIEST_SHARE).
-        const share =
-          offering.priest.commissionRate > 0 && offering.priest.commissionRate <= 1
-            ? offering.priest.commissionRate
-            : 0.8;
-        const priestPayoutAmount = priceAmount.mul(new Prisma.Decimal(share.toString()));
-        const platformCommission = priceAmount.mul(new Prisma.Decimal((1 - share).toString()));
+        // splitPujaPrice does the platform side in Decimal: `1 - 0.8` in JS float
+        // is 0.19999999999999996, and money is never JS float here.
+        const share = resolvePriestShare(offering.priest.commissionRate);
+        const { priestPayout: priestPayoutAmount, platformCommission } = splitPujaPrice(
+          basePrice,
+          share,
+        );
 
         // 3b. Slot whitelist. Skipped when the priest hasn't configured
         // availableSlots — back-compat with offerings created before the
@@ -1523,24 +2095,24 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         }
 
-        // 4. Optional prasad delivery address (mirrors /create-order).
+        // 4. Prasad delivery address (mirrors /create-order). The schema has
+        // already guaranteed one is present whenever prasadDelivery is true;
+        // DB-05: a failed write must not leave the ₹150 prasadFee charged
+        // above against a null address, so it aborts before any booking row.
         let prasadAddressId: string | undefined;
         if (body.prasadDelivery && body.deliveryAddress) {
           const addr = await prisma.userAddress
             .create({
-              data: {
-                userId,
-                label: `${body.deliveryAddress.fullName} (+91-${body.deliveryAddress.phone})`,
-                line1: body.deliveryAddress.line1,
-                line2: body.deliveryAddress.line2 ?? null,
-                city: body.deliveryAddress.city,
-                state: body.deliveryAddress.state,
-                pincode: body.deliveryAddress.pincode,
-              },
+              data: buildPrasadAddressRow(userId, body.deliveryAddress),
               select: { id: true },
             })
             .catch(() => null);
-          prasadAddressId = addr?.id;
+          if (!addr) {
+            return reply.status(500).send({
+              error: 'Could not save your prasad delivery address. Please try again.',
+            });
+          }
+          prasadAddressId = addr.id;
         }
 
         // 5. Generate booking number (retry on collision, same pattern as
@@ -1558,13 +2130,23 @@ export async function bookingRoutes(server: FastifyInstance) {
           return `BS-${yyyy}${mm}${dd}-${r}`;
         };
         let bookingNumber = generateBookingNumber();
-        for (let i = 0; i < 5; i++) {
+        let bookingNumberAttempts = 0;
+        while (bookingNumberAttempts < 5) {
           const existing = await prisma.pujaBooking.findUnique({
             where: { bookingNumber },
             select: { id: true },
           });
           if (!existing) break;
           bookingNumber = generateBookingNumber();
+          bookingNumberAttempts++;
+        }
+        // The loop used to fall through and create with the last COLLIDING
+        // number, so a 5-collision run violated the `bookingNumber @unique`
+        // constraint inside the transaction and the caller got a raw Prisma
+        // message instead of an actionable retry. booking.service throws in the
+        // same situation; match it.
+        if (bookingNumberAttempts >= 5) {
+          throw new Error('Failed to generate a unique booking number. Please try again.');
         }
 
         // 6. Persist the booking. The PriestPujaOffering FK
@@ -1609,7 +2191,11 @@ export async function bookingRoutes(server: FastifyInstance) {
               priestId: offering.priest.id,
               scheduledDate,
               scheduledTimeSlot: body.scheduledTime,
-              status: { notIn: ['cancelled', 'refunded'] },
+              // Stale, never-paid holds stop occupying the pandit's calendar —
+              // otherwise an attacker books every slot for 30 days, never pays,
+              // and that pandit is permanently unbookable at zero cost. See
+              // UNPAID_HOLD_MINUTES.
+              ...activeSlotHoldWhere(),
             },
             select: { bookingNumber: true, priestPujaOfferingId: true },
             take: offering.maxBookingsPerSlot + 1,
@@ -1666,9 +2252,22 @@ export async function bookingRoutes(server: FastifyInstance) {
 
         // 7. Create the payment order. Razorpay is the ONLY rail — Stripe was
         // removed 2026-08-10 (PayPal via Razorpay replaces it for international
-        // devotees). NRI bookings are priced 9x in INR above and charged here
-        // exactly like a domestic booking, so there is no second gateway and no
-        // currency branch to get wrong.
+        // devotees), so there is no second gateway and no currency branch to
+        // get wrong.
+        //
+        // The charged amount is `offering.basePrice` + the Rs 51 platform fee +
+        // the Rs 150 prasad-delivery fee when requested, all in INR. There is NO
+        // NRI multiplier anywhere on this path.
+        //
+        // This comment previously read "NRI bookings are priced 9x in INR above
+        // and charged here exactly like a domestic booking" — false, and the
+        // most dangerous kind of false: it sits directly on the Razorpay call
+        // and tells a maintainer a 9x multiplier is already applied upstream.
+        // The natural repair when NRI pricing returns is to "restore" it here,
+        // which recreates RV-01 — the P0 that billed Rs 1,100 as $9,900. NRI
+        // premium pricing returns as a SERVER-QUOTED amount on the PayPal rail,
+        // rendered by the client before payment; never as a multiplier applied
+        // behind a quote the UI has already shown.
         const order = await paymentService.createRazorpayOrder(booking.id, userId);
 
         return reply.status(201).send({
@@ -1679,6 +2278,17 @@ export async function bookingRoutes(server: FastifyInstance) {
           amount: order.amount,
           currency: order.currency,
           razorpayKeyId: order.razorpayKeyId,
+          // Displayed price MUST equal charged price. The pandit-direct checkout
+          // page renders `offering.basePrice`, so the fees this path now
+          // collects are itemised here for the client to show — the same
+          // breakdown apps/web/app/pujas/book/page.tsx already renders on the
+          // temple path (base + Rs 51 + Rs 150).
+          priceBreakdown: {
+            basePriceInr: basePrice.toString(),
+            platformFeeInr: platformFee.toString(),
+            prasadDeliveryFeeInr: prasadFee.toString(),
+            totalInr: priceAmount.toString(),
+          },
           booking: {
             id: booking.id,
             bookingNumber: booking.bookingNumber,
@@ -1815,12 +2425,35 @@ export async function bookingRoutes(server: FastifyInstance) {
 export const __testing = {
   checkVideoProofGate,
   checkPriestReassignable,
+  checkTransitionRole,
   isPureReassignment,
+  // Re-exported from lib/priest-slot.ts, where they moved so
+  // dispatch.service.accept can take the SAME lock on the SAME key.
   priestSlotKey,
+  lockPriestSlot,
   SlotConflictError,
   updateBookingStatusSchema,
+  rescheduleBookingSchema,
   normalizePriestSlots,
   evaluatePriestSlot,
+  classifyCreateBookingError,
+  resolvePriestShare,
+  splitPujaPrice,
+  unpaidHoldCutoff,
+  activeSlotHoldWhere,
+  UNPAID_HOLD_MINUTES,
   VIDEO_PROOF_REQUIRED_STATUSES,
   PRIEST_REASSIGNABLE_STATUSES,
+  OWNER_ALLOWED_TRANSITIONS,
+  ASSIGNED_PRIEST_ALLOWED_TRANSITIONS,
+  parseMyBookingsQuery,
+  // CM-06 — the country-aware delivery address contract, shared with the web
+  // form via @poojly/shared. Exported so the schema + the persisted row are
+  // pinned by tests without booting Fastify.
+  deliveryAddressSchema,
+  buildPrasadAddressRow,
+  // DB-05 — the two money-taking order bodies. Exported so the
+  // prasadDelivery/deliveryAddress pairing is pinned without booting Fastify.
+  createOrderBodySchema,
+  fromOfferingBodySchema,
 };

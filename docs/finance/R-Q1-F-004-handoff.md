@@ -1,6 +1,17 @@
-# R-Q1-F-004 — Stripe NRI KYC (US/UK/CA/AU) Handoff
+# [SUPERSEDED] R-Q1-F-004 — Stripe NRI KYC (US/UK/CA/AU) Handoff
 
-**Status**: founder-action-required
+> SUPERSEDED / HISTORICAL — Stripe was removed from Darshya on 2026-08-11. Razorpay is the only
+> gateway and INR the only currency. The endpoints, env vars, code paths and Cloudflare Pages
+> targets below no longer exist; do not follow these steps. Kept for decision history only.
+> See AUDIT.md.
+>
+> Two specifics worth naming, because acting on them would do real damage: the KYC business
+> profile below says "Non-profit / Section 8 Company / Bhaktisetu Foundation", which is NOT the
+> platform's entity — the live Razorpay account is an individual/proprietorship, and submitting
+> the Section 8 documents would be a false declaration to a payment processor. And the FX
+> constant "~₹83.50/USD" is the hardcoded-rate class that RV-01 was rooted in.
+
+**Status**: superseded — Stripe rail removed; no founder action remains
 **Unblocks**: U2 (Stripe live activation for NRI corridor)
 **Spec**: `docs/finance/stripe-nri-kyc-spec.md`
 **Roadmap item**: `docs/roadmap/items/Q1/finance/004-stripe-nri-kyc-us-uk-ca-au-activation.md`

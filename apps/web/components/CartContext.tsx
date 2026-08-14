@@ -8,6 +8,7 @@ import {
  useCallback,
  type ReactNode,
 } from 'react';
+import { computeStoreOrderTotals } from '../lib/store-pricing';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -34,7 +35,6 @@ interface CartContextValue {
  itemCount: number;
  subtotal: number;
  deliveryFee: number;
- tax: number;
  total: number;
  addItem: (product: CartProduct, quantity?: number) => void;
  removeItem: (itemId: string) => void;
@@ -130,17 +130,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
  // Computed values
  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
- const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
- const deliveryFee = subtotal >= 499 ? 0 : 49;
- const tax = Math.round(subtotal * 0.05);
- const total = subtotal + deliveryFee + tax;
+ // COM-06 / S-09: totals come from lib/store-pricing, which the API mirrors
+ // exactly (apps/api/src/lib/store-pricing.ts) and enforces — POST /store/orders
+ // now 409s when the client total disagrees with the server's. This used to add
+ // a flat 5% tax line the API never charged and the business — which has no tax
+ // registration — never remitted, so the "Place Order - ₹733" button sat on top
+ // of a ₹698 charge.
+ const { subtotalInr: subtotal, deliveryFeeInr: deliveryFee, totalInr: total } =
+ computeStoreOrderTotals(
+ items.map((item) => ({ qty: item.quantity, unitPriceInr: item.product.price })),
+ );
 
  const value: CartContextValue = {
  items,
  itemCount,
  subtotal,
  deliveryFee,
- tax,
  total,
  addItem,
  removeItem,

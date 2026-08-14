@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Linking,
+  Alert,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useProducts } from '@poojly/api-client';
+import { useProducts, useCart, useAddToCart } from '@poojly/api-client';
+import {
+  selectStoreProducts,
+  selectCart,
+  type StoreProductVM,
+  type CartVM,
+} from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -19,19 +25,30 @@ const GRID_GAP = spacing.sm;
 const GRID_PADDING = spacing.md;
 const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 
-type StoreCategory = 'all' | 'puja-items' | 'idols' | 'books' | 'rudraksha' | 'clothing';
+/**
+ * PAR-16. Nothing could be bought in the app.
+ *
+ * "Add" called `Linking.openURL('https://darshya.online/store?…&q=<product
+ * name>')` — a web SEARCH for the product's name, in the mobile browser. Three
+ * taps meant three browser tabs and an empty cart. The cart icon opened the web
+ * cart and carried a hardcoded badge of "2" for every user, signed in or not.
+ * Meanwhile useCart / useAddToCart / useUpdateCartItem / useRemoveCartItem all
+ * existed in api-client and all resolve to live routes.
+ *
+ * The catalogue was equally invented. On the API path the screen did
+ * `const fb = productsData[i % 8]` and took `rating`, `reviews` and `tag` from
+ * that positional mock, then set `originalPrice = price * 1.4` — stamping a
+ * real SKU with another product's 4.8/456-review social proof and a 29% "MRP
+ * discount" that no one had ever offered. Every one of those fields is on the
+ * product row (rating, reviewCount, compareAtPrice, discount, tag, inStock);
+ * they are read from it now, and left blank when absent.
+ *
+ * Cart mutations return {message, cart} — the hooks type them as a bare Cart,
+ * so the badge is read through selectCart, and it only moves after the server
+ * has confirmed the new item count.
+ */
 
-interface Product {
-  id: string;
-  name: string;
-  category: Exclude<StoreCategory, 'all'>;
-  price: number;
-  originalPrice: number;
-  rating: number;
-  reviews: number;
-  inStock: boolean;
-  tag?: string;
-}
+type StoreCategory = 'all' | 'puja-items' | 'idols' | 'books' | 'rudraksha' | 'clothing';
 
 const categoryFilters: { key: StoreCategory; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -42,93 +59,10 @@ const categoryFilters: { key: StoreCategory; label: string }[] = [
   { key: 'clothing', label: 'Clothing' },
 ];
 
-const productsData: Product[] = [
-  {
-    id: '1',
-    name: 'Premium Rudraksha Mala (108 beads)',
-    category: 'rudraksha',
-    price: 1299,
-    originalPrice: 1999,
-    rating: 4.8,
-    reviews: 456,
-    inStock: true,
-    tag: 'Bestseller',
-  },
-  {
-    id: '2',
-    name: 'Brass Ganesha Idol (6 inch)',
-    category: 'idols',
-    price: 2499,
-    originalPrice: 3499,
-    rating: 4.9,
-    reviews: 312,
-    inStock: true,
-  },
-  {
-    id: '3',
-    name: 'Complete Puja Thali Set',
-    category: 'puja-items',
-    price: 899,
-    originalPrice: 1299,
-    rating: 4.7,
-    reviews: 890,
-    inStock: true,
-    tag: 'Top Rated',
-  },
-  {
-    id: '4',
-    name: 'Bhagavad Gita (Hindi + English)',
-    category: 'books',
-    price: 349,
-    originalPrice: 499,
-    rating: 4.9,
-    reviews: 2100,
-    inStock: true,
-  },
-  {
-    id: '5',
-    name: 'Pure Sandalwood Dhoop Sticks (100g)',
-    category: 'puja-items',
-    price: 199,
-    originalPrice: 299,
-    rating: 4.6,
-    reviews: 1450,
-    inStock: true,
-  },
-  {
-    id: '6',
-    name: 'Silk Dhoti & Angavastram Set',
-    category: 'clothing',
-    price: 1599,
-    originalPrice: 2199,
-    rating: 4.5,
-    reviews: 230,
-    inStock: true,
-  },
-  {
-    id: '7',
-    name: 'Copper Kalash with Coconut',
-    category: 'puja-items',
-    price: 699,
-    originalPrice: 999,
-    rating: 4.7,
-    reviews: 567,
-    inStock: true,
-  },
-  {
-    id: '8',
-    name: '5 Mukhi Rudraksha (Certified)',
-    category: 'rudraksha',
-    price: 499,
-    originalPrice: 799,
-    rating: 4.8,
-    reviews: 1890,
-    inStock: true,
-    tag: 'Certified',
-  },
-];
-
-const iconForCategory: Record<Exclude<StoreCategory, 'all'>, React.ComponentProps<typeof Ionicons>['name']> = {
+const iconForCategory: Record<
+  Exclude<StoreCategory, 'all'>,
+  React.ComponentProps<typeof Ionicons>['name']
+> = {
   'puja-items': 'flame',
   idols: 'body',
   books: 'book',
@@ -136,130 +70,215 @@ const iconForCategory: Record<Exclude<StoreCategory, 'all'>, React.ComponentProp
   clothing: 'shirt',
 };
 
-function ProductCard({ product }: { product: Product }) {
-  const discount = Math.round(
-    ((product.originalPrice - product.price) / product.originalPrice) * 100
-  );
+function inferStoreCategory(product: StoreProductVM): Exclude<StoreCategory, 'all'> {
+  const h = `${product.collection ?? ''} ${product.category ?? ''} ${product.handle} ${product.title}`.toLowerCase();
+  if (h.includes('rudraksh')) return 'rudraksha';
+  if (h.includes('idol') || h.includes('murti') || h.includes('statue')) return 'idols';
+  if (h.includes('book') || h.includes('gita') || h.includes('granth') || h.includes('scripture'))
+    return 'books';
+  if (
+    h.includes('cloth') ||
+    h.includes('dhoti') ||
+    h.includes('saree') ||
+    h.includes('shawl') ||
+    h.includes('apparel')
+  )
+    return 'clothing';
+  return 'puja-items';
+}
 
+interface ProductRow extends StoreProductVM {
+  uiCategory: Exclude<StoreCategory, 'all'>;
+}
+
+function ProductCard({
+  product,
+  onAdd,
+  adding,
+}: {
+  product: ProductRow;
+  onAdd: (p: ProductRow) => void;
+  adding: boolean;
+}) {
   return (
-    <TouchableOpacity
-      style={[styles.productCard, { width: CARD_WIDTH }]}
-      activeOpacity={0.7}
-      onPress={() => Linking.openURL(`https://darshya.online/store?utm_source=mobile-app&utm_medium=product-card&q=${encodeURIComponent(product.name)}`)}
-    >
-      {/* Image placeholder */}
+    <View style={[styles.productCard, { width: CARD_WIDTH }]}>
       <View style={styles.productImage}>
-        <Ionicons
-          name={iconForCategory[product.category]}
-          size={28}
-          color={colors.saffron[300]}
-        />
-        {product.tag && (
+        <Ionicons name={iconForCategory[product.uiCategory]} size={28} color={colors.saffron[300]} />
+        {product.tag ? (
           <View style={styles.tagBadge}>
             <Text style={styles.tagText}>{product.tag}</Text>
           </View>
-        )}
-        {discount > 0 && (
+        ) : null}
+        {product.discountPercent !== null && product.discountPercent > 0 ? (
           <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>{discount}% OFF</Text>
+            <Text style={styles.discountText}>{product.discountPercent}% OFF</Text>
           </View>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.productInfo}>
         <Text style={styles.productName} numberOfLines={2}>
-          {product.name}
+          {product.title}
         </Text>
         <View style={styles.priceRow}>
           <Text style={styles.productPrice}>
-            {'\u20B9'}{product.price.toLocaleString('en-IN')}
+            {product.priceInr === null
+              ? '—'
+              : `₹${product.priceInr.toLocaleString('en-IN')}`}
           </Text>
-          <Text style={styles.originalPrice}>
-            {'\u20B9'}{product.originalPrice.toLocaleString('en-IN')}
-          </Text>
+          {product.compareAtPriceInr !== null &&
+          product.priceInr !== null &&
+          product.compareAtPriceInr > product.priceInr ? (
+            <Text style={styles.originalPrice}>
+              {'₹'}
+              {product.compareAtPriceInr.toLocaleString('en-IN')}
+            </Text>
+          ) : null}
         </View>
-        <View style={styles.ratingRow}>
-          <Ionicons name="star" size={11} color={colors.amber[500]} />
-          <Text style={styles.ratingText}>{product.rating}</Text>
-          <Text style={styles.reviewCount}>
-            ({product.reviews.toLocaleString('en-IN')})
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.addButton} activeOpacity={0.7} onPress={() => Linking.openURL(`https://darshya.online/store?utm_source=mobile-app&utm_medium=add-to-cart&q=${encodeURIComponent(product.name)}`)}>
+        {product.rating !== null ? (
+          <View style={styles.ratingRow}>
+            <Ionicons name="star" size={11} color={colors.amber[500]} />
+            <Text style={styles.ratingText}>{product.rating}</Text>
+            {product.reviewCount !== null ? (
+              <Text style={styles.reviewCount}>
+                ({product.reviewCount.toLocaleString('en-IN')})
+              </Text>
+            ) : null}
+          </View>
+        ) : (
+          <View style={styles.ratingRow}>
+            <Text style={styles.reviewCount}>No ratings yet</Text>
+          </View>
+        )}
+        <TouchableOpacity
+          style={[styles.addButton, (!product.inStock || adding) && styles.addButtonDisabled]}
+          activeOpacity={0.7}
+          disabled={!product.inStock || adding}
+          onPress={() => onAdd(product)}
+        >
           <Ionicons name="cart-outline" size={14} color={colors.white} />
-          <Text style={styles.addButtonText}>Add</Text>
+          <Text style={styles.addButtonText}>
+            {!product.inStock ? 'Out of stock' : adding ? 'Adding…' : 'Add'}
+          </Text>
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
-}
-
-function inferStoreCategory(handle?: string | null, title?: string | null): Exclude<StoreCategory, 'all'> {
-  const h = `${handle ?? ''} ${title ?? ''}`.toLowerCase();
-  if (h.includes('rudraksh')) return 'rudraksha';
-  if (h.includes('idol') || h.includes('murti') || h.includes('statue')) return 'idols';
-  if (h.includes('book') || h.includes('gita') || h.includes('granth')) return 'books';
-  if (h.includes('cloth') || h.includes('dhoti') || h.includes('saree') || h.includes('shawl')) return 'clothing';
-  return 'puja-items';
 }
 
 export default function StoreScreen() {
   const [activeCategory, setActiveCategory] = useState<StoreCategory>('all');
   const productsQuery = useProducts();
+  const cartQuery = useCart();
+  const addToCart = useAddToCart();
   const [refreshing, setRefreshing] = useState(false);
+  const [addingId, setAddingId] = useState<string | null>(null);
 
-  const apiProducts = productsQuery.data?.products ?? [];
-  const sourceProducts: Product[] = apiProducts.length > 0
-    ? apiProducts.map((p, i) => {
-        const fb = productsData[i % productsData.length]!;
-        const price = (p as any).price ?? fb.price;
-        const original = (p as any).originalPrice ?? Math.round(price * 1.4);
-        return {
-          id: p.id,
-          name: p.title ?? fb.name,
-          category: inferStoreCategory(p.handle, p.title),
-          price,
-          originalPrice: original,
-          rating: fb.rating,
-          reviews: fb.reviews,
-          inStock: true,
-          tag: fb.tag,
-        };
-      })
-    : productsData;
+  const products: ProductRow[] = useMemo(
+    () =>
+      selectStoreProducts(productsQuery.data).map((p) => ({
+        ...p,
+        uiCategory: inferStoreCategory(p),
+      })),
+    [productsQuery.data],
+  );
+
+  const cart: CartVM | null = selectCart(cartQuery.data);
 
   const filteredProducts =
     activeCategory === 'all'
-      ? sourceProducts
-      : sourceProducts.filter((p) => p.category === activeCategory);
+      ? products
+      : products.filter((p) => p.uiCategory === activeCategory);
 
   async function onRefresh() {
     setRefreshing(true);
-    await productsQuery.refetch();
+    await Promise.all([productsQuery.refetch(), cartQuery.refetch()]);
     setRefreshing(false);
   }
 
+  async function handleAdd(product: ProductRow) {
+    setAddingId(product.id);
+    try {
+      const response = await addToCart.mutateAsync({ productId: product.id, quantity: 1 });
+      // Confirm against what the SERVER says the cart now holds. If the
+      // response is not a cart, the add did not happen — never report success
+      // off a resolved promise alone.
+      const updated = selectCart(response);
+      if (!updated) {
+        Alert.alert('Not added', 'The server did not confirm the item was added. Please retry.');
+        return;
+      }
+      await cartQuery.refetch();
+      Alert.alert(
+        'Added to cart',
+        `${product.title} — cart now has ${updated.itemCount} item${updated.itemCount === 1 ? '' : 's'}.`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not add this item.';
+      Alert.alert(
+        'Could not add to cart',
+        message.includes('401') ? 'Sign in to add items to your cart.' : message,
+      );
+    } finally {
+      setAddingId(null);
+    }
+  }
+
+  function showCart() {
+    if (!cart) {
+      Alert.alert('Cart unavailable', 'Could not read your cart. Pull down to retry.');
+      return;
+    }
+    if (cart.items.length === 0) {
+      Alert.alert('Your cart is empty', 'Add an item to get started.');
+      return;
+    }
+    Alert.alert(
+      `Cart (${cart.itemCount} item${cart.itemCount === 1 ? '' : 's'})`,
+      [
+        ...cart.items.map(
+          (i) =>
+            `${i.quantity} × ${i.title}${i.subtotal !== null ? ` — ₹${i.subtotal.toLocaleString('en-IN')}` : ''}`,
+        ),
+        '',
+        cart.subtotal !== null ? `Subtotal: ₹${cart.subtotal.toLocaleString('en-IN')}` : '',
+        cart.deliveryFee !== null ? `Delivery: ₹${cart.deliveryFee.toLocaleString('en-IN')}` : '',
+        cart.total !== null ? `Total: ₹${cart.total.toLocaleString('en-IN')}` : '',
+        '',
+        'Checkout is on the web store for now.',
+      ]
+        .filter((line) => line !== undefined)
+        .join('\n'),
+    );
+  }
+
+  const badgeCount = cart?.itemCount ?? 0;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.headerTitle}>Darshya Store</Text>
             <Text style={styles.headerSubtitle}>
-              Sacred items delivered to your door
+              {productsQuery.isLoading
+                ? 'Loading catalogue…'
+                : productsQuery.isError
+                  ? 'Catalogue unavailable'
+                  : `${products.length} items · delivered to your door`}
             </Text>
           </View>
-          <TouchableOpacity style={styles.cartButton} activeOpacity={0.7} onPress={() => Linking.openURL('https://darshya.online/store/cart?utm_source=mobile-app&utm_medium=cart-icon')}>
+          <TouchableOpacity style={styles.cartButton} activeOpacity={0.7} onPress={showCart}>
             <Ionicons name="cart-outline" size={22} color={colors.stone[700]} />
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>2</Text>
-            </View>
+            {badgeCount > 0 ? (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{badgeCount}</Text>
+              </View>
+            ) : null}
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Category Filter */}
       <View style={styles.filterContainer}>
         <FlatList
           horizontal
@@ -271,19 +290,11 @@ export default function StoreScreen() {
             const isActive = activeCategory === item.key;
             return (
               <TouchableOpacity
-                style={[
-                  styles.filterChip,
-                  isActive && styles.filterChipActive,
-                ]}
+                style={[styles.filterChip, isActive && styles.filterChipActive]}
                 onPress={() => setActiveCategory(item.key)}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    isActive && styles.filterChipTextActive,
-                  ]}
-                >
+                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -292,20 +303,31 @@ export default function StoreScreen() {
         />
       </View>
 
-      {/* Product Grid */}
       <FlatList
         data={filteredProducts}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.gridRow}
-        renderItem={({ item }) => <ProductCard product={item} />}
+        renderItem={({ item }) => (
+          <ProductCard product={item} onAdd={handleAdd} adding={addingId === item.id} />
+        )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="bag-outline" size={48} color={colors.stone[300]} />
-            <Text style={styles.emptyText}>No products in this category</Text>
+            <Ionicons
+              name={productsQuery.isError ? 'cloud-offline-outline' : 'bag-outline'}
+              size={48}
+              color={colors.stone[300]}
+            />
+            <Text style={styles.emptyText}>
+              {productsQuery.isLoading
+                ? 'Loading…'
+                : productsQuery.isError
+                  ? 'Could not load the store'
+                  : 'No products in this category'}
+            </Text>
           </View>
         }
       />
@@ -349,8 +371,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
-    width: 16,
+    minWidth: 16,
     height: 16,
+    paddingHorizontal: 3,
     borderRadius: 8,
     backgroundColor: colors.saffron[600],
     justifyContent: 'center',
@@ -494,6 +517,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: borderRadius.md,
     gap: 4,
+  },
+  addButtonDisabled: {
+    backgroundColor: colors.stone[300],
   },
   addButtonText: {
     color: colors.white,

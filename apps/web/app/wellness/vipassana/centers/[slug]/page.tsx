@@ -25,10 +25,11 @@ export async function generateMetadata(
   const c = getCenter(slug);
   if (!c) return { title: 'Center not found' };
   return {
-    title: `${c.name}, ${c.city} — Vipassana 10-Day Course | Darshya`,
+    title: `${c.name}, ${c.city} — Vipassana 10-Day Course`,
     description: `Apply for a 10-day Vipassana course at ${c.name} in ${c.city}, ${c.state}, ${c.country}. ${LINEAGE_LABEL[c.lineage]}. Donation-based, direct application via official center site.`,
     alternates: { canonical: `${BASE_URL}/wellness/vipassana/centers/${c.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${c.name} — Vipassana 10-day course`,
       description: `${c.city}, ${c.state}, ${c.country}. ${LINEAGE_LABEL[c.lineage]}. Donation-based.`,
       url: `${BASE_URL}/wellness/vipassana/centers/${c.slug}`,
@@ -122,19 +123,19 @@ export default async function VipassanaCenterDetailPage(
 
       <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[10px] uppercase tracking-wide text-gray-500">Founded</p>
+          <p className="text-xs uppercase tracking-wide text-gray-500">Founded</p>
           <p className="mt-1 text-base font-semibold text-gray-900">{c.foundedYear || '—'}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[10px] uppercase tracking-wide text-gray-500">Capacity</p>
+          <p className="text-xs uppercase tracking-wide text-gray-500">Capacity</p>
           <p className="mt-1 text-base font-semibold text-gray-900">{c.capacity ? `${c.capacity} students` : '—'}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[10px] uppercase tracking-wide text-gray-500">Tradition</p>
+          <p className="text-xs uppercase tracking-wide text-gray-500">Tradition</p>
           <p className="mt-1 text-sm font-semibold text-gray-900">{LINEAGE_LABEL[c.lineage]}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[10px] uppercase tracking-wide text-gray-500">Languages</p>
+          <p className="text-xs uppercase tracking-wide text-gray-500">Languages</p>
           <p className="mt-1 text-sm font-semibold text-gray-900">{c.languagesTaught.join(', ')}</p>
         </div>
       </section>

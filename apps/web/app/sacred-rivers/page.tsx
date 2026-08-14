@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '10 Sacred Rivers of Bharat — Sapta Sindhu Complete Guide | Darshya',
+  title: '10 Sacred Rivers of Bharat — Sapta Sindhu Complete Guide',
   description:
     'Origins, mouths, sacred ghats and legends of Ganga, Yamuna, Saraswati, Narmada, Godavari, Kaveri, Sindhu, Brahmaputra, Krishna and Tapti — the rivers worshipped as goddesses across Sanatana Dharma.',
   alternates: { canonical: `${BASE_URL}/sacred-rivers` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Sacred Rivers of Bharat — Sapta Sindhu',
     description:
       'Deep guides to the ten rivers worshipped as living goddesses — their Vedic origins, sacred ghats, presiding goddesses, and the tirthas on their banks.',
@@ -64,7 +65,7 @@ export default function SacredRiversIndexPage() {
                 Origin · {r.origin.split(',')[0]?.trim()}
               </p>
               <p className="mt-2 line-clamp-2 text-sm text-gray-700">{r.spiritualSignificance}</p>
-              <div className="mt-3 flex flex-wrap gap-1 text-[10px] font-medium uppercase tracking-wide">
+              <div className="mt-3 flex flex-wrap gap-1 text-xs font-medium uppercase tracking-wide">
                 {r.states.slice(0, 4).map((s) => (
                   <span key={s} className="rounded bg-saffron-100 px-2 py-0.5 text-saffron-800">{s}</span>
                 ))}

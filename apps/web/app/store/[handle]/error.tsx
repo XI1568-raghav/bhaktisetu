@@ -1,10 +1,11 @@
 'use client';
 
-// P0-9: Route-segment error boundary for /store/[handle].
-// store/[handle] is a redirect route (307 → /store/view?handle=…), but a
-// redirect can still throw if params resolve oddly; this boundary keeps the
-// store shell visible and offers a retry + back-to-store link instead of a
-// raw 500. See app/temples/[slug]/error.tsx for rationale.
+// P0-9: Route-segment error boundary for /store/[handle], which is the real
+// server-rendered product page since COM-10 (it used to be a 307 shim to
+// /store/view?handle=…). This boundary keeps the store shell visible and offers
+// a retry + back-to-store link instead of a raw 500. It does NOT catch
+// notFound() — an unknown handle renders the 404 page, as it should.
+// See app/temples/[slug]/error.tsx for rationale.
 
 import { useEffect } from 'react';
 import { captureBrowserException } from '../../../lib/sentry';

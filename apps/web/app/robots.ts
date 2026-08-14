@@ -61,7 +61,11 @@ export default function robots(): MetadataRoute.Robots {
           '/admin/',
           '/sign-in',
           '/auth/',
-          '/_next/',
+          // '/_next/' must NEVER be disallowed: every stylesheet, script and
+          // font the site serves lives under /_next/static/, so blocking it
+          // makes Googlebot render every page unstyled and unhydrated
+          // (prod sweep 2026-08-12, SEO-02). If RSC/data payloads ever need
+          // excluding, disallow the narrow path only — never /_next/static/.
           '/temple-portal/',
           '/priest/',
           '/store-admin/',

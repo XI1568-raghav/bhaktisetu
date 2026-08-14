@@ -87,7 +87,7 @@ export default function ShubhMuhuratClient() {
       </select>
      </label>
     </div>
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      Composite scoring overlays Choghadiya kind + Hora planet match + Rahu/Yamaganda/Gulika avoidance.
      Ideal planets for {selectedEvent.label.toLowerCase()}: {selectedEvent.idealPlanets.join(' · ')}.
     </p>
@@ -158,7 +158,7 @@ export default function ShubhMuhuratClient() {
 function Stat({ label, value }: { label: string; value: string }) {
  return (
   <div className="rounded-xl border border-gray-200 bg-white/90 p-3 text-center">
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
    <p className="mt-0.5 font-serif text-lg text-gray-900">{value}</p>
   </div>
  );
@@ -170,23 +170,23 @@ function WindowCard({ w, rank }: { w: MuhuratWindow; rank: number }) {
   <div className={`rounded-xl border-2 p-4 ${s.border} ${s.bg}`}>
    <div className="flex flex-wrap items-center justify-between gap-2">
     <div className="flex items-center gap-2">
-     <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-[10px] font-bold text-white">#{rank}</span>
+     <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-xs font-bold text-white">#{rank}</span>
      <span className="font-mono text-sm font-semibold text-gray-900">{w.startTime} → {w.endTime}</span>
-     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${s.pill}`}>{s.label}</span>
+     <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${s.pill}`}>{s.label}</span>
     </div>
     <div className="flex items-center gap-2">
      <span className="text-lg">{PLANET_GLYPH[w.horaPlanet] ?? ''}</span>
      <span className="font-serif text-sm text-gray-800">{w.horaPlanet} hora · {w.choghadiyaName}</span>
-     <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-800">{w.score}/100</span>
+     <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-bold text-gray-800">{w.score}/100</span>
     </div>
    </div>
    {(w.reasons.length > 0 || w.warnings.length > 0) && (
     <div className="mt-2 flex flex-wrap gap-1.5">
      {w.reasons.map((r, i) => (
-      <span key={`r-${i}`} className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-800">+ {r}</span>
+      <span key={`r-${i}`} className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">+ {r}</span>
      ))}
      {w.warnings.map((wn, i) => (
-      <span key={`w-${i}`} className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] text-rose-800">⚠ {wn}</span>
+      <span key={`w-${i}`} className="rounded-full bg-rose-100 px-2 py-0.5 text-xs text-rose-800">⚠ {wn}</span>
      ))}
     </div>
    )}
@@ -201,12 +201,12 @@ function WindowRow({ w }: { w: MuhuratWindow }) {
    <div className="flex flex-wrap items-center justify-between gap-2">
     <div className="flex items-center gap-2">
      <span className="font-mono text-xs text-gray-800">{w.startTime}→{w.endTime}</span>
-     <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${s.pill}`}>{s.label}</span>
+     <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${s.pill}`}>{s.label}</span>
     </div>
     <div className="flex items-center gap-2">
      <span className="text-xs text-gray-700">{PLANET_GLYPH[w.horaPlanet] ?? ''} {w.horaPlanet}</span>
      <span className="text-xs text-gray-600">· {w.choghadiyaName}</span>
-     <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[9px] font-bold text-gray-800">{w.score}</span>
+     <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-xs font-bold text-gray-800">{w.score}</span>
     </div>
    </div>
   </div>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Video, Flame, MessageCircleQuestion, ArrowRight } from 'lucide-react';
 import { OnboardingGate } from './_useOnboardingSafe';
 import { capture } from '../../lib/posthog';
+import { liveDarshanClaim } from '../../lib/platform-stats';
 
 type IntentCard = {
   Icon: typeof Video;
@@ -16,16 +17,22 @@ type IntentCard = {
   ctaColor: string;
 };
 
-const CARDS: IntentCard[] = [
+/**
+ * CM-11 / DF-05 (prod sweep 2026-08-12): the darshan card used to hardcode
+ * "Watch live aarti from 200+ temples". /darshan links 17 distinct temples and
+ * the temples table holds 20. The body copy is now derived from a server count
+ * passed down from the homepage; with no count it loses its digits entirely.
+ */
+const cards = (liveDarshanTemples: number | null): IntentCard[] => [
   {
     Icon: Video,
     title: 'Live Darshan',
-    body: 'Watch live aarti from 200+ temples',
+    body: liveDarshanClaim(liveDarshanTemples),
     cta: 'Watch now',
     href: '/darshan',
-    iconBg: '#FFF4EC',
-    iconColor: '#E16318',
-    ctaColor: '#9E3F0A',
+    iconBg: '#FFF8F0',
+    iconColor: '#9e6229',
+    ctaColor: '#7d4e1f',
   },
   {
     Icon: Flame,
@@ -33,9 +40,9 @@ const CARDS: IntentCard[] = [
     body: 'Schedule a ritual at a temple',
     cta: 'Book now',
     href: '/pujas',
-    iconBg: '#FFF4EC',
-    iconColor: '#E16318',
-    ctaColor: '#9E3F0A',
+    iconBg: '#FFF8F0',
+    iconColor: '#9e6229',
+    ctaColor: '#7d4e1f',
   },
   {
     Icon: MessageCircleQuestion,
@@ -49,7 +56,8 @@ const CARDS: IntentCard[] = [
   },
 ];
 
-function TrioCards() {
+function TrioCards({ liveDarshanTemples }: { liveDarshanTemples: number | null }) {
+  const CARDS = cards(liveDarshanTemples);
   return (
     <section
       className="py-8 md:py-10"
@@ -111,13 +119,19 @@ function TrioCards() {
   );
 }
 
-export default function IntentTrio() {
+interface Props {
+  /** Server-counted distinct temples with a live darshan stream; `null` when
+   *  the count is unavailable (CM-11). */
+  liveDarshanTemples?: number | null;
+}
+
+export default function IntentTrio({ liveDarshanTemples = null }: Props) {
   return (
-    <OnboardingGate fallback={<TrioCards />}>
+    <OnboardingGate fallback={<TrioCards liveDarshanTemples={liveDarshanTemples} />}>
       {(api) => {
         const intent = api.data?.primaryIntent;
         if (intent) return null;
-        return <TrioCards />;
+        return <TrioCards liveDarshanTemples={liveDarshanTemples} />;
       }}
     </OnboardingGate>
   );

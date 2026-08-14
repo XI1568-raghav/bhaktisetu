@@ -131,7 +131,7 @@ export default function AddressManager() {
                 <p className="font-medium text-surface-800 flex items-center gap-2">
                   {a.label}
                   {a.isDefault && (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-saffron-100 text-saffron-700">DEFAULT</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-saffron-100 text-saffron-700">DEFAULT</span>
                   )}
                 </p>
                 <p className="text-surface-600">

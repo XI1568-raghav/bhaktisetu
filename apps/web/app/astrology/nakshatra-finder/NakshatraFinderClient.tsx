@@ -53,7 +53,7 @@ export default function NakshatraFinderClient({ options }: { options: TimezoneOp
        required
        className="mt-1 w-full rounded-lg border border-saffron-300 bg-white px-3 py-2 text-sm focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-200"
       />
-      <span className="mt-1 block text-[11px] text-gray-500">24-hour local time. If unknown, try 12:00.</span>
+      <span className="mt-1 block text-xs text-gray-500">24-hour local time. If unknown, try 12:00.</span>
      </label>
      <label className="block">
       <span className="text-sm font-semibold text-gray-800">Timezone</span>
@@ -82,7 +82,7 @@ export default function NakshatraFinderClient({ options }: { options: TimezoneOp
      Find My Nakshatra
     </button>
 
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      Pure Vedic compute — Meeus moon longitude + Lahiri ayanamsa. Accuracy ±0.3°, well within each
      nakshatra&rsquo;s 13°20&prime; span. For ceremonial muhurat-grade precision, verify with a pandit who
      runs full Drik panchang ephemeris.
@@ -117,7 +117,7 @@ export default function NakshatraFinderClient({ options }: { options: TimezoneOp
        <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-gray-500">
         Computed values (advanced)
        </summary>
-       <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-gray-700">
+       <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-700">
         <dt className="font-semibold">Julian Day</dt>
         <dd>{result.julianDay.toFixed(4)}</dd>
         <dt className="font-semibold">Moon tropical longitude</dt>
@@ -173,7 +173,7 @@ export default function NakshatraFinderClient({ options }: { options: TimezoneOp
 function Cell({ label, value }: { label: string; value: string }) {
  return (
   <div className="rounded-xl border border-saffron-200 bg-white/70 p-3">
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
    <p className="mt-0.5 text-sm font-semibold text-gray-900">{value}</p>
   </div>
  );

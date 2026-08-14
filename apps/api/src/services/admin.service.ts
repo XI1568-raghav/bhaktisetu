@@ -1,7 +1,22 @@
-import type { BookingStatus } from '@prisma/client';
+import { Prisma, type BookingStatus, type UserRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { commissionPlatformCut } from '../lib/commission-math.js';
 import { sendEmail, providerApprovedEmail, providerRejectedEmail } from '../lib/email.js';
+import { invalidateAuthUser } from '../lib/auth-cache.js';
+import { clampLimit, clampPage } from '../lib/pagination.js';
+
+/** SCAL-09: the UserRole enum, as a set, so an unknown ?role= is a clean empty
+ *  answer rather than a Prisma enum error surfaced as HTTP 500. */
+const USER_ROLES = new Set<string>([
+  'DEVOTEE',
+  'PANDIT',
+  'STORE_OWNER',
+  'ASTROLOGER',
+  'WELLNESS_INSTRUCTOR',
+  'GAUSHALA_MANAGER',
+  'TEMPLE_MANAGER',
+  'ADMIN',
+]);
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -33,7 +48,18 @@ interface DashboardStats {
 }
 
 interface RevenueBreakdown {
+  /**
+   * DI-08 (2026-08-12): DEPRECATED NAME, unchanged VALUE. This has always been
+   * the PLATFORM's cut, while /admin/commissions lists PROVIDER earnings — the
+   * two were 5.8x apart on prod (1142.91 vs 6580) and both were labelled
+   * "commissions", so an admin could not tell whether the platform was
+   * under-collecting or the ledger was corrupt. Read `platformTakeInr`.
+   */
   totalCommissions: number;
+  /** The platform's own revenue from the take rate on PAID commissions. */
+  platformTakeInr: number;
+  /** What providers earned on those same PAID commissions (sum of `amount`). */
+  providerEarningsInr: number;
   totalSubscriptions: number;
   pendingPayouts: number;
   commissions: Array<{
@@ -64,6 +90,34 @@ interface PendingApproval {
   createdAt: string;
 }
 
+/**
+ * SCAL-04: how many pending providers one call may materialise.
+ *
+ * The six approval queues were each read with an unfiltered pending lookup —
+ * no take, no orderBy, no select, six times, full profile rows. This is the
+ * list on the platform most likely to grow without bound: an unreviewed signup
+ * stays in it forever, so the read scales with the operator's own backlog.
+ *
+ * 100 is the same ceiling the public list routes use. It is a page for a human
+ * to work, not a data export.
+ */
+export const PENDING_APPROVAL_PAGE = 100;
+
+/**
+ * A page of the approval queue plus the size of the queue it came from.
+ *
+ * `total` is counted in SQL, never `items.length`. Bounding the read without
+ * this makes the count agree with the truncated page — which is precisely
+ * SCAL-09's defect ("a nearly-empty page with a wrong count, so the operator
+ * concludes there are no pandits when there are thousands"), reintroduced on a
+ * different screen.
+ */
+export interface PendingApprovalPage {
+  items: PendingApproval[];
+  total: number;
+  hasMore: boolean;
+}
+
 interface ReportsResponse {
   generatedAt: string;
   userGrowth: Array<{ month: string; users: number }>;
@@ -90,8 +144,11 @@ interface ReportsResponse {
 export class AdminService {
   async getUsers(filters: UserFilters) {
     try {
-      const page = filters.page ?? 1;
-      const limit = filters.limit ?? 20;
+      // SCAL-09: `filters.limit` arrived unbounded from routes/admin.ts, and a
+      // negative page produced a negative OFFSET. Public list routes already
+      // clamp to [1, 100]; the admin list is the one an operator hammers.
+      const page = clampPage(filters.page);
+      const limit = clampLimit(filters.limit);
       const skip = (page - 1) * limit;
 
       const where: Record<string, unknown> = {};
@@ -102,6 +159,36 @@ export class AdminService {
           { email: { contains: filters.search, mode: 'insensitive' } },
           { phone: { contains: filters.search } },
         ];
+      }
+
+      // SCAL-09: the role filter used to run as a JS `.filter()` on the 20 rows
+      // page 1 had already fetched, while `total` came from an UNFILTERED
+      // count. Filtering by ADMIN therefore returned "however many of the first
+      // 20 users are admins" next to a total counting everyone — an operator
+      // reads that as "there are no pandits" when there are thousands. The
+      // predicate has to constrain the query so the page AND the count agree.
+      //
+      // The natural shape is `where.roleAssignments = { some: { role } }`, but
+      // UserRoleAssignment.userId is a bare @db.Uuid column with NO `@relation`
+      // to User (prisma/schema.prisma), so Prisma rejects that argument
+      // outright — verified live: `Unknown argument 'roleAssignments'` → HTTP
+      // 500 "Failed to list users". Adding the relation is a schema change.
+      // Until then, resolve the role to its user ids first and constrain on
+      // `id`: one narrow indexed column, bounded by how many people hold that
+      // role, and it gives the page and the count the same answer.
+      if (filters.role) {
+        if (!USER_ROLES.has(filters.role)) {
+          // An unknown role matches nobody. Say so honestly (empty page, total
+          // 0) rather than letting Prisma throw on an invalid enum value and
+          // answering 500 to what is really a bad query parameter.
+          return { users: [], total: 0, page, limit };
+        }
+        const holders = await prisma.userRoleAssignment.findMany({
+          where: { role: filters.role as UserRole },
+          select: { userId: true },
+          distinct: ['userId'],
+        });
+        where.id = { in: holders.map((h) => h.userId) };
       }
 
       const [users, total] = await Promise.all([
@@ -134,15 +221,21 @@ export class AdminService {
         phone: u.phone,
         roles: roleMap.get(u.id) ?? ['DEVOTEE'],
         subscriptionTier: u.subscriptionTier,
+        // AO-01: the admin table's Status column had no field to read, so it
+        // showed every account as active — including ones an operator had just
+        // "blocked". Moderation state has to come back from the server or the
+        // UI is only ever displaying its own optimistic guess.
+        blocked: u.blocked,
+        blockedAt: u.blockedAt ? u.blockedAt.toISOString() : null,
+        blockedReason: u.blockedReason,
         createdAt: u.createdAt.toISOString(),
       }));
 
-      // Filter by role if specified
-      const filtered = filters.role
-        ? enriched.filter((u) => u.roles.includes(filters.role!))
-        : enriched;
-
-      return { users: filtered, total, page, limit };
+      // No post-pagination filtering: the `where.id` restriction above already
+      // constrained BOTH the page and `total`, so every row fetched belongs in
+      // the answer. Re-filtering here would drop rows whose role assignments
+      // arrive in the second query and re-open SCAL-09.
+      return { users: enriched, total, page, limit };
     } catch (err) {
       // Previously this catch served MOCK_USERS — a DB blip silently returned
       // 8 fake admin users to the admin UI. Fail loud instead so the operator
@@ -191,7 +284,7 @@ export class AdminService {
 
   async updateUser(
     id: string,
-    updates: { approved?: boolean; blocked?: boolean; roles?: string[] },
+    updates: { approved?: boolean; blocked?: boolean; blockedReason?: string; roles?: string[] },
   ) {
     try {
       const user = await prisma.user.findUnique({ where: { id } });
@@ -348,9 +441,46 @@ export class AdminService {
         await this.sendApprovalEmail(id, updates.approved, roleAssignments).catch(() => undefined);
       }
 
-      return { message: 'User updated', userId: id };
-    } catch {
-      return { message: 'User updated (mock)', userId: id };
+      // AO-01 (2026-08-12, P0): actually block the user.
+      //
+      // `blocked` has been in this method's SIGNATURE since it was written, and
+      // User.blocked / blockedReason / blockedAt have existed in the schema all
+      // along — but nothing ever wrote them. The admin UI's Ban button flipped
+      // the Status badge optimistically, the API answered 200, and the account
+      // stayed fully live: still able to sign in, take bookings and take money.
+      // This is the platform's ONLY moderation control, so an operator blocking
+      // a fraudulent pandit got a green confirmation and moved on while nothing
+      // happened. The only way to notice was to reload and re-check every action.
+      if (updates.blocked !== undefined) {
+        await prisma.user.update({
+          where: { id },
+          data: {
+            blocked: updates.blocked,
+            blockedAt: updates.blocked ? new Date() : null,
+            // Clear the reason on unblock so a stale one cannot linger and
+            // reappear if the account is blocked again later.
+            blockedReason: updates.blocked ? (updates.blockedReason ?? null) : null,
+          },
+        });
+      }
+
+      // SCAL-05: the auth middleware caches a verified session for up to a
+      // minute, so a moderation action has to evict it explicitly or the ban
+      // would not bite until the cache expired — the operator would get a green
+      // confirmation while the account kept taking bookings, which is the exact
+      // failure AO-01 just removed. Roles are cached in the same entry, so an
+      // approval/role change evicts too.
+      invalidateAuthUser(id);
+
+      return { message: 'User updated', userId: id, blocked: updates.blocked };
+    } catch (err) {
+      // NEVER report success on failure. This used to answer
+      // "User updated (mock)" — a 200 with a success message — for ANY error,
+      // so a DB outage was indistinguishable from a completed moderation
+      // action. Same class as the fabricated revenue in getRevenue, and the
+      // same fix: fail loud, exactly as getUsers already does.
+      console.error('[admin.service.updateUser] failed', { id, err });
+      throw err;
     }
   }
 
@@ -362,10 +492,25 @@ export class AdminService {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const [totalUsers, roleAssignments, subscriptions, recentTransactions, mtdRevenueAgg] =
+      const [
+        totalUsers,
+        roleAssignments,
+        subscriptions,
+        recentTransactions,
+        mtdSubscriptionAgg,
+        mtdCapturedAgg,
+      ] =
         await Promise.all([
           prisma.user.count(),
-          prisma.userRoleAssignment.findMany(),
+          // SCAL-04 (2026-08-13): count roles in SQL.
+          //
+          // This was `userRoleAssignment.findMany()` — no where clause, the
+          // whole table — read only to tally roles in the JS loop below.
+          // EXPLAIN (ANALYZE, SERIALIZE) put that at 33,360 kB against a
+          // 200k-row table: the largest single transfer in the API, on the
+          // first page an admin opens, into a 512 MB container. groupBy
+          // returns one row per role instead.
+          prisma.userRoleAssignment.groupBy({ by: ['role'], _count: { _all: true } }),
           prisma.marketplaceSubscription.count({ where: { status: 'ACTIVE' } }),
           prisma.transaction.findMany({
             where: { status: 'COMPLETED' },
@@ -376,14 +521,39 @@ export class AdminService {
             where: { status: 'COMPLETED', createdAt: { gte: monthStart } },
             _sum: { amount: true },
           }),
+          // AO-04 (2026-08-12, P0): the marketplace half of the number.
+          //
+          // "Revenue This Month" summed COMPLETED `Transaction` rows only — and
+          // the ONLY writers of that table are in subscription.service. No puja
+          // booking, store order, donation or consultation has ever created a
+          // Transaction. So the founder's single most important tile could
+          // never show marketplace revenue: it was structurally Rs 0, and wrong
+          // in the direction that HIDES success — it would still read Rs 0 on
+          // the day the platform took its first Rs 1,00,000. Meanwhile
+          // /admin/reports read a different source and showed a real number, so
+          // two admin screens flatly contradicted a third.
+          //
+          // Captured payments are the money that actually arrived. This is GMV
+          // COLLECTED, not the platform's net cut — that is
+          // getRevenue().totalCommissions, derived through commission-math.
+          // Keeping the two clearly separate is the whole reason the ledger
+          // conventions exist.
+          prisma.payment.aggregate({
+            where: { status: 'captured', createdAt: { gte: monthStart } },
+            _sum: { amount: true },
+          }),
         ]);
 
       const usersByRole: Record<string, number> = {};
-      for (const ra of roleAssignments) {
-        usersByRole[ra.role] = (usersByRole[ra.role] ?? 0) + 1;
+      for (const group of roleAssignments) {
+        usersByRole[group.role] = group._count._all;
       }
 
-      const totalRevenue = Number(mtdRevenueAgg._sum.amount ?? 0);
+      // Money collected this month = captured marketplace payments + completed
+      // subscription charges. Both halves, one number, same basis as
+      // /admin/metrics — so /admin, /admin/revenue and /admin/reports agree.
+      const totalRevenue =
+        Number(mtdCapturedAgg._sum.amount ?? 0) + Number(mtdSubscriptionAgg._sum.amount ?? 0);
       const transactions = recentTransactions;
 
       // Count pending approvals across all profile types
@@ -435,7 +605,34 @@ export class AdminService {
 
   async getRevenue(): Promise<RevenueBreakdown> {
     try {
-      const [commissions, subscriptions] = await Promise.all([
+      // These figures are the founder's revenue dashboard (web /admin/revenue,
+      // the mobile admin screen and the CSV exports), so they must be TOTALS.
+      //
+      // They used to be computed from `findMany({ take: 50 })` — the 50 most
+      // recent rows — and reported as the platform-wide total. That is right
+      // only until the 51st commission exists, after which the dashboard
+      // silently under-reports revenue by an amount that grows with the
+      // business. A founder deciding whether to spend on acquisition would be
+      // reading a number that gets more wrong the better things go.
+      //
+      // Grouping by `percentage` makes the platform cut exactly derivable
+      // without loading the table: within a rate bucket
+      //     platformCut = sum(amount) * rate / (1 - rate)
+      // which is commission-math's identity applied once per DISTINCT RATE
+      // rather than once per row. There are a handful of rates (0.20 today), so
+      // this is bounded and exact rather than sampled.
+      const [paidByRate, pendingAgg, recentCommissions, subscriptions] = await Promise.all([
+        prisma.commission.groupBy({
+          by: ['percentage'],
+          where: { status: 'PAID' },
+          _sum: { amount: true },
+        }),
+        prisma.commission.aggregate({
+          where: { status: 'PENDING' },
+          _sum: { amount: true },
+        }),
+        // The "Recent commissions" table only — deliberately bounded, and NOT
+        // the basis of any total above.
         prisma.commission.findMany({ orderBy: { createdAt: 'desc' }, take: 50 }),
         prisma.marketplaceSubscription.findMany({ where: { status: 'ACTIVE' } }),
       ]);
@@ -444,15 +641,23 @@ export class AdminService {
       // (lib/commission-math.ts). Summing it into "Commissions Earned" reported
       // provider payouts as platform revenue — a ~4x overstatement on a 20/80
       // split. The platform's share is derived from the stored take rate.
-      const totalCommissions = commissions
-        .filter((c) => c.status === 'PAID')
-        .reduce((sum, c) => sum + commissionPlatformCut(c.amount, c.percentage).toNumber(), 0);
+      const platformTakeInr = paidByRate.reduce((sum, bucket) => {
+        const providerTotal = bucket._sum.amount ?? new Prisma.Decimal(0);
+        return sum + commissionPlatformCut(providerTotal, bucket.percentage).toNumber();
+      }, 0);
+
+      // DI-08: the other half of the same money, reported next to it. Without
+      // this an admin comparing the dashboard to /admin/commissions sees two
+      // numbers 5.8x apart with no way to tell that one is the platform's cut
+      // and the other is what providers earned.
+      const providerEarningsInr = paidByRate.reduce(
+        (sum, bucket) => sum + Number(bucket._sum.amount ?? 0),
+        0,
+      );
 
       // Pending payouts genuinely IS what providers are owed, so this one keeps
       // summing `amount` — it was the under-reported figure before.
-      const pendingPayouts = commissions
-        .filter((c) => c.status === 'PENDING')
-        .reduce((sum, c) => sum + Number(c.amount), 0);
+      const pendingPayouts = Number(pendingAgg._sum.amount ?? 0);
 
       const totalSubscriptions = subscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
 
@@ -475,10 +680,15 @@ export class AdminService {
       }
 
       return {
-        totalCommissions,
+        // Same value it has always carried — see the interface note. Kept so
+        // the deployed web/mobile admin screens do not lose the figure while
+        // they migrate to `platformTakeInr`.
+        totalCommissions: platformTakeInr,
+        platformTakeInr,
+        providerEarningsInr,
         totalSubscriptions,
         pendingPayouts,
-        commissions: commissions.map((c) => ({
+        commissions: recentCommissions.map((c) => ({
           id: c.id,
           bookingId: c.bookingId,
           storeOrderId: c.storeOrderId,
@@ -489,34 +699,16 @@ export class AdminService {
         })),
         subscriptionRevenue: Array.from(subGroups.values()),
       };
-    } catch {
-      return {
-        totalCommissions: 45000,
-        totalSubscriptions: 15000,
-        pendingPayouts: 8000,
-        commissions: [
-          {
-            id: 'com-001',
-            bookingId: 'bk-001',
-            providerId: 'user-002',
-            amount: 630,
-            status: 'PAID',
-            createdAt: '2026-04-10T10:00:00Z',
-          },
-          {
-            id: 'com-002',
-            bookingId: 'bk-002',
-            providerId: 'user-002',
-            amount: 420,
-            status: 'PENDING',
-            createdAt: '2026-04-12T10:00:00Z',
-          },
-        ],
-        subscriptionRevenue: [
-          { plan: 'BASIC', role: 'PANDIT', count: 5, totalAmount: 4995 },
-          { plan: 'PRO', role: 'ASTROLOGER', count: 3, totalAmount: 8997 },
-        ],
-      };
+    } catch (err) {
+      // NEVER fabricate revenue. This used to answer a hardcoded Rs 45,000 /
+      // Rs 15,000 / Rs 8,000 with invented commission rows on ANY DB error, so
+      // the founder's revenue dashboard showed a confident, entirely fictional
+      // number whenever the database was unreachable — and the mobile admin
+      // screen's error banner could never fire, because the call always
+      // "succeeded". Fail loud, exactly as getUsers already does after the same
+      // mistake with MOCK_USERS.
+      console.error('[admin.service.getRevenue] DB failure', err);
+      throw err;
     }
   }
 
@@ -723,16 +915,69 @@ export class AdminService {
     }
   }
 
-  async getPendingApprovals(): Promise<PendingApproval[]> {
+  async getPendingApprovals(): Promise<PendingApprovalPage> {
     try {
-      const [pandits, stores, astrologers, wellness, gaushalas, temples] = await Promise.all([
-        prisma.panditProfile.findMany({ where: { approved: false } }),
-        prisma.storeProfile.findMany({ where: { approved: false } }),
-        prisma.astrologerProfile.findMany({ where: { approved: false } }),
-        prisma.wellnessProfile.findMany({ where: { approved: false } }),
-        prisma.gaushalaProfile.findMany({ where: { approved: false } }),
-        prisma.templeProfile.findMany({ where: { approved: false } }),
+      const pendingWhere = { approved: false } as const;
+      // `take`/`orderBy` are written out at every call site rather than hoisted
+      // into a shared object: the SCAL-04 ratchet
+      // (lib/unbounded-findmany.scal04.test.ts) matches on the ARGUMENT TEXT, so
+      // a hoisted options object reads to it as an unbounded call and, worse, a
+      // future unbounded read here would be indistinguishable from a bounded
+      // one. A guard that cannot see the bound is not a guard.
+      const orderOldestFirst = { createdAt: 'asc' as const };
+      const [
+        pandits,
+        stores,
+        astrologers,
+        wellness,
+        gaushalas,
+        temples,
+        panditTotal,
+        storeTotal,
+        astroTotal,
+        wellnessTotal,
+        gaushalaTotal,
+        templeTotal,
+      ] = await Promise.all([
+        prisma.panditProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.storeProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.astrologerProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.wellnessProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.gaushalaProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.templeProfile.findMany({
+          where: pendingWhere,
+          orderBy: orderOldestFirst,
+          take: PENDING_APPROVAL_PAGE,
+        }),
+        prisma.panditProfile.count({ where: pendingWhere }),
+        prisma.storeProfile.count({ where: pendingWhere }),
+        prisma.astrologerProfile.count({ where: pendingWhere }),
+        prisma.wellnessProfile.count({ where: pendingWhere }),
+        prisma.gaushalaProfile.count({ where: pendingWhere }),
+        prisma.templeProfile.count({ where: pendingWhere }),
       ]);
+      const total =
+        panditTotal + storeTotal + astroTotal + wellnessTotal + gaushalaTotal + templeTotal;
 
       // PanditProfile has no display-name column — `templeName` is a
       // legacy nullable field that historically held a free-form
@@ -798,9 +1043,14 @@ export class AdminService {
         })),
       ];
 
-      return approvals.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+      // Oldest wait first — the provider who has been waiting longest is the
+      // one the queue exists to reach. The old sort was newest-first, which on
+      // any real backlog buries them permanently below the day's signups.
+      const items = approvals
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .slice(0, PENDING_APPROVAL_PAGE);
+
+      return { items, total, hasMore: total > items.length };
     } catch (err) {
       console.error('[admin.service.getPendingApprovals] DB failure', err);
       throw err;

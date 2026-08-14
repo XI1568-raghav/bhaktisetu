@@ -2,15 +2,38 @@
 
 import { Mail, Clock, Send, Briefcase, Handshake, Scale, Newspaper, MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { COMPANY, postalContactLine } from "../../lib/company";
+import {
+  COMPANY,
+  grievanceOfficerLine,
+  grievanceSlaLine,
+  operatedByLine,
+  postalContactLine,
+  specialtyEmail,
+} from "../../lib/company";
 
 type EscalationItem = { label: string; email: string; icon: typeof Briefcase };
-const escalationEmails: EscalationItem[] = ([
-  COMPANY.specialtyEmails.sales        ? { label: "Sales & enterprise",  email: COMPANY.specialtyEmails.sales,        icon: Briefcase  } : null,
-  COMPANY.specialtyEmails.partnerships ? { label: "Temple partnerships", email: COMPANY.specialtyEmails.partnerships, icon: Handshake  } : null,
-  COMPANY.specialtyEmails.press        ? { label: "Press & media",       email: COMPANY.specialtyEmails.press,        icon: Newspaper  } : null,
-  COMPANY.specialtyEmails.legal        ? { label: "Legal & compliance",  email: COMPANY.specialtyEmails.legal,        icon: Scale      } : null,
-] satisfies (EscalationItem | null)[]).filter((x): x is EscalationItem => Boolean(x));
+
+/**
+ * LEG-16: these four aliases were published on the Contact page while
+ * lib/company.ts described them, in its own words, as "aspirational". A
+ * contact page whose addresses may not resolve is worse than one that lists
+ * only the inbox we answer — and for legal@ it is a statutory-notice channel.
+ *
+ * The whole block is now gated on HAS_SPECIALTY_INBOXES_VERIFIED (the section
+ * below already hides itself when the list is empty), and the addresses come
+ * from specialtyEmail() rather than being read off the object directly. The
+ * owner flips one boolean the day the aliases are provisioned and deliverable.
+ */
+const escalationEmails: EscalationItem[] = (
+  COMPANY.HAS_SPECIALTY_INBOXES_VERIFIED
+    ? ([
+        { label: "Sales & enterprise",  email: specialtyEmail('sales'),        icon: Briefcase },
+        { label: "Temple partnerships", email: specialtyEmail('partnerships'), icon: Handshake },
+        { label: "Press & media",       email: specialtyEmail('press'),        icon: Newspaper },
+        { label: "Legal & compliance",  email: specialtyEmail('legal'),        icon: Scale     },
+      ] satisfies EscalationItem[])
+    : []
+);
 
 const contactMethods: Array<{ icon: typeof Mail; title: string; detail: string; description: string }> = [
   {
@@ -256,12 +279,41 @@ export default function ContactPage() {
                     <Send className="w-3.5 h-3.5" />
                     Open in email
                   </button>
-                  <p className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                     Opens your default mail client pre-filled. Or write directly to {COMPANY.supportEmail}.
                   </p>
                 </form>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LEG-10 / LEG-11: the Consumer Protection (E-Commerce) Rules 2020 require
+          the operator's identity and a grievance contact to be displayed. Both
+          are rendered from lib/company.ts so /contact, /privacy and /refunds
+          cannot publish three different answers. */}
+      <section className="pb-16 sm:pb-24">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8">
+          <div
+            className="rounded-xl p-5 space-y-3"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+          >
+            <h2 className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>
+              Operator &amp; grievance redressal
+            </h2>
+            <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+              {operatedByLine()}
+            </p>
+            {postalContactLine() && (
+              <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+                {postalContactLine()}
+              </p>
+            )}
+            <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+              <strong style={{ color: "var(--color-text)" }}>Grievances:</strong>{" "}
+              {grievanceOfficerLine()} {grievanceSlaLine()}
+            </p>
           </div>
         </div>
       </section>

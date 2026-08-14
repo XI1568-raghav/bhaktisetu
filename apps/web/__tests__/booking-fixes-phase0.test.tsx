@@ -47,7 +47,11 @@ describe('Phase 0 — pandit portal fixes', () => {
     // API had PATCH /priest/bookings/:id/reject but no UI ever rendered it.
     expect(src).toMatch(/handleAction\(booking\.id,\s*'reject'\)/);
     expect(src).toContain('Decline');
-    expect(src).toMatch(/reject:\s*'confirmed'/);
+    // The released booking returns to `confirmed` server-side. This used to
+    // assert the client's optimistic status map, which PF-07 replaced with a
+    // refetch — the row can leave the active view and the tab counts have to
+    // move with it, so guessing locally is wrong.
+    expect(src).toMatch(/await fetchBookings\(\)/);
   });
 
   it('T1: priest dashboard has an on-duty toggle calling /priest/availability', () => {

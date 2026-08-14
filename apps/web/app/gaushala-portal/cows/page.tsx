@@ -473,7 +473,7 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: { label: 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-[var(--color-surface-offset)] rounded-lg px-3 py-2 border border-[var(--color-border)]">
-      <p className="text-[var(--color-text-muted)] mb-0.5 text-[10px] uppercase tracking-wide">{label}</p>
+      <p className="text-[var(--color-text-muted)] mb-0.5 text-xs uppercase tracking-wide">{label}</p>
       <p className="font-medium text-[var(--color-text)] capitalize">{value}</p>
     </div>
   );

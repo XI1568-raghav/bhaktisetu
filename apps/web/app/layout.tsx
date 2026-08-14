@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { TITLE_TEMPLATE } from "../lib/seo/title-template";
 import { Noto_Sans, Noto_Sans_Devanagari, Crimson_Pro } from "next/font/google";
 import { t } from "../lib/t";
 import {
@@ -32,6 +33,9 @@ import NavCartButton from "../components/NavCartButton";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { MobileNavV2 } from "../components/MobileNavV2";
 import { MobileBottomTabs } from "../components/MobileBottomTabs";
+import { SiteChrome } from "../components/SiteChrome";
+import CookieSettingsButton from "../components/CookieSettingsButton";
+import { buttonClass } from "../components/ui/button-recipe";
 import { CategoryNav } from "../components/CategoryNav";
 import OnboardingTrigger from "../components/OnboardingTrigger";
 import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown";
@@ -45,11 +49,12 @@ import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { SentryProvider } from "../components/SentryProvider";
 import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
+import { TranslationCoverageNotice } from "../components/TranslationCoverageNotice";
 import AdSenseScript from "../components/AdSenseScript";
 import { GA4Script } from "../lib/ga4";
 import { MetaPixelScript } from "../lib/meta-pixel";
 import { PostHogScript } from "../lib/posthog";
-import { getTempleHero } from "../lib/images";
+import { SITE_OPEN_GRAPH, SITE_TWITTER } from "../lib/site-metadata";
 import { organizationJsonLd, webSiteJsonLd } from "../lib/jsonld";
 import Link from "next/link";
 import "./globals.css";
@@ -85,7 +90,11 @@ export const metadata: Metadata = {
  metadataBase: new URL("https://darshya.online"),
  title: {
  default: "Darshya \u2014 India\u2019s Devotional Super App",
- template: "%s | Darshya",
+ // SEO-03: one definition, in lib/seo/title-template.ts. Do not retype the
+ // literal here \u2014 app/auth/layout.tsx used to carry a second copy, and two
+ // copies of a format string brand two parts of the site differently the
+ // moment one is edited, with nothing failing.
+ template: TITLE_TEMPLATE,
  },
  description:
  "Experience live darshan, book pujas, explore panchang, listen to bhajans, and shop for sacred items. Darshya brings the divine into daily life.",
@@ -110,31 +119,28 @@ export const metadata: Metadata = {
  },
  manifest: "/manifest.json",
  alternates: {
-   canonical: "https://darshya.online",
+   // NO canonical here. Next.js inherits a parent's `alternates.canonical`
+   // into every child route that does not declare its own, so a canonical on
+   // the ROOT layout tells Google that ~349 distinct indexable pages are
+   // duplicates of the homepage (prod sweep 2026-08-12, SEO-01). Each route
+   // supplies its own canonical; a missing one is safe because Google
+   // self-canonicalises by default. Guarded by
+   // __tests__/seo/canonical-and-next-assets.test.ts.
    languages: {
      "en-IN": "https://darshya.online",
      "en-US": "https://darshya.online",
      "x-default": "https://darshya.online",
    },
  },
- openGraph: {
- type: "website",
- locale: "en_IN",
- url: "https://darshya.online",
- siteName: "Darshya",
- title: "Darshya \u2014 India\u2019s Devotional Super App",
- description:
- "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
- // OG image: Golden Temple Wikimedia 1280px (works as Twitter summary_large_image fallback; CF worker-cap blocks @vercel/og runtime route, see 292c328)
- images: ["/images/golden-temple-og.jpg"],
- },
- twitter: {
- card: "summary_large_image",
- title: "Darshya \u2014 India\u2019s Devotional Super App",
- description:
- "Live darshan, puja booking, panchang, bhajans & more \u2014 your complete spiritual companion.",
- images: ["/images/golden-temple-og.jpg"],
- },
+ // Site-level card DEFAULTS only \u2014 no page content. Next.js inherits a
+ // parent's whole `openGraph`/`twitter` object into any route that does not
+ // declare its own, so a homepage title/description/url here becomes the card
+ // for every other page (prod sweep 2026-08-12, SEO-04: 1,652 pages emitted
+ // the homepage Twitter card, 158 sitemap URLs the homepage OG card).
+ // See lib/site-metadata.ts for the resolver mechanics that make the empty
+ // content keys load-bearing. Guarded by __tests__/seo/social-cards.test.ts.
+ openGraph: SITE_OPEN_GRAPH,
+ twitter: SITE_TWITTER,
  robots: {
  index: true,
  follow: true,
@@ -151,7 +157,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
- themeColor: "#E16318",
+ themeColor: "#9e6229",
  width: "device-width",
  initialScale: 1,
 };
@@ -259,33 +265,41 @@ export default function RootLayout({
  className={`${notoSans.variable} ${notoSansDevanagari.variable} ${crimsonPro.variable}`}
  >
  <head>
- {/* Resource hints — warm up connections to third-party origins we hit on nearly every page. */}
- <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
- <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
+ {/* Resource hints — warm up connections to third-party origins we hit on nearly every page.
+     NOT api/cdn.fontshare.com: that stylesheet was removed (PERF-03) and a
+     preconnect to an origin nothing requests costs a DNS+TLS handshake for
+     nothing. */}
  <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
  <link rel="dns-prefetch" href="https://images.unsplash.com" />
  <link rel="preconnect" href="https://www.youtube.com" crossOrigin="anonymous" />
  <link rel="dns-prefetch" href="https://www.youtube.com" />
 
  {/*
- Fontshare — Cabinet Grotesk (display) + Satoshi (body).
- Trimmed to the weights actually used in the UI:
- - Cabinet Grotesk 500, 700 (headings / display)
- - Satoshi 400, 500, 700 (body + UI)
- Dropped: cabinet-grotesk 400 & 800, satoshi 300 — unused in current components.
- */}
- <link
- href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700&f[]=satoshi@400,500,700&display=swap"
- rel="stylesheet"
- />
+ PERF-03 (prod sweep 2026-08-12) — the Fontshare stylesheet that used to sit
+ here has been DEAD for some time and must not come back. GET
+ api.fontshare.com/v2/css?f[]=cabinet-grotesk…&f[]=satoshi… answers HTTP 200
+ with a 162-byte body containing one comment: "Access to the Fontshare API
+ has been temporarily restricted." Zero @font-face rules. Measured on the
+ live homepage with CDP CSS.getPlatformFontsForNode: 5,545 of 5,604 glyphs
+ painted in Arial, 0 in any webfont — while every page paid a
+ render-blocking cross-origin round trip in <head> for that one comment.
+ The brand faces are now self-hostable via next/font/local; until Satoshi and
+ Cabinet Grotesk woff2 are licensed and dropped into public/fonts, the
+ already-downloaded Noto Sans backs --font-body/--font-display (globals.css).
 
- {/* Preload the home hero — the image is reused on multiple sections and is the LCP element on `/`. */}
- <link
- rel="preload"
- as="image"
- href={getTempleHero('kashi-vishwanath')}
- fetchPriority="high"
- />
+ PERF-02 — the global `<link rel="preload" as="image" fetchPriority="high">`
+ that used to sit here has been removed and must not come back. A ROOT LAYOUT
+ CANNOT KNOW THE LCP ELEMENT OF AN ARBITRARY ROUTE. It preloaded the Kashi
+ Vishwanath hero at 1280px on every route in the app — including
+ /pujas/rudrabhishek, which renders zero <img> tags and still transferred that
+ one image. It was not even correct on `/`: the homepage's only Kashi image is
+ the 500px-wide WorshipStrip card, a DIFFERENT URL, ~4,600px down the page. So
+ fetchPriority="high" spent a connection slot on bytes nothing ever painted,
+ during the most contended moment of page load. A route that genuinely has an
+ above-the-fold image should mark it `priority` on its own next/image.
+
+ Both are guarded by __tests__/seo/head-resource-budget.test.ts.
+ */}
 
  {/* Cloudflare Web Analytics — privacy-first, no cookies. No-op when env unset. */}
  <CloudflareAnalytics />
@@ -324,6 +338,12 @@ export default function RootLayout({
  <CartProvider>
 
  {/* ── Navigation ─────────────────────────────────────────────── */}
+ {/* RESP-10: the header, <main> and the bottom tab bar are handed to
+     SiteChrome, which drops the consumer chrome (and its 65px top offset
+     plus 80px bottom padding) on /admin, /priest and the six *-portal
+     routes. Those surfaces render their own sticky header. */}
+ <SiteChrome
+ header={
  <header
    data-scroll-shadow
    className="fixed top-0 left-0 right-0 z-50 bg-[#faf9f6]/85 backdrop-blur-xl backdrop-saturate-150 border-b border-transparent transition-[border,background] duration-200"
@@ -352,7 +372,9 @@ export default function RootLayout({
  {/* Ask Pandit — icon-only below xl, label visible 1280px+ */}
  <a
  href={highlightLink.href}
- className="hidden md:inline-flex items-center gap-1.5 h-9 px-2.5 xl:px-3 text-sm font-medium text-white bg-saffron-600 hover:bg-saffron-700 rounded-md transition-colors whitespace-nowrap btn-press"
+ // DU-03: the header "Ask Pandit" was the 10px-radius outlier — the only
+ // rounded-md CTA on the site, on every one of the ten measured screens.
+ className={buttonClass("primary", "sm", "hidden md:inline-flex btn-press")}
  aria-label={tNav(highlightLink.labelKey)}
  title={tNav(highlightLink.labelKey)}
  >
@@ -394,10 +416,11 @@ export default function RootLayout({
  </div>
  </nav>
  </header>
-
- {/* Main content — offset for fixed nav, bottom-padded on mobile for tab bar */}
- <main id="main" className="flex-1 pt-16 pb-20 md:pb-0 [@supports(padding:env(safe-area-inset-bottom))]:pb-[calc(5rem+env(safe-area-inset-bottom))] md:[@supports(padding:env(safe-area-inset-bottom))]:pb-0">{children}</main>
- <MobileBottomTabs />
+ }
+ tabs={<MobileBottomTabs />}
+ >
+ {children}
+ </SiteChrome>
 
  {/* ── Footer ──────────────────────────────────────────────────── */}
  <footer className="bg-[#2a2520] text-surface-400" aria-labelledby="footer-heading">
@@ -424,7 +447,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="Facebook"
- className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Facebook className="w-4 h-4" />
  </a>
@@ -433,7 +456,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="Instagram"
- className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Instagram className="w-4 h-4" />
  </a>
@@ -442,7 +465,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="YouTube"
- className="p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Youtube className="w-4 h-4" />
  </a>
@@ -466,6 +489,24 @@ export default function RootLayout({
  </a>
  </li>
  ))}
+ {/* LEG-15: withdrawal of consent must be as easy as giving it (UK GDPR
+     Art. 7(3), DPDP Act s.6(4)). The control shipped on /legal/cookies,
+     /privacy and /account/privacy, but a user who rejected on the homepage
+     had to already know one of those pages existed. The footer is on every
+     page, which is the only placement that satisfies "as easy".
+
+     Not an i18n key on purpose: lib/i18n has no entry for it and this file
+     must not gain a footer link that renders as a raw key in the five
+     non-English locales. Plain English here matches the untranslated
+     "Browse all 500+ guides" pill below. */}
+ {section.titleKey === 'support' && (
+ <li key="support-cookie-settings">
+ <CookieSettingsButton
+ label="Cookie settings"
+ className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
+ />
+ </li>
+ )}
  </ul>
  </div>
  ))}
@@ -552,24 +593,31 @@ export default function RootLayout({
  <div className="mt-6 flex justify-center">
  <Link
  href="/discover"
- className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-saffron-300 bg-white/5 hover:bg-white/10 hover:text-saffron-400 border border-saffron-700/40 rounded-full transition-colors"
+ className="inline-flex min-h-[44px] items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-saffron-300 bg-white/5 hover:bg-white/10 hover:text-saffron-400 border border-saffron-700/40 rounded-full transition-colors"
  >
  Browse all 500+ guides &rarr;
  </Link>
  </div>
  </details>
 
- {/* Lang switcher — surfaces translated landings */}
+ {/* Lang switcher — surfaces translated landings.
+     RESP-09: measured 41.3x18 / 25.6x18 / 37.4x18 / 40.2x18 / 28.9x18 — six
+     links on one row, each a third of a fingertip tall, and these are the
+     entry points for the Hindi/Tamil/Telugu/Bengali audience. They are not
+     inside a <li>, so the globals `footer li > a` floor never reached them. */}
  <div className="mt-10 pt-8 border-t border-surface-800/60">
  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-surface-500">
  <span className="text-surface-600">Read in:</span>
- <Link href="/" className="hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
- <Link href="/hi" className="hover:text-saffron-400 transition-colors" hrefLang="hi" lang="hi">हिन्दी</Link>
- <Link href="/ta" className="hover:text-saffron-400 transition-colors" hrefLang="ta" lang="ta">தமிழ்</Link>
- <Link href="/te" className="hover:text-saffron-400 transition-colors" hrefLang="te" lang="te">తెలుగు</Link>
- <Link href="/bn" className="hover:text-saffron-400 transition-colors" hrefLang="bn" lang="bn">বাংলা</Link>
- <Link href="/mr" className="hover:text-saffron-400 transition-colors" hrefLang="mr" lang="mr">मराठी</Link>
+ <Link href="/?lang=en" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
+ <Link href="/hi" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="hi" lang="hi">हिन्दी</Link>
+ <Link href="/ta" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="ta" lang="ta">தமிழ்</Link>
+ <Link href="/te" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="te" lang="te">తెలుగు</Link>
+ <Link href="/bn" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="bn" lang="bn">বাংলা</Link>
+ <Link href="/mr" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="mr" lang="mr">मराठी</Link>
  </div>
+ {/* I18N-01: these six links advertise a localized product on every page.
+ Until the copy exists, say so where the visitor actually is. */}
+ <TranslationCoverageNotice />
  </div>
 
  {/* Contact info */}
@@ -580,7 +628,7 @@ export default function RootLayout({
  </span>
  <span className="flex items-center gap-1.5">
  <Phone className="w-3.5 h-3.5" />
- <a href="tel:+919255109400" className="hover:text-saffron-400 transition-colors">+91 92551 09400</a>
+ <a href="tel:+919255109400" className="tap-safe hover:text-saffron-400 transition-colors">+91 92551 09400</a>
  </span>
  <span className="flex items-center gap-1.5">
  <MapPin className="w-3.5 h-3.5" /> Bengaluru, India

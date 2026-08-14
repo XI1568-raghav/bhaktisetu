@@ -4,6 +4,7 @@ import SelfOnboardForm, { ExtraInput, ExtraSelect } from '../../components/SelfO
 
 
 export const metadata: Metadata = {
+  alternates: { canonical: 'https://darshya.online/become-astrologer' },
   title: 'Become a Darshya astrologer',
   description:
     'Take per-minute consultations on Darshya — kundli, muhurat, gemstone and tarot. Verified astrologers only.',

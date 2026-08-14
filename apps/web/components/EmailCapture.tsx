@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { buttonClass } from './ui/button-recipe';
 import { API_BASE_URL } from '../lib/api-config';
 
 interface Props {
@@ -93,7 +94,9 @@ export default function EmailCapture({
         <button
           type="submit"
           disabled={busy}
-          className="px-4 py-2 bg-saffron-600 text-white rounded-md text-sm font-medium hover:bg-saffron-700 disabled:opacity-60"
+          // DU-03: "Get free panchang" measured 41px tall with a 10px radius
+          // — one of the two adjacent homepage CTAs the finding opens with.
+          className={buttonClass('primary', 'md')}
         >
           {busy ? '…' : cta}
         </button>
@@ -120,7 +123,7 @@ export default function EmailCapture({
         <button
           type="submit"
           disabled={busy}
-          className="px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-medium hover:bg-saffron-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : cta}
         </button>

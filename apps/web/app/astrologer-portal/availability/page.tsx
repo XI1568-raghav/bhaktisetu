@@ -209,7 +209,7 @@ function AstrologerAvailabilityPageContent() {
      {SLOTS.map((slot) => (
       <div key={slot.key} className="col-span-1 text-xs font-semibold text-surface-500 uppercase tracking-wider text-center">
        {slot.label}
-       <span className="block text-[10px] font-normal text-surface-400">{slot.time}</span>
+       <span className="block text-xs font-normal text-surface-400">{slot.time}</span>
       </div>
      ))}
      <div className="col-span-1 text-xs font-semibold text-surface-500 uppercase tracking-wider text-center">All Day</div>

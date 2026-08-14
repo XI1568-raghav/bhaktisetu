@@ -19,9 +19,9 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const c = getChalisa(slug);
-  if (!c) return { title: 'Chalisa — Darshya' };
+  if (!c) return { title: 'Chalisa' };
   return {
-    title: `${c.name} — Lyrics, Meaning, Benefits — Darshya`,
+    title: `${c.name} — Lyrics, Meaning, Benefits`,
     description: `${c.name} (${c.sanskrit}) by ${c.composer}. Full significance, benefits, opening verses with meaning. Recited ${c.whenRecited.toLowerCase()}.`,
     alternates: { canonical: `https://darshya.online/chalisa/${c.slug}` },
     openGraph: {

@@ -36,9 +36,10 @@ function formatCurrency(amount: number): string {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
  const { id } = await params;
  const priest = await getPublicPriest(id);
- if (!priest) return { title: 'Pandit · Darshya' };
+ if (!priest) return { title: 'Pandit' };
  return {
-  title: `${priest.displayName} · Verified Pandit on Darshya`,
+  title: `${priest.displayName} · Verified Pandit`,
+  alternates: { canonical: `https://darshya.online/pandits/${id}` },
   description:
    priest.bio?.slice(0, 160) ??
    `Book authentic pujas with ${priest.displayName} on Darshya. Verified pandit, transparent pricing.`,

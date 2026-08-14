@@ -159,14 +159,14 @@ function BookingCard({ b }: { b: StoredBooking }) {
  )}
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 mb-1.5">
- <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: statusStyle.bg, color: statusStyle.color }}>
+ <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: statusStyle.bg, color: statusStyle.color }}>
  <StatusIcon className="w-3 h-3" /> {statusStyle.label}
  </span>
- <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-widest" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>{b.packageTier}</span>
+ <span className="text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-widest" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>{b.packageTier}</span>
  </div>
  <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{b.yatraTitle}</h3>
- <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Booking #{b.bookingNumber}</p>
- <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Booking #{b.bookingNumber}</p>
+ <div className="flex flex-wrap items-center gap-3 mt-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {b.startDate || 'Date TBD'}</span>
  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {b.travelers} travelers</span>
  {yatra && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {yatra.places.length} stops</span>}
@@ -174,7 +174,7 @@ function BookingCard({ b }: { b: StoredBooking }) {
  </div>
  <div className="md:text-right flex flex-col gap-2 shrink-0 md:w-40">
  <div>
- <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>Amount paid</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>Amount paid</p>
  <p className="text-base font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(b.total)}</p>
  </div>
  <Link

@@ -6,7 +6,7 @@ import { listBlogPosts } from '../../lib/blog-posts';
 export const revalidate = 3600; // GH unauth: 60/hr — 1h cache safe.
 
 export const metadata: Metadata = {
-  title: 'Blog — Darshya',
+  title: 'Blog',
   description:
     'Essays on Hindu traditions, temple technology, panchang, dharma, and the building of Darshya. Updated daily.',
   alternates: { canonical: 'https://darshya.online/blog' },

@@ -61,11 +61,11 @@ export default function MobileProfile() {
  {user?.phone ? `+91 ${user.phone.replace(/^\+91/, '').trim()}` : 'Sign in to sync your profile'}
  </p>
  <div className="flex items-center gap-1.5 mt-1">
- <span className="text-[10px] font-semibold text-saffron-700 bg-saffron-100 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+ <span className="text-xs font-semibold text-saffron-700 bg-saffron-100 px-2 py-0.5 rounded-full flex items-center gap-0.5">
  <Shield className="w-2.5 h-2.5" />
  Bhakti Pass
  </span>
- <span className="text-[10px] font-medium text-surface-400">Member since 2026</span>
+ <span className="text-xs font-medium text-surface-400">Member since 2026</span>
  </div>
  </div>
  {user ? (
@@ -86,15 +86,15 @@ export default function MobileProfile() {
  <div className="grid grid-cols-3 gap-2 mt-4">
  <div className="bg-white rounded-xl px-3 py-2.5 text-center border border-surface-200/60">
  <p className="text-lg font-bold text-surface-900">12</p>
- <p className="text-[10px] text-surface-400">Bookings</p>
+ <p className="text-xs text-surface-400">Bookings</p>
  </div>
  <div className="bg-white rounded-xl px-3 py-2.5 text-center border border-surface-200/60">
  <p className="text-lg font-bold text-surface-900">3</p>
- <p className="text-[10px] text-surface-400">Temples</p>
+ <p className="text-xs text-surface-400">Temples</p>
  </div>
  <div className="bg-white rounded-xl px-3 py-2.5 text-center border border-surface-200/60">
  <p className="text-lg font-bold text-saffron-600">₹8.5K</p>
- <p className="text-[10px] text-surface-400">Spent</p>
+ <p className="text-xs text-surface-400">Spent</p>
  </div>
  </div>
  </div>
@@ -115,7 +115,7 @@ export default function MobileProfile() {
  </div>
  <span className="flex-1 text-sm font-medium text-surface-800">{link.label}</span>
  {link.badge && (
- <span className="text-[10px] font-semibold text-saffron-600 bg-saffron-50 px-2 py-0.5 rounded-full">
+ <span className="text-xs font-semibold text-saffron-600 bg-saffron-50 px-2 py-0.5 rounded-full">
  {link.badge}
  </span>
  )}
@@ -158,8 +158,8 @@ export default function MobileProfile() {
 
  {/* Footer */}
  <div className="text-center pb-6">
- <p className="text-[10px] text-surface-300">Darshya v1.0.0</p>
- <p className="text-[10px] text-surface-300">Made with devotion in India</p>
+ <p className="text-xs text-surface-300">Darshya v1.0.0</p>
+ <p className="text-xs text-surface-300">Made with devotion in India</p>
  </div>
  </div>
  );

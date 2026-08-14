@@ -145,7 +145,7 @@ export default function RoadmapRail({ milestones }: Props) {
           <div className="absolute top-10 left-0 right-0 z-20 px-10">
             <div className="mx-auto flex max-w-6xl items-end justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-saffron-700">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-saffron-700">
                   The journey · {overallPct}%
                 </p>
                 <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight text-surface-900">
@@ -154,8 +154,8 @@ export default function RoadmapRail({ milestones }: Props) {
                   <span className="ml-3 text-surface-500">{active.when}</span>
                 </h2>
               </div>
-              <div className="hidden items-center gap-2 text-[11px] font-medium text-surface-500 lg:flex">
-                <span className="inline-block h-2 w-2 rounded-full bg-saffron-500" />
+              <div className="hidden items-center gap-2 text-xs font-medium text-surface-500 lg:flex">
+                <span className="inline-block h-2 w-2 rounded-full bg-saffron-600" />
                 scroll to walk through
               </div>
             </div>
@@ -198,7 +198,7 @@ export default function RoadmapRail({ milestones }: Props) {
           >
             <div className="absolute inset-x-0 -top-3 flex justify-center">
               <span
-                className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-lg"
+                className="rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-white shadow-lg"
                 style={{ background: active.accent }}
               >
                 You are here
@@ -225,13 +225,13 @@ export default function RoadmapRail({ milestones }: Props) {
                         i <= activeIdx ? m.accent : 'rgba(120, 100, 80, 0.25)',
                     }}
                   />
-                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-surface-900 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-surface-900 px-2 py-0.5 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
                     {m.phase}
                   </span>
                 </button>
               ))}
             </div>
-            <div className="mt-3 text-center text-[10px] font-medium uppercase tracking-wider text-surface-400">
+            <div className="mt-3 text-center text-xs font-medium uppercase tracking-wider text-surface-400">
               click to jump · or just keep scrolling
             </div>
           </div>
@@ -292,19 +292,19 @@ function RailCard({
         >
           <Icon className="h-5 w-5" strokeWidth={1.75} />
         </div>
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-surface-400">
           {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
         </span>
       </div>
 
       <div className="mt-5 flex items-center gap-2">
         <span
-          className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+          className="rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider"
           style={{ background: `${m.accent}1c`, color: m.accent }}
         >
           {m.phase}
         </span>
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-surface-400">
           {m.when}
         </span>
       </div>
@@ -331,7 +331,7 @@ function StatusPill({
   if (status === 'shipped') {
     return (
       <div
-        className="mt-5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider"
+        className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
         style={{ color: accent }}
       >
         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -342,7 +342,7 @@ function StatusPill({
   if (status === 'now') {
     return (
       <div
-        className="mt-5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider"
+        className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
         style={{ color: accent }}
       >
         <span className="relative flex h-2 w-2">
@@ -362,7 +362,7 @@ function StatusPill({
   if (status === 'planned') {
     return (
       <div
-        className="mt-5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider"
+        className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
         style={{ color: accent }}
       >
         <span className="inline-block h-0.5 w-4 border-t-2 border-dashed" style={{ borderColor: accent }} />
@@ -372,7 +372,7 @@ function StatusPill({
   }
   return (
     <div
-      className="mt-5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider"
+      className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
       style={{ color: accent }}
     >
       <span className="inline-block h-2 w-2 rounded-full" style={{ background: accent, boxShadow: `0 0 12px ${accent}` }} />
@@ -443,19 +443,19 @@ function MobileStack({ milestones }: { milestones: Milestone[] }) {
               >
                 <div className="flex items-center gap-2">
                   <span
-                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                    className="rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wider"
                     style={{ background: `${m.accent}1c`, color: m.accent }}
                   >
                     {m.phase}
                   </span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-surface-400">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-surface-400">
                     {m.when}
                   </span>
                 </div>
                 <h3 className="mt-2 font-display text-lg font-semibold leading-snug tracking-tight text-surface-900">
                   {m.title}
                 </h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-surface-600">
+                <p className="mt-2 text-xs leading-relaxed text-surface-600">
                   {m.body}
                 </p>
                 <StatusPill status={m.status} accent={m.accent} />

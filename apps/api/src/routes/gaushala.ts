@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticateUser } from '../middlewares/auth.js';
 import { gaushalaService } from '../services/gaushala.service.js';
+import { prisma } from '../lib/prisma.js';
 
 export async function gaushalaRoutes(server: FastifyInstance) {
   // ─── GET / — List all gaushalas ────────────────────────────────────────────────
@@ -16,11 +17,42 @@ export async function gaushalaRoutes(server: FastifyInstance) {
     const { id } = request.params as { id: string };
     const gaushala = gaushalaService.getGaushalaById(id);
 
-    if (!gaushala) {
+    if (gaushala) {
+      return { gaushala: { ...gaushala, source: 'fixture', donationCauseId: id } };
+    }
+
+    // COM-07: the /gaushala page's "Approved gaushalas you can support
+    // directly" strip links every real DB profile to /gaushala/<uuid>, and
+    // every one of those 404'd because only the gs_00x fixtures resolved here.
+    // Resolve real, APPROVED profiles by profile id or owner id, and hand back
+    // the donation cause id so the detail page's donate CTA reaches the right
+    // donee (see lib/gaushala-donee.ts).
+    const profile = await prisma.gaushalaProfile.findFirst({
+      where: { approved: true, OR: [{ id }, { userId: id }] },
+    });
+    if (!profile) {
       return reply.code(404).send({ error: 'Gaushala not found.' });
     }
 
-    return { gaushala };
+    return {
+      gaushala: {
+        id: profile.id,
+        name: profile.gaushalaName,
+        location: profile.city ?? '',
+        state: '',
+        description: profile.description ?? '',
+        address: profile.address ?? '',
+        totalCows: profile.totalCows,
+        verified: profile.verified,
+        // No fixture cows are grafted onto a real gaushala — an empty roster
+        // means this gaushala has not listed cows yet, and the page must say so.
+        cows: [],
+        availableCows: 0,
+        cowsListed: 0,
+        source: 'profile',
+        donationCauseId: profile.userId,
+      },
+    };
   });
 
   // ─── GET /cows — List cows (filterable) ────────────────────────────────────────

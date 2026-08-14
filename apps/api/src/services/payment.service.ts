@@ -4,6 +4,10 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { platformRateOf } from '../lib/commission-math.js';
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
+import {
+  reverseBookingLedger,
+  reduceBookingLedgerForPartialRefund,
+} from './ledger-reversal.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
@@ -1278,6 +1282,18 @@ export class PaymentService {
             cancellationReason: `[refunded] ${reason}`.slice(0, 500),
           },
         });
+
+        // Unwind the ledger IN THE SAME TRANSACTION as the refund.
+        //
+        // This rail refunded the devotee and left the pandit's 80% and the
+        // temple's share PENDING and fully withdrawable — so a refunded booking
+        // still paid the provider. Proven end to end: BS-20260812-J3M76 was
+        // refunded Rs 1,151 here, then a Rs 770 payout request was raised
+        // against that same booking. ~172% of the booking value out the door,
+        // silently. refund.service has reversed correctly since RV-02; this
+        // rail was simply never backported, so the two now share one
+        // implementation instead of two copies that can drift again.
+        await reverseBookingLedger(tx, bookingId, reason);
       } else {
         await tx.pujaBooking.update({
           where: { id: bookingId },
@@ -1291,8 +1307,50 @@ export class PaymentService {
               `[partially-refunded ${refundAmount.toFixed(2)}] ${reason}`.slice(0, 500),
           },
         });
+
+        // DI-02 (2026-08-12): UNWIND THE LEDGER PROPORTIONALLY.
+        //
+        // This branch used to touch nothing but cancellationReason, and the
+        // sibling rail's reversal was gated on `refundType === 'full'` too — so
+        // NEITHER rail reversed a partial. The cancellation ladder
+        // (100/75/50/25/0) makes a fractional refund the designed common path,
+        // which meant every mid-ladder cancellation paid the provider in full
+        // on revenue the platform had handed back: Rs 825 refunded on a
+        // Rs 1,100 puja while the pandit kept all Rs 770 and the temple Rs 55.
+        //
+        // `refundable` is what was still refundable BEFORE this call
+        // (paid - alreadyRefunded), which is what makes successive partials
+        // compose to the same ledger as one combined refund.
+        await reduceBookingLedgerForPartialRefund(tx, bookingId, {
+          refundAmount,
+          refundableBefore: refundable,
+          reason,
+        });
       }
     });
+
+    // NOTIF-04 (2026-08-12): TELL THE DEVOTEE. This rail was 100% silent.
+    //
+    // refund.service's rail at least emailed devotees who had an address. This
+    // one — the admin panel's — sent nothing at all: no email, no push, no
+    // WhatsApp. An admin could refund a booking and the devotee's only notice
+    // was their bank statement days later. No `emailAlreadySent` flag is passed
+    // because there is no email here to duplicate; the notifier owns the
+    // written notice on this path.
+    //
+    // Fired after the transaction commits, never inside it. Awaited so a throw
+    // cannot escape as an unhandled rejection, and caught so a notification can
+    // never fail a refund Razorpay has already made.
+    try {
+      const { notifyRefundProcessed } = await import('./booking-notify.service.js');
+      await notifyRefundProcessed({
+        bookingId: booking.id,
+        // Decimal -> string, never Number(): the devotee is shown the stored figure.
+        amountInr: refundAmount.toFixed(2),
+      });
+    } catch (err) {
+      console.warn('[payment.service] refund notification failed:', err);
+    }
 
     return {
       refundId: refund.id,
@@ -1376,11 +1434,10 @@ export class PaymentService {
     // Before RV-04 these could not collide: the Commission row was keyed on a
     // Priest.id that no payout read ever matched, so it was inert and rail B
     // was the only one that paid. Repairing that key made BOTH rails live and
-    // payable for the same money, with nothing cross-checking them —
-    // `markPayoutPaid` (the one function that ever linked them) has no callers.
-    // On a Rs 5,000 booking the platform would transfer Rs 4,000 through
-    // /payouts AND Rs 4,000 through /admin/bookings: Rs 8,000 out on Rs 5,000
-    // of revenue.
+    // payable for the same money, with nothing cross-checking them. On a
+    // Rs 5,000 booking the platform would transfer Rs 4,000 through /payouts
+    // AND Rs 4,000 through /admin/bookings: Rs 8,000 out on Rs 5,000 of
+    // revenue.
     //
     // The unified rail wins where it exists — it is the documented direction
     // and the only one that pays every role. Rail B stays for the bookings
@@ -1389,7 +1446,13 @@ export class PaymentService {
     // dispatch-assigned (T1-T3) bookings never get one and would otherwise be
     // paid by nothing at all.
     const unifiedLedgerRow = await prisma.commission.findFirst({
-      where: { bookingId },
+      // A REVERSED row is a void earning that no provider owns any more — it
+      // exists only as an audit record (a reschedule detaches the pandit and
+      // reverses his commission). It must NOT hold the booking hostage: if it
+      // did, the replacement pandit would be paid by neither rail, since the
+      // unified rail has nothing live for him and this guard would block the
+      // legacy one. Only a LIVE commission means "rail A owns this booking".
+      where: { bookingId, status: { not: 'REVERSED' } },
       select: { id: true },
     });
     if (unifiedLedgerRow) {
@@ -1421,41 +1484,28 @@ export class PaymentService {
     return payout;
   }
 
-  /**
-   * Mark a PriestPayout as completed and flip the matching Commission row
-   * to PAID. Called from the admin "release payout" flow once the bank
-   * transfer has been initiated. Both writes happen in a single
-   * transaction so the ledger stays consistent.
-   */
-  async markPayoutPaid(payoutId: string) {
-    return prisma.$transaction(async (tx) => {
-      const payout = await tx.priestPayout.findUnique({
-        where: { id: payoutId },
-        select: { id: true, status: true, bookingId: true },
-      });
-      if (!payout) {
-        throw new Error('Payout not found.');
-      }
-      if (payout.status === 'completed') {
-        return payout;
-      }
-      const updated = await tx.priestPayout.update({
-        where: { id: payout.id },
-        data: { status: 'completed', processedAt: new Date() },
-      });
-      const commission = await tx.commission.findFirst({
-        where: { bookingId: payout.bookingId },
-        select: { id: true },
-      });
-      if (commission) {
-        await tx.commission.update({
-          where: { id: commission.id },
-          data: { status: 'PAID', paidAt: new Date() },
-        });
-      }
-      return updated;
-    });
-  }
+  // markPayoutPaid — REMOVED 2026-08-11. It completed a PriestPayout (rail B)
+  // and, in the same transaction, flipped the FIRST Commission row matching
+  // that booking (rail A) to PAID — no `status` predicate, no
+  // `payoutRequestId` predicate. It never had a caller in its life.
+  //
+  // Deleted rather than guarded because it was the LAST way to write across
+  // the two rails, and the guard above now makes them mutually exclusive by
+  // construction: a PriestPayout and a Commission can only share a booking on
+  // pre-guard legacy data, which is exactly the data a cross-rail write
+  // corrupts. refund.service scopes its REVERSED write to
+  // `payoutRequestId: null`, so this was also the only code path able to put a
+  // non-PENDING row inside an OPEN PayoutRequest. Wired to an admin "release
+  // payout" button it would strand one: flipping c1 to PAID while c1 is still
+  // linked to pr-1 makes payout.service.processPayout's completion guard throw
+  // "1 of 2 commissions on this payout request are no longer PENDING" forever,
+  // and the only exit — reject — unlinks both rows, at which point the PAID one
+  // drops out of getPayoutBalance and the provider's Rs 4,000 is simply gone.
+  //
+  // Consequence worth keeping true: this service now MINTS commission rows
+  // (both writers create them PENDING) and never mutates an existing one's
+  // status. Commission lifecycle belongs to payout.service and refund.service.
+  // See the prototype-surface lock in payment.service.test.ts.
 
   // createStripeOrder — REMOVED 2026-08-11 with the Stripe rail (owner
   // directive). It opened a USD PaymentIntent for NRI puja bookings priced off

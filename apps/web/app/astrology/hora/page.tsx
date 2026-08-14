@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Hora Calculator — Free Planetary Hour (Hora Chakra) for Any City | Darshya',
+ title: 'Hora Calculator — Free Planetary Hour (Hora Chakra) for Any City',
  description:
   'Free Vedic Hora (planetary hour) calculator. 24 horas per day — 12 day + 12 night — each ruled by one of 7 planets in Chaldean order. Find the auspicious planetary hour for any task (study, travel, marriage, business). Live "now" marker. 20 Indian + 6 NRI cities.',
  alternates: { canonical: `${BASE_URL}/astrology/hora` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Hora Today — Free Planetary Hour Calculator',
   description: '24 planetary horas computed per Chaldean order. Find the right hora for your task.',
   url: `${BASE_URL}/astrology/hora`,
@@ -129,7 +130,7 @@ export default function HoraPage() {
          <p className="font-serif text-lg font-semibold text-gray-900">{p.glyph} {p.planet}</p>
          <p className="text-xs text-gray-700">{p.sanskrit}</p>
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${p.pillTone}`}>{p.quality}</span>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${p.pillTone}`}>{p.quality}</span>
        </div>
        <p className="mt-2 text-sm text-gray-700">{p.use}</p>
       </div>

@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
-import { COMPANY, postalContactLine } from "../../lib/company";
+import {
+ COMPANY,
+ deliveryFeeLine,
+ operatedByLine,
+ postalContactLine,
+} from "../../lib/company";
 
 export const metadata: Metadata = {
  title: "Shipping & Delivery Policy",
  description:
- "Darshya's shipping and delivery policy for prasad, puja items, and store products. Free shipping above 999 within India.",
+ `Darshya's shipping and delivery policy for prasad, puja items, and store products. Free delivery on domestic orders of ₹${COMPANY.store.freeDeliveryAboveInr} and above.`,
  alternates: { canonical: "https://darshya.online/shipping" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "Shipping & Delivery Policy | Darshya",
  description:
  "Prasad and store delivery timelines: 3-7 days within India, 7-15 days for NRI orders. Tracked via India Post / Delhivery.",
@@ -99,10 +105,8 @@ export default function ShippingPage() {
  <ShippingSection title="3. Shipping Charges">
  <ul>
  <li>
- <strong>Free shipping</strong> on all domestic orders above
- &#8377;999. Below &#8377;999, a flat shipping fee of
- &#8377;49&ndash;&#8377;99 applies based on weight and
- destination.
+ <strong>Domestic delivery.</strong> {deliveryFeeLine()} The fee is
+ shown in your cart before you pay.
  </li>
  <li>
  <strong>Prasad delivery</strong> as part of a puja booking
@@ -236,6 +240,7 @@ export default function ShippingPage() {
  <li>Response window: {COMPANY.supportHours}</li>
  {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
+ <p>{operatedByLine()}</p>
  </ShippingSection>
  </div>
  </div>

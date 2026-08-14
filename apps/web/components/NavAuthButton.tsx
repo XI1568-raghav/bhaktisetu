@@ -3,6 +3,7 @@
 import { User, LogOut, LayoutDashboard, Settings, BookOpen, ShieldCheck, ShoppingBag, Store, Moon, MessageSquare, Compass } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth, getRoleLabel, getRoleDashboardPath } from '../lib/auth-context';
+import { buttonClass } from './ui/button-recipe';
 
 export default function NavAuthButton() {
  const { user, isAuthenticated, isLoading, signOut } = useAuth();
@@ -30,10 +31,11 @@ export default function NavAuthButton() {
 
  if (!isAuthenticated) {
  return (
- <a
- href="/auth/login"
- className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-semibold text-white gradient-saffron rounded-lg hover:opacity-90 transition-opacity shadow-sm"
- >
+ // DU-03/DU-04: this was the only gradient button on the site — a
+ // 135deg blend of saffron-500 into saffron-600 — sitting on all ten
+ // screens next to flat solid CTAs, at 36px with its own radius. One
+ // recipe now; `hidden sm:inline-flex` is the only call-site addition.
+ <a href="/auth/login" className={buttonClass('primary', 'sm', 'hidden sm:inline-flex')}>
  Sign In
  </a>
  );
@@ -77,7 +79,7 @@ export default function NavAuthButton() {
  <span className="text-sm font-medium text-surface-700 max-w-[100px] truncate leading-tight">
  {displayName}
  </span>
- <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md leading-none ${roleBadgeColors[role] || roleBadgeColors.devotee}`}>
+ <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-md leading-none ${roleBadgeColors[role] || roleBadgeColors.devotee}`}>
  {roleLabel}
  </span>
  </div>
@@ -89,7 +91,7 @@ export default function NavAuthButton() {
  <div className="px-4 py-2 border-b border-surface-100">
  <p className="text-sm font-semibold text-surface-800 truncate">{displayName}</p>
  <div className="flex items-center gap-2 mt-0.5">
- <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${roleBadgeColors[role] || roleBadgeColors.devotee}`}>
+ <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-md ${roleBadgeColors[role] || roleBadgeColors.devotee}`}>
  {roleLabel}
  </span>
  <span className="text-xs text-surface-400 truncate">{user?.email || user?.phone}</span>

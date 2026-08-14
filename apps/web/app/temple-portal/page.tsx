@@ -1,9 +1,14 @@
 'use client';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import {
+ API_BASE_URL,
+ DATA_FETCH_TIMEOUT_MS,
+ fetchWithTimeout,
+ loadErrorMessage,
+} from '../../lib/api-config';
 import Link from 'next/link';
 import {
  IndianRupee,
@@ -59,26 +64,39 @@ type ApiDashboard = {
 export default function TempleDashboard() {
  const { session } = useAuth();
  const [api, setApi] = useState<ApiDashboard | null>(null);
+ // RES-02 (2026-08-12): `if (!r.ok) return;` left this page rendering
+ // "0 Total Bookings / Rs 0 Revenue This Month / No bookings yet" on an HTTP
+ // 500, with no error anywhere. A temple manager mid-incident was told their
+ // temple earned nothing this month. Track the failure and say so.
+ const [loadError, setLoadError] = useState<string | null>(null);
 
- useEffect(() => {
+ const load = useCallback(async () => {
   // P0 #AP-07 (2026-07-10): fetch for demo sessions too. The old
   // startsWith('demo-') skip left a demo temple manager on hardcoded
   // zero stats, masking backend bugs during demo. The API accepts demo
-  // tokens in non-prod; a non-OK / catch keeps the existing fallback.
+  // tokens in non-prod.
   if (!session?.accessToken) return;
-  (async () => {
-   try {
-    const r = await fetch(`${API_BASE_URL}/temple-portal/dashboard`, {
-     headers: { Authorization: `Bearer ${session.accessToken}` },
-    });
-    if (!r.ok) return;
-    const j = (await r.json()) as ApiDashboard;
-    setApi(j);
-   } catch {
-    // graceful — keep mock
+  setLoadError(null);
+  try {
+   // RES-01: a bare fetch never rejects on a stalled socket, so this loader
+   // could hang forever with the page showing zeros and no way to recover.
+   const r = await fetchWithTimeout(
+    `${API_BASE_URL}/temple-portal/dashboard`,
+    { headers: { Authorization: `Bearer ${session.accessToken}` } },
+    DATA_FETCH_TIMEOUT_MS,
+   );
+   if (!r.ok) {
+    setLoadError(loadErrorMessage(r));
+    return;
    }
-  })();
- }, [session]);
+   const j = (await r.json()) as ApiDashboard;
+   setApi(j);
+  } catch (err) {
+   setLoadError(loadErrorMessage(err));
+  }
+ }, [session?.accessToken]);
+
+ useEffect(() => { void load(); }, [load]);
 
  const liveStats = api?.stats;
  const liveBookings: ApiBooking[] = api?.recentBookings ?? [];
@@ -86,11 +104,15 @@ export default function TempleDashboard() {
  const templeCity = api?.profile?.templeCity ?? '';
  const templeState = api?.profile?.templeState ?? '';
 
+ // Never print a figure the server did not send. On a failed load these are
+ // em dashes, not zeros — a fabricated zero revenue is indistinguishable from
+ // a real one, and it is the number that makes a temple manager churn.
+ const unread = !!loadError && !liveStats;
  const statCards = [
-   { label: 'Total Bookings', value: (liveStats?.totalBookings ?? 0).toLocaleString('en-IN'), icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
-   { label: 'Bookings This Month', value: (liveStats?.monthBookings ?? 0).toLocaleString('en-IN'), icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
-   { label: 'Revenue This Month', value: formatCurrency(liveStats?.monthRevenueInr ?? 0), icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
-   { label: 'Total Revenue', value: formatCurrency(liveStats?.totalRevenueInr ?? 0), icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50' },
+   { label: 'Total Bookings', value: unread ? '—' : (liveStats?.totalBookings ?? 0).toLocaleString('en-IN'), icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
+   { label: 'Bookings This Month', value: unread ? '—' : (liveStats?.monthBookings ?? 0).toLocaleString('en-IN'), icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
+   { label: 'Revenue This Month', value: unread ? '—' : formatCurrency(liveStats?.monthRevenueInr ?? 0), icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
+   { label: 'Total Revenue', value: unread ? '—' : formatCurrency(liveStats?.totalRevenueInr ?? 0), icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50' },
  ];
 
  return (
@@ -104,6 +126,15 @@ export default function TempleDashboard() {
  {templeCity}, {templeState} &middot; Temple management dashboard
  </p>
  </div>
+
+ {loadError && (
+ <div role="alert" className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+ <span className="flex-1 min-w-[12rem]">{loadError}</span>
+ <button type="button" onClick={() => { void load(); }} className="font-semibold underline underline-offset-2 hover:text-amber-900">
+ Retry
+ </button>
+ </div>
+ )}
 
  <MyProviderProfileCard role="TEMPLE_MANAGER" onboardingSlug="temple_manager" publicListingType="temple" />
 
@@ -138,8 +169,10 @@ export default function TempleDashboard() {
  {liveBookings.length === 0 ? (
   <div className="px-5 py-8 text-center">
    <Flame className="w-10 h-10 text-surface-300 mx-auto mb-3" />
-   <p className="text-sm text-surface-500">No bookings yet</p>
-   <p className="text-xs text-surface-400 mt-1">Puja bookings will appear here.</p>
+   {/* "No bookings yet" for a list we failed to read reads as "your bookings
+       were deleted". Say what actually happened instead. */}
+   <p className="text-sm text-surface-500">{loadError ? 'Bookings unavailable' : 'No bookings yet'}</p>
+   <p className="text-xs text-surface-400 mt-1">{loadError ? 'We could not read your bookings — retry above.' : 'Puja bookings will appear here.'}</p>
   </div>
  ) : liveBookings.map((b) => {
    const badge = getStatusBadge(b.status);
@@ -159,7 +192,7 @@ export default function TempleDashboard() {
      </div>
      <div className="text-right shrink-0">
       <p className="text-sm font-semibold text-surface-800">{formatCurrency(b.priceInr)}</p>
-      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+      <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
      </div>
     </div>
    );

@@ -26,6 +26,7 @@ import {
  marriageTypes,
 } from '../../../../lib/home-pujas';
 import { DateInput } from '../../../../components/ui/DateInput';
+import { WizardSteps } from '../../../../components/ui/WizardSteps';
 
 type StepId = 1 | 2 | 3 | 4 | 5;
 
@@ -176,34 +177,7 @@ export default function BookMarriage() {
  {/* Stepper */}
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
  <div className="bg-white border border-[var(--color-border)] rounded-xl p-4 md:p-5">
- <div className="flex items-center gap-2 md:gap-3 overflow-x-auto">
- {steps.map((s, i) => {
- const Icon = s.icon;
- const active = s.id === step;
- const done = s.id < step;
- return (
- <div key={s.id} className="flex items-center gap-2 md:gap-3 flex-shrink-0">
- <div
- className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm transition-colors ${
- active
- ? 'bg-saffron-500 text-white'
- : done
- ? 'bg-tulsi-green text-white'
- : 'bg-surface-100 text-surface-400'
- }`}
- >
- {done ? <CheckCircle className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
- </div>
- <div className={`text-xs md:text-sm font-medium whitespace-nowrap ${active ? 'text-surface-800' : 'text-surface-500'}`}>
- {s.label}
- </div>
- {i < steps.length - 1 && (
- <div className={`w-4 md:w-8 h-px ${done ? 'bg-tulsi-green' : 'bg-surface-200'}`} />
- )}
- </div>
- );
- })}
- </div>
+ <WizardSteps steps={steps} current={step} />
  </div>
  </div>
 

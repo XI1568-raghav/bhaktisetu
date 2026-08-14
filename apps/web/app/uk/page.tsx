@@ -13,7 +13,17 @@ import {
   PoundSterling,
 } from 'lucide-react';
 import EmailCapture from '../../components/EmailCapture';
-import { formatPrice, gbpFromInr } from '../../lib/pricing';
+import {
+  formatPrice,
+  gbpFromInr,
+  fetchPujaCatalog,
+  pickCatalogRows,
+  FX_INR_PER_GBP,
+} from '../../lib/pricing';
+// Read, not duplicated: the same constant the puja checkout adds, so this
+// sentence cannot drift away from the number the devotee is actually charged.
+import { PLATFORM_FEE_INR } from '../../lib/puja-pricing';
+import { rightsContactEmail } from "../../lib/company";
 
 export const revalidate = 86400;
 
@@ -99,16 +109,53 @@ const BENEFITS = [
   },
 ];
 
-// Sample GBP pricing (10x INR domestic, FX £1≈₹105) — founder reviews quarterly
-const SAMPLE_PUJAS = [
-  { name: 'Rudrabhishek (Kashi Vishwanath)', inr: 2500, type: 'temple-stream' },
-  { name: 'Satyanarayan Katha (your home deity)', inr: 1500, type: 'home-puja' },
-  { name: 'Lakshmi Puja (Diwali)', inr: 2100, type: 'temple-stream' },
-  { name: 'Mahamrityunjaya Jaap 11,000', inr: 5500, type: 'jaap' },
-  { name: 'Shraadh Pitru Paksh', inr: 3100, type: 'shraadh' },
+/**
+ * PM-05 (prod sweep 2026-08-12) — this section used to be a hardcoded
+ * SAMPLE_PUJAS table:
+ *
+ *   Rudrabhishek ₹2,500 / £240 · Satyanarayan ₹1,500 / £145 ·
+ *   Lakshmi Puja ₹2,100 / £200 · Mahamrityunjaya ₹5,500 / £525 ·
+ *   Shraadh ₹3,100 / £295
+ *
+ * Against the live catalogue those rupee figures were wrong — Rudrabhishek is
+ * ₹1,100, Lakshmi Puja ₹901, Mahamrityunjaya ₹2,501 — and there is no
+ * "Shraadh Pitru Paksh" SKU at all. The £ column then multiplied the wrong
+ * rupee figure by 10 (the "NRI pricing is 9-10x domestic" rule), which the
+ * server does not apply: /bookings/from-offering charges `basePrice` to
+ * everyone. A London devotee was quoted £240 for a puja the platform charges
+ * ₹1,100 (about £10.50) for — on the page built to acquire that exact cohort.
+ *
+ * Both columns now come from GET /api/v1/pujas/types. The order below is
+ * editorial preference only; a slug missing from the catalogue drops out
+ * rather than being rendered from memory, and an unreachable catalogue
+ * renders no table.
+ */
+const PREFERRED_PUJA_SLUGS = [
+  'rudrabhishek',
+  'satyanarayan-katha',
+  'lakshmi-puja',
+  'maha-mrityunjay-jaap',
+  'pitru-dosh-nivaran-puja',
 ];
 
-export default function UkLaunchPage() {
+/**
+ * API `category` enum → the words a UK visitor reads. The six values live on
+ * GET /api/v1/pujas/types (read 2026-08-13). An unmapped value falls through to
+ * the raw enum rather than to a guess — an odd-looking label is recoverable,
+ * a confidently wrong one is not.
+ */
+const CATEGORY_LABELS: Record<string, string> = {
+  planetary: 'Planetary remedy',
+  special_occasion: 'Special occasion',
+  prosperity: 'Prosperity',
+  health: 'Health & longevity',
+  daily: 'Daily practice',
+  memorial: 'Ancestral rites',
+};
+
+export default async function UkLaunchPage() {
+  const catalog = await fetchPujaCatalog();
+  const samplePujas = pickCatalogRows(catalog, PREFERRED_PUJA_SLUGS, 5);
   return (
     <div className="min-h-[100dvh] bg-surface-50">
       {/* Hero */}
@@ -219,40 +266,69 @@ export default function UkLaunchPage() {
             Sample pujas in £
           </h2>
           <p className="mt-3 max-w-3xl text-surface-700">
-            Indicative GBP pricing per UK NRI tier. Final price at checkout reflects live FX and
-            temple-specific fees. NRI pricing is 9-10x domestic — covers temple operations + UK
-            payment processing + USD/GBP infrastructure + a small dharmic donation.
+            These are our live catalogue prices — the same amount a devotee booking from India
+            pays. There is no NRI surcharge and no separate diaspora tier. The £ figures are a
+            reference conversion of that exact price, not a quote in £.
           </p>
-          <div className="mt-8 overflow-hidden rounded-xl border border-surface-200">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-100 text-left text-xs uppercase tracking-wide text-surface-600">
-                <tr>
-                  <th className="px-4 py-3">Puja</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3 text-right">Domestic (₹)</th>
-                  <th className="px-4 py-3 text-right">UK NRI (£)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-200 bg-white">
-                {SAMPLE_PUJAS.map((p) => (
-                  <tr key={p.name}>
-                    <td className="px-4 py-3 font-medium text-surface-900">{p.name}</td>
-                    <td className="px-4 py-3 text-xs text-surface-600">{p.type}</td>
-                    <td className="px-4 py-3 text-right text-surface-700">
-                      {formatPrice(p.inr, { currency: 'INR' })}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-saffron-800">
-                      {formatPrice(gbpFromInr(p.inr), { currency: 'GBP' })}
-                    </td>
+          {samplePujas.length === 0 ? (
+            <div
+              data-testid="uk-prices-unavailable"
+              className="mt-8 rounded-xl border border-surface-200 bg-surface-50 p-6"
+            >
+              <p className="text-sm font-medium text-surface-900">
+                Puja prices are temporarily unavailable.
+              </p>
+              <p className="mt-2 max-w-xl text-sm text-surface-600">
+                We could not reach our catalogue, so we are showing no price rather than one we
+                cannot honour at checkout. Every live puja and its current price is on the browse
+                page.
+              </p>
+              <Link
+                href="/pujas?cc=GB"
+                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-saffron-700"
+              >
+                Browse pujas <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-8 overflow-x-auto rounded-xl border border-surface-200">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-100 text-left text-xs uppercase tracking-wide text-surface-600">
+                  <tr>
+                    <th className="px-4 py-3">Puja</th>
+                    <th className="px-4 py-3">Category</th>
+                    <th className="px-4 py-3 text-right">Price charged (₹)</th>
+                    <th className="px-4 py-3 text-right">Approx. in £</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-surface-200 bg-white">
+                  {samplePujas.map((p) => (
+                    <tr key={p.slug}>
+                      <td className="px-4 py-3 font-medium text-surface-900">
+                        <Link href={`/pujas/${p.slug}`} className="hover:text-saffron-700">
+                          {p.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-surface-600">
+                        {CATEGORY_LABELS[p.category] ?? p.category}
+                      </td>
+                      <td className="px-4 py-3 text-right text-surface-700">
+                        {formatPrice(p.basePrice, { currency: 'INR' })}
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-saffron-800">
+                        ≈ {formatPrice(gbpFromInr(p.basePrice), { currency: 'GBP' })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           <p className="mt-4 text-xs text-surface-500">
-            Reference FX: £1 ≈ ₹105 (spot, 2026-06-15). Founder reviews quarterly. You are
-            charged in INR, so the exact £ amount depends on your bank's rate and any
-            foreign-transaction fee on the day.
+            Reference FX: £1 ≈ ₹{FX_INR_PER_GBP} (spot, 2026-06-15), reviewed quarterly. You are
+            billed in INR, so the exact £ amount depends on your card issuer's rate and any
+            foreign-transaction fee on the day. A ₹{PLATFORM_FEE_INR} platform fee is added at
+            checkout.
           </p>
         </div>
       </section>
@@ -269,8 +345,8 @@ export default function UkLaunchPage() {
               <span>
                 <strong>UK GDPR + Data Protection Act 2018</strong> compliant. Data Processing
                 Agreement (DPA) available on request via{' '}
-                <a href="mailto:privacy@darshya.online" className="text-saffron-700 underline">
-                  privacy@darshya.online
+                <a href={`mailto:${rightsContactEmail()}`} className="text-saffron-700 underline">
+                  {rightsContactEmail()}
                 </a>
                 . Cookie banner shipped per R-Q3-L-002 (UK & EEA visitors only).
               </span>

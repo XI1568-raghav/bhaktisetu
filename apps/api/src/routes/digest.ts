@@ -10,6 +10,13 @@
  * intentionally unauthenticated (the link lands from an email, possibly signed
  * out) but safe: it can only ever INSERT an opt-out row for the given user id
  * — it cannot read or mutate anything else. No PII is returned.
+ *
+ * NOTIF-02 (2026-08-12): the INSERT bound $1 as text into a uuid column, so
+ * every call raised Postgres 42804 and the catch answered 200 "unsubscribed" —
+ * the user was told they were off the list while the row was never written.
+ * Fixed with an explicit $1::uuid cast; the handler now reports failure instead
+ * of faking success. A consent withdrawal must be recorded or refused, never
+ * silently dropped.
  */
 
 import { FastifyInstance } from 'fastify';
@@ -30,18 +37,30 @@ export async function digestRoutes(server: FastifyInstance) {
     const { userId, reason } = parsed.data;
     try {
       // Idempotent: a second click just updates the timestamp/reason.
-      await prisma.$executeRawUnsafe(
+      //
+      // $1::uuid is load-bearing. WeeklyDigestOptOut.user_id is a uuid column
+      // and Prisma binds a JS string as text, so an uncast $1 raised Postgres
+      // 42804 (datatype_mismatch) on every single call — the opt-out was never
+      // recorded. Do not remove the cast.
+      const rowsAffected = await prisma.$executeRawUnsafe(
         `INSERT INTO "WeeklyDigestOptOut" (user_id, opted_out_at, reason)
-         VALUES ($1, NOW(), $2)
+         VALUES ($1::uuid, NOW(), $2)
          ON CONFLICT (user_id) DO UPDATE SET opted_out_at = NOW(), reason = EXCLUDED.reason`,
         userId,
         reason ?? null,
       );
+      if (rowsAffected < 1) {
+        // ON CONFLICT DO UPDATE always reports 1; 0 means nothing was written.
+        request.log.error({ userId, rowsAffected }, 'digest unsubscribe wrote no row');
+        return reply.code(500).send({ error: 'Failed to record the unsubscribe.' });
+      }
       return reply.code(200).send({ ok: true, unsubscribed: true });
     } catch (err) {
-      // If the table/columns drift, fail soft — never block the user.
-      request.log.warn({ err }, 'digest unsubscribe failed');
-      return reply.code(200).send({ ok: true, unsubscribed: true, note: 'recorded best-effort' });
+      // Never answer 200 here. Consent withdrawal that silently fails is worse
+      // than a visible error: the user believes they opted out and keeps
+      // receiving the digest, with no signal to anyone that it broke.
+      request.log.error({ err, userId }, 'digest unsubscribe failed');
+      return reply.code(500).send({ error: 'Failed to record the unsubscribe.' });
     }
   });
 }

@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: `Valmiki Ramayana, All 7 Kandas: Bala, Ayodhya, Aranya, Kishkindha, Sundara, Yuddha, Uttara | Darshya`,
+  title: `Valmiki Ramayana, All 7 Kandas: Bala, Ayodhya, Aranya, Kishkindha, Sundara, Yuddha, Uttara`,
   description: `Complete kanda-by-kanda guide to the Valmiki Ramayana, all 7 books across ${TOTAL_SARGAS} sargas. Episodes, central characters, key teachings of the story of Rama, Sita and Hanuman.`,
   alternates: { canonical: `${BASE_URL}/ramayana` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Valmiki Ramayana, 7 kandas complete guide',
     description: `From Rama's birth to his return, every kanda's story, key episodes, and central teaching.`,
     url: `${BASE_URL}/ramayana`,

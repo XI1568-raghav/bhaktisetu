@@ -11,26 +11,42 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { usePujas } from '@poojly/api-client';
+import { selectPujaTypes } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 type PujaCategory = 'all' | 'shiva' | 'vishnu' | 'devi' | 'ganesh' | 'navagraha';
 
+/**
+ * PAR-07. The catalogue on this screen was fiction.
+ *
+ * `pujasQuery.data?.data` does not exist — GET /api/v1/pujas/types returns
+ * {pujaTypes,total,page,limit,totalPages} — so the screen fell through to a
+ * six-row hardcoded array. Worse, even on the "API path" it did
+ * `price: fb.price`, i.e. it took the NAME from the API and the PRICE from the
+ * mock. Concrete divergences against the live catalogue:
+ *
+ *   Satyanarayan Katha       app ₹2,100   API/web ₹1,501
+ *   Sunderkand Path          app ₹551     API/web ₹1,101
+ *   Ganesh Atharvashirsha    app ₹751     does not exist (the puja is Ganesh Puja)
+ *
+ * A devotee tapped a price in the app and was charged a different one on the
+ * web checkout. Price now comes from `basePrice` / `nriPrice` and nothing else.
+ *
+ * Also deleted: `rating`, `reviews`, `temple`, `city`. The puja-types endpoint
+ * returns none of them, and inventing a 4.9 (1,240 reviews) badge on a ritual
+ * is a fabricated social proof claim.
+ */
 interface Puja {
   id: string;
   slug: string;
   name: string;
-  deity: string;
+  deity?: string;
   category: Exclude<PujaCategory, 'all'>;
-  temple: string;
-  city: string;
-  price: number;
-  nriPrice: number;
-  rating: number;
-  reviews: number;
-  duration: string;
+  priceInr: number | null;
+  nriPriceInr: number | null;
+  durationMinutes: number | null;
   description: string;
-  hasVideoProof: boolean;
-  hasPrasadDelivery: boolean;
+  samagriIncluded: boolean;
 }
 
 const categories: { key: PujaCategory; label: string }[] = [
@@ -40,111 +56,6 @@ const categories: { key: PujaCategory; label: string }[] = [
   { key: 'devi', label: 'Devi' },
   { key: 'ganesh', label: 'Ganesh' },
   { key: 'navagraha', label: 'Navagraha' },
-];
-
-const pujasData: Puja[] = [
-  {
-    id: '1',
-    slug: 'rudrabhishek',
-    name: 'Rudrabhishek',
-    deity: 'Lord Shiva',
-    category: 'shiva',
-    temple: 'Kashi Vishwanath',
-    city: 'Varanasi',
-    price: 1100,
-    nriPrice: 9999,
-    rating: 4.9,
-    reviews: 2340,
-    duration: '2-3 hours',
-    description: 'Sacred abhishekam of Lord Shiva with holy water, milk, and bilva leaves.',
-    hasVideoProof: true,
-    hasPrasadDelivery: true,
-  },
-  {
-    id: '2',
-    slug: 'satyanarayan-katha',
-    name: 'Satyanarayan Katha',
-    deity: 'Lord Vishnu',
-    category: 'vishnu',
-    temple: 'Birla Mandir',
-    city: 'Delhi',
-    price: 2100,
-    nriPrice: 19999,
-    rating: 4.8,
-    reviews: 1890,
-    duration: '3-4 hours',
-    description: 'Traditional katha and puja for blessings of prosperity and peace.',
-    hasVideoProof: true,
-    hasPrasadDelivery: true,
-  },
-  {
-    id: '3',
-    slug: 'ganesh-atharvashirsha',
-    name: 'Ganesh Atharvashirsha',
-    deity: 'Lord Ganesha',
-    category: 'ganesh',
-    temple: 'Siddhivinayak',
-    city: 'Mumbai',
-    price: 751,
-    nriPrice: 6999,
-    rating: 4.9,
-    reviews: 3100,
-    duration: '1-2 hours',
-    description: 'Recitation of the powerful Atharvashirsha for removing obstacles.',
-    hasVideoProof: true,
-    hasPrasadDelivery: true,
-  },
-  {
-    id: '4',
-    slug: 'navagraha-shanti',
-    name: 'Navagraha Shanti',
-    deity: 'Nine Planets',
-    category: 'navagraha',
-    temple: 'Suryanar Kovil',
-    city: 'Kumbakonam',
-    price: 3100,
-    nriPrice: 28999,
-    rating: 4.7,
-    reviews: 980,
-    duration: '4-5 hours',
-    description: 'Comprehensive puja to pacify all nine planets for harmony in life.',
-    hasVideoProof: true,
-    hasPrasadDelivery: false,
-  },
-  {
-    id: '5',
-    slug: 'durga-saptashati-path',
-    name: 'Durga Saptashati Path',
-    deity: 'Goddess Durga',
-    category: 'devi',
-    temple: 'Vaishno Devi',
-    city: 'Katra',
-    price: 1551,
-    nriPrice: 14999,
-    rating: 4.8,
-    reviews: 1450,
-    duration: '3-4 hours',
-    description: 'Complete recitation of Durga Saptashati for divine protection.',
-    hasVideoProof: true,
-    hasPrasadDelivery: true,
-  },
-  {
-    id: '6',
-    slug: 'sunderkand-path',
-    name: 'Sunderkand Path',
-    deity: 'Lord Hanuman',
-    category: 'vishnu',
-    temple: 'Hanuman Garhi',
-    city: 'Ayodhya',
-    price: 551,
-    nriPrice: 4999,
-    rating: 4.7,
-    reviews: 1540,
-    duration: '2-3 hours',
-    description: 'Recitation of Sunderkand from Ramcharitmanas for courage and devotion.',
-    hasVideoProof: true,
-    hasPrasadDelivery: true,
-  },
 ];
 
 function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
@@ -157,20 +68,38 @@ function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
   return 'shiva';
 }
 
+/**
+ * PAR-15. There is no in-app booking flow: this screen's only booking action is
+ * `Linking.openURL`, which ejects the devotee into the mobile browser. Building
+ * the flow is separate work (the dead `useCreateBooking` hook it would use is
+ * fixed in packages/api-client), but the control must not keep claiming to be
+ * something it is not — a saffron primary button reading "Book Puja" with a
+ * calendar icon is the strongest possible signal that the booking happens here.
+ * It says where it goes now, and announces itself to VoiceOver/TalkBack as a
+ * link rather than a plain button.
+ */
 const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
+  // Slug comes from the API row (PAR-07 replaced the hardcoded catalogue this
+  // used to read), so the page that opens is the puja that was tapped.
   const bookUrl = `https://darshya.online/pujas/book?slug=${encodeURIComponent(puja.slug)}&utm_source=mobile-app&utm_medium=puja-card`;
+  const leavesAppHint = `Opens darshya.online in your browser to book ${puja.name}`;
   return (
-    <TouchableOpacity style={styles.pujaCard} activeOpacity={0.7} onPress={() => Linking.openURL(bookUrl)}>
+    <TouchableOpacity
+      style={styles.pujaCard}
+      activeOpacity={0.7}
+      accessibilityRole="link"
+      accessibilityLabel={puja.name}
+      accessibilityHint={leavesAppHint}
+      onPress={() => Linking.openURL(bookUrl)}
+    >
 
       {/* Image placeholder */}
       <View style={styles.pujaImageArea}>
         <Ionicons name="flame" size={32} color={colors.saffron[300]} />
-        {puja.hasVideoProof && (
-          <View style={styles.videoBadge}>
-            <Ionicons name="videocam" size={10} color={colors.white} />
-            <Text style={styles.videoBadgeText}>Video Proof</Text>
-          </View>
-        )}
+        <View style={styles.videoBadge}>
+          <Ionicons name="videocam" size={10} color={colors.white} />
+          <Text style={styles.videoBadgeText}>Video Proof</Text>
+        </View>
       </View>
 
       <View style={styles.pujaContent}>
@@ -178,58 +107,62 @@ const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
           {puja.name}
         </Text>
 
-        <View style={styles.pujaDeityRow}>
-          <Ionicons name="flower-outline" size={12} color={colors.saffron[500]} />
-          <Text style={styles.pujaDeity}>{puja.deity}</Text>
-        </View>
-
-        <View style={styles.pujaTempleRow}>
-          <Ionicons name="location-outline" size={12} color={colors.stone[400]} />
-          <Text style={styles.pujaTemple}>
-            {puja.temple}, {puja.city}
-          </Text>
-        </View>
+        {puja.deity ? (
+          <View style={styles.pujaDeityRow}>
+            <Ionicons name="flower-outline" size={12} color={colors.saffron[500]} />
+            <Text style={styles.pujaDeity}>{puja.deity}</Text>
+          </View>
+        ) : null}
 
         <Text style={styles.pujaDescription} numberOfLines={2}>
           {puja.description}
         </Text>
 
         <View style={styles.pujaFeatures}>
-          <View style={styles.pujaFeatureBadge}>
-            <Ionicons name="time-outline" size={10} color={colors.stone[500]} />
-            <Text style={styles.pujaFeatureText}>{puja.duration}</Text>
-          </View>
-          {puja.hasPrasadDelivery && (
+          {puja.durationMinutes !== null ? (
+            <View style={styles.pujaFeatureBadge}>
+              <Ionicons name="time-outline" size={10} color={colors.stone[500]} />
+              <Text style={styles.pujaFeatureText}>
+                {puja.durationMinutes} min
+              </Text>
+            </View>
+          ) : null}
+          {puja.samagriIncluded ? (
             <View style={styles.pujaFeatureBadge}>
               <Ionicons name="gift-outline" size={10} color={colors.green[600]} />
               <Text style={[styles.pujaFeatureText, { color: colors.green[600] }]}>
-                Prasad
+                Samagri included
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
 
         <View style={styles.pujaFooter}>
           <View>
             <Text style={styles.pujaPrice}>
-              {'\u20B9'}{puja.price.toLocaleString('en-IN')}
+              {puja.priceInr === null
+                ? 'Price on request'
+                : `\u20B9${puja.priceInr.toLocaleString('en-IN')}`}
             </Text>
-            <Text style={styles.pujaNriPrice}>
-              NRI: ${Math.round(puja.nriPrice / 83)}
-            </Text>
-          </View>
-          <View style={styles.pujaRatingRow}>
-            <Ionicons name="star" size={13} color={colors.amber[500]} />
-            <Text style={styles.pujaRatingText}>{puja.rating}</Text>
-            <Text style={styles.pujaReviewCount}>
-              ({puja.reviews.toLocaleString('en-IN')})
-            </Text>
+            {puja.nriPriceInr !== null ? (
+              <Text style={styles.pujaNriPrice}>
+                NRI: {'\u20B9'}
+                {puja.nriPriceInr.toLocaleString('en-IN')}
+              </Text>
+            ) : null}
           </View>
         </View>
 
-        <TouchableOpacity style={styles.bookButton} activeOpacity={0.7} onPress={() => Linking.openURL(bookUrl)}>
-          <Ionicons name="calendar-outline" size={16} color={colors.white} />
-          <Text style={styles.bookButtonText}>Book Puja</Text>
+        <TouchableOpacity
+          style={styles.bookButton}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel={`Book ${puja.name} on darshya.online`}
+          accessibilityHint={leavesAppHint}
+          onPress={() => Linking.openURL(bookUrl)}
+        >
+          <Ionicons name="open-outline" size={16} color={colors.white} />
+          <Text style={styles.bookButtonText}>Book on darshya.online</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -241,36 +174,29 @@ export default function PujasScreen() {
   const pujasQuery = usePujas();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Merge API pujas (names/deities) with fallback prices/ratings.
-  const apiPujas = pujasQuery.data?.data ?? [];
-  const sourceData: Puja[] = apiPujas.length > 0
-    ? apiPujas.map((p, i) => {
-        const fb = pujasData[i % pujasData.length]!;
-        const cat = inferCategory(p.deity);
-        return {
-          id: p.id,
-          slug: (p as { slug?: string }).slug ?? p.id,
-          name: p.name,
-          deity: p.deity,
-          category: cat,
-          temple: fb.temple,
-          city: fb.city,
-          price: fb.price,
-          nriPrice: fb.nriPrice,
-          rating: fb.rating,
-          reviews: fb.reviews,
-          duration: `${Math.round((p.durationMinutes ?? 120) / 60)}-${Math.round((p.durationMinutes ?? 120) / 60) + 1} hours`,
-          description: p.shortDescription ?? p.description ?? '',
-          hasVideoProof: true,
-          hasPrasadDelivery: true,
-        };
-      })
-    : pujasData;
+  const sourceData: Puja[] = selectPujaTypes(pujasQuery.data).map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    deity: p.deity,
+    category: inferCategory(p.deity ?? ''),
+    priceInr: p.priceInr,
+    nriPriceInr: p.nriPriceInr,
+    durationMinutes: p.durationMinutes,
+    description: p.description ?? '',
+    samagriIncluded: p.samagriIncluded,
+  }));
 
   const filteredPujas =
     activeCategory === 'all'
       ? sourceData
       : sourceData.filter((p) => p.category === activeCategory);
+
+  const errorText = pujasQuery.isError
+    ? pujasQuery.error instanceof Error
+      ? pujasQuery.error.message
+      : 'Unknown error'
+    : null;
 
   async function onRefresh() {
     setRefreshing(true);
@@ -284,7 +210,11 @@ export default function PujasScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Book a Puja</Text>
         <Text style={styles.headerSubtitle}>
-          Verified priests, video proof, prasad delivery
+          {pujasQuery.isLoading
+            ? 'Loading catalogue…'
+            : errorText
+              ? 'Catalogue unavailable'
+              : `${sourceData.length} pujas · verified priests, video proof`}
         </Text>
       </View>
 
@@ -334,8 +264,21 @@ export default function PujasScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="flame-outline" size={48} color={colors.stone[300]} />
-            <Text style={styles.emptyText}>No pujas in this category</Text>
+            <Ionicons
+              name={errorText ? 'cloud-offline-outline' : 'flame-outline'}
+              size={48}
+              color={colors.stone[300]}
+            />
+            <Text style={styles.emptyText}>
+              {pujasQuery.isLoading
+                ? 'Loading…'
+                : errorText
+                  ? 'Could not load the puja catalogue'
+                  : 'No pujas in this category'}
+            </Text>
+            {errorText ? (
+              <Text style={styles.emptySubtext}>{errorText} — pull down to retry.</Text>
+            ) : null}
           </View>
         }
       />
@@ -545,5 +488,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: '600',
     color: colors.stone[600],
+  },
+  emptySubtext: {
+    fontSize: fontSize.sm,
+    color: colors.stone[500],
+    marginTop: spacing.xs,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
   },
 });

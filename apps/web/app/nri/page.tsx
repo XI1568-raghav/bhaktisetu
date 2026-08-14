@@ -16,14 +16,14 @@ import { nriPremiumServiceJsonLd } from '../../lib/jsonld';
 import EmailCapture from '../../components/EmailCapture';
 
 export const metadata: Metadata = {
-  title: 'NRI Premium — Stay Connected to India | Darshya',
+  title: 'NRI Premium — Stay Connected to India',
   description:
-    'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free 80G receipts, unlimited AI Pandit. ₹5,000 INR / $60 USD per year.',
+    'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free 80G receipts, unlimited AI Pandit. ₹5,000 per year, charged in INR (about $60).',
   alternates: { canonical: 'https://darshya.online/nri' },
   openGraph: {
     title: 'NRI Premium — Darshya',
     description:
-      'Annual all-access tier built for the Indian diaspora. ₹5,000 INR / $60 USD per year.',
+      'Annual all-access tier built for the Indian diaspora. ₹5,000 per year, charged in INR (about $60).',
     url: 'https://darshya.online/nri',
     type: 'website',
     images: ['/og/nri-premium.jpg'],
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'NRI Premium — Darshya',
-    description: 'Annual all-access for the Indian diaspora. $60 USD / yr.',
+    description: 'Annual all-access for the Indian diaspora. ₹5,000/yr, charged in INR.',
   },
 };
 
@@ -74,7 +74,11 @@ const comparison = [
   { feature: 'Priority booking window', free: 'No', perPuja: 'No', nri: '7 days early' },
   { feature: 'Weekly priest video call', free: 'No', perPuja: 'No', nri: 'Free, 30 min' },
   { feature: 'Ads', free: 'Yes', perPuja: 'Yes', nri: 'None' },
-  { feature: '80G receipt PDF', free: '₹49 each', perPuja: '₹49 each', nri: 'Free, unlimited' },
+  // LEG-05: this row advertised "₹49 each" on the free and per-puja tiers. No
+  // code path charges anything for an 80G receipt — routes/donations.ts mints
+  // the receipt number and the PDF at no cost — so the fee was fiction, and it
+  // contradicted /terms (which said ₹100) and /gaushala and /donations (free).
+  { feature: '80G receipt PDF', free: 'Included', perPuja: 'Included', nri: 'Included' },
   { feature: 'Live darshan replay history', free: '24 hours', perPuja: '24 hours', nri: '90 days' },
   { feature: 'Cancellation flexibility', free: '24h notice', perPuja: '24h notice', nri: '4h notice' },
 ];
@@ -133,7 +137,7 @@ export default function NriPremiumLanding() {
                 href="/auth?redirect=/upgrade"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
               >
-                Go Premium — $60 USD / year
+                Go Premium — ₹5,000 / year (about $60)
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
@@ -144,7 +148,7 @@ export default function NriPremiumLanding() {
               </Link>
             </div>
             <p className="text-xs text-surface-500 mt-4">
-              ₹5,000 INR / $60 USD per year · cancel anytime · 14-day full refund
+              Charged ₹5,000 in INR (about $60) · your bank sets the conversion rate · cancel anytime · 14-day full refund
             </p>
           </div>
         </div>
@@ -265,7 +269,7 @@ export default function NriPremiumLanding() {
             Less than a single live darshan abroad.
           </h2>
           <p className="text-saffron-100 text-lg mb-8 max-w-2xl mx-auto">
-            $60 USD (~₹5,000 INR) per year. Cancel anytime. Full refund within 14 days. Your home is one click away.
+            ₹5,000 per year, charged in INR (about $60). Cancel anytime. Full refund within 14 days. Your home is one click away.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link

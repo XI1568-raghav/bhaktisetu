@@ -103,7 +103,7 @@ export default function ManglikClient({ options }: { options: TimezoneOption[] }
      Check Manglik Dosh
     </button>
 
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      Chandra-lagna (moon) based check. Lagna-based check requires birth latitude + longitude;
      for that level of precision, get a pandit-grade kundli verification.
     </p>
@@ -179,7 +179,7 @@ export default function ManglikClient({ options }: { options: TimezoneOption[] }
 function Cell({ label, value }: { label: string; value: string }) {
  return (
   <div className="rounded-xl border border-gray-200 bg-white/80 p-3">
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
    <p className="mt-0.5 text-sm font-semibold text-gray-900">{value}</p>
   </div>
  );

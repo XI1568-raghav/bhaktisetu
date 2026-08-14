@@ -15,12 +15,13 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
  const { slug } = await params;
  const y = PANCHANG_YOGAS.find((it) => it.slug === slug);
- if (!y) return { title: 'Yoga not found | Darshya' };
+ if (!y) return { title: 'Yoga not found' };
  return {
-  title: `${y.name} Yoga (${y.sanskrit}) — Effect, Deity, Best For | Darshya`,
+  title: `${y.name} Yoga (${y.sanskrit}) — Effect, Deity, Best For`,
   description: `${y.name} is yoga #${y.number} of 27 nitya yogas. Deity ${y.deity}. ${y.effect.slice(0, 140)}`,
   alternates: { canonical: `${BASE_URL}/panchang/yoga/${y.slug}` },
   openGraph: {
+   images: ['/images/golden-temple-og.jpg'],
    title: `${y.name} Yoga — ${y.sanskrit}`,
    description: y.effect.slice(0, 200),
    url: `${BASE_URL}/panchang/yoga/${y.slug}`,

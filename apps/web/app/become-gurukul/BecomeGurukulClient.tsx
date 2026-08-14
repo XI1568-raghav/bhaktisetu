@@ -227,7 +227,7 @@ export default function BecomeGurukulClient() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <button type="submit" disabled={submitting || !isAuthenticated} className="w-full px-4 py-3 bg-saffron-500 text-white font-semibold rounded-lg hover:bg-saffron-600 disabled:opacity-50">
+        <button type="submit" disabled={submitting || !isAuthenticated} className="w-full px-4 py-3 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700 disabled:opacity-50">
           {submitting ? 'Registering...' : 'Register gurukul'}
         </button>
       </form>

@@ -16,7 +16,7 @@ import {
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import {
-  listTemplePujas,
+  listTemplePujasWithLinkState,
   createTemplePuja,
   updateTemplePuja,
   deleteTemplePuja,
@@ -57,6 +57,10 @@ function TemplePujasPageContent() {
   const [pujaTypes, setPujaTypes] = useState<PujaTypeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // S-06: non-null when this manager has no linked Temple. Every offering
+  // create would 409 in that state; the page used to invite the action anyway
+  // and then render the raw backend string.
+  const [templeLinkIssue, setTempleLinkIssue] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -90,12 +94,15 @@ function TemplePujasPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const [offerings, priestList, typeList] = await Promise.all([
-        listTemplePujas(token),
+      const [pujaResult, priestList, typeList] = await Promise.all([
+        listTemplePujasWithLinkState(token),
         listPublicPriests(),
         listPujaTypes(),
       ]);
-      setPujas(offerings);
+      setPujas(pujaResult.offerings);
+      // S-06: an unlinked temple account cannot save any offering. Say so
+      // instead of showing an empty list that looks like "nothing added yet".
+      setTempleLinkIssue(pujaResult.templeLinked ? null : (pujaResult.linkMessage ?? 'This account is not linked to a temple yet, so offerings cannot be saved.'));
       setPriests(priestList);
       setPujaTypes(typeList);
     } catch (err) {
@@ -231,11 +238,23 @@ function TemplePujasPageContent() {
             resetForm();
             setShowForm(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+          disabled={!!templeLinkIssue}
+          title={templeLinkIssue ?? undefined}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" /> Add Puja
         </button>
       </div>
+
+      {templeLinkIssue && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">No temple linked to this account</p>
+            <p className="mt-0.5">{templeLinkIssue}</p>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

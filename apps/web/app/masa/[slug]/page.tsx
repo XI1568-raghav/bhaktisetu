@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const m = getVedicMonthBySlug(slug);
   if (!m) return { title: 'Month not found' };
   return {
-    title: `${m.name} (${m.sanskrit}) — ${m.gregorianRange} | Vedic Months | Darshya`,
+    title: `${m.name} (${m.sanskrit}) — ${m.gregorianRange} | Vedic Months`,
     description: `${m.name} masa: ${m.significance.slice(0, 130)}…`,
     alternates: { canonical: `https://darshya.online/masa/${m.slug}` },
   };

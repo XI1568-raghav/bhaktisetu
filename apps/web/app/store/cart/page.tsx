@@ -36,7 +36,6 @@ export default function CartPage() {
  itemCount,
  subtotal,
  deliveryFee,
- tax,
  total,
  removeItem,
  updateQuantity,
@@ -210,10 +209,6 @@ export default function CartPage() {
  <span className={deliveryFee === 0 ? 'text-tulsi-green font-semibold' : 'text-surface-800'}>
  {deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)}
  </span>
- </div>
- <div className="flex justify-between">
- <span className="text-surface-500">GST (estimated)</span>
- <span className="text-surface-800">{formatPrice(tax)}</span>
  </div>
 
  <div className="border-t border-surface-100 pt-3 flex justify-between">

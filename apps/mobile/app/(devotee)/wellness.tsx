@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useWellnessSessions } from '@poojly/api-client';
+import { selectWellnessSessions, type WellnessSessionVM } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -22,11 +23,12 @@ type WellnessTab = 'yoga' | 'meditation' | 'ayurveda';
 interface YogaSession {
   id: string;
   title: string;
-  instructor: string;
-  duration: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
+  /** The list payload carries instructorId only, never a name. */
   category: string;
-  participants: number;
+  duration: string;
+  seats: string | null;
+  price: string | null;
+  when: string | null;
   isLive: boolean;
 }
 
@@ -47,48 +49,18 @@ interface AyurvedaTip {
   icon: React.ComponentProps<typeof Ionicons>['name'];
 }
 
-const yogaSessions: YogaSession[] = [
-  {
-    id: '1',
-    title: 'Surya Namaskar Flow',
-    instructor: 'Guru Priya',
-    duration: '30 min',
-    level: 'Beginner',
-    category: 'Hatha Yoga',
-    participants: 340,
-    isLive: true,
-  },
-  {
-    id: '2',
-    title: 'Pranayama & Breath Control',
-    instructor: 'Yogi Vikram',
-    duration: '20 min',
-    level: 'Beginner',
-    category: 'Pranayama',
-    participants: 215,
-    isLive: false,
-  },
-  {
-    id: '3',
-    title: 'Ashtanga Primary Series',
-    instructor: 'Guru Anand',
-    duration: '60 min',
-    level: 'Advanced',
-    category: 'Ashtanga Yoga',
-    participants: 128,
-    isLive: false,
-  },
-  {
-    id: '4',
-    title: 'Evening Wind Down Stretches',
-    instructor: 'Guru Priya',
-    duration: '25 min',
-    level: 'Beginner',
-    category: 'Restorative',
-    participants: 450,
-    isLive: true,
-  },
-];
+/**
+ * PAR-10 (devotee side). `sessionsQuery.data?.sessions` is undefined —
+ * GET /api/v1/wellness/sessions answers {data:[…]} — so this tab always fell
+ * through to four hardcoded classes: "Surya Namaskar Flow with Guru Priya,
+ * 340 practising now" and three more. None of them existed, none could be
+ * booked, and their instructors are not people who teach on Darshya. Even on
+ * the API path the screen took `participants` from that mock, stamping a real
+ * class with an invented live audience.
+ *
+ * The mock is deleted rather than repaired. Sessions now come from
+ * selectWellnessSessions and an empty catalogue renders as empty.
+ */
 
 const meditationTracks: MeditationTrack[] = [
   {
@@ -170,12 +142,6 @@ const tabConfig: { key: WellnessTab; label: string; icon: React.ComponentProps<t
   { key: 'ayurveda', label: 'Ayurveda', icon: 'leaf' },
 ];
 
-const levelColors: Record<YogaSession['level'], string> = {
-  Beginner: colors.green[600],
-  Intermediate: colors.amber[500],
-  Advanced: colors.red[500],
-};
-
 function YogaContent({
   sessions,
   refreshing,
@@ -191,22 +157,11 @@ function YogaContent({
       contentContainerStyle={styles.tabContent}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {/* Daily Challenge */}
-      <View style={styles.challengeCard}>
-        <View style={styles.challengeLeft}>
-          <Text style={styles.challengeTitle}>Daily Yoga Challenge</Text>
-          <Text style={styles.challengeSubtext}>
-            Day 12 of 21-Day Surya Namaskar
-          </Text>
-          <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: '57%' }]} />
-          </View>
-          <Text style={styles.progressText}>12/21 days completed</Text>
-        </View>
-        <View style={styles.challengeIconContainer}>
-          <Ionicons name="body" size={36} color={colors.saffron[300]} />
-        </View>
-      </View>
+      {/* The "Daily Yoga Challenge — Day 12 of 21, 12/21 days completed, 57%"
+          card stood here. It was a literal: no streak endpoint, no per-user
+          progress, the same day-12 for every devotee on first launch. Invented
+          personal progress belongs in the same bin as the invented classes
+          below it. */}
 
       {/* Sessions */}
       <Text style={styles.contentSectionTitle}>Sessions</Text>
@@ -215,48 +170,64 @@ function YogaContent({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.horizontalScroll}
       >
-        {sessions.map((session) => (
-          <TouchableOpacity
-            key={session.id}
-            style={[styles.sessionCard, { width: CARD_WIDTH }]}
-            activeOpacity={0.7}
-            onPress={() => Alert.alert(session.title, `Instructor: ${session.instructor}\nDuration: ${session.duration}\nLevel: ${session.level}`)}
-          >
-            <View style={styles.sessionImageArea}>
-              <Ionicons name="body" size={28} color={colors.saffron[300]} />
-              {session.isLive && (
-                <View style={styles.liveBadge}>
-                  <View style={styles.livePulse} />
-                  <Text style={styles.liveBadgeText}>LIVE</Text>
-                </View>
-              )}
-              <View style={[styles.levelBadge, { backgroundColor: levelColors[session.level] }]}>
-                <Text style={styles.levelText}>{session.level}</Text>
+        {sessions.length === 0 ? (
+          <Text style={styles.sessionsEmpty}>
+            No wellness classes are scheduled right now.
+          </Text>
+        ) : (
+          sessions.map((session) => (
+            <TouchableOpacity
+              key={session.id}
+              style={[styles.sessionCard, { width: CARD_WIDTH }]}
+              activeOpacity={0.7}
+              onPress={() =>
+                Alert.alert(
+                  session.title,
+                  [
+                    session.when ? `When: ${session.when}` : null,
+                    `Duration: ${session.duration}`,
+                    session.seats ? `Capacity: ${session.seats}` : null,
+                    session.price ? `Price: ${session.price}` : null,
+                    '\nBooking a class is not available in the app yet.',
+                  ]
+                    .filter(Boolean)
+                    .join('\n'),
+                )
+              }
+            >
+              <View style={styles.sessionImageArea}>
+                <Ionicons name="body" size={28} color={colors.saffron[300]} />
+                {session.isLive && (
+                  <View style={styles.liveBadge}>
+                    <View style={styles.livePulse} />
+                    <Text style={styles.liveBadgeText}>LIVE</Text>
+                  </View>
+                )}
               </View>
-            </View>
-            <View style={styles.sessionInfo}>
-              <Text style={styles.sessionTitle} numberOfLines={1}>
-                {session.title}
-              </Text>
-              <Text style={styles.sessionCategory}>{session.category}</Text>
-              <View style={styles.sessionMeta}>
-                <Text style={styles.sessionInstructor}>{session.instructor}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                  <Ionicons name="time-outline" size={10} color={colors.stone[400]} />
-                  <Text style={styles.sessionDuration}>{session.duration}</Text>
+              <View style={styles.sessionInfo}>
+                <Text style={styles.sessionTitle} numberOfLines={1}>
+                  {session.title}
+                </Text>
+                <Text style={styles.sessionCategory}>{session.category}</Text>
+                <View style={styles.sessionMeta}>
+                  <Text style={styles.sessionInstructor}>{session.when ?? ''}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <Ionicons name="time-outline" size={10} color={colors.stone[400]} />
+                    <Text style={styles.sessionDuration}>{session.duration}</Text>
+                  </View>
                 </View>
+                {session.price || session.seats ? (
+                  <View style={styles.participantsRow}>
+                    <Ionicons name="pricetag" size={11} color={colors.saffron[500]} />
+                    <Text style={styles.participantsText}>
+                      {[session.price, session.seats].filter(Boolean).join(' • ')}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
-              {session.isLive && (
-                <View style={styles.participantsRow}>
-                  <Ionicons name="people" size={11} color={colors.saffron[500]} />
-                  <Text style={styles.participantsText}>
-                    {session.participants} practicing now
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </ScrollView>
   );
@@ -373,11 +344,32 @@ function AyurvedaContent() {
   );
 }
 
-function mapWellnessLevel(level?: string): YogaSession['level'] {
-  const l = (level ?? '').toLowerCase();
-  if (l.includes('advanced')) return 'Advanced';
-  if (l.includes('intermediate')) return 'Intermediate';
-  return 'Beginner';
+/**
+ * The payload has no `level` column, so the level badge (and the
+ * mapWellnessLevel helper that fed it) is gone rather than defaulted to
+ * "Beginner" for every class.
+ */
+function toYogaSession(s: WellnessSessionVM): YogaSession {
+  const startsAt = s.scheduledAt ? new Date(s.scheduledAt) : null;
+  const started = startsAt !== null && startsAt.getTime() <= Date.now();
+  return {
+    id: s.id,
+    title: s.title,
+    category: s.type ?? 'Wellness',
+    duration: s.durationMinutes !== null ? `${s.durationMinutes} min` : '—',
+    seats: s.capacity !== null ? `${s.capacity} seats` : null,
+    price:
+      s.priceInr === null ? null : s.priceInr === 0 ? 'Free' : `₹${s.priceInr.toLocaleString('en-IN')}`,
+    when: startsAt
+      ? startsAt.toLocaleString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : null,
+    isLive: started && s.status === 'LIVE',
+  };
 }
 
 export default function WellnessScreen() {
@@ -386,22 +378,9 @@ export default function WellnessScreen() {
   const sessionsQuery = useWellnessSessions();
   const [refreshing, setRefreshing] = useState(false);
 
-  const apiSessions = sessionsQuery.data?.sessions ?? [];
-  const sourceSessions: YogaSession[] = apiSessions.length > 0
-    ? apiSessions.map((s, i) => {
-        const fb = yogaSessions[i % yogaSessions.length]!;
-        return {
-          id: s.id,
-          title: s.title ?? fb.title,
-          instructor: s.instructorName ?? fb.instructor,
-          duration: s.duration ? `${s.duration} min` : fb.duration,
-          level: mapWellnessLevel(s.level),
-          category: s.type ?? fb.category,
-          participants: fb.participants,
-          isLive: !!s.startTime && new Date(s.startTime).getTime() <= Date.now(),
-        };
-      })
-    : yogaSessions;
+  const sourceSessions: YogaSession[] = selectWellnessSessions(sessionsQuery.data).map(
+    toYogaSession,
+  );
 
   async function onRefresh() {
     setRefreshing(true);
@@ -528,6 +507,11 @@ const styles = StyleSheet.create({
   },
   horizontalScroll: {
     gap: spacing.sm,
+  },
+  sessionsEmpty: {
+    fontSize: fontSize.base,
+    color: colors.stone[500],
+    paddingVertical: spacing.md,
   },
   // Yoga Challenge
   challengeCard: {

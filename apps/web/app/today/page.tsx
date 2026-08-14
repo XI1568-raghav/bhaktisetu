@@ -13,7 +13,7 @@ import { getDeity } from '../../lib/deities';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Today — Tithi, Mantra, Deity of the Day, Upcoming Festival — Darshya',
+  title: 'Today — Tithi, Mantra, Deity of the Day, Upcoming Festival',
   description: 'Today\'s panchang (tithi + nakshatra + auspicious muhurat), day-of-week deity, suggested mantra, and countdown to the next major festival.',
   alternates: { canonical: 'https://darshya.online/today' },
   openGraph: {

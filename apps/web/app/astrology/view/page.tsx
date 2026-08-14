@@ -4,7 +4,6 @@ import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/api-config';
-import { getAstrologerImage } from '../../../lib/images';
 import {
  Star,
  BadgeCheck,
@@ -29,7 +28,8 @@ import {
 interface Astrologer {
  id: string;
  name: string;
- photo: string;
+ /** Null whenever the API did not supply one — see normalise(). Never a stock face. */
+ photo: string | null;
  specializations: string[];
  languages: string[];
  experienceYears: number;
@@ -52,118 +52,60 @@ interface Review {
  date: string;
 }
 
-// ─── Fallback Data ────────────────────────────────────────────────────────────
+/* AW-02 (prod sweep 2026-08-12, P0) — THE FIXTURES ARE GONE.
+ *
+ * What used to sit here:
+ *   `allAstrologers` — three invented astrologers ("Pt. Raghunath Sharma",
+ *   4.9, 12,450 reviews, 34,200 consultations), each carrying five invented
+ *   named testimonials, plus `allAstrologers[id] || allAstrologers['astro_001']`
+ *   so ANY id the API did not know rendered as Raghunath Sharma; and
+ *   `similarAstrologers` — three more invented people linking to
+ *   /astrology/astro_007|006|011, every one of which landed back on this page
+ *   under a "Book Paid Consultation" button.
+ *
+ * POST /consultation/book already refuses a non-onboarded astrologer id with
+ * 409 before money moves, so nobody could be charged — but the page still
+ * presented people who do not exist, testimonials nobody wrote, and a booking
+ * CTA. Refusing the sale at the till is not the same as not advertising it.
+ *
+ * This page now renders exactly what GET /astrology/astrologers/:id returned,
+ * or an honest "not available" pointing at the real directory. Nothing is
+ * defaulted, nothing is rounded, nothing is remembered.
+ *
+ * Reviews are deliberately NOT fetched: GET /astrology/astrologers/:id/reviews
+ * is still served from the same in-memory mock directory
+ * (apps/api/src/routes/astrology.ts:113 -> astrologyService.getReviews), so
+ * calling it would import the fiction back through a different door.
+ */
 
-const allAstrologers: Record<string, Astrologer & { reviews: Review[] }> = {
- astro_001: {
- id: 'astro_001',
- name: 'Pt. Raghunath Sharma',
- photo: getAstrologerImage('male', 0),
- specializations: ['Vedic Astrology', 'Prashna Kundli', 'Nadi Astrology'],
- languages: ['Hindi', 'English', 'Sanskrit'],
- experienceYears: 25,
- rating: 4.9,
- reviewCount: 12450,
- consultationCount: 34200,
- perMinuteRate: 50,
- isOnline: true,
- isBusy: false,
- bio: 'With 25 years of experience in Vedic Astrology, Pt. Raghunath Sharma is a renowned Jyotish Acharya who has guided over 34,000 devotees. Specializing in Prashna Kundli and Nadi Astrology, he offers precise predictions and effective remedies. Educated at Banaras Hindu University in Jyotish Shastra, he has been featured in leading spiritual magazines and TV channels.',
- verified: true,
- badges: ['Top Rated', '10K+ Consults'],
- reviews: [
- { id: 'r1', userName: 'Priya M.', rating: 5, comment: 'Extremely accurate predictions. The remedies suggested were practical and effective. Highly recommended!', date: '2026-04-10' },
- { id: 'r2', userName: 'Rahul K.', rating: 5, comment: 'Very knowledgeable and patient. Explained everything in detail. Will consult again for sure.', date: '2026-04-08' },
- { id: 'r3', userName: 'Sneha T.', rating: 4, comment: 'Good consultation overall. The astrologer understood my concerns and provided helpful guidance.', date: '2026-04-05' },
- { id: 'r4', userName: 'Amit S.', rating: 5, comment: 'Predictions about my career change were spot on. The timing advice was very helpful.', date: '2026-04-02' },
- { id: 'r5', userName: 'Kavya R.', rating: 4, comment: 'Nice experience. Clear explanations and practical remedies. Felt very positive after the session.', date: '2026-03-28' },
- ],
- },
- astro_002: {
- id: 'astro_002',
- name: 'Dr. Meera Devi',
- photo: getAstrologerImage('female', 1),
- specializations: ['Tarot Reading', 'Numerology', 'Vedic Astrology'],
- languages: ['Hindi', 'English', 'Gujarati'],
- experienceYears: 15,
- rating: 4.8,
- reviewCount: 8920,
- consultationCount: 22100,
- perMinuteRate: 40,
- isOnline: true,
- isBusy: false,
- bio: 'Dr. Meera Devi is a gifted Tarot reader and Numerologist with a PhD in Astro-Sciences. She blends ancient Vedic wisdom with modern Tarot techniques to provide holistic guidance on career, relationships, and life decisions. With over 22,000 consultations, she has helped people across India and abroad find clarity and direction.',
- verified: true,
- badges: ['Top Rated', 'Quick Response'],
- reviews: [
- { id: 'r1', userName: 'Deepak G.', rating: 5, comment: 'One of the best Tarot readers I have consulted. Deep knowledge and genuine concern.', date: '2026-04-12' },
- { id: 'r2', userName: 'Anjali P.', rating: 5, comment: 'The Tarot reading was incredibly accurate. She predicted events that actually happened!', date: '2026-04-09' },
- { id: 'r3', userName: 'Vikash N.', rating: 4, comment: 'Very professional and to the point. Great numerology analysis.', date: '2026-04-06' },
- { id: 'r4', userName: 'Ritu D.', rating: 5, comment: 'The Numerology analysis was thorough. Helped me choose the right business name.', date: '2026-04-01' },
- { id: 'r5', userName: 'Suresh B.', rating: 4, comment: 'Good experience. The remedies were simple and effective.', date: '2026-03-25' },
- ],
- },
- astro_003: {
- id: 'astro_003',
- name: 'Acharya Vikram Joshi',
- photo: getAstrologerImage('male', 2),
- specializations: ['Vedic Astrology', 'Vastu', 'KP Astrology'],
- languages: ['Hindi', 'English', 'Marathi'],
- experienceYears: 20,
- rating: 4.7,
- reviewCount: 6540,
- consultationCount: 18500,
- perMinuteRate: 60,
- isOnline: true,
- isBusy: true,
- bio: 'Acharya Vikram Joshi is a master of KP Astrology and Vastu Shastra. With two decades of practice, he has helped thousands of families achieve harmony through precise Vastu corrections and astrological guidance. He specializes in property Vastu, business astrology, and marriage compatibility.',
- verified: true,
- badges: ['Top Rated', '10K+ Consults'],
- reviews: [
- { id: 'r1', userName: 'Priya M.', rating: 5, comment: 'Amazing Vastu consultation. Our home feels so much better after the changes.', date: '2026-04-11' },
- { id: 'r2', userName: 'Rahul K.', rating: 5, comment: 'KP Astrology predictions were incredibly precise. Got the job on the exact date predicted!', date: '2026-04-07' },
- { id: 'r3', userName: 'Sneha T.', rating: 4, comment: 'Good Vastu advice for our new office. Practical and non-demolition remedies.', date: '2026-04-03' },
- { id: 'r4', userName: 'Amit S.', rating: 5, comment: 'Excellent experience. Very knowledgeable in both astrology and Vastu.', date: '2026-03-30' },
- { id: 'r5', userName: 'Kavya R.', rating: 4, comment: 'Helpful consultation. The astrologer was patient and thorough.', date: '2026-03-26' },
- ],
- },
-};
-
-const similarAstrologers = [
- {
- id: 'astro_007',
- name: 'Acharya Ramesh Iyer',
- photo: getAstrologerImage('male', 3),
- specializations: ['KP Astrology', 'Vedic Astrology'],
- rating: 4.8,
- reviewCount: 9100,
- perMinuteRate: 55,
- isOnline: true,
- isBusy: false,
- },
- {
- id: 'astro_006',
- name: 'Tarot Priya Singh',
- photo: getAstrologerImage('female', 0),
- specializations: ['Tarot Reading', 'Numerology'],
- rating: 4.5,
- reviewCount: 3210,
- perMinuteRate: 20,
- isOnline: true,
- isBusy: false,
- },
- {
- id: 'astro_011',
- name: 'Acharya Bhaskar Rao',
- photo: getAstrologerImage('male', 4),
- specializations: ['Nadi Astrology', 'Vedic Astrology'],
- rating: 4.9,
- reviewCount: 11200,
- perMinuteRate: 90,
- isOnline: true,
- isBusy: false,
- },
-];
+/** Coerce the API payload into the view model without inventing anything. */
+function normalise(d: Partial<Astrologer>, fallbackId: string): Astrologer {
+ const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+ const list = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []);
+ return {
+  id: typeof d.id === 'string' && d.id ? d.id : fallbackId,
+  name: String(d.name ?? ''),
+  // AW-02: NO STOCK-PORTRAIT FALLBACK. The sibling fix in AstrologyClient.tsx
+  // (see its type comment) dropped `photo` from the live contract precisely
+  // because the old fixture's stock portraits published strangers' faces as
+  // named astrologers' likenesses. A real AstrologerProfile carries no photo
+  // column, so this is null far more often than not — render an initial, never
+  // a face that belongs to someone else.
+  photo: typeof d.photo === 'string' && d.photo ? d.photo : null,
+  specializations: list(d.specializations),
+  languages: list(d.languages),
+  experienceYears: num(d.experienceYears),
+  rating: num(d.rating),
+  reviewCount: num(d.reviewCount),
+  consultationCount: num(d.consultationCount),
+  perMinuteRate: num(d.perMinuteRate),
+  isOnline: d.isOnline === true,
+  isBusy: d.isBusy === true,
+  bio: typeof d.bio === 'string' ? d.bio : '',
+  verified: d.verified === true,
+  badges: list(d.badges),
+ };
+}
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
@@ -171,40 +113,52 @@ function AstrologerDetailInner() {
  const sp = useSearchParams();
  const id = (sp.get('id') ?? '') as string;
 
- const baseAstrologer = allAstrologers[id] || allAstrologers['astro_001']!;
- // P0 #AP-11 (2026-07-09): overlay real data from GET /astrology/astrologers/:id
- // when available, so profile edits (PATCH /astrologer-portal/profile) surface
- // on the public detail page. The hardcoded allAstrologers map is the fallback
- // only (e.g. API unreachable / unknown id).
- const [astrologer, setAstrologer] = useState(baseAstrologer);
+ // P0 #AP-11 (2026-07-09) + AW-02 (2026-08-12): the profile is whatever
+ // GET /astrology/astrologers/:id returned, and nothing else. It is `null`
+ // while the request is in flight and stays `null` when the API 404s or the
+ // fetch fails — there is no remembered person to fall back to.
+ const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
+ const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading');
+
  useEffect(() => {
   let cancelled = false;
-  if (!id) return;
+  if (!id) {
+   setStatus('missing');
+   return;
+  }
+  setStatus('loading');
   (async () => {
    try {
     const r = await fetch(`${API_BASE_URL}/astrology/astrologers/${encodeURIComponent(id)}`);
-    if (!r.ok) return;
-    const j = await r.json();
-    const detail = (j as any)?.astrologer;
-    if (!cancelled && detail && typeof detail === 'object') {
-     setAstrologer((prev) => ({ ...prev, ...detail }));
+    if (!r.ok) {
+     if (!cancelled) setStatus('missing');
+     return;
     }
+    const j = await r.json();
+    const detail = (j as { astrologer?: Partial<Astrologer> })?.astrologer;
+    if (cancelled) return;
+    if (!detail || typeof detail !== 'object' || !detail.name) {
+     setStatus('missing');
+     return;
+    }
+    setAstrologer(normalise(detail, id));
+    setStatus('ready');
    } catch {
-    // keep fallback
+    if (!cancelled) setStatus('missing');
    }
   })();
   return () => { cancelled = true; };
  }, [id]);
 
  function getStatusColor() {
- if (astrologer.isOnline && !astrologer.isBusy) return 'bg-emerald-400';
- if (astrologer.isOnline && astrologer.isBusy) return 'bg-amber-400';
+ if (astrologer?.isOnline && !astrologer.isBusy) return 'bg-emerald-400';
+ if (astrologer?.isOnline && astrologer.isBusy) return 'bg-amber-400';
  return 'bg-surface-400';
  }
 
  function getStatusText() {
- if (astrologer.isOnline && !astrologer.isBusy) return 'Online';
- if (astrologer.isOnline && astrologer.isBusy) return 'Busy';
+ if (astrologer?.isOnline && !astrologer.isBusy) return 'Online';
+ if (astrologer?.isOnline && astrologer.isBusy) return 'Busy';
  return 'Offline';
  }
 
@@ -225,14 +179,49 @@ function AstrologerDetailInner() {
  );
  }
 
- // Rating breakdown (hardcoded distribution)
- const ratingBreakdown = [
- { stars: 5, percent: 72 },
- { stars: 4, percent: 20 },
- { stars: 3, percent: 5 },
- { stars: 2, percent: 2 },
- { stars: 1, percent: 1 },
- ];
+
+ // AW-02: nothing renders until the server has named this astrologer. The
+ // previous version rendered a fixture immediately and only *maybe* overlaid
+ // the real payload, so an unknown id was indistinguishable from a real one.
+ if (status === 'loading') {
+  return (
+   <div className="min-h-[100dvh] bg-surface-50 flex items-center justify-center">
+    <p role="status" aria-live="polite" className="text-surface-500">
+     Loading astrologer…
+    </p>
+   </div>
+  );
+ }
+
+ if (status === 'missing' || !astrologer) {
+  return (
+   <div className="min-h-[100dvh] bg-surface-50 flex items-center justify-center px-6">
+    <div className="max-w-md text-center">
+     <h1 className="text-xl font-semibold text-surface-800 mb-2">
+      This astrologer profile is not available
+     </h1>
+     <p className="text-sm text-surface-500 mb-6">
+      We only show astrologers we can actually connect you to. Browse the
+      verified astrologers who are onboarded right now.
+     </p>
+     <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      <Link
+       href="/astrology/astrologers/live"
+       className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm bg-saffron-600 text-white"
+      >
+       See verified astrologers <ArrowRight className="w-4 h-4" />
+      </Link>
+      <Link
+       href="/astrology"
+       className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm border border-surface-200 text-surface-700"
+      >
+       Back to Astrology
+      </Link>
+     </div>
+    </div>
+   </div>
+  );
+ }
 
  return (
  <div className="min-h-[100dvh] bg-surface-50">
@@ -257,11 +246,24 @@ function AstrologerDetailInner() {
  {/* Photo & Status */}
  <div className="shrink-0">
  <div className="relative inline-block">
+ {astrologer.photo ? (
  <img
  src={astrologer.photo}
  alt={astrologer.name}
+ width={144}
+ height={144}
  className="w-28 h-28 lg:w-36 lg:h-36 rounded-xl object-cover shadow-lg"
  />
+ ) : (
+ <div
+ aria-hidden="true"
+ className="w-28 h-28 lg:w-36 lg:h-36 rounded-xl bg-saffron-100 flex items-center justify-center shadow-lg"
+ >
+ <span className="text-3xl font-bold text-saffron-600">
+ {astrologer.name.trim().charAt(0).toUpperCase() || '?'}
+ </span>
+ </div>
+ )}
  <div className={`absolute -bottom-1 -right-1 w-6 h-6 ${getStatusColor()} rounded-full border-3 border-white shadow-sm`} />
  {astrologer.verified && (
  <div className="absolute -top-2 -right-2 w-7 h-7 bg-saffron-600 rounded-full flex items-center justify-center shadow-sm">
@@ -423,59 +425,27 @@ function AstrologerDetailInner() {
  <p className="text-surface-600 leading-relaxed">{astrologer.bio}</p>
  </div>
 
- {/* Reviews Section */}
+ {/* Reviews — AW-02: the five invented testimonials ("Priya M."…) and the
+  hardcoded 72/20/5/2/1 distribution that shipped for EVERY astrologer are
+  gone. GET /astrology/astrologers/:id/reviews is still backed by the mock
+  directory, so there is no honest source to render yet; until real review
+  rows exist this section states that plainly rather than filling itself. */}
  <div className="bg-white rounded-xl border border-surface-200/80 p-6">
- <div className="flex items-center justify-between mb-6">
- <h2 className="text-lg font-bold text-surface-800">Reviews</h2>
- <span className="text-sm text-surface-500">{astrologer.reviewCount.toLocaleString()} total</span>
- </div>
-
- {/* Rating Breakdown */}
- <div className="flex items-start gap-6 mb-6 pb-6 border-b border-surface-100">
- <div className="text-center shrink-0">
- <p className="text-xl font-semibold text-surface-800">{astrologer.rating}</p>
- <div className="mt-1">{renderStars(astrologer.rating, 'w-3.5 h-3.5')}</div>
- <p className="text-xs text-surface-400 mt-1">{astrologer.reviewCount.toLocaleString()} reviews</p>
- </div>
- <div className="flex-1 space-y-2">
- {ratingBreakdown.map((rb) => (
- <div key={rb.stars} className="flex items-center gap-2">
- <span className="text-xs text-surface-500 w-3">{rb.stars}</span>
- <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
- <div className="flex-1 h-2 bg-surface-100 rounded-full overflow-hidden">
- <div
- className="h-full bg-amber-400 rounded-full"
- style={{ width: `${rb.percent}%` }}
- />
- </div>
- <span className="text-xs text-surface-400 w-8 text-right">{rb.percent}%</span>
- </div>
- ))}
- </div>
- </div>
-
- {/* Individual Reviews */}
- <div className="space-y-5">
- {astrologer.reviews.map((review) => (
- <div key={review.id} className="pb-5 border-b border-surface-100 last:border-0 last:pb-0">
- <div className="flex items-center justify-between mb-2">
- <div className="flex items-center gap-2">
- <div className="w-8 h-8 bg-gradient-to-br from-saffron-100 to-saffron-100 rounded-full flex items-center justify-center">
- <span className="text-xs font-bold text-saffron-600">
- {review.userName.charAt(0)}
+ <h2 className="text-lg font-bold text-surface-800 mb-3">Reviews</h2>
+ {astrologer.reviewCount > 0 ? (
+ <div className="flex items-center gap-3">
+ {renderStars(astrologer.rating, 'w-4 h-4')}
+ <span className="text-sm font-semibold text-surface-700">{astrologer.rating}</span>
+ <span className="text-sm text-surface-500">
+ from {astrologer.reviewCount.toLocaleString()} consultations
  </span>
  </div>
- <div>
- <p className="text-sm font-semibold text-surface-700">{review.userName}</p>
- <p className="text-xs text-surface-400">{review.date}</p>
- </div>
- </div>
- {renderStars(review.rating, 'w-3 h-3')}
- </div>
- <p className="text-sm text-surface-600 leading-relaxed">{review.comment}</p>
- </div>
- ))}
- </div>
+ ) : (
+ <p className="text-sm text-surface-500">
+ No reviews yet. This astrologer has not completed a reviewed consultation
+ on Darshya.
+ </p>
+ )}
  </div>
  </div>
 
@@ -524,36 +494,23 @@ function AstrologerDetailInner() {
  </div>
  </div>
 
- {/* Similar Astrologers */}
+ {/* AW-02: the "Similar Astrologers" rail listed three invented people
+  (Acharya Ramesh Iyer / Tarot Priya Singh / Acharya Bhaskar Rao) with
+  invented ratings and rates, each linking to /astrology/astro_00X — a
+  fixture id that redirects back here and offers a booking the API refuses
+  with 409. It is replaced by a link to the directory of astrologers who
+  genuinely exist. */}
  <div className="bg-white rounded-xl border border-surface-200/80 p-6">
- <h3 className="text-base font-bold text-surface-800 mb-4">Similar Astrologers</h3>
- <div className="space-y-4">
- {similarAstrologers.map((sa) => (
+ <h3 className="text-base font-bold text-surface-800 mb-2">Other astrologers</h3>
+ <p className="text-sm text-surface-500 mb-4">
+ Every astrologer in our directory is onboarded and verified.
+ </p>
  <Link
- key={sa.id}
- href={`/astrology/${sa.id}`}
- className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-saffron-50/50 transition-colors"
+ href="/astrology/astrologers/live"
+ className="inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-600 hover:text-saffron-700"
  >
- <img
- src={sa.photo}
- alt={sa.name}
- className="w-12 h-12 rounded-xl object-cover"
- />
- <div className="flex-1 min-w-0">
- <p className="text-sm font-semibold text-surface-700 truncate">{sa.name}</p>
- <p className="text-xs text-surface-400">{sa.specializations[0]}</p>
- <div className="flex items-center gap-2 mt-0.5">
- <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
- <span className="text-xs text-surface-500">{sa.rating}</span>
- <span className="text-xs text-saffron-600 font-semibold">{'\u20B9'}{sa.perMinuteRate}/min</span>
- </div>
- </div>
- {sa.isOnline && !sa.isBusy && (
- <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full shrink-0" />
- )}
+ See verified astrologers <ArrowRight className="w-4 h-4" />
  </Link>
- ))}
- </div>
  </div>
 
  {/* CTA Card */}

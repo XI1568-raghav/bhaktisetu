@@ -11,45 +11,44 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { getTranslations } from '../../lib/t';
-import { IMAGES } from '../../lib/images';
-import { getTemples } from '../../lib/api';
+import { getGaushalaImage, IMG_W } from '../../lib/images';
+import { getTemples, getApprovedProviders } from '../../lib/api';
 import DonationForm from '../../components/DonationForm';
+import { COMPANY } from '../../lib/company';
+
+/**
+ * COM-02 (prod sweep 2026-08-12): the hero badge read "Tax-deductible (80G)"
+ * and the meta description sold "80G tax-deductible donations", while
+ * lib/company.ts records donationLegal.HAS_80G_VERIFIED false and
+ * eightyGNumber null — and the donee's own registration/PAN columns are
+ * written nowhere, so the receipt the API mints is not an 80G instrument (see
+ * apps/api/src/lib/pdf-receipt.ts, which now says so on the PDF). The badge is
+ * bound to the same owner-controlled flag as every other 80G surface; it
+ * returns the day the registration does.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
+  alternates: { canonical: 'https://darshya.online/donations' },
   title: 'Donate to Temples & Gaushalas',
   description:
-    'Support verified temples and gaushalas across India. 80G tax-deductible donations with instant PDF receipts. Razorpay-secured payments via Darshya.',
+    'Support verified temples and gaushalas across India. Instant PDF donation receipts, Razorpay-secured payments via Darshya.',
 };
 
-// ─── Static gaushala causes ─────────────────────────────────────
-// These mirror the ids used in app/gaushala/page.tsx so that linking
-// in either direction works without an extra API round-trip.
-const gaushalaCauses = [
-  {
-    id: 'gs_001',
-    name: 'Shri Krishna Gaushala',
-    location: 'Vrindavan, Uttar Pradesh',
-    image: IMAGES.gaushala['cow-shelter'],
-    description: 'ISKCON-affiliated; home to 500+ rescued cows.',
-    cowCount: 500,
-  },
-  {
-    id: 'gs_002',
-    name: 'Kamdhenu Gaushala',
-    location: 'Jaipur, Rajasthan',
-    image: IMAGES.gaushala['tharparkar-cow'],
-    description: 'Government-registered; 50-acre campus with 1,200+ cows.',
-    cowCount: 1200,
-  },
-  {
-    id: 'gs_003',
-    name: 'Gokul Gaushala',
-    location: 'Mathura, Uttar Pradesh',
-    image: IMAGES.gaushala['gir-cow'],
-    description: 'Heritage gaushala (since 1952); breed conservation focus.',
-    cowCount: 350,
-  },
-];
+// ─── Verified gaushala causes ──────────────────────────
+//
+// S-05 (prod sweep 2026-08-12): this list used to be three hardcoded causes
+// (`gs_001` Shri Krishna Gaushala, `gs_002` Kamdhenu, `gs_003` Gokul) whose ids
+// were written verbatim into `donations.gaushala_id`, while the gaushala portal
+// filters donations by the manager's User UUID. A paid ₹2,100 donation with a
+// live 80G receipt was therefore invisible to its recipient forever — and two
+// of the three causes had no onboarded gaushala behind them at all.
+//
+// The list now comes from the approved-provider directory, and the cause id is
+// the gaushala owner's User id — the key the portal reads. If none are
+// approved, the section says so rather than showing causes that cannot receive
+// money. POST /donations/create-order refuses an unonboarded donee, so a
+// fabricated card here would be a dead donate button.
 
 // ─── Page ───────────────────────────────────────────────────────
 
@@ -73,6 +72,12 @@ export default async function DonationsLandingPage({
     plan_lifetime: 225000,
   };
   const planAmount = sp.planId ? PLAN_AMOUNTS[sp.planId] : undefined;
+  // LC-09: /donations?planId=… with no causeId is the DIRECTORY view — the
+  // devotee still has to pick who receives the money. Each cause card rebuilt
+  // its own href from scratch, so the plan they had just chosen on /gaushala
+  // was dropped at that click and the form opened with an empty amount. Carry
+  // it through.
+  const planQuery = sp.planId ? `&planId=${encodeURIComponent(sp.planId)}` : '';
 
   // If the URL points at a specific cause (deep-linked from a temple or
   // gaushala detail page), render the form directly.
@@ -115,15 +120,30 @@ export default async function DonationsLandingPage({
     temples = [];
   }
 
+  // S-05: real, approved gaushalas only — see the note above the imports.
+  const { providers: gaushalaProviders } = await getApprovedProviders('gaushala', { limit: 6 });
+  const gaushalaCauses = gaushalaProviders.map((g) => ({
+    // The gaushala owner's User id is what donations are keyed on and what the
+    // gaushala portal filters by. Fall back to the profile id, which the API
+    // also resolves.
+    causeId: g.userId || g.id,
+    name: g.gaushalaName ?? 'Verified Gaushala',
+    location: [g.city, g.state].filter(Boolean).join(', '),
+    description: g.description ?? '',
+    cowCount: typeof g.totalCows === 'number' ? g.totalCows : 0,
+  }));
+
   return (
     <div className="min-h-[100dvh] bg-surface-50">
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-saffron-50 via-amber-50 to-rose-50">
         <div className="mx-auto max-w-5xl px-6 py-14 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-saffron-700 shadow-sm backdrop-blur">
-              <Heart className="h-3.5 w-3.5" /> {t('tax80G')}
-            </div>
+            {HAS_80G && (
+              <div className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-saffron-700 shadow-sm backdrop-blur">
+                <Heart className="h-3.5 w-3.5" /> {t('tax80G')}
+              </div>
+            )}
             <h1 className="mb-3 text-3xl font-bold text-surface-900 sm:text-4xl">
               {t('pageTitle')}
             </h1>
@@ -165,16 +185,26 @@ export default async function DonationsLandingPage({
           </Link>
         </div>
 
+        {gaushalaCauses.length === 0 && (
+          <div className="rounded-xl border border-dashed border-surface-200 bg-white p-8 text-center">
+            <p className="font-medium text-surface-700">No gaushalas are listed for donations yet</p>
+            <p className="mt-1 text-sm text-surface-500">
+              Gau seva causes appear here once a gaushala is onboarded and approved. Temple causes
+              below are unaffected.
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {gaushalaCauses.map((g) => (
             <CauseCard
-              key={g.id}
-              imageUrl={g.image}
+              key={g.causeId}
+              imageUrl={getGaushalaImage('cow-shelter')}
               title={g.name}
               location={g.location}
               description={g.description}
-              meta={`${g.cowCount}+ cows`}
-              donateHref={`/donations?causeId=${encodeURIComponent(g.id)}&causeKind=gaushala&causeName=${encodeURIComponent(g.name)}`}
+              meta={g.cowCount > 0 ? `${g.cowCount}+ cows` : 'Verified gaushala'}
+              donateHref={`/donations?causeId=${encodeURIComponent(g.causeId)}&causeKind=gaushala&causeName=${encodeURIComponent(g.name)}${planQuery}`}
               accent="emerald"
             />
           ))}
@@ -209,7 +239,7 @@ export default async function DonationsLandingPage({
                   ? firstImg
                   : firstImg && typeof firstImg === 'object' && 'url' in firstImg
                   ? firstImg.url
-                  : IMAGES.gaushala['cow-shelter'];
+                  : getGaushalaImage('cow-shelter');
               return (
                 <CauseCard
                   key={t.id}
@@ -218,7 +248,7 @@ export default async function DonationsLandingPage({
                   location={`${t.city ?? ''}${t.state ? ', ' + t.state : ''}`}
                   description={(t.description ?? '').slice(0, 100)}
                   meta={t.deityPrimary ?? 'Temple'}
-                  donateHref={`/donations?causeId=${encodeURIComponent(t.id)}&causeKind=temple&causeName=${encodeURIComponent(t.name)}`}
+                  donateHref={`/donations?causeId=${encodeURIComponent(t.id)}&causeKind=temple&causeName=${encodeURIComponent(t.name)}${planQuery}`}
                   accent="saffron"
                 />
               );
@@ -264,10 +294,15 @@ function CauseCard({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageUrl}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
+          width={500}
+          height={313}
+          loading="lazy"
+          decoding="async"
           alt={title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-0.5 text-[11px] font-semibold text-surface-700 shadow-sm backdrop-blur">
+        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-0.5 text-xs font-semibold text-surface-700 shadow-sm backdrop-blur">
           {meta}
         </span>
       </div>

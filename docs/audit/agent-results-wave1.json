@@ -1,0 +1,1080 @@
+{
+ "fixes": [
+  {
+   "area": "legal-content",
+   "id": "LEG-04",
+   "outcome": "partial",
+   "change": "No change made by me. Verified current state only.",
+   "evidence": "Price half is ALREADY FIXED: apps/web/lib/pricing.ts:42-46 now carries `There is deliberately no \\`price\\` here ... Adding one back would reintroduce PM-02b`, and apps/web/app/pricing/page.tsx:87 does `const apiPlans = await fetchSubscriptionPlans()` then groupPlansByRole, so the page renders the real per-role catalogue from GET /api/v1/subscriptions/plans. Commission half STILL REPRODUCES: apps/web/lib/pricing.ts:146-190 COMMISSION_RATES still declares pandit {free:30,basic:20,pro:15,enterprise:10}, store_owner {25,15,12,8}, astrologer {35,25,18,12} and is still rendered at apps/web/app/pricing/page.tsx:482. Nothing charges from it — apps/api/src/services/astrologer.service.ts:17 ASTROLOGER_PLATFORM_RATE = 0.2 and apps/api/prisma/schema.prisma:962 `commission Decimal @default(0.20)` are flat, and there is no plan-based rate lookup anywhere in apps/api.",
+   "blocked_on": "apps/web/app/pricing/** and apps/web/lib/pricing.ts are on my explicit do-not-touch list this session (the pricing-market agent is editing them right now). The remaining work is one deletion — remove COMMISSION_RATES and the table at pricing/page.tsx:482 — and it must be done by whoever owns those files, or the two edits will collide. I did lock the correct rate on the Terms side (see LEG-05) with a test that reads ASTROLOGER_PLATFORM_RATE and the Prisma default directly, so the /pricing table is now the only surface still publishing plan-based rates.",
+   "files": [
+    "apps/web/lib/pricing.ts",
+    "apps/web/app/pricing/page.tsx"
+   ],
+   "test": "apps/web/__tests__/legal-content-p1.test.ts — the new 'LEG-05 — the published take rate equals the rate the engine charges' case pins 0.2 / @default(0.20) from the API sources, so any future attempt to publish a plan-based ladder in Terms fails. No test added against /pricing itself (not my file)."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-05",
+   "outcome": "fixed",
+   "change": "Rewrote Terms section 7's commission block. The five-line schedule (Puja 25% configurable 20-40%, Astrology 30%, Wellness 25%, Donations 0% + Rs 100 per 80G receipt, Store 'standard MedusaJS take rate') is replaced by the uniform 20% platform / 80% provider doctrine, with the temple revenue share stated as coming out of the platform's 20% rather than the provider's 80%. MedusaJS is gone (the store runs on Prisma StoreProduct/StoreOrder; lib/medusa.ts is an unused internal client, not published copy). Settled the 80G receipt price at free on both surfaces that disagreed: Terms now says 'issued free of charge — there is no per-receipt fee', and apps/web/app/nri/page.tsx:81 changed from `free: 'Rs 49 each', perPuja: 'Rs 49 each'` to 'Included' on all three tiers.",
+   "evidence": "REPRODUCED before the fix at apps/web/app/terms/page.tsx:181-189, verbatim as the sweep recorded it. FIXED at apps/web/app/terms/page.tsx:181-193. Rendered output now reads: 'Platform commission is a uniform 20% of the transaction value across every service category ... The provider ... receives the remaining 80%.' Ground truth checked in code, not assumed: apps/api/src/services/astrologer.service.ts:17 ASTROLOGER_PLATFORM_RATE = 0.2; apps/api/prisma/schema.prisma:962 commission Decimal @default(0.20); apps/api/prisma/schema.prisma:338 commissionRate Float @default(0.80) (provider share); apps/api/src/lib/commission-math.ts header confirms percentage = platform take rate. On the 80G fee: I grepped apps/api/src/routes/donations.ts and apps/api/src/lib/pdf-receipt.ts and NO code path charges anything for a receipt — nextReceiptNumber() and generate80GReceipt() are free — so both Rs 100 (Terms) and Rs 49 (/nri) were charges that never happen.",
+   "files": [
+    "apps/web/app/terms/page.tsx",
+    "apps/web/app/nri/page.tsx"
+   ],
+   "test": "apps/web/__tests__/legal-content-p1.test.ts + legal-content-p1-render.test.tsx. RED: 'drops the third commission schedule' failed (`not to contain 'Astrology consultation: 30%'`), 'publishes the uniform 20%/80% doctrine' failed, 'does not name MedusaJS' failed, 'does not publish a per-80G-receipt fee' failed; render suite 'states the uniform 20% platform / 80% provider split' and 'drops the third schedule, MedusaJS and the per-receipt 80G fee' both failed. GREEN: all 6 pass. The rate test reads ASTROLOGER_PLATFORM_RATE and the Prisma default out of apps/api, so Terms and the engine cannot drift apart again."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-06",
+   "outcome": "fixed",
+   "change": "Changed the published copy to describe the process that exists, rather than inventing the 48h automation. /refunds row 5 went from 'Video proof not provided within 48 hours | Full refund or reschedule option' to '72 hours | Booking cancelled and sent for manual review. Where the pandit is at fault, the refund is 100% of everything you paid.', plus a new explanatory bullet that says in plain words that the refund is issued by a person and not by the sweep. /nri/ca and /why-darshya realigned to the same statement. Added COMPANY.refunds.missingVideoEscalationHours = 72 so the number has one owner. I did NOT implement the 48h sweep — that is an apps/api change and outside my lane. The new copy is strictly less generous than the copy it replaced, so it creates no commitment the owner has not already made in code.",
+   "evidence": "REPRODUCED: apps/web/app/refunds/page.tsx:101-102 (48h full refund), apps/web/app/nri/ca/page.tsx:101 ('Refund if no video uploaded within 48h'), apps/web/app/why-darshya/page.tsx:298-299 ('Full refund if you're not satisfied'). Enforcement re-read at apps/api/src/services/booking.service.ts:1701 `async escalateStaleBookings(staleHours = 72)`, :1715-1716 `status: 'priest_assigned', videoProofUrl: null`, and the comment at :1736-1748 which still reads '⚠ DELIBERATELY NOT writing REFUND_REQUESTED_MARKER here' — so the sweep cancels and drops the booking into apps/api/src/routes/admin-bookings.ts:413 GET /refunds/pending and issues nothing. The 100%-on-pandit-fault wording is backed by apps/api/src/services/cancellation.service.ts:56 panditCancelRefundFraction: 1.0 and :132 computePanditFaultRefund, and by the escalation's own cancellationReason string ('Pandit-fault: devotee is owed a full refund'). FIXED at apps/web/app/refunds/page.tsx:106-113 and :136-148, apps/web/app/nri/ca/page.tsx:101, apps/web/app/why-darshya/page.tsx:298-303.",
+   "blocked_on": "Copy is now honest, but the underlying gap is still open and needs an apps/api owner: the 72h sweep only looks at status 'priest_assigned', so the completed-with-no-video bookings the sweep found (BS-20260812-9HWMA, JMHM4, A6UON) are still invisible to it, and the pandit-fault refund is still admin-initiated with no SLA behind it. If the owner wants a real automated guarantee, refund.service must learn to branch on pandit fault before escalateStaleBookings can mark rows — exactly as that file's own comment says.",
+   "files": [
+    "apps/web/app/refunds/page.tsx",
+    "apps/web/app/nri/ca/page.tsx",
+    "apps/web/app/why-darshya/page.tsx",
+    "apps/web/lib/company.ts"
+   ],
+   "test": "legal-content-p1.test.ts + legal-content-p1-render.test.tsx. RED: source suite '/refunds does not promise an automatic full refund at 48h', 'the published escalation window equals the one the sweep actually uses' (COMPANY.refunds.missingVideoEscalationHours was undefined), '/nri/ca does not promise an automatic 48h no-video refund', '/why-darshya does not offer an unconditional satisfaction refund' all failed; render suite's three LEG-06 cases failed against restored HEAD files. GREEN: all 7 pass. The escalation-window test parses `escalateStaleBookings(staleHours = 72)` straight out of apps/api/src/services/booking.service.ts, so if anyone retunes the sweep the policy page fails the build."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-07",
+   "outcome": "owner_gated",
+   "change": "No change made by me.",
+   "evidence": "STILL REPRODUCES, all three strings verbatim: apps/web/app/bookings/view/page.tsx:1030 'Are you sure you want to cancel this booking? Any refund due under the cancellation policy will be processed within 5-7 business days.', :1071 'Confirm cancellation & refund. Your payment will be returned within 5-7 business days.', :1112 'Refund requested. It will be processed within 1 hour and credited within 5-7 business days.' None quotes an amount or a tier. Worth flagging as a state change since the sweep: the API half of the suggested fix now EXISTS — apps/api/src/routes/bookings.ts:1517-1521 registers GET /:id/cancel-quote (with a regression test at apps/api/src/routes/bookings.test.ts:672 about the ladder being applied to a fee-inclusive total). So this is the repo's signature defect shape again: one side shipped, the other left behind. The web dialogs never call it.",
+   "blocked_on": "Two blockers. (1) Lane: apps/web/app/bookings/view/page.tsx is not a legal or policy page and is not in my edit list; the devotee-booking area owns it. (2) Owner: the fix renders a tier label and a rupee amount at the moment of an irreversible decision, and those come from DEFAULT_CANCEL_POLICY's contested 100/75/50/25 ladder (apps/api/src/services/cancellation.service.ts:47-58). Wiring the dialog would publish that ladder to every cancelling devotee, which is precisely the choice LEG-01/LEG-03/CM-04 are held open for. Unambiguous regardless of which ladder wins: the string 'Your payment will be returned' at :1071 asserts 100% and must go, because no tier except 48h+ pays 100%.",
+   "files": [
+    "apps/web/app/bookings/view/page.tsx",
+    "apps/api/src/routes/bookings.ts"
+   ]
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-08",
+   "outcome": "fixed",
+   "change": "Replaced the invented NRI Premium entitlements in the FAQ with the six features the SKU actually sells, and restated the price as INR-first. Gone: '4 free pujas per year', 'monthly panchang calendar', 'prasad shipping discount', 'NRI-exclusive aarti recordings'. /nri itself already published the correct list (its six benefit tiles map 1:1 onto the API features), so only the FAQ needed changing.",
+   "evidence": "REPRODUCED at apps/web/lib/faqs.ts:103 — the answer was verbatim what the sweep recorded, including '4 free pujas per year'. Ground truth read at apps/api/src/services/subscription.service.ts:224-241: nri_premium_yearly, price 5000, priceUsd 60, features = ['No ads anywhere on Darshya','No NRI surcharge on bookings','Priority booking 7 days early','Weekly 1:1 call with priest (Jitsi)','Free 80G receipt PDF for any donation','Unlimited AI astro chat']. Not one of the five FAQ promises appeared there. FIXED at apps/web/lib/faqs.ts:103.",
+   "files": [
+    "apps/web/lib/faqs.ts"
+   ],
+   "test": "apps/web/__tests__/legal-content-p1.test.ts. RED: 'does not promise 4 free pujas' failed (`not to match /free pujas/i`) and 'quotes benefits that are actually in nri_premium_yearly.features' failed (`to match /no NRI surcharge/i`). GREEN: both pass. The second test was then strengthened into a real both-sides check — it slices nri_premium_yearly's features array out of apps/api/src/services/subscription.service.ts, asserts 'No NRI surcharge on bookings' is really in it, and loops the distinguishing nouns ('NRI surcharge','ads','Priority booking','80G receipt') against the published answer."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-09",
+   "outcome": "fixed",
+   "change": "Relabelled every place /nri quoted a USD price as the price: the hero CTA is now 'Go Premium — Rs 5,000 / year (about $60)', the sub-caption spells out that your bank sets the conversion rate, the closing CTA and all three metadata descriptions lead with INR. Rewrote the /nri-pujas pricing FAQ, which still claimed 'The full NRI price is shown in your local currency at checkout — no hidden conversion markups', to state that USD figures on the page are reference prices only and Razorpay charges in INR — the same honest framing /uk and /nri/ca already use.",
+   "evidence": "PARTLY DEAD ON ARRIVAL, partly reproduced. The 'Dual currency, no markup — USD/GBP/CAD/AUD/EUR/SGD/AED' tile the sweep quoted is ALREADY FIXED in the working tree by CM-06: apps/web/app/nri-pujas/page.tsx:138-142 now carries an explanatory comment and reads 'International cards, no markup / Billed in INR'. Still reproducing when I started: apps/web/app/nri/page.tsx:136 'Go Premium — $60 USD / year', :147, :268, plus metadata at :21, :26, :34; and apps/web/app/nri-pujas/page.tsx:70. Rail confirmed at apps/web/app/terms/page.tsx:171-172 (Razorpay, INR only). FIXED at apps/web/app/nri/page.tsx:21,26,34,140,147 and :268-ish closing CTA, and apps/web/app/nri-pujas/page.tsx:70.",
+   "files": [
+    "apps/web/app/nri/page.tsx",
+    "apps/web/app/nri-pujas/page.tsx"
+   ],
+   "test": "apps/web/__tests__/legal-content-p1.test.ts. RED: '/nri leads with the INR amount that Razorpay actually charges' failed (`not to contain 'Go Premium — $60 USD / year'`) and '/nri-pujas does not claim local-currency checkout' failed. GREEN: both pass."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-10",
+   "outcome": "partial",
+   "change": "Did the slice that is safe without an incorporation certificate: /refunds, /shipping and /contact now render operatedByLine() (previously only /terms and /privacy did), and /contact gained an 'Operator & grievance redressal' block so the Consumer Protection (E-Commerce) Rules identity requirement has one home. All of it is driven from lib/company.ts, so the moment IS_INCORPORATED_VERIFIED flips to true the entity name and registered address appear on all five pages at once with no copy edits. I did not invent an entity name, CIN, GSTIN or address.",
+   "evidence": "REPRODUCED and only partly closed. Verified still true: apps/web/lib/company.ts IS_INCORPORATED_VERIFIED:false and legalEntity:null, so postalContactLine() returns null and every postal block is omitted; apps/api/src/lib/pdf-invoice.ts:195 still draws 'DARSHYA TAX INVOICE' and :259 still prints 'Amount inclusive of all applicable taxes where chargeable'; apps/web/components/CartContext.tsx:135 still computes `const tax = Math.round(subtotal * 0.05)` and it is still rendered as 'GST (est.)' at apps/web/app/store/checkout/page.tsx:542 and apps/web/components/CartDrawer.tsx:197, against Terms section 6 'Prices include applicable taxes unless stated otherwise' (apps/web/app/terms/page.tsx:153-154). FIXED portion: apps/web/app/refunds/page.tsx:282, apps/web/app/shipping/page.tsx (section 9), apps/web/app/contact/page.tsx:286-300.",
+   "blocked_on": "Three separate blockers, none of which I can clear. (1) OWNER — the legal entity name, CIN, GSTIN and registered office are facts that do not exist yet; company.ts is already structured to publish them the day they do. (2) LANE — retitling the PDF from 'TAX INVOICE' to 'RECEIPT' is apps/api/src/lib/pdf-invoice.ts:195. (3) LANE — removing the 5% GST line is the same code that finding COM-06 (P1, commerce area) and S-09 (P2, store area) are already assigned to; COM-06's fix moves delivery and tax computation server-side, so me editing CartContext would collide. I deliberately left Terms section 6 alone: making it disclose an added GST would legitimise collecting a line item labelled GST without a GSTIN, which is worse than the mismatch.",
+   "files": [
+    "apps/web/app/refunds/page.tsx",
+    "apps/web/app/shipping/page.tsx",
+    "apps/web/app/contact/page.tsx"
+   ],
+   "test": "apps/web/__tests__/legal-content-p1.test.ts — 'LEG-10 (partial) — the operator is identified on every policy page'. RED: failed on /refunds and /contact (neither referenced operatedByLine; git show HEAD confirmed 0 occurrences in both). GREEN: passes."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-11",
+   "outcome": "partial",
+   "change": "Added COMPANY.grievance to apps/web/lib/company.ts (HAS_NAMED_OFFICER_VERIFIED gate, officerName/officerDesignation/officerPhone all null, email, acknowledgeHours 24, resolveBusinessDays 15) plus grievanceOfficerLine() and grievanceSlaLine() helpers, and rendered them identically on /privacy, /refunds, /contact and /privacy/v2. One SLA everywhere — 24h acknowledge / 15 business days resolve, which satisfies both IT Rules 2021 Rule 3(2) and the E-Commerce Rules. While there I closed a fourth instance of the same defect the sweep did not list: apps/web/app/privacy/v2/page.tsx:213 pointed the India grievance officer at /grievance, a route that does not exist (no app/grievance directory), and published a dpo@darshya.online inbox that company.ts never declares; both now resolve through company.ts. Crucially, with no officer appointed the pages now SAY so rather than implying one exists behind an alias.",
+   "evidence": "REPRODUCED: apps/web/app/privacy/page.tsx:298-300 ('acknowledge within 48 hours and resolve within 30 days') vs apps/web/app/refunds/page.tsx:243-245 ('respond within 15 business days'), both hardcoding grievance@darshya.online, an address apps/web/lib/company.ts:78-84 does not declare and whose sibling inboxes that file's own comment calls 'aspirational'. FIXED: apps/web/lib/company.ts:97-127 (block) and the grievanceOfficerLine/grievanceSlaLine helpers; rendered at apps/web/app/privacy/page.tsx:305, apps/web/app/refunds/page.tsx:270-271, apps/web/app/contact/page.tsx:296-299, apps/web/app/privacy/v2/page.tsx:220. Rendered output on both /privacy and /refunds is now identical: 'grievance@darshya.online — a named grievance officer has not yet been appointed; complaints sent to this address are handled by the platform operator. We acknowledge every complaint within 24 hours and aim to resolve it within 15 business days.'",
+   "blocked_on": "OWNER — the officer's NAME, DESIGNATION and PHONE are the substance of the statutory requirement and I will not invent a person. Flip COMPANY.grievance.HAS_NAMED_OFFICER_VERIFIED to true and fill officerName / officerDesignation / officerPhone in apps/web/lib/company.ts:97-127; all four pages then publish the named officer with no further edits. Also unconfirmed and worth checking before this ships: whether grievance@darshya.online and privacy@darshya.online actually deliver — company.ts describes the specialty inboxes as aspirational, and an SLA against a dead mailbox is worse than no SLA.",
+   "files": [
+    "apps/web/lib/company.ts",
+    "apps/web/app/privacy/page.tsx",
+    "apps/web/app/refunds/page.tsx",
+    "apps/web/app/contact/page.tsx",
+    "apps/web/app/privacy/v2/page.tsx"
+   ],
+   "test": "legal-content-p1.test.ts + legal-content-p1-render.test.tsx. RED: source suite 'company.ts owns the grievance block' failed (`expected undefined to be defined`), '/privacy and /refunds stop hardcoding the alias and the two SLAs' failed, 'both pages read the grievance block from company.ts' failed, '/privacy/v2 no longer links the grievance officer to a 404' failed; render suite's four LEG-11 cases failed against restored HEAD files (git show HEAD confirmed 0 occurrences of grievanceOfficerLine/grievanceSlaLine/COMPANY.grievance in all of privacy, refunds, contact, company.ts). GREEN: all 8 pass. One of them asserts HAS_NAMED_OFFICER_VERIFIED is false AND that /privacy renders 'has not yet been appointed', so the honest-until-appointed wording cannot be quietly dropped without also flipping the gate."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-12",
+   "outcome": "fixed",
+   "change": "Made /shipping publish the rule the cart actually applies. Section 3 went from 'Free shipping on all domestic orders above Rs 999. Below Rs 999, a flat shipping fee of Rs 49-Rs 99 applies based on weight and destination' to a line rendered from COMPANY.store: free above Rs 499, otherwise a flat Rs 49, explicitly 'the same fee for every weight and every destination'. Also fixed the page's own meta description, which still advertised the Rs 999 threshold to search engines. Chose to correct the policy rather than the cart because the cart's numbers are what the customer is charged, and because the cart's fee logic is being moved server-side by another finding.",
+   "evidence": "REPRODUCED: apps/web/app/shipping/page.tsx:102-105 (Rs 999 + Rs 49-99 weight band) and :7 (meta description 'Free shipping above 999 within India') against apps/web/components/CartContext.tsx:134 `const deliveryFee = subtotal >= 499 ? 0 : 49;` — a single flat fee with no weight or destination input. Third surface checked and already correct: the store badge and meta at apps/web/app/store/page.tsx:34,201,317 say Rs 499, so after this change the policy page, the badge and the cart finally agree. FIXED: apps/web/lib/company.ts:140-143 (store constants) and apps/web/app/shipping/page.tsx:107. Rendered output: 'Free delivery on domestic orders of Rs 499 and above. Below that, a flat Rs 49 applies — the same fee for every weight and every destination.'",
+   "files": [
+    "apps/web/lib/company.ts",
+    "apps/web/app/shipping/page.tsx"
+   ],
+   "test": "legal-content-p1.test.ts + legal-content-p1-render.test.tsx. RED: 'company.ts owns the delivery constants' failed (`Cannot read properties of undefined (reading 'freeDeliveryAboveInr')`), 'the cart charges exactly what company.ts publishes' failed the same way, '/shipping publishes the real rule, not Rs 999 and a weight band' failed; render suite's two LEG-12 cases failed against the restored HEAD file. GREEN: all 5 pass. The lockstep test reads the `>= N ? 0 : M` expression out of the charging code and asserts it equals COMPANY.store — and it searches BOTH apps/web/components/CartContext.tsx and apps/api/src/routes/store-orders.ts, so it survives COM-06 moving the computation server-side instead of turning into a false alarm for that agent."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-08",
+   "outcome": "fixed",
+   "change": "Extracted selectPanchang() into lib/api-contracts.ts and wired it into the home screen. It reads the flat payload, reads rahuKaal (not rahukaal), flattens the shubhMuhurat object into label/window pairs rendered as separate badges, adds the locationCity line, and returns null (-> 'Panchang unavailable') for any error body.",
+   "evidence": "The two mismatches the sweep named were already fixed by the earlier P0 pass (apps/mobile/app/(devotee)/index.tsx:65-84 read flat + rahuKaal), but a THIRD, worse one was live and undetected: GET /api/v1/panchang/today returns shubhMuhurat as an OBJECT — live body {\"rahuKaal\":\"12:20 - 13:58\",\"shubhMuhurat\":{\"vijayMuhurat\":\"14:31 - 15:24\",\"brahmaMuhurta\":\"04:09 - 04:57\",\"abhijitMuhurat\":\"11:56 - 12:44\"}} — and the old code typed it `shubhMuhurat: string`, assigned it to `auspicious`, and rendered `{panchangData.auspicious}` directly inside <Text> at index.tsx:175. React throws 'Objects are not valid as a React child' for an object child, so the devotee home screen crashed the moment a real panchang row arrived. Now apps/mobile/lib/api-contracts.ts:610 selectPanchang + apps/mobile/app/(devotee)/index.tsx:16,65. Live re-check printed: panchang Amavasya | 12:20 - 13:58 | 3 muhurats.",
+   "files": [
+    "apps/mobile/lib/api-contracts.ts",
+    "apps/mobile/app/(devotee)/index.tsx"
+   ],
+   "test": "apps/mobile/lib/__tests__/parity-contracts.test.ts 'PAR-08 selectPanchang' (4 tests, incl. one asserting every muhurat window is a string). RED: whole suite failed to load, 0 tests executed. GREEN: 4/4 within 39/39."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-09",
+   "outcome": "fixed",
+   "change": "Added mobile-local scoped hooks (lib/portal-queries.ts) for /temple-portal/dashboard, /temple-portal/pujas and /temple-portal/darshan, plus selectTemplePortalDashboard / selectTemplePortalOfferings / selectTemplePortalStreams. All three temple screens now read this temple's data or show an honest empty/error state. Dashboard gained real booking + revenue stat cards from the scoped stats block and a recent-bookings list; the offering Switch was removed.",
+   "evidence": "The envelope-key half was pre-fixed, but the deeper half the sweep flagged was fully live: apps/mobile/app/(temple)/dashboard.tsx:16-17 called useDarshan()+useTemples() and streams.tsx:10 / pujas.tsx:15 called the PUBLIC routes, so a temple manager saw all 20 temples' streams, their aggregated viewer count, and the 10-item platform puja catalogue presented as 'your offerings'. Confirmed live: GET /api/v1/temples -> 20 rows, /api/v1/darshan/live -> streams from other temples, while GET /api/v1/temple-portal/dashboard (temple@demo.com) -> {\"profile\":null,\"stats\":{\"totalBookings\":0,...},\"recentBookings\":[]}, /temple-portal/pujas -> {\"offerings\":[]}, /temple-portal/darshan -> {\"streams\":[]}. Also confirmed /api/v1/temple-portal/streams 404s, so the fix targets /darshan. The old per-row Switch (pujas.tsx:72-77) was useState-only. New: lib/portal-queries.ts:38,46,54; api-contracts.ts:682,726,769.",
+   "files": [
+    "apps/mobile/lib/portal-queries.ts",
+    "apps/mobile/lib/api-contracts.ts",
+    "apps/mobile/app/(temple)/dashboard.tsx",
+    "apps/mobile/app/(temple)/pujas.tsx",
+    "apps/mobile/app/(temple)/streams.tsx"
+   ],
+   "test": "parity-contracts.test.ts 'PAR-09 temple portal selectors' (4 tests, incl. one proving an offering with no catalogue row renders as its id, never a guessed puja name). RED: suite would not load. GREEN: 4/4."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-10",
+   "outcome": "fixed",
+   "change": "selectWellnessSessions() reads `data` and maps the real columns; wired into the instructor dashboard, the instructor sessions screen and the devotee Wellness tab. Deleted the four-class yogaSessions mock and the fabricated dashboard stat cards. Also fixed the write side: buildWellnessSessionInput() mirrors the server zod schema and the create modal now collects capacity and price.",
+   "evidence": "Read side reproduced: GET /api/v1/wellness/sessions returns keys ['data'] with 2 rows; (wellness)/dashboard.tsx:17 and sessions.tsx:53 read `.sessions` -> undefined -> 0 rows, and (devotee)/wellness.tsx:389 fell through to 4 hardcoded classes ('Surya Namaskar Flow', 'Guru Priya', '340 practicing now') and took `participants` from that mock even on the API path. Row fields were wrong too — the API sends durationMinutes/scheduledAt/priceInr/capacity, the screens read duration/startTime/level. Write side was an unreported P0-grade break in the same file: the form posted {type:'yoga', duration, level, startTime} against routes/wellness-sessions.ts:29-49 which requires {type:'YOGA'|…, durationMinutes, capacity, priceInr, scheduledAt} — four wrong keys, a lower-case enum, `level` is not a column, and capacity+priceInr (both required) had no inputs, so every create 400'd. The invalidate key was also wrong (useCreateWellnessSession invalidates ['wellnessSessions'], useWellnessSessions is keyed ['wellness','sessions']), so the list never refreshed; the screen now invalidates the correct key. Also removed the 'Day 12 of 21 / 57%' fabricated streak card. New: api-contracts.ts:812 + :895; wellness screens at (wellness)/dashboard.tsx:11, (wellness)/sessions.tsx:22, (devotee)/wellness.tsx:15. Live re-check: 2 rows, 'QA Deep Hatha Yoga', 60 min, ₹1000.",
+   "files": [
+    "apps/mobile/lib/api-contracts.ts",
+    "apps/mobile/app/(wellness)/dashboard.tsx",
+    "apps/mobile/app/(wellness)/sessions.tsx",
+    "apps/mobile/app/(devotee)/wellness.tsx"
+   ],
+   "test": "parity-contracts.test.ts 'PAR-10 selectWellnessSessions' (4) + 'PAR-10 buildWellnessSessionInput' (5). Read-side RED: suite would not load. Write-side RED (second cycle, module present): 3 hard failures — 'sends the field names and enum case POST /wellness/sessions requires', 'requires capacity and price', 'maps an unknown type to OTHER'. GREEN: 9/9 within 39/39."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-11",
+   "outcome": "fixed",
+   "change": "selectPriestProfile() reads the flat payload (name, bio, specializations, languages, experienceYears, ratingAvg/ratingCount, temples, aadhaarVerified, verificationStatus) and pins bankLinked/gstStatus to null. Profile screen renders it, including a Temples section and the rating line. Services screen now reads selectPujaTypes and the pandit's own specializations; the six-row FALLBACK and the fake toggle are gone.",
+   "evidence": "Both halves reproduced. GET /api/v1/priest/profile (pandit@demo.com) returns FLAT: {\"displayName\":\"Demo Pandit\",\"ratingAvg\":4.61,\"ratingCount\":43,\"specializations\":[3],\"temples\":[1],...} with no `profile` wrapper, while apps/mobile/app/(priest)/profile.tsx:30 read `profileQuery.data?.profile` -> null -> blank screen. Worse, the Verification block asserted state the payload does not contain: `bankLinked ?? false` and `gstStatus ?? 'pending'` (profile.tsx:32-33) told EVERY pandit 'Bank Account Not linked' and 'GST Pending Review' — a false claim about their payout eligibility; those rows are now a neutral 'not reported by the app' note. services.tsx:30 read `(pujasQuery.data)?.data` against {pujaTypes:[10]} and fell through to FALLBACK at services.tsx:15-22, whose prices contradict the live catalogue (Satyanarayan Katha ₹2,100 vs API ₹1,501) and which lists 'Ganesh Atharvashirsha', a puja Darshya does not sell. New: api-contracts.ts:979; (priest)/profile.tsx:9; (priest)/services.tsx:5. Live re-check: Demo Pandit, 4.61, 43 ratings, 1 temple.",
+   "files": [
+    "apps/mobile/lib/api-contracts.ts",
+    "apps/mobile/app/(priest)/profile.tsx",
+    "apps/mobile/app/(priest)/services.tsx"
+   ],
+   "test": "parity-contracts.test.ts 'PAR-11 selectPriestProfile' (4 tests, incl. one asserting bankLinked and gstStatus are null rather than a defaulted claim). RED: suite would not load. GREEN: 4/4."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-12",
+   "outcome": "fixed",
+   "change": "Added useGaushalaPortalCows() against /api/v1/gaushala-portal/cows plus selectPortalCows(), and pointed both the registry and the dashboard at it. The create mutation now invalidates that exact key and awaits a refetch before reporting success. Deleted the six-cow FALLBACK and the `cows.length || 42` / `adopted || 18` fallbacks.",
+   "evidence": "Reproduced exactly. Public GET /api/v1/gaushala/cows -> {cows:[19], total:19} spanning five gaushalas (first row gaushalaId 'gs_001'), which is what cows.tsx:50 (useCows) and dashboard.tsx:14 rendered; scoped GET /api/v1/gaushala-portal/cows (gaushala@demo.com) -> {\"cows\":[]}, which is what the Add Cow button at cows.tsx:78 wrote to. I proved the round-trip by POSTing a probe cow (201, gaushalaId 9bf8adb8-…), confirming it appeared only in the scoped list, then DELETEing it (200 {\"ok\":true}, list back to []). The prisma Cow model (apps/api/prisma/schema.prisma:1427) has no adoptionStatus and no `age` column, so the old status pill labelling every animal 'Available' (cows.tsx:126) was an adoption claim the server never made — it now shows healthStatus or nothing. dashboard.tsx:34-41 also printed 42 cows / 18 adopted / ₹64,200 donations / 12 volunteers out of nowhere. New: lib/portal-queries.ts:62; api-contracts.ts:1034; (gaushala)/cows.tsx:19; (gaushala)/dashboard.tsx:11.",
+   "files": [
+    "apps/mobile/lib/portal-queries.ts",
+    "apps/mobile/lib/api-contracts.ts",
+    "apps/mobile/app/(gaushala)/cows.tsx",
+    "apps/mobile/app/(gaushala)/dashboard.tsx"
+   ],
+   "test": "parity-contracts.test.ts 'PAR-12 selectPortalCows' (4 tests, incl. one proving a PUBLIC-shaped row yields ageYears null and no tagNumber rather than half-mapping into the owned herd). RED: suite would not load. GREEN: 4/4."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-13",
+   "outcome": "partial",
+   "change": "Fixed the app half: selectAstrologerDashboard() reads the keys the route actually sends and returns null for the 500 body; the screen shows an explicit 'this is a server error, not zero earnings' banner instead of ₹0 tiles, renders upcoming consultations (which were fetched and thrown away), and flags an unapproved listing.",
+   "evidence": "The 500 still reproduces right now: GET /api/v1/astrologer-portal/dashboard with astro@demo.com -> 500 {\"code\":\"P2023\",...\"Invalid `prisma.astrologerProfile.findUnique()` invocation in E:\\\\NewClaude\\\\bhaktisetu\\\\apps\\\\api\\\\src\\\\routes\\\\astrologer-portal.ts:53:52...\"} — absolute path and four source lines in the body. apps/api/src/routes/astrologer-portal.ts:53 is still an unguarded findUnique (another agent has that file open; its 13-line diff is elsewhere). Separately, a defect the sweep did not name was live in my lane and survives any server fix: apps/mobile/app/(astrologer)/dashboard.tsx:21-22 read `data.todayConsultations` and stats.todayCount / earningsToday / monthEarnings / ratingCount, none of which exist — the route sends stats.consultationsToday / earningsTodayInr / earningsMonthInr / totalEarningsInr and `upcomingSessions` (astrologer-portal.ts:133-146) — so even a healthy 200 rendered 'Today 0 · Earnings Today ₹0 · This Month ₹0', and `?? {}` made the 500 render identically. Now api-contracts.ts:1092 + (astrologer)/dashboard.tsx:11. Live re-check: 500 body -> selector returns null -> error banner.",
+   "files": [
+    "apps/mobile/lib/api-contracts.ts",
+    "apps/mobile/app/(astrologer)/dashboard.tsx"
+   ],
+   "test": "parity-contracts.test.ts 'PAR-13 selectAstrologerDashboard' (2 tests: the captured 500 body must map to null, and the success shape must read consultationsToday/earningsTodayInr/earningsMonthInr/upcoming). RED: suite would not load. GREEN: 2/2.",
+   "blocked_on": "The server half is apps/api/src/routes/astrologer-portal.ts, explicitly outside my lane and being edited by another agent right now. Two things are still needed there: a UUID guard (or a P2023 catch) around the findUnique at line 53, and a Fastify error handler that strips `message`/stack from 5xx bodies outside development — the leaked absolute path and source lines are an information-disclosure issue independent of the crash."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-14",
+   "outcome": "owner_gated",
+   "change": "None. Verified only.",
+   "evidence": "Reproduces. POST http://127.0.0.1:4000/api/v1/weddings/muhurat with only content-type -> 401 {\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}. The web submit handler at apps/web/app/weddings/muhurat/page.tsx:68 still sends `headers: { 'content-type': 'application/json' }` and nothing else, and apps/api/src/routes/weddings.ts:28 still registers POST /muhurat with `preHandler: [authenticateUser]`. The mobile path is unaffected (the shared client injects the token), which is exactly the parity gap.",
+   "files": [
+    "apps/web/app/weddings/muhurat/page.tsx",
+    "apps/api/src/routes/weddings.ts"
+   ],
+   "test": "None — no code changed.",
+   "blocked_on": "Both files are in DO-NOT-TOUCH lanes (apps/web and apps/api) with other agents editing them. The fix is one of two one-liners and needs an owner decision on which: attach the session bearer token at page.tsx:68 like other authed web pages, OR drop authenticateUser from weddings.ts:28 and rate-limit instead. The API comment at weddings.ts:26-27 says the gate was added deliberately to stop an attacker burning the mhah-panchang compute loop, so removing it is a real trade-off, not a cleanup — that is the owner's call."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-15",
+   "outcome": "partial",
+   "change": "No further mobile change was warranted. The sweep's stated minimum ('at least deep-link with the real slug from the API rather than a mock') is satisfied and I verified the hand-off end to end.",
+   "evidence": "The mock-slug half is dead: apps/mobile/app/(devotee)/pujas.tsx:161 now builds bookUrl from `puja.slug`, which comes from selectPujaTypes (api-contracts.ts:535) and is therefore the catalogue slug, and the price shown is basePrice from the same row — so the app price and the landing-page price now agree. I confirmed the receiving end reads that parameter: apps/web/app/pujas/book/page.tsx:450 does `searchParams.get('slug')` with a kebab-case validation. The dead-hook half still reproduces: POST http://127.0.0.1:4000/api/v1/bookings -> 404 {\"message\":\"Route POST:/api/v1/bookings not found\"}, and packages/shared/src/constants/index.ts:291 still has BOOKINGS: '/api/v1/bookings' (real route is /api/v1/bookings/book) with PAYMENT_BY_BOOKING at :299 similarly wrong.",
+   "files": [
+    "apps/mobile/app/(devotee)/pujas.tsx"
+   ],
+   "test": "Existing coverage: apps/mobile/lib/__tests__/api-contracts.test.ts:328-335 pins the real catalogue slugs and prices (satyanarayan-katha, sunderkand-path, ganesh-puja) that the deep link is built from. No new test — no new code.",
+   "blocked_on": "Two blockers, neither in my lane. (1) The endpoint constants live in packages/shared/src/constants/index.ts and the dead useCreateBooking in packages/api-client/src/hooks/index.ts:229 — both DO-NOT-TOUCH. (2) A native in-app checkout needs a Razorpay React Native SDK that is not in apps/mobile/package.json; adding a payment dependency and a booking flow that creates PENDING rows it cannot charge is an owner decision, not a defect fix. Building the flow behind a non-functional payment step would be strictly worse than the current correct web hand-off."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-16",
+   "outcome": "fixed",
+   "change": "Rewrote the store on the real API: selectStoreProducts() maps rating, reviewCount, compareAtPrice, discount, tag, category and inStock from the product row; Add now calls useAddToCart and confirms the result through selectCart before claiming success; the cart badge reads the live itemCount and the cart icon opens a real summary. Deleted the eight-product productsData mock, the positional mock join and the invented MRP.",
+   "evidence": "Reproduced. store.tsx:188 was `Linking.openURL('https://darshya.online/store?...&q=' + product.name)` — a web SEARCH by product name — and store.tsx:253 opened the web cart under a hardcoded badge of '2' (store.tsx:256) for every user. The catalogue was fabricated twice over: store.tsx:214 did `const fb = productsData[i % productsData.length]` and lines 223-226 took rating, reviews and tag from that positional mock, so a real SKU wore another product's 4.8 / 456 reviews; line 216 computed `originalPrice = price * 1.4`, printing a strike-through MRP and a '29% OFF' badge nobody ever offered — a misleading-discount claim, not a placeholder. Every one of those fields is already on the row: live GET /api/v1/store/products returns 20 products with keys [id,handle,title,price,compareAtPrice,discount,rating,reviewCount,tag,inStock,freeDelivery,category,...] (prod_015: price 349, compareAtPrice 599, discount 42, rating 4.9, reviewCount 2100). I also found an envelope trap the sweep did not mention: every cart route returns {message?, cart} (apps/api/src/routes/store.ts:99,116,153) while useCart/useAddToCart type the response as a bare Cart, so a naive data.itemCount is undefined — selectCart unwraps both forms. Verified by POSTing a real item (200, itemCount 1) and removing it again (itemCount 0). New: api-contracts.ts:1161 + :1217; (devotee)/store.tsx:14.",
+   "files": [
+    "apps/mobile/lib/api-contracts.ts",
+    "apps/mobile/app/(devotee)/store.tsx"
+   ],
+   "test": "parity-contracts.test.ts 'PAR-16 store selectors' (5 tests: real rating/MRP/discount mapping; a row without them yields nulls rather than a positional mock; selectCart unwraps both the GET and the POST envelope, asserting itemCount 1 off the captured add-to-cart response; a 401 body yields null, not an empty cart). RED: suite would not load. GREEN: 5/5."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-17",
+   "outcome": "already_fixed",
+   "change": "None needed.",
+   "evidence": "Dead. apps/mobile/app/(devotee)/temples.tsx:35 now builds `https://darshya.online/temples/${encodeURIComponent(temple.slug)}`, and slug is load-bearing in the mapper: apps/mobile/lib/api-contracts.ts:491 drops any temple row without one rather than falling back to the id ('a row without a slug cannot be linked'). The fix was made by the earlier P0 pass as fallout of PAR-07 and is already covered — apps/mobile/lib/__tests__/api-contracts.test.ts:313 'selectTemples reads .temples and carries the slug the web route needs' asserts rows[0].slug === 'tirumala-tirupati'. I confirmed the web route is apps/web/app/temples/[slug]/page.tsx, so a slug resolves where an id or UUID 404s.",
+   "files": [
+    "apps/mobile/app/(devotee)/temples.tsx"
+   ],
+   "test": "Pre-existing: apps/mobile/lib/__tests__/api-contracts.test.ts:313. No new test written — adding one that passes before and after would be worthless."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-18",
+   "outcome": "fixed",
+   "change": "Replaced the placeholder WhatsApp hand-off and the no-op concierge button with a real enquiry form posting to POST /api/v1/yatra-inquiry. buildYatraInquiry() mirrors the server zod schema so the traveller gets a specific message instead of a 400, the screen only reports success when the server returns its own referenceId, and that reference is displayed.",
+   "evidence": "Reproduced. apps/mobile/app/(devotee)/yatra-detail.tsx:50 was `Linking.openURL('https://wa.me/919999999999?text=…')` — a placeholder number with no env var behind it. The sibling control was worse and the sweep did not name it: the destination branch's only visible CTA fired `Alert.alert('Concierge', 'Our team will contact you within 24 hours.')` with no request at all, so the lead was promised a callback and left no trace anywhere. The target endpoint is real and public: apps/api/src/routes/yatra-inquiry.ts:170 (registered at server.ts:434) persists the lead, emails the desk and the traveller, and returns {referenceId, ok, waDelivery}; its schema at yatra-inquiry.ts:36-53 is what buildYatraInquiry mirrors. Now api-contracts.ts:1293 + (devotee)/yatra-detail.tsx:66. I deliberately did NOT fire a live POST — the handler sends real email to YATRA_INQUIRY_TO and the buyer.",
+   "files": [
+    "apps/mobile/lib/api-contracts.ts",
+    "apps/mobile/app/(devotee)/yatra-detail.tsx"
+   ],
+   "test": "parity-contracts.test.ts 'PAR-18 buildYatraInquiry' (5 tests: the built body satisfies the server schema field-for-field; bad email, blank name, travellers 0 and 51, and a missing start date each throw YatraInquiryError before the request goes out). RED: suite would not load. GREEN: 5/5."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-19",
+   "outcome": "fixed",
+   "change": "Removed the five fake switches entirely rather than faking persistence. Added lib/platform-flags.ts: describePlatformFlagSupport() states plainly that platform flags cannot be changed from the app, and describeGatewayStatus() renders the one value that can be read from a real endpoint — the Razorpay gateway via GET /api/v1/payments/config — read-only and defaulting to 'Unknown' on a failed or in-flight request. The dead `stripe` flag is gone. The user-count tile also now goes through selectAdminDashboard.",
+   "evidence": "Reproduced verbatim: apps/mobile/app/(admin)/settings.tsx:22-33 was `useState({video_proof_required:true, nri_pricing:true, razorpay:true, stripe:true, ai_jyotish:false, auto_approve:true})` with `toggle(id) => setState(s => ({...s,[id]:!s[id]}))` and no fetch anywhere in the file — an admin could believe they had switched off a payment gateway or dropped mandatory video proof for payouts, over money and over trust-and-safety, with nothing changed and the value lost on unmount. I took the audit's second option ('remove the screen until one exists') because the first is impossible: there is no platform-flag surface to wire to. apps/api/src/routes/admin-ops.ts is two CRON-token-gated read-only agent feeds plus an SLA bulk-resolve, and a repo-wide search for featureFlag/feature_flag/platformSetting returns nothing in apps/api/src/routes. Reused the existing isLivePaymentRail() from lib/subscription-gate.ts rather than duplicating the demo-key check. New: lib/platform-flags.ts:47,74; (admin)/settings.tsx:10.",
+   "files": [
+    "apps/mobile/lib/platform-flags.ts",
+    "apps/mobile/app/(admin)/settings.tsx"
+   ],
+   "test": "parity-contracts.test.ts 'PAR-19 describePlatformFlagSupport' (3 tests: canWrite is false and the message says so; no `stripe` flag is listed; every exposed flag names a real /api/v1/ source endpoint). RED: this is the import that failed the whole suite — 'Cannot find module ../platform-flags', 0 tests executed. GREEN: 3/3."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-20",
+   "outcome": "already_fixed",
+   "change": "None needed.",
+   "evidence": "Dead. apps/mobile/app/(admin)/reports.tsx:44-50 no longer promises an email: exportReport now says 'Report exports are not available in the mobile app yet — this screen cannot generate or email a file. Use the web admin console.', and reports.tsx:75-79 carries a standing notice above the list. The false 'Queued / You will receive an email shortly' alert is gone, and the PAR-04 crash on `dash.totalBookings.toLocaleString` is gone with it (reports.tsx:32 goes through selectAdminDashboard). I considered wiring the one export that does exist server-side (apps/api/src/routes/admin-donations-export.ts) but it is a file download behind a Bearer header, which Linking.openURL cannot carry — so the honest 'use the web console' message is the correct end state until a mobile-appropriate export exists.",
+   "files": [
+    "apps/mobile/app/(admin)/reports.tsx"
+   ],
+   "test": "None written — the screen is already honest and any test would pass before and after."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-06",
+   "outcome": "partial",
+   "evidence": "REPRODUCED. grep over apps/api/src for `notifyPriest` returned exactly one hit — its own definition at apps/api/src/services/booking-notify.service.ts:553 — no caller, no test. `'eta'` appeared only at booking-notify.service.ts:122 (union member), :135 (TEMPLATE 'pandit_eta') and :171 (push copy), with no producer anywhere. Of the 11 declared BookingEvents, `cancelled` and `video_ready` HAVE since gained producers (routes/bookings.ts:1293 and services/booking.service.ts:813/1510 via notifyVideoReady), so the finding's list is now 4 dead events, not 6: offer_timeout, in_progress, completed, eta. FIXED for offer_timeout + eta + the discarded result: dispatch.service.ts:479 now reads the expiring offers before closing them (a bare updateMany discards the priestIds, which is exactly why notifyPriest could have no caller) and :484 notifyExpiredOfferPriests fires `offer_timeout` to each pandit; booking-notify.service.ts:612 notifyPriest now returns a per-channel NotifyOutcome instead of Promise<void> with `.catch(() => undefined)` on both legs, and records the attempt against the pandit. 'eta' deleted from the union, TEMPLATE and pushTextFor.",
+   "change": "dispatch.service.expireSentOffers (new, dispatch.service.ts:463) selects the lapsing offers before updateMany and hands them to notifyExpiredOfferPriests, which resolves each priest's userId+phone via priestContact and calls notifyPriest('offer_timeout', ctx) — bounded (take: 200), deduped per booking, and fully swallowed so a BSP outage cannot break the sweep that reassigns the devotee's paid booking. notifyPriest rewritten to mirror notifyDevotee: per-channel ChannelOutcome, `skipped` (channel unconfigured) kept distinct from `sent`, email reported as 'no-target' by design, and the outcome persisted via reportOutcome with audience:'priest'. 'eta' removed rather than left as shipped-looking policy with no trigger — it also inflated the 11-template Meta approval effort tracked in TASKS.md.",
+   "files": [
+    "apps/api/src/services/dispatch.service.ts",
+    "apps/api/src/services/booking-notify.service.ts",
+    "apps/api/src/services/dispatch-offer-timeout.test.ts",
+    "apps/api/src/services/booking-notify.log.test.ts"
+   ],
+   "test": "apps/api/src/services/dispatch-offer-timeout.test.ts (new, 9 tests) — RED: all 9 failed, `__clearOfferTimersForTests is not a function`; GREEN 9/9, including 'fires offer_timeout to every pandit whose offer just expired' and 'notifies nobody when no offer expired'. apps/api/src/services/booking-notify.log.test.ts (new, 9 tests) — RED 7 failed / 2 passed (the 4 notifyPriest tests failed on the void return); GREEN 9/9. The 'eta' removal is additionally pinned by a compile-time assertion (@ts-expect-error on `const removed: BookingEvent = 'eta'`) that was a tsc error before the change and passes now — `npx tsc --noEmit` exits 0.",
+   "blocked_on": "The `in_progress` and `completed` transitions are set in apps/api/src/services/booking.service.ts (updateBookingStatus) and apps/api/src/routes/bookings.ts, both on this session's explicit do-not-touch list because other agents are mid-edit. Both events already have push copy, a WhatsApp template and a working notifyDevotee fan-out; wiring is two `void notifyDevotee('in_progress'|'completed', buildBookingCtx(updated))` calls on those transitions, matching the existing notifyVideoReady call at booking.service.ts:813. Needs the owner of those two files, not an owner decision."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-07",
+   "outcome": "partial",
+   "evidence": "REPRODUCED on both sides. apps/web/components/AartiOptIn.tsx:99-101 still does `const subJson = sub.toJSON(); const deviceToken = subJson.endpoint || JSON.stringify(subJson)` and POSTs it to /notifications/register-token. apps/api/src/lib/fcm.ts:126 classified `/UNREGISTERED|INVALID_ARGUMENT|NOT_FOUND/` as `expired: true`, and apps/api/src/jobs/aarti-notify.ts:159 pushed those tokens into expiredAll, which :167 deleteMany'd — so the first send after opt-in destroyed the registration. Live DB confirms fcm_device_tokens holds 1 row. FIXED on the API side: fcm.ts:124 isFcmRegistrationToken refuses a push endpoint URL / serialised subscription BEFORE the network call, fcm.ts:164 splits INVALID_ARGUMENT out of `expired` into a new `invalidToken` flag, aarti-notify.ts:204 counts invalid tokens and logs a greppable [aarti-notify][INVALID-TOKEN] line without deleting the row, and routes/notifications.ts:172 now 400s the write instead of storing something undeliverable and answering ok.",
+   "change": "New FcmSendResult.invalidToken, documented as 'a malformed token is a BUG on the write path, not a dead device, and deleting it destroys the only evidence'. sendFcm short-circuits a non-FCM token with no round-trip; UNREGISTERED/NOT_FOUND still classify as expired so genuinely dead devices are still pruned. sendFcmMulticast gained an `invalid: string[]` bucket (no callers, so the signature change is inert). POST /notifications/register-token returns 400 with a message naming the correct endpoint (POST /notifications/subscribe with the full PushSubscription); AartiOptIn.tsx:116 already does `if (!resp.ok) throw new Error('Server rejected token')`, so the toggle now fails visibly instead of lying that it is on. POST /notifications/test-fcm reports `invalid` separately and no longer answers ok:true when every token was refused.",
+   "files": [
+    "apps/api/src/lib/fcm.ts",
+    "apps/api/src/jobs/aarti-notify.ts",
+    "apps/api/src/routes/notifications.ts",
+    "apps/api/src/lib/fcm.test.ts",
+    "apps/api/src/jobs/aarti-notify.test.ts",
+    "apps/api/src/routes/notifications.centre.test.ts"
+   ],
+   "test": "apps/api/src/lib/fcm.test.ts (new, 6 tests) — RED 4 failed / 2 passed; the 2 that passed are deliberate controls ('still accepts a real FCM registration token', 'still classifies UNREGISTERED as expired') that must not regress. GREEN 6/6. apps/api/src/jobs/aarti-notify.test.ts pruning block (2 of 10) — RED (part of 7 failed / 3 passed); GREEN 10/10, asserting deleteMany is NOT called for an invalidToken and IS called for an expired one. apps/api/src/routes/notifications.centre.test.ts register-token block (2 of 7) — RED 6 failed / 1 passed; GREEN 7/7.",
+   "blocked_on": "The actual defect is the WRITE in apps/web/components/AartiOptIn.tsx:99-101, which is off-limits this session (apps/web/**). The API now refuses the bad value rather than silently storing it, so web aarti opt-in surfaces an error until that component is changed to call POST /notifications/subscribe with the full PushSubscription (endpoint + p256dh + auth) and reserve register-token for native iOS/Android FCM tokens. That is the honest state — the feature has never worked — but it is visible now, so it should land in the same release as the web change."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-08",
+   "outcome": "fixed",
+   "evidence": "REPRODUCED. apps/api/src/jobs/aarti-notify.ts:111 was `if (minutesUntil < 14 || minutesUntil > 16) continue;` — a 3-minute window — justified at :109-110 by 'Master-cron tick is ~5 min'. The real cadence is 30 minutes: apps/api/src/jobs/scheduler.ts:47 `DEFAULT_INTERVAL_MS = 30 * 60_000` (the in-process scheduler added by the NOTIF-01 fix), and master-cron.ts:35 documents the same 30 minutes for the external pinger. 3/30 = a 10% hit rate. Idempotency was a module-level `Set` (aarti-notify.ts:34) that a Render restart empties and a second instance never shares.",
+   "change": "The window now derives from the cadence instead of contradicting it: tickIntervalMinutes() (aarti-notify.ts:68) reads the SAME `OPS_TICK_INTERVAL_MS` env var scheduler.ts resolves, with the same 30-minute default, and the job fires on the first tick where the aarti is between 0 and tick+15 minutes away (aarti-notify.ts:142,156) — so an aarti cannot slip between two ticks. Midnight-IST wrap handled ((start - now + 1440) % 1440), which also unblocks the small-hours slots (Tirumala suprabhatam, Kashi mangala) that could previously only match on the same IST day. The in-process Set is replaced by a durable per-(temple, slot, IST-date) claim via lib/notification-run-log.claimRun (aarti-notify.ts:163), keyed off the AARTI's own IST date so two ticks straddling midnight cannot claim two keys for one aarti. Because the window can now be up to 45 minutes, the push body states the real minutes remaining instead of the hardcoded 'Watch live in 15 min', which would have been wrong on almost every tick.",
+   "files": [
+    "apps/api/src/jobs/aarti-notify.ts",
+    "apps/api/src/lib/notification-run-log.ts",
+    "apps/api/src/jobs/aarti-notify.test.ts"
+   ],
+   "test": "apps/api/src/jobs/aarti-notify.test.ts (new, 10 tests) — RED 7 failed / 3 passed; the window block failed with 'matches an aarti 40 minutes out when the tick is 30 minutes' and 'claims each (temple, slot, IST day) durably so a restart cannot re-fire'. GREEN 10/10. Two negative controls hold in both directions: no fire for an aarti already started, and none beyond tick+lead."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-09",
+   "outcome": "fixed",
+   "evidence": "REPRODUCED. apps/api/src/jobs/aarti-notify.ts:133-146 appended EVERY token with `aartiOptIn: true` to the audience of EVERY temple, merged by deviceToken, with the comment 'This is broad — fine for early launch'. Confirmed against the live DB: `SELECT count(*) FROM temple_follows` returns 0, so the targeted branch had no audience at all and 100% of the fan-out came from the global branch; `SELECT ... FROM temples WHERE live_darshan_enabled AND status='active'` returns the seeded set whose timing_info (verified for Kashi Vishwanath: eveningAarti/mangalaAarti/shringarAarti) produces ~20 aarti slots a day across them.",
+   "change": "The global branch is deleted. Audience is now followers of that temple only, with `aartiOptIn: true` (aarti-notify.ts:167-186), so the flag means what its UI copy implies: aarti reminders for the temples I follow. One push per device even when the row set repeats it. A temple with no followers now short-circuits before any token query.",
+   "files": [
+    "apps/api/src/jobs/aarti-notify.ts",
+    "apps/api/src/jobs/aarti-notify.test.ts"
+   ],
+   "test": "apps/api/src/jobs/aarti-notify.test.ts audience block (3 of 10 tests) — RED: 'does NOT push to a global opt-in who does not follow the temple' and 'pushes to a follower of that temple' both failed; GREEN 10/10. The opted-out-follower control passed before and after and is retained deliberately."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-10",
+   "outcome": "fixed",
+   "evidence": "REPRODUCED. apps/api/src/services/dispatch.service.ts:51 `instant: { candidateCount: 6, acceptWindowSec: 60, maxRounds: 2 }`. The only thing acting on an expired offer was sweepExpiredOffers, whose sole caller is tickDispatchSweep at apps/api/src/jobs/master-cron.ts:485 — tick 13 of the 18-tick runDailyOps chain, driven at scheduler.ts:47 DEFAULT_INTERVAL_MS = 30 minutes. So round 2 of a 60-second offer landed up to 30 minutes late and the 'we're re-matching' notice (dispatch.service.ts:478) up to an hour late. apps/api/src/services/cancellation.service.ts:187 set `offerExpiresAt: new Date()` with the comment 'trigger immediate re-broadcast on next sweep' — 'immediate' meaning up to 30 minutes.",
+   "change": "Three changes, all inside the lane. (1) broadcast() now arms a per-booking timer for the tier's OWN accept window (dispatch.service.ts:280,288): unref'd so it never holds the process open, one timer per booking replaced on rebroadcast, and the work is the new idempotent sweepBookingOffers(bookingId) so a timer that fires late, twice, or alongside the cron changes nothing. (2) The sweep was refactored so the cron path and the timer path share ONE decision — resolveUnassigned(bookingId, tier) (dispatch.service.ts:614) holds the rounds-counting and rebroadcast/escalate logic unchanged, and sweepBookingOffers (dispatch.service.ts:568) applies it to a single id with no table scan; the cron sweep remains the safety net for offers whose timers died with the process. (3) cancellation.service.panditCancel drives sweepBookingOffers for that booking immediately (cancellation.service.ts:214, dynamic import to keep the module graph acyclic, fire-and-forget after the requeue has committed). A token-gated `dispatch-sweep` job was also added to routes/cron.ts:87 so an external one-minute scheduler can drive it without dragging the other 17 ticks along; a GitHub Actions */1 schedule was deliberately NOT added because at 1,440 runs/month it blows the 2,000-minute cap that docs/free-tier-budgets.md already spends ~1,616 of.",
+   "files": [
+    "apps/api/src/services/dispatch.service.ts",
+    "apps/api/src/services/cancellation.service.ts",
+    "apps/api/src/routes/cron.ts",
+    "apps/api/src/services/dispatch-offer-timeout.test.ts",
+    "apps/api/src/services/cancellation-rebroadcast.test.ts",
+    "apps/api/src/routes/cron.test.ts"
+   ],
+   "test": "apps/api/src/services/dispatch-offer-timeout.test.ts (new, 9 tests) — RED all 9 failed; GREEN 9/9, with fake timers proving nothing fires at T+50s and sweepBookingOffers('bk-1') fires by T+70s (instant window is 60s), that it never scans pujaBooking.findMany, and that it does nothing once a pandit accepted. apps/api/src/services/cancellation-rebroadcast.test.ts (new, 2 tests) — RED proven by removing the new block from cancellation.service.ts and re-running: 1 failed / 1 passed ('expected spy to be called with [bk-1]'); restored → GREEN 2/2. apps/api/src/routes/cron.test.ts covers the token-gated dispatch-sweep job. The three pre-existing sweepExpiredOffers regression tests in dispatch.service.test.ts (S3-11 per-booking escalation, exact round counting, empty-candidate escalation) still pass unchanged — the refactor preserved that logic verbatim."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-11",
+   "outcome": "fixed",
+   "evidence": "REPRODUCED verbatim. apps/api/src/routes/cron.ts:46-63 held all three stubs — refreshPanchang `return { daysRefreshed: 0 }`, sendFestivalReminders `return { sent: 0 }` ('Stub for now — wire when push subs land in Prisma', which they did: the push_subscriptions table and notifications.ts:48 upsert), expireBookings `return { expired: 0 }` — registered at :65-69, run by POST /daily at :74-81 with `ok = results.every(r => r.ok)` (three stubs never fail) and returned 200. .github/workflows/daily-cron.yml curled it with `curl -fsS`, which only fails on a non-2xx, so the single scheduled workflow in the repo went green every day.",
+   "change": "All three stubs deleted. POST /api/v1/cron/daily now drives the real runDailyOps() chain and returns its counters, and 500s loudly when it throws so `-fsS` turns the workflow red. The named-job map holds only real work: 'daily-ops' (runDailyOps), 'dispatch-sweep' (NOTIF-10) and 'aarti-notify'. daily-cron.yml no longer treats a 200 as proof of work: it captures the body and fails the job when ok is false, when no result payload came back, or when any of the eight expected ticks (outreach, panchang, panchangCompute, aartiNotify, weeklyDigest, refunds, dispatchSweep, weeklySettlement) is missing, and it prints each tick's counters into the log. Timeout raised 5→10 min and curl --max-time 240→540 for the real chain. No new workflow and no schedule change, so zero additional Actions minutes. Festival reminders are not reintroduced as a job: festivals already ride the 5am panchang push body (master-cron.ts:260), and a registered no-op is indistinguishable from a working feature at every layer above it.",
+   "files": [
+    "apps/api/src/routes/cron.ts",
+    ".github/workflows/daily-cron.yml",
+    "apps/api/src/routes/cron.test.ts"
+   ],
+   "test": "apps/api/src/routes/cron.test.ts (new, 8 tests) — RED 7 failed / 1 passed (the surviving one is the auth control); GREEN 8/8, asserting runDailyOps is driven, that counters come back for a workflow to assert on, that a throwing chain yields 500 + ok:false, and that 'refresh-panchang' / 'festival-reminders' / 'expire-bookings' are gone from /cron/health. The workflow YAML was parsed with a YAML loader and its embedded python assertion block extracted and compiled to catch a heredoc/indentation error before it could hit CI."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-12",
+   "outcome": "fixed",
+   "evidence": "REPRODUCED. apps/api/src/jobs/master-cron.ts:132-139 isFiveAmIstWindow returns true for `istHour === 5` — the whole 05:00-05:59 IST hour — and tickPanchangBlast at :219-222 had that as its ONLY gate, with no record that today's blast had already gone out (unlike the weekly digest, which persists WeeklyDigestRun and enforces a 6-day cooldown at weekly-digest.ts:378-399). At the 30-minute scheduler cadence that hour contains exactly 2 ticks, so every panchangOptIn subscriber received the identical \"Today's Panchang\" push twice each morning.",
+   "change": "tickPanchangBlast claims `panchang-blast:<IST date>` via lib/notification-run-log.claimRun BEFORE the fan-out (master-cron.ts:239-242) — claiming after the first send would be a race, not a lock — and returns {sent:0, skipped:true, reason:'already blasted today'} when the day is taken. The key uses the IST calendar date (istDateKey, :233), so 23:45 UTC on the 12th correctly claims 2026-08-13, the morning it belongs to. The claim is RELEASED when nothing was attempted (no panchang data for today, :255; an error before the first send, :289) so a transient failure does not silently consume the day's only chance to send — but never after a partial fan-out, which would re-push everyone who already received it. claimRun uses INSERT ... ON CONFLICT DO NOTHING, so it is safe across concurrent instances, which an in-process flag would not have been.",
+   "files": [
+    "apps/api/src/jobs/master-cron.ts",
+    "apps/api/src/lib/notification-run-log.ts",
+    "apps/api/src/jobs/panchang-blast.test.ts"
+   ],
+   "test": "apps/api/src/jobs/panchang-blast.test.ts (new, 6 tests) — RED 6/6 failed ('tickPanchangBlast is not a function'; it was module-private); GREEN 6/6, covering send on the first tick, silence on the second tick of the same morning, IST-not-UTC date keying, no claim burned outside the window, claim released when there is nothing to send, and the admin force path still taking a claim. The claim primitive itself was verified against the live Postgres: the same INSERT ... ON CONFLICT DO NOTHING returned rowcount 1 then 0 for the same key."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-13",
+   "outcome": "fixed",
+   "evidence": "REPRODUCED, all four parts. apps/api/src/jobs/weekly-digest.ts:174-198 fetchUpcomingAartisForUser hardcoded `aarti: 'Sandhya Aarti'` and `whenLocal: 'today 6:30 PM IST'` for every followed temple; :218-243 fetchRecommendedPuja(user) took the user and never read it (the gotra branch at :223-227 was an empty block) while the template at :108 said 'Based on your <gotra> gotra'; both ran inside the per-user loop at :316-317, giving 1+2N queries; and :348-361 stamped WeeklyDigestRun unconditionally, after which maybeRunWeeklyDigest skips for 6 days.",
+   "change": "The fabrication is gone: fetchUpcomingAartisForBatch (weekly-digest.ts:210) joins temple_follows ONCE for the whole batch with `WHERE tf.user_id = ANY($1::uuid[])`, pulls t.timing_info, and renders each temple's REAL aarti label and IST clock time through the same lib/darshan-schedule.parseSchedule the darshan pages use; a temple with no parseable aarti window contributes no row rather than an invented one. fetchRecommendedPuja lost its unused `user` parameter and is hoisted to one call per run (:281,:329), and the email copy changed from 'Based on your <gotra> gotra, devotees often book' to 'Popular this week / Devotees are booking' — the honest description of a global top-puja query. Query count drops from 1+2N to 1 + 1-per-batch-of-200. The run is stamped only when failed === 0 (:417-424); a run that hit the Resend 100/day cap now logs a greppable [weekly-digest][INCOMPLETE] line, leaves WeeklyDigestRun untouched and retries on the next tick instead of writing 99% of recipients off for six days. `skipped` (opted out, no address, channel unconfigured) is explicitly NOT a failure and never blocks the stamp forever. NOT built: a separate dead-letter table — the retry is the un-stamped run, which needs no schema. NOT built: real gotra personalisation, which is a content decision (which rishi lineage maps to which deity, and which puja follows) belonging to the owner; the code now claims nothing rather than inventing a mapping.",
+   "files": [
+    "apps/api/src/jobs/weekly-digest.ts",
+    "apps/api/src/jobs/weekly-digest.fanout.test.ts",
+    "apps/api/src/lib/__mocks__/prisma.ts"
+   ],
+   "test": "apps/api/src/jobs/weekly-digest.fanout.test.ts (new, 8 tests) — RED 6 failed / 2 passed; failures were the 3-user N+1 (3 follow queries, 3 pujaType.findFirst calls), the missing real 'Mangala Aarti' / '3:00 AM IST' with 'Sandhya Aarti' still present, the 'Based on your Bharadwaj gotra' string, and the run being stamped despite a failure. GREEN 8/8; the 5 pre-existing tests in weekly-digest.test.ts (scheduling gate, HTML escaping, no cross-devotee PII) still pass. The shared mock gained `pujaType.findFirst` as an ADDED method — no existing method was reassigned. The new `ANY($1::uuid[])` join was executed against the live Postgres with a real temple_follows row and returned Kashi Vishwanath's actual regularHours (probe row deleted afterwards; temple_follows back to 0)."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-14",
+   "outcome": "partial",
+   "evidence": "REPRODUCED. No Notification model exists in apps/api/prisma/schema.prisma; `SELECT to_regclass('public.notification_log')` against the live DB returned null; and apps/api/src/routes/notifications.ts had no GET read route at all, matching the sweep's seven 404s. Every send result was discarded — notifyPriest returned Promise<void> with `.catch(() => undefined)` on both legs, and reportOutcome only emitted a console line for the undelivered case. FIXED for the record and the read API: lib/notification-log.ts writes one row per event with a column per channel, booking-notify.service.ts:285 records every notifyDevotee / notifyPriest / notifyRefundProcessed / notifyVideoReady outcome through the single reportOutcome funnel, and GET /api/v1/notifications (routes/notifications.ts:45) serves the devotee their own history.",
+   "change": "One row per event with per-channel columns (push/whatsapp/email/delivered) plus the exact title, body and url that were attempted — that shape serves the devotee's in-app centre, the operator's 'was she told, and on what?' and a future retry job from one table. sent/skipped/failed/no-target stay distinct in the log, so an unconfigured channel can never read as a delivery. The read endpoint is auth-gated, paginated by createdAt cursor, scoped to the caller's own rows, and returns an honest empty list — no fixtures, no placeholder history — with a separate `available:false` flag when the log itself could not be READ, because 'we cannot show your history' is a different fact from 'you have no notifications' and must not render as one. Every write and read degrades to a structured stdout line on failure; a logging problem can never break a booking. The stable [booking-notify][UNDELIVERED] marker is retained precisely because it survives the log table being unavailable.",
+   "files": [
+    "apps/api/src/lib/notification-log.ts",
+    "apps/api/src/services/booking-notify.service.ts",
+    "apps/api/src/routes/notifications.ts",
+    "apps/api/src/services/booking-notify.log.test.ts",
+    "apps/api/src/routes/notifications.centre.test.ts"
+   ],
+   "test": "apps/api/src/services/booking-notify.log.test.ts (new, 9 tests) — RED 7 failed / 2 passed; GREEN 9/9, asserting one record per event with the honest per-channel outcome, that a skipped channel is never recorded as sent, that the stored copy is the copy that was attempted, that a pandit attempt is recorded against the pandit, and that a logging failure never breaks the notification. apps/api/src/routes/notifications.centre.test.ts (new, 7 tests) — RED 6 failed / 1 passed; GREEN 7/7, covering 'no longer 404s', caller-scoped rows, the honest empty state, the no-history-vs-unavailable distinction, and the 401. The DDL, the parameterised insert and the cursor read were all executed against the live Postgres and round-tripped correctly.",
+   "blocked_on": "Two slices sit outside the lane. (1) A proper Prisma model — apps/api/prisma/** is off-limits this session, so the table is created by lazy idempotent CREATE TABLE IF NOT EXISTS DDL, which is the repo's own established mechanism (lib/ensure-schema.ts exists because Render's start command bypasses `prisma migrate deploy`). The owner of prisma/** should fold `notification_log` and `notification_run_log` into schema.prisma + a migration, at which point the lazy DDL in lib/notification-log.ts and lib/notification-run-log.ts becomes a no-op and can be dropped. (2) The devotee-facing bell / inbox UI is apps/web/**, off-limits; the API it needs is live and documented above. Neither is an owner decision — both need the agent owning those paths."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-04",
+   "outcome": "fixed",
+   "evidence": "Reproduced: grep for a `delivered` transition across apps/web returned nothing for puja bookings, and apps/web/app/priest/bookings/view/page.tsx:350 (pre-fix) rendered only a static green panel for `video_uploaded` with no control at all. The API side was already willing — apps/api/src/routes/bookings.ts:355-361 ASSIGNED_PRIEST_ALLOWED_TRANSITIONS includes 'delivered' — so the only thing missing was a client. Live DB confirmed the pile-up the finding predicts: 6 bookings sitting in video_uploaded for this one pandit. Fixed at apps/web/app/priest/bookings/view/page.tsx:219 (markDelivered) rendered at :482. The button only appears for `video_uploaded` (never before proof exists), PATCHes /bookings/:id {\"status\":\"delivered\"}, and reports the server's status text on failure instead of assuming success.",
+   "change": "Added a `Mark delivered` action to the pandit booking detail page for status `video_uploaded`, wired to the existing PATCH /api/v1/bookings/:id. It checks res.ok, refetches the booking, and surfaces the error banner on failure. Deliberately NOT rendered for `completed` (no proof yet) or `delivered` (already closed).",
+   "files": [
+    "apps/web/app/priest/bookings/view/page.tsx",
+    "apps/web/__tests__/priest-fulfilment-p1.test.tsx"
+   ],
+   "test": "apps/web/__tests__/priest-fulfilment-p1.test.tsx — 2 tests, 2 red before (no button matching /deliver/i existed anywhere on the page), 2 green after: one asserts the PATCH goes to /bookings/<id> with method PATCH and body {status:'delivered'}, the other asserts the control is absent while the booking is still `completed`.",
+   "blocked_on": "Not blocking this record, but the sweep's other half is unimplemented and sits in another lane: the devotee-side \"Confirm delivery\" button on apps/web/app/bookings/** (the booking owner is already authorised by routes/bookings.ts:354 OWNER_ALLOWED_TRANSITIONS). Pandit self-attestation closes the loop today; devotee confirmation would be the stronger signal."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-05",
+   "outcome": "fixed",
+   "evidence": "Reproduced live on the stale :4000 instance: `POST /api/v1/priest/bookings/<id>/video-proof/signed-url {\"contentType\":\"video/mp4\"}` -> `400 {\"error\":\"supabaseAdmin.storage.from is not a function\"}`, verbatim the sweep's observation. Root cause confirmed by reading both definitions of \"storage is configured\": apps/api/src/lib/r2.ts:41 `supabaseEnabled = !!(supabaseUrl && SUPABASE_SERVICE_ROLE_KEY)` vs apps/api/src/lib/supabase.ts:10 `isDemoMode = !supabaseUrl || supabaseUrl === 'https://demo.supabase.co'`, which returns a Proxy whose every non-`auth` property is a bare throwing function (supabase.ts:31). So r2.enabled was true, the 503 guard at routes/priest.ts:299 never fired, and the throw fell into the generic catch that maps everything to 400.",
+   "change": "Kept lib/r2.ts and lib/supabase.ts untouched (outside my lane) and closed it at the route boundary instead: added `storageReady({enabled, backend, demoMode})` at apps/api/src/routes/priest.ts:79, imported `isDemoMode` from lib/supabase.js, and replaced the guard at :369 so a demo-stub Supabase backend answers the designed 503 before anything is signed. Wrapped the presign call at :401 so a thrown storage error becomes 503 with the actionable env-var message rather than a 400 carrying the internal TypeError.",
+   "files": [
+    "apps/api/src/routes/priest.ts",
+    "apps/api/src/routes/priest-video-storage.test.ts"
+   ],
+   "test": "apps/api/src/routes/priest-video-storage.test.ts — 3 tests, 2 red before (both asserted 503, both got 400 — the exact live symptom), 3 green after. Test 1 pins that the guard fires BEFORE presign is called (presign asserted not-called); test 2 pins that a thrown TypeError maps to 503 and the response body never contains \"is not a function\"; test 3 is a labelled happy-path lock (green both sides) so the new guard cannot start refusing a real configuration. Live cross-check: my :4123 instance had a real SUPABASE_URL and returned 200 with a genuine presigned upload URL."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-06",
+   "outcome": "fixed",
+   "evidence": "Reproduced in the live DB, not just in code: `SELECT ... WHERE video_proof_url NOT LIKE 'http%'` for this pandit returned 5 poisoned rows — BS-20260812-SGAVP ('   '), BS-20260812-M302L ('   '), BS-20260812-QX6DC ('  '), BS-20260812-S3I4U ('not-a-url-at-all'), BS-20260812-IACI5 ('not a url at all'). Cause: apps/api/src/routes/priest.ts:356 (pre-fix) accepted any non-empty string, and booking.service.ts:1450 only permits `completed`, so a retry 400s while the delivery gate (routes/bookings.ts:278 checkVideoProofGate, which trims) refuses `delivered` — the booking is stuck, unpayable, unfixable without curl.",
+   "change": "Boundary validation: `videoProofBodySchema = z.object({ videoUrl: z.string().trim().url().max(2000) })` at apps/api/src/routes/priest.ts:63, mirroring the `z.string().url()` the PATCH /bookings/:id proof field already used. Repair path: apps/api/src/services/priest.service.ts:511 uploadVideoProof now checks ownership itself and, when the booking is already `video_uploaded`, writes ONLY videoProofUrl + videoUploadedAt (:524) instead of delegating — it does not touch `status`, so it cannot re-enter the payout hook that already minted the earning on the first upload. Client half: apps/web/app/priest/bookings/view/page.tsx:188 submitProof validates with `new URL()` before POSTing, and :468 adds a \"Wrong link? Replace video proof\" control while the booking is video_uploaded.",
+   "files": [
+    "apps/api/src/routes/priest.ts",
+    "apps/api/src/services/priest.service.ts",
+    "apps/web/app/priest/bookings/view/page.tsx",
+    "apps/api/src/routes/priest-fulfilment.test.ts"
+   ],
+   "test": "apps/api/src/routes/priest-fulfilment.test.ts — 6 tests, 5 red before, 6 green after. Red: '  ' accepted (now 400, service not called), 'not-a-url-at-all' accepted (now 400), a valid URL with surrounding whitespace forwarded untrimmed, replace-while-video_uploaded threw, replace-by-a-non-assigned-pandit reached the update. The 6th is a labelled lock (green both sides) asserting a booking that never reached `completed` is still refused, so the replace path cannot widen into \"any status may attach proof\". Live end-to-end: POST with '  ' -> 400, with 'not-a-url-at-all' -> 400, and the genuinely bricked BS-20260812-SGAVP was repaired through the product path -> 200 with videoProofUrl set."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-07",
+   "outcome": "fixed",
+   "evidence": "Reproduced against the live DB and the stale API. DB GROUP BY for priest 6a56eba6: priest_assigned 25, confirmed 9, video_uploaded 6, completed 4, delivered 3, pending_payment 2, refunded 1, in_progress 1 = 51 total. Stale :4000 `GET /priest/bookings` returned 20 rows and `counts: undefined`; apps/web/app/priest/bookings/page.tsx:113 (pre-fix) sent no page/limit, apps/api/src/services/priest.service.ts:159 defaults limit to 20, and the tab badges were `bookings.filter(...).length` over that truncated array — so the pandit was told 15 accepted when he had 25, and 31 bookings had no route to the screen.",
+   "change": "Server-side views and counts: PRIEST_BOOKING_VIEWS at apps/api/src/services/priest.service.ts:17 defines the tab strip (\"completed\" = completed + video_uploaded + delivered) once, so the badge and the rows behind it cannot disagree; getAssignedBookings adds a `view` filter and a single groupBy at :256 computed over the pandit's whole book (never the page). Route accepts `view` at routes/priest.ts:56. Client: apps/web/app/priest/bookings/page.tsx:163 now sends view+page+limit, badges read the server `counts`, client-side filtering is gone, and a Previous/Next pager with \"Showing X–Y of 51 bookings\" was added at :516. A successful Accept/Decline/Start/Complete now refetches instead of patching status locally, because the row can leave the active view and the counts must move with it.",
+   "files": [
+    "apps/api/src/services/priest.service.ts",
+    "apps/api/src/routes/priest.ts",
+    "apps/web/app/priest/bookings/page.tsx",
+    "apps/api/src/routes/priest-fulfilment.test.ts",
+    "apps/web/__tests__/priest-fulfilment-p1.test.tsx",
+    "apps/web/__tests__/booking-fixes-phase0.test.tsx"
+   ],
+   "test": "API apps/api/src/routes/priest-fulfilment.test.ts — 3 red before / green after (counts absent; ?view=completed and ?view=priest_assigned not translated into a status filter), plus 1 labelled lock that page/limit are honoured. Web apps/web/__tests__/priest-fulfilment-p1.test.tsx — 4 red before / green after (no page/limit sent; All chip printed 20 instead of 51; no Next control existed; tab switch did not reach the server). Live post-fix: default page returns 20 rows with total 51 / totalPages 3 and counts matching the DB exactly; ?view=completed returns 13 rows whose statuses are exactly ['completed','video_uploaded','delivered']. One adjacent test needed updating: apps/web/__tests__/booking-fixes-phase0.test.tsx:50 asserted the deleted optimistic status map by source-grep; it now asserts the refetch, with the reason in a comment."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-08",
+   "outcome": "fixed",
+   "evidence": "Reproduced: apps/web/app/priest/bookings/view/page.tsx:94 (pre-fix) fetched `${API}/priest/bookings` and did `.find(b => b.id === bookingId)` over the server's 20-row default, so any booking past row 20 could only ever hit `throw new Error('Booking not found')` and render an empty shell — on the one page that carries the video-proof control. Confirmed live: booking 53e54770-14ba-4a4c-a237-4b8d276c383a (BS-20260812-Z864E) is row 21 of this pandit's list and was unreachable.",
+   "change": "Added GET /priest/bookings/:id at apps/api/src/routes/priest.ts:185 backed by priestService.getAssignedBookingById (services/priest.service.ts:296), which returns a discriminated result so the route can answer 404 for unknown and 403 for someone else's booking (no existence leak), with a uuid guard so a junk id cannot reach Prisma. Both reads share one `assignedBookingSelect` (priest.service.ts:41) so the list and the detail page can never drift again. The web page fetches that single record at apps/web/app/priest/bookings/view/page.tsx:115.",
+   "files": [
+    "apps/api/src/routes/priest.ts",
+    "apps/api/src/services/priest.service.ts",
+    "apps/web/app/priest/bookings/view/page.tsx",
+    "apps/api/src/routes/priest-fulfilment.test.ts",
+    "apps/web/__tests__/priest-fulfilment-p1.test.tsx"
+   ],
+   "test": "API — 4 tests, all red before (the route did not exist; the 404 case was strengthened to assert the route's own `{\"error\":\"Booking not found.\"}` body so Fastify's generic 404 could not pass it vacuously), all green after: single booking returned without any findMany, commission present, 404 body, 403 for another pandit's booking. Web — 1 red/green test asserting the detail page calls /priest/bookings/<id> and never pulls the list. Live post-fix: row-21 booking opens by id and returns bookingNumber BS-20260812-Z864E; unknown uuid -> 404 {\"error\":\"Booking not found.\"}; non-uuid -> 404."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-09",
+   "outcome": "fixed",
+   "evidence": "Reproduced exactly. All three helpers did `new Date(dateStr + 'T00:00:00')` — apps/web/app/priest/bookings/page.tsx:56, view/page.tsx:54, priest/page.tsx:77 — against an API value that is already a full ISO instant. Live API returns `scheduledDate: \"2028-02-02T00:00:00.000Z\"`; node confirms `new Date(\"2026-08-19T00:00:00.000Z\" + \"T00:00:00\")` -> Invalid Date. The red web test found 20 rendered \"Invalid Date\" nodes on one list page.",
+   "change": "Parse the ISO string directly in all three files (bookings/page.tsx:77, view/page.tsx:63, priest/page.tsx:81), return the raw string rather than \"Invalid Date\" if it is ever unparseable, and pin `timeZone: 'Asia/Kolkata'`. The timezone is load-bearing, not cosmetic: scheduledDate is a Postgres DATE (schema.prisma PujaBooking `@db.Date`) serialised at UTC midnight, so rendering it in the viewer's own zone would show the PREVIOUS day to every NRI west of UTC — and NRI is a core segment. Pinning the puja's own zone also renders correctly for the seeded rows stored at a +05:30 offset.",
+   "files": [
+    "apps/web/app/priest/bookings/page.tsx",
+    "apps/web/app/priest/bookings/view/page.tsx",
+    "apps/web/app/priest/page.tsx",
+    "apps/web/__tests__/priest-fulfilment-p1.test.tsx"
+   ],
+   "test": "apps/web/__tests__/priest-fulfilment-p1.test.tsx — 3 tests (list card, detail Schedule & Location, dashboard Upcoming Bookings), 3 red before / 3 green after. Each asserts zero \"Invalid Date\" nodes AND the expected rendered day (\"19 Aug 2026\" / \"19 August 2026\") from the exact ISO string the API sends, so a formatter that merely stopped crashing would not pass."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-10",
+   "outcome": "fixed",
+   "evidence": "Reproduced: apps/web/app/priest/bookings/view/page.tsx:401 (pre-fix) read `booking.platformCommission` while the select in apps/api/src/services/priest.service.ts:182-206 never asked for the column. Confirmed live on the stale :4000 — `GET /priest/bookings` first row has `platformCommission: undefined` — and node confirms `Intl.NumberFormat(...).format(undefined)` is the literal string \"₹NaN\". The column does exist (schema.prisma PujaBooking.platformCommission Decimal(10,2)); nothing was computing it wrongly, it simply was not selected.",
+   "change": "Added `platformCommission: true` to the shared select at apps/api/src/services/priest.service.ts:56 — plus `rating`/`reviewText`, which the same page reads at view/page.tsx:376-390 and which were missing for the same reason, so the Devotee Review block could never render. No derivation, no client-side arithmetic: the stored column is surfaced as-is, keeping Commission/priestPayout semantics untouched. Second half of the contract: formatCurrency at view/page.tsx:49 now coerces and degrades a missing/unparseable amount to an em dash, so this screen can never print a broken number again.",
+   "files": [
+    "apps/api/src/services/priest.service.ts",
+    "apps/web/app/priest/bookings/view/page.tsx",
+    "apps/api/src/routes/priest-fulfilment.test.ts",
+    "apps/web/__tests__/priest-fulfilment-p1.test.tsx"
+   ],
+   "test": "API — 2 tests red before / green after, asserting the Prisma select actually contains platformCommission (and rating/reviewText); I deleted a third draft test that read the field back off the mock because the mock ignores `select`, so it passed before and after and proved nothing. Web — 2 tests red before / green after: the Platform Commission row renders ₹330 and contains no 'NaN'; and with the field absent it renders a dash, still no 'NaN'. Live post-fix: platformCommission '330' against priceAmount 1100 / priestPayout 770."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-11",
+   "outcome": "fixed",
+   "evidence": "Reproduced end-to-end. DB: `SELECT count(*) FROM puja_bookings WHERE priest_id=... AND rating IS NOT NULL` = 1, `SELECT count(*) FROM reviews WHERE provider_id=<userId> AND provider_type='PANDIT'` = 0. booking.service.ts:1521 submitReview writes PujaBooking.rating/reviewText and bumps the priests aggregate (:1592) but inserts no Review row; the only `prisma.review.create` in the codebase is provider.service.ts:320, a different flow. apps/api/src/routes/priest.ts:432 (pre-fix) read the Review table only, so the stale :4000 answers `{\"reviews\":[],\"total\":0}` while the dashboard Rating card climbs.",
+   "change": "Took the read-side option from the finding (the write side lives in booking.service.ts, outside my lane, and is no longer needed): GET /priest/reviews at apps/api/src/routes/priest.ts:521 now reads BOTH writers — the Review table AND PujaBooking rows with a non-null rating for this priest — maps them to one shape, merges newest-first and caps at 100. Booking-sourced ids are prefixed `booking:<uuid>` so they cannot collide with a Review row, and each row carries `source` plus bookingNumber/pujaName for context. The response keeps every field apps/web/lib/pandit-api.ts PriestReview declares, so the existing /priest/reviews page consumes it unchanged. Reading the source of truth also backfills every historical booking rating for free — no migration, no fabricated rows.",
+   "files": [
+    "apps/api/src/routes/priest.ts",
+    "apps/api/src/routes/priest-fulfilment.test.ts"
+   ],
+   "test": "apps/api/src/routes/priest-fulfilment.test.ts — 3 tests, 3 red before / 3 green after: a booking-embedded 5-star review is returned with its text; Review-table rows and booking rows are merged (total 2, both comments present) so fixing this did not drop the other writer; and the booking scan is scoped to `priestId` + `rating: {not: null}` so it cannot leak another pandit's feedback. Live post-fix: /priest/reviews returns the devotee's real review — rating 5, \"Excellent puja, very devoted pandit ji.\", booking BS-20260812-STNEO — the same text the sweep submitted and never saw.",
+   "blocked_on": "Not blocked, but one honest residual worth the owner knowing: priests.rating_count for this account is 43 while only 1 rating row actually exists (a seed artifact — the aggregate was seeded without underlying rows). So the dashboard card still reads 4.6 (43) while the Reviews page now reads 5.0 from 1 real review. I did not paper over that: inventing 42 reviews to make the two screens agree is exactly the fabrication class this codebase is being cleaned of. Closing it needs either a backfill of real historical ratings or a reset of the seeded aggregate — a data decision, not a code one."
+  },
+  {
+   "area": "accessibility",
+   "id": "A11Y-06",
+   "outcome": "fixed",
+   "change": "Added name + autoComplete to the credential inputs on /auth/login (email → autocomplete=\"email\", password → autocomplete=\"current-password\") and swept /auth/signup, which carried the same defect but was outside the 7 pages the sweep crawled: threaded optional name/autoComplete through the local FormInput component (app/auth/signup/page.tsx:342-382) and wired name/email/tel/new-password onto the four signup fields. /auth/forgot-password and /auth/reset-password already had it and were left alone.",
+   "evidence": "REPRODUCED: apps/web/app/auth/login/page.tsx:506 (email input) and :540 (password input) both carried id + type + placeholder and nothing else — no name, no autoComplete. apps/web/app/auth/signup/page.tsx:371 (FormInput's shared <input>) and :968 (password) likewise. Live confirmation after the fix, curled from the running dev server: <input id=\"email\" type=\"email\" autoComplete=\"email\" … name=\"email\"> and <input id=\"password\" type=\"password\" autoComplete=\"current-password\" … name=\"password\">.",
+   "test": "apps/web/__tests__/auth-forms-a11y.test.tsx — RED 8/8 failed (the file covers A11Y-06 and A11Y-07 together; 5 of the 8 are the A11Y-06 cases), GREEN 8/8. The suite renders the real page components rather than grepping source, so it asserts the attribute the browser actually receives.",
+   "files": [
+    "apps/web/app/auth/login/page.tsx",
+    "apps/web/app/auth/signup/page.tsx",
+    "apps/web/__tests__/auth-forms-a11y.test.tsx"
+   ]
+  },
+  {
+   "area": "accessibility",
+   "id": "A11Y-07",
+   "outcome": "fixed",
+   "change": "Gave the password-reveal toggle a name, role and value: aria-label={showPassword ? 'Hide password' : 'Show password'} plus aria-pressed={showPassword}. Applied to /auth/login (page.tsx:557) and the identical unnamed toggle on /auth/signup (page.tsx:994). The lucide icons already emit aria-hidden=\"true\" so no icon change was needed.",
+   "evidence": "REPRODUCED: apps/web/app/auth/login/page.tsx:550-556 — a <button type=\"button\"> whose only child was {showPassword ? <EyeOff/> : <Eye/>}, with no aria-label, no aria-labelledby, no text and no aria-pressed. A screen reader announced it as bare \"button\" between the password field and Sign In. apps/web/app/auth/signup/page.tsx:976-982 was the same control.",
+   "test": "apps/web/__tests__/auth-forms-a11y.test.tsx — 3 of the 8 RED tests are the A11Y-07 cases, including one that enumerates every <button> in the rendered login card and asserts none lacks an accessible name (it listed the toggle's outerHTML on failure). GREEN 8/8.",
+   "files": [
+    "apps/web/app/auth/login/page.tsx",
+    "apps/web/app/auth/signup/page.tsx",
+    "apps/web/__tests__/auth-forms-a11y.test.tsx"
+   ]
+  },
+  {
+   "area": "accessibility",
+   "id": "A11Y-08",
+   "outcome": "partial",
+   "change": "The finding's own fix surface (app/pujas/book/page.tsx) is in this task's explicit DO-NOT-TOUCH list, so I shipped the slice that is in lane and that the book-page agent can consume: a new shared components/ui/WizardSteps.tsx rendering <nav aria-label=\"Booking progress\"> + <ol>/<li>, aria-current=\"step\" on exactly the active item, decorative icons aria-hidden, and an always-mounted polite live region announcing \"Step N of M, <label>\" that re-announces on every step change. Wired it into the two sibling wizards that carry the identical defect and ARE in lane — app/pujas/home-puja/book/page.tsx:221 and app/pujas/marriage/book/page.tsx:180 — deleting the old bare-div stepper from both rather than duplicating it. While relocating I also cleared the A11Y-10 pairing the stepper carried (active pill bg-saffron-500 3.79:1 → saffron-600, completed pill bg-tulsi-green 3.30:1 → tulsi-green-dark).",
+   "evidence": "REPRODUCED and still live on the target file: grep for aria-live | role=\"status\" | role=\"alert\" | aria-current | <fieldset | <legend | role=\"radiogroup\" | role=\"progressbar\" across apps/web/app/pujas/book/page.tsx returns 0 matches, and the step indicator at apps/web/app/pujas/book/page.tsx:1484 ({STEP_LABELS.map((label, i) => …) building plain <div>s) has no current-step semantics — matching the sweep's measurement of {\"fieldsets\":0,\"legends\":0,\"radiogroups\":0,\"progressbars\":0} with liveRegions: []. Both sibling wizards were byte-identical steppers (app/pujas/home-puja/book/page.tsx:219-247 and app/pujas/marriage/book/page.tsx:179-205 before the edit).",
+   "test": "apps/web/__tests__/WizardSteps.a11y.test.tsx — RED 8/8 failed, GREEN 8/8. The red was honest, not a module-not-found: I first created WizardSteps.tsx containing the existing inaccessible markup lifted verbatim out of the wizard, ran the suite to get 8 real assertion failures (no <ol>, no aria-current, no navigation landmark, no live region, saffron-500+white), then made it accessible.",
+   "blocked_on": "The three remaining halves of this finding — the <ol>/aria-current step indicator, the step-change live region + focus move to the new step heading, and wrapping the temple/tier/slot choice sets in <fieldset>/<legend> or role=\"radiogroup\" — all live inside apps/web/app/pujas/book/page.tsx, which this task's lane list marks DO NOT TOUCH (another agent is editing it right now). Nothing else blocks it: components/ui/WizardSteps.tsx is a drop-in replacement for that file's STEP_LABELS block at line 1484, and its 8 tests already lock the contract. Hand this finding to whoever owns the booking wizard.",
+   "files": [
+    "apps/web/components/ui/WizardSteps.tsx",
+    "apps/web/app/pujas/home-puja/book/page.tsx",
+    "apps/web/app/pujas/marriage/book/page.tsx",
+    "apps/web/__tests__/WizardSteps.a11y.test.tsx"
+   ]
+  },
+  {
+   "area": "accessibility",
+   "id": "A11Y-09",
+   "outcome": "fixed",
+   "change": "Fixed entirely inside components/ui/DateInput.tsx so it reaches every call site including app/pujas/book/page.tsx, which this lane cannot edit: useId-generated input id with the visible <label htmlFor> now wired to it (:200/:208); an ariaLabel prop with an aria-label fallback so a call site that passes no label still yields a named field (:216); a persistent sr-only \"Format: DD/MM/YYYY\" hint referenced by aria-describedby (:217/:223) that survives typing, unlike the placeholder; aria-required mirroring required. Also fixed DateTimeInput, whose floating <label> named neither of its two fields — it is now a role=\"group\" with the label as its accessible name and each half named \"<label> — date\" / \"<label> — time\".",
+   "evidence": "REPRODUCED: apps/web/components/ui/DateInput.tsx:189-191 rendered {label && <label className=…>{label}</label>} with no htmlFor, and the input at :193-203 had no id, no aria-label and no aria-describedby — so even call sites that passed a label produced an unnamed field, matching the sweep's live read {\"id\":\"\",\"name\":\"\",\"ariaLabel\":null,\"labelFor\":false}. Blast radius is wider than the one call site the finding names: 8 of the 30 <DateInput> call sites pass no label at all (app/astrology/horoscope, kaal-sarp, manglik, nakshatra-finder, rahu-kalam, numerology, …), so all of them were announced as \"edit text, blank\" too.",
+   "test": "apps/web/__tests__/DateInput.a11y.test.tsx — RED 8/8 failed, GREEN 8/8. Redness for the last two (DateTimeInput) cases was proven by swapping the component back to its HEAD content via `git show HEAD:… > …` and re-running, then restoring — 8/8 failed against the original file.",
+   "files": [
+    "apps/web/components/ui/DateInput.tsx",
+    "apps/web/__tests__/DateInput.a11y.test.tsx"
+   ]
+  },
+  {
+   "area": "accessibility",
+   "id": "A11Y-10",
+   "outcome": "fixed",
+   "change": "Fixed every element the sweep pixel-measured. /pujas: TAG_COLORS (app/pujas/page.tsx:114) now pairs each fill with its own text colour instead of hard-coding text-white over the rotation — ganga-blue→ganga-blue-dark (5.93), tulsi-green→tulsi-green-dark (7.13), lotus-pink→lotus-pink-dark (6.04), purple-600→purple-700 (6.98), and temple-gold keeps its fill with text-surface-800 (6.62) because no dark weight of it passes with white (3.16); the six hard-coded fallback tagColor rows updated to match; the badge element at :618 no longer appends text-white. /pujas \"Book Now\" and app/not-found.tsx \"Back to Home\" dropped their inline style={{background:'var(--color-primary)'}} (which beat the class and painted saffron-500) for bg-saffron-600 hover:bg-saffron-700. components/CookieBanner.tsx: removed the inline background override on both action buttons so the existing bg-saffron-600 class (4.96) actually paints — this is the \"Accept all\" button that appears on every page. /store: discount badge and the rating/free-delivery green copy moved to tulsi-green-dark.",
+   "evidence": "REPRODUCED, and the audit's numbers recomputed exactly from apps/web/app/globals.css:35/99-107: saffron-500 #b87333 = 3.79:1 with white, ganga-blue #0ea5e9 = 2.77, tulsi-green #16a34a = 3.30, lotus-pink #ec4899 = 3.53, temple-gold #D4A438 = 2.29 — against the 4.96 the login submit already achieves on saffron-600. Offending sites: apps/web/app/pujas/page.tsx:688 (Book Now, style={{background:'var(--color-primary)',color:'#fff'}}), apps/web/components/CookieBanner.tsx:229 and :238 (style={{background:\"var(--color-primary, #E16318)\"}} overriding bg-saffron-600), apps/web/app/pujas/page.tsx:110-119 (TAG_COLORS) + :618 (badge), apps/web/app/store/page.tsx:273. Found one the sweep missed while live-checking the rendered /pujas payload: apps/web/app/not-found.tsx:63 carried the same inline saffron-500 fill under white text on the CTA reachable from every route. Live after fix: /pujas serves 20 Book Now CTAs on bg-saffron-600 and zero var(--color-primary) fills.",
+   "test": "apps/web/__tests__/cta-contrast.test.ts — RED 8/13 failed (later 9/15 with not-found added), GREEN 15/15. The suite parses every --color-* token out of globals.css, derives the set of fills that cannot legally hold white text rather than hard-coding it, and flags any class string pairing one with text-white (skipping opacity modifiers like bg-white/20, which composite and cannot be judged from source — that false positive showed up in the first red run and was fixed in the scanner, not papered over). It also re-derives every TAG_COLORS pair. Redness of the not-found case was proven separately by stashing just that file and re-running: 1 failed / 14 passed.",
+   "blocked_on": "Not blocked, but scoped: apps/web/app/globals.css (token layer), app/admin/** and app/pujas/book/page.tsx are owned by other agents this sweep, so the same bg-saffron-500+text-white and bg-tulsi-green+text-white pairings survive in ~15 files outside the four this suite guards (mostly the priest/temple/wellness/astrologer portals those agents are editing). The test names those excluded paths in a LANE NOTE and the guard widens by adding them to one SURFACES array once their edits land.",
+   "files": [
+    "apps/web/app/pujas/page.tsx",
+    "apps/web/components/CookieBanner.tsx",
+    "apps/web/app/store/page.tsx",
+    "apps/web/app/not-found.tsx",
+    "apps/web/__tests__/cta-contrast.test.ts"
+   ]
+  },
+  {
+   "area": "accessibility",
+   "id": "A11Y-11",
+   "outcome": "fixed",
+   "change": "Restructured the product card so it holds one link, not a link containing two buttons: the outer <a> became a relative <div className=\"group relative …\">, and the title link now stretches over the whole card with after:absolute after:inset-0 after:content-[''] (app/store/page.tsx:286) so whole-card clickability is preserved while the buttons sit outside it. Removed the dead \"Add to wishlist\" heart — it had no onClick and grep proves no wishlist feature exists anywhere in the codebase, so faking one would have been the dishonest option; also removed the identical dead heart on /pujas (app/pujas/page.tsx). Replaced the decorative Add-to-Cart <button> with a new client component components/store/AddToCartButton.tsx that calls the real CartContext addItem, only renders \"Added to cart\" after the cart has actually changed, and renders a disabled \"Out of stock\" button when inStock is false. Dropped the now-unused Heart/ShoppingCart imports.",
+   "evidence": "REPRODUCED: apps/web/app/store/page.tsx:240 <a href={`/store/${product.handle}`}> wrapped the entire card, containing <button aria-label=\"Add to wishlist\"> at :279 and <button>Add to Cart</button> at :322 — neither carried an onClick, exactly as the sweep's 49 nested-interactive instances describe. Live after fix, curled from the running dev server: 0 nested a>button on /store, 24 real Add to Cart buttons, 0 \"Add to wishlist\", and the compiled Tailwind CSS contains .after\\:absolute:after / .after\\:inset-0:after / .after\\:content-… so the stretched link genuinely covers the card.",
+   "test": "apps/web/__tests__/store-card-interactive.test.tsx — RED 3 failed / 4 passed, GREEN 7/7. It awaits and renders the real async StorePage server component (wrapped in CartProvider, as app/layout.tsx:331 does) and walks the DOM for interactive-inside-interactive pairs, printing the offending outer/inner pair on failure — plus three behavioural tests proving the button really mutates the cart, that the confirmation only appears after it does, and that a click on the out-of-stock variant adds nothing.",
+   "files": [
+    "apps/web/app/store/page.tsx",
+    "apps/web/app/pujas/page.tsx",
+    "apps/web/components/store/AddToCartButton.tsx",
+    "apps/web/__tests__/store-card-interactive.test.tsx"
+   ]
+  },
+  {
+   "area": "accessibility",
+   "id": "A11Y-12",
+   "outcome": "fixed",
+   "change": "Made the header search overlay a real dialog: role=\"dialog\" aria-modal=\"true\" aria-label=\"Search Darshya\" on the panel (GlobalSearch.tsx:219-221); a returnFocusRef captured from the trigger that opened it (or from document.activeElement when the \"/\" shortcut fires) and a single closeSearch() used by Escape, the Close button and the outside-click handler so focus always returns to the trigger instead of <body>; body scroll lock that restores the previous overflow value rather than hard-coding \"visible\"; and a Tab/Shift+Tab focus trap mirroring components/MobileNavV2.tsx, so aria-modal is honest rather than a claim the DOM contradicts. Both triggers gained aria-haspopup=\"dialog\" + aria-expanded, and the search input gained an accessible name.",
+   "evidence": "REPRODUCED: apps/web/components/GlobalSearch.tsx:151/158 rendered the overlay as plain divs with no role, no aria-modal and no scroll lock, and the Escape handler at :74 was `if (e.key === 'Escape') setOpen(false)` with no focus restore — matching the sweep's {\"dialogs\":0,\"bodyOverflow\":\"visible\"} on open and {\"active\":\"BODY \"} after Escape. The one behaviour the sweep found correct (focus moves into the input on open, GlobalSearch.tsx:86) is now pinned by an assertion so it cannot regress.",
+   "test": "apps/web/__tests__/GlobalSearch.dialog.test.tsx — RED 8 failed / 1 passed, GREEN 9/9. The one test that passed in the red run is the deliberate control (\"renders no dialog while closed\"); every other assertion moved red→green, which is how I confirmed the suite was actually exercising the component and not tautological.",
+   "files": [
+    "apps/web/components/GlobalSearch.tsx",
+    "apps/web/__tests__/GlobalSearch.dialog.test.tsx"
+   ]
+  },
+  {
+   "area": "admin-ops",
+   "id": "AO-05",
+   "outcome": "fixed",
+   "change": "Added the missing route segment app/admin/users/[id]/page.tsx so the 24 dead links on the first page of the user table resolve. Both hrefs (name link and Eye button) were already correct and are now locked by a test so they cannot drift back to the mock ?id= screen.",
+   "evidence": "Reproduced before the change: `ls apps/web/app/admin/users` returned only page.tsx and view/ -- no [id] segment -- while apps/web/app/admin/users/page.tsx:298 and :327 both render href={`/admin/users/${user.id}`}. Next's file-system router therefore 404'd every row.",
+   "files": [
+    "apps/web/app/admin/users/[id]/page.tsx",
+    "apps/web/app/admin/users/page.tsx",
+    "apps/web/__tests__/admin-users-p1.test.tsx",
+    "apps/web/__tests__/admin-user-detail-p1.test.tsx"
+   ],
+   "test": "apps/web/__tests__/admin-user-detail-p1.test.tsx -- RED: the whole file failed to collect (`Failed to load url ../app/admin/users/[id]/page`), 0 of 11 tests runnable. GREEN: 11/11. Plus apps/web/__tests__/admin-users-p1.test.tsx 'points the name and the Eye button at /admin/users/<id>'."
+  },
+  {
+   "area": "admin-ops",
+   "id": "AO-06",
+   "outcome": "fixed",
+   "change": "Replaced the fixture screen with a real one. app/admin/users/[id]/page.tsx fetches GET /admin/users/:id and renders only what the API returned -- identity, roles, moderation state, and whichever provider profiles are present, with absent fields omitted rather than defaulted (a printed 0 for a missing rating is a claim the API never made). A 404 says the account does not exist; a 500 renders an alert and no profile. Approve and Block PATCH the real endpoint and then re-read the user, reporting failure when the server's own state disagrees. Reset Password and Delete were removed (no endpoint; DELETE /admin/users/:id is a fabricated-success stub), as was the five-entry invented activity log. The old /admin/users/view?id= route is now a redirect so existing links land on the real record.",
+   "evidence": "Reproduced before the change at apps/web/app/admin/users/view/page.tsx:30 ('// Mock user data keyed by ID'), :60 (const usersDb with 9 invented people keyed u001-u012), :109 (const user = usersDb[userId]), :119 ('User not found. This may be a demo limitation.'), :161-182 (Approve/Reject/Block/Reset/Delete buttons with no onClick except a local confirm flag), :370-381 (hardcoded '12' bookings / 'Rs. 24,500' / 'Bhakti Pass' for any devotee) and :98-104 (fabricated activityLog). The file contained no fetch of any kind. Live API confirms the real source exists: GET /api/v1/admin/users/47542478-977f-4d9d-bab0-4b1212e400c8 returns the full User row plus profiles{pandit,store,astrologer,wellness,gaushala,temple}, and an unknown uuid returns 404.",
+   "files": [
+    "apps/web/app/admin/users/[id]/page.tsx",
+    "apps/web/app/admin/users/view/page.tsx",
+    "apps/web/app/admin/users/users-api.ts",
+    "apps/web/__tests__/admin-user-detail-p1.test.tsx"
+   ],
+   "test": "apps/web/__tests__/admin-user-detail-p1.test.tsx -- RED: 11 tests uncollectable (module did not exist). GREEN: 11/11, covering the authenticated fetch, real name/email/phone/profile rendering, absence of the four demo identities and of the fabricated 24,500, the honest 404 and 500 states, block-verified-by-refetch, the 200-but-nothing-written case reporting an alert instead of success, approve sending approved:true, and the absence of Reset Password / Delete."
+  },
+  {
+   "area": "admin-ops",
+   "id": "AO-07",
+   "outcome": "fixed",
+   "change": "Added fetchAllAdminUsers, which walks GET /admin/users at 200 rows per page until the server's own `total` is satisfied (cap 20 pages / 4,000 users) and reports complete:false when it had to stop; the page then renders a banner saying the directory is partial instead of letting a filter count pass as the whole picture. The footer now shows the API total when unfiltered. Role and status filtering deliberately stay client-side over the complete set.",
+   "evidence": "Reproduced before the change at apps/web/app/admin/users/page.tsx:123 (getUsers(token) with no params) against apps/api/src/services/admin.service.ts:92 (limit default 20), with the footer at :396 rendering filtered.length. Confirmed live today: GET /api/v1/admin/users -> returned 20, total 23, limit 20; GET /api/v1/admin/users?limit=500 -> returned 23, total 23. The reason filtering is not delegated is also live-confirmed: GET /api/v1/admin/users?role=PANDIT -> 2 rows with reported total 23, because admin.service.ts:145 filters `enriched` AFTER the page has been sliced, while Postgres says 3 PANDIT role assignments exist.",
+   "files": [
+    "apps/web/app/admin/users/users-api.ts",
+    "apps/web/app/admin/users/page.tsx",
+    "apps/web/__tests__/admin-users-p1.test.tsx"
+   ],
+   "test": "apps/web/__tests__/admin-users-p1.test.tsx, AO-07 block -- RED 4/4 ('expected \"Showing 1-10 of 20 users\" to match /of 23 users/'; the off-page user unreachable; the Pandit filter answering 2 of 3; no request beyond the default page). GREEN 4/4. File total: 10 failed / 2 passed before, 12/12 after."
+  },
+  {
+   "area": "admin-ops",
+   "id": "AO-08",
+   "outcome": "fixed",
+   "change": "mapStatus now reads User.blocked from the API instead of a `status` string the endpoint has never sent, and 'pending' comes from GET /admin/pending-approvals keyed by userId, which makes the per-row Approve control reachable for the first time. The approvals fetch is separate and non-blocking: if it fails the directory still renders and a banner says approvals are unmarked, rather than silently showing everyone as active. Blocked rows carry blockedReason as a tooltip. Both moderation actions now re-read the directory and surface an error when the server disagrees, and the approve path treats an unreadable approval queue as 'unconfirmed' rather than as an empty queue.",
+   "evidence": "Reproduced before the change at apps/web/app/admin/users/page.tsx:73-78, where mapStatus read `raw.status ?? ''` and fell through to 'active', with the Approve button gated on user.status === 'pending' at :333. The live API confirms the field it reads does not exist and the one it should read does: GET /api/v1/admin/users returns {id, fullName, email, phone, roles, subscriptionTier, blocked, blockedAt, blockedReason, createdAt} -- no `status` key. GET /api/v1/admin/pending-approvals is live and returns {approvals:[{userId, role, profileName, city, createdAt}], total}.",
+   "files": [
+    "apps/web/app/admin/users/page.tsx",
+    "apps/web/app/admin/users/users-api.ts",
+    "apps/web/__tests__/admin-users-p1.test.tsx"
+   ],
+   "test": "apps/web/__tests__/admin-users-p1.test.tsx, AO-08 blocks -- RED: blocked user rendered 'active'; Blocked filter answered 0; Active filter counted 22 instead of 21; Approve never rendered; and the two new verification cases failed. GREEN 6/6, including 'reports failure when PATCH answers 200 and the account is still active' (the badge must not flip on the strength of a 200) and 'does not call an approval confirmed when the approval queue cannot be re-read'."
+  },
+  {
+   "area": "admin-ops",
+   "id": "AO-09",
+   "outcome": "partial",
+   "change": "The page no longer publishes a zero it cannot support. Active count now comes from GET /admin/dashboard and the per-plan/role breakdown plus billed value from GET /admin/revenue -- the two endpoints that actually query MarketplaceSubscription -- so the three admin screens agree. When the list endpoint returns 0 rows while ACTIVE subscriptions exist, the page states that per-subscription detail is unavailable and shows the breakdown, instead of 'No subscriptions match the current filters'. The endpoint's own `note` field, which no UI had ever rendered, is now surfaced. A failed totals call renders '—' plus an alert, never 0. Separately, the third tile is no longer labelled 'ACTIVE MRR'.",
+   "evidence": "Reproduced live today: GET /api/v1/admin/subscriptions -> {\"subscriptions\":[],\"total\":0,\"active\":0,\"activeMrr\":0,...,\"note\":\"Marketplace subscriptions schema not yet shipped...\"} while GET /api/v1/admin/dashboard -> activeSubscriptions 7 and GET /api/v1/admin/revenue -> 7 subscriptionRevenue groups totalling 5000. Root cause unchanged at apps/api/src/routes/admin-subscriptions.ts:24 (`const subs: unknown[] = []`) and :45 (`active: 0, activeMrr: 0`). The MRR label is also wrong on its own terms: Postgres shows the one paid row is ENTERPRISE 5000.00 with start_date 2026-08-12 and end_date 2027-08-12, i.e. an annual amount presented as monthly recurring revenue.",
+   "files": [
+    "apps/web/app/admin/subscriptions/page.tsx",
+    "apps/web/app/admin/subscriptions/subscriptions-api.ts",
+    "apps/web/__tests__/admin-subscriptions-reconciliation.test.tsx"
+   ],
+   "test": "apps/web/__tests__/admin-subscriptions-reconciliation.test.tsx -- RED 6/6 (count 7 absent; no per-role breakdown; 'no subscriptions match' shown instead of the detail gap; the note swallowed; the value absent; a failed dashboard call not rendering '—'). GREEN 6/6.",
+   "blocked_on": "Per-subscription rows (user, plan, dates, razorpay id) cannot be shown until apps/api/src/routes/admin-subscriptions.ts:24 is replaced with a real prisma.marketplaceSubscription.findMany/count/aggregate. That file is in the API lane, which I was told not to touch. The web side is complete and will render the rows the moment the endpoint returns them -- the table and its filters are already wired to the list payload."
+  },
+  {
+   "area": "admin-ops",
+   "id": "AO-10",
+   "outcome": "fixed",
+   "change": "Rebuilt the screen as read-only, because there is no settings endpoint for a control to write to. Removed: the Save Changes button, all six rate sliders and number inputs, the Platform tab and its four non-persisting toggles, the invented admin list, and the Add/Remove Admin controls. Added: take rates MEASURED from GET /admin/commissions (bucketed by the rate actually charged, with row counts, provider earnings and platform cut, and a warning when older rows fall outside the fetched window); subscription plans from GET /subscriptions/plans; admin accounts from GET /admin/users filtered to the ADMIN role assignment, each linking to the real user record. Each tab states where the value is genuinely set.",
+   "evidence": "Reproduced before the change at apps/web/app/admin/settings/page.tsx:111-118 (handleSave = setSaving(true); await new Promise(r => setTimeout(r, 700)); setSaved(true) -- no fetch anywhere in the file), :35-42 (initialCommissionRates hardcoded 25/15/30/20/10/20), :79-83 (initialAdmins: 'Rahul Verma', 'Meena Kapoor'), :120-136 (handleAddAdmin pushes to local state), :142-147 (togglePlan local only), :44-77 (initialPlans hardcoded 199/1999/499). The fabricated rates are contradicted by the live ledger: SELECT percentage, count(*) FROM commissions returns 0.3310 x10, 0.2000 x5, 0.2354 x1 -- so 'Astrology Consultations 30%' and 'Puja Bookings 25%' were both wrong, and so would a flat '20%' have been.",
+   "files": [
+    "apps/web/app/admin/settings/page.tsx",
+    "apps/web/__tests__/admin-settings-readonly.test.tsx"
+   ],
+   "test": "apps/web/__tests__/admin-settings-readonly.test.tsx -- RED 11/11 (verified by stashing only the page and re-running). GREEN 11/11. The save test deliberately waits 900ms past the old 700ms timer: an earlier draft asserted too early, caught the button mid-'Saving...', and passed against the very defect it exists to catch."
+  },
+  {
+   "area": "admin-ops",
+   "id": "AO-11",
+   "outcome": "fixed",
+   "change": "Pending Payouts is now the reconciled liability: the accrual from GET /admin/bookings/payouts/pending (both rails, deduped against open requests) plus the open payout-request queue. When the payout engine is unreachable the figure renders '—' with an explanation -- falling back to revenue.pendingPayouts would print a confident number that understates the liability, which is the finding restated as a fallback. The accrual's `truncated` flag is surfaced as 'this figure is a floor'. The secondary 50-row cap is gone with the re-derivation it came from.",
+   "evidence": "Reproduced live today: GET /api/v1/admin/revenue -> pendingPayouts 10,070, sourced from apps/api/src/services/admin.service.ts:549 (a PENDING-Commission-only aggregate, blind to the priest rail). GET /api/v1/admin/bookings/payouts/pending -> 5 groups (Demo Pandit/PRIEST 10,763.25 | Demo Pandit/PANDIT 4,620 | Demo Wellness 2,800 | Acharya Vinod Sharma 1,000 | Pandit Ramesh Shastri 880) = 20,063.25, truncated false, plus one open request of 770. The web side read the smaller number at apps/web/app/admin/revenue/page.tsx:243 and again at the 'Rs. X due' label.",
+   "files": [
+    "apps/web/app/admin/revenue/page.tsx",
+    "apps/web/__tests__/admin-revenue-reconciliation.test.tsx",
+    "apps/web/__tests__/admin-revenue-payout.test.tsx"
+   ],
+   "test": "apps/web/__tests__/admin-revenue-reconciliation.test.tsx, AO-11 block -- RED 4/4 ('Unable to find an element with the text: /Rs. 13,100/'). GREEN 4/4: reconciled total, open requests additive, truncated scan reported as a floor, and an unreachable engine rendering '—' with Rs. 3,200 absent. The pre-existing apps/web/__tests__/admin-revenue-payout.test.tsx had its fixtures re-pointed at the new sources and stays 17/17."
+  },
+  {
+   "area": "admin-ops",
+   "id": "AO-12",
+   "outcome": "fixed",
+   "change": "No raw ids left on the screen where money is authorised. The owed table is now the payout engine's own groups, which carry providerName and role and cover the priest rail; the ledger table is now GET /admin/commissions, which already returns providerName, providerRole, bookingNumber and itemName, so a store-order or wellness commission with no bookingId shows its item name instead of a blank cell. Added PRIEST to the page's role label and badge maps -- the payout engine labels the legacy rail PRIEST, not PANDIT, so the largest single balance would otherwise have rendered unlabelled.",
+   "evidence": "Reproduced live today: GET /api/v1/admin/revenue commission rows carry only {id, bookingId, storeOrderId, providerId, amount, status, createdAt} (serializer at apps/api/src/services/admin.service.ts:575-583), and the page rendered them verbatim at apps/web/app/admin/revenue/page.tsx:563 ({g.providerId}) and :389 ({c.bookingId}). The enrichment already exists one endpoint away: GET /api/v1/admin/commissions?status=PENDING returns rows such as 'Demo Pandit | PANDIT | BS-20260812-D51VS | Ganesh Puja | amount 770 | rate 33.1 | cut 380.97'.",
+   "files": [
+    "apps/web/app/admin/revenue/page.tsx",
+    "apps/web/__tests__/admin-revenue-reconciliation.test.tsx"
+   ],
+   "test": "apps/web/__tests__/admin-revenue-reconciliation.test.tsx, AO-12 block -- RED 4/4 ('Unable to find an element with the text: Demo Wellness', 'Demo Pandit', 'BS-20260812-0266C'). GREEN 4/4, asserting the provider uuids and the booking uuid are absent, that the priest rail appears, and that both endpoints are called."
+  },
+  {
+   "area": "astro-wellness",
+   "id": "AW-04",
+   "outcome": "fixed",
+   "change": "Extracted loadAstrologerLedger() in apps/api/src/routes/astrologer-portal.ts and made BOTH GET /dashboard and GET /earnings read through it, so the two screens cannot state different rupee figures. Dashboard money is now the astrologer's 80% (Commission.amount, per lib/commission-math.ts) rather than SUM(amount_inr) gross, REVERSED rows are excluded from every total, and the response gained paidOutInr / pendingPayoutInr / astrologerShare. apps/web/app/astrologer-portal/page.tsx now passes totalPaid={paidOutInr ?? null} and pending={pendingPayoutInr ?? null} — `?? null` not `?? 0`, so an older API build renders an em dash instead of a confident fabricated ₹0.",
+   "evidence": "Reproduced before the change: apps/api/src/routes/astrologer-portal.ts:105 `totalEarningsInr = Number(all[0]?.sum ?? 0)` over `SELECT COALESCE(SUM(amount_inr),0) FROM astrologer_consultations` (gross), fed to apps/web/app/astrologer-portal/page.tsx:229 `totalPaid={liveStats?.totalEarningsInr}` under EarningsCard's hardcoded label 'Paid out' (apps/web/components/provider/EarningsCard.tsx:24), with `pending={null}` on the next line. Red proof: API test failed 6/6, first assertion literally `expected 375 to be 300`; web test failed 3/4 with `expected '300' to be '0'` and `expected 'null' to be '300'`. LIVE after fix (own API on :4055, real astrologer User ba87a424-…, email-session token): dashboard stats {\"earningsMonthInr\":1400,\"totalEarningsInr\":1400,\"paidOutInr\":0,\"pendingPayoutInr\":1400,\"astrologerShare\":0.8} == /astrologer-portal/earnings {\"totalEarningsInr\":1400,\"pendingInr\":1400,\"paidInr\":0} == /payouts/balance {\"availableInr\":1400,\"paidOutInr\":0}; raw gross over the same confirmed rows was 1250.00, i.e. the old card would have read \"Paid out ₹1,250\".",
+   "files": [
+    "apps/api/src/routes/astrologer-portal.ts",
+    "apps/web/app/astrologer-portal/page.tsx",
+    "apps/api/src/routes/astrologer-portal-money.test.ts",
+    "apps/web/__tests__/astrologer-dashboard-money.test.tsx"
+   ],
+   "test": "apps/api/src/routes/astrologer-portal-money.test.ts — 6 red → 6 green. apps/web/__tests__/astrologer-dashboard-money.test.tsx — 3 red of 4 → 4 green. The web test's first draft passed against broken code because waitFor's first tick saw the pre-fetch ZERO_STATS render; it now gates on a settled() helper before asserting, which is what turned it red."
+  },
+  {
+   "area": "astro-wellness",
+   "id": "AW-05",
+   "outcome": "fixed",
+   "change": "COMMISSION_PAGE_SIZE in apps/web/lib/commission-api.ts changed 200 → 100, i.e. bound to the TIGHTER of the two server caps rather than the admin route's. The client sends this one constant to both GET /admin/commissions (cap 200) and GET /payouts/commissions (cap 100). Chose the client-side fix over raising the server cap so nothing changes on a route another agent may be editing.",
+   "evidence": "Reproduced: apps/web/lib/commission-api.ts:129 `export const COMMISSION_PAGE_SIZE = 200` sent by listMyCommissions (line 166) to /payouts/commissions, whose zod schema is apps/api/src/routes/payout-requests.ts:103 `pageSize: z.coerce.number().int().min(1).max(100).default(20)` — every provider request 400s with {\"error\":\"Invalid query\"}. Red proof: `expected 200 to be less than or equal to 100`, and the behavioural test threw the live error verbatim, `Error: Invalid query`. I re-proved red after the fix by flipping the constant back to 200 and re-running (2 failed), then restoring 100 (11/11 green).",
+   "files": [
+    "apps/web/lib/commission-api.ts",
+    "apps/web/__tests__/commission-page-size-contract.test.ts",
+    "apps/web/__tests__/commissions-panel.test.tsx"
+   ],
+   "test": "apps/web/__tests__/commission-page-size-contract.test.ts — 2 red of 3 → 3 green. It is a genuine both-sides test: it parses the `.max(N)` out of apps/api/src/routes/payout-requests.ts and apps/api/src/routes/admin.ts at runtime rather than hardcoding the caps, so it fails again if either server schema is tightened without the client following. One existing assertion in commissions-panel.test.tsx hardcoded '200' and was updated to the constant (24/24 green)."
+  },
+  {
+   "area": "astro-wellness",
+   "id": "AW-06",
+   "outcome": "fixed",
+   "change": "POST /consultation/:id/cancel now runs the status flip and the ledger unwind in one prisma.$transaction, calling the shared reverseBookingLedger() leaf module (never a re-inlined copy) and only when refundEligible. Response gained commissionReversed + ledgerManualReview; an already-settled commission is logged at ERROR under event `consultation_ledger_manual_review` instead of being silently clawed back. One supporting change in the shared module: reverseBookingLedger's PujaBooking flag-write is now best-effort, because Commission.bookingId is not an FK and also carries consultation ids — a P2025 there would abort the caller's transaction and destroy the REVERSED write it was meant to annotate.",
+   "evidence": "Reproduced: apps/api/src/routes/consultation.ts:596-601 was a bare `UPDATE astrologer_consultations SET status='cancelled'` with no Commission touch anywhere in the handler (grep of the file showed Commission referenced only in the verify-payment block at :439-505). Red proof: 3 of 4 tests failed, including `expected undefined to be 1` on commissionReversed. LIVE PROOF on Postgres 127.0.0.1:55432 via my own API on :4055 — booked AC-20260813-407996 (₹500, scheduled +7d) → verify-payment wrote Commission {amount:'400.00', percentage:'0.2000', status:'PENDING'} → cancel returned 200 {\"refundEligible\":true,\"commissionReversed\":1,\"ledgerManualReview\":0} → the same row read status:'REVERSED' and the withdrawable sum for that booking (PENDING + payout_request_id IS NULL) went 400.00 → 0. Both test consultations were cancelled/reversed afterwards so no fake payable was left in the ledger.",
+   "files": [
+    "apps/api/src/routes/consultation.ts",
+    "apps/api/src/services/ledger-reversal.service.ts",
+    "apps/api/src/routes/consultation-cancel-ledger.test.ts"
+   ],
+   "test": "apps/api/src/routes/consultation-cancel-ledger.test.ts — 3 red of 4 → 4 green. Includes a control that a past-the-window cancellation does NOT reverse (no refund owed), and a case proving an already-settled commission returns 200 with ledgerManualReview:1 rather than 500ing. Regression check on the shared module: refund.service.test.ts + payment.service.test.ts + consultation suites, 81/81 green."
+  },
+  {
+   "area": "astro-wellness",
+   "id": "AW-07",
+   "outcome": "fixed",
+   "change": "Built the missing demand side. API: GET /wellness/sessions now carries instructorName and a real spotsLeft (capacity − PAID/PENDING_PAYMENT holds, floored at 0, matching the enroll handler's own capacity gate so the catalog can never advertise a seat /enroll will refuse); roomUrl stays stripped and the instructor relation/_count are not leaked. Web: new /wellness/classes catalog (WellnessClassesClient) and /wellness/classes/[id] detail (ClassDetailClient) wired to POST /wellness/sessions/:id/enroll → POST /wellness/enrollments/:id/verify, with the free-satsang path, the demo-payment path and the real Razorpay path. The join link renders only from a roomUrl the server chose to return (server-side entitlement, never a client decision), and a failed enroll surfaces the API's own sentence and stops — verify never fires after a failed enroll. /wellness's fabricated 'Upcoming this week' block was replaced with UpcomingClassesSection reading live rows, and the hero now leads to the catalog.",
+   "evidence": "Reproduced: apps/web/app/wellness/page.tsx:65-72 was `const upcomingSessions = [...]` — six invented classes ('Morning Hatha Flow · Aarav Sharma · Apr 18 · 8 spots left') each linking to a static category page, and `grep -rn 'enroll' apps/web/app --include=*.tsx` matched only for-temple-chains + three wellness-portal (instructor-side) files. The web test's first run failed at module resolution — the two client surfaces did not exist at all. Landing-page red proof: `expected 'import type { Metadata } …' not to match /Morning Hatha Flow/` and `… to match /\\/wellness\\/classes/`. API red proof: 4 of 6 failed, `expected undefined to be 'Ananya Devi'` and `expected undefined to be 3`. LIVE after fix: GET http://127.0.0.1:4055/api/v1/wellness/sessions returns the two real rows with \"instructorName\":\"Demo Wellness\",\"enrolledCount\":1,\"spotsLeft\":9 / spotsLeft:4 and no roomUrl; Next dev returns 200 for /wellness, /wellness/classes (body contains 'Upcoming yoga, meditation') and /wellness/classes/476dee2f-….",
+   "files": [
+    "apps/api/src/routes/wellness-sessions.ts",
+    "apps/web/app/wellness/classes/page.tsx",
+    "apps/web/app/wellness/classes/WellnessClassesClient.tsx",
+    "apps/web/app/wellness/classes/[id]/page.tsx",
+    "apps/web/app/wellness/classes/[id]/ClassDetailClient.tsx",
+    "apps/web/app/wellness/UpcomingClassesSection.tsx",
+    "apps/web/app/wellness/page.tsx",
+    "apps/api/src/routes/wellness-catalog.test.ts",
+    "apps/web/__tests__/wellness-class-catalog.test.tsx"
+   ],
+   "test": "apps/api/src/routes/wellness-catalog.test.ts — 4 red of 6 → 6 green. apps/web/__tests__/wellness-class-catalog.test.tsx — modules unresolvable, then 2 red of 11 → 11 green. The enrol test's mock returns roomUrl ONLY after verify fires, so it cannot pass without a payment actually happening; separate tests lock the honest empty state, the honest load-failure state, and that a 409 'Session is full' renders the server's sentence with no join link and no verify call."
+  },
+  {
+   "area": "astro-wellness",
+   "id": "AW-08",
+   "outcome": "fixed",
+   "change": "apps/api/src/middlewares/auth.ts now fails closed: a demo handle whose mapped User row is absent gets 401 with a plain sentence naming the account, plus a `demo_user_not_seeded` warn log. The synthetic-identity fallback that minted `id: 'demo-astro'` is gone, so no route has to defend against a non-UUID currentUser.id.",
+   "evidence": "Reproduced against the live DB: `select ... from users where email like '%@demo.com'` returns astrologer@demo.com but NO astro@demo.com, while apps/api/src/middlewares/auth.ts:134 maps the handle 'astro' to astro@demo.com — the lookup missed and the old fallback at :161-168 minted the non-UUID id, which is why every DB route 500'd with P2023/P2010 carrying the Prisma invocation site and the absolute Windows source path. Red proof: `expected { id: 'demo-astro', …(6) } to be undefined` and `expected 200 to be 401`. LIVE after fix: GET /astrologer-portal/dashboard with `Bearer demo-astro-token` → 401 {\"error\":\"Unauthorized\",\"message\":\"Demo account astro@demo.com is not seeded in this database. Run the demo seed before using this token.\"} — no Prisma text, no path, no SQL. NOT DONE (out of lane): the finding's second half, a Fastify error handler stripping Prisma internals from 5xx bodies in ALL environments, lives in apps/api/src/server.ts:449-465, which is on my do-not-touch list; that handler already strips in production (`safeToEcho = !isProd`), so the residual leak is dev-only.",
+   "files": [
+    "apps/api/src/middlewares/auth.ts",
+    "apps/api/src/middlewares/auth-demo-unseeded.test.ts",
+    "apps/api/src/routes/admin-roadmap.test.ts"
+   ],
+   "test": "apps/api/src/middlewares/auth-demo-unseeded.test.ts — 3 red of 4 → 4 green (the 4th is a control proving a seeded handle like wellness@demo.com still authenticates to its real UUID with its roles). Blast-radius swept: ran all 12 API test files that present demo tokens; one, admin-roadmap.test.ts, deliberately leaned on the removed synthetic fallback (its own comment said so) and was updated to resolve the demo email to a real row — it still asserts 401/403/200. 100/100 green across those files."
+  },
+  {
+   "area": "astro-wellness",
+   "id": "AW-09",
+   "outcome": "partial",
+   "change": "Shipped the durable half: apps/api/scripts/guard-db-target.ts (classifyDbTarget + assertLocalDbTarget — fails CLOSED on an unparseable/absent URL, names the host but never the password, honours an explicit --prod override) wired as predb:migrate / predb:push / predb:seed in apps/api/package.json so it runs BEFORE the destructive command. This neutralises the write half of the risk even if a prod DATABASE_URL reappears in the default env slot.",
+   "evidence": "Reproduced: apps/api/.env line 1 DATABASE_URL → aws-1-ap-northeast-1.pooler.supabase.com:6543, line 6 NODE_ENV=production, and apps/api/.env.production lines 1-2 already hold the byte-identical prod values, so nothing needs moving — .env simply must stop being a second copy. Port scan confirms .env.local's localhost:5432 is dead (nothing listening) and the live dev DB is ::1:55432. Red proof (guard wiring): `missing \"predb:migrate\" in apps/api/package.json: expected undefined to be truthy` ×3. Green + CLI exercised for real: DATABASE_URL=…pooler.supabase.com → exit 1 with '[guard-db-target] Refusing to run: DATABASE_URL points at \"aws-1.pooler.supabase.com\"…'; DATABASE_URL=…127.0.0.1:55432 → exit 0.",
+   "files": [
+    "apps/api/scripts/guard-db-target.ts",
+    "apps/api/scripts/guard-db-target.test.ts",
+    "apps/api/package.json"
+   ],
+   "test": "apps/api/scripts/guard-db-target.test.ts — 3 red of 11 → 11 green. My first draft asserted directly on apps/api/.env's contents; those 4 assertions went red as designed but are unsatisfiable while I cannot write the file, and a permanently-red test in the suite is worse than none, so they were replaced with the pre-hook wiring assertions (which were themselves red before the package.json edit).",
+   "blocked_on": "The owner must edit apps/api/.env by hand — this agent cannot. Both Write and Edit to that path are refused by the machine's credential-store policy ('this file is a credential store (.env / service-account / private key)… see permissions.deny'), so the file still points at prod. Exact change: set DATABASE_URL and DIRECT_URL to postgresql://darshya:darshya@127.0.0.1:55432/darshya_utf8, set NODE_ENV=development, and replace SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY with the demo placeholders already used in .env.local. Nothing is lost — apps/api/.env.production carries the identical production values today. An unmodified backup of the current file is at C:\\Users\\DELL\\AppData\\Local\\Temp\\claude\\E--NewClaude\\782d31c6-4c3d-473b-8b0f-c8361dcce923\\scratchpad\\api-dotenv-backup-2026-08-13.txt. Separately, and outside what the finding asked: apps/api/.env also carries the production JWT_SECRET, GROQ_API_KEY and COHERE_API_KEY. I left those untouched on purpose — rotating JWT_SECRET mid-audit would invalidate the live sessions of the other agents working right now — but the prod JWT secret sitting in a local dev env file is worth rotating once the audit is over."
+  },
+  {
+   "area": "scalability",
+   "id": "SCAL-04",
+   "outcome": "fixed",
+   "evidence": "Reproduced at every named line before changing anything: apps/api/src/services/admin.service.ts:411 was `prisma.userRoleAssignment.findMany()` with no where clause, read only to tally roles in the JS loop at :446-448; apps/api/src/services/payout.service.ts:159/165/179 were three `commission.findMany({select:{amount}})` summed in JS; apps/api/src/routes/admin-metrics.ts:99-104 materialised every paying userId just to read .length and then sent the id array back as an IN list at :110, :120-133 did it twice more into a JS Set, :192-209 read every lead/user/booking/payment in the window to bucket by day in JS; apps/api/src/routes/store-admin.ts:219 loaded a month of orders with `include:{user}` and :341 a full year with items JSON; apps/api/src/services/whatsapp-broadcast.service.ts:196/229 read every confirmed booking joined to its user. MEASURED with EXPLAIN (ANALYZE, SERIALIZE) on Postgres 18.4 against 200k-row tables I generated in a scratch schema: role tally 24,922 kB -> 1 kB; payout balance 2,344 kB -> 1 kB (x3 queries); funnel users 13,954 kB -> 1 kB; paying-users distinct 821 kB -> 1 kB. Unbounded findMany in the six named files fell 46 -> 32 by an AST-free paren-balanced scanner (payout 8->6, admin-metrics 7->1, whatsapp 4->0, store-admin 7->6, aarti-notify 4->3); repo-wide 98 remain and are now ratcheted.",
+   "change": "admin.service.ts:428 -> groupBy({by:['role'],_count:{_all:true}}). payout.service.ts:170-197 -> one sumCommissionAmounts() helper issuing commission.aggregate({_sum:{amount}}) three times; Decimal exactness preserved (Postgres SUM on numeric is exact) and asserted with a 0.10+0.20 case. admin-metrics.ts:178-206 -> user.count() over the payments/bookings relations instead of distinct-id materialisation; :103-138 new exported loadFunnelDaily() issuing four date_trunc('day') GROUP BY queries (<=30 rows each) with the same per-query .catch degradation, and count(*) FILTER (WHERE phone IS NOT NULL OR email IS NOT NULL) reproducing the old `u.phone || u.email` KYC rule exactly. whatsapp-broadcast.service.ts:179-250 -> cursor-paged recipient scans, and the booking audience is now asked user-first (one row per person, not one per booking). store-admin.ts:206-220 walkStoreOrders() cursor pager used by both /dashboard and /revenue; the buyer join moved off the month-long scan onto the <=10 rows actually displayed, with the join key stripped from the payload so the response shape is unchanged. Per-store revenue attribution stays in JS because it walks the items JSON against this store's product ids — paging bounds memory without changing a single total.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/admin.service.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/payout.service.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/admin-metrics.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/whatsapp-broadcast.service.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/store-admin.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/__mocks__/prisma.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/payout.service.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/admin.service.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/payout.service.scal04.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/admin.service.scal04.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/admin-metrics.scal04.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/admin-metrics.investor.scal04.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/whatsapp-broadcast.scal04.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/routes/store-admin.scal04.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/unbounded-findmany.scal04.test.ts"
+   ],
+   "test": "6 new suites, each run red against the pre-fix code first (old shape temporarily restored, then reverted): payout.service.scal04.test.ts 3 failed -> 3 passed; admin.service.scal04.test.ts 2 failed -> 2 passed; admin-metrics.scal04.test.ts 4 failed -> 4 passed; admin-metrics.investor.scal04.test.ts 1 of 2 failed ('expected +0 to be 400' — the mocked payment.findMany threw and the old .catch swallowed it to zero) -> 2 passed; whatsapp-broadcast.scal04.test.ts 3 failed -> 3 passed; store-admin.scal04.test.ts 3 failed -> 3 passed. Existing suites updated to the new query shape and still green: payout.service.test.ts 49/49, admin.service.test.ts 8/8, store-admin.test.ts 15/15. unbounded-findmany.scal04.test.ts (2 passed) is a ratchet, not a red-first test — it pins the repo-wide count at 98 so a NEW unbounded findMany fails with the file that added it; a blanket ban would have failed on 98 mostly-legitimate where-bounded sites."
+  },
+  {
+   "area": "scalability",
+   "id": "SCAL-05",
+   "outcome": "partial",
+   "evidence": "Reproduced at apps/api/src/middlewares/auth.ts:243 (now :268 after another agent's AW-08 edit): `await supabaseAdmin.auth.getUser(token)` ran on every request with no cache anywhere in the file, followed by up to three user lookups (:257-269) and a userRoleAssignment.findMany (:284). Proven red: with the cache code removed, three requests carrying one token produced 3 getUser calls, 3 user.findUnique and 3 role findMany ('calls Supabase once' failed) and an admin ban did not take effect. After the fix the same three requests produce 1 of each. The remote call is NOT eliminated — only de-duplicated within a TTL window; the first request per token per 60 s still crosses the Pacific.",
+   "change": "New apps/api/src/lib/auth-cache.ts: cache keyed on SHA-256 of the WHOLE token, so an entry can only be read back by the exact token that produced it and a forged token hashes elsewhere. Entries expire at min(TTL 60 s, the token's own `exp`) — `exp` is read from the payload without verifying the signature, which is sound in this direction only because it can shorten a lifetime, never grant trust. Bounded at 5,000 entries; AUTH_CACHE_TTL_MS=0 disables it. Wired at auth.ts:259 (read) and :344 (write, reached only after the blocked gate, so a suspended account is never cached). BOTH SIDES: admin.service.ts:388 calls invalidateAuthUser(id) in updateUser, so a block/unblock or role change evicts immediately instead of biting up to a minute later — without it this fix would have re-created the AO-01 failure it must not touch.",
+   "blocked_on": "Removing the remote call entirely needs the Supabase project JWT secret (Supabase dashboard -> Settings -> API -> JWT secret) set as an env var on the Render API service, plus the owner's decision to verify access tokens offline instead of calling GoTrue. That is a credential and a security-posture call, not a code change, and apps/api has no `jose`/`jsonwebtoken` dependency today — adding one is also an owner call under the free-tier/dep rules. I did not hand-roll a JWT verifier on the auth path.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/auth-cache.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/middlewares/auth.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/admin.service.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/middlewares/auth.scal05.test.ts"
+   ],
+   "test": "apps/api/src/middlewares/auth.scal05.test.ts — 2 of 8 failed against the pre-fix code ('calls Supabase once, then serves the same identity from memory' and 'lets an admin ban take effect on the very next request'), 8/8 pass after. The other six were written to hold in both states on purpose: a different token re-verifies, a cached entry is never served past the token's exp, the TTL lapses, a blocked account is never cached, the cache can be switched off, and exp parsing rejects non-JWTs."
+  },
+  {
+   "area": "scalability",
+   "id": "SCAL-06",
+   "outcome": "fixed",
+   "evidence": "Half of this finding was already dead when I got here: the loop-invariant global `tokenModel.findMany({where:{aartiOptIn:true}})` the finding describes at old line :135 no longer exists — the notifications agent's NOTIF-09 edit narrowed the audience to followers (apps/api/src/jobs/aarti-notify.ts:13-23 documents it). I verified that in the current file rather than assuming. What still reproduced: apps/api/src/jobs/aarti-notify.ts:167-177 read EVERY follower of a firing temple with no take and no cursor, then sent that entire id array back to Postgres as `userId: { in: [...] }` for the token lookup — both resident together in a 512 MB container at exactly the 06:00 moment the finding is about. Proven red by restoring that single-read shape: the paging assertions failed (1 follower query for 1,250 followers, one IN list of 1,250).",
+   "change": "aarti-notify.ts:130 FOLLOWER_PAGE_SIZE=500 and :198-247 keyset paging on userId (`where: { templeId, userId: { gt: last } }`, orderBy userId asc, take 500), with the token lookup and the FCM fan-out done per page. Keyset rather than a Prisma cursor object so it works whether or not TempleFollow's compound unique has been migrated — this job already guards for unmigrated tables. Nobody is dropped: 1,250 followers still receive 1,250 pushes, asserted. Two items from the finding's fix list were deliberately NOT done and are not gaps: (1) `@@index([aartiOptIn])` is moot now that no query filters on aartiOptIn alone — every token read is keyed on userId, which is indexed — and schema.prisma is serialised to another agent anyway; (2) I did not cap `temple.findMany` at :153, because a `take` there silently drops temples from the run, which is the same class of silent-partial-delivery failure the finding itself is complaining about; live-darshan temples are a curated catalog (20 seeded), and the fan-out that actually scales with users is now paged.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/jobs/aarti-notify.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/jobs/aarti-notify.scal06.test.ts"
+   ],
+   "test": "apps/api/src/jobs/aarti-notify.scal06.test.ts — 2 of 4 failed against the unbounded shape ('pages the follower scan and never builds one giant IN list', 'walks forward past the last id of the previous page'), 4/4 pass after. The notifications agent's existing aarti-notify.test.ts stays 10/10 green, so NOTIF-07/08/09 are intact."
+  },
+  {
+   "area": "scalability",
+   "id": "SCAL-07",
+   "outcome": "fixed",
+   "evidence": "Reproduced at apps/api/src/lib/ensure-schema.ts: the STATEMENTS array is 95 statements (not 80 — I counted it by instrumenting the module's own log line: 'ensureSchemaInvariants: 95/95 statements ran cleanly'), each awaited individually in a for-loop before bootstrap() registers a route. At the finding's measured ~95 ms Oregon<->Tokyo RTT that is ~9.0 s of pure network wait per boot. Proven red: the pre-fix code issued 0 queries and 95 executes even when the schema was already correct. LIVE CONFIRMATION against the local Postgres on a spare port: the first boot logged '93/95 statements ran cleanly' plus two 42P07 duplicate-object errors and recorded fingerprint c5d695889311 (verified in the DB: SELECT from _schema_invariants shows id=1, applied_at 2026-08-13T09:10:14Z); the next boot logged 'schema fingerprint c5d695889311 already applied, skipping 95 statements (1 round trip instead of 95)' and served /health 200.",
+   "change": "ensure-schema.ts:578 SCHEMA_INVARIANTS_FINGERPRINT = sha256 of the statement array; :637 one SELECT against a `_schema_invariants` marker short-circuits the whole replay when it matches. Change any statement and the fingerprint changes, so the new one applies on the next boot with no manual step — the recovery path this file exists for is fully preserved, it just stops being paid for when already satisfied. SCHEMA_INVARIANTS_FORCE=true replays by hand. The marker is written ONLY when every statement is satisfied, so a boot with a real failure retries next time rather than recording 'schema is good'. isDuplicateObjectError (:591) treats 42P07/42701/42710 as satisfied — this was NOT theoretical: the live boot showed 2 of 95 statements are `DO $$` blocks adding a constraint whose name an index already holds, and counting those as failures would have meant the marker was never written and the full replay ran forever, i.e. the fix would have silently done nothing.",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/ensure-schema.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/ensure-schema.scal07.test.ts"
+   ],
+   "test": "apps/api/src/lib/ensure-schema.scal07.test.ts — 2 of 6 failed against the pre-fix code (most importantly 'costs one query when the recorded fingerprint already matches': 0 queries and 95 executes), 7/7 pass after (a seventh test was added for the duplicate-object case the live boot revealed). Covers: cold DB replays and records; matching fingerprint costs exactly one query and zero executes; changed statement set replays; SCHEMA_INVARIANTS_FORCE replays; a real failure does NOT record the marker; no DATABASE_URL still skips entirely."
+  },
+  {
+   "area": "scalability",
+   "id": "SCAL-08",
+   "outcome": "fixed",
+   "evidence": "Reproduced at apps/api/src/lib/cache.ts:10 — REDIS_URL and UPSTASH_REDIS_URL are both absent from apps/api/.env (I read it: DATABASE_URL, DIRECT_URL, SUPABASE_*, NODE_ENV, PORT, CORS_ORIGIN, JWT_SECRET, GROQ/COHERE keys, ENABLE_DEMO_PAY), so getClient() returned null and cacheGet/cacheSet were no-ops; temple.service.ts:80/:126 and panchang's 6-hour wrapper therefore hit Postgres on every request. Proven red: the first test, two `cached()` calls with the same key, saw the loader invoked twice. LIVE CONFIRMATION on the spare API instance: GET /api/v1/temples with a fresh cache key committed ~19 transactions in Postgres on the miss and 0 on each of the two following hits (pg_stat_database.xact_commit deltas), with wall time 120.9 ms -> 3.7 ms -> 3.1 ms against a LOCAL database; against Supabase in ap-northeast-1 the saving is far larger.",
+   "change": "cache.ts:60-105 adds a bounded in-process store (1,000 entries, LRU-by-recency eviction, per-key TTL) used only when no Redis client exists — Redis still wins outright when REDIS_URL is set and the memory store is not consulted at all. Values are stored JSON-serialised exactly as Redis stores them, so a hit has the same shape either way (a Date comes back as an ISO string in both); a memory cache handing back live objects would be a shape difference that only appears the day REDIS_URL is set. cacheDel and cacheDelPattern honour it, the latter reimplementing Redis MATCH glob semantics. This is explicitly not a distributed cache and the code says so: entries are per container and cacheDel invalidates locally only. BOTH SIDES: because caching is real now, three existing suites that assert on the query a service issues would have been served from a previous test's entry — temple.service.test.ts, puja.service.test.ts and panchang.service.test.ts now call __memoryCacheClear() in beforeEach (temple.service.test.ts was already failing that way before I added the seam: 'orders by trustScore desc then name asc' passed alone and failed in-file).",
+   "files": [
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/cache.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/lib/cache.scal08.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/temple.service.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/puja.service.test.ts",
+    "E:/NewClaude/bhaktisetu/apps/api/src/services/panchang.service.test.ts"
+   ],
+   "test": "apps/api/src/lib/cache.scal08.test.ts — 3 of 7 failed against the pre-fix code (loader called twice inside the TTL; hit shape; unbounded keyspace), 7/7 pass after. Covers TTL expiry, null results staying uncached, cacheDel, cacheDelPattern glob semantics and the 1,000-entry bound. temple/puja/panchang suites 27/27 green. Owner-gated remainder, NOT blocking this fix: provisioning Upstash Redis (free tier) and setting REDIS_URL would make the cache shared across containers and invalidation global; that needs an account plus a row in docs/free-tier-budgets.md, which is the owner's call. The finding itself offers the in-process fallback as a complete alternative that needs no new service, and that is what shipped."
+  }
+ ],
+ "verdicts": [
+  {
+   "area": "legal-content",
+   "id": "LEG-05",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Verified at apps/web/app/terms/page.tsx:168-201: the five-line schedule is gone, replaced by 'Platform commission is a uniform 20% ... provider ... receives the remaining 80%', MedusaJS is absent from the file, and the 80G line reads 'issued free of charge - there is no per-receipt fee' correctly qualified with 'Where the donee is eligible'. apps/web/app/nri/page.tsx:81 now reads Included/Included/Included with an explanatory comment. I re-derived every cited ground truth independently rather than trusting the claim: astrologer.service.ts:17 ASTROLOGER_PLATFORM_RATE=0.2, schema.prisma:962 commission Decimal @default(0.20), schema.prisma:338 commissionRate Float @default(0.80) plus migration 20260812000000_priest_commission_rate_80 which ALTERs the DB default to 0.80, and a full grep of apps/api/src found no code path charging for an 80G receipt. I also checked the temple-share sentence, which the claim did not evidence: temple-payout.service.ts:82-86 computes 5% of (priestPayout + platformCommission) and never touches priestPayout, so 'paid out of the platform's 20%, not deducted from the provider's 80%' is arithmetically true. Non-vacuous: reverting terms/page.tsx to HEAD fails 6 tests (4 source + 2 render); reverting nri/page.tsx alone fails the 80G assertion. One residual worth flagging but not disqualifying: /nri's comparison table now shows 80G receipts 'Included' on all three tiers while the API still sells 'Free 80G receipt PDF for any donation' as an NRI Premium differentiator and the new LEG-08 FAQ repeats it - the code truth backs 'free for everyone', so the inconsistency is now in the API's feature list, not the published copy."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-06",
+   "verdict": "DISPUTED",
+   "vacuous_test": false,
+   "reason": "The copy edits and the tests are real (reverting refunds/nri-ca/why-darshya fails all 6 LEG-06 cases), but 'fixed' over-claims and the claim's own justification is false. (1) apps/web/app/why-darshya/page.tsx:298-303 now reads 'If the video never arrives, we cancel and refund you in full' - an unconditional automatic full refund with no manual-review caveat. booking.service.ts:1736-1748 states in its own comment that it DELIBERATELY writes no refund marker, so the sweep issues nothing; the refund is admin-initiated with no SLA, which the claim's own blocked_on concedes. The claim asserts the new copy 'creates no commitment the owner has not already made in code' - that is untrue of this sentence. (2) apps/web/app/refunds/page.tsx:136-148 says 'If no video has been uploaded 72 hours after your scheduled time, we cancel the booking automatically'. escalateStaleBookings filters status:'priest_assigned' AND videoProofUrl:null (booking.service.ts:1713-1720), so none of the three bookings the sweep actually found (BS-20260812-9HWMA/JMHM4/A6UON, status completed, videoProofUrl null) would ever be auto-cancelled - the published automatic behaviour still does not happen for the exact rows that produced the finding. (3) why-darshya still says 'get video proof in 48 hours' immediately before the 72h regime it now points at. The tests do not catch any of this: the why-darshya guard is a single narrow negative regex /Full refund if\\s*\\n?\\s*you&apos;re not satisfied/ that passes cleanly against the new over-promise, and no test asserts the sweep's status filter matches what the page claims. Net: the guarantee was rewritten and narrowed, not brought into line with the engine - LEG-06's defect (a published automatic remedy the code does not perform) survives in reduced form and should be reported as partial, not fixed."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-08",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "apps/web/lib/faqs.ts:103 no longer contains '4 free pujas per year', 'monthly panchang calendar', 'prasad shipping discount' or 'NRI-exclusive aarti recordings'; the answer now enumerates all six real entitlements and states INR-first billing through Razorpay. I read the SKU myself at apps/api/src/services/subscription.service.ts:224-241 and confirmed the six features verbatim, and confirmed the claim's secondary assertion that /nri already published the correct list - apps/web/app/nri/page.tsx:40-70 has six benefit tiles mapping 1:1 onto that features array, so the claim that only the FAQ needed changing holds. Non-vacuous: reverting faqs.ts to HEAD fails both LEG-08 assertions, including the strengthened both-sides test which slices the features array out of the API source and loops the distinguishing nouns against the published answer."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-09",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Confirmed via git diff of apps/web/app/nri/page.tsx: metadata at :21/:26/:34, hero CTA at :140 ('Go Premium - Rs 5,000 / year (about $60)'), sub-caption at :151 (adds 'your bank sets the conversion rate') and closing CTA at :272 are all INR-first. apps/web/app/nri-pujas/page.tsx:70 now states 'Any USD figures on this page are reference prices only - Razorpay charges the full amount in INR'. The claim's 'partly dead on arrival' disclosure is honest and I verified it: nri-pujas/page.tsx:138-142 already carries the CM-06 comment and the 'International cards, no markup / Billed in INR' wording, so this agent did not take credit for that tile. Rail confirmed at terms/page.tsx:170-172 (Razorpay, INR). Non-vacuous: reverting nri/page.tsx fails the CTA test, reverting nri-pujas/page.tsx fails the local-currency test. Note for the record, not a defect in this claim: nri-pujas/page.tsx:42-47 still quotes puja estimates in USD only ('$45-$120') with no INR alongside - now covered by a disclaimer rather than relabelled, which is what the sweep's fix instruction asked for, but the price tiles themselves remain USD-only."
+  },
+  {
+   "area": "legal-content",
+   "id": "LEG-12",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "apps/web/app/shipping/page.tsx:104-110 now renders deliveryFeeLine() ('Free delivery on domestic orders of Rs 499 and above. Below that, a flat Rs 49 applies - the same fee for every weight and every destination.') and the meta description at :10-12 is templated off COMPANY.store.freeDeliveryAboveInr, so the Rs 999 SEO claim is gone too. COMPANY.store = {freeDeliveryAboveInr:499, flatDeliveryFeeInr:49} in apps/web/lib/company.ts:132-143. I grepped for residual '999' across shipping, store and terms and found none, and confirmed the third surface independently: apps/web/app/store/page.tsx:33/200/316 already say Rs 499. CartContext.tsx:134 still hardcodes 'subtotal >= 499 ? 0 : 49' rather than importing the constant, but the lockstep test parses that expression out of the charging code and asserts equality with COMPANY.store, and it searches both CartContext and apps/api/src/routes/store-orders.ts so it survives COM-06's server-side move. Non-vacuous: reverting shipping/page.tsx fails 3 tests (1 source + 2 render); reverting company.ts fails both constant tests with 'Cannot read properties of undefined'. Full web suite green after restore: 806/806 across 80 files, no adjacent breakage."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-08",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "selectPanchang (api-contracts.ts:610) reads the FLAT payload, reads rahuKaal, flattens the shubhMuhurat OBJECT into label/window pairs, and returns null for an error body — verified against source, not just the fixture: apps/api/src/routes/panchang.ts:22 returns the raw prisma row and schema.prisma:698-699 declares rahuKaal String / shubhMuhurat Json. (devotee)/index.tsx:69 wires it; :138-172 render 'Panchang unavailable right now' with no literal fallback, and PanchangItem (:300) prints an em-dash for a missing field. Old code at HEAD confirmed verbatim (six literal strings, `?? 'Dwadashi (Shukla Paksha)'`). Non-vacuous: three mutations (read nested .data, read `rahukaal`, treat shubhMuhurat as string-only) each turned the suite red. CAVEAT — the evidence's claim that the pre-fix screen CRASHED with 'Objects are not valid as a React child' cannot be verified and does not hold for HEAD: HEAD reads `panchang.data?.data?.abhijitMuhurta`, never shubhMuhurat, so it always fell through to a string. The claimed crash existed only in an intermediate uncommitted state git cannot recover. The fix itself is real and addresses the sweep finding as written."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-09",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "portal-queries.ts:38/46/54 add scoped hooks and all three screens use them: (temple)/dashboard.tsx:38-39 (was useDarshan()+useTemples() at HEAD — confirmed verbatim), pujas.tsx:30, streams.tsx:19. Verified against apps/api/src/routes/temple-portal.ts: /dashboard:127 returns {profile,stats,recentBookings}, /pujas:375 returns {offerings}, /darshan:642 returns {streams}, and the route list confirms there is NO /temple-portal/streams — the claim's 404 note is right. Selector fields match serializeOffering:351 and serializeDarshan:598 exactly. Dashboard now renders Bookings/Revenue from dash.stats and a Recent Bookings list; the literals '42' and '₹1,84,500' are gone; no Switch remains in pujas.tsx. Non-vacuous: reverting `offerings`→`data` and replacing the `Puja ${id}` fallback with a guessed name each turned the suite red."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-10",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "selectWellnessSessions reads `data` and maps durationMinutes/scheduledAt/priceInr/capacity/status; wired at (wellness)/dashboard.tsx:30, (wellness)/sessions.tsx:68 and (devotee)/wellness.tsx:381. The four-class yogaSessions mock is gone, as is the 'Day 12 of 21' card and the fabricated Students/Earnings/Rating tiles. Write side verified against source: buildWellnessSessionInput mirrors createSessionSchema in apps/api/src/routes/wellness-sessions.ts:29-49 field-for-field including the -60s past-time refine, the UPPERCASE enum, and required capacity/priceInr; the modal now collects both (sessions.tsx:241,248). Old code at HEAD confirmed verbatim: it posted {type:'yoga', duration, level, startTime}. Invalidate-key mismatch confirmed at source (wave-1-4.ts:153 invalidates ['wellnessSessions'], providers.ts:131 keys ['wellness','sessions']); the screen now invalidates the correct key. Non-vacuous: reverting the envelope to `sessions`, lowercasing the enum, and making capacity default to 20 each turned the suite red. Note: meditationTracks (:65) and ayurvedaTips (:108) on the devotee screen are still hardcoded — outside PAR-10's scope but the same class of defect."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-11",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "selectPriestProfile (api-contracts.ts:979) reads the flat payload and pins bankLinked/gstStatus to null; verified against apps/api/src/services/priest.service.ts:651-677, which returns the profile flat with displayName/ratingAvg/ratingCount/aadhaarVerified/verificationStatus/temples and NO bank or GST field. (priest)/profile.tsx:30 renders it including a Temples section and the rating line; the Verification block now prints a neutral 'Bank account and GST status are not reported by the app' note instead of asserting 'Not linked'/'Pending Review'. (priest)/services.tsx:27 reads selectPujaTypes plus the pandit's own specializations; the six-row FALLBACK at HEAD is confirmed verbatim (Satyanarayan Katha ₹2,100, 'Ganesh Atharvashirsha' ₹751) and is deleted along with the useState-only Switch. Non-vacuous: re-adding a `profile` wrapper read and restoring `bankLinked:false`/`gstStatus:'pending'` each turned the suite red."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-12",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "useGaushalaPortalCows (portal-queries.ts:62) hits /api/v1/gaushala-portal/cows; both (gaushala)/cows.tsx:60 and dashboard.tsx:25 use it. Verified at source: apps/api/src/routes/gaushala-cows.ts:43 returns {cows} scoped to the manager's gaushalaId and is registered under the /gaushala-portal prefix (server.ts:380), and the Cow model (schema.prisma:1427-1446) has ageYears/healthStatus and NO adoptionStatus and no `age` column — so the old 'Available' pill was a claim the server never made. Old code at HEAD confirmed verbatim: useCows(), the six-row FALLBACK (Lakshmi/Nandini/Kamadhenu), `cows.length || 42`, `adopted || 18`, ₹64,200, 12 volunteers, and an invalidate of the wrong key ['gaushala','cows']. The create now invalidates portalQueryKeys.gaushalaCows AND awaits cowsQuery.refetch() before the success alert. Non-vacuous: adding back an `?? toNumber(c.age)` fallback turned the suite red. Fixture is a genuine capture — real UUID, fields matching the model exactly."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-16",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "store.tsx no longer calls Linking at all: handleAdd (:199) awaits useAddToCart, runs the response through selectCart, and refuses to claim success when the server did not return a cart; the badge (:255) reads cart.itemCount, and the cart icon opens a real summary of live items/subtotal/delivery/total. selectStoreProducts maps rating/reviewCount/compareAtPrice/discount/tag/category/inStock off the row and leaves them null when absent. The {message,cart} envelope trap is real — verified at apps/api/src/routes/store.ts:99,116,153 vs the bare-Cart typing in packages/api-client/src/hooks/store.ts:147 — and selectCart unwraps both forms. Old code at HEAD confirmed verbatim: the openURL search by product name, the '2' hardcoded badge, `const fb = productsData[i % productsData.length]`, and `Math.round(price*1.4)`. Non-vacuous: injecting a 4.8/456 positional default and removing the envelope unwrap each turned the suite red. Fixture proven genuine by re-deriving deliveryFee 49 / tax 17 / total 415 from store.service.ts:857-861. CAVEAT: rating/reviewCount/compareAtPrice now come from a hardcoded server-side PRODUCTS array (store.service.ts:78) — the app is consistent with web, but those figures are still fixtures, just server-side ones; and checkout still hands off to the web store."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-18",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "wa.me/919999999999 is gone from (devotee)/yatra-detail.tsx and so is the no-op `Alert.alert('Concierge', 'Our team will contact you within 24 hours.')` at HEAD:213 (both confirmed verbatim in the old file). submitInquiry (:66) builds the body through buildYatraInquiry, POSTs /api/v1/yatra-inquiry, and only reports success when res.referenceId is present (:94), displaying that reference (:279). buildYatraInquiry mirrors inquirySchema in apps/api/src/routes/yatra-inquiry.ts:36-53 field-for-field (packageTier enum, travelersCount 1..50, buyer.name/email/phone/country, totalInr nonnegative). Route is real, public, and returns referenceId. Non-vacuous: disabling the email check and defaulting a missing startDate each turned the suite red. Not firing a live POST was the right call — the handler emails YATRA_INQUIRY_TO and the buyer."
+  },
+  {
+   "area": "app-web-parity",
+   "id": "PAR-19",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "The five Switches and the useState flag map are gone from (admin)/settings.tsx (HEAD state confirmed verbatim, including the dead `stripe:true`). The screen now renders describePlatformFlagSupport()'s explicit 'Platform flags cannot be changed from the app' notice plus one read-only Razorpay row driven by describeGatewayStatus, which defaults to 'Unknown' on error/in-flight and reuses the existing isLivePaymentRail from subscription-gate.ts:61 rather than duplicating the demo-key check. GET /api/v1/payments/config exists (payments.ts:189). I independently confirmed the 'no surface to wire to' justification: a repo-wide search for featureFlag/feature_flag/platformSetting across apps/api/src/routes and src/services returns nothing. The user-count tile goes through selectAdminDashboard. Non-vacuous: flipping canWrite to true and re-adding a stripe flag each turned the suite red."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-08",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Independently verified. apps/api/src/jobs/aarti-notify.ts:68-72 tickIntervalMinutes() reads OPS_TICK_INTERVAL_MS with a 60_000 floor and a 30-minute default — byte-for-byte the same contract as apps/api/src/jobs/scheduler.ts:59-64 resolveIntervalMs()/DEFAULT_INTERVAL_MS, so the two files can no longer disagree. Window is now `minutesUntil > tick+15 -> continue` (:164,:178), midnight wrap is `(slot.start - nowMin + 1440) % 1440` (:177), and the module-level Set is gone, replaced by claimRun(`aarti:<temple>:<slot>:<aartiIstDate>`) at :183-185 keyed off the AARTI's own IST date (:182), so two ticks straddling midnight cannot double-claim. RED reproduced independently by restoring HEAD's aarti-notify.ts: exactly 7 failed / 3 passed as claimed, and the two named tests ('matches an aarti 40 minutes out when the tick is 30 minutes', 'claims each (temple, slot, IST day) durably') were among the failures. GREEN 10/10; neighbouring aarti-notify.scal06.test.ts 4/4 and full API suite 1482/1482 across 123 files still green; tsc clean. Two caveats that do not overturn the verdict: (1) the reminder can now land up to 45 minutes early while apps/web/components/AartiOptIn.tsx:170,180 still promises 'Notify me 15 min before aarti' / '15-minute aarti reminders' — the push BODY was corrected but the toggle copy was not, and this is now systematically wrong rather than occasionally; (2) per NOTIF-09 below the production audience for this job is provably empty, so the widened window sends nothing to anyone today."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-09",
+   "verdict": "DISPUTED",
+   "vacuous_test": false,
+   "reason": "The code change and the tests are real — the global `aartiOptIn: true` branch is deleted and the only token query is now `where: { userId: { in: followerIds }, aartiOptIn: true }` (aarti-notify.ts:216-219); reverting to HEAD makes both named tests fail. But the claim is an optimistic success claim over a feature the fix makes provably dead, and its own evidence contains the proof. There is NO write path to temple_follows anywhere in the repository: grepping apps/ and packages/ for templeFollow|temple_follows|TempleFollow returns the model at apps/api/prisma/schema.prisma:1782, the idempotent DDL at apps/api/src/lib/ensure-schema.ts:317-324, and exactly two READERS (aarti-notify.ts:148, weekly-digest.ts:220). Zero routes, zero services, zero web or mobile components ever insert a row — the only 'follow' strings in apps/web and apps/mobile are the marketing copy at AartiOptIn.tsx:182 and darshan-player.tsx:251. The claim itself states `SELECT count(*) FROM temple_follows` returns 0 on live, then deletes the one branch that had an audience without noting that the surviving branch has none and cannot acquire one. Net customer outcome: the toggle that previously over-sent 20 pushes/day now turns on and can never deliver a single reminder to any user, and there is no user-reachable action that would change that. The claim's framing — 'aartiOptIn now means what its UI copy implies: aarti reminders for the temples I follow' — reads as a working feature. It is a dead one, and that is not disclosed. (Secondary, minor: 'A temple with no followers now short-circuits before any token query' is true, but the durable claim at :185 is still consumed first, so a zero-follower temple burns its per-day claim and increments aartisMatched with nothing sent.)"
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-10",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Independently verified end to end. broadcast() arms the timer with the tier's own window at dispatch.service.ts:280 -> armOfferTimeout(:288-300): unref'd (:298), one entry per bookingId replaced on rebroadcast (:289-290), deleted before the work runs (:292), and the work is sweepBookingOffers. sweepBookingOffers (:568-591) re-reads the booking and no-ops unless status==='confirmed' && !priestId && offerExpiresAt<=now && tier in instant|one_hour|senior — the same predicate as the cron sweep's stale query (:537-546), so the two paths cannot diverge. The refactor is faithful: resolveUnassigned (:596-672) uses `b` only as `b.id` (verified by reading the whole body), tier is passed in where it used to come off the row, and the S3-11 per-iteration didEscalate guard and the exact expiresAt-groupBy round counting are preserved verbatim. cancellation.service.ts:201-214 drives sweepBookingOffers after the requeue commits, dynamic-import, fire-and-forget. Two independent mutation tests, not just the claimed revert: commenting out the armOfferTimeout call fails exactly 'arms a timeout for the tier accept window when a broadcast goes out' (1 failed / 7 passed); removing the cancellation block fails exactly 'drives the dispatch sweep for that booking immediately' (1 failed / 1 passed, matching the claim). The three pre-existing sweepExpiredOffers regressions in dispatch.service.test.ts (10/10) and cancellation.service.test.ts (12/12) pass unchanged. cron.ts:87 registers the token-gated 'dispatch-sweep' job and no new GitHub Actions schedule was added, so the free-tier reasoning holds. One factual inaccuracy in the claim: dispatch-offer-timeout.test.ts contains 8 tests, not the claimed 9 (4 NOTIF-06 + 4 NOTIF-10). Minor, non-material: expireSentOffers reads with take:200 but updateMany's where is unbounded, so past 200 concurrently-expiring offers the state transition is complete while only 200 pandits get the offer_timeout notice."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-11",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Independently verified. All three stubs are deleted from apps/api/src/routes/cron.ts; POST /daily now awaits runDailyOps() and returns {ok:true,durationMs,result} or a 500 + {ok:false,error} on throw; the JOBS map holds only 'daily-ops', 'dispatch-sweep' and 'aarti-notify', all backed by real imports. I parsed .github/workflows/daily-cron.yml with a YAML loader myself: after block-scalar stripping the heredoc opener sits at column 0, the terminator line is exactly 'PY', and the extracted python body compiles. Every one of the eight keys the workflow asserts on (outreach, panchang, panchangCompute, aartiNotify, weeklyDigest, refunds, dispatchSweep, weeklySettlement) plus ranAt exists on DailyOpsResult at apps/api/src/jobs/master-cron.ts:78-108, so the assertion cannot false-red. RED reproduced by restoring HEAD's cron.ts: exactly 7 failed / 1 passed, the survivor being the auth control, precisely as claimed. GREEN 8/8. One caveat, disclosed rather than disqualifying: the workflow asserts key PRESENCE, not work performed — a chain in which all eighteen ticks return {skipped:true,reason} still goes green, so the in-file comment 'asserts on the RETURNED COUNTERS rather than on a status code' overstates by a notch. It is still materially stronger than before (real work driven, 500-on-throw turns -fsS red, per-tick counters printed to the log), and asserting non-zero counters would produce legitimate false reds, so I do not treat this as a reintroduced optimistic-success claim."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-12",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Independently verified. master-cron.ts:239-242 claims `panchang-blast:<istDateKey(now)>` BEFORE the fan-out and returns {sent:0,skipped:true,reason:'already blasted today'} on a lost claim; istDateKey (:221-223) shifts by 330 minutes so 23:45 UTC keys the following IST morning. releaseRun fires only on the no-panchang-data path (:255) and, in the catch, only when attempted===0 (:288-290) — I read the counter and it increments per send attempt, so a partial fan-out can never release. Rather than accept the claimed RED (which was only 'tickPanchangBlast is not a function', a weak import-level failure caused by the export change), I ran a targeted mutation: keeping the export and the `now` parameter but deleting only the two-line claim gate fails 4 of 6 tests including the load-bearing 'does NOT send again on the second tick of the same morning'. The test is not vacuous. GREEN 6/6; scheduler.test.ts 13/13 and the full suite unaffected. One inaccuracy in the claim: 'the admin force path still taking a claim' describes a path that is not wired — forcePanchang exists only as a RunOptions field declared at master-cron.ts:128 and consumed at :419, and no route anywhere sets it. Cosmetic; the test asserting it is harmless. Note also that claimRun itself carries no unit test and its cross-instance durability rests on a live-Postgres probe I could not independently reproduce — but every failure path in lib/notification-run-log.ts degrades to the process-local Set that was the prior behaviour, so the primitive can only be stronger than what it replaced, never weaker."
+  },
+  {
+   "area": "notifications",
+   "id": "NOTIF-13",
+   "verdict": "DISPUTED",
+   "vacuous_test": false,
+   "reason": "Three of the four parts are genuinely fixed and I verified them: fetchUpcomingAartisForBatch (weekly-digest.ts:210-245) joins temple_follows once with `WHERE tf.user_id = ANY($1::uuid[])`, pulls t.timing_info and renders real labels/times through parseSchedule + formatIstClock, contributing no row when a temple has no parseable aarti; fetchRecommendedPuja (:266-292) lost the unused `user` parameter and is hoisted to one call per run (:327,:364); the 'Based on your <gotra> gotra' copy is replaced by 'Popular this week / Devotees are booking' (:107-116). RED reproduced by restoring HEAD's weekly-digest.ts: exactly 6 failed / 2 passed as claimed; GREEN 8/8; weekly-digest.test.ts 5/5 and digest.test.ts 6/6 unaffected; the prisma mock gained pujaType.findFirst and userRoleAssignment.groupBy as pure additions with no reassignment. The dispute is the fourth part. The stamping change reintroduces, two files over, the exact defect NOTIF-12 was filed for. runWeeklyDigest keeps NO per-recipient record of who was reached, so when `failed > 0` (:417-423) the un-stamped run simply re-sends the digest to every user from the top on the next tick. isSunday9AmIst (:45-53) returns true for the entire 09:00-09:59 IST hour and the ops tick is 30 minutes, so that hour holds two ticks: one permanently-failing address — a single hard-bouncing mailbox, not just the Resend cap — means every healthy recipient receives an identical digest TWICE every Sunday, indefinitely, because the 6-day cooldown at :460-471 never engages on an un-stamped run. The claim presents this as a clean win ('leaves WeeklyDigestRun untouched and retries on the next tick') and explicitly declines a dead-letter table on the grounds that 'the retry is the un-stamped run, which needs no schema', without acknowledging that the retry is an unconditional full re-send. The same batch of fixes reached for claimRun to prevent exactly this for panchang and aarti; it was not applied here. The finding's own recommended fix said 'only stamp WeeklyDigestRun when failed === 0, persisting failures to a retry queue' — the first half shipped, the second half was dropped, and dropping it is what creates the duplicate-send path."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-04",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Fix is real and non-vacuous. markDelivered at apps/web/app/priest/bookings/view/page.tsx:219, rendered at :482, gated to status video_uploaded only; it checks res.ok, refetches, and surfaces the server's text on failure — no optimistic success. API side independently confirmed: apps/api/src/routes/bookings.ts:355-361 ASSIGNED_PRIEST_ALLOWED_TRANSITIONS includes 'delivered' and :934 resolves isAssignedPriest via booking.priest.userId, so the pandit's own session can drive it. Surgical probe: deleting only the button (lines 472-486) turns the PATCH test red while everything else stays green — genuinely red-green. blocked_on is honest: I grepped the whole repo and apps/web/app/priest/bookings/view/page.tsx is still the ONLY client anywhere that sends status:'delivered'; the devotee side is genuinely unimplemented. Two caveats that do not overturn the verdict. (1) The claim says both tests were 'red before (no button matching /deliver/i existed anywhere)'. Literally true against HEAD, but test 2 is an ABSENCE assertion — with only PF-04 reverted it PASSES; it was red against HEAD solely because of the PF-08 confound (the detail page could not resolve the booking at all, so 'Price Breakdown' never rendered). It is a lock, not a red-green, and the stated mechanism is wrong. (2) Live evidence ('6 bookings sitting in video_uploaded for this one pandit') is unverifiable: that DB is localhost:5432/bhaktisetu_dev and is down; the reachable Supabase DB has 7 bookings total and no such priest row."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-05",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Verified end to end at the code level. storageReady at apps/api/src/routes/priest.ts:79, guard at :369, presign wrapped at :401 — line numbers accurate. Root cause independently confirmed by reading both definitions: lib/r2.ts:41 supabaseEnabled = !!(url && serviceKey) vs lib/supabase.ts:10 isDemoMode treating https://demo.supabase.co as demo, returning a Proxy whose non-auth property (:32) is a bare throwing function. The claim that lib/r2.ts and lib/supabase.ts were left untouched is TRUE — git diff --stat is empty for both, and isDemoMode was already exported at supabase.ts:51 in HEAD, so no lane was crossed. Vacuity check passed: against HEAD, tests 1 and 2 fail and test 3 passes — exactly the 2-red/1-lock split the claim states, no over-report. Test 1 additionally pins presign not-called, so the guard genuinely fires before signing rather than after. No fabricated fallback: a null presign still 500s, it does not invent a URL. One residual not in the claim: the :401 catch maps ANY thrown storage error to 'Storage backend not configured', so a transient failure from a correctly-configured R2 now reports a config problem — still far better than the 400 carrying the internal TypeError. The ':4123 returned 200 with a genuine presigned URL' live cross-check is unverifiable (that instance is gone; only the stale :4000 is still listening)."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-06",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Both halves are real. Boundary: videoProofBodySchema z.string().trim().url().max(2000) at routes/priest.ts:63, replacing the old `!videoUrl || typeof !== 'string'` check. Repair path: priest.service.ts:511 does its own findUnique + ownership check and, when status is already video_uploaded, writes ONLY videoProofUrl + videoUploadedAt at :525 with no `status` key. I verified the payout claim by reading booking.service.ts:1436-1514 — the delegated path is what mints the payout via createPriestPayout, so the bypass is correct, and the test asserts args.data.status is undefined. Client half at view/page.tsx:188 validates with new URL() before POSTing; :468 renders the replace control. Vacuity: against HEAD, 5 of 6 fail and the labelled lock passes — exactly as claimed, no inflation. TWO GAPS THE CLAIM DOES NOT MENTION. (1) The delegated path also fires notifyVideoReady (booking.service.ts:1510); the replace path skips it. The devotee was already notified about the junk link and gets NO notification when the correct recording is filed — the sweep's own customer_impact (the devotee never receives the video) is only partly closed. (2) The replace path has no throttle or single-use limit, so a pandit can overwrite a GOOD proof URL indefinitely while video_uploaded, after the devotee viewed it and after the payout minted. Neither breaks the finding's stated 'expected', so this stays CONFIRMED, but both belong in the ledger. The 'five poisoned rows' and the claimed live repair of BS-20260812-SGAVP are unverifiable — that DB is down and the reachable one has no such rows."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-07",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Server and client halves both verified. PRIEST_BOOKING_VIEWS at priest.service.ts:17 defines the strip once; getAssignedBookings splits scopeWhere (date filters, no status) from where (status/view), and the groupBy runs over scopeWhere so counts describe the whole book, never the page — I read this rather than trusting the summary. Client at bookings/page.tsx:163 sends view+page+limit, badges read data.counts, the client-side filteredBookings array is deleted, and a Previous/Next pager with 'Showing X–Y of N' is added at :498. Vacuity: web 4/4 red against HEAD and API 4/5 red, with the page/limit test passing as the labelled lock. Minor accounting discrepancy in the claim, in the honest direction: it reports '3 red + 1 lock' for the API but the describe holds 5 tests and 4 went red — the extra red one ('rejects an unknown ?status') belongs to the adjacent z.nativeEnum change, not to PF-07. The adjacent-test edit to booking-fixes-phase0.test.tsx:50 is legitimate — the old assertion source-grepped the deleted optimistic status map — though the replacement only asserts `await fetchBookings()` and no longer pins the reject→confirmed semantic anywhere on the client. ONE REGRESSION NOT MENTIONED: bookings/page.tsx:122 still casts ?status= straight to TabKey and now forwards it as view=, which the Zod enum rejects, so a legacy deep link such as ?status=video_uploaded now renders a 400 error banner instead of a filtered list. Both in-repo deep links (priest/page.tsx:347,361) use valid values, so no live link is broken. Live counts unverifiable (DB down)."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-08",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Strongest of the set. GET /bookings/:id at routes/priest.ts:185 with a uuid guard that 404s junk before Prisma; getAssignedBookingById at priest.service.ts:296 returns a discriminated result so 404 (unknown) and 403 (someone else's) are distinguishable without an existence leak, and it strips priestId from the response. The shared assignedBookingSelect (priest.service.ts:48, claim said :41 — 7 lines off, immaterial) really is used by both reads, so the drift claim holds. Web page fetches the single record at view/page.tsx:115. Vacuity is airtight: all 4 API tests red against HEAD, and a surgical probe restoring only the old list-scan-plus-.find() on an otherwise fully-fixed page turns the web test red on its own. The 404-body assertion genuinely defeats Fastify's generic 404 — I confirmed the test asserts res.json().error === 'Booking not found.' rather than just the status code, which is the specific vacuity trap this repo has shipped before. No fabricated fallback: fetchBooking checks res.ok and renders 'Could not load booking: <error>' rather than a silent empty shell."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-09",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "All three helpers fixed as described: bookings/page.tsx:77, bookings/view/page.tsx:63, priest/page.tsx:81 — each now `new Date(dateStr)`, returns the raw string rather than 'Invalid Date' when unparseable, and pins timeZone 'Asia/Kolkata'. Best-isolated vacuity probe of the batch: I reverted ONLY the parse (back to dateStr + 'T00:00:00') while leaving the NaN fallback and the timezone in place, and all 3 tests went red — so they are not merely 'stopped crashing' assertions; the expected rendered day is what carries them. Scope is complete for the finding: I grepped apps/web/app/priest/** and no `+ 'T00:00:00'` pattern survives outside comments; the other two formatDate helpers (payouts/page.tsx:58, reviews/page.tsx:22) never had the bug. The timezone reasoning independently checks out — a @db.Date at UTC midnight and a row stored at +05:30 both render 19 Aug under Asia/Kolkata. One honest limit: the tests do not actually pin the timezone (they would likely still pass on a UTC or IST runner with the timeZone key removed), so that specific load-bearing claim rests on code review rather than on the test."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-10",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Both halves verified and each is separately non-vacuous. Server: platformCommission (plus rating/reviewText) added to the shared select at priest.service.ts:56 — the two API tests inspect the actual Prisma call args and both go red against HEAD. Client: formatCurrency at view/page.tsx:54 coerces and returns an em dash for null/undefined/non-finite. Surgical probe: deleting only line 56 (the guard) leaves web test 1 GREEN and turns test 2 red, which is the correct division of labour — test 1 locks the wiring, test 2 locks the degradation. The claim's disclosure that it DELETED a third draft test because the prisma mock ignores `select` and the test therefore passed before and after is exactly the self-policing this brief asks for, and it is the reason the surviving tests assert on call args instead of on the mocked return value. No derivation or client-side arithmetic was introduced — the stored column is surfaced as-is, so Commission/priestPayout semantics are untouched. Live figure ('330' against 1100/770) unverifiable."
+  },
+  {
+   "area": "pandit-fulfilment",
+   "id": "PF-11",
+   "verdict": "CONFIRMED",
+   "vacuous_test": false,
+   "reason": "Read-side merge verified at routes/priest.ts:521: it queries the Review table AND PujaBooking rows with rating not null for this priestId, maps to one shape, sorts newest-first, caps at 100. Booking ids are prefixed `booking:` so they cannot collide. The response-shape claim checks out — I compared against PriestReview in apps/web/lib/pandit-api.ts:140-148 and every declared field is present with compatible types, so /priest/reviews consumes it unchanged. Vacuity: 3/3 red against HEAD, and the third test specifically pins the scan to priestId + rating:{not:null}, which is the leak this fix could have introduced. I also checked the new getPriestId(userId) call the endpoint gained: requireRole('priest') (middlewares/auth.ts:393-412) already demands an ACTIVE Priest row, so it cannot throw here and the endpoint cannot start 400ing for users who previously got an empty list. The blocked_on is the most valuable thing in the batch and it is honest — refusing to invent 42 reviews to make two screens agree is the right call. TWO NOTES. (1) The dual-source read creates a latent trap: if anyone later also implements the sweep's FIRST suggested fix (insert a Review row inside submitReview), every review will appear twice, once per source. That should be recorded next to this fix. (2) The live result ('rating 5, Excellent puja, very devoted pandit ji., BS-20260812-STNEO') is unverifiable — that booking does not exist in the reachable database and the seeded one is down."
+  }
+ ]
+}

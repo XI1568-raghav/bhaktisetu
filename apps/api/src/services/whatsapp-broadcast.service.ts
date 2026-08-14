@@ -160,6 +160,88 @@ interface BroadcastInput {
   triggeredBy?: string;
 }
 
+/** Booking states whose holder counts as implicitly opted in via T&C. */
+const BOOKING_AUDIENCE_STATUSES = ['confirmed', 'video_uploaded', 'completed', 'delivered'] as const;
+
+/**
+ * SCAL-04 (2026-08-13): recipient scans are paged with a cursor.
+ *
+ * Both audience queries were unbounded `findMany` calls — every waitlist row,
+ * and every PujaBooking that was ever confirmed joined to its user — resolved
+ * into one array before a single message went out. The booking scan was also
+ * per-BOOKING, so a devotee with 12 bookings appeared 12 times and was
+ * de-duplicated in Node afterwards. On a 512 MB Render container the whole
+ * audience had to fit in memory at once before the fan-out started.
+ *
+ * Paging keeps peak memory at one page regardless of audience size. Nobody is
+ * dropped: the cursor walks the whole set, it just never holds all of it.
+ */
+const RECIPIENT_PAGE_SIZE = 1000;
+
+async function pageByCursor<T extends { id: string }>(
+  fetch: (cursor: string | undefined, take: number) => Promise<T[]>,
+  onPage: (rows: T[]) => void,
+): Promise<void> {
+  let cursor: string | undefined;
+  for (;;) {
+    const rows = await fetch(cursor, RECIPIENT_PAGE_SIZE);
+    if (rows.length === 0) return;
+    onPage(rows);
+    if (rows.length < RECIPIENT_PAGE_SIZE) return;
+    cursor = rows[rows.length - 1]!.id;
+  }
+}
+
+/** Opted-in waitlist phones, paged. */
+async function loadWaitlistPhones(): Promise<string[]> {
+  const phones: string[] = [];
+  await pageByCursor<{ id: string; phone: string | null }>(
+    (cursor, take) =>
+      prisma.waitlist.findMany({
+        where: {
+          whatsappOptIn: true,
+          status: { not: 'UNSUBSCRIBED' },
+          phone: { not: null },
+        },
+        select: { id: true, phone: true },
+        orderBy: { id: 'asc' },
+        take,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      }),
+    (rows) => {
+      for (const r of rows) if (r.phone) phones.push(r.phone);
+    },
+  );
+  return phones;
+}
+
+/**
+ * Phones of devotees holding a confirmed/completed booking, paged.
+ *
+ * Asked user-first rather than booking-first: one row per person instead of one
+ * row per booking, so the transfer no longer scales with order volume.
+ */
+async function loadBookingHolderPhones(): Promise<string[]> {
+  const phones: string[] = [];
+  await pageByCursor<{ id: string; phone: string | null }>(
+    (cursor, take) =>
+      prisma.user.findMany({
+        where: {
+          phone: { not: null },
+          bookings: { some: { status: { in: [...BOOKING_AUDIENCE_STATUSES] } } },
+        },
+        select: { id: true, phone: true },
+        orderBy: { id: 'asc' },
+        take,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      }),
+    (rows) => {
+      for (const r of rows) if (r.phone) phones.push(r.phone);
+    },
+  );
+  return phones;
+}
+
 /**
  * Sends a template to every opted-in waitlist phone, respecting Meta's
  * 50/sec cap. The Waitlist row is treated as opted-in iff
@@ -168,17 +250,9 @@ interface BroadcastInput {
 export async function broadcastToWaitlist(input: BroadcastInput): Promise<BroadcastResult> {
   await ensureSchema();
   const optOut = await loadOptOuts();
-  const recipients = await prisma.waitlist.findMany({
-    where: {
-      whatsappOptIn: true,
-      status: { not: 'UNSUBSCRIBED' },
-      phone: { not: null },
-    },
-    select: { phone: true },
-  });
   return runBroadcast({
     audience: 'waitlist',
-    phones: recipients.map((r) => r.phone!).filter(Boolean),
+    phones: await loadWaitlistPhones(),
     optOut,
     input,
   });
@@ -193,18 +267,9 @@ export async function broadcastToBookingHolders(
 ): Promise<BroadcastResult> {
   await ensureSchema();
   const optOut = await loadOptOuts();
-  const bookings = await prisma.pujaBooking.findMany({
-    where: {
-      status: { in: ['confirmed', 'video_uploaded', 'completed', 'delivered'] },
-    },
-    select: { user: { select: { phone: true } } },
-  });
-  const phones = bookings
-    .map((b) => b.user?.phone)
-    .filter((p): p is string => !!p);
   return runBroadcast({
     audience: 'bookings',
-    phones,
+    phones: await loadBookingHolderPhones(),
     optOut,
     input,
   });
@@ -217,29 +282,13 @@ export async function broadcastToBookingHolders(
 export async function broadcastToAll(input: BroadcastInput): Promise<BroadcastResult> {
   await ensureSchema();
   const optOut = await loadOptOuts();
-  const [waitlist, bookings] = await Promise.all([
-    prisma.waitlist.findMany({
-      where: {
-        whatsappOptIn: true,
-        status: { not: 'UNSUBSCRIBED' },
-        phone: { not: null },
-      },
-      select: { phone: true },
-    }),
-    prisma.pujaBooking.findMany({
-      where: {
-        status: { in: ['confirmed', 'video_uploaded', 'completed', 'delivered'] },
-      },
-      select: { user: { select: { phone: true } } },
-    }),
+  const [waitlist, bookingHolders] = await Promise.all([
+    loadWaitlistPhones(),
+    loadBookingHolderPhones(),
   ]);
-  const phones = [
-    ...waitlist.map((r) => r.phone!),
-    ...bookings.map((b) => b.user?.phone).filter((p): p is string => !!p),
-  ];
   return runBroadcast({
     audience: 'all',
-    phones,
+    phones: [...waitlist, ...bookingHolders],
     optOut,
     input,
   });

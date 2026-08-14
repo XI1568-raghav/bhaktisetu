@@ -13,6 +13,11 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useDarshan } from '@poojly/api-client';
+import {
+  selectLiveStreams,
+  selectUpcomingDarshan,
+  type LiveStreamVM,
+} from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -20,103 +25,36 @@ const GRID_GAP = spacing.sm;
 const GRID_PADDING = spacing.md;
 const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 
-interface DarshanStream {
-  id: string;
-  templeName: string;
-  city: string;
-  deity: string;
-  status: 'live' | 'scheduled';
-  viewers: number;
-  scheduledTime?: string;
-}
-
-const liveStreams: DarshanStream[] = [
-  {
-    id: '1',
-    templeName: 'Kashi Vishwanath',
-    city: 'Varanasi',
-    deity: 'Lord Shiva',
-    status: 'live',
-    viewers: 12450,
-  },
-  {
-    id: '2',
-    templeName: 'Tirumala Venkateswara',
-    city: 'Tirupati',
-    deity: 'Lord Venkateswara',
-    status: 'live',
-    viewers: 28300,
-  },
-  {
-    id: '3',
-    templeName: 'Siddhivinayak',
-    city: 'Mumbai',
-    deity: 'Lord Ganesha',
-    status: 'live',
-    viewers: 8760,
-  },
-  {
-    id: '4',
-    templeName: 'Somnath',
-    city: 'Somnath',
-    deity: 'Lord Shiva',
-    status: 'live',
-    viewers: 5420,
-  },
-];
-
-const scheduledStreams: DarshanStream[] = [
-  {
-    id: '5',
-    templeName: 'Jagannath Temple',
-    city: 'Puri',
-    deity: 'Lord Jagannath',
-    status: 'scheduled',
-    viewers: 0,
-    scheduledTime: '06:00 PM',
-  },
-  {
-    id: '6',
-    templeName: 'Meenakshi Amman',
-    city: 'Madurai',
-    deity: 'Goddess Meenakshi',
-    status: 'scheduled',
-    viewers: 0,
-    scheduledTime: '07:00 PM',
-  },
-  {
-    id: '7',
-    templeName: 'Kedarnath Temple',
-    city: 'Kedarnath',
-    deity: 'Lord Shiva',
-    status: 'scheduled',
-    viewers: 0,
-    scheduledTime: '05:30 AM (Tomorrow)',
-  },
-  {
-    id: '8',
-    templeName: 'Dwarkadhish Temple',
-    city: 'Dwarka',
-    deity: 'Lord Krishna',
-    status: 'scheduled',
-    viewers: 0,
-    scheduledTime: '06:30 AM (Tomorrow)',
-  },
-];
-
-function StreamCard({ stream }: { stream: DarshanStream }) {
-  const isLive = stream.status === 'live';
+/**
+ * PAR-07 / PAR-05. This tab read `darshanQuery.data?.data`, which does not
+ * exist — GET /api/v1/darshan/live returns {streams,total,upcoming} — so it
+ * always rendered eight hardcoded temples: four fake "LIVE" cards and four fake
+ * "scheduled" ones, while the temple that was genuinely broadcasting was hidden.
+ *
+ * Both mock arrays are deleted. Live cards now come from `streams` and carry
+ * the real playbackUrl straight to the player, so the player does not have to
+ * re-resolve it (and cannot disagree with this list — see PAR-21, where
+ * /:id/stream reports a different status and URL for the same stream).
+ *
+ * `upcoming` is a list of aarti SLOTS, not streams, and is rendered as such.
+ */
+function StreamCard({ stream }: { stream: LiveStreamVM }) {
+  const isLive = stream.isLive;
 
   return (
     <TouchableOpacity
       style={[styles.streamCard, { width: CARD_WIDTH }]}
       activeOpacity={0.7}
       onPress={() => {
-        if (isLive) {
-          router.push({ pathname: '/(devotee)/darshan-player' as any, params: { id: stream.id, title: stream.templeName } } as any);
-        } else {
-          Alert.alert(stream.templeName, 'Scheduled: ' + (stream.scheduledTime ?? '') + ' — ' + stream.deity + ' • ' + stream.city);
-        }
+        router.push({
+          pathname: '/(devotee)/darshan-player' as never,
+          params: {
+            id: stream.id,
+            title: stream.templeName,
+            deity: stream.deity ?? '',
+            ...(stream.playbackUrl ? { url: stream.playbackUrl } : {}),
+          },
+        } as never);
       }}
     >
       {/* Stream preview placeholder */}
@@ -140,14 +78,14 @@ function StreamCard({ stream }: { stream: DarshanStream }) {
           </Text>
         </View>
 
-        {/* Viewer count for live */}
-        {isLive && stream.viewers > 0 && (
+        {/* Viewer count for live — only when the server reports one */}
+        {isLive && stream.viewerCount !== null && stream.viewerCount > 0 && (
           <View style={styles.viewerBadge}>
             <Ionicons name="people" size={10} color={colors.white} />
             <Text style={styles.viewerText}>
-              {stream.viewers >= 1000
-                ? `${(stream.viewers / 1000).toFixed(1)}K`
-                : stream.viewers}
+              {stream.viewerCount >= 1000
+                ? `${(stream.viewerCount / 1000).toFixed(1)}K`
+                : stream.viewerCount}
             </Text>
           </View>
         )}
@@ -169,19 +107,23 @@ function StreamCard({ stream }: { stream: DarshanStream }) {
         <Text style={styles.streamTempleName} numberOfLines={1}>
           {stream.templeName}
         </Text>
-        <View style={styles.streamMetaRow}>
-          <Ionicons name="location-outline" size={11} color={colors.stone[400]} />
-          <Text style={styles.streamCity}>{stream.city}</Text>
-        </View>
-        <Text style={styles.streamDeity} numberOfLines={1}>
-          {stream.deity}
-        </Text>
-        {stream.scheduledTime && (
+        {stream.city ? (
+          <View style={styles.streamMetaRow}>
+            <Ionicons name="location-outline" size={11} color={colors.stone[400]} />
+            <Text style={styles.streamCity}>{stream.city}</Text>
+          </View>
+        ) : null}
+        {stream.deity ? (
+          <Text style={styles.streamDeity} numberOfLines={1}>
+            {stream.deity}
+          </Text>
+        ) : null}
+        {stream.currentSlot ? (
           <View style={styles.scheduleRow}>
             <Ionicons name="time-outline" size={11} color={colors.saffron[500]} />
-            <Text style={styles.scheduleTime}>{stream.scheduledTime}</Text>
+            <Text style={styles.scheduleTime}>{stream.currentSlot}</Text>
           </View>
-        )}
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -190,31 +132,14 @@ function StreamCard({ stream }: { stream: DarshanStream }) {
 export default function DarshanScreen() {
   const darshanQuery = useDarshan();
   const [refreshing, setRefreshing] = useState(false);
-  const apiStreams = darshanQuery.data?.data ?? [];
-  const liveFromApi: DarshanStream[] = apiStreams
-    .filter((s) => String(s.status).toLowerCase() === 'live')
-    .map((s, i) => ({
-      id: s.id,
-      templeName: s.temple?.name ?? s.title,
-      city: s.temple?.city ?? '',
-      deity: s.temple?.deity ?? '',
-      status: 'live' as const,
-      viewers: s.viewerCount,
-    }));
-  const scheduledFromApi: DarshanStream[] = apiStreams
-    .filter((s) => String(s.status).toLowerCase() === 'scheduled')
-    .map((s) => ({
-      id: s.id,
-      templeName: s.temple?.name ?? s.title,
-      city: s.temple?.city ?? '',
-      deity: s.temple?.deity ?? '',
-      status: 'scheduled' as const,
-      viewers: 0,
-      scheduledTime: s.scheduledStartTime,
-    }));
+  const liveData = selectLiveStreams(darshanQuery.data).filter((s) => s.isLive);
+  const upcomingSlots = selectUpcomingDarshan(darshanQuery.data);
 
-  const liveData = liveFromApi.length > 0 ? liveFromApi : liveStreams;
-  const scheduledData = scheduledFromApi.length > 0 ? scheduledFromApi : scheduledStreams;
+  const errorText = darshanQuery.isError
+    ? darshanQuery.error instanceof Error
+      ? darshanQuery.error.message
+      : 'Unknown error'
+    : null;
 
   async function onRefresh() {
     setRefreshing(true);
@@ -249,30 +174,66 @@ export default function DarshanScreen() {
             </View>
           </View>
 
-          <View style={styles.grid}>
-            {liveData.map((stream) => (
-              <StreamCard key={stream.id} stream={stream} />
-            ))}
-          </View>
+          {darshanQuery.isLoading && liveData.length === 0 ? (
+            <Text style={styles.emptyNote}>Loading…</Text>
+          ) : errorText ? (
+            <Text style={styles.emptyNote}>
+              Could not load live darshan: {errorText}. Pull down to retry.
+            </Text>
+          ) : liveData.length === 0 ? (
+            <Text style={styles.emptyNote}>
+              No temple is broadcasting right now. Upcoming aarti slots are
+              listed below.
+            </Text>
+          ) : (
+            <View style={styles.grid}>
+              {liveData.map((stream) => (
+                <StreamCard key={stream.id} stream={stream} />
+              ))}
+            </View>
+          )}
         </View>
 
-        {/* Upcoming Section */}
+        {/* Upcoming aarti slots — {templeSlug,nextSlot,startsInMin}, not streams */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <Ionicons name="time-outline" size={18} color={colors.stone[500]} />
-              <Text style={styles.sectionTitle}>Upcoming</Text>
+              <Text style={styles.sectionTitle}>Next aarti</Text>
             </View>
             <View style={styles.countBadge}>
-              <Text style={styles.countText}>{scheduledData.length}</Text>
+              <Text style={styles.countText}>{upcomingSlots.length}</Text>
             </View>
           </View>
 
-          <View style={styles.grid}>
-            {scheduledData.map((stream) => (
-              <StreamCard key={stream.id} stream={stream} />
-            ))}
-          </View>
+          {upcomingSlots.length === 0 ? (
+            <Text style={styles.emptyNote}>
+              {errorText ? 'Unavailable.' : 'No aarti slots published for today.'}
+            </Text>
+          ) : (
+            upcomingSlots.map((slot) => (
+              <TouchableOpacity
+                key={`${slot.templeSlug}-${slot.nextSlot}`}
+                style={styles.slotRow}
+                activeOpacity={0.7}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(devotee)/darshan-player' as never,
+                    params: { id: slot.templeSlug, title: slot.templeSlug },
+                  } as never)
+                }
+              >
+                <Ionicons name="time-outline" size={16} color={colors.saffron[600]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.slotName}>{slot.nextSlot}</Text>
+                  <Text style={styles.slotTemple}>{slot.templeSlug}</Text>
+                </View>
+                <Text style={styles.slotIn}>
+                  in {slot.startsInMin} min
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Reminder CTA */}
@@ -296,6 +257,26 @@ export default function DarshanScreen() {
 }
 
 const styles = StyleSheet.create({
+  emptyNote: {
+    fontSize: fontSize.sm,
+    color: colors.stone[500],
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  slotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+    padding: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  slotName: { fontSize: fontSize.sm, fontWeight: '700', color: colors.stone[800] },
+  slotTemple: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
+  slotIn: { fontSize: fontSize.xs, fontWeight: '700', color: colors.saffron[700] },
   container: {
     flex: 1,
     backgroundColor: colors.stone[50],

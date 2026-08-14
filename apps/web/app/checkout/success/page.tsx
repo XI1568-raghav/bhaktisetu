@@ -4,7 +4,7 @@ import { CheckCircle2, Video, Mail } from 'lucide-react';
 
 
 export const metadata = {
-  title: 'Payment received — Darshya',
+  title: 'Payment received',
   description: 'Your puja booking is confirmed.',
   robots: { index: false, follow: false },
 };

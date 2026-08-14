@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
@@ -41,10 +41,23 @@ interface BookingItem {
  user: { fullName: string };
 }
 
-// ─── Fallback Data ──────────────────────────────────────────────
+interface BookingCounts {
+ all: number;
+ confirmed: number;
+ priest_assigned: number;
+ in_progress: number;
+ completed: number;
+}
 
-// Fallback removed - show empty state instead of fakes.
-const fallbackBookings: BookingItem[] = [];
+const ZERO_COUNTS: BookingCounts = {
+ all: 0,
+ confirmed: 0,
+ priest_assigned: 0,
+ in_progress: 0,
+ completed: 0,
+};
+
+const PAGE_SIZE = 20;
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -52,9 +65,24 @@ function formatCurrency(amount: number): string {
  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 }
 
+// PF-09 (prod sweep 2026-08-12): this used to be
+// `new Date(dateStr + 'T00:00:00')`. The API sends scheduledDate as a full ISO
+// instant ("2026-08-19T00:00:00.000Z"), so the concatenation produced
+// "2026-08-19T00:00:00.000ZT00:00:00" and EVERY date in the pandit portal read
+// "Invalid Date" — list, detail and dashboard.
+//
+// scheduledDate is a Postgres DATE, serialised at UTC midnight. Rendering it in
+// the viewer's own zone would show the previous day to every NRI west of UTC,
+// so the puja's own zone is pinned instead.
 function formatDate(dateStr: string): string {
- const d = new Date(dateStr + 'T00:00:00');
- return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+ const d = new Date(dateStr);
+ if (Number.isNaN(d.getTime())) return dateStr;
+ return d.toLocaleDateString('en-IN', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'Asia/Kolkata',
+ });
 }
 
 function formatTime(time: string): string {
@@ -94,104 +122,128 @@ function PriestBookingsInner() {
  const initialTab = (searchParams.get('status') as TabKey) || 'all';
 
  const [bookings, setBookings] = useState<BookingItem[]>([]);
+ const [counts, setCounts] = useState<BookingCounts>(ZERO_COUNTS);
+ const [total, setTotal] = useState(0);
+ const [totalPages, setTotalPages] = useState(1);
+ const [page, setPage] = useState(1);
  const [loading, setLoading] = useState(true);
+ // PF-15: a failed fetch used to be swallowed into an empty array, so every API
+ // hiccup told the pandit "You have no assigned bookings yet" — indistinguishable
+ // from a genuinely empty day, and invisible to anyone watching.
+ const [loadError, setLoadError] = useState<string | null>(null);
  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
  const [actionLoading, setActionLoading] = useState<string | null>(null);
+ // A failed action used to be invisible: `if (res.ok)` had no else and the
+ // catch was marked "Silent fail for MVP", so a pandit clicking Accept saw
+ // literally nothing happen and had no idea why.
+ const [actionError, setActionError] = useState<string | null>(null);
 
  useEffect(() => {
   const qs = activeTab === 'all' ? '' : `?status=${activeTab}`;
   router.replace(`${pathname}${qs}`, { scroll: false });
  }, [activeTab, pathname, router]);
 
- useEffect(() => {
- async function fetchBookings() {
+ // PF-07: the page used to fetch `/priest/bookings` with no page/limit, take the
+ // server's 20-row default, then filter AND count that truncated array
+ // client-side. A pandit with 51 assigned bookings saw 20 of them and a tab
+ // strip claiming 15 accepted when he had 25 — and there was no pager, so his
+ // oldest unaccepted jobs were unreachable and silently breached SLA.
+ // Filtering and counting now both happen server-side, over the whole book.
+ const fetchBookings = useCallback(async () => {
+ if (!session?.accessToken) {
+ // No session yet (signed out, or auth still hydrating). Stop the spinner
+ // rather than leaving it running forever; the portal layout gates access.
+ setLoading(false);
+ return;
+ }
+ setLoading(true);
+ setLoadError(null);
  try {
- const res = await fetch(`${API_BASE_URL}/priest/bookings`, {
- headers: { Authorization: `Bearer ${session?.accessToken}` },
- });
- if (res.ok) {
+ const res = await fetch(
+ `${API_BASE_URL}/priest/bookings?view=${activeTab}&page=${page}&limit=${PAGE_SIZE}`,
+ { headers: { Authorization: `Bearer ${session.accessToken}` } },
+ );
+ if (!res.ok) {
+ const detail = await res.text().catch(() => '');
+ throw new Error(`Could not load your bookings (${res.status}). ${detail.slice(0, 140)}`.trim());
+ }
  const data = await res.json();
  setBookings(data.bookings || []);
- } else {
- throw new Error('API unavailable');
- }
- } catch {
- setBookings(fallbackBookings);
+ setCounts({ ...ZERO_COUNTS, ...(data.counts ?? {}) });
+ setTotal(typeof data.total === 'number' ? data.total : (data.bookings?.length ?? 0));
+ setTotalPages(Math.max(1, data.totalPages ?? 1));
+ } catch (err) {
+ setLoadError(
+ err instanceof Error ? err.message : 'Could not load your bookings. Please try again.',
+ );
+ setBookings([]);
  } finally {
  setLoading(false);
  }
+ }, [session, activeTab, page]);
+
+ useEffect(() => {
+ void fetchBookings();
+ }, [fetchBookings]);
+
+ function selectTab(key: TabKey) {
+ setActiveTab(key);
+ setPage(1);
  }
- fetchBookings();
- }, [session]);
 
- const filteredBookings = bookings.filter((b) => {
- if (activeTab === 'all') return true;
- if (activeTab === 'completed') return ['completed', 'video_uploaded', 'delivered'].includes(b.status);
- return b.status === activeTab;
- });
-
- const tabs: { key: TabKey; label: string; count: number }[] = [
- { key: 'all', label: 'All', count: bookings.length },
- { key: 'confirmed', label: 'Pending', count: bookings.filter((b) => b.status === 'confirmed').length },
- { key: 'priest_assigned', label: 'Accepted', count: bookings.filter((b) => b.status === 'priest_assigned').length },
- { key: 'in_progress', label: 'In Progress', count: bookings.filter((b) => b.status === 'in_progress').length },
- { key: 'completed', label: 'Completed', count: bookings.filter((b) => ['completed', 'video_uploaded', 'delivered'].includes(b.status)).length },
+ // PF-15, second half. The error banner below split "load failed" from "empty
+ // day" in the RESULT area but left this strip publishing `All 0 / Pending 0 /
+ // Accepted 0 / In Progress 0 / Completed 0` on a failed load — `counts` starts
+ // at ZERO_COUNTS and the catch never touches it. That is the exact strip the
+ // sweep recorded for an account holding 25 bookings. A count is a claim about
+ // the pandit's book; a book that was never read supports no claim, so the
+ // badge reads "—" until one loads. `null` rather than 0 so the distinction
+ // cannot be lost again by a later formatter.
+ const tabs: { key: TabKey; label: string; count: number | null }[] = [
+ { key: 'all', label: 'All', count: loadError ? null : counts.all },
+ { key: 'confirmed', label: 'Pending', count: loadError ? null : counts.confirmed },
+ { key: 'priest_assigned', label: 'Accepted', count: loadError ? null : counts.priest_assigned },
+ { key: 'in_progress', label: 'In Progress', count: loadError ? null : counts.in_progress },
+ { key: 'completed', label: 'Completed', count: loadError ? null : counts.completed },
  ];
 
- async function handleAction(bookingId: string, action: string) {
+ // PJ-09: there used to be a `video` branch here that collected the mandatory
+ // proof URL through a raw browser dialog — on the screen the pandit
+ // actually closes a booking from, on a phone, straight after a puja, and only
+ // if he had already hosted the recording somewhere himself. The real
+ // uploader (components/provider/VideoProofUpload, Supabase Storage with
+ // progress and a validated paste fallback) lives on the detail page, so the
+ // Completed card routes there instead. This handler now drives only the four
+ // bodyless transitions; the prompt path is gone rather than left dormant.
+ type BookingAction = 'accept' | 'reject' | 'start' | 'complete';
+
+ async function handleAction(bookingId: string, action: BookingAction) {
  setActionLoading(`${bookingId}-${action}`);
  try {
- const endpoint = action === 'video'
- ? `${API_BASE_URL}/priest/bookings/${bookingId}/video`
- : `${API_BASE_URL}/priest/bookings/${bookingId}/${action}`;
-
- const method = action === 'video' ? 'POST' : 'PATCH';
-
- // P0 #pp-07 (2026-07-09): prompt for the real recording URL instead of
- // posting a hardcoded placeholder. The API persists whatever is sent, so
- // the placeholder became the stored "video proof" for every booking.
- let videoUrl: string | null = null;
- if (action === 'video') {
- videoUrl = window.prompt('Paste the video recording URL for this booking:')?.trim() ?? null;
- if (!videoUrl) {
- setActionLoading(null);
- return;
- }
- // Basic URL sanity check — the API only requires a non-empty string, but a
- // missing scheme produces a useless proof link.
- try { new URL(videoUrl); } catch {
- alert('That doesn\'t look like a valid URL. Please paste a full https:// link.');
- setActionLoading(null);
- return;
- }
- }
-
- const res = await fetch(endpoint, {
- method,
- headers: {
- Authorization: `Bearer ${session?.accessToken}`,
- 'Content-Type': 'application/json',
- },
- ...(action === 'video' ? { body: JSON.stringify({ videoUrl }) } : {}),
+ // No body on any of these. A Content-Type of application/json made Fastify
+ // reject them with FST_ERR_CTP_EMPTY_JSON_BODY before the handler ran — so
+ // every button here 400'd, and the silent `if (res.ok)` below meant the card
+ // simply never changed. "Nothing happens at all" was the reported symptom.
+ const res = await fetch(`${API_BASE_URL}/priest/bookings/${bookingId}/${action}`, {
+ method: 'PATCH',
+ headers: { Authorization: `Bearer ${session?.accessToken}` },
  });
 
- if (res.ok) {
- // Optimistically update the status
- const statusMap: Record<string, string> = {
- accept: 'priest_assigned',
- start: 'in_progress',
- complete: 'completed',
- video: 'video_uploaded',
- reject: 'confirmed',
- };
- setBookings((prev) =>
- prev.map((b) =>
- b.id === bookingId ? { ...b, status: statusMap[action] ?? b.status } : b
- )
+ if (!res.ok) {
+ const detail = await res.text().catch(() => '');
+ setActionError(
+ `Could not ${action} this booking (${res.status}). ${detail.slice(0, 140)}`.trim(),
  );
+ } else {
+ setActionError(null);
+ // Re-read from the server rather than guessing locally: the row may leave
+ // the current view, and the tab counts must move with it.
+ await fetchBookings();
  }
- } catch {
- // Silent fail for MVP
+ } catch (err) {
+ setActionError(
+ err instanceof Error ? err.message : 'Network error — please try again.',
+ );
  } finally {
  setActionLoading(null);
  }
@@ -281,12 +333,31 @@ function PriestBookingsInner() {
  <p className="text-surface-500 mt-1">Manage your assigned puja bookings</p>
  </div>
 
+ {/* Action failures must be visible. Setting actionError without rendering it
+     would leave the exact silent failure this fix exists to remove. */}
+ {actionError && (
+ <div
+ role="alert"
+ className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+ >
+ <span className="flex-1">{actionError}</span>
+ <button
+ type="button"
+ onClick={() => setActionError(null)}
+ className="shrink-0 font-medium text-red-600 hover:text-red-800"
+ aria-label="Dismiss error"
+ >
+ ×
+ </button>
+ </div>
+ )}
+
  {/* Tabs */}
  <div className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1 border border-surface-100">
  {tabs.map((tab) => (
  <button
  key={tab.key}
- onClick={() => setActiveTab(tab.key)}
+ onClick={() => selectTab(tab.key)}
  className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
  activeTab === tab.key
  ? 'bg-saffron-600 text-white shadow-sm'
@@ -299,7 +370,7 @@ function PriestBookingsInner() {
  activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-surface-100 text-surface-500'
  }`}
  >
- {tab.count}
+ {tab.count === null ? '—' : tab.count}
  </span>
  </button>
  ))}
@@ -313,8 +384,26 @@ function PriestBookingsInner() {
  </div>
  )}
 
+ {/* Load failure — never rendered as "you have no work today". */}
+ {!loading && loadError && (
+ <div
+ role="alert"
+ className="flex flex-col items-center justify-center gap-3 rounded-xl border border-red-200 bg-red-50 py-12 px-4 text-center"
+ >
+ <h3 className="text-lg font-semibold text-red-800">Could not load your bookings</h3>
+ <p className="text-sm text-red-700 max-w-md">{loadError}</p>
+ <button
+ type="button"
+ onClick={() => void fetchBookings()}
+ className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+ >
+ Retry
+ </button>
+ </div>
+ )}
+
  {/* Empty */}
- {!loading && filteredBookings.length === 0 && (
+ {!loading && !loadError && bookings.length === 0 && (
  <div className="flex flex-col items-center justify-center rounded-xl border border-surface-100 bg-white py-16">
  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-saffron-50">
  <Inbox className="h-8 w-8 text-saffron-400" />
@@ -329,9 +418,9 @@ function PriestBookingsInner() {
  )}
 
  {/* Booking Cards */}
- {!loading && filteredBookings.length > 0 && (
+ {!loading && !loadError && bookings.length > 0 && (
  <div className="space-y-4">
- {filteredBookings.map((booking) => {
+ {bookings.map((booking) => {
  const statusCfg = getStatusConfig(booking.status);
  return (
  <Link
@@ -394,6 +483,37 @@ function PriestBookingsInner() {
  </Link>
  );
  })}
+ </div>
+ )}
+
+ {/* Pager. Without it rows 21+ had no route to the screen at all. */}
+ {!loading && !loadError && total > 0 && (
+ <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-surface-100 bg-white px-4 py-3">
+ <p className="text-sm text-surface-500">
+ Showing {bookings.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–
+ {(page - 1) * PAGE_SIZE + bookings.length} of {total} bookings
+ </p>
+ <div className="flex items-center gap-2">
+ <button
+ type="button"
+ onClick={() => setPage((p) => Math.max(1, p - 1))}
+ disabled={page <= 1}
+ className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-200 text-surface-600 hover:border-saffron-300 disabled:opacity-40 disabled:cursor-not-allowed"
+ >
+ Previous
+ </button>
+ <span className="text-sm text-surface-500">
+ Page {page} of {totalPages}
+ </span>
+ <button
+ type="button"
+ onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+ disabled={page >= totalPages}
+ className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-200 text-surface-600 hover:border-saffron-300 disabled:opacity-40 disabled:cursor-not-allowed"
+ >
+ Next
+ </button>
+ </div>
  </div>
  )}
  </div>

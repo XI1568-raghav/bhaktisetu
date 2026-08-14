@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DateInputProps {
@@ -9,12 +9,25 @@ interface DateInputProps {
   min?: string;
   max?: string;
   label?: string;
+  /**
+   * Accessible name for call sites that render no visible label. Falls back to
+   * "Date" — a date field announced as "edit text, blank" is A11Y-09.
+   */
+  ariaLabel?: string;
   required?: boolean;
   className?: string;
   /** Optional per-date muhurat marker: iso (YYYY-MM-DD) → grade. */
   dateMarkers?: Record<string, 'shubh' | 'neutral' | 'avoid'>;
   /** Optional set of dates that cannot be selected (e.g. avoid days). */
   disabledDates?: Set<string>;
+  /**
+   * DB-10: called when the user types a date the field then refuses.
+   *
+   * OPTIONAL by design — ~26 consumers, and a required prop turns a one-file
+   * change into a 26-file one. Call sites that pass nothing still get the fix:
+   * the field renders its own inline message.
+   */
+  onInvalid?: (attempted: string, reason: 'out-of-range' | 'unparseable') => void;
 }
 
 /**
@@ -86,13 +99,24 @@ export function DateInput({
   min,
   max,
   label,
+  ariaLabel,
   required,
   className,
   dateMarkers,
   disabledDates,
+  onInvalid,
 }: DateInputProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const reactId = useId();
+  const inputId = `date-${reactId}`;
+  const hintId = `date-hint-${reactId}`;
+  const errorId = `date-error-${reactId}`;
   const [display, setDisplay] = useState(value ? formatForDisplay(value) : '');
+  /** DB-10: the last typed value this field refused, so it can say so. */
+  const [rejected, setRejected] = useState<{
+    attempted: string;
+    reason: 'out-of-range' | 'unparseable';
+  } | null>(null);
   const [open, setOpen] = useState(false);
 
   // Calendar viewport state
@@ -141,7 +165,16 @@ export function DateInput({
     if (iso && isInRange(iso, min, max)) {
       onChange(iso);
       setDisplay(formatForDisplay(iso));
-    } else if (display && display.length > 0) {
+      setRejected(null);
+      return;
+    }
+    if (display && display.length > 0) {
+      // DB-10: say WHY before reverting. The revert still happens — the field
+      // must not hold a value the form would submit — but the user now sees
+      // what was rejected instead of watching their typing disappear.
+      const reason = iso ? 'out-of-range' : 'unparseable';
+      setRejected({ attempted: display, reason });
+      onInvalid?.(display, reason);
       setDisplay(value ? formatForDisplay(value) : '');
     }
   }
@@ -151,6 +184,8 @@ export function DateInput({
     if (!isInRange(iso, min, max)) return;
     onChange(iso);
     setDisplay(formatForDisplay(iso));
+    // DB-10: recovering via the calendar clears the message too.
+    setRejected(null);
     setOpen(false);
   }
 
@@ -178,29 +213,58 @@ export function DateInput({
   const selectedIso = value;
   const todayIso = toIso(today.getFullYear(), today.getMonth(), today.getDate());
 
-  // Year list for dropdown (1900 to current+5)
-  const minYear = 1900;
-  const maxYear = today.getFullYear() + 5;
+  // PF-09: this was a fixed 1900..currentYear+5 on EVERY consumer, so a booking
+  // picker offered ~130 years and isInRange() then silently refused 125 of them
+  // — all three booking call sites already pass `min`. The props were there the
+  // whole time; only this list ignored them. Date-of-birth consumers pass
+  // neither and keep the full 1900 range they need.
+  const minYear = parseIso(min ?? '')?.year ?? 1900;
+  const maxYear = parseIso(max ?? '')?.year ?? today.getFullYear() + 5;
   const years: number[] = [];
-  for (let y = maxYear; y >= minYear; y--) years.push(y);
+  for (let y = Math.max(maxYear, minYear); y >= minYear; y--) years.push(y);
 
   return (
     <div ref={containerRef} className={`relative ${className ?? ''}`}>
       {label && (
-        <label className="block text-sm font-semibold text-surface-700 mb-1.5">{label}</label>
+        <label
+          htmlFor={inputId}
+          className="block text-sm font-semibold text-surface-700 mb-1.5"
+        >
+          {label}
+        </label>
       )}
       <div className="relative">
         <input
+          id={inputId}
           type="text"
           value={display}
           onChange={handleTextChange}
           onBlur={handleTextBlur}
           placeholder="DD/MM/YYYY"
           required={required}
+          aria-required={required || undefined}
+          aria-label={label ? undefined : (ariaLabel ?? 'Date')}
+          aria-describedby={rejected ? `${hintId} ${errorId}` : hintId}
+          aria-invalid={rejected ? true : undefined}
           inputMode="numeric"
           autoComplete="off"
           className="w-full px-4 py-3 pr-12 border border-surface-200 rounded-xl text-sm text-surface-800 placeholder:text-surface-400 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
         />
+        {/* The placeholder disappears on the first keystroke; this does not. */}
+        <span id={hintId} className="sr-only">
+          Format: DD/MM/YYYY
+        </span>
+        {rejected && (
+          // DB-10: role="alert" so a screen reader hears it — the whole defect
+          // was that the rejection was invisible.
+          <p id={errorId} role="alert" className="mt-1.5 text-xs text-[var(--color-status-error)]">
+            {rejected.reason === 'unparseable'
+              ? `“${rejected.attempted}” isn’t a date we could read. Use DD/MM/YYYY.`
+              : `“${rejected.attempted}” is outside the dates this booking accepts${
+                  minYear === maxYear ? ` (${minYear})` : ` (${minYear}–${maxYear})`
+                }.`}
+          </p>
+        )}
         <button
           type="button"
           tabIndex={-1}
@@ -252,7 +316,7 @@ export function DateInput({
           {/* Day-of-week header */}
           <div className="grid grid-cols-7 gap-1 mb-1">
             {DAYS_OF_WEEK.map((d) => (
-              <div key={d} className="text-center text-[10px] font-semibold text-surface-500 uppercase tracking-wider py-1">
+              <div key={d} className="text-center text-xs font-semibold text-surface-500 uppercase tracking-wider py-1">
                 {d}
               </div>
             ))}
@@ -338,9 +402,13 @@ export function DateTimeInput({
   min,
   max,
   label,
+  ariaLabel,
   required,
   className,
 }: DateInputProps) {
+  const groupId = useId();
+  const groupLabelId = `datetime-label-${groupId}`;
+  const groupName = label ?? ariaLabel;
   // For datetime, keep simpler text+time approach.
   // value ISO format: YYYY-MM-DDTHH:MM
   const [datePart, setDatePart] = useState(value ? value.split('T')[0] ?? '' : '');
@@ -359,9 +427,19 @@ export function DateTimeInput({
   }
 
   return (
-    <div className={className}>
+    <div
+      className={className}
+      role="group"
+      aria-labelledby={label ? groupLabelId : undefined}
+      aria-label={label ? undefined : (ariaLabel ?? 'Date and time')}
+    >
       {label && (
-        <label className="block text-sm font-semibold text-surface-700 mb-1.5">{label}</label>
+        <span
+          id={groupLabelId}
+          className="block text-sm font-semibold text-surface-700 mb-1.5"
+        >
+          {label}
+        </span>
       )}
       <div className="grid grid-cols-2 gap-2">
         <DateInput
@@ -370,12 +448,15 @@ export function DateTimeInput({
           min={min?.split('T')[0]}
           max={max?.split('T')[0]}
           required={required}
+          ariaLabel={groupName ? `${groupName} — date` : 'Date'}
         />
         <input
           type="time"
           value={timePart}
           onChange={(e) => { setTimePart(e.target.value); commit(datePart, e.target.value); }}
           required={required}
+          aria-required={required || undefined}
+          aria-label={groupName ? `${groupName} — time` : 'Time'}
           className="w-full px-4 py-3 border border-surface-200 rounded-xl text-sm text-surface-800 focus:ring-2 focus:ring-saffron-500/30 focus:border-saffron-500 outline-none transition-all"
         />
       </div>

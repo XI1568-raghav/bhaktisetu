@@ -1,5 +1,6 @@
 import { Prisma, ContentType, Language } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { clampLimit, clampPage } from '../lib/pagination.js';
 
 export interface ContentListParams {
   type?: string;
@@ -50,7 +51,11 @@ export class ContentService {
       ];
     }
 
-    const skip = (page - 1) * limit;
+    // RES-12: `?page=-1` used to reach Prisma as a negative OFFSET and return
+    // HTTP 500 "Failed to fetch content". A page is an ordinal — clamp it.
+    const safePage = clampPage(page);
+    const safeLimit = clampLimit(limit);
+    const skip = (safePage - 1) * safeLimit;
 
     const [content, total] = await Promise.all([
       prisma.contentItem.findMany({
@@ -77,7 +82,7 @@ export class ContentService {
         },
         orderBy: [{ sortOrder: 'asc' }, { viewCount: 'desc' }],
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       prisma.contentItem.count({ where }),
     ]);
@@ -85,10 +90,10 @@ export class ContentService {
     return {
       data: content,
       pagination: {
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / safeLimit),
       },
     };
   }
@@ -189,9 +194,12 @@ export class ContentService {
     params: { type?: string; language?: string; page?: number; limit?: number } = {}
   ) {
     const { type, language, page = 1, limit = 20 } = params;
+    // RES-12: /content/search?page=-1 returned HTTP 500 before this clamp.
+    const safePage = clampPage(page);
+    const safeLimit = clampLimit(limit);
 
     if (!query || query.trim().length === 0) {
-      return { results: [], total: 0, query, page, limit };
+      return { results: [], total: 0, query, page: safePage, limit: safeLimit };
     }
 
     const where: Prisma.ContentItemWhereInput = {
@@ -215,7 +223,7 @@ export class ContentService {
       where.language = language as Language;
     }
 
-    const skip = (page - 1) * limit;
+    const skip = (safePage - 1) * safeLimit;
 
     const [results, total] = await Promise.all([
       prisma.contentItem.findMany({
@@ -239,7 +247,7 @@ export class ContentService {
         },
         orderBy: [{ viewCount: 'desc' }, { sortOrder: 'asc' }],
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       prisma.contentItem.count({ where }),
     ]);
@@ -248,9 +256,9 @@ export class ContentService {
       results,
       total,
       query,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 

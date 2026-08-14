@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDarshanStream } from '@poojly/api-client';
+import { selectStreamDetail } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 // react-native-webview is optional — Expo Go ships it, bare RN may not.
@@ -71,25 +72,40 @@ function hlsHtml(streamUrl: string): string {
 }
 
 export default function DarshanPlayerScreen() {
-  const params = useLocalSearchParams<{ id?: string; url?: string; title?: string }>();
+  const params = useLocalSearchParams<{
+    id?: string;
+    url?: string;
+    title?: string;
+    deity?: string;
+  }>();
   const id = typeof params.id === 'string' ? params.id : '';
   const passedUrl = typeof params.url === 'string' ? params.url : undefined;
   const passedTitle = typeof params.title === 'string' ? params.title : undefined;
 
+  const passedDeity = typeof params.deity === 'string' ? params.deity : undefined;
+
+  // PAR-05. Two bugs stacked here.
+  //   1. API_ENDPOINTS.DARSHAN_STREAM omitted the `/stream` suffix, so this
+  //      query 404'd on every single call — and `refetchInterval: 15_000` kept
+  //      re-requesting the 404 four times a minute for as long as the screen
+  //      was open. The constant is fixed; the hook now also sets retry:false.
+  //   2. The response is FLAT: {streamId, templeName, status, playbackUrl, …}.
+  //      The player read `data.data.streamUrl` and `data.data.temple.deity`,
+  //      neither of which exists, so `liveUrl` was always undefined and every
+  //      temple rendered "Stream player not available".
   const stream = useDarshanStream(id, { enabled: !!id });
-  const data = stream.data?.data as
-    | (Partial<{
-        title: string;
-        description: string;
-        streamUrl: string;
-        viewerCount: number;
-        temple: { name?: string; deity?: string } | null;
-      }>)
-    | undefined;
-  const liveUrl = passedUrl ?? data?.streamUrl;
-  const title = passedTitle ?? data?.title ?? data?.temple?.name ?? 'Live Darshan';
-  const subtitle = data?.temple?.deity ?? '';
+  const data = selectStreamDetail(stream.data);
+
+  // Prefer the URL the list screen already had (it comes from GET /darshan/live,
+  // which is the authoritative live view — see PAR-21: /:id/stream reports a
+  // different status and URL for the same stream).
+  const liveUrl = passedUrl ?? data?.playbackUrl ?? data?.recentVideoUrl ?? undefined;
+  const title = passedTitle ?? data?.templeName ?? 'Live Darshan';
+  const subtitle = passedDeity ?? '';
   const viewers = typeof data?.viewerCount === 'number' ? data.viewerCount : undefined;
+  // The header badge used to be a hardcoded red LIVE pill regardless of state.
+  const isLive = data ? data.isLive : !!passedUrl;
+  const streamMissing = stream.isError || (!stream.isLoading && data === null);
 
   const embedUrl = youtubeEmbedUrl(liveUrl);
   const hlsMode = isHlsUrl(liveUrl);
@@ -139,9 +155,9 @@ export default function DarshanPlayerScreen() {
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
         </View>
-        <View style={styles.liveBadge}>
+        <View style={[styles.liveBadge, !isLive && styles.offlineBadge]}>
           <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE</Text>
+          <Text style={styles.liveText}>{isLive ? 'LIVE' : 'OFFLINE'}</Text>
         </View>
       </View>
 
@@ -166,15 +182,27 @@ export default function DarshanPlayerScreen() {
           />
         ) : (
           <View style={styles.fallback}>
-            <Ionicons name="videocam" size={56} color={colors.saffron[300]} />
-            <Text style={styles.fallbackTitle}>Stream player not available</Text>
-            <Text style={styles.fallbackText}>
-              Tap below to open the live darshan in your browser.
+            <Ionicons name="videocam-off" size={56} color={colors.saffron[300]} />
+            <Text style={styles.fallbackTitle}>
+              {streamMissing
+                ? 'Stream unavailable'
+                : liveUrl
+                  ? 'In-app player unavailable'
+                  : 'No stream right now'}
             </Text>
-            <TouchableOpacity style={styles.openBtn} onPress={openExternal} activeOpacity={0.85}>
-              <Ionicons name="open-outline" size={18} color={colors.white} />
-              <Text style={styles.openBtnText}>Open Live Darshan</Text>
-            </TouchableOpacity>
+            <Text style={styles.fallbackText}>
+              {streamMissing
+                ? 'This temple has no stream we can play at the moment. Pull down to retry.'
+                : liveUrl
+                  ? 'The video component is missing from this build. Open it in your browser instead.'
+                  : 'This temple is not broadcasting right now. Check the aarti timings and come back.'}
+            </Text>
+            {liveUrl ? (
+              <TouchableOpacity style={styles.openBtn} onPress={openExternal} activeOpacity={0.85}>
+                <Ionicons name="open-outline" size={18} color={colors.white} />
+                <Text style={styles.openBtnText}>Open in browser</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         )}
       </View>
@@ -219,9 +247,15 @@ export default function DarshanPlayerScreen() {
         <View style={styles.aboutCard}>
           <Text style={styles.aboutHeading}>About this stream</Text>
           <Text style={styles.aboutText}>
-            {data?.description ??
-              'Live darshan from this temple lets you participate in aarti and sankalp from anywhere. Best viewed during morning and evening aarti times.'}
+            Live darshan lets you join aarti and sankalp from anywhere. Streams
+            follow each temple&apos;s published aarti timings.
           </Text>
+          {data ? (
+            <Text style={styles.aboutMeta}>
+              {data.templeName ? `${data.templeName} · ` : ''}status: {data.status}
+              {data.startedAt ? ` · since ${data.startedAt.slice(11, 16)} UTC` : ''}
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -251,6 +285,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red[600], paddingHorizontal: spacing.sm, paddingVertical: 4,
     borderRadius: borderRadius.full,
   },
+  offlineBadge: { backgroundColor: colors.stone[500] },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white },
   liveText: { color: colors.white, fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
   player: {
@@ -298,4 +333,5 @@ const styles = StyleSheet.create({
   },
   aboutHeading: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
   aboutText: { fontSize: fontSize.sm, color: colors.stone[600], marginTop: spacing.xs, lineHeight: 20 },
+  aboutMeta: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: spacing.xs },
 });

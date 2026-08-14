@@ -45,8 +45,8 @@ export default function NriLaneAbTest({ slot }: Props) {
           prefetch={false}
           className="flex items-center justify-between gap-4 p-4 md:p-5 rounded-xl card-hover transition-all"
           style={{
-            background: 'linear-gradient(135deg, #FFF4EC 0%, #FFFBEB 100%)',
-            border: '1px solid #FBD0A8',
+            background: 'linear-gradient(135deg, #FFF8F0 0%, #FFFBEB 100%)',
+            border: '1px solid #FDD8AF',
           }}
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -54,18 +54,22 @@ export default function NriLaneAbTest({ slot }: Props) {
               className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(225, 99, 24, 0.12)' }}
             >
-              <Gift className="w-5 h-5" style={{ color: '#E16318' }} />
+              <Gift className="w-5 h-5" style={{ color: '#9e6229' }} />
             </span>
             <div className="min-w-0">
               <p
                 className="text-sm font-semibold leading-tight"
-                style={{ color: '#9E3F0A' }}
+                style={{ color: '#7d4e1f' }}
               >
-                Gift a puja from abroad — INR or USD, GBP, AUD, CAD
+                {/* CM-06: this lane used to list four foreign currencies as
+                    billing options. Razorpay is the only rail and it is
+                    INR-only, so those were a promise checkout could not keep.
+                    The honest sentence already existed on /gift. */}
+                Gift a puja from abroad — billed in INR, international cards accepted
               </p>
               <p
-                className="text-[11px] mt-0.5 leading-snug"
-                style={{ color: '#9E3F0A', opacity: 0.8 }}
+                className="text-xs mt-0.5 leading-snug"
+                style={{ color: '#7d4e1f', opacity: 0.8 }}
               >
                 Pandit-verified, video proof delivered same day, 80G receipt to your PAN.
               </p>
@@ -73,7 +77,7 @@ export default function NriLaneAbTest({ slot }: Props) {
           </div>
           <span
             className="hidden sm:inline-flex items-center gap-1 text-xs font-medium shrink-0"
-            style={{ color: '#9E3F0A' }}
+            style={{ color: '#7d4e1f' }}
           >
             Send gift <ArrowRight className="w-3.5 h-3.5" />
           </span>

@@ -45,11 +45,81 @@ function getClient(): Redis | null {
 }
 
 /**
- * Read JSON-serialized value from cache. Returns null on miss, error, or no-op mode.
+ * SCAL-08 (2026-08-13): in-process fallback so `cached()` is not a no-op.
+ *
+ * REDIS_URL and UPSTASH_REDIS_URL are both unset in apps/api/.env and nothing
+ * listens on 6379, so `getClient()` returned null and every cacheGet/cacheSet
+ * silently did nothing. The three endpoints written to be cache-served — temple
+ * list (300 s), temple detail (600 s), panchang (6 h) — went to Postgres in
+ * ap-northeast-1 on every request, which is both the homepage latency users
+ * feel and Supabase egress against a 5 GB/month allowance.
+ *
+ * What this is NOT: a distributed cache. Entries live in one container, so a
+ * second instance keeps its own copy and `cacheDel` only invalidates locally.
+ * That is acceptable for read-mostly catalog data with short TTLs on a
+ * single-instance free-tier deployment, and it is strictly better than nothing.
+ * Setting REDIS_URL still takes precedence — Redis is authoritative when present
+ * and this store is not consulted at all.
+ *
+ * Values are stored JSON-serialised exactly as Redis stores them, so a hit has
+ * the same shape either way (a Date comes back as an ISO string in both). A
+ * memory cache handing back live objects would be a shape difference that only
+ * shows up in production.
+ */
+export const MEMORY_CACHE_MAX_ENTRIES = 1000;
+
+type MemoryEntry = { raw: string; expiresAt: number };
+const memoryStore = new Map<string, MemoryEntry>();
+
+function memoryGet(key: string): string | null {
+  const hit = memoryStore.get(key);
+  if (!hit) return null;
+  if (hit.expiresAt <= Date.now()) {
+    memoryStore.delete(key);
+    return null;
+  }
+  // Refresh recency so the eviction below drops the coldest key, not the oldest.
+  memoryStore.delete(key);
+  memoryStore.set(key, hit);
+  return hit.raw;
+}
+
+function memorySet(key: string, raw: string, ttlSeconds: number): void {
+  memoryStore.delete(key);
+  memoryStore.set(key, { raw, expiresAt: Date.now() + ttlSeconds * 1000 });
+  while (memoryStore.size > MEMORY_CACHE_MAX_ENTRIES) {
+    const oldest = memoryStore.keys().next();
+    if (oldest.done) break;
+    memoryStore.delete(oldest.value);
+  }
+}
+
+/** Test seam — asserts the store stays bounded. Not used by application code. */
+export function __memoryCacheSize(): number {
+  return memoryStore.size;
+}
+
+/**
+ * Test seam — drops every in-process entry.
+ *
+ * Unit suites that assert on the query a service issues must start from a cold
+ * cache, or the second test with the same filters is served from the first
+ * test's entry and never touches the mock. Before SCAL-08 that could not happen
+ * because caching was a no-op with no Redis, which is precisely the bug.
+ */
+export function __memoryCacheClear(): void {
+  memoryStore.clear();
+}
+
+/**
+ * Read JSON-serialized value from cache. Returns null on miss or error.
  */
 export async function cacheGet<T>(key: string): Promise<T | null> {
   const c = getClient();
-  if (!c) return null;
+  if (!c) {
+    const local = memoryGet(key);
+    return local === null ? null : (JSON.parse(local) as T);
+  }
   try {
     const raw = await c.get(key);
     if (!raw) return null;
@@ -66,7 +136,14 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
  */
 export async function cacheSet(key: string, value: unknown, ttlSeconds: number): Promise<void> {
   const c = getClient();
-  if (!c) return;
+  if (!c) {
+    try {
+      memorySet(key, JSON.stringify(value), ttlSeconds);
+    } catch {
+      // Unserialisable value — skip it rather than poison the store.
+    }
+    return;
+  }
   try {
     await c.set(key, JSON.stringify(value), 'EX', ttlSeconds);
   } catch {
@@ -97,7 +174,10 @@ export async function cached<T>(
  */
 export async function cacheDel(key: string): Promise<void> {
   const c = getClient();
-  if (!c) return;
+  if (!c) {
+    memoryStore.delete(key);
+    return;
+  }
   try {
     await c.del(key);
   } catch {
@@ -111,7 +191,17 @@ export async function cacheDel(key: string): Promise<void> {
  */
 export async function cacheDelPattern(pattern: string): Promise<void> {
   const c = getClient();
-  if (!c) return;
+  if (!c) {
+    // Same glob semantics Redis MATCH gives: * spans any run of characters,
+    // ? one character. Everything else is literal.
+    const rx = new RegExp(
+      `^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`,
+    );
+    for (const key of Array.from(memoryStore.keys())) {
+      if (rx.test(key)) memoryStore.delete(key);
+    }
+    return;
+  }
   try {
     const stream = c.scanStream({ match: pattern, count: 100 });
     for await (const keys of stream) {

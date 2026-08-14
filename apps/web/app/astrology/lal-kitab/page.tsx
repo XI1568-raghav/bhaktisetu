@@ -8,11 +8,12 @@ const BASE_URL = 'https://darshya.online';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
- title: 'Lal Kitab Upay & Farman Finder — Free 108 Graha-House Remedies | Darshya',
+ title: 'Lal Kitab Upay & Farman Finder — Free 108 Graha-House Remedies',
  description:
  'Free Lal Kitab calculator per Pt. Roop Chand Joshi (1939-52). Pick your life problem (career, marriage, money, health, court case + 8 more) → identify the troubling graha → get 3 universal Farman + house-by-house remedy. All 108 graha-in-house combinations (9 grahas × 12 houses) with household upay — water Arghya, jaggery + chana, mustard oil to Shani, feeding crows + black dog, silver in wallet, sindoor on Tuesday, peepal water Thursday. Zero gemstone cost. Pure traditional Lal Kitab.',
  alternates: { canonical: `${BASE_URL}/astrology/lal-kitab` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   type: 'website',
   url: `${BASE_URL}/astrology/lal-kitab`,
   title: 'Lal Kitab Upay Finder — Free 108 Graha-House Farman',

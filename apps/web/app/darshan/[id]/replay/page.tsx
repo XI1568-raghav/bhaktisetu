@@ -57,10 +57,11 @@ export async function generateMetadata({
   const { id } = await params;
   const pretty = id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   return {
-    title: `${pretty} — Aarti Replay (Last 24h) | Darshya`,
+    title: `${pretty} — Aarti Replay (Last 24h)`,
     description: `Watch last 24 hours of recorded aartis from ${pretty}. Auto-recorded daily, replay anytime.`,
     alternates: { canonical: `/darshan/${id}/replay` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${pretty} — Aarti Replay`,
       description: `Last 24 hours of recorded aartis from ${pretty}.`,
       type: 'video.other',

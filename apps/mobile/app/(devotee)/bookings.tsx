@@ -2,7 +2,19 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useBookings } from '@poojly/api-client';
 import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
+import {
+  selectBookings,
+  selectBookingTotal,
+  formatInr,
+  toNumber,
+  type BookingRow,
+} from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+
+/** Narrow an `unknown` field off a booking row to a non-empty string. */
+function text(v: unknown): string | undefined {
+  return typeof v === 'string' && v.length > 0 ? v : undefined;
+}
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -16,8 +28,12 @@ export default function DevoteeBookings() {
   const [filter, setFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  const all = bookingsQuery.data?.data ?? [];
-  const filtered = all.filter((b: any) => {
+  // PAR-02: the envelope is {success, bookings, pagination} — never {data}.
+  const all = selectBookings(bookingsQuery.data);
+  // `total` is the account-wide count (81 for the seeded devotee); `all` is one
+  // page of it. The subtitle must not report the page length as the total.
+  const total = selectBookingTotal(bookingsQuery.data);
+  const filtered = all.filter((b: BookingRow) => {
     if (filter === 'all') return true;
     const status = String(b.status ?? '').toLowerCase();
     if (filter === 'upcoming') {
@@ -44,7 +60,13 @@ export default function DevoteeBookings() {
   return (
     <PortalScreen
       title="My Bookings"
-      subtitle={`${all.length} total`}
+      subtitle={
+        bookingsQuery.isLoading
+          ? 'Loading…'
+          : bookingsQuery.isError
+            ? 'Could not load bookings'
+            : `${total} total${all.length < total ? ` · showing ${all.length}` : ''}`
+      }
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
@@ -78,7 +100,7 @@ export default function DevoteeBookings() {
       ) : filtered.length === 0 ? (
         <EmptyHint text="No bookings yet — book a puja to get started." />
       ) : (
-        filtered.map((b: any) => {
+        filtered.map((b: BookingRow) => {
           const status = String(b.status ?? 'pending').toLowerCase();
           const color = status.includes('complet') || status.includes('deliver')
             ? colors.green[600]
@@ -88,18 +110,15 @@ export default function DevoteeBookings() {
                 ? colors.saffron[600]
                 : colors.amber[600];
           const pujaName =
-            b.pujaName ??
-            b.pujaType?.name ??
-            b.bookingNumber ??
+            text(b.pujaName) ??
+            text(b.pujaType?.name) ??
+            text(b.bookingNumber) ??
             'Booking';
-          const templeName = b.templeName ?? b.temple?.name;
-          const dateRaw = b.scheduledDate ?? '';
-          const date =
-            typeof dateRaw === 'string' && dateRaw.includes('T')
-              ? dateRaw.slice(0, 10)
-              : dateRaw;
-          const time = b.scheduledTime ?? b.scheduledTimeSlot ?? '';
-          const amount = b.totalAmount ?? b.priceAmount;
+          const templeName = text(b.templeName) ?? text(b.temple?.name);
+          const dateRaw = text(b.scheduledDate) ?? '';
+          const date = dateRaw.includes('T') ? dateRaw.slice(0, 10) : dateRaw;
+          const time = text(b.scheduledTime) ?? text(b.scheduledTimeSlot) ?? '';
+          const amountNum = toNumber(b.totalAmount ?? b.priceAmount);
           return (
             <ListRow
               key={b.id}
@@ -109,8 +128,8 @@ export default function DevoteeBookings() {
                   ? `${templeName} • ${date} ${time}`.trim()
                   : `${date} ${time}`.trim() || 'Schedule TBD'
               }
-              trailing={amount ? `₹${Number(amount).toLocaleString('en-IN')}` : undefined}
-              status={{ label: b.status ?? 'pending', color }}
+              trailing={amountNum === null ? undefined : formatInr(amountNum)}
+              status={{ label: text(b.status) ?? 'pending', color }}
             />
           );
         })

@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ chapter: 
   const c = getChapter(chapter);
   if (!c) return { title: 'Not found' };
   return {
-    title: `Bhagavad Gita Chapter ${c.number}: ${c.english} — Sanskrit, Verses & Meaning | Darshya`,
+    title: `Bhagavad Gita Chapter ${c.number}: ${c.english} — Sanskrit, Verses & Meaning`,
     description: `${c.english} (${c.sanskrit}) — Chapter ${c.number} of the Bhagavad Gita in ${c.verseCount} verses. ${c.theme}. Key shlokas with translation and the central teaching.`,
     alternates: { canonical: `${BASE_URL}/gita/${c.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `Gita Chapter ${c.number}: ${c.english}`,
       description: c.summary.slice(0, 160),
       url: `${BASE_URL}/gita/${c.slug}`,

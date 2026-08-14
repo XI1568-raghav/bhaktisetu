@@ -13,8 +13,13 @@
   --color-surface-100: #faf9f6;  /* --color-surface */
   --color-surface-200: #ede9e3;  /* --color-surface-offset */
   --color-surface-300: #e4dfd8;  /* --color-surface-dynamic */
-  --color-surface-400: #b5b0a8;  /* --color-text-faint */
-  --color-surface-500: #7a756e;  /* --color-text-muted */
+  /* 400/500 are TEXT tones, so both must clear WCAG AA 4.5:1 on every light
+     surface above (worst case is surface-200 #ede9e3). Hue 35–37° and the
+     saffron-tinted low saturation are preserved — only lightness moved.
+     a11y 2026-08-12: 400 was #b5b0a8 (1.78–2.16:1), 500 was #7a756e
+     (3.78–4.57:1). The dark footer re-scopes both, see the footer block. */
+  --color-surface-400: #6b6761;  /* --color-text-faint  · ≥4.65:1 on light */
+  --color-surface-500: #635f59;  /* --color-text-muted  · ≥5.24:1 on light */
   --color-surface-550: #5a5650;
   --color-surface-600: #4a4540;
   --color-surface-700: #3a3530;
@@ -111,17 +116,47 @@
   --color-error: #a12c7b;
   --color-info: #006494;
 
-  /* ── Typography — font families ──────────────────────────────────────── */
-  --font-family-sans: 'Satoshi', 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
-  --font-family-display: 'Cabinet Grotesk', 'Noto Sans', system-ui, sans-serif;
-  --font-family-serif: 'Crimson Pro', 'Tiro Devanagari Sanskrit', Georgia, 'Times New Roman', serif;
-  --font-family-devanagari: 'Noto Sans Devanagari', 'Tiro Devanagari Sanskrit', system-ui, sans-serif;
+  /* ── Typography — font families ──────────────────────────────────────────
+     DU-01/06/11 (prod sweep 2026-08-12): these four lived under a
+     `--font-family-*` prefix. Tailwind v4 generates font utilities from the
+     `--font-*` namespace ONLY, so `--font-family-sans` generated a
+     `.font-family-sans` nobody writes, resolved to the empty string at
+     runtime, and left `font-serif` (445 call sites) falling through to
+     Tailwind's stock `ui-serif` and `.font-display` (41 call sites) not
+     existing at all. They also named Satoshi / Cabinet Grotesk / Crimson Pro
+     by literal family name — Satoshi and Cabinet Grotesk are not loaded
+     anywhere since PERF-03 dropped the api.fontshare.com stylesheet, and
+     next/font never exposes a literal family name, only the CSS variable.
 
-  /* ── Type scale — fluid clamp-based ──────────────────────────────────── */
-  --text-xs: clamp(0.6875rem, 0.66rem + 0.15vw, 0.75rem);
-  --text-sm: clamp(0.78rem, 0.75rem + 0.15vw, 0.84rem);
-  --text-base: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
-  --text-lg: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+     Every stack below now leads with a face app/layout.tsx actually
+     downloads: --font-noto-sans (Noto Sans), --font-reader-serif (Crimson
+     Pro) and --font-noto-devanagari (Noto Sans Devanagari). Locked by
+     __tests__/design-tokens.test.ts, which cross-checks each var() against
+     the `variable:` names declared in layout.tsx.
+
+     Satoshi and Cabinet Grotesk keep their place at the HEAD of the sans and
+     display stacks — that is PERF-03's contract, guarded by
+     __tests__/seo/head-resource-budget.test.ts: self-host the licensed woff2
+     under public/fonts with an @font-face of that name and the brand face
+     takes over with no edit here. They are placeholders, never the only thing
+     in front of the fallback, so a downloaded face always paints today.
+     JetBrains Mono, Fira Code and Inter had no such plan behind them and are
+     gone. --font-sans aliases --font-body so the sans stack has one home. */
+  --font-sans: var(--font-body);
+  --font-display: 'Cabinet Grotesk', var(--font-noto-sans), system-ui, sans-serif;
+  --font-serif: var(--font-reader-serif), Georgia, 'Times New Roman', serif;
+  --font-devanagari: var(--font-noto-devanagari), var(--font-noto-sans), sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* ── Type scale — fluid clamp-based ──────────────────────────────────────
+     DU-10 / RESP-05: the xs and sm floors were 11px and 12.48px at 390px —
+     the sweep measured 190 elements under the 12px legibility floor on the
+     mobile homepage — and --text-base floored at 15px while the parallel
+     --type-base floored at 14px. One scale, 12px floor, 16px body. */
+  --text-xs: clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem);
+  --text-sm: clamp(0.8125rem, 0.79rem + 0.15vw, 0.875rem);
+  --text-base: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  --text-lg: clamp(1.0625rem, 1.03rem + 0.2vw, 1.1875rem);
   --text-xl: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);
   --text-2xl: clamp(1.5rem, 1.1rem + 1.5vw, 2.25rem);
   --text-3xl: clamp(1.875rem, 1.5rem + 1.5vw, 2.75rem);
@@ -145,6 +180,108 @@
   --radius-xl: 1.375rem;
   --radius-2xl: 1.75rem;
   --radius-3xl: 2rem;
+
+  /* ── Warm elevation ramp ──────────────────────────────────────────────────
+     DU-02: shadow-warm / -sm / -md / -lg are written 51 times across the app
+     (the sign-in card among them) but no --shadow-warm* token ever existed,
+     so all 51 compiled to `box-shadow: none`. Tailwind v4 needs the token in
+     @theme — a :root declaration alone does not generate the utility, which
+     is why the neutral --shadow-sm/md/lg below could be redefined in :root
+     but these could not. Same warm-tinted ramp, one step softer per weight. */
+  --shadow-warm-sm: 0 1px 2px oklch(0.25 0.03 60 / 0.05), 0 1px 3px oklch(0.25 0.03 60 / 0.06);
+  --shadow-warm: 0 1px 3px oklch(0.25 0.03 60 / 0.07), 0 4px 12px oklch(0.25 0.03 60 / 0.08);
+  --shadow-warm-md: 0 2px 6px oklch(0.25 0.03 60 / 0.08), 0 10px 28px oklch(0.25 0.03 60 / 0.10);
+  --shadow-warm-lg: 0 4px 12px oklch(0.25 0.03 60 / 0.09), 0 20px 48px oklch(0.25 0.03 60 / 0.14);
+
+  /* DU-12: --shadow-sm/md/lg are warm lab()-tinted in :root, but shadow-xl and
+     shadow-2xl (28 call sites — modals, dropdowns, the nav menu) had no token
+     and fell through to Tailwind's stock rgb(0 0 0 / …), a neutral-black cast
+     that reads cool against every warm surface next to it. Same hue as the
+     rest of the ramp, two steps further out. Declared here in @theme, not
+     :root, because the utilities do not exist otherwise. */
+  --shadow-xl: 0 8px 24px oklch(0.25 0.03 60 / 0.10), 0 28px 64px oklch(0.25 0.03 60 / 0.16);
+  --shadow-2xl: 0 12px 32px oklch(0.25 0.03 60 / 0.12), 0 40px 88px oklch(0.25 0.03 60 / 0.20);
+
+  /* ── Neutral ramp — warm ──────────────────────────────────────────────────
+     DU-12: 2,128 gray/slate/stone utilities across 122 files paint Tailwind's
+     stock cool ramp (gray-500 is #6b7280, a blue-leaning neutral) on a product
+     whose surface ramp is warm cream. Redefining the stock scales here
+     retargets every one of those call sites without editing a single
+     component. Each step is at least as readable on white as the Tailwind
+     value it replaces — asserted step-by-step in
+     __tests__/design-tokens.test.ts, so this can never silently regress. */
+  --color-gray-50: #faf9f6;
+  --color-gray-100: #f4f2ee;
+  --color-gray-200: #e6e2db;
+  --color-gray-300: #d2ccc3;
+  --color-gray-400: #98928a;
+  --color-gray-500: #6b6761;
+  --color-gray-600: #4a4540;
+  --color-gray-700: #3a3530;
+  --color-gray-800: #2a2520;
+  --color-gray-900: #1a1510;
+  --color-gray-950: #050403;
+
+  /* The other four stock neutrals alias the same ramp, so `slate-600` and
+     `stone-600` can never drift apart from `gray-600` again. */
+  --color-slate-50: var(--color-gray-50);
+  --color-slate-100: var(--color-gray-100);
+  --color-slate-200: var(--color-gray-200);
+  --color-slate-300: var(--color-gray-300);
+  --color-slate-400: var(--color-gray-400);
+  --color-slate-500: var(--color-gray-500);
+  --color-slate-600: var(--color-gray-600);
+  --color-slate-700: var(--color-gray-700);
+  --color-slate-800: var(--color-gray-800);
+  --color-slate-900: var(--color-gray-900);
+  --color-slate-950: var(--color-gray-950);
+  --color-zinc-50: var(--color-gray-50);
+  --color-zinc-100: var(--color-gray-100);
+  --color-zinc-200: var(--color-gray-200);
+  --color-zinc-300: var(--color-gray-300);
+  --color-zinc-400: var(--color-gray-400);
+  --color-zinc-500: var(--color-gray-500);
+  --color-zinc-600: var(--color-gray-600);
+  --color-zinc-700: var(--color-gray-700);
+  --color-zinc-800: var(--color-gray-800);
+  --color-zinc-900: var(--color-gray-900);
+  --color-zinc-950: var(--color-gray-950);
+  --color-neutral-50: var(--color-gray-50);
+  --color-neutral-100: var(--color-gray-100);
+  --color-neutral-200: var(--color-gray-200);
+  --color-neutral-300: var(--color-gray-300);
+  --color-neutral-400: var(--color-gray-400);
+  --color-neutral-500: var(--color-gray-500);
+  --color-neutral-600: var(--color-gray-600);
+  --color-neutral-700: var(--color-gray-700);
+  --color-neutral-800: var(--color-gray-800);
+  --color-neutral-900: var(--color-gray-900);
+  --color-neutral-950: var(--color-gray-950);
+  --color-stone-50: var(--color-gray-50);
+  --color-stone-100: var(--color-gray-100);
+  --color-stone-200: var(--color-gray-200);
+  --color-stone-300: var(--color-gray-300);
+  --color-stone-400: var(--color-gray-400);
+  --color-stone-500: var(--color-gray-500);
+  --color-stone-600: var(--color-gray-600);
+  --color-stone-700: var(--color-gray-700);
+  --color-stone-800: var(--color-gray-800);
+  --color-stone-900: var(--color-gray-900);
+  --color-stone-950: var(--color-gray-950);
+
+  /* DU-09: 90 orange-* utilities shipped Tailwind's stock orange beside the
+     saffron ramp — two warm brand oranges that were never in the palette.
+     Aliased, so `bg-orange-500` and `bg-saffron-500` are the same pixel. */
+  --color-orange-50: var(--color-saffron-50);
+  --color-orange-100: var(--color-saffron-100);
+  --color-orange-200: var(--color-saffron-200);
+  --color-orange-300: var(--color-saffron-300);
+  --color-orange-400: var(--color-saffron-400);
+  --color-orange-500: var(--color-saffron-500);
+  --color-orange-600: var(--color-saffron-600);
+  --color-orange-700: var(--color-saffron-700);
+  --color-orange-800: var(--color-saffron-800);
+  --color-orange-900: var(--color-saffron-900);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -163,14 +300,21 @@
 
   /* ── Text ──────────────────────────────────────────────────────────────── */
   --color-text: #2a2520;
-  --color-text-muted: #7a756e;
-  --color-text-faint: #b5b0a8;
+  --color-text-muted: #635f59;  /* mirrors --color-surface-500 */
+  --color-text-faint: #6b6761;  /* mirrors --color-surface-400 */
   --color-text-inverse: #f9f8f4;
 
-  /* ── Accent — warm amber (saffron brand) ──────────────────────────────── */
-  --color-primary: #b87333;
-  --color-primary-hover: #9e6229;
-  --color-primary-active: #7d4e1f;
+  /* ── Accent — warm amber (saffron brand) ──────────────────────────────────
+     DU-04: #b87333 (saffron-500) and #9e6229 (saffron-600) were BOTH shipping
+     as resting primary fills — one as --color-primary, one as the class every
+     CTA had already moved to when A11Y-10 fixed contrast — plus a gradient
+     that painted the pair side by side. There is now one resting primary, and
+     it is the weight that carries white text at 4.96:1; hover and active step
+     down the same ramp. --color-primary is the only fill token a new surface
+     should reach for. */
+  --color-primary: #9e6229;          /* saffron-600 · 4.96:1 with white */
+  --color-primary-hover: #7d4e1f;    /* saffron-700 · 7.04:1 with white */
+  --color-primary-active: #783318;   /* saffron-900 */
   --color-primary-highlight: #f5e6d0;
 
   /* ── Status colors ────────────────────────────────────────────────────── */
@@ -186,18 +330,39 @@
   --color-art-4: #d4c9bc;  /* Sand */
 
   /* ── Typography ────────────────────────────────────────────────────────── */
-  --font-display: 'Cabinet Grotesk', 'Helvetica Neue', sans-serif;
-  --font-body: 'Satoshi', 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-devanagari: var(--font-noto-devanagari), 'Noto Sans Devanagari', 'Cabinet Grotesk', sans-serif;
+  /* PERF-03 (prod sweep 2026-08-12): these two stacks named ONLY Satoshi and
+     Cabinet Grotesk, which are served by api.fontshare.com — an endpoint that
+     has been answering 200 with a 162-byte "temporarily restricted" comment and
+     no @font-face rules. Result: 5,545 of 5,604 measured glyphs on the live
+     homepage painted in Arial, while next/font/google still downloaded 201.9 KB
+     of Noto Sans / Noto Sans Devanagari / Crimson Pro that no stack referenced.
+     var(--font-noto-sans) is that already-downloaded family, so it now paints
+     instead of Arial at zero extra bytes. The brand faces stay FIRST: drop the
+     licensed Satoshi / Cabinet Grotesk woff2 into public/fonts, declare them
+     with next/font/local, and they take over with no change here.
+     Guarded by __tests__/seo/head-resource-budget.test.ts.
 
-  /* ── Fluid type scale ──────────────────────────────────────────────────── */
-  --type-xs: clamp(0.6875rem, 0.66rem + 0.15vw, 0.75rem);
-  --type-sm: clamp(0.78rem, 0.75rem + 0.15vw, 0.84rem);
-  --type-base: clamp(0.875rem, 0.85rem + 0.12vw, 0.9375rem);
-  --type-lg: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-  --type-xl: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);
-  --type-2xl: clamp(1.5rem, 1.1rem + 1.5vw, 2.25rem);
+     DU-01/11 (prod sweep 2026-08-12): --font-display / --font-body /
+     --font-mono / --font-devanagari were declared HERE and nowhere else, so
+     Tailwind generated no matching utility for any of them — `.font-display`
+     simply did not exist and its 41 call sites inherited the body stack. The
+     families now live in @theme above (the namespace Tailwind reads). The one
+     that stays here is --font-body: it is the canonical sans stack — `body`
+     and one call site name it directly — and @theme's --font-sans is an alias
+     of it, so `font-sans` and the document body can never disagree. */
+  --font-body: 'Satoshi', var(--font-noto-sans), system-ui, -apple-system, sans-serif;
+
+  /* ── Fluid type scale ────────────────────────────────────────────────────
+     DU-10: these were a SECOND scale with different values from --text-* in
+     @theme (--type-base floored at 14px, --text-base at 15px), so "body copy"
+     had two answers depending on which token a screen reached for. Aliased —
+     one scale, one answer. */
+  --type-xs: var(--text-xs);
+  --type-sm: var(--text-sm);
+  --type-base: var(--text-base);
+  --type-lg: var(--text-lg);
+  --type-xl: var(--text-xl);
+  --type-2xl: var(--text-2xl);
 
   /* ── Shadows — warm-tinted ─────────────────────────────────────────────── */
   --shadow-sm: 0 1px 3px oklch(0.25 0.02 60 / 0.06);
@@ -240,6 +405,11 @@ body {
   color: var(--color-text);
   font-family: var(--font-body);
   line-height: var(--leading-relaxed);
+  /* RESP-01: CookieBanner is position:fixed and used to bury whatever sat at
+     the bottom of the page — at 390x844 the entire /auth/login form, Sign In
+     included. While it is open it publishes its measured height here, so the
+     document always has somewhere to scroll to. 0px when dismissed. */
+  padding-bottom: var(--consent-h, 0px);
 }
 
 /* Devanagari font stack when locale is Hindi. Cabinet Grotesk / Satoshi
@@ -249,6 +419,10 @@ body {
 html[lang="hi"] {
   --font-body: var(--font-devanagari);
   --font-display: var(--font-devanagari);
+  --font-sans: var(--font-devanagari);
+  /* Crimson Pro has no Devanagari coverage either, so font-serif would drop to
+     a system serif mid-page. Same swap keeps the rhythm. */
+  --font-serif: var(--font-devanagari);
 }
 
 ::selection {
@@ -261,10 +435,28 @@ h1, h2, h3, h4, h5, h6 {
   scroll-margin-top: 4rem;
 }
 
-/* Placeholder styling */
+/* Placeholder styling.
+   Placeholder copy is text, not decoration — several fields carry no visible
+   label, so it must clear WCAG AA 4.5:1. Painted with the muted token, not the
+   faint one (a11y 2026-08-12: text-faint gave 2.05:1 on a card surface). */
 ::placeholder {
-  color: var(--color-text-faint);
+  color: var(--color-text-muted);
   opacity: 1;
+}
+
+/* ── Dark footer re-scopes the neutral text ramp ──────────────────────────
+   app/layout.tsx paints the site footer bg-[#2a2520] and styles its copy with
+   the same text-surface-400/500/600 utilities used on cream. Those utilities
+   compile to `color: var(--color-surface-N)`, so redefining the variables here
+   retargets every descendant without touching a single component.
+   a11y 2026-08-12: against #2a2520 the shipped values measured 500 = 3.32:1
+   and 600 = 1.60:1 (the copyright line); after the light-surface darkening
+   above they would land at 2.39:1 and 2.70:1. Same warm hue, lifted into the
+   readable range and kept in light → dim order. */
+footer[aria-labelledby="footer-heading"] {
+  --color-surface-400: #b5b0a8;  /* 7.04:1 on #2a2520 — footer base copy   */
+  --color-surface-500: #a19b91;  /* 5.50:1 on #2a2520 — links, contact, tagline */
+  --color-surface-600: #989186;  /* 4.86:1 on #2a2520 — copyright, legal    */
 }
 
 /* Suppress browser autofill blue/yellow on text inputs — keep brand cream */
@@ -290,6 +482,116 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 textarea,
 select {
   font-size: max(16px, 1rem);
+}
+
+/* ── Mobile tap-target floor ──────────────────────────────────────────────
+   RESP-06/07/08/09/11 (prod sweep 2026-08-12, measured at 390x844): the
+   global header shipped a 28x28 logo link and three 36x36 icon buttons; the
+   login password show/hide toggle was 16x16; the /temples and /store filter
+   chips and selects were 32-41px; every footer link was `display: inline` at
+   17px tall; the admin sidebar close button was 20x20. WCAG 2.5.5 asks for
+   44x44 CSS px.
+
+   Doing this in the token layer fixes all of them at once — none of those
+   files needs to change, and a control added tomorrow inherits the floor.
+   `min-height` beats a Tailwind `h-9`, and inline links must become flex
+   boxes before a min-height means anything to them.
+
+   Deliberately NOT floored: [role="switch"] (a 48x28 pill stretched to 44px
+   tall renders as a rounded rectangle, and its knob is absolutely positioned
+   against the track) and anything under [data-tap-exempt], the escape hatch
+   for a dense grid that genuinely needs smaller cells.
+
+   tap-target floor */
+@media (max-width: 1023px) {
+  button,
+  [role="button"],
+  select,
+  summary,
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]),
+  nav li > a,
+  footer li > a {
+    min-height: 44px;
+  }
+
+  /* `display` is set on ONE selector only, and deliberately on a
+     class-free one. Footer and nav links compute to `display: inline`, which
+     ignores min-height, so they genuinely need it — but a selector carrying an
+     attribute or :has() outscores Tailwind's `.hidden` (0-1-0) and would drag
+     every desktop-only control back onto the mobile screen. `nav li > a` is
+     0-0-3, so `hidden` / `lg:hidden` still win. Buttons need no display at all:
+     they are inline-block with centred content by default, so the floors below
+     apply as-is. */
+  nav li > a,
+  footer li > a {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  button:has(> svg:only-child),
+  a[aria-label]:has(> svg:only-child),
+  [role="button"]:has(> svg:only-child) {
+    min-width: 44px;
+  }
+
+  /* The masthead logo link measured 28x28 and the cart button 36 wide: neither
+     is icon-ONLY (the logo wraps a mark plus a wordmark, the cart an icon plus
+     a count badge), so `:has(> svg:only-child)` above never matched them.
+     Every labelled control in the header is a target, so floor them all. */
+  header a[aria-label],
+  header button[aria-label] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  [role="switch"],
+  [data-tap-exempt],
+  [data-tap-exempt] button,
+  [data-tap-exempt] a,
+  [data-tap-exempt] select {
+    min-height: 0;
+    min-width: 0;
+  }
+}
+
+/* ── heading-display — the display face, in one place ─────────────────────
+   DU-06: Cabinet Grotesk is declared as --font-display but rendered on only
+   3 of 10 screens (57 leaf nodes on /, 10 on /pricing, 1 on the 404) — six
+   screens painted every heading, h1 included, in the body face, so a devotee
+   moving from / to /pujas got a typeface change at the moment of highest
+   intent. The rule is now explicit and lives here: the display face carries
+   the h1 on marketing, catalogue and detail surfaces; portal chrome stays on
+   the body face.
+
+   OWNER-GATED, and deliberately harmless until it is not: PERF-03 removed the
+   api.fontshare.com stylesheet, so no licensed display face is bundled today
+   and --font-display currently resolves to the Noto Sans that layout.tsx
+   already downloads. Every call site below is therefore correct and invisible.
+   Drop a licensed woff2 under public/fonts with an @font-face named at the
+   head of --font-display and the hierarchy appears everywhere at once, with
+   no further call-site edits. */
+.heading-display {
+  font-family: var(--font-display);
+}
+
+/* ── tap-safe — the standalone-link escape hatch ──────────────────────────
+   RESP-07/RESP-09: the media query above floors buttons, selects, summaries
+   and list links. It cannot reach a bare inline anchor that sits outside a
+   list — "Forgot password?" beside the password label (89.2x14.8), the
+   section CTAs "All streams" / "Talk to Astrologer" / "Browse Pujas"
+   (71-104 x 14.8), the puja-detail Save/Share row and the footer language
+   switcher (18px tall). Flooring every `a` would drag inline body links and
+   the whole content library to 44px.
+
+   So those call sites opt in. Negative margin cancels the padding, so the
+   visual rhythm of the row is unchanged and only the hit box grows. */
+.tap-safe {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 0.625rem;
+  margin-block: -0.625rem;
 }
 
 /* Smooth image loading */
@@ -520,9 +822,16 @@ img {
    UTILITY CLASSES — gradients, card hover, btn-press
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Gradient background (used by AiChat avatar) */
+/* Gradient background (used by AiChat avatar).
+   DU-04: this blended --color-primary into --color-primary-hover, which is
+   how both saffron weights ended up painted as resting fills on the same
+   screen. Derived from the single primary now, so the ramp cannot drift. */
 .gradient-saffron {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    oklch(from var(--color-primary) calc(l - 0.09) c h)
+  );
 }
 
 /* Card hover — translateY(-2px) + warm shadow. The ONLY hover pattern.

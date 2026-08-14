@@ -93,13 +93,55 @@ export interface FcmPayload {
 export interface FcmSendResult {
   ok: boolean;
   skipped?: boolean;
-  expired?: boolean; // 404 / UNREGISTERED / INVALID_ARGUMENT — drop token
+  /** 404 / UNREGISTERED / NOT_FOUND — the device is gone; the caller SHOULD drop the row. */
+  expired?: boolean;
+  /**
+   * The token is structurally wrong or FCM says INVALID_ARGUMENT.
+   *
+   * NOTIF-07: this used to be folded into `expired`, so the first send after a
+   * web devotee enabled aarti reminders DELETED their registration — the toggle
+   * went on, nothing was ever delivered, and the row that would have let anyone
+   * diagnose it was gone. A malformed token is a BUG on the write path
+   * (apps/web registers a Web Push endpoint URL here), not a dead device, and
+   * deleting it destroys the only evidence. Callers must keep the row, count it
+   * separately and shout.
+   */
+  invalidToken?: boolean;
   error?: string;
+}
+
+/**
+ * Is this an FCM HTTP v1 registration token?
+ *
+ * FCM v1 requires a registration token in `message.token`. It is an opaque
+ * URL-safe string (base64url plus `:`), never a URL and never JSON.
+ * apps/web/components/AartiOptIn.tsx registers `pushSubscription.endpoint`
+ * (`https://fcm.googleapis.com/fcm/send/...`) or, on its fallback branch, the
+ * whole `JSON.stringify(subJson)` — both of which FCM rejects. The component's
+ * comment claims "the API treats both as opaque strings"; FCM does not, so the
+ * API must say so instead of silently posting garbage.
+ */
+export function isFcmRegistrationToken(token: string): boolean {
+  const t = token?.trim() ?? '';
+  if (t.length < 60) return false; // real tokens are ~150+ chars
+  if (/^\s*[{[]/.test(t)) return false; // a serialised PushSubscription
+  if (/^https?:/i.test(t) || t.includes('://')) return false; // a push endpoint URL
+  if (/\s/.test(t)) return false;
+  return /^[A-Za-z0-9_:.-]+$/.test(t);
 }
 
 export async function sendFcm(token: string, payload: FcmPayload): Promise<FcmSendResult> {
   if (!enabled) return { ok: false, skipped: true };
   if (!token) return { ok: false, error: 'empty token' };
+  if (!isFcmRegistrationToken(token)) {
+    // Refuse BEFORE the network call. Posting a push endpoint URL to FCM buys
+    // an INVALID_ARGUMENT round-trip and nothing else.
+    return {
+      ok: false,
+      invalidToken: true,
+      error: `not an FCM registration token (${maskToken(token)}) — looks like a Web Push endpoint or serialised subscription`,
+    };
+  }
   try {
     const accessToken = await getAccessToken();
     const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
@@ -119,13 +161,19 @@ export async function sendFcm(token: string, payload: FcmPayload): Promise<FcmSe
     });
     if (resp.ok) return { ok: true };
     const text = await resp.text();
-    // FCM returns 404 / 400 with errorCode UNREGISTERED or INVALID_ARGUMENT for
-    // dead tokens — caller should delete from DB.
-    if (
-      resp.status === 404 ||
-      /UNREGISTERED|INVALID_ARGUMENT|NOT_FOUND/.test(text)
-    ) {
+    // NOTIF-07: INVALID_ARGUMENT is NOT in this bucket. UNREGISTERED / NOT_FOUND
+    // mean the app was uninstalled or the token rotated — the device is gone and
+    // the row is dead weight. INVALID_ARGUMENT means we sent something that was
+    // never a token, which is our bug; deleting the row hides it forever.
+    if (resp.status === 404 || /UNREGISTERED|NOT_FOUND/.test(text)) {
       return { ok: false, expired: true };
+    }
+    if (/INVALID_ARGUMENT/.test(text)) {
+      return {
+        ok: false,
+        invalidToken: true,
+        error: `FCM INVALID_ARGUMENT ${maskToken(token)}: ${text.slice(0, 200)}`,
+      };
     }
     return {
       ok: false,
@@ -139,9 +187,17 @@ export async function sendFcm(token: string, payload: FcmPayload): Promise<FcmSe
 export async function sendFcmMulticast(
   tokens: string[],
   payload: FcmPayload,
-): Promise<{ sent: number; expired: string[]; failed: number; skipped?: boolean }> {
-  if (!enabled) return { sent: 0, expired: [], failed: 0, skipped: true };
+): Promise<{
+  sent: number;
+  expired: string[];
+  /** Tokens that are not FCM tokens at all. NOT deleted — see FcmSendResult. */
+  invalid: string[];
+  failed: number;
+  skipped?: boolean;
+}> {
+  if (!enabled) return { sent: 0, expired: [], invalid: [], failed: 0, skipped: true };
   const expired: string[] = [];
+  const invalid: string[] = [];
   let sent = 0;
   let failed = 0;
   // FCM HTTP v1 has no batch endpoint (only the deprecated legacy API did);
@@ -150,9 +206,10 @@ export async function sendFcmMulticast(
     const r = await sendFcm(t, payload);
     if (r.ok) sent++;
     else if (r.expired) expired.push(t);
+    else if (r.invalidToken) invalid.push(t);
     else if (!r.skipped) failed++;
   }
-  return { sent, expired, failed };
+  return { sent, expired, invalid, failed };
 }
 
 export const fcmConfig = { enabled, projectId };

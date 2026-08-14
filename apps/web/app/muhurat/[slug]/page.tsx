@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!m) return { title: 'Muhurat not found' };
 
   return {
-    title: `${m.name} (${m.sanskritName}) — Timing, Calculation, Significance | Darshya`,
+    title: `${m.name} (${m.sanskritName}) — Timing, Calculation, Significance`,
     description: `${m.name}: ${m.shortDesc} Duration: ${m.duration}. Ruled by ${m.ruledBy}. Full guide — when, how to calculate, what to do, what to avoid.`,
     alternates: { canonical: `${BASE_URL}/muhurat/${m.slug}` },
     openGraph: {

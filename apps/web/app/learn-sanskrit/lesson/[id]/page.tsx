@@ -16,7 +16,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { id } = await params;
   const l = getLesson(id);
   if (!l) return { title: 'Lesson not found' };
-  return { title: `${l.title} — Learn Sanskrit`, description: l.intro };
+  return {
+    title: `${l.title} — Learn Sanskrit`,
+    alternates: { canonical: `https://darshya.online/learn-sanskrit/lesson/${id}` },
+    description: l.intro,
+  };
 }
 
 export default async function LessonPage({ params }: { params: Promise<Params> }) {

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     'White-label donor CRM, puja bookings, 80G automation and live darshan for temple chains, ashram networks and matha organizations. Pilot pricing ₹1,500/mo for 90 days.',
   alternates: { canonical: '/for-temple-chains' },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Darshya for Temple Chains — B2B SaaS pilot ₹1,500/mo',
     description: 'White-label donor CRM, 80G automation, puja bookings for chains operating 5-20 temples.',
     url: 'https://darshya.online/for-temple-chains',

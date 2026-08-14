@@ -12,10 +12,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Baby Name by Nakshatra — Free Namakaran Calculator (Sanskrit + Vedic) | Darshya',
+ title: 'Baby Name by Nakshatra — Free Namakaran Calculator (Sanskrit + Vedic)',
  description: 'Free Vedic namakaran calculator. Pick your baby’s birth nakshatra and get the 4 traditional pada-syllables (शास्त्र शुद्ध) plus a curated list of Sanskrit-rooted baby names with meanings, deity, and gender. No signup.',
  alternates: { canonical: `${BASE_URL}/astrology/baby-name` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Baby Name by Nakshatra — Free Namakaran Calculator',
   description: 'Vedic baby names by birth star — 27 nakshatras × 4 padas, full pada-syllable map, curated Sanskrit names. Free, no signup.',
   url: `${BASE_URL}/astrology/baby-name`,
@@ -120,13 +121,13 @@ export default function BabyNamePage() {
        <div key={n.slug} className="rounded-xl border border-saffron-200 bg-saffron-50/30 p-4">
         <div className="flex items-baseline justify-between">
          <p className="font-serif text-base font-semibold text-gray-900">{n.name}</p>
-         <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{n.lord}</span>
+         <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{n.lord}</span>
         </div>
         <p className="mt-0.5 text-xs text-saffron-700">{n.sanskritName}</p>
         <div className="mt-2 grid grid-cols-4 gap-1.5">
          {syls.map((sy, i) => (
           <div key={i} className="rounded-md border border-saffron-300 bg-white py-1.5 text-center">
-           <p className="text-[10px] font-semibold text-gray-500">Pada {i + 1}</p>
+           <p className="text-xs font-semibold text-gray-500">Pada {i + 1}</p>
            <p className="font-serif text-base font-bold text-saffron-700">{sy}</p>
           </div>
          ))}

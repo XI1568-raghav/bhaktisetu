@@ -1,22 +1,24 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
+import { clientIp, rateLimitKey } from './rate-limit-key.js';
 
 // R-Q2-E-013 — API rate limiting per-user + per-IP
+// SCAL-01 — the partition was broken; these tests now prove it isn't.
 //
-// Lightweight Fastify harness exercising the same plugin + key derivation
-// strategy used in apps/api/src/server.ts. Kept self-contained so the suite
-// doesn't pull the full server bootstrap (Sentry, Prisma, helmet, CORS).
-
-interface UserInjector {
-  userId?: string;
-}
+// The harness imports the REAL rateLimitKey from server.ts's own module. The
+// previous version of this file re-implemented the key derivation inline, so
+// every assertion tested its own copy: the server could (and did) share one
+// bucket across the entire platform while this suite stayed green.
+//
+// It also asserted "different user gets a fresh bucket" by closing the app and
+// building a new one — a new rate-limit store — which passes even if the key
+// is a constant. Both users now hit the SAME instance.
 
 async function buildApp(opts: {
   max: number;
   authMax?: number;
   allowList?: string[];
-  injector?: UserInjector;
 }): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
 
@@ -41,23 +43,22 @@ async function buildApp(opts: {
     max: opts.max,
     timeWindow: '1 minute',
     allowList: (req) => skip.has(req.url.split('?')[0] ?? ''),
-    keyGenerator: (req) => {
-      const uid = (req as unknown as { currentUser?: { id?: string } })
-        .currentUser?.id;
-      return uid ? `u:${uid}` : `ip:${req.ip}`;
-    },
+    keyGenerator: (req) => rateLimitKey(req),
   });
 
-  // Inject the test user before rate-limit checks (uses preHandler ordering).
-  app.addHook('onRequest', async (req) => {
-    if (opts.injector?.userId) {
-      (req as unknown as { currentUser: { id: string } }).currentUser = {
-        id: opts.injector.userId,
+  // Mirrors production: auth is a per-route preHandler, so it runs AFTER the
+  // limiter's onRequest hook. Anything the limiter needs must come off the
+  // raw request, not off currentUser.
+  const authenticateUser = async (req: { headers: Record<string, unknown> }) => {
+    const raw = req.headers['authorization'];
+    if (typeof raw === 'string') {
+      (req as { currentUser?: { id: string } }).currentUser = {
+        id: raw.replace(/^Bearer /i, ''),
       };
     }
-  });
+  };
 
-  app.get('/api/v1/ping', async () => ({ ok: true }));
+  app.get('/api/v1/ping', { preHandler: [authenticateUser] }, async () => ({ ok: true }));
   app.post('/auth/login', async () => ({ ok: true }));
   app.get('/health', async () => ({ status: 'ok' }));
   app.get('/ready', async () => ({ ready: true }));
@@ -67,46 +68,102 @@ async function buildApp(opts: {
   return app;
 }
 
-describe('rate-limit (R-Q2-E-013)', () => {
+const asReq = (headers: Record<string, string>, ip = '10.0.0.1') => ({ ip, headers });
+
+describe('rate-limit key derivation (SCAL-01)', () => {
+  it('partitions two bearer tokens into different buckets', () => {
+    const a = rateLimitKey(asReq({ authorization: 'Bearer alice-token' }));
+    const b = rateLimitKey(asReq({ authorization: 'Bearer bob-token' }));
+    expect(a).not.toBe(b);
+    expect(a.startsWith('u:')).toBe(true);
+  });
+
+  it('gives the same caller a stable bucket across requests', () => {
+    const h = { authorization: 'Bearer alice-token' };
+    expect(rateLimitKey(asReq(h, '10.0.0.1'))).toBe(rateLimitKey(asReq(h, '10.0.0.9')));
+  });
+
+  it('never leaks the raw credential into the key', () => {
+    const key = rateLimitKey(asReq({ authorization: 'Bearer super-secret-jwt' }));
+    expect(key).not.toContain('super-secret-jwt');
+  });
+
+  it('partitions by the darshya_session cookie when no Authorization header', () => {
+    const a = rateLimitKey(asReq({ cookie: 'foo=1; darshya_session=sess-alice; bar=2' }));
+    const b = rateLimitKey(asReq({ cookie: 'darshya_session=sess-bob' }));
+    expect(a).not.toBe(b);
+    expect(a.startsWith('u:')).toBe(true);
+  });
+
+  it('falls back to the client IP for anonymous traffic', () => {
+    expect(rateLimitKey(asReq({}, '203.0.113.7'))).toBe('ip:203.0.113.7');
+  });
+
+  it('separates anonymous callers behind a proxy via CF-Connecting-IP', () => {
+    const a = rateLimitKey(asReq({ 'cf-connecting-ip': '1.1.1.1' }, '10.0.0.1'));
+    const b = rateLimitKey(asReq({ 'cf-connecting-ip': '2.2.2.2' }, '10.0.0.1'));
+    expect(a).toBe('ip:1.1.1.1');
+    expect(b).toBe('ip:2.2.2.2');
+  });
+
+  it('ignores client-supplied X-Forwarded-For — it is forgeable', () => {
+    // Honouring raw XFF would let one caller mint unlimited buckets.
+    expect(clientIp(asReq({ 'x-forwarded-for': '9.9.9.9' }, '10.0.0.1'))).toBe('10.0.0.1');
+  });
+
+  it('treats a blank Authorization header as anonymous, not as a shared bucket', () => {
+    expect(rateLimitKey(asReq({ authorization: '   ' }, '198.51.100.4'))).toBe('ip:198.51.100.4');
+  });
+});
+
+describe('rate-limit enforcement (R-Q2-E-013)', () => {
   let app: FastifyInstance;
 
   afterEach(async () => {
     if (app) await app.close();
   });
 
-  it('returns 429 after exceeding per-IP default cap', async () => {
+  const ping = (headers: Record<string, string> = {}) =>
+    app.inject({ method: 'GET', url: '/api/v1/ping', headers });
+
+  it('returns 429 after exceeding the anonymous per-IP cap', async () => {
     app = await buildApp({ max: 5 });
-    for (let i = 0; i < 5; i++) {
-      const res = await app.inject({ method: 'GET', url: '/api/v1/ping' });
-      expect(res.statusCode).toBe(200);
-    }
-    const blocked = await app.inject({ method: 'GET', url: '/api/v1/ping' });
-    expect(blocked.statusCode).toBe(429);
+    for (let i = 0; i < 5; i++) expect((await ping()).statusCode).toBe(200);
+    expect((await ping()).statusCode).toBe(429);
   });
 
   it('429 response includes Retry-After header', async () => {
     app = await buildApp({ max: 2 });
-    await app.inject({ method: 'GET', url: '/api/v1/ping' });
-    await app.inject({ method: 'GET', url: '/api/v1/ping' });
-    const blocked = await app.inject({ method: 'GET', url: '/api/v1/ping' });
+    await ping();
+    await ping();
+    const blocked = await ping();
     expect(blocked.statusCode).toBe(429);
     expect(blocked.headers['retry-after']).toBeDefined();
   });
 
-  it('authenticated user gets a partition keyed by user id, not IP', async () => {
-    app = await buildApp({ max: 3, injector: { userId: 'user-abc' } });
-    // Burn the user bucket
-    for (let i = 0; i < 3; i++) {
-      const res = await app.inject({ method: 'GET', url: '/api/v1/ping' });
-      expect(res.statusCode).toBe(200);
-    }
-    const blocked = await app.inject({ method: 'GET', url: '/api/v1/ping' });
-    expect(blocked.statusCode).toBe(429);
-    // Different user — fresh bucket on same IP.
-    await app.close();
-    app = await buildApp({ max: 3, injector: { userId: 'user-xyz' } });
-    const fresh = await app.inject({ method: 'GET', url: '/api/v1/ping' });
-    expect(fresh.statusCode).toBe(200);
+  // The regression test for SCAL-01. Against the old keyGenerator (which read
+  // currentUser — always undefined in onRequest) bob's FIRST request was a 429.
+  it('one user burning their quota does not throttle a different user', async () => {
+    app = await buildApp({ max: 3 });
+    const alice = { authorization: 'Bearer alice-token' };
+    const bob = { authorization: 'Bearer bob-token' };
+
+    for (let i = 0; i < 3; i++) expect((await ping(alice)).statusCode).toBe(200);
+    expect((await ping(alice)).statusCode).toBe(429);
+
+    // Same app, same socket IP, same instant — bob must be untouched.
+    for (let i = 0; i < 3; i++) expect((await ping(bob)).statusCode).toBe(200);
+    expect((await ping(bob)).statusCode).toBe(429);
+  });
+
+  it('anonymous callers behind the proxy get independent buckets', async () => {
+    app = await buildApp({ max: 2 });
+    const one = { 'cf-connecting-ip': '1.1.1.1' };
+    const two = { 'cf-connecting-ip': '2.2.2.2' };
+    expect((await ping(one)).statusCode).toBe(200);
+    expect((await ping(one)).statusCode).toBe(200);
+    expect((await ping(one)).statusCode).toBe(429);
+    expect((await ping(two)).statusCode).toBe(200);
   });
 
   it('per-prefix override tightens /auth/* below global default', async () => {
@@ -120,17 +177,11 @@ describe('rate-limit (R-Q2-E-013)', () => {
   });
 
   it('health / ready / metrics routes are never rate limited', async () => {
-    app = await buildApp({
-      max: 1,
-      allowList: ['/health', '/ready', '/metrics'],
-    });
+    app = await buildApp({ max: 1, allowList: ['/health', '/ready', '/metrics'] });
     for (let i = 0; i < 5; i++) {
-      const h = await app.inject({ method: 'GET', url: '/health' });
-      const r = await app.inject({ method: 'GET', url: '/ready' });
-      const m = await app.inject({ method: 'GET', url: '/metrics' });
-      expect(h.statusCode).toBe(200);
-      expect(r.statusCode).toBe(200);
-      expect(m.statusCode).toBe(200);
+      expect((await app.inject({ method: 'GET', url: '/health' })).statusCode).toBe(200);
+      expect((await app.inject({ method: 'GET', url: '/ready' })).statusCode).toBe(200);
+      expect((await app.inject({ method: 'GET', url: '/metrics' })).statusCode).toBe(200);
     }
   });
 });

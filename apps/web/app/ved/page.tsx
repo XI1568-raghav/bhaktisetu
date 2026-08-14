@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import CategoryIndex from '../../components/CategoryIndex';
 
 export const metadata: Metadata = {
+  alternates: { canonical: 'https://darshya.online/ved' },
   title: 'Vedas — Knowledge & History',
   description: 'The four Vedas — Rigveda, Samaveda, Yajurveda, Atharvaveda — their Samhitas, Brahmanas, Aranyakas, and Upanishads, the rishis who heard them, and the Vedic worldview.',
 };

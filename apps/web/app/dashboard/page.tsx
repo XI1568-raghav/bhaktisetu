@@ -23,7 +23,12 @@ import AuthGuard from '../../components/AuthGuard';
 import PujaRecommendationWidget from '../../components/PujaRecommendationWidget';
 import DevoteeTodaySection from '../../components/dashboard/DevoteeTodaySection';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import {
+ API_BASE_URL,
+ DATA_FETCH_TIMEOUT_MS,
+ fetchWithTimeout,
+ loadErrorMessage,
+} from '../../lib/api-config';
 
 interface Booking {
  id: string;
@@ -73,22 +78,32 @@ function DashboardContent() {
  const [bookingsCount, setBookingsCount] = useState(0);
  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
  const [isLoadingData, setIsLoadingData] = useState(true);
+ // RES-02 (2026-08-12): with /users/me/bookings returning 500 this page showed
+ // "Total Bookings 0" and "No Bookings Yet — begin your spiritual journey" to a
+ // devotee who already had confirmed pujas, with no error anywhere. Telling
+ // someone their bookings do not exist is worse than telling them we are down.
+ const [loadError, setLoadError] = useState<string | null>(null);
 
  const fetchDashboardData = useCallback(async () => {
  if (!session?.accessToken) return;
 
+ setLoadError(null);
  try {
  const headers = { Authorization: `Bearer ${session.accessToken}` };
 
+ // RES-01: bare fetch has no timeout — held open, /dashboard sat on
+ // "Loading bookings..." at T+10s and at T+30s with no way to recover.
  const [bookingsRes, subscriptionRes] = await Promise.all([
- fetch(`${API_BASE_URL}/users/me/bookings?limit=5`, { headers }),
- fetch(`${API_BASE_URL}/users/me/subscription`, { headers }),
+ fetchWithTimeout(`${API_BASE_URL}/users/me/bookings?limit=5`, { headers }, DATA_FETCH_TIMEOUT_MS),
+ fetchWithTimeout(`${API_BASE_URL}/users/me/subscription`, { headers }, DATA_FETCH_TIMEOUT_MS),
  ]);
 
  if (bookingsRes.ok) {
  const bookingsData = await bookingsRes.json();
  setBookings(bookingsData.bookings || []);
  setBookingsCount(bookingsData.pagination?.total || 0);
+ } else {
+ setLoadError(loadErrorMessage(bookingsRes));
  }
 
  if (subscriptionRes.ok) {
@@ -96,7 +111,7 @@ function DashboardContent() {
  setSubscription(subData.subscription || null);
  }
  } catch (err) {
- console.error('Failed to load dashboard data:', err);
+ setLoadError(loadErrorMessage(err));
  } finally {
  setIsLoadingData(false);
  }
@@ -168,7 +183,7 @@ function DashboardContent() {
  <div>
  <p className="text-sm text-surface-500">Total Bookings</p>
  <p className="text-lg font-semibold text-surface-800">
- {isLoadingData ? '...' : bookingsCount}
+ {isLoadingData ? '...' : loadError ? '—' : bookingsCount}
  </p>
  </div>
  </div>
@@ -235,6 +250,19 @@ function DashboardContent() {
  <div className="bg-[var(--color-surface)] rounded-xl p-8 border border-[var(--color-border)] text-center">
  <div className="w-8 h-8 border-3 border-saffron-200 border-t-saffron-600 rounded-full animate-spin mx-auto mb-3" />
  <p className="text-surface-400 text-sm">Loading bookings...</p>
+ </div>
+ ) : loadError ? (
+ /* Never the "No Bookings Yet" empty state for a list we failed to read —
+    that reads as "your bookings were cancelled". */
+ <div role="alert" className="bg-amber-50 rounded-xl p-6 border border-amber-200 text-center">
+ <p className="text-sm text-amber-800">{loadError}</p>
+ <button
+ type="button"
+ onClick={() => { setIsLoadingData(true); void fetchDashboardData(); }}
+ className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg text-sm hover:bg-saffron-700 transition-colors"
+ >
+ Retry
+ </button>
  </div>
  ) : bookings.length === 0 ? (
  <div className="bg-[var(--color-surface)] rounded-xl p-8 border border-[var(--color-border)] text-center">

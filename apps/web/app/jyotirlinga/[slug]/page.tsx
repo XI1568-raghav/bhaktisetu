@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const j = getJyotirlingaBySlug(slug);
   if (!j) return { title: 'Not found' };
   return {
-    title: `${j.name} Jyotirlinga (${j.number} of 12) — Darshan Timings, ${j.signatureRitual.split('(')[0]?.trim() ?? ''} | Darshya`,
+    title: `${j.name} Jyotirlinga (${j.number} of 12) — Darshan Timings, ${j.signatureRitual.split('(')[0]?.trim() ?? ''}`,
     description: `${j.name} (${j.sanskrit}) — ${j.number}th Jyotirlinga in ${j.city}, ${j.state}. Darshan ${j.darshanTimings}. Signature ritual: ${j.signatureRitual}. ${j.significance.slice(0, 90)}…`,
     alternates: { canonical: `${BASE_URL}/jyotirlinga/${j.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${j.name} Jyotirlinga — ${j.number} of 12`,
       description: j.significance,
       url: `${BASE_URL}/jyotirlinga/${j.slug}`,
@@ -91,7 +92,7 @@ export default async function JyotirlingaPage({ params }: Props) {
         <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">{j.name}</h1>
         <p className="mt-1 font-serif text-xl text-gray-700">{j.sanskrit}</p>
         <p className="mt-3 text-base text-gray-700"><strong>Location:</strong> {j.city}, {j.state}</p>
-        <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-medium uppercase tracking-wide">
+        <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium uppercase tracking-wide">
           {j.swayambhu && <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800">Swayambhu (self-manifest)</span>}
           {j.dakshinmukhi && <span className="rounded bg-rose-100 px-2 py-0.5 text-rose-800">Dakshinmukhi (south-facing)</span>}
           {j.onlineBookingAvailable && <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-800">Online booking</span>}

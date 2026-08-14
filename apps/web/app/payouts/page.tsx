@@ -14,7 +14,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { IndianRupee, Clock, CheckCircle2, Loader2, AlertCircle, Wallet, ArrowUpRight } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth, type UserRole } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import {
+  API_BASE_URL,
+  DATA_FETCH_TIMEOUT_MS,
+  fetchWithTimeout,
+  loadErrorMessage,
+} from '../../lib/api-config';
 
 interface Balance {
   availableInr: number;
@@ -48,25 +53,50 @@ function PayoutsContent() {
   const [requesting, setRequesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // RES-02: a failed load used to leave `balance` null, which every card below
+  // renders as ₹0. A provider mid-incident was told they had ₹0 withdrawable,
+  // ₹0 processing, ₹0 ever paid and "No payouts yet" — with no error anywhere.
+  // That is the single most churn-inducing screen we own, and it was a lie.
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!session?.accessToken) return;
     setLoading(true);
+    setLoadError(null);
     try {
+      const headers = { Authorization: `Bearer ${session.accessToken}` };
+      // RES-01: bare `fetch` has no timeout, so a stalled socket left this page
+      // on "Available to withdraw …" forever — the `setLoading(false)` below
+      // sits after an await that never returns.
       const [bRes, pRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/payouts/balance`, { headers: { Authorization: `Bearer ${session.accessToken}` } }),
-        fetch(`${API_BASE_URL}/payouts/my`, { headers: { Authorization: `Bearer ${session.accessToken}` } }),
+        fetchWithTimeout(`${API_BASE_URL}/payouts/balance`, { headers }, DATA_FETCH_TIMEOUT_MS),
+        fetchWithTimeout(`${API_BASE_URL}/payouts/my`, { headers }, DATA_FETCH_TIMEOUT_MS),
       ]);
       if (bRes.ok) setBalance(await bRes.json());
+      else setLoadError(loadErrorMessage(bRes));
       if (pRes.ok) {
         const j = await pRes.json();
         setPayouts(j.payouts ?? []);
+      } else if (bRes.ok) {
+        setLoadError(loadErrorMessage(pRes));
       }
-    } catch { /* keep */ }
+    } catch (err) {
+      setLoadError(loadErrorMessage(err));
+    }
     setLoading(false);
   }, [session?.accessToken]);
 
   useEffect(() => { load(); }, [load]);
+
+  // RES-02: never print a currency figure the server did not send. While the
+  // request is in flight that is an ellipsis; when it FAILED it is an em dash,
+  // never ₹0 — a fabricated zero next to the word "withdraw" is what makes a
+  // provider believe their earnings vanished.
+  function money(n: number | undefined): string {
+    if (loading) return '…';
+    if (!balance) return '—';
+    return formatINR(n ?? 0);
+  }
 
   async function requestPayout() {
     if (!session?.accessToken) return;
@@ -74,11 +104,13 @@ function PayoutsContent() {
     setError(null);
     setNotice(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/payouts/request`, {
+      // RES-01: a stalled POST left "Requesting…" spinning forever on the one
+      // button that moves the provider's money.
+      const res = await fetchWithTimeout(`${API_BASE_URL}/payouts/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}` },
         body: JSON.stringify({ method: 'upi' }),
-      });
+      }, DATA_FETCH_TIMEOUT_MS);
       const j = await res.json().catch(() => ({}));
       if (res.ok) {
         setNotice('Payout requested. It will be processed to your bank/UPI.');
@@ -86,8 +118,8 @@ function PayoutsContent() {
       } else {
         setError(j?.error ?? 'Could not request payout.');
       }
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err) {
+      setError(loadErrorMessage(err));
     }
     setRequesting(false);
   }
@@ -98,6 +130,22 @@ function PayoutsContent() {
         <h1 className="text-2xl font-bold text-surface-800">Payouts</h1>
         <p className="text-sm text-surface-500 mt-1">Withdraw your earnings to your bank / UPI.</p>
 
+        {loadError && (
+          <div
+            role="alert"
+            className="mt-4 flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+          >
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span className="flex-1 min-w-[12rem]">{loadError}</span>
+            <button
+              type="button"
+              onClick={() => { void load(); }}
+              className="font-semibold underline underline-offset-2 hover:text-amber-900"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         {error && (
           <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> {error}
@@ -118,7 +166,7 @@ function PayoutsContent() {
               </div>
               <div>
                 <p className="text-xs text-surface-500">Available to withdraw</p>
-                <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(balance?.availableInr ?? 0)}</p>
+                <p className="text-xl font-bold text-surface-800">{money(balance?.availableInr)}</p>
               </div>
             </div>
           </div>
@@ -129,7 +177,7 @@ function PayoutsContent() {
               </div>
               <div>
                 <p className="text-xs text-surface-500">Processing</p>
-                <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(balance?.pendingInr ?? 0)}</p>
+                <p className="text-xl font-bold text-surface-800">{money(balance?.pendingInr)}</p>
               </div>
             </div>
           </div>
@@ -140,7 +188,7 @@ function PayoutsContent() {
               </div>
               <div>
                 <p className="text-xs text-surface-500">Paid out (total)</p>
-                <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(balance?.paidOutInr ?? 0)}</p>
+                <p className="text-xl font-bold text-surface-800">{money(balance?.paidOutInr)}</p>
               </div>
             </div>
           </div>
@@ -161,7 +209,7 @@ function PayoutsContent() {
           ) : (
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <p className="font-semibold text-surface-800">Withdraw {loading ? '…' : formatINR(balance?.availableInr ?? 0)}</p>
+                <p className="font-semibold text-surface-800">Withdraw {money(balance?.availableInr)}</p>
                 <p className="text-xs text-surface-500">Paid to your registered bank / UPI within 5-7 business days.</p>
               </div>
               <button
@@ -184,6 +232,10 @@ function PayoutsContent() {
           <div className="p-5">
             {loading ? (
               <p className="text-sm text-surface-400">Loading…</p>
+            ) : loadError ? (
+              // Never show "No payouts yet" for a list we failed to read — that
+              // reads as "your payouts were deleted", not "we are down".
+              <p className="text-sm text-surface-500 text-center py-6">Payout history unavailable — retry above.</p>
             ) : payouts.length === 0 ? (
               <p className="text-sm text-surface-500 text-center py-6">No payouts yet.</p>
             ) : (

@@ -92,7 +92,7 @@ export default function AdSlot({ slotId, format, label = 'Advertisement', classN
    aria-label={label}
    data-ad-slot={slotId}
   >
-   <p className="text-[10px] uppercase tracking-widest text-surface-400 mb-1">{label}</p>
+   <p className="text-xs uppercase tracking-widest text-surface-400 mb-1">{label}</p>
    <ins
     ref={insRef}
     className="adsbygoogle"

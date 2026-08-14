@@ -96,7 +96,7 @@ export default function MyTicketsPage() {
  {/* Filters */}
  <div className="bg-white rounded-xl border border-surface-200 p-4 mb-5 flex flex-wrap items-center gap-3">
  <div>
- <label className="text-[11px] font-semibold uppercase tracking-wide text-surface-500 block mb-1">
+ <label className="text-xs font-semibold uppercase tracking-wide text-surface-500 block mb-1">
  Status
  </label>
  <select
@@ -113,7 +113,7 @@ export default function MyTicketsPage() {
  </select>
  </div>
  <div>
- <label className="text-[11px] font-semibold uppercase tracking-wide text-surface-500 block mb-1">
+ <label className="text-xs font-semibold uppercase tracking-wide text-surface-500 block mb-1">
  Category
  </label>
  <select

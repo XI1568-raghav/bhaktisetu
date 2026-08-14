@@ -1,6 +1,7 @@
 import { Prisma, PujaCategory } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { cached, CACHE_TTL } from '../lib/cache.js';
+import { clampLimit, clampPage } from '../lib/pagination.js';
 
 export interface PujaListParams {
   category?: string;
@@ -35,13 +36,17 @@ export class PujaService {
       ];
     }
 
-    const skip = (page - 1) * limit;
+    // RES-12: `?page=-1` used to reach Prisma as a negative OFFSET and return
+    // HTTP 500 "Failed to fetch puja types". A page is an ordinal — clamp it.
+    const safePage = clampPage(page);
+    const safeLimit = clampLimit(limit);
+    const skip = (safePage - 1) * safeLimit;
     const cacheKey = `puja:list:${JSON.stringify({
       category: category ?? '',
       deity: deity ?? '',
       search: search ?? '',
-      page,
-      limit,
+      page: safePage,
+      limit: safeLimit,
     })}`;
 
     return cached(cacheKey, CACHE_TTL.PUJA_LIST, async () => {
@@ -65,7 +70,7 @@ export class PujaService {
           },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
           skip,
-          take: limit,
+          take: safeLimit,
         }),
         prisma.pujaType.count({ where }),
       ]);
@@ -73,9 +78,9 @@ export class PujaService {
       return {
         pujaTypes,
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
       };
     });
   }

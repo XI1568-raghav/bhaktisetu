@@ -1202,3 +1202,68 @@ export function nextFestival(today: Date = new Date()): FestivalInfo | undefined
     a.date2026.localeCompare(b.date2026),
   )[0];
 }
+
+/**
+ * DF-02 (prod sweep 2026-08-12) — spelling drift between this editorial
+ * calendar and the puja catalogue.
+ *
+ * `pujasAvailable` was written by hand and never checked against puja_types,
+ * so several entries name the right ritual with the wrong slug. These are the
+ * cases where the festival slug and a catalogue slug denote the SAME ritual —
+ * nothing here maps one ritual onto a different one. Everything not listed
+ * (durga-puja, kali-puja, chandi-homam, …) names a puja the platform genuinely
+ * does not sell, and is dropped rather than redirected somewhere plausible.
+ */
+const PUJA_SLUG_ALIASES: Record<string, string> = {
+  // Satyanarayan Katha is the Satyanarayan puja; 26 festival rows use one of
+  // these three spellings and the catalogue sells it as satyanarayan-katha.
+  'satyanarayan-puja': 'satyanarayan-katha',
+  'satyanarayana-katha': 'satyanarayan-katha',
+  'satyanarayana-puja': 'satyanarayan-katha',
+  // Sunder/Sundar transliteration.
+  'sundarkand-path': 'sunderkand-path',
+  // Navagraha/Navgraha transliteration + the catalogue's "-shanti-puja" suffix.
+  'navgraha-puja': 'navgraha-shanti-puja',
+  'navagraha-shanti': 'navgraha-shanti-puja',
+  'navgraha-shanti': 'navgraha-shanti-puja',
+  // The catalogue sells the jaap, not a generic "maha-mrityunjaya".
+  'maha-mrityunjaya': 'maha-mrityunjay-jaap',
+  'maha-mrityunjay': 'maha-mrityunjay-jaap',
+  // Ram Charit Manas Path is the Ramayana recitation.
+  'ramayana-path': 'ram-charit-manas-path',
+  'ram-charit-manas': 'ram-charit-manas-path',
+  // Pitra/Pitru transliteration.
+  'pitra-dosh-nivaran': 'pitru-dosh-nivaran-puja',
+  'pitru-dosh-nivaran': 'pitru-dosh-nivaran-puja',
+  // Rudrabhishek IS the Rudra/Shiva abhishekam.
+  'rudra-abhishekam': 'rudrabhishek',
+  'shiva-abhisheka': 'rudrabhishek',
+  'shiva-abhishekam': 'rudrabhishek',
+  // Hanuman Chalisa Path.
+  'hanuman-chalisa': 'hanuman-chalisa-path',
+};
+
+/**
+ * Map a festival's `pujasAvailable` onto slugs that are bookable RIGHT NOW.
+ *
+ * @param slugs      the editorial list from a FestivalInfo
+ * @param catalogue  live slugs from lib/puja-catalogue.getCatalogueSlugs()
+ *
+ * An empty `catalogue` (API unreachable) returns `[]` — we do not render a
+ * booking link we could not verify. Order is preserved and duplicates created
+ * by two aliases collapsing onto one real puja are removed.
+ */
+export function resolveBookablePujas(
+  slugs: readonly string[],
+  catalogue: ReadonlySet<string>,
+): string[] {
+  if (catalogue.size === 0) return [];
+  const out: string[] = [];
+  for (const raw of slugs) {
+    const resolved = PUJA_SLUG_ALIASES[raw] ?? raw;
+    if (!catalogue.has(resolved)) continue;
+    if (out.includes(resolved)) continue;
+    out.push(resolved);
+  }
+  return out;
+}
