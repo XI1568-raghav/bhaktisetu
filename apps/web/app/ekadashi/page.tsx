@@ -7,11 +7,12 @@ const BASE_URL = 'https://darshya.online';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
- title: '24 Ekadashi Vratas — Names, Stories, Fasting Rules & Mantras | Darshya',
+ title: '24 Ekadashi Vratas — Names, Stories, Fasting Rules & Mantras',
  description:
   'Complete guide to all 24 Ekadashi vratas of the Hindu lunar year — Utpanna, Mokshada, Nirjala, Devshayani, Devuthani, Indira & more. Each fast\'s presiding deity, story (Padma Purana), permitted foods, mantras, benefits & who should observe.',
  alternates: { canonical: `${BASE_URL}/ekadashi` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: '24 Ekadashis — Complete Vrat Guide',
   description: 'Names, stories, fasting rules & mantras for all 24 Ekadashi vratas.',
   url: `${BASE_URL}/ekadashi`,
@@ -148,7 +149,7 @@ export default function EkadashiIndexPage() {
           <p className="mt-2 text-xs text-gray-600">{e.gregorianWindow}</p>
           <p className="mt-3 line-clamp-3 text-sm text-gray-700">{e.storySummary}</p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-           <span className="rounded-full bg-saffron-50 px-2 py-0.5 text-[11px] text-saffron-800">
+           <span className="rounded-full bg-saffron-50 px-2 py-0.5 text-xs text-saffron-800">
             {e.presidingDeity.split('(')[0]?.trim() ?? ''}
            </span>
           </div>

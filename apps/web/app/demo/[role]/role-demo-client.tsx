@@ -77,7 +77,7 @@ function StatusBar({ variant }: { variant: 'ios' | 'android' }) {
  if (variant === 'ios') {
  return (
  <div className="flex items-center justify-between px-7 pt-3 pb-1 bg-surface-50 shrink-0">
- <span className="text-[11px] font-semibold text-surface-900" style={{ fontFamily: '-apple-system, sans-serif' }}>9:41</span>
+ <span className="text-xs font-semibold text-surface-900" style={{ fontFamily: '-apple-system, sans-serif' }}>9:41</span>
  <div className="w-[76px] h-[26px] bg-surface-900 rounded-full" />
  <div className="flex items-center gap-1">
  <Signal className="w-3.5 h-3.5 text-surface-900" />
@@ -89,7 +89,7 @@ function StatusBar({ variant }: { variant: 'ios' | 'android' }) {
  }
  return (
  <div className="flex items-center justify-between px-5 pt-2.5 pb-1 bg-surface-50 shrink-0">
- <span className="text-[11px] font-medium text-surface-800">9:41</span>
+ <span className="text-xs font-medium text-surface-800">9:41</span>
  <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-surface-900 rounded-full z-10" />
  <div className="flex items-center gap-1.5">
  <Signal className="w-3 h-3 text-surface-700" />
@@ -105,7 +105,7 @@ function StatusBar({ variant }: { variant: 'ios' | 'android' }) {
 function FormField({ label, placeholder, type = 'text' }: { label: string; placeholder: string; type?: string }) {
  return (
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">{label}</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">{label}</label>
  <div className="w-full px-3 py-2 bg-surface-100 rounded-lg text-xs text-surface-400 border border-surface-200/60">
  {placeholder}
  </div>
@@ -120,7 +120,7 @@ function StatCard({ label, value, icon: Icon, color = 'bg-saffron-50 text-saffro
  <Icon className={`w-3.5 h-3.5 ${color.split(' ')[1]}`} />
  </div>
  <p className="text-sm font-bold text-surface-900">{value}</p>
- <p className="text-[9px] text-surface-400">{label}</p>
+ <p className="text-xs text-surface-400">{label}</p>
  </div>
  );
 }
@@ -135,7 +135,7 @@ function ListItem({ title, subtitle, right, icon: Icon, iconBg = 'bg-saffron-50'
  </div>
  <div className="flex-1 min-w-0">
  <p className="text-xs font-semibold text-surface-900 truncate">{title}</p>
- <p className="text-[9px] text-surface-400">{subtitle}</p>
+ <p className="text-xs text-surface-400">{subtitle}</p>
  </div>
  {right && <span className="text-xs font-bold text-saffron-600 shrink-0">{right}</span>}
  </div>
@@ -157,7 +157,7 @@ function PrimaryButton({ children }: { children: React.ReactNode }) {
 function ScreenHeader({ title, subtitle }: { title: string; subtitle?: string }) {
  return (
  <div className="px-5 pt-3 pb-2">
- {subtitle && <p className="text-[9px] text-surface-400 font-medium">{subtitle}</p>}
+ {subtitle && <p className="text-xs text-surface-400 font-medium">{subtitle}</p>}
  <h1 className="text-lg font-bold text-surface-900 tracking-tight">{title}</h1>
  </div>
  );
@@ -173,7 +173,7 @@ function TabBar({ items, active = 0 }: { items: { icon: React.ElementType; label
  return (
  <div key={tab.label} className={`flex flex-col items-center gap-0.5 ${isActive ? 'text-saffron-600' : 'text-surface-400'}`}>
  <Icon className={`w-[20px] h-[20px] ${isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
- <span className="text-[9px] font-medium">{tab.label}</span>
+ <span className="text-xs font-medium">{tab.label}</span>
  </div>
  );
  })}
@@ -225,14 +225,14 @@ function DevoteeScreen2() {
  <div className="w-4 h-4 border-2 border-saffron-600 rounded bg-saffron-600 flex items-center justify-center shrink-0 mt-0.5">
  <CheckCircle2 className="w-3 h-3 text-white" />
  </div>
- <p className="text-[9px] text-surface-500 leading-relaxed">I agree to the Terms of Service and Privacy Policy</p>
+ <p className="text-xs text-surface-500 leading-relaxed">I agree to the Terms of Service and Privacy Policy</p>
  </div>
  <div className="pt-2">
  <PrimaryButton>Create Account</PrimaryButton>
  </div>
  <div className="flex items-center gap-3 pt-2">
  <div className="flex-1 h-px bg-surface-200" />
- <span className="text-[9px] text-surface-400">or continue with</span>
+ <span className="text-xs text-surface-400">or continue with</span>
  <div className="flex-1 h-px bg-surface-200" />
  </div>
  <div className="flex gap-3">
@@ -248,7 +248,7 @@ function DevoteeScreen3() {
  return (
  <div className="bg-surface-50">
  <div className="px-5 pt-3 pb-2">
- <p className="text-[10px] text-surface-400 font-medium">Namaste</p>
+ <p className="text-xs text-surface-400 font-medium">Namaste</p>
  <h1 className="text-lg font-bold text-surface-900 tracking-tight">Arjun Sharma</h1>
  </div>
  <div className="px-5 mb-3">
@@ -271,7 +271,7 @@ function DevoteeScreen3() {
  <Building2 className="w-8 h-8 text-saffron-400/50" />
  </div>
  <div className="absolute bottom-1.5 left-1.5">
- <p className="text-[9px] font-semibold text-surface-800">{t}</p>
+ <p className="text-xs font-semibold text-surface-800">{t}</p>
  </div>
  </div>
  </div>
@@ -296,8 +296,8 @@ function DevoteeScreen3() {
  <div className="bg-gradient-to-br from-saffron-50 to-amber-50/50 rounded-xl p-3 border border-saffron-200/40">
  <h2 className="text-xs font-bold text-surface-900 mb-1.5">Today&apos;s Panchang</h2>
  <div className="grid grid-cols-2 gap-1.5">
- <div className="bg-white/70 rounded-lg px-2.5 py-1.5"><p className="text-[8px] text-surface-400">Tithi</p><p className="text-[10px] font-semibold text-surface-900">Trayodashi</p></div>
- <div className="bg-white/70 rounded-lg px-2.5 py-1.5"><p className="text-[8px] text-surface-400">Nakshatra</p><p className="text-[10px] font-semibold text-surface-900">Hasta</p></div>
+ <div className="bg-white/70 rounded-lg px-2.5 py-1.5"><p className="text-[8px] text-surface-400">Tithi</p><p className="text-xs font-semibold text-surface-900">Trayodashi</p></div>
+ <div className="bg-white/70 rounded-lg px-2.5 py-1.5"><p className="text-[8px] text-surface-400">Nakshatra</p><p className="text-xs font-semibold text-surface-900">Hasta</p></div>
  </div>
  </div>
  </div>
@@ -318,7 +318,7 @@ function DevoteeScreen4() {
  <ScreenHeader title="Book a Puja" />
  <div className="px-5 space-y-3">
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Select Temple</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Select Temple</label>
  <div className="flex items-center justify-between w-full px-3 py-2.5 bg-white rounded-lg border border-surface-200/60">
  <div className="flex items-center gap-2">
  <Building2 className="w-4 h-4 text-saffron-500" />
@@ -328,7 +328,7 @@ function DevoteeScreen4() {
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Select Puja</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Select Puja</label>
  <div className="space-y-1.5">
  {['Rudrabhishek - ₹501', 'Maha Mrityunjaya - ₹751', 'Kaal Sarp Dosh - ₹1,101'].map((p, i) => (
  <div key={p} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border ${i === 0 ? 'bg-saffron-50 border-saffron-300' : 'bg-white border-surface-200/60'}`}>
@@ -341,14 +341,14 @@ function DevoteeScreen4() {
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Select Date</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Select Date</label>
  <div className="flex items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-surface-200/60">
  <Calendar className="w-4 h-4 text-saffron-500" />
  <span className="text-xs text-surface-900">April 20, 2026</span>
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Sankalp Details</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Sankalp Details</label>
  <FormField label="" placeholder="Your name and gotra for the sankalp" />
  </div>
  <div className="bg-saffron-50 rounded-xl p-3 border border-saffron-200/40">
@@ -371,10 +371,10 @@ function DevoteeScreen5() {
  <div className="bg-red-600/20 text-red-400 text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
  <span className="w-1 h-1 bg-red-500 rounded-full" /> LIVE
  </div>
- <span className="text-[9px] text-surface-500">12.4K watching</span>
+ <span className="text-xs text-surface-500">12.4K watching</span>
  </div>
  <h1 className="text-base font-bold text-white mt-1">Kashi Vishwanath</h1>
- <p className="text-[10px] text-surface-500">Morning Aarti &middot; Varanasi</p>
+ <p className="text-xs text-surface-500">Morning Aarti &middot; Varanasi</p>
  </div>
  <div className="flex items-center gap-2">
  <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
@@ -396,7 +396,7 @@ function DevoteeScreen5() {
  </div>
  {/* Chat overlay */}
  <div className="mx-5 bg-surface-800 rounded-xl p-3 border border-surface-700/50">
- <p className="text-[9px] text-surface-500 mb-2 font-medium">Live Chat</p>
+ <p className="text-xs text-surface-500 mb-2 font-medium">Live Chat</p>
  <div className="space-y-1.5">
  {[
  { name: 'Priya M.', msg: 'Har Har Mahadev! ' },
@@ -407,12 +407,12 @@ function DevoteeScreen5() {
  <div className="w-4 h-4 bg-saffron-600/30 rounded-full shrink-0 flex items-center justify-center">
  <span className="text-[6px] text-saffron-300 font-bold">{c.name[0]}</span>
  </div>
- <p className="text-[9px] text-surface-300"><span className="font-semibold text-saffron-400">{c.name}</span> {c.msg}</p>
+ <p className="text-xs text-surface-300"><span className="font-semibold text-saffron-400">{c.name}</span> {c.msg}</p>
  </div>
  ))}
  </div>
  <div className="mt-2 flex gap-2">
- <div className="flex-1 px-2.5 py-1.5 bg-surface-700 rounded-lg text-[9px] text-surface-500">Type a message...</div>
+ <div className="flex-1 px-2.5 py-1.5 bg-surface-700 rounded-lg text-xs text-surface-500">Type a message...</div>
  <div className="w-7 h-7 bg-saffron-600 rounded-lg flex items-center justify-center">
  <Send className="w-3 h-3 text-white" />
  </div>
@@ -432,7 +432,7 @@ function DevoteeScreen6() {
  </div>
  <div>
  <h1 className="text-base font-bold text-surface-900">Arjun Sharma</h1>
- <p className="text-[10px] text-surface-400">+91 98765 43210</p>
+ <p className="text-xs text-surface-400">+91 98765 43210</p>
  <span className="text-[8px] font-semibold text-saffron-700 bg-saffron-100 px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 mt-0.5">
  <Shield className="w-2 h-2" /> Bhakti Pass
  </span>
@@ -452,16 +452,16 @@ function DevoteeScreen6() {
  <span className="text-xs font-semibold text-surface-900">Rudrabhishek</span>
  <span className="text-[8px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Confirmed</span>
  </div>
- <p className="text-[9px] text-surface-400">Kashi Vishwanath &middot; Apr 20, 2026</p>
- <p className="text-[9px] text-surface-400">Booking #BS-20260420-00312</p>
+ <p className="text-xs text-surface-400">Kashi Vishwanath &middot; Apr 20, 2026</p>
+ <p className="text-xs text-surface-400">Booking #BS-20260420-00312</p>
  </div>
  <div className="bg-white rounded-xl p-3 border border-surface-200/60">
  <div className="flex items-center justify-between mb-1">
  <span className="text-xs font-semibold text-surface-900">Ganesh Puja</span>
  <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Scheduled</span>
  </div>
- <p className="text-[9px] text-surface-400">Siddhivinayak &middot; Apr 25, 2026</p>
- <p className="text-[9px] text-surface-400">Booking #BS-20260425-00487</p>
+ <p className="text-xs text-surface-400">Siddhivinayak &middot; Apr 25, 2026</p>
+ <p className="text-xs text-surface-400">Booking #BS-20260425-00487</p>
  </div>
  </div>
  </div>
@@ -495,7 +495,7 @@ function PanditScreen1() {
  <FormField label="Full Name" placeholder="Pt. Ramesh Tiwari" />
  <FormField label="Phone Number" placeholder="+91 99887 76655" />
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">I am a...</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">I am a...</label>
  <div className="grid grid-cols-2 gap-2">
  {[
  { label: 'Devotee', icon: Heart, active: false },
@@ -526,17 +526,17 @@ function PanditScreen2() {
  <div className="px-5 space-y-3">
  <FormField label="Years of Experience" placeholder="15 years" />
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Specialties</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Specialties</label>
  <div className="flex flex-wrap gap-1.5">
  {['Vedic Rituals', 'Graha Shanti', 'Vivah', 'Satyanarayan', 'Rudrabhishek', 'Kaal Sarp'].map((s, i) => (
- <span key={s} className={`text-[9px] font-medium px-2.5 py-1 rounded-full ${i < 3 ? 'bg-saffron-100 text-saffron-700 border border-saffron-200' : 'bg-surface-100 text-surface-500 border border-surface-200/60'}`}>{s}</span>
+ <span key={s} className={`text-xs font-medium px-2.5 py-1 rounded-full ${i < 3 ? 'bg-saffron-100 text-saffron-700 border border-saffron-200' : 'bg-surface-100 text-surface-500 border border-surface-200/60'}`}>{s}</span>
  ))}
  </div>
  </div>
  <FormField label="Languages" placeholder="Hindi, Sanskrit, English" />
  <FormField label="Temple Affiliations" placeholder="Kashi Vishwanath, Varanasi" />
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Bio</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Bio</label>
  <div className="w-full px-3 py-2.5 bg-surface-100 rounded-lg text-xs text-surface-400 border border-surface-200/60 min-h-[60px]">
  15+ years performing Vedic rituals. Trained at BHU Varanasi...
  </div>
@@ -553,7 +553,7 @@ function PanditScreen3() {
  <ScreenHeader title="Pricing & Documents" subtitle="Step 2 of 2" />
  <div className="px-5 space-y-3">
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Set Your Rates</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Set Your Rates</label>
  <div className="space-y-2">
  {[
  { puja: 'Basic Puja', price: '₹500' },
@@ -568,7 +568,7 @@ function PanditScreen3() {
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Upload Documents</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Upload Documents</label>
  <div className="space-y-2">
  {['Aadhaar Card', 'PAN Card', 'Certification'].map((doc) => (
  <div key={doc} className="flex items-center gap-2.5 bg-white rounded-lg px-3 py-2.5 border border-surface-200/60">
@@ -580,7 +580,7 @@ function PanditScreen3() {
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Bank Details for Payouts</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Bank Details for Payouts</label>
  <FormField label="" placeholder="Account number, IFSC" />
  </div>
  <PrimaryButton>Submit for Verification</PrimaryButton>
@@ -594,7 +594,7 @@ function PanditScreen4() {
  <div className="bg-surface-50">
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
- <p className="text-[10px] text-surface-400">Good morning</p>
+ <p className="text-xs text-surface-400">Good morning</p>
  <h1 className="text-lg font-bold text-surface-900">Pt. Ramesh</h1>
  </div>
  <div className="flex items-center gap-2">
@@ -623,7 +623,7 @@ function PanditScreen4() {
  <span className="text-xs font-semibold text-surface-900">{b.puja}</span>
  <span className="text-[8px] font-bold text-saffron-600 bg-saffron-50 px-1.5 py-0.5 rounded-full">{b.time}</span>
  </div>
- <p className="text-[9px] text-surface-400">{b.devotee} &middot; {b.temple}</p>
+ <p className="text-xs text-surface-400">{b.devotee} &middot; {b.temple}</p>
  </div>
  ))}
  </div>
@@ -650,25 +650,25 @@ function PanditScreen5() {
  <span className="text-[8px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">In Progress</span>
  </div>
  <div className="space-y-1">
- <p className="text-[9px] text-surface-400">Devotee: <span className="text-surface-700 font-medium">Arjun Sharma</span></p>
- <p className="text-[9px] text-surface-400">Temple: <span className="text-surface-700 font-medium">Kashi Vishwanath, Varanasi</span></p>
- <p className="text-[9px] text-surface-400">Sankalp: <span className="text-surface-700 font-medium">Arjun Sharma, Kashyap Gotra</span></p>
- <p className="text-[9px] text-surface-400">Booking: <span className="text-surface-700 font-medium">#BS-20260420-00312</span></p>
+ <p className="text-xs text-surface-400">Devotee: <span className="text-surface-700 font-medium">Arjun Sharma</span></p>
+ <p className="text-xs text-surface-400">Temple: <span className="text-surface-700 font-medium">Kashi Vishwanath, Varanasi</span></p>
+ <p className="text-xs text-surface-400">Sankalp: <span className="text-surface-700 font-medium">Arjun Sharma, Kashyap Gotra</span></p>
+ <p className="text-xs text-surface-400">Booking: <span className="text-surface-700 font-medium">#BS-20260420-00312</span></p>
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Upload Puja Video (Required)</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Upload Puja Video (Required)</label>
  <div className="border-2 border-dashed border-saffron-300 rounded-xl p-6 text-center bg-saffron-50/30">
  <Camera className="w-8 h-8 text-saffron-400 mx-auto mb-2" />
  <p className="text-xs font-medium text-surface-700">Record or upload video</p>
- <p className="text-[9px] text-surface-400 mt-0.5">Video proof is mandatory for payout</p>
- <div className="mt-3 inline-flex items-center gap-1.5 bg-saffron-600 text-white text-[10px] font-semibold px-4 py-1.5 rounded-lg">
+ <p className="text-xs text-surface-400 mt-0.5">Video proof is mandatory for payout</p>
+ <div className="mt-3 inline-flex items-center gap-1.5 bg-saffron-600 text-white text-xs font-semibold px-4 py-1.5 rounded-lg">
  <Camera className="w-3 h-3" /> Start Recording
  </div>
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Upload Photos</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Upload Photos</label>
  <div className="flex gap-2">
  {[1, 2, 3].map((n) => (
  <div key={n} className="w-16 h-16 bg-surface-100 rounded-lg border border-surface-200/60 flex items-center justify-center">
@@ -689,14 +689,14 @@ function PanditScreen6() {
  <ScreenHeader title="Earnings" />
  <div className="px-5">
  <div className="bg-gradient-to-br from-saffron-600 to-amber-600 rounded-xl p-4 mb-4">
- <p className="text-[10px] text-white/70">Total Earnings</p>
+ <p className="text-xs text-white/70">Total Earnings</p>
  <p className="text-2xl font-bold text-white mt-0.5">₹1,85,400</p>
  <div className="flex items-center gap-3 mt-3">
- <div><p className="text-[9px] text-white/60">This Month</p><p className="text-sm font-bold text-white">₹28,500</p></div>
+ <div><p className="text-xs text-white/60">This Month</p><p className="text-sm font-bold text-white">₹28,500</p></div>
  <div className="w-px h-6 bg-white/20" />
- <div><p className="text-[9px] text-white/60">Pending</p><p className="text-sm font-bold text-white">₹4,200</p></div>
+ <div><p className="text-xs text-white/60">Pending</p><p className="text-sm font-bold text-white">₹4,200</p></div>
  <div className="w-px h-6 bg-white/20" />
- <div><p className="text-[9px] text-white/60">Pujas Done</p><p className="text-sm font-bold text-white">142</p></div>
+ <div><p className="text-xs text-white/60">Pujas Done</p><p className="text-sm font-bold text-white">142</p></div>
  </div>
  </div>
  <SectionTitle>Recent Payouts</SectionTitle>
@@ -712,7 +712,7 @@ function PanditScreen6() {
  </div>
  <div className="flex-1">
  <p className="text-xs font-semibold text-surface-900">{p.amount}</p>
- <p className="text-[9px] text-surface-400">{p.date} &middot; {p.pujas} pujas</p>
+ <p className="text-xs text-surface-400">{p.date} &middot; {p.pujas} pujas</p>
  </div>
  <span className="text-[8px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">{p.status}</span>
  </div>
@@ -737,7 +737,7 @@ function StoreScreen1() {
  <Store className="w-8 h-8 text-emerald-600" />
  <div>
  <p className="text-xs font-semibold text-surface-900">Sell on Darshya</p>
- <p className="text-[9px] text-surface-500">Reach millions of devotees</p>
+ <p className="text-xs text-surface-500">Reach millions of devotees</p>
  </div>
  </div>
  <FormField label="Owner Name" placeholder="Rajesh Gupta" />
@@ -760,15 +760,15 @@ function StoreScreen2() {
  <FormField label="GST Number" placeholder="09AAACR5055K1Z5" />
  <FormField label="Store Address" placeholder="Vishwanath Gali, Varanasi" />
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Store Category</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Store Category</label>
  <div className="flex flex-wrap gap-1.5">
  {['Puja Items', 'Idols', 'Books', 'Rudraksha', 'Gemstones'].map((c, i) => (
- <span key={c} className={`text-[9px] font-medium px-2.5 py-1 rounded-full ${i < 2 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-surface-100 text-surface-500'}`}>{c}</span>
+ <span key={c} className={`text-xs font-medium px-2.5 py-1 rounded-full ${i < 2 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-surface-100 text-surface-500'}`}>{c}</span>
  ))}
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Store Logo</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Store Logo</label>
  <div className="w-20 h-20 bg-surface-100 rounded-xl border-2 border-dashed border-surface-300 flex items-center justify-center">
  <Upload className="w-5 h-5 text-surface-300" />
  </div>
@@ -785,7 +785,7 @@ function StoreScreen3() {
  <ScreenHeader title="Add Product" />
  <div className="px-5 space-y-3">
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Product Photos</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Product Photos</label>
  <div className="flex gap-2">
  <div className="w-20 h-20 bg-saffron-50 rounded-xl border border-saffron-200/60 flex items-center justify-center">
  <Sparkles className="w-6 h-6 text-saffron-300" />
@@ -803,7 +803,7 @@ function StoreScreen3() {
  </div>
  <FormField label="SKU" placeholder="KPS-BTH-001" />
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Category</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Category</label>
  <div className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-surface-200/60">
  <span className="text-xs text-surface-600">Puja Thali & Accessories</span>
  <ChevronRight className="w-3.5 h-3.5 text-surface-300" />
@@ -821,7 +821,7 @@ function StoreScreen4() {
  <div className="bg-surface-50">
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
- <p className="text-[10px] text-surface-400">Store Dashboard</p>
+ <p className="text-xs text-surface-400">Store Dashboard</p>
  <h1 className="text-lg font-bold text-surface-900">Kashi Puja Samagri</h1>
  </div>
  <div className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center">
@@ -851,7 +851,7 @@ function StoreScreen4() {
  'text-green-600 bg-green-50'
  }`}>{o.status}</span>
  </div>
- <p className="text-[9px] text-surface-400">{o.id} &middot; {o.amount}</p>
+ <p className="text-xs text-surface-400">{o.id} &middot; {o.amount}</p>
  </div>
  ))}
  </div>
@@ -878,15 +878,15 @@ function StoreScreen5() {
  <span className="text-[8px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">New Order</span>
  </div>
  <div className="space-y-1">
- <p className="text-[9px] text-surface-400">Customer: <span className="text-surface-700 font-medium">Priya Mehta</span></p>
- <p className="text-[9px] text-surface-400">Address: <span className="text-surface-700 font-medium">Andheri West, Mumbai 400053</span></p>
- <p className="text-[9px] text-surface-400">Qty: <span className="text-surface-700 font-medium">1</span></p>
- <p className="text-[9px] text-surface-400">Amount: <span className="text-saffron-600 font-bold">₹899</span></p>
+ <p className="text-xs text-surface-400">Customer: <span className="text-surface-700 font-medium">Priya Mehta</span></p>
+ <p className="text-xs text-surface-400">Address: <span className="text-surface-700 font-medium">Andheri West, Mumbai 400053</span></p>
+ <p className="text-xs text-surface-400">Qty: <span className="text-surface-700 font-medium">1</span></p>
+ <p className="text-xs text-surface-400">Amount: <span className="text-saffron-600 font-bold">₹899</span></p>
  </div>
  </div>
  {/* Tracking */}
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-2 block">Order Status</label>
+ <label className="text-xs font-medium text-surface-500 mb-2 block">Order Status</label>
  <div className="space-y-0">
  {[
  { step: 'Order Placed', done: true },
@@ -927,7 +927,7 @@ function AstrologerScreen1() {
  <Star className="w-8 h-8 text-purple-600" />
  <div>
  <p className="text-xs font-semibold text-surface-900">Share Your Wisdom</p>
- <p className="text-[9px] text-surface-500">Consult devotees on Darshya</p>
+ <p className="text-xs text-surface-500">Consult devotees on Darshya</p>
  </div>
  </div>
  <FormField label="Full Name" placeholder="Acharya Vinod Sharma" />
@@ -946,17 +946,17 @@ function AstrologerScreen2() {
  <ScreenHeader title="Setup Profile" subtitle="Complete your astrologer profile" />
  <div className="px-5 space-y-3">
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Specialties</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Specialties</label>
  <div className="flex flex-wrap gap-1.5">
  {['Vedic Astrology', 'Numerology', 'Palmistry', 'Vastu', 'Tarot', 'KP System'].map((s, i) => (
- <span key={s} className={`text-[9px] font-medium px-2.5 py-1 rounded-full ${i < 3 ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-surface-100 text-surface-500'}`}>{s}</span>
+ <span key={s} className={`text-xs font-medium px-2.5 py-1 rounded-full ${i < 3 ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-surface-100 text-surface-500'}`}>{s}</span>
  ))}
  </div>
  </div>
  <FormField label="Experience" placeholder="20 years" />
  <FormField label="Languages" placeholder="Hindi, English, Sanskrit" />
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Consultation Pricing</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Consultation Pricing</label>
  <div className="space-y-2">
  {[
  { type: 'Chat (per min)', price: '₹15' },
@@ -981,13 +981,13 @@ function AstrologerScreen3() {
  <div className="bg-surface-50">
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
- <p className="text-[10px] text-surface-400">Welcome back</p>
+ <p className="text-xs text-surface-400">Welcome back</p>
  <h1 className="text-lg font-bold text-surface-900">Acharya Vinod</h1>
  </div>
  <div className="flex items-center gap-2">
  <div className="px-3 py-1 bg-green-500 rounded-full flex items-center gap-1">
  <div className="w-1.5 h-1.5 bg-white rounded-full" />
- <span className="text-[9px] text-white font-semibold">Online</span>
+ <span className="text-xs text-white font-semibold">Online</span>
  </div>
  </div>
  </div>
@@ -1011,7 +1011,7 @@ function AstrologerScreen3() {
  </div>
  <div className="flex-1 min-w-0">
  <p className="text-xs font-semibold text-surface-900">{q.name}</p>
- <p className="text-[9px] text-surface-400">{q.type} &middot; {q.topic}</p>
+ <p className="text-xs text-surface-400">{q.type} &middot; {q.topic}</p>
  </div>
  <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center">
  <Phone className="w-3.5 h-3.5 text-white" />
@@ -1041,7 +1041,7 @@ function AstrologerScreen4() {
  </div>
  <div>
  <p className="text-xs font-semibold text-surface-900">Kavita Desai</p>
- <p className="text-[9px] text-surface-400">Video Call &middot; 12:34</p>
+ <p className="text-xs text-surface-400">Video Call &middot; 12:34</p>
  </div>
  </div>
  <div className="flex items-center gap-2">
@@ -1054,36 +1054,36 @@ function AstrologerScreen4() {
  {/* Messages */}
  <div className="flex justify-end">
  <div className="bg-purple-600 text-white rounded-2xl rounded-br-sm px-3 py-2 max-w-[70%]">
- <p className="text-[10px]">Please share your birth details - date, time, and place of birth.</p>
+ <p className="text-xs">Please share your birth details - date, time, and place of birth.</p>
  </div>
  </div>
  <div className="flex justify-start">
  <div className="bg-white rounded-2xl rounded-bl-sm px-3 py-2 max-w-[70%] border border-surface-200/60">
- <p className="text-[10px] text-surface-800">DOB: 15 March 1992, 10:35 AM, Pune</p>
+ <p className="text-xs text-surface-800">DOB: 15 March 1992, 10:35 AM, Pune</p>
  </div>
  </div>
  <div className="flex justify-end">
  <div className="bg-purple-600 text-white rounded-2xl rounded-br-sm px-3 py-2 max-w-[70%]">
- <p className="text-[10px]">Your Kundli shows strong 7th house placement. Jupiter is favorably positioned for marriage this year. Let me check compatibility...</p>
+ <p className="text-xs">Your Kundli shows strong 7th house placement. Jupiter is favorably positioned for marriage this year. Let me check compatibility...</p>
  </div>
  </div>
  <div className="flex justify-start">
  <div className="bg-white rounded-2xl rounded-bl-sm px-3 py-2 max-w-[70%] border border-surface-200/60">
- <p className="text-[10px] text-surface-800">That&apos;s great news! What about the Manglik dosha?</p>
+ <p className="text-xs text-surface-800">That&apos;s great news! What about the Manglik dosha?</p>
  </div>
  </div>
  <div className="flex justify-end">
  <div className="bg-purple-50 rounded-xl p-2.5 max-w-[75%] border border-purple-200/40">
- <p className="text-[9px] font-semibold text-purple-700 mb-1">Kundli Analysis</p>
+ <p className="text-xs font-semibold text-purple-700 mb-1">Kundli Analysis</p>
  <div className="grid grid-cols-2 gap-1">
- <div className="bg-white rounded px-2 py-1"><p className="text-[7px] text-surface-400">Rashi</p><p className="text-[9px] font-medium">Mithun</p></div>
- <div className="bg-white rounded px-2 py-1"><p className="text-[7px] text-surface-400">Nakshatra</p><p className="text-[9px] font-medium">Ardra</p></div>
+ <div className="bg-white rounded px-2 py-1"><p className="text-[7px] text-surface-400">Rashi</p><p className="text-xs font-medium">Mithun</p></div>
+ <div className="bg-white rounded px-2 py-1"><p className="text-[7px] text-surface-400">Nakshatra</p><p className="text-xs font-medium">Ardra</p></div>
  </div>
  </div>
  </div>
  </div>
  <div className="px-5 py-2.5 border-t border-surface-200/60 flex items-center gap-2">
- <div className="flex-1 px-3 py-2 bg-surface-100 rounded-xl text-[10px] text-surface-400">Type your message...</div>
+ <div className="flex-1 px-3 py-2 bg-surface-100 rounded-xl text-xs text-surface-400">Type your message...</div>
  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
  <Send className="w-3.5 h-3.5 text-white" />
  </div>
@@ -1104,7 +1104,7 @@ function AstrologerScreen5() {
  <Star key={s} className={`w-4 h-4 ${s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-amber-400 fill-amber-100'}`} />
  ))}
  </div>
- <p className="text-[9px] text-surface-400 mt-1">Based on 128 consultations</p>
+ <p className="text-xs text-surface-400 mt-1">Based on 128 consultations</p>
  </div>
  <SectionTitle>Recent Reviews</SectionTitle>
  <div className="space-y-2.5">
@@ -1122,7 +1122,7 @@ function AstrologerScreen5() {
  ))}
  </div>
  </div>
- <p className="text-[9px] text-surface-500 leading-relaxed">{r.comment}</p>
+ <p className="text-xs text-surface-500 leading-relaxed">{r.comment}</p>
  <p className="text-[8px] text-surface-300 mt-1">{r.date}</p>
  </div>
  ))}
@@ -1143,7 +1143,7 @@ function WellnessScreen1() {
  <Leaf className="w-8 h-8 text-teal-600" />
  <div>
  <p className="text-xs font-semibold text-surface-900">Teach Wellness</p>
- <p className="text-[9px] text-surface-500">Yoga, meditation, and Ayurveda</p>
+ <p className="text-xs text-surface-500">Yoga, meditation, and Ayurveda</p>
  </div>
  </div>
  <FormField label="Full Name" placeholder="Guru Nirmala Devi" />
@@ -1162,7 +1162,7 @@ function WellnessScreen2() {
  <ScreenHeader title="Your Profile" subtitle="Step 1 of 1" />
  <div className="px-5 space-y-3">
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Certifications</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Certifications</label>
  <div className="space-y-1.5">
  {['Yoga Alliance RYT-500', 'Ayurveda Practitioner'].map((c) => (
  <div key={c} className="flex items-center gap-2.5 bg-teal-50 rounded-lg px-3 py-2 border border-teal-200/40">
@@ -1177,10 +1177,10 @@ function WellnessScreen2() {
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Session Types</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Session Types</label>
  <div className="flex flex-wrap gap-1.5">
  {['Yoga', 'Meditation', 'Pranayama', 'Ayurveda', 'Sound Healing'].map((s, i) => (
- <span key={s} className={`text-[9px] font-medium px-2.5 py-1 rounded-full ${i < 3 ? 'bg-teal-100 text-teal-700 border border-teal-200' : 'bg-surface-100 text-surface-500'}`}>{s}</span>
+ <span key={s} className={`text-xs font-medium px-2.5 py-1 rounded-full ${i < 3 ? 'bg-teal-100 text-teal-700 border border-teal-200' : 'bg-surface-100 text-surface-500'}`}>{s}</span>
  ))}
  </div>
  </div>
@@ -1198,7 +1198,7 @@ function WellnessScreen3() {
  <div className="bg-surface-50">
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
- <p className="text-[10px] text-surface-400">Namaste</p>
+ <p className="text-xs text-surface-400">Namaste</p>
  <h1 className="text-lg font-bold text-surface-900">Guru Nirmala</h1>
  </div>
  <div className="w-8 h-8 bg-teal-50 rounded-full flex items-center justify-center">
@@ -1228,7 +1228,7 @@ function WellnessScreen3() {
  'text-blue-600 bg-blue-50'
  }`}>{s.status}</span>
  </div>
- <p className="text-[9px] text-surface-400">{s.time} &middot; {s.students} students</p>
+ <p className="text-xs text-surface-400">{s.time} &middot; {s.students} students</p>
  </div>
  ))}
  </div>
@@ -1267,7 +1267,7 @@ function WellnessScreen4() {
  ))}
  </div>
  <div className="bg-white rounded-xl p-3 border border-surface-200/60">
- <p className="text-[9px] font-medium text-surface-500 mb-2">Session Controls</p>
+ <p className="text-xs font-medium text-surface-500 mb-2">Session Controls</p>
  <div className="flex items-center justify-around">
  <div className="text-center">
  <div className="w-10 h-10 bg-surface-100 rounded-full flex items-center justify-center mx-auto mb-1">
@@ -1300,14 +1300,14 @@ function WellnessScreen5() {
  <ScreenHeader title="Earnings" />
  <div className="px-5">
  <div className="bg-gradient-to-br from-teal-600 to-emerald-600 rounded-xl p-4 mb-4">
- <p className="text-[10px] text-white/70">Total Earnings</p>
+ <p className="text-xs text-white/70">Total Earnings</p>
  <p className="text-2xl font-bold text-white mt-0.5">₹2,48,000</p>
  <div className="flex items-center gap-3 mt-3">
- <div><p className="text-[9px] text-white/60">This Month</p><p className="text-sm font-bold text-white">₹34,500</p></div>
+ <div><p className="text-xs text-white/60">This Month</p><p className="text-sm font-bold text-white">₹34,500</p></div>
  <div className="w-px h-6 bg-white/20" />
- <div><p className="text-[9px] text-white/60">Sessions</p><p className="text-sm font-bold text-white">42</p></div>
+ <div><p className="text-xs text-white/60">Sessions</p><p className="text-sm font-bold text-white">42</p></div>
  <div className="w-px h-6 bg-white/20" />
- <div><p className="text-[9px] text-white/60">Students</p><p className="text-sm font-bold text-white">248</p></div>
+ <div><p className="text-xs text-white/60">Students</p><p className="text-sm font-bold text-white">248</p></div>
  </div>
  </div>
  <SectionTitle>Earnings Breakdown</SectionTitle>
@@ -1323,7 +1323,7 @@ function WellnessScreen5() {
  </div>
  <div className="flex-1">
  <p className="text-xs font-semibold text-surface-900">{e.type}</p>
- <p className="text-[9px] text-surface-400">{e.count}</p>
+ <p className="text-xs text-surface-400">{e.count}</p>
  </div>
  <span className="text-xs font-bold text-teal-600">{e.amount}</span>
  </div>
@@ -1345,7 +1345,7 @@ function TempleScreen1() {
  <Building2 className="w-8 h-8 text-rose-600" />
  <div>
  <p className="text-xs font-semibold text-surface-900">Temple Management</p>
- <p className="text-[9px] text-surface-500">Bring your temple online on Darshya</p>
+ <p className="text-xs text-surface-500">Bring your temple online on Darshya</p>
  </div>
  </div>
  <FormField label="Manager Name" placeholder="Shri Mahant Devnath" />
@@ -1368,7 +1368,7 @@ function TempleScreen2() {
  <FormField label="Deity" placeholder="Lord Shiva" />
  <FormField label="Established" placeholder="Ancient (rebuilt 1780)" />
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Temple Photos</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Temple Photos</label>
  <div className="flex gap-2">
  {[1, 2, 3].map((n) => (
  <div key={n} className={`w-20 h-20 rounded-xl flex items-center justify-center ${n === 1 ? 'bg-rose-50 border border-rose-200/60' : 'bg-surface-100 border-2 border-dashed border-surface-300'}`}>
@@ -1389,7 +1389,7 @@ function TempleScreen3() {
  <div className="bg-surface-50">
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
- <p className="text-[10px] text-surface-400">Temple Dashboard</p>
+ <p className="text-xs text-surface-400">Temple Dashboard</p>
  <h1 className="text-base font-bold text-surface-900">Kashi Vishwanath</h1>
  </div>
  <div className="flex items-center gap-2">
@@ -1422,7 +1422,7 @@ function TempleScreen3() {
  </div>
  <div className="flex-1 min-w-0">
  <p className="text-xs font-semibold text-surface-900">{e.event}</p>
- <p className="text-[9px] text-surface-400">{e.time}</p>
+ <p className="text-xs text-surface-400">{e.time}</p>
  </div>
  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${
  e.status === 'Live Now' ? 'text-red-600 bg-red-50' :
@@ -1458,23 +1458,23 @@ function TempleScreen4() {
  </div>
  <div className="text-center">
  <RadioTower className="w-10 h-10 text-surface-500 mx-auto" />
- <p className="text-[10px] text-surface-500 mt-1">Camera 1 - Sanctum</p>
+ <p className="text-xs text-surface-500 mt-1">Camera 1 - Sanctum</p>
  </div>
  </div>
  <div className="flex gap-2">
  {['Camera 1', 'Camera 2', 'Camera 3'].map((c, i) => (
- <div key={c} className={`flex-1 py-2 rounded-lg text-[10px] font-semibold text-center ${i === 0 ? 'bg-saffron-600 text-white' : 'bg-surface-100 text-surface-500'}`}>
+ <div key={c} className={`flex-1 py-2 rounded-lg text-xs font-semibold text-center ${i === 0 ? 'bg-saffron-600 text-white' : 'bg-surface-100 text-surface-500'}`}>
  {c}
  </div>
  ))}
  </div>
  <div className="bg-white rounded-xl p-3 border border-surface-200/60">
- <p className="text-[9px] font-medium text-surface-500 mb-2">Stream Info</p>
+ <p className="text-xs font-medium text-surface-500 mb-2">Stream Info</p>
  <div className="space-y-1.5">
- <div className="flex justify-between text-[10px]"><span className="text-surface-400">Quality</span><span className="font-medium text-surface-800">1080p @ 30fps</span></div>
- <div className="flex justify-between text-[10px]"><span className="text-surface-400">Bitrate</span><span className="font-medium text-surface-800">4.5 Mbps</span></div>
- <div className="flex justify-between text-[10px]"><span className="text-surface-400">Uptime</span><span className="font-medium text-surface-800">3h 24m</span></div>
- <div className="flex justify-between text-[10px]"><span className="text-surface-400">Peak Viewers</span><span className="font-medium text-surface-800">18,200</span></div>
+ <div className="flex justify-between text-xs"><span className="text-surface-400">Quality</span><span className="font-medium text-surface-800">1080p @ 30fps</span></div>
+ <div className="flex justify-between text-xs"><span className="text-surface-400">Bitrate</span><span className="font-medium text-surface-800">4.5 Mbps</span></div>
+ <div className="flex justify-between text-xs"><span className="text-surface-400">Uptime</span><span className="font-medium text-surface-800">3h 24m</span></div>
+ <div className="flex justify-between text-xs"><span className="text-surface-400">Peak Viewers</span><span className="font-medium text-surface-800">18,200</span></div>
  </div>
  </div>
  <div className="flex gap-2">
@@ -1492,14 +1492,14 @@ function TempleScreen5() {
  <ScreenHeader title="Donations" />
  <div className="px-5">
  <div className="bg-gradient-to-br from-rose-600 to-pink-600 rounded-xl p-4 mb-4">
- <p className="text-[10px] text-white/70">Total Donations</p>
+ <p className="text-xs text-white/70">Total Donations</p>
  <p className="text-2xl font-bold text-white mt-0.5">₹18,42,000</p>
  <div className="flex items-center gap-3 mt-3">
- <div><p className="text-[9px] text-white/60">This Month</p><p className="text-sm font-bold text-white">₹4,20,000</p></div>
+ <div><p className="text-xs text-white/60">This Month</p><p className="text-sm font-bold text-white">₹4,20,000</p></div>
  <div className="w-px h-6 bg-white/20" />
- <div><p className="text-[9px] text-white/60">Donors</p><p className="text-sm font-bold text-white">1,248</p></div>
+ <div><p className="text-xs text-white/60">Donors</p><p className="text-sm font-bold text-white">1,248</p></div>
  <div className="w-px h-6 bg-white/20" />
- <div><p className="text-[9px] text-white/60">Avg</p><p className="text-sm font-bold text-white">₹336</p></div>
+ <div><p className="text-xs text-white/60">Avg</p><p className="text-sm font-bold text-white">₹336</p></div>
  </div>
  </div>
  <SectionTitle>Recent Donations</SectionTitle>
@@ -1516,7 +1516,7 @@ function TempleScreen5() {
  </div>
  <div className="flex-1 min-w-0">
  <p className="text-xs font-semibold text-surface-900">{d.name}</p>
- <p className="text-[9px] text-surface-400">{d.type} &middot; {d.time}</p>
+ <p className="text-xs text-surface-400">{d.type} &middot; {d.time}</p>
  </div>
  <span className="text-xs font-bold text-green-600">{d.amount}</span>
  </div>
@@ -1538,7 +1538,7 @@ function GaushalaScreen1() {
  <MilkOff className="w-8 h-8 text-lime-600" />
  <div>
  <p className="text-xs font-semibold text-surface-900">Gaushala Management</p>
- <p className="text-[9px] text-surface-500">Connect your gaushala with devotees</p>
+ <p className="text-xs text-surface-500">Connect your gaushala with devotees</p>
  </div>
  </div>
  <FormField label="Manager Name" placeholder="Shri Govardhan Das" />
@@ -1561,15 +1561,15 @@ function GaushalaScreen2() {
  <FormField label="Total Cows" placeholder="245" />
  <FormField label="Established Year" placeholder="1998" />
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Services</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Services</label>
  <div className="flex flex-wrap gap-1.5">
  {['Cow Feeding', 'Cow Adoption', 'Gau Daan', 'Panchgavya Products', 'Visits'].map((s, i) => (
- <span key={s} className={`text-[9px] font-medium px-2.5 py-1 rounded-full ${i < 3 ? 'bg-lime-100 text-lime-700 border border-lime-200' : 'bg-surface-100 text-surface-500'}`}>{s}</span>
+ <span key={s} className={`text-xs font-medium px-2.5 py-1 rounded-full ${i < 3 ? 'bg-lime-100 text-lime-700 border border-lime-200' : 'bg-surface-100 text-surface-500'}`}>{s}</span>
  ))}
  </div>
  </div>
  <div>
- <label className="text-[10px] font-medium text-surface-500 mb-1 block">Photos</label>
+ <label className="text-xs font-medium text-surface-500 mb-1 block">Photos</label>
  <div className="flex gap-2">
  <div className="w-20 h-20 bg-lime-50 rounded-xl border border-lime-200/60 flex items-center justify-center">
  <PawPrint className="w-6 h-6 text-lime-300" />
@@ -1591,7 +1591,7 @@ function GaushalaScreen3() {
  <div className="bg-surface-50">
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
- <p className="text-[10px] text-surface-400">Gaushala Dashboard</p>
+ <p className="text-xs text-surface-400">Gaushala Dashboard</p>
  <h1 className="text-base font-bold text-surface-900">Govardhan Gaushala</h1>
  </div>
  <div className="w-8 h-8 bg-lime-50 rounded-full flex items-center justify-center">
@@ -1618,7 +1618,7 @@ function GaushalaScreen3() {
  </div>
  <div className="flex-1 min-w-0">
  <p className="text-xs font-semibold text-surface-900">{a.event}</p>
- <p className="text-[9px] text-surface-400">{a.detail}</p>
+ <p className="text-xs text-surface-400">{a.detail}</p>
  </div>
  <span className="text-[8px] text-surface-300 shrink-0">{a.time}</span>
  </div>
@@ -1648,7 +1648,7 @@ function GaushalaScreen4() {
  </div>
  <div className="px-5 flex gap-1.5 mb-3">
  {['All (245)', 'Adopted (89)', 'Available (156)'].map((f, i) => (
- <span key={f} className={`text-[9px] font-semibold px-2.5 py-1 rounded-full ${i === 0 ? 'bg-lime-600 text-white' : 'bg-surface-100 text-surface-500'}`}>{f}</span>
+ <span key={f} className={`text-xs font-semibold px-2.5 py-1 rounded-full ${i === 0 ? 'bg-lime-600 text-white' : 'bg-surface-100 text-surface-500'}`}>{f}</span>
  ))}
  </div>
  <div className="px-5 space-y-2.5">
@@ -1670,8 +1670,8 @@ function GaushalaScreen4() {
  {cow.adopted ? 'Adopted' : 'Available'}
  </span>
  </div>
- <p className="text-[9px] text-surface-400">{cow.breed} &middot; {cow.age} &middot; Tag: {cow.tag}</p>
- {cow.sponsor && <p className="text-[9px] text-saffron-600 mt-0.5">Sponsor: {cow.sponsor}</p>}
+ <p className="text-xs text-surface-400">{cow.breed} &middot; {cow.age} &middot; Tag: {cow.tag}</p>
+ {cow.sponsor && <p className="text-xs text-saffron-600 mt-0.5">Sponsor: {cow.sponsor}</p>}
  </div>
  </div>
  </div>
@@ -1814,7 +1814,7 @@ export function RoleDemoClient({ role }: { role: string }) {
  onClick={() => setCurrentScreen(i)}
  className={`h-2 rounded-full transition-all duration-300 ${
  i === currentScreen
- ? 'w-8 bg-saffron-500'
+ ? 'w-8 bg-saffron-600'
  : i < currentScreen
  ? 'w-2 bg-saffron-600/50'
  : 'w-2 bg-surface-600'

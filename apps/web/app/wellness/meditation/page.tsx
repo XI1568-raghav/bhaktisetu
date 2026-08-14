@@ -17,6 +17,7 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/wellness/meditation' },
  title: 'Meditation — Guided Sessions & Daily Practice',
  description:
  'Explore guided meditation, Transcendental, Mindfulness, Chakra healing, and Sound bath sessions with experienced teachers.',
@@ -249,7 +250,7 @@ export default function MeditationPage() {
  <div className="progress-track">
  <div className="progress-fill" style={{ width: '35%' }} />
  </div>
- <div className="flex items-center justify-between mt-1.5 text-[10px]" style={{ color: 'var(--color-text-faint)' }}>
+ <div className="flex items-center justify-between mt-1.5 text-xs" style={{ color: 'var(--color-text-faint)' }}>
  <span>5:14</span>
  <span>15:00</span>
  </div>
@@ -336,7 +337,7 @@ export default function MeditationPage() {
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{d.duration}</p>
  </div>
  {d.day <= 3 && (
- <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#ecfdf5', color: '#166534' }}>
+ <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: '#ecfdf5', color: '#166534' }}>
  Free
  </span>
  )}

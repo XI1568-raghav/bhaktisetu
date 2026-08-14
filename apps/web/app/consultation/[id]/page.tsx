@@ -215,7 +215,7 @@ function ConsultationRoomContent() {
 
       {/* Privacy footer */}
       <div className="border-surface-100 border-t bg-white px-4 py-3 text-center">
-        <p className="text-surface-500 text-[11px]">
+        <p className="text-surface-500 text-xs">
           Powered by Jitsi Meet — open-source video. Calls are encrypted in transit. No recordings
           are stored on Darshya servers.
         </p>

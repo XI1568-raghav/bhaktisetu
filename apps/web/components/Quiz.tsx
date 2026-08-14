@@ -35,7 +35,7 @@ export default function Quiz({ questions, onComplete }: Props) {
         </ul>
         <button
           onClick={() => { setIdx(0); setSelected(null); setAnswers([]); setDone(false); }}
-          className="mt-4 px-4 py-2 bg-saffron-500 text-white rounded-lg hover:bg-saffron-600"
+          className="mt-4 px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700"
         >
           Retake
         </button>
@@ -90,7 +90,7 @@ export default function Quiz({ questions, onComplete }: Props) {
                 setSelected(null);
               }
             }}
-            className="mt-3 px-4 py-2 bg-saffron-500 text-white rounded-lg hover:bg-saffron-600"
+            className="mt-3 px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700"
           >
             {idx + 1 >= questions.length ? 'Finish' : 'Next'}
           </button>

@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = getAvatar(slug);
   if (!a) return { title: 'Not found' };
   return {
-    title: `${a.name} (${a.sanskrit}) — Avatar #${a.number} of Vishnu | Darshya`,
+    title: `${a.name} (${a.sanskrit}) — Avatar #${a.number} of Vishnu`,
     description: `${a.name}, the ${a.number}${a.number === 1 ? 'st' : a.number === 2 ? 'nd' : a.number === 3 ? 'rd' : 'th'} avatara of Vishnu in ${YUGA_LABELS[a.yuga]}. ${a.bestKnownFor}.`,
     alternates: { canonical: `${BASE_URL}/dashavatar/${a.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${a.name} — ${a.bestKnownFor}`,
       description: a.purpose.slice(0, 180),
       url: `${BASE_URL}/dashavatar/${a.slug}`,

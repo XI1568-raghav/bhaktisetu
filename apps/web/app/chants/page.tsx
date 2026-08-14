@@ -7,7 +7,7 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '12 Famous Hindu Chants — Gayatri, Mahamrityunjaya, Hare Krishna, Hanuman Chalisa | Darshya',
+  title: '12 Famous Hindu Chants — Gayatri, Mahamrityunjaya, Hare Krishna, Hanuman Chalisa',
   description:
     'Most powerful Hindu mantras and chants with sanskrit lyrics, transliteration, meaning, benefits and how-to-chant guide. Gayatri, Mahamrityunjaya, Shanti, Ganesh, Lakshmi, Saraswati, Hanuman, Krishna, Durga mantras.',
   alternates: { canonical: `${BASE_URL}/chants` },
@@ -115,7 +115,7 @@ export default function ChantsIndex() {
                       </h3>
                       <div className="text-sm text-surface-600 truncate">{c.sanskritName}</div>
                     </div>
-                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-white border border-surface-300 text-surface-700 rounded-full">
+                    <span className="shrink-0 text-xs font-semibold uppercase tracking-wider px-2 py-0.5 bg-white border border-surface-300 text-surface-700 rounded-full">
                       {diffLabel[c.difficulty]}
                     </span>
                   </div>

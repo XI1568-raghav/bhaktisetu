@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/help' },
  title: "Help Center",
  description:
  "Find answers to common questions about Darshya \u2014 puja bookings, live darshan, store orders, payments, refunds, and account management.",

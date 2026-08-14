@@ -33,6 +33,29 @@ export interface ReceiptData {
   gaushalaAddress?: string;
 }
 
+/**
+ * COM-02 (prod sweep 2026-08-12): whether THIS receipt may assert Section 80G.
+ *
+ * The document used to print "80G Income Tax Exemption" and "Eligible for
+ * deduction under Section 80G of the Income Tax Act, 1961." unconditionally,
+ * while the two facts that make either true were rendered behind `if`s.
+ * `gaushala_profiles.regn_80g` / `.pan` are read in one place and written
+ * nowhere — no admin form, no portal field, no seed, no migration default — so
+ * both are NULL for every donee and the temple branch never even queries them.
+ * The claim was therefore false on every receipt ever issued, against
+ * PROJECT_CONTEXT.md immutable rule 7 ("80G receipt requires donee 80G regn +
+ * PAN"), and a donor who claimed the deduction had it disallowed.
+ *
+ * Both facts, or no claim. A receipt is still a valid proof of payment without
+ * them; it is simply not a tax instrument.
+ */
+export function is80GEligible(data: {
+  gaushala80GNumber?: string | undefined;
+  gaushalaPan?: string | undefined;
+}): boolean {
+  return !!(data.gaushala80GNumber?.trim() && data.gaushalaPan?.trim());
+}
+
 const SAFFRON = rgb(0.918, 0.345, 0.047); // matches brand #EA580C
 const TEXT = rgb(0.24, 0.18, 0.12);
 const MUTED = rgb(0.45, 0.4, 0.35);
@@ -80,9 +103,17 @@ export async function generate80GReceipt(data: ReceiptData): Promise<Buffer> {
   page.drawText('India’s Devotional Super App', { x: left, y: y - 16, size: 9, font, color: MUTED });
   page.drawText('https://darshya.online', { x: left, y: y - 28, size: 9, font, color: MUTED });
 
+  // COM-02: the subtitle is the first thing a donor reads and the first thing
+  // an assessing officer reads. It states the exemption only when the donee
+  // data behind it exists.
+  const eligible80G = is80GEligible(data);
+
   y -= 60;
   page.drawText('OFFICIAL DONATION RECEIPT', { x: left, y, size: 14, font: fontBold, color: TEXT });
-  page.drawText('80G Income Tax Exemption', { x: left, y: y - 14, size: 10, font, color: MUTED });
+  page.drawText(
+    eligible80G ? '80G Income Tax Exemption' : 'Proof of donation — not a tax exemption certificate',
+    { x: left, y: y - 14, size: 10, font, color: MUTED },
+  );
 
   // Receipt meta
   y -= 44;
@@ -151,15 +182,32 @@ export async function generate80GReceipt(data: ReceiptData): Promise<Buffer> {
     }
   }
 
-  // Tax exemption note
+  // Tax exemption note — COM-02: asserted only when the donee's 80G
+  // registration number AND PAN are both on this receipt above. Without them
+  // the deduction is disallowed at assessment, so saying so here is the only
+  // honest line: the donor learns it from us, not from the department.
   y -= 26;
-  page.drawText('Eligible for deduction under Section 80G of the Income Tax Act, 1961.', {
-    x: left, y, size: 9, font, color: MUTED,
-  });
-  y -= 12;
-  page.drawText('Please retain this receipt for your tax records.', {
-    x: left, y, size: 9, font, color: MUTED,
-  });
+  if (eligible80G) {
+    page.drawText('Eligible for deduction under Section 80G of the Income Tax Act, 1961.', {
+      x: left, y, size: 9, font, color: MUTED,
+    });
+    y -= 12;
+    page.drawText('Please retain this receipt for your tax records.', {
+      x: left, y, size: 9, font, color: MUTED,
+    });
+  } else {
+    page.drawText('This receipt is not valid for a Section 80G deduction: the donee organisation', {
+      x: left, y, size: 9, font, color: MUTED,
+    });
+    y -= 12;
+    page.drawText('has no 80G registration number and PAN on record with Darshya.', {
+      x: left, y, size: 9, font, color: MUTED,
+    });
+    y -= 12;
+    page.drawText('Please retain this receipt as proof of your donation.', {
+      x: left, y, size: 9, font, color: MUTED,
+    });
+  }
 
   // Signatory
   y -= 60;

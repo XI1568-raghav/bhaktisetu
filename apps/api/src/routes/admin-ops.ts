@@ -3,6 +3,7 @@ import { z } from 'zod';
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
+import { notifyBookingEvent } from '../services/booking-notify.service.js';
 
 /**
  * Token-gated read-only ops feeds for the Sprint-2 Wave-1 agents.
@@ -213,6 +214,25 @@ export async function adminOpsRoutes(server: FastifyInstance) {
             },
             select: { id: true, status: true },
           });
+
+          // NOTIF-06 (2026-08-14): this endpoint is a PRODUCER of `cancelled`
+          // and `completed`, and it bypasses BookingService.updateBookingStatus
+          // entirely — the raw update above is the whole write. So the lifecycle
+          // fan-out wired into that service does not run here, and this is the
+          // SLA-BREACH queue: every booking in it already failed the devotee
+          // once. An admin resolving her breach as cancelled-with-refund, or
+          // stamping the puja `completed`, sent her nothing on any channel; she
+          // found out by opening the app, if she opened it.
+          //
+          // Fire-and-forget after the write has committed: the operator's action
+          // is done and an unreachable BSP must not turn a resolved booking into
+          // a 500 the operator retries.
+          void notifyBookingEvent(
+            booking.id,
+            plan.status === 'completed' ? 'completed' : 'cancelled',
+          ).catch((err) =>
+            request.log.warn({ err, bookingId: booking.id }, 'sla-overdue resolve: notify failed'),
+          );
 
           resolved.push({
             bookingId: booking.bookingNumber ?? booking.id,

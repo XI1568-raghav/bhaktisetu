@@ -95,7 +95,7 @@ export default function NumerologyClient() {
        <NumCell label="Soul Urge" n={result.nameSoul} />
        <NumCell label="Personality" n={result.namePersonality} />
       </div>
-      <p className="mt-3 text-[11px] text-gray-500">Life-path reduction: {result.lifePathSteps}</p>
+      <p className="mt-3 text-xs text-gray-500">Life-path reduction: {result.lifePathSteps}</p>
      </div>
 
      <MeaningCard tag="Life Path Number" sub="Central karmic theme of your life" m={result.meanings.lifePath} />
@@ -128,7 +128,7 @@ export default function NumerologyClient() {
 function NumCell({ label, n, primary }: { label: string; n: number; primary?: boolean }) {
  return (
   <div className={`rounded-xl border bg-white p-3 ${primary ? 'border-saffron-400 ring-2 ring-saffron-300' : 'border-gray-200'}`}>
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
    <p className={`mt-1 font-serif text-4xl font-bold ${primary ? 'text-saffron-700' : 'text-gray-900'}`}>{n}</p>
   </div>
  );
@@ -139,13 +139,13 @@ function MeaningCard({ tag, sub, m }: { tag: string; sub: string; m: NumberMeani
   <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
    <div className="flex items-start justify-between gap-3">
     <div>
-     <p className="text-[11px] font-semibold uppercase tracking-wider text-saffron-700">{tag} · {sub}</p>
+     <p className="text-xs font-semibold uppercase tracking-wider text-saffron-700">{tag} · {sub}</p>
      <p className="mt-1 font-serif text-2xl text-gray-900">
       Number <span className="text-saffron-700">{m.number}</span> — {m.title}
      </p>
     </div>
     {m.planet && (
-     <span className="shrink-0 rounded-full bg-saffron-100 px-2.5 py-0.5 text-[11px] font-semibold text-saffron-800">
+     <span className="shrink-0 rounded-full bg-saffron-100 px-2.5 py-0.5 text-xs font-semibold text-saffron-800">
       {m.planet}
      </span>
     )}
@@ -162,11 +162,11 @@ function MeaningCard({ tag, sub, m }: { tag: string; sub: string; m: NumberMeani
 
    <div className="mt-4 grid gap-2 sm:grid-cols-2">
     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-     <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Lucky colors</p>
+     <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Lucky colors</p>
      <p className="mt-1 text-sm text-gray-800">{m.luckyColors.join(' · ')}</p>
     </div>
     <div className="rounded-lg border border-saffron-200 bg-saffron-50 p-3">
-     <p className="text-[11px] font-semibold uppercase tracking-wider text-saffron-700">Vedic remedy</p>
+     <p className="text-xs font-semibold uppercase tracking-wider text-saffron-700">Vedic remedy</p>
      <p className="mt-1 text-sm text-saffron-900">{m.spiritualNote}</p>
     </div>
    </div>
@@ -187,7 +187,7 @@ const TONE_HEAD: Record<string, string> = {
 function Bucket({ title, items, tone }: { title: string; items: string[]; tone: 'emerald' | 'amber' | 'indigo' | 'saffron' }) {
  return (
   <div className={`rounded-lg border p-3 ${TONE[tone]}`}>
-   <p className={`text-[11px] font-semibold uppercase tracking-wider ${TONE_HEAD[tone]}`}>{title}</p>
+   <p className={`text-xs font-semibold uppercase tracking-wider ${TONE_HEAD[tone]}`}>{title}</p>
    <ul className="mt-1 space-y-0.5 text-xs leading-relaxed">
     {items.map((it, i) => (
      <li key={i}>• {it}</li>

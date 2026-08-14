@@ -215,7 +215,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
  <div
  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
  i < current
- ? 'bg-saffron-500 text-white'
+ ? 'bg-saffron-600 text-white'
  : i === current
  ? 'bg-saffron-100 text-saffron-700 ring-2 ring-saffron-400'
  : 'bg-surface-100 text-surface-400'

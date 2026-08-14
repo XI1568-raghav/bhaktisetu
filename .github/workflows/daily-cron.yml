@@ -1,8 +1,16 @@
-name: Daily cron (panchang refresh + reminders)
+name: Daily cron (daily ops chain)
 
 # Render free tier has no cron. GitHub Actions does it for free,
 # 2,000 minutes/month included. We only burn ~5 sec/day so this is
 # essentially zero cost.
+#
+# NOTIF-11 (2026-08-12): this workflow used to POST /api/v1/cron/daily when that
+# endpoint ran three hardcoded stubs (`return {daysRefreshed: 0}`,
+# `{sent: 0}`, `{expired: 0}`) and always answered 200. `curl -fsS` only fails
+# on a non-2xx, so the job went GREEN every single day while nothing ran — and
+# the green tick is precisely why nobody noticed for months. /cron/daily now
+# drives the real runDailyOps chain, and the step below asserts on the RETURNED
+# COUNTERS rather than on a status code that three no-ops could always satisfy.
 
 on:
   schedule:
@@ -13,13 +21,14 @@ on:
 jobs:
   daily:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Hit /api/v1/cron/daily
+      - name: Hit /api/v1/cron/daily and assert on the work it reports
         env:
           CRON_AUTH_TOKEN: ${{ secrets.CRON_AUTH_TOKEN }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
         run: |
+          set -euo pipefail
           if [ -z "$CRON_AUTH_TOKEN" ] || [ -z "$API_BASE_URL" ]; then
             echo "::warning::Skipping daily cron — set CRON_AUTH_TOKEN and API_BASE_URL secrets to enable (gate U18)."
             exit 0
@@ -36,4 +45,43 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{}' \
             "$API_BASE_URL/api/v1/cron/daily" \
-            --max-time 240
+            --max-time 540 \
+            -o response.json
+
+          echo "--- daily ops result ---"
+          cat response.json
+          echo
+
+          # A 200 is not proof of work. Fail when the body says the chain did
+          # not actually run, and surface the per-tick counters in the log so a
+          # human can see WHAT ran, not just that something answered.
+          python3 - <<'PY'
+          import json, sys
+
+          with open('response.json') as fh:
+              body = json.load(fh)
+
+          if not body.get('ok'):
+              print(f"::error::daily ops reported ok=false: {body.get('error')}")
+              sys.exit(1)
+
+          result = body.get('result') or {}
+          if not result:
+              print('::error::daily ops returned no result payload — the chain did not run')
+              sys.exit(1)
+
+          # Every tick reports either work or an explicit skip+reason. A tick
+          # that is missing entirely means the chain was cut short.
+          expected = [
+              'outreach', 'panchang', 'panchangCompute', 'aartiNotify',
+              'weeklyDigest', 'refunds', 'dispatchSweep', 'weeklySettlement',
+          ]
+          missing = [k for k in expected if k not in result]
+          if missing:
+              print(f"::error::daily ops chain incomplete, missing ticks: {missing}")
+              sys.exit(1)
+
+          for key in expected:
+              print(f"  {key}: {json.dumps(result[key])}")
+          print(f"::notice::daily ops ran at {result.get('ranAt')}")
+          PY

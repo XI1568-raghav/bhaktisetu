@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const t = getPanchaBhootaBySlug(slug);
   if (!t) return { title: 'Not found' };
   return {
-    title: `${t.templeName} — ${t.element} Pancha Bhoota | Darshya`,
+    title: `${t.templeName} — ${t.element} Pancha Bhoota`,
     description: `${t.templeName} in ${t.city}, ${t.state} — the ${t.element} Pancha Bhoota Stalam. ${t.lingaForm.split('—')[0]?.trim() ?? ''}. Mantra, ritual, festival, travel guide.`,
     alternates: { canonical: `https://darshya.online/pancha-bhoota/${t.slug}` },
   };

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { prisma } from './prisma.js';
 
 // Boot-time defensive schema check. Render's start command bypasses our
@@ -552,6 +553,77 @@ const STATEMENTS: string[] = [
   END $$`,
 ];
 
+/**
+ * SCAL-07 (2026-08-13): replay only when the statement set has actually changed.
+ *
+ * Every one of these statements is a no-op once the schema matches, but each
+ * one still costs a full round trip — ~95 ms Oregon↔Tokyo, so ~7.6 s of pure
+ * network wait on EVERY boot, before `bootstrap()` registers a route, on top of
+ * Render free's 30–60 s spin-up and under Cloudflare's 100 s origin timeout.
+ * `ALTER TABLE … ADD COLUMN IF NOT EXISTS` also takes an ACCESS EXCLUSIVE lock
+ * even when it no-ops, so all 80 briefly locked most tables on every restart —
+ * including during a deploy, on top of live traffic.
+ *
+ * They cannot simply be deleted: this file exists because `prisma migrate
+ * deploy` was once bypassed, and it is still the recovery path. So instead of
+ * dropping the safety net we stop paying for it when it is already satisfied —
+ * a fingerprint of the statement array is stored in `_schema_invariants` and
+ * checked with ONE query. Change any statement and the fingerprint changes, so
+ * the new one is applied on the next boot with no manual step. Set
+ * SCHEMA_INVARIANTS_FORCE=true to replay everything by hand.
+ *
+ * The marker is written ONLY when all statements ran cleanly. A boot where one
+ * failed must not record "schema is good" — the next boot has to retry it.
+ */
+export const SCHEMA_INVARIANTS_FINGERPRINT = createHash('sha256')
+  .update(STATEMENTS.join('\n;\n'))
+  .digest('hex');
+
+const MARKER_TABLE = '_schema_invariants';
+
+/**
+ * Postgres codes that mean "the thing this statement wanted already exists":
+ * 42P07 duplicate_table (covers indexes), 42701 duplicate_column,
+ * 42710 duplicate_object (constraints, types). Nothing else counts.
+ */
+const DUPLICATE_OBJECT_CODES = ['42P07', '42701', '42710'];
+
+export function isDuplicateObjectError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  const code = (err as { meta?: { code?: unknown } })?.meta?.code;
+  if (typeof code === 'string' && DUPLICATE_OBJECT_CODES.includes(code)) return true;
+  // Prisma flattens the driver error into the message for $executeRawUnsafe.
+  return DUPLICATE_OBJECT_CODES.some((c) => message.includes(`Code: \`${c}\``));
+}
+
+async function recordedFingerprint(): Promise<string | null> {
+  try {
+    const rows = await prisma.$queryRawUnsafe<Array<{ fingerprint: string }>>(
+      `SELECT fingerprint FROM "${MARKER_TABLE}" WHERE id = 1 LIMIT 1`,
+    );
+    return rows?.[0]?.fingerprint ?? null;
+  } catch {
+    // No marker table yet (first boot after this change, or a fresh DB).
+    return null;
+  }
+}
+
+async function recordFingerprint(): Promise<void> {
+  await prisma.$executeRawUnsafe(
+    `CREATE TABLE IF NOT EXISTS "${MARKER_TABLE}" (
+      id INTEGER PRIMARY KEY,
+      fingerprint TEXT NOT NULL,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`,
+  );
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO "${MARKER_TABLE}" (id, fingerprint, applied_at)
+     VALUES (1, $1, now())
+     ON CONFLICT (id) DO UPDATE SET fingerprint = EXCLUDED.fingerprint, applied_at = now()`,
+    SCHEMA_INVARIANTS_FINGERPRINT,
+  );
+}
+
 export async function ensureSchemaInvariants(
   log: { info: (msg: string) => void; error: (obj: unknown, msg?: string) => void },
 ): Promise<void> {
@@ -559,12 +631,39 @@ export async function ensureSchemaInvariants(
     log.info('ensureSchemaInvariants: DATABASE_URL unset, skipping');
     return;
   }
+
+  const force = process.env.SCHEMA_INVARIANTS_FORCE === 'true';
+  if (!force) {
+    const seen = await recordedFingerprint();
+    if (seen === SCHEMA_INVARIANTS_FINGERPRINT) {
+      log.info(
+        `ensureSchemaInvariants: schema fingerprint ${seen.slice(0, 12)} already applied, ` +
+          `skipping ${STATEMENTS.length} statements (1 round trip instead of ${STATEMENTS.length})`,
+      );
+      return;
+    }
+  }
+
   let applied = 0;
+  let alreadySatisfied = 0;
   for (const sql of STATEMENTS) {
     try {
       await prisma.$executeRawUnsafe(sql);
       applied += 1;
     } catch (err) {
+      // A duplicate-object error means the object this statement wanted is
+      // already there — the invariant HOLDS, the statement just could not
+      // express it as IF NOT EXISTS (a `DO $$` block adding a constraint whose
+      // name is already taken by an index, for instance). Observed live on the
+      // local database: 2 of 95 statements fail this way every boot. Counting
+      // them as unsatisfied would mean the fingerprint is never recorded and
+      // the full 95-statement replay runs forever — the exact cost SCAL-07 is
+      // about. A REAL failure (permissions, syntax, a missing dependency) still
+      // blocks the marker so the next boot retries.
+      if (isDuplicateObjectError(err)) {
+        alreadySatisfied += 1;
+        continue;
+      }
       // Don't fail boot on schema fix-up — log and continue. The underlying
       // route will surface the real problem if the column genuinely needed
       // creating and this DDL failed.
@@ -574,5 +673,21 @@ export async function ensureSchemaInvariants(
       );
     }
   }
-  log.info(`ensureSchemaInvariants: ${applied}/${STATEMENTS.length} statements ran cleanly`);
+  log.info(
+    `ensureSchemaInvariants: ${applied}/${STATEMENTS.length} statements ran cleanly` +
+      (alreadySatisfied > 0 ? ` (+${alreadySatisfied} already satisfied)` : ''),
+  );
+
+  if (applied + alreadySatisfied === STATEMENTS.length) {
+    try {
+      await recordFingerprint();
+    } catch (err) {
+      // Marker is an optimisation. Failing to write it costs the next boot the
+      // full replay — never correctness.
+      log.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        'ensureSchemaInvariants: could not record fingerprint (will replay next boot)',
+      );
+    }
+  }
 }

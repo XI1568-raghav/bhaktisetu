@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Mountain, ArrowRight } from 'lucide-react';
-import { getTempleHero } from '../../lib/images';
+import { getTempleHero, IMG_W } from '../../lib/images';
 
 type Destination = {
   name: string;
@@ -16,21 +16,21 @@ const DESTINATIONS: Destination[] = [
     region: 'Uttarakhand Himalayas',
     fromPrice: 'From ₹24,999',
     href: '/yatra/destinations',
-    image: getTempleHero('kedarnath'),
+    image: getTempleHero('kedarnath', IMG_W.CARD),
   },
   {
     name: 'Vaishno Devi',
     region: 'Katra, Jammu',
     fromPrice: 'From ₹8,499',
     href: '/yatra/destinations',
-    image: getTempleHero('vaishno-devi'),
+    image: getTempleHero('vaishno-devi', IMG_W.CARD),
   },
   {
     name: 'Tirupati',
     region: 'Andhra Pradesh',
     fromPrice: 'From ₹6,999',
     href: '/yatra/destinations',
-    image: getTempleHero('tirupati'),
+    image: getTempleHero('tirupati', IMG_W.CARD),
   },
 ];
 
@@ -65,6 +65,9 @@ export default function YatraStrip() {
               <div className="relative h-40 sm:h-44 overflow-hidden">
                 <img
                   src={d.image}
+                  sizes="(max-width: 640px) 80vw, 340px"
+                  width={500}
+                  height={352}
                   alt={d.name}
                   loading="lazy"
                   decoding="async"

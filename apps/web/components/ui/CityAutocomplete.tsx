@@ -147,7 +147,7 @@ export default function CityAutocomplete({
                 {city.name}
                 {city.state && <span className="text-surface-400 font-normal">, {city.state}</span>}
               </div>
-              <div className="text-[11px] text-surface-400 mt-0.5">
+              <div className="text-xs text-surface-400 mt-0.5">
                 {Math.abs(city.lat).toFixed(2)}{city.lat >= 0 ? 'N' : 'S'}, {Math.abs(city.lng).toFixed(2)}{city.lng >= 0 ? 'E' : 'W'}
                 {city.country !== 'IN' && ` · ${city.country}`}
               </div>

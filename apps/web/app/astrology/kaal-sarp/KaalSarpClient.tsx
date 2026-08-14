@@ -90,7 +90,7 @@ export default function KaalSarpClient() {
       </select>
      </label>
     </div>
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      Accuracy ±0.5° (Meeus simplified). For ceremonial-grade precision, verify with a pandit running
      full Drik panchang ephemeris.
     </p>
@@ -183,15 +183,15 @@ export default function KaalSarpClient() {
            <td className="py-2 pr-3 font-mono text-xs">{p.longitude.toFixed(2)}°</td>
            <td className="py-2 pr-3">
             {p.insideArc
-             ? <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">inside</span>
-             : <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">outside</span>}
+             ? <span className="rounded bg-rose-100 px-1.5 py-0.5 text-xs font-bold text-rose-800">inside</span>
+             : <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-bold text-emerald-800">outside</span>}
            </td>
           </tr>
          ))}
         </tbody>
        </table>
       </div>
-      <p className="mt-3 text-[11px] text-gray-500">
+      <p className="mt-3 text-xs text-gray-500">
        Lagna (ascendant): {result.ascendantSign} at {result.ascendantLongitude.toFixed(2)}° · Ayanamsa {result.ayanamsa.toFixed(2)}°.
       </p>
      </div>
@@ -207,7 +207,7 @@ export default function KaalSarpClient() {
          </li>
         ))}
        </ul>
-       <p className="mt-3 text-[11px] text-gray-500">
+       <p className="mt-3 text-xs text-gray-500">
         Remedies must be performed under a qualified pandit. Self-prescribed Kaal Sarp puja is not advised.
        </p>
       </div>

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import GurukulsListClient from './GurukulsListClient';
 
 export const metadata: Metadata = {
+  alternates: { canonical: 'https://darshya.online/gurukuls' },
   title: 'Gurukuls — Traditional Sanskrit & Vedic Schools',
   description: 'Discover verified gurukuls across India offering Sanskrit, Vedic chanting, Karma Kanda, Jyotisha, and yoga. Filter by tradition, location, age group. Apply online.',
 };

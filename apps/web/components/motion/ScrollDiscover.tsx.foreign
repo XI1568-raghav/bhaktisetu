@@ -1,0 +1,300 @@
+'use client';
+
+import { useEffect, useRef, useState, type JSX } from 'react';
+import Link from 'next/link';
+import { ArrowRight, type LucideIcon } from 'lucide-react';
+import { getTempleHero, getHeroImage, getContentImage, getImage } from '../../lib/images';
+
+/**
+ * ScrollDiscover — "scroll to discover" five devotional worlds, rebuilt as an
+ * image-driven 3D diorama (the founder's brief: cover more area, image-led,
+ * eye-catching depth WHILE scrolling — but never scroll-jacked).
+ *
+ * Design: THE LIVING WINDOW (jharokha diorama split-panel).
+ *   - LEFT: a full-height 3D diorama. Three parallax planes recede in real
+ *     CSS perspective: a soft background wash, the world's photograph, and a
+ *     near "frame" ring — all drifting at different scroll rates + a subtle
+ *     gyro-of-scroll rotateY so it reads as genuine depth, not a flat crossfade.
+ *   - RIGHT: editorial column — world index, huge Devanagari glyph, English
+ *     display label, descriptor line, and a CTA. Covers the full width so the
+ *     section never feels empty.
+ *
+ * Engineering (the reel's #1 comment: "never bind the scrollwheel to useless
+ * animation"): the wheel is NEVER hijacked. We only READ native scroll position
+ * (rAF-throttled, passive listener) and write transform/opacity — compositor
+ * only, 60fps. prefers-reduced-motion → a static, fully-readable card list.
+ *
+ * Perf guardrails honored: images via wikiThumb ~1280px, lazy, decoding async,
+ * ≤3 composited layers, transform+opacity only.
+ */
+
+type World = {
+  key: string;
+  en: string;
+  hi: string;        // Devanagari world-label
+  line: string;      // short descriptor
+  href: string;
+  cta: string;
+  img: string;       // world photograph
+  imgAlt: string;
+  // Category accent (matches the homepage category-strip palette exactly).
+  bg: string;
+  border: string;
+  text: string;
+  icon: string;      // accent color
+  chip: string;      // translucent chip bg
+};
+
+const WORLDS: World[] = [
+  {
+    key: 'worship', en: 'Worship', hi: 'पूजा', line: 'Live darshan, puja & aarti',
+    href: '/pujas', cta: 'Book a puja',
+    img: getTempleHero('golden-temple'), imgAlt: 'Sri Harmandir Sahib (Golden Temple) at dawn, live darshan',
+    bg: '#FFF4EC', border: '#FBD0A8', text: '#9E3F0A', icon: '#E16318', chip: 'rgba(225,99,24,0.14)',
+  },
+  {
+    key: 'library', en: 'Library', hi: 'ज्ञान', line: 'Scripture & wisdom guides',
+    href: '/discover', cta: 'Explore the library',
+    img: getContentImage('mantra', 'full'), imgAlt: 'Ancient manuscript and japa meditation',
+    bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5', chip: 'rgba(79,70,229,0.14)',
+  },
+  {
+    key: 'consult', en: 'Consult', hi: 'ज्योतिष', line: 'Kundli, horoscope, astrologers',
+    href: '/astrology', cta: 'Talk to an astrologer',
+    img: getHeroImage('astrology'), imgAlt: 'Surya, the celestial sun — Vedic astrology',
+    bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5', chip: 'rgba(79,70,229,0.14)',
+  },
+  {
+    key: 'seva', en: 'Seva', hi: 'सेवा', line: 'Gaushala, prasad & giving',
+    href: '/donations', cta: 'Give with 80G receipts',
+    img: getImage('gaushala', 'cow-feeding'), imgAlt: 'Cow feeding at the gaushala, morning light',
+    bg: '#ECFDF5', border: '#A7F3D0', text: '#065F46', icon: '#059669', chip: 'rgba(5,150,105,0.14)',
+  },
+  {
+    key: 'yatra', en: 'Yatra', hi: 'यात्रा', line: 'Pilgrimage & wellness circuits',
+    href: '/yatra', cta: 'Plan a yatra',
+    img: getTempleHero('kedarnath'), imgAlt: 'Kedarnath temple in the Himalayas, pilgrimage circuit',
+    bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: '#D97706', chip: 'rgba(217,119,6,0.14)',
+  },
+];
+
+export default function ScrollDiscover(): JSX.Element {
+  // ── Hydration-safe 3D activation ─────────────────────────────────────────
+  // We NEVER branch SSR vs client-first-render on window/matchMedia (that is
+  // what causes the hydration mismatch). Instead the markup is IDENTICAL on
+  // server + client; the 3D scene is simply INERT until the effect runs. The
+  // effect flips `liveRef.current` and writes the first transforms directly to
+  // the DOM (style, not React state) — so hydration always matches, and the 3D
+  // only "switches on" post-hydration. Scroll progress is kept in a ref (no
+  // re-render); we write transforms imperatively per frame (compositor-cheap).
+  const outerRef = useRef<HTMLDivElement | null>(null);
+  const liveRef = useRef(false);           // false = inert/SSR shape (first world static)
+  const panelRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const imgRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const reducedRef = useRef(false);
+
+  // Mounted gate: SSR + the client's first render both use the INERT (top-aligned)
+  // class set → hydration matches byte-for-byte. After mount we switch to the
+  // centered set — a normal post-hydration React update (NOT a mismatch).
+  const [mounted, setMounted] = useState(false);
+
+  const N = WORLDS.length;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setMounted(true);
+    reducedRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedRef.current) return; // stays inert: first world fully visible, rest hidden (readable)
+
+    const outer = outerRef.current;
+    if (!outer) return;
+    liveRef.current = true;
+
+    let frame: number | null = null;
+
+    const render = (): void => {
+      frame = null;
+      const rect = outer.getBoundingClientRect();
+      const winH = window.innerHeight;
+      const runway = rect.height - winH;
+      const progress = runway > 0 ? Math.min(1, Math.max(0, -rect.top / runway)) : 0;
+
+      const segFloat = progress * N;
+      const active = Math.min(N - 1, Math.floor(segFloat));
+      const segT = segFloat - active;
+
+      for (let i = 0; i < N; i++) {
+        const panel = panelRefs.current[i];
+        if (!panel) continue;
+        let opacity = 0;
+        let enter = 0;
+        if (i === active) {
+          if (segT < 0.22) { enter = segT / 0.22; opacity = enter; }
+          else if (segT > 0.78 && i < N - 1) { const t = (segT - 0.78) / 0.22; opacity = 1 - t; enter = 1; }
+          else { opacity = 1; enter = 1; }
+        } else if (i === active + 1 && segT > 0.78) {
+          enter = (segT - 0.78) / 0.22; opacity = enter;
+        }
+        const isActive = i === active;
+        panel.style.opacity = String(opacity);
+        panel.style.pointerEvents = isActive ? 'auto' : 'none';
+        panel.setAttribute('aria-hidden', String(!isActive));
+
+        // 3D depth on the image plane
+        const img = imgRefs.current[i];
+        if (img) {
+          const imgZ = -120 * (1 - enter);
+          const imgScale = 1.14 - 0.14 * enter;
+          const driftY = (segT - 0.5) * 26;
+          const rotY = (1 - enter) * 8;
+          img.style.transform = `translate3d(0, ${driftY}px, ${imgZ}px) rotateY(${rotY}deg) scale(${imgScale})`;
+        }
+        // near frame pop — find the frame node by data attribute
+        const fr = outer.querySelector<HTMLElement>(`[data-frame="${i}"]`);
+        if (fr) fr.style.transform = `translateZ(${40 * enter}px)`;
+
+        // progress dots
+        const dot = outer.querySelector<HTMLElement>(`[data-dot="${i}"]`);
+        if (dot) {
+          dot.style.width = isActive ? '22px' : '6px';
+          dot.style.background = isActive ? WORLDS[i]!.icon : 'var(--color-border)';
+        }
+      }
+    };
+
+    const onScroll = (): void => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(render);
+    };
+
+    render(); // initial paint of the 3D state
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [N]);
+
+  // ── SINGLE render path — identical markup on server + client → no hydration
+  // mismatch. The 3D scene is INERT until the effect flips liveRef and writes
+  // transforms to the DOM. Panel 0 is fully visible by default; panels 1-4 are
+  // opacity:0 (they still contribute to a11y tree / SEO). Reduced-motion users
+  // keep this exact static shape (panel 0 shown) — readable and correct.
+  const runwayVh = N * 78;
+
+  return (
+    <div ref={outerRef} className="relative" style={{ height: `${runwayVh}vh` }} aria-label="Scroll to discover the five worlds">
+      {/* The whole section (heading + panels) sits inside one full-viewport
+          sticky frame. SSR + first client render are TOP-ALIGNED (inert → hydration
+          matches); after mount we CENTER it (justify-center + pt-16 clears the site
+          header) so the panel is FULLY in view the moment the scroll begins. */}
+      <div className={mounted ? 'sticky top-0 h-screen overflow-hidden flex flex-col justify-center pt-16' : 'sticky top-0 h-screen overflow-hidden flex flex-col'} style={{ background: 'var(--color-bg)' }}>
+
+        {/* Header — overline + title + progress dots (dots animate via effect) */}
+        <div className={mounted ? 'pb-3 text-center px-6 shrink-0' : 'pt-20 md:pt-24 pb-2 text-center px-6 shrink-0'}>
+          <p className="text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: 'var(--color-primary)' }}>
+            Scroll to discover
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+            One app, five worlds of devotion
+          </h2>
+          <div className="mt-3 flex items-center justify-center gap-2" aria-hidden="true">
+            {WORLDS.map((w, i) => (
+              <span key={w.key} data-dot={i} className="rounded-full transition-all duration-300"
+                style={{ width: i === 0 ? 22 : 6, height: 6, background: i === 0 ? w.icon : 'var(--color-border)' }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Stage — full-width split: 3D diorama LEFT, editorial copy RIGHT.
+            After mount: capped so header + stage fit inside the 100vh frame. */}
+        <div className={mounted ? 'relative px-4 sm:px-6 lg:px-8 shrink-0' : 'relative flex-1 px-4 sm:px-6 lg:px-8 pb-6 min-h-0'} style={mounted ? { height: 'min(58vh, 540px)' } : undefined}>
+          <div className="relative h-full max-w-6xl mx-auto">
+            {WORLDS.map((w, i) => {
+              const isFirst = i === 0;
+              return (
+                <div
+                  key={w.key}
+                  ref={(el) => { panelRefs.current[i] = el; }}
+                  aria-hidden={!isFirst}
+                  className="absolute inset-0 grid md:grid-cols-2 gap-4 md:gap-6 items-stretch"
+                  style={{ opacity: isFirst ? 1 : 0, transition: 'none', pointerEvents: isFirst ? 'auto' : 'none', willChange: 'opacity' }}
+                >
+                  {/* ── LEFT: 3D diorama (jharokha window) ── */}
+                  <div
+                    className="relative rounded-2xl overflow-hidden"
+                    style={{ perspective: '1200px', background: w.bg, border: `1px solid ${w.border}` }}
+                  >
+                    {/* background wash plane (deepest) */}
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${w.chip}, transparent 60%)`, transform: 'translateZ(-160px)' }} />
+                    {/* the world photograph — mid plane, scroll-driven depth (transform set by effect) */}
+                    <div
+                      ref={(el) => { imgRefs.current[i] = el; }}
+                      className="absolute inset-0"
+                      style={{ transform: 'translate3d(0, 0, 0) scale(1)', transformStyle: 'preserve-3d', willChange: 'transform', transition: 'none' }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={w.img}
+                        alt={w.imgAlt}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
+                      {/* warm vignette so copy-side blends */}
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.22))' }} />
+                    </div>
+                    {/* near frame ring — closest plane, pops toward viewer (transform set by effect) */}
+                    <div
+                      data-frame={i}
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ transform: 'translateZ(0px)', boxShadow: `inset 0 0 0 1px ${w.border}, inset 0 0 60px ${w.chip}`, borderRadius: 'inherit', willChange: 'transform' }}
+                    />
+                    {/* corner accent chip */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold text-white"
+                      style={{ background: w.icon }}>
+                      {String(i + 1).padStart(2, '0')} · {w.en.toUpperCase()}
+                    </div>
+                  </div>
+
+                  {/* ── RIGHT: editorial copy column ── */}
+                  <div className={mounted ? 'relative flex flex-col justify-center rounded-2xl px-5 py-5 md:px-8 overflow-hidden' : 'relative flex flex-col justify-center rounded-2xl px-6 py-8 md:px-10 overflow-hidden'}
+                    style={{ background: w.bg, border: `1px solid ${w.border}` }}>
+                    {/* huge Devanagari watermark */}
+                    <span aria-hidden="true" lang="hi"
+                      className="absolute -right-4 -top-6 select-none font-bold leading-none"
+                      style={{ fontSize: mounted ? '9rem' : '11rem', color: w.icon, opacity: 0.08, fontFamily: 'var(--font-devanagari, var(--font-display))' }}>
+                      {w.hi}
+                    </span>
+
+                    <p className={mounted ? 'text-[11px] font-semibold uppercase tracking-widest mb-2' : 'text-[11px] font-semibold uppercase tracking-widest mb-3'} style={{ color: w.icon }}>
+                      World {String(i + 1).padStart(2, '0')} / {String(N).padStart(2, '0')}
+                    </p>
+                    <p lang="hi" className={mounted ? 'text-lg md:text-xl font-semibold mb-0.5' : 'text-xl md:text-2xl font-semibold mb-1'} style={{ color: w.text, fontFamily: 'var(--font-devanagari, var(--font-display))' }}>
+                      {w.hi}
+                    </p>
+                    <h3 className={mounted ? 'text-3xl md:text-4xl font-semibold tracking-tight leading-none' : 'text-4xl md:text-5xl font-semibold tracking-tight leading-none'} style={{ color: w.text, fontFamily: 'var(--font-display)' }}>
+                      {w.en}
+                    </h3>
+                    <p className={mounted ? 'mt-2 text-sm max-w-sm' : 'mt-3 text-sm md:text-base max-w-sm'} style={{ color: w.text, opacity: 0.85 }}>
+                      {w.line}
+                    </p>
+                    <div className={mounted ? 'mt-4' : 'mt-6'}>
+                      <Link href={w.href} tabIndex={isFirst ? 0 : -1}
+                        className={mounted ? 'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press' : 'inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press'}
+                        style={{ background: w.icon }}>
+                        {w.cta} <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

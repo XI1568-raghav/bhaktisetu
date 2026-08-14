@@ -288,7 +288,12 @@ export const API_ENDPOINTS = {
   PUJA_CATEGORIES: "/api/v1/pujas/types/popular",
 
   // Bookings
-  BOOKINGS: "/api/v1/bookings",
+  // PAR-15: this was "/api/v1/bookings" — the bare collection, which the API
+  // does not register. Live: POST /api/v1/bookings -> 404 "Route
+  // POST:/api/v1/bookings not found". The create route is
+  // apps/api/src/routes/bookings.ts `server.post('/book')` under the
+  // '/api/v1/bookings' prefix.
+  BOOKINGS: "/api/v1/bookings/book",
   BOOKING_BY_ID: (id: string) => `/api/v1/bookings/${id}` as const,
   BOOKING_CANCEL: (id: string) => `/api/v1/bookings/${id}/cancel` as const,
   BOOKING_REVIEW: (id: string) => `/api/v1/bookings/${id}/review` as const,
@@ -296,8 +301,12 @@ export const API_ENDPOINTS = {
   // Payments
   PAYMENT_CREATE_ORDER: "/api/v1/payments/create-order",
   PAYMENT_VERIFY: "/api/v1/payments/verify",
+  // PAR-15: the `/booking/` segment does not exist. apps/api/src/routes/
+  // payments.ts registers `server.get('/:id')` and its handler calls
+  // `paymentService.getPaymentByBookingId(id)` — the path parameter already IS
+  // the booking id.
   PAYMENT_BY_BOOKING: (bookingId: string) =>
-    `/api/v1/payments/booking/${bookingId}` as const,
+    `/api/v1/payments/${bookingId}` as const,
 
   // Content
   CONTENT: "/api/v1/content",
@@ -310,8 +319,13 @@ export const API_ENDPOINTS = {
 
   // Live Darshan
   DARSHAN_LIVE: "/api/v1/darshan/live",
+  // PAR-05: this used to be `/api/v1/darshan/${streamId}`, which is not a
+  // registered route — every player request 404'd, four times a minute, for as
+  // long as the screen stayed open. The real handler is
+  // apps/api/src/routes/darshan.ts:380 and it accepts either a stream id or a
+  // temple slug.
   DARSHAN_STREAM: (streamId: string) =>
-    `/api/v1/darshan/${streamId}` as const,
+    `/api/v1/darshan/${streamId}/stream` as const,
 
   // Search
   SEARCH: "/api/v1/search",

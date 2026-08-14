@@ -107,17 +107,48 @@ async function userCanEditTemple(
  * no profile or the profile name doesn't match any Temple row.
  */
 async function resolveManagerTempleId(userId: string): Promise<string | null> {
+  return (await resolveManagerTemple(userId)).templeId;
+}
+
+export type TempleLinkReason = 'linked' | 'no_temple_profile' | 'no_matching_temple';
+
+/**
+ * S-06: the same resolution, but it says WHY it failed.
+ *
+ * A manager with no TempleProfile and a manager whose profile name matches no
+ * Temple row were indistinguishable — both produced a silent `{offerings: []}`
+ * on GET and `400 {"error":"No matched Temple for this manager"}` on POST. The
+ * slots editor shipped in #231 is correct; it was stranded behind this.
+ *
+ * The name match is also case- and whitespace-tolerant now. "Somnath Temple "
+ * typed into the profile form should still find `Somnath Temple`; there is no
+ * FK between TempleProfile and Temple to fall back on (schema.prisma:1058).
+ */
+async function resolveManagerTemple(
+  userId: string,
+): Promise<{ templeId: string | null; reason: TempleLinkReason }> {
   const profile = await prisma.templeProfile.findUnique({
     where: { userId },
     select: { templeName: true },
   });
-  if (!profile) return null;
+  if (!profile) return { templeId: null, reason: 'no_temple_profile' };
+  const name = (profile.templeName ?? '').trim();
+  if (!name) return { templeId: null, reason: 'no_matching_temple' };
   const temple = await prisma.temple.findFirst({
-    where: { name: profile.templeName },
+    where: { name: { equals: name, mode: 'insensitive' } },
     select: { id: true },
   });
-  return temple?.id ?? null;
+  return temple?.id
+    ? { templeId: temple.id, reason: 'linked' }
+    : { templeId: null, reason: 'no_matching_temple' };
 }
+
+const TEMPLE_LINK_MESSAGE: Record<Exclude<TempleLinkReason, 'linked'>, string> = {
+  no_temple_profile:
+    'Your temple profile is not set up yet, so offerings cannot be attached to a temple. Complete your temple profile to start listing pujas.',
+  no_matching_temple:
+    'Your temple profile name does not match any temple listed on Darshya, so offerings cannot be attached. Check the spelling on your profile or contact support to get your temple linked.',
+};
 
 export async function templePortalRoutes(server: FastifyInstance) {
   // GET /dashboard — TempleProfile + booking/donation aggregates when the
@@ -377,13 +408,22 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.send({ offerings: [] });
+    // S-06: a bare `{offerings: []}` looked identical whether the manager had
+    // no offerings or no temple at all. Say which.
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    if (!link.templeId) {
+      return reply.send({
+        offerings: [],
+        templeLinked: false,
+        reason: link.reason,
+        message: TEMPLE_LINK_MESSAGE[link.reason as Exclude<TempleLinkReason, 'linked'>],
+      });
+    }
     const offerings = await prisma.templePujaOffering.findMany({
-      where: { templeId },
+      where: { templeId: link.templeId },
       orderBy: { id: 'desc' },
     });
-    return reply.send({ offerings: offerings.map(serializeOffering) });
+    return reply.send({ offerings: offerings.map(serializeOffering), templeLinked: true });
   });
 
   server.post('/pujas', { preHandler: [authenticateUser] }, async (request, reply) => {
@@ -391,9 +431,18 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
     if (!templeId) {
-      return reply.code(400).send({ error: 'No matched Temple for this manager' });
+      // S-06: was `400 {"error":"No matched Temple for this manager"}`, which
+      // the UI rendered verbatim. Machine-readable code + copy that names the
+      // actual blocker and the way out.
+      return reply.code(409).send({
+        code: 'temple_not_linked',
+        error: 'Temple not linked',
+        reason: link.reason,
+        message: TEMPLE_LINK_MESSAGE[link.reason as Exclude<TempleLinkReason, 'linked'>],
+      });
     }
     const parsed = pujaOfferingCreateSchema.safeParse(request.body);
     if (!parsed.success) {

@@ -111,7 +111,19 @@ function BookContent() {
       });
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
-        throw new Error(`Booking failed (${res.status}) ${txt.slice(0, 160)}`);
+        // AW-02 (2026-08-12): POST /consultation/book now REFUSES any astrologer
+        // id that is not an approved AstrologerProfile — the 15-row mock fixture
+        // used to be bookable, so a devotee could be charged for a consultation
+        // with someone who does not exist. A stale link to a fixture profile
+        // lands here; show the API's own sentence rather than a raw JSON dump.
+        let message = `Booking failed (${res.status}) ${txt.slice(0, 160)}`;
+        try {
+          const parsed = JSON.parse(txt) as { error?: string };
+          if (parsed?.error) message = parsed.error;
+        } catch {
+          /* not JSON — keep the raw fallback */
+        }
+        throw new Error(message);
       }
       const order = (await res.json()) as {
         consultationId: string;
@@ -162,7 +174,7 @@ function BookContent() {
             name: user?.fullName ?? '',
             email: user?.email ?? '',
           },
-          theme: { color: '#E16318' },
+          theme: { color: '#9e6229' },
           modal: { ondismiss: () => reject(new Error('Payment cancelled')) },
           handler: async (response: {
             razorpay_order_id: string;

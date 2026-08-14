@@ -3,58 +3,76 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
  MessageSquare,
- Phone,
  Video,
  Calendar,
  Clock,
- Star,
  Loader2,
  CheckCircle2,
- X,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 
+/**
+ * AW-01 (2026-08-12, P0) — this page could never show a consultation the
+ * astrologer had been PAID for.
+ *
+ * It fetched `GET /astrology/consultations?role=astrologer`, served by
+ * astrology.service.ts:859-863 from an in-memory `this.sessions` Map that only
+ * the free `/astrology/consult/start` trial path ever writes to (and which
+ * empties on every API restart). The PAID flow — POST /consultation/book →
+ * /verify-payment — persists to the raw-SQL `astrologer_consultations` table
+ * instead. Verified live for the real onboarded astrologer: the dashboard
+ * endpoint returned the confirmed ₹375 row while this one returned
+ * {"consultations":[]} at the same moment.
+ *
+ * It now reads `GET /consultation/astrologer/mine`, the DB-backed list, whose
+ * own AW-01 half was that it filtered on the User UUID while /book writes the
+ * AstrologerProfile.id (fixed in routes/consultation.ts).
+ *
+ * The Join and End actions were repointed to the DB-backed endpoints too. The
+ * old astrologer-side Cancel button is gone: POST /consultation/:id/cancel is
+ * gated on `row.user_id === caller` (devotee-only), so for an astrologer it was
+ * a guaranteed 403 dressed up as an action. A button that cannot work is worse
+ * than no button.
+ */
+
 type TabKey = 'upcoming' | 'past';
 
+type ConsultationStatus = 'pending_payment' | 'confirmed' | 'completed' | 'cancelled';
+
+/** Mirrors GET /consultation/astrologer/mine exactly. */
 interface Consultation {
   id: string;
-  clientName: string;
-  type: string;
-  mode: 'video' | 'call' | 'chat';
-  scheduledAt: string;
-  duration: number;
-  rate: number;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
-  rating?: number;
-  notes?: string;
-  roomUrl?: string | null;
+  reference: string;
+  astrologerName?: string | null;
+  minutes?: number | null;
+  amountInr?: number | null;
+  currency?: string | null;
+  status: ConsultationStatus | string;
+  roomName?: string | null;
+  jitsiUrl?: string | null;
+  scheduledAt?: string | null;
+  createdAt?: string | null;
+  paidAt?: string | null;
 }
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 }
 
-function formatDateTime(dateStr: string): string {
+function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'Time to be agreed';
   const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return 'Time to be agreed';
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
-
-function getModeConfig(mode: string) {
-  switch (mode) {
-    case 'video': return { icon: Video, label: 'Video', cls: 'bg-purple-100 text-purple-700' };
-    case 'call':  return { icon: Phone, label: 'Call',  cls: 'bg-blue-100 text-blue-700' };
-    default:      return { icon: MessageSquare, label: 'Chat', cls: 'bg-saffron-100 text-saffron-700' };
-  }
 }
 
 function getStatusConfig(status: string) {
   const map: Record<string, { label: string; cls: string }> = {
-    scheduled:   { label: 'Scheduled',   cls: 'bg-blue-100 text-blue-700' },
-    in_progress: { label: 'In Progress', cls: 'bg-purple-100 text-purple-700' },
-    completed:   { label: 'Completed',   cls: 'bg-green-100 text-green-700' },
-    cancelled:   { label: 'Cancelled',   cls: 'bg-surface-100 text-surface-600' },
-    no_show:     { label: 'No Show',     cls: 'bg-red-100 text-red-700' },
+    pending_payment: { label: 'Awaiting payment', cls: 'bg-amber-100 text-amber-700' },
+    confirmed:       { label: 'Confirmed',        cls: 'bg-blue-100 text-blue-700' },
+    completed:       { label: 'Completed',        cls: 'bg-green-100 text-green-700' },
+    cancelled:       { label: 'Cancelled',        cls: 'bg-surface-100 text-surface-600' },
   };
   return map[status] ?? { label: status, cls: 'bg-surface-100 text-surface-600' };
 }
@@ -75,7 +93,7 @@ export default function AstrologerConsultationsPage() {
     }
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/astrology/consultations?role=astrologer`, {
+      const res = await fetch(`${API_BASE_URL}/consultation/astrologer/mine?limit=100`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
       });
       if (!res.ok) {
@@ -83,7 +101,7 @@ export default function AstrologerConsultationsPage() {
         throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
       }
       const data = await res.json();
-      const raw: Consultation[] = data.consultations ?? data.data ?? [];
+      const raw: Consultation[] = Array.isArray(data.consultations) ? data.consultations : [];
       setConsultations(raw);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Network error');
@@ -97,44 +115,28 @@ export default function AstrologerConsultationsPage() {
     fetchConsultations();
   }, [fetchConsultations]);
 
-  async function handleJoin(c: Consultation) {
-    setActionId(c.id);
+  // The room is minted by /verify-payment and returned on the row, so there is
+  // nothing to "start" — open it. If the row carries no room the payment has not
+  // settled, and we say that instead of opening a URL we invented.
+  function handleJoin(c: Consultation) {
     setActionError(null);
-    try {
-      let url = c.roomUrl ?? null;
-      if (!url) {
-        const res = await fetch(`${API_BASE_URL}/astrology/consultations/${c.id}/start-call`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${session?.accessToken ?? ''}` },
-        });
-        if (!res.ok) {
-          const body = await res.text().catch(() => '');
-          throw new Error(`Start-call ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
-        }
-        const data = await res.json();
-        url = data.roomUrl ?? data.data?.roomUrl ?? null;
-        if (!url) throw new Error('No roomUrl returned');
-      }
-      window.open(url, '_blank', 'noopener,noreferrer');
-      await fetchConsultations();
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Could not start call');
-    } finally {
-      setActionId(null);
+    if (!c.jitsiUrl) {
+      setActionError('No room has been created for this consultation yet.');
+      return;
     }
+    window.open(c.jitsiUrl, '_blank', 'noopener,noreferrer');
   }
 
-  async function handlePatch(c: Consultation, status: 'COMPLETED' | 'CANCELLED') {
+  async function handleComplete(c: Consultation) {
     setActionId(c.id);
     setActionError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/astrology/consultations/${c.id}`, {
+      const res = await fetch(`${API_BASE_URL}/consultation/${c.id}/complete`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${session?.accessToken ?? ''}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status }),
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
@@ -148,8 +150,8 @@ export default function AstrologerConsultationsPage() {
     }
   }
 
-  const upcoming = consultations.filter((c) => c.status === 'scheduled' || c.status === 'in_progress');
-  const past = consultations.filter((c) => ['completed', 'cancelled', 'no_show'].includes(c.status));
+  const upcoming = consultations.filter((c) => c.status === 'confirmed' || c.status === 'pending_payment');
+  const past = consultations.filter((c) => c.status === 'completed' || c.status === 'cancelled');
   const displayed = activeTab === 'upcoming' ? upcoming : past;
 
   const tabs = [
@@ -207,64 +209,52 @@ export default function AstrologerConsultationsPage() {
       ) : (
         <div className="space-y-3">
           {displayed.map((consultation) => {
-            const modeCfg = getModeConfig(consultation.mode);
-            const ModeIcon = modeCfg.icon;
             const statusCfg = getStatusConfig(consultation.status);
             const isActing = actionId === consultation.id;
-            const canJoin = consultation.status === 'scheduled' || consultation.status === 'in_progress';
-            const canCancel = consultation.status === 'scheduled';
-            const canEnd = consultation.status === 'in_progress';
+            const isPaid = consultation.status === 'confirmed';
+            const amount = Number(consultation.amountInr);
 
             return (
               <div key={consultation.id} className="bg-white rounded-xl border border-surface-100 p-5 hover:border-purple-200 transition-all">
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                   <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
-                    <ModeIcon className="w-5 h-5 text-purple-500" />
+                    <Video className="w-5 h-5 text-purple-500" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h3 className="text-base font-semibold text-surface-800">{consultation.clientName}</h3>
+                      <h3 className="text-base font-semibold text-surface-800">{consultation.reference}</h3>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusCfg.cls}`}>{statusCfg.label}</span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${modeCfg.cls}`}>{modeCfg.label}</span>
                     </div>
-                    <p className="text-sm text-surface-600">{consultation.type}</p>
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-surface-400">
                       <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDateTime(consultation.scheduledAt)}</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{consultation.duration} min</span>
-                      {consultation.rating && (
-                        <span className="flex items-center gap-1"><Star className="w-3 h-3 text-temple-gold fill-temple-gold" />{consultation.rating}/5</span>
+                      {typeof consultation.minutes === 'number' && (
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{consultation.minutes} min</span>
                       )}
                     </div>
-                    {consultation.notes && <p className="text-xs text-surface-400 mt-2 italic">&ldquo;{consultation.notes}&rdquo;</p>}
                   </div>
                   <div className="text-right shrink-0 flex flex-col gap-2 items-end">
-                    <p className="text-sm font-bold text-surface-800">{formatCurrency(consultation.rate)}</p>
-                    <p className="text-xs text-surface-400 -mt-1">Rate</p>
-                    {canJoin && (
+                    {Number.isFinite(amount) && amount > 0 && (
+                      <>
+                        <p className="text-sm font-bold text-surface-800">{formatCurrency(amount)}</p>
+                        <p className="text-xs text-surface-400 -mt-1">Devotee paid</p>
+                      </>
+                    )}
+                    {isPaid && (
                       <button
                         onClick={() => handleJoin(consultation)}
                         disabled={isActing}
                         className="inline-flex items-center gap-1 px-3 py-1.5 text-white text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-60"
                       >
-                        {isActing ? <><Loader2 className="w-3 h-3 animate-spin" />...</> : <><Video className="w-3 h-3" />{consultation.status === 'in_progress' ? 'Rejoin' : 'Join'}</>}
+                        <Video className="w-3 h-3" /> Join
                       </button>
                     )}
-                    {canEnd && (
+                    {isPaid && (
                       <button
-                        onClick={() => handlePatch(consultation, 'COMPLETED')}
+                        onClick={() => handleComplete(consultation)}
                         disabled={isActing}
                         className="inline-flex items-center gap-1 px-3 py-1.5 text-white text-xs font-medium rounded-lg bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-60"
                       >
-                        <CheckCircle2 className="w-3 h-3" /> End
-                      </button>
-                    )}
-                    {canCancel && (
-                      <button
-                        onClick={() => handlePatch(consultation, 'CANCELLED')}
-                        disabled={isActing}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
-                      >
-                        <X className="w-3 h-3" /> Cancel
+                        {isActing ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} End
                       </button>
                     )}
                   </div>

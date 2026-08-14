@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 // Mirrors the /wellness-portal/students response — one row per devotee,
@@ -43,9 +43,9 @@ async function describeFailure(res: Response, fallback: string): Promise<string>
 export async function getMyStudents(
   token: string | undefined,
 ): Promise<WellnessStudent[]> {
-  const res = await fetch(`${API_BASE_URL}/wellness-portal/students`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness-portal/students`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load students'));
   const data = (await res.json()) as { students: WellnessStudent[]; total: number };
   return data.students ?? [];
@@ -91,9 +91,9 @@ export type UpdateWellnessSessionInput = Partial<CreateWellnessSessionInput> & {
 };
 
 export async function listMySessions(token: string | undefined): Promise<WellnessSession[]> {
-  const res = await fetch(`${API_BASE_URL}/wellness/sessions/mine`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/sessions/mine`, {
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load sessions'));
   const body = (await res.json()) as { data: WellnessSession[] };
   return body.data;
@@ -103,11 +103,11 @@ export async function createWellnessSession(
   token: string | undefined,
   input: CreateWellnessSessionInput,
 ): Promise<WellnessSession> {
-  const res = await fetch(`${API_BASE_URL}/wellness/sessions`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create session'));
   const body = (await res.json()) as { data: WellnessSession };
   return body.data;
@@ -118,11 +118,11 @@ export async function updateWellnessSession(
   id: string,
   input: UpdateWellnessSessionInput,
 ): Promise<WellnessSession> {
-  const res = await fetch(`${API_BASE_URL}/wellness/sessions/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/sessions/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update session'));
   const body = (await res.json()) as { data: WellnessSession };
   return body.data;
@@ -132,10 +132,10 @@ export async function deleteWellnessSession(
   token: string | undefined,
   id: string,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/wellness/sessions/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/sessions/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete session'));
 }
 
@@ -147,11 +147,11 @@ export async function setWellnessSessionRoom(
   id: string,
   roomUrl: string,
 ): Promise<WellnessSession> {
-  const res = await fetch(`${API_BASE_URL}/wellness/sessions/${id}/room`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/sessions/${id}/room`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ roomUrl }),
-  });
+  }, DATA_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(await describeFailure(res, 'Failed to set room URL'));
   const body = (await res.json()) as { data: WellnessSession };
   return body.data;

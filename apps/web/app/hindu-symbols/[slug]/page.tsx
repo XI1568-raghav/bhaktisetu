@@ -22,10 +22,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = getHinduSymbol(slug);
   if (!s) return { title: 'Not found' };
   return {
-    title: `${s.name} — Meaning, Deity ${s.associatedDeity}, Ritual Use | Darshya`,
+    title: `${s.name} — Meaning, Deity ${s.associatedDeity}, Ritual Use`,
     description: `${s.name} (${s.sanskrit}) — ${s.meaning.slice(0, 150)}…`,
     alternates: { canonical: `${BASE_URL}/hindu-symbols/${s.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${s.name} — ${s.associatedDeity}`,
       description: s.meaning.slice(0, 200),
       url: `${BASE_URL}/hindu-symbols/${s.slug}`,

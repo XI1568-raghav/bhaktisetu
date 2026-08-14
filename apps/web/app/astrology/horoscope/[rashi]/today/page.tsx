@@ -41,7 +41,7 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { rashi } = await params;
   const r = getRashi(rashi);
-  if (!r) return { title: 'Horoscope Today — Darshya' };
+  if (!r) return { title: 'Horoscope Today' };
   const { iso, prettyDate } = istDateParts(new Date());
   const title = `${r.rashiEnglish} Horoscope Today ${iso} | Lucky Color, Number, Predictions`;
   const description = `${r.rashiEnglish} (${r.rashiHindi}) horoscope for ${prettyDate}. Today's tithi, nakshatra, lucky color, lucky number, and Vedic predictions for career, love, finance, and health.`;
@@ -148,7 +148,7 @@ export default async function RashiTodayPage({ params }: Params) {
             {Array.from({ length: daily.rating }).map((_, i) => (
               <Star key={i} className="w-3 h-3 fill-amber-500 text-amber-500" />
             ))}
-            <span className="ml-1 text-surface-500 text-[10px]">{daily.rating}/5 today</span>
+            <span className="ml-1 text-surface-500 text-xs">{daily.rating}/5 today</span>
           </span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
@@ -165,21 +165,21 @@ export default async function RashiTodayPage({ params }: Params) {
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
           <div>
-            <p className="text-[10px] uppercase text-surface-500 tracking-wide">Tithi</p>
+            <p className="text-xs uppercase text-surface-500 tracking-wide">Tithi</p>
             <p className="font-semibold text-surface-900">{daily.tithi}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase text-surface-500 tracking-wide">Nakshatra</p>
+            <p className="text-xs uppercase text-surface-500 tracking-wide">Nakshatra</p>
             <p className="font-semibold text-surface-900 flex items-center gap-1">
               <Moon className="w-3.5 h-3.5 text-indigo-600" /> {daily.nakshatra}
             </p>
           </div>
           <div>
-            <p className="text-[10px] uppercase text-surface-500 tracking-wide">Vaara</p>
+            <p className="text-xs uppercase text-surface-500 tracking-wide">Vaara</p>
             <p className="font-semibold text-surface-900">{dayName}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase text-surface-500 tracking-wide">Date (IST)</p>
+            <p className="text-xs uppercase text-surface-500 tracking-wide">Date (IST)</p>
             <p className="font-semibold text-surface-900">{iso}</p>
           </div>
         </div>

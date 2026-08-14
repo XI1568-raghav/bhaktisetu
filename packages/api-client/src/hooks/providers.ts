@@ -214,13 +214,50 @@ export function useAdoptionPlans(
 
 // ─── Priest Portal ───────────────────────────
 
+/**
+ * GET /api/v1/priest/dashboard — the REAL shape.
+ *
+ * PAR-03: the previous interface declared
+ *   { todayBookings, earningsToday, earningsThisMonth, rating, ratingCount,
+ *     pendingVideoUploads }
+ * None of those six fields has ever been returned by this endpoint. Because
+ * the interface was a fabrication, `data.earningsToday.toLocaleString()`
+ * type-checked and then threw `TypeError: Cannot read properties of undefined`
+ * on the pandit's home tab the moment the fetch resolved.
+ *
+ * `earnings.pending` arrives as a Decimal STRING ("2310"), the other two as
+ * numbers — normalise via apps/mobile/lib/api-contracts.ts#selectPriestDashboard.
+ */
 export interface PriestDashboard {
-  todayBookings: number;
-  earningsToday: number;
-  earningsThisMonth: number;
-  rating: number;
-  ratingCount: number;
-  pendingVideoUploads: number;
+  priest: {
+    id: string;
+    displayName: string;
+    avatarUrl: string | null;
+    ratingAvg: number | null;
+    ratingCount: number;
+  };
+  earnings: {
+    total: number | string;
+    thisMonth: number | string;
+    pending: number | string;
+  };
+  bookings: {
+    total: number;
+    upcoming: number;
+    completed: number;
+  };
+  upcomingBookings: Array<{
+    id: string;
+    bookingNumber: string;
+    status: string;
+    scheduledDate: string;
+    scheduledTimeSlot: string | null;
+    devoteeNames?: Array<{ name?: string }>;
+    priceAmount: string | number;
+    priestPayout: string | number | null;
+    temple: { id: string; name: string; city?: string } | null;
+    pujaType: { id: string; name: string } | null;
+  }>;
 }
 
 export interface PriestBooking {
@@ -297,12 +334,27 @@ export function usePriestProfile(
 
 // ─── Admin Portal ────────────────────────────
 
+/**
+ * GET /api/v1/admin/dashboard — the REAL shape.
+ *
+ * PAR-04: the old interface declared `totalBookings` and `activeTemples`, which
+ * this endpoint has never returned. `data.totalBookings.toLocaleString('en-IN')`
+ * therefore threw on the admin home screen and again on Reports.
+ */
 export interface AdminDashboard {
   totalUsers: number;
-  totalBookings: number;
+  usersByRole: Record<string, number>;
   totalRevenue: number;
-  activeTemples: number;
   pendingApprovals: number;
+  activeSubscriptions: number;
+  recentTransactions: Array<{
+    id: string;
+    userId: string;
+    type: string;
+    amount: number | string;
+    status: string;
+    createdAt: string;
+  }>;
 }
 
 export interface AdminUser {

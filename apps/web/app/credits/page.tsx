@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/credits' },
  title: "Image Credits",
  description:
  "Attribution for the photographs and artworks used on Darshya. Many images are sourced from Wikimedia Commons under Creative Commons licenses.",

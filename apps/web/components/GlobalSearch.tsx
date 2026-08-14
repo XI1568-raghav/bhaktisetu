@@ -40,6 +40,27 @@ export function GlobalSearch() {
  const [placeholderIdx, setPlaceholderIdx] = useState(0);
  const inputRef = useRef<HTMLInputElement>(null);
  const containerRef = useRef<HTMLDivElement>(null);
+ const panelRef = useRef<HTMLDivElement>(null);
+ /**
+  * A11Y-12: the element focus must return to when the overlay closes. Without
+  * it Escape dropped focus on <body> and the next Tab restarted at the skip
+  * link. Set from the trigger that opened the overlay, or from whatever had
+  * focus when the "/" shortcut fired.
+  */
+ const returnFocusRef = useRef<HTMLElement | null>(null);
+
+ function openSearch(from?: HTMLElement | null) {
+   returnFocusRef.current =
+     from ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+   setOpen(true);
+ }
+
+ function closeSearch() {
+   setOpen(false);
+   const target = returnFocusRef.current;
+   returnFocusRef.current = null;
+   target?.focus();
+ }
 
  useEffect(() => {
    const id = setInterval(() => {
@@ -56,7 +77,7 @@ export function GlobalSearch() {
      if (tgt && /^(INPUT|TEXTAREA|SELECT)$/.test(tgt.tagName)) return;
      if (tgt?.isContentEditable) return;
      e.preventDefault();
-     setOpen(true);
+     openSearch();
    };
    window.addEventListener('keydown', onKey);
    return () => window.removeEventListener('keydown', onKey);
@@ -67,11 +88,11 @@ export function GlobalSearch() {
  if (!open) return;
  function onClick(e: MouseEvent) {
  if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
- setOpen(false);
+ closeSearch();
  }
  }
  function onEsc(e: KeyboardEvent) {
- if (e.key === 'Escape') setOpen(false);
+ if (e.key === 'Escape') closeSearch();
  }
  window.addEventListener('mousedown', onClick);
  window.addEventListener('keydown', onEsc);
@@ -80,6 +101,40 @@ export function GlobalSearch() {
  window.removeEventListener('keydown', onEsc);
  };
  }, [open]);
+
+ // A11Y-12: a dialog that declares aria-modal must actually take the page out
+ // of play — lock body scroll while it is open, restore the previous value on
+ // close (never hard-code "visible", which would clobber a page-level lock).
+ useEffect(() => {
+ if (!open) return;
+ const previous = document.body.style.overflow;
+ document.body.style.overflow = 'hidden';
+ return () => {
+ document.body.style.overflow = previous;
+ };
+ }, [open]);
+
+ // A11Y-12: keep Tab inside the dialog, mirroring components/MobileNavV2.tsx.
+ function onPanelKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+ if (e.key !== 'Tab') return;
+ const panel = panelRef.current;
+ if (!panel) return;
+ const items = Array.from(
+ panel.querySelectorAll<HTMLElement>(
+ 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+ ),
+ );
+ if (items.length === 0) return;
+ const first = items[0]!;
+ const last = items[items.length - 1]!;
+ if (e.shiftKey && document.activeElement === first) {
+ e.preventDefault();
+ last.focus();
+ } else if (!e.shiftKey && document.activeElement === last) {
+ e.preventDefault();
+ first.focus();
+ }
+ }
 
  // Focus input when dropdown opens
  useEffect(() => {
@@ -125,14 +180,16 @@ export function GlobalSearch() {
  <button
  type="button"
  aria-label="Search"
- onClick={() => setOpen(true)}
+ aria-haspopup="dialog"
+ aria-expanded={open}
+ onClick={(e) => openSearch(e.currentTarget)}
  className="hidden xl:flex items-center gap-2 w-[240px] 2xl:w-[300px] h-9 px-3 text-sm text-surface-500 bg-white border border-surface-200 hover:border-saffron-300 hover:text-surface-700 rounded-md transition-colors"
  >
  <Search className="w-4 h-4 shrink-0" />
  <span className="truncate text-left flex-1">
  {ROTATING_PLACEHOLDERS[placeholderIdx]}
  </span>
- <kbd className="inline-flex px-1.5 py-0.5 text-[10px] font-mono text-surface-400 bg-surface-100 rounded border border-surface-200">
+ <kbd className="inline-flex px-1.5 py-0.5 text-xs font-mono text-surface-400 bg-surface-100 rounded border border-surface-200">
  /
  </kbd>
  </button>
@@ -141,7 +198,9 @@ export function GlobalSearch() {
  type="button"
  aria-label="Search"
  title="Search"
- onClick={() => setOpen(true)}
+ aria-haspopup="dialog"
+ aria-expanded={open}
+ onClick={(e) => openSearch(e.currentTarget)}
  className="xl:hidden inline-flex items-center justify-center h-9 w-9 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
  >
  <Search className="w-4 h-4" />
@@ -152,10 +211,15 @@ export function GlobalSearch() {
  className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm sm:absolute sm:inset-auto sm:right-0 sm:top-12 sm:w-[420px] sm:bg-transparent sm:backdrop-blur-none"
  onMouseDown={(e) => {
  // Click on backdrop closes (mobile only)
- if (e.target === e.currentTarget) setOpen(false);
+ if (e.target === e.currentTarget) closeSearch();
  }}
  >
  <div
+ ref={panelRef}
+ role="dialog"
+ aria-modal="true"
+ aria-label="Search Darshya"
+ onKeyDown={onPanelKeyDown}
  className="bg-white rounded-xl shadow-2xl border border-surface-200 mx-4 mt-16 sm:m-0 overflow-hidden"
  >
  <div className="flex items-center gap-2 px-3 py-2 border-b border-surface-100">
@@ -164,13 +228,14 @@ export function GlobalSearch() {
  ref={inputRef}
  value={query}
  onChange={(e) => setQuery(e.target.value)}
+ aria-label="Search temples, pujas and aartis"
  placeholder="Search temples, pujas, aartis…"
  className="flex-1 px-1 py-1.5 text-sm bg-transparent outline-none placeholder:text-surface-400"
  />
  {loading && <Loader2 className="w-4 h-4 text-surface-400 animate-spin" />}
  <button
  type="button"
- onClick={() => setOpen(false)}
+ onClick={closeSearch}
  className="p-1 text-surface-400 hover:text-surface-600"
  aria-label="Close search"
  >
@@ -195,7 +260,7 @@ export function GlobalSearch() {
 
  {sections.map(([label, items]) => (
  <div key={label} className="py-2">
- <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-saffron-600">
+ <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-saffron-600">
  {label}
  </div>
  {items.map((item) => (

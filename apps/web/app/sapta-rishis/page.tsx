@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Sapta Rishis — The 7 Great Sages of Sanatana Dharma | Darshya',
+  title: 'Sapta Rishis — The 7 Great Sages of Sanatana Dharma',
   description: 'The seven great rishis who composed the Rigveda and founded the brahmana gotras — Atri, Bharadvaja, Gautama, Jamadagni, Kashyapa, Vasishtha, Vishvamitra. The Ursa Major constellation in the sky.',
   alternates: { canonical: `${BASE_URL}/sapta-rishis` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Sapta Rishis — The 7 Great Sages',
     description: 'The seven rishis whose names are carried by every brahmana gotra and whose mandalas form the core of the Rigveda — visible nightly as Ursa Major.',
     url: `${BASE_URL}/sapta-rishis`,

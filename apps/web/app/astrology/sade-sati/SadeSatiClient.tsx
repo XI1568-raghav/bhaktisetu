@@ -102,7 +102,7 @@ export default function SadeSatiClient({ options }: { options: TimezoneOption[] 
      Am I in Sade Sati?
     </button>
 
-    <p className="mt-3 text-[11px] text-gray-500">
+    <p className="mt-3 text-xs text-gray-500">
      Chandra-lagna based check using Saturn longitude (simplified Meeus VSOP87 ±1°), fully
      sufficient for 30°-wide rashi determination + 2.5-yr phase timing.
     </p>
@@ -181,12 +181,12 @@ export default function SadeSatiClient({ options }: { options: TimezoneOption[] 
            } ${ps.border} ${ps.bg}`}
           >
            <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${ps.pill}`}>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${ps.pill}`}>
              {p.kind === 'rising' ? 'Phase 1' : p.kind === 'peak' ? 'Phase 2' : p.kind === 'setting' ? 'Phase 3' : p.kind === 'dhaiya-4th' ? 'Dhaiya 4th' : 'Dhaiya 8th'}
             </span>
             <span className="text-sm font-semibold text-gray-900">{p.saturnRashi}</span>
             {p.isCurrent && (
-             <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-[10px] font-bold text-white">NOW</span>
+             <span className="rounded-full bg-saffron-600 px-2 py-0.5 text-xs font-bold text-white">NOW</span>
             )}
            </div>
            <div className="text-xs text-gray-700">
@@ -226,7 +226,7 @@ export default function SadeSatiClient({ options }: { options: TimezoneOption[] 
 function Cell({ label, value }: { label: string; value: string }) {
  return (
   <div className="rounded-xl border border-gray-200 bg-white/80 p-3">
-   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
    <p className="mt-0.5 text-sm font-semibold text-gray-900">{value}</p>
   </div>
  );

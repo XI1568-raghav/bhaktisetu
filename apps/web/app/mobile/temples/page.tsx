@@ -54,18 +54,18 @@ export default function MobileTemples() {
  <img src={t.img} alt={t.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
  {t.live && (
- <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+ <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
  LIVE
  </div>
  )}
  {t.verified && (
- <div className="absolute top-2.5 right-2.5 flex items-center gap-0.5 bg-green-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+ <div className="absolute top-2.5 right-2.5 flex items-center gap-0.5 bg-green-600/90 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
  <Shield className="w-2.5 h-2.5" />
  </div>
  )}
  {t.live && t.viewers > 0 && (
- <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+ <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-md backdrop-blur-sm">
  <Users className="w-2.5 h-2.5" />
  {(t.viewers / 1000).toFixed(1)}K
  </div>

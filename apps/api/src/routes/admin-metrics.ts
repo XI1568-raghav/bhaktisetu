@@ -65,6 +65,78 @@ function daysAgo(n: number): Date {
   return new Date(Date.now() - n * 24 * 3600_000);
 }
 
+/** One funnel stage's count for one UTC day. */
+type DayCountRow = { day: string; n: number | bigint | null };
+
+export type FunnelStages = {
+  landing: number;
+  signup: number;
+  kyc: number;
+  booking: number;
+  payment_success: number;
+};
+
+function toCount(n: number | bigint | null | undefined): number {
+  if (n == null) return 0;
+  return typeof n === 'bigint' ? Number(n) : n;
+}
+
+/**
+ * Per-day funnel counts, aggregated by Postgres.
+ *
+ * SCAL-04 (2026-08-13): this used to be four unbounded `findMany` calls whose
+ * rows were bucketed by day in a JS loop — 15,040 kB for the users query and
+ * 13,282 kB for the bookings query at 200k rows, measured with EXPLAIN
+ * (ANALYZE, SERIALIZE). The daily funnel-drop-analyzer cron hits this endpoint,
+ * so that was ~28 MB into a 512 MB container on a schedule. `date_trunc` gives
+ * back at most `days` rows per table (30 max) — the same numbers, ~99.9% less
+ * wire.
+ *
+ * The day key is UTC, matching `dayKey()`: created_at is `timestamp` and Prisma
+ * writes UTC, so `date_trunc('day', created_at)` truncates on the same boundary
+ * `toISOString().slice(0, 10)` reads.
+ *
+ * Each query degrades to an empty result independently, exactly as the four
+ * `.catch(() => [])` calls did — a missing table must not 500 the whole feed.
+ * Days with no rows simply keep the zero floor seeded by the caller.
+ */
+export async function loadFunnelDaily(since: Date): Promise<Record<string, FunnelStages>> {
+  const [leadRows, userRows, bookingRows, paymentRows] = await Promise.all([
+    prisma.$queryRaw<DayCountRow[]>`
+      SELECT to_char(date_trunc('day', "created_at"), 'YYYY-MM-DD') AS day, count(*)::int AS n
+      FROM "leads" WHERE "created_at" >= ${since} GROUP BY 1
+    `.catch(() => [] as DayCountRow[]),
+    prisma.$queryRaw<Array<DayCountRow & { kyc: number | bigint | null }>>`
+      SELECT to_char(date_trunc('day', "created_at"), 'YYYY-MM-DD') AS day,
+             count(*)::int AS n,
+             count(*) FILTER (WHERE "phone" IS NOT NULL OR "email" IS NOT NULL)::int AS kyc
+      FROM "users" WHERE "created_at" >= ${since} GROUP BY 1
+    `.catch(() => [] as Array<DayCountRow & { kyc: number | bigint | null }>),
+    prisma.$queryRaw<DayCountRow[]>`
+      SELECT to_char(date_trunc('day', "created_at"), 'YYYY-MM-DD') AS day, count(*)::int AS n
+      FROM "puja_bookings" WHERE "created_at" >= ${since} GROUP BY 1
+    `.catch(() => [] as DayCountRow[]),
+    prisma.$queryRaw<DayCountRow[]>`
+      SELECT to_char(date_trunc('day', "created_at"), 'YYYY-MM-DD') AS day, count(*)::int AS n
+      FROM "payments" WHERE "created_at" >= ${since} AND "status"::text = 'captured' GROUP BY 1
+    `.catch(() => [] as DayCountRow[]),
+  ]);
+
+  const out: Record<string, FunnelStages> = {};
+  const row = (day: string): FunnelStages =>
+    (out[day] ??= { landing: 0, signup: 0, kyc: 0, booking: 0, payment_success: 0 });
+
+  for (const r of leadRows ?? []) row(r.day).landing = toCount(r.n);
+  for (const r of userRows ?? []) {
+    const s = row(r.day);
+    s.signup = toCount(r.n);
+    s.kyc = toCount(r.kyc);
+  }
+  for (const r of bookingRows ?? []) row(r.day).booking = toCount(r.n);
+  for (const r of paymentRows ?? []) row(r.day).payment_success = toCount(r.n);
+  return out;
+}
+
 // Decimal → paise. Prisma Decimal serialises as string in JSON; coerce safely.
 function decToPaise(d: unknown): number {
   if (d == null) return 0;
@@ -95,19 +167,23 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
       _sum: { amount: true },
     }).catch(() => null);
 
-    // Distinct paying users
-    const paidUserRows = await prisma.payment.findMany({
-      where: { status: 'captured' },
-      select: { userId: true },
-      distinct: ['userId'],
-    }).catch(() => [] as Array<{ userId: string }>);
-    const paidUsers = paidUserRows.length;
+    // Distinct paying users.
+    //
+    // SCAL-04 (2026-08-13): this was `payment.findMany({ select: { userId },
+    // distinct: ['userId'] })` — every paying user's id materialised in Node
+    // just to read `.length`, measured at 16,016 kB by EXPLAIN (ANALYZE,
+    // SERIALIZE) at 200k rows. Then that whole id array went back to Postgres
+    // as an `IN (...)` list for the NRI count. Two counts over the relation
+    // answer both questions and transfer two integers.
+    const paidUsers = await prisma.user.count({
+      where: { payments: { some: { status: 'captured' } } },
+    }).catch(() => 0);
 
     // NRI mix — share of paying users with isNri=true
     let nriMixPct: number | null = null;
     if (paidUsers > 0) {
       const nriCount = await prisma.user.count({
-        where: { isNri: true, id: { in: paidUserRows.map((r) => r.userId) } },
+        where: { isNri: true, payments: { some: { status: 'captured' } } },
       }).catch(() => 0);
       nriMixPct = nriCount / paidUsers;
     }
@@ -117,20 +193,17 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
       where: { createdAt: { gte: since7 } },
     }).catch(() => 0);
 
-    const activeFromPayments = await prisma.payment.findMany({
-      where: { createdAt: { gte: since30 } },
-      select: { userId: true },
-      distinct: ['userId'],
-    }).catch(() => [] as Array<{ userId: string }>);
-    const activeFromBookings = await prisma.pujaBooking.findMany({
-      where: { createdAt: { gte: since30 } },
-      select: { userId: true },
-      distinct: ['userId'],
-    }).catch(() => [] as Array<{ userId: string }>);
-    const activeUsers = new Set([
-      ...activeFromPayments.map((r) => r.userId),
-      ...activeFromBookings.map((r) => r.userId),
-    ]).size;
+    // SCAL-04: "distinct users with a payment OR a booking in 30 days" was two
+    // more full id transfers de-duplicated in a JS Set. It is one count with an
+    // OR over the two relations — same number, no rows on the wire.
+    const activeUsers = await prisma.user.count({
+      where: {
+        OR: [
+          { payments: { some: { createdAt: { gte: since30 } } } },
+          { bookings: { some: { createdAt: { gte: since30 } } } },
+        ],
+      },
+    }).catch(() => 0);
 
     // Line breakdown — bookings + donations + (store via Payment.metadata gap, omit)
     const bookingAgg = await prisma.pujaBooking.aggregate({
@@ -188,52 +261,15 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
     const days = Math.min(Math.max(Number(request.query.days) || 7, 2), 30);
     const since = startOfDayUtc(daysAgo(days));
 
-    // Pull raw rows; bucket in app. Cheap on free-tier DB — caps ~3k rows/day.
-    const [leads, users, bookings, payments] = await Promise.all([
-      prisma.lead.findMany({
-        where: { createdAt: { gte: since } },
-        select: { createdAt: true, status: true },
-      }).catch(() => [] as Array<{ createdAt: Date; status: string }>),
-      prisma.user.findMany({
-        where: { createdAt: { gte: since } },
-        select: { createdAt: true, phone: true, email: true },
-      }).catch(() => [] as Array<{ createdAt: Date; phone: string | null; email: string | null }>),
-      prisma.pujaBooking.findMany({
-        where: { createdAt: { gte: since } },
-        select: { createdAt: true },
-      }).catch(() => [] as Array<{ createdAt: Date }>),
-      prisma.payment.findMany({
-        where: { createdAt: { gte: since }, status: 'captured' },
-        select: { createdAt: true },
-      }).catch(() => [] as Array<{ createdAt: Date }>),
-    ]);
+    // Aggregated by day in SQL — at most `days` rows per table (see
+    // loadFunnelDaily). Was four unbounded row reads bucketed in JS.
+    const counted = await loadFunnelDaily(since);
 
     // Seed each day key so the agent baseline median has a zero floor.
-    type Stages = { landing: number; signup: number; kyc: number; booking: number; payment_success: number };
-    const daily: Record<string, Stages> = {};
+    const daily: Record<string, FunnelStages> = {};
     for (let i = 0; i < days; i++) {
       const k = dayKey(daysAgo(i));
-      daily[k] = { landing: 0, signup: 0, kyc: 0, booking: 0, payment_success: 0 };
-    }
-
-    for (const l of leads) {
-      const row = daily[dayKey(l.createdAt)];
-      if (row) row.landing += 1;
-    }
-    for (const u of users) {
-      const row = daily[dayKey(u.createdAt)];
-      if (row) {
-        row.signup += 1;
-        if (u.phone || u.email) row.kyc += 1;
-      }
-    }
-    for (const b of bookings) {
-      const row = daily[dayKey(b.createdAt)];
-      if (row) row.booking += 1;
-    }
-    for (const p of payments) {
-      const row = daily[dayKey(p.createdAt)];
-      if (row) row.payment_success += 1;
+      daily[k] = counted[k] ?? { landing: 0, signup: 0, kyc: 0, booking: 0, payment_success: 0 };
     }
 
     return reply.send({

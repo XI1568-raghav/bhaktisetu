@@ -88,7 +88,7 @@ export default function ProviderBadge({
   const Icon = style.Icon;
   const sizeCls =
     size === 'xs'
-      ? 'text-[10px] px-1.5 py-0.5 gap-1'
+      ? 'text-xs px-1.5 py-0.5 gap-1'
       : 'text-xs px-2.5 py-1 gap-1.5';
   const iconCls = size === 'xs' ? 'w-3 h-3' : 'w-3.5 h-3.5';
 
@@ -131,7 +131,7 @@ export function RatingDisplay({
     );
   }
   const sizeCls =
-    size === 'md' ? 'text-sm' : size === 'sm' ? 'text-xs' : 'text-[11px]';
+    size === 'md' ? 'text-sm' : size === 'sm' ? 'text-xs' : 'text-xs';
   return (
     <span
       className={`inline-flex items-center gap-1 ${sizeCls} ${className}`}

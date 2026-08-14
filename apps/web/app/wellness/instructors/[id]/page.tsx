@@ -160,6 +160,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
  if (!inst) return { title: 'Instructor Not Found' };
  return {
  title: `${inst.name} — ${inst.specialty.join(', ')}`,
+ alternates: { canonical: `https://darshya.online/wellness/instructors/${id}` },
  description: inst.bio.slice(0, 160),
  };
 }
@@ -346,7 +347,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
  <div>
  <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{review.author}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>{review.date}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>{review.date}</p>
  </div>
  </div>
  <div className="flex items-center gap-0.5">
@@ -388,7 +389,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  }}
  >
  {plan.highlight && (
- <span className="text-[10px] font-medium px-2 py-0.5 rounded-full mb-2 inline-block" style={{ background: 'rgba(255,255,255,0.2)' }}>
+ <span className="text-xs font-medium px-2 py-0.5 rounded-full mb-2 inline-block" style={{ background: 'rgba(255,255,255,0.2)' }}>
  Most Popular
  </span>
  )}

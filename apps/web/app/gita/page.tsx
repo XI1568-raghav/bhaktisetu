@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Bhagavad Gita, All 18 Chapters with Sanskrit, Meaning & Key Verses | Darshya',
+  title: 'Bhagavad Gita, All 18 Chapters with Sanskrit, Meaning & Key Verses',
   description: `Complete chapter-by-chapter guide to the Bhagavad Gita: all 18 chapters, ${TOTAL_VERSES} verses, themes, key shlokas, and the yoga path each chapter teaches. Krishna's teaching to Arjuna at Kurukshetra.`,
   alternates: { canonical: `${BASE_URL}/gita` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Bhagavad Gita, 18 chapters complete guide',
     description: `Sanskrit, transliteration, key verses, and teaching of each of the Gita's 18 chapters across ${TOTAL_VERSES} verses.`,
     url: `${BASE_URL}/gita`,

@@ -41,7 +41,43 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { apiErrorCode, serverErrorMessage } from '../../../lib/friendly-error';
+import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { DateInput } from '../../../components/ui/DateInput';
+import { formatTrustScoreOutOf, hasMeaningfulTrustScore } from '../../../lib/trust-score';
+import {
+ PLATFORM_FEE_INR,
+ PRASAD_DELIVERY_FEE_INR,
+ formatInr,
+ pujaTotalInr,
+} from '../../../lib/puja-pricing';
+// DB-06: the real cancellation guarantee, shared with the puja detail page so
+// the badge above the Pay button and the badge on the listing cannot drift.
+import {
+ CANCELLATION_BADGE_LABEL,
+ CANCELLATION_POLICY_SENTENCE,
+} from '../../../lib/cancellation-policy';
+import {
+ buildLoginRedirect,
+ clearBookingDraft,
+ draftHasContent,
+ loadBookingDraft,
+ peekBookingDraftSlug,
+ saveBookingDraft,
+ type BookingDraft,
+} from '../../../lib/booking-draft';
+// CM-06: prasad delivery used to be India-only (6-digit pincode + [6-9]\d{9}
+// phone, no country field anywhere on this page), so an NRI — the cohort the
+// whole pricing doctrine is built on — could not finish checkout. The rules
+// now live in @poojly/shared and the API's Zod schema parses with the SAME
+// module, so the form and the wire contract cannot drift apart.
+// Billing is unchanged: INR via Razorpay for every country.
+import {
+ DELIVERY_COUNTRY_OPTIONS,
+ deliveryFieldHints,
+ emptyDeliveryAddress,
+ validateDeliveryAddress,
+} from '../../../lib/delivery-address';
 
 // PostHog never throws on capture, but its singleton may not be initialised
 // in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
@@ -138,8 +174,11 @@ const NAKSHATRAS = [
  'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati',
 ];
 
-const PLATFORM_FEE = 51;
-const PRASAD_DELIVERY_FEE = 150;
+// CM-03 (prod sweep 2026-08-12): the two fee constants used to be declared right
+// here, a private copy of numbers the API is the only authority on. They now come
+// from lib/puja-pricing, which the fee-disclosure test parses against
+// apps/api/src/services/booking.service.ts so drift fails CI instead of
+// mischarging a devotee.
 
 const STEP_LABELS = ['Temple & Date', 'Devotee Details', 'Review & Prasad', 'Payment'];
 
@@ -212,7 +251,7 @@ function getFallbackPuja(slug: string): PujaInfo {
  { time: '17:00', label: 'Evening (5:00 PM)' },
  ],
  isActive: true,
- trustScore: 98,
+ trustScore: 4.9,
  isVerified: true,
  },
  {
@@ -228,7 +267,7 @@ function getFallbackPuja(slug: string): PujaInfo {
  { time: '16:00', label: 'Afternoon (4:00 PM)' },
  ],
  isActive: true,
- trustScore: 96,
+ trustScore: 4.8,
  isVerified: true,
  },
  {
@@ -243,7 +282,7 @@ function getFallbackPuja(slug: string): PujaInfo {
  { time: '11:00', label: 'Late Morning (11:00 AM)' },
  ],
  isActive: true,
- trustScore: 95,
+ trustScore: 4.75,
  isVerified: true,
  },
  ],
@@ -337,19 +376,15 @@ type RazorpayInstance = {
 type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance;
 type RazorpayWindow = typeof window & { Razorpay?: RazorpayConstructor };
 
-const loadRazorpay = (): Promise<RazorpayConstructor | undefined> => {
- return new Promise((resolve) => {
- const w = window as RazorpayWindow;
- if (w.Razorpay) {
- resolve(w.Razorpay);
- return;
- }
- const script = document.createElement('script');
- script.src = 'https://checkout.razorpay.com/v1/checkout.js';
- script.onload = () => resolve((window as RazorpayWindow).Razorpay);
- document.body.appendChild(script);
- });
-};
+// RES-04: this file used to hand-roll the loader with `script.onload` only —
+// no `onerror`, no timer — so a blocked or slow checkout.razorpay.com left the
+// promise unsettled forever. That await sits AFTER create-order has succeeded,
+// so a PujaBooking row and a live Razorpay order already exist and hold a slot
+// place while the Pay button spins with no error and no retry. The sibling
+// flows (DonationForm, astrology booking, store checkout) all handled it; this
+// one did not. lib/razorpay-loader.ts is the single loader with the single
+// failure contract: it resolves `undefined` on error OR timeout, which is what
+// the "Could not load Razorpay checkout. Please retry." branch below needs.
 
 // The literal placeholder the API ships when RAZORPAY_KEY_ID is unset. A real
 // Razorpay *test* key (rzp_test_<random>) is a valid key and is left alone —
@@ -442,6 +477,20 @@ function PujaBookingInner() {
  // Wizard state
  const [currentStep, setCurrentStep] = useState(0);
 
+ // A11Y-08: pressing Continue swaps the whole step body out. Without an
+ // explicit focus move the caret stays on a button that no longer exists and
+ // the next Tab restarts at the top of the document. Skip the first paint —
+ // stealing focus on load would fight the browser's own restore.
+ const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+ const stepMountedRef = useRef(false);
+ useEffect(() => {
+ if (!stepMountedRef.current) {
+ stepMountedRef.current = true;
+ return;
+ }
+ stepHeadingRef.current?.focus();
+ }, [currentStep]);
+
  // Step 1
  const [selectedTempleId, setSelectedTempleId] = useState('');
  const [selectedDate, setSelectedDate] = useState(getTomorrow);
@@ -455,6 +504,10 @@ function PujaBookingInner() {
  const [loadingSlots, setLoadingSlots] = useState(false);
  // PBO-7: honest slot-load failure flag (no mock availability fallback).
  const [slotsError, setSlotsError] = useState(false);
+ // RES-07: bumped when a create-order 409 tells us the chosen slot is gone,
+ // so the picker re-reads live availability instead of re-showing the counts
+ // that were true before the race was lost.
+ const [slotRefreshTick, setSlotRefreshTick] = useState(0);
 
  // Muhurat guidance (per-puja shubh-window layer). Populated only for puja
  // types with a classical scoring ruleset (Griha Pravesh + Satyanarayan); the
@@ -492,15 +545,11 @@ function PujaBookingInner() {
 
  // Step 3
  const [wantsPrasad, setWantsPrasad] = useState(false);
- const [address, setAddress] = useState({
- fullName: '',
- line1: '',
- line2: '',
- city: '',
- state: '',
- pincode: '',
- phone: '',
- });
+ // Defaults to India (CM-06) — the country only widens what validates.
+ const [address, setAddress] = useState(emptyDeliveryAddress);
+ // Labels/placeholders follow the selected country: "Pincode / 110001" for
+ // India, "ZIP code / 07030" for the US, and no postcode at all for the UAE.
+ const addrHints = deliveryFieldHints(address.country);
  const [agreedTerms, setAgreedTerms] = useState(false);
 
  // Step 4 / Success
@@ -522,6 +571,21 @@ function PujaBookingInner() {
 
  // ─── Validation errors ──────────────────────────────────────
  const [errors, setErrors] = useState<Record<string, string>>({});
+
+ // ─── DF-01: parked-draft recovery ───────────────────────────
+ // A logged-out devotee who taps Pay is sent through /auth/login, which is a
+ // full page navigation — every piece of React state above this line is
+ // destroyed. We park the wizard in sessionStorage first and replay it on the
+ // way back. See lib/booking-draft.ts for the storage/privacy contract.
+ const draftRestoredRef = useRef(false);
+ // The slot has to be re-applied after availability loads, because the
+ // slot-fetch effect deliberately clears the selection whenever the temple or
+ // date changes — including the change the replay itself causes.
+ const restoredSlotRef = useRef('');
+ // Only read for the no-slug screen, and only in an effect: sessionStorage does
+ // not exist during the server pass, so touching it in render would desync
+ // hydration.
+ const [parkedDraftSlug, setParkedDraftSlug] = useState<string | null>(null);
 
  // ─── Fetch puja data ────────────────────────────────────────
  // PBO-7 (2026-07-09): on fetch failure show an honest "could not load" state
@@ -591,11 +655,31 @@ function PujaBookingInner() {
  return Number(selectedTemple.priceOverride || puja.basePrice);
  }, [puja, selectedTemple]);
 
- const totalPrice = useMemo(() => {
- let total = basePrice + PLATFORM_FEE;
- if (wantsPrasad) total += PRASAD_DELIVERY_FEE;
- return total;
- }, [basePrice, wantsPrasad]);
+ const totalPrice = useMemo(
+ () => pujaTotalInr(basePrice, wantsPrasad),
+ [basePrice, wantsPrasad],
+ );
+
+ // CM-03: what step 0 has to be honest about. Before a temple is picked there is
+ // no single price, so quote the cheapest bookable offering — the same "from"
+ // number the catalogue card and the detail hero advertise — and label it as such.
+ const disclosureBasePrice = useMemo(() => {
+ if (selectedTemple) return basePrice;
+ if (!puja) return 0;
+ const prices = bookableTemples
+ .map((t) => Number(t.priceOverride || puja.basePrice))
+ .filter((n) => Number.isFinite(n) && n > 0);
+ return prices.length > 0 ? Math.min(...prices) : Number(puja.basePrice) || 0;
+ }, [selectedTemple, basePrice, puja, bookableTemples]);
+
+ const totalWithoutPrasad = useMemo(
+ () => pujaTotalInr(disclosureBasePrice, false),
+ [disclosureBasePrice],
+ );
+ const totalWithPrasad = useMemo(
+ () => pujaTotalInr(disclosureBasePrice, true),
+ [disclosureBasePrice],
+ );
 
  // USD price comes straight from PujaType.nriPrice — already encodes
  // the 9-10x diaspora multiplier configured per puja type. We do not
@@ -623,6 +707,17 @@ function PujaBookingInner() {
  if (res.ok) {
  const data = await res.json();
  setSlotAvailability(data.slots);
+ // DF-01: re-apply the slot the devotee had already chosen before the login
+ // bounce — but only if it is still offered and still has room. Never
+ // silently rebook them into a slot that filled up while they were away.
+ const wanted = restoredSlotRef.current;
+ if (wanted) {
+ restoredSlotRef.current = '';
+ const stillFree = (data.slots as SlotAvailability[] | undefined)?.find(
+ (s) => s.time === wanted && s.remaining > 0,
+ );
+ if (stillFree) setSelectedSlot(wanted);
+ }
  } else {
  throw new Error('API unavailable');
  }
@@ -638,7 +733,7 @@ function PujaBookingInner() {
  }
  fetchSlots();
  setSelectedSlot('');
- }, [selectedTemple, selectedDate]);
+ }, [selectedTemple, selectedDate, slotRefreshTick]);
 
  // ─── Fetch per-puja muhurat guidance (shubh-window layer) ──────
  useEffect(() => {
@@ -683,6 +778,85 @@ function PujaBookingInner() {
  [muhuratDays, selectedDate],
  );
 
+ // ─── DF-01: park / replay the in-progress wizard ────────────
+
+ const draftSnapshot = useCallback(
+ (): BookingDraft => ({
+ slug,
+ selectedTempleId,
+ selectedDate,
+ selectedSlot,
+ devotees: devotees.map((d) => ({ name: d.name, gotra: d.gotra, nakshatra: d.nakshatra })),
+ sankalp,
+ specialInstructions,
+ wantsPrasad,
+ address,
+ agreedTerms,
+ currentStep,
+ savedAt: Date.now(),
+ }),
+ [
+ slug,
+ selectedTempleId,
+ selectedDate,
+ selectedSlot,
+ devotees,
+ sankalp,
+ specialInstructions,
+ wantsPrasad,
+ address,
+ agreedTerms,
+ currentStep,
+ ],
+ );
+
+ // Replay first, exactly once, before anything is allowed to save over it.
+ useEffect(() => {
+ if (!slug || draftRestoredRef.current) return;
+ draftRestoredRef.current = true;
+ const d = loadBookingDraft(slug);
+ if (!d || !draftHasContent(d)) return;
+ if (d.selectedTempleId) setSelectedTempleId(d.selectedTempleId);
+ if (d.selectedDate) setSelectedDate(d.selectedDate);
+ // Not setSelectedSlot: the slot-fetch effect clears the selection on every
+ // temple/date change, so the slot is re-applied once availability is back.
+ restoredSlotRef.current = d.selectedSlot;
+ if (d.devotees.length > 0) {
+ setDevotees(
+ d.devotees.map((x, i) => ({
+ id: `${idBase}-r${i}`,
+ name: x.name,
+ gotra: x.gotra,
+ nakshatra: x.nakshatra,
+ })),
+ );
+ devoteeSeq.current = d.devotees.length + 1;
+ }
+ setSankalp(d.sankalp);
+ setSpecialInstructions(d.specialInstructions);
+ setWantsPrasad(d.wantsPrasad);
+ setAddress(d.address);
+ setAgreedTerms(d.agreedTerms);
+ setCurrentStep(d.currentStep);
+ }, [slug, idBase]);
+
+ // Then keep the parked copy current. Gated on the replay having run, or the
+ // empty first render would overwrite the very draft we came back for.
+ useEffect(() => {
+ if (!slug || bookingSuccess || !draftRestoredRef.current) return;
+ const d = draftSnapshot();
+ if (draftHasContent(d)) saveBookingDraft(d);
+ }, [slug, bookingSuccess, draftSnapshot]);
+
+ // PJ-04 lesson (a dispatch accept-link died when a redirect dropped its query
+ // string): `/auth/login` preserves ours today, but if a devotee ever lands back
+ // on /pujas/book with no ?slug= we can still name the puja they were buying
+ // instead of showing them the bare "No puja selected" dead end.
+ useEffect(() => {
+ if (slug) return;
+ setParkedDraftSlug(peekBookingDraftSlug());
+ }, [slug]);
+
  // ─── Validation ─────────────────────────────────────────────
 
  const validateStep = useCallback(
@@ -704,16 +878,8 @@ function PujaBookingInner() {
  if (step === 2) {
  if (!agreedTerms) errs.terms = 'Please agree to the terms & conditions';
  if (wantsPrasad) {
- if (!address.fullName.trim()) errs.addr_name = 'Name is required';
- if (!address.line1.trim()) errs.addr_line1 = 'Address line 1 is required';
- if (!address.city.trim()) errs.addr_city = 'City is required';
- if (!address.state.trim()) errs.addr_state = 'State is required';
- if (!address.pincode.trim()) errs.addr_pincode = 'Pincode is required';
- else if (!/^\d{6}$/.test(address.pincode.trim()))
- errs.addr_pincode = 'Enter valid 6-digit pincode';
- if (!address.phone.trim()) errs.addr_phone = 'Phone is required';
- else if (!/^[6-9]\d{9}$/.test(address.phone.trim()))
- errs.addr_phone = 'Enter valid 10-digit phone number';
+ // CM-06: country-aware, and identical to the API's Zod schema.
+ Object.assign(errs, validateDeliveryAddress(address));
  }
  }
 
@@ -767,7 +933,15 @@ function PujaBookingInner() {
 
  if (!isAuthenticated) {
  creatingOrderRef.current = false;
- window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+ // DF-01 (prod sweep 2026-08-12): this used to redirect with
+ // `window.location.pathname` alone, so `?slug=…&temple=…` was dropped and the
+ // devotee came back to "No puja selected" with every field blank. Park the
+ // wizard, then bounce with the FULL target — pathname AND search.
+ saveBookingDraft(draftSnapshot());
+ window.location.href = buildLoginRedirect(
+ window.location.pathname,
+ window.location.search,
+ );
  return;
  }
 
@@ -821,12 +995,33 @@ function PujaBookingInner() {
  }).catch(() => null);
 
  if (!res || !res.ok) {
+ // RES-07 (2026-08-12): this branch used to compose the message from
+ // `res.status` alone and never look at the body. The API answers a
+ // fully localized, actionable failure — HTTP 409
+ // {"error":"The selected time slot is no longer available.",
+ //  "code":"SLOT_UNAVAILABLE"} (apps/api/src/lib/error-i18n.ts) — and the
+ // wizard replaced it with "Please try again", which on a lost slot race
+ // can never succeed. The sibling flow (app/checkout/offering) already
+ // read `body?.error`; this is the same fix on the path devotees use.
+ const failureBody = res ? await res.json().catch(() => null) : null;
  const message = res
- ? `Could not create your booking (${res.status}). Please try again or contact support at ${'support@darshya.online'}.`
+ ? serverErrorMessage(
+ failureBody,
+ `Could not create your booking (${res.status}). Please try again or contact support at ${'support@darshya.online'}.`,
+ )
  : 'Network error reaching the booking service. Check your connection and try again.';
  setPaymentError(message);
  setPaymentLoading(false);
  creatingOrderRef.current = false;
+ // A slot that filled up is recoverable IN PAGE: drop the dead slot, send
+ // the devotee back to the picker with the date preserved, and refetch
+ // availability so she is choosing from live counts rather than the ones
+ // that were true when she started.
+ if (apiErrorCode(failureBody) === 'SLOT_UNAVAILABLE') {
+ setSelectedSlot('');
+ setSlotRefreshTick((t) => t + 1);
+ setCurrentStep(0);
+ }
  return;
  }
 
@@ -844,7 +1039,7 @@ function PujaBookingInner() {
  orderRazorpayKeyId = typeof data.razorpayKeyId === 'string' ? data.razorpayKeyId : '';
 
  // Step 2: Open Razorpay checkout
- const Razorpay = await loadRazorpay();
+ const Razorpay = await loadRazorpayCheckout();
  if (!Razorpay) {
  setPaymentError('Could not load Razorpay checkout. Please retry.');
  setPaymentLoading(false);
@@ -861,11 +1056,20 @@ function PujaBookingInner() {
  ? orderRazorpayKeyId
  : await getRazorpayKey();
  if (!isUsableRazorpayKey(razorpayKey)) {
+ // DB-03 (2026-08-12): this used to read "so we did not open checkout. You
+ // have NOT been charged." — true about the money, and misleading about the
+ // booking. create-order has ALREADY committed a pending_payment row (the
+ // 201 above) holding one of the slot's seats for UNPAID_HOLD_MINUTES = 30.
+ // Saying nothing happened is how a devotee ends up with unpayable ghost
+ // bookings they never knew existed. Name the reservation, give the window,
+ // and point at the surface that can complete it.
  setPaymentError(
  'Payments are temporarily unavailable — the payment gateway is not configured, ' +
- 'so we did not open checkout. You have NOT been charged. Please try again in a ' +
- 'few minutes, or email support@darshya.online and we will complete this booking ' +
- 'for you.',
+ 'so checkout could not open. You have NOT been charged. ' +
+ (orderBookingNumber ? `Booking ${orderBookingNumber} is ` : 'Your slot is ') +
+ 'reserved for 30 minutes: open My Bookings and tap "Complete payment" to finish, ' +
+ 'or cancel it there to release the slot. If it does not work, email ' +
+ 'support@darshya.online and we will complete this booking for you.',
  );
  setPaymentLoading(false);
  creatingOrderRef.current = false;
@@ -948,6 +1152,9 @@ function PujaBookingInner() {
  amountInr: totalPrice,
  currency: 'INR',
  });
+ // DF-01: the booking is confirmed, so the parked wizard is spent. Drop it
+ // before the success screen so the next visit starts clean.
+ clearBookingDraft();
  setBookingNumber(bkNum);
  setBookingSuccess(true);
  setPaymentLoading(false);
@@ -1065,6 +1272,7 @@ function PujaBookingInner() {
  amountInr: totalPrice,
  currency: 'INR',
  });
+ clearBookingDraft();
  setBookingNumber(bkNum);
  setBookingSuccess(true);
  setPaymentLoading(false);
@@ -1097,13 +1305,31 @@ function PujaBookingInner() {
  This booking page needs to know which puja you want. Pick one from the catalogue
  and we&apos;ll bring you straight back here.
  </p>
+ {/* DF-01: last line of defence. If the puja was lost on the way here but the
+   parked wizard survived, offer it back rather than sending the devotee to
+   start over from the catalogue. */}
+ <div className="flex flex-col items-center gap-3">
+ {parkedDraftSlug && (
+ <Link
+ href={`/pujas/book?slug=${encodeURIComponent(parkedDraftSlug)}`}
+ className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ >
+ <RefreshCw className="h-4 w-4" />
+ Resume your booking
+ </Link>
+ )}
  <Link
  href="/pujas"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 font-medium ${
+ parkedDraftSlug
+ ? 'border-2 border-saffron-200 text-saffron-600 hover:bg-saffron-50'
+ : 'bg-saffron-600 text-white hover:bg-saffron-700'
+ }`}
  >
  <Flame className="h-4 w-4" />
  Browse all pujas
  </Link>
+ </div>
  </div>
  </div>
  );
@@ -1304,20 +1530,29 @@ function PujaBookingInner() {
  </p>
  </div>
 
- {/* Step Indicator */}
- <div className="mb-10">
- <div className="flex items-center justify-between">
+ {/* Step Indicator
+   A11Y-08 (prod sweep 2026-08-12): this was bare <div>s — no <ol>, no
+   aria-current, no live region — so a screen-reader user who pressed
+   Continue was told nothing. The classes are unchanged (an <ol> under
+   Tailwind preflight has no marker, margin or padding), only the tags and
+   the semantics. */}
+ <nav className="mb-10" aria-label="Booking progress">
+ <ol className="flex items-center justify-between">
  {STEP_LABELS.map((label, i) => {
  const isCompleted = i < currentStep;
  const isCurrent = i === currentStep;
  return (
- <div key={label} className="flex flex-1 flex-col items-center">
+ <li
+ key={label}
+ aria-current={isCurrent ? 'step' : undefined}
+ className="flex flex-1 flex-col items-center"
+ >
  <div className="relative flex w-full items-center">
  {/* Connector line (left side) */}
  {i > 0 && (
  <div
  className={`h-0.5 flex-1 ${
- i <= currentStep ? 'bg-saffron-500' : 'bg-surface-200'
+ i <= currentStep ? 'bg-saffron-600' : 'bg-surface-200'
  }`}
  />
  )}
@@ -1329,7 +1564,7 @@ function PujaBookingInner() {
  isCompleted
  ? 'border-tulsi-green bg-tulsi-green text-white'
  : isCurrent
- ? 'border-saffron-500 bg-saffron-500 text-white shadow-lg'
+ ? 'border-saffron-600 bg-saffron-600 text-white shadow-lg'
  : 'border-surface-200 bg-white text-surface-400'
  }`}
  >
@@ -1340,7 +1575,7 @@ function PujaBookingInner() {
  {i < STEP_LABELS.length - 1 && (
  <div
  className={`h-0.5 flex-1 ${
- i < currentStep ? 'bg-saffron-500' : 'bg-surface-200'
+ i < currentStep ? 'bg-saffron-600' : 'bg-surface-200'
  }`}
  />
  )}
@@ -1354,18 +1589,32 @@ function PujaBookingInner() {
  <span className="hidden sm:inline">{label}</span>
  <span className="sm:hidden">{i + 1}</span>
  </span>
- </div>
+ </li>
  );
  })}
- </div>
- </div>
+ </ol>
+ {/* Always mounted — a region inserted at the same moment as its text is
+     not reliably announced. */}
+ <p className="sr-only" role="status" aria-live="polite">
+ {`Step ${currentStep + 1} of ${STEP_LABELS.length}, ${STEP_LABELS[currentStep]}`}
+ </p>
+ </nav>
+
+ {/* Focus lands here on every step change, so the flow does not silently
+     restart at the top of the document. */}
+ <h2 ref={stepHeadingRef} tabIndex={-1} className="sr-only outline-none">
+ {`Step ${currentStep + 1} of ${STEP_LABELS.length}: ${STEP_LABELS[currentStep]}`}
+ </h2>
 
  {/* ─── STEP 1: Temple, Date & Time ─────────────────── */}
  {currentStep === 0 && (
  <div className="space-y-6">
  {/* Temple Selection */}
  <div className="rounded-xl border border-surface-100 bg-white p-6">
- <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
+ <h2
+ id="book-temple-heading"
+ className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800"
+ >
  <MapPin className="h-5 w-5 text-saffron-500" />
  Select Temple
  </h2>
@@ -1408,13 +1657,21 @@ function PujaBookingInner() {
  </div>
  </div>
  ) : (
- <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+ // A11Y-08: eight temple cards were eight ungrouped buttons, so AT
+ // described them as eight separate actions rather than one choice.
+ <div
+ role="radiogroup"
+ aria-labelledby="book-temple-heading"
+ className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+ >
  {bookableTemples.map((temple) => {
  const isSelected = selectedTempleId === temple.id;
  const price = temple.priceOverride || puja.basePrice;
  return (
  <button
  key={temple.id}
+ role="radio"
+ aria-checked={isSelected}
  onClick={() => setSelectedTempleId(temple.id)}
  className={`relative rounded-xl border-2 p-4 text-left transition-all ${
  isSelected
@@ -1423,7 +1680,7 @@ function PujaBookingInner() {
  }`}
  >
  {isSelected && (
- <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-saffron-500">
+ <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-saffron-600">
  <Check className="h-3.5 w-3.5 text-white" />
  </div>
  )}
@@ -1443,13 +1700,14 @@ function PujaBookingInner() {
  <span className="text-lg font-bold text-saffron-600">
  ₹{Number(price).toLocaleString('en-IN')}
  </span>
- {/* P2 (2026-08-03): trustScore is 0-100. The old `/20` shrank 98 → "4.9" but
-   a near-empty temple (score ~1) rendered as an unexplained "0.0/0.2" badge
-   that read as a bug. Show the star rating only when it's meaningful. */}
- {temple.trustScore >= 20 && (
+ {/* trustScore is 0-5 (see lib/trust-score.ts). The 2026-08-03 note here
+   claimed 0-100 — taken from this file's own MOCK fixtures, which used 98/96/95
+   while the API served 4.9. That made the `>= 20` guard hide the badge on every
+   REAL temple. Scale and threshold now come from one shared module. */}
+ {hasMeaningfulTrustScore(temple.trustScore) && (
  <span className="flex items-center gap-1 text-xs text-surface-400">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
- {(temple.trustScore / 20).toFixed(1)}
+ {formatTrustScoreOutOf(temple.trustScore)}
  </span>
  )}
  </div>
@@ -1459,6 +1717,50 @@ function PujaBookingInner() {
  </div>
  )}
  </div>
+
+ {/* CM-03 (prod sweep 2026-08-12): every surface before this one advertises the
+   bare puja price — homepage "₹1,100", catalogue card "₹1,100 onwards", detail
+   hero "Starting from ₹1,100". The wizard then revealed the ₹51 platform fee and
+   the ₹150 prasad-delivery fee for the first time in the step-3 Price Breakdown,
+   so ₹1,100 became ₹1,301 at the last gate. Both fees are genuinely charged —
+   apps/api/src/services/booking.service.ts folds them into `priceAmount`, which
+   is what the Razorpay order is minted from — so the answer is to say so here,
+   on the first screen that shows a price, not to hide them one screen longer. */}
+ {bookableTemples.length > 0 && disclosureBasePrice > 0 && (
+ <div className="rounded-xl border border-surface-200 bg-surface-50 p-5">
+ <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-surface-700">
+ <IndianRupee className="h-4 w-4 text-saffron-500" />
+ What you will pay
+ </h2>
+ <dl className="space-y-1.5 text-sm">
+ <div className="flex items-center justify-between">
+ <dt className="text-surface-600">
+ {selectedTemple ? 'Puja fee' : 'Puja fee (from)'}
+ </dt>
+ <dd className="font-medium text-surface-700">
+ ₹{formatInr(disclosureBasePrice)}
+ </dd>
+ </div>
+ <div className="flex items-center justify-between">
+ <dt className="text-surface-600">Platform fee</dt>
+ <dd className="font-medium text-surface-700">₹{formatInr(PLATFORM_FEE_INR)}</dd>
+ </div>
+ <div className="flex items-center justify-between border-t border-surface-200 pt-2">
+ <dt className="text-base font-bold text-surface-800">
+ Total{selectedTemple ? '' : ' from'}
+ </dt>
+ <dd className="text-lg font-bold text-saffron-600">
+ ₹{formatInr(totalWithoutPrasad)}
+ </dd>
+ </div>
+ </dl>
+ <p className="mt-3 text-xs leading-relaxed text-surface-500">
+ Prasad delivered to your home is optional and adds ₹
+ {formatInr(PRASAD_DELIVERY_FEE_INR)} — ₹{formatInr(totalWithPrasad)} in total.
+ You choose at Review &amp; Prasad. Nothing else is added at checkout.
+ </p>
+ </div>
+ )}
 
  {/* S2C-11: with nothing bookable there is no date, no slot and nothing to
    continue to — showing those controls would only lead back to the same
@@ -1476,6 +1778,12 @@ function PujaBookingInner() {
  <AlertCircle className="h-4 w-4" /> {errors.date}
  </p>
  )}
+ {/* A11Y-09: this call site passed no label, so the field announced as
+     "edit text, blank" with only a 2.05:1 DD/MM/YYYY placeholder as the
+     hint. The card already carries the visible "Select Date" heading, so
+     the name goes on the input via ariaLabel rather than duplicating it as
+     a second visible label. DateInput itself renders the persistent
+     "Format: DD/MM/YYYY" hint through aria-describedby. */}
  <DateInput
  value={selectedDate}
  min={bookingWindowMin}
@@ -1483,6 +1791,8 @@ function PujaBookingInner() {
  onChange={(v) => setSelectedDate(v)}
  dateMarkers={muhuratMarkers}
  disabledDates={avoidDates}
+ ariaLabel="Puja date"
+ required
  />
  {selectedDate && (
  <p className="mt-2 text-sm text-surface-500">{formatDate(selectedDate)}</p>
@@ -1493,7 +1803,7 @@ function PujaBookingInner() {
  <Sparkles className="h-3.5 w-3.5 text-green-600" />
  Shubh muhurat windows
  {selectedDayMuhurat.grade === 'shubh' && (
- <span className="ml-1 rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+ <span className="ml-1 rounded-full bg-green-600 px-2 py-0.5 text-xs font-bold uppercase text-white">
  Shubh
  </span>
  )}
@@ -1508,7 +1818,7 @@ function PujaBookingInner() {
  </span>
  ))}
  </div>
- <p className="mt-2 text-[11px] text-surface-500">
+ <p className="mt-2 text-xs text-surface-500">
  Rahu Kaal {selectedDayMuhurat.rahuKaal} avoided.
  </p>
  </div>
@@ -1523,7 +1833,10 @@ function PujaBookingInner() {
  {/* Time Slot Selection */}
  {selectedTemple && (
  <div className="rounded-xl border border-surface-100 bg-white p-6">
- <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
+ <h2
+ id="book-slot-heading"
+ className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800"
+ >
  <Clock className="h-5 w-5 text-saffron-500" />
  Select Time Slot
  </h2>
@@ -1551,7 +1864,9 @@ function PujaBookingInner() {
  <span className="ml-2 text-sm text-surface-500">Checking availability...</span>
  </div>
  ) : (
- <>
+ // A11Y-08: one choice, so one radiogroup — the morning/afternoon/evening
+ // headings stay as visual grouping inside it.
+ <div role="radiogroup" aria-labelledby="book-slot-heading">
  {['morning', 'afternoon', 'evening'].map((period) => {
  const periodSlots = slotAvailability.filter(
  (s) => getSlotPeriod(s.time) === period,
@@ -1571,6 +1886,8 @@ function PujaBookingInner() {
  return (
  <button
  key={slot.time}
+ role="radio"
+ aria-checked={isSelected}
  disabled={isFull}
  onClick={() => setSelectedSlot(slot.time)}
  className={`relative rounded-lg border-2 p-3 text-center transition-all ${
@@ -1598,7 +1915,7 @@ function PujaBookingInner() {
  : `${slot.remaining} spot${slot.remaining !== 1 ? 's' : ''} left`}
  </p>
  {isSelected && (
- <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-saffron-500">
+ <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-saffron-600">
  <Check className="h-3 w-3 text-white" />
  </div>
  )}
@@ -1609,7 +1926,7 @@ function PujaBookingInner() {
  </div>
  );
  })}
- </>
+ </div>
  )}
  </div>
  )}
@@ -1954,7 +2271,7 @@ function PujaBookingInner() {
  onChange={(e) => setWantsPrasad(e.target.checked)}
  className="peer sr-only"
  />
- <div className="h-6 w-11 rounded-full bg-surface-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-all after:content-[''] peer-checked:bg-saffron-500 peer-checked:after:translate-x-full peer-focus:ring-2 peer-focus:ring-saffron-200" />
+ <div className="h-6 w-11 rounded-full bg-surface-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-all after:content-[''] peer-checked:bg-saffron-600 peer-checked:after:translate-x-full peer-focus:ring-2 peer-focus:ring-saffron-200" />
  </label>
  </div>
 
@@ -1963,11 +2280,43 @@ function PujaBookingInner() {
  <p className="mb-4 text-sm text-surface-500">
  Sacred prasad from the temple will be delivered to your address.
  <span className="ml-1 font-semibold text-saffron-600">
- +₹{PRASAD_DELIVERY_FEE}
+ +₹{formatInr(PRASAD_DELIVERY_FEE_INR)}
  </span>
  </p>
 
  <div className="grid gap-3 sm:grid-cols-2">
+ {/* CM-06: country first — it decides what a valid postcode, state
+ and phone number look like for every field below. */}
+ <div className="sm:col-span-2">
+ <label
+ htmlFor="addr-country"
+ className="mb-1 block text-xs font-medium text-surface-600"
+ >
+ Country <span className="text-red-400">*</span>
+ </label>
+ <select
+ id="addr-country"
+ value={address.country}
+ onChange={(e) => setAddress({ ...address, country: e.target.value })}
+ className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
+ errors.addr_country ? 'border-red-300 bg-red-50' : 'border-surface-200'
+ }`}
+ >
+ {DELIVERY_COUNTRY_OPTIONS.map((c) => (
+ <option key={c.code} value={c.code}>
+ {c.name}
+ </option>
+ ))}
+ </select>
+ {errors.addr_country ? (
+ <p className="mt-1 text-xs text-red-500">{errors.addr_country}</p>
+ ) : (
+ <p className="mt-1 text-xs text-surface-400">
+ Prasad ships worldwide. Payment is always taken in INR — your bank
+ applies its own conversion rate.
+ </p>
+ )}
+ </div>
  <div>
  <label className="mb-1 block text-xs font-medium text-surface-600">
  Full Name <span className="text-red-400">*</span>
@@ -1993,7 +2342,7 @@ function PujaBookingInner() {
  type="tel"
  value={address.phone}
  onChange={(e) => setAddress({ ...address, phone: e.target.value })}
- placeholder="10-digit number"
+ placeholder={addrHints.phonePlaceholder}
  className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
  errors.addr_phone ? 'border-red-300 bg-red-50' : 'border-surface-200'
  }`}
@@ -2050,13 +2399,14 @@ function PujaBookingInner() {
  </div>
  <div>
  <label className="mb-1 block text-xs font-medium text-surface-600">
- State <span className="text-red-400">*</span>
+ {addrHints.stateLabel}{' '}
+ {addrHints.stateRequired && <span className="text-red-400">*</span>}
  </label>
  <input
  type="text"
  value={address.state}
  onChange={(e) => setAddress({ ...address, state: e.target.value })}
- placeholder="State"
+ placeholder={addrHints.stateLabel}
  className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
  errors.addr_state ? 'border-red-300 bg-red-50' : 'border-surface-200'
  }`}
@@ -2067,14 +2417,17 @@ function PujaBookingInner() {
  </div>
  <div>
  <label className="mb-1 block text-xs font-medium text-surface-600">
- Pincode <span className="text-red-400">*</span>
+ {addrHints.postalLabel}{' '}
+ {addrHints.postalRequired && <span className="text-red-400">*</span>}
  </label>
  <input
  type="text"
  value={address.pincode}
  onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
- placeholder="6-digit pincode"
- maxLength={6}
+ placeholder={addrHints.postalPlaceholder}
+ // CM-06: was maxLength={6}, which physically truncated a
+ // "07030-1234" ZIP+4 before validation ever saw it.
+ maxLength={16}
  className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
  errors.addr_pincode ? 'border-red-300 bg-red-50' : 'border-surface-200'
  }`}
@@ -2087,7 +2440,7 @@ function PujaBookingInner() {
  </div>
  ) : (
  <p className="text-sm text-surface-500">
- Toggle the switch to add prasad delivery to your order (+₹{PRASAD_DELIVERY_FEE}).
+ Toggle the switch to add prasad delivery to your order (+₹{formatInr(PRASAD_DELIVERY_FEE_INR)}).
  </p>
  )}
  </div>
@@ -2108,14 +2461,14 @@ function PujaBookingInner() {
  <div className="flex justify-between text-sm">
  <span className="text-surface-600">Platform Fee</span>
  <span className="font-medium text-surface-700">
- ₹{PLATFORM_FEE.toLocaleString('en-IN')}
+ ₹{formatInr(PLATFORM_FEE_INR)}
  </span>
  </div>
  {wantsPrasad && (
  <div className="flex justify-between text-sm">
  <span className="text-surface-600">Prasad Delivery</span>
  <span className="font-medium text-surface-700">
- ₹{PRASAD_DELIVERY_FEE.toLocaleString('en-IN')}
+ ₹{formatInr(PRASAD_DELIVERY_FEE_INR)}
  </span>
  </div>
  )}
@@ -2148,8 +2501,10 @@ function PujaBookingInner() {
  <Link href="/refunds" className="font-medium text-saffron-600 hover:underline">
  Refund Policy
  </Link>
- . I understand that cancellation is allowed up to 24 hours before the scheduled
- puja time.
+ {/* DB-06: this used to say only "cancellation is allowed up to 24 hours
+     before", which is the cut-off but not the refund. State the ladder the
+     API actually applies, from the same module the badges use. */}
+ . {CANCELLATION_POLICY_SENTENCE}
  </span>
  </label>
  {errors.terms && (
@@ -2221,12 +2576,12 @@ function PujaBookingInner() {
  </div>
  <div className="flex justify-between text-sm">
  <span className="text-surface-600">Platform Fee</span>
- <span className="text-surface-700">₹{PLATFORM_FEE}</span>
+ <span className="text-surface-700">₹{formatInr(PLATFORM_FEE_INR)}</span>
  </div>
  {wantsPrasad && (
  <div className="flex justify-between text-sm">
  <span className="text-surface-600">Prasad Delivery</span>
- <span className="text-surface-700">₹{PRASAD_DELIVERY_FEE}</span>
+ <span className="text-surface-700">₹{formatInr(PRASAD_DELIVERY_FEE_INR)}</span>
  </div>
  )}
  <div className="border-t border-surface-100 pt-2">
@@ -2260,9 +2615,12 @@ function PujaBookingInner() {
  <Video className="h-3.5 w-3.5 text-saffron-500" />
  Video Proof Guaranteed
  </span>
+ {/* DB-06 (2026-08-12): this badge read "100% Money-Back" directly above
+     the Pay button. No dissatisfaction refund exists anywhere in the API —
+     what ships is the 48h/24h ladder in cancellation.service. State that. */}
  <span className="flex items-center gap-1 text-xs text-surface-500">
  <CheckCircle2 className="h-3.5 w-3.5 text-ganga-blue" />
- 100% Money-Back
+ {CANCELLATION_BADGE_LABEL}
  </span>
  </div>
 

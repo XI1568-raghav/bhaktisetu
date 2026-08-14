@@ -187,7 +187,7 @@ function ListContent() {
             onClick={() => setFilter(f.key)}
             className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
               filter === f.key
-                ? 'bg-saffron-500 text-white border-saffron-500'
+                ? 'bg-saffron-600 text-white border-saffron-600'
                 : 'bg-white text-surface-600 border-surface-200 hover:bg-surface-50'
             }`}
           >

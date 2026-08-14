@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const r = getRishi(slug);
   if (!r) return { title: 'Not found' };
   return {
-    title: `${r.name} (${r.sanskrit}) — Sapta Rishi #${r.number} | Darshya`,
+    title: `${r.name} (${r.sanskrit}) — Sapta Rishi #${r.number}`,
     description: `${r.name}, one of the seven great rishis. ${r.bestKnownFor}. Star: ${r.associatedStar}. Gotra: ${r.gotra}.`,
     alternates: { canonical: `${BASE_URL}/sapta-rishis/${r.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${r.name} — ${r.bestKnownFor}`,
       description: r.storySummary.slice(0, 180),
       url: `${BASE_URL}/sapta-rishis/${r.slug}`,

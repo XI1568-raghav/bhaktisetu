@@ -7,6 +7,32 @@ import { runDailyOps } from '../jobs/master-cron.js';
 import { sendEmail } from '../lib/email.js';
 import { onboardingService } from '../services/onboarding.service.js';
 import { mapLeadRoleToOnboarding, isLeadRole } from '../lib/lead-role-mapping.js';
+import { signToken, ONBOARDING_TOKEN_TTL_MIN } from './magic-link.js';
+
+/**
+ * PJ-08. The one credential a provisioned lead can actually use.
+ *
+ * The CONVERTED branch below mints a User + role assignment + approved provider
+ * profile (PBO-6). It does NOT mint a password, because there is no password
+ * column on User anywhere in schema.prisma — web sign-in is Supabase
+ * email+password or phone OTP, and a lead has neither. So "Sign in at
+ * darshya.online" was an instruction the recipient could not follow even before
+ * you notice the URL it pointed at, `/auth/sign-in`, is not a route in apps/web
+ * (the directory has `login`).
+ *
+ * The magic link is the credential: /auth/verify?token= POSTs to
+ * /auth/magic-link/verify, which finds the User by email and issues a session.
+ * Same HMAC, same verifier, longer TTL — see ONBOARDING_TOKEN_TTL_MIN.
+ */
+function onboardingSignInUrl(email: string): string {
+  const base = process.env.WEB_BASE_URL ?? 'https://darshya.online';
+  // Signed over the address EXACTLY as the User row was created with. /verify
+  // resolves the account by `findFirst({ where: { email } })` and CREATES one
+  // when it misses, so normalising the case here would hand the pandit a second,
+  // empty devotee account instead of the provider account just approved.
+  const { token } = signToken(email.trim(), ONBOARDING_TOKEN_TTL_MIN);
+  return `${base}/auth/verify?token=${encodeURIComponent(token)}`;
+}
 
 // Lead pipeline + Outreach + Waitlist admin routes.
 //
@@ -246,9 +272,24 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
     }
     try {
       const since = days[0]!;
-      const [all, recent] = await Promise.all([
-        waitlist.findMany({
-          select: { status: true, referredByEmail: true, email: true },
+      // SCAL-04 (2026-08-14): the funnel and the leaderboard are computed in SQL.
+      //
+      // This was an unbounded read of the whole waitlist table — selecting
+      // status + referredByEmail + email with no where, no take and no cursor —
+      // followed by a JS for-loop that produced six scalars and a top-20 list.
+      // Same shape as the 33,360 kB role-assignment scan the finding measured:
+      // every row of a table that grows with signups, pulled into a 512 MB
+      // container, to answer a question Postgres can answer with two grouped
+      // reads. `groupBy` returns one row per status and a `take: 20` slice of
+      // referrers instead.
+      const [statusGroups, referrerGroups, recent] = await Promise.all([
+        waitlist.groupBy({ by: ['status'], _count: { _all: true } }),
+        waitlist.groupBy({
+          by: ['referredByEmail'],
+          where: { referredByEmail: { not: null } },
+          _count: { _all: true },
+          orderBy: { _count: { referredByEmail: 'desc' } },
+          take: 20,
         }),
         waitlist.findMany({
           where: { createdAt: { gte: since } },
@@ -260,19 +301,23 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
       let confirmed = 0;
       let invited = 0;
       let converted = 0;
-      const refCounts: Record<string, number> = {};
-      for (const r of all as Array<{ status: string; referredByEmail: string | null }>) {
-        total++;
-        if (r.status === 'PENDING') pending++;
-        else if (r.status === 'CONFIRMED') confirmed++;
-        else if (r.status === 'INVITED') invited++;
-        else if (r.status === 'CONVERTED') converted++;
-        if (r.referredByEmail) refCounts[r.referredByEmail] = (refCounts[r.referredByEmail] ?? 0) + 1;
+      for (const g of statusGroups as Array<{ status: string; _count: { _all: number } }>) {
+        const n = g._count?._all ?? 0;
+        total += n;
+        if (g.status === 'PENDING') pending += n;
+        else if (g.status === 'CONFIRMED') confirmed += n;
+        else if (g.status === 'INVITED') invited += n;
+        else if (g.status === 'CONVERTED') converted += n;
       }
-      const topReferrers = Object.entries(refCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 20)
-        .map(([email, count], i) => ({ rank: i + 1, email, referralCount: count }));
+      const topReferrers = (
+        referrerGroups as Array<{ referredByEmail: string | null; _count: { _all: number } }>
+      )
+        .filter((g) => !!g.referredByEmail)
+        .map((g, i) => ({
+          rank: i + 1,
+          email: g.referredByEmail as string,
+          referralCount: g._count?._all ?? 0,
+        }));
 
       const buckets: Record<string, number> = {};
       for (const d of days) buckets[d.toISOString().slice(0, 10)] = 0;
@@ -485,10 +530,23 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
           const isApproval = parsed.data.status === 'CONVERTED';
           const isReject = parsed.data.status === 'UNSUBSCRIBED' || parsed.data.status === 'BOUNCED';
           if (isApproval) {
+            // PJ-08: the email may only promise a portal when one exists. An
+            // account was provisioned on THIS request (provisionedUserId) or on
+            // an earlier idempotent pass (convertedUserId already set); in
+            // either case the applicant has a User row the magic link resolves.
+            // If neither is true — an unmappable lead role, or the best-effort
+            // provisioning block above threw — there is nothing to sign in to,
+            // and saying otherwise is the defect this finding is about.
+            const accountId =
+              provisionedUserId ?? (existing as { convertedUserId?: string | null }).convertedUserId ?? null;
+            const signInUrl = accountId ? onboardingSignInUrl(existing.email) : null;
+            const nextStep = signInUrl
+              ? `<p>Your Darshya portal is ready. Open it with the link below — it signs you in directly, no password needed, and is valid for 72 hours.</p><p><a href="${signInUrl}">Open your Darshya portal</a></p><p style="font-size:12px;color:#999;word-break:break-all;">${signInUrl}</p>`
+              : `<p>Our partnerships team is setting up your portal and will email you the sign-in link shortly. Reply to this email if you do not hear back within two working days.</p>`;
             await sendEmail({
               to: existing.email,
               subject: `You're verified on Darshya as a ${roleLabel}`,
-              html: `<p>Namaste ${existing.name},</p><p>Your application to join Darshya as a <strong>${roleLabel}</strong> has been approved. Sign in at <a href="https://darshya.online/auth/sign-in">darshya.online</a> to set up your profile and start taking bookings.</p>${parsed.data.reason ? `<p>Note from our team: ${parsed.data.reason}</p>` : ''}<p>— Darshya partnerships team</p>`,
+              html: `<p>Namaste ${existing.name},</p><p>Your application to join Darshya as a <strong>${roleLabel}</strong> has been approved.</p>${nextStep}${parsed.data.reason ? `<p>Note from our team: ${parsed.data.reason}</p>` : ''}<p>— Darshya partnerships team</p>`,
             }).catch(() => null);
           } else if (isReject) {
             await sendEmail({

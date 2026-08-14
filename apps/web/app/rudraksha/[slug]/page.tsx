@@ -14,10 +14,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const r = getRudraksha(slug);
   if (!r) return { title: 'Not found' };
   return {
-    title: `${r.name} — Benefits, Mantra, Wearing Rules, Deity ${r.deity} | Darshya`,
+    title: `${r.name} — Benefits, Mantra, Wearing Rules, Deity ${r.deity}`,
     description: `${r.name} (${r.sanskrit}) — sacred bead of ${r.deity}, planet ${r.planet}. Beej mantra: ${r.mantraTranslit}. ${r.significance.slice(0, 100)}…`,
     alternates: { canonical: `${BASE_URL}/rudraksha/${r.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${r.name} — ${r.deity}`,
       description: r.significance,
       url: `${BASE_URL}/rudraksha/${r.slug}`,

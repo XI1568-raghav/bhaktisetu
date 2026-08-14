@@ -25,6 +25,16 @@ const RECIPIENT_LIST_PATH = process.env.UK_PANDIT_RECIPIENTS_PATH
 
 const CITIES = ['London', 'Birmingham', 'Leicester'];
 
+// Take rate quoted to prospects. Uniform 20% platform / 80% provider across
+// every role — source of truth is apps/api/src/lib/commission-math.ts (the
+// astrologer rate was cut 30%→20% in PR #227). Stated once, here, because this
+// copy reaches live prospects: the draft used to quote 30%, ten points ABOVE
+// what we actually charge, which is ~₹2,000/mo of phantom deduction on a
+// ₹20,000/mo pandit and a reason to decline. Interpolate it — never restate
+// the number in prose, or the next rate change leaves outbound copy stale.
+export const PLATFORM_TAKE_RATE_PCT = 20;
+export const PROVIDER_SHARE_PCT = 100 - PLATFORM_TAKE_RATE_PCT;
+
 // Public-domain institutional channels. Founder MUST verify each contact
 // address before sending. {{VERIFY_FOUNDER}} tokens force a manual review
 // gate.
@@ -94,11 +104,20 @@ function loadRecipients() {
   return { source: 'built-in default pool', list: DEFAULT_INSTITUTIONAL_POOL };
 }
 
-function pandit3CaseStudies() {
+// Honest early-stage framing — NOT case studies. Three named pandits with
+// booking volumes, revenue, onboarding dates and per-consult fees used to sit
+// here, and none of it came from any data path in this repo. These drafts go to
+// Hindu Council UK and named mandirs whose entire value to us is credential
+// vouching; the natural response to a reference in a partnership request is
+// "may I speak to him", and there was no one to produce. That is a materially
+// worse version of the R2 lesson at the top of this file. Any traction figure
+// that appears here in future must be read from a data source, not typed in.
+function tractionFraming() {
   return [
-    'Pandit Ramesh Sharma (Varanasi) — 47 NRI bookings/mo across US + UK + Australia, ₹1.8 lakh/mo gross at our 30% commission.',
-    'Acharya Vinod Trivedi (Haridwar) — onboarded April 2025, first paid booking in 9 days, now 22 GBP-denominated bookings/mo from UK NRI clientele.',
-    'Pandit Suresh Mishra (Delhi) — handles Wedding muhurat consults for UK-based families; £270-300 per consult, 6-8 consults/mo.',
+    'We are pre-launch in the UK. Our verified-pandit network, video-proof workflow and payout rails are live in India,',
+    'and we are now looking for founding UK pandits to open the corridor with.',
+    'We would rather not quote you diaspora numbers we cannot evidence — happy to walk you through the live platform',
+    'and our India onboarding and vetting process on a call.',
   ].join(' ');
 }
 
@@ -107,20 +126,20 @@ function buildOutreachDraft(recipient) {
 
   const body = `Namaste,
 
-I'm Raghav, founder of Darshya (darshya.online), an India-first devotional super-app live since 2025 with verified pandits and temples across India. We're now opening UK supply for our growing UK-based NRI client base who want puja seva with video proof, GBP pricing, and trusted credentials.
+I'm Raghav, founder of Darshya (darshya.online), an India-first devotional super-app live since 2025 with verified pandits and temples across India. We're now opening UK supply for UK-based NRI families who want puja seva with video proof, INR pricing with an NRI tier, and trusted credentials.
 
 I'm writing to ${recipient.org} because ${recipient.role === 'umbrella'
   ? 'Hindu Council UK is the natural first stop to identify pandits and acharyas with verified credentials and community standing'
   : `${recipient.org} is one of the most respected dharmic institutions in ${recipient.city || 'the UK'} and likely has acharyas, pujaris, or community pandits who would value a platform that brings UK-resident devotees plus diaspora-Hindu families globally`}.
 
 What we offer UK-resident pandits:
-  - GBP-denominated payouts via Stripe Connect (UK entity, HMRC-compliant)
-  - Booking pipeline from existing UK NRI clientele (currently ~140 UK households actively using the platform via Indian pandits — strong demand for UK-local pandits)
+  - INR payouts via Razorpay to an Indian bank account or UPI (India-domiciled platform; UK pandits need an NRE/NRO or Indian account)
+  - Booking pipeline from UK-based NRI devotees as the corridor opens
   - Video proof workflow, 80G receipts where applicable, NRI 9-10× pricing tier
-  - 30% platform commission (negotiable per arrangement), no listing fee
+  - ${PLATFORM_TAKE_RATE_PCT}% platform commission, ${PROVIDER_SHARE_PCT}% to the pandit — no listing fee
   - Lifecycle automation — onboarding emails, slot management, dispute resolution
 
-Examples from our India network: ${pandit3CaseStudies()}
+Where we are today: ${tractionFraming()}
 
 I'd like to request your guidance on three questions:
   1. Are there pandits or acharyas in your network who you would be comfortable referring to a platform like ours?

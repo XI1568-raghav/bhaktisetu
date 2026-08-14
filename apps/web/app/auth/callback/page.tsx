@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
-import { API_BASE_URL } from '../../../lib/api-config';
+import {
+ API_BASE_URL,
+ fetchWithTimeout,
+ isNetworkFailure,
+ NETWORK_ERROR_MESSAGE,
+} from '../../../lib/api-config';
 import {
  getRoleDashboardPath,
  fromApiRole,
@@ -40,7 +45,7 @@ export default function AuthCallbackPage() {
  return;
  }
 
- const res = await fetch(`${API_BASE_URL}/auth/google/sync`, {
+ const res = await fetchWithTimeout(`${API_BASE_URL}/auth/google/sync`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({
@@ -85,8 +90,17 @@ export default function AuthCallbackPage() {
  }
  window.location.href = redirectTarget;
  } catch (err) {
+ // Always leave 'working' — this page's only other state is an endless
+ // spinner, and a stalled /auth/google/sync used to hang here with no
+ // timeout and no message (reported from production 2026-08-11).
  setStatus('error');
- setErrorMessage(err instanceof Error ? err.message : 'Unexpected error completing sign-in.');
+ setErrorMessage(
+ isNetworkFailure(err)
+ ? NETWORK_ERROR_MESSAGE
+ : err instanceof Error
+ ? err.message
+ : 'Unexpected error completing sign-in.',
+ );
  }
  })();
  }, []);

@@ -4,7 +4,8 @@ import SelfOnboardForm, { ExtraInput, ExtraSelect } from '../../components/SelfO
 
 
 export const metadata: Metadata = {
-  title: 'Teach yoga & meditation on Darshya',
+  alternates: { canonical: 'https://darshya.online/become-wellness' },
+  title: 'Teach yoga & meditation',
   description:
     'Host live yoga, meditation, pranayama and vipassana sessions for Darshya devotees. Get paid per session.',
 };

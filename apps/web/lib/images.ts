@@ -95,6 +95,81 @@ export function wikiResize(url: string, width: number): string {
  return wikiThumb(url, width);
 }
 
+// ────────────────────────────────────────────────────────────
+// remoteImage — the single funnel every remote image URL goes through
+// ────────────────────────────────────────────────────────────
+
+/**
+ * Slot widths, in CSS pixels, for the four shapes this product actually
+ * paints. Pass the CSS width of the LARGEST breakpoint the image renders at;
+ * the Commons ladder snaps up, which absorbs the DPR headroom.
+ *
+ *   THUMB 250  avatars, 64-120px chips, content thumbnails
+ *   CARD  500  every grid card (store, puja, temple, gaushala, festival)
+ *   WIDE  960  full-width strips and gallery tiles
+ *   HERO 1280  the one above-the-fold hero on a page
+ */
+export const IMG_W = {
+ THUMB: 250,
+ CARD: 500,
+ WIDE: 960,
+ HERO: 1280,
+} as const;
+
+/**
+ * Resize ANY remote image URL to `width` CSS pixels using the host's own
+ * resizer. Wikimedia Commons → /thumb/<w>px-; Unsplash → w/h/q params;
+ * every other host (Supabase, CloudFront, YouTube, an operator-supplied
+ * URL) is returned untouched rather than guessed at.
+ *
+ * This exists because `images.unoptimized` is true in next.config.ts — see
+ * the comment there — so Next emits no srcset of its own and nothing else
+ * stands between a 6016x4000 original and a 375px phone.
+ */
+export function remoteImage(url: string, width: number): string {
+ if (!url) return url;
+ if (url.includes('upload.wikimedia.org/wikipedia/commons/')) return wikiThumb(url, width);
+ if (url.includes('images.unsplash.com')) {
+   const currentW = Number(/[?&]w=(\d+)/.exec(url)?.[1] ?? 0);
+   const currentH = Number(/[?&]h=(\d+)/.exec(url)?.[1] ?? 0);
+   if (currentW && width >= currentW) return url;
+   let out = url.replace(/([?&])w=\d+/, `$1w=${width}`);
+   if (currentW && currentH) {
+     out = out.replace(/([?&])h=\d+/, `$1h=${Math.round((currentH / currentW) * width)}`);
+   }
+   return out.replace(/([?&])q=\d+/, `$1q=${qualityFor(width, width)}`);
+ }
+ return url;
+}
+
+/**
+ * Build a `srcSet` for a remote URL so a 375px phone downloads the 500px
+ * candidate while a desktop takes the 960px one. Returns undefined when the
+ * host has no resizer, which is the correct value for the React `srcSet`
+ * prop (attribute omitted entirely).
+ *
+ * Widths that collapse to the same URL after ladder-snapping are dropped —
+ * a duplicate candidate is dead weight and confuses the selection algorithm.
+ */
+export function remoteSrcSet(url: string | undefined, widths: number[]): string | undefined {
+ if (!url) return undefined;
+ const resizable =
+   url.includes('upload.wikimedia.org/wikipedia/commons/') || url.includes('images.unsplash.com');
+ if (!resizable) return undefined;
+ const seen = new Set<string>();
+ const parts: string[] = [];
+ for (const w of [...widths].sort((a, b) => a - b)) {
+   const candidate = remoteImage(url, w);
+   if (seen.has(candidate)) continue;
+   seen.add(candidate);
+   // Descriptor must reflect the width actually served, not the width asked
+   // for, or the browser picks the wrong candidate.
+   const served = Number(/\/(\d+)px-/.exec(candidate)?.[1] ?? /[?&]w=(\d+)/.exec(candidate)?.[1] ?? w);
+   parts.push(`${candidate} ${served}w`);
+ }
+ return parts.length > 0 ? parts.join(', ') : undefined;
+}
+
 /**
  * Resize an Unsplash URL by replacing its w/h/q params.
  */
@@ -550,67 +625,91 @@ export function getImage(
  url = (value as { hero: string }).hero;
  }
 
- if (!url) return FALLBACK_IMAGE;
+ if (!url) return remoteImage(FALLBACK_IMAGE, IMG_W.CARD);
 
- if (size && url.includes('images.unsplash.com')) {
- const [w, h] = size.split('x').map(Number);
- if (w && h) {
- url = url.replace(/w=\d+/, `w=${w}`).replace(/h=\d+/, `h=${h}`);
- }
- }
-
- return url;
+ // `size` is the legacy "WxH" form; only the width drives the request.
+ const width = size ? Number(size.split('x')[0]) || IMG_W.CARD : IMG_W.CARD;
+ return remoteImage(url, width);
 }
 
-export function getTempleHero(slug: string): string {
+export function getTempleHero(slug: string, width: number = IMG_W.HERO): string {
  const temple = IMAGES.temples[slug as TempleSlug];
- return wikiThumb(temple?.hero ?? FALLBACK_IMAGE, 1600);
+ return remoteImage(temple?.hero ?? FALLBACK_IMAGE, width);
 }
 
-export function getTempleThumbnail(slug: string): string {
+export function getTempleThumbnail(slug: string, width: number = IMG_W.CARD): string {
  const temple = IMAGES.temples[slug as TempleSlug];
- return wikiThumb(temple?.thumbnail ?? FALLBACK_IMAGE, 800);
+ return remoteImage(temple?.thumbnail ?? FALLBACK_IMAGE, width);
 }
 
-export function getTempleGallery(slug: string): readonly string[] {
+export function getTempleGallery(slug: string, width: number = IMG_W.WIDE): readonly string[] {
  const temple = IMAGES.temples[slug as TempleSlug];
- return temple?.gallery ?? [];
+ return (temple?.gallery ?? []).map((u) => remoteImage(u, width));
 }
 
-export function getDeityImage(slug: string, variant: 'portrait' | 'square' = 'portrait'): string {
+export function getDeityImage(
+ slug: string,
+ variant: 'portrait' | 'square' = 'portrait',
+ width?: number,
+): string {
  const key = variant === 'square' ? `${slug}-square` : slug;
  const deities = IMAGES.deities as Record<string, string>;
  const url = deities[key] ?? deities[slug] ?? FALLBACK_IMAGE;
- return wikiThumb(url, variant === 'square' ? 600 : 800);
+ return remoteImage(url, width ?? IMG_W.CARD);
 }
 
-export function getPujaImage(slug: string): string {
+export function getPujaImage(slug: string, width: number = IMG_W.CARD): string {
  const url = (IMAGES.pujas as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
- return wikiThumb(url, 800);
+ return remoteImage(url, width);
 }
 
-export function getProductImage(slug: string): string {
- return (IMAGES.store as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
+/**
+ * Store product photo. Defaults to CARD — the store grid paints these into a
+ * ~170px (mobile, 2-up) to ~280px (desktop) box. This used to return the raw
+ * Commons original: /store measured 29,056 KB of images at a 375px viewport,
+ * with a single 5,594 KB Rudraksha_mala.jpg landing in a 170px slot.
+ */
+export function getProductImage(slug: string, width: number = IMG_W.CARD): string {
+ const url = (IMAGES.store as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
+ return remoteImage(url, width);
 }
 
-export function getHeroImage(page: string): string {
+/**
+ * Gaushala / cow-seva photo. This group had no getter at all — pages read
+ * IMAGES.gaushala directly, so /gaushala shipped 16,131 KB of images
+ * including a 7,816 KB Sahiwala_01.JPG.
+ */
+export function getGaushalaImage(key: string, width: number = IMG_W.CARD): string {
+ const url = (IMAGES.gaushala as Record<string, string>)[key] ?? FALLBACK_IMAGE;
+ return remoteImage(url, width);
+}
+
+export function getHeroImage(page: string, width: number = IMG_W.HERO): string {
  const url = (IMAGES.hero as Record<string, string>)[page] ?? FALLBACK_IMAGE;
- return wikiThumb(url, 1600);
+ return remoteImage(url, width);
 }
 
-export function getAstrologerImage(gender: 'male' | 'female', index: number): string {
+export function getAstrologerImage(
+ gender: 'male' | 'female',
+ index: number,
+ width: number = IMG_W.THUMB,
+): string {
  const pool = IMAGES.astrologers[gender];
- return pool[index % pool.length] ?? FALLBACK_IMAGE;
+ return remoteImage(pool[index % pool.length] ?? FALLBACK_IMAGE, width);
 }
 
-export function getFestivalImage(slug: string): string {
+export function getFestivalImage(slug: string, width: number = IMG_W.CARD): string {
  const url = (IMAGES.festivals as Record<string, string>)[slug] ?? FALLBACK_IMAGE;
- return wikiThumb(url, 800);
+ return remoteImage(url, width);
 }
 
-export function getContentImage(type: string, variant: 'full' | 'thumbnail' = 'full'): string {
+export function getContentImage(
+ type: string,
+ variant: 'full' | 'thumbnail' = 'full',
+ width?: number,
+): string {
  const key = variant === 'thumbnail' ? `${type}-thumbnail` : type;
  const content = IMAGES.content as Record<string, string>;
  const url = content[key] ?? content[type] ?? FALLBACK_IMAGE;
- return wikiThumb(url, variant === 'thumbnail' ? 400 : 1200);
+ return remoteImage(url, width ?? (variant === 'thumbnail' ? IMG_W.THUMB : IMG_W.WIDE));
 }

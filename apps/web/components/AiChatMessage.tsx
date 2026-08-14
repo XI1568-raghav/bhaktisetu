@@ -264,7 +264,7 @@ export default function AiChatMessage({
 
  {/* Streaming cursor */}
  {isStreaming && (
- <span className="inline-block w-2 h-4 bg-saffron-500 animate-pulse ml-0.5 rounded-sm" />
+ <span className="inline-block w-2 h-4 bg-saffron-600 animate-pulse ml-0.5 rounded-sm" />
  )}
 
  {/* Copy button */}

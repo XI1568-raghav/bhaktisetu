@@ -5,11 +5,12 @@ import { getTranslations } from '../../../lib/t';
 import { yatraDestinations, formatINRPrice } from '../../../lib/yatra-destinations';
 
 export const metadata: Metadata = {
-  title: 'Top 10 Yatra Destinations in India — Booking, Itineraries & Best Time | Darshya',
+  title: 'Top 10 Yatra Destinations in India — Booking, Itineraries & Best Time',
   description:
     'Explore the 10 most visited pilgrimage destinations in India — Vaishno Devi, Tirupati, Char Dham, Shirdi, Kashi, Amarnath, Kailash Mansarovar, Rameshwaram, Dwarka-Somnath and Ujjain. Book direct via trusted partners.',
   alternates: { canonical: 'https://darshya.online/yatra/destinations' },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Top 10 Yatra Destinations in India',
     description: 'India\'s most visited pilgrimage destinations with itinerary, best time to visit, and direct booking links.',
     url: 'https://darshya.online/yatra/destinations',
@@ -54,11 +55,11 @@ export default async function YatraDestinationsPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3">
                     <h3 className="text-base font-semibold text-white tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>{d.name}</h3>
-                    <p className="text-[11px] text-white/80 mt-0.5">{d.state}</p>
+                    <p className="text-xs text-white/80 mt-0.5">{d.state}</p>
                   </div>
                 </div>
                 <div className="p-4 flex flex-col flex-1">
-                  <div className="flex items-center gap-3 text-[11px] mb-2.5" style={{ color: 'var(--color-text-muted)' }}>
+                  <div className="flex items-center gap-3 text-xs mb-2.5" style={{ color: 'var(--color-text-muted)' }}>
                     <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {d.durationDays} {t('days')}</span>
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {d.region}</span>
                   </div>
@@ -67,12 +68,12 @@ export default async function YatraDestinationsPage() {
                   </p>
                   <div className="mt-auto pt-4 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-divider)' }}>
                     <div>
-                      <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>{t('from')}</p>
+                      <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>{t('from')}</p>
                       <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
-                        {formatINRPrice(d.startingPriceInr)} <span className="text-[10px] font-normal" style={{ color: 'var(--color-text-muted)' }}>/ {t('perPerson')}</span>
+                        {formatINRPrice(d.startingPriceInr)} <span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>/ {t('perPerson')}</span>
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 text-[11px] font-medium group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
+                    <div className="flex items-center gap-1 text-xs font-medium group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
                       {t('viewDetails')} <ArrowRight className="w-3 h-3" />
                     </div>
                   </div>

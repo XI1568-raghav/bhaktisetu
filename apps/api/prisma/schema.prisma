@@ -240,6 +240,10 @@ model User {
   credit               UserCredit?
   creditLedgerEntries  CreditLedgerEntry[]
 
+  // SCAL-03: admin.getUsers is "ORDER BY created_at DESC LIMIT 20" with no
+  // index to serve it — 155 ms warm / 2,114 ms cold at 200k rows, 0.109 ms
+  // indexed. Every growth table below gets the same treatment.
+  @@index([createdAt(sort: Desc)])
   @@map("users")
 }
 
@@ -325,7 +329,13 @@ model Priest {
   verificationStatus PriestVerificationStatus @default(pending) @map("verification_status")
   bio                String?
   avatarUrl          String?                  @map("avatar_url")
-  commissionRate     Float                    @default(0.70) @map("commission_rate")
+  /// The PANDIT's share, not the platform's. Default 0.80 = the uniform
+  /// 20/80 take rate (booking.service DEFAULT_PRIEST_SHARE). This sat at 0.70
+  /// until 2026-08-12: the 2026-08-04 revamp cut the platform take 30%->20% by
+  /// changing the CONSTANT but never the schema default, and resolvePriestShare
+  /// treats any stored value in (0,1] as authoritative — so 0.70 always won and
+  /// the constant never fired. Every normally-onboarded pandit was paid 70%.
+  commissionRate     Float                    @default(0.80) @map("commission_rate")
   status             PriestStatus             @default(active)
   tier                 PriestTier             @default(standard)
   isOnDuty             Boolean                @default(false) @map("is_on_duty")
@@ -511,6 +521,9 @@ model PujaBooking {
   // portal (my-bookings, earnings, dispatch) and was unindexed — every pandit
   // page did a full scan of puja_bookings.
   @@index([priestId])
+  // SCAL-03: 10 indexes here, none on created_at — what every admin list
+  // sorts by. 225 ms warm / 1,463 ms cold at 200k rows.
+  @@index([createdAt(sort: Desc)])
   @@index([dispatchTier, status])
   @@map("puja_bookings")
 }
@@ -611,6 +624,8 @@ model Payment {
   @@index([gatewayPaymentId])
   @@index([userId])
   @@index([status])
+  // SCAL-03: payments are always filtered by status, then sorted by date.
+  @@index([status, createdAt(sort: Desc)])
   @@map("payments")
 }
 
@@ -667,6 +682,7 @@ model ContentItem {
   @@index([deity])
   @@index([language])
   @@index([status])
+  @@index([createdAt(sort: Desc)])
   @@map("content_items")
 }
 
@@ -1103,6 +1119,10 @@ model Commission {
   @@index([storeOrderId])
   @@index([wellnessEnrollmentId])
   @@index([payoutRequestId])
+  // SCAL-03: admin revenue sorts by date — 893 ms top-50, 0.111 ms indexed.
+  @@index([createdAt(sort: Desc)])
+  // getPayoutBalance filters provider + status + unlinked payout request.
+  @@index([providerId, status, payoutRequestId])
   @@map("commissions")
 }
 
@@ -1145,6 +1165,9 @@ model Transaction {
   updatedAt DateTime          @updatedAt @map("updated_at")
 
   @@index([userId])
+  // SCAL-03: dashboard reads latest-N filtered by status — 1,418 ms at 200k.
+  @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
   @@index([type])
   @@map("transactions")
 }
@@ -1167,6 +1190,7 @@ model Review {
   @@index([providerId])
   @@index([userId])
   @@index([productId])
+  @@index([createdAt(sort: Desc)])
   @@map("reviews")
 }
 

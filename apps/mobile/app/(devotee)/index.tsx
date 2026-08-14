@@ -13,25 +13,21 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useDarshan, usePujas, usePanchang } from '@poojly/api-client';
+import { selectLiveStreams, selectPujaTypes, selectPanchang } from '../../lib/api-contracts';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.72;
 
-// Fallback mock data — only used if the API is unreachable or returns empty.
-const FALLBACK_DARSHAN = [
-  { id: '1', templeName: 'Shri Kashi Vishwanath', city: 'Varanasi', deity: 'Lord Shiva', viewers: 12450, isLive: true },
-  { id: '2', templeName: 'Tirumala Venkateswara', city: 'Tirupati', deity: 'Lord Venkateswara', viewers: 28300, isLive: true },
-  { id: '3', templeName: 'Shree Siddhivinayak', city: 'Mumbai', deity: 'Lord Ganesha', viewers: 8760, isLive: true },
-];
-
-const FALLBACK_PUJAS = [
-  { id: '1', name: 'Rudrabhishek', deity: 'Lord Shiva', price: 1100, rating: 4.9, reviews: 2340 },
-  { id: '2', name: 'Satyanarayan Katha', deity: 'Lord Vishnu', price: 2100, rating: 4.8, reviews: 1890 },
-  { id: '3', name: 'Ganesh Atharvashirsha', deity: 'Lord Ganesha', price: 751, rating: 4.9, reviews: 3100 },
-  { id: '4', name: 'Sunderkand Path', deity: 'Lord Hanuman', price: 551, rating: 4.7, reviews: 1540 },
-];
+// PAR-07: FALLBACK_DARSHAN and FALLBACK_PUJAS lived here. Both accessors
+// (`darshan.data?.data`, `pujas.data?.data`) read a key the API does not send,
+// so the home screen permanently showed three invented "live" temples and four
+// invented pujas whose prices contradicted the website
+// (Satyanarayan Katha ₹2,100 here vs ₹1,501 in the catalogue; "Ganesh
+// Atharvashirsha" is not a puja Darshya sells at all). Deleted, not repaired:
+// a fallback that is indistinguishable from real inventory is worse than an
+// empty shelf.
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -53,40 +49,24 @@ export default function HomeScreen() {
     day: 'numeric',
   });
 
-  const darshanList =
-    (darshan.data?.data && darshan.data.data.length > 0
-      ? darshan.data.data.slice(0, 3).map((d) => ({
-          id: d.id,
-          templeName: d.temple?.name ?? d.title ?? 'Temple',
-          city: d.temple?.city ?? '',
-          deity: d.temple?.deity ?? '',
-          viewers: d.viewerCount ?? 0,
-          isLive: String(d.status).toLowerCase() === 'live',
-        }))
-      : FALLBACK_DARSHAN) as typeof FALLBACK_DARSHAN;
+  const darshanList = selectLiveStreams(darshan.data)
+    .filter((s) => s.isLive)
+    .slice(0, 3);
 
-  // PujaType doesn't carry price (TemplePujaOffering does). Use fallback prices
-  // to keep the home tile useful — names/deities still come from real data.
-  const apiPujaNames = pujas.data?.data?.slice(0, 4) ?? [];
-  const pujaList = apiPujaNames.length > 0
-    ? apiPujaNames.map((p, i) => ({
-        id: p.id,
-        name: p.name,
-        deity: p.deity,
-        price: FALLBACK_PUJAS[i % FALLBACK_PUJAS.length]!.price,
-        rating: FALLBACK_PUJAS[i % FALLBACK_PUJAS.length]!.rating,
-        reviews: FALLBACK_PUJAS[i % FALLBACK_PUJAS.length]!.reviews,
-      }))
-    : FALLBACK_PUJAS;
+  // PujaType DOES carry price — every row has basePrice and nriPrice. The old
+  // comment here claimed otherwise and substituted mock rupee figures.
+  const pujaList = selectPujaTypes(pujas.data).slice(0, 4);
 
-  const panchangData = {
-    tithi: panchang.data?.data?.tithi ?? 'Dwadashi (Shukla Paksha)',
-    nakshatra: panchang.data?.data?.nakshatra ?? 'Uttara Phalguni',
-    sunrise: panchang.data?.data?.sunrise ?? '06:02 AM',
-    sunset: panchang.data?.data?.sunset ?? '06:41 PM',
-    rahuKaal: panchang.data?.data?.rahukaal ?? '07:30 AM - 09:00 AM',
-    auspicious: panchang.data?.data?.abhijitMuhurta ?? 'Sarvartha Siddhi Yoga',
-  };
+  // PAR-08: /api/v1/panchang/today returns a FLAT object, so every
+  // `panchang.data?.data?.x` accessor resolved to undefined and this card
+  // rendered the same six literal strings every day of the year — a fabricated
+  // tithi, which for a devotional product is a credibility-ending error. The
+  // API key is `rahuKaal`, not `rahukaal` (a second, independent mismatch), and
+  // `shubhMuhurat` is an OBJECT of three named windows, not a string: rendering
+  // it straight into <Text> throws "Objects are not valid as a React child" and
+  // takes the whole home screen down. selectPanchang handles all three and
+  // returns null — never a default day — for an error body.
+  const panchangData = selectPanchang(panchang.data);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -155,18 +135,44 @@ export default function HomeScreen() {
             <Ionicons name="sunny" size={18} color={colors.amber[500]} />
             <Text style={styles.panchangTitle}>Today&apos;s Panchang</Text>
           </View>
-          <View style={styles.panchangRow}>
-            <PanchangItem label="Tithi" value={panchangData.tithi} />
-            <PanchangItem label="Nakshatra" value={panchangData.nakshatra} />
-          </View>
-          <View style={styles.panchangRow}>
-            <PanchangItem label="Sunrise" value={panchangData.sunrise} />
-            <PanchangItem label="Sunset" value={panchangData.sunset} />
-          </View>
-          <View style={styles.auspiciousBadge}>
-            <Ionicons name="star" size={14} color={colors.amber[600]} />
-            <Text style={styles.auspiciousText}>{panchangData.auspicious}</Text>
-          </View>
+          {panchang.isLoading && !panchangData ? (
+            <Text style={styles.panchangUnavailable}>Loading…</Text>
+          ) : !panchangData ? (
+            <Text style={styles.panchangUnavailable}>
+              Panchang unavailable right now. Pull down to retry.
+            </Text>
+          ) : (
+            <>
+              <View style={styles.panchangRow}>
+                <PanchangItem label="Tithi" value={panchangData.tithi} />
+                <PanchangItem label="Nakshatra" value={panchangData.nakshatra} />
+              </View>
+              <View style={styles.panchangRow}>
+                <PanchangItem label="Sunrise" value={panchangData.sunrise} />
+                <PanchangItem label="Sunset" value={panchangData.sunset} />
+              </View>
+              <View style={styles.panchangRow}>
+                <PanchangItem label="Rahu Kaal" value={panchangData.rahuKaal} />
+              </View>
+              {panchangData.muhurats.length > 0 ? (
+                <View style={styles.auspiciousWrap}>
+                  {panchangData.muhurats.map((m) => (
+                    <View key={m.label} style={styles.auspiciousBadge}>
+                      <Ionicons name="star" size={14} color={colors.amber[600]} />
+                      <Text style={styles.auspiciousText}>
+                        {m.label}: {m.window}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+              {panchangData.locationCity ? (
+                <Text style={styles.panchangCity}>
+                  Timings for {panchangData.locationCity}
+                </Text>
+              ) : null}
+            </>
+          )}
         </View>
 
         {/* Live Darshan */}
@@ -179,6 +185,12 @@ export default function HomeScreen() {
           </View>
           {darshan.isLoading && !darshan.data ? (
             <ActivityIndicator size="small" color={colors.saffron[600]} style={{ paddingVertical: spacing.lg }} />
+          ) : darshanList.length === 0 ? (
+            <Text style={styles.sectionEmpty}>
+              {darshan.isError
+                ? 'Live darshan is unavailable right now.'
+                : 'No temple is broadcasting at the moment.'}
+            </Text>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
               {darshanList.map((item) => (
@@ -186,24 +198,38 @@ export default function HomeScreen() {
                   key={item.id}
                   style={styles.darshanCard}
                   activeOpacity={0.85}
-                  onPress={() => router.push('/(devotee)/darshan' as any)}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(devotee)/darshan-player' as never,
+                      params: {
+                        id: item.id,
+                        title: item.templeName,
+                        deity: item.deity ?? '',
+                        ...(item.playbackUrl ? { url: item.playbackUrl } : {}),
+                      },
+                    } as never)
+                  }
                 >
                   <View style={styles.darshanThumb}>
                     <Ionicons name="videocam" size={36} color={colors.white} />
-                    {item.isLive ? (
-                      <View style={styles.liveBadge}>
-                        <View style={styles.liveDot} />
-                        <Text style={styles.liveBadgeText}>LIVE</Text>
-                      </View>
-                    ) : null}
+                    <View style={styles.liveBadge}>
+                      <View style={styles.liveDot} />
+                      <Text style={styles.liveBadgeText}>LIVE</Text>
+                    </View>
                   </View>
                   <View style={styles.darshanInfo}>
                     <Text style={styles.darshanTitle} numberOfLines={1}>{item.templeName}</Text>
-                    <Text style={styles.darshanSub} numberOfLines={1}>{item.deity} • {item.city}</Text>
-                    <View style={styles.viewersRow}>
-                      <Ionicons name="eye" size={12} color={colors.stone[500]} />
-                      <Text style={styles.viewersText}>{item.viewers.toLocaleString()} watching</Text>
-                    </View>
+                    <Text style={styles.darshanSub} numberOfLines={1}>
+                      {[item.deity, item.city].filter(Boolean).join(' • ')}
+                    </Text>
+                    {item.viewerCount !== null && item.viewerCount > 0 ? (
+                      <View style={styles.viewersRow}>
+                        <Ionicons name="eye" size={12} color={colors.stone[500]} />
+                        <Text style={styles.viewersText}>
+                          {item.viewerCount.toLocaleString('en-IN')} watching
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
                 </TouchableOpacity>
               ))}
@@ -221,6 +247,12 @@ export default function HomeScreen() {
           </View>
           {pujas.isLoading && !pujas.data ? (
             <ActivityIndicator size="small" color={colors.saffron[600]} style={{ paddingVertical: spacing.lg }} />
+          ) : pujaList.length === 0 ? (
+            <Text style={styles.sectionEmpty}>
+              {pujas.isError
+                ? 'The puja catalogue could not be loaded.'
+                : 'No pujas are listed right now.'}
+            </Text>
           ) : (
             <View style={styles.pujaGrid}>
               {pujaList.map((puja) => (
@@ -234,13 +266,13 @@ export default function HomeScreen() {
                     <Ionicons name="flame" size={26} color={colors.saffron[600]} />
                   </View>
                   <Text style={styles.pujaName} numberOfLines={1}>{puja.name}</Text>
-                  <Text style={styles.pujaDeity} numberOfLines={1}>{puja.deity}</Text>
+                  <Text style={styles.pujaDeity} numberOfLines={1}>{puja.deity ?? ''}</Text>
                   <View style={styles.pujaFooter}>
-                    <Text style={styles.pujaPrice}>₹{puja.price}</Text>
-                    <View style={styles.ratingRow}>
-                      <Ionicons name="star" size={11} color={colors.amber[500]} />
-                      <Text style={styles.ratingText}>{puja.rating}</Text>
-                    </View>
+                    <Text style={styles.pujaPrice}>
+                      {puja.priceInr === null
+                        ? '—'
+                        : `₹${puja.priceInr.toLocaleString('en-IN')}`}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -265,11 +297,11 @@ function QuickAction({ icon, label, onPress }: { icon: React.ComponentProps<type
   );
 }
 
-function PanchangItem({ label, value }: { label: string; value: string }) {
+function PanchangItem({ label, value }: { label: string; value: string | undefined }) {
   return (
     <View style={styles.panchangItem}>
       <Text style={styles.panchangLabel}>{label}</Text>
-      <Text style={styles.panchangValue} numberOfLines={1}>{value}</Text>
+      <Text style={styles.panchangValue} numberOfLines={1}>{value ?? '—'}</Text>
     </View>
   );
 }
@@ -325,6 +357,17 @@ const styles = StyleSheet.create({
   waitlistText: { flex: 1 },
   waitlistTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
   waitlistSubtitle: { fontSize: fontSize.xs, color: colors.stone[700], marginTop: 2 },
+  panchangUnavailable: {
+    fontSize: fontSize.sm,
+    color: colors.stone[500],
+    paddingVertical: spacing.sm,
+  },
+  sectionEmpty: {
+    fontSize: fontSize.sm,
+    color: colors.stone[500],
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
   panchangCard: {
     backgroundColor: colors.amber[400],
     marginHorizontal: spacing.lg, marginTop: spacing.md,
@@ -336,11 +379,15 @@ const styles = StyleSheet.create({
   panchangItem: { flex: 1 },
   panchangLabel: { fontSize: fontSize.xs, color: colors.stone[700], fontWeight: '600' },
   panchangValue: { fontSize: fontSize.sm, color: colors.stone[900], fontWeight: '700', marginTop: 2 },
+  auspiciousWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   auspiciousBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: 'rgba(255,255,255,0.4)',
     paddingHorizontal: spacing.sm, paddingVertical: 4,
     borderRadius: borderRadius.sm, alignSelf: 'flex-start',
+  },
+  panchangCity: {
+    fontSize: fontSize.xs, color: colors.stone[700], marginTop: spacing.xs,
   },
   auspiciousText: { fontSize: fontSize.xs, color: colors.stone[900], fontWeight: '700' },
   section: { marginTop: spacing.lg },

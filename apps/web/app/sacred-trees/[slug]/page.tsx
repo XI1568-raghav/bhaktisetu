@@ -16,7 +16,7 @@ export async function generateMetadata({
   const t = getSacredTree(slug);
   if (!t) return { title: 'Sacred tree not found' };
 
-  const title = `${t.name} (${t.sanskrit}) — Sacred Tree of ${t.associatedDeity.split(' ').slice(0, 3).join(' ')} | Darshya`;
+  const title = `${t.name} (${t.sanskrit}) — Sacred Tree of ${t.associatedDeity.split(' ').slice(0, 3).join(' ')}`;
   const description = `${t.name} (${t.botanicalName}) — spiritual significance, planting muhurta on ${t.plantingMuhurta.split(' / ')[0]}, traditional uses in puja and daily practice. Associated deity: ${t.associatedDeity}.`;
 
   return {

@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const u = getUpanishad(slug);
   if (!u) return { title: 'Not found' };
   return {
-    title: `${u.name} (${u.sanskrit}) — Summary, Mahavakya, Key Verses | Darshya`,
+    title: `${u.name} (${u.sanskrit}) — Summary, Mahavakya, Key Verses`,
     description: `${u.name} from the ${u.veda} Veda. ${u.centralTheme}. ${u.summary.slice(0, 120)}`,
     alternates: { canonical: `${BASE_URL}/upanishads/${u.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${u.name} — ${u.centralTheme}`,
       description: u.summary.slice(0, 160),
       url: `${BASE_URL}/upanishads/${u.slug}`,

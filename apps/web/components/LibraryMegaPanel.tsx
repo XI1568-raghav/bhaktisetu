@@ -20,7 +20,7 @@ export function LibraryMegaPanel({ category, onItemClick }: Props) {
   return (
     <div className="w-full rounded-xl bg-white p-6 shadow-xl ring-1 ring-surface-200">
       <div className="mb-4">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700">
+        <p className="text-xs font-semibold uppercase tracking-widest text-indigo-700">
           {category.label}
         </p>
         <p className="text-sm text-surface-600">{category.tagline}</p>
@@ -29,7 +29,7 @@ export function LibraryMegaPanel({ category, onItemClick }: Props) {
       <div className="grid grid-cols-4 gap-5">
         {groups.map((g) => (
           <div key={g.heading} className="flex flex-col">
-            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-indigo-900">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-indigo-900">
               {g.heading}
             </h3>
             <ul className="flex-1 space-y-0.5">
@@ -38,7 +38,7 @@ export function LibraryMegaPanel({ category, onItemClick }: Props) {
                   <Link
                     href={it.href}
                     onClick={onItemClick}
-                    className="block rounded-md px-2 py-1.5 text-[13px] text-surface-700 hover:bg-indigo-50 hover:text-indigo-900"
+                    className="block rounded-md px-2 py-1.5 text-xs text-surface-700 hover:bg-indigo-50 hover:text-indigo-900"
                   >
                     {it.label}
                   </Link>
@@ -48,7 +48,7 @@ export function LibraryMegaPanel({ category, onItemClick }: Props) {
             <Link
               href={g.hubHref}
               onClick={onItemClick}
-              className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
             >
               {g.hubLabel}
               <ChevronRight className="w-3 h-3" aria-hidden="true" />

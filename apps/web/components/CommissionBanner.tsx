@@ -1,10 +1,28 @@
 "use client";
 
+/**
+ * ⚠ DO NOT MOUNT THIS UNTIL PM-01 IS RESOLVED (prod sweep 2026-08-12).
+ *
+ * As of 2026-08-13 this component has no importers anywhere in apps/web, which
+ * is the only reason it is not a live defect. Both numbers it prints come from
+ * `getCommissionRate`, i.e. `COMMISSION_RATES[].rates` — the tier ladder that
+ * NO server code applies (grep `commissionOverride` across apps/api: no
+ * matches). So it would tell a free-tier pandit "Commission: 30%" when the
+ * platform actually takes 20% (schema.prisma Priest.commissionRate @default
+ * 0.80), and then sell them an upgrade to a rate that is never charged.
+ *
+ * /pricing was corrected to publish `chargedCommissionRate` only. If this
+ * banner is ever wanted on a provider dashboard, it has to be rebuilt on the
+ * same source — and the "upgrade to reduce commission" half needs the tier
+ * discount to exist in apps/api/src/lib/commission-math.ts first. Whether that
+ * discount ships at all is the owner's decision, so nothing here is rewritten
+ * to pre-empt it.
+ */
+
 import { ArrowUpRight, Percent } from "lucide-react";
 import {
  getPlanById,
  getUpgradePlan,
- formatPrice,
  type PlanId,
  type ProviderRole,
  getCommissionRate,
@@ -48,9 +66,11 @@ export function CommissionBanner({ currentPlanId, role }: CommissionBannerProps)
  <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
  Upgrade to {upgradePlan.name} to reduce commission from {currentRate}%
  to {upgradeRate}%.
- {upgradePlan.price > 0 && (
- <span> Just {formatPrice(upgradePlan.price)}/mo.</span>
- )}
+ {/* PM-02b: this used to append "Just ₹1,499/mo" from the hardcoded
+   ladder in lib/pricing. That number was never charged — the real
+   price is role-specific and lives in the API — so the banner now
+   sends the user to the plan page to read the price it will bill. */}
+ <span> See your plan options for the exact price.</span>
  </p>
  )}
  </div>
@@ -58,7 +78,7 @@ export function CommissionBanner({ currentPlanId, role }: CommissionBannerProps)
 
  {upgradePlan && (
  <a
- href="/settings/subscription"
+ href="/pricing"
  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium shrink-0 btn-press transition-colors"
  style={{
  background: "var(--color-primary)",

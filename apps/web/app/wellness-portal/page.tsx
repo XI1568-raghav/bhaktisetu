@@ -14,7 +14,12 @@ import {
  Leaf,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
-import { API_BASE_URL } from '../../lib/api-config';
+import {
+ API_BASE_URL,
+ DATA_FETCH_TIMEOUT_MS,
+ fetchWithTimeout,
+ loadErrorMessage,
+} from '../../lib/api-config';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -69,29 +74,34 @@ export default function WellnessDashboard() {
  // optimistic mutation), so the cache + single loading state come for free.
  // P0 #AP-07 (2026-07-10) still honored: demo tokens are sent in non-prod and
  // a non-OK/catch keeps the mock fallback (query stays in error/no-data).
- const { data: api } = useQuery({
+ const { data: api, error: dashError, refetch: refetchDashboard } = useQuery({
   queryKey: ['wellness', 'dashboard', session?.accessToken],
   enabled: !!session?.accessToken,
   queryFn: async () => {
    const token = session!.accessToken;
-   const r = await fetch(`${API_BASE_URL}/wellness-portal/dashboard`, {
+   // RES-01: react-query surfaces a rejection, but a bare fetch on a stalled
+   // socket never rejects — the query stayed `pending` forever and the page
+   // sat on its skeleton.
+   const r = await fetchWithTimeout(`${API_BASE_URL}/wellness-portal/dashboard`, {
     headers: { Authorization: `Bearer ${token}` },
-   });
-   if (!r.ok) throw new Error(`dashboard ${r.status}`);
+   }, DATA_FETCH_TIMEOUT_MS);
+   // RES-02: carry the status so the banner can name it instead of showing
+   // a fabricated "0 Upcoming Sessions / 0 Total Students".
+   if (!r.ok) throw Object.assign(new Error(`dashboard ${r.status}`), { status: r.status });
    return (await r.json()) as ApiWellnessDashboard;
   },
   retry: false,
  });
 
- const { data: kyc } = useQuery({
+ const { data: kyc, isSuccess: kycLoaded } = useQuery({
   queryKey: ['provider-kyc', session?.accessToken],
   enabled: !!session?.accessToken,
   queryFn: async () => {
    const token = session!.accessToken;
-   const r = await fetch(`${API_BASE_URL}/provider-kyc`, {
+   const r = await fetchWithTimeout(`${API_BASE_URL}/provider-kyc`, {
     headers: { Authorization: `Bearer ${token}` },
-   });
-   if (!r.ok) throw new Error(`kyc ${r.status}`);
+   }, DATA_FETCH_TIMEOUT_MS);
+   if (!r.ok) throw Object.assign(new Error(`kyc ${r.status}`), { status: r.status });
    return (await r.json()) as { kyc?: { verified?: boolean; rejectionReason?: string | null } };
   },
   retry: false,
@@ -101,18 +111,26 @@ export default function WellnessDashboard() {
  // imperative setKycState/setKycReason chain. Defaults to 'unsubmitted' until
  // the query resolves, matching the prior initial state.
  const { kycState, kycReason } = useMemo(() => {
+  // RES-06: an unread KYC state is 'unknown' (badge renders nothing), NOT
+  // 'unsubmitted'. The old default accused a verified instructor of missing
+  // KYC every time /provider-kyc 500'd.
+  if (!kycLoaded) return { kycState: 'unknown' as const, kycReason: null };
   if (!kyc?.kyc) return { kycState: 'unsubmitted' as const, kycReason: null };
   if (kyc.kyc.verified) return { kycState: 'verified' as const, kycReason: null };
   if (kyc.kyc.rejectionReason) {
    return { kycState: 'rejected' as const, kycReason: kyc.kyc.rejectionReason };
   }
   return { kycState: 'pending' as const, kycReason: null };
- }, [kyc]);
+ }, [kyc, kycLoaded]);
 
  const liveStats = api?.stats;
+ // RES-02: the query already produced an `error` object; nothing rendered it,
+ // so an HTTP 500 showed "0 Upcoming Sessions / 0 Total Students" as fact.
+ const loadError = dashError ? loadErrorMessage(dashError) : null;
+ const unread = !!loadError && !liveStats;
  const statCards = [
-  { label: 'Upcoming Sessions', value: liveStats?.upcomingSessions ?? 0, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { label: 'Total Students', value: liveStats?.totalStudents ?? 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { label: 'Upcoming Sessions', value: unread ? '—' : liveStats?.upcomingSessions ?? 0, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { label: 'Total Students', value: unread ? '—' : liveStats?.totalStudents ?? 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
  ];
 
  return (
@@ -128,11 +146,20 @@ export default function WellnessDashboard() {
  </div>
  </div>
 
+ {loadError && (
+ <div role="alert" className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+ <span className="flex-1 min-w-[12rem]">{loadError}</span>
+ <button type="button" onClick={() => { void refetchDashboard(); }} className="font-semibold underline underline-offset-2 hover:text-amber-900">
+ Retry
+ </button>
+ </div>
+ )}
+
  <MyProviderProfileCard role="WELLNESS_INSTRUCTOR" onboardingSlug="wellness_instructor" publicListingType="wellness" />
 
  <EarningsCard
- totalPaid={liveStats?.totalEarningsInr ?? 0}
- thisMonth={liveStats?.monthEarningsInr ?? 0}
+ totalPaid={unread ? null : liveStats?.totalEarningsInr ?? 0}
+ thisMonth={unread ? null : liveStats?.monthEarningsInr ?? 0}
  pending={null}
  />
  {liveStats?.instructorShare != null && (

@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { COMPANY, operatedByLine, postalContactLine } from "../../../lib/company";
+import {
+ COMPANY,
+ grievanceOfficerLine,
+ grievanceSlaLine,
+ operatedByLine,
+ postalContactLine,
+ rightsContactEmail,
+} from "../../../lib/company";
 
 export const metadata: Metadata = {
- title: "Privacy Policy v2 (Multi-Geo) | Darshya",
+ title: "Privacy Policy v2 (Multi-Geo)",
  description:
  "Darshya's multi-geo Privacy Policy v2 covering India DPDP, EU GDPR, US CCPA, UK, Canada PIPEDA, and Australia Privacy Act 1988.",
  alternates: { canonical: "https://darshya.online/privacy/v2" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "Privacy Policy v2 (Multi-Geo) | Darshya",
  description:
  "Darshya's multi-geo Privacy Policy v2 covering DPDP + GDPR + CCPA + UK + Canada + Australia.",
@@ -185,42 +193,47 @@ export default function PrivacyV2Page() {
  <p className="mt-4">
  To exercise any right, email{" "}
  <a
- href="mailto:dpo@darshya.online"
+ href={`mailto:${rightsContactEmail()}`}
  className="underline"
  style={{ color: "var(--color-primary)" }}
  >
- dpo@darshya.online
- </a>{" "}
- or use the in-app DSAR form. We respond within 30 days (DPDP/GDPR) or 45
- days (CCPA), extendable once with notice.
+ {rightsContactEmail()}
+ </a>
+ . We respond within 30 days (DPDP/GDPR) or 45 days (CCPA), extendable once
+ with notice.
  </p>
  </PolicySection>
 
  <PolicySection title="7. Data Protection Officer and grievance contact">
  <p>
- <strong>DPO email:</strong>{" "}
+ <strong>Data protection contact:</strong>{" "}
  <a
- href="mailto:dpo@darshya.online"
+ href={`mailto:${rightsContactEmail()}`}
  className="underline"
  style={{ color: "var(--color-primary)" }}
  >
- dpo@darshya.online
+ {rightsContactEmail()}
  </a>
  </p>
+ {/* LEG-11: this used to point at /grievance, a route that does not exist,
+ and at a dpo@ inbox this codebase never declared. One grievance block,
+ owned by lib/company.ts, identical to /privacy, /refunds and /contact. */}
  <p>
- <strong>India grievance officer:</strong> as notified at{" "}
+ <strong>India grievance redressal:</strong> {grievanceOfficerLine()}{" "}
+ {grievanceSlaLine()} See also our{" "}
  <Link
- href="/grievance"
+ href="/privacy"
  className="underline"
  style={{ color: "var(--color-primary)" }}
  >
- /grievance
+ India privacy notice
  </Link>
  .
  </p>
  <p>
  <strong>EU/UK representative:</strong> to be appointed under GDPR Art 27 /
- UK GDPR Art 27 prior to active EU/UK marketing. Until then, contact the DPO.
+ UK GDPR Art 27 prior to active EU/UK marketing. Until then, use the data
+ protection contact above.
  </p>
  <p>{postalContactLine()}</p>
  </PolicySection>

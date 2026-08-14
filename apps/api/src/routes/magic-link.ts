@@ -46,8 +46,28 @@ const sensitiveAuthRateLimit = {
   config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
 };
 
-function signToken(email: string): { token: string; expiresAt: number } {
-  const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_TTL_MIN * 60;
+/**
+ * PJ-08. Provider onboarding needs a longer-lived link than a self-service
+ * "email me a link" click does.
+ *
+ * The self-service flow is minutes old when it lands: the user asked for it
+ * seconds ago and is staring at their inbox, so 15 minutes is right and stays
+ * the default. A partnerships approval is not that — it is sent when an admin
+ * gets to the queue, to somebody who applied days earlier and is not waiting at
+ * their laptop, and it is the ONLY credential their freshly-provisioned account
+ * has (there is no password column on User). At 15 minutes that email is a dead
+ * end, and apps/web has no UI anywhere to request a fresh link.
+ *
+ * So the TTL is a parameter with the tight default preserved, and the caller
+ * that needs a longer one says so and owns the reason.
+ */
+export const ONBOARDING_TOKEN_TTL_MIN = 72 * 60;
+
+export function signToken(
+  email: string,
+  ttlMinutes: number = TOKEN_TTL_MIN,
+): { token: string; expiresAt: number } {
+  const expiresAt = Math.floor(Date.now() / 1000) + ttlMinutes * 60;
   const nonce = randomBytes(8).toString('hex');
   const payload = `${email}.${nonce}.${expiresAt}`;
   const sig = createHmac('sha256', JWT_SECRET).update(payload).digest('base64url');
@@ -95,6 +115,9 @@ function verifyToken(token: string): { email: string; expiresAt: number } | null
   if (!Number.isFinite(expiresAt) || Math.floor(Date.now() / 1000) > expiresAt) return null;
   return { email, expiresAt };
 }
+
+/** Signing/verification internals, for tests that must not mint their own HMAC. */
+export const __testing = { signToken, verifyToken };
 
 export async function magicLinkRoutes(server: FastifyInstance) {
   // ── POST /request ──────────────────────────────────────────────────────

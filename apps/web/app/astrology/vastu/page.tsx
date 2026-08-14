@@ -8,11 +8,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vastu Shastra Calculator — Free 8-Direction Room Placement Scorer | Darshya',
+ title: 'Vastu Shastra Calculator — Free 8-Direction Room Placement Scorer',
  description:
   'Free Vastu Shastra calculator. Score every room placement (pooja, kitchen, master bedroom, toilet, water tank, entrance) across 8 dishas per Mayamatam + Vishwakarma Prakash + Brihat Samhita. Detects Vastu doshas + suggests ideal layout. Pure direction-based, no birth data.',
  alternates: { canonical: `${BASE_URL}/astrology/vastu` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Vastu Shastra Calculator — Free 8-Direction Scorer',
   description: 'Score room placements across 8 dishas. Detect Vastu doshas. Per Mayamatam + Brihat Samhita.',
   url: `${BASE_URL}/astrology/vastu`,
@@ -126,7 +127,7 @@ export default function VastuPage() {
        <p className="mt-1 text-xs text-gray-700">Deity: <strong>{d.deity}</strong></p>
        <p className="text-xs text-gray-700">Planet: <strong>{d.planet}</strong></p>
        <p className="text-xs text-gray-700">Element: <strong>{d.element}</strong></p>
-       <p className="mt-2 text-[11px] leading-relaxed text-gray-600">{d.significance}</p>
+       <p className="mt-2 text-xs leading-relaxed text-gray-600">{d.significance}</p>
       </div>
      ))}
     </div>
@@ -141,12 +142,12 @@ export default function VastuPage() {
      {ROOMS.map((r) => (
       <div key={r.value} className="rounded-xl border border-saffron-200 bg-saffron-50/40 p-4">
        <p className="font-serif text-sm font-semibold text-gray-900">{r.label} <span className="text-saffron-700">{r.sanskrit}</span></p>
-       <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
+       <div className="mt-2 flex flex-wrap gap-1 text-xs">
         {r.ideal.map((d) => <span key={`i-${d}`} className="rounded-full bg-emerald-200 px-2 py-0.5 text-emerald-900">✓ {d}</span>)}
         {r.acceptable.map((d) => <span key={`a-${d}`} className="rounded-full bg-amber-200 px-2 py-0.5 text-amber-900">~ {d}</span>)}
         {r.avoid.map((d) => <span key={`x-${d}`} className="rounded-full bg-rose-200 px-2 py-0.5 text-rose-900">✗ {d}</span>)}
        </div>
-       <p className="mt-2 text-[11px] leading-relaxed text-gray-600">{r.shastra}</p>
+       <p className="mt-2 text-xs leading-relaxed text-gray-600">{r.shastra}</p>
       </div>
      ))}
     </div>

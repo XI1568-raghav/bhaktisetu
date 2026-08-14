@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const s = getSamskara(slug);
   if (!s) return { title: 'Not found' };
   return {
-    title: `${s.name} (${s.sanskrit}) — Hindu Samskara #${s.number} | Darshya`,
+    title: `${s.name} (${s.sanskrit}) — Hindu Samskara #${s.number}`,
     description: `${s.name} (${s.iast}) — samskara #${s.number} of 16. ${s.timing}. ${s.purpose.slice(0, 110)}`,
     alternates: { canonical: `${BASE_URL}/samskaras/${s.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${s.name} — ${s.iast}`,
       description: s.purpose.slice(0, 160),
       url: `${BASE_URL}/samskaras/${s.slug}`,

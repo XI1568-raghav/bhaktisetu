@@ -27,7 +27,10 @@ const DETAIL_PATH: Record<ProviderListingType, (id: string) => string> = {
  store: (id) => `/store/${id}`,
  astrologer: (id) => `/astrology/${id}`,
  wellness: (id) => `/wellness/instructors/${id}`,
- gaushala: (id) => `/gaushala/${id}`,
+ // COM-07: `/gaushala/${id}` is the adoptable-COW route (dynamicParams=false
+ // over cow ids), so every real gaushala profile linked from this strip 404'd.
+ // The gaushala profile lives on its own segment.
+ gaushala: (id) => `/gaushala/profile/${id}`,
  temple: (id) => `/temples/${id}`,
 };
 
@@ -157,12 +160,12 @@ export async function ApprovedProvidersStrip({
  {p.specialties && p.specialties.length > 0 && (
  <div className="flex flex-wrap gap-1 mb-3">
  {p.specialties.slice(0, 2).map((s) => (
- <span key={s} className="px-2 py-0.5 bg-surface-100 text-surface-600 text-[10px] rounded-full">
+ <span key={s} className="px-2 py-0.5 bg-surface-100 text-surface-600 text-xs rounded-full">
  {s}
  </span>
  ))}
  {p.specialties.length > 2 && (
- <span className="px-2 py-0.5 bg-surface-100 text-surface-500 text-[10px] rounded-full">
+ <span className="px-2 py-0.5 bg-surface-100 text-surface-500 text-xs rounded-full">
  +{p.specialties.length - 2}
  </span>
  )}

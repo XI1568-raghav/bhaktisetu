@@ -11,10 +11,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Free Numerology Calculator — Life Path + Name Number + Lucky Day | Darshya',
+ title: 'Free Numerology Calculator — Life Path + Name Number + Lucky Day',
  description: 'Free Vedic + Pythagorean + Chaldean numerology calculator. Get your life-path number, birthday number, name number, soul-urge, and personality number with full meanings, lucky days, lucky colors, and planetary ruler. No signup.',
  alternates: { canonical: `${BASE_URL}/astrology/numerology` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Free Numerology Calculator — Life Path + Name + Lucky Day',
   description: 'Pythagorean + Chaldean numerology with full meanings, planetary ruler, lucky colors. Free, no signup.',
   url: `${BASE_URL}/astrology/numerology`,
@@ -116,7 +117,7 @@ export default function NumerologyPage() {
       <div key={m.number} className="rounded-xl border border-saffron-200 bg-saffron-50/30 p-4">
        <div className="flex items-baseline justify-between">
         <p className="font-serif text-3xl font-bold text-saffron-700">{m.number}</p>
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{m.planet}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{m.planet}</span>
        </div>
        <p className="mt-1 text-sm font-semibold text-gray-900">{m.title}</p>
        <p className="mt-1 text-xs leading-relaxed text-gray-700">{m.short}</p>

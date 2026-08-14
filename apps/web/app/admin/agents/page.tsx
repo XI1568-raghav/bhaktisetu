@@ -116,7 +116,7 @@ export default function AgentsPage() {
                   className={`w-full text-left p-2 rounded text-xs hover:bg-saffron-50 ${selected === r.file ? 'bg-saffron-100 text-saffron-900' : 'text-surface-700'}`}
                 >
                   <div className="font-mono">{r.file}</div>
-                  <div className="text-surface-400 text-[10px]">{new Date(r.mtime).toLocaleString()}</div>
+                  <div className="text-surface-400 text-xs">{new Date(r.mtime).toLocaleString()}</div>
                 </button>
               ))}
             </div>

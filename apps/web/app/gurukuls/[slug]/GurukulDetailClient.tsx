@@ -82,7 +82,7 @@ export default function GurukulDetailClient({ slug }: { slug: string }) {
                     {p.feeAnnualInr ? ` - INR ${p.feeAnnualInr.toLocaleString('en-IN')}/yr` : ''}
                   </div>
                 </div>
-                <Link href={`/gurukuls/apply/${p.id}`} className="px-4 py-2 bg-saffron-500 text-white text-sm font-semibold rounded-lg hover:bg-saffron-600 shrink-0">
+                <Link href={`/gurukuls/apply/${p.id}`} className="px-4 py-2 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 shrink-0">
                   Apply
                 </Link>
               </div>

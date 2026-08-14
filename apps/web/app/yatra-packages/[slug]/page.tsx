@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!pkg) return {};
   const url = `https://darshya.online/yatra-packages/${pkg.slug}`;
   return {
-    title: `${pkg.name} — ${pkg.duration_days} day Yatra | Darshya`,
+    title: `${pkg.name} — ${pkg.duration_days} day Yatra`,
     description: pkg.short_description ?? `${pkg.duration_days}-day curated pilgrimage from Darshya.`,
     alternates: { canonical: url },
     openGraph: {
@@ -105,7 +105,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
                 <ol className="space-y-2.5">
                   {itineraryEntries.map(([day, desc]) => (
                     <li key={day} className="flex gap-3">
-                      <span className="rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider shrink-0" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
+                      <span className="rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wider shrink-0" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary-active)' }}>
                         {day.replace('day', 'Day ')}
                       </span>
                       <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{desc}</span>
@@ -149,7 +149,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
                 <span className="text-xs font-normal ml-1.5" style={{ color: 'var(--color-text-muted)' }}>/ person</span>
               </p>
               {pkg.price_usd && (
-                <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>NRI: ${pkg.price_usd}</p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>NRI: ${pkg.price_usd}</p>
               )}
 
               {pkg.departure_dates && pkg.departure_dates.length > 0 && (
@@ -157,7 +157,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
                   <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text)' }}>Departure dates</p>
                   <div className="flex flex-wrap gap-1.5">
                     {pkg.departure_dates.slice(0, 6).map((d) => (
-                      <span key={d} className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ background: 'var(--color-bg)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
+                      <span key={d} className="rounded-full px-2.5 py-0.5 text-xs" style={{ background: 'var(--color-bg)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
                         {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                       </span>
                     ))}
@@ -173,10 +173,10 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
                 Reserve seat <ArrowRight className="w-4 h-4" />
               </Link>
               {seatsLeft <= 5 && seatsLeft > 0 && (
-                <p className="mt-2 text-[11px] text-center" style={{ color: '#dc2626' }}>Only {seatsLeft} seats left!</p>
+                <p className="mt-2 text-xs text-center" style={{ color: '#dc2626' }}>Only {seatsLeft} seats left!</p>
               )}
               {seatsLeft === 0 && (
-                <p className="mt-2 text-[11px] text-center" style={{ color: '#dc2626' }}>Group full — try another date</p>
+                <p className="mt-2 text-xs text-center" style={{ color: '#dc2626' }}>Group full — try another date</p>
               )}
             </div>
           </aside>

@@ -142,6 +142,12 @@ export {
   useCancelSubscription,
   useCreateDonationOrder,
   useVerifyDonation,
+  usePaymentConfig,
+} from "./hooks/wave-1-4.js";
+export type {
+  CreateDonationOrderInput,
+  CreateDonationOrderResponse,
+  VerifyDonationInput,
 } from "./hooks/wave-1-4.js";
 
 export {

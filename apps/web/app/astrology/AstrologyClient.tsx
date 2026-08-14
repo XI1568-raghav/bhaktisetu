@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../lib/api-config';
-import { getAstrologerImage } from '../../lib/images';
+import {
+ ASTROLOGY_SORT_VALUES,
+ ASTROLOGY_SPECIALIZATIONS,
+ buildAstrologyQuery,
+ parseAstrologyFilters,
+ type AstrologyFilters,
+ type AstrologySort,
+} from '../../lib/astrology-filters';
 import {
  Star,
  Moon,
@@ -35,22 +42,25 @@ import { DateInput } from '../../components/ui/DateInput';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// Mirrors GET /astrology/astrologers/live (apps/api/src/routes/astrology.ts:132)
+// — approved AstrologerProfile rows. Optional fields are optional because the
+// DB columns are nullable: they render as absent, never as an invented value.
+// There is no `photo`, `reviewCount`, `isBusy` or `badges` because a real
+// AstrologerProfile carries none of those, and the old fixture's stock
+// portraits published strangers' faces as named astrologers' likenesses.
 interface Astrologer {
  id: string;
  name: string;
- photo: string;
- specializations: string[];
- languages: string[];
- experienceYears: number;
- rating: number;
- reviewCount: number;
- consultationCount: number;
- perMinuteRate: number;
- isOnline: boolean;
- isBusy: boolean;
- bio: string;
- verified: boolean;
- badges: string[];
+ specializations?: string[] | null;
+ languages?: string[] | null;
+ experienceYears?: number | null;
+ rating?: number | null;
+ consultationCount?: number | null;
+ perMinuteRate?: number | null;
+ isOnline?: boolean;
+ mode?: { chat?: boolean; call?: boolean } | null;
+ bio?: string | null;
+ verified?: boolean;
 }
 
 interface DailyHoroscope {
@@ -71,144 +81,15 @@ interface DailyHoroscope {
 
 // ─── Hardcoded Fallback Data ──────────────────────────────────────────────────
 
-const fallbackAstrologers: Astrologer[] = [
- {
- id: 'astro_001',
- name: 'Pt. Raghunath Sharma',
- photo: getAstrologerImage('male', 0),
- specializations: ['Vedic Astrology', 'Prashna Kundli', 'Nadi Astrology'],
- languages: ['Hindi', 'English', 'Sanskrit'],
- experienceYears: 25,
- rating: 4.9,
- reviewCount: 12450,
- consultationCount: 34200,
- perMinuteRate: 50,
- isOnline: true,
- isBusy: false,
- bio: 'Renowned Jyotish Acharya with 25 years of experience.',
- verified: true,
- badges: ['Top Rated', '10K+ Consults'],
- },
- {
- id: 'astro_002',
- name: 'Dr. Meera Devi',
- photo: getAstrologerImage('female', 1),
- specializations: ['Tarot Reading', 'Numerology', 'Vedic Astrology'],
- languages: ['Hindi', 'English', 'Gujarati'],
- experienceYears: 15,
- rating: 4.8,
- reviewCount: 8920,
- consultationCount: 22100,
- perMinuteRate: 40,
- isOnline: true,
- isBusy: false,
- bio: 'Gifted Tarot reader and Numerologist with PhD in Astro-Sciences.',
- verified: true,
- badges: ['Top Rated', 'Quick Response'],
- },
- {
- id: 'astro_003',
- name: 'Acharya Vikram Joshi',
- photo: getAstrologerImage('male', 2),
- specializations: ['Vedic Astrology', 'Vastu', 'KP Astrology'],
- languages: ['Hindi', 'English', 'Marathi'],
- experienceYears: 20,
- rating: 4.7,
- reviewCount: 6540,
- consultationCount: 18500,
- perMinuteRate: 60,
- isOnline: true,
- isBusy: true,
- bio: 'Master of KP Astrology and Vastu Shastra.',
- verified: true,
- badges: ['Top Rated', '10K+ Consults'],
- },
- {
- id: 'astro_004',
- name: 'Jyotishi Sunita Patel',
- photo: getAstrologerImage('female', 3),
- specializations: ['Palmistry', 'Numerology', 'Tarot Reading'],
- languages: ['Hindi', 'Gujarati', 'English'],
- experienceYears: 12,
- rating: 4.6,
- reviewCount: 4320,
- consultationCount: 11800,
- perMinuteRate: 25,
- isOnline: true,
- isBusy: false,
- bio: 'Unique blend of Palmistry and Numerology.',
- verified: true,
- badges: ['Quick Response'],
- },
- {
- id: 'astro_005',
- name: 'Pt. Devendra Mishra',
- photo: getAstrologerImage('male', 1),
- specializations: ['Vedic Astrology', 'Nadi Astrology', 'Prashna Kundli'],
- languages: ['Hindi', 'English', 'Tamil'],
- experienceYears: 30,
- rating: 4.9,
- reviewCount: 15600,
- consultationCount: 41000,
- perMinuteRate: 80,
- isOnline: false,
- isBusy: false,
- bio: 'One of India\'s most respected Nadi Astrologers.',
- verified: true,
- badges: ['Top Rated', '10K+ Consults', 'Quick Response'],
- },
- {
- id: 'astro_006',
- name: 'Tarot Priya Singh',
- photo: getAstrologerImage('female', 0),
- specializations: ['Tarot Reading', 'Numerology'],
- languages: ['Hindi', 'English', 'Punjabi'],
- experienceYears: 8,
- rating: 4.5,
- reviewCount: 3210,
- consultationCount: 8900,
- perMinuteRate: 20,
- isOnline: true,
- isBusy: false,
- bio: 'Young and intuitive Tarot card reader.',
- verified: true,
- badges: ['Quick Response'],
- },
- {
- id: 'astro_007',
- name: 'Acharya Ramesh Iyer',
- photo: getAstrologerImage('male', 3),
- specializations: ['KP Astrology', 'Vedic Astrology', 'Vastu'],
- languages: ['Hindi', 'English', 'Tamil', 'Kannada'],
- experienceYears: 22,
- rating: 4.8,
- reviewCount: 9100,
- consultationCount: 25600,
- perMinuteRate: 55,
- isOnline: true,
- isBusy: false,
- bio: 'KP Astrology specialist from Vaitheeswaran Koil lineage.',
- verified: true,
- badges: ['Top Rated', '10K+ Consults'],
- },
- {
- id: 'astro_008',
- name: 'Dr. Kavita Reddy',
- photo: getAstrologerImage('female', 2),
- specializations: ['Vastu', 'Vedic Astrology', 'Numerology'],
- languages: ['Hindi', 'English', 'Telugu'],
- experienceYears: 18,
- rating: 4.7,
- reviewCount: 5840,
- consultationCount: 15200,
- perMinuteRate: 45,
- isOnline: true,
- isBusy: true,
- bio: 'Doctorate in Vastu Shastra combined with Vedic Astrology.',
- verified: true,
- badges: ['Top Rated'],
- },
-];
+// AW-02 (2026-08-12, P0): a hardcoded fallback array lived here — 15 invented
+// astrologers with invented names, ratings, review counts and Rs50-90/min rates,
+// seeded straight into component state, so the grid rendered them before any
+// fetch resolved and KEPT rendering them if the fetch failed. Every card linked
+// to a real Razorpay charge against a person who does not exist: money captured,
+// Jitsi room minted, "Your astrologer has been notified", and no Commission row
+// because verify-payment had no real provider to credit. It is deleted, not
+// hidden behind a flag. The directory below is bound to real onboarded supply;
+// when there is none it says so.
 
 const fallbackHoroscopes: DailyHoroscope[] = [
  { rashi: 'aries', rashiHindi: 'मेष', rashiEnglish: 'Aries', symbol: '', prediction: 'A day of new beginnings and fresh energy. Trust your instincts.', luckyNumber: 9, luckyColor: 'Red', luckyDirection: 'East', mantra: 'Om Kraam Kreem Kraum Sah Bhaumaya Namah', mantraHindi: 'ओम क्रां क्रीं क्रौं सः भौमाय नमः', rulingPlanet: 'Mars (Mangal)', element: 'Fire (Agni)', overallRating: 4 },
@@ -225,16 +106,10 @@ const fallbackHoroscopes: DailyHoroscope[] = [
  { rashi: 'pisces', rashiHindi: 'मीन', rashiEnglish: 'Pisces', symbol: '', prediction: 'Spiritual awareness and creativity peak. Dreams carry messages.', luckyNumber: 12, luckyColor: 'Sea Green', luckyDirection: 'Northeast', mantra: 'Om Graam Greem Graum Sah Gurave Namah', mantraHindi: 'ओम ग्रां ग्रीं ग्रौं सः गुरवे नमः', rulingPlanet: 'Jupiter (Guru)', element: 'Water (Jal)', overallRating: 4 },
 ];
 
-const specializations = [
- 'All',
- 'Vedic Astrology',
- 'Tarot Reading',
- 'Numerology',
- 'Vastu',
- 'KP Astrology',
- 'Palmistry',
- 'Nadi Astrology',
-];
+// LC-12: the pills and the URL parser must read from ONE list. A pill the
+// parser does not recognise writes ?filter=X and then reloads as "All" — the
+// same half-shipped contract this finding is about, one drifted string later.
+const specializations = ASTROLOGY_SPECIALIZATIONS;
 
 const sortOptions = [
  { value: '', label: 'Relevance' },
@@ -246,47 +121,82 @@ const sortOptions = [
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function AstrologyPage() {
- const router = useRouter();
- const pathname = usePathname();
  const searchParams = useSearchParams();
 
- const [astrologers, setAstrologers] = useState<Astrologer[]>(fallbackAstrologers);
+ const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
  const [horoscopes] = useState<DailyHoroscope[]>(fallbackHoroscopes);
- const [activeFilter, setActiveFilter] = useState(() => searchParams.get('filter') || 'All');
- const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || '');
- const [selectedRashi, setSelectedRashi] = useState<string | null>(() => searchParams.get('rashi'));
- const [showOnlineOnly, setShowOnlineOnly] = useState(() => searchParams.get('online') === '1');
 
- // P0 #AP-11 (2026-07-09): fetch from the API on mount instead of rendering
- // hardcoded fallbackAstrologers forever. The fallback is kept as an error-only
- // safety net (e.g. the API is unreachable), but the page is now API-driven so
- // profile edits made via PATCH /astrologer-portal/profile surface here.
- const [apiError, setApiError] = useState(false);
+ // LC-12: the four list controls below are the shareable identity of this page
+ // — "online Vastu astrologers, cheapest first" is a query people type into
+ // Google — and none of them used to reach the URL. See lib/astrology-filters.
+ const [filters, setFilters] = useState<AstrologyFilters>(() =>
+  parseAstrologyFilters(new URLSearchParams(searchParams?.toString() ?? ''))
+ );
+ const { spec: activeFilter, sort: sortBy, rashi: selectedRashi, online: showOnlineOnly } = filters;
+
+ // Mirror for `commit`, so it can merge onto the freshest filters without
+ // taking them as a dependency (and without doing history side effects inside
+ // a setState updater, which React re-invokes).
+ const filtersRef = useRef(filters);
+
+ // AW-02 (2026-08-12, P0): this fetched `/astrology/astrologers?limit=100` —
+ // the 15-row in-memory MOCK fixture — and seeded state with a hardcoded copy
+ // of the same invented people, so the funnel sold consultations with
+ // astrologers nobody could deliver while the 3 genuinely onboarded ones were
+ // invisible. It now reads `/astrology/astrologers/live`: approved
+ // AstrologerProfile rows only, the same set the booking endpoint will accept
+ // (POST /consultation/book now REFUSES any non-onboarded astrologer id).
+ //
+ // There is deliberately no fallback. Empty means empty and a failure says it
+ // failed — rendering fixtures on error is the defect this whole finding is.
+ const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
  useEffect(() => {
   let cancelled = false;
   (async () => {
    try {
-    const r = await fetch(`${API_BASE_URL}/astrology/astrologers?limit=100`);
-    if (!r.ok) { if (!cancelled) setApiError(true); return; }
+    const r = await fetch(`${API_BASE_URL}/astrology/astrologers/live`);
+    if (!r.ok) { if (!cancelled) setLoadState('error'); return; }
     const j = await r.json();
-    const list = Array.isArray(j?.astrologers) ? j.astrologers : [];
-    if (!cancelled && list.length > 0) setAstrologers(list);
+    const list = Array.isArray(j?.astrologers) ? (j.astrologers as Astrologer[]) : [];
+    if (!cancelled) {
+     setAstrologers(list);
+     setLoadState('ready');
+    }
    } catch {
-    if (!cancelled) setApiError(true);
+    if (!cancelled) setLoadState('error');
    }
   })();
   return () => { cancelled = true; };
  }, []);
 
+ // LC-12: this used to be `router.replace(...)` inside an effect. In the App
+ // Router that is a NAVIGATION: every pill click fired `GET /astrology?…&_rsc=…`
+ // and the address bar only moved once that round trip committed, so on a cold
+ // or wedged API the URL never changed at all. `replace` also writes no history
+ // entry, so Back could not undo a filter. Every filter here runs client-side
+ // over an array we already hold, so the server has nothing to contribute — the
+ // native History API (which the App Router has synced with usePathname /
+ // useSearchParams since 14.1) writes the URL with no request at all.
+ const commit = useCallback((next: Partial<AstrologyFilters>) => {
+  const merged = { ...filtersRef.current, ...next };
+  filtersRef.current = merged;
+  setFilters(merged);
+  if (typeof window === 'undefined') return;
+  const url = `${window.location.pathname}${buildAstrologyQuery(merged)}`;
+  if (url === `${window.location.pathname}${window.location.search}`) return;
+  window.history.pushState(null, '', url);
+ }, []);
+
+ // Back/Forward: re-read the URL so the LIST reverts, not just the address bar.
  useEffect(() => {
-  const params = new URLSearchParams();
-  if (activeFilter !== 'All') params.set('filter', activeFilter);
-  if (sortBy) params.set('sort', sortBy);
-  if (selectedRashi) params.set('rashi', selectedRashi);
-  if (showOnlineOnly) params.set('online', '1');
-  const qs = params.toString();
-  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
- }, [activeFilter, sortBy, selectedRashi, showOnlineOnly, pathname, router]);
+  const onPop = () => {
+   const next = parseAstrologyFilters(new URLSearchParams(window.location.search));
+   filtersRef.current = next;
+   setFilters(next);
+  };
+  window.addEventListener('popstate', onPop);
+  return () => window.removeEventListener('popstate', onPop);
+ }, []);
 
  // Kundli form
  const [kundliName, setKundliName] = useState('');
@@ -300,31 +210,35 @@ export default function AstrologyPage() {
  const [compatRashi2, setCompatRashi2] = useState('');
  const [compatScore, setCompatScore] = useState<number | null>(null);
 
- // Filter astrologers
+ // Filter astrologers. Every accessor is null-tolerant: the live payload comes
+ // from nullable DB columns, unlike the fixture that guaranteed every field.
  const filteredAstrologers = astrologers.filter((a) => {
- if (activeFilter !== 'All' && !a.specializations.includes(activeFilter)) return false;
+ if (activeFilter !== 'All' && !(a.specializations ?? []).includes(activeFilter)) return false;
  if (showOnlineOnly && !a.isOnline) return false;
  return true;
  }).sort((a, b) => {
- if (sortBy === 'rating') return b.rating - a.rating;
- if (sortBy === 'price') return a.perMinuteRate - b.perMinuteRate;
- if (sortBy === 'experience') return b.experienceYears - a.experienceYears;
+ if (sortBy === 'rating') return (b.rating ?? 0) - (a.rating ?? 0);
+ if (sortBy === 'price') return (a.perMinuteRate ?? 0) - (b.perMinuteRate ?? 0);
+ if (sortBy === 'experience') return (b.experienceYears ?? 0) - (a.experienceYears ?? 0);
  // Default: online first
- if (a.isOnline && !a.isBusy && !(b.isOnline && !b.isBusy)) return -1;
- if (b.isOnline && !b.isBusy && !(a.isOnline && !a.isBusy)) return 1;
- return b.rating - a.rating;
+ return Number(!!b.isOnline) - Number(!!a.isOnline) || (b.rating ?? 0) - (a.rating ?? 0);
  });
+ const onlineCount = filteredAstrologers.filter((a) => a.isOnline).length;
 
  function getStatusColor(astrologer: Astrologer) {
- if (astrologer.isOnline && !astrologer.isBusy) return 'bg-emerald-400';
- if (astrologer.isOnline && astrologer.isBusy) return 'bg-amber-400';
- return 'bg-surface-400';
+ return astrologer.isOnline ? 'bg-emerald-400' : 'bg-surface-400';
  }
 
- function getStatusText(astrologer: Astrologer) {
- if (astrologer.isOnline && !astrologer.isBusy) return 'Online';
- if (astrologer.isOnline && astrologer.isBusy) return 'Busy';
- return 'Offline';
+ // Initials, not a photo: an AstrologerProfile carries no image, and the old
+ // fixture attached stock portraits to named people.
+ function initials(name: string) {
+ const words = name
+ .replace(/\b(pt\.?|pandit|acharya|dr\.?|shri|smt\.?|guru)\b/gi, ' ')
+ .trim()
+ .split(/\s+/)
+ .filter(Boolean);
+ const picked = words.length > 0 ? words : name.trim().split(/\s+/).filter(Boolean);
+ return picked.slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
  }
 
  function handleGenerateKundli() {
@@ -425,7 +339,11 @@ export default function AstrologyPage() {
  Talk to Astrologers
  </h2>
  <p className="text-surface-500 mt-1">
- {filteredAstrologers.filter(a => a.isOnline && !a.isBusy).length} astrologers online now
+ {loadState === 'ready'
+ ? `${onlineCount} ${onlineCount === 1 ? 'astrologer' : 'astrologers'} online now`
+ : loadState === 'loading'
+ ? 'Loading verified astrologers...'
+ : 'Availability unavailable'}
  </p>
  </div>
  <div className="flex items-center gap-3">
@@ -433,14 +351,20 @@ export default function AstrologyPage() {
  <input
  type="checkbox"
  checked={showOnlineOnly}
- onChange={(e) => setShowOnlineOnly(e.target.checked)}
+ onChange={(e) => commit({ online: e.target.checked })}
  className="w-4 h-4 rounded border-surface-300 text-saffron-600 focus:ring-saffron-400"
  />
  Online only
  </label>
+ {/* LC-12: the sort control had no accessible name — a screen-reader user
+     heard "combo box, Relevance" with nothing saying what it sorts. */}
  <select
+ aria-label="Sort astrologers"
  value={sortBy}
- onChange={(e) => setSortBy(e.target.value)}
+ onChange={(e) => {
+  const v = e.target.value as AstrologySort;
+  commit({ sort: ASTROLOGY_SORT_VALUES.includes(v) ? v : '' });
+ }}
  className="text-sm border border-surface-200 rounded-xl px-3 py-2 bg-white text-surface-700 focus:ring-2 focus:ring-saffron-400 focus:border-saffron-400"
  >
  {sortOptions.map((opt) => (
@@ -455,7 +379,9 @@ export default function AstrologyPage() {
  {specializations.map((spec) => (
  <button
  key={spec}
- onClick={() => setActiveFilter(spec)}
+ type="button"
+ aria-pressed={activeFilter === spec}
+ onClick={() => commit({ spec })}
  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
  activeFilter === spec
  ? 'bg-saffron-600 text-white shadow-md'
@@ -467,9 +393,43 @@ export default function AstrologyPage() {
  ))}
  </div>
 
- {/* Astrologer Cards Grid */}
+ {/* Astrologer Cards Grid.
+ AW-02: three honest terminal states — loading, failed, empty — instead of
+ the old behaviour of silently rendering 15 invented astrologers. */}
+ {loadState === 'loading' ? (
+ <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-10 text-center text-sm text-surface-500">
+ Loading verified astrologers...
+ </div>
+ ) : loadState === 'error' ? (
+ <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+ <p className="text-sm font-semibold text-red-700">
+ We could not load the astrologer directory.
+ </p>
+ <p className="mt-1 text-xs text-red-600">
+ Please try again shortly. We will not show you astrologers we cannot connect you to.
+ </p>
+ </div>
+ ) : filteredAstrologers.length === 0 ? (
+ <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
+ <p className="text-sm font-semibold text-surface-700">
+ No astrologers are available right now.
+ </p>
+ <p className="mt-1 text-xs text-surface-500">
+ {astrologers.length > 0
+ ? 'No verified astrologer matches these filters. Try clearing them.'
+ : 'Our verified astrologers are being onboarded. Use the free Kundli and horoscope tools below in the meantime.'}
+ </p>
+ </div>
+ ) : (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
- {filteredAstrologers.map((astrologer) => (
+ {filteredAstrologers.map((astrologer) => {
+ const rating = typeof astrologer.rating === 'number' && astrologer.rating > 0 ? astrologer.rating : null;
+ const consults = typeof astrologer.consultationCount === 'number' ? astrologer.consultationCount : 0;
+ const rate = typeof astrologer.perMinuteRate === 'number' && astrologer.perMinuteRate > 0 ? astrologer.perMinuteRate : null;
+ const languages = (astrologer.languages ?? []).filter(Boolean);
+ const specs = (astrologer.specializations ?? []).filter(Boolean);
+ const years = typeof astrologer.experienceYears === 'number' ? astrologer.experienceYears : null;
+ return (
  <Link
  key={astrologer.id}
  href={`/astrology/${astrologer.id}`}
@@ -478,13 +438,14 @@ export default function AstrologyPage() {
  {/* Card Header */}
  <div className="relative p-4 pb-3">
  <div className="flex items-start gap-3">
- {/* Photo */}
+ {/* Initials — the API carries no image for a real profile. */}
  <div className="relative shrink-0">
- <img
- src={astrologer.photo}
- alt={astrologer.name}
- className="w-16 h-16 rounded-xl object-cover"
- />
+ <div
+ className="w-16 h-16 rounded-xl bg-gradient-to-br from-saffron-100 to-amber-100 text-saffron-700 flex items-center justify-center font-serif text-xl font-semibold"
+ aria-hidden="true"
+ >
+ {initials(astrologer.name)}
+ </div>
  {/* Status dot */}
  <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 ${getStatusColor(astrologer)} rounded-full border-2 border-white`} />
  </div>
@@ -500,71 +461,69 @@ export default function AstrologyPage() {
  )}
  </div>
  <div className="flex items-center gap-1.5 mb-1">
- {renderStars(astrologer.rating)}
+ {rating !== null ? (
+ <>
+ {renderStars(rating)}
  <span className="text-xs text-surface-500">
- {astrologer.rating} ({astrologer.reviewCount.toLocaleString()})
+ {rating.toFixed(1)}
+ {consults > 0 ? ` (${consults.toLocaleString('en-IN')})` : ''}
  </span>
+ </>
+ ) : (
+ <span className="text-xs text-surface-400">New on Darshya</span>
+ )}
  </div>
  <p className="text-xs text-surface-500">
- {astrologer.experienceYears} yrs exp | {astrologer.languages.slice(0, 2).join(', ')}
+ {years !== null ? `${years} yrs exp` : 'Experience not listed'}
+ {languages.length > 0 ? ` | ${languages.slice(0, 2).join(', ')}` : ''}
  </p>
  </div>
  </div>
-
- {/* Badges */}
- {astrologer.badges.length > 0 && (
- <div className="flex flex-wrap gap-1 mt-2.5">
- {astrologer.badges.map((badge) => (
- <span
- key={badge}
- className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/60"
- >
- {badge}
- </span>
- ))}
- </div>
- )}
  </div>
 
  {/* Specializations */}
+ {specs.length > 0 && (
  <div className="px-4 pb-3">
  <div className="flex flex-wrap gap-1">
- {astrologer.specializations.slice(0, 3).map((spec) => (
+ {specs.slice(0, 3).map((spec) => (
  <span
  key={spec}
- className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-saffron-50 text-saffron-600"
+ className="text-xs font-medium px-2 py-0.5 rounded-md bg-saffron-50 text-saffron-600"
  >
  {spec}
  </span>
  ))}
  </div>
  </div>
+ )}
 
  {/* Footer */}
  <div className="px-4 pb-4 flex items-center justify-between">
  <div className="text-sm font-bold text-surface-800">
- <span className="text-lg">{'₹'}{astrologer.perMinuteRate}</span>
+ {rate !== null ? (
+ <>
+ <span className="text-lg">{'₹'}{rate}</span>
  <span className="text-xs font-normal text-surface-400">/min</span>
+ </>
+ ) : (
+ <span className="text-xs font-normal text-surface-400">Rate on request</span>
+ )}
  </div>
  <span
  className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
- astrologer.isOnline && !astrologer.isBusy
+ astrologer.isOnline
  ? 'bg-saffron-600 text-white shadow-sm group-hover:shadow-md group-hover:bg-saffron-700'
- : astrologer.isBusy
- ? 'bg-surface-200 text-surface-500'
  : 'bg-surface-100 text-surface-400'
  }`}
  >
- {astrologer.isOnline && !astrologer.isBusy
- ? 'Chat Now'
- : astrologer.isBusy
- ? 'Busy'
- : 'Offline'}
+ {astrologer.isOnline ? 'Chat Now' : 'Offline'}
  </span>
  </div>
  </Link>
- ))}
+ );
+ })}
  </div>
+ )}
  </section>
 
  {/* ── AI Features Section (Free Tools) ────────────────────────────────── */}
@@ -659,7 +618,11 @@ export default function AstrologyPage() {
  {horoscopes.slice(0, 12).map((h) => (
  <button
  key={h.rashi}
- onClick={() => setSelectedRashi(selectedRashi === h.rashi ? null : h.rashi)}
+ type="button"
+ data-rashi={h.rashi}
+ aria-pressed={selectedRashi === h.rashi}
+ aria-label={`${h.rashiEnglish} horoscope`}
+ onClick={() => commit({ rashi: selectedRashi === h.rashi ? null : h.rashi })}
  className={`flex flex-col items-center py-2 rounded-lg transition-all text-center ${
  selectedRashi === h.rashi
  ? 'bg-saffron-100 border border-saffron-300'
@@ -667,7 +630,7 @@ export default function AstrologyPage() {
  }`}
  >
  <span className="text-lg leading-none">{h.symbol}</span>
- <span className="text-[9px] text-surface-500 mt-0.5">{h.rashiHindi}</span>
+ <span className="text-xs text-surface-500 mt-0.5">{h.rashiHindi}</span>
  </button>
  ))}
  </div>
@@ -683,16 +646,16 @@ export default function AstrologyPage() {
  <span className="text-xl">{h.symbol}</span>
  <div>
  <p className="text-sm font-bold text-surface-800">{h.rashiEnglish}</p>
- <p className="text-[10px] text-surface-500">{h.rashiHindi} &middot; {h.rulingPlanet}</p>
+ <p className="text-xs text-surface-500">{h.rashiHindi} &middot; {h.rulingPlanet}</p>
  </div>
  </div>
  <p className="text-xs text-surface-600 leading-relaxed mb-2">{h.prediction}</p>
  {/* Mantra */}
  <div className="bg-white/60 rounded-lg p-2 mb-2">
- <p className="text-[10px] text-surface-400 uppercase tracking-wide mb-0.5">Daily Mantra</p>
- <p className="text-[11px] font-medium text-saffron-700">{h.mantraHindi}</p>
+ <p className="text-xs text-surface-400 uppercase tracking-wide mb-0.5">Daily Mantra</p>
+ <p className="text-xs font-medium text-saffron-700">{h.mantraHindi}</p>
  </div>
- <div className="flex flex-wrap items-center gap-2 text-[10px] text-surface-400">
+ <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
  <span>Lucky #{h.luckyNumber}</span>
  <span>{h.luckyColor}</span>
  <span className="flex items-center gap-0.5">

@@ -170,8 +170,12 @@ function BookYatraInner() {
 
  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.darshya.online';
  const totalInr = priceBreakdown.total;
- const totalUsd = Math.round((totalInr / 83) * 100) / 100;
 
+ // COM-08: a hardcoded USD conversion at a fixed 83:1 rate was computed here
+ // and posted alongside the real quote — a leftover of the removed Stripe/USD
+ // path. Nothing reads it (the inquiry schema defaults that field to 0) and the
+ // rate was already stale, so it was a fabricated number travelling with a real
+ // one. Dropped.
  const payload = {
  yatraSlug: currentYatra.slug,
  yatraTitle: currentYatra.title,
@@ -181,7 +185,6 @@ function BookYatraInner() {
  travelersCount: data.travelersCount,
  travelers: data.travelers.map((t) => ({ name: t.name, age: t.age, gender: t.gender })),
  totalInr,
- totalUsd,
  buyer: {
  name: buyerName,
  email: data.buyerEmail,
@@ -277,11 +280,11 @@ function BookYatraInner() {
  return (
  <div key={label} className="flex items-center gap-2 flex-1">
  <div
- className="flex items-center gap-1.5 text-[11px] font-medium flex-1"
+ className="flex items-center gap-1.5 text-xs font-medium flex-1"
  style={{ color: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-text-faint)' }}
  >
  <div
- className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+ className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
  style={{
  background: active ? 'var(--color-primary)' : done ? 'var(--color-status-success)' : 'var(--color-surface-offset)',
  color: active || done ? '#fff' : 'var(--color-text-faint)',
@@ -320,7 +323,7 @@ function BookYatraInner() {
  onChange={(v) => setData({ ...data, startDate: v })}
  />
  </div>
- <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-faint)' }}>Best time: {yatra.bestTime}</p>
+ <p className="text-xs mt-1" style={{ color: 'var(--color-text-faint)' }}>Best time: {yatra.bestTime}</p>
  </div>
 
  <div>
@@ -376,13 +379,13 @@ function BookYatraInner() {
  >
  <div className="flex items-start justify-between gap-3">
  <div>
- <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--color-primary)' }}>{pkg.tier}</p>
+ <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: 'var(--color-primary)' }}>{pkg.tier}</p>
  <h3 className="text-sm font-semibold mt-0.5" style={{ color: 'var(--color-text)' }}>{pkg.name}</h3>
  <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{pkg.tagline}</p>
  </div>
  <div className="text-right shrink-0">
  <p className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{formatINR(pkg.price)}</p>
- <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>per person</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>per person</p>
  </div>
  </div>
  </button>
@@ -428,12 +431,12 @@ function BookYatraInner() {
  />
  {data.addOns.companion && (
  <div className="ml-10 rounded-lg p-3" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
- <label className="text-[11px] font-medium block mb-1" style={{ color: 'var(--color-text)' }}>Companion required for (days)</label>
+ <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-text)' }}>Companion required for (days)</label>
  <div className="flex items-center gap-3">
  <button onClick={() => setData({ ...data, companionDays: Math.max(1, data.companionDays - 1) })} className="w-7 h-7 rounded-md text-sm" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>-</button>
  <span className="text-sm font-semibold min-w-6 text-center" style={{ color: 'var(--color-text)' }}>{data.companionDays}</span>
  <button onClick={() => setData({ ...data, companionDays: Math.min(yatra.durationDays, data.companionDays + 1) })} className="w-7 h-7 rounded-md text-sm" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>+</button>
- <Link href="/yatra/companion" className="text-[11px] ml-auto" style={{ color: 'var(--color-primary)' }}>Choose companion →</Link>
+ <Link href="/yatra/companion" className="text-xs ml-auto" style={{ color: 'var(--color-primary)' }}>Choose companion →</Link>
  </div>
  </div>
  )}
@@ -461,7 +464,7 @@ function BookYatraInner() {
  <p className="text-xs font-semibold mb-3" style={{ color: 'var(--color-text)' }}>Traveler {i + 1}</p>
  <div className="grid sm:grid-cols-2 gap-3">
  <div>
- <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Full name</label>
+ <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Full name</label>
  <input
  value={t.name}
  onChange={(e) => {
@@ -475,7 +478,7 @@ function BookYatraInner() {
  />
  </div>
  <div>
- <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Age</label>
+ <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Age</label>
  <input
  type="number"
  value={t.age}
@@ -489,7 +492,7 @@ function BookYatraInner() {
  />
  </div>
  <div>
- <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Gender</label>
+ <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Gender</label>
  <select
  value={t.gender}
  onChange={(e) => {
@@ -506,7 +509,7 @@ function BookYatraInner() {
  </select>
  </div>
  <div>
- <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>ID proof (Aadhaar/Passport)</label>
+ <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>ID proof (Aadhaar/Passport)</label>
  <div className="flex items-center gap-2">
  <input
  value={t.idProof}
@@ -520,7 +523,7 @@ function BookYatraInner() {
  maxLength={12}
  style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
  />
- <button type="button" className="px-3 py-2 text-[11px] rounded-lg inline-flex items-center gap-1.5" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
+ <button type="button" className="px-3 py-2 text-xs rounded-lg inline-flex items-center gap-1.5" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
  <Upload className="w-3 h-3" /> Upload
  </button>
  </div>
@@ -539,7 +542,7 @@ function BookYatraInner() {
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Verify details before payment.</p>
  </div>
  <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p className="text-[11px] uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Trip summary</p>
+ <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Trip summary</p>
  <div className="space-y-2 text-xs">
  <Row label="Yatra" value={yatra.title} />
  <Row label="Start date" value={data.startDate || '—'} />
@@ -550,7 +553,7 @@ function BookYatraInner() {
  </div>
 
  <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p className="text-[11px] uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Price breakdown</p>
+ <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Price breakdown</p>
  <div className="space-y-2 text-xs">
  {priceBreakdown.lines.map((l, i) => (
  <div key={i} className="flex items-center justify-between">
@@ -566,13 +569,13 @@ function BookYatraInner() {
  </div>
 
  <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <p className="text-[11px] uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Your contact</p>
- <p className="text-[11px] mb-3" style={{ color: 'var(--color-text-muted)' }}>
+ <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Your contact</p>
+ <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
  Our yatra desk confirms hotel + transport availability and emails final invoice within 24h. No card needed now.
  </p>
  <div className="grid sm:grid-cols-2 gap-3">
  <div>
- <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Your name</label>
+ <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Your name</label>
  <input
  value={buyerName}
  onChange={(e) => setBuyerName(e.target.value)}
@@ -582,7 +585,7 @@ function BookYatraInner() {
  />
  </div>
  <div>
- <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Email</label>
+ <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Email</label>
  <input
  type="email"
  value={data.buyerEmail}
@@ -593,7 +596,7 @@ function BookYatraInner() {
  />
  </div>
  <div className="sm:col-span-2">
- <label className="text-[11px] block mb-1" style={{ color: 'var(--color-text-muted)' }}>Phone / WhatsApp (optional)</label>
+ <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Phone / WhatsApp (optional)</label>
  <input
  value={data.buyerPhone}
  onChange={(e) => setData({ ...data, buyerPhone: e.target.value })}
@@ -618,9 +621,9 @@ function BookYatraInner() {
  )}
  </button>
  {submitError && (
- <p className="text-[11px] text-center" style={{ color: 'var(--color-status-danger, #b91c1c)' }}>{submitError}</p>
+ <p className="text-xs text-center" style={{ color: 'var(--color-status-danger, #b91c1c)' }}>{submitError}</p>
  )}
- <p className="text-[11px] text-center" style={{ color: 'var(--color-text-faint)' }}>
+ <p className="text-xs text-center" style={{ color: 'var(--color-text-faint)' }}>
  Payment link emailed after our team confirms availability. No charge now.
  </p>
  </div>
@@ -657,24 +660,24 @@ function BookYatraInner() {
  </div>
  <div className="p-4">
  <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{yatra.title}</h3>
- <div className="flex items-center gap-3 mt-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+ <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {yatra.durationDays} days</span>
  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {yatra.places.length} stops</span>
  </div>
 
  {selectedPackage && (
  <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--color-divider)' }}>
- <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--color-primary)' }}>{selectedPackage.tier}</p>
+ <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: 'var(--color-primary)' }}>{selectedPackage.tier}</p>
  <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{selectedPackage.name}</p>
  <div className="mt-3 flex items-center justify-between">
  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Estimated total</span>
  <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</span>
  </div>
- <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-faint)' }}>For {data.travelersCount} travelers, incl. GST</p>
+ <p className="text-xs mt-1" style={{ color: 'var(--color-text-faint)' }}>For {data.travelersCount} travelers, incl. GST</p>
  </div>
  )}
 
- <div className="mt-4 flex items-center gap-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+ <div className="mt-4 flex items-center gap-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <Users className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
  <span>{data.travelersCount} {data.travelersCount === 1 ? 'traveler' : 'travelers'}</span>
  </div>

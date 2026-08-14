@@ -5,7 +5,7 @@ import { NAVARATNA } from '../../lib/navaratna';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: '9 Navaratna Gems — Vedic Gemology for Nava-Graha | Darshya',
+  title: '9 Navaratna Gems — Vedic Gemology for Nava-Graha',
   description:
     'The nine sacred gems of Vedic astrology — Ruby, Pearl, Red Coral, Emerald, Yellow Sapphire, Diamond, Blue Sapphire, Hessonite, Cat\'s Eye. Each paired with its ruling planet, with finger, metal, weight, day, mantra, benefits, side-effects, quality indicators, price guidance, and substitutes.',
   alternates: { canonical: 'https://darshya.online/navaratna' },

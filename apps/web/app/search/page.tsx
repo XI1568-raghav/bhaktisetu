@@ -4,8 +4,9 @@ import { Suspense } from 'react';
 import SearchClient from './SearchClient';
 
 export const metadata: Metadata = {
-  title: 'Search Knowledge — Darshya',
-  description: 'Search across Sanskrit, Vedas, and Sanatan Dharma articles.',
+  alternates: { canonical: 'https://darshya.online/search' },
+  title: 'Search pujas, temples and the library',
+  description: 'Search pujas you can book, temples, and the Sanskrit, Veda and Sanatan Dharma library.',
 };
 
 export default function SearchPage() {

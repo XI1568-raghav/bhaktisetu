@@ -23,6 +23,9 @@ import {
   ListChecks,
   Star,
   Bot,
+  Banknote,
+  RotateCcw,
+  BadgeCheck,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -37,6 +40,12 @@ const sidebarLinks = [
   { href: '/admin/support', label: 'Support Tickets', icon: LifeBuoy },
   { href: '/admin/ratings', label: 'Ratings', icon: Star },
   { href: '/admin/commissions', label: 'Commissions', icon: Wallet },
+  // AO-03: the payout, refund and KYC rails were all live on the API with no
+  // way to reach them from the sidebar. A screen nobody can navigate to is the
+  // same defect as a screen that 404s.
+  { href: '/admin/payouts', label: 'Payouts', icon: Banknote },
+  { href: '/admin/refunds', label: 'Refunds', icon: RotateCcw },
+  { href: '/admin/kyc', label: 'Provider KYC', icon: BadgeCheck },
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: Sparkles },
   { href: '/admin/revenue', label: 'Revenue', icon: IndianRupee },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
@@ -112,7 +121,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 key={link.href}
                 href={link.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                   active
                     ? 'bg-saffron-500/20 text-saffron-300 border border-saffron-500/30'
                     : 'text-white/60 hover:bg-white/5 hover:text-white/80'
@@ -137,14 +146,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="px-3 py-4 border-t border-white/10">
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors"
+            className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors"
           >
             <ChevronRight className="w-5 h-5 rotate-180" />
             Back to Site
           </Link>
           <button
             onClick={signOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
           >
             <LogOut className="w-5 h-5" />
             Sign Out

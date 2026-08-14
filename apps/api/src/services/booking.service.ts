@@ -7,6 +7,7 @@ import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 // exposes the name to importers but does not bind it in local scope.
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
 import { notifyUser } from '../routes/notifications.js';
+import { notifyBookingEvent, notifyVideoReady } from './booking-notify.service.js';
 import { ensureConversationForBooking } from './conversation.service.js';
 import { paymentService } from './payment.service.js';
 
@@ -27,12 +28,48 @@ export interface CreateBookingInput {
   dispatchTier?: 'instant' | 'one_hour' | 'senior' | 'scheduled';
 }
 
+/**
+ * The four tabs the devotee's My Bookings page renders. DB-01 (2026-08-12):
+ * these used to be computed in the browser from whatever page of rows the API
+ * happened to return, so "All" showed 20 when the devotee had 81 bookings.
+ * The server owns both the filter and the count now, so a chip can never
+ * disagree with the list under it.
+ */
+export const MY_BOOKINGS_VIEWS = ['all', 'upcoming', 'completed', 'cancelled'] as const;
+export type MyBookingsView = (typeof MY_BOOKINGS_VIEWS)[number];
+
+/** Terminal success states — what a devotee reads as "done". */
+export const COMPLETED_BOOKING_STATUSES: BookingStatus[] = [
+  'completed',
+  'video_uploaded',
+  'delivered',
+];
+
+/**
+ * Anything in here can never be "upcoming", whatever the date says.
+ *
+ * DB-03 (2026-08-12): `pending_payment` used to be missing, so every abandoned
+ * or failed checkout — each of which mints a real booking row BEFORE the
+ * gateway opens — showed up under Upcoming as if it were a paid puja. One
+ * seeded devotee carried 8 such ghosts. The customer is told "You have NOT
+ * been charged" and then sees the un-charged row listed among their upcoming
+ * pujas; the tab has to mean "booked and paid for" or it means nothing.
+ * `refunded` was missing for the same reason — it is as terminal as cancelled.
+ */
+export const NON_UPCOMING_BOOKING_STATUSES: BookingStatus[] = [
+  'pending_payment',
+  'cancelled',
+  'refunded',
+  ...COMPLETED_BOOKING_STATUSES,
+];
+
 export interface UserBookingsFilters {
   status?: BookingStatus;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
   limit?: number;
+  view?: MyBookingsView;
 }
 
 // P0 #PBO-3 (2026-07-09): fees that the booking wizard shows but previously
@@ -46,11 +83,27 @@ export const PLATFORM_FEE_INR = 51;
 export const PRASAD_DELIVERY_FEE_INR = 150;
 
 // Booking revamp (2026-08-04): platform take-rate cut from 30% to 20% to win
-// pandit supply. Research basis: Sri Mandir takes 20-25% from temples; the
-// current hardcoded 30% (with Priest.commissionRate 0.70 ignored) is both
-// uncompetitive for supply acquisition AND inconsistent. The pandit's
-// Priest.commissionRate (their share, default 0.80) is now the source of truth,
-// falling back to DEFAULT_PRIEST_SHARE when unset. Confirmed with founder.
+// pandit supply. Research basis: Sri Mandir takes 20-25% from temples; the old
+// hardcoded 30% (with Priest.commissionRate ignored) was both uncompetitive for
+// supply acquisition AND inconsistent. The pandit's Priest.commissionRate
+// (their SHARE) is the source of truth, falling back to DEFAULT_PRIEST_SHARE
+// when it is outside (0,1]. Confirmed with founder.
+//
+// PJ-03 (opened 2026-08-11, CLOSED 2026-08-13). The schema default really did
+// disagree with this constant: `Priest.commissionRate` carried `@default(0.70)`,
+// the pre-revamp 30/70 split, so a pandit onboarded through the normal flow was
+// paid Rs 7,000 instead of Rs 8,000 on a Rs 10,000 booking and the Commission
+// row recorded a 30% platform take on a product advertised at 20%. All three
+// halves have shipped:
+//   - schema.prisma now declares `commissionRate Float @default(0.80)`;
+//   - migration 20260812000000_priest_commission_rate_80 moves the column
+//     default AND backfills the existing 0.70 rows (no live money had moved);
+//   - PATCH /admin/priests/:id/commission-rate (routes/admin.ts) is the
+//     authenticated, audit-logged write path for a genuinely negotiated rate.
+// A stored 0.70 is therefore honoured as a deliberate negotiation, never
+// silently treated as "unset" — which was the trap in the alternative fix.
+// booking.service.commission-doctrine.pj03.test.ts pins this comment to the
+// schema so the two cannot drift apart again.
 export const DEFAULT_PRIEST_SHARE = 0.8;
 export const DEFAULT_PLATFORM_SHARE = 0.2;
 
@@ -108,6 +161,55 @@ async function lockSlot(tx: BookingTxClient, slotKey: string): Promise<void> {
 }
 
 /**
+ * S3-04 (2026-08-11): an UNPAID booking must not hold a slot forever.
+ *
+ * Every conflict/capacity predicate in this domain was
+ * `status: { notIn: ['cancelled','refunded'] }` with no age bound, and there is
+ * no expiry job for puja bookings (jobs/consultation-expire.ts covers
+ * consultations only). A `pending_payment` row therefore occupied its slot
+ * permanently. That row is created BEFORE the Razorpay order exists
+ * (routes/bookings.ts /create-order creates the booking, then calls
+ * createRazorpayOrder), so every abandoned checkout and every failed
+ * order-creation silently burned one of the offering's slots with no recovery
+ * path. The hostile version is worse and free: POST /bookings/from-offering
+ * against a competitor pandit for every slot of the next 30 days, never pay,
+ * and that pandit's calendar is permanently full — PriestPujaOffering
+ * .maxBookingsPerSlot defaults to 1, so one unpaid row per slot is enough.
+ *
+ * Query-side only, deliberately: no cron and no sweep. The free-tier budget has
+ * no room for another scheduled job and an age predicate needs none. The row
+ * stays `pending_payment` in the table; it simply stops counting against
+ * capacity once it is older than the hold. A real payment flips the status
+ * inside payment.service's capture transaction, so a booking that was actually
+ * paid is unaffected no matter how long the capture took.
+ */
+export const UNPAID_HOLD_MINUTES = 30;
+
+/** The instant before which an unpaid hold stops counting against capacity. */
+export function unpaidHoldCutoff(now: Date = new Date()): Date {
+  return new Date(now.getTime() - UNPAID_HOLD_MINUTES * 60_000);
+}
+
+/**
+ * The single "this row occupies the slot" predicate.
+ *
+ * Exported because the same predicate is hand-copied into six places across the
+ * domain (routes/bookings.ts GET /slots, the PATCH reassign conflict check and
+ * the from-offering `held` count; dispatch.service.accept's conflict check) and
+ * the copies had already drifted. Callers must not pass their own `status` or
+ * `AND` alongside it — this owns both.
+ */
+export function activeSlotHoldWhere(now: Date = new Date()): Prisma.PujaBookingWhereInput {
+  return {
+    AND: [
+      { status: { notIn: ['cancelled', 'refunded'] } },
+      // An unpaid hold older than the TTL is abandoned inventory, not a booking.
+      { NOT: { status: 'pending_payment', createdAt: { lt: unpaidHoldCutoff(now) } } },
+    ],
+  };
+}
+
+/**
  * Authoritative capacity check. Must be called inside the same transaction (and
  * after `lockSlot`) as the write it guards.
  */
@@ -117,7 +219,7 @@ async function assertSlotCapacity(
   maxBookingsPerSlot: number,
 ): Promise<void> {
   const booked = await tx.pujaBooking.count({
-    where: { ...where, status: { notIn: ['cancelled', 'refunded'] } },
+    where: { ...where, ...activeSlotHoldWhere() },
   });
   if (booked >= maxBookingsPerSlot) {
     throw new Error(
@@ -232,6 +334,28 @@ export const VALID_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
 const CANCELLABLE_STATUSES: BookingStatus[] = ['pending_payment', 'confirmed', 'priest_assigned'];
 
 /**
+ * Transitions after which an assigned pandit has an earning on this booking.
+ *
+ * DI-05: deliberately EXCLUDES 'confirmed' (the confirm branch mints its own
+ * row) and every terminal state — a cancelled or refunded booking must never
+ * mint a new payable.
+ */
+const EARNING_ATTACH_STATUSES = new Set<BookingStatus>([
+  'priest_assigned',
+  'in_progress',
+  'completed',
+  'video_uploaded',
+  'delivered',
+]);
+
+/**
+ * How many times one booking may be moved (S3-25). `PujaBooking.rescheduleCount`
+ * was added to bound this and was never incremented or read, so the cap did not
+ * exist. Exported so the web wizard and admin tooling can show the same number.
+ */
+export const MAX_RESCHEDULES = 2;
+
+/**
  * The relation shape `updateBookingStatus` returns, and therefore the shape
  * `PATCH /bookings/:id` answers with. Exported because routes/bookings.ts has a
  * second path to that same response (RV-17: a pure pandit reassignment, which
@@ -338,9 +462,12 @@ export class BookingService {
     await assertSlotCapacity(prisma, slotWhere, offering.maxBookingsPerSlot);
 
     // 4. Determine pricing
+    // Existence check only. `isNri` used to be read here to swap in the NRI
+    // price behind the quote — see the pricing note below for why it no longer
+    // is, and why a self-settable flag can never drive a charged amount.
     const user = await prisma.user.findUnique({
       where: { id: data.userId },
-      select: { isNri: true },
+      select: { id: true },
     });
 
     if (!user) {
@@ -348,12 +475,50 @@ export class BookingService {
     }
 
     const basePrice = offering.priceOverride ?? offering.pujaType.basePrice;
-    const pujaPrice = user.isNri ? offering.pujaType.nriPrice : basePrice;
+
+    // S3-09 (2026-08-11): the devotee is charged the price the wizard QUOTED.
+    //
+    // This was `user.isNri ? offering.pujaType.nriPrice : basePrice`, and three
+    // separate things were wrong with it — only one of them about revenue:
+    //  1. the web wizard (apps/web/app/pujas/book/page.tsx) quotes
+    //     `priceOverride ?? basePrice` (+ fees) and never renders an NRI
+    //     figure at all — its `nriUsdPrice` memo is computed and dropped. With
+    //     the repo's own fixtures (basePrice 1100 / nriPrice 5100) the page and
+    //     the Pay button said Rs 1,151 while the booking row and the Razorpay
+    //     order were Rs 5,151: a 4.5x quote/charge mismatch at the payment
+    //     sheet. That is the RV-01 failure mode, and the /from-offering path
+    //     already refuses to create it in so many words ("applying a
+    //     server-side multiplier the UI cannot see would charge an NRI devotee
+    //     Rs 9,900 against a Rs 1,100 quote — a worse failure than the one
+    //     being fixed"). The temple path had never been brought into line.
+    //  2. `isNri` is self-settable — PATCH /users/me accepts `isNri` — so the
+    //     rule this enforced was bypassable in a single request and can never
+    //     be a server-side pricing switch.
+    //  3. it jumped straight to PujaType.nriPrice, discarding BOTH the
+    //     temple's `priceOverride` and the temple manager's offering-level
+    //     override (TemplePujaOffering.nriPrice, written by temple-portal and
+    //     read by no booking path) — so a temple that configured Rs 6,000 for
+    //     NRIs was ignored.
+    //
+    // Business rule 2 (NRI 9-10x) is NOT abandoned: it comes back as a
+    // server-QUOTED unit price resolved as `offering.nriPrice ??
+    // offering.pujaType.nriPrice`, returned in the create-order response and
+    // rendered/confirmed by the client before checkout. Until that quote exists
+    // in the UI, displayed price === charged price.
+    const pujaPrice = basePrice;
 
     // Resolve the priest's actual share. The booking may already have a priest
     // pinned (temple-pin / from-offering); when it does, read that priest's
     // commissionRate so per-pandit negotiated splits are honoured. Otherwise
     // fall back to the platform default (now 80% priest / 20% platform).
+    //
+    // S3-24: `assignedPriestId` is read ONLY to resolve that rate. createBooking
+    // never writes `priestId` onto the row (see the create payload below), so a
+    // temple-path booking cannot participate in a priest-slot collision and
+    // needs no priest-slot lock — the offering-scoped `slotKeyFor` lock is the
+    // correct key for the row this actually writes. If a future change starts
+    // pinning the priest at create time, take the shared priest-slot lock here
+    // too and run the same conflict check dispatch/priest/admin do.
     let priestShare = DEFAULT_PRIEST_SHARE;
     const pinnedPriestId = offering.assignedPriestId ?? null;
     if (pinnedPriestId) {
@@ -379,12 +544,17 @@ export class BookingService {
 
     // Split on the PUJA price using the priest's actual share (default 80/20 —
     // see DEFAULT_PRIEST_SHARE). Platform keeps the remainder.
-    const priestPayoutAmount = new Prisma.Decimal(pujaPrice.toString()).mul(
-      new Prisma.Decimal(priestShare.toString()),
-    );
-    const platformCommission = new Prisma.Decimal(pujaPrice.toString()).mul(
-      new Prisma.Decimal((1 - priestShare).toString()),
-    );
+    //
+    // S3-07: the platform multiplier used to be `new Prisma.Decimal((1 -
+    // priestShare).toString())` — the subtraction ran in JS float FIRST, so the
+    // 0.8 default produced the literal string '0.19999999999999996'. Decimal(10,2)
+    // rounds that away on write today, so no rupee is currently wrong, but it
+    // breaks the project's own money rule and the error becomes real the moment
+    // anyone sums the un-rounded value or widens the column. Subtract in Decimal.
+    const shareDec = new Prisma.Decimal(priestShare.toString());
+    const pujaPriceDec = new Prisma.Decimal(pujaPrice.toString());
+    const priestPayoutAmount = pujaPriceDec.mul(shareDec);
+    const platformCommission = pujaPriceDec.mul(new Prisma.Decimal(1).sub(shareDec));
 
     // 5. Generate booking number (retry on collision)
     let bookingNumber = this.generateBookingNumber();
@@ -432,6 +602,64 @@ export class BookingService {
         tx,
         slotKeyFor(data.templePujaOfferingId, scheduledDate, data.scheduledTimeSlot),
       );
+
+      // ── RES-05 (2026-08-12): IDEMPOTENT ON THE NATURAL BOOKING KEY ────────
+      //
+      // Three byte-identical POSTs to /create-order in the same tick returned
+      // [201,201,201] with three distinct bookings and three distinct payable
+      // Razorpay orders for one puja. Capacity was never oversold (this lock
+      // and maxBookingsPerSlot hold), so it is duplicate INTENT: a devotee
+      // whose response is lost to a mobile handover retries and now owns two
+      // live orders — two charges to reverse, or one paid booking plus a
+      // phantom hold burning 1 of the 5 slot places for the whole hold window.
+      //
+      // The lookup runs INSIDE the advisory lock, which is the only place
+      // racers are already serialised, so it closes the parallel case as well
+      // as the sequential retry. `createRazorpayOrder` is already idempotent
+      // per booking (it returns an existing initiated/authorized order), so
+      // reusing the booking makes the whole endpoint idempotent end to end
+      // without the caller doing anything.
+      //
+      // Deliberately NARROW: only a hold for the SAME devotee, offering, date
+      // and slot, still inside UNPAID_HOLD_MINUTES, AND carrying the same
+      // charged amount and the same devotees. A different prasad choice or a
+      // different sankalp party is a genuinely different booking, and handing
+      // back the earlier one would charge this devotee for something they did
+      // not ask for.
+      const holdCutoff = new Date(Date.now() - UNPAID_HOLD_MINUTES * 60 * 1000);
+      const liveHold = await tx.pujaBooking.findFirst({
+        where: {
+          userId: data.userId,
+          templePujaOfferingId: data.templePujaOfferingId,
+          scheduledDate: scheduledDate,
+          scheduledTimeSlot: data.scheduledTimeSlot,
+          status: 'pending_payment',
+          createdAt: { gte: holdCutoff },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          bookingNumber: true,
+          status: true,
+          priceAmount: true,
+          currency: true,
+          scheduledDate: true,
+          scheduledTimeSlot: true,
+          createdAt: true,
+          devoteeNames: true,
+          prasadDeliveryRequested: true,
+        },
+      });
+      if (
+        liveHold &&
+        liveHold.prasadDeliveryRequested === data.prasadDeliveryRequested &&
+        new Prisma.Decimal(liveHold.priceAmount as Prisma.Decimal).equals(priceAmount) &&
+        JSON.stringify(liveHold.devoteeNames ?? null) === JSON.stringify(data.devoteeNames ?? null)
+      ) {
+        const { devoteeNames: _dn, prasadDeliveryRequested: _pd, ...reused } = liveHold;
+        return reused;
+      }
+
       await assertSlotCapacity(tx, slotWhere, offering.maxBookingsPerSlot);
       return tx.pujaBooking.create({
         data: {
@@ -513,6 +741,15 @@ export class BookingService {
       'userId',
       'priestId',
       'id',
+      // S3-03 (2026-08-11): the server stamps `videoUploadedAt` in
+      // uploadVideoProof. It was client-settable through the route's
+      // VIDEO_PROOF_FIELDS whitelist and passed the video-proof gate (which
+      // only inspects the URL), so the booking OWNER could rewrite the
+      // server-stamped evidence timestamp to any value on a booking that
+      // already carried genuine proof. GET /bookings/:id/video then served the
+      // forged timestamp, destroying the one artefact that settles "was the
+      // puja performed on the booked day" in a chargeback.
+      'videoUploadedAt',
     ]);
     const sanitizedData: Record<string, any> | undefined = data
       ? Object.fromEntries(Object.entries(data).filter(([k]) => !FORBIDDEN_DATA_KEYS.has(k)))
@@ -544,6 +781,38 @@ export class BookingService {
       });
 
       if (newStatus === 'confirmed') {
+        // ── P0 S3-08 (2026-08-11): no captured payment, no confirm ──────────
+        //
+        // `confirmed` is where this method MINTS MONEY: the Commission row
+        // below, whose `amount` is precisely what payout.service.getPayoutBalance
+        // pays a provider, plus the temple's TemplePayout. Nothing upstream
+        // required the booking to have been paid, and PATCH /bookings/:id
+        // authorizes the booking OWNER for every transition — so a plain
+        // devotee could book a Rs 10,000 puja via /bookings/from-offering
+        // (which pins priestId at create), never pay, PATCH
+        // {"status":"confirmed"}, and mint Rs 8,000 of withdrawable balance
+        // for the pandit. Unbounded, and free.
+        //
+        // The guard is here rather than only at the route because this service
+        // is the shared chokepoint (priest.service reaches it too) and because
+        // it must roll the status flip back with it — throwing inside the
+        // transaction does exactly that, so an unpaid booking does not even
+        // become `confirmed`.
+        //
+        // The legitimate paths are unaffected: payment.service flips the
+        // status to `confirmed` INLINE inside its own capture transaction and
+        // never calls this method, and it sets Payment.status = 'captured' in
+        // that same transaction.
+        const capturedPayments = await tx.payment.count({
+          where: { bookingId: row.id, status: 'captured' },
+        });
+        if (capturedPayments === 0) {
+          throw new Error(
+            'Cannot confirm a booking that has no captured payment. ' +
+              'Payment capture confirms the booking automatically.',
+          );
+        }
+
         // Commission ledger row so /admin/commissions has a single source of
         // truth for payout reconciliation. Idempotent via findFirst on
         // bookingId, so a double-confirm or webhook retry never double-writes.
@@ -595,6 +864,61 @@ export class BookingService {
         await writeTemplePayoutOnConfirm(row.id, tx);
       }
 
+      // ── DI-05 (2026-08-12): MINT THE EARNING WHEN THE PANDIT IS ATTACHED ──
+      //
+      // Commission rows are minted at CONFIRM time keyed to whoever is on the
+      // booking then. On the temple booking path nobody is: the pandit is
+      // attached later by a PATCH, so `writePujaCommissionOnConfirm` hit its
+      // `if (!booking.priestId) return` and nothing ever re-ran it. The
+      // reassignment block in routes/bookings.ts only calls
+      // `commission.updateMany`, which matches ZERO rows when none was minted.
+      //
+      // Driven end to end 2026-08-12: create-order -> verify-payment ->
+      // priest_assigned -> in_progress -> completed, all 200, and `commissions`
+      // stayed empty for that booking while `priest_payout` read Rs 770. The
+      // pandit's own /payouts/balance answered {availableInr: 0}. He is owed
+      // money and the product's own payout page tells him he has none.
+      //
+      // Safe to run here because it is idempotent on bookingId — the same
+      // findFirst guard both minting writers use — and gated on a CAPTURED
+      // payment, so it can never mint withdrawable balance for an unpaid
+      // booking (the S3-08 hole, on the transition instead of the confirm).
+      if (EARNING_ATTACH_STATUSES.has(newStatus) && row.priestId) {
+        const alreadyOwned = await tx.commission.findFirst({
+          where: { bookingId: row.id },
+          select: { id: true },
+        });
+        if (!alreadyOwned) {
+          const capturedForEarning = await tx.payment.count({
+            where: { bookingId: row.id, status: 'captured' },
+          });
+          if (capturedForEarning > 0) {
+            const priestUser = await tx.priest.findUnique({
+              where: { id: row.priestId },
+              select: { userId: true },
+            });
+            // No linked User means no payable provider — writing the row anyway
+            // is what produced the orphans RV-04 exists to stop creating.
+            if (priestUser?.userId) {
+              // amount = the PROVIDER's earning, percentage = the PLATFORM's
+              // take rate, against the same fee-inclusive base every other
+              // writer uses. lib/commission-math.ts — one column, one meaning.
+              const price = new Prisma.Decimal(row.priceAmount as Prisma.Decimal);
+              const providerEarning = new Prisma.Decimal(row.priestPayout as Prisma.Decimal);
+              await tx.commission.create({
+                data: {
+                  bookingId: row.id,
+                  providerId: priestUser.userId,
+                  amount: providerEarning,
+                  percentage: platformRateOf(price.sub(providerEarning), price),
+                  status: 'PENDING',
+                },
+              });
+            }
+          }
+        }
+      }
+
       return row;
     });
 
@@ -614,10 +938,61 @@ export class BookingService {
         .catch((err) => console.warn('[booking.service] priest payout write failed:', err));
     }
 
+    // NOTIF-05 (2026-08-12): the video-proof fan-out.
+    //
+    // Video proof is business rule #1 and the whole justification for 9-10x NRI
+    // pricing, and we promise its delivery in writing — by email in the booking
+    // confirmation, by WhatsApp on /nri-pujas. Neither was implemented: the only
+    // thing that fired here was the bare `notifyUser` push below, which needs a
+    // desktop browser with granted permission, i.e. essentially nobody in that
+    // cohort. notifyVideoReady owns the whole fan-out (push + WhatsApp + email),
+    // so the generic push leg is skipped for this status rather than firing a
+    // second, duplicate push.
+    if (newStatus === 'video_uploaded') {
+      void notifyVideoReady(updated.id).catch((err) =>
+        console.warn('[booking.service] video-ready notify failed:', err),
+      );
+    }
+
+    // NOTIF-06 (2026-08-14): the middle of the lifecycle finally has a producer.
+    //
+    // `in_progress` and `completed` are written ONLY here, and pushMessageFor
+    // returns null for both — so a devotee whose puja started and finished was
+    // told nothing on any channel, while the `puja_started` / `puja_completed`
+    // WhatsApp templates and their push copy sat written and unreachable in
+    // booking-notify.service. `cancelled` was one step better and still wrong:
+    // the devotee-initiated route (POST /bookings/:id/cancel) fans out, but the
+    // two paths that reach `cancelled` through THIS method — the admin PATCH and
+    // the unpaid-hold expiry sweep — only fired a bare web push, i.e. a desktop
+    // browser with granted permission or nothing.
+    //
+    // No double-send: cancelBooking writes `cancelled` with its own raw
+    // `pujaBooking.update` and never enters this method, so the route's fan-out
+    // and this one are on disjoint paths.
+    const FAN_OUT_EVENT = {
+      in_progress: 'in_progress',
+      completed: 'completed',
+      cancelled: 'cancelled',
+    } as const;
+    const fanOutEvent = FAN_OUT_EVENT[newStatus as keyof typeof FAN_OUT_EVENT];
+    if (fanOutEvent) {
+      void notifyBookingEvent(updated.id, fanOutEvent).catch((err) =>
+        console.warn(`[booking.service] ${fanOutEvent} notify failed:`, err),
+      );
+    }
+
     // Push notification on key transitions. Fire-and-forget — push failure
     // must never break booking flow. notifyUser no-ops if VAPID is unset
     // or the user has no subscriptions.
-    const message = pushMessageFor(newStatus, updated.pujaType.name, updated.temple.name);
+    //
+    // Statuses owned by a fan-out above are skipped here rather than pushed a
+    // second time: notifyVideoReady / notifyBookingEvent each carry their own
+    // push leg, so leaving `cancelled` on this path would send two identical
+    // pushes for one cancellation.
+    const message =
+      newStatus === 'video_uploaded' || fanOutEvent
+        ? null
+        : pushMessageFor(newStatus, updated.pujaType.name, updated.temple.name);
     if (message) {
       void notifyUser(updated.user.id, {
         ...message,
@@ -739,9 +1114,11 @@ export class BookingService {
    * loses the booking and forces a refund round-trip. Competitors (SmartPuja,
    * Aastha, Mangalnath) all offer reschedule precisely because it cuts
    * cancellations. Allowed from confirmed/priest_assigned, up to 24h before the
-   * CURRENT scheduled slot. When a priest is already assigned we reset to
-   * `confirmed` + clear priestId so the new slot re-enters the assignment queue
-   * (the old priest may not be free at the new time).
+   * CURRENT scheduled slot, and at most MAX_RESCHEDULES times. When a priest is
+   * already assigned we reset to `confirmed` + clear priestId so the new slot
+   * re-enters the assignment queue (the old priest may not be free at the new
+   * time) — and, since 2026-08-11, void his unclaimed earning and supersede his
+   * offers along with it, so the pandit who actually performs is the one paid.
    */
   async rescheduleBooking(
     bookingId: string,
@@ -760,6 +1137,7 @@ export class BookingService {
         scheduledTimeSlot: true,
         templePujaOfferingId: true,
         priestPujaOfferingId: true,
+        rescheduleCount: true,
       },
     });
 
@@ -770,6 +1148,19 @@ export class BookingService {
     if (booking.status !== 'confirmed' && booking.status !== 'priest_assigned') {
       throw new Error(
         `Booking cannot be rescheduled in its current status "${booking.status}".`
+      );
+    }
+
+    // S3-25 (2026-08-11): `PujaBooking.rescheduleCount` exists in the schema
+    // precisely to bound this, and nothing ever incremented it or read it — the
+    // column was 0 on every row. Unbounded reschedules are not just an ops blind
+    // spot: each move re-locks and re-counts a slot and detaches the pandit (see
+    // the re-queue block below), so a loop of them churns assignments and
+    // dispatch broadcasts at zero cost to the devotee. The message carries
+    // "cannot be rescheduled" so the route's existing catch maps it to 409.
+    if (booking.rescheduleCount >= MAX_RESCHEDULES) {
+      throw new Error(
+        `This booking cannot be rescheduled again — the limit of ${MAX_RESCHEDULES} reschedules has been reached. Please contact support.`,
       );
     }
 
@@ -813,6 +1204,25 @@ export class BookingService {
       throw new Error('New date is not a valid date.');
     }
 
+    // S3-06b (2026-08-11): normalise to UTC MIDNIGHT before anything reads it.
+    //
+    // `scheduledDate` is a `@db.Date` column and every other path in the domain
+    // produces UTC midnight (`new Date('YYYY-MM-DD')`). The reschedule route
+    // parses its input with `z.coerce.date()`, which happily accepts
+    // '2026-09-15T10:30:00+05:30' or an epoch number and yields a Date with a
+    // time component. Two things then break together: the capacity query below
+    // filters `scheduledDate: newDate`, which matches ZERO existing rows and so
+    // passes trivially, and the row it writes is invisible to every availability
+    // reader (checkSlotAvailability, GET /bookings/slots) because they all query
+    // UTC midnight. One reschedule silently oversells a 5-capacity slot to 6 —
+    // the invisible-oversell failure RV-10 closed for the slot STRING and left
+    // open for the date. Fixing the route's zod shape is the other half (that
+    // file is owned elsewhere); normalising here makes the service correct for
+    // every caller regardless.
+    const targetDate = new Date(
+      Date.UTC(newDate.getUTCFullYear(), newDate.getUTCMonth(), newDate.getUTCDate()),
+    );
+
     const effectiveSlot = newTimeSlot ?? booking.scheduledTimeSlot;
     if (newTimeSlot !== undefined && newTimeSlot.trim() === '') {
       throw new Error('New time slot must not be empty.');
@@ -822,15 +1232,31 @@ export class BookingService {
     const offering = isPriestOffering
       ? await prisma.priestPujaOffering.findUnique({
           where: { id: booking.priestPujaOfferingId! },
-          select: { id: true, availableSlots: true, maxBookingsPerSlot: true },
+          select: { id: true, isActive: true, availableSlots: true, maxBookingsPerSlot: true },
         })
       : await prisma.templePujaOffering.findUnique({
           where: { id: booking.templePujaOfferingId },
-          select: { id: true, availableSlots: true, maxBookingsPerSlot: true },
+          select: { id: true, isActive: true, availableSlots: true, maxBookingsPerSlot: true },
         });
 
     if (!offering) {
       throw new Error('The puja offering for this booking no longer exists.');
+    }
+
+    // S3-06a (2026-08-11): `isActive` was not even SELECTED here, so a move onto
+    // a deactivated offering was neither blocked nor consciously allowed.
+    // Deciding it deliberately: refuse. An inactive offering means the temple
+    // (or pandit) has stopped performing this puja — no availability page can
+    // show it, createBooking hard-refuses it, and parking a PAID booking on a
+    // future date there sells a service that will not be delivered and ends at
+    // the 72h SLA escalation. Refusing costs the devotee the difference between
+    // a reschedule and a cancellation, which is the smaller harm and is
+    // recoverable by support; the alternative is not. "cannot be rescheduled"
+    // keeps the route's existing 409 mapping.
+    if (!offering.isActive) {
+      throw new Error(
+        'This puja is no longer offered, so the booking cannot be rescheduled. Please cancel it for a refund or contact support.',
+      );
     }
 
     // Whitelist. Skipped when the offering has no slots configured — that is
@@ -847,7 +1273,7 @@ export class BookingService {
     // Futurity against the real slot INSTANT, not the date. Rescheduling into
     // the past (or into a slot that has already started today) is what closes
     // every self-service exit, so this is the guard that matters.
-    if (hoursUntilSlot(newDate, effectiveSlot) <= 0) {
+    if (hoursUntilSlot(targetDate, effectiveSlot) <= 0) {
       throw new Error('New date and time slot must be in the future.');
     }
 
@@ -859,21 +1285,96 @@ export class BookingService {
       ...(isPriestOffering
         ? { priestPujaOfferingId: offering.id }
         : { templePujaOfferingId: offering.id }),
-      scheduledDate: newDate,
+      scheduledDate: targetDate,
       scheduledTimeSlot: effectiveSlot,
       id: { not: bookingId },
     };
 
     const updated = await prisma.$transaction(async (tx) => {
-      await lockSlot(tx, slotKeyFor(offering.id, newDate, effectiveSlot));
+      await lockSlot(tx, slotKeyFor(offering.id, targetDate, effectiveSlot));
       await assertSlotCapacity(tx, capacityWhere, offering.maxBookingsPerSlot);
+
+      if (hadPriest) {
+        // ── S3-10 (2026-08-11): move the earning with the work ──────────────
+        //
+        // Detaching the pandit below used to leave the Commission row minted
+        // for him at confirm time completely untouched. The PATCH reassignment
+        // path in routes/bookings.ts handles exactly this and reschedule had
+        // none of it, so: Rs 10,000 booking confirmed with Pandit A mints
+        // Commission{providerId: A.userId, amount: Rs 8,000, PENDING};
+        // devotee reschedules; Pandit B is matched and performs the puja; at
+        // video_uploaded createPriestPayout REFUSES to mint B's payout because
+        // a Commission already owns the booking (the mutual-exclusion guard in
+        // payment.service). A withdraws Rs 8,000 for work he did not do and B
+        // is paid Rs 0 for work he did — reachable from the plain devotee
+        // reschedule button.
+        //
+        // Only unclaimed rows may move. A commission that is already PAID (or
+        // sitting inside a PayoutRequest) represents money that has left or is
+        // mid-transfer; silently voiding it would corrupt a live payout
+        // request, so the reschedule is refused instead of half-applied.
+        const settled = await tx.commission.findFirst({
+          where: {
+            bookingId,
+            OR: [{ status: { not: 'PENDING' } }, { payoutRequestId: { not: null } }],
+          },
+          select: { id: true },
+        });
+        if (settled) {
+          throw new Error(
+            'This booking cannot be rescheduled: the pandit’s earning has already been paid out or is inside a payout request. Please contact support.',
+          );
+        }
+
+        // REVERSE, never delete. A money ledger must keep its history: a row
+        // that was minted and then voided is an accounting event, and deleting
+        // it leaves no trace that this booking ever carried an earning — which
+        // is precisely what an auditor (or a disputed payout) needs to see.
+        //
+        // The earlier pass deleted deliberately, and its reasoning was sound at
+        // the time: createPriestPayout's guard matched ANY commission row, so a
+        // REVERSED row would have blocked the replacement pandit from being
+        // paid by EITHER rail. That guard is now status-aware (it ignores
+        // REVERSED — see payment.service.createPriestPayout), so reversing is
+        // both safe and correct: balances already exclude non-PENDING rows, the
+        // replacement pandit is payable, and the void is on the record.
+        await tx.commission.updateMany({
+          where: { bookingId, status: 'PENDING', payoutRequestId: null },
+          data: { status: 'REVERSED' },
+        });
+
+        // The dispatch trail belongs to the OLD date/slot. Leaving `sent`
+        // offers live lets a pandit accept an offer for a puja that has moved,
+        // and `assignedVia` would keep claiming the booking was assigned.
+        await tx.dispatchOffer.updateMany({
+          where: { bookingId, state: 'sent' },
+          data: { state: 'superseded', respondedAt: new Date() },
+        });
+      }
+
       return tx.pujaBooking.update({
         where: { id: bookingId },
         data: {
-          scheduledDate: newDate,
+          scheduledDate: targetDate,
           ...(newTimeSlot ? { scheduledTimeSlot: newTimeSlot } : {}),
+          // S3-25: bound the loop. The column existed and was never written.
+          rescheduleCount: { increment: 1 },
           // Re-queue if a priest was attached — they may not be free at the new time.
-          ...(hadPriest ? { priestId: null, status: 'confirmed' } : {}),
+          ...(hadPriest
+            ? {
+                priestId: null,
+                status: 'confirmed',
+                assignedVia: null,
+                // dispatch.service.accept sets offerExpiresAt to NULL on
+                // assignment, and sweepExpiredOffers only sees bookings with
+                // `offerExpiresAt: { lt: now }`. Leaving it null meant
+                // `requeuedForAssignment: true` was a lie — the booking was
+                // detached from its pandit and then never re-broadcast to
+                // anyone. An already-elapsed window puts it back in the sweep's
+                // sights on its next run.
+                offerExpiresAt: new Date(),
+              }
+            : {}),
         },
         select: {
           id: true,
@@ -963,7 +1464,7 @@ export class BookingService {
    * Get a paginated list of bookings for a user with optional filters.
    */
   async getUserBookings(userId: string, filters?: UserBookingsFilters) {
-    const { status, dateFrom, dateTo, page = 1, limit = 20 } = filters ?? {};
+    const { status, dateFrom, dateTo, page = 1, limit = 20, view = 'all' } = filters ?? {};
 
     const where: Prisma.PujaBookingWhereInput = {
       userId,
@@ -985,9 +1486,40 @@ export class BookingService {
 
     const skip = (page - 1) * limit;
 
-    const [bookings, total] = await Promise.all([
+    // DB-01: the view predicate always rides in `AND` so it composes with an
+    // explicit `status`/date filter instead of overwriting `where.status`.
+    const viewPredicate = (v: MyBookingsView): Prisma.PujaBookingWhereInput | null => {
+      switch (v) {
+        case 'upcoming': {
+          // scheduledDate is a @db.Date (UTC midnight); compare against the
+          // start of today so a puja later TODAY still reads as upcoming.
+          const startOfToday = new Date();
+          startOfToday.setUTCHours(0, 0, 0, 0);
+          return {
+            status: { notIn: NON_UPCOMING_BOOKING_STATUSES },
+            scheduledDate: { gte: startOfToday },
+          };
+        }
+        case 'completed':
+          return { status: { in: COMPLETED_BOOKING_STATUSES } };
+        case 'cancelled':
+          return { status: 'cancelled' };
+        default:
+          return null;
+      }
+    };
+
+    const whereForView = (v: MyBookingsView): Prisma.PujaBookingWhereInput => {
+      const predicate = viewPredicate(v);
+      return predicate ? { ...where, AND: [predicate] } : where;
+    };
+
+    // One count per tab, over the WHOLE filtered set — never over the page.
+    // These are indexed `userId` counts; the page query dominates the cost.
+    const [bookings, allCount, upcomingCount, completedCount, cancelledCount] =
+      await Promise.all([
       prisma.pujaBooking.findMany({
-        where,
+        where: whereForView(view),
         select: {
           id: true,
           bookingNumber: true,
@@ -1030,19 +1562,41 @@ export class BookingService {
             },
           },
         },
-        orderBy: { scheduledDate: 'desc' },
+        // Newest puja first, then a UNIQUE tiebreaker. `scheduledDate` alone
+        // is not a total order — this devotee has dozens of bookings on the
+        // same date — so Postgres could order ties differently per query and
+        // a row would fall through the seam between two pages. Measured on
+        // the seeded account: walking all 5 pages yielded 80 distinct rows of
+        // 81 before `id` was added here.
+        orderBy: [{ scheduledDate: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
         skip,
         take: limit,
       }),
-      prisma.pujaBooking.count({ where }),
+      prisma.pujaBooking.count({ where: whereForView('all') }),
+      prisma.pujaBooking.count({ where: whereForView('upcoming') }),
+      prisma.pujaBooking.count({ where: whereForView('completed') }),
+      prisma.pujaBooking.count({ where: whereForView('cancelled') }),
     ]);
+
+    const counts = {
+      all: allCount,
+      upcoming: upcomingCount,
+      completed: completedCount,
+      cancelled: cancelledCount,
+    };
+
+    // `total` paginates the ACTIVE view. For the default 'all' view this is
+    // exactly the number the endpoint returned before, so existing callers
+    // (and their tests) are unaffected.
+    const total = counts[view];
 
     return {
       bookings,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+      counts,
     };
   }
 
@@ -1085,6 +1639,48 @@ export class BookingService {
         videoUploadedAt: true,
       },
     });
+
+    // PF-02 (2026-08-12, P0): mint the pandit's payout.
+    //
+    // This is the SECOND path that sets `video_uploaded`. The other —
+    // updateBookingStatus — mints the PriestPayout on that transition (see the
+    // P0 #pp-02 hook), but this one wrote the status with a raw update and
+    // skipped it entirely. Since the pandit portal's proof upload comes through
+    // HERE, the pandit did the puja, filed the proof, got a 200 reading "Video
+    // proof uploaded successfully" — and their earnings stayed Rs 0 forever.
+    // The platform's own books also held no record of what it owed. That is the
+    // fastest possible way to lose supply: the first payout cycle produces
+    // nothing and every pandit churns.
+    //
+    // Why this is duplicated rather than delegated to updateBookingStatus: that
+    // method's FORBIDDEN_DATA_KEYS denylist strips `videoUploadedAt` (S3-03, so
+    // a client cannot forge the evidence timestamp), so routing through it
+    // would silently drop the server stamp this method exists to write.
+    //
+    // Same contract as the other call site: createPriestPayout is idempotent,
+    // Aadhaar-gated, refuses when the unified Commission ledger already owns the
+    // booking, and is fire-and-forget — a payout write must never fail the proof
+    // upload the pandit just completed.
+    void paymentService
+      .createPriestPayout(updated.id)
+      .catch((err) =>
+        console.warn('[booking.service] priest payout write failed after video proof:', err),
+      );
+
+    // NOTIF-05 (2026-08-12): tell the devotee their video is ready.
+    //
+    // This is the path the pandit portal actually uses, and it was silent —
+    // it did not even fire the web-push that updateBookingStatus managed,
+    // because it writes `video_uploaded` with a raw update and bypasses that
+    // method entirely (see the payout note above, same root cause). The devotee
+    // who paid a premium specifically for video proof could not learn it
+    // existed until they logged in and looked.
+    //
+    // Same contract as the payout write: fire-and-forget, never fails the
+    // upload the pandit just completed.
+    void notifyVideoReady(updated.id).catch((err) =>
+      console.warn('[booking.service] video-ready notify failed:', err),
+    );
 
     return updated;
   }
@@ -1147,11 +1743,27 @@ export class BookingService {
     // reviews: two reviews both read ratingCount=5, both wrote 6, one
     // rating was lost. A single atomic SQL UPDATE with the running
     // average computed inside the statement serializes correctly.
+    //
+    // S3-22 (2026-08-11): the whole expression is cast to `numeric` before
+    // ROUND. `Priest.ratingAvg` is a Prisma `Float`, i.e. Postgres `double
+    // precision`: float8 * int4 is float8, float8 + numeric resolves to float8,
+    // float8 / int4 is float8 — and Postgres has NO `round(double precision,
+    // integer)` (only `round(dp)` and `round(numeric, int)`, and float8→numeric
+    // is assignment-only so it is not eligible in function resolution). Every
+    // review on a booking with an assigned pandit therefore raised `function
+    // round(double precision, integer) does not exist`. The booking's own
+    // rating/reviewText update above had ALREADY committed as a separate
+    // statement, so the devotee saw "Failed to submit review" on a review that
+    // was in fact saved, and the retry hit "A review has already been
+    // submitted". Consequence downstream: ratingAvg never moved off 0 for any
+    // pandit, and dispatch.selectCandidates orders by that column. Never caught
+    // because the suite mocks $executeRawUnsafe — hence the SQL-text assertion
+    // in the test rather than an execution check.
     if (booking.priestId) {
       await prisma.$executeRawUnsafe(
         `UPDATE priests
          SET rating_count = rating_count + 1,
-             rating_avg = ROUND(((rating_avg * rating_count) + $1::numeric) / (rating_count + 1), 2)
+             rating_avg = ROUND((((rating_avg * rating_count) + $1::numeric) / (rating_count + 1))::numeric, 2)
          WHERE id = $2::uuid`,
         rating,
         booking.priestId,
@@ -1195,7 +1807,9 @@ export class BookingService {
       where: {
         templePujaOfferingId: offering.id,
         scheduledDate: scheduledDate,
-        status: { notIn: ['cancelled', 'refunded'] },
+        // S3-04: same occupancy predicate as the capacity check, so what this
+        // endpoint shows and what createBooking enforces cannot disagree.
+        ...activeSlotHoldWhere(),
       },
       _count: { id: true },
     });
@@ -1204,7 +1818,18 @@ export class BookingService {
       existingBookings.map((b) => [b.scheduledTimeSlot, b._count.id]),
     );
 
-    const slots: SlotAvailability[] = (offering.availableSlots as string[]).map((slot) => {
+    // S3-18 (2026-08-11): this was `(offering.availableSlots as string[])` — a
+    // cast, not a conversion. `availableSlots` is free-form JSON and the API
+    // accepts `{ time, label }` objects (routes/temple-portal.ts takes
+    // `z.array(z.unknown())`; routes/priest.ts documents both shapes; GET
+    // /bookings/slots already handles both). The moment a temple manager saved
+    // object-shaped slots this endpoint reported `booked: 0, remaining: max` for
+    // every slot forever — the Map key was the groupBy's STRING and the lookup
+    // key was an object, so nothing ever matched — and `time` serialised as an
+    // object the client cannot render. Devotees were shown 5/5 free on a full
+    // slot and then hit the hard "No availability" error at createBooking.
+    // normalizeSlots is the same helper createBooking and rescheduleBooking use.
+    const slots: SlotAvailability[] = normalizeSlots(offering.availableSlots).map((slot) => {
       const booked = bookingCountBySlot.get(slot) ?? 0;
       const remaining = offering.maxBookingsPerSlot - booked;
       return {
@@ -1245,24 +1870,68 @@ export class BookingService {
    * Returns { escalated: string[], scanned: number }.
    */
   async escalateStaleBookings(staleHours = 72) {
-    const cutoff = new Date(Date.now() - staleHours * 60 * 60 * 1000);
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - staleHours * 60 * 60 * 1000);
+
+    // S3-12 (2026-08-11): the DB filter is deliberately one day LOOSER than the
+    // real test, and the real test runs in JS against the slot INSTANT.
+    // `scheduledDate` is a DATE column (midnight); the actual puja time lives in
+    // `scheduledTimeSlot` and is IST, so the true instant sits anywhere from
+    // -5h30m to +18h30m either side of that midnight. Filtering on the date
+    // alone escalated some bookings early and missed others. lib/slot-time.ts is
+    // the only correct way to compare a booking date+slot, and its null-slot
+    // fallback keeps the old (midnight) behaviour for unparseable legacy rows.
     const stale = await prisma.pujaBooking.findMany({
       where: {
         status: 'priest_assigned',
         videoProofUrl: null,
-        scheduledDate: { lt: cutoff },
+        scheduledDate: { lt: new Date(cutoff.getTime() + 24 * 60 * 60 * 1000) },
       },
-      select: { id: true, scheduledDate: true, priestId: true },
+      select: { id: true, scheduledDate: true, scheduledTimeSlot: true, priestId: true },
     });
 
     const escalated: string[] = [];
     for (const b of stale) {
-      // priest_assigned -> cancelled is a VALID_TRANSITION (refund review path).
-      await prisma.pujaBooking.update({
-        where: { id: b.id },
-        data: { status: 'cancelled' },
-      });
-      escalated.push(b.id);
+      if (hoursUntilSlot(b.scheduledDate, b.scheduledTimeSlot, now) > -staleHours) continue;
+
+      // S3-12: this used to be a bare `pujaBooking.update({ status:
+      // 'cancelled' })` — no `cancelledAt`, no `cancellationReason`, and no push
+      // to the devotee, because it bypassed updateBookingStatus entirely. The
+      // exact scenario this method exists for (devotee paid, pandit never
+      // uploaded proof, 72h past the slot) therefore ended with the booking
+      // silently flipped to `cancelled` and the devotee neither told nor
+      // refunded. Going through updateBookingStatus restores the notification
+      // and the transition check; the timestamp and reason make the row usable
+      // in GET /admin/bookings/refunds/pending, which orders by cancelledAt.
+      //
+      // ⚠ DELIBERATELY NOT writing REFUND_REQUESTED_MARKER here, despite this
+      // being exactly the paid-cancellation shape that marker exists for.
+      // refund.service.processAutoRefunds applies the DEVOTEE ladder
+      // (cancellation.service.computeDevoteeRefund) to every marked row, and
+      // that ladder's `find(hoursUntil >= minHoursBefore)` matches no tier for a
+      // slot 72h in the PAST, so it falls through to the last tier: 25%. This is
+      // a PANDIT-fault cancellation, which computePanditFaultRefund defines as
+      // 100% of everything paid. Writing the marker would auto-refund 25% within
+      // the hour and flip the booking to `refunded`, removing it from the admin
+      // queue — turning "devotee is owed Rs 10,000 and an admin can see it" into
+      // "devotee silently received Rs 2,500 and has no claim left". refund
+      // .service must learn to branch on pandit fault BEFORE this path can mark
+      // rows for the cron; until then the admin queue is the honest destination.
+      try {
+        await this.updateBookingStatus(b.id, 'cancelled', {
+          cancelledAt: now,
+          cancellationReason:
+            `SLA escalation — no video proof ${staleHours}h after the scheduled slot. Pandit-fault: devotee is owed a full refund.`.slice(
+              0,
+              500,
+            ),
+        });
+        escalated.push(b.id);
+      } catch (err) {
+        // One un-escalatable booking (already moved on by an admin, notification
+        // backend down) must not abort the rest of the cron sweep.
+        console.warn('[booking.service] stale-booking escalation failed:', b.id, err);
+      }
     }
     return { escalated, scanned: stale.length };
   }

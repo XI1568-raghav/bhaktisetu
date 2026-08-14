@@ -4,7 +4,8 @@ import SelfOnboardForm, { ExtraInput, ExtraCheckbox } from '../../components/Sel
 
 
 export const metadata: Metadata = {
-  title: 'List your gaushala on Darshya',
+  alternates: { canonical: 'https://darshya.online/list-gaushala' },
+  title: 'List your gaushala',
   description:
     'Receive 80G donations online for cow seva. Verified gaushalas only. Instant tax receipts to donors.',
 };
@@ -57,7 +58,7 @@ export default function ListGaushalaPage() {
                 <ExtraInput name="pan" label="Trust PAN (for 80G receipts)" placeholder="e.g. AAATR1234C" />
                 <ExtraInput name="regn80G" label="80G registration number" placeholder="e.g. AAATR1234C/12-AA/2024-25" />
               </div>
-              <p className="text-[11px] opacity-70">PAN + 80G number print on every donor's tax receipt. Leave blank if not yet registered — we'll mark you as pending verification.</p>
+              <p className="text-xs opacity-70">PAN + 80G number print on every donor's tax receipt. Leave blank if not yet registered — we'll mark you as pending verification.</p>
               <ExtraCheckbox name="has80G" label="Our trust is 80G-registered (we'll verify)" />
             </>
           }

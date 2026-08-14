@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const l = getAshtaLakshmiBySlug(slug);
   if (!l) return { title: 'Not found' };
   return {
-    title: `${l.name} (${l.number} of 8) — Mantra, Vahana, Vrata, Best Day | Darshya`,
+    title: `${l.name} (${l.number} of 8) — Mantra, Vahana, Vrata, Best Day`,
     description: `${l.name} (${l.sanskrit}) — ${l.number}th form of Ashta Lakshmi. Domain: ${l.domain}. Vahana: ${l.vahana}. Best day: ${l.bestDay}. Festival: ${l.signatureFestival.slice(0, 60)}. Includes beej mantra in Devanagari.`,
     alternates: { canonical: `${BASE_URL}/ashta-lakshmi/${l.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${l.name} — ${l.number} of 8 Ashta Lakshmi`,
       description: l.benefit,
       url: `${BASE_URL}/ashta-lakshmi/${l.slug}`,

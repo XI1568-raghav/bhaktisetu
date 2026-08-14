@@ -11,10 +11,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Manglik Dosh Calculator — Free Mangal Dosha Check (DOB + Time) | Darshya',
+ title: 'Manglik Dosh Calculator — Free Mangal Dosha Check (DOB + Time)',
  description: 'Free Vedic Manglik dosh calculator. Enter DOB + birth time to check if you are manglik — including severity (poorna/anshik), Mars house from Moon, traditional cancellation rules, and Mangal Shanti remedies. Per Brihat Parashara Hora Shastra.',
  alternates: { canonical: `${BASE_URL}/astrology/manglik` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Manglik Dosh Calculator — Free Mangal Dosha Check',
   description: 'Am I manglik? Free chandra-lagna based check + severity + cancellation rules + remedies. No signup.',
   url: `${BASE_URL}/astrology/manglik`,
@@ -124,7 +125,7 @@ export default function ManglikPage() {
       }`}>
        <div className="flex items-baseline justify-between">
         <p className="font-serif text-base font-semibold text-gray-900">House {h.h} — {h.name}</p>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+        <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
          h.severity === 'Poorna' ? 'bg-red-200 text-red-900' : 'bg-amber-200 text-amber-900'
         }`}>{h.severity}</span>
        </div>

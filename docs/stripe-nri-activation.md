@@ -1,4 +1,9 @@
-# Stripe NRI USD Activation Playbook
+# [SUPERSEDED] Stripe NRI USD Activation Playbook
+
+> SUPERSEDED / HISTORICAL — Stripe was removed from Darshya on 2026-08-11. Razorpay is the only
+> gateway and INR the only currency. The endpoints, env vars, code paths and Cloudflare Pages
+> targets below no longer exist; do not follow these steps. Kept for decision history only.
+> See AUDIT.md.
 
 Step-by-step to flip Darshya's NRI / diaspora flow from demo Stripe to
 live USD collection. Companion to `razorpay-live-activation.md` — same

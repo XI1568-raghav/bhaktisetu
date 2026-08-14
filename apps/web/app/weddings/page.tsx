@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Hindu Wedding Planning — Muhurat, Pandit, Samagri | Darshya',
+  alternates: { canonical: 'https://darshya.online/weddings' },
+  title: 'Hindu Wedding Planning — Muhurat, Pandit, Samagri',
   description:
     'Plan your Vedic Hindu wedding end-to-end on Darshya. Find an auspicious muhurat from your kundli, book a verified pandit, and get the full samagri kit shipped. Three packages from ₹15,000.',
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Darshya Weddings — Muhurat, Pandit, Samagri',
     description:
       'Auspicious muhurat finder, verified pandits, full samagri. Three Vedic wedding packages from ₹15,000.',

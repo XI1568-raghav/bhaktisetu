@@ -198,6 +198,22 @@ export class CancellationService {
       },
     });
     if (full) void notifyDevotee('reassigned', buildBookingCtx(full as never)).catch(() => undefined);
+
+    // NOTIF-10: "immediate" has to mean immediate.
+    //
+    // The `offerExpiresAt: new Date()` above is annotated "trigger immediate
+    // re-broadcast on next sweep", but the next sweep was tick 13 of an 18-tick
+    // chain on a 30-minute cadence — so a pandit dropping a booking left the
+    // devotee unassigned and unre-offered for up to half an hour before anyone
+    // else was even asked. Drive the sweep for THIS booking now. Dynamic import
+    // keeps the module graph acyclic (dispatch.service already imports
+    // booking.service, which this file sits alongside); fire-and-forget because
+    // the requeue itself has already committed and the cron sweep remains the
+    // safety net if this call fails.
+    void import('./dispatch.service.js')
+      .then((m) => m.dispatchService.sweepBookingOffers(bookingId))
+      .catch((err) => console.warn('[cancellation] immediate re-broadcast failed:', err));
+
     return { requeued: true, bookingId };
   }
 }

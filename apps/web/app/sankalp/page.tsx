@@ -10,11 +10,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Sankalp Generator — Personalized Vedic Vow for Any Puja | Darshya',
+  title: 'Sankalp Generator — Personalized Vedic Vow for Any Puja',
   description:
     'Generate your traditional Sanskrit sankalp (vow declaration) with your gotra, nakshatra, rashi, time, place, and intent. Used before every puja, vrat, donation, or homam. Free, no signup.',
   alternates: { canonical: `${BASE_URL}/sankalp` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Sankalp Generator — your personalized Vedic vow',
     description:
       'Recite the right Sanskrit declaration before any puja. Names your gotra, nakshatra, intent, and time per shastra.',

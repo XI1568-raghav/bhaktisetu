@@ -13,8 +13,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCreateAnnualSubscription, useIsPremium } from '@poojly/api-client';
+import {
+  useCreateAnnualSubscription,
+  useIsPremium,
+  usePaymentConfig,
+} from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
+import {
+  evaluateUpgradeGate,
+  extractCheckoutUrl,
+} from '../../lib/subscription-gate';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 const BENEFITS = [
@@ -26,16 +34,52 @@ const BENEFITS = [
   { icon: 'document-text', text: 'GST invoices for every booking and order' },
 ] as const;
 
+/**
+ * PAR-01 — the most serious defect in the app.
+ *
+ * Tapping "Upgrade — ₹5,000/yr" called POST /api/v1/subscriptions/subscribe,
+ * which creates an ACTIVE ENTERPRISE subscription and a COMPLETED ₹5,000
+ * Transaction with no Razorpay order, no payment and no mandate. Verified on
+ * the live stack: /is-premium then answers {"isPremium":true} and
+ * /admin/dashboard shows {"type":"SUBSCRIPTION","amount":5000,
+ * "status":"COMPLETED"}. The screen read the missing checkout URL as "granted
+ * server-side" and announced "Upgrade complete — your Premium benefits are now
+ * active."
+ *
+ * Net effect: a free year of Premium for anyone who taps once, and ₹5,000 of
+ * revenue in the founder's ledger that nobody paid.
+ *
+ * The server-side fix (PENDING subscription, real mandate, activation only from
+ * the verified webhook) belongs in apps/api and is NOT in this change. What is
+ * fixed here is the client's half:
+ *
+ *   - the "no URL means it was granted" branch is gone; a missing checkout URL
+ *     is now a failure and is reported as one;
+ *   - the button will not fire at all unless GET /api/v1/payments/config
+ *     reports a real, non-placeholder Razorpay key, so on this configuration it
+ *     cannot grant anything;
+ *   - the blocked state says plainly that nothing was charged and no plan was
+ *     activated.
+ *
+ * See apps/mobile/lib/subscription-gate.ts for the gate and its tests.
+ */
 export default function UpgradeScreen() {
   const { user } = useAuth();
   const premiumQuery = useIsPremium();
+  const paymentConfigQuery = usePaymentConfig();
   const createCheckout = useCreateAnnualSubscription();
   const isPremium = premiumQuery.data?.isPremium === true;
   const [refreshing, setRefreshing] = useState(false);
 
+  const gate = evaluateUpgradeGate({
+    paymentConfig: paymentConfigQuery.data,
+    configError: paymentConfigQuery.error,
+    isPremium,
+  });
+
   async function onRefresh() {
     setRefreshing(true);
-    await premiumQuery.refetch();
+    await Promise.all([premiumQuery.refetch(), paymentConfigQuery.refetch()]);
     setRefreshing(false);
   }
 
@@ -47,6 +91,10 @@ export default function UpgradeScreen() {
       ]);
       return;
     }
+    if (!gate.canPurchase) {
+      Alert.alert('Not available', gate.message ?? 'Upgrade is not available.');
+      return;
+    }
     try {
       // Razorpay returns a hosted short URL for the subscription mandate.
       // (Was a Stripe Checkout session URL until that rail was removed on
@@ -54,19 +102,22 @@ export default function UpgradeScreen() {
       // the API, so the old endpoint would have 404'd for every installed
       // client the moment the API went out.)
       const res = await createCheckout.mutateAsync();
-      const url = res?.subscription?.shortUrl ?? res?.subscription?.url ?? undefined;
-      if (url) {
-        const supported = await Linking.canOpenURL(url);
-        if (supported) {
-          await Linking.openURL(url);
-        } else {
-          Alert.alert('Cannot open checkout', 'Open the link in your browser:\n' + url);
-        }
+      const url = extractCheckoutUrl(res);
+      if (!url) {
+        // The server did not hand back a hosted payment page. It may have taken
+        // its demo branch (`skipped: true`) and granted the plan for free —
+        // which is exactly what must never be reported as a purchase.
+        Alert.alert(
+          'Checkout could not be started',
+          'The payment gateway did not return a checkout page, so no payment was taken. If your account shows Premium, contact support@darshya.online — do not treat it as paid.',
+        );
+        return;
+      }
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
       } else {
-        // No URL means the plan was granted server-side rather than needing a
-        // mandate — reflect the new state instead of claiming failure.
-        await premiumQuery.refetch();
-        Alert.alert('Upgrade complete', 'Your Premium benefits are now active.');
+        Alert.alert('Cannot open checkout', 'Open the link in your browser:\n' + url);
       }
     } catch (err) {
       const m = err instanceof Error ? err.message : 'Could not start upgrade.';
@@ -123,7 +174,7 @@ export default function UpgradeScreen() {
               Manage your subscription on the web at darshya.online/account/subscriptions.
             </Text>
           </View>
-        ) : (
+        ) : gate.canPurchase ? (
           <TouchableOpacity
             style={[styles.ctaBtn, createCheckout.isPending && { opacity: 0.6 }]}
             onPress={onUpgrade}
@@ -139,11 +190,21 @@ export default function UpgradeScreen() {
               </>
             )}
           </TouchableOpacity>
+        ) : (
+          <View style={styles.blockedCard}>
+            <Ionicons name="lock-closed-outline" size={26} color={colors.stone[500]} />
+            <Text style={styles.blockedTitle}>Upgrade unavailable</Text>
+            <Text style={styles.blockedText}>{gate.message}</Text>
+            <View style={[styles.ctaBtn, styles.ctaBtnDisabled]}>
+              <Text style={styles.ctaTextDisabled}>Upgrade — ₹5,000/yr</Text>
+            </View>
+          </View>
         )}
 
         <Text style={styles.fineprint}>
-          Payments are handled securely by Razorpay and billed in INR;
-          international cards are accepted. Cancel anytime from the web account page.
+          Payments are handled by Razorpay and billed in INR. Premium is only
+          active once a payment is confirmed by the gateway — the app never
+          activates it on its own. Cancel anytime from the web account page.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -187,6 +248,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.saffron[700], padding: spacing.md, borderRadius: borderRadius.md,
   },
   ctaText: { color: colors.white, fontWeight: '900', fontSize: fontSize.base },
+  ctaBtnDisabled: { backgroundColor: colors.stone[200], marginTop: spacing.md, width: '100%' },
+  ctaTextDisabled: { color: colors.stone[500], fontWeight: '900', fontSize: fontSize.base },
+  blockedCard: {
+    backgroundColor: colors.white, padding: spacing.lg, borderRadius: borderRadius.lg,
+    alignItems: 'center', borderWidth: 1, borderColor: colors.stone[200],
+  },
+  blockedTitle: {
+    fontSize: fontSize.lg, fontWeight: '800', color: colors.stone[900], marginTop: spacing.xs,
+  },
+  blockedText: {
+    fontSize: fontSize.sm, color: colors.stone[600], marginTop: spacing.xs, textAlign: 'center',
+  },
   activeCard: {
     backgroundColor: colors.white, padding: spacing.lg, borderRadius: borderRadius.lg,
     alignItems: 'center', borderWidth: 1, borderColor: colors.green[500],

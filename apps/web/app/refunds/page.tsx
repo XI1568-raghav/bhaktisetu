@@ -1,7 +1,18 @@
 // TODO(2026-06): v2 draft pending lawyer review — see docs/legal/refund-policy-v2-draft.md
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import { COMPANY, postalContactLine } from "../../lib/company";
+import {
+ COMPANY,
+ grievanceOfficerLine,
+ grievanceSlaLine,
+ operatedByLine,
+ postalContactLine,
+} from "../../lib/company";
+import {
+ FULL_REFUND_HOURS_BEFORE,
+ CANCELLATION_CUTOFF_HOURS,
+ PARTIAL_REFUND_PERCENT,
+} from "../../lib/cancellation-policy";
 
 export const metadata: Metadata = {
  title: "Refund & Cancellation Policy",
@@ -9,6 +20,7 @@ export const metadata: Metadata = {
  "Darshya\u2019s refund policy for puja bookings, store orders, gaushala contributions, and chadhava offerings.",
  alternates: { canonical: "https://darshya.online/refunds" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "Refund & Cancellation Policy | Darshya",
  description:
  "Refund timelines and rules for pujas, astrology, donations, and store orders. Refunds via Razorpay in 5\u20137 business days.",
@@ -81,25 +93,59 @@ export default function RefundsPage() {
  </tr>
  </thead>
  <tbody style={{ color: "var(--color-text-muted)" }}>
+ {/* DB-06 (prod sweep 2026-08-12, P1) — THIS TABLE USED TO PUBLISH A
+     DIFFERENT LADDER FROM THE ONE THAT RUNS.
+
+     It read "More than 24 hours before -> 100% refund" and "6 to 24 hours
+     -> 50% refund". The shipped policy is
+     apps/api/src/services/cancellation.service.ts DEFAULT_CANCEL_POLICY
+     (48h+ -> 100%, 24-48h -> 75%) on top of a HARD REFUSAL inside 24h in
+     booking.service.ts cancelBooking. So the 24h row over-promised by a
+     full tier, and the 6-24h row described a 50% refund the code refuses
+     to produce at all — an unreachable promise on the page a devotee is
+     pointed at from the checkout terms checkbox.
+
+     The numbers now come from lib/cancellation-policy, the same module
+     the checkout badge and the terms checkbox read, so the legal page and
+     the payment screen cannot say different things again. */}
  <tr>
- <td className="py-1.5">More than 24 hours before scheduled puja</td>
+ <td className="py-1.5">
+ {FULL_REFUND_HOURS_BEFORE} hours or more before the scheduled puja
+ </td>
  <td className="py-1.5">100% refund</td>
  </tr>
  <tr>
- <td className="py-1.5">6 to 24 hours before scheduled puja</td>
- <td className="py-1.5">50% refund</td>
+ <td className="py-1.5">
+ {CANCELLATION_CUTOFF_HOURS} to {FULL_REFUND_HOURS_BEFORE} hours
+ before the scheduled puja
+ </td>
+ <td className="py-1.5">{PARTIAL_REFUND_PERCENT}% refund</td>
  </tr>
  <tr>
- <td className="py-1.5">Less than 6 hours before scheduled puja</td>
- <td className="py-1.5">No refund (preparations underway)</td>
+ <td className="py-1.5">
+ Within {CANCELLATION_CUTOFF_HOURS} hours of the scheduled puja
+ </td>
+ <td className="py-1.5">
+ Cancellation is not possible &mdash; the pandit is assigned and
+ samagri is being prepared.
+ </td>
  </tr>
  <tr>
  <td className="py-1.5">Puja not performed by temple</td>
  <td className="py-1.5">100% refund + 10% platform credit</td>
  </tr>
  <tr>
- <td className="py-1.5">Video proof not provided within 48 hours</td>
- <td className="py-1.5">Full refund or reschedule option</td>
+ <td className="py-1.5">
+ No video proof {COMPANY.refunds.missingVideoEscalationHours} hours
+ after the scheduled time
+ </td>
+ <td className="py-1.5">
+ If the booking is still waiting on its assigned pandit, it is
+ cancelled and sent for manual review. Any other status &mdash;
+ a booking already marked completed, for example &mdash; needs
+ an email from you. Where the pandit is at fault, the refund is
+ 100% of everything you paid.
+ </td>
  </tr>
  </tbody>
  </table>
@@ -120,6 +166,32 @@ export default function RefundsPage() {
  <li>
  Prasad delivery charges are refunded only if the entire
  booking is cancelled before the puja is performed.
+ </li>
+ {/* LEG-06: this used to read "we cancel the booking automatically and
+     place it in our refund review queue", which described the sweep as
+     though it saw every booking. escalateStaleBookings selects ONE status
+     — `where: { status: 'priest_assigned', videoProofUrl: null }` in
+     apps/api/src/services/booking.service.ts, against a nine-member
+     BookingStatus enum. A booking a pandit has already advanced (the
+     audit found three sitting in `completed` with videoProofUrl NULL) is
+     invisible to it. Telling that devotee an automation is coming is the
+     same failure as the original 48h promise, one step further in. */}
+ <li>
+ <strong>Missing video proof.</strong> Video is mandatory on
+ every puja booking. {COMPANY.refunds.missingVideoEscalationHours}{" "}
+ hours after your scheduled time an automatic sweep runs, and it
+ covers one case: a booking still waiting on its assigned pandit.
+ Those it cancels and places in our refund review queue. It does
+ not reach a booking that has already been moved on &mdash; one
+ marked completed, for example &mdash; so if yours shows as
+ completed and no video ever arrived, email {COMPANY.supportEmail}{" "}
+ rather than waiting for the sweep. Either way the refund is
+ issued by a person, not by the sweep, so allow us{" "}
+ {COMPANY.grievance.acknowledgeHours} hours to come back to you.
+ Where the pandit is at fault you are refunded in full, and you
+ never need to wait for the{" "}
+ {COMPANY.refunds.missingVideoEscalationHours}-hour mark to write
+ to us.
  </li>
  </ul>
  </RefundSection>
@@ -217,22 +289,43 @@ export default function RefundsPage() {
  </RefundSection>
 
  <RefundSection title="9. How to Request a Refund">
+ {/*
+  LEG-18 (prod sweep 2026-08-12): step 2 named a refund button that has
+  never existed anywhere in the app. The two controls that do exist live
+  in apps/web/app/bookings/view/page.tsx, and the labels quoted below are
+  asserted against that file by __tests__/legal-content-p2.test.ts — so
+  renaming a button breaks the test instead of silently making this
+  policy wrong again.
+ */}
  <ol className="list-decimal pl-5 space-y-2">
  <li>
- Log in to your Darshya account and navigate to your
- booking or order history.
+ Log in to your Darshya account and open{" "}
+ <a
+ href="/bookings"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ My Bookings
+ </a>
+ , then open the booking you want to cancel.
  </li>
  <li>
- Select the item or booking and click &quot;Request Refund.&quot;
+ On the booking page, use{" "}
+ &quot;Cancel Booking&quot; if the puja has not been paid for or is
+ still awaiting a pandit, or{" "}
+ &quot;Request cancellation &amp; refund&quot; once it is confirmed.
+ The page shows whichever of the two applies to that booking.
  </li>
  <li>
  Provide the reason for your refund request and any
- supporting information.
+ supporting information. The refund amount is the one set by the
+ cancellation policy in section 2 above, not necessarily the full
+ amount paid.
  </li>
  <li>
- Alternatively, email support@darshya.online with your
- booking/order ID, registered email, and reason for the
- refund.
+ Store orders, and anything you cannot reach from the booking
+ page: email {COMPANY.supportEmail} with your booking or order ID,
+ your registered email, and the reason.
  </li>
  </ol>
  </RefundSection>
@@ -240,10 +333,12 @@ export default function RefundsPage() {
  <RefundSection title="10. Disputes">
  <p>
  If you believe a refund has been incorrectly denied, you may
- escalate the matter by emailing grievance@darshya.online. Our
- Grievance Officer will review and respond within 15 business
- days.
+ escalate the matter to our grievance contact:
  </p>
+ <ul>
+ <li>{grievanceOfficerLine()}</li>
+ <li>{grievanceSlaLine()}</li>
+ </ul>
  </RefundSection>
 
  <RefundSection title="11. Contact">
@@ -253,6 +348,7 @@ export default function RefundsPage() {
  <li>Response window: {COMPANY.supportHours}</li>
  {postalContactLine() && <li>{postalContactLine()}</li>}
  </ul>
+ <p>{operatedByLine()}</p>
  </RefundSection>
  </div>
 

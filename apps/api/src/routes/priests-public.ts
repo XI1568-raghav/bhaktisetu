@@ -21,7 +21,18 @@ export const publicPriestsQuerySchema = z.object({
     .transform((v) => (v && v.length > 0 ? v : undefined)),
 });
 
-export const __testing = { publicPriestsQuerySchema };
+// PJ-07: `Priest.id` is a uuid column. Anything else — `/priests/me`, a slug,
+// a typo — reached `prisma.priest.findFirst` and came back as a 500 whose body
+// named the ORM, the model, the query method and the source path to any
+// unauthenticated caller. An id that cannot exist is a 404, decided before the
+// query runs.
+const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+export function isPriestId(id: string): boolean {
+  return UUID_RE.test(id);
+}
+
+export const __testing = { publicPriestsQuerySchema, isPriestId };
 
 // Public, unauthenticated reads of verified+active priests and their
 // pandit-owned puja offerings. Mirror of priestRoutes' pandit-side CRUD
@@ -90,6 +101,20 @@ function serializePriest(p: PriestRow, offeringCount: number) {
 }
 
 export async function priestsPublicRoutes(server: FastifyInstance) {
+  // PJ-07: this is a fully public, unauthenticated surface — nothing thrown
+  // inside it may reach the caller. Fastify's default serialiser echoed
+  // `err.message`, which for a Prisma failure is a multi-line dump containing
+  // the absolute server path, the model and the query method. Scoped to this
+  // plugin so the rest of the API keeps its own handling.
+  server.setErrorHandler((err, request, reply) => {
+    request.log.error({ err }, 'public priests route failed');
+    const status = (err as { statusCode?: number }).statusCode ?? 500;
+    if (status >= 400 && status < 500) {
+      return reply.code(status).send({ error: 'Invalid request' });
+    }
+    return reply.code(500).send({ error: 'Something went wrong' });
+  });
+
   // GET / — list verified active priests with active-offering counts.
   // Optional filters: ?specialization=marriage&deity=ganesh — applied
   // server-side so clients don't pull the full list and post-filter (E10).
@@ -153,6 +178,7 @@ export async function priestsPublicRoutes(server: FastifyInstance) {
   // GET /:id — single priest profile + active offerings
   server.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!isPriestId(id)) return reply.code(404).send({ error: 'Priest not found' });
     const priest = await prisma.priest.findFirst({
       where: { id, isVerified: true, status: 'active' },
       select: {
@@ -184,6 +210,7 @@ export async function priestsPublicRoutes(server: FastifyInstance) {
   // GET /:id/pujas — active offerings only
   server.get('/:id/pujas', async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!isPriestId(id)) return reply.code(404).send({ error: 'Priest not found' });
     const priest = await prisma.priest.findFirst({
       where: { id, isVerified: true, status: 'active' },
       select: { id: true },

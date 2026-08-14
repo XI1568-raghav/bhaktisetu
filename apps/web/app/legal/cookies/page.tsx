@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import CookieSettingsButton from "../../../components/CookieSettingsButton";
+import { rightsContactEmail } from "../../../lib/company";
 
 
 export const metadata: Metadata = {
- title: "Cookie Policy | Darshya",
+ title: "Cookie Policy",
  description:
  "How Darshya uses cookies, the categories we run, and how to change your consent at any time.",
  alternates: { canonical: "https://darshya.online/legal/cookies" },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title: "Cookie Policy | Darshya",
  description:
  "How Darshya uses cookies, the categories we run, and how to change your consent at any time.",
@@ -75,11 +78,22 @@ export default function CookiePolicyPage() {
  all, or set per-category preferences. Reject-all and Accept-all buttons are
  the same size and prominence, as required by the UK ICO.
  </p>
+ {/* LEG-15: this paragraph used to tell the reader to delete a
+     localStorage key by hand. Withdrawal must be as easy as consent
+     (UK GDPR Art. 7(3), DPDP Act s.6(4)), so the control lives here. */}
  <p>
- You can change your choices at any time by clearing the
- <code> darshya_cookie_consent_v1 </code> entry in your browser storage, or
- contact{" "}
- <a href="mailto:privacy@darshya.online">privacy@darshya.online</a> for help.
+ You can change or withdraw your choices at any time — it takes the same
+ one click that granted them. The button below re-opens the same
+ preference panel you saw on your first visit, with your current
+ choices already selected.
+ </p>
+ <p>
+ <CookieSettingsButton />
+ </p>
+ <p>
+ Prefer we do it for you? Email{" "}
+ <a href={`mailto:${rightsContactEmail()}`}>{rightsContactEmail()}</a> and we
+ will clear the record of your consent on request.
  </p>
 
  <h2>Browser controls</h2>
@@ -97,7 +111,7 @@ export default function CookiePolicyPage() {
  <h2>Contact</h2>
  <p>
  Questions about cookies or your data?{" "}
- <a href="mailto:privacy@darshya.online">privacy@darshya.online</a>. UK
+ <a href={`mailto:${rightsContactEmail()}`}>{rightsContactEmail()}</a>. UK
  residents may also see our{" "}
  <a href="/legal/privacy-uk">UK Privacy Notice</a>.
  </p>

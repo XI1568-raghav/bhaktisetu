@@ -8,7 +8,12 @@ import {
  useCallback,
  type ReactNode,
 } from 'react';
-import { API_BASE_URL } from './api-config';
+import {
+ API_BASE_URL,
+ fetchWithTimeout,
+ isNetworkFailure,
+ NETWORK_ERROR_MESSAGE,
+} from './api-config';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -483,7 +488,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  if (expMs && expMs < nowMs + 60_000) {
  // Token expired or about to expire — refresh it.
  // P1#4: credentials:'include' so HttpOnly refresh cookie is sent.
- const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+ const refreshRes = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  credentials: 'include',
@@ -529,7 +534,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const delay = Math.max(refreshAt - Date.now(), 10_000);
  const timer = setTimeout(async () => {
  try {
- const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+ const res = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  credentials: 'include',
@@ -554,7 +559,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  */
  const signInWithOtp = useCallback(async (phone: string) => {
  try {
- const res = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+ const res = await fetchWithTimeout(`${API_BASE_URL}/auth/send-otp`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ phone }),
@@ -577,7 +582,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  */
  const verifyOtp = useCallback(async (phone: string, token: string) => {
  try {
- const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+ const res = await fetchWithTimeout(`${API_BASE_URL}/auth/verify-otp`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ phone, token }),
@@ -628,7 +633,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
  // Try API login
  try {
- const res = await fetch(`${API_BASE_URL}/auth/login`, {
+ const res = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ email: emailLower, password }),
@@ -651,8 +656,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  persistSession(newSession, newUser);
 
  return { success: true, message: 'Signed in successfully' };
- } catch {
- // If API is unreachable and not a demo account
+ } catch (err) {
+ // Do not blame the credentials for a network failure. This catch fires for
+ // an unreachable/stalled API just as readily as for a real rejection, and it
+ // used to answer "Invalid email or password." either way — sending a user
+ // off to reset a password that was never wrong. The server's own 401 is
+ // handled above, via `!res.ok`; anything reaching here never got an answer.
+ if (isNetworkFailure(err)) {
+ return { success: false, message: NETWORK_ERROR_MESSAGE };
+ }
  if (demoAccount) {
  return { success: false, message: 'Incorrect password' };
  }
@@ -666,7 +678,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  */
  const signUpWithCredentials = useCallback(async (data: SignUpData) => {
  try {
- const res = await fetch(`${API_BASE_URL}/auth/register`, {
+ const res = await fetchWithTimeout(`${API_BASE_URL}/auth/register`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ ...data, role: toApiRole(data.role) }),
@@ -716,7 +728,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // P1#4: credentials:'include' ensures the HttpOnly `darshya_session`
  // cookie is sent so the backend /auth/logout can clear it
  // (Set-Cookie expires=0). Bearer body retained for transition.
- await fetch(`${API_BASE_URL}/auth/logout`, {
+ await fetchWithTimeout(`${API_BASE_URL}/auth/logout`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  credentials: 'include',
@@ -761,7 +773,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  if (session.accessToken.startsWith('demo-')) return;
 
  try {
- const res = await fetch(`${API_BASE_URL}/auth/me`, {
+ const res = await fetchWithTimeout(`${API_BASE_URL}/auth/me`, {
  headers: {
  Authorization: `Bearer ${session.accessToken}`,
  },

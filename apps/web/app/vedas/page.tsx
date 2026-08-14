@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'The 4 Vedas, Rigveda, Samaveda, Yajurveda, Atharvaveda | Darshya',
+  title: 'The 4 Vedas, Rigveda, Samaveda, Yajurveda, Atharvaveda',
   description: 'The four Vedas of Sanatana Dharma, Rig (hymns), Sama (melody), Yajur (ritual), Atharva (life). ~20,000 mantras, principal Upanishads, shakhas, presiding priests.',
   alternates: { canonical: `${BASE_URL}/vedas` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'The 4 Vedas, Shruti foundation',
     description: 'The oldest sacred literature preserved continuously by human civilisation, ~20,000 mantras across four Vedas, each with samhita, brahmana, aranyaka, upanishad.',
     url: `${BASE_URL}/vedas`,
@@ -82,17 +83,17 @@ export default function VedasIndexPage() {
           >
             <div className="flex items-baseline justify-between">
               <span className="text-xs font-semibold text-gray-500">#{v.number} of 4</span>
-              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-900">{v.totalMantras.toLocaleString()} mantras</span>
+              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-900">{v.totalMantras.toLocaleString()} mantras</span>
             </div>
             <h2 className="mt-1 text-xl font-bold text-gray-900 group-hover:text-indigo-700">{v.name}</h2>
             <p className="mt-1 font-serif text-lg text-gray-700">{v.sanskrit}</p>
             <p className="mt-0.5 italic text-xs text-gray-500">{v.iast} · {v.meaning}</p>
             <p className="mt-3 text-sm text-gray-700">{v.primaryFocus}</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-gray-600">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
               <div><span className="font-semibold">Priest:</span> {v.associatedPriest}</div>
               <div><span className="font-semibold">Shakhas:</span> {v.shakhasExtant} of {v.shakhasOriginal} extant</div>
             </div>
-            <p className="mt-3 rounded bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-900">{v.bestKnownFor}</p>
+            <p className="mt-3 rounded bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-900">{v.bestKnownFor}</p>
           </Link>
         ))}
       </div>

@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const d = getDarshana(slug);
   if (!d) return { title: 'Not found' };
   return {
-    title: `${d.name} (${d.sanskrit}) — ${d.bestKnownFor} | Darshya`,
+    title: `${d.name} (${d.sanskrit}) — ${d.bestKnownFor}`,
     description: `${d.name} darshana, founded by ${d.founder}. Root text ${d.foundingText} (${d.approxDate}). ${d.centralThesis.slice(0, 100)}`,
     alternates: { canonical: `${BASE_URL}/darshanas/${d.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${d.name} — ${d.bestKnownFor}`,
       description: d.centralThesis.slice(0, 160),
       url: `${BASE_URL}/darshanas/${d.slug}`,

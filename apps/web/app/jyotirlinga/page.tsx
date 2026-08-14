@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: '12 Jyotirlinga of Lord Shiva — Canonical Order, Darshan Booking, Bhasma Aarti | Darshya',
+  title: '12 Jyotirlinga of Lord Shiva — Canonical Order, Darshan Booking, Bhasma Aarti',
   description:
     'All 12 Jyotirlinga in canonical order: Somnath, Mallikarjuna, Mahakaleshwar, Omkareshwar, Kedarnath, Bhimashankar, Kashi Vishwanath, Trimbakeshwar, Vaidyanath, Nageshwar, Rameshwar, Grishneshwar. Timings, signature rituals (Bhasma Aarti, Sphatika Linga), how to reach, online darshan booking.',
   alternates: { canonical: `${BASE_URL}/jyotirlinga` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: '12 Jyotirlinga of Lord Shiva — complete pilgrim guide',
     description: 'Canonical order with darshan timings, signature rituals (Bhasma Aarti, Sphatika Linga), abhishekam fees, and online booking for each Jyotirlinga.',
     url: `${BASE_URL}/jyotirlinga`,
@@ -80,7 +81,7 @@ export default function JyotirlingaIndexPage() {
               </div>
               <p className="mt-1 text-xs text-gray-600">{j.state} · {j.city}</p>
               <p className="mt-3 line-clamp-3 text-sm text-gray-700">{j.significance}</p>
-              <div className="mt-3 flex flex-wrap gap-1 text-[10px] font-medium uppercase tracking-wide">
+              <div className="mt-3 flex flex-wrap gap-1 text-xs font-medium uppercase tracking-wide">
                 {j.swayambhu && <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800">Swayambhu</span>}
                 {j.dakshinmukhi && <span className="rounded bg-rose-100 px-2 py-0.5 text-rose-800">Dakshinmukhi</span>}
                 {j.onlineBookingAvailable && <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-800">Online booking</span>}

@@ -258,7 +258,7 @@ export default function OrchestratorProgress() {
         <div className="text-xs text-surface-400 shrink-0 text-right">
           {lastFetch ? `synced ${lastFetch.toLocaleTimeString()}` : 'connecting…'}
           {ok && data.rateLimit.remaining !== null && (
-            <div className="text-[10px] mt-0.5">GH rate: {data.rateLimit.remaining} left</div>
+            <div className="text-xs mt-0.5">GH rate: {data.rateLimit.remaining} left</div>
           )}
         </div>
       </div>
@@ -271,21 +271,21 @@ export default function OrchestratorProgress() {
       {/* Health stats row */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="bg-surface-50 rounded-lg border border-surface-200 p-3">
-          <div className="text-[10px] uppercase tracking-wide text-surface-500">Green rate (last {completed.length})</div>
+          <div className="text-xs uppercase tracking-wide text-surface-500">Green rate (last {completed.length})</div>
           <div className={`text-xl font-mono font-bold ${greenPct >= 80 ? 'text-emerald-700' : greenPct >= 50 ? 'text-saffron-700' : 'text-red-700'}`}>{greenPct}%</div>
-          <div className="text-[10px] text-surface-500">{green}/{completed.length} cycles</div>
+          <div className="text-xs text-surface-500">{green}/{completed.length} cycles</div>
         </div>
         <div className="bg-surface-50 rounded-lg border border-surface-200 p-3">
-          <div className="text-[10px] uppercase tracking-wide text-surface-500">Queue depth (dryrun)</div>
+          <div className="text-xs uppercase tracking-wide text-surface-500">Queue depth (dryrun)</div>
           <div className="text-xl font-mono font-bold text-surface-800">{queueCount}</div>
-          <div className="text-[10px] text-surface-500">unconsumed items</div>
+          <div className="text-xs text-surface-500">unconsumed items</div>
         </div>
         <div className="bg-surface-50 rounded-lg border border-surface-200 p-3">
-          <div className="text-[10px] uppercase tracking-wide text-surface-500">Last green wall</div>
+          <div className="text-xs uppercase tracking-wide text-surface-500">Last green wall</div>
           <div className="text-xl font-mono font-bold text-surface-800">
             {lastSuccessRun ? fmtWall(lastSuccessRun.wallSeconds) : '—'}
           </div>
-          <div className="text-[10px] text-surface-500">target &lt; 10min</div>
+          <div className="text-xs text-surface-500">target &lt; 10min</div>
         </div>
       </div>
 
@@ -294,7 +294,7 @@ export default function OrchestratorProgress() {
         <div className="mb-4 bg-saffron-50/40 border border-saffron-200 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-semibold text-saffron-900 uppercase tracking-wide">Cycle in progress — step-by-step</h3>
-            <span className="text-[10px] font-mono text-saffron-700">{fmtWall(liveElapsedSec)} elapsed</span>
+            <span className="text-xs font-mono text-saffron-700">{fmtWall(liveElapsedSec)} elapsed</span>
           </div>
           <div className="space-y-1">
             {livePhases.map((p, idx) => {
@@ -314,12 +314,12 @@ export default function OrchestratorProgress() {
                 >
                   <span className="font-mono font-bold w-4">{done ? '✓' : running ? '⏳' : '○'}</span>
                   <span className="flex-1 truncate">{p.label}</span>
-                  <span className="font-mono text-[10px] opacity-75 shrink-0">~{p.etaSec}s</span>
+                  <span className="font-mono text-xs opacity-75 shrink-0">~{p.etaSec}s</span>
                 </div>
               );
             })}
           </div>
-          <p className="mt-2 text-[10px] text-saffron-700/80">ETAs based on cycle 13 baseline (5min47s green). Live log unavailable inside GH runner — phase inferred from elapsed time.</p>
+          <p className="mt-2 text-xs text-saffron-700/80">ETAs based on cycle 13 baseline (5min47s green). Live log unavailable inside GH runner — phase inferred from elapsed time.</p>
         </div>
       )}
 
@@ -327,7 +327,7 @@ export default function OrchestratorProgress() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
         {/* PAST 24h */}
         <div className="bg-surface-50/60 border border-surface-200 rounded-lg p-3">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-surface-600 mb-2">Past 24h — outcomes</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-surface-600 mb-2">Past 24h — outcomes</h3>
           <div className="flex flex-wrap gap-1.5">
             {past24.length === 0 ? (
               <span className="text-xs text-surface-400">No runs in last 24h.</span>
@@ -340,7 +340,7 @@ export default function OrchestratorProgress() {
                     href={r.htmlUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] font-mono ${b.classes}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-mono ${b.classes}`}
                     title={`${r.title} — ${b.label} (${fmtWall(r.wallSeconds)})`}
                   >
                     <span>{b.icon}</span>
@@ -350,7 +350,7 @@ export default function OrchestratorProgress() {
               })
             )}
           </div>
-          <div className="mt-2 text-[10px] text-surface-500 grid grid-cols-4 gap-1">
+          <div className="mt-2 text-xs text-surface-500 grid grid-cols-4 gap-1">
             <span className="text-emerald-700">✓ {past24Green} green</span>
             <span className="text-amber-700">⊘ {past24Cancelled} cancelled</span>
             <span className="text-red-700">✗ {past24Failed} failed</span>
@@ -360,17 +360,17 @@ export default function OrchestratorProgress() {
 
         {/* FUTURE — next cron + countdown */}
         <div className="bg-blue-50/40 border border-blue-200 rounded-lg p-3">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 mb-2">Future — next scheduled cycle</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-2">Future — next scheduled cycle</h3>
           {nextCronAt ? (
             <>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-mono font-bold text-blue-900">{nextCronCountdown}</span>
-                <span className="text-[10px] text-blue-700">until next cron</span>
+                <span className="text-xs text-blue-700">until next cron</span>
               </div>
-              <div className="mt-1 text-[10px] text-blue-700 font-mono">
+              <div className="mt-1 text-xs text-blue-700 font-mono">
                 {new Date(nextCronAt).toLocaleString(undefined, { timeZone: 'UTC', dateStyle: 'short', timeStyle: 'short' })} UTC
               </div>
-              <div className="mt-2 text-[10px] text-blue-700/80">
+              <div className="mt-2 text-xs text-blue-700/80">
                 Schedule: <code className="font-mono bg-blue-100 px-1 rounded">17 */8 * * *</code> · 3 cycles/day @ 00:17 / 08:17 / 16:17 UTC
               </div>
             </>
@@ -382,8 +382,8 @@ export default function OrchestratorProgress() {
         {/* PIPELINE — top planned items next cycle will likely pick */}
         <div className="bg-emerald-50/40 border border-emerald-200 rounded-lg p-3 md:col-span-2">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">Pipeline — top planned items (next cycle candidates)</h3>
-            <span className="text-[10px] text-emerald-700">{plannedTop.length} of {tripwiresCount} tripwires armed</span>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Pipeline — top planned items (next cycle candidates)</h3>
+            <span className="text-xs text-emerald-700">{plannedTop.length} of {tripwiresCount} tripwires armed</span>
           </div>
           {plannedTop.length === 0 ? (
             <span className="text-xs text-emerald-700">No planned items above founder-blocker filter.</span>
@@ -391,12 +391,12 @@ export default function OrchestratorProgress() {
             <div className="space-y-1">
               {plannedTop.map((p) => (
                 <div key={p.id} className="flex items-center gap-2 px-2 py-1 rounded bg-white border border-emerald-100 text-xs">
-                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-[10px] px-1 rounded ${p.priority === 'P0' ? 'bg-red-100 text-red-700' : p.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{p.priority}</span>
-                  <span className="font-mono text-[10px] text-surface-500 shrink-0 w-16 truncate">{p.id}</span>
+                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-xs px-1 rounded ${p.priority === 'P0' ? 'bg-red-100 text-red-700' : p.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{p.priority}</span>
+                  <span className="font-mono text-xs text-surface-500 shrink-0 w-16 truncate">{p.id}</span>
                   <span className="flex-1 truncate text-surface-700">{p.title}</span>
-                  <span className="font-mono text-[10px] text-surface-400 shrink-0">{p.owner_role}</span>
+                  <span className="font-mono text-xs text-surface-400 shrink-0">{p.owner_role}</span>
                   {p.est_hours !== null && (
-                    <span className="font-mono text-[10px] text-surface-400 shrink-0">{p.est_hours}h</span>
+                    <span className="font-mono text-xs text-surface-400 shrink-0">{p.est_hours}h</span>
                   )}
                 </div>
               ))}
@@ -408,19 +408,19 @@ export default function OrchestratorProgress() {
         {shippedRecent.length > 0 && (
           <div className="bg-emerald-50/60 border border-emerald-200 rounded-lg p-3 md:col-span-2">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">Shipped — last 14 days ({shippedRecent.length})</h3>
-              <span className="text-[10px] text-emerald-700">closed by orchestrator + claude-code session</span>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Shipped — last 14 days ({shippedRecent.length})</h3>
+              <span className="text-xs text-emerald-700">closed by orchestrator + claude-code session</span>
             </div>
             <div className="space-y-1">
               {shippedRecent.map((s) => (
                 <div key={s.id} className="flex items-center gap-2 px-2 py-1 rounded bg-white border border-emerald-100 text-xs">
                   <span className="font-mono font-bold shrink-0 w-4 text-emerald-700">✓</span>
-                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-[10px] px-1 rounded ${s.priority === 'P0' ? 'bg-red-100 text-red-700' : s.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{s.priority}</span>
-                  <span className="font-mono text-[10px] text-surface-500 shrink-0 w-16 truncate">{s.id}</span>
+                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-xs px-1 rounded ${s.priority === 'P0' ? 'bg-red-100 text-red-700' : s.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{s.priority}</span>
+                  <span className="font-mono text-xs text-surface-500 shrink-0 w-16 truncate">{s.id}</span>
                   <span className="flex-1 truncate text-surface-700">{s.title}</span>
-                  <span className="font-mono text-[10px] text-surface-400 shrink-0">{s.owner_role}</span>
+                  <span className="font-mono text-xs text-surface-400 shrink-0">{s.owner_role}</span>
                   {s.shipped_at && (
-                    <span className="font-mono text-[10px] text-surface-400 shrink-0 w-16 text-right">{fmtRelative(s.shipped_at)}</span>
+                    <span className="font-mono text-xs text-surface-400 shrink-0 w-16 text-right">{fmtRelative(s.shipped_at)}</span>
                   )}
                 </div>
               ))}
@@ -432,18 +432,18 @@ export default function OrchestratorProgress() {
         {inProgress.length > 0 && (
           <div className="bg-saffron-50/60 border border-saffron-200 rounded-lg p-3 md:col-span-2">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-saffron-800">In progress ({inProgress.length})</h3>
-              <span className="text-[10px] text-saffron-700">started, awaiting completion or founder-action</span>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-saffron-800">In progress ({inProgress.length})</h3>
+              <span className="text-xs text-saffron-700">started, awaiting completion or founder-action</span>
             </div>
             <div className="space-y-1">
               {inProgress.map((p) => (
                 <div key={p.id} className="flex items-center gap-2 px-2 py-1 rounded bg-white border border-saffron-100 text-xs">
                   <span className="font-mono font-bold shrink-0 w-4 text-saffron-700">⏳</span>
-                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-[10px] px-1 rounded ${p.priority === 'P0' ? 'bg-red-100 text-red-700' : p.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{p.priority}</span>
-                  <span className="font-mono text-[10px] text-surface-500 shrink-0 w-16 truncate">{p.id}</span>
+                  <span className={`font-mono font-bold shrink-0 w-7 text-center text-xs px-1 rounded ${p.priority === 'P0' ? 'bg-red-100 text-red-700' : p.priority === 'P1' ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>{p.priority}</span>
+                  <span className="font-mono text-xs text-surface-500 shrink-0 w-16 truncate">{p.id}</span>
                   <span className="flex-1 truncate text-surface-700">{p.title}</span>
-                  <span className="font-mono text-[10px] text-surface-400 shrink-0">{p.owner_role}</span>
-                  <span className="font-mono text-[10px] text-surface-400 shrink-0">{p.quarter}</span>
+                  <span className="font-mono text-xs text-surface-400 shrink-0">{p.owner_role}</span>
+                  <span className="font-mono text-xs text-surface-400 shrink-0">{p.quarter}</span>
                 </div>
               ))}
             </div>
@@ -454,19 +454,19 @@ export default function OrchestratorProgress() {
         {queueItems.length > 0 && (
           <div className="bg-amber-50/40 border border-amber-200 rounded-lg p-3 md:col-span-2">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-amber-800">Queue — unconsumed sub-agent emissions</h3>
-              <span className="text-[10px] text-amber-700">{queueCount} total · showing top {Math.min(10, queueItems.length)}</span>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-800">Queue — unconsumed sub-agent emissions</h3>
+              <span className="text-xs text-amber-700">{queueCount} total · showing top {Math.min(10, queueItems.length)}</span>
             </div>
             <div className="space-y-1">
               {queueItems.slice(0, 10).map((q) => (
                 <div key={q.name} className="flex items-center gap-2 px-2 py-1 rounded bg-white border border-amber-100 text-xs">
-                  <span className="font-mono text-[10px] text-amber-600 shrink-0 w-12 text-center bg-amber-100 rounded px-1">{q.role || '?'}</span>
-                  <span className="font-mono text-[10px] text-surface-700 shrink-0 w-24 truncate">{q.itemId || '—'}</span>
-                  <span className="flex-1 truncate text-surface-500 font-mono text-[10px]">{q.name}</span>
+                  <span className="font-mono text-xs text-amber-600 shrink-0 w-12 text-center bg-amber-100 rounded px-1">{q.role || '?'}</span>
+                  <span className="font-mono text-xs text-surface-700 shrink-0 w-24 truncate">{q.itemId || '—'}</span>
+                  <span className="flex-1 truncate text-surface-500 font-mono text-xs">{q.name}</span>
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-[10px] text-amber-700/80">
+            <p className="mt-2 text-xs text-amber-700/80">
               Each queue item is a sub-agent prompt waiting for human consumption (via session UserPromptSubmit hook routes it into Claude Code session).
             </p>
           </div>
@@ -493,8 +493,8 @@ export default function OrchestratorProgress() {
                   <span className="font-mono font-bold w-4">{b.icon}</span>
                   <span className="w-20 font-mono shrink-0">{b.label}</span>
                   <span className="flex-1 truncate">{r.title}</span>
-                  <span className="font-mono text-[10px] opacity-75 shrink-0">{fmtWall(r.wallSeconds)}</span>
-                  <span className="font-mono text-[10px] opacity-50 shrink-0 w-16 text-right">{fmtRelative(r.updatedAt)}</span>
+                  <span className="font-mono text-xs opacity-75 shrink-0">{fmtWall(r.wallSeconds)}</span>
+                  <span className="font-mono text-xs opacity-50 shrink-0 w-16 text-right">{fmtRelative(r.updatedAt)}</span>
                 </a>
               );
             })}
@@ -519,7 +519,7 @@ export default function OrchestratorProgress() {
               >
                 <span className="font-mono text-surface-500 shrink-0">{c.shortSha}</span>
                 <span className="flex-1 truncate">{c.message}</span>
-                <span className="font-mono text-[10px] text-surface-400 shrink-0">{fmtRelative(c.date)}</span>
+                <span className="font-mono text-xs text-surface-400 shrink-0">{fmtRelative(c.date)}</span>
               </a>
             ))}
           </div>
@@ -541,7 +541,7 @@ export default function OrchestratorProgress() {
       )}
 
       {/* Source links */}
-      <div className="mt-4 pt-3 border-t border-surface-100 flex items-center justify-between text-[11px] text-surface-500">
+      <div className="mt-4 pt-3 border-t border-surface-100 flex items-center justify-between text-xs text-surface-500">
         <span>
           Source:{' '}
           <a

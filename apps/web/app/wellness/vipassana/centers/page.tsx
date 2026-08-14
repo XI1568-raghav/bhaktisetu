@@ -11,10 +11,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: `Vipassana Centers Worldwide — ${VIPASSANA_CENTERS.length} Goenka & Insight Meditation Centers | Darshya`,
+  title: `Vipassana Centers Worldwide — ${VIPASSANA_CENTERS.length} Goenka & Insight Meditation Centers`,
   description: `Directory of ${VIPASSANA_CENTERS.length} Vipassana meditation centers across India and worldwide. Goenka tradition (S.N. Goenka), Tibetan, and Western Insight lineages. Apply directly via dhamma.org and partner sites.`,
   alternates: { canonical: `${BASE_URL}/wellness/vipassana/centers` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: `Vipassana Centers — India + Worldwide`,
     description: `${VIPASSANA_CENTERS.length} centers across India, USA, UK, Canada, Australia, NZ. Donation-based 10-day silent retreats.`,
     url: `${BASE_URL}/wellness/vipassana/centers`,
@@ -136,7 +137,7 @@ export default function VipassanaCentersIndexPage() {
                     {c.name}
                   </h3>
                   {c.isFlagshipCenter ? (
-                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
                       Flagship
                     </span>
                   ) : null}
@@ -146,12 +147,12 @@ export default function VipassanaCentersIndexPage() {
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <span
-                    className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ${LINEAGE_ACCENT[c.lineage] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                    className={`inline-block rounded-full border px-2 py-0.5 text-xs font-semibold ${LINEAGE_ACCENT[c.lineage] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
                   >
                     {LINEAGE_LABEL[c.lineage]}
                   </span>
                   {c.capacity ? (
-                    <span className="inline-block rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700">
+                    <span className="inline-block rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
                       Cap {c.capacity}
                     </span>
                   ) : null}

@@ -195,7 +195,7 @@ export default function WellnessEnrolButton({
                       {busy ? 'Saving…' : 'Reserve'}
                     </button>
                   </div>
-                  <p className="text-[10px] pt-1" style={{ color: 'var(--color-text-faint)' }}>
+                  <p className="text-xs pt-1" style={{ color: 'var(--color-text-faint)' }}>
                     Live Razorpay checkout enables once instructor verification completes. No charge today.
                   </p>
                 </form>

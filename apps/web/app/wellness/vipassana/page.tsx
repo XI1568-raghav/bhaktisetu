@@ -15,6 +15,7 @@ import ScrollReveal from '../../../components/ScrollReveal';
 import { FLAGSHIP_CENTERS, VIPASSANA_CENTERS } from '../../../lib/vipassana-centers';
 
 export const metadata: Metadata = {
+ alternates: { canonical: 'https://darshya.online/wellness/vipassana' },
  title: 'Vipassana — 10-Day Silent Meditation Retreats',
  description:
  'Discover Vipassana meditation in the S.N. Goenka tradition. Browse 27 centers across India and worldwide. Learn the technique, preparation guides, FAQs, and how to apply directly with each center.',
@@ -190,7 +191,7 @@ export default function VipassanaPage() {
  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
  {c.name}
  </h3>
- <span className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
+ <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}>
  Flagship
  </span>
  </div>
@@ -200,7 +201,7 @@ export default function VipassanaPage() {
  <p className="text-xs leading-relaxed mb-3 flex-grow" style={{ color: 'var(--color-text-muted)' }}>
  {c.summary.length > 180 ? c.summary.slice(0, 180) + '…' : c.summary}
  </p>
- <div className="flex flex-wrap items-center gap-3 text-[11px] mb-4" style={{ color: 'var(--color-text-faint)' }}>
+ <div className="flex flex-wrap items-center gap-3 text-xs mb-4" style={{ color: 'var(--color-text-faint)' }}>
  {c.capacity ? <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Cap {c.capacity}</span> : null}
  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {c.bestSeason}</span>
  </div>

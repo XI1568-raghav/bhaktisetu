@@ -5,7 +5,7 @@ import { VEDIC_MONTHS } from '../../lib/vedic-months';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: '12 Vedic Months (Masa) — Hindu Lunar Calendar | Darshya',
+  title: '12 Vedic Months (Masa) — Hindu Lunar Calendar',
   description:
     'All 12 Vedic months from Chaitra through Phalguna — Gregorian range, ritu (season), presiding Aditya, major festivals, vrata practices, and ritual character of each month.',
   alternates: { canonical: 'https://darshya.online/masa' },

@@ -7,6 +7,11 @@ const { prismaMock } = vi.hoisted(() => {
     commission: {
       findMany: vi.fn(),
       updateMany: vi.fn(),
+      // listPayoutRequests joins each request to what it actually owns.
+      groupBy: vi.fn(),
+      // SCAL-04: getPayoutBalance sums in SQL now — three aggregates instead of
+      // three unbounded findMany reads of the whole ledger.
+      aggregate: vi.fn(),
     },
     payoutRequest: {
       create: vi.fn(),
@@ -26,20 +31,58 @@ const { prismaMock } = vi.hoisted(() => {
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 vi.mock('../routes/notifications.js', () => ({ notifyUser: vi.fn().mockResolvedValue(0) }));
 
+import { notifyUser } from '../routes/notifications.js';
 import {
   getPayoutBalance,
   getKycStatus,
   requestPayout,
   processPayout,
   runWeeklySettlement,
+  resolveProviderRole,
   resolveProviderRoleForUser,
+  listPayoutRequests,
   PAYOUT_CONCURRENT_REQUEST_ERROR,
 } from './payout.service.js';
 
 const commission = prismaMock.commission as {
   findMany: ReturnType<typeof vi.fn>;
   updateMany: ReturnType<typeof vi.fn>;
+  groupBy: ReturnType<typeof vi.fn>;
+  aggregate: ReturnType<typeof vi.fn>;
 };
+
+/**
+ * SCAL-04: getPayoutBalance now asks Postgres for three SUMs instead of reading
+ * three unbounded row sets. Tests describe the ledger; this answers whichever
+ * slice of it the where clause selects, exactly as the DB would.
+ */
+type BalanceRow = {
+  amount: number | string;
+  status?: string;
+  /** true when the row is linked to a pending/processing PayoutRequest */
+  linked?: boolean;
+};
+function wireBalance(rows: BalanceRow[]) {
+  commission.aggregate.mockImplementation(async (args: any) => {
+    const where = args?.where ?? {};
+    const matched = rows.filter((row) => {
+      const status = row.status ?? 'PENDING';
+      if (where.status && status !== where.status) return false;
+      if (where.payoutRequestId === null && row.linked) return false;
+      if (where.payoutRequest && !row.linked) return false;
+      return true;
+    });
+    if (matched.length === 0) return { _sum: { amount: null } };
+    return {
+      _sum: {
+        amount: matched.reduce(
+          (s, r) => s.add(new Prisma.Decimal(r.amount)),
+          new Prisma.Decimal(0),
+        ),
+      },
+    };
+  });
+}
 const payoutRequest = prismaMock.payoutRequest as {
   create: ReturnType<typeof vi.fn>;
   findUnique: ReturnType<typeof vi.fn>;
@@ -48,6 +91,8 @@ const payoutRequest = prismaMock.payoutRequest as {
   count: ReturnType<typeof vi.fn>;
 };
 const userRoleAssignment = (prismaMock.userRoleAssignment as { findMany: ReturnType<typeof vi.fn> });
+const user = prismaMock.user as { findMany: ReturnType<typeof vi.fn> };
+const notify = vi.mocked(notifyUser);
 const $queryRawUnsafe = prismaMock.$queryRawUnsafe as ReturnType<typeof vi.fn>;
 const $transaction = prismaMock.$transaction as ReturnType<typeof vi.fn>;
 
@@ -65,10 +110,11 @@ describe('payout.service — getPayoutBalance', () => {
     // Audit worked example: Rs 5,000 linked to a still-pending request, Rs 9,000
     // of newly earned commissions. Old code paid Rs 4,000 and marked all
     // Rs 9,000 PAID, destroying Rs 5,000.
-    commission.findMany
-      .mockResolvedValueOnce([{ amount: 4000 }, { amount: 5000 }]) // PENDING unlinked
-      .mockResolvedValueOnce([]) // PAID
-      .mockResolvedValueOnce([{ amount: 5000 }]); // in-flight (linked, NOT in the set above)
+    wireBalance([
+      { amount: 4000 }, // PENDING unlinked
+      { amount: 5000 }, // PENDING unlinked
+      { amount: 5000, linked: true }, // in-flight (linked, NOT in the set above)
+    ]);
     const b = await getPayoutBalance('prov-1');
     expect(b.availableInr).toBe(9000);
     expect(b.pendingInr).toBe(5000);
@@ -78,28 +124,48 @@ describe('payout.service — getPayoutBalance', () => {
   it('RV-05: stays positive when in-flight exceeds newly earned (no lockout)', async () => {
     // Inverse case: old code returned -3,000 → web showed "-Rs 3,000", Withdraw
     // disabled, requestPayout threw "No withdrawable balance".
-    commission.findMany
-      .mockResolvedValueOnce([{ amount: 2000 }]) // PENDING unlinked
-      .mockResolvedValueOnce([]) // PAID
-      .mockResolvedValueOnce([{ amount: 5000 }]); // in-flight
+    wireBalance([
+      { amount: 2000 }, // PENDING unlinked
+      { amount: 5000, linked: true }, // in-flight
+    ]);
     const b = await getPayoutBalance('prov-1');
     expect(b.availableInr).toBe(2000);
     expect(b.pendingInr).toBe(5000);
   });
 
   it('reports PAID separately as paidOut', async () => {
-    commission.findMany
-      .mockResolvedValueOnce([{ amount: 100 }, { amount: 250 }])
-      .mockResolvedValueOnce([{ amount: 500 }])
-      .mockResolvedValueOnce([]);
+    wireBalance([
+      { amount: 100 },
+      { amount: 250 },
+      { amount: 500, status: 'PAID', linked: true },
+    ]);
     const b = await getPayoutBalance('prov-1');
     expect(b).toEqual({ availableInr: 350, pendingInr: 0, paidOutInr: 500 });
   });
 
   it('returns zeros for a provider with no commissions', async () => {
-    commission.findMany.mockResolvedValue([]);
+    wireBalance([]);
     const b = await getPayoutBalance('prov-none');
     expect(b).toEqual({ availableInr: 0, pendingInr: 0, paidOutInr: 0 });
+  });
+
+  // batch9-review: the in-flight query was the only one of the three with no
+  // filter on the Commission's own status, so a linked row that had already
+  // moved on from PENDING was summed into pendingInr AND paidOutInr — the same
+  // ₹4,000 reported under both "Pending" and "Paid out".
+  it('batch9: a non-PENDING linked row counts once (paid out), never as in-flight', async () => {
+    // A tiny ledger the mock actually filters on, so the assertion binds to the
+    // where clause rather than to call ordering.
+    wireBalance([
+      { amount: 9000, status: 'PENDING', linked: false },
+      { amount: 4000, status: 'PAID', linked: true },
+    ]);
+
+    const b = await getPayoutBalance('prov-1');
+
+    expect(b.availableInr).toBe(9000);
+    expect(b.paidOutInr).toBe(4000);
+    expect(b.pendingInr).toBe(0); // was 4000 before the status filter
   });
 });
 
@@ -132,7 +198,7 @@ describe('payout.service — requestPayout gating', () => {
 
   it('rejects when no withdrawable balance', async () => {
     $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
-    commission.findMany.mockResolvedValue([]); // no commissions at all
+    wireBalance([]); // no commissions at all
     await expect(requestPayout('prov-1', 'PANDIT')).rejects.toThrow(/No withdrawable balance/);
   });
 });
@@ -144,11 +210,13 @@ describe('payout.service — requestPayout sizing (RV-05 / RV-06)', () => {
     previewInFlight?: Array<{ amount: number | string }>;
     txRows: Array<{ id: string; amount: number | string }>;
   }) {
-    commission.findMany
-      .mockResolvedValueOnce(opts.previewPending) // getPayoutBalance: PENDING unlinked
-      .mockResolvedValueOnce([]) // getPayoutBalance: PAID
-      .mockResolvedValueOnce(opts.previewInFlight ?? []) // getPayoutBalance: in-flight
-      .mockResolvedValueOnce(opts.txRows); // inside the transaction
+    // getPayoutBalance is three SQL SUMs now (SCAL-04); only the in-transaction
+    // read still streams rows, because it needs their ids to link them.
+    wireBalance([
+      ...opts.previewPending.map((r) => ({ amount: r.amount })),
+      ...(opts.previewInFlight ?? []).map((r) => ({ amount: r.amount, linked: true })),
+    ]);
+    commission.findMany.mockResolvedValueOnce(opts.txRows); // inside the transaction
     $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
       fn({ payoutRequest, commission }),
     );
@@ -222,6 +290,40 @@ describe('payout.service — requestPayout sizing (RV-05 / RV-06)', () => {
     await expect(requestPayout('prov-1', 'PANDIT')).rejects.toThrow(PAYOUT_CONCURRENT_REQUEST_ERROR);
   });
 
+  // batch9-review: MIN_PAYOUT_INR was ₹1 while its comment claimed "no
+  // meaningful floor", and it gates BOTH the pre-check and the in-transaction
+  // total — so any balance strictly between ₹0.00 and ₹1.00 was unwithdrawable
+  // forever. The standing decision is that self-serve has no floor.
+  it('batch9: a sub-₹1 balance is withdrawable — the only floor is "positive"', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+    mockReads({ previewPending: [{ amount: '0.50' }], txRows: [{ id: 'c1', amount: '0.50' }] });
+    payoutRequest.create.mockImplementation(async ({ data }: { data: { amount: unknown } }) => ({
+      id: 'pr-1',
+      ...data,
+    }));
+    commission.updateMany.mockResolvedValue({ count: 1 });
+
+    await requestPayout('prov-1', 'PANDIT');
+
+    const created = payoutRequest.create.mock.calls[0]![0] as { data: { amount: Prisma.Decimal } };
+    expect(created.data.amount.toString()).toBe('0.5');
+  });
+
+  // batch9-review: on Prisma's defaults (maxWait 2s / timeout 5s) the LOSING
+  // transaction of the race below is killed with P2028 before the linked-count
+  // guard can turn it into PAYOUT_CONCURRENT_REQUEST_ERROR, so the provider sees
+  // a raw engine message instead of "try again in a moment".
+  it('batch9: opens the transaction with explicit timeouts, not Prisma’s defaults', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+    mockReads({ previewPending: [{ amount: 9000 }], txRows: [{ id: 'c1', amount: 9000 }] });
+    payoutRequest.create.mockResolvedValue({ id: 'pr-1', amount: new Prisma.Decimal(9000) });
+    commission.updateMany.mockResolvedValue({ count: 1 });
+
+    await requestPayout('prov-1', 'PANDIT');
+
+    expect($transaction.mock.calls[0]![1]).toMatchObject({ timeout: 15000, maxWait: 5000 });
+  });
+
   it('RV-06: refuses when the ledger emptied between the pre-check and the transaction', async () => {
     $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
     mockReads({ previewPending: [{ amount: 9000 }], txRows: [] });
@@ -267,6 +369,19 @@ describe('payout.service — requestPayout concurrency race (RV-06)', () => {
     const read = async ({ where }: { where: Record<string, any> }) =>
       select(where).map((r) => ({ id: r.id, amount: r.amount }));
 
+    // SCAL-04: the balance pre-check is a SQL SUM over the same live state, so
+    // the race still snapshots exactly what the rival transaction can steal.
+    const aggregate = async ({ where }: { where: Record<string, any> }) => {
+      const hit = select(where);
+      return {
+        _sum: {
+          amount: hit.length
+            ? hit.reduce((s, r) => s.add(new Prisma.Decimal(r.amount)), new Prisma.Decimal(0))
+            : null,
+        },
+      };
+    };
+
     const txClient = (mine: string[]) => ({
       commission: {
         findMany: read,
@@ -288,6 +403,7 @@ describe('payout.service — requestPayout concurrency race (RV-06)', () => {
     });
 
     commission.findMany.mockImplementation(read);
+    commission.aggregate.mockImplementation(aggregate);
     $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const mine: string[] = [];
       try {
@@ -363,6 +479,14 @@ describe('payout.service — runWeeklySettlement', () => {
       }
       return []; // PAID rows and in-flight rows
     });
+    // SCAL-04: the balance the sweep reads is a SQL SUM — same ledger, one row.
+    commission.aggregate.mockImplementation(async (args: any) => {
+      const where = args?.where ?? {};
+      const unlinkedPending = where.status === 'PENDING' && where.payoutRequestId === null;
+      return {
+        _sum: { amount: unlinkedPending ? new Prisma.Decimal(opts.unlinkedInr) : null },
+      };
+    });
     $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
   }
 
@@ -408,12 +532,49 @@ describe('payout.service — runWeeklySettlement', () => {
 });
 
 describe('payout.service — resolveProviderRoleForUser', () => {
-  it('prefers the primary role (queried isPrimary-first) and maps it to a ProviderRole', async () => {
-    userRoleAssignment.findMany.mockResolvedValue([{ role: 'STORE_OWNER' }, { role: 'PANDIT' }]);
+  // batch9-review: the tiebreak used to be `{ role: 'asc' }`, documented as "a
+  // stable alphabetical tiebreak". Postgres orders enum columns by DECLARATION
+  // order — UserRole declares DEVOTEE, PANDIT, STORE_OWNER, … — so the real rule
+  // was "lowest-declared role wins", i.e. PANDIT for nearly every dual-role
+  // provider. The previous version of this test fed the mock [STORE_OWNER,
+  // PANDIT] and asserted STORE_OWNER: an ordering the query could never return,
+  // so it greenlit the mislabelling instead of catching it.
+  it('batch9: applies the documented precedence to the order the DB really returns', async () => {
+    // A pandit who also sells samagri, neither assignment primary. Postgres
+    // hands back PANDIT first; their ₹9,000 of STORE_OWNER commissions must not
+    // be stamped role=PANDIT and vanish from a STORE_OWNER-filtered admin queue.
+    userRoleAssignment.findMany.mockResolvedValue([
+      { role: 'PANDIT', isPrimary: false },
+      { role: 'STORE_OWNER', isPrimary: false },
+    ]);
     await expect(resolveProviderRoleForUser('u-1')).resolves.toBe('STORE_OWNER');
+  });
+
+  it('batch9: no longer asks SQL to carry the tiebreak', async () => {
+    userRoleAssignment.findMany.mockResolvedValue([{ role: 'PANDIT', isPrimary: true }]);
+    await resolveProviderRoleForUser('u-1');
     expect(userRoleAssignment.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: [{ isPrimary: 'desc' }, { role: 'asc' }] }),
+      expect.objectContaining({
+        select: { role: true, isPrimary: true },
+        orderBy: [{ isPrimary: 'desc' }],
+      }),
     );
+  });
+
+  it('a primary assignment beats a higher-precedence secondary one', async () => {
+    userRoleAssignment.findMany.mockResolvedValue([
+      { role: 'PANDIT', isPrimary: true },
+      { role: 'STORE_OWNER', isPrimary: false },
+    ]);
+    await expect(resolveProviderRoleForUser('u-1')).resolves.toBe('PANDIT');
+  });
+
+  it('falls through to precedence when the primary role cannot own a payout', async () => {
+    userRoleAssignment.findMany.mockResolvedValue([
+      { role: 'DEVOTEE', isPrimary: true },
+      { role: 'ASTROLOGER', isPrimary: false },
+    ]);
+    await expect(resolveProviderRoleForUser('u-1')).resolves.toBe('ASTROLOGER');
   });
 
   it('skips non-provider roles rather than returning them', async () => {
@@ -424,6 +585,24 @@ describe('payout.service — resolveProviderRoleForUser', () => {
   it('returns null when the user holds no payout-capable role', async () => {
     userRoleAssignment.findMany.mockResolvedValue([{ role: 'DEVOTEE' }, { role: 'ADMIN' }]);
     await expect(resolveProviderRoleForUser('u-1')).resolves.toBeNull();
+  });
+});
+
+describe('payout.service — resolveProviderRole (JWT claims)', () => {
+  // The auth middleware builds the claims array from an unordered findMany, so
+  // "first mapped role wins" made a dual-role provider's self-serve payout label
+  // depend on row order — and disagree with the label the weekly sweep stamps.
+  it('batch9: is order-independent, so self-serve and the weekly sweep agree', () => {
+    expect(resolveProviderRole(['PANDIT', 'STORE_OWNER', 'DEVOTEE'])).toBe('STORE_OWNER');
+    expect(resolveProviderRole(['STORE_OWNER', 'PANDIT', 'DEVOTEE'])).toBe('STORE_OWNER');
+  });
+
+  it('still maps the web `PRIEST` vocabulary onto PANDIT', () => {
+    expect(resolveProviderRole(['PRIEST', 'DEVOTEE'])).toBe('PANDIT');
+  });
+
+  it('returns null for a devotee-only claim set', () => {
+    expect(resolveProviderRole(['DEVOTEE'])).toBeNull();
   });
 });
 
@@ -473,6 +652,43 @@ describe('payout.service — processPayout', () => {
     const out = await processPayout('pr-1', 'complete', 'admin-1');
     expect(out.status).toBe('completed');
     expect(payoutRequest.update).not.toHaveBeenCalled();
+  });
+
+  // batch9-review: the idempotent short-circuit resolves the transaction
+  // normally, so it used to fall straight into the notification block. Every
+  // repeat click on Complete (or retry of POST .../process) pushed another
+  // "Your payout of ₹9,000 has been sent." for one transfer.
+  describe('notification on repeat completion', () => {
+    beforeEach(() => {
+      $transaction.mockImplementation(async (fn: any) => fn({ payoutRequest, commission }));
+    });
+
+    it('batch9: sends nothing when the request was already completed', async () => {
+      payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'completed', amount: new Prisma.Decimal('9000.00'), providerId: 'prov-1' });
+
+      await processPayout('pr-1', 'complete', 'admin-1', 'UTR123');
+
+      expect(notify).not.toHaveBeenCalled();
+    });
+
+    it('still notifies exactly once on the completion that actually moves money', async () => {
+      payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'pending', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+      payoutRequest.update.mockResolvedValue({ id: 'pr-1', status: 'completed', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+      commission.findMany.mockResolvedValue(HEALTHY_LINKED);
+
+      await processPayout('pr-1', 'complete', 'admin-1', 'UTR123');
+
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith('prov-1', expect.objectContaining({ title: 'Payout sent' }));
+    });
+
+    it('batch9: opens the transaction with explicit timeouts, not Prisma’s defaults', async () => {
+      payoutRequest.findUnique.mockResolvedValue({ id: 'pr-1', status: 'completed', amount: new Prisma.Decimal('350.00'), providerId: 'prov-1' });
+
+      await processPayout('pr-1', 'complete', 'admin-1');
+
+      expect($transaction.mock.calls[0]![1]).toMatchObject({ timeout: 15000, maxWait: 5000 });
+    });
   });
 
   // batch5-review: RV-06 closed the CREATION side of the hollow-request
@@ -534,5 +750,125 @@ describe('payout.service — processPayout', () => {
       const out = await processPayout('pr-1', 'reject', 'admin-1', undefined, 'retry');
       expect(out.status).toBe('rejected');
     });
+  });
+});
+
+// ─── batch9-review: the admin payout queue (was entirely untested) ─────────────
+
+describe('payout.service — listPayoutRequests', () => {
+  /** A PayoutRequest row shaped the way Prisma returns one (amount = Decimal). */
+  function req(id: string, providerId: string, amount: string) {
+    return {
+      id,
+      providerId,
+      role: 'ASTROLOGER',
+      amount: new Prisma.Decimal(amount),
+      status: 'pending',
+      method: 'upi',
+      reference: null,
+      requestedAt: new Date('2026-08-11T00:00:00Z'),
+      processedAt: null,
+    };
+  }
+  /** A commission.groupBy bucket for one payout request. */
+  function bucket(payoutRequestId: string, count: number, sum: string) {
+    return { payoutRequestId, _count: { _all: count }, _sum: { amount: new Prisma.Decimal(sum) } };
+  }
+
+  it('short-circuits on an empty queue without touching the join queries', async () => {
+    payoutRequest.findMany.mockResolvedValue([]);
+
+    await expect(listPayoutRequests()).resolves.toEqual([]);
+    expect(user.findMany).not.toHaveBeenCalled();
+    expect(commission.groupBy).not.toHaveBeenCalled();
+  });
+
+  // The linked count is the one signal an admin has for spotting a hollow
+  // request before transferring against it, so it must land on the right row.
+  it('joins each request to the commissions it actually owns', async () => {
+    payoutRequest.findMany.mockResolvedValue([
+      req('pr-1', 'prov-1', '9000.00'),
+      req('pr-2', 'prov-2', '350.00'),
+    ]);
+    user.findMany.mockResolvedValue([
+      { id: 'prov-1', fullName: 'Astro Anand', email: 'anand@example.com' },
+      { id: 'prov-2', fullName: 'Store Suman', email: 'suman@example.com' },
+    ]);
+    // Deliberately out of order relative to `requests` — a positional join would
+    // pass on an in-order fixture and swap the counts here.
+    commission.groupBy.mockResolvedValue([bucket('pr-2', 1, '350.00'), bucket('pr-1', 2, '9000.00')]);
+
+    const out = await listPayoutRequests();
+
+    expect(out.map((r) => [r.id, r.linkedCommissionCount, r.linkedCommissionTotal])).toEqual([
+      ['pr-1', 2, '9000'],
+      ['pr-2', 1, '350'],
+    ]);
+    expect(out[0]!.providerName).toBe('Astro Anand');
+    expect(commission.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['payoutRequestId'],
+        where: { payoutRequestId: { in: ['pr-1', 'pr-2'] } },
+      }),
+    );
+  });
+
+  it('reports a hollow request as 0 linked / ₹0 rather than dropping it', async () => {
+    payoutRequest.findMany.mockResolvedValue([req('pr-1', 'prov-1', '9000.00')]);
+    user.findMany.mockResolvedValue([{ id: 'prov-1', fullName: 'Astro Anand', email: 'anand@example.com' }]);
+    commission.groupBy.mockResolvedValue([]); // nothing links to pr-1
+
+    const [row] = await listPayoutRequests();
+
+    expect(row!.linkedCommissionCount).toBe(0);
+    expect(row!.linkedCommissionTotal).toBe('0');
+  });
+
+  it('serialises both money fields as strings — never a Decimal over the wire', async () => {
+    payoutRequest.findMany.mockResolvedValue([req('pr-1', 'prov-1', '9000.50')]);
+    user.findMany.mockResolvedValue([{ id: 'prov-1', fullName: 'Astro Anand', email: 'anand@example.com' }]);
+    commission.groupBy.mockResolvedValue([bucket('pr-1', 1, '9000.50')]);
+
+    const [row] = await listPayoutRequests();
+
+    expect(typeof row!.amount).toBe('string');
+    expect(row!.amount).toBe('9000.5');
+    expect(typeof row!.linkedCommissionTotal).toBe('string');
+  });
+
+  it('falls back to Unknown when the provider row is missing', async () => {
+    payoutRequest.findMany.mockResolvedValue([req('pr-1', 'ghost', '9000.00')]);
+    user.findMany.mockResolvedValue([]);
+    commission.groupBy.mockResolvedValue([bucket('pr-1', 1, '9000.00')]);
+
+    const [row] = await listPayoutRequests();
+
+    expect(row!.providerName).toBe('Unknown');
+    expect(row!.providerEmail).toBeNull();
+  });
+
+  // batch9-review: `status` came straight off request.query with no schema and
+  // went to Prisma as `status as never`. Wrong case, a typo, or the 'reversed'
+  // that migration 20260810000000 added to ProviderPayoutStatus but NOT to
+  // PayoutRequestStatus threw PrismaClientValidationError out of an unhandled
+  // handler — the whole admin payout queue 500'd.
+  it('batch9: refuses an out-of-enum status instead of handing it to Prisma', async () => {
+    await expect(listPayoutRequests('Pending')).resolves.toEqual([]);
+    await expect(listPayoutRequests('reversed')).resolves.toEqual([]);
+    expect(payoutRequest.findMany).not.toHaveBeenCalled();
+  });
+
+  it('passes a valid status through as a where filter', async () => {
+    payoutRequest.findMany.mockResolvedValue([]);
+    await listPayoutRequests('processing');
+    expect(payoutRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: 'processing' } }),
+    );
+  });
+
+  it('treats an empty status (the "All" chip) as no filter', async () => {
+    payoutRequest.findMany.mockResolvedValue([]);
+    await listPayoutRequests('');
+    expect(payoutRequest.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
   });
 });

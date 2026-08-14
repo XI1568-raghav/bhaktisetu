@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import crypto from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { Prisma } from '@prisma/client';
 import { prismaMock } from '../lib/__mocks__/prisma.js';
 
@@ -298,6 +300,33 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
   // The double-pay rail, found by adversarial review 2026-08-11: repairing the
   // Commission key (RV-04) made the unified /payouts rail live for the same
   // money PriestPayout already carried, with nothing cross-checking them.
+  // A reschedule detaches the pandit and REVERSES his commission. That voided
+  // row must not block the replacement pandit: if the guard matched it, he
+  // would be paid by neither rail (the unified rail has nothing live for him).
+  it('ignores a REVERSED commission — a voided row must not strand the next pandit', async () => {
+    const service = await loadService();
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...baseBooking,
+      status: 'video_uploaded',
+    });
+    prismaMock.priest.findUnique.mockResolvedValue({
+      aadhaarVerified: true,
+      displayName: 'Replacement Priest',
+    });
+    prismaMock.priestPayout.findFirst.mockResolvedValue(null);
+    // The guard filters REVERSED out in SQL, so the query returns nothing.
+    prismaMock.commission.findFirst.mockResolvedValue(null);
+    prismaMock.priestPayout.create.mockResolvedValue({ id: 'po-2', amount: 350 });
+
+    const out = await service.createPriestPayout('bk-1');
+
+    expect('id' in out && out.id).toBe('po-2');
+    // Bind to the actual predicate — this is the half of the pair that makes
+    // reversing (rather than deleting) safe in booking.service.
+    const where = (prismaMock.commission.findFirst.mock.calls[0]![0] as any).where;
+    expect(where.status).toEqual({ not: 'REVERSED' });
+  });
+
   it('does NOT mint a PriestPayout when the unified Commission ledger owns the booking', async () => {
     const service = await loadService();
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
@@ -350,6 +379,47 @@ describe('PaymentService.createPriestPayout — video proof gate (P0 #5)', () =>
   });
 });
 
+describe('PaymentService — no cross-rail Commission writer (markPayoutPaid stays deleted)', () => {
+  // The mutual-exclusion guard tested above protects the WRITE path: a booking
+  // the Commission ledger owns never gets a second payable PriestPayout row.
+  // `markPayoutPaid` was the hole in it — a callerless method that completed a
+  // PriestPayout and flipped the first Commission matching the same bookingId
+  // to PAID with no `status`/`payoutRequestId` predicate. Because
+  // refund.service scopes its REVERSED write to `payoutRequestId: null`, it was
+  // the only code path in the repo that could put a non-PENDING row inside an
+  // OPEN PayoutRequest, which permanently strands that request: processPayout's
+  // completion guard throws, reject unlinks the rows, and the already-PAID one
+  // drops out of getPayoutBalance with the provider's money on it.
+  //
+  // These two assertions are the lock. Reintroducing the method fails the
+  // first; reintroducing the ledger write under any other name fails the
+  // second. A test that only drove the surviving methods would pass with the
+  // bug back, so it has to bind to the absence itself.
+
+  it('exposes no markPayoutPaid on the service surface', async () => {
+    const service = await loadService();
+    expect((service as unknown as Record<string, unknown>).markPayoutPaid).toBeUndefined();
+    expect(Object.getOwnPropertyNames(Object.getPrototypeOf(service))).not.toContain(
+      'markPayoutPaid'
+    );
+  });
+
+  it('never mutates an existing Commission row — it only mints PENDING ones', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('./payment.service.ts', import.meta.url)),
+      'utf8'
+    );
+    // Strip comments so the tombstone explaining the removal cannot satisfy
+    // (or trip) the match.
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+    expect(code).not.toMatch(/commission\s*\.\s*(update|updateMany|upsert|delete|deleteMany)\b/);
+    // Commission lifecycle after minting belongs to payout.service (PAID) and
+    // refund.service (REVERSED). This service creates and reads, nothing else.
+    expect(code).toMatch(/commission\s*\.\s*create\b/);
+  });
+});
+
 describe('PaymentService.processRefund — RV-12 partial refunds + cancellation ladder', () => {
   // RV-12 (2026-08-10): the admin refund endpoint had NO amount parameter and
   // always refunded 100% of the captured amount. On a Rs 1,100 booking
@@ -396,6 +466,14 @@ describe('PaymentService.processRefund — RV-12 partial refunds + cancellation 
       .mockResolvedValueOnce({ cancelPolicyJson });
     prismaMock.payment.update.mockResolvedValue({});
     prismaMock.pujaBooking.update.mockResolvedValue({});
+    // DI-02: the partial rail now reads the claimable ledger rows before
+    // scaling them. Rs 880 is the pandit's 80% of a Rs 1,100 puja.
+    prismaMock.commission.findMany.mockResolvedValue([
+      { id: 'c1', amount: new Prisma.Decimal('880.00') },
+    ]);
+    prismaMock.commission.update.mockResolvedValue({});
+    prismaMock.commission.count.mockResolvedValue(0);
+    prismaMock.templePayout.findMany.mockResolvedValue([]);
   }
 
   async function loadLiveService() {
@@ -415,6 +493,77 @@ describe('PaymentService.processRefund — RV-12 partial refunds + cancellation 
     prismaMock.pujaBooking.findUnique.mockReset();
     razorpayRefundMock.mockReset();
     razorpayRefundMock.mockResolvedValue({ id: 'rfnd_test_1' });
+  });
+
+  // ── Ledger reversal on refund (2026-08-12, P0) ──────────────────────────
+  //
+  // There are TWO refund rails. refund.service reversed the provider ledger
+  // (RV-02); THIS one refunded the devotee and left the pandit's earning
+  // PENDING and fully withdrawable. Driven end to end by an audit agent:
+  // BS-20260812-J3M76 was refunded Rs 1,151 here, then a Rs 770 payout request
+  // was raised successfully against that same refunded booking — the platform
+  // pays the devotee back AND pays the pandit, roughly 172% of booking value,
+  // with no alert anywhere. Both rails now share reverseBookingLedger().
+  it('reverses the provider ledger on a FULL refund — otherwise a refund pays out twice', async () => {
+    const service = await loadLiveService();
+    arrange(
+      makeBooking({
+        cancelledAt: new Date('2026-08-25T00:00:00Z'), // >7 days out -> 100% tier
+        cancellationReason: '[refund-requested] full refund',
+      })
+    );
+    prismaMock.commission.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.commission.count.mockResolvedValue(0);
+    prismaMock.templePayout.updateMany.mockResolvedValue({ count: 1 });
+
+    const out = await service.processRefund('bk-1', 'admin-1');
+    expect(out.status).toBe('refunded');
+
+    // The assertion that matters: the pandit's earning is voided in the SAME
+    // transaction as the refund, and only while it is still unclaimed.
+    expect(prismaMock.commission.updateMany).toHaveBeenCalledWith({
+      where: { bookingId: 'bk-1', status: 'PENDING', payoutRequestId: null },
+      data: { status: 'REVERSED' },
+    });
+    // Money already paid out or mid-transfer is NEVER silently clawed back.
+    expect(prismaMock.commission.count).toHaveBeenCalledWith({
+      where: { bookingId: 'bk-1', OR: [{ status: 'PAID' }, { payoutRequestId: { not: null } }] },
+    });
+    // The temple's share follows the same rule.
+    expect(prismaMock.templePayout.updateMany).toHaveBeenCalledWith({
+      where: { bookingId: 'bk-1', status: 'pending' },
+      data: { status: 'reversed' },
+    });
+  });
+
+  it('unwinds the ledger PROPORTIONALLY on a PARTIAL refund (DI-02)', async () => {
+    // This test used to assert the opposite — that a partial reversed NOTHING —
+    // on the grounds that splitting an earning was an owner decision. It is
+    // not: the take-rate doctrine is a uniform 20/80, and applying it to the
+    // revenue actually retained is the same rule. Meanwhile the published
+    // ladder (100/75/50/25/0) makes partial the NORMAL case, so every
+    // mid-ladder cancellation refunded the devotee AND paid the pandit in full
+    // — about -Rs 550 per cancellation on a Rs 1,100 puja.
+    //
+    // 50% tier: Rs 550 refunded of Rs 1,100, so the pandit keeps half of his
+    // Rs 880 and the row is SCALED, never REVERSED.
+    const service = await loadLiveService();
+    arrange(
+      makeBooking({
+        cancelledAt: new Date('2026-09-01T00:30:00Z'), // 12h out -> 50% tier
+        cancellationReason: '[refund-requested] partial',
+      })
+    );
+    prismaMock.commission.updateMany.mockResolvedValue({ count: 0 });
+
+    const out = await service.processRefund('bk-1', 'admin-1');
+    expect(out.status).toBe('partially_refunded');
+    expect(prismaMock.commission.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.commission.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'c1' } }),
+    );
+    const amount = prismaMock.commission.update.mock.calls[0]![0].data.amount;
+    expect(amount.toString()).toBe('440');
   });
 
   it('applies the 50% tier (12h out) instead of refunding 100%', async () => {

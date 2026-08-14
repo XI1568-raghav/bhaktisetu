@@ -21,7 +21,7 @@ export default function MobileDarshan() {
  {/* Header */}
  <div className="px-5 pt-4 pb-3">
  <div className="flex items-center gap-2">
- <div className="flex items-center gap-1 bg-red-600/20 text-red-400 text-[10px] font-bold px-2 py-1 rounded-full">
+ <div className="flex items-center gap-1 bg-red-600/20 text-red-400 text-xs font-bold px-2 py-1 rounded-full">
  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
  LIVE
  </div>
@@ -52,8 +52,8 @@ export default function MobileDarshan() {
  </div>
  </button>
  <div className="absolute bottom-2 left-2 right-2">
- <p className="text-white text-[11px] font-semibold truncate">{s.name}</p>
- <p className="text-white/60 text-[9px]">{s.event}</p>
+ <p className="text-white text-xs font-semibold truncate">{s.name}</p>
+ <p className="text-white/60 text-xs">{s.event}</p>
  </div>
  </div>
  </div>
@@ -70,15 +70,15 @@ export default function MobileDarshan() {
  <img src={s.img} alt={s.name} className="w-12 h-12 rounded-lg object-cover opacity-70" loading="lazy" decoding="async" />
  <div className="flex-1">
  <p className="text-xs font-semibold text-white">{s.name}</p>
- <p className="text-[10px] text-surface-500 flex items-center gap-1 mt-0.5">
+ <p className="text-xs text-surface-500 flex items-center gap-1 mt-0.5">
  <MapPin className="w-2.5 h-2.5" /> {s.city}
  </p>
  </div>
  <div className="text-right shrink-0">
- <p className="text-[10px] text-surface-400 flex items-center gap-1">
+ <p className="text-xs text-surface-400 flex items-center gap-1">
  <Clock className="w-2.5 h-2.5" /> {s.time}
  </p>
- <button className="mt-1 text-[9px] font-semibold text-saffron-400 flex items-center gap-0.5">
+ <button className="mt-1 text-xs font-semibold text-saffron-400 flex items-center gap-0.5">
  <Bell className="w-2.5 h-2.5" /> Remind
  </button>
  </div>

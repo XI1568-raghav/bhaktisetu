@@ -8,10 +8,11 @@ const BASE_URL = 'https://darshya.online';
 const TOTAL_ADHYAYAS = MAHABHARATA_PARVAS.reduce((sum, p) => sum + p.adhyayaCount, 0);
 
 export const metadata: Metadata = {
-  title: `Mahabharata, All 18 Parvas: Adi, Sabha, Vana, Virata, Udyoga, Bhishma, Drona, Karna, Shalya, Sauptika, Stri, Shanti, Anushasana, Ashvamedhika, Ashramavasika, Mausala, Mahaprasthanika, Svargarohana | Darshya`,
+  title: `Mahabharata, All 18 Parvas: Adi, Sabha, Vana, Virata, Udyoga, Bhishma, Drona, Karna, Shalya, Sauptika, Stri, Shanti, Anushasana, Ashvamedhika, Ashramavasika, Mausala, Mahaprasthanika, Svargarohana`,
   description: `Complete parva-by-parva guide to Vyasa's Mahabharata, all 18 books across ${TOTAL_ADHYAYAS.toLocaleString()} adhyayas, ~100,000 shlokas. Episodes, key characters, central teachings of the world's longest epic.`,
   alternates: { canonical: `${BASE_URL}/mahabharata` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Mahabharata, 18 parvas complete guide',
     description: `From the lacquer house to Svargarohana, every parva's story, key episodes, and central teaching.`,
     url: `${BASE_URL}/mahabharata`,

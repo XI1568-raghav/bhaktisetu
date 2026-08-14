@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ kanda: st
   const k = getKanda(kanda);
   if (!k) return { title: 'Not found' };
   return {
-    title: `Ramayana ${k.english} (${k.sanskrit}) — Kanda ${k.number} Summary, Episodes | Darshya`,
+    title: `Ramayana ${k.english} (${k.sanskrit}) — Kanda ${k.number} Summary, Episodes`,
     description: `${k.english} — Kanda ${k.number} of the Valmiki Ramayana in ${k.sargaCount} sargas. ${k.summary.slice(0, 140)}`,
     alternates: { canonical: `${BASE_URL}/ramayana/${k.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `Ramayana Kanda ${k.number}: ${k.english}`,
       description: k.summary.slice(0, 160),
       url: `${BASE_URL}/ramayana/${k.slug}`,

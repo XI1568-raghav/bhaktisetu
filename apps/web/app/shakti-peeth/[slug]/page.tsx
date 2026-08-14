@@ -23,10 +23,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = getShaktiPeethBySlug(slug);
   if (!s) return { title: 'Not found' };
   return {
-    title: `${s.name} Shakti Peeth (${s.number} of 51) — Devi ${s.devi}, Darshan & Navratri | Darshya`,
+    title: `${s.name} Shakti Peeth (${s.number} of 51) — Devi ${s.devi}, Darshan & Navratri`,
     description: `${s.name} (${s.sanskrit}) — ${s.number}th Shakti Peeth at ${s.location}, ${s.state}. Body part: ${s.bodyPart}. Devi-Bhairava: ${s.devi} · ${s.bhairava}. Darshan ${s.darshanTimings}. ${s.significance.slice(0, 80)}…`,
     alternates: { canonical: `${BASE_URL}/shakti-peeth/${s.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `${s.name} Shakti Peeth — ${s.number} of 51`,
       description: s.significance,
       url: `${BASE_URL}/shakti-peeth/${s.slug}`,

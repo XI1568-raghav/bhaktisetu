@@ -10,10 +10,11 @@ const BASE_URL = 'https://darshya.online';
 const TOTAL = FREE_PANDIT_TOPICS.length;
 
 export const metadata: Metadata = {
- title: `Free Pandit Kundli Astrology Advice — ${TOTAL} Topics Answered by Verified Pandits | Darshya`,
+ title: `Free Pandit Kundli Astrology Advice — ${TOTAL} Topics Answered by Verified Pandits`,
  description: `Free pandit kundli astrology advice across ${TOTAL} life areas — marriage, career, health, finance, education, manglik dosh, kundli milan and more. Authentic Vedic guidance, no credit card required.`,
  alternates: { canonical: `${BASE_URL}/free-pandit-advice` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Free Pandit Kundli Astrology Advice — Darshya',
   description: `${TOTAL} curated free advice topics from verified Vedic pandits — marriage, career, health, dosh remedies and more.`,
   url: `${BASE_URL}/free-pandit-advice`,
@@ -105,7 +106,7 @@ export default function FreePanditAdviceHub() {
         <h2 className="text-base font-bold text-gray-900 group-hover:underline">
          {t.title.replace('Free Pandit Advice on ', '')}
         </h2>
-        <span className="shrink-0 rounded-full bg-saffron-100 px-2 py-0.5 text-[11px] font-semibold text-saffron-800">
+        <span className="shrink-0 rounded-full bg-saffron-100 px-2 py-0.5 text-xs font-semibold text-saffron-800">
          {t.faqs.length} Qs
         </span>
        </div>

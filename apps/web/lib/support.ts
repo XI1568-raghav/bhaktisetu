@@ -2,7 +2,17 @@
  * Support / Customer Care data layer.
  * Ticket types, sample data, FAQ content, auto-reply keyword matching,
  * and localStorage persistence helpers.
+ *
+ * LEG-10/LEG-12 (prod sweep 2026-08-12): the money rules in this file were
+ * written independently of the code that charges the money, so they drifted.
+ * The delivery numbers now interpolate from COMPANY.store — the same figures
+ * lib/store-pricing.ts uses and the API enforces — rather than being retyped.
  */
+
+import { COMPANY } from './company';
+
+const FREE_DELIVERY_ABOVE = `₹${COMPANY.store.freeDeliveryAboveInr.toLocaleString('en-IN')}`;
+const FLAT_DELIVERY_FEE = `₹${COMPANY.store.flatDeliveryFeeInr}`;
 
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -620,7 +630,11 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  {
  keywords: ['store', 'order', 'shipping', 'product'],
  reply:
- 'Store orders ship within 24-48 hours. Standard delivery: 3-5 days pan-India, 7-14 days international. Free shipping over ₹999. Share your order ID for status.',
+ // LEG-12: this said "Free shipping over ₹999". The cart charges
+ // `subtotal >= 499 ? 0 : 49` (lib/store-pricing.ts, mirrored and enforced
+ // by apps/api/src/lib/store-pricing.ts), so support was quoting a
+ // threshold no basket has ever been measured against.
+ `Store orders ship within 24-48 hours. Standard delivery: 3-5 days pan-India, 7-14 days international. Free delivery on domestic orders of ${FREE_DELIVERY_ABOVE} and above; below that a flat ${FLAT_DELIVERY_FEE}. Share your order ID for status.`,
  },
  {
  keywords: ['price', 'cost', 'how much', 'fee'],
@@ -747,9 +761,15 @@ export const FAQ_ITEMS: FaqItem[] = [
  {
  id: 'bp-8',
  section: 'Bookings & Payments',
- question: 'Can I get a GST invoice?',
+ question: 'Can I get an invoice for my booking?',
+ // LEG-10: this used to be titled "Can I get a GST invoice?" and answered
+ // "Invoice includes GST breakup. For business/GSTIN invoices, email …
+ // with your GSTIN before booking." Darshya has no GSTIN
+ // (COMPANY.tax.HAS_GST_REGISTRATION_VERIFIED === false), no code path adds
+ // a tax line to a booking or a store order, and a document itemising GST
+ // without a registration number is not a valid tax invoice.
  answer:
- 'Yes. After booking, go to /bookings → tap the booking → "Download Invoice". Invoice includes GST breakup. For business/GSTIN invoices, email support@darshya.online with your GSTIN before booking.',
+ 'Yes. After booking, go to /bookings → tap the booking → "Download Invoice". It is a payment receipt showing what you paid, and it is not a GST tax invoice: Darshya is not GST-registered yet, so no GST is charged and none is shown. The amount on the receipt is the whole amount taken from your card. If you need a GST invoice for a business claim, wait until we publish a GSTIN — we cannot issue one before then.',
  },
 
  // Live Darshan (4)
@@ -794,8 +814,9 @@ export const FAQ_ITEMS: FaqItem[] = [
  id: 'sd-2',
  section: 'Store & Delivery',
  question: 'What are the shipping timelines?',
+ // LEG-12: "free over ₹999, else ₹49" — the ₹999 half was never charged.
  answer:
- 'India: 3-5 business days (free over ₹999, else ₹49). International: 7-14 business days. Prasad parcels ship same-day from the temple city.',
+ `India: 3-5 business days (free on orders of ${FREE_DELIVERY_ABOVE} and above, otherwise a flat ${FLAT_DELIVERY_FEE} whatever the weight or destination). International: 7-14 business days. Prasad parcels ship same-day from the temple city.`,
  },
  {
  id: 'sd-3',
@@ -808,8 +829,14 @@ export const FAQ_ITEMS: FaqItem[] = [
  id: 'sd-4',
  section: 'Store & Delivery',
  question: 'Do you ship to the US, UK, and Middle East?',
+ // LEG-10: this used to end "Duties and taxes are calculated at checkout for
+ // transparency." Nothing calculates them. computeStoreOrderTotals() is
+ // `Σ(unitPrice × qty) + deliveryFee` — it takes no destination, no weight
+ // and no HSN code, and the API refuses any order whose total disagrees. An
+ // overseas buyer was told the landed cost was settled and then met a bill
+ // from the carrier at the door.
  answer:
- 'Yes — we deliver to 40+ countries including US, UK, Canada, Australia, UAE, Singapore. Duties and taxes are calculated at checkout for transparency.',
+ 'Yes — we deliver to 40+ countries including US, UK, Canada, Australia, UAE, Singapore. Import duty and local sales tax are NOT included in the price you pay us and are not calculated at checkout: your country levies them on arrival, and the carrier collects them from you before delivery. What you pay Darshya is the goods plus shipping only.',
  },
  {
  id: 'sd-5',

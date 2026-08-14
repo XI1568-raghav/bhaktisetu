@@ -4,8 +4,9 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { sendEmail, donationReceiptEmail } from '../lib/email.js';
-import { generate80GReceipt } from '../lib/pdf-receipt.js';
+import { generate80GReceipt, is80GEligible } from '../lib/pdf-receipt.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
+import { resolveGaushalaDonee } from '../lib/gaushala-donee.js';
 import Razorpay from 'razorpay';
 
 assertNotProductionDemo('routes/donations');
@@ -181,6 +182,13 @@ export async function finalizeDonationReceipt(
         gaushalaName: doneeName,
         receiptNumber,
         date: donationDate,
+        // COM-02: one source of truth for the 80G claim — the same predicate
+        // the PDF uses. Both are false today for every donee (regn_80g / pan
+        // are written nowhere), and the temple branch never loads them at all.
+        is80G: is80GEligible({
+          gaushala80GNumber: taxFields?.regn_80g ?? undefined,
+          gaushalaPan: taxFields?.pan ?? undefined,
+        }),
       });
       await sendEmail({
         to: user.email,
@@ -275,6 +283,27 @@ export async function donationRoutes(server: FastifyInstance) {
     const amount = amountInr;
 
     const userId = request.currentUser!.id;
+
+    // S-05: resolve the gaushala donee BEFORE any money moves. The caller may
+    // send a GaushalaProfile id, the owner's User id, or a legacy directory
+    // fixture id; all three collapse to the owner id the gaushala portal
+    // filters on. An id that matches no onboarded gaushala is refused — we do
+    // not take a donation for a donee that cannot be paid and cannot be named
+    // on the receipt.
+    let doneeGaushalaId = gaushalaId;
+    if (kind === 'gaushala') {
+      const resolved = await resolveGaushalaDonee(gaushalaId!);
+      if (!resolved.ok) {
+        return reply.code(400).send({
+          code: 'gaushala_not_onboarded',
+          error: 'Gaushala not available for donations',
+          message:
+            'This gaushala is not yet onboarded to receive donations through Darshya. Please choose a verified gaushala.',
+        });
+      }
+      doneeGaushalaId = resolved.donee.doneeUserId;
+    }
+
     const donationId = `don_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 
     let razorpayOrderId: string;
@@ -285,7 +314,7 @@ export async function donationRoutes(server: FastifyInstance) {
         receipt: donationId,
         notes: {
           causeKind: kind,
-          ...(kind === 'temple' ? { templeId: templeId! } : { gaushalaId: gaushalaId! }),
+          ...(kind === 'temple' ? { templeId: templeId! } : { gaushalaId: doneeGaushalaId! }),
           planId: planId ?? '',
           userId,
         },
@@ -317,7 +346,7 @@ export async function donationRoutes(server: FastifyInstance) {
          VALUES ($1, $2::uuid, $3, $4, $5, 'created', $6, $7)`,
         donationId,
         userId,
-        gaushalaId,
+        doneeGaushalaId,
         amount,
         razorpayOrderId,
         parsed.data.donorPan ?? null,

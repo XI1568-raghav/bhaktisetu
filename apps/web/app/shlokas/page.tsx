@@ -62,7 +62,7 @@ export default function ShlokasIndexPage() {
                 {s.tags.map((t) => (
                   <span
                     key={t}
-                    className="text-[11px] uppercase tracking-wider text-saffron-700 bg-saffron-50 px-2 py-0.5 rounded"
+                    className="text-xs uppercase tracking-wider text-saffron-700 bg-saffron-50 px-2 py-0.5 rounded"
                   >
                     {t}
                   </span>

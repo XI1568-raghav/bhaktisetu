@@ -1,21 +1,47 @@
 import { FastifyInstance } from 'fastify';
 import { requireCronBearer } from '../middlewares/cron-auth.js';
+import { runDailyOps } from '../jobs/master-cron.js';
+import { runAartiNotify } from '../jobs/aarti-notify.js';
+import { dispatchService } from '../services/dispatch.service.js';
 
 /**
- * Daily cron endpoint, invoked by GitHub Actions because Render's free
- * tier has no cron. The workflow at .github/workflows/daily-cron.yml
- * fires at 5:30 IST and POSTs here with `Authorization: Bearer <token>`.
+ * Cron endpoints, invoked by GitHub Actions and/or an external pinger because
+ * Render's free tier has no cron.
  *
- *   POST /api/v1/cron/daily      → runs every job
- *   POST /api/v1/cron/run/:job   → runs a single named job (for ad-hoc)
+ *   POST /api/v1/cron/daily      → runs the full daily ops chain
+ *   POST /api/v1/cron/run/:job   → runs a single named job (ad-hoc / tight loop)
+ *   GET  /api/v1/cron/health     → token config + the real job list
  *
  * Auth: requireCronBearer middleware. Fail-loud if CRON_AUTH_TOKEN unset
  * (returns 401 + 'cron_auth_misconfigured' body code so log search picks
  * up server-side misconfig vs client bad-token). See R-Q1-IT-002 +
  * apps/api/src/middlewares/cron-auth.ts.
  *
+ * NOTIF-11 (2026-08-12): every job registered here USED TO BE A LITERAL STUB.
+ *
+ *   refreshPanchang       returned {daysRefreshed: 0} — "Real implementation
+ *                         would call mhah-panchang…" (jobs/daily-panchang-
+ *                         compute-cron.ts had been doing it for months)
+ *   sendFestivalReminders returned {sent: 0} — "Stub for now — wire when push
+ *                         subs land in Prisma" (push_subscriptions landed
+ *                         months ago)
+ *   expireBookings        returned {expired: 0}
+ *
+ * POST /daily ran all three, computed `ok = results.every(r => r.ok)` — three
+ * stubs never fail — and returned 200. daily-cron.yml curls with `-fsS`, which
+ * only fails on a non-2xx, so the single scheduled workflow in the repo went
+ * GREEN every day for months while /panchang sold "daily panchang, shubh
+ * muhurat alerts, and festival reminders" and nobody had ever received one. A
+ * green tick over three `return 0`s is worse than a red one: it is the reason
+ * nobody looked.
+ *
+ * The stubs are deleted. /daily now drives the real runDailyOps chain and
+ * returns its counters, so the workflow can assert on WORK DONE rather than on
+ * an HTTP status that three no-ops could always satisfy.
+ *
  * Jobs are intentionally idempotent so re-runs after a failed GH Action
- * don't double-send notifications.
+ * don't double-send notifications — see the per-day claim in
+ * lib/notification-run-log.ts.
  */
 
 interface JobResult {
@@ -42,42 +68,45 @@ async function runJob(name: string, fn: () => Promise<unknown>): Promise<JobResu
 }
 
 // ── Job definitions ──────────────────────────────────────────────────
-
-async function refreshPanchang(): Promise<{ daysRefreshed: number }> {
-  // Real implementation would call mhah-panchang for next 90 days and
-  // upsert into a `panchang_days` cache table. Returning a stub keeps
-  // the cron functional without coupling to the panchang module here.
-  return { daysRefreshed: 0 };
-}
-
-async function sendFestivalReminders(): Promise<{ sent: number }> {
-  // Look up festivals in next 24h, fan out via web-push + WhatsApp to
-  // users opted-in. Stub for now — wire when push subs land in Prisma.
-  return { sent: 0 };
-}
-
-async function expireBookings(): Promise<{ expired: number }> {
-  // Mark bookings as 'no-show' if scheduled time + 2h has passed without
-  // video proof upload. Idempotent — only updates rows still in 'confirmed'.
-  return { expired: 0 };
-}
+//
+// Every entry here does real work. If a job cannot be implemented, it does not
+// belong in this map: a registered no-op is indistinguishable from a working
+// feature at every layer above it.
 
 const JOBS: Record<string, () => Promise<unknown>> = {
-  'refresh-panchang': refreshPanchang,
-  'festival-reminders': sendFestivalReminders,
-  'expire-bookings': expireBookings,
+  /** The full chain — the same one the in-process scheduler ticks. */
+  'daily-ops': () => runDailyOps(),
+  /**
+   * NOTIF-10: the instant tier promises a 60-second accept window. broadcast()
+   * arms a per-booking timer for exactly that, but timers die with the process,
+   * so this endpoint exists for a tight external schedule — cron-job.org at
+   * one-minute granularity, which is free and already the documented scheduler
+   * — to drive the sweep without dragging the other 17 ticks of the daily chain
+   * along with it.
+   */
+  'dispatch-sweep': () => dispatchService.sweepExpiredOffers(),
+  /** Pre-aarti reminders — cheap, and worth running more often than daily. */
+  'aarti-notify': () => runAartiNotify(),
 };
 
 // ── Routes ──────────────────────────────────────────────────────────
 
 export async function cronRoutes(server: FastifyInstance) {
-  server.post('/daily', { preHandler: requireCronBearer }, async (_request, reply) => {
-    const results: JobResult[] = [];
-    for (const [name, fn] of Object.entries(JOBS)) {
-      results.push(await runJob(name, fn));
+  server.post('/daily', { preHandler: requireCronBearer }, async (request, reply) => {
+    const t0 = Date.now();
+    try {
+      const result = await runDailyOps();
+      return reply.code(200).send({ ok: true, durationMs: Date.now() - t0, result });
+    } catch (err) {
+      // Loud on purpose. `-fsS` in daily-cron.yml turns a non-2xx into a red
+      // workflow, which is the only signal anyone was ever going to see.
+      request.log.error({ err }, 'daily cron failed');
+      return reply.code(500).send({
+        ok: false,
+        durationMs: Date.now() - t0,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
-    const ok = results.every((r) => r.ok);
-    return reply.code(ok ? 200 : 500).send({ ok, results });
   });
 
   server.post<{ Params: { job: string } }>('/run/:job', { preHandler: requireCronBearer }, async (request, reply) => {

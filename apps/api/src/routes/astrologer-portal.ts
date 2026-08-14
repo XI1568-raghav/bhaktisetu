@@ -10,6 +10,40 @@ import {
   ASTROLOGER_SHARE,
 } from '../services/astrologer.service.js';
 
+/**
+ * PAR-13. `AstrologerProfile.userId` and `Commission.providerId` are both
+ * `@db.Uuid`. The demo astrologer signs in with `user.id = "demo-astro"`, which
+ * cannot be cast to a uuid, so every lookup keyed on it threw Prisma P2023 and
+ * the portal home answered 500 with the server's absolute path and four lines
+ * of source in the body — on both web and the app, for that account.
+ *
+ * A value that cannot be a uuid cannot match a uuid column: the honest result is
+ * a miss, not an exception. Every other portal (priest/temple/store/gaushala/
+ * wellness) already answers 200 for the same class of id; this is that same
+ * behaviour, made explicit.
+ *
+ * Same regex as routes/priests-public.ts:29 and lib/gaushala-donee.ts:27.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(value: string | null | undefined): boolean {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
+/** No ledger rows can exist for an id the ledger cannot store. All zeros. */
+function emptyAstrologerLedger() {
+  return {
+    data: [] as Array<Record<string, unknown>>,
+    summary: {
+      totalEarningsInr: 0,
+      pendingInr: 0,
+      paidInr: 0,
+      monthEarningsInr: 0,
+      todayEarningsInr: 0,
+      astrologerShare: ASTROLOGER_SHARE,
+    },
+  };
+}
+
 const profileUpdateSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
   specialties: z.array(z.string().max(50)).max(20).optional(),
@@ -38,6 +72,86 @@ const availabilityUpdateSchema = z.object({
 
 export const __testing = { profileUpdateSchema, availabilityUpdateSchema };
 
+/**
+ * The caller's consultation earnings, straight off the Commission ledger.
+ *
+ * AW-04 (2026-08-12, P1): /dashboard and /earnings each computed money their
+ * own way — /dashboard summed `astrologer_consultations.amount_inr` (GROSS,
+ * before the 20% platform cut) and /earnings summed `Commission.amount` (the
+ * astrologer's actual 80%). The two screens therefore stated different rupee
+ * figures for the same day, and the dashboard's gross number was rendered under
+ * the label "Paid out" while nothing had settled. One reader, one source: this.
+ *
+ * `Commission.amount` IS the provider's earning and `percentage` IS the
+ * platform's take rate — see lib/commission-math.ts. Nothing here re-derives
+ * either.
+ */
+async function loadAstrologerLedger(userId: string) {
+  // PAR-13: `Commission.providerId` is @db.Uuid — a non-UUID account id throws
+  // P2023 here just as it does on astrologerProfile. No rows can be attributed
+  // to an id that cannot be stored, so an empty ledger is the true answer.
+  if (!isUuid(userId)) return emptyAstrologerLedger();
+  const allRows = await prisma.commission.findMany({
+    where: { providerId: userId },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
+  // Commission has no source discriminator, and every provider role is keyed
+  // by User.id — so once the puja writers were corrected to use User.id
+  // (RV-04), a dual-role user's PUJA commissions started matching this query
+  // and rendering as consultation earnings. Exclude anything whose bookingId
+  // is a PujaBooking; what remains is this astrologer's consultations.
+  const candidateIds = allRows.map((c) => c.bookingId).filter((id): id is string => !!id);
+  const pujaRows = candidateIds.length
+    ? await prisma.pujaBooking.findMany({
+        where: { id: { in: candidateIds } },
+        select: { id: true },
+      })
+    : [];
+  const pujaIds = new Set(pujaRows.map((p) => p.id));
+  const rows = allRows.filter((c) => !c.bookingId || !pujaIds.has(c.bookingId));
+
+  const data = rows.map((c) => {
+    const earnings = new Prisma.Decimal(c.amount);
+    const gross = commissionGross(c.amount, c.percentage);
+    const platformCut = commissionPlatformCut(c.amount, c.percentage);
+    return {
+      id: c.id,
+      bookingId: c.bookingId,
+      status: c.status,
+      createdAt: c.createdAt,
+      grossAmountInr: gross.toNumber(),
+      platformCutInr: platformCut.toNumber(),
+      earningsInr: earnings.toNumber(),
+      astrologerShare: ASTROLOGER_SHARE,
+    };
+  });
+
+  // A REVERSED row is a cancelled/refunded consultation (AW-06). It is not
+  // earned, not pending and not paid — it must not appear in any total.
+  const live = data.filter((r) => r.status !== 'REVERSED');
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const sum = (rs: typeof live) => round2(rs.reduce((s, r) => s + r.earningsInr, 0));
+
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+
+  return {
+    data,
+    summary: {
+      totalEarningsInr: sum(live),
+      pendingInr: sum(live.filter((r) => r.status === 'PENDING')),
+      paidInr: sum(live.filter((r) => r.status === 'PAID')),
+      monthEarningsInr: sum(live.filter((r) => new Date(r.createdAt) >= monthStart)),
+      todayEarningsInr: sum(live.filter((r) => new Date(r.createdAt) >= dayStart)),
+      astrologerShare: ASTROLOGER_SHARE,
+    },
+  };
+}
+
 // No persistent Consultation model — Jitsi rooms are ephemeral (see consultation.ts).
 // Stats below derive from AstrologerProfile counters maintained elsewhere; sessions
 // + earnings remain 0 until a Consultation table lands.
@@ -50,7 +164,10 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'ASTROLOGER role required' });
     }
 
-    const profile = await prisma.astrologerProfile.findUnique({ where: { userId } });
+    // PAR-13: guarded — see isUuid. A miss, not a P2023 crash.
+    const profile = isUuid(userId)
+      ? await prisma.astrologerProfile.findUnique({ where: { userId } })
+      : null;
 
     // P0 #AP-04/05 (2026-07-09): astrologer attribution. astrologer_consultations.
     // astrologer_id is TEXT and has been written as several forms over time —
@@ -64,12 +181,17 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       (v): v is string => typeof v === 'string' && v.length > 0,
     );
 
+    // AW-04 (2026-08-12, P1): every rupee on this dashboard now comes off the
+    // Commission ledger — the same source /astrologer-portal/earnings and
+    // payout.service.getPayoutBalance read — so the dashboard and the Earnings
+    // page can no longer state different numbers for the same day. The raw
+    // `astrologer_consultations` sums that used to feed these cards were GROSS
+    // (pre-20%-cut) and were rendered under the label "Paid out".
+    const ledger = await loadAstrologerLedger(userId);
+
     // Surface real bookings from raw-SQL astrologer_consultations table.
     // Safe-default empty arrays on table miss.
     let consultationsToday = 0;
-    let earningsTodayInr = 0;
-    let earningsMonthInr = 0;
-    let totalEarningsInr = 0;
     let upcomingSessions: unknown[] = [];
     try {
       if (astrologerIdValues.length > 0) {
@@ -85,26 +207,16 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
           idArray,
         );
         consultationsToday = Number(today[0]?.count ?? 0);
-        earningsTodayInr = Number(today[0]?.sum ?? 0);
 
-        const month = await prisma.$queryRawUnsafe<Array<{ sum: string | null }>>(
-          `SELECT COALESCE(SUM(amount_inr),0)::text AS sum
-           FROM astrologer_consultations
-           WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'
-             AND date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE)`,
-          idArray,
-        );
-        earningsMonthInr = Number(month[0]?.sum ?? 0);
-
-        const all = await prisma.$queryRawUnsafe<Array<{ sum: string | null }>>(
-          `SELECT COALESCE(SUM(amount_inr),0)::text AS sum
-           FROM astrologer_consultations
-           WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'`,
-          idArray,
-        );
-        totalEarningsInr = Number(all[0]?.sum ?? 0);
-
-        upcomingSessions = await prisma.$queryRawUnsafe<unknown[]>(
+        // AW-01 (2026-08-12, P0): the dashboard "Upcoming Sessions" panel was a
+        // hardcoded empty state, so this array was fetched and thrown away. It is
+        // now rendered — and the astrologer needs a way INTO the room, not just
+        // proof it exists, so derive the Jitsi URL here the way every other
+        // consultation endpoint does (routes/consultation.ts) rather than making
+        // the client reconstruct the meet.jit.si origin.
+        const upcomingRows = await prisma.$queryRawUnsafe<
+          Array<Record<string, unknown> & { room_name: string | null }>
+        >(
           `SELECT id, reference, user_id, minutes, amount_inr, scheduled_at, room_name, status, created_at
            FROM astrologer_consultations
            WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'
@@ -113,6 +225,10 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
            LIMIT 20`,
           idArray,
         );
+        upcomingSessions = upcomingRows.map((r) => ({
+          ...r,
+          jitsiUrl: r.room_name ? `https://meet.jit.si/${r.room_name}` : null,
+        }));
       }
     } catch (err) {
       server.log.warn({ err }, 'astrologer_consultations query failed (table may not exist yet)');
@@ -126,9 +242,16 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
         pricePerMinute: profile ? Number(profile.pricePerMinute) : 0,
         approved: profile?.approved ?? false,
         consultationsToday,
-        earningsTodayInr,
-        earningsMonthInr,
-        totalEarningsInr,
+        // All net (the astrologer's 80%), all from the Commission ledger.
+        earningsTodayInr: ledger.summary.todayEarningsInr,
+        earningsMonthInr: ledger.summary.monthEarningsInr,
+        totalEarningsInr: ledger.summary.totalEarningsInr,
+        // The paid/pending split the "Paid out" and "Pending payout" cards
+        // needed. `pending` used to be passed as literal null by the page, so
+        // "Pending payout" rendered as an em dash on every astrologer's screen.
+        paidOutInr: ledger.summary.paidInr,
+        pendingPayoutInr: ledger.summary.pendingInr,
+        astrologerShare: ledger.summary.astrologerShare,
         activeClients: upcomingSessions.length,
       },
       upcomingSessions,
@@ -144,6 +267,15 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     const parsed = profileUpdateSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    // PAR-13: this handler both reads and CREATES on the uuid-typed userId, so
+    // a non-UUID account id would throw P2023 on findUnique and again on create.
+    // There is no profile to read and none that could be written; say so.
+    if (!isUuid(userId)) {
+      return reply.code(409).send({
+        error:
+          'This account cannot own an astrologer profile. Sign in with a full Darshya account to edit your astrologer details.',
+      });
     }
     const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
     if (!existing) {
@@ -180,6 +312,15 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     const parsed = availabilityUpdateSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    // PAR-13: this handler both reads and CREATES on the uuid-typed userId, so
+    // a non-UUID account id would throw P2023 on findUnique and again on create.
+    // There is no profile to read and none that could be written; say so.
+    if (!isUuid(userId)) {
+      return reply.code(409).send({
+        error:
+          'This account cannot own an astrologer profile. Sign in with a full Darshya account to edit your astrologer details.',
+      });
     }
     const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
     if (!existing) {
@@ -250,57 +391,16 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     if (!roles.includes('ASTROLOGER')) {
       return reply.code(403).send({ error: 'ASTROLOGER role required' });
     }
-    const allRows = await prisma.commission.findMany({
-      where: { providerId: userId },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    // Commission has no source discriminator, and every provider role is keyed
-    // by User.id — so once the puja writers were corrected to use User.id
-    // (RV-04), a dual-role user's PUJA commissions started matching this query
-    // and rendering as consultation earnings. Exclude anything whose bookingId
-    // is a PujaBooking; what remains is this astrologer's consultations.
-    const candidateIds = allRows
-      .map((c) => c.bookingId)
-      .filter((id): id is string => !!id);
-    const pujaRows = candidateIds.length
-      ? await prisma.pujaBooking.findMany({
-          where: { id: { in: candidateIds } },
-          select: { id: true },
-        })
-      : [];
-    const pujaIds = new Set(pujaRows.map((p) => p.id));
-    const rows = allRows.filter((c) => !c.bookingId || !pujaIds.has(c.bookingId));
-    const data = rows.map((c) => {
-      // `amount` IS the provider's earning and `percentage` IS the platform's
-      // rate — see lib/commission-math.ts. This used to read `amount` as the
-      // platform cut and back-solve gross from it, which inverted every figure
-      // on this page the moment the puja writers were corrected. Derived
-      // figures now come from the shared helpers so no two readers disagree.
-      const earnings = new Prisma.Decimal(c.amount);
-      const gross = commissionGross(c.amount, c.percentage);
-      const platformCut = commissionPlatformCut(c.amount, c.percentage);
-      return {
-        id: c.id,
-        bookingId: c.bookingId,
-        status: c.status,
-        createdAt: c.createdAt,
-        grossAmountInr: gross.toNumber(),
-        platformCutInr: platformCut.toNumber(),
-        earningsInr: earnings.toNumber(),
-        astrologerShare: ASTROLOGER_SHARE,
-      };
-    });
-    const totalEarnings = data.reduce((s, r) => s + r.earningsInr, 0);
-    const pending = data.filter((r) => r.status === 'PENDING').reduce((s, r) => s + r.earningsInr, 0);
-    const paid = data.filter((r) => r.status === 'PAID').reduce((s, r) => s + r.earningsInr, 0);
+    // AW-04: shared with GET /dashboard. The two endpoints used to compute
+    // money independently and disagreed on screen; there is now one reader.
+    const { data, summary } = await loadAstrologerLedger(userId);
     return reply.send({
       data,
       summary: {
-        totalEarningsInr: Math.round(totalEarnings * 100) / 100,
-        pendingInr: Math.round(pending * 100) / 100,
-        paidInr: Math.round(paid * 100) / 100,
-        astrologerShare: ASTROLOGER_SHARE,
+        totalEarningsInr: summary.totalEarningsInr,
+        pendingInr: summary.pendingInr,
+        paidInr: summary.paidInr,
+        astrologerShare: summary.astrologerShare,
       },
     });
   });

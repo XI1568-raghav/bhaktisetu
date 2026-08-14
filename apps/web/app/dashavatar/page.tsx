@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Dashavatar — 10 Avatars of Vishnu | Darshya',
+  title: 'Dashavatar — 10 Avatars of Vishnu',
   description: 'The ten incarnations of Vishnu — Matsya, Kurma, Varaha, Narasimha, Vamana, Parashurama, Rama, Krishna, Buddha, Kalki. Yuga, purpose, demon slain, principal scripture.',
   alternates: { canonical: `${BASE_URL}/dashavatar` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Dashavatar — 10 Avatars of Vishnu',
     description: 'From the cosmic flood to the future-rider on a white horse — the ten Vishnu incarnations across the four yugas.',
     url: `${BASE_URL}/dashavatar`,

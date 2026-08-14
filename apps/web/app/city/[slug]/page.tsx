@@ -22,7 +22,7 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const c = getCity(slug);
-  if (!c) return { title: 'City — Darshya' };
+  if (!c) return { title: 'City' };
   return {
     title: `Pujas and temples in ${c.name} — verified pandits, video proof`,
     description: `Book online pujas in ${c.name}, ${c.state}. Famous temples: ${c.famousTemples.slice(0, 3).join(', ')}. ${c.popularPujas.length} pujas, verified pandits, video proof.`,

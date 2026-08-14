@@ -28,7 +28,6 @@ export default function CartDrawer() {
  itemCount,
  subtotal,
  deliveryFee,
- tax,
  total,
  removeItem,
  updateQuantity,
@@ -192,10 +191,6 @@ export default function CartDrawer() {
  <span className={deliveryFee === 0 ? 'text-tulsi-green font-medium' : ''}>
  {deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)}
  </span>
- </div>
- <div className="flex justify-between text-surface-500">
- <span>GST (est.)</span>
- <span>{formatPrice(tax)}</span>
  </div>
  <div className="flex justify-between text-surface-900 font-bold text-base pt-1.5 border-t border-surface-100">
  <span>Total</span>

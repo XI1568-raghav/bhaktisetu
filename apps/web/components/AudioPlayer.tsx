@@ -314,7 +314,7 @@ export default function AudioPlayer({
  className="flex-1 h-1.5 bg-surface-100 rounded-full cursor-pointer overflow-hidden"
  >
  <div
- className="h-full bg-saffron-500 rounded-full transition-[width] duration-100"
+ className="h-full bg-saffron-600 rounded-full transition-[width] duration-100"
  style={{ width: `${progress}%` }}
  />
  </div>

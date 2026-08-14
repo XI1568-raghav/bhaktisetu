@@ -490,7 +490,7 @@ export default function AdminLeadsPage() {
                   Queue for outreach
                 </button>
               </div>
-              <p className="text-[10px] text-surface-500">
+              <p className="text-xs text-surface-500">
                 Approve transitions status to CONVERTED + emails sign-in link. Reject emails a polite decline. Queue is internal-only (no email).
               </p>
             </div>

@@ -30,6 +30,7 @@ vi.mock('../routes/notifications.js', () => ({ notifyUser: notifyUserMock }));
 import {
   notifyDevotee,
   notifyRefundProcessed,
+  notifyVideoReady,
   sendBookingConfirmationEmail,
 } from './booking-notify.service.js';
 
@@ -183,10 +184,27 @@ describe('notifyRefundProcessed — RV-19', () => {
     });
   });
 
-  it('sends no email — refund.service already emails, so wiring this cannot duplicate one', async () => {
+  // NOTIF-04 (2026-08-12) CHANGED THIS CONTRACT. It used to be "never email",
+  // which was safe when the only caller-to-be was refund.service (it has its own
+  // refundSuccessEmail). But the OTHER rail — payment.service.processRefund, the
+  // admin panel's — sends no email at all, so a blanket no-email rule left every
+  // admin refund with zero written notice. The email is now conditional on the
+  // caller reporting whether it already sent one. What must still hold is the
+  // thing this test was really protecting: exactly one email per refund.
+  it('emails at most once per refund, whichever rail issued it', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(EMAILED_BOOKING as never);
-    await notifyRefundProcessed({ bookingId: 'bk-1', amountInr: '1100.50' });
+
+    // refund.service's rail: it already emailed.
+    await notifyRefundProcessed({
+      bookingId: 'bk-1',
+      amountInr: '1100.50',
+      emailAlreadySent: true,
+    });
     expect(sendEmailMock).not.toHaveBeenCalled();
+
+    // The admin rail: nobody emailed, so the notifier does — exactly once.
+    await notifyRefundProcessed({ bookingId: 'bk-1', amountInr: '1100.50' });
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
   });
 
   it('still announces the refund when the amount is unknown', async () => {
@@ -200,10 +218,192 @@ describe('notifyRefundProcessed — RV-19', () => {
 
   it('never throws — it is called after the refund transaction has committed', async () => {
     prismaMock.pujaBooking.findUnique.mockRejectedValue(new Error('db down'));
-    await expect(notifyRefundProcessed({ bookingId: 'bk-1', amountInr: '100' })).resolves.toBeUndefined();
+    await expect(
+      notifyRefundProcessed({ bookingId: 'bk-1', amountInr: '100' }),
+    ).resolves.toMatchObject({ delivered: false });
 
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null as never);
-    await expect(notifyRefundProcessed({ bookingId: 'nope', amountInr: '100' })).resolves.toBeUndefined();
+    await expect(
+      notifyRefundProcessed({ bookingId: 'nope', amountInr: '100' }),
+    ).resolves.toMatchObject({ delivered: false });
     expect(notifyUserMock).not.toHaveBeenCalled();
+  });
+
+  // NOTIF-04 (2026-08-12): the admin rail (payment.service.processRefund) sends
+  // NO email of its own, so for a refund issued there the notifier owns the
+  // written notice too. refund.service's own rail passes emailAlreadySent so it
+  // still cannot produce a duplicate.
+  it('sends the refund email when the caller has NOT already sent one', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(EMAILED_BOOKING as never);
+    await notifyRefundProcessed({ bookingId: 'bk-1', amountInr: '1100.50' });
+
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = sendEmailMock.mock.calls[0]![0] as unknown as { to: string; html: string };
+    expect(arg.to).toBe('anita@example.com');
+    expect(arg.html).toContain('₹1,100.50');
+  });
+
+  it('suppresses the email when the caller already sent one', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(EMAILED_BOOKING as never);
+    await notifyRefundProcessed({
+      bookingId: 'bk-1',
+      amountInr: '1100.50',
+      emailAlreadySent: true,
+    });
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+});
+
+// ── NOTIF-05: the video-proof notification ───────────────────────────────────
+
+describe('notifyVideoReady — NOTIF-05', () => {
+  it('sends the email the confirmation email promises in writing', async () => {
+    // lib/email.ts:146 tells every paying devotee: "You'll receive an email
+    // when the recording is ready." No such template existed.
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...EMAILED_BOOKING,
+      videoProofUrl: 'https://r2.example.com/proof.mp4',
+    } as never);
+
+    const out = await notifyVideoReady('bk-1');
+
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = sendEmailMock.mock.calls[0]![0] as unknown as {
+      to: string;
+      subject: string;
+      html: string;
+      text: string;
+    };
+    expect(arg.to).toBe('anita@example.com');
+    for (const body of [arg.html, arg.text]) {
+      expect(body).toContain('Rudrabhishek');
+      expect(body).toContain('BS-20260810-ABCDE');
+    }
+    expect(out.email).toBe('sent');
+  });
+
+  it('fires the puja_video_ready WhatsApp template — the NRI promise is WhatsApp', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...EMAILED_BOOKING,
+      videoProofUrl: 'https://r2.example.com/proof.mp4',
+    } as never);
+
+    await notifyVideoReady('bk-1');
+
+    expect(sendWhatsappTemplateMock).toHaveBeenCalledTimes(1);
+    expect(sendWhatsappTemplateMock.mock.calls[0]![0]).toMatchObject({
+      to: '+919000000001',
+      template: 'puja_video_ready',
+    });
+  });
+
+  it('reaches a phone-only devotee — no email address is not a dead end', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...PHONE_ONLY_BOOKING,
+      videoProofUrl: 'https://r2.example.com/proof.mp4',
+    } as never);
+
+    const out = await notifyVideoReady('bk-1');
+
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(out.email).toBe('no-target');
+    expect(sendWhatsappTemplateMock).toHaveBeenCalledTimes(1);
+    expect(notifyUserMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('never throws — it is called fire-and-forget after the proof is stored', async () => {
+    prismaMock.pujaBooking.findUnique.mockRejectedValue(new Error('db down'));
+    await expect(notifyVideoReady('bk-1')).resolves.toMatchObject({ delivered: false });
+
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(null as never);
+    await expect(notifyVideoReady('nope')).resolves.toMatchObject({ delivered: false });
+  });
+});
+
+// ── NOTIF-03 honesty: channels are UNCONFIGURED in this environment ──────────
+//
+// Resend, the WhatsApp BSP and VAPID all lack credentials (owner-gated). Every
+// integration here is env-or-noop by convention, so a send becomes a silent
+// {skipped:true}. The failure mode that produced NOTIF-04 is not "the channel
+// was down" — it is that nothing anywhere could tell you the devotee heard
+// nothing. These lock the honesty contract: report per channel, never count a
+// skip as a send, and make a total miss visible in the log.
+
+describe('delivery reporting — never claim delivery on an unconfigured channel', () => {
+  const VIDEO_BOOKING = {
+    ...EMAILED_BOOKING,
+    videoProofUrl: 'https://r2.example.com/proof.mp4',
+  };
+
+  it('reports a skip as a skip, not a send, when every channel is unconfigured', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(VIDEO_BOOKING as never);
+    // Exactly what the libs return with no credentials set.
+    notifyUserMock.mockResolvedValue(0);
+    sendWhatsappTemplateMock.mockResolvedValue({ ok: false, skipped: true });
+    sendEmailMock.mockResolvedValue({ ok: false, skipped: true });
+
+    const out = await notifyVideoReady('bk-1');
+
+    expect(out).toMatchObject({
+      push: 'skipped',
+      whatsapp: 'skipped',
+      email: 'skipped',
+      delivered: false,
+    });
+  });
+
+  it('logs an UNDELIVERED marker so a devotee who heard nothing is visible in the log', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(PHONE_ONLY_BOOKING as never);
+    notifyUserMock.mockResolvedValue(0);
+    sendWhatsappTemplateMock.mockResolvedValue({ ok: false, skipped: true });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await notifyRefundProcessed({ bookingId: 'bk-1', amountInr: '1100.50' });
+
+    const logged = warn.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(logged).toContain('[booking-notify][UNDELIVERED]');
+    expect(logged).toContain('bk-1');
+    expect(logged).toContain('refund');
+    warn.mockRestore();
+  });
+
+  it('stays quiet when a channel really did deliver', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(PHONE_ONLY_BOOKING as never);
+    notifyUserMock.mockResolvedValue(0);
+    sendWhatsappTemplateMock.mockResolvedValue({ ok: true, messageId: 'wamid.1' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const out = await notifyRefundProcessed({ bookingId: 'bk-1', amountInr: '1100.50' });
+
+    expect(out).toMatchObject({ whatsapp: 'sent', delivered: true });
+    const logged = warn.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(logged).not.toContain('[booking-notify][UNDELIVERED]');
+    warn.mockRestore();
+  });
+
+  it('distinguishes a transport failure from an unconfigured channel', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(PHONE_ONLY_BOOKING as never);
+    notifyUserMock.mockRejectedValue(new Error('vapid blew up'));
+    sendWhatsappTemplateMock.mockResolvedValue({ ok: false, error: 'HTTP 500' });
+
+    const out = await notifyRefundProcessed({ bookingId: 'bk-1', amountInr: '100' });
+
+    expect(out).toMatchObject({ push: 'failed', whatsapp: 'failed', delivered: false });
+  });
+
+  it('reports no-target rather than a skip when there is nothing to send to', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      ...EMAILED_BOOKING,
+      user: { id: null, fullName: 'Nobody', email: null, phone: null },
+    } as never);
+
+    const out = await notifyVideoReady('bk-1');
+
+    expect(out).toMatchObject({
+      push: 'no-target',
+      whatsapp: 'no-target',
+      email: 'no-target',
+      delivered: false,
+    });
   });
 });

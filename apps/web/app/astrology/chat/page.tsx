@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  ChevronLeft,
  Send,
@@ -332,7 +333,7 @@ How may I guide you today?`,
  <Sparkles className="w-3.5 h-3.5 text-saffron-600" />
  <span className="text-xs font-bold text-saffron-700 uppercase tracking-wider">Free AI Consultation</span>
  </div>
- <h1 className="text-3xl md:text-4xl font-bold text-surface-800 mb-3">
+ <h1 className={`${H1.catalogue} mb-3`}>
  AI Vedic Astrologer
  </h1>
  <p className="text-surface-500 max-w-xl mx-auto">
@@ -478,7 +479,7 @@ How may I guide you today?`,
  </div>
  <div>
  <h1 className="text-base font-semibold text-surface-800">AI Astrologer</h1>
- <p className="text-[10px] text-surface-400">Vedic Jyotish guidance</p>
+ <p className="text-xs text-surface-400">Vedic Jyotish guidance</p>
  </div>
  </div>
  </div>
@@ -512,10 +513,10 @@ How may I guide you today?`,
  {msg.role === 'assistant' && (
  <div className="flex items-center gap-1.5 mb-2 flex-wrap">
  <Star className="w-3.5 h-3.5 text-saffron-500" />
- <span className="text-[10px] font-semibold text-saffron-600 uppercase tracking-wider">AI Astrologer</span>
+ <span className="text-xs font-semibold text-saffron-600 uppercase tracking-wider">AI Astrologer</span>
  {msg.source && (
  <span
- className={`text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider border ${
+ className={`text-xs font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider border ${
  msg.source === 'llm-grounded'
  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
  : msg.source === 'llm'
@@ -550,7 +551,7 @@ How may I guide you today?`,
  }`}>
  {formatMarkdown(msg.content)}
  </div>
- <p className={`text-[10px] mt-2 ${
+ <p className={`text-xs mt-2 ${
  msg.role === 'user' ? 'text-white/60' : 'text-surface-400'
  }`}>
  {msg.timestamp}
@@ -601,7 +602,7 @@ How may I guide you today?`,
  )}
  </button>
  </div>
- <p className="text-center text-[10px] text-surface-400 mt-2">
+ <p className="text-center text-xs text-surface-400 mt-2">
  AI Astrologer provides guidance based on Vedic Jyotish principles. For life decisions, consult a qualified astrologer.
  </p>
  </div>

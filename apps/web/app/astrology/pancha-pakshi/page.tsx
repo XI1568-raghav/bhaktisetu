@@ -8,11 +8,12 @@ const BASE_URL = 'https://darshya.online';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
- title: 'Pancha Pakshi Shastra — Tamil Siddhar 5-Bird Astrology | Free | Darshya',
+ title: 'Pancha Pakshi Shastra — Tamil Siddhar 5-Bird Astrology | Free',
  description:
   'Free Pancha Pakshi Sastra calculator — ancient Tamil Siddhar 5-bird system. Find your ruling bird (Vulture / Owl / Crow / Cock / Peacock) by birth nakshatra. Get personality, lucky days, compatible birds, careers, mantra + remedy. 5 daily activities (Rules / Eats / Walks / Sleeps / Dies) explained. Per S.M. Manuswamy & Tamil Siddhar tradition.',
  alternates: { canonical: `${BASE_URL}/astrology/pancha-pakshi` },
  openGraph: {
+  images: ['/images/golden-temple-og.jpg'],
   title: 'Pancha Pakshi Shastra — Tamil 5-Bird Astrology',
   description: 'Which Pakshi rules you? Vulture / Owl / Crow / Cock / Peacock — find your bird by nakshatra.',
   url: `${BASE_URL}/astrology/pancha-pakshi`,

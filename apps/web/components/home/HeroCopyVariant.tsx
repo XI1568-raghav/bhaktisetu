@@ -1,6 +1,7 @@
 'use client';
 
 import { useExperiment } from '../../lib/experiments';
+import { H1 } from '../ui/heading-recipe';
 
 /**
  * A/B experiment: hero_copy_v2
@@ -60,8 +61,8 @@ export default function HeroCopyVariant({
     <div data-experiment="hero_copy_v2" data-variant={variant}>
       <h1
         data-reveal="cinematic"
-        className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]"
-        style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+        className={H1.marketing}
+        style={{ color: 'var(--color-text)' }}
       >
         {copy.title1}{' '}
         <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>

@@ -7,10 +7,11 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Patanjali Yoga Sutras — 4 Padas, 196 Sutras, Ashtanga Yoga | Darshya',
+  title: 'Patanjali Yoga Sutras — 4 Padas, 196 Sutras, Ashtanga Yoga',
   description: '196 sutras of Patanjali in 4 padas — Samadhi, Sadhana, Vibhuti, Kaivalya. The classical eight-limbed (ashtanga) path: yama, niyama, asana, pranayama, pratyahara, dharana, dhyana, samadhi.',
   alternates: { canonical: `${BASE_URL}/yoga-sutras` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Patanjali Yoga Sutras — 4 Padas, 196 Sutras',
     description: 'The foundational text of Yoga darshana — Patanjali’s eight-limbed path to kaivalya.',
     url: `${BASE_URL}/yoga-sutras`,

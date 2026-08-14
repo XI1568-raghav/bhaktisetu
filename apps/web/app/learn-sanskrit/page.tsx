@@ -3,6 +3,7 @@ import { getAllLessons } from '../../lib/sanskrit-lessons-catalog';
 import LessonCard from '../../components/LessonCard';
 
 export const metadata: Metadata = {
+  alternates: { canonical: 'https://darshya.online/learn-sanskrit' },
   title: 'Learn Sanskrit — Lessons, Streaks, Badges',
   description: 'Bite-sized Sanskrit lessons with quizzes. Build a daily streak. Earn badges as you progress from Devanagari basics to classical grammar.',
 };

@@ -39,7 +39,7 @@ function Card({
         >
           <div className="flex-1 min-w-0 pr-8 sm:pr-0">
             <p
-              className="text-[11px] font-medium uppercase tracking-widest mb-1"
+              className="text-xs font-medium uppercase tracking-widest mb-1"
               style={{ color: 'var(--color-primary)' }}
             >
               Continue your journey

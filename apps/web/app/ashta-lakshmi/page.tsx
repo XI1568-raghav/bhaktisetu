@@ -7,11 +7,12 @@ export const revalidate = 86400;
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'Ashta Lakshmi — 8 Forms of Goddess Lakshmi (Mantras, Vahana, Vrata) | Darshya',
+  title: 'Ashta Lakshmi — 8 Forms of Goddess Lakshmi (Mantras, Vahana, Vrata)',
   description:
     'All 8 manifestations of Lakshmi per Lakshmi Tantra: Adi, Dhana, Dhanya, Gaja, Santana, Veera, Vijaya, Vidya. Each form\'s domain, beej + primary mantra in Devanagari, vahana, color, best day, signature festival, vrata practice and associated temple.',
   alternates: { canonical: `${BASE_URL}/ashta-lakshmi` },
   openGraph: {
+    images: ['/images/golden-temple-og.jpg'],
     title: 'Ashta Lakshmi — 8 forms of Goddess Lakshmi',
     description: 'Mantras, vahana, vrata and best-day for all 8 Lakshmi manifestations.',
     url: `${BASE_URL}/ashta-lakshmi`,

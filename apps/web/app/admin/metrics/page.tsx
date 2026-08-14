@@ -100,7 +100,7 @@ export default function MetricsPage() {
         <button
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-saffron-500 text-white text-sm font-medium hover:bg-saffron-600 disabled:opacity-50"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-saffron-600 text-white text-sm font-medium hover:bg-saffron-700 disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Refresh

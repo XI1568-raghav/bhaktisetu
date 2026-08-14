@@ -421,7 +421,7 @@ export async function generateMetadata({
  if (!stream) {
  const name = humanizeSlug(id);
  return {
- title: `${name} — Live Darshan Coming Soon | Darshya`,
+ title: `${name} — Live Darshan Coming Soon`,
  description: `Live darshan from ${name} is not yet available on Darshya. Browse 16 active temple streams or request this temple.`,
  robots: { index: false, follow: true },
  };
@@ -434,6 +434,7 @@ export async function generateMetadata({
  description,
  alternates: { canonical: url },
  openGraph: {
+ images: ['/images/golden-temple-og.jpg'],
  title,
  description,
  url,
@@ -533,7 +534,7 @@ export default async function DarshanDetailPage({
  <div className="flex items-center gap-2 mt-1">
  <span className="text-xs text-surface-600">{s.temple.deityPrimary}</span>
  {s.status === 'live' && (
- <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400">
+ <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400">
  <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
  LIVE
  </span>
@@ -623,7 +624,10 @@ export default async function DarshanDetailPage({
  templeName={stream.temple.name}
  templeSlug={stream.temple.slug}
  isLive={isLive}
- viewerCount={stream.viewerCount}
+ // DF-10: 0 rather than the fabricated fallback figure. The player
+ // renders its counter only when the count is positive, so this hides
+ // the badge instead of printing a zero.
+ viewerCount={0}
  isPremium={stream.isPremium}
  currentEvent={isLive ? 'Live Darshan' : undefined}
  scheduledStart={stream.scheduledStart}
@@ -646,12 +650,13 @@ export default async function DarshanDetailPage({
  {stream.temple.city}
  </span>
  <span>{stream.temple.deityPrimary}</span>
- {isLive && (
- <span className="flex items-center gap-1 text-red-400">
- <Users className="w-4 h-4" />
- {stream.viewerCount.toLocaleString('en-IN')} watching
- </span>
- )}
+ {/* DF-10 (prod sweep 2026-08-12): this printed
+   "{viewerCount} watching" from a literal in the fallback library
+   below — 12,450 for Kashi. Nothing on this page measures the
+   audience; the YouTube embed exposes no viewer API to us, and the
+   real count is visible inside the player itself, where anyone can
+   read it and see it disagree. Restore when the YouTube Data API is
+   wired and the number is sourced. */}
  </div>
  </div>
  <div className="hidden sm:flex items-center gap-4 shrink-0">
@@ -698,22 +703,9 @@ export default async function DarshanDetailPage({
  )}
  </div>
  </div>
- <div>
- <div className="text-xs text-surface-500 font-medium uppercase">
- Peak Viewers
- </div>
- <div className="text-sm font-semibold text-white mt-1">
- {stream.peakViewers.toLocaleString('en-IN')}
- </div>
- </div>
- <div>
- <div className="text-xs text-surface-500 font-medium uppercase">
- Quality
- </div>
- <div className="text-sm font-semibold text-white mt-1">
- HD 1080p
- </div>
- </div>
+ {/* DF-10: "PEAK VIEWERS 24,000" and "QUALITY HD 1080p" were both
+   literals. Neither is measured anywhere — the stream's resolution is
+   whatever the temple's own broadcast is, which this page never reads. */}
  </div>
  </div>
 
@@ -798,7 +790,7 @@ export default async function DarshanDetailPage({
  ))}
  </div>
  {aartiSchedule && (
- <p className="mt-3 text-[11px] text-surface-500">
+ <p className="mt-3 text-xs text-surface-500">
  Schedule shown in IST. Slots auto-classify based on current Indian Standard Time.
  </p>
  )}
@@ -907,7 +899,7 @@ export default async function DarshanDetailPage({
  {temple.deity}
  </span>
  {temple.isLive && (
- <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400">
+ <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400">
  <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
  LIVE
  </span>

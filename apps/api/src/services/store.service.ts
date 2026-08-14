@@ -1,3 +1,5 @@
+import { commonsThumb } from '../lib/commons-thumb.js';
+
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 export interface Product {
@@ -63,12 +65,21 @@ export interface ProductsParams {
 
 // ─── Image Helper ────────────────────────────────────────────────────
 // Accepts either an Unsplash photo ID (legacy) or a full URL (Wikimedia /
-// other CDN). Wikimedia and other absolute URLs pass through unchanged.
+// other CDN).
+//
+// COM-18 (prod sweep 2026-08-12): absolute Wikimedia URLs used to pass through
+// unchanged, which meant this catalogue handed out 4-6 MB Commons ORIGINALS
+// (Rudraksha_mala.jpg = 5,728,036 B measured live) for a 600x600 card — to a
+// buyer on 4G in India. The Unsplash branch below was always correctly sized;
+// only the Commons set was oversized. Every absolute URL now goes through
+// commonsThumb, which rewrites Commons URLs to a ladder-width /thumb/ variant
+// and leaves every other host untouched.
+const PRODUCT_IMAGE_WIDTH = 600;
 
 function img(photoIdOrUrl: string, alt: string): { url: string; alt: string } {
   const isAbsolute = photoIdOrUrl.startsWith('http://') || photoIdOrUrl.startsWith('https://');
   const url = isAbsolute
-    ? photoIdOrUrl
+    ? commonsThumb(photoIdOrUrl, PRODUCT_IMAGE_WIDTH)
     : `https://images.unsplash.com/${photoIdOrUrl}?w=600&h=600&fit=crop&auto=format&q=80`;
   return { url, alt };
 }

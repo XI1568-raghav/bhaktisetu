@@ -21,6 +21,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { friendlyApiError } from '../../../lib/friendly-error';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -80,7 +81,7 @@ type PaymentMethod = 'razorpay' | 'cod';
 function CheckoutContent() {
  const router = useRouter();
  const { user, session } = useAuth();
- const { items, itemCount, subtotal, deliveryFee, tax, total, clearCart } = useCart();
+ const { items, itemCount, subtotal, deliveryFee, total, clearCart } = useCart();
 
  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
  const [addressesLoading, setAddressesLoading] = useState(true);
@@ -145,8 +146,15 @@ function CheckoutContent() {
  <p className="text-surface-500 mb-6">
  Thank you for your order. You will receive a confirmation soon.
  </p>
+ {/* S-11: this used to fall back to an order number built from the
+ browser clock — a reference
+ invented from the browser clock that matches nothing in the system, so
+ support could never find the order the customer quoted. Show the real
+ number or say plainly that it is pending. */}
  <p className="text-sm text-surface-400 mb-6">
- Order ID: {orderNumber ?? `ORD-${Date.now().toString().slice(-8)}`}
+ {orderNumber
+ ? `Order ID: ${orderNumber}`
+ : 'Your confirmation is on its way by email with the order number.'}
  </p>
  <div className="space-y-3">
  <Link
@@ -155,8 +163,10 @@ function CheckoutContent() {
  >
  Continue Shopping
  </Link>
+ {/* COM-09: /bookings has no store orders — the buyer had no way to look
+ an order up after paying. Point at the real order history. */}
  <Link
- href="/bookings"
+ href="/store/orders"
  className="w-full flex items-center justify-center gap-2 py-2.5 text-saffron-600 font-medium text-sm"
  >
  View My Orders
@@ -217,8 +227,20 @@ function CheckoutContent() {
  }),
  });
  if (!res.ok) {
+ // S-10: the raw response body used to be rendered to the customer,
+ // truncated mid-word at 120 chars, at the highest-intent moment in the
+ // funnel. Log it, show human copy.
  const txt = await res.text().catch(() => '');
- throw new Error(`Order failed (${res.status}) ${txt.slice(0, 120)}`);
+ console.error('[checkout] POST /store/orders failed', res.status, txt);
+ if (res.status === 409) {
+ // COM-06: the API refuses when our displayed total disagrees with its
+ // own. Tell the customer to re-check rather than silently charging a
+ // different number.
+ throw new Error(
+ 'PRICE_CHANGED: Prices in your cart have changed. Please review your order total and try again.',
+ );
+ }
+ throw new Error(`Order failed (${res.status})`);
  }
  const json = (await res.json()) as { data?: { id?: string; orderNumber?: string } };
  const storeOrderId = json.data?.id ?? null;
@@ -248,7 +270,8 @@ function CheckoutContent() {
  );
  if (!rzpRes.ok) {
  const txt = await rzpRes.text().catch(() => '');
- throw new Error(`Could not start payment (${rzpRes.status}) ${txt.slice(0, 120)}`);
+ console.error('[checkout] razorpay order failed', rzpRes.status, txt);
+ throw new Error(`Could not start payment (${rzpRes.status})`);
  }
  const rzpOrder = (await rzpRes.json()) as {
  orderId: string;
@@ -293,7 +316,7 @@ function CheckoutContent() {
  name: user?.fullName ?? '',
  email: user?.email ?? '',
  },
- theme: { color: '#E16318' },
+ theme: { color: '#9e6229' },
  modal: {
  ondismiss: () => reject(new Error('Payment cancelled')),
  },
@@ -321,8 +344,18 @@ function CheckoutContent() {
  rzp.open();
  });
  } catch (err) {
- const msg = err instanceof Error ? err.message : 'Could not place order';
- setPlaceError(msg);
+ // S-10: map to human copy. Two messages are ours and already
+ // customer-ready — the price-change notice and an explicit cancellation —
+ // everything else goes through the shared friendly-error mapper so no
+ // status code or backend string ever reaches the screen.
+ const raw = err instanceof Error ? err.message : '';
+ if (raw.startsWith('PRICE_CHANGED: ')) {
+ setPlaceError(raw.slice('PRICE_CHANGED: '.length));
+ } else if (/payment cancelled/i.test(raw)) {
+ setPlaceError('Payment was cancelled. Your cart is still saved.');
+ } else {
+ setPlaceError(friendlyApiError(err).message);
+ }
  } finally {
  setPlacing(false);
  }
@@ -350,7 +383,8 @@ function CheckoutContent() {
  );
  if (!verifyRes.ok) {
  const txt = await verifyRes.text().catch(() => '');
- throw new Error(`Payment verification failed (${verifyRes.status}) ${txt.slice(0, 120)}`);
+ console.error('[checkout] payment verify failed', verifyRes.status, txt);
+ throw new Error(`Payment verification failed (${verifyRes.status})`);
  }
  }
 
@@ -537,10 +571,6 @@ function CheckoutContent() {
  <span className={deliveryFee === 0 ? 'text-tulsi-green font-medium' : ''}>
  {deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)}
  </span>
- </div>
- <div className="flex justify-between text-surface-500">
- <span>GST (est.)</span>
- <span>{formatPrice(tax)}</span>
  </div>
  <div className="border-t border-surface-100 pt-2 flex justify-between">
  <span className="font-bold text-surface-800 text-base">Total</span>

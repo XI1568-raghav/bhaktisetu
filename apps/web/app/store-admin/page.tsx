@@ -402,7 +402,7 @@ export default function StoreAdminDashboard() {
              </div>
              <p className="text-xl font-bold text-surface-800">{card.value}</p>
              <p className="text-xs text-surface-500 mt-0.5">{card.label}</p>
-             <p className="text-[10px] text-surface-400">{card.sub}</p>
+             <p className="text-xs text-surface-400">{card.sub}</p>
            </div>
          );
        })}

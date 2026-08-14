@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { buttonClass } from '../../../components/ui/button-recipe';
 import Link from 'next/link';
 import { useTranslations } from '../../../lib/t';
 import {
@@ -303,14 +304,21 @@ export default function LoginPage() {
     <div className="shadow-warm overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
       {/* Header */}
       <div className="border-b border-[var(--color-border)] bg-[#ede9e3] px-6 py-8 text-center">
-        <div className="mb-2 flex items-center justify-center gap-2">
-          <div className="bg-saffron-600/15 flex h-7 w-7 items-center justify-center rounded-lg">
-            <Flame className="text-saffron-600 h-4 w-4" />
-          </div>
+        {/* A11Y-15 / DU-05: /auth/login shipped with h1Count=0 - no heading
+            of any level anywhere on the page - so the heading rotor had no
+            entry for "this is the sign-in page" and search engines saw no
+            title. The lockup is unchanged pixel-for-pixel; it is now the
+            h1, and the purpose is appended for AT instead of being
+            duplicated on screen. */}
+        <h1 className="mb-2 flex items-center justify-center gap-2">
+          <span className="bg-saffron-600/15 flex h-7 w-7 items-center justify-center rounded-lg">
+            <Flame className="text-saffron-600 h-4 w-4" aria-hidden="true" />
+          </span>
           <span className="text-surface-800 text-xl font-semibold tracking-tight">
             Darsh<span className="text-saffron-600">ya</span>
           </span>
-        </div>
+          <span className="sr-only">{step === 'otp' ? '\u2014 verify code' : '\u2014 sign in'}</span>
+        </h1>
         <p className="text-surface-500 text-sm">
           {step === 'otp' ? t('otpLabel') : t('loginSubtitle')}
         </p>
@@ -380,7 +388,7 @@ export default function LoginPage() {
             <button
               onClick={handleVerifyOtp}
               disabled={isSubmitting || otp.join('').length !== 6}
-              className="bg-saffron-600 hover:bg-saffron-700 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
             >
               {isSubmitting ? (
                 <>
@@ -504,7 +512,9 @@ export default function LoginPage() {
                     <input
                       ref={emailInputRef}
                       id="email"
+                      name="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -527,9 +537,13 @@ export default function LoginPage() {
                     {/* A-002: the only entry point to password recovery. Without
                         it the reset pages exist but are unreachable, which is
                         the state the whole product was in until 2026-08-11. */}
+                    {/* RESP-07: measured 89.2x14.8 at 390px — the account
+                        recovery path, a third of a fingertip tall. `.tap-safe`
+                        grows the hit box to 44px and cancels it back out with
+                        negative margin, so the label row does not move. */}
                     <Link
                       href="/auth/forgot-password"
-                      className="text-saffron-700 hover:text-saffron-800 text-xs font-medium"
+                      className="text-saffron-700 hover:text-saffron-800 tap-safe text-xs font-medium"
                     >
                       Forgot password?
                     </Link>
@@ -538,7 +552,9 @@ export default function LoginPage() {
                     <Lock className="text-surface-400 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <input
                       id="password"
+                      name="password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       placeholder="Enter password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -550,6 +566,8 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
                       className="text-surface-400 hover:text-surface-600 absolute top-1/2 right-3 -translate-y-1/2"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -560,7 +578,7 @@ export default function LoginPage() {
                 <button
                   onClick={handleEmailLogin}
                   disabled={isSubmitting}
-                  className="bg-saffron-600 hover:bg-saffron-700 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
                 >
                   {isSubmitting ? (
                     <>
@@ -608,10 +626,10 @@ export default function LoginPage() {
                           }}
                           className="group flex items-center justify-between gap-2 rounded-md border border-amber-200 bg-white px-2.5 py-1.5 text-left transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <span className="text-surface-700 truncate text-[11px] font-medium">
+                          <span className="text-surface-700 truncate text-xs font-medium">
                             {acc.role}
                           </span>
-                          <span className="text-saffron-600 group-hover:text-saffron-700 shrink-0 text-[10px] font-semibold">
+                          <span className="text-saffron-600 group-hover:text-saffron-700 shrink-0 text-xs font-semibold">
                             Sign in →
                           </span>
                         </button>
@@ -658,7 +676,7 @@ export default function LoginPage() {
                 <button
                   onClick={handleSendOtp}
                   disabled={isSubmitting || phone.replace(/\D/g, '').length !== 10}
-                  className="bg-saffron-600 hover:bg-saffron-700 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
                 >
                   {isSubmitting ? (
                     <>

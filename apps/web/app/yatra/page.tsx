@@ -211,18 +211,18 @@ export default function YatraHubPage() {
  <img src={y.heroImage} alt={y.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
  {y.helicopterAvailable && (
- <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-white/90 backdrop-blur text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ color: 'var(--color-primary)' }}>
+ <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-white/90 backdrop-blur text-xs font-medium px-2 py-0.5 rounded-full" style={{ color: 'var(--color-primary)' }}>
  <Plane className="w-2.5 h-2.5" /> Heli option
  </div>
  )}
  <div className="absolute bottom-3 left-3 right-3">
  <h3 className="text-base font-semibold text-white tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>{y.title}</h3>
- <p className="text-[11px] text-white/80 mt-0.5">{y.subtitle}</p>
+ <p className="text-xs text-white/80 mt-0.5">{y.subtitle}</p>
  </div>
  </div>
 
  <div className="p-4 flex flex-col flex-1">
- <div className="flex items-center gap-3 text-[11px] mb-2.5" style={{ color: 'var(--color-text-muted)' }}>
+ <div className="flex items-center gap-3 text-xs mb-2.5" style={{ color: 'var(--color-text-muted)' }}>
  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {y.durationDays} days</span>
  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {y.places.length} stops</span>
  <span className="flex items-center gap-1"><Compass className="w-3 h-3" /> {y.region}</span>
@@ -234,7 +234,7 @@ export default function YatraHubPage() {
 
  <div className="mt-3 flex flex-wrap gap-1">
  {y.tags.slice(0, 3).map((t) => (
- <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>
+ <span key={t} className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>
  {t}
  </span>
  ))}
@@ -242,10 +242,10 @@ export default function YatraHubPage() {
 
  <div className="mt-auto pt-4 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-divider)' }}>
  <div>
- <p className="text-[10px]" style={{ color: 'var(--color-text-faint)' }}>Starts from</p>
- <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(y.startingPrice)} <span className="text-[10px] font-normal" style={{ color: 'var(--color-text-muted)' }}>/ person</span></p>
+ <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>Starts from</p>
+ <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(y.startingPrice)} <span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>/ person</span></p>
  </div>
- <div className="flex items-center gap-1 text-[11px] font-medium group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
+ <div className="flex items-center gap-1 text-xs font-medium group-hover:gap-2 transition-all" style={{ color: 'var(--color-primary)' }}>
  View details <ArrowRight className="w-3 h-3" />
  </div>
  </div>
@@ -288,7 +288,7 @@ export default function YatraHubPage() {
  <div key={f.t} className="p-4 rounded-xl" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <f.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{f.t}</p>
- <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{f.s}</p>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{f.s}</p>
  </div>
  ))}
  </div>
@@ -331,28 +331,28 @@ function HeroBento() {
  <div className="col-span-2 row-span-2 rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
  <img src={flagship.heroImage} alt="Char Dham" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
- <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-saffron-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+ <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-saffron-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
  <Sparkles className="w-2.5 h-2.5" /> FLAGSHIP
  </div>
  <div className="absolute bottom-3 left-3 right-3">
  <p className="text-sm font-semibold text-white">{flagship.title}</p>
- <p className="text-[10px] text-white/70">{flagship.durationDays} days • Himalayas • From {formatINR(flagship.startingPrice)}</p>
+ <p className="text-xs text-white/70">{flagship.durationDays} days • Himalayas • From {formatINR(flagship.startingPrice)}</p>
  </div>
  </div>
  <div className="rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
  <img src={amarnath.heroImage} alt="Amarnath" className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
  <div className="absolute bottom-2 left-2 right-2">
- <p className="text-[11px] font-semibold text-white">Amarnath</p>
- <p className="text-[9px] text-white/70">{amarnath.durationDays} days</p>
+ <p className="text-xs font-semibold text-white">Amarnath</p>
+ <p className="text-xs text-white/70">{amarnath.durationDays} days</p>
  </div>
  </div>
  <div className="rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
  <img src={tirupati.heroImage} alt="Tirupati" className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
  <div className="absolute bottom-2 left-2 right-2">
- <p className="text-[11px] font-semibold text-white">Tirupati</p>
- <p className="text-[9px] text-white/70">{tirupati.durationDays} days</p>
+ <p className="text-xs font-semibold text-white">Tirupati</p>
+ <p className="text-xs text-white/70">{tirupati.durationDays} days</p>
  </div>
  </div>
  </div>

@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ parva: st
   const p = getParva(parva);
   if (!p) return { title: 'Not found' };
   return {
-    title: `Mahabharata ${p.english} (${p.sanskrit}) — Parva ${p.number} Summary, Episodes | Darshya`,
+    title: `Mahabharata ${p.english} (${p.sanskrit}) — Parva ${p.number} Summary, Episodes`,
     description: `${p.english} — Parva ${p.number} of the Mahabharata in ${p.adhyayaCount} adhyayas. ${p.summary.slice(0, 140)}`,
     alternates: { canonical: `${BASE_URL}/mahabharata/${p.slug}` },
     openGraph: {
+      images: ['/images/golden-temple-og.jpg'],
       title: `Mahabharata Parva ${p.number}: ${p.english}`,
       description: p.summary.slice(0, 160),
       url: `${BASE_URL}/mahabharata/${p.slug}`,

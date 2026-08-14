@@ -12,19 +12,29 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { api, useCows } from '@poojly/api-client';
+import { api } from '@poojly/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
+import { selectPortalCows } from '../../lib/api-contracts';
+import { useGaushalaPortalCows, portalQueryKeys } from '../../lib/portal-queries';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-const FALLBACK = [
-  { id: '1', name: 'Lakshmi', breed: 'Gir', age: 6, health: 'Healthy', adoptionStatus: 'Adopted' },
-  { id: '2', name: 'Nandini', breed: 'Sahiwal', age: 4, health: 'Healthy', adoptionStatus: 'Available' },
-  { id: '3', name: 'Kamadhenu', breed: 'Tharparkar', age: 8, health: 'Recovering', adoptionStatus: 'Available' },
-  { id: '4', name: 'Surabhi', breed: 'Gir', age: 3, health: 'Healthy', adoptionStatus: 'Adopted' },
-  { id: '5', name: 'Ganga', breed: 'Red Sindhi', age: 7, health: 'Senior care', adoptionStatus: 'Available' },
-  { id: '6', name: 'Yamuna', breed: 'Gir', age: 5, health: 'Healthy', adoptionStatus: 'Adopted' },
-];
+/**
+ * PAR-12. The list read the PUBLIC GET /api/v1/gaushala/cows — 19 cows across
+ * all five seeded gaushalas — so a manager saw a herd they do not own, with
+ * other people's adoption status and health records, while Register Cow POSTed
+ * to the SCOPED /api/v1/gaushala-portal/cows. Every cow they added went into a
+ * collection this screen never read and silently vanished; adoption revenue
+ * was attributed against the wrong herd.
+ *
+ * Both ends now use the scoped route, and the create invalidates exactly the
+ * key the list is registered under (the old code invalidated
+ * ['gaushala','cows'], which is the public query).
+ *
+ * The six-row FALLBACK herd (Lakshmi, Nandini, Kamadhenu…) is deleted. An
+ * empty registry now reads as empty: inventing livestock that a donor can
+ * sponsor is not a placeholder.
+ */
 
 type CreateCowForm = {
   tagNumber: string;
@@ -47,15 +57,14 @@ const EMPTY_FORM: CreateCowForm = {
 };
 
 export default function GaushalaCows() {
-  const cowsQuery = useCows();
+  const cowsQuery = useGaushalaPortalCows();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CreateCowForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
-  const apiCows = cowsQuery.data?.cows ?? [];
-  const cows = apiCows.length > 0 ? apiCows : FALLBACK;
+  const cows = selectPortalCows(cowsQuery.data);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -84,7 +93,11 @@ export default function GaushalaCows() {
         healthStatus: form.healthStatus,
         notes: form.notes.trim() || undefined,
       });
-      await qc.invalidateQueries({ queryKey: ['gaushala', 'cows'] });
+      // Refetch the SCOPED list this screen renders and wait for it, so the
+      // success alert only fires once the new cow is actually in the registry
+      // the manager is looking at.
+      await qc.invalidateQueries({ queryKey: portalQueryKeys.gaushalaCows });
+      await cowsQuery.refetch();
       setForm(EMPTY_FORM);
       setModalOpen(false);
       Alert.alert('Registered', `${form.name} added to registry.`);
@@ -112,23 +125,38 @@ export default function GaushalaCows() {
         <Text style={styles.addButtonText}>Register New Cow</Text>
       </TouchableOpacity>
 
-      {cows.length === 0 ? (
-        <EmptyHint text="No cows registered yet." />
+      {cowsQuery.isLoading ? (
+        <EmptyHint text="Loading your registry…" />
+      ) : cowsQuery.isError ? (
+        <EmptyHint text="Could not load your cow registry. Pull down to retry." />
+      ) : cows.length === 0 ? (
+        <EmptyHint text="No cows registered yet — use Register New Cow to add one." />
       ) : (
-        cows.map((c) => {
-          const adopted = (c.adoptionStatus ?? '').toLowerCase().includes('adopt');
-          return (
-            <ListRow
-              key={c.id}
-              primary={c.name}
-              secondary={`${c.breed ?? 'Unknown'} • ${c.age ?? '?'} yrs • ${c.health ?? 'No health data'}`}
-              status={{
-                label: c.adoptionStatus ?? 'Available',
-                color: adopted ? colors.green[600] : colors.amber[600],
-              }}
-            />
-          );
-        })
+        cows.map((c) => (
+          <ListRow
+            key={c.id}
+            primary={`${c.name}${c.tagNumber ? ` (${c.tagNumber})` : ''}`}
+            secondary={[
+              c.breed,
+              c.ageYears !== null ? `${c.ageYears} yrs` : null,
+              c.gender,
+            ]
+              .filter(Boolean)
+              .join(' • ')}
+            // Cow has a healthStatus column but no adoption column — the pill
+            // used to read "Available" for every animal, which is an adoption
+            // claim the server never made.
+            status={
+              c.healthStatus
+                ? {
+                    label: c.healthStatus,
+                    color:
+                      c.healthStatus === 'healthy' ? colors.green[600] : colors.amber[600],
+                  }
+                : undefined
+            }
+          />
+        ))
       )}
 
       <Modal

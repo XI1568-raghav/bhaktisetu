@@ -7,7 +7,8 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
- title: 'Vedic Astrology — Kundli, Dosha & Daily Horoscope | Darshya',
+ alternates: { canonical: 'https://darshya.online/astrology' },
+ title: 'Vedic Astrology — Kundli, Dosha & Daily Horoscope',
  description:
  'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check, Choghadiya muhurat, Rahu Kalam / Yamaganda / Gulika daily inauspicious windows, Hora planetary hour, Kaal Sarp Dosh detector (12 Kalsarpa Yoga types), Shubh Muhurat finder for marriage / griha pravesh / vehicle / business / 8 more life events, Vastu Shastra 8-direction room placement scorer, Lal Kitab Farman Finder mapping 12 life problems to 9 grahas with 108 house-by-house household remedies, Pitra Dosha symptom-checker with 5 dosh types + 18 ancestral-karma remedies (Pind Daan / Narayan Nagbali / Pitru Paksha tarpan), Pancha Pakshi Shastra Tamil Siddhar 5-bird astrology (Vulture / Owl / Crow / Cock / Peacock) with per-Pakshi mantra + remedy + lucky days + compatibility. Plus verified pandits for consults.',
 };
@@ -193,7 +194,7 @@ export default function AstrologyPage() {
        <p className="font-serif text-xl font-semibold text-gray-900 group-hover:text-saffron-700">{t.title}</p>
        <p className="mt-0.5 text-sm text-saffron-700">{t.sanskrit}</p>
       </div>
-      <span className="shrink-0 rounded-full bg-saffron-100 px-2.5 py-0.5 text-[11px] font-semibold text-saffron-800">
+      <span className="shrink-0 rounded-full bg-saffron-100 px-2.5 py-0.5 text-xs font-semibold text-saffron-800">
        {t.badge}
       </span>
      </div>
@@ -212,7 +213,13 @@ export default function AstrologyPage() {
     relation to your full kundli, current dasha, and life questions.
    </p>
    <div className="mt-4 flex flex-wrap justify-center gap-3">
-    <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+    {/* AW-03: the live directory is the only surface listing real onboarded
+        astrologers. It existed as an API route with no page and no inbound
+        link, so real supply was unreachable from the consumer funnel. */}
+    <Link href="/astrology/astrologers/live" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     See Live Astrologers
+    </Link>
+    <Link href="/ask-pandit" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
      Ask a Pandit Live
     </Link>
     <Link href="/free-pandit-advice" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

@@ -18,6 +18,19 @@ vi.mock('../lib/auth-context', () => ({
 // API_BASE_URL is a plain constant; stub it to a sentinel we can assert on.
 vi.mock('../lib/api-config', () => ({
   API_BASE_URL: 'https://api.test',
+  DATA_FETCH_TIMEOUT_MS: 15000,
+  AUTH_FETCH_TIMEOUT_MS: 20000,
+  // Must delegate to the CURRENT global fetch: these suites swap
+  // globalThis.fetch per test, and a captured reference would freeze the first
+  // one. The signal is passed through so the pages' timeout wiring stays real.
+  fetchWithTimeout: (input: RequestInfo | URL, init: RequestInit = {}) =>
+    globalThis.fetch(input, { ...init, signal: AbortSignal.timeout(15000) }),
+  isNetworkFailure: (e: unknown) => e instanceof TypeError,
+  NETWORK_ERROR_MESSAGE: 'Could not reach Darshya.',
+  loadErrorMessage: (c: unknown) =>
+    typeof c === 'object' && c !== null && 'status' in c
+      ? `Couldn't load live data (HTTP ${(c as { status: number }).status}).`
+      : "Couldn't load live data.",
 }));
 
 // Heavy children that would pull in their own fetches / context — stub them
