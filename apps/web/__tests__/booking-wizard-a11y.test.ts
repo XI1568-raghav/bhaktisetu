@@ -160,7 +160,12 @@ describe('A11Y-09 — the date field has a name and a surviving format hint', ()
       path.resolve(__dirname, '..', 'components/ui/DateInput.tsx'),
       'utf8',
     );
-    expect(di).toMatch(/aria-describedby=\{hintId\}/);
+    // DB-10 made this conditional — `rejected ? `${hintId} ${errorId}` : hintId`
+    // — so the field can point at its error message as well as the format hint.
+    // The invariant A11Y-09 protects is that the persistent hint is ALWAYS
+    // referenced, which both branches satisfy; asserting the literal old source
+    // text would fail on a strict improvement.
+    expect(di).toMatch(/aria-describedby=\{[^}]*hintId[^}]*\}/);
     expect(di).toMatch(/Format: DD\/MM\/YYYY/);
     // The placeholder disappears on the first keystroke; the hint must not.
     expect(di).toMatch(/id=\{hintId\}[^>]*className="sr-only"/);

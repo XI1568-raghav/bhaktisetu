@@ -645,7 +645,15 @@ export default async function PujasPage({
  <Link
  key={puja.id}
  href={`/pujas/${puja.slug}`}
- className="group block bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300 focus-visible:ring-offset-2"
+ // CM-09: the WHOLE card is the tap target, not just the pill inside it. The
+ // pill was already h-11, but a thumb aiming at the card body outside it hit
+ // nothing. min-h-[44px] states the floor on the card itself.
+ //
+ // Deliberately does NOT name the pill's label here: cta-contrast.test.ts
+ // locates that control by searching for its text, so repeating the label in a
+ // comment makes the comment the first match and the assertion reads the wrong
+ // 400-char window.
+ className="group block min-h-[44px] bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300 focus-visible:ring-offset-2"
  >
  {/* Puja image */}
  <div className="relative aspect-[16/10] bg-gradient-to-br from-saffron-100 to-amber-50">
