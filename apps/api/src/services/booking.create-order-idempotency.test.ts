@@ -116,7 +116,26 @@ describe('RES-05 — create-order is idempotent on the natural booking key', () 
     expect(out.id).toBe('bk-new');
   });
 
-  it('does not reuse a hold whose request differs — a different prasad choice is a different booking', async () => {
+  /**
+   * These two cases changed meaning when DB-07 landed, and the change is
+   * deliberate. RES-05 alone said: a request that differs is not a repeat, so
+   * mint a new booking. DB-07 then measured what that permits — vary only the
+   * devotee name and one unpaid user takes a slot from {remaining:5} to
+   * {remaining:0} for the whole hold window, five 201s, nothing paid.
+   * maxBookingsPerSlot counts rows, not people, so capacity is never oversold
+   * and nothing alerts.
+   *
+   * So the contract composes rather than picking a winner:
+   *   identical repeat  → REUSE the hold   (the two cases above)
+   *   differing request → REFUSE, by name  (the two cases here)
+   *
+   * The half of RES-05 that mattered is intact and still asserted below: a
+   * mismatched hold is never silently handed back, so no devotee is charged
+   * for a booking they did not ask for. Only the outcome on mismatch moved,
+   * from create-a-second to refuse-and-name-the-first. The refusal is
+   * recoverable — it quotes the booking number, and /bookings/pay resumes it.
+   */
+  it('refuses rather than reusing when the request differs — a different prasad choice is a different booking', async () => {
     arrange({
       id: 'bk-first',
       bookingNumber: 'BS-20260812-VXVHO',
@@ -129,13 +148,14 @@ describe('RES-05 — create-order is idempotent on the natural booking key', () 
       prasadDeliveryRequested: true,
     });
 
-    const out = await service.createBooking(CREATE_INPUT as never);
-
-    expect(prismaMock.pujaBooking.create).toHaveBeenCalledTimes(1);
-    expect(out.id).toBe('bk-new');
+    await expect(service.createBooking(CREATE_INPUT as never)).rejects.toThrow(
+      /already have an unpaid booking \(BS-20260812-VXVHO\)/,
+    );
+    // Neither silently reused nor duplicated.
+    expect(prismaMock.pujaBooking.create).not.toHaveBeenCalled();
   });
 
-  it('does not reuse a hold booked for different devotees', async () => {
+  it('refuses rather than reusing a hold booked for different devotees', async () => {
     arrange({
       id: 'bk-first',
       bookingNumber: 'BS-20260812-VXVHO',
@@ -146,10 +166,10 @@ describe('RES-05 — create-order is idempotent on the natural booking key', () 
       prasadDeliveryRequested: false,
     });
 
-    const out = await service.createBooking(CREATE_INPUT as never);
-
-    expect(prismaMock.pujaBooking.create).toHaveBeenCalledTimes(1);
-    expect(out.id).toBe('bk-new');
+    await expect(service.createBooking(CREATE_INPUT as never)).rejects.toThrow(
+      /already have an unpaid booking/,
+    );
+    expect(prismaMock.pujaBooking.create).not.toHaveBeenCalled();
   });
 
   it('scopes the reuse lookup to this devotee, this offering, this date and this slot', async () => {

@@ -27,7 +27,23 @@ const SRC = join(import.meta.dirname, '..');
  * and 32 after: payout 8→6, admin-metrics 7→1, whatsapp-broadcast 4→0,
  * store-admin 7→6, aarti-notify 4→3.
  */
-const BASELINE = 94;
+/**
+ * 94 → 91 on 2026-08-15, and NOT because three reads were bounded. The detector
+ * was over-reporting and two fixes below made it honest: `take` written as an
+ * ES6 shorthand (`skip, take`) now counts as bounded, and comments are stripped
+ * before scanning. Both had been inflating the number, so the baseline drops to
+ * the true count to keep the ratchet tight — leaving it at 94 would bank three
+ * findMany calls of free slack for the next author.
+ *
+ * Genuine movement in the same window, verified by running the corrected
+ * detector against 55c3acfe and HEAD: admin.service.ts 11 → 10 (one bounded),
+ * consultation.ts 1 → 2 (one added — an identity hydration keyed
+ * `in: userIds` off an already-paginated page, bounded by construction like the
+ * commission/temple reads justified above). Net zero. The five "new" unbounded
+ * reads in routes/admin.ts that first tripped this ratchet were all paginated
+ * list endpoints using shorthand `take` — false positives, every one.
+ */
+const BASELINE = 91;
 
 // −1 on 2026-08-15 — services/admin.service.getRevenue, the ACTIVE
 // subscription scan.
@@ -121,6 +137,26 @@ const BASELINE = 94;
 // its full earning on money the platform has already handed back. This is the
 // "legitimately bounded by their where clause" case the header describes.
 
+/**
+ * Comments are not call sites. The needle is a bare `findMany(`, so prose that
+ * merely MENTIONS a query counted as one — on 2026-08-15 the ratchet was held
+ * one over baseline by `payout.service.ts:163`, a comment describing a
+ * `findMany({ select: { amount } })` that the same commit had DELETED. The
+ * detector was reporting the fix as the defect.
+ *
+ * This is the fourth guard in this sweep to match its own documentation (a
+ * localStorage ban tripped on the comment explaining the ban; a 5xx
+ * `error.message` scan flagged six legitimate 4xx echoes; a CTA-contrast test
+ * matched a comment naming the CTA). Any scanner that reads source as text
+ * strips comments first.
+ *
+ * Line comments and block comments only — string literals containing `//` are
+ * left alone, since a query is never written inside one here.
+ */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+}
+
 function tsFiles(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir)) {
@@ -162,9 +198,16 @@ function findManyArgs(source: string): string[] {
 function unboundedSites(): Array<{ file: string; snippet: string }> {
   const hits: Array<{ file: string; snippet: string }> = [];
   for (const file of tsFiles(SRC)) {
-    const source = readFileSync(file, 'utf8');
+    const source = stripComments(readFileSync(file, 'utf8'));
     for (const args of findManyArgs(source)) {
-      if (/\btake\s*:/.test(args) || /\bcursor\s*:/.test(args)) continue;
+      // `take: 20` and the ES6 shorthand `take,` are equally bounded. Matching
+      // only the colon form reported five paginated admin list endpoints as
+      // unbounded on 2026-08-15 — they pass `skip, take` through from the
+      // validated query, which is the shape we WANT, so a detector that fails
+      // them pushes authors toward the verbose form to appease the ratchet.
+      // `\btake\s*[,:}]` covers both; `[,}]` also catches `take` as the last
+      // property before the closing brace.
+      if (/\btake\s*[,:}]/.test(args) || /\bcursor\s*[,:}]/.test(args)) continue;
       hits.push({ file: relative(SRC, file), snippet: args.slice(0, 90).replace(/\s+/g, ' ') });
     }
   }
