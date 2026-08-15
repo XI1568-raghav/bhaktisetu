@@ -573,6 +573,7 @@ export async function adminRoutes(server: FastifyInstance) {
     },
   );
 
+
   server.get('/pujas', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, q } = request.query as { page?: string; limit?: string; q?: string };
     const take = clampLimit(limit);
