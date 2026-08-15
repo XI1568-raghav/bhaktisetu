@@ -134,11 +134,25 @@ export async function notificationRoutes(server: FastifyInstance) {
     if (stillValid.length !== subs.length) {
       subsByUser.set(userId, stillValid);
     }
+    const sent = results.filter((r) => r.ok).length;
+    const skipped = results.filter((r) => !r.ok && r.skipped).length;
+    // NOTIF-03: a skip is not a delivery.
+    //
+    // This answered `{ok:true, sent:0, expired:0, failed:0}` against the live
+    // API with a real subscription row present, because a transport that is
+    // switched off returns `{ok:false, skipped:true}` and that counts as none
+    // of the three buckets. The one endpoint whose entire job is to answer
+    // "did that go out?" was answering yes for a product that had sent
+    // nothing. Report the skip in its own bucket and never call it ok.
     return reply.send({
-      ok: true,
-      sent: results.filter((r) => r.ok).length,
+      ok: sent > 0,
+      sent,
+      skipped,
       expired: results.filter((r) => r.expired).length,
       failed: results.filter((r) => !r.ok && !r.expired && !r.skipped).length,
+      reason: webPushConfig.enabled
+        ? undefined
+        : 'web push is not configured — set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY',
     });
   });
 
@@ -231,8 +245,19 @@ export async function notificationRoutes(server: FastifyInstance) {
       deleteMany: (args: { where: { deviceToken: { in: string[] } } }) => Promise<{ count: number }>;
     };
     const model = (prisma as unknown as { fcmDeviceToken?: FcmTokenModel }).fcmDeviceToken;
+    // NOTIF-03: same rule as /test above — a dark transport answers ok:false.
+    // This returned `{ok:true, skipped:true}` on the live API, so the operator
+    // probe for "can we push to phones?" read green while FCM had no
+    // credentials at all.
     if (!model || !fcmConfig.enabled) {
-      return reply.send({ ok: true, skipped: true, reason: !fcmConfig.enabled ? 'FCM not configured' : 'model missing' });
+      return reply.send({
+        ok: false,
+        skipped: true,
+        sent: 0,
+        reason: !fcmConfig.enabled
+          ? 'FCM is not configured — set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY'
+          : 'fcm_device_tokens is not migrated on this database',
+      });
     }
     const rows = await model.findMany({ where: { userId: targetUserId }, select: { deviceToken: true } });
     if (rows.length === 0) return reply.code(404).send({ error: 'no devices for user' });

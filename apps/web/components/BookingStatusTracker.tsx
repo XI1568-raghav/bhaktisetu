@@ -86,7 +86,7 @@ export default function BookingStatusTracker({
  <div
  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
  isCompleted
- ? 'border-tulsi-green bg-tulsi-green text-white'
+ ? 'border-tulsi-green bg-tulsi-green-dark text-white'
  : isCurrent
  ? 'border-saffron-600 bg-saffron-600 text-white shadow-lg shadow-saffron-200 animate-pulse'
  : 'border-surface-200 bg-white text-surface-400'
@@ -143,7 +143,7 @@ export default function BookingStatusTracker({
  <div
  className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
  isCompleted
- ? 'border-tulsi-green bg-tulsi-green text-white'
+ ? 'border-tulsi-green bg-tulsi-green-dark text-white'
  : isCurrent
  ? 'border-saffron-600 bg-saffron-600 text-white animate-pulse'
  : 'border-surface-200 bg-white text-surface-400'

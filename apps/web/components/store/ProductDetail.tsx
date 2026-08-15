@@ -134,7 +134,7 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
 
                 {product.discount > 0 && (
                   <div className="absolute top-4 right-4">
-                    <span className="bg-tulsi-green text-white text-sm font-bold px-3 py-1.5 rounded-full">
+                    <span className="bg-tulsi-green-dark text-white text-sm font-bold px-3 py-1.5 rounded-full">
                       -{product.discount}%
                     </span>
                   </div>
@@ -281,7 +281,7 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
                   disabled={added}
                   className={`flex-1 flex items-center justify-center gap-2 py-3.5 font-semibold rounded-xl transition-all ${
                     added
-                      ? 'bg-tulsi-green text-white'
+                      ? 'bg-tulsi-green-dark text-white'
                       : 'bg-saffron-50 text-saffron-700 border-2 border-saffron-200 hover:bg-saffron-100'
                   } rounded-lg`}
                 >

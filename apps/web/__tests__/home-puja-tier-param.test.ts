@@ -21,7 +21,10 @@ const WEB = path.resolve(__dirname, '..');
 const read = (p: string) => fs.readFileSync(path.join(WEB, p), 'utf8');
 
 const SHIM = 'app/pujas/home-puja/[slug]/book/page.tsx';
-const WIZARD = 'app/pujas/home-puja/book/page.tsx';
+// PF-10 split the route: page.tsx is now the server guard that 404s an unknown
+// slug, and the wizard this suite inspects moved beside it. Same component,
+// same assertions — only the filename changed.
+const WIZARD = 'app/pujas/home-puja/book/BookHomePujaClient.tsx';
 
 describe('PF-01 — the at-home funnel carries the chosen tier end to end', () => {
   it('the slug route exists so the CTAs do not 404', () => {

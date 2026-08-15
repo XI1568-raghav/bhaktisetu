@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { supabaseAdmin, isDemoMode } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { getCachedAuth, setCachedAuth } from '../lib/auth-cache.js';
+import { verifySupabaseJwt } from '../lib/supabase-jwt.js';
 
 export type MarketplaceRole = 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER' | 'ADMIN';
 
@@ -262,15 +263,44 @@ export async function authenticateUser(
       return;
     }
 
-    // Verify the token with Supabase
-    const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
+    // SCAL-05: verify the token HERE when we can, and only call out when we
+    // cannot.
+    //
+    // Supabase signs access tokens HS256 with the project JWT secret, so the
+    // signature, `exp` and `aud` are all checkable in-process — see
+    // lib/supabase-jwt.ts. That removes an outbound HTTPS round trip to GoTrue
+    // in ap-northeast-1 from EVERY authenticated request: ~100–300 ms that no
+    // query tuning could touch, plus a throughput ceiling set by Supabase's
+    // rate limit rather than by this API, plus the failure mode where one slow
+    // minute at Supabase 500s every logged-in user at once.
+    //
+    // `null` means "this verifier will not vouch for it" — a wrong or rotated
+    // secret, an asymmetric project key, an expired token, a forgery. Every one
+    // of those falls through to the remote check below, which is the same code
+    // that ran before, so turning the secret on cannot lock anybody out and
+    // leaving it off changes nothing at all.
+    //
+    // Only IDENTITY is short-circuited. The Prisma lookup, the blocked gate and
+    // the role read all still run underneath.
+    const locallyVerified = verifySupabaseJwt(token, process.env.SUPABASE_JWT_SECRET);
 
-    if (error || !supabaseUser) {
-      reply.code(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid or expired access token.',
-      });
-      return;
+    let supabaseUser: { id: string; email?: string | null; phone?: string | null };
+    if (locallyVerified) {
+      supabaseUser = {
+        id: locallyVerified.id,
+        email: locallyVerified.email,
+        phone: locallyVerified.phone,
+      };
+    } else {
+      const { data, error } = await supabaseAdmin.auth.getUser(token);
+      if (error || !data?.user) {
+        reply.code(401).send({
+          error: 'Unauthorized',
+          message: 'Invalid or expired access token.',
+        });
+        return;
+      }
+      supabaseUser = data.user;
     }
 
     // Look up the user in our Prisma database. Signup writes

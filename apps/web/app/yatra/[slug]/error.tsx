@@ -3,8 +3,12 @@
 // P0-9: Route-segment error boundary for /yatra/[slug].
 // Catches render errors on a pilgrimage-package detail page. See
 // app/temples/[slug]/error.tsx for rationale.
+//
+// DU-13: shares components/ui/ErrorState with the other five boundaries, so
+// the recovery screen uses the product's own type, radius and palette.
 
 import { useEffect } from 'react';
+import ErrorState from '../../../components/ui/ErrorState';
 import { captureBrowserException } from '../../../lib/sentry';
 
 export default function YatraDetailError({
@@ -19,68 +23,13 @@ export default function YatraDetailError({
   }, [error]);
 
   return (
-    <div
-      style={{
-        minHeight: '50vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem',
-        textAlign: 'center',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#2a2520',
-      }}
-    >
-      <p style={{ fontSize: '1.5rem', fontWeight: 600, color: '#b87333', margin: '0 0 0.75rem' }}>
-        Couldn&apos;t load this yatra
-      </p>
-      <p style={{ fontSize: '0.875rem', color: '#7a756e', maxWidth: '24rem', margin: '0 0 1.5rem' }}>
-        Something went wrong while loading the pilgrimage details. Please try again.
-      </p>
-      <div style={{ display: 'flex', gap: '0.75rem' }}>
-        <button
-          onClick={() => reset()}
-          style={{
-            padding: '0.625rem 1.25rem',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            background: '#b87333',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '0.5rem',
-            cursor: 'pointer',
-          }}
-        >
-          Try again
-        </button>
-        <a
-          href="/yatra"
-          style={{
-            padding: '0.625rem 1.25rem',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            background: '#ede9e3',
-            color: '#2a2520',
-            textDecoration: 'none',
-            borderRadius: '0.5rem',
-          }}
-        >
-          All yatras
-        </a>
-      </div>
-      {error.digest && (
-        <p
-          style={{
-            fontSize: '0.75rem',
-            color: '#b5b0a8',
-            marginTop: '1.5rem',
-            fontFamily: 'monospace',
-          }}
-        >
-          Error: {error.digest}
-        </p>
-      )}
-    </div>
+    <ErrorState
+      title="Couldn't load this yatra"
+      description="Something went wrong while loading the pilgrimage details. Please try again."
+      digest={error.digest}
+      onRetry={() => reset()}
+      backHref="/yatra"
+      backLabel="All yatras"
+    />
   );
 }

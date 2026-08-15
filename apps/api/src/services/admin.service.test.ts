@@ -272,10 +272,12 @@ describe('AdminService.getRevenue', () => {
         createdAt: new Date(),
       },
     ]);
-    prismaMock.marketplaceSubscription.findMany.mockResolvedValue([
-      { plan: 'BASIC', role: 'PANDIT', amount: 999 },
-      { plan: 'BASIC', role: 'PANDIT', amount: 999 },
-      { plan: 'PRO', role: 'ASTROLOGER', amount: 2999 },
+    // SCAL-04: the same three ACTIVE subscriptions (2x BASIC/PANDIT @999 and
+    // 1x PRO/ASTROLOGER @2999), now bucketed by Postgres instead of read row by
+    // row and tallied in a JS Map. The assertions below are unchanged.
+    prismaMock.marketplaceSubscription.groupBy.mockResolvedValue([
+      { plan: 'BASIC', role: 'PANDIT', _count: { _all: 2 }, _sum: { amount: 1998 } },
+      { plan: 'PRO', role: 'ASTROLOGER', _count: { _all: 1 }, _sum: { amount: 2999 } },
     ]);
 
     const out = await service.getRevenue();

@@ -248,7 +248,7 @@ function AstrologerAvailabilityPageContent() {
            onClick={() => toggleDay(day)}
            className={`px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
             allOn
-             ? 'bg-tulsi-green text-white'
+             ? 'bg-tulsi-green-dark text-white'
              : 'bg-surface-100 text-surface-500 hover:bg-surface-200'
            }`}
           >
@@ -265,7 +265,7 @@ function AstrologerAvailabilityPageContent() {
           <button
            onClick={() => toggleDay(day)}
            className={`px-3 py-1 rounded-full text-xs font-medium ${
-            allOn ? 'bg-tulsi-green text-white' : 'bg-surface-100 text-surface-500'
+            allOn ? 'bg-tulsi-green-dark text-white' : 'bg-surface-100 text-surface-500'
            }`}
           >
            {allOn ? 'All On' : 'Enable All'}

@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
+import { BookingStatus, Prisma } from '@prisma/client';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { processRefund } from '../services/refund.service.js';
@@ -27,8 +27,24 @@ import {
 //     states. The list-refunds query returns [] + log when the enum is
 //     absent.
 
+// AO-18 (prod sweep 2026-08-12): `status` was `z.string().optional()`.
+//
+// Any string passed validation and went straight into `where.status`. Prisma
+// rejects a value the enum has never held, the list handler's own catch
+// swallows the throw, and the caller gets 200 with `{"bookings":[],"total":0}`
+// — which an operator reads as "no bookings are in that state". Measured live:
+// `?status=NOT_A_STATUS` -> 200 empty, while the sibling payout-requests and
+// commissions endpoints both answer 400 and name their legal values.
+//
+// The enum is generated from the Prisma column, so the accepted spellings are
+// exactly the ones the database can store and no list can drift out of date.
+//
+// SCOPE, deliberately not widened: the second half of AO-18 observes that this
+// surface wants lowercase while /admin/commissions wants uppercase. Making
+// those agree changes what a LIVE, shipped API accepts, so it is an owner
+// decision and is NOT done here — only the silent-empty-page bug is closed.
 const listQuerySchema = z.object({
-  status: z.string().optional(),
+  status: z.nativeEnum(BookingStatus).optional(),
   page: z.string().optional(),
   limit: z.string().optional(),
 });
@@ -486,7 +502,26 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         parsed.data.reference,
         parsed.data.failureReason,
       );
-      return reply.send({ ok: true, payout: { id: updated.id, status: updated.status } });
+      // DI-10: a repeat Complete must not read like the first one.
+      //
+      // The bank/UPI transfer happens outside this system, so this response is
+      // the ONLY thing telling the admin whether their click did anything. Five
+      // concurrent completes and a later sequential one all returned an
+      // identical 200 body; the ledger stayed correct but nothing said "already
+      // settled", which invites a second real-world transfer. `processedAt` and
+      // `reference` come off the STORED row, so the no-op answers with the
+      // reference the money actually moved under rather than the one just
+      // typed into the second click.
+      return reply.send({
+        ok: true,
+        payout: {
+          id: updated.id,
+          status: updated.status,
+          alreadyCompleted: updated.alreadyCompleted,
+          processedAt: updated.processedAt ?? null,
+          reference: updated.reference ?? null,
+        },
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to process payout';
       if (msg.includes('not found')) return reply.code(404).send({ error: msg });

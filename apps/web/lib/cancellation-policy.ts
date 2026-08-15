@@ -54,3 +54,39 @@ export const CANCELLATION_POLICY_SENTENCE =
   `or ${CANCELLATION_CUTOFF_HOURS}-${FULL_REFUND_HOURS_BEFORE}h before for ${PARTIAL_REFUND_PERCENT}%. ` +
   `Cancellation is not possible within ${CANCELLATION_CUTOFF_HOURS} hours of the scheduled time. ` +
   `Refunds reach your account in ${REFUND_DAYS_LABEL}.`;
+
+/**
+ * LEG-19 (prod sweep 2026-08-12) — the settlement table.
+ *
+ * Four surfaces published four different answers to "how long does a refund
+ * take":
+ *
+ *   /refunds section 8   a four-row table, UPI at the top of it
+ *   /faqs                "within 3-7 working days ... UPI refunds are usually
+ *                        instant", which contradicted that table's own top row
+ *   /nri-pujas           "processed within 5-7 business days", flat
+ *   /why-darshya         "3-7 day processing"
+ *
+ * while the engine carries exactly one figure: DEFAULT_CANCEL_POLICY
+ * .refundDaysLabel in apps/api/src/services/cancellation.service.ts. apps/web
+ * cannot import from apps/api, so `REFUND_DAYS_LABEL` above mirrors it and the
+ * wave-3 test re-reads the API source and fails if the two drift.
+ *
+ * The rows below are the /refunds table unchanged — no figure here is new. The
+ * point is that they now live in ONE array: /refunds renders it, and every
+ * other page quotes `REFUND_SETTLEMENT_SENTENCE`, which is generated from it.
+ */
+export const REFUND_SETTLEMENT_BANDS: ReadonlyArray<{ method: string; label: string }> = [
+  { method: 'UPI and wallets', label: '1-3 business days' },
+  { method: 'Debit and credit cards', label: REFUND_DAYS_LABEL },
+  { method: 'Net banking', label: '5-10 business days' },
+  { method: 'International cards', label: '7-14 business days' },
+];
+
+/**
+ * The bands as one plain-text sentence. Derived, never retyped — a page that
+ * quotes this cannot fall out of step with the table on /refunds.
+ */
+export const REFUND_SETTLEMENT_SENTENCE =
+  `Once a refund is issued it goes back to the method you paid with: ` +
+  `${REFUND_SETTLEMENT_BANDS.map((b) => `${b.method} ${b.label}`).join(', ')}.`;

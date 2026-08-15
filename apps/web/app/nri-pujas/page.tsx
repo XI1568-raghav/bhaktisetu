@@ -14,8 +14,30 @@ import {
   Phone,
   Star,
 } from 'lucide-react';
+import { fetchPublicStats, type PublicStats } from '../../lib/live-stats';
+import { COMPANY } from '../../lib/company';
+import {
+  CANCELLATION_POLICY_SENTENCE,
+  REFUND_SETTLEMENT_SENTENCE,
+} from '../../lib/cancellation-policy';
 
 export const revalidate = 86400;
+
+/**
+ * LEG-13 (prod sweep 2026-08-12) — four CTAs on this page advertised a puja
+ * catalogue five times the size of the real one, and the final CTA added a
+ * temple-city count that was larger than the entire temple table. The API
+ * returned 10 puja types and 20 temples. /about was rewired to live counts in
+ * the same sweep; this surface, the highest-value NRI acquisition page, was
+ * not. There is no city count anywhere in the API, so that half of the claim is
+ * dropped rather than re-derived from something adjacent.
+ *
+ * Same rule as lib/live-stats: a count we could not read is OMITTED, never
+ * replaced with a remembered figure.
+ */
+function countedNoun(count: number | null, noun: string): string {
+  return count === null ? noun : `${count.toLocaleString('en-IN')} ${noun}`;
+}
 
 export const metadata: Metadata = {
   title: 'NRI Pujas — Book a Puja from USA, UK, Canada, Australia',
@@ -63,7 +85,7 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Will I receive video proof of my puja?',
-    a: 'Video proof is mandatory on every booking. The verified pandit uploads a 3-7 minute clip showing the sankalp (your name + gotra), the ritual, and the prasad. You receive a WhatsApp link within 24 hours of completion. Pandit payout is gated on this upload.',
+    a: `Video proof is mandatory on every booking. The verified pandit uploads a 3-7 minute clip showing the sankalp (your name + gotra), the ritual, and the prasad. We aim to have the WhatsApp link with you within ${COMPANY.refunds.videoProofTargetLabel} of completion; if nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write in and a person reviews it.`,
   },
   {
     q: 'How does pricing work from abroad?',
@@ -83,11 +105,11 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'What is the cancellation policy?',
-    a: 'Free cancellation up to 24 hours before the scheduled puja time. Refunds processed within 5-7 business days to the original payment method. Within 24 hours, the booking is non-refundable since the pandit has already prepared materials.',
+    a: `${CANCELLATION_POLICY_SENTENCE} ${REFUND_SETTLEMENT_SENTENCE}`,
   },
   {
     q: 'How long does the full process take?',
-    a: 'Booking: 3 minutes online. Pandit confirmation: same day (within 6 hours, often within 1 hour). Puja completion: 30 minutes to 4 hours depending on the ritual. Video proof: within 24 hours. Prasad shipment (if ordered): 7-21 days international.',
+    a: `Booking: 3 minutes online. Pandit confirmation: same day (within 6 hours, often within 1 hour). Puja completion: 30 minutes to 4 hours depending on the ritual. Video proof: we aim for ${COMPANY.refunds.videoProofTargetLabel} after the ceremony. Prasad shipment (if ordered): 7-21 days international.`,
   },
   {
     q: 'Can I watch the puja live?',
@@ -99,11 +121,11 @@ const faqs: Array<{ q: string; a: string }> = [
   },
 ];
 
-const steps = [
+const stepsFor = (stats: PublicStats) => [
   {
     n: 1,
     title: 'Choose your puja',
-    body: 'Browse 50+ rituals by occasion, deity or temple. Each listing shows what\'s included, duration, lineage of pandit and what you\'ll receive (video, photos, prasad).',
+    body: `Browse ${countedNoun(stats.pujaTypeCount, 'rituals')} by occasion, deity or temple. Each listing shows what's included, duration, lineage of pandit and what you'll receive (video, photos, prasad).`,
   },
   {
     n: 2,
@@ -145,7 +167,7 @@ const trustSignals = [
   { icon: Globe2, title: 'Trusted by diaspora', body: 'NRIs from USA, UK, Canada, Australia, Singapore, UAE.' },
 ];
 
-const pillarPageJsonLd = {
+const pillarPageJsonLdFor = (steps: ReturnType<typeof stepsFor>) => ({
   '@context': 'https://schema.org',
   '@graph': [
     {
@@ -184,9 +206,12 @@ const pillarPageJsonLd = {
       })),
     },
   ],
-};
+});
 
-export default function NRIPujasPillarPage() {
+export default async function NRIPujasPillarPage() {
+  const stats = await fetchPublicStats();
+  const steps = stepsFor(stats);
+  const pillarPageJsonLd = pillarPageJsonLdFor(steps);
   return (
     <div className="bg-white text-surface-900">
       <script
@@ -225,7 +250,7 @@ export default function NRIPujasPillarPage() {
               href="/pujas"
               className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-700"
             >
-              Browse 50+ pujas
+              Browse {countedNoun(stats.pujaTypeCount, 'pujas')}
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
@@ -324,7 +349,7 @@ export default function NRIPujasPillarPage() {
             href="/pujas"
             className="text-sm font-medium text-saffron-700 hover:text-saffron-800"
           >
-            Browse all 50+ pujas →
+            Browse all {countedNoun(stats.pujaTypeCount, 'pujas')} →
           </Link>
         </div>
       </section>
@@ -432,7 +457,8 @@ export default function NRIPujasPillarPage() {
           <div>
             <h2 className="font-display text-2xl font-semibold">Ready to book your first puja?</h2>
             <p className="mt-2 max-w-xl text-surface-200">
-              Pick from 50+ verified pujas across 30+ temple cities. International payment, video
+              Pick from {countedNoun(stats.pujaTypeCount, 'verified pujas')} at{' '}
+              {countedNoun(stats.templeCount, 'listed temples')}. International payment, video
               proof, WhatsApp coordination — all included.
             </p>
           </div>

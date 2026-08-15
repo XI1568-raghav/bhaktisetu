@@ -22,6 +22,10 @@ const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
+// A real AstrologerProfile.id. Anything else is a legacy in-memory fixture slug
+// ('astro_001'..) — see the AW-02 note on GET /astrologers/:id.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const astrologerListQuerySchema = paginationSchema.extend({
   specialization: z.string().optional(),
   language: z.string().optional(),
@@ -61,10 +65,8 @@ export async function astrologyRoutes(server: FastifyInstance) {
     const { id } = request.params as { id: string };
     // A UUID means the caller is pointing at a REAL onboarded AstrologerProfile
     // (sourced from /astrologers/live). Resolve it against the DB so the detail
-    // page + booking flow serve the real astrologer, not the mock fixture.
-    // Non-UUID (legacy slug like "astro_002") falls through to the in-memory
-    // directory for backward-compat until the directory swap completes.
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    // page + booking flow serve the real astrologer.
+    if (UUID_RE.test(id)) {
       const p = await prisma.astrologerProfile.findUnique({ where: { id } });
       if (!p || !p.approved) {
         return reply.code(404).send({ error: 'Astrologer not found.' });
@@ -89,14 +91,17 @@ export async function astrologyRoutes(server: FastifyInstance) {
         },
       };
     }
-    // R-Q1-E-010: legacy slug dual-lookup (in-memory directory).
-    const astrologer = astrologyService.getAstrologerByIdOrSlug(id);
-
-    if (!astrologer) {
-      return reply.code(404).send({ error: 'Astrologer not found.' });
-    }
-
-    return { astrologer };
+    // AW-02 (2026-08-12, P0): this used to fall through to
+    // astrologyService.getAstrologerByIdOrSlug(), the 15-row in-memory
+    // directory of invented astrologers. That made every fixture slug a
+    // describable person: /astrology/view?id=astro_001 rendered "Pt. Raghunath
+    // Sharma" as a profile and /astrology/astro_001/book drew a live pay
+    // button over him. POST /consultation/book already refuses any id that is
+    // not an approved AstrologerProfile — an id the platform will not sell is
+    // an id it must not describe either. The in-memory directory still backs
+    // GET /astrologers (packages/api-client's useAstrologers reads that list),
+    // so it is not deleted here; it is simply no longer reachable as a person.
+    return reply.code(404).send({ error: 'Astrologer not found.' });
   });
 
   // ─── GET /astrologers/:id/reviews ──────────────────────────────────────────
@@ -110,9 +115,16 @@ export async function astrologyRoutes(server: FastifyInstance) {
     }
     const { page, limit } = parsed.data;
 
-    const result = astrologyService.getReviews(id, page, limit);
-
-    return result;
+    // AW-02: the same door, one step narrower. This served REVIEWS[slug] — five
+    // named testimonials per fixture astrologer, all invented. A slug is not a
+    // person here any more, so it has no reviews to show; say 404, matching the
+    // detail route above.
+    if (!UUID_RE.test(id)) {
+      return reply.code(404).send({ error: 'Astrologer not found.' });
+    }
+    // Real astrologers have no review store yet (REVIEWS is keyed by fixture
+    // slug). An empty page is the truthful answer — never borrow a fixture's.
+    return { reviews: [], total: 0, page: page ?? 1, limit: limit ?? 5, totalPages: 0 };
   });
 
   // ─── GET /specializations ──────────────────────────────────────────────────

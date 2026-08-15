@@ -193,6 +193,10 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     // Safe-default empty arrays on table miss.
     let consultationsToday = 0;
     let upcomingSessions: unknown[] = [];
+    // AW-14 (2026-08-12, P2): null means "the raw table could not be read", in
+    // which case the stored counter is the only number available. A derived 0
+    // and an unreadable table must not look the same.
+    let consultationsLifetime: number | null = null;
     try {
       if (astrologerIdValues.length > 0) {
         // Build an IN-list placeholder per value ($2, $3, ...) — $1 is the count
@@ -207,6 +211,21 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
           idArray,
         );
         consultationsToday = Number(today[0]?.count ?? 0);
+
+        // AW-14 (2026-08-12, P2): the lifetime figure used to be
+        // `AstrologerProfile.totalConsultations`, a counter column NOTHING in
+        // the codebase ever incremented — so the card read 0 forever while the
+        // card beside it read "Today's Sessions 1". Count the same rows that
+        // produce `consultationsToday`, minus the date bound, so the two can
+        // never contradict each other again. 'completed' is included because a
+        // finished session is still a consultation the astrologer delivered.
+        const lifetime = await prisma.$queryRawUnsafe<Array<{ count: string | number }>>(
+          `SELECT COUNT(*)::text AS count
+           FROM astrologer_consultations
+           WHERE astrologer_id = ANY($1::text[]) AND status IN ('confirmed', 'completed')`,
+          idArray,
+        );
+        consultationsLifetime = Number(lifetime[0]?.count ?? 0);
 
         // AW-01 (2026-08-12, P0): the dashboard "Upcoming Sessions" panel was a
         // hardcoded empty state, so this array was fetched and thrown away. It is
@@ -237,7 +256,9 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     return reply.send({
       profile,
       stats: {
-        totalConsultations: profile?.totalConsultations ?? 0,
+        // AW-14: derived when the ledger table answered; the stored counter is
+        // the fallback for the table-missing case only.
+        totalConsultations: consultationsLifetime ?? profile?.totalConsultations ?? 0,
         rating: profile?.rating ?? 0,
         pricePerMinute: profile ? Number(profile.pricePerMinute) : 0,
         approved: profile?.approved ?? false,

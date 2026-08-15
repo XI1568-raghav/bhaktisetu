@@ -203,7 +203,7 @@ export default async function RashiDetail({
               <Link
                 key={p}
                 href={`/pujas/${p}`}
-                className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+                className="text-xs px-3 py-1.5 bg-emerald-700 text-white rounded-md hover:bg-emerald-800"
               >
                 Book {p.replace(/-/g, ' ')} →
               </Link>

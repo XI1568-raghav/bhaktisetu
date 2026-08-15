@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import ConsentGate from './ConsentGate';
 
 /**
  * Client-only wrapper that lazy-loads non-critical overlay widgets.
@@ -43,12 +44,21 @@ const CookieBanner = dynamic(() => import('./CookieBanner'), {
 // LiveChatWidget canonical (AI Asha + Claude API + escalate-to-ticket richer flow).
 // WhatsApp still reachable via Ask Pandit nav chip + /contact + /support/ticket/new.
 
+// TD-07 (prod sweep 2026-08-12): the consent bar, the chat launcher and the
+// aarti countdown all landed in the bottom ~95px of the first 720px screen at
+// once. The banner has to be the only floating thing on screen until the
+// visitor answers it — both because two more overlays crowding a consent
+// control is a consent-quality problem, and because it was the bottom eighth
+// of the fold spent on interruptions. The two discretionary overlays wait;
+// the banner never does.
 export function DeferredClientWidgets() {
  return (
  <>
  <CartDrawer />
+ <ConsentGate>
  <LiveChatWidget />
  <StickyAartiCta />
+ </ConsentGate>
  <HeaderScrollShadow />
  <CookieBanner />
  </>

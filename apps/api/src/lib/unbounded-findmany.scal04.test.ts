@@ -27,7 +27,28 @@ const SRC = join(import.meta.dirname, '..');
  * and 32 after: payout 8→6, admin-metrics 7→1, whatsapp-broadcast 4→0,
  * store-admin 7→6, aarti-notify 4→3.
  */
-const BASELINE = 95;
+const BASELINE = 94;
+
+// −1 on 2026-08-15 — services/admin.service.getRevenue, the ACTIVE
+// subscription scan.
+//
+//   Every ACTIVE `MarketplaceSubscription` row was read with no take, no
+//   cursor and no select, then reduced to one scalar and bucketed by
+//   (plan, role) in a JS Map. Of the reads left in this file it is the one that
+//   grows fastest with SUCCESS rather than with traffic: there is one ACTIVE
+//   row per paying customer and it never leaves the set while they pay, so the
+//   founder's own revenue dashboard gets heavier every time the business works.
+//
+//   Now `groupBy({ by: ['plan','role'], _count, _sum: { amount } })` — one row
+//   per bucket, bounded by the product catalogue instead of the customer count.
+//   Postgres SUM over `numeric` is exact so the reported figures are identical;
+//   `admin.service.subscription-revenue.scal04.test.ts` states the ledger once
+//   and asserts the total and the per-plan breakdown against it.
+//
+//   ⚠ THE COMMENT EXPLAINING THE FIX ORIGINALLY QUOTED THE REMOVED CALL, and
+//   this scanner counted the quote — the number stayed at 95 and the removal
+//   was invisible. That is the same trap the header warns about, running the
+//   other way. Reworded to describe the call instead of spelling it.
 
 // −6 on 2026-08-14 (third pass) — services/admin.service.getPendingApprovals.
 //

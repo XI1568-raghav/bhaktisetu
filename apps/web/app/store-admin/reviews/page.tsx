@@ -186,7 +186,7 @@ export default function StoreAdminReviewsPage() {
               onClick={() => setRatingFilter(f)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 ratingFilter === f
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-emerald-700 text-white'
                   : 'bg-white border border-surface-200 text-surface-600 hover:border-emerald-300'
               }`}
             >

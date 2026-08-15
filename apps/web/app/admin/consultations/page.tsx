@@ -19,6 +19,11 @@ type AdminConsultation = {
   id: string;
   reference: string;
   userId: string;
+  // AO-17: joined from User by GET /consultation/admin/all. Nullable because
+  // an unresolvable devotee must read as unknown rather than as somebody, and
+  // optional so an older API build renders rather than showing "undefined".
+  userName?: string | null;
+  userEmail?: string | null;
   astrologerId: string;
   astrologerName: string;
   minutes: number;
@@ -240,11 +245,26 @@ function ListContent() {
                 return (
                   <tr key={c.id} className="border-t border-surface-100 hover:bg-surface-50">
                     <td className="px-3 py-2 font-mono text-xs text-surface-700">{c.reference}</td>
+                    {/* AO-17: the astrologer's UUID used to be printed under
+                        their name. It told an operator nothing they could act
+                        on and leaked an internal id onto the screen. */}
                     <td className="px-3 py-2">
                       <p className="font-medium text-surface-800">{c.astrologerName}</p>
-                      <p className="text-xs text-surface-400 font-mono">{c.astrologerId}</p>
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs text-surface-500">{shortId(c.userId)}…</td>
+                    {/* AO-17: this cell was a truncated UUID and nothing else,
+                        so the only person who can drive the lifecycle could not
+                        tell which devotee the money belonged to. The API now
+                        joins User; the id stays as a monospace subtitle for
+                        support, below a name a human can read. */}
+                    <td className="px-3 py-2">
+                      <p className="font-medium text-surface-800">
+                        {c.userName ?? 'Unknown devotee'}
+                      </p>
+                      {c.userEmail && (
+                        <p className="text-xs text-surface-500">{c.userEmail}</p>
+                      )}
+                      <p className="text-xs text-surface-400 font-mono">{shortId(c.userId)}…</p>
+                    </td>
                     <td className="px-3 py-2">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.cls}`}>
                         {badge.label}

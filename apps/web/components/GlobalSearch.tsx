@@ -201,7 +201,9 @@ export function GlobalSearch() {
  aria-haspopup="dialog"
  aria-expanded={open}
  onClick={(e) => openSearch(e.currentTarget)}
- className="xl:hidden inline-flex items-center justify-center h-9 w-9 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
+ // HN-12: h-9 w-9 is 36x36, under the 44px floor on the surface where it
+ // matters most — this is the only search affordance a phone gets.
+ className="xl:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
  >
  <Search className="w-4 h-4" />
  </button>

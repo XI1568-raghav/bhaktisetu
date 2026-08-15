@@ -58,6 +58,10 @@ type ApiWellnessDashboard = {
   totalStudents: number;
   totalEarningsInr: number;
   monthEarningsInr: number;
+  // AW-10: optional — an older API build omits them, and the page must render
+  // a blank rather than invent a 0. See the EarningsCard block below.
+  paidOutInr?: number | null;
+  pendingPayoutInr?: number | null;
   instructorShare?: number;
   platformRate?: number;
  };
@@ -157,11 +161,30 @@ export default function WellnessDashboard() {
 
  <MyProviderProfileCard role="WELLNESS_INSTRUCTOR" onboardingSlug="wellness_instructor" publicListingType="wellness" />
 
+ {/*
+ AW-10 (2026-08-12, P2): the first card is labelled with settlement, and it
+ used to be fed `totalEarningsInr` — the instructor's LIFETIME net share.
+ An instructor with one paid ₹1,000 class read that ₹800 had been
+ transferred to them while /payouts/balance said paidOutInr 0. `pending`
+ was passed literally null, so the middle card was an em dash for everyone.
+ Both figures now come from the Commission ledger, the same source
+ /payouts/balance and the Earnings page read. Identical to the AW-04 fix on
+ the astrologer dashboard.
+
+ `?? null` and NOT `?? 0`: if the API did not send the split, the card
+ renders a blank. A blank is honest; a confident zero is not.
+ */}
  <EarningsCard
- totalPaid={unread ? null : liveStats?.totalEarningsInr ?? 0}
+ totalPaid={unread ? null : liveStats?.paidOutInr ?? null}
+ pending={unread ? null : liveStats?.pendingPayoutInr ?? null}
  thisMonth={unread ? null : liveStats?.monthEarningsInr ?? 0}
- pending={null}
  />
+ {!unread && liveStats?.totalEarningsInr != null && (
+ <p data-testid="lifetime-earnings" className="text-xs text-surface-500 -mt-2">
+ Lifetime earnings {formatCurrency(liveStats.totalEarningsInr)} — your share of every
+ enrollment so far, settled or not.
+ </p>
+ )}
  {liveStats?.instructorShare != null && (
  <p className="text-xs text-surface-500 -mt-2">
  You keep {Math.round(liveStats.instructorShare * 100)}% of every enrollment (platform {Math.round((liveStats.platformRate ?? 0.2) * 100)}%).

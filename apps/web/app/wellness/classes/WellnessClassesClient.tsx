@@ -107,6 +107,15 @@ export default function WellnessClassesClient() {
           Every class below is scheduled by a verified instructor on Darshya. Enrol to reserve your
           seat; the live room link appears here once your payment is confirmed.
         </p>
+        {/* AW-13: the catalog is where a devotee lands after paying, so it is
+            where the route back to what they bought has to be. */}
+        <Link
+          href="/wellness/my-classes"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium"
+          style={{ color: 'var(--color-primary)' }}
+        >
+          <Users className="w-4 h-4" /> Classes I have enrolled in
+        </Link>
       </div>
 
       {error ? (

@@ -40,6 +40,9 @@ const steps = [
 
 const languageOptions = ['Hindi', 'Sanskrit', 'English', 'Tamil', 'Telugu', 'Marathi', 'Bengali', 'Gujarati', 'Punjabi'];
 
+/** Indian GST on wedding-ceremony services. Rendered as a percentage too — keep the label in step. */
+const GST_RATE = 0.18;
+
 export default function BookMarriage() {
  const [step, setStep] = useState<StepId>(1);
 
@@ -74,6 +77,12 @@ export default function BookMarriage() {
  const tierAmount = selectedTier?.price ?? 0;
  const addOnAmount = addOns.length * 2500;
  const total = tierAmount + addOnAmount;
+ // PF-11: these two were computed inline inside the step-5 review block, so the
+ // sticky sidebar could only say "+ GST" through the four steps where the
+ // couple is deciding — ₹25,000 on screen against a ₹29,500 commitment. One
+ // derivation, rendered in both places, so the two can never disagree.
+ const gstAmount = Math.round(total * GST_RATE);
+ const estimatedTotal = total + gstAmount;
 
  const canProceed = (): boolean => {
  if (step === 1) return !!(brideName && groomName && weddingDate);
@@ -546,11 +555,11 @@ export default function BookMarriage() {
  )}
  <div className="flex justify-between text-sm text-surface-600">
  <span>GST (18%)</span>
- <span>₹{Math.round(total * 0.18).toLocaleString('en-IN')}</span>
+ <span>₹{gstAmount.toLocaleString('en-IN')}</span>
  </div>
  <div className="flex justify-between text-lg font-bold text-surface-800 pt-2 border-t border-[var(--color-divider)]">
  <span>Estimated total</span>
- <span>₹{Math.round(total * 1.18).toLocaleString('en-IN')}</span>
+ <span>₹{estimatedTotal.toLocaleString('en-IN')}</span>
  </div>
  </div>
 
@@ -655,14 +664,25 @@ export default function BookMarriage() {
  </div>
  )}
  </div>
- <div className="mt-4 pt-4 border-t border-[var(--color-divider)]">
- <div className="flex justify-between items-baseline">
- <span className="text-sm text-surface-500">Amount</span>
- <span className="text-xl font-bold text-surface-800">
+ <div className="mt-4 pt-4 border-t border-[var(--color-divider)] space-y-1.5">
+ <div className="flex justify-between items-baseline text-sm">
+ <span className="text-surface-500">Amount</span>
+ <span className="font-medium text-surface-700">
  ₹{total.toLocaleString('en-IN')}
  </span>
  </div>
- <div className="text-xs text-surface-400 text-right mt-0.5">+ GST</div>
+ <div className="flex justify-between items-baseline text-sm">
+ <span className="text-surface-500">GST (18%)</span>
+ <span className="font-medium text-surface-700">
+ ₹{gstAmount.toLocaleString('en-IN')}
+ </span>
+ </div>
+ <div className="flex justify-between items-baseline pt-1.5 border-t border-[var(--color-divider)]">
+ <span className="text-sm text-surface-500">Estimated total</span>
+ <span className="text-xl font-bold text-surface-800">
+ ₹{estimatedTotal.toLocaleString('en-IN')}
+ </span>
+ </div>
  </div>
  </div>
 

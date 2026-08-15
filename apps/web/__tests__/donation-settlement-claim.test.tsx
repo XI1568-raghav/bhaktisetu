@@ -52,8 +52,12 @@ describe('COM-16 — the donate form makes no settlement promise it cannot keep'
   it('keeps the trust badges that code actually backs', async () => {
     await renderForm();
     expect(screen.getByText(/Razorpay secured/i)).toBeTruthy();
-    // The form mentions the 80G receipt in more than one place (badge + the
-    // PAN helper copy), so assert on presence, not uniqueness.
-    expect(screen.getAllByText(/80G receipt/i).length).toBeGreaterThan(0);
+    // This assertion used to require a Section 80G badge here. COM-02 then
+    // established that the receipt is not a Section 80G instrument — the
+    // platform holds no registration and the donee PAN is null — so the badge
+    // is now gated on donationLegal.HAS_80G_VERIFIED and the un-gated form
+    // promises only what it delivers: a receipt, by email.
+    // The tax claim itself is covered by donation-form-80g-honesty.test.tsx.
+    expect(screen.getAllByText(/receipt/i).length).toBeGreaterThan(0);
   });
 });
