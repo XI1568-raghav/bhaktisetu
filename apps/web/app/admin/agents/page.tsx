@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Bot, FileText, Clock, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 type AgentSummary = {
   agent: string;
@@ -59,7 +60,7 @@ export default function AgentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 flex items-center gap-2">
+          <h1 className={`${H1.portal} flex items-center gap-2`}>
             <Bot className="w-6 h-6 text-saffron-600" />
             Agent Fleet
           </h1>

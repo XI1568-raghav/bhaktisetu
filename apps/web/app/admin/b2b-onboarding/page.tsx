@@ -4,6 +4,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Building2, CheckCircle2, Circle, ExternalLink, ShieldCheck } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // R-Q4-S-006: B2B temple chain rollout — anchor 5 chain temples live + custom branding.
 // Scaffold for founder-driven onboarding loop. Real per-temple state lives in
@@ -104,7 +105,7 @@ export default function B2BOnboardingPage() {
 
     <header className="flex items-start justify-between gap-4 mb-8">
      <div>
-      <h1 className="text-3xl font-semibold text-surface-900 flex items-center gap-2">
+      <h1 className={`${H1.portal} flex items-center gap-2`}>
        <Building2 className="w-7 h-7 text-saffron-600" />
        B2B chain onboarding
       </h1>

@@ -503,7 +503,7 @@ function RichTemplePage({
  About {rich.name}
  </h2>
 
- <div className="space-y-5 text-[15px] leading-relaxed text-surface-600">
+ <div className="space-y-5 text-base leading-relaxed text-surface-600">
  <div>
  <h3 className="mb-2 font-semibold text-surface-800">History</h3>
  <p className="whitespace-pre-line">{rich.history}</p>

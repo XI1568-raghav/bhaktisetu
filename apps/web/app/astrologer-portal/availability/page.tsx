@@ -16,6 +16,7 @@ import {
  type WeekAvailability,
  type DaySlots,
 } from '../../../lib/astrologer-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -157,7 +158,7 @@ function AstrologerAvailabilityPageContent() {
    {/* Header */}
    <div className="flex items-center justify-between">
     <div>
-     <h1 className="text-2xl font-bold text-surface-800">Availability</h1>
+     <h1 className={H1.portal}>Availability</h1>
      <p className="text-surface-500 mt-1">
       Set your available time slots for consultations. {totalSlots} slots active.
      </p>

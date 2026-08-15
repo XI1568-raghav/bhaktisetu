@@ -2,6 +2,11 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import {
+  clearPreferredLanguageCache,
+  languageSchema,
+  sendLocalizedError,
+} from '../lib/i18n.js';
 
 // ─── Validation Schemas ────────────────────────────────────────────────────────
 
@@ -11,7 +16,10 @@ const updateProfileSchema = z.object({
   gotra: z.string().max(50).optional().nullable(),
   nakshatra: z.string().max(50).optional().nullable(),
   rashi: z.string().max(50).optional().nullable(),
-  preferredLanguage: z.enum(['en', 'hi', 'ta', 'te', 'bn', 'mr', 'gu', 'kn', 'ml', 'pa']).optional(),
+  // I-11: was a hand-retyped copy of the Prisma `Language` enum, free to drift
+  // from the enum it guards and from the three other lists that disagreed with
+  // it. Derived from the one list now — see packages/shared/.../languages.ts.
+  preferredLanguage: languageSchema.optional(),
   locationCity: z.string().max(100).optional().nullable(),
   locationState: z.string().max(100).optional().nullable(),
   isNri: z.boolean().optional(),
@@ -72,9 +80,10 @@ export async function userRoutes(server: FastifyInstance) {
     });
 
     if (!user) {
-      return reply.code(404).send({
+      return sendLocalizedError(request, reply, {
+        statusCode: 404,
+        code: 'NOT_FOUND',
         error: 'Not Found',
-        message: 'User profile not found.',
       });
     }
 
@@ -113,9 +122,13 @@ export async function userRoutes(server: FastifyInstance) {
 
     const parseResult = updateProfileSchema.safeParse(request.body);
     if (!parseResult.success) {
-      return reply.code(400).send({
+      // I-04: the field-level Zod text stays in `details` for the form to map
+      // onto inputs; `message` — the string apps/web actually renders — is now
+      // a catalogue string in the caller's language.
+      return sendLocalizedError(request, reply, {
+        statusCode: 400,
+        code: 'INVALID_BODY',
         error: 'Validation Error',
-        message: parseResult.error.errors[0]?.message || 'Invalid input',
         details: parseResult.error.errors,
       });
     }
@@ -132,6 +145,13 @@ export async function userRoutes(server: FastifyInstance) {
         where: { id: userId },
         data: updateData,
       });
+
+      // I18N-07: the stored language now drives every later response, so a
+      // change to it has to invalidate the cached copy immediately — otherwise
+      // the user switches to Tamil and reads Hindi for another five minutes.
+      if (updateData.preferredLanguage !== undefined) {
+        clearPreferredLanguageCache(userId);
+      }
 
       return reply.code(200).send({
         success: true,
@@ -157,9 +177,10 @@ export async function userRoutes(server: FastifyInstance) {
       });
     } catch (err: any) {
       if (err?.code === 'P2002' && err?.meta?.target?.includes('email')) {
-        return reply.code(409).send({
+        return sendLocalizedError(request, reply, {
+          statusCode: 409,
+          code: 'EMAIL_TAKEN',
           error: 'Conflict',
-          message: 'This email address is already associated with another account.',
         });
       }
       throw err;
@@ -206,9 +227,10 @@ export async function userRoutes(server: FastifyInstance) {
 
     const parseResult = createAddressSchema.safeParse(request.body);
     if (!parseResult.success) {
-      return reply.code(400).send({
+      return sendLocalizedError(request, reply, {
+        statusCode: 400,
+        code: 'INVALID_BODY',
         error: 'Validation Error',
-        message: parseResult.error.errors[0]?.message || 'Invalid input',
         details: parseResult.error.errors,
       });
     }
@@ -260,6 +282,11 @@ export async function userRoutes(server: FastifyInstance) {
     });
 
     if (!existing) {
+      // Deliberately NOT routed through the catalogue: "or does not belong to
+      // you" is information no code encodes, and the generic NOT_FOUND string
+      // would drop it. Same rule the serializer follows — localize only when
+      // nothing caller-specific is lost. Add an ADDRESS_NOT_FOUND code to
+      // lib/error-i18n.ts to localize this without the downgrade.
       return reply.code(404).send({
         error: 'Not Found',
         message: 'Address not found or does not belong to you.',
@@ -268,9 +295,10 @@ export async function userRoutes(server: FastifyInstance) {
 
     const parseResult = updateAddressSchema.safeParse(request.body);
     if (!parseResult.success) {
-      return reply.code(400).send({
+      return sendLocalizedError(request, reply, {
+        statusCode: 400,
+        code: 'INVALID_BODY',
         error: 'Validation Error',
-        message: parseResult.error.errors[0]?.message || 'Invalid input',
         details: parseResult.error.errors,
       });
     }
@@ -311,6 +339,11 @@ export async function userRoutes(server: FastifyInstance) {
     });
 
     if (!existing) {
+      // Deliberately NOT routed through the catalogue: "or does not belong to
+      // you" is information no code encodes, and the generic NOT_FOUND string
+      // would drop it. Same rule the serializer follows — localize only when
+      // nothing caller-specific is lost. Add an ADDRESS_NOT_FOUND code to
+      // lib/error-i18n.ts to localize this without the downgrade.
       return reply.code(404).send({
         error: 'Not Found',
         message: 'Address not found or does not belong to you.',
@@ -338,9 +371,11 @@ export async function userRoutes(server: FastifyInstance) {
 
     const parseResult = paginationSchema.safeParse(request.query);
     if (!parseResult.success) {
-      return reply.code(400).send({
+      return sendLocalizedError(request, reply, {
+        statusCode: 400,
+        code: 'INVALID_QUERY',
         error: 'Validation Error',
-        message: parseResult.error.errors[0]?.message || 'Invalid query parameters',
+        details: parseResult.error.errors,
       });
     }
 

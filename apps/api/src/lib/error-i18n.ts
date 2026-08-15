@@ -11,9 +11,27 @@
  *   reply.code(400).send({ error: { code: 'INVALID_BODY', message: localizedError('INVALID_BODY', lang) } });
  */
 
-export type SupportedLang = 'en' | 'hi' | 'ta' | 'te' | 'kn';
+import {
+  TRANSLATED_LANGUAGES,
+  isTranslatedLanguage,
+  normalizeLanguageTag,
+  type TranslatedLanguage,
+} from '@poojly/shared';
 
-export const SUPPORTED_LANGS: readonly SupportedLang[] = ['en', 'hi', 'ta', 'te', 'kn'] as const;
+/**
+ * I-11: this file used to declare its own five-member list, one of four
+ * mutually inconsistent definitions of "a supported language". The list now
+ * comes from packages/shared/src/validators/languages.ts. The names below are
+ * kept as aliases because routes import them.
+ *
+ * Note the distinction that list preserves: the platform SUPPORTS ten
+ * languages (the Prisma `Language` enum — what a profile may store); this file
+ * has authored strings for five of them. A user on an untranslated language
+ * reads English, never a raw code.
+ */
+export type SupportedLang = TranslatedLanguage;
+
+export const SUPPORTED_LANGS: readonly SupportedLang[] = TRANSLATED_LANGUAGES;
 
 export type ErrorCode =
   | 'INVALID_BODY'
@@ -218,6 +236,30 @@ const CATALOGS: Record<SupportedLang, Catalog> = { en, hi, ta, te, kn };
 
 export const ERROR_CODES = Object.keys(en) as ErrorCode[];
 
+const ERROR_CODE_SET = new Set<string>(ERROR_CODES);
+
+/** True when `value` is one of the codes this catalogue can translate. */
+export function isErrorCode(value: unknown): value is ErrorCode {
+  return typeof value === 'string' && ERROR_CODE_SET.has(value);
+}
+
+/**
+ * I-04 — the code a bare HTTP status maps to.
+ *
+ * The serializer needs this because most errors reach it as a status and a
+ * generic English sentence ("Internal server error"), with no code attached.
+ * Mapping the status gives every one of them a catalogue entry, which is what
+ * turns localization on by default instead of per-call-site.
+ */
+export function errorCodeForStatus(statusCode: number): ErrorCode {
+  if (statusCode === 401) return 'UNAUTHORIZED';
+  if (statusCode === 403) return 'FORBIDDEN';
+  if (statusCode === 404) return 'NOT_FOUND';
+  if (statusCode === 429) return 'RATE_LIMITED';
+  if (statusCode >= 400 && statusCode < 500) return 'INVALID_BODY';
+  return 'INTERNAL_ERROR';
+}
+
 /**
  * Pick the best supported language from an Accept-Language header value
  * and/or an explicit `?lang=` override. Explicit wins; otherwise we walk
@@ -227,11 +269,35 @@ export function pickLang(
   acceptLanguage: string | string[] | undefined,
   override?: string | string[] | undefined
 ): SupportedLang {
-  const ov = Array.isArray(override) ? override[0] : override;
-  if (ov && isSupported(ov.toLowerCase())) {
-    return ov.toLowerCase() as SupportedLang;
-  }
-  const header = Array.isArray(acceptLanguage) ? acceptLanguage[0] : acceptLanguage;
+  return pickLangFor({ acceptLanguage, override });
+}
+
+/**
+ * I18N-07 — the same resolution, plus the user's stored `preferredLanguage`.
+ *
+ * A profile setting is a deliberate choice; an Accept-Language header is
+ * whatever the handset happens to be configured to. The stored choice wins.
+ * An explicit `?lang=` still outranks both, because it is a per-request
+ * instruction from the caller.
+ *
+ * Anything the platform supports but has no catalogue for (bn/mr/gu/ml/pa)
+ * collapses to English here rather than leaking an untranslated code.
+ */
+export function pickLangFor(input: {
+  acceptLanguage?: string | string[] | undefined;
+  override?: string | string[] | undefined;
+  preferredLanguage?: string | null | undefined;
+}): SupportedLang {
+  const rawOverride = Array.isArray(input.override) ? input.override[0] : input.override;
+  const override = normalizeLanguageTag(rawOverride);
+  if (override && isSupported(override)) return override;
+
+  const preferred = normalizeLanguageTag(input.preferredLanguage);
+  if (preferred && isSupported(preferred)) return preferred;
+
+  const header = Array.isArray(input.acceptLanguage)
+    ? input.acceptLanguage[0]
+    : input.acceptLanguage;
   if (!header) return 'en';
   // Parse "hi-IN,hi;q=0.9,en;q=0.8" → [{tag:'hi-in',q:1},...]
   const parts = header.split(',').map((raw) => {
@@ -247,13 +313,13 @@ export function pickLang(
   for (const { tag } of parts) {
     if (!tag) continue;
     const primary = tag.split('-')[0];
-    if (primary && isSupported(primary)) return primary as SupportedLang;
+    if (primary && isSupported(primary)) return primary;
   }
   return 'en';
 }
 
 function isSupported(s: string): s is SupportedLang {
-  return (SUPPORTED_LANGS as readonly string[]).includes(s);
+  return isTranslatedLanguage(s);
 }
 
 /**

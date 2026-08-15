@@ -330,6 +330,15 @@ export interface StreamDetailVM {
   thumbnailUrl?: string;
   viewerCount: number | null;
   startedAt?: string;
+  /**
+   * PAR-21. `currentSlot` / `endsInMin` are published by BOTH /darshan/live and
+   * /darshan/:id/stream (apps/api/src/routes/darshan.ts, deriveStreamPlayback →
+   * the `/:id/stream` reply). The player used to ignore them and render a
+   * hardcoded "24x7 darshan" chip instead, which is a claim about broadcast
+   * hours that no endpoint makes.
+   */
+  currentSlot?: string;
+  endsInMin: number | null;
 }
 
 export function selectStreamDetail(payload: unknown): StreamDetailVM | null {
@@ -348,6 +357,8 @@ export function selectStreamDetail(payload: unknown): StreamDetailVM | null {
     thumbnailUrl: str(payload.thumbnailUrl),
     viewerCount: toNumber(payload.viewerCount),
     startedAt: str(payload.startedAt),
+    currentSlot: str(payload.currentSlot),
+    endsInMin: toNumber(payload.endsInMin),
   };
 }
 
@@ -1325,5 +1336,243 @@ export function buildYatraInquiry(form: YatraInquiryFormState): YatraInquiryBody
       country: 'India',
     },
     notes: form.notes?.trim() ?? '',
+  };
+}
+
+// ─── PAR-22: provider earnings + temple payouts/bookings ─────────────────────
+//
+// These four surfaces exist on the web and had no mobile equivalent at all:
+//
+//   web /temple-portal/payouts        <- GET /api/v1/temple-portal/payouts
+//   web /temple-portal/bookings       <- GET /api/v1/temple-portal/bookings
+//   web /astrologer-portal/earnings   <- GET /api/v1/astrologer-portal/earnings
+//   web /wellness-portal/earnings     <- GET /api/v1/payouts/commissions
+//                                     +  GET /api/v1/payouts/balance
+//
+// The last pair is deliberately the UNIFIED provider surface (payout-requests.ts),
+// not a per-role route: /payouts/commissions and /payouts/balance are open to
+// every provider role, so one mobile earnings screen serves wellness, store,
+// gaushala and temple alike. The web client makes the same choice for the same
+// stated reason — the admin commissions route 403s a provider no matter what
+// query string is attached (apps/web/lib/commission-api.ts:165-171).
+//
+// Every field below is read off the VERBATIM reply objects in the route
+// handlers, cited per-selector. The same two rules apply as everywhere else in
+// this file: read the key the server actually sends, and let an unrecognised
+// shape yield empty/null rather than a confident zero on a money screen.
+
+/** Money that arrives as a Decimal STRING ("2310.00") or as a number. */
+function money(v: unknown): number | null {
+  return toNumber(v);
+}
+
+// GET /api/v1/temple-portal/payouts -> {payouts[],total,pendingInr,paidInr}
+// apps/api/src/routes/temple-portal.ts:360-372. `amount` is r.amount.toString().
+export interface TemplePayoutRow {
+  id: string;
+  bookingId: string | null;
+  amountInr: number | null;
+  status: string;
+  reference: string | null;
+  processedAt: string | null;
+  createdAt: string | null;
+}
+
+export interface TemplePayoutsVM {
+  rows: TemplePayoutRow[];
+  total: number;
+  pendingInr: number | null;
+  paidInr: number | null;
+}
+
+export function selectTemplePayouts(payload: unknown): TemplePayoutsVM | null {
+  if (!isRecord(payload)) return null;
+  // A 403 body is {error}. It has no `payouts` array, and answering
+  // "0 paid out" to a temple that was refused is the worst possible lie.
+  if (!Array.isArray(payload.payouts)) return null;
+  const rows = payload.payouts
+    .filter(isRecord)
+    .map((r): TemplePayoutRow | null => {
+      const id = str(r.id);
+      if (!id) return null;
+      return {
+        id,
+        bookingId: str(r.bookingId) ?? null,
+        amountInr: money(r.amount),
+        status: str(r.status) ?? 'unknown',
+        reference: str(r.reference) ?? null,
+        processedAt: str(r.processedAt) ?? null,
+        createdAt: str(r.createdAt) ?? null,
+      };
+    })
+    .filter((r): r is TemplePayoutRow => r !== null);
+  return {
+    rows,
+    total: toNumberOr(payload.total, rows.length),
+    pendingInr: money(payload.pendingInr),
+    paidInr: money(payload.paidInr),
+  };
+}
+
+// GET /api/v1/temple-portal/bookings -> {bookings[],total}
+// apps/api/src/routes/temple-portal.ts:624-641. `priceAmount` is a Decimal string.
+export interface TempleBookingRow {
+  id: string;
+  bookingNumber: string | null;
+  status: string;
+  scheduledDate: string | null;
+  scheduledTimeSlot: string | null;
+  priceInr: number | null;
+  pujaName: string | null;
+  priestName: string | null;
+  devoteeName: string | null;
+}
+
+export function selectTempleBookings(payload: unknown): TempleBookingRow[] | null {
+  if (!isRecord(payload)) return null;
+  if (!Array.isArray(payload.bookings)) return null;
+  return payload.bookings
+    .filter(isRecord)
+    .map((b): TempleBookingRow | null => {
+      const id = str(b.id);
+      if (!id) return null;
+      return {
+        id,
+        bookingNumber: str(b.bookingNumber) ?? null,
+        status: str(b.status) ?? 'unknown',
+        scheduledDate: str(b.scheduledDate) ?? null,
+        scheduledTimeSlot: str(b.scheduledTimeSlot) ?? null,
+        // `priceAmount`, not `price` and not `priceInr`.
+        priceInr: money(b.priceAmount),
+        pujaName: str(b.pujaName) ?? null,
+        priestName: str(b.priestName) ?? null,
+        devoteeName: str(b.devoteeName) ?? null,
+      };
+    })
+    .filter((b): b is TempleBookingRow => b !== null);
+}
+
+// GET /api/v1/astrologer-portal/earnings -> {data[],summary{...}}
+// apps/api/src/routes/astrologer-portal.ts:417-426 + loadAstrologerLedger:113-127.
+export interface AstrologerEarningRow {
+  id: string;
+  bookingId: string | null;
+  status: string;
+  createdAt: string | null;
+  grossInr: number | null;
+  platformCutInr: number | null;
+  earningsInr: number | null;
+}
+
+export interface AstrologerEarningsVM {
+  rows: AstrologerEarningRow[];
+  totalEarningsInr: number | null;
+  pendingInr: number | null;
+  paidInr: number | null;
+  /** 0.8 — the astrologer share, sent as a fraction, not a percentage. */
+  astrologerShare: number | null;
+}
+
+export function selectAstrologerEarnings(payload: unknown): AstrologerEarningsVM | null {
+  if (!isRecord(payload)) return null;
+  const summary = isRecord(payload.summary) ? payload.summary : null;
+  if (!summary) return null; // 403 {error} — not a ledger
+  const rows = arrayAt(payload, 'data')
+    .filter(isRecord)
+    .map((r): AstrologerEarningRow | null => {
+      const id = str(r.id);
+      if (!id) return null;
+      return {
+        id,
+        bookingId: str(r.bookingId) ?? null,
+        status: str(r.status) ?? 'unknown',
+        createdAt: str(r.createdAt) ?? null,
+        grossInr: money(r.grossAmountInr),
+        platformCutInr: money(r.platformCutInr),
+        // `earningsInr` is the astrologer own take. Never render grossAmountInr
+        // as "you earned" — that is the devotee payment, not the payout.
+        earningsInr: money(r.earningsInr),
+      };
+    })
+    .filter((r): r is AstrologerEarningRow => r !== null);
+  return {
+    rows,
+    totalEarningsInr: money(summary.totalEarningsInr),
+    pendingInr: money(summary.pendingInr),
+    paidInr: money(summary.paidInr),
+    astrologerShare: money(summary.astrologerShare),
+  };
+}
+
+// GET /api/v1/payouts/commissions -> {data[],total,page,pageSize}
+// apps/api/src/routes/payout-requests.ts:139-161.
+//
+// `grossAmount` / `platformCut` / `ratePercent` are DELIBERATELY null for rows
+// written before COMMISSION_CONVENTION_CUTOVER (2026-08-11): the ledger is
+// mixed and those rows would derive a confidently wrong rupee figure. The app
+// must render the blank as a blank, never as 0.
+export interface ProviderCommissionRow {
+  id: string;
+  bookingId: string | null;
+  status: string;
+  createdAt: string | null;
+  /** The provider earning. Always populated, always safe to show. */
+  amountInr: number | null;
+  /** null for pre-cutover rows — not derivable, so not shown. */
+  grossInr: number | null;
+  platformCutInr: number | null;
+  ratePercent: number | null;
+}
+
+export interface ProviderCommissionsVM {
+  rows: ProviderCommissionRow[];
+  total: number;
+}
+
+export function selectProviderCommissions(payload: unknown): ProviderCommissionsVM | null {
+  if (!isRecord(payload)) return null;
+  if (!Array.isArray(payload.data)) return null; // 403 {error}
+  const rows = payload.data
+    .filter(isRecord)
+    .map((c): ProviderCommissionRow | null => {
+      const id = str(c.id);
+      if (!id) return null;
+      return {
+        id,
+        bookingId: str(c.bookingId) ?? null,
+        status: str(c.status) ?? 'unknown',
+        createdAt: str(c.createdAt) ?? null,
+        amountInr: money(c.amount),
+        grossInr: money(c.grossAmount),
+        platformCutInr: money(c.platformCut),
+        ratePercent: money(c.ratePercent),
+      };
+    })
+    .filter((c): c is ProviderCommissionRow => c !== null);
+  return { rows, total: toNumberOr(payload.total, rows.length) };
+}
+
+// GET /api/v1/payouts/balance
+//   -> {availableInr,pendingInr,paidOutInr,kycVerified,kycOnFile}
+// apps/api/src/routes/payout-requests.ts:50, spreading payout.service:216-220.
+export interface PayoutBalanceVM {
+  availableInr: number | null;
+  /** Money already inside an in-flight PayoutRequest. Disjoint from available. */
+  pendingInr: number | null;
+  paidOutInr: number | null;
+  kycVerified: boolean;
+  kycOnFile: boolean;
+}
+
+export function selectPayoutBalance(payload: unknown): PayoutBalanceVM | null {
+  if (!isRecord(payload)) return null;
+  // 403 {error: 'Provider role required'} has none of these keys.
+  if (payload.availableInr === undefined) return null;
+  return {
+    availableInr: money(payload.availableInr),
+    pendingInr: money(payload.pendingInr),
+    paidOutInr: money(payload.paidOutInr),
+    kycVerified: payload.kycVerified === true,
+    kycOnFile: payload.kycOnFile === true,
   };
 }

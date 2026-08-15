@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { formatINR, getYatraBySlug } from '../../../lib/yatra-data';
 import AuthGuard from '../../../components/AuthGuard';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface StoredBooking {
  bookingNumber: string;
@@ -75,7 +76,7 @@ function YatraBookingsInner() {
  <Mountain className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>My Yatra Bookings</p>
  </div>
- <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Your sacred journeys
  </h1>
  </div>

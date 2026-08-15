@@ -63,11 +63,71 @@ function snapToLadder(width: number): number {
 }
 
 /**
+ * Source width, in pixels, of every Commons file this app references that is
+ * NARROWER than the widest slot asked of it (IMG_W.HERO, 1280). Measured from
+ * the Commons `imageinfo` API on 2026-08-15.
+ *
+ * Commons does not refuse an oversized thumb request — it UPSCALES and answers
+ * 200. Measured on Bhimashankar.jpg, a 320x240 file: the 1280px "thumb" is
+ * 125,084 bytes, the source file itself is 26,266 bytes, and the 250px thumb
+ * is 16,938 bytes. The resize funnel, whose entire purpose is bytes, was
+ * therefore shipping 7.4x the bytes of a correct request and a blurred
+ * upscale with it. Kashi_Vishwanath.jpg (621x452) is the worst placed of
+ * these: it is FALLBACK_IMAGE, the home hero, the temple-card placeholder and
+ * the og-image placeholder, and it was being requested at 1280 (160,061 B)
+ * where 500 costs 52,125 B.
+ *
+ * Only under-1280 files need a row — anything wider is never overshot. Keys
+ * are the DECODED Commons file name, which is what `ladderWidth` looks up.
+ * `commons-asset-integrity.test.ts` fails if a key here stops being
+ * referenced, so the table cannot quietly drift into fiction.
+ */
+export const COMMONS_INTRINSIC_WIDTH: Readonly<Record<string, number>> = {
+ 'Bhimashankar.jpg': 320,
+ 'Mahishasura-Mardini_Durga.jpg': 464,
+ 'Kashi_Vishwanath.jpg': 621,
+ 'Krishna_Holds_Up_Mount_Govardhan_(MET_70694)_cropped.png': 720,
+ 'Yesoda-krishna.jpg': 796,
+ 'Japa_mala_(prayer_beads)_of_Tulasi_wood_with_108_beads_-_20040101-01.jpg': 800,
+ 'Navaratri_Bajan.jpg': 800,
+ 'Swaminarayan_Akshardham,_Delhi.jpg': 800,
+ 'Saraswati.jpg': 925,
+};
+
+/** Commons file names are percent-encoded in URLs; the table is keyed decoded. */
+function decodeCommonsFile(encoded: string | undefined): string | undefined {
+ if (!encoded) return undefined;
+ try {
+   return decodeURIComponent(encoded);
+ } catch {
+   return encoded;
+ }
+}
+
+/**
+ * The ladder step to actually request: snapped UP for quality, then clamped
+ * DOWN to the largest step the source file can satisfy without upscaling.
+ *
+ * The clamp must land on a ladder step, not on the source width — Commons
+ * answers HTTP 400 for any off-ladder width (verified: a 621px request for a
+ * 621px-wide file returns 400, its 500px request returns 200).
+ */
+function ladderWidth(requested: number, encodedFile?: string): number {
+ const up = snapToLadder(requested);
+ const intrinsic = COMMONS_INTRINSIC_WIDTH[decodeCommonsFile(encodedFile) ?? ''];
+ if (!intrinsic || up <= intrinsic) return up;
+ let down: number = COMMONS_LADDER[0]!;
+ for (const step of COMMONS_LADDER) if (step <= intrinsic) down = step;
+ return down;
+}
+
+/**
  * Convert ANY Wikimedia Commons URL to a thumbnail at the given width.
  * Originals (5-15 MB) become resized thumbnails (50-300 KB) — critical for perf.
  *
  * Width is snapped to the Commons ladder (250/330/500/960/1280/1920) — Commons
- * rejects arbitrary widths with HTTP 400 since 2024.
+ * rejects arbitrary widths with HTTP 400 since 2024 — and then capped at the
+ * source file's own width so a small file is never upscaled into a big one.
  *
  * Handles both shapes:
  *   .../commons/a/bc/Foo.jpg          → .../commons/thumb/a/bc/Foo.jpg/<w>px-Foo.jpg
@@ -75,13 +135,15 @@ function snapToLadder(width: number): number {
  */
 export function wikiThumb(url: string, width: number): string {
  if (!url.includes('upload.wikimedia.org/wikipedia/commons/')) return url;
- const w = snapToLadder(width);
  if (url.includes('/commons/thumb/')) {
+   const thumbFile = /\/commons\/thumb\/[0-9a-f]\/[0-9a-f]{2}\/([^/?#]+)\//.exec(url)?.[1];
+   const w = ladderWidth(width, thumbFile);
    return url.replace(/\/(\d+)px-/, `/${w}px-`);
  }
  const match = url.match(/\/commons\/([0-9a-f])\/([0-9a-f]{2})\/([^/?#]+)$/);
  if (!match) return url;
  const [, a, bc, file] = match;
+ const w = ladderWidth(width, file);
  // .svg → .svg.png thumb (Commons rule). Other extensions pass through.
  const thumbFile = /\.svg$/i.test(file!) ? `${file}.png` : file;
  return `https://upload.wikimedia.org/wikipedia/commons/thumb/${a}/${bc}/${file}/${w}px-${thumbFile}`;
@@ -314,10 +376,15 @@ export const IMAGES = {
  },
 
  // ── 12 Jyotirlingas (each is a unique Shiva shrine) ──────
+ // HN-05: the previous file for this shrine is not on Commons at all — the
+ // API reports it `missing` and both the original and every thumb answer
+ // HTTP 404, so it had been rendering as a permanent blank tile. Replaced
+ // with the south gopuram of the Srisailam temple itself (1752x1306, CC BY
+ // 4.0, Adityamadhav83), wide enough that the 1280 hero is not an upscale.
  'mallikarjuna': {
- hero: wiki('https://upload.wikimedia.org/wikipedia/commons/5/53/MKJNTemple.jpg'),
- thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/5/53/MKJNTemple.jpg'),
- gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/5/53/MKJNTemple.jpg')],
+ hero: wiki('https://upload.wikimedia.org/wikipedia/commons/1/1f/Night_view_of_Srisailam_Temple_South_Gopuram.jpg'),
+ thumbnail: wiki('https://upload.wikimedia.org/wikipedia/commons/1/1f/Night_view_of_Srisailam_Temple_South_Gopuram.jpg'),
+ gallery: [wiki('https://upload.wikimedia.org/wikipedia/commons/1/1f/Night_view_of_Srisailam_Temple_South_Gopuram.jpg')],
  },
  'omkareshwar': {
  hero: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Omkareswar_Jyotirlinga.jpg/1280px-Omkareswar_Jyotirlinga.jpg'),

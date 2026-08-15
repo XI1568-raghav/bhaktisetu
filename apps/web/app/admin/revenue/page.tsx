@@ -27,6 +27,7 @@ import {
   type PayoutAccrual,
 } from './payout-api';
 import { listCommissions, type Commission } from '../../../lib/commission-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const roleBadgeColors: Record<string, string> = {
  PANDIT: 'bg-saffron-50 text-saffron-700',
@@ -268,7 +269,7 @@ export default function AdminRevenuePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-lg font-semibold text-surface-800">Revenue</h1>
+          <h1 className={H1.portal}>Revenue</h1>
           <p className="text-sm text-surface-500 mt-0.5">Platform revenue, commissions, and payout management</p>
         </div>
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-12 text-center">
@@ -283,7 +284,7 @@ export default function AdminRevenuePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-lg font-semibold text-surface-800">Revenue</h1>
+          <h1 className={H1.portal}>Revenue</h1>
           <p className="text-sm text-surface-500 mt-0.5">Platform revenue, commissions, and payout management</p>
         </div>
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -342,7 +343,7 @@ export default function AdminRevenuePage() {
  <div className="space-y-6">
  {/* Header */}
  <div>
- <h1 className="text-lg font-semibold text-surface-800">Revenue</h1>
+ <h1 className={H1.portal}>Revenue</h1>
  <p className="text-sm text-surface-500 mt-0.5">Platform revenue, commissions, and payout management</p>
  </div>
 

@@ -13,6 +13,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { API_BASE_URL, fetchWithTimeout, isNetworkFailure } from '../../../../lib/api-config';
+import { buttonClass } from '../../../../components/ui/button-recipe';
 
 /**
  * The REAL astrologer directory.
@@ -189,11 +190,7 @@ function AstrologerCard({ a }: { a: LiveAstrologer }) {
           </Link>
           <Link
             href={`/astrology/${a.id}/book`}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-              online
-                ? 'bg-saffron-600 text-white shadow-sm hover:bg-saffron-700 hover:shadow-md'
-                : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
-            }`}
+            className={buttonClass(online ? 'primary' : 'secondary', 'sm')}
           >
             {online ? 'Consult now' : 'Book a slot'}
           </Link>
@@ -372,7 +369,7 @@ export default function LiveAstrologersClient() {
           <button
             type="button"
             onClick={retry}
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+            className={buttonClass('primary', 'md', 'mt-4')}
           >
             <RefreshCw className="w-4 h-4" aria-hidden="true" /> Try again
           </button>
@@ -389,7 +386,7 @@ export default function LiveAstrologersClient() {
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             <Link
               href="/astrology"
-              className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Free astrology tools
             </Link>

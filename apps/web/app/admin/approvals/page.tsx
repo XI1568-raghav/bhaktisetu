@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // Backend returns aggregated rows from getPendingApprovals():
 //   { id, userId, role: 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' |
@@ -188,7 +189,7 @@ export default function AdminApprovalsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-surface-800">Provider Approvals</h1>
+          <h1 className={H1.portal}>Provider Approvals</h1>
           <p className="text-sm text-surface-500 mt-0.5">
             {loading ? 'Loading…' : `${approvals.length} pending approval${approvals.length === 1 ? '' : 's'} require review`}
           </p>

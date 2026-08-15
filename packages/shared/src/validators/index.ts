@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { languageSchema } from "./languages.js";
+
 // ──────────────────────────────────────────────
 // @poojly/shared — Zod Validators
 // ──────────────────────────────────────────────
@@ -49,7 +51,10 @@ export const updateProfileSchema = z.object({
   gotra: z.string().max(50).optional(),
   nakshatra: z.string().max(50).optional(),
   rashi: z.string().max(50).optional(),
-  preferredLanguage: z.string().min(2).max(5).optional(),
+  // I-11: was `z.string().min(2).max(5)`, which accepted "zz" and "zzzzz" and
+  // deferred the real check to the Prisma `Language` enum — a 500 for what is
+  // a 400. Derived from the one list now; see ./languages.ts.
+  preferredLanguage: languageSchema.optional(),
   tradition: z
     .enum([
       "SHAIVA",
@@ -197,6 +202,9 @@ export const paginationSchema = z.object({
 });
 
 export type PaginationInput = z.infer<typeof paginationSchema>;
+
+// ─── Languages (I-11 single source of truth) ─
+export * from "./languages.js";
 
 // ─── Reading Progress ────────────────────────
 export * from "./reading-progress.js";

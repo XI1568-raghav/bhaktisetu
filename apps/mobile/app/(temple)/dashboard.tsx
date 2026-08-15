@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import {
   PortalScreen,
   Section,
@@ -102,6 +104,19 @@ export default function TempleDashboard() {
         </>
       ) : null}
 
+      {/*
+        PAR-22. Bookings and Payouts are new tabs; Plan moved off the tab bar to
+        make room for them rather than being dropped, so it keeps an entry point
+        here. A screen with no route to it is the same as a missing screen.
+      */}
+      <Section title="Manage">
+        <View style={styles.quickRow}>
+          <QuickLink icon="calendar" label="Bookings" href="/(temple)/bookings" />
+          <QuickLink icon="cash" label="Payouts" href="/(temple)/payouts" />
+          <QuickLink icon="card" label="Plan" href="/(temple)/subscription" />
+        </View>
+      </Section>
+
       <Section title="Messages">
         <MessagesEntry roleGroup="temple" />
       </Section>
@@ -146,6 +161,29 @@ export default function TempleDashboard() {
   );
 }
 
+function QuickLink({
+  icon,
+  label,
+  href,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  href: string;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.quickLink}
+      activeOpacity={0.7}
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      onPress={() => router.push(href as never)}
+    >
+      <Ionicons name={icon} size={20} color={colors.saffron[600]} />
+      <Text style={styles.quickLinkText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   notice: {
     fontSize: fontSize.sm,
@@ -156,5 +194,21 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     padding: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  quickRow: { flexDirection: 'row', gap: spacing.sm },
+  quickLink: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+  },
+  quickLinkText: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.stone[800],
   },
 });

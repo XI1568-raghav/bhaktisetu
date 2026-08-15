@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -329,7 +330,7 @@ function PriestBookingsInner() {
  <div className="space-y-6 max-w-5xl">
  {/* Header */}
  <div>
- <h1 className="text-2xl font-bold text-surface-800">My Bookings</h1>
+ <h1 className={H1.portal}>My Bookings</h1>
  <p className="text-surface-500 mt-1">Manage your assigned puja bookings</p>
  </div>
 

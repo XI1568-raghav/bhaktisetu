@@ -2,6 +2,7 @@
 // "ashtakoot guna milan", "manglik dosh check", "free kundli match".
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -108,7 +109,7 @@ export default function MatchmakingPage() {
      Bhakoot, Nadi — totaling 36 guna. Plus Manglik dosh check. Free, instant, no signup.
     </p>
     <div className="mt-6 flex flex-wrap justify-center gap-3">
-     <Link href="/astrology/kundli-milan" className="rounded-full bg-saffron-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-saffron-700">
+     <Link href="/astrology/kundli-milan" className={buttonClass('primary', 'lg')}>
       Start Free Match (36 points)
      </Link>
      <Link href="/ask-pandit" className="rounded-full border-2 border-saffron-300 bg-white px-6 py-3 text-base font-semibold text-saffron-700 hover:bg-saffron-50">
@@ -184,7 +185,7 @@ export default function MatchmakingPage() {
      Enter both birth nakshatras + Manglik status → 36-point score with full koota breakdown
      in 5 seconds. Free.
     </p>
-    <Link href="/astrology/kundli-milan" className="mt-5 inline-block rounded-full bg-saffron-600 px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-saffron-700">
+    <Link href="/astrology/kundli-milan" className={buttonClass('primary', 'lg', 'mt-5')}>
      Open Free Kundli Milan →
     </Link>
    </section>
@@ -213,7 +214,7 @@ export default function MatchmakingPage() {
      <li>• <strong>Remedies if doshas present</strong> — specific puja, mantra, gem recommendations</li>
     </ul>
     <div className="mt-5 flex flex-wrap gap-3">
-     <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
       Talk to a Pandit
      </Link>
      <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

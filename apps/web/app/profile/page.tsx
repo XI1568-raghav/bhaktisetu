@@ -23,6 +23,8 @@ import {
  fetchWithTimeout,
  loadErrorMessage,
 } from '../../lib/api-config';
+import { H1 } from '../../components/ui/heading-recipe';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 interface ProfileFormData {
  fullName: string;
@@ -252,7 +254,7 @@ function ProfileContent() {
  <ArrowLeft className="w-4 h-4" />
  Back to Dashboard
  </a>
- <h1 className="text-2xl sm:text-3xl font-bold text-surface-800">Edit Profile</h1>
+ <h1 className={H1.portal}>Edit Profile</h1>
  <p className="text-surface-500 text-sm mt-1">
  Manage your personal and spiritual information
  </p>
@@ -547,7 +549,7 @@ function ProfileContent() {
  <button
  onClick={handleSave}
  disabled={isSaving || !!loadFailed}
- className="inline-flex items-center gap-2 px-6 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-warm-sm"
+ className={buttonClass('primary', 'md', 'disabled:cursor-not-allowed shadow-warm-sm')}
  >
  {isSaving ? (
  <>

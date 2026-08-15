@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '../lib/api-config';
+import { contentSubtitleLabel, pujaSubtitleLabel } from './SearchSubtitle';
 
 const ROTATING_PLACEHOLDERS = [
   'Search puja, temple, kundli, saint…',
@@ -166,13 +167,33 @@ export function GlobalSearch() {
  return () => clearTimeout(timer);
  }, [query]);
 
- const sections: Array<[string, SearchResult[]]> = data
- ? [
- ['Temples', data.results.temples],
- ['Pujas', data.results.pujas],
- ['Content', data.results.content],
- ].filter(([, list]) => (list as SearchResult[]).length > 0) as Array<[string, SearchResult[]]>
+ /**
+  * CM-12: pujas lead. They are the only results a devotee can act on with
+  * money, and temples — which used to lead — is the branch CM-14 measured as
+  * 75% dead (15 of 20 temples carry zero offerings). /search already orders it
+  * this way; the overlay is what people actually type into.
+  *
+  * CM-10: `format` strips the enum out of the API's composed subtitle before
+  * it reaches the DOM. See components/SearchSubtitle.ts.
+  */
+ type Section = {
+   label: string;
+   items: SearchResult[];
+   format: (subtitle?: string | null) => string;
+ };
+
+ const sections: Section[] = data
+ ? (
+ [
+ { label: 'Pujas', items: data.results.pujas, format: pujaSubtitleLabel },
+ { label: 'Temples', items: data.results.temples, format: (s) => (s ?? '').trim() },
+ { label: 'Content', items: data.results.content, format: contentSubtitleLabel },
+ ] as Section[]
+ ).filter((s) => s.items.length > 0)
  : [];
+
+ const trimmedQuery = query.trim();
+ const noMatches = trimmedQuery.length >= 2 && !!data && data.results.total === 0 && !loading;
 
  return (
  <div ref={containerRef} className="relative">
@@ -246,9 +267,45 @@ export function GlobalSearch() {
  </div>
 
  <div className="max-h-[60vh] overflow-y-auto">
- {query.trim().length >= 2 && data && data.results.total === 0 && !loading && (
- <div className="px-4 py-8 text-center text-sm text-surface-500">
- No matches for &ldquo;{query.trim()}&rdquo;.
+ {/*
+   CM-12: this used to be the complete zero-result state — one sentence, no
+   links. The finding names it exactly: "no route back into the catalogue at
+   the moment the user has proven both intent and a willingness to type".
+   /search got its recovery links; the overlay did not, and on a phone the
+   overlay is the ONLY search affordance the site offers (see HN-12 above).
+   The typed term is carried into /search so nobody has to type it twice.
+ */}
+ {noMatches && (
+ <div className="px-4 py-6 text-sm">
+ <p className="text-surface-600">
+ No matches for &ldquo;{trimmedQuery}&rdquo;.
+ </p>
+ <p className="mt-1 text-xs text-surface-500">
+ Try a shorter term, or start from a catalogue:
+ </p>
+ <div className="mt-3 flex flex-wrap gap-2">
+ <Link
+ href="/pujas"
+ onClick={closeSearch}
+ className="inline-flex min-h-[44px] items-center rounded-lg bg-saffron-600 px-4 text-sm font-semibold text-white hover:bg-saffron-700"
+ >
+ Browse all pujas
+ </Link>
+ <Link
+ href="/temples"
+ onClick={closeSearch}
+ className="inline-flex min-h-[44px] items-center rounded-lg border border-surface-200 px-4 text-sm font-semibold text-surface-700 hover:border-saffron-400"
+ >
+ Browse temples
+ </Link>
+ </div>
+ <Link
+ href={`/search?q=${encodeURIComponent(trimmedQuery)}`}
+ onClick={closeSearch}
+ className="mt-3 inline-flex min-h-[44px] items-center text-xs font-medium text-saffron-700 underline underline-offset-4"
+ >
+ Search the whole library for &ldquo;{trimmedQuery}&rdquo;
+ </Link>
  </div>
  )}
 
@@ -260,12 +317,14 @@ export function GlobalSearch() {
  </div>
  )}
 
- {sections.map(([label, items]) => (
+ {sections.map(({ label, items, format }) => (
  <div key={label} className="py-2">
  <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-saffron-600">
  {label}
  </div>
- {items.map((item) => (
+ {items.map((item) => {
+ const subtitle = format(item.subtitle);
+ return (
  <Link
  key={`${label}-${item.id}`}
  href={item.href}
@@ -273,11 +332,12 @@ export function GlobalSearch() {
  className="block px-3 py-2 hover:bg-surface-50 transition-colors"
  >
  <div className="text-sm font-medium text-surface-800">{item.name}</div>
- {item.subtitle && (
- <div className="text-xs text-surface-500">{item.subtitle}</div>
+ {subtitle && (
+ <div className="text-xs text-surface-500">{subtitle}</div>
  )}
  </Link>
- ))}
+ );
+ })}
  </div>
  ))}
  </div>

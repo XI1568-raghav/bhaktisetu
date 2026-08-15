@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, ClipboardList, Building2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
+import { H1 } from '../../components/ui/heading-recipe';
 
 interface Gurukul {
   id: string; slug: string; name: string; city: string; state: string;
@@ -45,7 +46,7 @@ export default function GurukulPortalClient() {
     <main className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-surface-900">Gurukul portal</h1>
+          <h1 className={H1.portal}>Gurukul portal</h1>
           <p className="text-sm text-surface-600">Manage your listings and review admission applications.</p>
         </div>
         <div className="flex gap-2">

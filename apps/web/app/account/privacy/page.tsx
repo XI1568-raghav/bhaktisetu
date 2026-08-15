@@ -18,6 +18,7 @@ import {
   grievanceSlaLine,
   rightsContactEmail,
 } from '../../../lib/company';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * LEG-16 (prod sweep 2026-08-12) — DPDP rights were email-only.
@@ -185,7 +186,7 @@ function AccountPrivacyInner() {
   return (
     <div className="min-h-[100dvh] bg-surface-50">
       <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
-        <h1 className="text-2xl font-semibold text-surface-900">Your data & privacy</h1>
+        <h1 className={H1.portal}>Your data & privacy</h1>
         <p className="mt-2 text-sm leading-relaxed text-surface-700">
           Exercise your rights under the Digital Personal Data Protection Act, 2023 here. We record
           every request with a deadline and answer in writing — you do not have to send an email and

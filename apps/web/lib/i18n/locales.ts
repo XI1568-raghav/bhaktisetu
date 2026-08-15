@@ -363,6 +363,53 @@ export function readClientLocale(): Locale | null {
   return readCookieLocale() ?? readStorageLocale();
 }
 
+function writeCookieLocale(locale: Locale): void {
+  if (typeof document === 'undefined') return;
+  // Same attributes the middleware uses (locales.ts is the one definition of
+  // this cookie), so we update the existing cookie rather than shadowing it
+  // with a second one on a narrower path.
+  document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
+}
+
+function writeStorageLocale(locale: Locale): void {
+  try {
+    if (typeof window === 'undefined') return;
+    window.localStorage?.setItem(LOCALE_COOKIE, locale);
+  } catch {
+    // Storage unavailable — the cookie is still authoritative.
+  }
+}
+
+/**
+ * Record a locale the visitor JUST CHOSE, into both stores at once.
+ *
+ * This is the write half `readClientLocale`/`syncClientLocale` were missing,
+ * and its absence is what kept the in-app switcher decorative: the only
+ * language control in the product (components/LanguageSwitcher.tsx, mounted on
+ * the content page header, the profile page and the onboarding modal) wrote
+ * `localStorage` and nothing else, so no server code could see the choice —
+ * not the middleware, not lib/i18n/server.ts, not the coverage disclosure.
+ *
+ * WHY BOTH STORES AND NOT JUST THE COOKIE. `syncClientLocale` resolves a
+ * conflict in the COOKIE's favour, because the middleware only writes it in
+ * response to an explicit signal on that request. So a switcher pick that
+ * updated only localStorage was not merely invisible — it was actively erased
+ * by the next navigation's reconciliation, silently restoring whatever the
+ * footer had stored earlier. Writing both keeps that tie-break honest: the
+ * click IS the explicit signal.
+ *
+ * Unconditional on purpose (unlike the convergence writes in
+ * `syncClientLocale`): re-picking the language you already have should still
+ * refresh the year-long expiry, and these are `document.cookie` /
+ * `localStorage` writes, so neither costs a request or a cache entry.
+ */
+export function writeClientLocale(locale: Locale): Locale {
+  const active = normalizeLocale(locale);
+  writeCookieLocale(active);
+  writeStorageLocale(active);
+  return active;
+}
+
 /**
  * Read the active locale AND converge both stores onto it. Returns the active
  * locale (English when nothing was ever chosen).
@@ -376,23 +423,12 @@ export function syncClientLocale(): Locale {
 
   const active: Locale = cookie ?? stored ?? DEFAULT_LOCALE;
 
-  if (cookie !== active && typeof document !== 'undefined') {
-    // Same attributes the middleware uses (locales.ts is the one definition of
-    // this cookie), so we update the existing cookie rather than shadowing it
-    // with a second one on a narrower path.
-    document.cookie = `${LOCALE_COOKIE}=${active}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
-  }
+  if (cookie !== active) writeCookieLocale(active);
 
   // Compare the RAW stored string, not the parsed locale: a stored 'hi-IN'
-  // parses to 'hi' but is not what the switcher's `stored === 'hi'` check
-  // accepts, so it has to be rewritten in canonical form.
-  if (readStorageRaw() !== active) {
-    try {
-      window.localStorage?.setItem(LOCALE_COOKIE, active);
-    } catch {
-      // Storage unavailable — the cookie is still authoritative.
-    }
-  }
+  // parses to 'hi' but is not what the switcher's canonical-code check accepts,
+  // so it has to be rewritten in canonical form.
+  if (readStorageRaw() !== active) writeStorageLocale(active);
 
   return active;
 }

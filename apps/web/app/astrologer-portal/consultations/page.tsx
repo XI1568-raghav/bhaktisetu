@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * AW-01 (2026-08-12, P0) — this page could never show a consultation the
@@ -162,7 +163,7 @@ export default function AstrologerConsultationsPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold text-surface-800">Consultations</h1>
+        <h1 className={H1.portal}>Consultations</h1>
         <p className="text-surface-500 mt-1">Manage your upcoming and past sessions</p>
       </div>
 

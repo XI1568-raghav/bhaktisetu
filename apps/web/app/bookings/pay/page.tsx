@@ -31,6 +31,7 @@ import { AlertCircle, ArrowLeft, Calendar, Clock, Loader2, MapPin, ShieldCheck }
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Razorpay ───────────────────────────────────────────────────
 
@@ -320,7 +321,7 @@ function ResumePaymentContent() {
           Back to My Bookings
         </Link>
 
-        <h1 className="mb-1 text-xl font-semibold text-surface-800">Complete your payment</h1>
+        <h1 className={`${H1.portal} mb-1`}>Complete your payment</h1>
         <p className="mb-6 text-sm text-surface-500">
           This booking is already reserved in your name. Paying now confirms it.
         </p>
