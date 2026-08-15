@@ -277,7 +277,7 @@ function WellnessSessionsPageContent() {
     </div>
     <button
      onClick={() => { resetForm(); setShowForm(true); }}
-     className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 transition-colors"
+     className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white font-medium text-sm rounded-lg hover:bg-emerald-800 transition-colors"
     >
      <Plus className="w-4 h-4" />
      Add Session
@@ -421,7 +421,7 @@ function WellnessSessionsPageContent() {
        <button
         type="submit"
         disabled={saving}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700 text-white font-medium text-sm rounded-lg hover:bg-emerald-800 transition-colors disabled:opacity-50"
        >
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
         {editingId ? 'Update Session' : 'Add Session'}
@@ -512,7 +512,7 @@ function WellnessSessionsPageContent() {
              <button
               onClick={() => void handleSaveRoom(s)}
               disabled={roomSaving}
-              className="px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-medium bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 disabled:opacity-50"
              >
               {roomSaving ? 'Saving…' : 'Save room'}
              </button>
@@ -542,7 +542,7 @@ function WellnessSessionsPageContent() {
            disabled={disabled || s.status === 'COMPLETED'}
            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
             s.status === 'CANCELLED'
-             ? 'bg-tulsi-green text-white hover:opacity-90'
+             ? 'bg-tulsi-green-dark text-white hover:opacity-90'
              : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
            }`}
           >

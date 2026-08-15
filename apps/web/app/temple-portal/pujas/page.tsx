@@ -486,7 +486,7 @@ function TemplePujasPageContent() {
                       className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
                         puja.isActive
                           ? 'bg-surface-100 text-surface-600 hover:bg-surface-200'
-                          : 'bg-tulsi-green text-white hover:opacity-90'
+                          : 'bg-tulsi-green-dark text-white hover:opacity-90'
                       }`}
                     >
                       {puja.isActive ? 'Deactivate' : 'Activate'}

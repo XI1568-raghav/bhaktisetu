@@ -116,7 +116,7 @@ export default async function HomePage() {
 
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}
  <section className="flex flex-col justify-center relative overflow-hidden">
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+ <div className="container-wide py-6 md:py-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
  {panchangChip && (
@@ -237,7 +237,7 @@ export default async function HomePage() {
  {/* User complaint 2026-06-05: above-fold reads as saffron monoculture. */}
  {/* This strip immediately signals Worship saffron, Library indigo, Astrology indigo, Yatra emerald, Shop amber. */}
  <section aria-label="Browse by category" className="py-5 md:py-7" style={{ background: 'var(--color-bg)' }}>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="flex md:grid md:grid-cols-5 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
  {[
  { label: 'Worship', sub: 'Darshan, Puja, Aarti', href: '/pujas', Icon: Flame, bg: '#FFF8F0', border: '#FDD8AF', text: '#7d4e1f', icon: '#9e6229' },
@@ -266,7 +266,7 @@ export default async function HomePage() {
 
  {/* ═══ QUICK ACTIONS — 6 chip row (IA P4) ═══════════════════════════ */}
  <section aria-label="Quick actions" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="flex md:grid md:grid-cols-6 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
  {[
  { label: 'Darshan', href: '/darshan', Icon: Video, color: 'var(--color-primary)' },
@@ -293,7 +293,7 @@ export default async function HomePage() {
 
  {/* ═══ TRUST STRIP — verified, video-proof, 80G, NRI-friendly ═══ */}
  <section aria-label="Trust signals" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  {[
  { icon: Shield, title: 'Verified Temples', desc: 'Manager-signed, on-site audit', accent: 'var(--color-primary)' },
@@ -318,7 +318,7 @@ export default async function HomePage() {
 
  {/* ═══ WHAT WE OFFER — cascade card grid ════════════════════════════ */}
  <section className="py-6 md:py-8">
- <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="flex items-center gap-2.5 mb-3">
  <Zap className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>{t('everythingOneApp')}</p>
@@ -357,7 +357,7 @@ export default async function HomePage() {
 
  {/* ═══ LIVE DARSHAN — cinematic image reveal ════════════════════════ */}
  <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="flex items-center justify-between mb-5">
  <div>
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>{t('liveDarshanLabel')}</p>
@@ -406,7 +406,7 @@ export default async function HomePage() {
 
  {/* ═══ PUJA BOOKING + ASTROLOGY — side by side ═══════════════════ */}
  <section className="py-6 md:py-8">
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="grid md:grid-cols-2 gap-5">
  {/* Puja Booking card */}
  <div data-reveal="spring" className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
@@ -519,7 +519,7 @@ export default async function HomePage() {
 
  {/* ═══ AI PANDIT — blur-in chat mockup ════════════════════════════ */}
  <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('aiGuideLabel')}</p>
@@ -567,7 +567,7 @@ export default async function HomePage() {
 
  {/* ═══ BHAKTI STORE — showcase ═══════════════════════════════════ */}
  <section className="py-6 md:py-8">
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('bhaktiStoreLabel')}</p>
@@ -612,7 +612,7 @@ export default async function HomePage() {
 
  {/* ═══ MORE FEATURES — cascade compact row ═══════════════════════ */}
  <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  {[
  { title: t('gauSevaTitle'), desc: t('gauSevaDesc'), href: '/gaushala', icon: Heart },
@@ -640,7 +640,7 @@ export default async function HomePage() {
 
  {/* ═══ FINAL CTA — cinematic + spring ════════════════════════════ */}
  <section className="py-6 md:py-8">
- <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+ <div className="container-wide text-center">
  <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  {t('finalCtaTitle')}
  </h2>
@@ -673,7 +673,7 @@ export default async function HomePage() {
 
  {/* ═══ LIBRARY TEASER — 4-card row mirroring Library mega-panel (IA P4) ═══ */}
  <section aria-label="Discover the Library" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="flex items-end justify-between mb-5">
  <div>
  <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#4f46e5' }}>Library</p>
@@ -715,7 +715,7 @@ export default async function HomePage() {
 
  {/* ═══ YATRA TEASER — 3-card emerald row per audit §3 delta #1 ═══════════ */}
  <section aria-label="Pilgrimage circuits" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <div className="flex items-end justify-between mb-5">
  <div>
  <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#059669' }}>Yatra</p>
@@ -757,7 +757,7 @@ export default async function HomePage() {
  <TrustStrip verifiedTemples={counts.verifiedTemples} />
 
  {/* Daily-panchang waitlist — single-field email capture, source-tagged for funnel */}
- <section className="max-w-3xl mx-auto px-4 py-12">
+ <section className="container-prose py-12">
  <EmailCapture
  source="home-hero"
  title="Daily panchang in your inbox"

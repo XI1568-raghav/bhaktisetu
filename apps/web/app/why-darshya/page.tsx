@@ -1,5 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { COMPANY } from '../../lib/company';
+import {
+  CANCELLATION_BADGE_LABEL,
+  CANCELLATION_BADGE_DESC,
+  CANCELLATION_POLICY_SENTENCE,
+  REFUND_DAYS_LABEL,
+} from '../../lib/cancellation-policy';
 
 export const revalidate = 86400;
 
@@ -31,11 +38,11 @@ interface Row {
 const ROWS: Row[] = [
   {
     feature: 'Video proof of every puja',
-    darshya: '✓ Mandatory, 24-48h delivery',
+    darshya: `✓ Mandatory, ${COMPANY.refunds.videoProofTargetLabel} target`,
     sriMandir: '~ Partial (premium tier)',
     utsav: '~ On request',
     astrosage: '✗',
-    detail: 'We refuse to ship a puja without recorded sankalp. Every booking gets a 5-10 min video uploaded within 48 hours.',
+    detail: `We refuse to ship a puja without recorded sankalp. Every booking gets a 5-10 min video, and we aim to have it up within ${COMPANY.refunds.videoProofTargetLabel}. That is a target, not a money-backed clock: if nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, a sweep cancels the booking for manual refund review if it is still waiting on its assigned pandit, and any other status needs an email from you.`,
   },
   {
     feature: 'NRI-fair pricing',
@@ -110,12 +117,12 @@ const ROWS: Row[] = [
     detail: 'You book from abroad, recipient in India gets booking number + video proof via WhatsApp + name in sankalp.',
   },
   {
-    feature: 'Cancellation up to 24h before',
-    darshya: '✓ Full refund, 3-7 day processing',
+    feature: 'Published cancellation ladder',
+    darshya: `✓ ${CANCELLATION_BADGE_LABEL}, then ${CANCELLATION_BADGE_DESC}`,
     sriMandir: '~ Case-by-case',
     utsav: '~ Strict policies',
     astrosage: 'N/A',
-    detail: 'After 24h: samagri procured + pandit slot locked, so no refund. Reschedule still possible.',
+    detail: `${CANCELLATION_POLICY_SENTENCE} Inside the cutoff the samagri is procured and the pandit slot is locked; a reschedule is still possible. Refunds settle in ${REFUND_DAYS_LABEL}.`,
   },
   {
     feature: 'Mobile app + web parity',
@@ -294,9 +301,18 @@ export default function WhyDarshya() {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-8 text-center">
         <h2 className="text-2xl font-bold text-surface-900 mb-3">Try us with a small puja</h2>
+        {/* LEG-06 (prod sweep 2026-08-12): this used to promise a video inside
+            48 hours and, if it never came, an automatic cancel-and-repay.
+            Neither exists. escalateStaleBookings runs at 72h, selects one of
+            nine statuses, and its own comment records that it deliberately
+            writes no refund marker — a person issues the money. /refunds was
+            rewritten to say so; this CTA was not, and a CTA is read by more
+            people than a policy page. */}
         <p className="text-surface-700 text-base mb-5 max-w-xl mx-auto">
-          Book a ₹501 puja, get video proof in 48 hours, judge for yourself. If the video never
-          arrives, we cancel and refund you in full &mdash; see the{' '}
+          Book a ₹501 puja and judge for yourself. We aim to have your video up within{' '}
+          {COMPANY.refunds.videoProofTargetLabel}; if none has arrived{' '}
+          {COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write to us and a
+          person reviews it &mdash; where the pandit is at fault you are repaid in full. See the{' '}
           <Link href="/refunds" className="underline">
             refund policy
           </Link>{' '}

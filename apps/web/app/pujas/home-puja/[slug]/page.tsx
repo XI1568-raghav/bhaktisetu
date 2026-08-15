@@ -22,13 +22,7 @@ import {
 } from 'lucide-react';
 import { homePujaCategories } from '../../../../lib/home-pujas';
 import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api';
-
-function panditInitials(name: string): string {
- const parts = name.trim().split(/\s+/);
- const first = parts[0]?.charAt(0) ?? '';
- const last = parts.length > 1 ? parts[parts.length - 1]?.charAt(0) ?? '' : '';
- return (first + last).toUpperCase() || 'P';
-}
+import { PanditAvatar } from '../../PanditAvatar';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -299,18 +293,14 @@ export default async function HomePujaDetail({ params }: Props) {
  href={`/pandits/${p.id}`}
  className="group bg-white border border-[var(--color-border)] rounded-xl p-5 hover:shadow-warm-md hover:-translate-y-0.5 transition-all flex gap-4"
  >
- {p.avatarUrl ? (
- // eslint-disable-next-line @next/next/no-img-element
- <img
+ {/* PF-04: same defect as the wedding page — a present-but-unresolvable
+     avatar URL skipped the initials tile and rendered broken. */}
+ <PanditAvatar
  src={p.avatarUrl}
- alt={p.displayName}
- className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
+ name={p.displayName}
+ size={80}
+ className="w-20 h-20 rounded-xl text-xl"
  />
- ) : (
- <div className="w-20 h-20 rounded-xl bg-saffron-100 flex items-center justify-center text-saffron-700 font-bold text-xl flex-shrink-0">
- {panditInitials(p.displayName)}
- </div>
- )}
  <div className="flex-1 min-w-0">
  <div className="flex items-start justify-between gap-2">
  <div className="min-w-0">

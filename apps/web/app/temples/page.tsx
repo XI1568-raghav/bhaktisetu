@@ -4,6 +4,8 @@ import { H1 } from '../../components/ui/heading-recipe';
 import { getTemples, type TempleListItem } from '../../lib/api';
 import { TEMPLE_DETAILS, type TempleDetailRich } from '../../lib/temple-details';
 import { TemplesBrowser, type TempleCardData } from '../../components/temples/TemplesBrowser';
+import { canonicalTempleSlug } from '../../lib/temple-slug';
+import { dedupeTempleCards } from '../../lib/temple-grid';
 import { TRUST_SCORE_MARQUEE } from '../../lib/trust-score';
 
 export const metadata: Metadata = {
@@ -99,7 +101,7 @@ function TemplesSkeleton() {
    className="min-h-[100dvh] bg-[color:var(--color-bg,#fbf7f1)]"
   >
    <section className="bg-[#ede9e3] py-12 md:py-16">
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="container-wide">
      <h1 className={`${H1.catalogue} mb-3`}>
       Sacred Temples of India
      </h1>
@@ -107,7 +109,7 @@ function TemplesSkeleton() {
      <div className="mt-8 h-[54px] max-w-2xl animate-pulse rounded-lg bg-white/70" />
     </div>
    </section>
-   <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+   <div className="container-wide py-8">
     <div className="mb-6 flex flex-wrap gap-2">
      {Array.from({ length: 6 }).map((_, i) => (
       <div key={i} className="h-8 w-24 animate-pulse rounded-full bg-white/70" />
@@ -140,8 +142,10 @@ function TemplesSkeleton() {
  * up to serverFetch's 4s abort budget with nothing painted on screen.
  */
 async function TemplesData() {
- // Start with all rich-detail temples
- const richCards = Object.values(TEMPLE_DETAILS).map(richToCard);
+ // TD-03: the curated map holds Ramanathaswamy twice (rameswaram +
+ // rameshwaram), so even before the API is consulted the grid must be reduced
+ // to one card per temple.
+ const richCards = dedupeTempleCards(Object.values(TEMPLE_DETAILS).map(richToCard));
 
  // Try to merge in additional API temples
  let merged = richCards;
@@ -149,18 +153,15 @@ async function TemplesData() {
  try {
  const result = await getTemples({ limit: 50 });
  // P2 #217 (2026-08-03): the API seeds temples with `<name>-<city>` slugs while
- // the rich-detail map uses short slugs. Matching by exact slug meant every
- // long-slug API temple failed to match its rich twin and got APPENDED as a
- // duplicate → the browser showed "Showing 41 of 22 temples". Normalize the API
- // slug to its short form before matching so duplicates merge instead of append.
- const canon = (slug: string): string => {
- const parts = slug.split('-');
- const candidates = [slug];
- while (parts.length > 1) { parts.pop(); candidates.push(parts.join('-')); }
- for (const c of candidates) if (TEMPLE_DETAILS[c]) return c;
- return slug;
- };
- const apiBySlug = new Map(result.data.map((t) => [canon(t.slug), t]));
+ // the rich-detail map uses short slugs, so matching by exact slug appended
+ // every API temple as a duplicate → "Showing 41 of 22 temples".
+ // TD-03 (2026-08-12): the suffix-stripping normaliser this page carried could
+ // only bridge slugs that share a prefix, so the pairs that differ by NAME
+ // (tirumala-tirupati/tirupati-balaji, meenakshi-madurai/meenakshi-temple,
+ // ramanathaswamy-rameshwaram/rameshwaram) still doubled up — 33 cards for 29
+ // temples. lib/temple-slug.ts already resolves those for the detail route and
+ // the sitemap; the grid now reads the same table instead of a private copy.
+ const apiBySlug = new Map(result.data.map((t) => [canonicalTempleSlug(t.slug), t]));
  // Merge API image into rich-detail cards; otherwise rich card keeps imageUrl: null and falls to deity.
  const mergedRich = richCards.map((card) => {
   const apiMatch = apiBySlug.get(card.slug);
@@ -169,9 +170,9 @@ async function TemplesData() {
  });
  const existingSlugs = new Set(richCards.map((t) => t.slug));
  const extraApi = result.data
- .filter((t) => !existingSlugs.has(canon(t.slug)))
+ .filter((t) => !existingSlugs.has(canonicalTempleSlug(t.slug)))
  .map(apiToCard);
- merged = [...mergedRich, ...extraApi];
+ merged = dedupeTempleCards([...mergedRich, ...extraApi]);
  } catch {
  // API unavailable — proceed with rich-detail only
  }

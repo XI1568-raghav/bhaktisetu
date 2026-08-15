@@ -18,6 +18,28 @@ const USER_ROLES = new Set<string>([
   'ADMIN',
 ]);
 
+/**
+ * AO-15: the booking population every figure on /admin/reports is drawn from.
+ *
+ * A booking that was cancelled or refunded is not a booking the platform did;
+ * everything else on the way to delivery is. The "Total Bookings" tile has
+ * always used this set — the Popular Pujas card used no filter at all, which is
+ * how the card's rows came to sum to MORE than the tile above them. Declared
+ * once so the two can never diverge again.
+ */
+const COUNTED_BOOKING_STATUSES: readonly BookingStatus[] = [
+  'pending_payment',
+  'confirmed',
+  'priest_assigned',
+  'in_progress',
+  'completed',
+  'video_uploaded',
+  'delivered',
+];
+
+/** Exported for the AO-15 population test. */
+export const __reportsTesting = { COUNTED_BOOKING_STATUSES };
+
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 interface UserFilters {
@@ -634,7 +656,28 @@ export class AdminService {
         // The "Recent commissions" table only — deliberately bounded, and NOT
         // the basis of any total above.
         prisma.commission.findMany({ orderBy: { createdAt: 'desc' }, take: 50 }),
-        prisma.marketplaceSubscription.findMany({ where: { status: 'ACTIVE' } }),
+        // SCAL-04 (2026-08-15): bucket subscriptions in SQL.
+        //
+        // This used to be an unbounded row scan of every ACTIVE
+        // MarketplaceSubscription — no take, no cursor, no select — read only
+        // to sum `amount` in a JS reduce and bucket by (plan, role) in a JS
+        // Map. One ACTIVE row exists per paying customer and it never leaves
+        // the set while they pay, so it is the read on the founder's own
+        // dashboard that grows fastest with success, inside a 512 MB container.
+        //
+        // groupBy returns one row per (plan, role) instead — a handful today,
+        // bounded by the product catalogue rather than by the customer count.
+        // Postgres SUM over numeric is exact, so the figure is unchanged.
+        //
+        // The prose above deliberately does not spell out the old call: the
+        // SCAL-04 ratchet scanner matches call TEXT, so quoting it here would
+        // have kept the count at 95 and hidden this removal.
+        prisma.marketplaceSubscription.groupBy({
+          by: ['plan', 'role'],
+          where: { status: 'ACTIVE' },
+          _count: { _all: true },
+          _sum: { amount: true },
+        }),
       ]);
 
       // `Commission.amount` is the PROVIDER's earning, not the platform's cut
@@ -659,25 +702,24 @@ export class AdminService {
       // summing `amount` — it was the under-reported figure before.
       const pendingPayouts = Number(pendingAgg._sum.amount ?? 0);
 
-      const totalSubscriptions = subscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
-
-      // Group subscriptions by plan+role
+      // `_sum` is null when a bucket matched no summable value — that is zero,
+      // not NaN, and the JS reduce this replaced would have produced 0 there too.
       const subGroups = new Map<
         string,
         { plan: string; role: string; count: number; totalAmount: number }
       >();
-      for (const s of subscriptions) {
-        const key = `${s.plan}-${s.role}`;
-        const existing = subGroups.get(key) ?? {
-          plan: s.plan,
-          role: s.role,
-          count: 0,
-          totalAmount: 0,
-        };
-        existing.count += 1;
-        existing.totalAmount += Number(s.amount);
-        subGroups.set(key, existing);
+      for (const bucket of subscriptions) {
+        subGroups.set(`${bucket.plan}-${bucket.role}`, {
+          plan: bucket.plan,
+          role: bucket.role,
+          count: bucket._count?._all ?? 0,
+          totalAmount: Number(bucket._sum?.amount ?? 0),
+        });
       }
+      const totalSubscriptions = Array.from(subGroups.values()).reduce(
+        (sum, g) => sum + g.totalAmount,
+        0,
+      );
 
       return {
         // Same value it has always carried — see the interface note. Kept so
@@ -743,18 +785,7 @@ export class AdminService {
       const prevMonthEnd = monthStart;
 
       const statusGroups: Array<[string, BookingStatus[]]> = [
-        [
-          'Total Bookings',
-          [
-            'pending_payment',
-            'confirmed',
-            'priest_assigned',
-            'in_progress',
-            'completed',
-            'video_uploaded',
-            'delivered',
-          ],
-        ],
+        ['Total Bookings', [...COUNTED_BOOKING_STATUSES]],
         ['Completed', ['completed', 'video_uploaded', 'delivered']],
         ['In Progress', ['confirmed', 'priest_assigned', 'in_progress']],
         ['Cancelled', ['cancelled', 'refunded']],
@@ -787,8 +818,21 @@ export class AdminService {
       );
 
       // ─── 3. Popular pujas (top 8 by booking count) ───────────────────────
+      //
+      // AO-15 (prod sweep 2026-08-12): this groupBy carried NO status filter
+      // while the "Total Bookings" tile directly above it excludes cancelled
+      // and refunded rows. Live: tile 53, card rows 49 + 5 = 54, and the gap
+      // grows with every cancellation — two numbers on one screen that cannot
+      // both be true. The same unfiltered aggregate summed `priceAmount` over
+      // pending_payment and cancelled rows and the card rendered it as
+      // "Rs. 54.7K", inflating the per-puja read an operator makes off it with
+      // money nobody ever paid.
+      //
+      // One population, declared once (COUNTED_BOOKING_STATUSES) and used by
+      // both, so the card and the tile cannot drift apart again.
       const pujaAgg = await prisma.pujaBooking.groupBy({
         by: ['pujaTypeId'],
+        where: { status: { in: [...COUNTED_BOOKING_STATUSES] } },
         _count: { _all: true },
         _sum: { priceAmount: true },
         _avg: { rating: true },

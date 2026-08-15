@@ -848,7 +848,7 @@ function RichTemplePage({
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
  {t.isJyotirlinga && (
- <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
+ <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-amber-700 px-2 py-0.5 text-xs font-bold text-white">
  <Star className="h-3 w-3" /> Jyotirlinga
  </span>
  )}

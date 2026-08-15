@@ -27,6 +27,9 @@
 
 import { prisma } from '../lib/prisma.js';
 import { notifyUser } from '../routes/notifications.js';
+import { sendEmail, payoutSettledEmail } from '../lib/email.js';
+import { sendWhatsappTemplate } from '../lib/whatsapp.js';
+import { recordNotification } from '../lib/notification-log.js';
 import { Prisma } from '@prisma/client';
 import type { ProviderRole, PayoutRequestStatus } from '@prisma/client';
 
@@ -464,8 +467,113 @@ export async function processPayout(
           : `Your payout could not be completed${failureReason ? `: ${failureReason}` : ''}. Your balance is intact.`,
       url: '/payouts',
     }).catch(() => undefined);
+
+    // NOTIF-16: and off push, where the provider actually is.
+    void fanOutPayoutSettled({
+      providerId: req.providerId,
+      amount: new Prisma.Decimal(req.amount),
+      status: req.status as 'completed' | 'rejected' | 'failed',
+      reference: (req as { reference?: string | null }).reference ?? reference ?? null,
+      failureReason: failureReason ?? null,
+    });
   }
-  return req;
+
+  // DI-10: tell the caller whether this call CHANGED anything.
+  //
+  // The money moves outside the system — a bank/UPI transfer an admin performs
+  // by hand — so the only signal that the first click already recorded it is
+  // this response. Five concurrent completes and a later sequential one all
+  // returned HTTP 200 with identical bodies; the ledger was correct (₹2,310
+  // flipped to PAID exactly once) but the human had no way to know, which
+  // invites a second real-world transfer the software will never see.
+  //
+  // Spread rather than a wrapper object so every existing caller that reads
+  // `.status` / `.amount` off the return value keeps working unchanged.
+  return { ...req, alreadyCompleted: !changed };
+}
+
+/**
+ * NOTIF-16 — reach the provider on the channels they actually have.
+ *
+ * Both payout notifications were a bare `notifyUser`, i.e. web push and nothing
+ * else, against a `push_subscriptions` table holding one row in the entire
+ * database. Every seeded user has an email AND a phone on the User row, so both
+ * alternatives were available and unused.
+ *
+ * Entirely best-effort and never awaited: a mail provider having a bad minute
+ * must not fail an admin's "mark this payout complete", which has already
+ * committed. Every leg is recorded with its true outcome — an unconfigured
+ * channel is logged as `skipped`, never as `sent` (NOTIF-03).
+ */
+async function fanOutPayoutSettled(params: {
+  providerId: string;
+  amount: Prisma.Decimal;
+  status: 'completed' | 'rejected' | 'failed';
+  reference: string | null;
+  failureReason: string | null;
+}): Promise<void> {
+  const { providerId, amount, status, reference, failureReason } = params;
+  try {
+    const provider = await prisma.user.findUnique({
+      where: { id: providerId },
+      select: { email: true, phone: true, fullName: true },
+    });
+    if (!provider) return;
+
+    const display = `₹${amount.toFixed(2)}`;
+    const name = provider.fullName ?? 'there';
+
+    let emailLeg = 'no-target';
+    if (provider.email) {
+      const tpl = payoutSettledEmail({
+        providerName: name,
+        amount: display,
+        status,
+        reference,
+        failureReason,
+      });
+      const res = await sendEmail({ to: provider.email, ...tpl });
+      emailLeg = res.ok ? 'sent' : res.skipped ? 'skipped' : 'failed';
+    }
+
+    let whatsappLeg = 'no-target';
+    if (provider.phone) {
+      // The template name matches the Meta-approved set in
+      // docs/company/whatsapp-templates-booking-2026-08-04.md. Until the owner
+      // approves it there, the client answers `{skipped:true}` — recorded as
+      // skipped below, which is the honest reading.
+      const res = await sendWhatsappTemplate({
+        to: provider.phone,
+        template: status === 'completed' ? 'payout_sent' : 'payout_failed',
+        variables:
+          status === 'completed'
+            ? [name, display, reference ?? '-']
+            : [name, display, failureReason ?? 'a bank issue'],
+      });
+      whatsappLeg = res.ok ? 'sent' : res.skipped ? 'skipped' : 'failed';
+    }
+
+    await recordNotification({
+      userId: providerId,
+      audience: 'priest',
+      event: status === 'completed' ? 'payout_completed' : 'payout_not_completed',
+      title: status === 'completed' ? 'Payout sent' : 'Payout update',
+      body:
+        status === 'completed'
+          ? `Your payout of ${display} has been sent.${reference ? ` Reference ${reference}.` : ''}`
+          : `Your payout of ${display} could not be completed${failureReason ? `: ${failureReason}` : ''}. Your balance is intact.`,
+      url: '/payouts',
+      push: 'no-target',
+      whatsapp: whatsappLeg,
+      email: emailLeg,
+      delivered: emailLeg === 'sent' || whatsappLeg === 'sent',
+    });
+  } catch (err) {
+    console.warn(
+      '[payout][NOTIF-16] settlement fan-out failed:',
+      err instanceof Error ? err.message : String(err),
+    );
+  }
 }
 
 /** List a provider's own payout requests. */

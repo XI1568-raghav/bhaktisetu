@@ -20,6 +20,7 @@ import {
 import { getContent, getDailyContent, type ContentItem } from '../../lib/api';
 import ContentPageHeader from '../../components/ContentPageHeader';
 import { getContentImage, getDeityImage } from '../../lib/images';
+import { contentTypeLabel } from '../../lib/content-type-labels';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/content' },
@@ -574,8 +575,10 @@ async function ContentListSection({
  const paged = await fetchContentData(type, search, page);
  const items = paged.items;
  const activeType = type || 'all';
- const label =
- tabs.find((t) => t.id === activeType)?.label ?? 'All Content';
+ // HN-07: this used to read the label off the five rendered chips, so a valid
+ // ContentType without a chip (bhajan, story, shloka) produced the unfiltered
+ // heading and the filtered page looked identical to /content.
+ const label = contentTypeLabel(activeType);
 
  if (items.length === 0) {
  return (

@@ -12,6 +12,7 @@ import {
  FULL_REFUND_HOURS_BEFORE,
  CANCELLATION_CUTOFF_HOURS,
  PARTIAL_REFUND_PERCENT,
+ REFUND_SETTLEMENT_BANDS,
 } from "../../lib/cancellation-policy";
 
 export const metadata: Metadata = {
@@ -267,22 +268,21 @@ export default function RefundsPage() {
  </RefundSection>
 
  <RefundSection title="8. Refund Processing Timeline">
+ {/* LEG-19 (prod sweep 2026-08-12): these four rows were retyped here,
+     and three other pages retyped their own versions — /faqs said
+     refunds are "usually instant" on the very method this table gives
+     as one to three days, /nri-pujas quoted a single flat band and
+     /why-darshya a fourth. The rows are unchanged; they now live in
+     lib/cancellation-policy, and the other pages quote the sentence
+     generated from them instead of writing their own. */}
  <ul>
- <li>
- <strong>UPI and Wallets:</strong> 1&ndash;3 business days.
+ {REFUND_SETTLEMENT_BANDS.map((band) => (
+ <li key={band.method}>
+ <strong>{band.method}:</strong> {band.label}.
  </li>
+ ))}
  <li>
- <strong>Debit/Credit Cards:</strong> 5&ndash;7 business days.
- </li>
- <li>
- <strong>Net Banking:</strong> 5&ndash;10 business days.
- </li>
- <li>
- <strong>International Cards:</strong> 7&ndash;14
- business days, depending on your bank.
- </li>
- <li>
- <strong>Platform Credits:</strong> Applied instantly to your
+ <strong>Platform credits:</strong> Applied instantly to your
  Darshya wallet.
  </li>
  </ul>

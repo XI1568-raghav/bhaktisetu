@@ -23,7 +23,16 @@ type InvestorPayload = {
 };
 
 type DashboardPayload = {
-  today: { date: string; gmvPaise: number; successfulPayments: number; bookings: number; signups: number };
+  today: {
+    date: string;
+    // AO-14: which day boundary the figures below were cut on. Optional so an
+    // older API build still renders rather than showing "undefined".
+    timezone?: string;
+    gmvPaise: number;
+    successfulPayments: number;
+    bookings: number;
+    signups: number;
+  };
   mrrPaise: number;
   gmvCumulativePaise: number;
   generatedAt: string;
@@ -111,7 +120,14 @@ export default function MetricsPage() {
 
       {/* Today snapshot */}
       <section>
-        <h2 className="text-sm font-semibold text-surface-700 mb-3 uppercase tracking-wider">Today ({today?.date ?? '—'})</h2>
+        {/* AO-14: the window is an India day now (API: startOfDayIst). Naming
+            the zone on the heading stops this tile being read as a UTC figure,
+            which is how it came to say "0 signups" over ten signups the next
+            tab was already listing as today. */}
+        <h2 className="text-sm font-semibold text-surface-700 mb-3 uppercase tracking-wider">
+          Today ({today?.date ?? '—'}
+          {today?.timezone ? ` ${today.timezone}` : ''})
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Tile label="GMV today" value={today ? paiseToInr(today.gmvPaise) : '—'} sub={`${today?.successfulPayments ?? 0} successful payments`} />
           <Tile label="Bookings" value={String(today?.bookings ?? 0)} />

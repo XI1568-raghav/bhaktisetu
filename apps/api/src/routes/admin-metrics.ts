@@ -65,6 +65,41 @@ function daysAgo(n: number): Date {
   return new Date(Date.now() - n * 24 * 3600_000);
 }
 
+/**
+ * AO-14 (prod sweep 2026-08-12): the founder's TODAY tile is an INDIA day.
+ *
+ * The tile cut its window with startOfDayUtc while /admin renders every date
+ * through toLocaleDateString('en-IN'). Measured: /admin/metrics said
+ * `TODAY (2026-08-12) … SIGNUPS 0` while /admin's Recent Signups listed ten
+ * users dated "12 Aug", all with createdAt 2026-08-11T19:19:10Z — 00:49 IST on
+ * the 12th, the 11th in UTC. So for the first 5.5 hours of every IST day the
+ * page explicitly framed as the "founder + investor view" reported zero
+ * signups, zero bookings and zero GMV for activity the next tab was showing.
+ *
+ * IST is a fixed UTC+05:30 with no DST, so the window is arithmetic: shift into
+ * IST, truncate, shift back. No tz database, no Intl formatting in a hot path.
+ *
+ * Scope: the TODAY window and its label. The /funnel feed still buckets by UTC
+ * day — its keys are joined to SQL date_trunc in loadFunnelDaily and are read
+ * by agents rather than by a human comparing two screens, so moving it needs
+ * the SQL changed with it and is not part of this finding.
+ */
+const IST_OFFSET_MS = 5.5 * 3600_000;
+
+/** Midnight Asia/Kolkata on the IST calendar day containing `d`, as a UTC instant. */
+function startOfDayIst(d: Date): Date {
+  const shifted = d.getTime() + IST_OFFSET_MS;
+  return new Date(Math.floor(shifted / 86_400_000) * 86_400_000 - IST_OFFSET_MS);
+}
+
+/** The YYYY-MM-DD an Indian reader would call this instant. */
+function dayKeyIst(d: Date): string {
+  return new Date(d.getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** Exported for the AO-14 boundary tests — pure date maths, no Fastify needed. */
+export const __testing = { startOfDayIst, dayKeyIst, IST_OFFSET_MS };
+
 /** One funnel stage's count for one UTC day. */
 type DayCountRow = { day: string; n: number | bigint | null };
 
@@ -287,7 +322,8 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
     }
 
     const since30 = daysAgo(30);
-    const sinceToday = startOfDayUtc(new Date());
+    // AO-14: an INDIA day, matching the en-IN dates /admin renders one tab away.
+    const sinceToday = startOfDayIst(new Date());
 
     const [todayPayments, todayBookings, todaySignups, mrrAgg, gmvAgg] = await Promise.all([
       prisma.payment.aggregate({
@@ -309,7 +345,11 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
 
     return reply.send({
       today: {
-        date: dayKey(new Date()),
+        // AO-14: the label has to name the same day the window counted, and
+        // `timezone` says which day that is so the tile can never be read as
+        // a UTC figure again.
+        date: dayKeyIst(new Date()),
+        timezone: 'Asia/Kolkata',
         gmvPaise: decToPaise(todayPayments?._sum?.amount ?? null),
         successfulPayments: todayPayments?._count?._all ?? 0,
         bookings: todayBookings,

@@ -112,7 +112,7 @@ export default function NavaratnaIndexPage() {
             <Link href="/astrology" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
               Book astrology consult
             </Link>
-            <Link href="/rashi" className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm">
+            <Link href="/rashi" className="px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 text-sm">
               12 Rashi
             </Link>
           </div>

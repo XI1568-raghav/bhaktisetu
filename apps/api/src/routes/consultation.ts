@@ -507,6 +507,28 @@ export async function consultationRoutes(server: FastifyInstance) {
             status: 'PENDING',
           },
         });
+
+        // AW-14 (2026-08-12, P2): AstrologerProfile.totalConsultations was a
+        // counter column NOTHING ever wrote, so it stayed 0 for life. The
+        // astrologer's own dashboard now derives its lifetime figure from the
+        // consultations table (routes/astrologer-portal.ts) — but the PUBLIC
+        // directory badge reads this column (routes/astrology.ts:82,153) and
+        // also ORDERs by it, so it has to become real. This sits inside the
+        // `existing` idempotency guard above: one increment per consultation,
+        // never on a replayed verify. Its own try — a counter is cosmetic and
+        // must never be able to unwind or mask the ledger write that preceded
+        // it. Worst case is an undercount, never a double count.
+        try {
+          await prisma.astrologerProfile.update({
+            where: { id: profile.id },
+            data: { totalConsultations: { increment: 1 } },
+          });
+        } catch (err) {
+          server.log.warn(
+            { err, astrologerProfileId: profile.id, consultationId: row.id },
+            '[consultation] totalConsultations increment failed (ledger row already written)',
+          );
+        }
       } catch (err) {
         server.log.warn({ err }, '[consultation] commission write failed');
       }
@@ -901,6 +923,32 @@ export async function consultationRoutes(server: FastifyInstance) {
       }
     }
 
+    // AO-17 (prod sweep 2026-08-12): say WHO the consultation is for.
+    //
+    // The USER column rendered `2b5bd615…` — a truncated UUID with no name and
+    // no email — so the operator who is the only role able to drive the
+    // lifecycle could not tell which devotee a Rs 500 consultation belonged to
+    // without a separate database lookup. `astrologer_consultations.user_id` is
+    // a TEXT column with no Prisma relation, so this is one explicit IN over
+    // the page's ids: never per row (the page holds up to 50), and never a
+    // reason for the ledger itself to fail — a cosmetic join that can blank the
+    // list is worse than the missing name.
+    const userIds = Array.from(
+      new Set(rows.map((r) => r.user_id).filter((id): id is string => typeof id === 'string' && id.length > 0)),
+    );
+    const identities = new Map<string, { fullName: string | null; email: string | null }>();
+    if (userIds.length > 0) {
+      try {
+        const users = await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, fullName: true, email: true },
+        });
+        for (const u of users) identities.set(u.id, { fullName: u.fullName, email: u.email });
+      } catch (err) {
+        server.log.warn({ err }, '[consultation] devotee identity lookup failed for admin list');
+      }
+    }
+
     return reply.send({
       total,
       limit,
@@ -909,6 +957,10 @@ export async function consultationRoutes(server: FastifyInstance) {
         id: row.id,
         reference: row.reference,
         userId: row.user_id,
+        // AO-17: null, never a placeholder. A row whose devotee could not be
+        // resolved must read as unknown, not as somebody.
+        userName: identities.get(row.user_id)?.fullName ?? null,
+        userEmail: identities.get(row.user_id)?.email ?? null,
         astrologerId: row.astrologer_id,
         astrologerName: row.astrologer_name,
         minutes: row.minutes,

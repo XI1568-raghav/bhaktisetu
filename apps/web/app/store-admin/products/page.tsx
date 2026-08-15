@@ -253,7 +253,7 @@ function StoreAdminProductsPageContent() {
           }}
           disabled={storeSetupRequired}
           title={storeSetupRequired ? 'Finish setting up your store first' : undefined}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white font-medium text-sm rounded-lg hover:bg-emerald-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
           Add Product
@@ -312,7 +312,7 @@ function StoreAdminProductsPageContent() {
             <button
               type="submit"
               disabled={savingSetup || setupName.trim().length < 2}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white font-medium text-sm rounded-lg hover:bg-emerald-800 disabled:opacity-50"
             >
               {savingSetup ? 'Saving…' : 'Save store details'}
             </button>
@@ -465,7 +465,7 @@ function StoreAdminProductsPageContent() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700 text-white font-medium text-sm rounded-lg hover:bg-emerald-800 transition-colors disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

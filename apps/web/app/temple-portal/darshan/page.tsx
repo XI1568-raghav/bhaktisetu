@@ -469,7 +469,7 @@ function TempleDarshanPageContent() {
                       className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
                         isLive
                           ? 'bg-red-500 text-white hover:bg-red-600'
-                          : 'bg-tulsi-green text-white hover:opacity-90'
+                          : 'bg-tulsi-green-dark text-white hover:opacity-90'
                       }`}
                     >
                       {isBusy ? (

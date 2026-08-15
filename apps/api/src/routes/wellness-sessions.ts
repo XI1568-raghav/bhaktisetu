@@ -460,6 +460,71 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
     }
   );
 
+  // GET /enrollments/mine — the devotee's own wellness enrolments.
+  //
+  // AW-13 (2026-08-12, P2): there was no such route. A devotee paid ₹1,000 for a
+  // class and, the moment they closed the tab, had no way back to it — the only
+  // path in was already knowing the session UUID. /wellness/enrollments/mine,
+  // /wellness/my-enrollments and /wellness/enrollments all 404'd. This mirrors
+  // GET /consultation/mine and backs the devotee "My classes" page.
+  //
+  // The room gate is the same one GET /sessions/:id enforces: the join link is
+  // a PAID entitlement. An enrolment sitting in PENDING_PAYMENT, CANCELLED or
+  // REFUNDED still lists (the devotee needs to see it) but carries roomUrl null.
+  server.get('/enrollments/mine', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const userId = request.currentUser!.id;
+    const rows = await prisma.wellnessEnrollment.findMany({
+      where: { userId },
+      orderBy: { enrolledAt: 'desc' },
+      take: 200,
+      select: {
+        id: true,
+        sessionId: true,
+        status: true,
+        enrolledAt: true,
+        attendedAt: true,
+        session: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            type: true,
+            scheduledAt: true,
+            durationMinutes: true,
+            capacity: true,
+            priceInr: true,
+            status: true,
+            roomUrl: true,
+            instructor: { select: { id: true, fullName: true } },
+          },
+        },
+      },
+    });
+
+    const data = rows.map((row) => {
+      const { session, ...enrollment } = row as typeof row & {
+        session: {
+          roomUrl: string | null;
+          priceInr: unknown;
+          instructor: { id: string; fullName: string | null } | null;
+        } & Record<string, unknown>;
+      };
+      const { roomUrl, instructor, ...restOfSession } = session;
+      const paid = enrollment.status === 'PAID' || enrollment.status === 'ATTENDED';
+      return {
+        ...enrollment,
+        session: {
+          ...serializeSession(restOfSession),
+          instructorName: instructor?.fullName ?? null,
+          // Withheld unless the money actually landed.
+          roomUrl: paid ? roomUrl ?? null : null,
+        },
+      };
+    });
+
+    return reply.send({ data });
+  });
+
   // POST /enrollments/:id/verify — verify Razorpay signature, flip PAID
   server.post(
     '/enrollments/:id/verify',

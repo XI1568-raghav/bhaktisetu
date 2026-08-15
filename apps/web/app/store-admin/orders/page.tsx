@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { useAuth } from '../../../lib/auth-context';
+import { filterOrders, statusTabCounts } from '../../../lib/store-admin-orders';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -276,21 +277,18 @@ export default function StoreAdminOrdersPage() {
    }
  }
 
- const filtered = orders.filter((o) => {
-   const matchSearch =
-     !search ||
-     o.customerName.toLowerCase().includes(search.toLowerCase()) ||
-     o.orderNumber.toLowerCase().includes(search.toLowerCase());
-   const matchStatus = statusFilter === 'all' || o.status === statusFilter;
-   return matchSearch && matchStatus;
- });
+ // LC-16: the rows and the tab badges are derived from ONE search predicate.
+ // They used to be two — the rows applied the search box, the badges did not —
+ // so with a search active a tab could read 5 and render 2.
+ const filtered = filterOrders(orders, search, statusFilter);
+ const tabCounts = statusTabCounts(orders, search, ALL_STATUSES);
 
  const statusTabs: { key: OrderStatus | 'all'; label: string; count: number }[] = [
-   { key: 'all', label: 'All', count: orders.length },
+   { key: 'all', label: 'All', count: tabCounts.all ?? 0 },
    ...ALL_STATUSES.map((s) => ({
      key: s,
      label: getStatusConfig(s).label,
-     count: orders.filter((o) => o.status === s).length,
+     count: tabCounts[s] ?? 0,
    })),
  ];
 
@@ -310,7 +308,7 @@ export default function StoreAdminOrdersPage() {
            onClick={() => setStatusFilter(tab.key)}
            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
              statusFilter === tab.key
-               ? 'bg-emerald-600 text-white shadow-sm'
+               ? 'bg-emerald-700 text-white shadow-sm'
                : 'text-surface-600 hover:bg-surface-50'
            }`}
          >
@@ -661,7 +659,7 @@ export default function StoreAdminOrdersPage() {
            key={t.id}
            className={`px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${
              t.kind === 'success'
-               ? 'bg-emerald-600 text-white'
+               ? 'bg-emerald-700 text-white'
                : 'bg-red-600 text-white'
            }`}
          >

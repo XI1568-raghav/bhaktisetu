@@ -402,7 +402,7 @@ function PriestBookingDetailInner() {
  <button
  onClick={() => handleAction('complete')}
  disabled={actionLoading}
- className="w-full flex items-center justify-center gap-2 py-3 bg-tulsi-green text-white font-semibold rounded-xl hover:opacity-90 transition-colors disabled:opacity-50"
+ className="w-full flex items-center justify-center gap-2 py-3 bg-tulsi-green-dark text-white font-semibold rounded-xl hover:opacity-90 transition-colors disabled:opacity-50"
  >
  {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
  Mark Puja Complete
@@ -476,7 +476,7 @@ function PriestBookingDetailInner() {
  type="button"
  onClick={markDelivered}
  disabled={actionLoading}
- className="w-full flex items-center justify-center gap-2 py-3 bg-tulsi-green text-white font-semibold rounded-xl hover:opacity-90 transition-colors disabled:opacity-50"
+ className="w-full flex items-center justify-center gap-2 py-3 bg-tulsi-green-dark text-white font-semibold rounded-xl hover:opacity-90 transition-colors disabled:opacity-50"
  >
  {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
  Mark delivered

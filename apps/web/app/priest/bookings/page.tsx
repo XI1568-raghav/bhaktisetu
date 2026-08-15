@@ -304,7 +304,7 @@ function PriestBookingsInner() {
  <button
  onClick={(e) => { e.preventDefault(); handleAction(booking.id, 'complete'); }}
  disabled={!!actionLoading}
- className="inline-flex items-center gap-1.5 px-4 py-2 bg-tulsi-green text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
+ className="inline-flex items-center gap-1.5 px-4 py-2 bg-tulsi-green-dark text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
  >
  {isLoading('complete') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
  Mark Complete
@@ -423,12 +423,29 @@ function PriestBookingsInner() {
  {bookings.map((booking) => {
  const statusCfg = getStatusConfig(booking.status);
  return (
- <Link
+ // PF-17: this wrapper used to be the card's own <Link>, and
+ // getActionButton renders another <Link> ("Upload Video") inside it
+ // for a completed booking. The console carried "<a> cannot contain a
+ // nested <a>. This will cause a hydration error." Browsers split
+ // nested anchors while parsing, so on the pandit's most-used page an
+ // Upload Video tap could navigate somewhere else entirely.
+ //
+ // The card keeps ONE real anchor, stretched across the whole surface
+ // so the click target and hover affordance are unchanged, and the
+ // action column is now a SIBLING painted above it.
+ // `pointer-events-none` on the content layer lets a click anywhere on
+ // the card fall through to that anchor; the action column re-enables
+ // pointer events for itself.
+ <div
  key={booking.id}
- href={`/priest/bookings/view?id=${booking.id}`}
- className="block bg-white rounded-xl border border-surface-100 p-5 hover:border-saffron-200 card-hover transition-all"
+ className="relative bg-white rounded-xl border border-surface-100 p-5 hover:border-saffron-200 card-hover transition-all"
  >
- <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+ <Link
+ href={`/priest/bookings/view?id=${booking.id}`}
+ aria-label={`Open booking ${booking.bookingNumber}`}
+ className="absolute inset-0 z-0 rounded-xl focus-visible:ring-2 focus-visible:ring-saffron-500"
+ />
+ <div className="relative pointer-events-none flex flex-col sm:flex-row sm:items-start gap-4">
  {/* Icon */}
  <div className="w-12 h-12 bg-saffron-50 rounded-xl flex items-center justify-center shrink-0">
  <Flame className="w-5 h-5 text-saffron-500" />
@@ -471,8 +488,10 @@ function PriestBookingsInner() {
  </p>
  </div>
 
- {/* Right side */}
- <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-2">
+ {/* Right side. PF-17: `pointer-events-auto` + a stacking context above
+     the overlay anchor, so the buttons and the Upload Video link here
+     receive their own clicks instead of the card's. */}
+ <div className="pointer-events-auto relative z-10 flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-2">
  <div className="text-right">
  <p className="text-lg font-bold text-surface-800">{formatCurrency(booking.priestPayout)}</p>
  <p className="text-xs text-surface-400">Your payout</p>
@@ -480,7 +499,7 @@ function PriestBookingsInner() {
  {getActionButton(booking)}
  </div>
  </div>
- </Link>
+ </div>
  );
  })}
  </div>

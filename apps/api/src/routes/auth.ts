@@ -231,6 +231,34 @@ const SESSION_TTL_SECONDS = 60 * 60;                 // 1 hour
 const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;        // 7 days
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
 
+/**
+ * SEC-02, prerequisite — the flags every auth cookie carries.
+ *
+ * `secure` used to be hardcoded `true`, and a Secure cookie is never stored by
+ * a browser over `http://localhost`. So on every developer machine the
+ * `darshya_session` path silently did not exist, which is why the localStorage
+ * Bearer is still the primary credential and still the XSS liability SEC-02
+ * describes: nobody could exercise the replacement locally. 83 files under
+ * apps/web hand-build `Authorization: Bearer ${token}` and only 11 send
+ * `credentials: 'include'`, so cutting the localStorage write before the cookie
+ * path is testable would 401 most of the product.
+ *
+ * Production is unchanged — Secure stays on, and a test pins that. `httpOnly`
+ * is NOT environment-dependent: a JS-readable cookie is the localStorage
+ * problem wearing a different hat.
+ */
+function cookieSecurityOptions(): {
+  httpOnly: true;
+  secure: boolean;
+  sameSite: 'lax';
+} {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  };
+}
+
 function setAuthCookies(
   reply: import('fastify').FastifyReply,
   accessToken: string,
@@ -245,16 +273,12 @@ function setAuthCookies(
   if (typeof r.setCookie !== 'function') return;
   try {
     r.setCookie(SESSION_COOKIE, accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
+      ...cookieSecurityOptions(),
       path: '/',
       maxAge: SESSION_TTL_SECONDS,
     });
     r.setCookie(REFRESH_COOKIE, refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
+      ...cookieSecurityOptions(),
       path: REFRESH_COOKIE_PATH,
       maxAge: REFRESH_TTL_SECONDS,
     });
@@ -1201,3 +1225,6 @@ export async function authRoutes(server: FastifyInstance) {
     }
   });
 }
+
+/** Internals reachable from tests only. */
+export const __testing = { cookieSecurityOptions };
