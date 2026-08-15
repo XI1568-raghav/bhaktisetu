@@ -201,8 +201,10 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  links: [
  { href: "/aarti", t: "terms", key: "aarti" },
  { href: "/chalisa", t: "terms", key: "chalisa" },
- { href: "/content?tab=mantra", t: "terms", key: "mantra" },
- { href: "/content?tab=bhajan", t: "terms", key: "bhajan" },
+ // HN-07: these were written with a param /content does not read, so both
+ // landed on the unfiltered library alongside every other footer entry.
+ { href: "/content?type=mantra", t: "terms", key: "mantra" },
+ { href: "/content?type=bhajan", t: "terms", key: "bhajan" },
  ],
  },
  {
@@ -354,7 +356,10 @@ export default function RootLayout({
  aria-label="Main navigation"
  >
  {/* Logo — fixed left, shrink-0 */}
- <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Darshya home">
+ {/* HN-12: below sm the wordmark is hidden, leaving a bare 28px house icon —
+     the smallest target in the mobile bar. The glyph keeps its size; the box
+     around it reaches the 44px floor. */}
+ <a href="/" className="flex items-center justify-center sm:justify-start gap-2 shrink-0 min-h-[44px] min-w-[44px]" aria-label="Darshya home">
  <Logo size={28} />
  <span className="text-[15px] font-semibold text-surface-800 tracking-tight hidden sm:inline leading-none">
  Darsh<span className="text-saffron-600">ya</span>
@@ -382,8 +387,12 @@ export default function RootLayout({
  <span className="hidden xl:inline">{tNav(highlightLink.labelKey)}</span>
  </a>
 
- {/* List your business — only at 2xl (1536px+). Below that, lives in mobile drawer. */}
- <div className="hidden 2xl:block">
+ {/* HN-12 / HN-06: the reveal was 2xl (1536px+), so a 1280 or 1440 laptop —
+     the common case — got no header route to listing at all and had to reach
+     the footer. It now appears at the standard lg breakpoint; the control
+     itself shortens its visible label below 2xl so it fits at 1024px. Below
+     lg the mobile drawer carries these links. */}
+ <div className="hidden lg:block">
  <ListYourBusinessDropdown />
  </div>
 

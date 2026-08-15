@@ -552,7 +552,7 @@ export default async function CowDetailPage({
  }`}
  >
  {plan.popular && (
- <span className="absolute -top-2 right-2 px-2 py-0.5 bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider rounded-full">
+ <span className="absolute -top-2 right-2 px-2 py-0.5 bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-full">
  Popular
  </span>
  )}

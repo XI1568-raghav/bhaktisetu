@@ -235,7 +235,7 @@
     "title": "On /gaushala the real cows 404 while the mock demo cows work",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: 'Remove the cow_00X mock entries so only real adoptable cows are shown' cannot be executed: there is no real adoptable-c"
+    "note": "Product decision plus a build, neither of which is web-side: either (a) a public unauthenticated adoptable-cow endpoint over prisma.cow so gaushala owners' real"
   },
   {
     "key": "F018",
@@ -289,9 +289,9 @@
     "workflow": "launch-readiness-delta",
     "line": 131,
     "title": "An invalid astrologer id spins on \"Loading…\" forever with no error and no 404",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "LANE. Both remaining halves live in apps/web/app/astrology/** which this cluster must not edit. The fixes are small and independent: add an app/astrology/astrol"
   },
   {
     "key": "F022",
@@ -303,9 +303,9 @@
     "workflow": "launch-readiness-delta",
     "line": 137,
     "title": "The highest-volume free-tool page (/astrology/kundli) ships with no page metadata, and ~16 pages carry a doubled \"| Darshya | Darshya\" title",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "LANE. The finding's headline surface, /astrology/kundli, is a 'use client' page under apps/web/app/astrology/** (do-not-touch this wave) with no sibling layout;"
   },
   {
     "key": "F023",
@@ -333,7 +333,7 @@
     "title": "Every 80G receipt Darshya issues is legally invalid — it asserts Section 80G eligibility with no registration number and no donee PAN",
     "state": "partial",
     "commit": "1645e4da",
-    "note": "still partial after wave: The two owner actions: obtain the 80G(5) registration + donee PAN (I must not invent a registration number), and decide "
+    "note": "OWNER, outside the repo: obtain the Section 80G(5) registration and the donee PAN, then set COMPANY.donationLegal.HAS_80G_VERIFIED/eightyGNumber/pan in apps/web"
   },
   {
     "key": "F025",
@@ -471,9 +471,9 @@
     "workflow": "launch-readiness-delta",
     "line": 211,
     "title": "15 of 20 temples advertise \"Book Puja via Darshya\" with zero bookable offerings behind the CTA",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: Seeding offerings for the remaining 15 temples is business content, not code: which pujas each temple offers, at what pr"
+    "note": "OWNER, business content not code: 15 of the 20 seeded temples still return {\"pujas\":[]} — akshardham-delhi, badrinath-uttarakhand, dagdusheth-pune, meenakshi-ma"
   },
   {
     "key": "F035",
@@ -529,7 +529,7 @@
     "title": "\"100% to cause\" is printed on the donate form but no code ever moves the money to the cause",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: Two things. (1) Schema: Commission needs a nullable `donationId` + unique/index, a migration, and a Prisma client regen "
+    "note": "Two things, neither of which I can close safely in this lane. (1) SCHEMA + MIGRATION: Commission needs a nullable donationId with a unique index, a Prisma migra"
   },
   {
     "key": "F039",
@@ -555,9 +555,9 @@
     "workflow": "launch-readiness-delta",
     "line": 247,
     "title": "Store product images are full-resolution Wikimedia hotlinks — 5.7 MB downloaded for a 600px card",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: Two hard blocks on the self-host step. (1) It requires downloading 24 third-party binary images from Wikimedia into apps"
+    "note": "OWNER: the self-host step. It requires downloading 24 third-party binary images from Wikimedia into apps/web/public and committing them — a licensing/attributio"
   },
   {
     "key": "F041",
@@ -569,9 +569,9 @@
     "workflow": "launch-readiness-delta",
     "line": 253,
     "title": "POST /gaushala/adopt lets any signed-in user mark a cow adopted for free, in shared process memory",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Attribution clean: `git diff 55c3acfe -- apps/api/src/routes/gaushala.ts` shows the removal (13+/47-) — the routes were "
   },
   {
     "key": "F042",
@@ -611,9 +611,9 @@
     "workflow": "launch-readiness-delta",
     "line": 273,
     "title": "The live default platform take is 30%, not the 20% the whole business is built on",
-    "state": "partial",
+    "state": "owner",
     "commit": "1645e4da",
-    "note": "still partial after wave: Applying migration 20260812000000_priest_commission_rate_80 to the running databases (local and prod). Until it runs, ev"
+    "note": "DEPLOY/OPS: run `prisma migrate deploy` against local and prod (per docs/handoff, migrations do not auto-apply on Render deploy), then redeploy the API so Prism"
   },
   {
     "key": "F045",
@@ -667,9 +667,9 @@
     "workflow": "launch-readiness-delta",
     "line": 297,
     "title": "The two SKUs and three-tier structure the entire GTM plan depends on do not exist in the product",
-    "state": "fixed",
+    "state": "owner",
     "commit": "",
-    "note": "already_fixed · VERIFIED IN TREE: apps/api/prisma/schema.prisma:338 now reads `commissionRate Float @default(0."
+    "note": "Identical to PM-03: apply migration 20260812000000 to the running databases in the documented order, redeploy the API, then verify a new Priest row defaults to "
   },
   {
     "key": "F049",
@@ -681,9 +681,9 @@
     "workflow": "launch-readiness-delta",
     "line": 303,
     "title": "Four different platform take rates are simultaneously authoritative; nothing reconciles them",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: The owner's single decision and the three PROSE authorities it governs, none of which is a code change: publish the numb"
+    "note": "OWNER, one decision governing three prose authorities and one deletion, none of which is a code change I may make unilaterally: publish the number, then amend P"
   },
   {
     "key": "F050",
@@ -697,7 +697,7 @@
     "title": "No GST treatment anywhere in the pricing model",
     "state": "owner",
     "commit": "",
-    "note": "Owner decision plus two out-of-lane changes. (1) BUSINESS: the sign-off line at the bottom of E:\\NewClaude\\deliverables\\launch-catalog-2sku-pricing.md"
+    "note": "OWNER + apps/api, both out of lane. The founder sign-off line on E:/NewClaude/deliverables/launch-catalog-2sku-pricing.md is still blank, so the price architect"
   },
   {
     "key": "F051",
@@ -709,9 +709,9 @@
     "workflow": "launch-readiness-delta",
     "line": 315,
     "title": "Astrologer per-minute rates render with no currency symbol at all",
-    "state": "fixed",
+    "state": "owner",
     "commit": "",
-    "note": "triage-verified: AstrologyClient:469 renders ₹{rate}/min and the live directory does the same, both with a \"Rate on request\" fallback — committed in 97fbd58c"
+    "note": "OWNER: setting a price band for a marketplace's highest-margin repeat line is a pricing decision, not a fix -- and raising a live per-minute rate on existing as"
   },
   {
     "key": "F052",
@@ -919,9 +919,9 @@
     "workflow": "prod-clickthrough",
     "line": 414,
     "title": "images.darshya.online does not resolve — pandit trust photos are broken on the wedding page",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "DISPUTED: The code is real and the test is not vacuous — PanditAvatar.tsx is new, both call sites genuinely dropped their `avatarUrl ? <img> : <div>initials</di"
   },
   {
     "key": "F067",
@@ -933,9 +933,9 @@
     "workflow": "prod-clickthrough",
     "line": 420,
     "title": "Wedding booking wizard's step indicator is clipped off-screen on mobile",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "already_fixed · The finding measured the stepper items overflowing a 390px viewport with document.documentEleme"
   },
   {
     "key": "F068",
@@ -947,9 +947,9 @@
     "workflow": "prod-clickthrough",
     "line": 426,
     "title": "₹51 platform fee is never disclosed until step 3 of the wizard",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: git diff 55c3acfe -- apps/web/app/pujas/page.tsx shows the new `import { PLATFORM_FEE_INR, formatInr, pujaTotalInr } fro"
   },
   {
     "key": "F069",
@@ -961,9 +961,9 @@
     "workflow": "prod-clickthrough",
     "line": 432,
     "title": "On mobile the first bookable item on /pujas is 2.3 screens below the fold",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: The `<a href=\"#catalogue\" className=\"md:hidden mt-4 inline-flex min-h-[44px] ...\">Skip to all pujas</a>` in the hero and"
   },
   {
     "key": "F070",
@@ -989,9 +989,9 @@
     "workflow": "prod-clickthrough",
     "line": 444,
     "title": "Booking date picker offers a year dropdown spanning 1900–2031",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "already_fixed · Already closed at the DEPLOYED baseline: `git show 55c3acfe:apps/web/components/ui/DateInput.ts"
   },
   {
     "key": "F072",
@@ -1003,9 +1003,9 @@
     "workflow": "prod-clickthrough",
     "line": 450,
     "title": "/pujas/home-puja/book returns 200 with a \"Puja not found\" dead end",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Read the new files: page.tsx is now a server component awaiting searchParams and calling redirect()/notFound() before re"
   },
   {
     "key": "F073",
@@ -1017,9 +1017,9 @@
     "workflow": "prod-clickthrough",
     "line": 456,
     "title": "Wedding wizard shows an unquantified \"+ GST\" during the decision steps",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Diff confirms the named GST_RATE constant, gstAmount/estimatedTotal derived once, the sidebar's bare `<div>+ GST</div>` "
   },
   {
     "key": "F074",
@@ -1075,7 +1075,7 @@
     "title": "All five non-English homepages are 23%-size stubs that still declare lang=\"en\" and keep an English header",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: (a) HEADER/NAV STILL ENGLISH — blocked twice over. lib/t.ts and lib/i18n/** are on this cluster's do-not-touch list; and"
+    "note": "CONTENT AUTHORING plus LANE. lib/i18n/** and lib/t.ts are on this cluster's do-not-touch list and another agent is editing them this wave; independently, four o"
   },
   {
     "key": "F078",
@@ -1089,7 +1089,7 @@
     "title": "Broken temple image on /temples — a Wikimedia hotlink failing in production today",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: OWNER DECISION: self-host vs CDN for the temple imagery. This is a throughput property of the upstream, not one bad file"
+    "note": "OWNER DECISION (self-host vs CDN for temple imagery, TASKS.md #203/#204) plus LANE — lib/images.ts and next.config.* are both on the do-not-touch list. The fall"
   },
   {
     "key": "F079",
@@ -1101,9 +1101,9 @@
     "workflow": "prod-clickthrough",
     "line": 494,
     "title": "\"List your business\" header CTA is invisible at 1280px — the whole supply-side entry point only appears at ≥1600px",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: git diff 55c3acfe shows `hidden 2xl:block` -> `hidden lg:block` around <ListYourBusinessDropdown /> in app/layout.tsx, a"
   },
   {
     "key": "F080",
@@ -1115,9 +1115,9 @@
     "workflow": "prod-clickthrough",
     "line": 500,
     "title": "/content?tab= query parameter is ignored — two different footer links land on the same undifferentiated page",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "DISPUTED: Both code halves are real and non-vacuous: the footer hrefs moved from ?tab= to ?type= (the param app/content/page.tsx actually destructures), lib/con"
   },
   {
     "key": "F081",
@@ -1129,9 +1129,9 @@
     "workflow": "prod-clickthrough",
     "line": 506,
     "title": "Nav dropdown triggers never update aria-expanded — screen readers are told the menu is closed while it is open",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "already_fixed · Already closed at the DEPLOYED baseline: `git show 55c3acfe:apps/web/components/CategoryNav.tsx"
   },
   {
     "key": "F082",
@@ -1143,9 +1143,9 @@
     "workflow": "prod-clickthrough",
     "line": 512,
     "title": "Skip-to-content link updates the hash but never moves focus, so keyboard users are dumped back into the header",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Exactly one functional line in the diff: `tabIndex={-1}` on the <Wrapper id=\"main\"> in components/SiteChrome.tsx. Vacuit"
   },
   {
     "key": "F083",
@@ -1157,9 +1157,9 @@
     "workflow": "prod-clickthrough",
     "line": 518,
     "title": "Clicking a nav dropdown trigger closes the panel that hovering just opened",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Diff shows the new hoverOpenedRef set inside scheduleOpen's timeout, cleared in scheduleClose and closeNow, and consulte"
   },
   {
     "key": "F084",
@@ -1171,9 +1171,9 @@
     "workflow": "prod-clickthrough",
     "line": 524,
     "title": "/blog is an empty shell linked from the global footer",
-    "state": "open",
+    "state": "owner",
     "commit": "",
-    "note": ""
+    "note": "OWNER DECISION, exactly the two the finding offers: approve 3-5 drafts (flip a status and append to content/blog/published.ts — one commit each), or remove 'Blo"
   },
   {
     "key": "F085",
@@ -1185,9 +1185,9 @@
     "workflow": "prod-clickthrough",
     "line": 530,
     "title": "Mobile header controls are 28-36px — below the 44px minimum touch target",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: All four min-h-[44px] min-w-[44px] additions are in the diff and are the agent's (layout.tsx brand link, GlobalSearch co"
   },
   {
     "key": "F086",
@@ -1241,9 +1241,9 @@
     "workflow": "prod-clickthrough",
     "line": 556,
     "title": "/temples shows 33 cards for only 29 distinct temples — Ramanathaswamy is listed three times, and the two Meenakshi cards disagree about LIVE",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: apps/web/lib/temple-grid.ts is a genuinely new untracked file; page.tsx dedupe wiring is in the 55c3acfe diff. Deleting "
   },
   {
     "key": "F090",
@@ -1255,9 +1255,9 @@
     "workflow": "prod-clickthrough",
     "line": 562,
     "title": "/live returns HTTP 404 and serves the homepage <title> on the error page",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: app/live/page.tsx is new; the not-found.tsx metadata export is in the 55c3acfe diff (13 added). Whole-revert red is only"
   },
   {
     "key": "F091",
@@ -1269,9 +1269,9 @@
     "workflow": "prod-clickthrough",
     "line": 568,
     "title": "The free Kundli page — a top acquisition keyword — has no page-specific <title>",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: app/astrology/kundli/layout.tsx is a genuinely new file; page.tsx is byte-identical to baseline as claimed (absent from "
   },
   {
     "key": "F092",
@@ -1297,9 +1297,9 @@
     "workflow": "prod-clickthrough",
     "line": 580,
     "title": "Three floating overlays stack inside the first viewport at once — cookie bar, chat launcher, and aarti reminder",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: ConsentGate.tsx is new; DeferredClientWidgets.tsx (+10) and StickyAartiCta.tsx (bottom-6 → bottom-24) are both in the 55"
   },
   {
     "key": "F094",
@@ -1311,9 +1311,9 @@
     "workflow": "prod-clickthrough",
     "line": 586,
     "title": "Dozens of visible links expose no accessible name, including the panchang previous/next-day arrows",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: panchang/page.tsx is in the 55c3acfe diff (24 changed). Revert → 4 failed / 1 passed. Assertions match JSX attributes on"
   },
   {
     "key": "F095",
@@ -1325,9 +1325,9 @@
     "workflow": "prod-clickthrough",
     "line": 592,
     "title": "Temple photography is hotlinked from upload.wikimedia.org rather than self-hosted",
-    "state": "open",
+    "state": "owner",
     "commit": "",
-    "note": ""
+    "note": "OWNER: mirroring ~30 temple photographs into Supabase storage or an image CDN. Same block as COM-18 — downloading and redistributing third-party binaries, a CC-"
   },
   {
     "key": "F096",
@@ -1563,9 +1563,9 @@
     "workflow": "authenticated-deep",
     "line": 766,
     "title": "Nested <a> hydration error on the pandit bookings list",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: 27+/8- in the 55c3acfe diff on priest/bookings/page.tsx. Revert → 4 failed / 7 passed (one more red than the claimed 3, "
   },
   {
     "key": "F113",
@@ -1577,9 +1577,9 @@
     "workflow": "authenticated-deep",
     "line": 776,
     "title": "Payouts page has no pagination and is missing the \"Failed\" filter chip",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: 72+/7- in the 55c3acfe diff. Revert → 7 failed / 4 passed. Every element of the claim is in the source: the `failed` chi"
   },
   {
     "key": "F114",
@@ -1591,9 +1591,9 @@
     "workflow": "authenticated-deep",
     "line": 786,
     "title": "The unified provider payouts page is unreachable from the pandit portal",
-    "state": "open",
+    "state": "owner",
     "commit": "",
-    "note": ""
+    "note": "Which payout rail is canonical for pandits. The two rails are deliberately mutually exclusive and picking one moves real money, so per instruction I did not gue"
   },
   {
     "key": "F115",
@@ -1677,7 +1677,7 @@
     "title": "Checkout and the puja page promise \"100% Money-Back\" / \"100% refund if not satisfied\" while the shipped policy is a 100/75/50/25 ladder that pays 100% only 48h+ out",
     "state": "partial",
     "commit": "",
-    "note": "DISPUTED by verify: SCOPE OVER-CLAIM — the same failure mode the previous verifier caught, repeated one level out. The work on /refunds and /terms is real and the test is"
+    "note": "The remaining half is a business decision and the copy half is NOT my work. Both surfaces the finding names were already fixed before this session — I verified "
   },
   {
     "key": "F121",
@@ -1689,9 +1689,9 @@
     "workflow": "authenticated-deep",
     "line": 861,
     "title": "A single devotee can consume an entire slot's capacity by abandoning checkout five times, and the API accepts bookings years into the future",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Both halves are in the 55c3acfe diff (booking.service.ts +69/-2, bookings.ts +89/-1). Reverting both files → 8 failed / "
   },
   {
     "key": "F122",
@@ -1703,9 +1703,9 @@
     "workflow": "authenticated-deep",
     "line": 873,
     "title": "A completed booking can never be reviewed — the review endpoint rejects the \"completed\" status it is meant to serve",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: In the 55c3acfe diff: the literal `['delivered', 'video_uploaded']` predicate is replaced by the exported REVIEWABLE_BOO"
   },
   {
     "key": "F123",
@@ -1717,9 +1717,9 @@
     "workflow": "authenticated-deep",
     "line": 883,
     "title": "Booking detail shows a \"Video Ready\" / \"Watch Video\" affordance for records whose videoProofUrl is an empty string or not a URL",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Honest partial, correctly labelled as such. I independently verified the 'already closed, not by me' attribution at base"
   },
   {
     "key": "F124",
@@ -1731,9 +1731,9 @@
     "workflow": "authenticated-deep",
     "line": 893,
     "title": "Typing a past or out-of-range date into the booking date field silently snaps back with no message",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "already_fixed · NOT MY WORK — verified before touching anything, and the fix is out of my lane in any case (app"
   },
   {
     "key": "F125",
@@ -1913,9 +1913,9 @@
     "workflow": "authenticated-deep",
     "line": 1027,
     "title": "Export Users CSV silently drops 3 of 23 users",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "DISPUTED: The FIX is real and correctly attributed — export-users.ts is new, and the 55c3acfe diff on page.tsx shows both `getUsers(token)` call sites replaced "
   },
   {
     "key": "F138",
@@ -1927,9 +1927,9 @@
     "workflow": "authenticated-deep",
     "line": 1037,
     "title": "/admin/metrics reports '0 signups today' while /admin lists 10 signups dated today",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "DISPUTED: The FIX is real: the 55c3acfe diff shows startOfDayIst/dayKeyIst/IST_OFFSET_MS added and wired into the handler (`sinceToday = startOfDayIst(new Date("
   },
   {
     "key": "F139",
@@ -1941,9 +1941,9 @@
     "workflow": "authenticated-deep",
     "line": 1046,
     "title": "On /admin/reports the Popular Pujas rows sum to more bookings than the 'Total Bookings' tile directly above them",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: In the 55c3acfe diff on admin.service.ts: COUNTED_BOOKING_STATUSES declared once, applied to BOTH the tile's statusGroup"
   },
   {
     "key": "F140",
@@ -1955,9 +1955,9 @@
     "workflow": "authenticated-deep",
     "line": 1056,
     "title": "Five admin CRUD endpoints are hardcoded stubs that return empty lists and fake success on writes",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Largest claim in the batch and it holds up. The 55c3acfe diff on admin.ts is 258+/76- and contains real prisma.temple/pr"
   },
   {
     "key": "F141",
@@ -1969,9 +1969,9 @@
     "workflow": "authenticated-deep",
     "line": 1067,
     "title": "/admin/consultations shows a raw user UUID in the USER column and repeats the astrologer's UUID under their name",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: 52 added lines in the 55c3acfe diff on consultation.ts. Revert → 4 failed / 4. The implementation matches the claim exac"
   },
   {
     "key": "F142",
@@ -1983,9 +1983,9 @@
     "workflow": "authenticated-deep",
     "line": 1076,
     "title": "GET /admin/bookings accepts an invalid status and returns 200 with an empty list instead of 400",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: 38+/3- in the 55c3acfe diff: `status: z.string().optional()` is now `z.nativeEnum(BookingStatus).optional()` with Bookin"
   },
   {
     "key": "F143",
@@ -2013,7 +2013,7 @@
     "title": "The main consumer astrology funnel sells consultations with 15 fictional astrologers — money is captured, no Commission row is written, nobody can deliver",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: TWO remainders, deliberately not over-claimed. (1) OWNER: real astrologer supply. GET /astrology/astrologers/live serves"
+    "note": "TWO remainders, deliberately not over-claimed. (1) OWNER, unchanged from last wave: real astrologer supply. GET /astrology/astrologers/live serves 3 approved pr"
   },
   {
     "key": "F145",
@@ -2097,7 +2097,7 @@
     "title": "astro@demo.com is unusable — every astrologer-portal route returns HTTP 500 with a raw Prisma stack trace exposing absolute server paths and SQL",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: One of the verifier's three counts remains: astro@demo.com is STILL not seeded. apps/api/prisma/seed.ts:828 seeds astrol"
+    "note": "CODE, outside this lane's edit list. The close is one seeded row: apps/api/prisma/seed.ts:828 seeds astrologer@demo.com, not astro@demo.com, while middlewares/a"
   },
   {
     "key": "F151",
@@ -2123,9 +2123,9 @@
     "workflow": "authenticated-deep",
     "line": 1178,
     "title": "Wellness dashboard also labels un-paid pending earnings as \"Paid out\", and \"Pending payout\" renders as an em dash",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Attribution real: git diff 55c3acfe shows loadInstructorPayoutSplit() new in apps/api/src/routes/wellness-portal.ts (pro"
   },
   {
     "key": "F153",
@@ -2137,9 +2137,9 @@
     "workflow": "authenticated-deep",
     "line": 1187,
     "title": "GET /consultation/astrologer/mine always returns 0 rows for a real astrologer — it filters on User.id while rows store AstrologerProfile.id",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "already_fixed · NOT MY WORK, verified explicitly: `git show 55c3acfe:apps/api/src/routes/consultation.ts | grep"
   },
   {
     "key": "F154",
@@ -2151,9 +2151,9 @@
     "workflow": "authenticated-deep",
     "line": 1196,
     "title": "GET /wellness-portal/instructor/mine returns HTTP 500 — raw SQL compares a uuid column to a text parameter",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Diff against 55c3acfe shows `WHERE instructor_id = $1::uuid` and `AND status = $N::\\\"WellnessSessionStatus\\\"` on the sha"
   },
   {
     "key": "F155",
@@ -2165,9 +2165,9 @@
     "workflow": "authenticated-deep",
     "line": 1204,
     "title": "A devotee who paid for a wellness class has no way to find it again — no \"my enrolments\" endpoint and no page",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: GET /enrollments/mine is a genuinely new +65-line block in apps/api/src/routes/wellness-sessions.ts (userId-scoped, orde"
   },
   {
     "key": "F156",
@@ -2179,9 +2179,9 @@
     "workflow": "authenticated-deep",
     "line": 1213,
     "title": "Astrologer dashboard \"Total Consultations\" is permanently 0 and contradicts \"Today's Sessions 1\" on the same row of cards",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Both halves are in the diff. Read side: astrologer-portal.ts now issues a second COUNT over astrologer_consultations wit"
   },
   {
     "key": "F157",
@@ -2207,9 +2207,9 @@
     "workflow": "authenticated-deep",
     "line": 1231,
     "title": "/astrology sort and filter selections never reach the URL, so sorted views cannot be shared or restored by the back button",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "already_fixed · NOT MY WORK, verified explicitly: `git diff 55c3acfe -- apps/web/app/astrology/AstrologyClient."
   },
   {
     "key": "F159",
@@ -2221,9 +2221,9 @@
     "workflow": "authenticated-deep",
     "line": 1241,
     "title": "/wellness/instructors is a 404 — only the [id] child route exists",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: apps/web/app/wellness/instructors/page.tsx is new and untracked; removing it collapses the suite to an unresolvable impo"
   },
   {
     "key": "F160",
@@ -2613,9 +2613,9 @@
     "workflow": "authenticated-deep",
     "line": 1520,
     "title": "/blog index renders zero posts",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: OWNER — editorial approval of content. Publishing a post is now a one-line commit to apps/web/content/blog/published.ts,"
+    "note": "OWNER, editorial: PUBLISHED_POSTS is deliberately empty. All 30 existing drafts under docs/agent-reports/blog-drafts are status draft or ready-for-founder-revie"
   },
   {
     "key": "F188",
@@ -2641,9 +2641,9 @@
     "workflow": "authenticated-deep",
     "line": 1538,
     "title": "/store-admin/orders status-tab counts ignore the search box, so a tab labelled with a number can render fewer rows",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: lib/store-admin-orders.ts is new; the page.tsx rewiring is in the 55c3acfe diff. Reverting page.tsx ALONE (helper kept) "
   },
   {
     "key": "F190",
@@ -2699,7 +2699,7 @@
     "title": "No shared Button primitive: the primary CTA ships in 11 pixel heights, 11 paddings, 4 radii and 5 type styles across the 10 measured screens",
     "state": "partial",
     "commit": "",
-    "note": "DISPUTED by verify: Roughly half the claim is pre-existing. components/ui/button-recipe.ts was CREATED at 97fbd58c (before this wave) and is byte-identical at HEAD, so 'S"
+    "note": "~280 hand-rolled bg-saffron-600 controls and the lint rule remain. A repo-wide Button migration is a separate piece of work."
   },
   {
     "key": "F194",
@@ -2711,9 +2711,9 @@
     "workflow": "authenticated-deep",
     "line": 1597,
     "title": "Two different colours are both shipping as 'the primary' — #B87333 and #9E6229 — plus a gradient of the two, sometimes on the same screen",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: The entire 51-fill sweep is pre-existing. git grep for solid bg-saffron-500 under apps/web/{app,components,lib}: 52 hits / 37 files at 376153d5, but a"
+    "note": "already_fixed · All three halves verified closed at HEAD, all predating 55c3acfe (git diff on globals.css shows"
   },
   {
     "key": "F195",
@@ -2727,7 +2727,7 @@
     "title": "The h1 is a different thing on every screen: 7 treatments, 18px to 70.4px, two typefaces — and two of the ten screens have no h1 at all",
     "state": "partial",
     "commit": "",
-    "note": "DISPUTED by verify: components/ui/heading-recipe.ts was created at 97fbd58c and is untouched by this wave, as are app/store/page.tsx, app/temples/page.tsx, app/pujas/page"
+    "note": "Repo-wide, 349 h1 tags across 45 size+weight recipes still exist outside the ten migrated call sites. Not swept."
   },
   {
     "key": "F196",
@@ -2739,9 +2739,9 @@
     "workflow": "authenticated-deep",
     "line": 1617,
     "title": "The display typeface is effectively homepage-only — 6 of 10 screens render zero Cabinet Grotesk",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: OWNER: no licensed display face is bundled. Licensing Cabinet Grotesk (or choosing an alternative) and dropping the woff"
+    "note": "OWNER: licence Cabinet Grotesk (or pick an alternative), drop the woff2 under apps/web/public/fonts and declare it with next/font/local. The hierarchy then appe"
   },
   {
     "key": "F197",
@@ -2753,9 +2753,9 @@
     "workflow": "authenticated-deep",
     "line": 1626,
     "title": "Visual and semantic heading hierarchy contradict each other — an h3 renders at 36px on /pujas while an h2 on the same page renders at 16px",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: All three named page fixes already existed at 97fbd58c: app/pujas/page.tsx h3s were already text-xl (lines 420, 456) under a text-2xl h2; app/priest/p"
+    "note": "already_fixed · All three named pages verified at HEAD and untouched by me. /pujas: the section h3s are text-xl"
   },
   {
     "key": "F198",
@@ -2767,9 +2767,9 @@
     "workflow": "authenticated-deep",
     "line": 1636,
     "title": "Heading level skips: /temples, /store and /priest jump straight from h1 to h3 with no h2 in between",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: Every element of the claim predates the wave. At 97fbd58c app/store/page.tsx:169-170 already had <section aria-labelledby=\"store-all-products\"> with t"
+    "note": "already_fixed · Verified at HEAD, none of it mine. app/store/page.tsx:169-170 wraps the product grid in <sectio"
   },
   {
     "key": "F199",
@@ -2781,9 +2781,9 @@
     "workflow": "authenticated-deep",
     "line": 1646,
     "title": "16 distinct warm brand colours render across the 10 screens, including two Tailwind stock oranges that are not in the palette at all",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "still partial after wave: OWNER/DESIGN: the finding counts 16 warm colours, and the residual four are declared ramps, not mistakes — temple-gold, "
+    "note": "already_fixed · The code half is closed and predates me. apps/web/app/globals.css:272-283 aliases the whole ora"
   },
   {
     "key": "F200",
@@ -2797,7 +2797,7 @@
     "title": "Reading size for body copy varies from 12px to 18px across the product — five different paragraph styles, and 12px/13.4px is below comfortable reading size",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: The other half of DU-10 is unified PROSE size, not the legibility floor. The two competing base scales are already recon"
+    "note": "The other half — one prose size for all body copy — is unclosed. The five per-page paragraph styles the sweep measured (12px on /priest through 18px on /pujas) "
   },
   {
     "key": "F201",
@@ -2825,7 +2825,7 @@
     "title": "Cool-gray leak: 2,128 gray/slate/zinc/neutral/stone utilities on a product whose neutral ramp is warm cream",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: The two remaining halves are both larger than a token fix and one of them is a design decision. (1) 2,257 gray/slate/zin"
+    "note": "Two halves remain and both are larger than a token fix: (1) the literal utility names are still cool-family across 122 files, so the next author copies gray-500"
   },
   {
     "key": "F203",
@@ -2837,9 +2837,9 @@
     "workflow": "authenticated-deep",
     "line": 1685,
     "title": "The puja error screen is rendered in the OS system font with an off-scale radius and no heading",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: ATTRIBUTION REAL: all six boundaries are uncommitted modifications with the claimed shape — app/error.tsx 14/63, pujas 1"
   },
   {
     "key": "F204",
@@ -2851,9 +2851,9 @@
     "workflow": "authenticated-deep",
     "line": 1695,
     "title": "Page container width changes route to route — 11 distinct max-w values across 679 container declarations",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "~700 declarations remain on /pricing, the detail routes, the seven provider portals and the content library. Not migrated; the guard states this explicitly."
   },
   {
     "key": "F205",
@@ -2865,9 +2865,9 @@
     "workflow": "authenticated-deep",
     "line": 1704,
     "title": "Border radius sprawls to 13 utilities over 888 uses against a 6-token scale, including 41 uses of the untokenised bare `rounded`",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "The other half — collapsing 18 utilities to the finding's target of three (control/card/pill) — is a 4,791-call-site design decision, not a token fix. Not attem"
   },
   {
     "key": "F206",
@@ -2879,9 +2879,9 @@
     "workflow": "authenticated-deep",
     "line": 1715,
     "title": "Cookie consent card buries the entire /auth/login form at 390x844 — Sign In is invisible and un-tappable on first visit",
-    "state": "partial",
+    "state": "owner",
     "commit": "376153d5",
-    "note": "space reserved, banner 347->321; Sign In still occluded"
+    "note": "OWNER/COMPLIANCE: the consent card cannot shrink further without deciding what may be dropped from the notice, or moving to a compact bar with a 'more options' "
   },
   {
     "key": "F207",
@@ -2935,9 +2935,9 @@
     "workflow": "authenticated-deep",
     "line": 1763,
     "title": "Text below the 12px legibility floor is systemic — 190 elements under 12px on the mobile homepage, smallest 9px",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: Zero source files were changed by this wave for RESP-05. The only file listed, apps/web/app/globals.css, was not touched by 5cf7650c. The arbitrary-si"
+    "note": "already_fixed · Both halves verified closed at HEAD, neither mine. Clamp floor: globals.css:151 --text-xs: clam"
   },
   {
     "key": "F211",
@@ -2963,9 +2963,9 @@
     "workflow": "authenticated-deep",
     "line": 1782,
     "title": "/auth/login form controls under 44px at 390 — password show/hide toggle is 16x16",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: Neither listed file was touched by this wave. At 97fbd58c globals.css:589-595 already defined .tap-safe with inline-flex + min-height:44px + padding-b"
+    "note": "already_fixed · Checked all four named controls at HEAD; every one is covered, and none of it is mine. (1) Pass"
   },
   {
     "key": "F213",
@@ -2991,9 +2991,9 @@
     "workflow": "authenticated-deep",
     "line": 1802,
     "title": "Standalone section CTAs and footer links render as 14.8-18px tall tap targets on mobile",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: Mixed, and the headline items are pre-existing. app/page.tsx was not touched by this wave and already had 5 className=\"tap-safe \" CTAs at 97fbd58c, an"
+    "note": "already_fixed · Verified at HEAD, none of it mine. app/page.tsx carries 5 tap-safe section CTAs; app/layout.tsx"
   },
   {
     "key": "F215",
@@ -3005,9 +3005,9 @@
     "workflow": "authenticated-deep",
     "line": 1812,
     "title": "Provider and admin portals stack two headers plus the consumer tab bar — 177-185px of chrome on a 390x844 phone",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: components/SiteChrome.tsx was not touched by this wave. At 97fbd58c it already contained everything the claim describes: the 'use client' gate, PORTAL"
+    "note": "already_fixed · Verified at HEAD and untouched by me. components/SiteChrome.tsx:19 declares PORTAL_ROUTE_PREFIX"
   },
   {
     "key": "F216",
@@ -3021,7 +3021,7 @@
     "title": "Portal controls under 44px at 390 — including a 20x20 sidebar close button and the priest's 48x28 on-duty toggle",
     "state": "partial",
     "commit": "",
-    "note": "DISPUTED by verify: The two headline controls are pre-existing. At 97fbd58c app/priest/page.tsx:315-320 already had the on-duty switch as h-8 w-14 inside a p-2 / -m-2 but"
+    "note": "DISPUTED: SCOPE OVER-CLAIM: outcome should be 'partial', not 'fixed'. The one real change is a single className on one anchor — `git diff HEAD -- apps/web/compo"
   },
   {
     "key": "F217",
@@ -3033,9 +3033,9 @@
     "workflow": "authenticated-deep",
     "line": 1834,
     "title": "Web security headers (CSP/HSTS/X-Frame-Options/nosniff) are defined only in public/_headers — a Cloudflare Pages convention the current Render Next-standalone host does not honor; next.config.ts headers() sets Cache-Control only, so no CSP/anti-clickjacking header is applied",
-    "state": "open",
+    "state": "owner",
     "commit": "",
-    "note": ""
+    "note": "apps/web/next.config.ts and apps/web/middleware.ts are outside this lane (apps/web except lib/api-config.ts). This is the highest-severity item I could not touc"
   },
   {
     "key": "F218",
@@ -3047,9 +3047,9 @@
     "workflow": "authenticated-deep",
     "line": 1842,
     "title": "Auth access token persisted in localStorage (poojly_session/poojly_user) — any XSS yields full account + API takeover as that user",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "MIGRATION PLAN for the remaining work, in order, none of it in this lane: (1) with the cookie now settable locally, verify end-to-end that authenticateUser's ex"
   },
   {
     "key": "F219",
@@ -3089,9 +3089,9 @@
     "workflow": "authenticated-deep",
     "line": 1868,
     "title": "Published refund ladder is 100/50/0; the code refunds 100/75/50/25 — a 24-48h cancellation is short-paid 25%",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "OWNER, two decisions, both untouched. (1) The ladder VALUES: DEFAULT_CANCEL_POLICY (apps/api/src/services/cancellation.service.ts:47-58) still declares 50% at 4"
   },
   {
     "key": "F222",
@@ -3117,9 +3117,9 @@
     "workflow": "authenticated-deep",
     "line": 1890,
     "title": "Site tells devotees cancellation inside 24h is 'not permitted' with 'no refund'; the code permits it and owes them 50% or 25%",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "Same two owner decisions as LEG-01 -- whether the unreachable 50%/25% tiers are deleted or made reachable, and the priceAmount-vs-fee-exclusive refund base at a"
   },
   {
     "key": "F224",
@@ -3131,9 +3131,9 @@
     "workflow": "authenticated-deep",
     "line": 1901,
     "title": "/pricing sells provider plans and a commission ladder that do not exist in the API",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "still partial after wave: The commission half is untouched and remains a live wrong-data exposure to the supply side. lib/pricing.ts:180 COMMISSIO"
+    "note": "already_fixed · The blocked_on note in the ledger is stale and I am explicitly NOT claiming this work. Proof it"
   },
   {
     "key": "F225",
@@ -3159,9 +3159,9 @@
     "workflow": "authenticated-deep",
     "line": 1921,
     "title": "The 48-hour video-proof refund guarantee is enforced nowhere; the only automation runs at 72h and deliberately issues no refund",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: Real, non-vacuous, and strictly narrower than 'fixed'. The prior DISPUTE named THREE defects; this wave fixed only the second. (1) UNFIXED: apps/web/a"
+    "note": "verified: Verified real on every named surface. why-darshya +23/-7 (the CTA no longer says 'get video proof in 48 hours ... we can"
   },
   {
     "key": "F227",
@@ -3217,7 +3217,7 @@
     "title": "No legal entity, GSTIN or registered address anywhere — yet the platform issues a PDF titled 'DARSHYA TAX INVOICE' and adds 5% GST at checkout",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: Two things remain and neither is in this lane. (1) apps/api/src/lib/pdf-invoice.ts:195 still draws the header 'DARSHYA T"
+    "note": "Two things, neither in this lane. (1) apps/api/src/lib/pdf-invoice.ts:195 must be retitled 'RECEIPT' -- apps/api is explicitly do-not-touch this wave. (2) OWNER"
   },
   {
     "key": "F231",
@@ -3257,9 +3257,9 @@
     "workflow": "authenticated-deep",
     "line": 1993,
     "title": "/about publishes '200+ Temples partnered' and '100% Bookings with video proof' against 20 temples and completed bookings with no video",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: Real and non-vacuous, but only one of the prior DISPUTE's two criticisms is closed. The pre-wave note reads 'Real and substantial, but NARROWER THAN T"
+    "note": "verified: The incremental half is real and the prior half is honestly disclosed. I independently confirmed `git diff --numstat 55c"
   },
   {
     "key": "F234",
@@ -3299,9 +3299,9 @@
     "workflow": "authenticated-deep",
     "line": 2024,
     "title": "DPDP rights are email-only: the built DSAR endpoint is unreachable from the web app and every rights inbox is 'aspirational'",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: Good engineering, non-vacuous, but it closes only HALF of the clause it claims. The finding's third fix clause is verbatim: 'confirm privacy@ **and gr"
+    "note": "verified: Real and correctly attributed. company.ts +50/-4 at 55c3acfe adds HAS_GRIEVANCE_INBOX_VERIFIED:false and grievanceContac"
   },
   {
     "key": "F237",
@@ -3341,9 +3341,9 @@
     "workflow": "authenticated-deep",
     "line": 2055,
     "title": "Refund settlement timelines differ across four pages, including 'UPI 1–3 business days' vs 'UPI refunds are usually instant'",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Attribution real: `git diff 55c3acfe` shows cancellation-policy.ts +36/-0 (new REFUND_SETTLEMENT_BANDS + REFUND_SETTLEME"
   },
   {
     "key": "F240",
@@ -3553,7 +3553,7 @@
     "title": "Puja booking does not exist in the app — the Book button opens the production website, and the create-booking hook points at a 404",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: THE IN-APP BOOKING FLOW ITSELF IS NOT BUILT (finding size L). Tapping Book still opens the mobile browser; useCreateBook"
+    "note": "The in-app booking flow itself is not built, and that is the whole remaining L. Both smaller halves were already shipped before this session and I explicitly do"
   },
   {
     "key": "F255",
@@ -3635,9 +3635,9 @@
     "workflow": "authenticated-deep",
     "line": 2267,
     "title": "The same darshan stream reports a different status and a different playback URL from two endpoints",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "DISPUTED: The central mechanism claim is factually false. The claim says 'Extracted deriveStreamPlayback as the one derivation both use' — it is not. `grep -n d"
   },
   {
     "key": "F261",
@@ -3649,9 +3649,9 @@
     "workflow": "authenticated-deep",
     "line": 2276,
     "title": "Provider earnings and temple payouts/bookings screens exist on web but are missing from the app; the app has no search and almost no content library",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "The v1 mobile scope decision, which is what the finding actually asks for ('Decide the v1 mobile scope explicitly'). I fixed the one item on the list that is a "
   },
   {
     "key": "F262",
@@ -3705,9 +3705,9 @@
     "workflow": "scale-mindset",
     "line": 2945,
     "title": "Three contradictory refund policies are live simultaneously; the most prominent one is a hardcoded badge the written policy does not honour",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "already_fixed · All four contradicting surfaces now read from ONE module, apps/web/lib/cancellation-policy.ts, "
   },
   {
     "key": "F266",
@@ -3763,7 +3763,7 @@
     "title": "Product cards ship 5.58 MB of unoptimised hotlinked Wikimedia images, using 19th-century paintings as product photography",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: Three things remain. (1) Self-hosting / CDN — the images are STILL hotlinked to upload.wikimedia.org, so the burst 429 t"
+    "note": "LANE plus OWNER. lib/images.ts and next.config.* are both on this wave's do-not-touch list, and the self-host-vs-CDN choice is TASKS.md #203/#204 awaiting the o"
   },
   {
     "key": "F270",
@@ -3791,7 +3791,7 @@
     "title": "Card and hero copy is a 1,144-character scripture excerpt; raw enum values like \"special_occasion\" are shown to customers",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: The remaining half is a contract change in apps/api, which is do-not-touch this wave: add a shortDescription / cardBlurb"
+    "note": "apps/api CONTRACT CHANGE, out of lane this wave: add a shortDescription/cardBlurb field (100-140 chars, benefit-first) to the puja type model, return it from GE"
   },
   {
     "key": "F272",
@@ -3819,7 +3819,7 @@
     "title": "Site search only searches encyclopedia articles — a devotee searching \"rudrabhishek\" cannot find the puja they can buy",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: Everything left needs apps/api/src/routes/search.ts, which is out of lane. Confirmed against the live API: `GET /api/v1/"
+    "note": "apps/api/src/routes/search.ts, out of lane. Adding store products to the result set, cross-corpus relevance ranking, and 'nearest match' suggestions on zero res"
   },
   {
     "key": "F274",
@@ -3833,7 +3833,7 @@
     "title": "Homepage is brand-first with two competing CTAs, no how-it-works, no proof video, and a cookie banner over 29% of the fold",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: Three remain. (1) The H1 rewrite ('Darshya, your bridge to sacred traditions' -> a job statement) lives in lib/i18n/en.j"
+    "note": "(1) LANE — lib/i18n/** and lib/t.ts are on the do-not-touch list and another agent is editing them this wave. (2) COMPLIANCE JUDGEMENT — deferring when a DPDP/U"
   },
   {
     "key": "F275",
@@ -3847,7 +3847,7 @@
     "title": "75% of temples have nothing bookable, yet \"Explore Temples\" is a co-primary homepage CTA",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: The directory-level badge is blocked by the API payload, not by lane alone. Confirmed live: `GET /api/v1/temples?limit=2"
+    "note": "apps/api LIST-ENDPOINT FIELD, out of lane, plus app/temples/** which is on this wave's do-not-touch list. The 'Notify me when pujas open here' demand capture ad"
   },
   {
     "key": "F276",
@@ -3861,7 +3861,7 @@
     "title": "/temples and /astrology render an empty full-viewport div as their loading state",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: app/astrology/page.tsx:171 still reads `<Suspense fallback={<div className=\"min-h-[100dvh]\" />}>` — verbatim the empty f"
+    "note": "LANE. One line once app/astrology/** frees: extract the existing TemplesSkeleton card grid into a shared component and use it in both places, which is what the "
   },
   {
     "key": "F277",
@@ -3957,9 +3957,9 @@
     "workflow": "scale-mindset",
     "line": 3055,
     "title": "API runs in Render Oregon while the database is Supabase Tokyo — every query crosses the Pacific",
-    "state": "open",
+    "state": "owner",
     "commit": "",
-    "note": ""
+    "note": "The region change is pure infrastructure and owner-only: either recreate the Supabase project in ap-south-1 (Mumbai) and move both Render services to region: si"
   },
   {
     "key": "F284",
@@ -3987,7 +3987,7 @@
     "title": "111 of 205 findMany calls have no take or cursor; the worst ship 15-33 MB per request",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: 95 unbounded findMany calls remain (top files: admin.service 11, store-admin 6, payout.service 6, admin-bookings 5, admi"
+    "note": "94 unbounded findMany calls remain. Top files: admin.service 10, store-admin 6, payout.service 6, admin-bookings 5, admin.ts 5, store-orders 5. Most are bounded"
   },
   {
     "key": "F286",
@@ -4001,7 +4001,7 @@
     "title": "Every authenticated request in production makes a live network call to Supabase Auth",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: Owner must supply the Supabase project JWT secret (Supabase dashboard -> Settings -> API -> JWT secret) as an env var be"
+    "note": "Owner must set SUPABASE_JWT_SECRET on the Render API service (Supabase dashboard -> Settings -> API -> JWT secret). Until then supabaseJwtConfig().enabled is fa"
   },
   {
     "key": "F287",
@@ -4055,9 +4055,9 @@
     "workflow": "scale-mindset",
     "line": 3097,
     "title": "Admin user list filters by role in JavaScript after pagination, and searches with an unindexed ILIKE",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: STOPPING AND REPORTING AS INSTRUCTED — this needs a Prisma migration, and apps/api/prisma/** is off-limits this session."
+    "note": "The ILIKE half needs a Prisma migration: CREATE EXTENSION pg_trgm plus GIN trigram indexes on users(full_name) and users(email). apps/api/prisma/** is off-limit"
   },
   {
     "key": "F291",
@@ -4083,9 +4083,9 @@
     "workflow": "scale-mindset",
     "line": 3109,
     "title": "Resend's 100 emails/day is the first hard business cap you will hit — around 30 signups a day",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: Three owner decisions remain, none of them code: (1) buy the paid Resend tier ($20/mo for 50k) as a launch-day line item"
+    "note": "Three owner decisions, none of them code: (1) buy the paid Resend tier ($20/mo for 50k) as a launch-day line item; (2) move digest/drip/marketing sends off Rese"
   },
   {
     "key": "F293",
@@ -4223,9 +4223,9 @@
     "workflow": "scale-mindset",
     "line": 3171,
     "title": "Booking wizard is silent to assistive technology: no live region, no step semantics, no field grouping",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: All three 'remaining halves' already existed at 97fbd58c in app/pujas/book/page.tsx: nav aria-label=\"Booking progress\" + <ol> + aria-current at lines "
+    "note": "already_fixed · All three halves verified at HEAD in apps/web/app/pujas/book/page.tsx and none of them mine (gi"
   },
   {
     "key": "F303",
@@ -4237,9 +4237,9 @@
     "workflow": "scale-mindset",
     "line": 3177,
     "title": "Booking wizard date field has no label — placeholder \"DD/MM/YYYY\" only",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: The DISPUTED half — the call site — was already closed before this wave: app/pujas/book/page.tsx:1797 carries ariaLabel=\"Puja date\" at 97fbd58c. The D"
+    "note": "already_fixed · Both halves are closed at HEAD and neither is mine. Component: components/ui/DateInput.tsx uses"
   },
   {
     "key": "F304",
@@ -4251,9 +4251,9 @@
     "workflow": "scale-mindset",
     "line": 3183,
     "title": "Primary CTA fill bg-saffron-500 gives 3.79:1 white text; four accent badge fills are worse (2.29–3.53:1)",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: Same substance as DU-04 and the same problem. The repo-wide sweep the claim rests on ('51 solid fills across 37 files moved to saffron-600') was alrea"
+    "note": "verified: INDEPENDENTLY REPRODUCED THE BEFORE/AFTER WITHOUT TOUCHING THE WORKING TREE: I extracted HEAD's apps/web/app + apps/web/"
   },
   {
     "key": "F305",
@@ -4321,9 +4321,9 @@
     "workflow": "scale-mindset",
     "line": 3213,
     "title": "Structural nits: /auth/login has no h1, /store skips h1 to h3, /admin nests <main> inside <main>",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: All three structural nits were already closed at 97fbd58c. app/auth/login/page.tsx:313 was already <h1 className=\"mb-2 flex items-center justify-cente"
+    "note": "already_fixed · All three structural nits verified closed at HEAD, none of them mine. app/auth/login/page.tsx:3"
   },
   {
     "key": "F310",
@@ -4335,9 +4335,9 @@
     "workflow": "scale-mindset",
     "line": 3219,
     "title": "Local API CORS allowlist omits 127.0.0.1, which hides every client-rendered form behind a catalog error",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: The functional fix — 'added http://127.0.0.1:3000 and :3001 alongside the two localhost spellings' — was already live at 97fbd58c, inline in apps/api/"
+    "note": "already_fixed · Out of my lane (apps/api/**, explicitly do-not-touch this wave) and independently confirmed clo"
   },
   {
     "key": "F311",
@@ -4365,7 +4365,7 @@
     "title": "The only language switcher on 8 of 8 product pages leads to marketing shells that link straight back to English",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/layout.tsx (DO-NOT-TOUCH, another agent is in it right now — `git status` shows it modified). Two things ne"
+    "note": "apps/web/app/layout.tsx (out of lane). Two edits: (1) swap `t('nav')`/`t('footer')` for `getServerTranslations` — but read the cost note at lib/i18n/server.ts:1"
   },
   {
     "key": "F313",
@@ -4379,7 +4379,7 @@
     "title": "The one working language switcher translates 3 strings out of 264; 15 of 18 authored Hindi labels are never read",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/components/ContentPageHeader.tsx and apps/web/components/LanguageSwitcher.tsx (both DO-NOT-TOUCH). Remaining wo"
+    "note": "apps/web/components/ContentPageHeader.tsx and apps/web/components/LanguageSwitcher.tsx (out of lane). Mechanical: point ContentPageHeader at `t('content', langu"
   },
   {
     "key": "F314",
@@ -4393,7 +4393,7 @@
     "title": "API error localization: 150 authored strings, 5 languages, 2 call sites, 3 reachable codes — 0 of 40 probed responses localized",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/api/src/server.ts:444 (another agent's lane, currently dirty). One-line choke point, same as I18N-03: accept `req`,"
+    "note": "apps/api/src/server.ts:153 (out of lane). One-line choke point: accept `req`, compute `pickLang(req.headers['accept-language'], (req.query as any)?.lang)` once,"
   },
   {
     "key": "F315",
@@ -4407,7 +4407,7 @@
     "title": "<html lang> is hardcoded to \"en\" everywhere, which makes the Devanagari font rule a selector that can never match",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/layout.tsx:258 and apps/web/app/globals.css:353,419 (both DO-NOT-TOUCH; layout.tsx is currently dirty from "
+    "note": "apps/web/app/layout.tsx:264 and apps/web/app/globals.css:353,418-425 (both out of lane). One owner of that pair should drive `lang` from the route's first path "
   },
   {
     "key": "F316",
@@ -4421,7 +4421,7 @@
     "title": "11 of 20 temple names are in scripts the app loads no webfont for; glyph coverage is delegated entirely to the user's OS",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/layout.tsx (next/font declarations) and apps/web/app/globals.css:353 — both DO-NOT-TOUCH. Purely mechanical"
+    "note": "apps/web/app/layout.tsx (next/font declarations) and apps/web/app/globals.css:353 (out of lane). Mechanical: add the six Noto faces with `display:'swap'` and ap"
   },
   {
     "key": "F317",
@@ -4435,7 +4435,7 @@
     "title": "The API ships correct-script localized names for 20/20 temples; the web renders 0 of them",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/temples/[slug]/page.tsx and the temples list/card components (DO-NOT-TOUCH, currently dirty). Delete the ha"
+    "note": "apps/web/app/temples/[slug]/page.tsx:70 and the temples list/card components (out of lane). Delete the hardcoded null, pass the API value through, and render it"
   },
   {
     "key": "F318",
@@ -4447,9 +4447,9 @@
     "workflow": "scale-mindset",
     "line": 3269,
     "title": "Accept-Language is never negotiated — no i18n config, no middleware locale logic, no redirect",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: Owner decision only: whether to also adopt a locale from Accept-Language for a first-time visitor. Recommendation is to "
+    "note": "OWNER DECISION, not code: whether a first-time visitor whose browser asks for Hindi should be switched, or only offered. Recommendation is to keep offering unti"
   },
   {
     "key": "F319",
@@ -4463,7 +4463,7 @@
     "title": "Multilingual help center ships 6 articles against its own stated target of 300, is unlinked from /help, and 5 of 6 are unreviewed machine translations shown without disclosure",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/help/articles/[lang]/[slug]/page.tsx, apps/web/a"
+    "note": "apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/help/articles/[lang]/[slug]/page.tsx, apps/web/app/sitemap.ts, apps/web/lib/support.ts ("
   },
   {
     "key": "F320",
@@ -4475,9 +4475,9 @@
     "workflow": "scale-mindset",
     "line": 3281,
     "title": "INR currency formatting is correct; 23 bare toLocaleString() calls silently take the server's en-US default",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "All 21 sites are in apps/web/app/{astrology,admin,vedas,puranas,sacred-rivers,sacred-mountains,mahabharata}, and the finding's preferred home for a shared helpe"
   },
   {
     "key": "F321",
@@ -4491,7 +4491,7 @@
     "title": "Four different, mutually inconsistent lists of supported languages; preferredLanguage is validated and stored but read by nothing",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/layout.tsx, apps/web/components/LanguageSwitcher.tsx, apps/web/lib/support.ts (DO-NOT-TOUCH) and apps/api/s"
+    "note": "apps/web/app/layout.tsx, apps/web/components/LanguageSwitcher.tsx, apps/web/lib/support.ts and apps/api/src/routes/users.ts + lib/error-i18n.ts + routes/auth.ts"
   },
   {
     "key": "F322",
@@ -4533,7 +4533,7 @@
     "title": "756 of 758 API error responses are English-only, despite a complete, working 5-language error catalog sitting unused",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/api/src/server.ts:444 (another agent's lane, dirty in `git status`). Exact remaining change: accept `req`, compute "
+    "note": "apps/api/src/server.ts:153 (out of lane). Identical remaining change to I-04 — these two findings are one defect seen twice. Keep the two bookings.ts call sites"
   },
   {
     "key": "F325",
@@ -4545,9 +4545,9 @@
     "workflow": "scale-mindset",
     "line": 3313,
     "title": "Five layers disagree about which languages exist; bn and mr are offered in the UI but silently fall back to English, while kn is supported but offered nowhere",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: Owner decision (add bn+mr catalogs to apps/api/src/lib/error-i18n.ts, 60 strings, or drop kn and the two footer links), "
+    "note": "OWNER DECISION FIRST, with a concrete copy estimate: either author bn + mr error catalogs in apps/api/src/lib/error-i18n.ts (30 codes each = 60 strings, and the"
   },
   {
     "key": "F326",
@@ -4561,7 +4561,7 @@
     "title": "The only in-app language control translates 3 strings on 1 page; 15 of its 18 Hindi labels are dead code",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/components/LanguageSwitcher.tsx and apps/web/components/ContentPageHeader.tsx (DO-NOT-TOUCH). Remaining: delete"
+    "note": "apps/web/components/LanguageSwitcher.tsx and apps/web/components/ContentPageHeader.tsx (out of lane). Delete CONTENT_LABELS, read `t('content', locale)`, and re"
   },
   {
     "key": "F327",
@@ -4575,7 +4575,7 @@
     "title": "No webfont covers any Indic script — Devanagari, Tamil, Telugu and Bengali all render from OS fallback, and the Noto Sans Devanagari that IS loaded is never referenced by the headings",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/layout.tsx (next/font) and apps/web/app/globals.css:148,353,419 — both DO-NOT-TOUCH and layout.tsx is curre"
+    "note": "apps/web/app/layout.tsx and apps/web/app/globals.css:148,353,418-425 (out of lane). Add the Tamil/Telugu/Bengali faces and put them into the stacks headings act"
   },
   {
     "key": "F328",
@@ -4589,7 +4589,7 @@
     "title": "preferredLanguage is a write-only field — set at signup, editable in the profile UI, returned by the API, and read by nothing that renders; the demo path also reports it wrongly",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/api/src/routes/auth.ts:625,731 and apps/web/app/profile/page.tsx (both out of lane), plus apps/web/lib/auth-context"
+    "note": "apps/api/src/routes/auth.ts:625,731, apps/web/app/profile/page.tsx and apps/web/lib/auth-context.tsx (all out of lane). NOTE FOR WHOEVER TAKES IT: the web now h"
   },
   {
     "key": "F329",
@@ -4603,7 +4603,7 @@
     "title": "hreflang cluster is wrong on every page: all 6 alternates are emitted from the root layout, so /pujas tells Google its Hindi equivalent is the Hindi homepage",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/layout.tsx:301-307 (DO-NOT-TOUCH, currently dirty from the styling sweep). While deleting, also drop the re"
+    "note": "apps/web/app/layout.tsx:307-313 and :129-133 (out of lane). Delete the seven root-level alternate tags and let each landing keep emitting its own; while there, "
   },
   {
     "key": "F330",
@@ -4617,7 +4617,7 @@
     "title": "The multilingual help centre is one article, not the 300 its own spec claims — and it is unreachable from the UI",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/sitemap.ts — all DO-NOT-TOUCH. Near-term code sl"
+    "note": "apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/sitemap.ts (out of lane). Near-term code: link the language-filtered list from /help and"
   },
   {
     "key": "F331",
@@ -4629,9 +4629,9 @@
     "workflow": "scale-mindset",
     "line": 3349,
     "title": "No Accept-Language negotiation anywhere in the web tier; a Hindi browser gets the English page with no Content-Language header",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "triage: Accept-Language negotiation DOES exist (lib/i18n/locales.ts negotiateLocale, consumed at middleware.ts:121) and html lang is driven off the declared <main lang>. Residual: no Content-Language response header"
+    "note": "verified: ATTRIBUTION REAL: `git diff HEAD -- apps/web/middleware.ts apps/web/lib/i18n/locales.ts` = 21/1 and 48/0, both uncommitt"
   },
   {
     "key": "F332",
@@ -4685,9 +4685,9 @@
     "workflow": "scale-mindset",
     "line": 3375,
     "title": "All four outbound channels are unconfigured and nothing in the product can tell you",
-    "state": "open",
+    "state": "partial",
     "commit": "",
-    "note": ""
+    "note": "DISPUTED: The work done is real and the tests are honest, but the claim is marked outcome:'fixed' with an EMPTY blocked_on while two of the finding's three fix "
   },
   {
     "key": "F336",
@@ -4741,9 +4741,9 @@
     "workflow": "scale-mindset",
     "line": 3399,
     "title": "Aarti opt-in stores a web-push endpoint URL as an FCM device token — undeliverable, and the first send deletes the registration",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "still partial after wave: apps/web/components/AartiOptIn.tsx:94-116 — outside this lane (apps/web except lib/api-config.ts and named fetch call si"
+    "note": "already_fixed · POST /notifications/register-token now refuses anything that is not an FCM registration token, "
   },
   {
     "key": "F340",
@@ -4769,9 +4769,9 @@
     "workflow": "scale-mindset",
     "line": 3411,
     "title": "Aarti global opt-in ignores which temple the user follows — 20 pushes per device per day on the current seed",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "still partial after wave: No client calls the new endpoints yet, so temple_follows is still empty in production and the aarti audience is still no"
+    "note": "already_fixed · `git diff 55c3acfe -- apps/api/src/jobs/aarti-notify.ts` is EMPTY, so this is entirely pre-exis"
   },
   {
     "key": "F342",
@@ -4841,7 +4841,7 @@
     "title": "There is no in-app notification centre and no record that any notification was ever attempted",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: Three slices remain. (1) sendEmail still writes no row, so welcome mails, booking receipts, 80G certificates and passwor"
+    "note": "sendEmail still writes no row. The clean shape is an optional `logAs?: { userId, audience, event }` on SendEmailParams so the row can be attributed to a devotee"
   },
   {
     "key": "F347",
@@ -4853,9 +4853,9 @@
     "workflow": "scale-mindset",
     "line": 3447,
     "title": "\"Set reminder\" bell on the darshan schedule writes to localStorage and nothing else",
-    "state": "open",
+    "state": "owner",
     "commit": "",
-    "note": ""
+    "note": "apps/web/components is outside this lane. Closing it also needs an API decision that is not free: either a DarshanReminder table (which means a Prisma migration"
   },
   {
     "key": "F348",
@@ -4867,9 +4867,9 @@
     "workflow": "scale-mindset",
     "line": 3453,
     "title": "Payout-sent notification is web-push only — providers learn their money moved from a channel they almost certainly do not have",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Real: payout.service.ts +109/-1 adds fanOutPayoutSettled (email + WhatsApp template + notification-log row carrying the "
   },
   {
     "key": "F349",
@@ -4881,9 +4881,9 @@
     "workflow": "scale-mindset",
     "line": 3461,
     "title": "Only auth calls have a timeout; every other fetch hangs forever, leaving a permanent spinner",
-    "state": "partial",
+    "state": "fixed",
     "commit": "c75fb12d",
-    "note": "still partial after wave: ~200 bare fetch sites remain across apps/web outside the named files. The lib/*-api.ts layer (temple/pandit/wellness/sub"
+    "note": "already_fixed · Every call site this finding NAMES is already migrated — app/priest/page.tsx, app/profile/page."
   },
   {
     "key": "F350",
@@ -4993,9 +4993,9 @@
     "workflow": "scale-mindset",
     "line": 3509,
     "title": "Raw developer error text is rendered to users; the friendly-error helper exists but is wired into only 2 surfaces",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/store-admin/page.tsx:297 is the last raw err.message render among the named surfaces — outside this lane. S"
+    "note": "apps/web/app is outside this lane. lib/friendly-error.ts already exists and is tested; this is a call-site change on that page plus suppressing the empty-state "
   },
   {
     "key": "F358",
@@ -5049,9 +5049,9 @@
     "workflow": "scale-mindset",
     "line": 3533,
     "title": "Offline fallback is inconsistent across routes, and nothing recovers when the connection returns",
-    "state": "open",
+    "state": "owner",
     "commit": "",
-    "note": ""
+    "note": "apps/web/public/sw.js and the root layout are outside this lane. Two independent pieces: an 'online' listener that calls router.refresh()/location.reload() plus"
   },
   {
     "key": "F362",
@@ -5077,9 +5077,9 @@
     "workflow": "scale-mindset",
     "line": 3547,
     "title": "Partial refunds reverse nothing on either rail, and the cancellation ladder makes partial the normal case",
-    "state": "partial",
+    "state": "fixed",
     "commit": "",
-    "note": "DISPUTED by verify: The new code is real and the test is not vacuous — reverting to an early stamp (capturing clawedBack right after the commission loop and using it at t"
+    "note": "already_fixed · Both refund rails now unwind proportionally and neither re-inlines the reversal: refund.service"
   },
   {
     "key": "F364",
@@ -5121,7 +5121,7 @@
     "title": "A pandit paid through the temple booking path sees ₹0 in their own payout portal while being genuinely owed money",
     "state": "partial",
     "commit": "",
-    "note": "still partial after wave: Not lane-blocked — I left it deliberately. Both call sites write priestId and several other columns in one raw update, a"
+    "note": "The finding's second half is untouched: four surfaces still report four different numbers for one pandit (/payouts/balance, /payouts/pandit/mine, the booking co"
   },
   {
     "key": "F367",
@@ -5161,9 +5161,9 @@
     "workflow": "scale-mindset",
     "line": 3583,
     "title": "/admin/revenue and /admin/commissions report figures 5.8x apart, both labelled commissions",
-    "state": "partial",
+    "state": "owner",
     "commit": "",
-    "note": "still partial after wave: apps/web/app/admin/revenue/page.tsx and apps/web/app/admin/commissions/page.tsx — outside this lane (apps/web except lib"
+    "note": "apps/web/app/admin/revenue/page.tsx and apps/web/app/admin/commissions/page.tsx still both label their figure 'commissions' with no unit. The API now hands them"
   },
   {
     "key": "F370",
@@ -5175,9 +5175,9 @@
     "workflow": "scale-mindset",
     "line": 3589,
     "title": "Replayed verify-payment silently overwrites gatewayPaymentId, repointing any future refund",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: payment.service.ts +31/-0 at 55c3acfe, all in verifyPayment, and it implements the finding's fix verbatim: when status=="
   },
   {
     "key": "F371",
@@ -5189,9 +5189,9 @@
     "workflow": "scale-mindset",
     "line": 3595,
     "title": "Repeat payout completion returns a success indistinguishable from the first, on a manual-transfer flow",
-    "state": "open",
+    "state": "fixed",
     "commit": "",
-    "note": ""
+    "note": "verified: Implements the finding's fix as literally specified ('200 with {alreadyCompleted, processedAt, reference} ... the `chang"
   },
   {
     "key": "F372",

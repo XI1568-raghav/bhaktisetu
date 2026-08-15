@@ -127,9 +127,13 @@ export default function StickyAartiCta(): JSX.Element | null {
 
   if (dismissed) return null;
 
+  // TD-07: this card used to sit at bottom-6 right-6, directly on top of the
+  // chat launcher at bottom-5 right-5 — two overlays in one band, with the
+  // consent bar underneath both, all inside the first 720px screen. It now
+  // stacks clear of the 56px launcher instead of sharing its corner.
   return (
     <div
-      className={`pointer-events-none fixed bottom-6 right-6 z-40 hidden md:block transition-all duration-500 ease-in ${
+      className={`pointer-events-none fixed bottom-24 right-6 z-40 hidden md:block transition-all duration-500 ease-in ${
         visible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
       }`}
       aria-hidden={!visible}

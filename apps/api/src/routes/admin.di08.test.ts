@@ -78,7 +78,7 @@ beforeEach(() => {
   prismaMock.pujaBooking.findMany.mockResolvedValue([] as never);
   prismaMock.storeOrder.findMany.mockResolvedValue([] as never);
   prismaMock.wellnessEnrollment.findMany.mockResolvedValue([] as never);
-  prismaMock.marketplaceSubscription.findMany.mockResolvedValue([] as never);
+  prismaMock.marketplaceSubscription.groupBy.mockResolvedValue([] as never); // SCAL-04: bucketed in SQL now
   prismaMock.commission.groupBy.mockResolvedValue([
     { percentage: new Prisma.Decimal('0.2000'), _sum: { amount: new Prisma.Decimal('880.00') } },
   ] as never);

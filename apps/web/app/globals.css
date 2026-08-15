@@ -173,7 +173,18 @@
   --tracking-normal: 0;
   --tracking-wide: 0.05em;
 
-  /* ── Radius — warm, slightly more rounded ─────────────────────────────── */
+  /* ── Radius — warm, slightly more rounded ─────────────────────────────────
+     DU-15: the six steps below are the declared scale, but the un-suffixed
+     utility reads a SEVENTH theme key — Tailwind's `--radius`, which the
+     stock theme sets to 0.25rem and inlines as a literal. Compiled against
+     this stylesheet before the line below existed, that utility emitted
+     `border-radius: 0.25rem` — 4px, a corner that matches no declared step —
+     across 194 call sites plus the six bare directional forms
+     (`rounded-t` / `-br` / `-bl`), which read the same key. Declaring it here
+     snaps every one of them onto the smallest declared step with no call-site
+     edits. Kept equal to the sm step, and __tests__/radius-scale.test.ts
+     fails if the two ever drift. */
+  --radius: 0.375rem;
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
   --radius-lg: 1rem;
@@ -553,6 +564,54 @@ select {
     min-height: 0;
     min-width: 0;
   }
+}
+
+/* ── container-wide / container-prose — two content widths, not eleven ────
+   DU-14: 753 centred containers across app/ and components/ span ELEVEN
+   widths (4xl 182, 6xl 154, 5xl 132, 3xl 96, 2xl 68, 7xl 56, xl 34, md 20,
+   lg 7, xs 2, sm 2), and routes disagree with each other and with themselves:
+   / mixed 6xl / 5xl / 3xl, /pujas + /temples + /store sat at 7xl, /pricing
+   mixed 4xl / 5xl / 6xl / 3xl. On a 1440px monitor the left content edge
+   moves every time a devotee changes route.
+
+   Two widths, one gutter ramp, both declared here so a page shell never picks
+   its own number again:
+     .container-wide  — 72rem, the width / already used and the single most
+                        common declaration in the codebase. Grids and
+                        catalogue shells.
+     .container-prose — 48rem, for reading columns.
+
+   This is a UTILITY FOR PAGE SHELLS ONLY. A `max-w-md` on a <p> is a reading
+   measure, not a container, and must stay a measure — the class is not a
+   drop-in for every max-w-* in the tree. Locked by
+   __tests__/container-scale.test.ts. */
+.container-wide,
+.container-prose {
+  margin-inline: auto;
+  width: 100%;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-wide,
+  .container-prose {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-wide,
+  .container-prose {
+    padding-inline: 2rem;
+  }
+}
+
+.container-wide {
+  max-width: 72rem;
+}
+
+.container-prose {
+  max-width: 48rem;
 }
 
 /* ── heading-display — the display face, in one place ─────────────────────

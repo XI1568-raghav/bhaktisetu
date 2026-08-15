@@ -140,7 +140,7 @@ export default async function GaushalaProfilePage({
             <div className="mt-8">
               <Link
                 href={donateHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white hover:bg-emerald-700"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-6 py-3 font-medium text-white hover:bg-emerald-800"
               >
                 <Heart className="h-5 w-5" />
                 Donate to this gaushala

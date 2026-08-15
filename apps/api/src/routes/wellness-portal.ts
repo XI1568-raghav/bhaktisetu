@@ -23,7 +23,46 @@ const mineQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-export const __testing = { mineQuerySchema };
+// Same regex as routes/astrologer-portal.ts:27 — a value that cannot be a uuid
+// cannot match a uuid column, so the honest answer is a miss, not a 22P02.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(value: string | null | undefined): boolean {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
+export const __testing = { mineQuerySchema, isUuid };
+
+/**
+ * The instructor's settled / unsettled split, straight off the Commission
+ * ledger — the same source payout.service.getPayoutBalance and the Earnings
+ * page read, so the dashboard cannot state a different number than either.
+ *
+ * AW-10 (2026-08-12, P2): the dashboard had no such split, so the page
+ * hardcoded `pending={null}` ("Pending payout —") and printed the LIFETIME
+ * earnings figure under the label "Paid out" — claiming ₹800 had been
+ * transferred when /payouts/balance said paidOutInr 0.
+ *
+ * `Commission.amount` IS the provider's earning and `percentage` IS the
+ * platform's take rate (lib/commission-math.ts). Neither is re-derived here.
+ * `wellnessEnrollmentId: { not: null }` is the discriminator: without it a
+ * dual-role provider's puja or consultation commissions would render as
+ * wellness earnings.
+ */
+async function loadInstructorPayoutSplit(userId: string) {
+  if (!isUuid(userId)) return { paidOutInr: 0, pendingPayoutInr: 0 };
+  const rows = await prisma.commission.findMany({
+    where: { providerId: userId, wellnessEnrollmentId: { not: null } },
+    select: { amount: true, status: true },
+    take: 500,
+  });
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  // A REVERSED row is a refunded enrolment. It is not earned, not pending and
+  // not paid — it must not appear in either total.
+  const live = rows.filter((r) => r.status !== 'REVERSED');
+  const sumOf = (status: string) =>
+    round2(live.filter((r) => r.status === status).reduce((s, r) => s + Number(r.amount), 0));
+  return { paidOutInr: sumOf('PAID'), pendingPayoutInr: sumOf('PENDING') };
+}
 
 type WellnessSessionRow = {
   id: string;
@@ -102,6 +141,10 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
     const monthEarnings = Math.round(grossMonth * share * 100) / 100;
     const uniqueStudents = new Set(paidEnrollments.map((e) => e.userId)).size;
 
+    // AW-10: the settled/unsettled split the "Paid out" and "Pending payout"
+    // cards needed. See loadInstructorPayoutSplit.
+    const payoutSplit = await loadInstructorPayoutSplit(userId);
+
     return reply.send({
       profile,
       stats: {
@@ -111,6 +154,11 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
         totalStudents: uniqueStudents,
         totalEarningsInr: totalEarnings,
         monthEarningsInr: monthEarnings,
+        // AW-10: settled vs unsettled. `totalEarningsInr` above is the
+        // instructor's LIFETIME net share and must never again be labelled
+        // "Paid out" — only `paidOutInr` describes money that actually moved.
+        paidOutInr: payoutSplit.paidOutInr,
+        pendingPayoutInr: payoutSplit.pendingPayoutInr,
         instructorShare: share,
         platformRate,
       },
@@ -152,11 +200,25 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
       const { status, limit, offset } = parsed.data;
       const instructorId = request.currentUser!.id;
 
+      // AW-12: an id that cannot be stored in a uuid column cannot match a row
+      // in one. Answering an empty page is the true result; sending it to
+      // Postgres only earns a 22P02 "invalid input syntax for type uuid" 500.
+      if (!isUuid(instructorId)) {
+        return reply.send({ total: 0, limit, offset, sessions: [] });
+      }
+
       const params: unknown[] = [instructorId];
-      let whereSql = `WHERE instructor_id = $1`;
+      // AW-12: both predicates compare against a NON-text column —
+      // wellness_sessions.instructor_id is `uuid` and .status is the
+      // `WellnessSessionStatus` enum — and Prisma binds raw params as `text`.
+      // Without these casts Postgres refused every single call with
+      // `42883 operator does not exist: uuid = text` (and, once the id was
+      // cast, `... "WellnessSessionStatus" = text`), so the endpoint 500'd on
+      // 100% of requests and leaked the raw SQL error to the caller.
+      let whereSql = `WHERE instructor_id = $1::uuid`;
       if (status) {
         params.push(status);
-        whereSql += ` AND status = $${params.length}`;
+        whereSql += ` AND status = $${params.length}::"WellnessSessionStatus"`;
       }
       params.push(limit);
       params.push(offset);

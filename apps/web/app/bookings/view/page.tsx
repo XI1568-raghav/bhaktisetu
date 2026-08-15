@@ -31,6 +31,9 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError, serverErrorMessage } from '../../../lib/friendly-error';
+// DB-09: shared with /bookings so the list CTA and this player agree about
+// what counts as a playable recording.
+import { videoProofState } from '../video-proof';
 import AuthGuard from '../../../components/AuthGuard';
 import BookingStatusTracker, { type BookingStatus } from '../../../components/BookingStatusTracker';
 
@@ -570,6 +573,11 @@ function BookingDetailContent() {
  // Hoisted so the <a href> below narrows to string without relying on
  // property-path narrowing inside JSX.
  const videoUrl = booking.videoUrl;
+ // DB-09: three-way, not truthy/falsy. `playableVideoUrl` is non-null exactly
+ // when the state is 'player', which keeps the href narrowed to string without
+ // reintroducing a truthiness gate that "not a url at all" would satisfy.
+ const videoState = videoProofState(booking.status, videoUrl);
+ const playableVideoUrl = videoState === 'player' ? (videoUrl as string) : null;
 
  return (
  <div className="min-h-[100dvh] bg-surface-50">
@@ -648,7 +656,7 @@ function BookingDetailContent() {
  </div>
  <Link
  href={`/bookings/pay?id=${booking.id}`}
- className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600"
+ className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
  >
  <CreditCard className="h-4 w-4" />
  Complete payment
@@ -769,8 +777,36 @@ function BookingDetailContent() {
  )}
  </div>
 
- {/* Video Proof Section */}
- {videoUrl && (
+ {/* Video Proof Section.
+     DB-09 (2026-08-12): this block was gated on `videoUrl` truthiness, so a
+     stored "" rendered nothing at all under a "Video Ready" status pill, and
+     a stored "not a url at all" rendered a play surface and a Download
+     button whose href a browser resolves RELATIVE to this page — the devotee
+     clicks the one thing they paid extra trust for and lands on a 404, with
+     no path to report it. `videoProofState` splits the three cases: a real
+     recording, a promised-but-missing one, and nothing to show. */}
+ {videoState === 'pending' && (
+ <div id="video" className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+ <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-amber-900">
+ <Video className="h-5 w-5 text-amber-600" />
+ Your video is being processed
+ </h2>
+ <p className="text-sm text-amber-800">
+ This booking is marked as recorded, but the video is not available to play
+ yet. If it does not appear within 24 hours, contact support with booking{' '}
+ <span className="font-mono font-semibold">{booking.bookingNumber}</span> and
+ we will chase the recording for you.
+ </p>
+ <Link
+ href="/support"
+ className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-700 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-800"
+ >
+ Contact support
+ </Link>
+ </div>
+ )}
+
+ {playableVideoUrl && (
  <div id="video" className="rounded-xl border border-surface-100 bg-white p-6">
  <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-surface-800">
  <Video className="h-5 w-5 text-purple-500" />
@@ -780,7 +816,7 @@ function BookingDetailContent() {
      and the download button open it instead of being inert decoration. */}
  <div className="overflow-hidden rounded-xl bg-surface-800">
  <a
- href={videoUrl}
+ href={playableVideoUrl}
  target="_blank"
  rel="noopener noreferrer"
  className="relative flex aspect-video items-center justify-center"
@@ -801,7 +837,7 @@ function BookingDetailContent() {
  Recorded on {formatDate(booking.scheduledDate)}
  </p>
  <a
- href={videoUrl}
+ href={playableVideoUrl}
  target="_blank"
  rel="noopener noreferrer"
  className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-600 hover:bg-purple-100"
@@ -1108,7 +1144,7 @@ function BookingDetailContent() {
  <button
  onClick={handleRequestRefund}
  disabled={refunding}
- className="flex-1 rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+ className="flex-1 rounded-lg bg-amber-700 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-800 disabled:opacity-50"
  >
  {refunding ? 'Submitting…' : 'Confirm refund'}
  </button>

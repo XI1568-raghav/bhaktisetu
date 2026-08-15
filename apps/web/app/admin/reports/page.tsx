@@ -21,6 +21,9 @@ import {
   downloadCsv,
   type ReportsResponse,
 } from '../../../lib/admin-api';
+// AO-13: paginate the export to exhaustion. See the module for why a large
+// `limit` is not a fix (the API clamps it to 100, silently).
+import { fetchAllUsersForExport } from './export-users';
 
 type ExportType = 'users' | 'revenue' | 'all';
 
@@ -64,6 +67,10 @@ export default function AdminReportsPage() {
 
   const [exportLoading, setExportLoading] = useState<ExportType | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  // AO-13: the count that just left the building. Nobody re-counts a CSV
+  // against the database, so the number has to be on screen at the moment of
+  // export or a short file is never noticed.
+  const [exportNote, setExportNote] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,10 +98,13 @@ export default function AdminReportsPage() {
   const handleExport = async (type: ExportType) => {
     setExportLoading(type);
     setExportError(null);
+    setExportNote(null);
     try {
       if (type === 'users') {
-        const data = await getUsers(token);
-        const rows = data.users.map((u) => ({
+        // AO-13: `getUsers(token)` with no params took the API's 20-row default
+        // and wrote a CSV named like a complete export. Walk every page.
+        const users = await fetchAllUsersForExport(getUsers, token);
+        const rows = users.map((u) => ({
           id: u.id,
           fullName: u.fullName,
           email: u.email ?? '',
@@ -107,6 +117,7 @@ export default function AdminReportsPage() {
           'id', 'fullName', 'email', 'phone', 'roles', 'subscriptionTier', 'createdAt',
         ]);
         downloadCsv(`darshya-users-${today()}.csv`, csv);
+        setExportNote(`Exported ${rows.length} user${rows.length === 1 ? '' : 's'}.`);
       } else if (type === 'revenue') {
         const data = await getRevenue(token);
         const summaryRows = [
@@ -129,11 +140,13 @@ export default function AdminReportsPage() {
             'metric', 'bookingId', 'providerId', 'amountInr', 'status', 'createdAt',
           ]);
         downloadCsv(`darshya-revenue-${today()}.csv`, csv);
+        setExportNote(`Exported ${commissionRows.length} commission rows.`);
       } else {
-        const [dash, rev, usersResp] = await Promise.all([
+        const [dash, rev, allUsers] = await Promise.all([
           getDashboard(token),
           getRevenue(token),
-          getUsers(token),
+          // AO-13: "Export All" was capped at 20 users the same way.
+          fetchAllUsersForExport(getUsers, token),
         ]);
         const dashRows = [
           { metric: 'Total Users', value: dash.totalUsers },
@@ -150,7 +163,7 @@ export default function AdminReportsPage() {
           { metric: 'Total Subscriptions (active)', value: rev.totalSubscriptions },
           { metric: 'Pending Payouts', value: rev.pendingPayouts },
         ];
-        const userRows = usersResp.users.map((u) => ({
+        const userRows = allUsers.map((u) => ({
           metric: 'User',
           id: u.id,
           fullName: u.fullName,
@@ -168,8 +181,13 @@ export default function AdminReportsPage() {
             'metric', 'id', 'fullName', 'email', 'phone', 'roles', 'createdAt',
           ]);
         downloadCsv(`darshya-platform-${today()}.csv`, csv);
+        setExportNote(`Exported ${userRows.length} user${userRows.length === 1 ? '' : 's'}.`);
       }
     } catch (err) {
+      // AO-13: a partial export is the same lie as a truncated one. The walk
+      // throws rather than handing back what it managed to read, so nothing is
+      // downloaded here — say so instead of leaving a stale success note up.
+      setExportNote(null);
       setExportError(err instanceof Error ? err.message : 'Export failed');
     } finally {
       setExportLoading(null);
@@ -234,6 +252,18 @@ export default function AdminReportsPage() {
  {exportError && (
    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
      {exportError}
+   </div>
+ )}
+
+ {/* AO-13: the row count of the file that was just downloaded. Shown only on
+     success — the catch clears it, so a failed export can never leave a
+     count on screen implying a file arrived. */}
+ {exportNote && !exportError && (
+   <div
+     role="status"
+     className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+   >
+     {exportNote}
    </div>
  )}
 
@@ -327,7 +357,12 @@ export default function AdminReportsPage() {
  />
  </div>
  <div className="flex items-center gap-3 mt-1">
- <span className="text-xs text-surface-500">{revenueShort(puja.revenueInr)}</span>
+ {/* AO-15: this figure sums priceAmount over the bookings counted beside
+     it, which now excludes cancelled/refunded but still includes rows in
+     pending_payment. That is BOOKED value, not captured revenue, and it
+     was rendered bare — an operator read "Rs. 54.7K" as money in the
+     bank. The word is the whole fix; the number is honest with it. */}
+ <span className="text-xs text-surface-500">{revenueShort(puja.revenueInr)} booked</span>
  {puja.avgRating !== null && (
  <span className="text-xs text-amber-600 flex items-center gap-0.5">
  <Star className="w-3 h-3" /> {puja.avgRating}

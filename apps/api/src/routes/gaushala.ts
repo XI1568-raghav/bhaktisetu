@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import { authenticateUser } from '../middlewares/auth.js';
 import { gaushalaService } from '../services/gaushala.service.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -91,50 +90,17 @@ export async function gaushalaRoutes(server: FastifyInstance) {
     return { plans };
   });
 
-  // ─── POST /adopt — Adopt a cow (auth required) ────────────────────────────────
-
-  server.post('/adopt', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const userId = request.currentUser!.id;
-    const { cowId, planId } = request.body as {
-      cowId: string;
-      planId: string;
-    };
-
-    if (!cowId || !planId) {
-      return reply.code(400).send({ error: 'cowId and planId are required.' });
-    }
-
-    try {
-      const adoption = gaushalaService.adoptCow(userId, cowId, planId);
-      return {
-        message: 'Cow adopted successfully! You will receive monthly updates.',
-        adoption,
-      };
-    } catch (err: any) {
-      return reply.code(400).send({ error: err.message });
-    }
-  });
-
-  // ─── GET /my-adoptions — User's adopted cows (auth required) ──────────────────
-
-  server.get('/my-adoptions', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const userId = request.currentUser!.id;
-    const adoptions = gaushalaService.getMyAdoptions(userId);
-    return { adoptions, total: adoptions.length };
-  });
-
-  // ─── GET /adoptions/:id/updates — Monthly updates for an adoption ─────────────
-
-  server.get('/adoptions/:id/updates', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const userId = request.currentUser!.id;
-    const { id } = request.params as { id: string };
-
-    const updates = gaushalaService.getAdoptionUpdates(id, userId);
-
-    if (updates === null) {
-      return reply.code(404).send({ error: 'Adoption not found.' });
-    }
-
-    return { updates };
-  });
+  // COM-19 (prod sweep 2026-08-12): three routes used to live here — a POST
+  // that claimed a cow, plus the two reads that listed what it claimed. The
+  // POST charged nothing, persisted nothing, and wrote `isAdopted = true` onto
+  // a module-level fixture array, so one signed-in caller could walk all eight
+  // cows off the shelf for zero rupees and every other visitor of that process
+  // then saw "0 available" until the dyno restarted. It also told the caller
+  // they would receive monthly updates, which nothing was ever going to send.
+  //
+  // Since #230 the real path is /donations with a planId prefill — Razorpay,
+  // a persisted Donation row and a receipt — and apps/web stopped calling
+  // these, so they were orphaned as well as unsafe. They are removed rather
+  // than guarded: a paid rail already exists, and a second free one beside it
+  // is the whole risk. Restore only on top of a completed donation, persisted.
 }

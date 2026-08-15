@@ -198,11 +198,16 @@ async function PanchangDetailsSection({
  </p>
  </div>
  <div className="flex items-center gap-2">
+ {/* TD-08: these two arrows are the page's only interaction and both used
+     to announce as a bare "link" — an icon child with no text node and no
+     label. The chevrons are decorative once the anchor is named, so they
+     leave the accessibility tree rather than competing with it. */}
  <a
  href={`/panchang?offset=${prevOffset}`}
+ aria-label="Previous day"
  className="p-2 bg-surface-50 rounded-lg hover:bg-surface-100 transition-colors"
  >
- <ChevronLeft className="w-5 h-5 text-surface-500" />
+ <ChevronLeft aria-hidden="true" className="w-5 h-5 text-surface-500" />
  </a>
  <a
  href="/panchang"
@@ -212,9 +217,10 @@ async function PanchangDetailsSection({
  </a>
  <a
  href={`/panchang?offset=${nextOffset}`}
+ aria-label="Next day"
  className="p-2 bg-surface-50 rounded-lg hover:bg-surface-100 transition-colors"
  >
- <ChevronRight className="w-5 h-5 text-surface-500" />
+ <ChevronRight aria-hidden="true" className="w-5 h-5 text-surface-500" />
  </a>
  </div>
  </div>
@@ -499,14 +505,12 @@ export default async function PanchangPage({
  <div className="bg-white rounded-xl p-6 border border-surface-100">
  <div className="flex items-center justify-between mb-4">
  <h3 className="font-semibold text-surface-800">{calendarMonthLabel(new Date())}</h3>
- <div className="flex items-center gap-1">
- <button className="p-1.5 hover:bg-surface-50 rounded-lg">
- <ChevronLeft className="w-4 h-4 text-surface-400" />
- </button>
- <button className="p-1.5 hover:bg-surface-50 rounded-lg">
- <ChevronRight className="w-4 h-4 text-surface-400" />
- </button>
- </div>
+ {/* TD-08: a pair of icon-only month steppers used to sit here with no
+     accessible name AND no handler — this block is a server component and
+     the label is always the current month, so they could never have
+     stepped anywhere. Labelling an inert control only makes the dead end
+     audible, so they are removed. The full month view is /calendar, which
+     is already linked below. */}
  </div>
 
  {/* Day headers */}

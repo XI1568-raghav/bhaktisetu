@@ -360,7 +360,9 @@ export function MobileNavV2() {
         aria-label={open ? 'Close menu' : 'Open menu'}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="md:hidden p-2 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
+        // HN-12: measured 36x36 at 390px wide. The hamburger is the entry to
+        // the whole taxonomy on a phone and was the smallest target in the bar.
+        className="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-2 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
       >
         {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>

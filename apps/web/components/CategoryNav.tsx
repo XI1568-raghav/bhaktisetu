@@ -46,6 +46,15 @@ export function CategoryNav() {
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Where focus should land once a keyboard-opened panel has rendered.
   const focusIntentRef = useRef<'first' | 'last' | null>(null);
+  /**
+   * HN-10. The key whose panel was opened by the pointer resting on it, and
+   * which the pointer has not yet confirmed with a click. A real click is
+   * always preceded by a hover, so without this the click handler saw a panel
+   * that was already open and shut it — the menu flashed open and vanished.
+   * The first click after a hover-open confirms (and clears this), the next
+   * one dismisses.
+   */
+  const hoverOpenedRef = useRef<CategoryKey | null>(null);
   const baseId = useId();
 
   const clearTimers = useCallback(() => {
@@ -63,6 +72,7 @@ export function CategoryNav() {
     (key: CategoryKey) => {
       clearTimers();
       openTimerRef.current = setTimeout(() => {
+        hoverOpenedRef.current = key;
         setOpenKey(key);
       }, HOVER_OPEN_DELAY_MS);
     },
@@ -72,12 +82,14 @@ export function CategoryNav() {
   const scheduleClose = useCallback(() => {
     clearTimers();
     closeTimerRef.current = setTimeout(() => {
+      hoverOpenedRef.current = null;
       setOpenKey(null);
     }, HOVER_CLOSE_DELAY_MS);
   }, [clearTimers]);
 
   const closeNow = useCallback(() => {
     clearTimers();
+    hoverOpenedRef.current = null;
     setOpenKey(null);
   }, [clearTimers]);
 
@@ -246,6 +258,9 @@ export function CategoryNav() {
             onMouseEnter={() => scheduleOpen(category.key)}
             onClick={() => {
               clearTimers();
+              const confirmingHover = hoverOpenedRef.current === category.key;
+              hoverOpenedRef.current = null;
+              if (confirmingHover) return;
               setOpenKey((prev) => (prev === category.key ? null : category.key));
             }}
             onKeyDown={(e) => onTriggerKeyDown(e, category.key)}

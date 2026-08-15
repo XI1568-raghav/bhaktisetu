@@ -90,8 +90,10 @@ describe('A11Y-08 — the step indicator carries step semantics', () => {
 });
 
 describe('A11Y-08 — both in-lane wizards render the accessible indicator', () => {
+  // PF-10 moved the at-home wizard out of page.tsx, which is now the server
+  // guard for the route. The component under inspection is unchanged.
   for (const page of [
-    'app/pujas/home-puja/book/page.tsx',
+    'app/pujas/home-puja/book/BookHomePujaClient.tsx',
     'app/pujas/marriage/book/page.tsx',
   ]) {
     it(`${page} uses WizardSteps instead of a bare div stepper`, () => {

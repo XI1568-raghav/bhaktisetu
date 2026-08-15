@@ -10,7 +10,9 @@ export default function NavCartButton() {
  <button
  onClick={toggleCart}
  aria-label={`Cart (${itemCount} items)`}
- className="relative p-2 text-surface-500 hover:text-saffron-600 hover:bg-saffron-50 rounded-lg transition-colors"
+ // HN-12: p-2 around a 20px glyph measured 36x36 on a phone, under the 44px
+ // floor in WCAG 2.5.5. The box grows; the glyph does not.
+ className="relative inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-2 text-surface-500 hover:text-saffron-600 hover:bg-saffron-50 rounded-lg transition-colors"
  >
  <ShoppingBag className="w-5 h-5" />
  {itemCount > 0 && (

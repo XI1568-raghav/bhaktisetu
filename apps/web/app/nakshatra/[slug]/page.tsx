@@ -176,7 +176,7 @@ export default async function NakshatraDetail({
         <div className="mt-3 flex flex-wrap gap-2">
           <Link
             href="/pujas"
-            className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+            className="text-xs px-3 py-1.5 bg-emerald-700 text-white rounded-md hover:bg-emerald-800"
           >
             Book a puja →
           </Link>

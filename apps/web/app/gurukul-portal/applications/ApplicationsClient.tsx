@@ -161,14 +161,14 @@ export default function ApplicationsClient() {
                   {!decided && (
                     <div className="flex flex-wrap gap-2 pt-2">
                       {a.status === 'submitted' && (
-                        <button disabled={busyId === a.id} onClick={() => decide(a.id, 'forwarded')} className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+                        <button disabled={busyId === a.id} onClick={() => decide(a.id, 'forwarded')} className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
                           <Forward className="w-4 h-4" /> Forward for review
                         </button>
                       )}
                       <button disabled={busyId === a.id} onClick={() => {
                         const note = prompt('Acceptance note (optional)') ?? undefined;
                         decide(a.id, 'accepted', note);
-                      }} className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+                      }} className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
                         <Check className="w-4 h-4" /> Accept
                       </button>
                       <button disabled={busyId === a.id} onClick={() => {

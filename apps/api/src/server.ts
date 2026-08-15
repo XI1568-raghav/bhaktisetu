@@ -64,6 +64,7 @@ import { donationRoutes } from './routes/donations.js';
 import { mediaRoutes } from './routes/media.js';
 import { whatsappOtpRoutes } from './routes/whatsapp-otp.js';
 import { notificationRoutes } from './routes/notifications.js';
+import { healthChannelRoutes } from './routes/health-channels.js';
 import { semanticSearchRoutes } from './routes/semantic-search.js';
 import { cronRoutes } from './routes/cron.js';
 import { adminCronRoutes } from './routes/admin-cron.js';
@@ -276,6 +277,13 @@ async function bootstrap() {
   // silent scheduler is indistinguishable from a working one without it.
   // Unauthenticated by design: it exposes only timings and counters, no data,
   // and an external pinger must be able to read it. Rate-limited normally.
+  // NOTIF-03: readiness of the four outbound transports (email/WhatsApp/web
+  // push/FCM). Registered as a SIBLING of /health rather than folded into it —
+  // /health is the liveness probe Render polls and must never false-negative on
+  // a missing WhatsApp key. See routes/health-channels.ts.
+  await server.register(healthChannelRoutes, { prefix: '/health' });
+  await server.register(healthChannelRoutes, { prefix: '/api/v1/health' });
+
   server.get('/ops/scheduler', async (_request, reply) => {
     const status = getSchedulerStatus();
     // 503 when stale so an uptime monitor can alarm on it without parsing JSON.

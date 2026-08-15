@@ -14,6 +14,8 @@
  * actually have the registration / address / phone in hand.
  */
 
+import { CANCELLATION_CUTOFF_HOURS } from './cancellation-policy';
+
 export const COMPANY = {
   /** Public-facing brand name. Always safe to display. */
   brand: 'Darshya',
@@ -113,6 +115,21 @@ export const COMPANY = {
    * even declare. One block, one SLA, rendered from here on every page that
    * mentions grievances.
    */
+  /**
+   * LEG-16, second half. `HAS_SPECIALTY_INBOXES_VERIFIED` above gated privacy@,
+   * legal@, sales@, partners@ and press@ — but the redressal alias below sits
+   * outside `specialtyEmails`, was touched by no helper, and went on being
+   * printed raw by `grievanceOfficerLine()` on /privacy, /privacy/v2, /refunds,
+   * /contact and /account/privacy. That is the IT Rules 2021 Rule 3(2) and
+   * Consumer Protection (E-Commerce) Rules 4(5) channel: at least as
+   * load-bearing as privacy@, and unverified in exactly the same way.
+   *
+   * While this is false the pages publish `supportEmail`, which is answered.
+   * Provisioning the alias is an owner/DNS action; flipping this boolean is the
+   * only code change it needs.
+   */
+  HAS_GRIEVANCE_INBOX_VERIFIED: false,
+
   grievance: {
     /**
      * Set true ONLY when a real person is appointed and the name below is
@@ -135,10 +152,27 @@ export const COMPANY = {
 
   /** Refund policy facts surfaced on /refunds and /terms. */
   refunds: {
-    /** Hours before scheduled time that a free cancellation is allowed. */
-    freeCancellationHoursBeforeService: 24,
+    /**
+     * Hours before scheduled time that a free cancellation is allowed. Mirrors
+     * `CANCELLATION_CUTOFF_HOURS` in lib/cancellation-policy, which is the
+     * module every consumer surface renders from; the wave-3 test fails if the
+     * two drift.
+     */
+    freeCancellationHoursBeforeService: CANCELLATION_CUTOFF_HOURS,
     /** Days the refund takes to settle to the originating method. */
     refundSettlementDays: '5–7 business days',
+    /**
+     * How soon after the ceremony a video is expected. This is a delivery
+     * TARGET, not a guarantee with money behind it: nothing in apps/api checks
+     * it, and the only automation is the escalation below.
+     *
+     * LEG-06 — /why-darshya and /terms published this window as though a refund
+     * hung off it ("get video proof in 48 hours ... if the video never arrives,
+     * we cancel and refund you in full") while /refunds had already been
+     * rewritten to the real regime. Both numbers now come from here so a page
+     * cannot quote one without the other.
+     */
+    videoProofTargetLabel: '24-48 hours',
     /**
      * Hours after the scheduled slot at which a booking with no video proof is
      * auto-cancelled and routed to the admin refund queue. Mirrors
@@ -238,6 +272,17 @@ export function legalContactEmail(): string {
   return specialtyEmail('legal');
 }
 
+/**
+ * Where a grievance / redressal complaint must be sent. Same rule as the
+ * specialty aliases: publish the dedicated address only once it is known to
+ * deliver, otherwise the staffed inbox. Nothing may read
+ * `COMPANY.grievance.email` directly — that bypasses the gate.
+ */
+export function grievanceContactEmail(): string {
+  if (!COMPANY.HAS_GRIEVANCE_INBOX_VERIFIED) return COMPANY.supportEmail;
+  return COMPANY.grievance.email;
+}
+
 export function postalContactLine(): string | null {
   if (COMPANY.IS_INCORPORATED_VERIFIED && COMPANY.legalEntity) {
     return `Mail: ${COMPANY.legalEntity.name}, ${COMPANY.legalEntity.registeredAddress}`;
@@ -252,12 +297,13 @@ export function postalContactLine(): string | null {
  */
 export function grievanceOfficerLine(): string {
   const g = COMPANY.grievance;
+  const inbox = grievanceContactEmail();
   if (g.HAS_NAMED_OFFICER_VERIFIED && g.officerName) {
     const designation = g.officerDesignation ? `, ${g.officerDesignation}` : '';
     const phone = g.officerPhone ? ` · ${g.officerPhone}` : '';
-    return `${g.officerName}${designation} — ${g.email}${phone}`;
+    return `${g.officerName}${designation} — ${inbox}${phone}`;
   }
-  return `${g.email} — a named grievance officer has not yet been appointed; complaints sent to this address are handled by the platform operator.`;
+  return `${inbox} — a named grievance officer has not yet been appointed; complaints sent to this address are handled by the platform operator.`;
 }
 
 /** Helper: the single grievance SLA sentence, used verbatim on every page. */

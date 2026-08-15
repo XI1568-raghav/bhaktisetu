@@ -24,6 +24,9 @@ import {
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../lib/api-config';
 import { friendlyApiError } from '../../lib/friendly-error';
+// DB-09: whether a stored videoProofUrl is something a browser can open, and
+// what to render when the status promised a video that is not there.
+import { videoProofState } from './video-proof';
 import AuthGuard from '../../components/AuthGuard';
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -509,14 +512,22 @@ function BookingsContent() {
  {booking.status === 'pending_payment' && (
  <Link
  href={`/bookings/pay?id=${booking.id}`}
- className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-600"
+ className="inline-flex items-center gap-1.5 rounded-lg bg-amber-700 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-800"
  >
  <CreditCard className="h-3.5 w-3.5" />
  Complete payment
  </Link>
  )}
 
- {booking.videoUrl && (
+ {/* DB-09 (2026-08-12): this was gated on `booking.videoUrl` alone.
+     A stored `""` rendered the "Video Ready" pill with no control and
+     no explanation; a stored "not a url at all" rendered the CTA over
+     a value a browser resolves relative to the current page, i.e. a
+     404 inside the site instead of the puja recording. Video proof is
+     the headline promise of the product, so the control appears only
+     for something that can actually be opened — and when the status
+     promised a video that is not there, the row says so. */}
+ {videoProofState(booking.status, booking.videoUrl) === 'player' && (
  <Link
  href={`/bookings/view?id=${booking.id}#video`}
  className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-600 transition-colors hover:bg-purple-100"
@@ -524,6 +535,13 @@ function BookingsContent() {
  <Video className="h-3.5 w-3.5" />
  Watch Video
  </Link>
+ )}
+
+ {videoProofState(booking.status, booking.videoUrl) === 'pending' && (
+ <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+ <Video className="h-3.5 w-3.5" />
+ Video is being processed
+ </span>
  )}
 
  {canCancel && (

@@ -1,4 +1,17 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+// TD-04 (prod sweep 2026-08-12): this page inherited the root layout's default
+// and every 404 on the site was served titled "Darshya — India's Devotional
+// Super App". A link preview or a SERP snippet therefore presented a dead end
+// as a legitimate page, so broken URLs kept getting shared and crawled. The
+// root layout's template appends the brand, so the segment supplies only the
+// leading phrase. noindex because a 404 must never be a search result.
+export const metadata: Metadata = {
+  title: 'Page not found',
+  description: 'This Darshya page has moved or no longer exists.',
+  robots: { index: false, follow: true },
+};
 
 // Global 404 page. Render the "Page not found" copy immediately — the previous
 // 2.8s CSS loading animation was SEO-hostile (crawlers saw "Loading…" first)

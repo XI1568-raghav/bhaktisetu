@@ -115,11 +115,26 @@ export default function TermsPage() {
  </p>
 
  <h4>4.3 Video Proof</h4>
+ {/* LEG-06 (prod sweep 2026-08-12): this clause used to state a flat
+     48-hour delivery as an operative term while /refunds published the
+     real regime — escalateStaleBookings runs at 72h, covers a booking
+     still in `priest_assigned`, and issues no refund of its own. Terms
+     are the operative document in a dispute, so a delivery window
+     written here as a guarantee is a guarantee. It is now stated as the
+     target it is, with the escalation the platform actually runs. */}
  <p>
  All puja bookings include video proof of the ritual
- performance. Video links are delivered within 48 hours of the
- scheduled puja. Videos are retained for 90 days from the date
- of performance.
+ performance. We aim to deliver the video link within{" "}
+ {COMPANY.refunds.videoProofTargetLabel} of the scheduled puja.
+ This is a service target rather than a guaranteed window: where
+ no video has been uploaded{" "}
+ {COMPANY.refunds.missingVideoEscalationHours} hours after the
+ scheduled slot, an automated sweep cancels a booking still
+ awaiting its assigned pandit and refers it for manual refund
+ review, and a booking in any other state is reviewed on request
+ to {COMPANY.supportEmail}. Where the pandit is at fault the
+ refund is 100% of the amount paid. Videos are retained for 90
+ days from the date of performance.
  </p>
 
  <h4>4.4 Prasad Delivery</h4>

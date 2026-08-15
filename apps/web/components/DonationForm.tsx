@@ -16,6 +16,20 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { API_BASE_URL } from '../lib/api-config';
+import { COMPANY } from '../lib/company';
+
+/**
+ * COM-02 (prod sweep 2026-08-12): this form asserted Section 80G eligibility in
+ * four places — the header line, the PAN helper, a trust badge and the success
+ * screen — while `donationLegal.HAS_80G_VERIFIED` is false and both the
+ * registration number and the donee PAN are null. The receipt the donor
+ * receives therefore carries neither, and the deduction is disallowed at
+ * assessment; PROJECT_CONTEXT.md business rule 7 says the same. The PDF and the
+ * /donations and /gaushala pages were already gated on this flag — the form was
+ * the last surface still promising it. Flip the flag the day the 80G(5)
+ * certificate is on file and every claim returns at once.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -171,7 +185,9 @@ export default function DonationForm({
     }
 
     if (!donorName.trim()) {
-      errs.donorName = 'Name is required for the 80G receipt';
+      errs.donorName = HAS_80G
+        ? 'Name is required for the 80G receipt'
+        : 'Name is required for your receipt';
     }
 
     if (!donorEmail.trim()) {
@@ -186,15 +202,19 @@ export default function DonationForm({
       errs.donorPhone = 'Enter a valid 10-digit Indian phone number';
     }
 
-    // PAN is optional below ₹2,000 by income-tax rules but mandatory for
-    // 80G claim; we ask but do not block donations < ₹2,000 without it.
-    // Above ₹2,000 require it.
+    // PAN is collected from ₹2,000 up: that is the income-tax donation
+    // record-keeping threshold and it is recorded on the receipt either way.
+    // The reason given to the donor changes with the flag — demanding a
+    // sensitive identifier "for your 80G receipt" when no such instrument can
+    // be issued is the misrepresentation COM-02/COM-04 named.
     if (donorPan.trim()) {
       if (!PAN_REGEX.test(donorPan.trim().toUpperCase())) {
         errs.donorPan = 'Invalid PAN format (e.g. ABCDE1234F)';
       }
     } else if (amountNumber >= 2000) {
-      errs.donorPan = 'PAN is required for 80G receipt on donations ≥ ₹2,000';
+      errs.donorPan = HAS_80G
+        ? 'PAN is required for 80G receipt on donations ≥ ₹2,000'
+        : 'PAN is required on donations of ₹2,000 or more';
     }
 
     setErrors(errs);
@@ -370,12 +390,17 @@ export default function DonationForm({
 
         <div className="mb-4 rounded-xl border border-surface-200 bg-white p-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-surface-500">80G Receipt Number</span>
+            <span className="text-surface-500">
+              {HAS_80G ? '80G Receipt Number' : 'Receipt Number'}
+            </span>
             <span className="font-mono font-semibold text-surface-800">{success.receiptNumber}</span>
           </div>
           <p className="mt-3 flex items-start gap-2 text-xs text-surface-500">
             <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-            A signed PDF receipt has been emailed to <strong>{donorEmail}</strong>. Save it for your tax filing.
+            A signed PDF receipt has been emailed to <strong>{donorEmail}</strong>.{' '}
+            {HAS_80G
+              ? 'Save it for your tax filing.'
+              : 'It is proof of your donation; it is not a Section 80G certificate.'}
           </p>
         </div>
 
@@ -412,7 +437,9 @@ export default function DonationForm({
         <div>
           <h2 className="text-lg font-bold text-surface-800">Donate to {causeName}</h2>
           <p className="text-xs text-surface-500">
-            Secure payment via Razorpay · 80G tax-deductible · Receipt emailed instantly
+            {HAS_80G
+              ? 'Secure payment via Razorpay · 80G tax-deductible · Receipt emailed instantly'
+              : 'Secure payment via Razorpay · Receipt emailed instantly'}
           </p>
         </div>
       </div>
@@ -550,7 +577,9 @@ export default function DonationForm({
         <label htmlFor="donor-pan" className="mb-1.5 block text-sm font-semibold text-surface-700">
           PAN Number{' '}
           <span className="text-xs font-normal text-surface-500">
-            (required for 80G receipt on ≥ ₹2,000)
+            {HAS_80G
+              ? '(required for 80G receipt on ≥ ₹2,000)'
+              : '(required on donations of ₹2,000 or more)'}
           </span>
         </label>
         <div className="relative">
@@ -605,7 +634,8 @@ export default function DonationForm({
           <Shield className="h-3.5 w-3.5 text-emerald-600" /> Razorpay secured
         </span>
         <span className="flex items-center gap-1">
-          <FileText className="h-3.5 w-3.5 text-saffron-600" /> 80G receipt
+          <FileText className="h-3.5 w-3.5 text-saffron-600" />{' '}
+          {HAS_80G ? '80G receipt' : 'Receipt emailed'}
         </span>
       </div>
 

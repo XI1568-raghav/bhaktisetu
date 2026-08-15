@@ -67,7 +67,14 @@ export function SiteChrome({
   return (
     <>
       {!portal && header}
-      <Wrapper id="main" className={portal ? PORTAL_MAIN : CONSUMER_MAIN}>
+      {/*
+       * HN-09: the skip link in app/layout.tsx points here. A browser refuses
+       * to move focus to an element that is not focusable, so the hash changed
+       * and activeElement stayed on BODY — the next Tab restarted at the top of
+       * the header. -1 makes it programmatically focusable without adding a
+       * stop to the Tab sequence.
+       */}
+      <Wrapper id="main" tabIndex={-1} className={portal ? PORTAL_MAIN : CONSUMER_MAIN}>
         {children}
       </Wrapper>
       {!portal && tabs}

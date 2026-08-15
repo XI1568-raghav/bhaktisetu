@@ -375,6 +375,14 @@ export default function ClassDetailClient() {
               The instructor has not published the live room link yet. It will appear here — and in
               your class reminder — before the session starts.
             </p>
+            {/* AW-13: the devotee has just paid and may well close this tab. */}
+            <Link
+              href="/wellness/my-classes"
+              className="mt-3 inline-block text-sm font-medium"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              Find this class again in My classes
+            </Link>
           </div>
         ) : (
           <div className="mt-4">

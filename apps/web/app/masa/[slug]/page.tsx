@@ -124,7 +124,7 @@ export default async function MasaDetailPage({ params }: { params: Promise<{ slu
           <Link href="/tithi" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
             30 Tithis
           </Link>
-          <Link href="/aditya" className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm">
+          <Link href="/aditya" className="px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 text-sm">
             12 Adityas
           </Link>
           <Link href="/calendar" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">

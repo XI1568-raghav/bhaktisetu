@@ -76,12 +76,19 @@ function getPayoutStatusConfig(status: string) {
 
 // ─── Component ──────────────────────────────────────────────────
 
+/** PF-18: the page size the table asks for. The API clamps to [1,100]. */
+const PAGE_SIZE = 20;
+
 export default function PriestPayoutsPage() {
  const { session } = useAuth();
  const [payouts, setPayouts] = useState<PayoutItem[]>([]);
  const [summary, setSummary] = useState<PayoutSummary | null>(null);
  const [loading, setLoading] = useState(true);
  const [filter, setFilter] = useState<PayoutStatusFilter>('all');
+ // PF-18: server-side paging. Matches the pager already on /priest/bookings.
+ const [page, setPage] = useState(1);
+ const [total, setTotal] = useState(0);
+ const [totalPages, setTotalPages] = useState(1);
  // PF-15: a non-OK response used to be thrown and caught into an empty array
  // plus a zeroed summary, so any API hiccup rendered "You have no payout
  // records yet" over ₹0 cards — indistinguishable from a pandit who genuinely
@@ -89,11 +96,20 @@ export default function PriestPayoutsPage() {
  // error, never a balance.
  const [loadError, setLoadError] = useState<string | null>(null);
 
+ // PF-18: the fetch used to carry no query string at all, so the API's 20-row
+ // default silently capped the table while the summary cards above it
+ // aggregated EVERY row — past 20 payouts the two stopped agreeing and nothing
+ // said so. It also filtered client-side, which means a `failed` transfer
+ // sitting on page 3 could not be found by any chip. Both now go to the
+ // server, which already supports `status`, `page` and `limit` and returns
+ // `total`/`totalPages` (routes/priest.ts GET /payouts).
  const fetchPayouts = useCallback(async () => {
  setLoading(true);
  setLoadError(null);
  try {
- const res = await fetch(`${API_BASE_URL}/priest/payouts`, {
+ const qs = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+ if (filter !== 'all') qs.set('status', filter);
+ const res = await fetch(`${API_BASE_URL}/priest/payouts?${qs.toString()}`, {
  headers: { Authorization: `Bearer ${session?.accessToken}` },
  });
  if (!res.ok) {
@@ -105,9 +121,13 @@ export default function PriestPayoutsPage() {
  const data = await res.json();
  setPayouts(data.payouts || []);
  setSummary(data.summary || null);
+ setTotal(typeof data.total === 'number' ? data.total : (data.payouts?.length ?? 0));
+ setTotalPages(Math.max(1, data.totalPages ?? 1));
  } catch (err) {
  setPayouts([]);
  setSummary(null);
+ setTotal(0);
+ setTotalPages(1);
  setLoadError(
  err instanceof Error ? err.message : 'Could not load your payouts. Please try again.',
  );
@@ -116,16 +136,21 @@ export default function PriestPayoutsPage() {
  }
  // Keyed on the token, not the session object: a new object identity on every
  // render would re-arm the effect after each setState and re-fetch forever.
- }, [session?.accessToken]);
+ }, [session?.accessToken, filter, page]);
 
  useEffect(() => {
  void fetchPayouts();
  }, [fetchPayouts]);
 
- const filteredPayouts = payouts.filter((p) => {
- if (filter === 'all') return true;
- return p.status === filter;
- });
+ // PF-18: the server already applied the status filter, so the page IS the
+ // filtered set. Re-filtering here would drop rows the server deliberately
+ // returned and reintroduce the "chip matches nothing on this page" bug.
+ const filteredPayouts = payouts;
+
+ function selectFilter(next: PayoutStatusFilter) {
+ setFilter(next);
+ setPage(1);
+ }
 
  const summaryCards = [
  {
@@ -157,11 +182,17 @@ export default function PriestPayoutsPage() {
  },
  ];
 
+ // PF-18: PayoutStatusFilter has always declared 'failed' and
+ // getPayoutStatusConfig has always rendered a red badge for it — the chip
+ // row simply never offered it, so a pandit whose bank transfer bounced had
+ // no way to filter to the one row he most needs to see. Every member of the
+ // union now has a chip, so the two cannot fall out of step again.
  const statusFilters: { key: PayoutStatusFilter; label: string }[] = [
  { key: 'all', label: 'All' },
  { key: 'pending', label: 'Pending' },
  { key: 'processing', label: 'Processing' },
  { key: 'completed', label: 'Completed' },
+ { key: 'failed', label: 'Failed' },
  ];
 
  return (
@@ -223,7 +254,7 @@ export default function PriestPayoutsPage() {
  {statusFilters.map((sf) => (
  <button
  key={sf.key}
- onClick={() => setFilter(sf.key)}
+ onClick={() => selectFilter(sf.key)}
  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
  filter === sf.key
  ? 'bg-saffron-600 text-white'
@@ -327,6 +358,40 @@ export default function PriestPayoutsPage() {
  </div>
  );
  })}
+ </div>
+ </div>
+ )}
+
+ {/* PF-18: without this, rows 21+ had no route to the screen — and the
+     summary cards above kept aggregating every one of them, so the totals
+     silently stopped matching the table. `total` is the server's count,
+     never the length of what happens to be rendered. */}
+ {!loading && !loadError && total > 0 && (
+ <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-surface-100 bg-white px-4 py-3">
+ <p className="text-sm text-surface-500">
+ Showing {filteredPayouts.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–
+ {(page - 1) * PAGE_SIZE + filteredPayouts.length} of {total} payouts
+ </p>
+ <div className="flex items-center gap-2">
+ <button
+ type="button"
+ onClick={() => setPage((p) => Math.max(1, p - 1))}
+ disabled={page <= 1}
+ className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-200 text-surface-600 hover:border-saffron-300 disabled:opacity-40 disabled:cursor-not-allowed"
+ >
+ Previous
+ </button>
+ <span className="text-sm text-surface-500">
+ Page {page} of {totalPages}
+ </span>
+ <button
+ type="button"
+ onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+ disabled={page >= totalPages}
+ className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-200 text-surface-600 hover:border-saffron-300 disabled:opacity-40 disabled:cursor-not-allowed"
+ >
+ Next
+ </button>
  </div>
  </div>
  )}
