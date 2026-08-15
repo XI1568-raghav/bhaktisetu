@@ -2,6 +2,20 @@
 // Grouped by topic. Each FAQ MUST be 1 question + 1 plain-text answer (no
 // markdown — JSON-LD doesn't render it). Answers should be 30-80 words for
 // optimal rich-snippet eligibility per Google's FAQ guidelines.
+//
+// Money and policy sentences are INTERPOLATED, never retyped. This file is
+// syndicated into JSON-LD, so a number typed here is a number Google quotes
+// back at a devotee who never opened the policy page. LEG-03/LEG-19 (prod
+// sweep 2026-08-12): the cancellation answer promised a full refund at the
+// 24-hour mark against an engine that pays 75% in that band, and the refund
+// answer published a third settlement timeline that contradicted the table on
+// /refunds. Both now come from lib/cancellation-policy.
+
+import {
+  CANCELLATION_POLICY_SENTENCE,
+  REFUND_SETTLEMENT_SENTENCE,
+} from './cancellation-policy';
+import { COMPANY } from './company';
 
 export interface Faq {
   q: string;
@@ -23,15 +37,15 @@ export const FAQ_GROUPS: FaqGroup[] = [
     faqs: [
       {
         q: 'How do I book a puja online on Darshya?',
-        a: "Pick a puja from our /pujas catalogue, choose a verified pandit and temple, enter the sankalp details (your name, gotra, intent), pick a date, and pay. You'll receive a booking number (format BS-YYYYMMDD-XXXXX), a WhatsApp confirmation, and video proof of the puja within 24-48 hours after the ceremony.",
+        a: `Pick a puja from our /pujas catalogue, choose a verified pandit and temple, enter the sankalp details (your name, gotra, intent), pick a date, and pay. You'll receive a booking number (format BS-YYYYMMDD-XXXXX), a WhatsApp confirmation, and video proof of the puja, which we aim to upload within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony.`,
       },
       {
         q: 'What is video proof and is it mandatory?',
-        a: "Video proof is a 5-10 minute recording showing the pandit performing your puja with your sankalp named aloud. It is mandatory for every puja booking on Darshya — no exceptions. The video is uploaded to your account within 24-48 hours of the ceremony and is available for download for 90 days.",
+        a: `Video proof is a 5-10 minute recording showing the pandit performing your puja with your sankalp named aloud. It is mandatory for every puja booking on Darshya. We aim to upload it to your account within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony, and it stays downloadable for 90 days. If nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write to ${COMPANY.supportEmail} — a person reviews it and the refund is full where the pandit is at fault.`,
       },
       {
         q: 'Can I cancel or reschedule a puja booking?',
-        a: 'Yes. You can cancel or reschedule up to 24 hours before the scheduled puja time for a full refund. Within 24 hours, cancellations are not permitted because materials (samagri) have already been procured and the pandit slot is locked. Reschedule via /support or WhatsApp.',
+        a: `${CANCELLATION_POLICY_SENTENCE} Inside that window the samagri has been procured and the pandit slot is locked, which is why the booking can no longer be cancelled by you. Reschedule via /support or WhatsApp.`,
       },
       {
         q: 'Will I receive prasad at my home address?',
@@ -81,7 +95,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'How long do refunds take?',
-        a: 'Refunds are processed within 24 hours and typically credited to the original payment method within 3-7 working days. UPI refunds are usually instant, credit/debit cards 5-7 days, international cards 7-14 days. You receive an email + WhatsApp notification when the refund is initiated.',
+        a: `${REFUND_SETTLEMENT_SENTENCE} You receive an email and WhatsApp notification when the refund is initiated. These are the same bands published on our Refund Policy page — we do not quote a different timeline anywhere.`,
       },
     ],
   },

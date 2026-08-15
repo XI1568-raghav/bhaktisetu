@@ -7,6 +7,10 @@ import { getDeityImage, remoteImage, remoteSrcSet, IMG_W } from "../../lib/image
 import { getPujaTypes, type PujaType } from "../../lib/api";
 import { getPujaCompletionCounts } from "../../lib/social-proof";
 import { pujaCategoryLabel } from "../../lib/puja-labels";
+// PF-06: the fee has to come from the same module the wizard and the detail
+// hero read, or the catalogue starts advertising a number checkout will not
+// honour the moment either side changes.
+import { PLATFORM_FEE_INR, formatInr, pujaTotalInr } from "../../lib/puja-pricing";
 import {
  applyPujaCatalogue,
  buildPujaFacets,
@@ -341,7 +345,7 @@ export default async function PujasPage({
  <div className="min-h-[100dvh] bg-surface-50">
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <h1 className={`${H1.catalogue} mb-3`}>
  {t('pageTitle')}
  </h1>
@@ -389,11 +393,24 @@ export default async function PujasPage({
  </button>
  </div>
  </form>
+
+ {/* PF-07: at 390x844 the first bookable card was at absolute top 1932px —
+     2.3 screens of hero copy, facets and category tiles before a phone user
+     could see anything to buy. A plain in-page anchor: no client JS, no
+     effect on the desktop grid, and it keeps working as the block above it
+     grows. Hidden from md up, where the grid is already near the fold. */}
+ <a
+ href="#catalogue"
+ className="md:hidden mt-4 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-saffron-700 underline underline-offset-4"
+ >
+ Skip to all pujas
+ <ChevronDown className="w-4 h-4" aria-hidden="true" />
+ </a>
  </div>
  </section>
 
  {/* At-home services — featured */}
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+ <div className="container-wide pt-10">
  <div className="mb-4 flex items-end justify-between">
  <div>
  <h2 className="text-2xl md:text-3xl font-bold text-surface-800 tracking-tight">
@@ -482,7 +499,7 @@ export default async function PujasPage({
  </div>
  </div>
 
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+ <div className="container-wide py-8">
  {/* Filters — DB-04 / PF-02: a real GET form. Same zero-client-JS pattern as
      the ?q= search above, so each facet is a shareable URL and the server does
      the filtering. `q` rides along in a hidden field: applying a facet must not
@@ -633,8 +650,10 @@ export default async function PujasPage({
  </div>
  )}
 
- {/* Puja Grid */}
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+ {/* Puja Grid — PF-07: the jump target for the phone anchor in the hero.
+     scroll-mt clears the 64px fixed header, otherwise the first row of cards
+     lands underneath it. */}
+ <div id="catalogue" className="scroll-mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
  {/* CM-09 (prod sweep 2026-08-12): the card body was inert — the image, the
      title and the price were dead, and the only interactive region was an
      89x34px bare <a> on the button, which also said "Book Now" while landing
@@ -731,6 +750,15 @@ export default async function PujasPage({
  <span className="text-xs ml-1" style={{ color: 'var(--color-text-faint)' }}>
  onwards
  </span>
+ {/* PF-06: the surcharge used to surface at step 3 of the wizard, after a
+     temple, a date, a slot, devotee names and a sankalp had been entered.
+     It travels with the price now, on the first surface that shows one. */}
+ {puja.price > 0 && (
+ <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-faint)' }}>
+ + ₹{formatInr(PLATFORM_FEE_INR)} platform fee · ₹
+ {formatInr(pujaTotalInr(puja.price, false))} total
+ </div>
+ )}
  </div>
  {/* DU-03: kept as a literal recipe rather than buttonClass() because it is
      a <span> inside the card link, and __tests__/cta-contrast.test.ts reads

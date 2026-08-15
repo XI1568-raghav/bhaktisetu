@@ -40,9 +40,21 @@ export default function KycStatusBadge({ state, reason, href = '/provider/kyc' }
       {c.label}
     </span>
   );
+  /**
+   * RESP-11: measured 168.8x26 on /priest at 390x844. The tap-target floor in
+   * globals.css reaches buttons, selects, summaries and list links; this is a
+   * bare anchor outside any list, so nothing reached it. `tap-safe` cancels
+   * its own padding with a negative margin, so the pill still LOOKS 26px tall
+   * and the hit box is 44px. It matters more than most: this is the link a
+   * provider follows to unblock being paid.
+   */
   return (
     <span className="inline-flex flex-col gap-0.5">
-      {state === 'verified' ? inner : <Link href={href}>{inner}</Link>}
+      {state === 'verified' ? inner : (
+        <Link href={href} className="tap-safe">
+          {inner}
+        </Link>
+      )}
       {reason && <span className="text-xs text-red-600">{reason}</span>}
     </span>
   );

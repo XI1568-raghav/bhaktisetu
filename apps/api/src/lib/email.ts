@@ -16,6 +16,16 @@ const REPLY_TO = process.env.RESEND_REPLY_TO ?? 'support@darshya.online';
 const resend = apiKey ? new Resend(apiKey) : null;
 
 /**
+ * NOTIF-03: whether this channel can actually deliver.
+ *
+ * The other three transports (`whatsapp`, `webPushConfig`, `fcmConfig`) each
+ * already export an `enabled` flag; email was the one that did not, so nothing
+ * could ask "is mail configured?" without reaching into `process.env` a second
+ * time and re-deriving the answer. `/health/channels` reads all four.
+ */
+export const emailConfig = { enabled: !!apiKey, from: FROM_EMAIL };
+
+/**
  * SCAL-11: which allowance this mail is allowed to spend.
  *
  * `transactional` — a receipt, an 80G donation certificate, a password reset, a
@@ -584,5 +594,66 @@ export function donationReceiptEmail(params: {
       <a class="btn" href="https://darshya.online/gaushala">Visit gaushala</a>
     `),
     text: `Thank you ${donorName}!\n\nYour donation of ${amount} to ${gaushalaName} has been received.\nReceipt #${receiptNumber} dated ${date}\n\n${attachmentLineText}`,
+  };
+}
+
+/**
+ * NOTIF-16 — the settlement mail a provider gets when their payout moves.
+ *
+ * Both payout notifications were web-push only, and `push_subscriptions` held a
+ * single row in the entire database. Pandits are mobile-first and are the
+ * cohort least likely to have granted desktop web-push permission, so a
+ * completed transfer was in practice invisible until they opened /payouts.
+ *
+ * The transfer reference is the load-bearing field: the money moves outside the
+ * system (bank/UPI/Route), so the reference is the only thing the provider can
+ * match against a statement that has not updated yet.
+ */
+export function payoutSettledEmail(params: {
+  providerName: string;
+  /** Pre-formatted display amount, e.g. "₹9,000.00". Built from the stored Decimal. */
+  amount: string;
+  status: 'completed' | 'rejected' | 'failed';
+  reference?: string | null;
+  failureReason?: string | null;
+}): { subject: string; html: string; text: string } {
+  const { providerName, amount, status, reference, failureReason } = params;
+
+  if (status === 'completed') {
+    const refHtml = reference
+      ? `<p><strong>Transfer reference:</strong> ${esc(reference)}</p>`
+      : '<p>Your bank or UPI app will show the credit shortly.</p>';
+    const refText = reference
+      ? `Transfer reference: ${reference}\n`
+      : 'Your bank or UPI app will show the credit shortly.\n';
+    return {
+      subject: `Your Darshya payout of ${amount} has been sent`,
+      html: shell(`
+        <h1>Namaste ${esc(providerName)}, your payout has been sent</h1>
+        <p><strong>Amount:</strong> ${esc(amount)}</p>
+        ${refHtml}
+        <p>Transfers usually appear within one working day. If it has not arrived after
+        that, reply to this email with the reference above and we will trace it.</p>
+        <a class="btn" href="https://darshya.online/payouts">View your payouts</a>
+      `),
+      text: `Namaste ${providerName}, your payout has been sent.\n\nAmount: ${amount}\n${refText}\nTransfers usually appear within one working day.\n\nhttps://darshya.online/payouts`,
+    };
+  }
+
+  const reasonHtml = failureReason
+    ? `<p><strong>Reason:</strong> ${esc(failureReason)}</p>`
+    : '';
+  const reasonText = failureReason ? `Reason: ${failureReason}\n` : '';
+  return {
+    subject: `Your Darshya payout of ${amount} could not be completed`,
+    html: shell(`
+      <h1>Namaste ${esc(providerName)}, your payout did not go through</h1>
+      <p><strong>Amount:</strong> ${esc(amount)}</p>
+      ${reasonHtml}
+      <p>Your balance is intact and is available to withdraw again. Please check the bank
+      or UPI details on your profile before requesting the next payout.</p>
+      <a class="btn" href="https://darshya.online/payouts">Check your balance</a>
+    `),
+    text: `Namaste ${providerName}, your payout of ${amount} could not be completed.\n${reasonText}\nYour balance is intact and available to withdraw again.\n\nhttps://darshya.online/payouts`,
   };
 }

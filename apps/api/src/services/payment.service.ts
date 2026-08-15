@@ -646,6 +646,37 @@ export class PaymentService {
       }
     }
 
+    // DI-09: never repoint a captured payment at a different gateway id.
+    //
+    // The update below used to stamp `gatewayPaymentId` unconditionally. Two
+    // correctly-signed verify calls for the same order with DIFFERENT payment
+    // ids both returned 200 and the second silently overwrote the first, which
+    // matters because refund.service issues refunds against
+    // `captured.gatewayPaymentId` — after an overwrite the refund targets
+    // whichever id was seen last, not the one that actually took the money, and
+    // the record of which payment settled the booking is gone. A gateway retry
+    // carrying a new id is enough to trigger it.
+    //
+    // Replaying the SAME id stays idempotent (below). A different one is two
+    // successful captures against one order: a reconciliation problem, so it is
+    // refused with both ids in the message rather than absorbed.
+    if (
+      payment.status === 'captured' &&
+      payment.gatewayPaymentId &&
+      payment.gatewayPaymentId !== razorpayPaymentId
+    ) {
+      console.error(
+        `[payment][DI-09] verify-payment replay with a conflicting gateway id on payment ${payment.id} ` +
+          `(order ${razorpayOrderId}): captured as ${payment.gatewayPaymentId}, now presented ${razorpayPaymentId}. ` +
+          'Refusing to overwrite — reconcile in the Razorpay dashboard.',
+      );
+      throw new Error(
+        `This booking already captured under payment ${payment.gatewayPaymentId}; ` +
+          `${razorpayPaymentId} is a different payment. Refusing to overwrite the settled id — ` +
+          'please reconcile this order before retrying.',
+      );
+    }
+
     // 3+4. Capture payment and confirm booking atomically — a crash
     // between the two updates previously left a captured Payment with a
     // pending_payment Booking until the webhook retried.

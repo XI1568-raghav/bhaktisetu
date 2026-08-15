@@ -185,6 +185,35 @@ async function lockSlot(tx: BookingTxClient, slotKey: string): Promise<void> {
  */
 export const UNPAID_HOLD_MINUTES = 30;
 
+/**
+ * DB-07: thrown when a devotee already holds an unpaid booking on the exact
+ * offering + date + slot they are asking for again.
+ *
+ * Its own class so routes/bookings.ts can answer 409 (a state conflict the
+ * caller can resolve by paying or cancelling) rather than the generic 400 the
+ * message-sniffing classifier would otherwise give a bare Error.
+ */
+export class SlotHoldConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SlotHoldConflictError';
+  }
+}
+
+/**
+ * DB-08: the states in which the puja has demonstrably been performed and a
+ * devotee may therefore rate it.
+ *
+ * `completed` is the pandit's "puja performed" transition; video_uploaded and
+ * delivered follow it. Anything earlier has delivered nothing to rate, and
+ * cancelled/refunded never will.
+ */
+export const REVIEWABLE_BOOKING_STATUSES: readonly string[] = [
+  'completed',
+  'video_uploaded',
+  'delivered',
+];
+
 /** The instant before which an unpaid hold stops counting against capacity. */
 export function unpaidHoldCutoff(now: Date = new Date()): Date {
   return new Date(now.getTime() - UNPAID_HOLD_MINUTES * 60_000);
@@ -658,6 +687,31 @@ export class BookingService {
       ) {
         const { devoteeNames: _dn, prasadDeliveryRequested: _pd, ...reused } = liveHold;
         return reused;
+      }
+
+      // ── DB-07 (prod sweep 2026-08-12): ONE live hold per devotee per slot ──
+      //
+      // The lookup above is deliberately narrow — a different devotee party, a
+      // different amount or a different prasad choice is a genuinely different
+      // booking, and silently handing back the earlier one would charge this
+      // devotee for something they did not ask for. That narrowness is also the
+      // hole: the sweep varied the devotee name and got FIVE 201s on one
+      // offering+date+slot from a single unpaid user, taking the slot from
+      // {remaining:5} to {remaining:0} for the whole hold window with nothing
+      // paid. maxBookingsPerSlot counts rows, not people, so capacity was never
+      // oversold and never noticed.
+      //
+      // So the two rules compose: an identical repeat REUSES (above), and a
+      // different request for a slot this devotee is already holding is
+      // REFUSED (here). The refusal names the booking they hold so the answer
+      // is "go pay the one you have", not a dead end — /bookings/pay resumes it.
+      //
+      // Inside the advisory lock, so two parallel racers cannot both pass.
+      if (liveHold) {
+        throw new SlotHoldConflictError(
+          `You already have an unpaid booking (${liveHold.bookingNumber}) for this puja at this date and time. ` +
+            'Complete or cancel that booking before making another.',
+        );
       }
 
       await assertSlotCapacity(tx, slotWhere, offering.maxBookingsPerSlot);
@@ -1713,9 +1767,22 @@ export class BookingService {
       throw new Error('You are not authorized to review this booking.');
     }
 
-    if (!['delivered', 'video_uploaded'].includes(booking.status)) {
+    // DB-08 (prod sweep 2026-08-12): `completed` was missing from this set, so
+    // the one terminal state a customer recognises could never be rated. The
+    // devotee's list held three bookings sitting in it, all rendered under the
+    // pill "Completed", none of them reviewable — a bare 409 for anyone who
+    // tried. `completed` is the pandit's own "puja performed" transition and
+    // precedes video_uploaded/delivered, so the work being rated has already
+    // happened, which is the only precondition a review has.
+    //
+    // Derived from one list rather than a literal in the predicate and another
+    // in the message: the old message named two states and the caller had no
+    // way to discover the third.
+    if (!REVIEWABLE_BOOKING_STATUSES.includes(booking.status)) {
       throw new Error(
-        `Reviews can only be submitted for bookings in "delivered" or "video_uploaded" status. Current: "${booking.status}".`,
+        `Reviews can only be submitted for bookings in ${REVIEWABLE_BOOKING_STATUSES.map(
+          (s) => `"${s}"`,
+        ).join(', ')} status. Current: "${booking.status}".`,
       );
     }
 

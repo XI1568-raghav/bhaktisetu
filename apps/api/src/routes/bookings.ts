@@ -655,6 +655,15 @@ function classifyCreateBookingError(message: string | undefined): BookingCreateF
   if (m.startsWith('This puja offering is currently inactive')) {
     return { status: 409, code: 'PUJA_UNAVAILABLE' };
   }
+  // DB-07: the devotee already holds an unpaid booking on this exact
+  // offering + date + slot. A state conflict they can resolve themselves, so
+  // 409 rather than the default 400 — and deliberately WITHOUT a `code`, so
+  // the handler forwards booking.service's own message, which names the
+  // booking number they should go pay. A localised code would have to drop
+  // that number, and "which one?" is the whole answer here.
+  if (m.startsWith('You already have an unpaid booking')) {
+    return { status: 409 };
+  }
   if (m.includes('not found')) return { status: 404 };
   return { status: 400 };
 }
@@ -732,6 +741,25 @@ const orderDevoteesSchema = z
   .min(1)
   .max(5);
 
+/**
+ * DB-07 (prod sweep 2026-08-12), second half: how far ahead a booking may sit.
+ *
+ * There was no upper bound of any kind. `scheduledDate: "2031-01-01"` returned
+ * 201 and the resulting booking rendered on My Bookings as "1 Jan 2031" — a row
+ * five years out that no pandit will ever be assigned to and that sits in
+ * Upcoming forever. The web picker caps itself at +30 days, so the only way to
+ * reach this was a mistyped year or a non-browser client.
+ *
+ * The bound is 365 days, NOT the picker's 30, and that gap is deliberate: the
+ * offering checkout (apps/web/app/checkout/offering/page.tsx) passes `min` with
+ * no `max`, and the sweep itself probed slots 45 days out and found them open.
+ * A server bound of 30 would start refusing dates the product currently sells.
+ * A year still refuses every mistyped year, which is the failure this closes.
+ * Narrowing it to exactly the wizard's window is a product decision, not a bug
+ * fix, and is left to the owner.
+ */
+export const MAX_BOOKING_HORIZON_DAYS = 365;
+
 // Past-date guard mirrors createBookingSchema. Without it, the web wizard
 // would happily create a Razorpay order for yesterday's puja, which the
 // booking service never validates again — payment captures, ledger writes,
@@ -747,6 +775,19 @@ const futureBookingDateSchema = z
       return !Number.isNaN(requested.getTime()) && requested >= today;
     },
     { message: 'Cannot book a past date.' },
+  )
+  .refine(
+    (d) => {
+      const requested = new Date(`${d}T00:00:00`);
+      if (Number.isNaN(requested.getTime())) return true; // the past-date rule owns this
+      const horizon = new Date();
+      horizon.setHours(0, 0, 0, 0);
+      horizon.setDate(horizon.getDate() + MAX_BOOKING_HORIZON_DAYS);
+      return requested <= horizon;
+    },
+    {
+      message: `That date is too far ahead — bookings open up to ${MAX_BOOKING_HORIZON_DAYS} days from today.`,
+    },
   );
 
 /**
@@ -1229,7 +1270,7 @@ export async function bookingRoutes(server: FastifyInstance) {
             );
 
             if (newPriestUser?.userId) {
-              await tx.commission.updateMany({
+              const moved = await tx.commission.updateMany({
                 where: { bookingId: id, status: 'PENDING', payoutRequestId: null },
                 data: {
                   providerId: newPriestUser.userId,
@@ -1259,6 +1300,50 @@ export async function bookingRoutes(server: FastifyInstance) {
                   ),
                 },
               });
+
+              // ── DI-05 residue: MOVING nothing is not the same as moving it ──
+              //
+              // `updateMany` above re-points an existing earning at the new
+              // pandit. On the TEMPLE booking path there is no earning to
+              // re-point: nobody is on the booking at confirm time, so
+              // writePujaCommissionOnConfirm returns early and the ledger stays
+              // empty. `count` is then 0 and this transaction — which RETURNS
+              // EARLY on a pure reassignment, never reaching
+              // updateBookingStatus and its EARNING_ATTACH mint — used to
+              // commit the pandit onto the booking while leaving him with
+              // nothing. That is the finding's own screen: /payouts answering
+              // {availableInr: 0} to a pandit who is genuinely owed money.
+              //
+              // So mint it here, with the same three guards the other writers
+              // use, in this order for a reason:
+              //   1. count === 0 — never a SECOND row on one booking; two rows
+              //      is a double payable, which is worse than the bug.
+              //   2. a CAPTURED payment exists — otherwise this becomes the
+              //      S3-08 hole (withdrawable balance on an unpaid booking)
+              //      relocated onto the reassignment path.
+              //   3. the same split/percentage the update above writes, so
+              //      whichever branch runs produces an identical row.
+              if (moved.count === 0) {
+                const capturedForEarning = await tx.payment.count({
+                  where: { bookingId: id, status: 'captured' },
+                });
+                if (capturedForEarning > 0) {
+                  await tx.commission.create({
+                    data: {
+                      bookingId: id,
+                      providerId: newPriestUser.userId,
+                      // amount = PROVIDER earning, percentage = PLATFORM rate.
+                      // lib/commission-math.ts — one column, one meaning.
+                      amount: split.priestPayout,
+                      percentage: platformRateOf(
+                        new Prisma.Decimal(money?.priceAmount ?? 0).sub(split.priestPayout),
+                        new Prisma.Decimal(money?.priceAmount ?? 0),
+                      ),
+                      status: 'PENDING',
+                    },
+                  });
+                }
+              }
             }
 
             return tx.pujaBooking.update({
@@ -2456,4 +2541,7 @@ export const __testing = {
   // prasadDelivery/deliveryAddress pairing is pinned without booting Fastify.
   createOrderBodySchema,
   fromOfferingBodySchema,
+  // DB-07 — the server-side booking horizon, so a test can assert the bound
+  // rather than a magic date.
+  MAX_BOOKING_HORIZON_DAYS,
 };

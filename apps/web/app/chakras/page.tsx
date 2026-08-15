@@ -51,7 +51,7 @@ const COLOR_STYLE: Record<string, { border: string; bg: string; text: string; ch
   Red: { border: 'border-red-300', bg: 'bg-red-50', text: 'text-red-900', chip: 'bg-red-600 text-white' },
   Orange: { border: 'border-orange-300', bg: 'bg-orange-50', text: 'text-orange-900', chip: 'bg-orange-500 text-white' },
   Yellow: { border: 'border-yellow-300', bg: 'bg-yellow-50', text: 'text-yellow-900', chip: 'bg-yellow-500 text-white' },
-  Green: { border: 'border-emerald-300', bg: 'bg-emerald-50', text: 'text-emerald-900', chip: 'bg-emerald-600 text-white' },
+  Green: { border: 'border-emerald-300', bg: 'bg-emerald-50', text: 'text-emerald-900', chip: 'bg-emerald-700 text-white' },
   Blue: { border: 'border-sky-300', bg: 'bg-sky-50', text: 'text-sky-900', chip: 'bg-sky-600 text-white' },
   Indigo: { border: 'border-indigo-300', bg: 'bg-indigo-50', text: 'text-indigo-900', chip: 'bg-indigo-600 text-white' },
   Violet: { border: 'border-violet-300', bg: 'bg-violet-50', text: 'text-violet-900', chip: 'bg-violet-600 text-white' },

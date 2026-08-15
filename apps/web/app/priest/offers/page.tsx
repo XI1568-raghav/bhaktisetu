@@ -290,7 +290,7 @@ function PriestOffersInner() {
                   <button
                     onClick={() => void respond(o.bookingId, 'accept')}
                     disabled={actionOn !== null}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-tulsi-green text-white font-medium text-sm rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-tulsi-green-dark text-white font-medium text-sm rounded-lg hover:opacity-90 transition disabled:opacity-50"
                   >
                     {actionOn === `${o.bookingId}-accept` ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

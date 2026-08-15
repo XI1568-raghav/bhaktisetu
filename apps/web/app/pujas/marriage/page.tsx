@@ -26,15 +26,9 @@ import {
 } from '../../../lib/home-pujas';
 import { getPublicPriests, type PriestSummary } from '../../../lib/pandit-api';
 import { remoteImage, IMG_W } from '../../../lib/images';
+import { PanditAvatar } from '../PanditAvatar';
 
 const MARRIAGE_KEYWORDS = ['marriage', 'wedding', 'vivah', 'kalyanam', 'anand karaj'];
-
-function panditInitials(name: string): string {
- const parts = name.trim().split(/\s+/);
- const first = parts[0]?.charAt(0) ?? '';
- const last = parts.length > 1 ? parts[parts.length - 1]?.charAt(0) ?? '' : '';
- return (first + last).toUpperCase() || 'P';
-}
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pujas/marriage' },
@@ -296,22 +290,15 @@ export default async function MarriagePage() {
  className="group bg-white border border-[var(--color-border)] rounded-xl p-6 hover:shadow-warm-md hover:-translate-y-0.5 transition-all"
  >
  <div className="flex items-start gap-4 mb-4">
- {p.avatarUrl ? (
- // eslint-disable-next-line @next/next/no-img-element
- <img
- src={remoteImage(p.avatarUrl, IMG_W.THUMB)}
- width={64}
- height={64}
- loading="lazy"
- decoding="async"
- alt={p.displayName}
- className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+ {/* PF-04: the old branch only reached the initials tile when avatarUrl
+     was falsy, so the two seeded wedding pandits — whose rows point at a
+     hostname with no DNS record — rendered a broken-image icon next to
+     "Vedic certified". */}
+ <PanditAvatar
+ src={p.avatarUrl ? remoteImage(p.avatarUrl, IMG_W.THUMB) : null}
+ name={p.displayName}
+ className="w-16 h-16 rounded-xl text-lg"
  />
- ) : (
- <div className="w-16 h-16 rounded-xl bg-saffron-100 flex items-center justify-center text-saffron-700 font-bold text-lg flex-shrink-0">
- {panditInitials(p.displayName)}
- </div>
- )}
  <div className="flex-1 min-w-0">
  <div className="flex items-start gap-1.5">
  <div className="font-bold text-surface-800 group-hover:text-saffron-600 transition-colors truncate">

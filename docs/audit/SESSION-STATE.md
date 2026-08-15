@@ -329,3 +329,37 @@ this repo is **private** so minutes are billed with per-job rounding. That is wh
 NOTIF-01 became an in-process timer rather than the `*/10` workflow the finding
 recommended — `*/10` alone is 4,320 min/month. Read
 `docs/free-tier-budgets.md` before adding any workflow, cron, or SDK.
+
+---
+
+## ▶ NEXT SESSION STARTS HERE (2026-08-15)
+
+**281 of 388 closed. 220 of those are LIVE in production** (main @ 55c3acfe,
+deployed and probe-verified 2026-08-14). The final wave's work is committed but
+**NOT deployed** — three API tests are red and must be fixed first.
+
+### Blocking deploy — three red API tests, both defects in the final wave's own work
+
+1. **SCAL-04 ratchet: 100 vs baseline 94.** `apps/api/src/routes/admin.ts` gained
+   258 lines and went 5 → 10 unbounded `findMany`. This is the ratchet working —
+   do NOT just raise the baseline. Read the five new reads, bound the ones that
+   scale with row count, and lower the baseline to whatever remains, with a
+   written justification in the file like the ones already there.
+
+2. **RES-05 idempotency, 2 tests** (`booking.create-order-idempotency.test.ts`).
+   The new dedup guard is TOO AGGRESSIVE: it refuses a second booking that
+   differs by prasad choice or by devotee names, answering "You already have an
+   unpaid booking… Complete or cancel that booking before making another." The
+   natural key must include the fields that make it a different booking. As
+   written this blocks legitimate bookings, which is worse than the duplicate it
+   prevents.
+
+### Then
+`git push` → PR → CI → merge → deploy both Render services → re-run the three
+prod probes (see DEPLOY-PLAN.md). No migration pending; all four applied
+2026-08-14.
+
+### Final-wave verification result
+46 verdicts: 39 CONFIRMED, 7 DISPUTED, 3 vacuous tests caught, and — for the
+first time — **zero claims of pre-existing work**. The attribution rule added
+after 16 such claims last wave worked.

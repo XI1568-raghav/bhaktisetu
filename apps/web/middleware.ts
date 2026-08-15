@@ -33,6 +33,7 @@ import {
   LOCALE_COOKIE,
   LOCALE_COOKIE_MAX_AGE,
   LOCALE_QUERY_PARAM,
+  contentLanguageFor,
   normalizeLocale,
   resolveRequestLocale,
   type Locale,
@@ -190,6 +191,25 @@ function rootLocaleRedirect(req: NextRequest): NextResponse | null {
   return res;
 }
 
+/**
+ * State the language of the document being returned — audit I18N-10, whose
+ * probe recorded "200, Location header absent, <html lang>=en, Content-Language
+ * absent" and found no occurrence of the header anywhere in apps/web outside
+ * one help-article metadata key.
+ *
+ * Applied only to the pass-through response, because that is the only one of
+ * the four that carries a document; a 307 has no body to describe.
+ *
+ * The value comes from the ROUTE, never from the visitor's cookie — see
+ * `contentLanguageFor` for why claiming Hindi on an English page is worse than
+ * claiming nothing. That is also what keeps this free: nothing to `Vary` on, so
+ * the anonymous English page remains a single shared cache entry.
+ */
+function withContentLanguage(req: NextRequest, res: NextResponse): NextResponse {
+  res.headers.set('Content-Language', contentLanguageFor(req.nextUrl.pathname));
+  return res;
+}
+
 export function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
@@ -225,7 +245,7 @@ export function middleware(req: NextRequest) {
   const rooted = rootLocaleRedirect(req);
   if (rooted) return rooted;
 
-  return withLocale(req, NextResponse.next());
+  return withContentLanguage(req, withLocale(req, NextResponse.next()));
 }
 
 export const config = {

@@ -107,7 +107,7 @@ export default async function StorePage({
  />
  {isStoreDegraded && (
    <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-sm">
-     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2">
+     <div className="container-wide py-2.5 flex items-center gap-2">
        <Package className="w-4 h-4 shrink-0" />
        <span>
          Live store inventory is temporarily unavailable. Showing our curated
@@ -118,7 +118,7 @@ export default async function StorePage({
  )}
  {/* Hero */}
  <section className="bg-[#ede9e3] py-12 md:py-16">
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="container-wide">
  <h1 className={`${H1.catalogue} mb-3`}>
  {t('pageTitle')}
  </h1>
@@ -151,7 +151,7 @@ export default async function StorePage({
  </div>
  </section>
 
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+ <div className="container-wide py-8">
  <StoreFilterBar
  filters={filters}
  categories={categories.map((c) => ({ name: c.name, slug: c.slug, count: c.count }))}

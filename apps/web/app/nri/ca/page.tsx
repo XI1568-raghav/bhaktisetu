@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Sparkles,
 } from 'lucide-react';
+import { COMPANY } from '../../../lib/company';
 
 export const revalidate = 86400;
 
@@ -98,7 +99,7 @@ const benefits = [
   {
     icon: ShieldCheck,
     title: 'Pandit-verified, video proof mandatory',
-    body: 'Every booking ships a video of your puja being performed. If no video arrives within 72h of your slot we cancel the booking and review it for a full refund. Pandits Aadhaar-verified before payout.',
+    body: `Every booking ships a video of your puja being performed. If none has arrived ${COMPANY.refunds.missingVideoEscalationHours}h after your slot, a sweep cancels a booking still waiting on its assigned pandit and sends it for manual refund review; any other status is reviewed when you write in. Where the pandit is at fault the refund is 100%. Pandits Aadhaar-verified before payout.`,
   },
   {
     icon: Sparkles,

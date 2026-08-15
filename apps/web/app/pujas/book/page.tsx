@@ -1562,7 +1562,7 @@ function PujaBookingInner() {
  <div
  className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold transition-all ${
  isCompleted
- ? 'border-tulsi-green bg-tulsi-green text-white'
+ ? 'border-tulsi-green bg-tulsi-green-dark text-white'
  : isCurrent
  ? 'border-saffron-600 bg-saffron-600 text-white shadow-lg'
  : 'border-surface-200 bg-white text-surface-400'

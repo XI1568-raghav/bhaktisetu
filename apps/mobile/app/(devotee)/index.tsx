@@ -90,13 +90,25 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* PAR-22. This was a search affordance that does not search: a
+            magnifying glass over a placeholder naming three things it would
+            search across, whose onPress is a plain tab push. There is no
+            in-app search endpoint to wire it to (apps/web/app/search is
+            web-only), so the control describes what it actually does —
+            the same treatment PAR-15 gave the Book button. Building real
+            search is separate work; shipping a disguised tab link is a
+            credibility tax paid on every session. */}
         <TouchableOpacity
           style={styles.searchBar}
           activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel="Browse all pujas"
+          accessibilityHint="Opens the Pujas tab"
           onPress={() => router.push('/(devotee)/pujas' as any)}
         >
-          <Ionicons name="search-outline" size={18} color={colors.stone[500]} />
-          <Text style={styles.searchPlaceholder}>Search pujas, temples, content…</Text>
+          <Ionicons name="flame-outline" size={18} color={colors.stone[500]} />
+          <Text style={styles.searchPlaceholder}>Browse all pujas</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.stone[400]} />
         </TouchableOpacity>
 
         {!user && (
@@ -332,7 +344,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.md,
     borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.stone[200],
   },
-  searchPlaceholder: { fontSize: fontSize.base, color: colors.stone[500] },
+  // PAR-22: `flex: 1` pushes the chevron to the trailing edge, so the row
+  // reads as a navigation entry rather than as a text field.
+  searchPlaceholder: { flex: 1, fontSize: fontSize.base, color: colors.stone[500] },
   waitlistCard: {
     flexDirection: 'row',
     alignItems: 'center',

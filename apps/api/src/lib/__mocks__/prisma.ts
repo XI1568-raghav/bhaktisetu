@@ -11,6 +11,9 @@ export const prismaMock = {
     create: vi.fn(),
     update: vi.fn(),
     count: vi.fn(),
+    // AO-15: admin.service.getReports buckets the geographic-distribution card
+    // by User.locationState. Additive.
+    groupBy: vi.fn(),
   },
   userAddress: {
     findFirst: vi.fn(),
@@ -120,6 +123,8 @@ export const prismaMock = {
     update: vi.fn(),
     updateMany: vi.fn(),
     count: vi.fn(),
+    // SCAL-04: /admin/revenue buckets subscriptions in SQL now.
+    groupBy: vi.fn(),
   },
   transaction: {
     create: vi.fn(),
@@ -157,6 +162,10 @@ export const prismaMock = {
     create: vi.fn(),
     update: vi.fn(),
     count: vi.fn(),
+    // AO-15: admin.service.getReports aggregates the popular-services card
+    // through groupBy. Additive — nothing that already stubbed this model
+    // changes behaviour.
+    groupBy: vi.fn(),
   },
   onboardingStep: {
     findFirst: vi.fn(),
@@ -232,6 +241,8 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    // AO-15: getReports' astrologer half of the popular-services card.
+    groupBy: vi.fn(),
   },
   chatMessage: {
     findMany: vi.fn(),

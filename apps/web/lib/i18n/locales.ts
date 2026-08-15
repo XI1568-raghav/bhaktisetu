@@ -98,6 +98,54 @@ export function localeFromPathname(pathname: string): Locale | null {
   return isLocale(segment) && segment !== DEFAULT_LOCALE ? segment : null;
 }
 
+/**
+ * The language the DOCUMENT served at this route is written in — the value for
+ * the `Content-Language` response header (audit I18N-10, which measured it
+ * absent on every page) and the same claim `<html lang>` should carry.
+ *
+ * DERIVED FROM THE ROUTE AND NOTHING ELSE, which is the whole point. It
+ * deliberately ignores the visitor's stored locale, for the reason
+ * components/TranslationCoverageNotice records at length for the sibling
+ * attribute: the nine pages wired to lib/t.ts still call it without a locale,
+ * so /pujas is an English document regardless of what the visitor picked.
+ * Announcing otherwise would tell Google and every screen reader that English
+ * pricing and legal copy is Hindi — a fabricated claim about content, and
+ * strictly worse than the silence I18N-10 found.
+ *
+ * Being path-derived also means it needs no `Vary`: the anonymous English page
+ * stays the one shared CDN entry it is today.
+ *
+ * The locale landings are ~16% translated over English chrome, and this still
+ * reports them as their own language rather than hedging to a list. The hedge
+ * belongs in copy the visitor can read — that is what TranslationCoverageNotice
+ * is for — not in a header, where a second value would just make the page
+ * contradict its own `<main lang>`.
+ *
+ * TWO ROUTE SHAPES CARRY A LANGUAGE, and both are matched explicitly rather
+ * than by scanning for "any segment that happens to parse as a locale":
+ *
+ *   /{locale}[/…]                    the landings and their city pages
+ *   /help/articles/{locale}/{slug}   app/help/articles/[lang]/[slug]
+ *
+ * The second one is not optional. That page already declares its language in
+ * its own metadata, so a rule that did not know about it would put an English
+ * header over a Hindi article — a contradiction introduced BY announcing the
+ * language, which is worse than the silence the audit found. A loose "any
+ * segment" rule is equally wrong in the other direction: it would turn
+ * /store/orders/hi into a Hindi document.
+ */
+export function contentLanguageFor(pathname: string): Locale {
+  const fromLanding = localeFromPathname(pathname);
+  if (fromLanding) return fromLanding;
+
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments[0] === 'help' && segments[1] === 'articles' && segments.length >= 3) {
+    return parseLocale(segments[2]) ?? DEFAULT_LOCALE;
+  }
+
+  return DEFAULT_LOCALE;
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
  * BROWSER LANGUAGE NEGOTIATION — audit I-08
  *

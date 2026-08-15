@@ -5,6 +5,9 @@ import { adminService } from '../services/admin.service.js';
 import { prisma } from '../lib/prisma.js';
 import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
 import { resolveProviderRole } from '../services/payout.service.js';
+// AO-16: the previously-stubbed admin lists are real queries now and take the
+// same page/limit clamp every other list route uses.
+import { clampLimit, clampPage } from '../lib/pagination.js';
 import type { Prisma } from '@prisma/client';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
@@ -288,7 +291,38 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   // ─── Existing Temple/Priest/Puja/Content/Booking/Payment CRUD ───────────────
-  // Kept from original admin.ts for backward compatibility
+  //
+  // ┌── AO-16 (prod sweep 2026-08-12) ────────────────────────────────────────┐
+  // │ Nine of these were hardcoded stubs, live and admin-authenticated, and   │
+  // │ they lied in two different ways.                                        │
+  // │                                                                          │
+  // │ The READS answered `{"temples":[],"total":0}` against 20 seeded temples, │
+  // │ total 0 against 3 priests, and empty arrays for pujas, content and       │
+  // │ payments. Those are now real Prisma queries — every model already        │
+  // │ existed, the handlers simply never asked. A failed read answers 500      │
+  // │ rather than an empty list, because "none" and "could not look" must not  │
+  // │ render identically.                                                      │
+  // │                                                                          │
+  // │ The WRITES fabricated success: PATCH/DELETE on a NON-EXISTENT uuid       │
+  // │ returned 200 {"message":"Temple deleted"}, and POST /users answered      │
+  // │ "User created" having created nobody. A stub that says "deleted" is more │
+  // │ dangerous than one that 404s — it tells an operator a destructive action │
+  // │ landed. Making them real needs cascade behaviour, an audit trail and a   │
+  // │ GDPR answer for user deletion, so until that ships they answer 501 and   │
+  // │ say so. Never a 200 for something that did not happen.                   │
+  // │                                                                          │
+  // │ POST /temples is untouched: it was always real.                          │
+  // └──────────────────────────────────────────────────────────────────────────┘
+
+  /** AO-16: one shape for every write that is declared but not built. */
+  function notImplemented(reply: import('fastify').FastifyReply, what: string) {
+    return reply.code(501).send({
+      error: 'Not implemented',
+      message:
+        `${what} is not available through the API yet. Nothing was changed. ` +
+        'Use the database or the role-specific portal until this ships.',
+    });
+  }
 
   server.get('/temples', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, q } = request.query as {
@@ -297,7 +331,44 @@ export async function adminRoutes(server: FastifyInstance) {
       status?: string;
       q?: string;
     };
-    return { temples: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
+    const take = clampLimit(limit);
+    const skip = (clampPage(page) - 1) * take;
+    const where: Prisma.TempleWhereInput = {};
+    if (status === 'verified') where.isVerified = true;
+    if (status === 'unverified') where.isVerified = false;
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { city: { contains: q, mode: 'insensitive' } },
+        { slug: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+    try {
+      const [temples, total] = await Promise.all([
+        prisma.temple.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            city: true,
+            state: true,
+            deityPrimary: true,
+            isVerified: true,
+            liveDarshanEnabled: true,
+            createdAt: true,
+          },
+        }),
+        prisma.temple.count({ where }),
+      ]);
+      return { temples, total, page: clampPage(page), limit: take };
+    } catch (err) {
+      request.log.error({ err }, 'admin /temples failed');
+      return reply.code(500).send({ error: 'Failed to list temples' });
+    }
   });
 
   server.post('/temples', { preHandler: adminPreHandlers }, async (request, reply) => {
@@ -344,17 +415,13 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   });
 
-  server.patch('/temples/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const body = validateBody(templeWriteSchema, request.body, reply);
-    if (!body) return;
-    return { message: 'Temple updated', templeId: id, updates: body };
-  });
+  server.patch('/temples/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Updating a temple'),
+  );
 
-  server.delete('/temples/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    return { message: 'Temple deleted', templeId: id };
-  });
+  server.delete('/temples/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Deleting a temple'),
+  );
 
   server.get('/priests', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, status, q } = request.query as {
@@ -363,26 +430,54 @@ export async function adminRoutes(server: FastifyInstance) {
       status?: string;
       q?: string;
     };
-    return { priests: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
+    const take = clampLimit(limit);
+    const skip = (clampPage(page) - 1) * take;
+    const where: Prisma.PriestWhereInput = {};
+    if (status === 'verified') where.isVerified = true;
+    if (status === 'unverified') where.isVerified = false;
+    if (q) where.displayName = { contains: q, mode: 'insensitive' };
+    try {
+      const [priests, total] = await Promise.all([
+        prisma.priest.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+          select: {
+            id: true,
+            userId: true,
+            displayName: true,
+            isVerified: true,
+            isOnDuty: true,
+            ratingAvg: true,
+            ratingCount: true,
+            commissionRate: true,
+            createdAt: true,
+          },
+        }),
+        prisma.priest.count({ where }),
+      ]);
+      return { priests, total, page: clampPage(page), limit: take };
+    } catch (err) {
+      request.log.error({ err }, 'admin /priests failed');
+      return reply.code(500).send({ error: 'Failed to list priests' });
+    }
   });
 
-  server.post('/priests', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = validateBody(priestWriteSchema, request.body, reply);
-    if (!body) return;
-    return { message: 'Priest created', priest: body };
-  });
+  server.post('/priests', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Creating a pandit'),
+  );
 
-  server.patch('/priests/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const body = validateBody(priestWriteSchema, request.body, reply);
-    if (!body) return;
-    return { message: 'Priest updated', priestId: id, updates: body };
-  });
+  // NOTE: the negotiated-rate write a pandit's pay actually depends on is
+  // PATCH /priests/:id/commission-rate below, and it is REAL. This generic
+  // patch only ever echoed its body.
+  server.patch('/priests/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Updating a pandit'),
+  );
 
-  server.delete('/priests/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    return { message: 'Priest deleted', priestId: id };
-  });
+  server.delete('/priests/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Deleting a pandit'),
+  );
 
   // ─── PATCH /priests/:id/commission-rate — negotiated pandit share ──────────
   //
@@ -478,28 +573,52 @@ export async function adminRoutes(server: FastifyInstance) {
     },
   );
 
+
   server.get('/pujas', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, q } = request.query as { page?: string; limit?: string; q?: string };
-    return { pujas: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
+    const take = clampLimit(limit);
+    const skip = (clampPage(page) - 1) * take;
+    const where: Prisma.PujaTypeWhereInput = q
+      ? { name: { contains: q, mode: 'insensitive' } }
+      : {};
+    try {
+      const [pujas, total] = await Promise.all([
+        prisma.pujaType.findMany({
+          where,
+          orderBy: { name: 'asc' },
+          skip,
+          take,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            category: true,
+            basePrice: true,
+            nriPrice: true,
+            durationMinutes: true,
+            isActive: true,
+          },
+        }),
+        prisma.pujaType.count({ where }),
+      ]);
+      return { pujas, total, page: clampPage(page), limit: take };
+    } catch (err) {
+      request.log.error({ err }, 'admin /pujas failed');
+      return reply.code(500).send({ error: 'Failed to list puja types' });
+    }
   });
 
-  server.post('/pujas', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = validateBody(pujaWriteSchema, request.body, reply);
-    if (!body) return;
-    return { message: 'Puja type created', puja: body };
-  });
+  server.post('/pujas', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Creating a puja type'),
+  );
 
-  server.patch('/pujas/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const body = validateBody(pujaWriteSchema, request.body, reply);
-    if (!body) return;
-    return { message: 'Puja type updated', pujaId: id, updates: body };
-  });
+  server.patch('/pujas/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Updating a puja type'),
+  );
 
-  server.delete('/pujas/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    return { message: 'Puja type deleted', pujaId: id };
-  });
+  server.delete('/pujas/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Deleting a puja type'),
+  );
 
   server.get('/content', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { page, limit, type, status, q } = request.query as {
@@ -509,26 +628,54 @@ export async function adminRoutes(server: FastifyInstance) {
       status?: string;
       q?: string;
     };
-    return { content: [], total: 0, page: Number(page) || 1, limit: Number(limit) || 20 };
+    const take = clampLimit(limit);
+    const skip = (clampPage(page) - 1) * take;
+    // `type` and `status` are Prisma enums; an unknown value must not become a
+    // 500. Cast only what the caller supplied and let a bad one match nothing.
+    const where: Prisma.ContentItemWhereInput = {};
+    if (type) where.type = type as Prisma.ContentItemWhereInput['type'];
+    if (status) where.status = status as Prisma.ContentItemWhereInput['status'];
+    if (q) where.title = { contains: q, mode: 'insensitive' };
+    try {
+      const [content, total] = await Promise.all([
+        prisma.contentItem.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            type: true,
+            status: true,
+            language: true,
+            isPremium: true,
+            viewCount: true,
+            publishedAt: true,
+            createdAt: true,
+          },
+        }),
+        prisma.contentItem.count({ where }),
+      ]);
+      return { content, total, page: clampPage(page), limit: take };
+    } catch (err) {
+      request.log.error({ err }, 'admin /content failed');
+      return reply.code(500).send({ error: 'Failed to list content' });
+    }
   });
 
-  server.post('/content', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = validateBody(contentWriteSchema, request.body, reply);
-    if (!body) return;
-    return { message: 'Content created', content: body };
-  });
+  server.post('/content', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Creating content'),
+  );
 
-  server.patch('/content/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const body = validateBody(contentWriteSchema, request.body, reply);
-    if (!body) return;
-    return { message: 'Content updated', contentId: id, updates: body };
-  });
+  server.patch('/content/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Updating content'),
+  );
 
-  server.delete('/content/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    return { message: 'Content deleted', contentId: id };
-  });
+  server.delete('/content/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Deleting content'),
+  );
 
   // GET /bookings moved to apps/api/src/routes/admin-bookings.ts (M2 layer).
   // Registered separately at /api/v1/admin/bookings prefix in server.ts.
@@ -541,25 +688,61 @@ export async function adminRoutes(server: FastifyInstance) {
       dateFrom?: string;
       dateTo?: string;
     };
-    return {
-      payments: [],
-      total: 0,
-      page: Number(page) || 1,
-      limit: Number(limit) || 20,
-      filters: { status, dateFrom, dateTo },
-    };
+    const take = clampLimit(limit);
+    const skip = (clampPage(page) - 1) * take;
+    const where: Prisma.PaymentWhereInput = {};
+    if (status) where.status = status as Prisma.PaymentWhereInput['status'];
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) (where.createdAt as { gte?: Date }).gte = new Date(dateFrom);
+      if (dateTo) (where.createdAt as { lte?: Date }).lte = new Date(dateTo);
+    }
+    try {
+      const [payments, total] = await Promise.all([
+        prisma.payment.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+          select: {
+            id: true,
+            bookingId: true,
+            amount: true,
+            currency: true,
+            status: true,
+            paymentGateway: true,
+            gatewayPaymentId: true,
+            method: true,
+            refundAmount: true,
+            createdAt: true,
+          },
+        }),
+        prisma.payment.count({ where }),
+      ]);
+      return {
+        payments,
+        total,
+        page: clampPage(page),
+        limit: take,
+        filters: { status, dateFrom, dateTo },
+      };
+    } catch (err) {
+      request.log.error({ err }, 'admin /payments failed');
+      return reply.code(500).send({ error: 'Failed to list payments' });
+    }
   });
 
-  server.post('/users', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const body = validateBody(userCreateSchema, request.body, reply);
-    if (!body) return;
-    return { message: 'User created', user: body };
-  });
+  // Account creation goes through Supabase auth, not this route — it never
+  // created anybody and there is no password/identity path here to make it real.
+  server.post('/users', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Creating a user'),
+  );
 
-  server.delete('/users/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    return { message: 'User deleted', userId: id };
-  });
+  // Blocking a user IS real: PATCH /users/:id (adminService.updateUser). Hard
+  // deletion needs a cascade + retention answer, so it is not faked here.
+  server.delete('/users/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
+    notImplemented(reply, 'Deleting a user'),
+  );
 
   // ─── GET /commissions — paginated commission ledger ─────────────────────────
 

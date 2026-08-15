@@ -114,10 +114,15 @@ describe('/temples count line never reports a subset larger than its total', () 
   it('hands TemplesBrowser a total that covers every temple it also hands over', async () => {
     const { temples, total } = await templesBrowserProps();
 
-    // Sanity: the mock must actually reproduce the merge that overflows —
-    // 22 rich cards + 11 unmatched API rows.
-    expect(temples.length).toBe(33);
+    // Sanity: the mock must actually reproduce the merge that overflows.
+    // This read 33 (22 rich cards + 11 unmatched API rows) until TD-03: the
+    // curated map holds Ramanathaswamy twice, as `rameswaram` and
+    // `rameshwaram`, and the grid now collapses a temple's aliases onto one
+    // card, so the rich half contributes 21.
+    expect(temples.length).toBe(32);
     expect(total).toBeGreaterThanOrEqual(temples.length);
+    // TD-03: and no two cards are the same temple.
+    expect(new Set(temples.map((t) => t.slug)).size).toBe(temples.length);
   });
 
   it('shows no "of N" contradiction on an unfiltered page', async () => {

@@ -72,7 +72,7 @@ export default function AdityaIndexPage() {
           >
             <div className="flex items-baseline justify-between gap-2">
               <h2 className="text-base font-semibold text-gray-900">
-                <span className="mr-2 inline-block rounded bg-amber-600 px-1.5 py-0.5 text-xs font-bold text-white">{a.number}</span>
+                <span className="mr-2 inline-block rounded bg-amber-700 px-1.5 py-0.5 text-xs font-bold text-white">{a.number}</span>
                 {a.name}
               </h2>
               <span className="font-serif text-sm text-gray-700">{a.sanskrit}</span>

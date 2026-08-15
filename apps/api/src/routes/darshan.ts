@@ -210,6 +210,55 @@ function resolveSlug(idOrSlug: string): string {
   return SLUG_ALIASES[idOrSlug] ?? idOrSlug;
 }
 
+/**
+ * PAR-21 (prod sweep 2026-08-12): ONE derivation of "is this live, and what do
+ * I play", used by both the listing and the detail endpoint.
+ *
+ * They disagreed on the same stream id — /live said `live` at
+ * `.../kashi-vishwanath-varanasi/live.m3u8`, /:id/stream said `offline` at
+ * `.../kashi-vishwanath` — for two independent reasons:
+ *
+ *   STATUS: /live derives liveness from the temple's aarti window; the detail
+ *   route returned LiveDarshanStream.status, a column nothing keeps in step
+ *   with the schedule. So a listing that says LIVE opened a page saying offline.
+ *
+ *   URL: the precedence was exactly reversed. /live reads the stream row first
+ *   and falls back to Temple.streamUrl; the detail route preferred the
+ *   temple-level default, so wherever both columns are set the player was
+ *   handed a different (and staler) manifest than the card promised.
+ *
+ * A stored status that the schedule cannot speak to — `scheduled`, `ended` —
+ * passes through. Only the live/offline claim is derived, and never `live`
+ * with nothing to play, which is the gate /live already applies.
+ */
+function deriveStreamPlayback(input: {
+  timingInfo: unknown;
+  streamPlaybackUrl: string | null;
+  templeStreamUrl: string | null;
+  fallbackPlaybackUrl: string | null;
+  storedStatus: string;
+  now?: Date;
+}): { status: string; playbackUrl: string | null; currentSlot: string | null; endsInMin: number | null } {
+  const playbackUrl =
+    input.streamPlaybackUrl || input.templeStreamUrl || input.fallbackPlaybackUrl || null;
+  const schedule = getLiveStatus(input.timingInfo, input.now ?? new Date());
+  const isLive = schedule.isLive && Boolean(playbackUrl);
+
+  let status = input.storedStatus;
+  if (isLive) status = 'live';
+  else if (input.storedStatus === 'live') status = 'offline';
+
+  return {
+    status,
+    playbackUrl,
+    currentSlot: isLive && schedule.isLive ? schedule.current.label : null,
+    endsInMin: isLive && schedule.isLive ? schedule.endsInMin : null,
+  };
+}
+
+/** Exported for the PAR-21 consistency test — pure, no Fastify, no Prisma. */
+export const __testing = { deriveStreamPlayback };
+
 // In-process cache for /live (TTL 30s). Drops landing-page TTFB from 3+s
 // (Prisma cold connection on Render free tier) to <50ms on warm hits.
 // Aarti windows tick by the minute, so 30s staleness is invisible to users.
@@ -416,19 +465,36 @@ export async function darshanRoutes(server: FastifyInstance) {
             select: {
               id: true, name: true, slug: true,
               city: true, deityPrimary: true,
-              images: true, streamUrl: true,
+              // PAR-21: timingInfo is what /live derives liveness from, so the
+              // detail route has to read it too or the two cannot agree.
+              images: true, streamUrl: true, timingInfo: true,
             },
           },
         },
       });
 
       if (stream) {
+        // PAR-21: same derivation /live uses — same URL precedence, same
+        // schedule-driven status. See deriveStreamPlayback.
+        const view = deriveStreamPlayback({
+          timingInfo: stream.temple.timingInfo,
+          streamPlaybackUrl: stream.playbackUrl,
+          templeStreamUrl: stream.temple.streamUrl,
+          fallbackPlaybackUrl:
+            TEMPLE_LIVE_STREAMS.find((s) => s.templeSlug === stream.temple.slug)?.playbackUrl ??
+            null,
+          storedStatus: stream.status,
+        });
         return {
           streamId: stream.id,
           templeId: stream.templeId,
           templeName: stream.temple.name,
-          status: stream.status,
-          playbackUrl: stream.temple.streamUrl || stream.playbackUrl,
+          status: view.status,
+          playbackUrl: view.playbackUrl,
+          // Same two fields /live publishes, so a player can drive its badge
+          // from the response instead of hardcoding a red LIVE pill.
+          currentSlot: view.currentSlot,
+          endsInMin: view.endsInMin,
           thumbnailUrl: Array.isArray(stream.temple.images) && (stream.temple.images as string[]).length > 0
             ? (stream.temple.images as string[])[0]
             : null,
