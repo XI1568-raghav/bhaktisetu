@@ -7,12 +7,36 @@
  * written independently of the code that charges the money, so they drifted.
  * The delivery numbers now interpolate from COMPANY.store — the same figures
  * lib/store-pricing.ts uses and the API enforces — rather than being retyped.
+ *
+ * I-09 (prod sweep 2026-08-12) extended that rule to three more claims this
+ * file was making on its own authority — the cancellation ladder, the
+ * video-proof window and the list of languages the product speaks. All three
+ * now interpolate from the module that governs them, and the popular-article
+ * list carries a real destination per row instead of a title nobody wrote.
  */
 
 import { COMPANY } from './company';
+import {
+ HELP_CATEGORIES,
+ HELP_LANGS,
+ HELP_SOURCE_LANG,
+ getHelpArticle,
+} from './help-articles';
+import {
+ FULL_REFUND_HOURS_BEFORE,
+ CANCELLATION_CUTOFF_HOURS,
+ PARTIAL_REFUND_PERCENT,
+ REFUND_SETTLEMENT_SENTENCE,
+} from './cancellation-policy';
 
 const FREE_DELIVERY_ABOVE = `₹${COMPANY.store.freeDeliveryAboveInr.toLocaleString('en-IN')}`;
 const FLAT_DELIVERY_FEE = `₹${COMPANY.store.flatDeliveryFeeInr}`;
+
+/** "English, Hindi, Tamil, Telugu, Bengali and Marathi" — from the one list. */
+const OFFERED_LANGUAGES = (() => {
+ const labels = HELP_LANGS.map((l) => l.label);
+ return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+})();
 
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -604,8 +628,10 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  },
  {
  keywords: ['refund', 'cancel', 'money back'],
- reply:
- 'For refunds: bookings cancelled 24+ hours before the scheduled time get a full refund. Refunds reach Indian cards in 3-5 business days, international cards in 5-7 days. Share your order ID and I can check the status.',
+ // I-09: the live-chat bot quoted the same superseded ladder the FAQ did, so
+ // the first answer a devotee got was wrong at exactly the moment they were
+ // deciding whether to cancel. Interpolated from lib/cancellation-policy.
+ reply: `For refunds: cancelling ${FULL_REFUND_HOURS_BEFORE} hours or more before the scheduled time returns 100%, and between ${CANCELLATION_CUTOFF_HOURS} and ${FULL_REFUND_HOURS_BEFORE} hours returns ${PARTIAL_REFUND_PERCENT}%. Inside ${CANCELLATION_CUTOFF_HOURS} hours a booking can no longer be cancelled. ${REFUND_SETTLEMENT_SENTENCE} Share your order ID and I can check the status.`,
  },
  {
  keywords: ['darshan', 'stream', 'buffer', 'live'],
@@ -704,8 +730,12 @@ export const FAQ_ITEMS: FaqItem[] = [
  id: 'gs-5',
  section: 'Getting Started',
  question: 'Which languages does Darshya support?',
- answer:
- 'The app is available in English, Hindi, Tamil, Telugu, Kannada, Marathi, and Bengali. More languages coming soon. Switch from the language selector in the footer.',
+ // I-09: this named seven languages including one — Kannada — that has no
+ // landing page, no locale file and no help article; /help/articles/kn/…
+ // answered 404 while this line invited a reader to switch to it. The list is
+ // now generated from HELP_LANGS, which is the same set as SUPPORTED_LOCALES,
+ // so it cannot name a language the product has nowhere to send you.
+ answer: `The app is available in ${OFFERED_LANGUAGES}. Switch from the language selector in the footer. Coverage differs by language — most of the product is English, and each language page says how much of it is translated.`,
  },
 
  // Bookings & Payments (8)
@@ -720,8 +750,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  id: 'bp-2',
  section: 'Bookings & Payments',
  question: 'Can I cancel or reschedule a puja?',
- answer:
- 'Yes, up to 24 hours before the scheduled time. Go to /bookings, tap the booking, and choose "Cancel" or "Reschedule". Full refund within 3-5 business days.',
+ answer: `Go to /bookings, tap the booking, and choose "Cancel" or "Reschedule". Cancelling ${FULL_REFUND_HOURS_BEFORE} hours or more before the scheduled time returns everything you paid; between ${CANCELLATION_CUTOFF_HOURS} and ${FULL_REFUND_HOURS_BEFORE} hours it returns ${PARTIAL_REFUND_PERCENT}%. Inside ${CANCELLATION_CUTOFF_HOURS} hours the pandit is assigned and samagri is bought, so cancellation is no longer possible. Rescheduling depends on pandit and temple availability.`,
  },
  {
  id: 'bp-3',
@@ -734,8 +763,11 @@ export const FAQ_ITEMS: FaqItem[] = [
  id: 'bp-4',
  section: 'Bookings & Payments',
  question: 'When will I receive the video proof?',
- answer:
- 'Within 2-4 hours of puja completion. You\'ll get a push notification and email with the video link. Video is hosted securely and accessible from /bookings forever.',
+ // I-09: this promised 2-4 hours. COMPANY.refunds.videoProofTargetLabel — the
+ // figure /refunds and /terms publish, and the only one the escalation sweep
+ // is built around — is an order of magnitude wider, so support was setting an
+ // expectation the delivery path was never designed to meet.
+ answer: `The delivery target is ${COMPANY.refunds.videoProofTargetLabel} after the scheduled time. You'll get a push notification and email with the video link, and it stays on the booking at /bookings. If ${COMPANY.refunds.missingVideoEscalationHours} hours pass with no video and the booking is still waiting on its pandit, it is cancelled and sent to our team for review.`,
  },
  {
  id: 'bp-5',
@@ -755,8 +787,12 @@ export const FAQ_ITEMS: FaqItem[] = [
  id: 'bp-7',
  section: 'Bookings & Payments',
  question: 'How do refunds work?',
- answer:
- 'Cancellations 24+ hours before → full refund. Within 24 hours → 50%. After puja has started → no refund (but we review case-by-case for genuine issues). Refunds reach Indian cards in 3-5 days, international in 5-7 days.',
+ // I-09: this published a ladder the engine refuses to produce — a full refund
+ // at the 24-hour mark and a 50% tier inside it. DEFAULT_CANCEL_POLICY pays
+ // 100% at 48h+ and 75% between 24h and 48h, and cancelBooking refuses
+ // outright inside 24h, so the 50% tier is unreachable for a devotee. Same
+ // module /refunds and the checkout terms checkbox read (DB-06, LEG-19).
+ answer: `Cancelling ${FULL_REFUND_HOURS_BEFORE} hours or more before the scheduled time returns 100%; between ${CANCELLATION_CUTOFF_HOURS} and ${FULL_REFUND_HOURS_BEFORE} hours it returns ${PARTIAL_REFUND_PERCENT}%. Cancellation is not possible within ${CANCELLATION_CUTOFF_HOURS} hours of the scheduled time. If the pandit or temple cancels, you are refunded in full whenever it happens. ${REFUND_SETTLEMENT_SENTENCE}`,
  },
  {
  id: 'bp-8',
@@ -933,6 +969,27 @@ export const FAQ_SECTIONS = [
  'Account & Security',
 ];
 
+// ─────────────────────── Category → FAQ section ───────────────────────
+
+/**
+ * I-09: /support's eight category tiles all linked `/support/faq?cat=<id>` and
+ * the FAQ page read neither `cat` nor `q`. Every tile, and every "article" link
+ * on /support and /help, landed on the same unfiltered list. The tiles are
+ * ticket categories and the FAQ is organised by section, so the two need a map;
+ * this is it, and the discoverability test fails if a tile maps to a section
+ * that does not exist or if a tile has no mapping at all.
+ */
+export const FAQ_SECTION_FOR_CATEGORY: Record<TicketCategory, string> = {
+ puja: 'Bookings & Payments',
+ payments: 'Bookings & Payments',
+ darshan: 'Live Darshan',
+ store: 'Store & Delivery',
+ astrology: 'Astrology & Wellness',
+ wellness: 'Astrology & Wellness',
+ yatra: 'Yatra & Travel',
+ account: 'Account & Security',
+};
+
 // ─────────────────────────── Popular articles ─────────────────────────
 
 export interface HelpArticle {
@@ -941,77 +998,84 @@ export interface HelpArticle {
  excerpt: string;
  category: string;
  readTime: string;
+ /** Where the row actually goes. Derived — never typed by hand. */
+ href: string;
 }
 
-export const POPULAR_ARTICLES: HelpArticle[] = [
- {
- id: 'art-1',
- title: 'How to book your first puja on Darshya',
- excerpt: 'A step-by-step walkthrough — from picking the right puja to receiving video proof and prasad at home.',
- category: 'Puja Bookings',
- readTime: '4 min',
- },
- {
- id: 'art-2',
- title: 'Understanding video proof: what to expect',
- excerpt: 'Video proof is mandatory for every booking. Here\'s when it arrives, what it contains, and how long it stays accessible.',
- category: 'Puja Bookings',
- readTime: '3 min',
- },
- {
- id: 'art-3',
- title: 'Troubleshoot live darshan buffering in 60 seconds',
- excerpt: 'Three quick fixes that solve 90% of streaming issues — before you have to contact support.',
- category: 'Live Darshan',
- readTime: '2 min',
- },
- {
- id: 'art-4',
- title: 'Refund timelines explained (India & NRI)',
- excerpt: 'Exactly when refunds arrive for different payment methods, cancellation windows, and international cards.',
- category: 'Payments & Refunds',
- readTime: '3 min',
- },
- {
- id: 'art-5',
- title: 'Setting up your sankalp: name, gotra, nakshatra',
- excerpt: 'Why these details matter, where to find them, and how to save them once for all future bookings.',
- category: 'Account & Profile',
- readTime: '5 min',
- },
- {
- id: 'art-6',
- title: 'What to do if your prasad is delayed',
- excerpt: 'Typical courier delays, how to track, and when to raise a ticket for a replacement or refund.',
- category: 'Store Orders',
- readTime: '3 min',
- },
- {
- id: 'art-7',
- title: 'How to choose the right astrologer for your concern',
- excerpt: 'Match astrologers by speciality — marriage, career, health — and pick between chat, call, and detailed reports.',
- category: 'Astrology',
- readTime: '6 min',
- },
- {
- id: 'art-8',
- title: 'Joining your first live yoga session',
- excerpt: 'Tech check, attire, what to keep ready, and making the most of your instructor-led sessions.',
- category: 'Wellness',
- readTime: '4 min',
- },
- {
- id: 'art-9',
- title: 'Char Dham yatra: best time, routes, and health prep',
- excerpt: 'A complete planning guide for the Char Dham pilgrimage — altitude, weather, fitness, and what to pack.',
- category: 'Yatra & Travel',
- readTime: '8 min',
- },
- {
- id: 'art-10',
- title: 'Securing your account: 2FA, OTPs, and family access',
- excerpt: 'Simple steps to keep your spiritual and payment data safe without making sign-in a chore.',
- category: 'Account & Profile',
- readTime: '4 min',
- },
+/**
+ * I-09 — WHY THIS LIST IS GENERATED.
+ *
+ * It used to be ten hand-written titles with hand-written excerpts and
+ * hand-written read times: "Char Dham yatra: best time, routes, and health
+ * prep · 8 min", and so on. None of them had been written. Each row linked to
+ * `/support/faq?q=<its own title>`, a parameter the FAQ page ignored, so a
+ * devotee clicking the most prominent thing on the support page got an
+ * unfiltered FAQ that did not contain the article they had just been promised.
+ * Ten fabricated articles, presented as "the ones devotees read most this
+ * week", on the page people reach when something has already gone wrong.
+ *
+ * The list is now assembled from things that exist — a help article or a FAQ
+ * entry — so a row cannot outlive its content. Title, excerpt and destination
+ * all come from the source record, and the read time is counted off the words
+ * rather than invented.
+ */
+export const POPULAR_ARTICLE_REFS: ReadonlyArray<
+ { kind: 'article'; slug: string } | { kind: 'faq'; id: string }
+> = [
+ { kind: 'article', slug: 'how-to-book-a-puja' },
+ { kind: 'article', slug: 'cancel-or-reschedule-a-puja' },
+ { kind: 'article', slug: 'when-will-my-refund-arrive' },
+ { kind: 'article', slug: 'video-proof-what-to-expect' },
+ { kind: 'article', slug: 'payment-failed-money-deducted' },
+ { kind: 'article', slug: 'track-your-store-order' },
+ { kind: 'article', slug: 'donation-receipts-and-tax-exemption' },
+ { kind: 'faq', id: 'ld-2' },
+ { kind: 'faq', id: 'aw-1' },
+ { kind: 'faq', id: 'as-1' },
 ];
+
+/** Reading time at 200 words per minute, rounded up to a whole minute. */
+function readingTime(text: string): string {
+ const words = text.trim().split(/\s+/).filter(Boolean).length;
+ return `${Math.max(1, Math.ceil(words / 200))} min`;
+}
+
+function firstSentences(text: string, limit: number): string {
+ if (text.length <= limit) return text;
+ const cut = text.slice(0, limit);
+ const stop = cut.lastIndexOf('. ');
+ return stop > limit / 2 ? cut.slice(0, stop + 1) : `${cut.trimEnd()}…`;
+}
+
+export const POPULAR_ARTICLES: HelpArticle[] = POPULAR_ARTICLE_REFS.flatMap(
+ (ref, idx): HelpArticle[] => {
+ const id = `art-${idx + 1}`;
+ if (ref.kind === 'article') {
+ const article = getHelpArticle(HELP_SOURCE_LANG, ref.slug);
+ if (!article) return [];
+ const category = HELP_CATEGORIES.find((c) => c.id === article.category);
+ return [
+ {
+ id,
+ title: article.title,
+ excerpt: firstSentences(article.summary, 160),
+ category: category?.en ?? 'Help',
+ readTime: readingTime(article.body),
+ href: `/help/articles/${HELP_SOURCE_LANG}/${article.slug}`,
+ },
+ ];
+ }
+ const item = FAQ_ITEMS.find((f) => f.id === ref.id);
+ if (!item) return [];
+ return [
+ {
+ id,
+ title: item.question,
+ excerpt: firstSentences(item.answer, 160),
+ category: item.section,
+ readTime: readingTime(item.answer),
+ href: `/support/faq?q=${encodeURIComponent(item.question)}`,
+ },
+ ];
+ },
+);

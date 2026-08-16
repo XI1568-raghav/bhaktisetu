@@ -75,10 +75,15 @@ export default function LanguageSwitcher({
   * `readClientLocale()` reads the COOKIE first and localStorage second. That
   * order is load-bearing: the middleware writes only the cookie (a footer click
   * on हिन्दी → /hi), so a localStorage-only read reported "English" one click
-  * after the visitor had chosen Hindi. It runs even when `currentLanguage` is
-  * supplied, because the controlling parent (components/ContentPageHeader) has
-  * that same localStorage-only blind spot and would otherwise pin this control
-  * to a stale answer.
+  * after the visitor had chosen Hindi.
+  *
+  * The read runs even when `currentLanguage` is supplied — the controlling
+  * parent (components/ContentPageHeader:18) seeds itself from localStorage
+  * ALONE and would otherwise pin this control to a stale answer. Note what the
+  * line below does NOT do: it cannot push the stored locale into `language`
+  * against a controlled parent, because the `[currentLanguage]` effect right
+  * after it re-applies the prop in the same commit. That is why the display
+  * locale is DERIVED (see `activeLocale`) rather than pushed into state.
   */
  useEffect(() => {
  const stored = readClientLocale();
@@ -137,11 +142,24 @@ export default function LanguageSwitcher({
  };
 
  /**
-  * What the control REPORTS. Normally the selected language; when the shared
-  * store holds a locale this control cannot offer (ta/te/bn/mr chosen from the
-  * footer), it reports that instead of silently claiming English.
+  * What the control REPORTS — the locale the rest of the product is actually
+  * running on, which is the one in the shared store. The store wins over
+  * `language` whenever it holds anything, because it is what the middleware,
+  * lib/i18n/server.ts and the coverage notice all read; `language` is only the
+  * answer for a visitor who has never chosen at all.
+  *
+  * This used to defer to the store ONLY for locales the control cannot offer
+  * (ta/te/bn/mr), which fixed தமிழ் and left हिन्दी — the single locale with a
+  * catalog behind it — still lying. Controlled by ContentPageHeader (its only
+  * mount in the product, seeded from localStorage alone), a visitor who clicked
+  * हिन्दी in the footer arrived on /content with the cookie on `hi`, the prop on
+  * `en`, and this control announcing "English": audit I-03's headline symptom,
+  * reproduced by __tests__/i18n-switcher-controlled-locale.test.tsx.
+  *
+  * `handleSelect` writes the store on every pick, so a click keeps the two in
+  * step; the store can only be *ahead* of the prop, never behind it.
   */
- const activeLocale: Locale = storedLocale && !isOffered(storedLocale) ? storedLocale : language;
+ const activeLocale: Locale = storedLocale ?? language;
  const currentLang =
   LANGUAGES.find((l) => l.code === activeLocale) ??
   ({
@@ -152,8 +170,15 @@ export default function LanguageSwitcher({
 
  // Compact toggle mode
  if (compact) {
- const nextLang = language === 'en' ? 'hi' : 'en';
- const nextLabel = language === 'en' ? '\u0939\u093F' : 'EN';
+ /**
+  * Offer the language the visitor is NOT already in, judged by `activeLocale`
+  * rather than `language` for the same reason the trigger is. A visitor whose
+  * cookie says \u0939\u093F\u0928\u094D\u0926\u0940 was being offered \u0939\u093F\u0928\u094D\u0926\u0940. A visitor on ta/te/bn/mr is
+  * offered English \u2014 the language the chrome around them is genuinely in \u2014
+  * rather than Hindi, which is neither what they chose nor what they see.
+  */
+ const nextLang: SupportedLanguage = activeLocale === 'en' ? 'hi' : 'en';
+ const nextLabel = activeLocale === 'en' ? '\u0939\u093F' : 'EN';
  return (
  <button
  onClick={() => handleSelect(nextLang)}
@@ -188,25 +213,31 @@ export default function LanguageSwitcher({
  /* aria-haspopup="listbox" on the trigger promises a listbox, and
     role="option" is only valid inside one. */
  <div role="listbox" aria-label="Language" className="absolute right-0 z-50 mt-1 w-44 origin-top-right rounded-xl border border-surface-100 bg-white py-1 shadow-lg ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95">
+ {/* Selection is keyed to `activeLocale`, the same value the trigger
+     renders, so the list can never contradict the button that opened
+     it. When the active locale is one this control does not offer
+     (ta/te/bn/mr), NOTHING is marked selected — that is the honest
+     state, and marking English instead would move the exact false
+     claim `activeLocale` exists to prevent into the listbox. */}
  {LANGUAGES.map((lang) => (
  <button
  key={lang.code}
  onClick={() => handleSelect(lang.code)}
  className={`flex w-full items-center justify-between px-3 py-2.5 text-sm transition-colors ${
- language === lang.code
+ activeLocale === lang.code
  ? 'bg-saffron-50 text-saffron-700 font-semibold'
  : 'text-surface-700 hover:bg-surface-50'
  }`}
  role="option"
- aria-selected={language === lang.code}
+ aria-selected={activeLocale === lang.code}
  >
  <div className="flex items-center gap-2">
  <span lang={lang.code} className="text-base">{lang.nativeLabel}</span>
- {lang.code !== language && (
+ {lang.code !== activeLocale && (
  <span className="text-xs text-surface-400">({lang.label})</span>
  )}
  </div>
- {language === lang.code && (
+ {activeLocale === lang.code && (
  <Check className="h-4 w-4 text-saffron-600" />
  )}
  </button>

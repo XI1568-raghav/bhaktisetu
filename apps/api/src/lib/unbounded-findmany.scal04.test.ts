@@ -43,7 +43,58 @@ const SRC = join(import.meta.dirname, '..');
  * reads in routes/admin.ts that first tripped this ratchet were all paginated
  * list endpoints using shorthand `take` — false positives, every one.
  */
-const BASELINE = 91;
+const BASELINE = 89;
+
+// −2 on 2026-08-16 — routes/admin-lead-conversion.ts, GET /admin/leads/conversion.
+//
+//   One request read TWO entire tables. The lead funnel pulled every row of
+//   `leads` (id, role, status, convertedUserId) and every row of
+//   `outreach_logs` (leadId, openedAt, clickedAt, openCount, clickCount,
+//   status) — no where, no take, no cursor on either — and reduced both to 35
+//   integers with JavaScript Sets and for-loops.
+//
+//   These were the two fastest-growing reads left in this API, and one of them
+//   is the largest table the product has: `outreach_logs` gains a row per
+//   MESSAGE per lead, so its row count is a multiple of the lead table's, and a
+//   lead row is never deleted. The pair is a strict superset of the waitlist
+//   scan justified below — same shape, bigger tables, and both on one dashboard
+//   hit into a 512 MB container.
+//
+//   Now five grouped reads: one row per (role, status) for the funnel, and one
+//   row per role each for emailed / opened / clicked through
+//   `where: { outreachLogs: { some: … } }`. `Lead.outreachLogs` IS a declared
+//   relation in prisma/schema.prisma, so the `some` filter pushes the lead↔log
+//   join into Postgres — which is exactly what the three JS Sets were doing by
+//   hand. Zero lead rows and zero log rows now cross the wire.
+//
+//   `converted` deliberately costs two reads, not one. The rule it must
+//   reproduce is `status = CONVERTED` **OR** `convertedUserId IS NOT NULL`, and
+//   a single group over status silently drops every lead linked to a real
+//   account but never re-stamped — under-reporting the one number the funnel
+//   exists to show, which is SCAL-09's lying-number defect wearing a new hat.
+//   The second read asks for that residue with `status: { not: 'CONVERTED' }`
+//   so nothing is double-counted, and
+//   `routes/admin-lead-conversion.scal04.test.ts` pins the full arithmetic
+//   (totals AND per-role) against a stated ledger so the endpoint cannot be
+//   satisfied by returning less.
+//
+//   NOT touched in the same pass, and why — the residue in this file and its
+//   neighbours needs work outside this lane, not more of the same:
+//     · the `/conversion/timeline` read and `admin-leads` `/outreach/stats`
+//       bucket by DAY across three different timestamp columns. Prisma cannot
+//       express `date_trunc`, so the honest fix is raw SQL — and raw SQL here
+//       sits behind a swallowing try/catch that answers an all-zero timeline on
+//       any error. Shipping a query nobody could execute against Postgres first
+//       would have converted a slow dashboard into a silently empty one.
+//     · `/admin/temple-timings` and `/admin/gurukuls` return whole tables, but
+//       both are consumed by apps/admin pages that expect the complete list.
+//       Adding a page size without the paired UI change truncates an operator's
+//       view with no indication — the same trade this ratchet already refused
+//       once on the approvals screen.
+//     · `admin.service.getUsers`' role filter is still the read that scales with
+//       the USER BASE (see the accepted-risk note below). Its documented end
+//       state needs a `@relation` on UserRoleAssignment, which is a schema
+//       change; verified again on 2026-08-16 that the model still has none.
 
 // −1 on 2026-08-15 — services/admin.service.getRevenue, the ACTIVE
 // subscription scan.

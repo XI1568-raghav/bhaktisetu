@@ -26,6 +26,9 @@ export default function StoreAdminLayout() {
         <Tabs.Screen name="products" options={{ title: 'Products', tabBarIcon: ({ color, size }) => <TabIcon name="cube" color={color} size={size} /> }} />
         <Tabs.Screen name="orders" options={{ title: 'Orders', tabBarIcon: ({ color, size }) => <TabIcon name="bag-handle" color={color} size={size} /> }} />
         <Tabs.Screen name="revenue" options={{ title: 'Revenue', tabBarIcon: ({ color, size }) => <TabIcon name="trending-up" color={color} size={size} /> }} />
+        {/* PAR-22: `revenue` is gross STORE sales, which is neither the owner's
+            withdrawable balance nor a way to withdraw it. */}
+        <Tabs.Screen name="payouts" options={{ title: 'Payouts', tabBarIcon: ({ color, size }) => <TabIcon name="cash" color={color} size={size} /> }} />
         <Tabs.Screen name="reviews" options={{ title: 'Reviews', tabBarIcon: ({ color, size }) => <TabIcon name="star" color={color} size={size} /> }} />
         <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>

@@ -131,6 +131,18 @@ export default function TabLayout() {
           title: 'Support',
         }}
       />
+      {/*
+        expo-router builds the tab list from the FILE SYSTEM — a <Tabs.Screen>
+        only attaches options to a route the directory already created. So a
+        route file with no declaration is not hidden, it is an extra tab
+        labelled with its raw file name. Both of these were exactly that:
+        `puja-book` (PAR-15's booking screen, pushed from the Pujas card) and
+        `consultations` (reached from Profile) each sat on the devotee tab bar
+        as an unlabelled sixth and seventh entry. Guarded by
+        lib/__tests__/tab-route-registration.par15.test.ts.
+      */}
+      <Tabs.Screen name="puja-book" options={{ href: null, title: 'Book a Puja' }} />
+      <Tabs.Screen name="consultations" options={{ href: null, title: 'Consultations' }} />
       {/* TD10 — feature-parity sub-screens. Hidden from tab bar; reached via push. */}
       <Tabs.Screen name="darshan-player" options={{ href: null, title: 'Darshan Player' }} />
       <Tabs.Screen name="kundli" options={{ href: null, title: 'Kundli' }} />

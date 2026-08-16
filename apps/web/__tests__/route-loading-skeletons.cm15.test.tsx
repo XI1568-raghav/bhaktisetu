@@ -25,6 +25,16 @@
  * /astrology: app/astrology/page.tsx:171 is still
  * `<Suspense fallback={<div className="min-h-[100dvh]" />}>` and that file is
  * outside this lane.
+ *
+ * /pujas added in the second pass. It is the same defect one route over and the
+ * worst-placed instance of it: app/pujas/page.tsx is an async server component
+ * that awaits the catalogue AND `getTranslations` with no <Suspense> of its own
+ * and had no loading.tsx either, so the single highest-intent navigation on the
+ * site — every "Book a puja" CTA, the header nav, the homepage category strip —
+ * had no boundary of any kind and rendered nothing until the whole segment
+ * resolved. CM-15 names /temples and /astrology because those are what the
+ * sweep sampled; the finding is about blank screens reading as broken pages,
+ * and this is the blank screen in front of the money.
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
@@ -32,12 +42,14 @@ import { render, cleanup } from '@testing-library/react';
 
 import TemplesLoading from '../app/temples/loading';
 import AstrologyLoading from '../app/astrology/loading';
+import PujasLoading from '../app/pujas/loading';
 
 afterEach(() => cleanup());
 
 const ROUTES: Array<[string, () => JSX.Element]> = [
   ['/temples', TemplesLoading],
   ['/astrology', AstrologyLoading],
+  ['/pujas', PujasLoading],
 ];
 
 describe.each(ROUTES)('CM-15 — %s segment loading state', (route, Loading) => {

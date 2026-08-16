@@ -655,10 +655,33 @@ const RASHIS: DailyHoroscope[] = [
 // ─── Service Implementation ──────────────────────────────────────────────────────
 
 // ─── Persisted Consultation Record (for portal listing) ────────────────────────
+/**
+ * AW-02 (P0) — a REAL astrologer, resolved from an approved `AstrologerProfile`
+ * row, in the shape `startConsultation` needs. It is the merge input: passed in,
+ * it takes precedence over the in-memory fixture; omitted, the fixture lookup
+ * runs exactly as before.
+ */
+export interface ResolvedAstrologer {
+  id: string;
+  /** The astrologer's User UUID — what they authenticate as. */
+  userId: string;
+  name: string;
+  specializations: string[];
+  perMinuteRate: number;
+  isOnline: boolean;
+  isBusy: boolean;
+}
+
 export interface PortalConsultation {
   id: string;
   userId: string;
   astrologerId: string;
+  /**
+   * The astrologer's User UUID when the session was opened against a real
+   * `AstrologerProfile`. `null` for legacy fixture sessions, whose
+   * `astrologerId` was the only identity that ever existed.
+   */
+  astrologerUserId?: string | null;
   clientName: string;
   type: string;
   mode: 'video' | 'call' | 'chat';
@@ -814,12 +837,27 @@ class AstrologyService {
   }
 
   // ── Start Consultation ────────────────────────────────────────────────────
+  //
+  // AW-02 (P0): `resolved` is how a REAL astrologer gets in.
+  //
+  // The route gate above this only admits an approved `AstrologerProfile` id,
+  // and a real profile UUID can never appear in the in-memory ASTROLOGERS
+  // fixture (its ids are `astro_001`..`astro_015`). So the fixture lookup
+  // answered 'Astrologer not found.' for every genuinely onboarded astrologer:
+  // the endpoint refused the invented 15 AND the real 3 — shut in both
+  // directions, which is not what "stop selling fictional astrologers" means.
+  //
+  // Real supply is MERGED IN AHEAD of the fixture, never in place of it. The
+  // fixture is load-bearing (GET /specializations, getReviews,
+  // getAstrologerByIdOrSlug all read it) and stays the fallback branch, so a
+  // direct caller passing `astro_00X` behaves exactly as before.
   startConsultation(
     userId: string,
     astrologerId: string,
-    mode: 'chat' | 'call' | 'video'
+    mode: 'chat' | 'call' | 'video',
+    resolved?: ResolvedAstrologer,
   ): ConsultationSession | { error: string } {
-    const astrologer = ASTROLOGERS.find((a) => a.id === astrologerId);
+    const astrologer = resolved ?? ASTROLOGERS.find((a) => a.id === astrologerId);
     if (!astrologer) return { error: 'Astrologer not found.' };
     if (!astrologer.isOnline) return { error: 'Astrologer is currently offline.' };
     if (astrologer.isBusy) return { error: 'Astrologer is currently busy with another consultation.' };
@@ -827,11 +865,16 @@ class AstrologyService {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const startedAt = new Date().toISOString();
 
-    // Persist a portal-shaped record so astrologer dashboards can list it
+    // Persist a portal-shaped record so astrologer dashboards can list it.
+    // `astrologerUserId` is the astrologer's User UUID when one is known: the
+    // session is addressed by AstrologerProfile.id, but an astrologer signs in
+    // as their User, so without it a real astrologer could never see the
+    // consultation booked with them (see listConsultations).
     this.sessions.set(sessionId, {
       id: sessionId,
       userId,
       astrologerId,
+      astrologerUserId: resolved?.userId ?? null,
       clientName: 'Devotee',
       type: astrologer.specializations[0] ?? 'General Consultation',
       mode,
@@ -855,10 +898,20 @@ class AstrologyService {
     };
   }
 
+  /**
+   * Is `callerId` the astrologer on this session? A session is addressed by
+   * AstrologerProfile.id but the astrologer authenticates as their User, so
+   * both identities have to match. Legacy fixture sessions carry no
+   * `astrologerUserId` and keep matching on the id alone.
+   */
+  private isSessionAstrologer(session: PortalConsultation, callerId: string): boolean {
+    return session.astrologerId === callerId || session.astrologerUserId === callerId;
+  }
+
   // ── List Consultations (for portal dashboards) ────────────────────────────
   async listConsultations({ userId, role }: { userId: string; role: string }): Promise<PortalConsultation[]> {
     const all = Array.from(this.sessions.values());
-    if (role === 'astrologer') return all.filter((s) => s.astrologerId === userId);
+    if (role === 'astrologer') return all.filter((s) => this.isSessionAstrologer(s, userId));
     return all.filter((s) => s.userId === userId);
   }
 
@@ -874,7 +927,11 @@ class AstrologyService {
   ): Promise<PortalConsultation> {
     const session = this.sessions.get(id);
     if (!session) throw new Error('Consultation not found');
-    if (!caller.isAdmin && session.userId !== caller.userId && session.astrologerId !== caller.userId) {
+    if (
+      !caller.isAdmin &&
+      session.userId !== caller.userId &&
+      !this.isSessionAstrologer(session, caller.userId)
+    ) {
       throw new Error('Not authorized for this consultation');
     }
     session.status = status === 'COMPLETED' ? 'completed' : 'cancelled';
@@ -891,7 +948,11 @@ class AstrologyService {
   ): Promise<{ roomUrl: string }> {
     const session = this.sessions.get(id);
     if (!session) throw new Error('Consultation not found');
-    if (!caller.isAdmin && session.userId !== caller.userId && session.astrologerId !== caller.userId) {
+    if (
+      !caller.isAdmin &&
+      session.userId !== caller.userId &&
+      !this.isSessionAstrologer(session, caller.userId)
+    ) {
       throw new Error('Not authorized for this consultation');
     }
     if (!session.roomUrl) {

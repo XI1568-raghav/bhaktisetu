@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Search as SearchIcon, ArrowRight, BookOpen, Flame, Landmark } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api-config';
 import { contentSubtitleLabel, pujaSubtitleLabel } from '../../components/SearchSubtitle';
+import { buildRelaxedQueries } from '../../lib/search-relax';
 
 /**
  * CM-12 (prod sweep 2026-08-12) — this page searched ONLY the static
@@ -88,6 +89,13 @@ export default function SearchClient() {
   const [idx, setIdx] = useState<Entry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [api, setApi] = useState<ApiResults>(EMPTY_API_RESULTS);
+  /**
+   * CM-12 (second pass) — the term that actually produced `api`, when it is not
+   * the term the devotee typed. `null` means the results below are an exact
+   * answer to the query. See lib/search-relax.ts for why an exact answer is so
+   * often empty.
+   */
+  const [relaxedTerm, setRelaxedTerm] = useState<string | null>(null);
 
   useEffect(() => { setInput(q); }, [q]);
 
@@ -102,35 +110,96 @@ export default function SearchClient() {
     const trimmed = q.trim();
     if (!trimmed) {
       setApi(EMPTY_API_RESULTS);
+      setRelaxedTerm(null);
       return;
     }
     let cancelled = false;
-    fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(trimmed)}&limit=8`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((body: { results?: Partial<ApiResults> }) => {
-        if (cancelled) return;
-        setApi({
+
+    const fetchBuckets = (term: string): Promise<ApiResults> =>
+      fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(term)}&limit=8`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+        .then((body: { results?: Partial<ApiResults> }) => ({
           temples: Array.isArray(body.results?.temples) ? body.results!.temples! : [],
           pujas: Array.isArray(body.results?.pujas) ? body.results!.pujas! : [],
           // Absent bucket stays empty rather than being back-filled from
           // anywhere: a missing key is "the server did not say", not "there are
           // aartis and here they are".
           content: Array.isArray(body.results?.content) ? body.results!.content! : [],
-        });
-      })
-      .catch(() => {
+        }));
+
+    const isEmpty = (r: ApiResults) =>
+      r.temples.length === 0 && r.pujas.length === 0 && r.content.length === 0;
+
+    (async () => {
+      let exact: ApiResults;
+      try {
+        exact = await fetchBuckets(trimmed);
+      } catch {
         // Catalogue search unavailable — fall back to the article index alone.
-        // Never invent a puja result to fill the gap.
-        if (!cancelled) setApi(EMPTY_API_RESULTS);
-      });
+        // Never invent a puja result to fill the gap, and never relax: a
+        // relaxed retry against a dead endpoint is just a second failure.
+        if (!cancelled) {
+          setApi(EMPTY_API_RESULTS);
+          setRelaxedTerm(null);
+        }
+        return;
+      }
+      if (cancelled) return;
+      if (!isEmpty(exact)) {
+        setApi(exact);
+        setRelaxedTerm(null);
+        return;
+      }
+
+      // CM-12: the endpoint matches with one whole-string `contains`, so the
+      // exact query is empty for every phrased or inflected form of a real
+      // catalogue row. Retry narrower terms, in order, and stop at the first
+      // that answers.
+      setApi(EMPTY_API_RESULTS);
+      setRelaxedTerm(null);
+      for (const candidate of buildRelaxedQueries(trimmed)) {
+        let widened: ApiResults;
+        try {
+          widened = await fetchBuckets(candidate);
+        } catch {
+          return;
+        }
+        if (cancelled) return;
+        if (!isEmpty(widened)) {
+          setApi(widened);
+          setRelaxedTerm(candidate);
+          return;
+        }
+      }
+    })();
+
     return () => {
       cancelled = true;
     };
   }, [q]);
 
-  const hits = useMemo(() => (idx ? search(idx, q, 50) : []), [idx, q]);
+  const exactHits = useMemo(() => (idx ? search(idx, q, 50) : []), [idx, q]);
+  /**
+   * The article index tokenises and ANDs, so it fails on phrasing too — just
+   * differently. When the exact query found no article either, search the same
+   * relaxed term the catalogue answered on, so both halves of the page are
+   * answering the same question.
+   */
+  const relaxedHits = useMemo(
+    () => (idx && relaxedTerm && exactHits.length === 0 ? search(idx, relaxedTerm, 50) : []),
+    [idx, relaxedTerm, exactHits.length],
+  );
+  const hits = exactHits.length > 0 ? exactHits : relaxedHits;
   const totalHits =
     hits.length + api.pujas.length + api.temples.length + api.content.length;
+  /** Something on this page came from a term other than the one typed. */
+  const widened = relaxedTerm !== null && totalHits > 0;
+  /**
+   * ...but the library half still answered the typed query exactly. Saying "no
+   * exact match" over a list that contains exact matches is a false statement,
+   * so the two cases get different sentences.
+   */
+  const partiallyWidened = widened && exactHits.length > 0;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -164,7 +233,26 @@ export default function SearchClient() {
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
       {!idx && !error && <p className="text-sm text-surface-500">Loading index...</p>}
 
-      {idx && q && (
+      {/*
+        CM-12: when the exact query came back empty and a narrower one answered,
+        say so in the same breath as the count. Presenting relaxed results as an
+        exact match is how a devotee ends up booking the wrong rite; naming both
+        terms lets them see instantly whether the widening went where they meant.
+      */}
+      {idx && q && widened && !partiallyWidened && (
+        <p className="text-sm text-surface-600 mb-4" role="status">
+          No exact match for &ldquo;{q}&rdquo;. Showing {totalHits} result
+          {totalHits === 1 ? '' : 's'} for &ldquo;{relaxedTerm}&rdquo;.
+        </p>
+      )}
+      {idx && q && partiallyWidened && (
+        <p className="text-sm text-surface-600 mb-4" role="status">
+          {totalHits} result{totalHits === 1 ? '' : 's'} for &ldquo;{q}&rdquo;. Nothing in the
+          catalogue matched that exactly, so pujas and temples below are for &ldquo;
+          {relaxedTerm}&rdquo;.
+        </p>
+      )}
+      {idx && q && !widened && (
         <p className="text-sm text-surface-500 mb-4">{totalHits} result{totalHits === 1 ? '' : 's'} for &ldquo;{q}&rdquo;</p>
       )}
 

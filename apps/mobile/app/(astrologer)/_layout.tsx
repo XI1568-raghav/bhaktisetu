@@ -29,6 +29,9 @@ export default function AstrologerLayout() {
         <Tabs.Screen name="earnings" options={{ title: 'Earnings', tabBarIcon: ({ color, size }) => <TabIcon name="cash" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }} />
         <Tabs.Screen name="subscription" options={{ title: 'Plan', tabBarIcon: ({ color, size }) => <TabIcon name="card" color={color} size={size} /> }} />
+        {/* PAR-22: the withdrawal surface. Off the bar — this one already
+            carries six — and pushed from the earnings screen instead. */}
+        <Tabs.Screen name="payouts" options={{ href: null, title: 'Payouts' }} />
         <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
     </RoleGuard>

@@ -43,6 +43,44 @@ export const AUTH_FETCH_TIMEOUT_MS = 20_000;
  * An AbortController converts "hangs forever, says nothing" into "fails in 20s
  * with something the user can act on" — the only honest outcome of a request
  * that is never coming back.
+ *
+ * SEC-02 (2026-08-16): it also carries the auth cookie.
+ *
+ * The API has accepted the httpOnly `darshya_session` cookie as a credential
+ * since #200 (apps/api/src/middlewares/auth.ts falls back to it when there is
+ * no Bearer header), and a browser signing in through POST /auth/login now
+ * actually stores it. None of that mattered, because the web never SENT the
+ * cookie back: darshya.online and api.darshya.online are different origins, and
+ * `fetch` defaults to `credentials: 'same-origin'`, which omits cookies on a
+ * cross-origin request outright. Four call sites in lib/auth-context.tsx opted
+ * in by hand; the ~96 others routed through here did not. So the JS-readable
+ * localStorage access token remained the only credential that authenticated
+ * anything — which IS SEC-02.
+ *
+ * Defaulting the mode here is the version of that fix that scales, because this
+ * is the one chokepoint every timed fetch in apps/web already passes through,
+ * and every one of them is aimed at API_BASE_URL — checked: no call site passes
+ * a third-party origin, so nothing starts sending cookies to someone else.
+ * `darshya_refresh` is path-scoped to /api/v1/auth on the server, so it still
+ * only travels to the refresh endpoint. The server-side precondition holds too:
+ * CORS is registered with `credentials: true` against an explicit origin
+ * allowlist and never `*` (apps/api/src/lib/cors-origins.ts).
+ *
+ * No new CSRF surface, which is the obvious objection to sending cookies:
+ * darshya.online and api.darshya.online are the same SITE, so `SameSite=lax`
+ * (set by cookieSecurityOptions on the API) permits this call while still
+ * withholding the cookie from any genuinely cross-site POST, and a scripted
+ * cross-site call in credentials mode never leaves the browser because its
+ * preflight fails the origin allowlist.
+ *
+ * Purely additive, deliberately. The `Authorization: Bearer` header each caller
+ * builds is untouched and still authenticates; the cookie becomes a WORKING
+ * PARALLEL credential rather than a replacement. Retiring the localStorage copy
+ * is the next step and cannot be taken from here — see the notes on
+ * persistAuthStorage in lib/auth-context.tsx.
+ *
+ * `init` is spread AFTER the default, so a caller that deliberately asks for
+ * `credentials: 'omit'` still gets it.
  */
 export async function fetchWithTimeout(
  input: RequestInfo | URL,
@@ -52,7 +90,7 @@ export async function fetchWithTimeout(
  const controller = new AbortController();
  const timer = setTimeout(() => controller.abort(), timeoutMs);
  try {
-  return await fetch(input, { ...init, signal: controller.signal });
+  return await fetch(input, { credentials: 'include', ...init, signal: controller.signal });
  } finally {
   clearTimeout(timer);
  }

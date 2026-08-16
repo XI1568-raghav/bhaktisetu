@@ -8,7 +8,7 @@ import { cancellationService } from '../services/cancellation.service.js';
 import { prisma } from '../lib/prisma.js';
 import { presignR2Upload, r2 } from '../lib/r2.js';
 import { isDemoMode } from '../lib/supabase.js';
-import { BookingStatus, PayoutStatus } from '@prisma/client';
+import { BookingStatus, PayoutStatus, Prisma } from '@prisma/client';
 
 // Zod gates for the pandit-owned puja offering CRUD. Hoisted to module
 // scope so tests can import them via __testing without spinning a server.
@@ -131,6 +131,169 @@ const videoProofBodySchema = z.object({
   videoUrl: z.string().trim().url().max(2000),
 });
 
+/* ─── DI-05, the read half: /priest/payouts must see BOTH payout rails ───────
+ *
+ * The write half shipped 2026-08-12 (booking.service EARNING_ATTACH_STATUSES):
+ * attaching a pandit to a paid temple booking now mints his Commission, so the
+ * unified surfaces (/payouts/balance, /payouts/commissions) report him
+ * correctly.
+ *
+ * It did not fix the screen he is actually sent to. The priest portal's only
+ * money link is /priest/payouts (apps/web/app/priest/layout.tsx), and that
+ * endpoint reads the PriestPayout sidecar table and nothing else — while
+ * payment.service.createPriestPayout REFUSES to write a sidecar row whenever a
+ * live Commission owns the booking (the two rails are mutually exclusive by
+ * construction, and must stay that way or every pandit is paid twice).
+ *
+ * So minting the Commission is precisely what stops the row this endpoint reads
+ * from ever existing. A pandit whose work came through the temple path still
+ * opens his payout page and sees "No payouts found" over three Rs 0 cards.
+ * routes/admin-bookings.ts already merges both rails for the ADMIN — the
+ * operator could see money the earner could not.
+ *
+ * Nothing here computes what anyone is owed: `Commission.amount` IS the
+ * provider's earning (lib/commission-math.ts) and is passed through untouched.
+ * This is a read that had been looking at one of two tables.
+ */
+
+/** A commission-backed earning, shaped exactly like a PriestPayout row. */
+type UnifiedRail = {
+  id: string;
+  rail: 'commission';
+  amount: Prisma.Decimal;
+  status: 'pending' | 'processing' | 'completed';
+  payoutMethod: string;
+  payoutReference: string | null;
+  processedAt: Date | null;
+  createdAt: Date;
+  booking: {
+    id: string;
+    bookingNumber: string;
+    pujaType: { name: string };
+    temple: { name: string };
+  };
+};
+
+/**
+ * Puja-booking-backed, non-void commissions owned by this pandit's User id.
+ *
+ *  - `bookingId: { not: null }` — the ledger also carries store-order and
+ *    wellness-enrollment rows for a provider who wears more than one hat. Those
+ *    have no booking to render and belong to their own portals; the unified
+ *    /payouts page is where a multi-role provider sees everything at once.
+ *  - REVERSED is an audit record of a VOIDED earning (a reschedule detaches the
+ *    pandit and reverses his commission). Showing it would promise money nobody
+ *    owes — the same reason createPriestPayout ignores REVERSED rows.
+ */
+function unifiedBaseWhere(providerId: string): Prisma.CommissionWhereInput {
+  return { providerId, bookingId: { not: null }, status: { not: 'REVERSED' } };
+}
+
+/** Open payout requests — a commission linked to one is in flight, not fresh. */
+const IN_FLIGHT_REQUEST_STATUSES = ['pending', 'processing'] as const;
+
+/**
+ * The portal's payout vocabulary, expressed against the commission ledger.
+ * Returns null when NO commission can ever match — `failed` is a property of a
+ * bank transfer, and a failed PayoutRequest unlinks its commissions and returns
+ * them to PENDING, so no commission is ever left in a failed state.
+ *
+ * The two PENDING branches are exact complements, so they agree with
+ * `unifiedRowStatus` below by construction rather than by coincidence.
+ */
+function unifiedStatusFilter(status?: PayoutStatus): Prisma.CommissionWhereInput | null {
+  switch (status) {
+    case undefined:
+      return {};
+    case 'pending':
+      return {
+        status: 'PENDING',
+        OR: [
+          { payoutRequestId: null },
+          { payoutRequest: { status: { notIn: [...IN_FLIGHT_REQUEST_STATUSES] } } },
+        ],
+      };
+    case 'processing':
+      return {
+        status: 'PENDING',
+        payoutRequest: { status: { in: [...IN_FLIGHT_REQUEST_STATUSES] } },
+      };
+    case 'completed':
+      return { status: 'PAID' };
+    case 'failed':
+      return null;
+    default:
+      // Unreachable — Zod already rejected anything outside PayoutStatus. If the
+      // enum ever grows, matching nothing is the conservative answer: it can
+      // under-report a filtered VIEW, never the summary cards, which are
+      // computed from the unfiltered ledger.
+      return null;
+  }
+}
+
+function unifiedRowStatus(row: {
+  status: string;
+  payoutRequest?: { status: string } | null;
+}): 'pending' | 'processing' | 'completed' {
+  if (row.status === 'PAID') return 'completed';
+  const requestStatus = row.payoutRequest?.status;
+  if (requestStatus && (IN_FLIGHT_REQUEST_STATUSES as readonly string[]).includes(requestStatus)) {
+    return 'processing';
+  }
+  return 'pending';
+}
+
+/**
+ * How deep the MERGED ledger can be paged when a pandit has rows on BOTH rails.
+ *
+ * Offset-paging a union needs the top (skip + limit) of each side, so the cost
+ * grows with the page number. A pandit with rows on only one rail is unaffected
+ * — that path pages the single rail directly, with no ceiling — and this bound
+ * is ~500 completed pujas on the OTHER rail before it can bite. The response
+ * says `mergeTruncated` when it does, rather than quietly ending the list.
+ */
+const RAIL_MERGE_WINDOW = 500;
+
+const toDecimal = (value: Prisma.Decimal | number | string | null | undefined): Prisma.Decimal =>
+  new Prisma.Decimal(value ?? 0);
+
+/**
+ * The same three earnings figures the dashboard card shows, taken off the
+ * unified rail.
+ *
+ * PF-12 exists because /priest and /priest/payouts once disagreed about the
+ * same account's money. Teaching only the payouts endpoint about the commission
+ * ledger would recreate that contradiction with a bigger gap: Rs 770 owed on one
+ * screen, Rs 0 on the other. Both read through here.
+ *
+ * `monthStart` is passed in rather than computed here so it is the CALLER's one
+ * definition of "this month" — priest.service builds it as a local-time
+ * `new Date(y, m, 1)`, and two boundaries that drift apart is the same defect
+ * again in a different column.
+ */
+async function unifiedEarnings(providerId: string, monthStart: Date) {
+  const base = unifiedBaseWhere(providerId);
+  const [paid, paidThisMonth, pending] = await Promise.all([
+    prisma.commission.aggregate({
+      where: { ...base, status: 'PAID' },
+      _sum: { amount: true },
+    }),
+    prisma.commission.aggregate({
+      where: { ...base, status: 'PAID', paidAt: { gte: monthStart } },
+      _sum: { amount: true },
+    }),
+    prisma.commission.aggregate({
+      where: { ...base, status: 'PENDING' },
+      _sum: { amount: true },
+    }),
+  ]);
+  return {
+    total: toDecimal(paid._sum.amount),
+    thisMonth: toDecimal(paidThisMonth._sum.amount),
+    pending: toDecimal(pending._sum.amount),
+  };
+}
+
 /**
  * PF-05: two modules disagreed about what "storage is configured" means.
  * `r2.enabled` is `r2Enabled || supabaseEnabled`, and lib/r2's `supabaseEnabled`
@@ -207,9 +370,31 @@ export async function priestRoutes(server: FastifyInstance) {
 
   server.get('/dashboard', { preHandler: priestAuth }, async (request, reply) => {
     try {
-      const priestId = await getPriestId(request.currentUser!.id);
+      const userId = request.currentUser!.id;
+      const priestId = await getPriestId(userId);
       const dashboard = await priestService.getDashboard(priestId);
-      return dashboard;
+
+      // DI-05: the earnings card reads the PriestPayout sidecar rail, which a
+      // temple-path pandit never has a row on. Same merge as GET /payouts, so
+      // the two screens keep agreeing (PF-12).
+      const unifiedAny = await prisma.commission.count({
+        where: unifiedBaseWhere(userId),
+      });
+      if (!(unifiedAny > 0)) return dashboard;
+
+      const now = new Date();
+      // Identical construction to priest.service.getDashboard's firstOfMonth.
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const extra = await unifiedEarnings(userId, monthStart);
+
+      return {
+        ...dashboard,
+        earnings: {
+          total: toDecimal(dashboard.earnings.total).add(extra.total),
+          thisMonth: toDecimal(dashboard.earnings.thisMonth).add(extra.thisMonth),
+          pending: toDecimal(dashboard.earnings.pending).add(extra.pending),
+        },
+      };
     } catch (err: any) {
       request.log?.error({ err }, 'priest route failed');
       reply.code(400).send({ error: safeErrorMessage(err) });
@@ -533,14 +718,154 @@ export async function priestRoutes(server: FastifyInstance) {
       }
       const { status, page, limit } = parsed.data;
 
-      const priestId = await getPriestId(request.currentUser!.id);
-      const result = await priestService.getPayoutHistory(priestId, {
-        status,
-        page,
-        limit,
+      const userId = request.currentUser!.id;
+      const priestId = await getPriestId(userId);
+
+      // DI-05: does this pandit have ANY earning on the unified rail? Gated on
+      // the UNFILTERED set — a `?status=completed` filter that matches no
+      // commission must not send us down the legacy-only path, because the
+      // summary cards below it cover the whole ledger regardless of the filter.
+      const baseWhere = unifiedBaseWhere(userId);
+      const unifiedAny = await prisma.commission.count({ where: baseWhere });
+
+      // Legacy-only pandit: the single-rail path, byte-for-byte the behaviour
+      // this endpoint has always had, including unbounded deep paging.
+      // Written as `> 0` rather than `=== 0` so that "no rows" and "no answer"
+      // both fall back to the rail that has always worked — the merge is
+      // additive, and must never be the reason a legacy ledger stops rendering.
+      // A ledger read that THROWS still propagates to the 400 below, which is
+      // what the page's PF-15 error banner exists for: an unread ledger is an
+      // error, never a balance.
+      if (!(unifiedAny > 0)) {
+        return await priestService.getPayoutHistory(priestId, { status, page, limit });
+      }
+
+      // Defaults mirror priestService.getPayoutHistory so the two paths page
+      // identically.
+      const currentPage = page ?? 1;
+      const pageSize = limit ?? 20;
+      const skip = (currentPage - 1) * pageSize;
+      const window = Math.min(skip + pageSize, RAIL_MERGE_WINDOW);
+
+      const railFilter = unifiedStatusFilter(status);
+      const filteredWhere: Prisma.CommissionWhereInput | null = railFilter
+        ? { ...baseWhere, ...railFilter }
+        : null;
+
+      // Same helper the dashboard card uses, so the two screens cannot drift
+      // apart on the same account's money again (PF-12). `thisMonth` is unused
+      // here; one extra indexed aggregate is cheaper than a second definition.
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+      const [legacy, unifiedRows, unifiedTotal, unifiedSummary, lastPaid] = await Promise.all([
+        // Top `window` of the sidecar rail. `total` and `summary` are
+        // aggregates, so they are unaffected by asking for page 1.
+        priestService.getPayoutHistory(priestId, { status, page: 1, limit: window }),
+        filteredWhere
+          ? prisma.commission.findMany({
+              where: filteredWhere,
+              select: {
+                id: true,
+                bookingId: true,
+                amount: true,
+                status: true,
+                paidAt: true,
+                createdAt: true,
+                payoutRequest: {
+                  select: { status: true, method: true, reference: true, processedAt: true },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: window,
+            })
+          : Promise.resolve([]),
+        filteredWhere ? prisma.commission.count({ where: filteredWhere }) : Promise.resolve(0),
+        unifiedEarnings(userId, monthStart),
+        prisma.commission.findFirst({
+          where: { ...baseWhere, status: 'PAID' },
+          orderBy: { paidAt: 'desc' },
+          select: { amount: true, paidAt: true },
+        }),
+      ]);
+
+      // Hydrate the booking each commission belongs to. Commission carries a
+      // bookingId scalar, not a relation, so this is a separate read — bounded
+      // by an IN list drawn from the already-bounded page above.
+      const bookingIds = Array.from(
+        new Set(unifiedRows.map((c) => c.bookingId).filter((id): id is string => !!id)),
+      );
+      const bookings = bookingIds.length
+        ? await prisma.pujaBooking.findMany({
+            where: { id: { in: bookingIds } },
+            select: {
+              id: true,
+              bookingNumber: true,
+              pujaType: { select: { name: true } },
+              temple: { select: { name: true } },
+            },
+            take: bookingIds.length,
+          })
+        : [];
+      const bookingById = new Map(bookings.map((b) => [b.id, b] as const));
+
+      const unified: UnifiedRail[] = unifiedRows.map((c) => {
+        const booking = c.bookingId ? bookingById.get(c.bookingId) : undefined;
+        return {
+          id: c.id,
+          rail: 'commission',
+          amount: c.amount,
+          status: unifiedRowStatus(c),
+          // No request yet means no method has been chosen. Saying so beats
+          // printing a bank transfer that nobody has asked for.
+          payoutMethod: c.payoutRequest?.method ?? 'not_requested',
+          payoutReference: c.payoutRequest?.reference ?? null,
+          processedAt: c.paidAt ?? c.payoutRequest?.processedAt ?? null,
+          createdAt: c.createdAt,
+          // A booking we cannot read is a join problem, never a reason to drop
+          // an earning off the only screen that shows it — the client renders
+          // booking.* unconditionally, so the shape has to be complete.
+          booking: {
+            id: c.bookingId ?? c.id,
+            bookingNumber: booking?.bookingNumber ?? '—',
+            pujaType: { name: booking?.pujaType?.name ?? 'Puja' },
+            temple: { name: booking?.temple?.name ?? '—' },
+          },
+        };
       });
 
-      return result;
+      // Both sides are the top `window` of their own rail sorted newest-first,
+      // so the first `window` entries of the sorted concatenation are the true
+      // top `window` of the union.
+      const merged = [
+        ...legacy.payouts.map((p) => ({ ...p, rail: 'priest_payout' as const })),
+        ...unified,
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      const total = legacy.total + unifiedTotal;
+
+      // Money stays Decimal to the response boundary — never float-summed.
+      const totalEarned = toDecimal(legacy.summary.totalEarned).add(unifiedSummary.total);
+      const pending = toDecimal(legacy.summary.pending).add(unifiedSummary.pending);
+
+      // Whichever rail settled most recently owns the "Last Payout" card.
+      const legacyLast = legacy.summary.lastPayout;
+      const unifiedLastAt = lastPaid?.paidAt ?? null;
+      const legacyLastAt = legacyLast?.date ?? null;
+      const lastPayout =
+        unifiedLastAt && (!legacyLastAt || unifiedLastAt > legacyLastAt)
+          ? { amount: lastPaid!.amount, date: unifiedLastAt }
+          : legacyLast;
+
+      return {
+        payouts: merged.slice(skip, skip + pageSize),
+        total,
+        page: currentPage,
+        limit: pageSize,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        summary: { totalEarned, pending, lastPayout },
+        // Say it out loud rather than ending the list without explanation.
+        mergeTruncated: skip + pageSize > RAIL_MERGE_WINDOW,
+      };
     } catch (err: any) {
       request.log?.error({ err }, 'priest route failed');
       reply.code(400).send({ error: safeErrorMessage(err) });

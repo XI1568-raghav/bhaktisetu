@@ -326,7 +326,40 @@ export async function astrologyRoutes(server: FastifyInstance) {
         });
       }
 
-      const result = astrologyService.startConsultation(userId, astrologerId, mode);
+      // AW-02 (P0), the other half of the same door. Closing it against the
+      // invented 15 left it closed against the real 3 as well:
+      // `startConsultation` resolved ids ONLY against the in-memory fixture
+      // (`astro_001`..`astro_015`), and the gate above admits nothing but an
+      // approved AstrologerProfile UUID — which that fixture can never contain.
+      // Every genuinely onboarded astrologer came back 400 'Astrologer not
+      // found.'. Refusing to sell someone who does not exist is only half the
+      // fix; the people who DO exist have to be sellable.
+      //
+      // The real profile is merged in AHEAD of the fixture (the fixture stays
+      // as the fallback branch and is not deleted — it still backs
+      // GET /specializations and getReviews).
+      const presence = getAstrologerPresence(approved.userId);
+      if (!presence.online) {
+        // Distinct from ASTROLOGER_NOT_BOOKABLE on purpose: this astrologer is
+        // real and approved, they are simply not at their desk. Saying "not
+        // found" about a person who exists sends the devotee away for good.
+        return reply.code(409).send({
+          code: 'ASTROLOGER_OFFLINE',
+          error: `${approved.displayName} is not online right now. Book a slot instead, or see who is online at /astrology/astrologers/live.`,
+        });
+      }
+
+      const result = astrologyService.startConsultation(userId, astrologerId, mode, {
+        id: approved.id,
+        userId: approved.userId,
+        name: approved.displayName,
+        specializations: approved.specialties ?? [],
+        perMinuteRate: Number(approved.pricePerMinute),
+        isOnline: presence.online,
+        // AstrologerProfile carries no busy signal; presence is the only
+        // availability fact we have, and it is not invented here.
+        isBusy: false,
+      });
 
       if ('error' in result) {
         return reply.code(400).send({ error: result.error });

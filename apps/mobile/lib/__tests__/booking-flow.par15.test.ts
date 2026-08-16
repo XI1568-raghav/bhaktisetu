@@ -380,3 +380,43 @@ describe('PAR-15 — booking happens in the app', () => {
     expect(src).toMatch(/resumePaymentUrl\(/);
   });
 });
+
+describe('PAR-15 — a lost slot race actually re-checks availability', () => {
+  /**
+   * The 409 branch is the one recoverable failure this screen has: another
+   * devotee took the slot between the availability read and the submit. Its
+   * whole value is that the stale slot grid gets replaced, so the devotee picks
+   * a slot that still exists instead of retrying the taken one.
+   *
+   * The first implementation "refreshed" with `setDate(date)` — assigning a
+   * state value to itself. React compares with Object.is and bails out, the
+   * effect's `[offering, date]` deps are referentially unchanged, and the fetch
+   * never re-runs. The error text appeared; the grid kept showing the slot as
+   * available. The comment above it claimed the opposite.
+   *
+   * These are SOURCE guards, and that is a real limitation stated plainly: this
+   * package has no React Native renderer (see vitest.config.ts, which scopes
+   * the runner to pure modules under lib/). They pin the mechanism — a
+   * dependency that actually changes — rather than the rendered result.
+   */
+  const src = code('(devotee)/puja-book.tsx');
+
+  it('never re-assigns a state value to itself to force a refetch', () => {
+    expect(src).not.toMatch(/setDate\(\s*date\s*\)/);
+    expect(src).not.toMatch(/setOffering\(\s*offering\s*\)/);
+  });
+
+  it('the availability effect depends on a nonce, not only on temple and date', () => {
+    // The effect that reads /bookings/slots, identified by its own body so a
+    // renamed variable cannot quietly detach the guard from it.
+    const effect = src.split('bookings/slots')[1] ?? '';
+    const deps = /\},\s*\[([^\]]*)\]\)/.exec(effect)?.[1] ?? '';
+    expect(deps, 'availability effect dependency array').toMatch(/availabilityNonce/);
+  });
+
+  it('the 409 branch bumps that nonce', () => {
+    expect(src).toMatch(
+      /setAvailabilityNonce\(\s*\(?\s*\w+\s*\)?\s*=>\s*\w+\s*\+\s*1\s*\)/,
+    );
+  });
+});

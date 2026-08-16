@@ -8,6 +8,7 @@ import { ArrowLeft, Clock, IndianRupee, Loader2, Sparkles, Phone } from 'lucide-
 import AuthGuard from '../../../../components/AuthGuard';
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
+import { astrologyFetch, isAstrologyNetworkFailure } from '../../../../lib/astrologer-fetch';
 import { DateTimeInput } from '../../../../components/ui/DateInput';
 
 type Astrologer = {
@@ -75,7 +76,11 @@ function BookContent() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/astrology/astrologers/${astrologerId}`);
+        // DF-12: bounded. A bare `fetch` never rejects on a stalled socket, so
+        // the `finally { setLoading(false) }` below could not run and this page
+        // held the full-screen Loader2 forever — the same dead spinner the
+        // finding reported on /astrology/view, one click further in.
+        const res = await astrologyFetch(`${API_BASE_URL}/astrology/astrologers/${astrologerId}`);
         if (!res.ok) throw new Error(`Astrologer fetch failed (${res.status})`);
         const json = (await res.json()) as { astrologer?: Astrologer };
         if (!cancelled) {
@@ -97,9 +102,13 @@ function BookContent() {
     if (!astrologer) return;
     setPlacing(true);
     setPlaceError(null);
+    let paymentCaptured = false;
     try {
       const headers = buildAuthHeaders(session?.accessToken);
-      const res = await fetch(`${API_BASE_URL}/consultation/book`, {
+      // DF-12: bounded like the load above. Without it the pay button sticks on
+      // "Processing…" with no error, which on a payment screen reads as "did my
+      // money go through?" — the worst place in the app to hang silently.
+      const res = await astrologyFetch(`${API_BASE_URL}/consultation/book`, {
         method: 'POST',
         headers,
         credentials: 'include',
@@ -138,7 +147,7 @@ function BookContent() {
 
       // Demo mode: skip Razorpay UI, immediately verify with synthetic ids.
       if (order.demo) {
-        const verifyRes = await fetch(`${API_BASE_URL}/consultation/verify-payment`, {
+        const verifyRes = await astrologyFetch(`${API_BASE_URL}/consultation/verify-payment`, {
           method: 'POST',
           headers,
           credentials: 'include',
@@ -181,8 +190,12 @@ function BookContent() {
             razorpay_payment_id: string;
             razorpay_signature: string;
           }) => {
+            // Razorpay only calls this once the charge has been captured, so
+            // from here on the devotee's money HAS moved. Anything that fails
+            // after this line must not be reported as "booking failed".
+            paymentCaptured = true;
             try {
-              const verifyRes = await fetch(`${API_BASE_URL}/consultation/verify-payment`, {
+              const verifyRes = await astrologyFetch(`${API_BASE_URL}/consultation/verify-payment`, {
                 method: 'POST',
                 headers,
                 credentials: 'include',
@@ -207,7 +220,18 @@ function BookContent() {
         rzp.open();
       });
     } catch (err) {
-      setPlaceError(err instanceof Error ? err.message : 'Could not start consultation booking');
+      // DF-12: with a deadline on every call, this branch is now reachable
+      // where it previously could not run at all. Two failures reach it and
+      // they must not say the same thing.
+      if (isAstrologyNetworkFailure(err)) {
+        setPlaceError(
+          paymentCaptured
+            ? 'Your payment went through, but we lost the connection before we could confirm the booking. Do NOT pay again — open My Consultations in a moment, and contact support if it is not there.'
+            : 'Could not reach Darshya to start the booking. Nothing was charged — check your connection and try again.',
+        );
+      } else {
+        setPlaceError(err instanceof Error ? err.message : 'Could not start consultation booking');
+      }
     } finally {
       setPlacing(false);
     }

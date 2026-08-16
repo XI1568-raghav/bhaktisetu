@@ -168,6 +168,54 @@
   --leading-relaxed: 1.6;
   --leading-normal: 1.5;
 
+  /* DU-10, second half: the SIZE half of this finding was closed above, but
+     Tailwind v4 pairs each size token with a SEPARATE `--text-*--line-height`
+     token, and redefining the size does not touch the pairing. Compiling this
+     stylesheet through @tailwindcss/postcss showed the stock pairings still
+     shipping — calc(1 / 0.75) = 1.333 for xs, calc(1.25 / 0.875) = 1.429 for
+     sm, 1.5 for base, calc(1.75 / 1.125) = 1.556 for lg — against the 1.6 that
+     `body` below sets. So one paragraph role led at five different ratios
+     depending on which size class it happened to carry, and an unclassed <p>
+     led differently again. That is the sweep's own measurement: 1.33 on
+     /priest against 1.60 on /pujas for the same body copy.
+
+     Worse, the body range was INVERTED: the smallest type, which needs the
+     most leading, got the least. The four prose steps now share one reading
+     ratio — the same --leading-relaxed the document already inherits — and the
+     display steps tighten monotonically from there. Declaring the pairings
+     here reaches every call site that does not set its own `leading-*` without
+     editing one of them. Locked by __tests__/design-tokens.test.ts. */
+  --text-xs--line-height: var(--leading-relaxed);
+  --text-sm--line-height: var(--leading-relaxed);
+  --text-base--line-height: var(--leading-relaxed);
+  --text-lg--line-height: var(--leading-relaxed);
+  --text-xl--line-height: 1.4;
+  --text-2xl--line-height: 1.3;
+  --text-3xl--line-height: 1.2;
+  --text-4xl--line-height: 1.1;
+  --text-5xl--line-height: 1.05;
+
+  /* ── Container widths ─────────────────────────────────────────────────────
+     DU-14: eleven container widths over 725 centred declarations. The two
+     declared widths (.container-wide 72rem / .container-prose 48rem) live
+     further down and four routes are migrated onto them; the rest is still a
+     call-site migration.
+
+     One step CAN be closed here. --container-7xl has exactly one consumer
+     family in this app — max-w-7xl — and every occurrence of it is a centred
+     page shell, app/layout.tsx's masthead among them; there is no w-7xl,
+     min-w-7xl, basis-7xl or @7xl container query anywhere. Retargeting the
+     token from Tailwind's stock 80rem to the declared wide width snaps all of
+     them onto .container-wide with no call-site edits and no collateral, and
+     stops the masthead sitting 8rem wider than the content beneath it.
+
+     This works ONLY for 7xl. Every other step has non-container consumers — a
+     max-w-md reading measure on a <p>, for one — so the same move there would
+     silently resize things that were never page shells. Locked by
+     __tests__/design-tokens.test.ts, which re-checks the exclusivity before it
+     checks the value. */
+  --container-7xl: 72rem;
+
   /* ── Letter-spacing ───────────────────────────────────────────────────── */
   --tracking-tight: -0.02em;
   --tracking-normal: 0;

@@ -18,12 +18,20 @@
  * named, which is the part that stops the number growing back while the backlog
  * is worked off.
  *
- * TWO EXCLUSIONS, BOTH DELIBERATE:
+ * THREE EXCLUSIONS, ALL DELIBERATE:
  *  - A route robots.txt already disallows cannot show up in a SERP at all, so a
  *    shared title costs nothing there. That is most of /admin and the portals.
  *  - A page under a segment layout that DOES declare metadata (app/auth/* under
  *    app/auth/layout.tsx, for instance) inherits a real title, not the root
  *    default. The finding is specifically about falling through to the ROOT.
+ *  - A page whose whole body is `redirect()` / `permanentRedirect()` never
+ *    renders a document. Next answers those routes with a 307/308 and no HTML,
+ *    so there is no <title> to be duplicated and nothing a metadata export
+ *    could change — Next never resolves metadata for a render that throws a
+ *    redirect. Counting them inflated the finding by 8 and the only way to
+ *    "fix" one is a dead export that exists to satisfy this file, which is the
+ *    thing a ratchet is supposed to prevent. The excluded set is pinned by name
+ *    below so this cannot quietly become an escape hatch.
  *
  * The root layout is excluded as a source on purpose: it is the thing being
  * fallen through TO. Counting it as an ancestor would make every page "covered"
@@ -79,8 +87,33 @@ function robotsBlocks(route: string): boolean {
   return DISALLOWED.some((d) => r === d || r.startsWith(d) || `${r}/` === d);
 }
 
+/**
+ * `description:` at the metadata root. Excludes `openGraph.description` and
+ * `twitter.description`, which resolve separately and do NOT satisfy
+ * <meta name="description"> — a page with only those still emits the root's.
+ */
+const DECLARES_DESCRIPTION = /(^|[^\w$.])description\s*:/;
+
 const declares = (file: string) =>
   fs.existsSync(file) && DECLARES_METADATA.test(stripComments(fs.readFileSync(file, 'utf8')));
+
+const describes = (file: string) =>
+  fs.existsSync(file) && DECLARES_DESCRIPTION.test(stripComments(fs.readFileSync(file, 'utf8')));
+
+/**
+ * A page whose entire job is to forward to another URL.
+ *
+ * Detected as "calls redirect()/permanentRedirect() and contains no JSX at
+ * all". JSX is spotted by `</` or `/>` rather than by `<Tag`, because every TS
+ * generic in these files (`Promise<{ slug: string }>`, `Record<string,
+ * string[]>`) would otherwise read as an element. Comments are stripped first,
+ * so a comment quoting `<Foo />` cannot mark a real page as a redirect — the
+ * same rule the rest of this file follows.
+ */
+function isRedirectOnly(file: string): boolean {
+  const src = stripComments(fs.readFileSync(file, 'utf8'));
+  return !/<\/|\/>/.test(src) && /\b(redirect|permanentRedirect)\s*\(/.test(src);
+}
 
 /** A segment layout ABOVE this page that supplies a title — root excluded. */
 function coveredByAncestorLayout(file: string): boolean {
@@ -93,21 +126,98 @@ function coveredByAncestorLayout(file: string): boolean {
   return false;
 }
 
+/** The same walk for `description`, which Next inherits independently. */
+function describedByAncestorLayout(file: string): boolean {
+  let dir = path.dirname(path.resolve(file));
+  const root = path.resolve(APP_DIR);
+  while (dir.startsWith(root) && dir !== root) {
+    if (describes(path.join(dir, 'layout.tsx'))) return true;
+    dir = path.dirname(dir);
+  }
+  return false;
+}
+
 const PAGES = collect(APP_DIR, 'page.tsx');
+
+const relOf = (f: string) => path.relative(APP_DIR, f).split(path.sep).join('/');
+
+const REDIRECT_ONLY = PAGES.filter(isRedirectOnly).map(relOf).sort();
+
+/**
+ * Every page that is allowed to skip metadata because it never renders one.
+ * Pinned by name: the exclusion is only defensible for a route that answers a
+ * redirect, and a list that can grow silently is a hole, not an exclusion.
+ */
+const EXPECTED_REDIRECT_ONLY = [
+  'astrology/[id]/page.tsx',
+  'festivals/page.tsx',
+  'live/page.tsx',
+  // Under /priest/, which robots.txt already disallows — listed because the
+  // detector is repo-wide, not because the exclusion is what spares them.
+  'priest/bookings/[id]/accept/page.tsx',
+  'priest/bookings/[id]/page.tsx',
+  'pujas/[slug]/book/page.tsx',
+  'pujas/home-puja/[slug]/book/page.tsx',
+  'pujas/pandits/[id]/page.tsx',
+  'settings/earnings/page.tsx',
+  'waitlist/confirm/page.tsx',
+  // Already writes generateMetadata — it also has a notFound() branch, which
+  // does render. Listed for completeness; it was never in the count.
+  'yatra/[slug]/book/page.tsx',
+];
 
 /** Indexable pages that fall all the way through to the root defaults. */
 const INHERIT_ROOT_DEFAULTS = PAGES.filter(
-  (f) => !declares(f) && !coveredByAncestorLayout(f) && !robotsBlocks(routeOf(f)),
+  (f) =>
+    !declares(f) &&
+    !coveredByAncestorLayout(f) &&
+    !robotsBlocks(routeOf(f)) &&
+    !isRedirectOnly(f),
 )
-  .map((f) => path.relative(APP_DIR, f).split(path.sep).join('/'))
+  .map(relOf)
   .sort();
 
 /**
  * Today's count. LOWER THIS as pages gain their own metadata; never raise it.
  * Measured from comment-free source, so a comment mentioning `export const
  * metadata` cannot mark a page as covered.
+ *
+ * 65 → 1 (2026-08-16, SEO-09). 8 of the 65 were redirect-only routes that were
+ * never really offenders (see the exclusion above); the remaining 57 were
+ * written. 54 of those are `'use client'` pages, which cannot export
+ * `metadata` at all — each gained a sibling `layout.tsx` carrying it, the
+ * arrangement app/astrology/kundli/layout.tsx and app/pujas/book/layout.tsx
+ * already use.
+ *
+ * The 1 that remains is app/mobile/page.tsx. Its own segment layout
+ * (app/mobile/layout.tsx) is itself `'use client'` — it reads usePathname() to
+ * light the active tab — so there is no server file anywhere on that page's
+ * path that can hold a metadata export. Closing it means splitting that layout
+ * into a server shell plus a client tab bar, which is a change to render code,
+ * not to metadata.
  */
-const BASELINE = 65;
+const BASELINE = 1;
+
+/**
+ * The other half of the finding: 129 pages shared one <meta name="description">.
+ *
+ * Next resolves `description` independently of `title`, so a page can declare
+ * `export const metadata = { title: 'Gift Puja' }` — which makes it "covered"
+ * above — and still emit the root's homepage description. That is exactly what
+ * app/gift/success/page.tsx did, and the title-only check could never see it.
+ */
+const INHERIT_ROOT_DESCRIPTION = PAGES.filter(
+  (f) =>
+    !describes(f) &&
+    !describedByAncestorLayout(f) &&
+    !robotsBlocks(routeOf(f)) &&
+    !isRedirectOnly(f),
+)
+  .map(relOf)
+  .sort();
+
+/** Same story as BASELINE, and the same single leftover. */
+const DESCRIPTION_BASELINE = 1;
 
 describe('[SEO-09] indexable pages do not fall through to the root title', () => {
   it('the guard is actually measuring something', () => {
@@ -115,6 +225,21 @@ describe('[SEO-09] indexable pages do not fall through to the root title', () =>
     // ratchet below into a test that can never fail.
     expect(PAGES.length).toBeGreaterThan(300);
     expect(INHERIT_ROOT_DEFAULTS.length).toBeGreaterThan(0);
+  });
+
+  it('the redirect-only exclusion covers exactly the routes that answer a redirect', () => {
+    // The one exclusion that is not verifiable from robots.txt or from a
+    // layout, so it is verified by name instead. A page added to this set
+    // without a redirect body, or a redirect page that grows a real body,
+    // shows up here rather than silently leaving the count.
+    expect(REDIRECT_ONLY).toEqual(EXPECTED_REDIRECT_ONLY);
+
+    for (const rel of REDIRECT_ONLY) {
+      const src = stripComments(fs.readFileSync(path.join(APP_DIR, rel), 'utf8'));
+      expect(src, `${rel} is excluded as redirect-only but never redirects`).toMatch(
+        /\b(redirect|permanentRedirect)\s*\(/,
+      );
+    }
   });
 
   it('the root layout is the thing being fallen through to, not an escape hatch', () => {
@@ -142,6 +267,30 @@ describe('[SEO-09] indexable pages do not fall through to the root title', () =>
       BASELINE - INHERIT_ROOT_DEFAULTS.length,
       `BASELINE is ${BASELINE} but only ${INHERIT_ROOT_DEFAULTS.length} pages are affected — ` +
         'lower BASELINE to the real number so the ratchet keeps biting.',
+    ).toBeLessThanOrEqual(0);
+  });
+
+  it('no NEW page ships the root DESCRIPTION either', () => {
+    // A title-only metadata export satisfies the ratchet above and still emits
+    // the homepage's description. Verified against the build output: of 1,829
+    // prerendered documents, exactly two served pages carried the root
+    // description — app/gift/success (a title-only export, now written) and
+    // app/mobile (see BASELINE).
+    expect(
+      INHERIT_ROOT_DESCRIPTION.length,
+      `${INHERIT_ROOT_DESCRIPTION.length} indexable pages emit the root layout's ` +
+        `<meta name="description"> (baseline ${DESCRIPTION_BASELINE}). ` +
+        'Add a `description` to that page\'s own metadata — openGraph.description ' +
+        'does NOT satisfy it, Next resolves the two separately.\n' +
+        INHERIT_ROOT_DESCRIPTION.join('\n'),
+    ).toBeLessThanOrEqual(DESCRIPTION_BASELINE);
+  });
+
+  it('the description baseline is not stale either', () => {
+    expect(
+      DESCRIPTION_BASELINE - INHERIT_ROOT_DESCRIPTION.length,
+      `DESCRIPTION_BASELINE is ${DESCRIPTION_BASELINE} but only ` +
+        `${INHERIT_ROOT_DESCRIPTION.length} pages are affected — lower it.`,
     ).toBeLessThanOrEqual(0);
   });
 });

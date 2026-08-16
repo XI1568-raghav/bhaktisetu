@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../lib/api-config';
+import { astrologyFetch } from '../../lib/astrologer-fetch';
 import {
  ASTROLOGY_SORT_VALUES,
  ASTROLOGY_SPECIALIZATIONS,
@@ -154,7 +155,10 @@ export default function AstrologyPage() {
   let cancelled = false;
   (async () => {
    try {
-    const r = await fetch(`${API_BASE_URL}/astrology/astrologers/live`);
+    // DF-12: bounded, because a bare `fetch` never rejects on a stalled socket
+    // and `loadState` would sit on 'loading' — "Loading verified astrologers..."
+    // forever, with the error branch below unreachable.
+    const r = await astrologyFetch(`${API_BASE_URL}/astrology/astrologers/live`);
     if (!r.ok) { if (!cancelled) setLoadState('error'); return; }
     const j = await r.json();
     const list = Array.isArray(j?.astrologers) ? (j.astrologers as Astrologer[]) : [];

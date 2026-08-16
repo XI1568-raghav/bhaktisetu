@@ -111,9 +111,47 @@ function sourceFiles(): string[] {
 
 const SOURCE = sourceFiles().map((f) => readFileSync(f, 'utf8')).join('\n');
 
+/**
+ * The same corpus with comments removed. Guards that count call sites MUST use
+ * this: five guards in this sweep matched the prose documenting the rule they
+ * were enforcing and reported phantom offenders. `SOURCE` is kept as-is because
+ * the DU-02/DU-09/DU-12 scans above are already green against it and re-basing
+ * them is a separate change.
+ */
+const CODE = sourceFiles()
+  .map((f) =>
+    readFileSync(f, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1'),
+  )
+  .join('\n');
+
 /** Distinct whole utilities matching a pattern, as they appear in source. */
 function utilities(re: RegExp): string[] {
   return [...new Set([...SOURCE.matchAll(re)].map((m) => m[0]))].sort();
+}
+
+/** One level of `var(--x)` indirection resolved against the theme block. */
+function resolveVar(value: string | undefined): string | undefined {
+  if (!value) return value;
+  const m = /^var\(\s*(--[\w-]+)\s*\)$/.exec(value.trim());
+  return m ? (THEME_VARS[m[1]!] ?? ROOT_VARS[m[1]!]) : value.trim();
+}
+
+/**
+ * Body of the rule whose selector is EXACTLY `sel`, from comment-free CSS.
+ *
+ * `block()` above scans the raw stylesheet, which is right for its marker
+ * lookups and wrong here twice over: the prose above these rules names the
+ * selectors it is documenting, and `.container-wide` also heads a grouped rule
+ * that carries only the shared gutters. Both would return the wrong body.
+ */
+function ruleFor(sel: string): string {
+  for (const m of CSS_NC.matchAll(/([^{}@]+)\{([^}]*)\}/g)) {
+    if (m[1]!.trim() === sel) return m[2]!;
+  }
+  return '';
 }
 
 /* ═══ DU-01 / DU-06 / DU-11 — font tokens ═════════════════════════════════ */
@@ -335,6 +373,179 @@ describe('DU-10 / RESP-05 — a single type scale that never floors below 12px',
       literal,
       '--type-base was clamp(0.875rem…0.9375rem) while --text-base was clamp(0.9375rem…1.0625rem) — two scales, two answers',
     ).toEqual([]);
+  });
+});
+
+/* ═══ DU-10 — one leading ratio for prose ═════════════════════════════════ */
+
+/**
+ * The half of DU-10 the size scale could not close.
+ *
+ * `--text-*` was rewritten to a single fluid scale, but Tailwind v4 pairs every
+ * size token with a SEPARATE `--text-*--line-height` token, and redefining the
+ * size does not touch the pairing. Compiling app/globals.css through
+ * @tailwindcss/postcss showed the stock pairings still shipping:
+ *
+ *   text-xs   calc(1 / 0.75)      = 1.333
+ *   text-sm   calc(1.25 / 0.875)  = 1.429
+ *   text-base calc(1.5 / 1)       = 1.5
+ *   text-lg   calc(1.75 / 1.125)  = 1.556
+ *   text-xl   calc(1.75 / 1.25)   = 1.4
+ *
+ * against `body { line-height: var(--leading-relaxed) }` = 1.6. So the same
+ * paragraph role led at five different ratios depending on which size class it
+ * happened to carry, and an unclassed <p> led differently again — which is
+ * exactly the sweep's measurement ("the line-height ratio also swings: 1.33 on
+ * /priest vs 1.60 on /pujas"). Note the body range was also INVERTED: the
+ * smallest type, which needs the most leading, got the least.
+ *
+ * Declaring the pairings is a token-layer fix — it reaches every call site that
+ * does not set its own `leading-*`, without editing one of them.
+ */
+describe('DU-10 — the type scale ships its own line-heights, not Tailwind stock', () => {
+  /** Prose sizes. All four must lead identically — "one reading ratio". */
+  const BODY = ['xs', 'sm', 'base', 'lg'];
+  /** Display sizes, where leading tightens as the type grows. */
+  const DISPLAY = ['xl', '2xl', '3xl', '4xl', '5xl'];
+  const STEPS = [...BODY, ...DISPLAY];
+
+  function ratio(step: string): number {
+    const raw = THEME_VARS[`--text-${step}--line-height`];
+    expect(
+      raw,
+      `--text-${step}--line-height is undeclared, so text-${step} inherits Tailwind's stock pairing`,
+    ).toBeTruthy();
+    const resolved = resolveVar(raw);
+    const n = Number(resolved);
+    expect(Number.isFinite(n), `--text-${step}--line-height must be a unitless ratio, got ${resolved}`)
+      .toBe(true);
+    return n;
+  }
+
+  for (const step of STEPS) {
+    it(`--text-${step} declares its own line-height pairing`, () => {
+      expect(ratio(step)).toBeGreaterThan(0);
+    });
+  }
+
+  it('every prose size leads at the one reading ratio', () => {
+    const ratios = new Set(BODY.map(ratio));
+    expect(
+      [...ratios],
+      'the same paragraph must not lead differently because it carries text-sm rather than text-base',
+    ).toHaveLength(1);
+  });
+
+  it('that reading ratio is the one `body` already inherits, so an unclassed <p> matches', () => {
+    const bodyRule = block('\nbody {');
+    const declared = /line-height:\s*([^;]+);/.exec(bodyRule)?.[1]?.trim();
+    expect(declared, 'body must still declare a line-height').toBeTruthy();
+    expect(Number(resolveVar(declared))).toBe(ratio('base'));
+  });
+
+  it('leading tightens as type grows — it never goes back up', () => {
+    const ramp = STEPS.map(ratio);
+    for (let i = 1; i < ramp.length; i++) {
+      expect(
+        ramp[i],
+        `--text-${STEPS[i]} leads looser than --text-${STEPS[i - 1]}; the body range used to be inverted this way`,
+      ).toBeLessThanOrEqual(ramp[i - 1]!);
+    }
+  });
+
+  it('display type is genuinely tighter than prose, not merely not-looser', () => {
+    expect(Math.max(...DISPLAY.map(ratio))).toBeLessThan(Math.min(...BODY.map(ratio)));
+  });
+});
+
+/* ═══ DU-14 — the widest container step ═══════════════════════════════════ */
+
+/**
+ * DU-14 counted eleven container widths over 679 centred declarations; the
+ * recount at HEAD is 725 over the same eleven. `.container-wide` (72rem) and
+ * `.container-prose` (48rem) exist and four routes are migrated onto them —
+ * __tests__/container-scale.test.ts owns that half and the ~700 unmigrated
+ * declarations are still open.
+ *
+ * What CAN be closed without touching a call site is the widest step.
+ * `--container-7xl` has exactly one consumer family in this app: `max-w-7xl`,
+ * and every one of those occurrences is a centred page shell — no `w-7xl`,
+ * `min-w-7xl`, `basis-7xl` or `@7xl` container query anywhere. So retargeting
+ * the token from Tailwind's stock 80rem to the declared wide width snaps all of
+ * them onto `.container-wide` with zero edits and zero collateral, and removes
+ * the widest of the eleven. The other ten steps all have non-container
+ * consumers (a `max-w-md` reading measure on a <p>, for one), so the same move
+ * would be wrong for them — they stay a call-site migration.
+ *
+ * Every scan below runs on comment-stripped source.
+ */
+describe('DU-14 — the widest container step is the declared wide width', () => {
+  const CENTRED_7XL = /(?:mx-auto[^"'`]{0,40}max-w-7xl|max-w-7xl[^"'`]{0,40}mx-auto)(?![\w-])/g;
+  const ANY_7XL = /\b(?:[a-z0-9]+:)?max-w-7xl(?![\w-])/g;
+
+  it('source still ships max-w-7xl page shells (the finding is live)', () => {
+    expect([...CODE.matchAll(ANY_7XL)].length).toBeGreaterThan(20);
+  });
+
+  it('every max-w-7xl in the app is a centred page shell, so retargeting is safe', () => {
+    const all = [...CODE.matchAll(ANY_7XL)].length;
+    const centred = [...CODE.matchAll(CENTRED_7XL)].length;
+    expect(
+      all - centred,
+      'a max-w-7xl that is NOT a centred container would be silently narrowed by the token change',
+    ).toBe(0);
+  });
+
+  /**
+   * The other families Tailwind v4 generates from the --container-* namespace.
+   * Each is matched on its own: a single alternation with a leading `\b` looks
+   * right and silently never fires on `@7xl:`, because `@` is not a word
+   * character and there is no boundary in front of it.
+   */
+  const COLLATERAL: Array<[string, RegExp]> = [
+    ['w-7xl', /(?<![\w-])w-7xl(?![\w-])/g],
+    ['min-w-7xl', /(?<![\w-])min-w-7xl(?![\w-])/g],
+    ['basis-7xl', /(?<![\w-])basis-7xl(?![\w-])/g],
+    ['@7xl', /@7xl(?=[:/])/g],
+  ];
+
+  it('the collateral patterns actually match the thing they are hunting', () => {
+    // Without this the guard below is green because it never fires at all.
+    const FIXTURE = 'w-7xl min-w-7xl basis-7xl @7xl:flex lg:w-7xl';
+    for (const [name, re] of COLLATERAL) {
+      expect([...FIXTURE.matchAll(re)].length, `${name} pattern matches nothing`).toBeGreaterThan(0);
+    }
+    // …and none of them may fire on a plain centred container.
+    for (const [name, re] of COLLATERAL) {
+      expect([...'mx-auto max-w-7xl px-4'.matchAll(re)], `${name} misreads max-w-7xl`).toEqual([]);
+    }
+  });
+
+  it('no other utility family reads --container-7xl', () => {
+    const collateral = COLLATERAL.flatMap(([, re]) => [...CODE.matchAll(re)].map((m) => m[0]));
+    expect(
+      collateral,
+      'redefining --container-7xl would also move these, which the finding never asked for',
+    ).toEqual([]);
+  });
+
+  it('--container-7xl is redefined onto the declared wide width', () => {
+    const value = THEME_VARS['--container-7xl'];
+    expect(
+      value,
+      '--container-7xl is not redefined — max-w-7xl still resolves to Tailwind stock 80rem, an eleventh width',
+    ).toBeTruthy();
+    const wide = /max-width:\s*([\d.]+rem)/.exec(ruleFor('.container-wide'))?.[1];
+    expect(wide, '.container-wide must declare a rem max-width').toBeTruthy();
+    expect(
+      resolveVar(value),
+      `max-w-7xl must land on the same edge as .container-wide (${wide})`,
+    ).toBe(wide);
+  });
+
+  it('the prose width still differs from the wide one (this is not a collapse to one)', () => {
+    const rem = (s: string) => Number(/max-width:\s*([\d.]+)rem/.exec(s)?.[1] ?? NaN);
+    expect(rem(ruleFor('.container-wide'))).toBeGreaterThan(rem(ruleFor('.container-prose')));
   });
 });
 

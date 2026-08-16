@@ -66,91 +66,92 @@ export async function adminLeadConversionRoutes(server: FastifyInstance) {
     }> = [];
 
     try {
-      // Pull all leads grouped by role + status. Faster + simpler than role*status counts.
-      const leads = await prisma.lead.findMany({
-        select: { id: true, role: true, status: true, convertedUserId: true },
-      });
+      // SCAL-04 (2026-08-16): the whole funnel is now computed in Postgres.
+      //
+      // This block used to read the ENTIRE `leads` table and the ENTIRE
+      // `outreach_logs` table — no where, no take, no cursor — and reduce both
+      // to 35 integers with JavaScript Sets. `outreach_logs` gains a row per
+      // message per lead, so it is a MULTIPLE of the lead table and the fastest-
+      // growing table in the app; one operator opening this dashboard dragged
+      // both into a 512 MB Render container, and neither read had any ceiling.
+      //
+      // Five grouped reads replace them, each returning at most one row per
+      // role (the lead funnel: one per role×status). `Lead.outreachLogs` is a
+      // declared relation in prisma/schema.prisma, so a `some` filter pushes the
+      // lead↔log join into SQL — which is exactly what the JS Sets were doing by
+      // hand. Zero lead rows and zero log rows cross the wire.
+      //
+      // `converted` is deliberately two reads. The old rule was
+      // `status === 'CONVERTED' || convertedUserId`, and a single group over
+      // status silently drops every lead that was linked to a real account but
+      // never re-stamped — under-reporting the one number the funnel exists to
+      // show. The second read asks for exactly that residue, with
+      // `status: { not: 'CONVERTED' }` so nothing is counted twice.
+      const [statusGroups, convertedByLink, emailedGroups, openedGroups, clickedGroups] =
+        await Promise.all([
+          prisma.lead.groupBy({ by: ['role', 'status'], _count: { _all: true } }),
+          prisma.lead.groupBy({
+            by: ['role'],
+            where: { convertedUserId: { not: null }, status: { not: 'CONVERTED' } },
+            _count: { _all: true },
+          }),
+          prisma.lead.groupBy({
+            by: ['role'],
+            where: { outreachLogs: { some: {} } },
+            _count: { _all: true },
+          }),
+          prisma.lead.groupBy({
+            by: ['role'],
+            where: {
+              outreachLogs: { some: { OR: [{ openedAt: { not: null } }, { openCount: { gt: 0 } }] } },
+            },
+            _count: { _all: true },
+          }),
+          prisma.lead.groupBy({
+            by: ['role'],
+            where: {
+              outreachLogs: { some: { OR: [{ clickedAt: { not: null } }, { clickCount: { gt: 0 } }] } },
+            },
+            _count: { _all: true },
+          }),
+        ]);
 
-      const leadIdsByRole: Record<Role, Set<string>> = {
-        TEMPLE: new Set(),
-        PRIEST: new Set(),
-        ASTROLOGER: new Set(),
-        WELLNESS_INSTRUCTOR: new Set(),
-        GAUSHALA: new Set(),
-      };
+      type RoleCountRow = { role: string; _count: { _all: number } };
 
-      for (const l of leads) {
-        const r = l.role as Role;
+      for (const row of statusGroups as unknown as Array<RoleCountRow & { status: string }>) {
+        const r = row.role as Role;
         if (!byRole[r]) continue;
-        byRole[r].total += 1;
-        totals.total += 1;
-        leadIdsByRole[r].add(l.id);
-        if (l.status === 'REPLIED' || l.status === 'CONVERTED') {
-          byRole[r].replied += 1;
-          totals.replied += 1;
+        const n = row._count._all;
+        byRole[r].total += n;
+        totals.total += n;
+        if (row.status === 'REPLIED' || row.status === 'CONVERTED') {
+          byRole[r].replied += n;
+          totals.replied += n;
         }
-        if (l.status === 'CONVERTED' || l.convertedUserId) {
-          byRole[r].converted += 1;
-          totals.converted += 1;
+        if (row.status === 'CONVERTED') {
+          byRole[r].converted += n;
+          totals.converted += n;
         }
       }
 
-      // Outreach aggregates: emailed/opened/clicked per role via lead join.
-      const logs = await prisma.outreachLog.findMany({
-        select: {
-          leadId: true,
-          openedAt: true,
-          clickedAt: true,
-          openCount: true,
-          clickCount: true,
-          status: true,
-        },
-      });
-
-      const emailedLeadIds: Record<Role, Set<string>> = {
-        TEMPLE: new Set(),
-        PRIEST: new Set(),
-        ASTROLOGER: new Set(),
-        WELLNESS_INSTRUCTOR: new Set(),
-        GAUSHALA: new Set(),
-      };
-      const openedLeadIds: Record<Role, Set<string>> = {
-        TEMPLE: new Set(),
-        PRIEST: new Set(),
-        ASTROLOGER: new Set(),
-        WELLNESS_INSTRUCTOR: new Set(),
-        GAUSHALA: new Set(),
-      };
-      const clickedLeadIds: Record<Role, Set<string>> = {
-        TEMPLE: new Set(),
-        PRIEST: new Set(),
-        ASTROLOGER: new Set(),
-        WELLNESS_INSTRUCTOR: new Set(),
-        GAUSHALA: new Set(),
-      };
-
-      // Reverse-lookup: lead → role
-      const roleByLeadId = new Map<string, Role>();
-      for (const r of ROLES) {
-        for (const id of leadIdsByRole[r]) roleByLeadId.set(id, r);
+      for (const row of convertedByLink as unknown as RoleCountRow[]) {
+        const r = row.role as Role;
+        if (!byRole[r]) continue;
+        byRole[r].converted += row._count._all;
+        totals.converted += row._count._all;
       }
 
-      for (const log of logs) {
-        const role = roleByLeadId.get(log.leadId);
-        if (!role) continue;
-        emailedLeadIds[role].add(log.leadId);
-        if (log.openedAt || log.openCount > 0) openedLeadIds[role].add(log.leadId);
-        if (log.clickedAt || log.clickCount > 0) clickedLeadIds[role].add(log.leadId);
-      }
-
-      for (const r of ROLES) {
-        byRole[r].emailed = emailedLeadIds[r].size;
-        byRole[r].opened = openedLeadIds[r].size;
-        byRole[r].clicked = clickedLeadIds[r].size;
-        totals.emailed += byRole[r].emailed;
-        totals.opened += byRole[r].opened;
-        totals.clicked += byRole[r].clicked;
-      }
+      const applyRoleCounts = (rows: RoleCountRow[], key: 'emailed' | 'opened' | 'clicked') => {
+        for (const row of rows) {
+          const r = row.role as Role;
+          if (!byRole[r]) continue;
+          byRole[r][key] = row._count._all;
+          totals[key] += row._count._all;
+        }
+      };
+      applyRoleCounts(emailedGroups as unknown as RoleCountRow[], 'emailed');
+      applyRoleCounts(openedGroups as unknown as RoleCountRow[], 'opened');
+      applyRoleCounts(clickedGroups as unknown as RoleCountRow[], 'clicked');
 
       // INTERESTED replies — count + recent feed.
       const replies = await prisma.outreachLog.findMany({

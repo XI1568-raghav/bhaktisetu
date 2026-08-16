@@ -12,8 +12,18 @@ import { MessageCircle } from 'lucide-react';
  * than deleted — so any stale link lands somewhere honest instead of a 404,
  * and it is now static: no query parsing, no fetch, no client component.
  */
+/**
+ * SEO-09 residual (2026-08-16): this export carried a `title` but no
+ * `description`, so the page inherited the ROOT layout's — "Experience live
+ * darshan, book pujas, explore panchang…" — which describes the homepage and
+ * not this dead-end confirmation. It was one of only two served pages left
+ * doing that after the SEO-09 sweep. `noindex` keeps it out of a SERP, but the
+ * description is what a WhatsApp or Slack unfurl of a stale link still shows.
+ */
 export const metadata = {
   title: 'Gift Puja',
+  description:
+    'Gift-puja orders are arranged by the Darshya team directly. This page is kept so older payment links still land somewhere that explains what to do next.',
   robots: { index: false, follow: false },
 };
 

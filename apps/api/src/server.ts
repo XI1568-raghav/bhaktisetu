@@ -115,7 +115,7 @@ import { prisma } from './lib/prisma.js';
 import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-prisma.js';
 import { isJobQueueAvailable } from './services/job-queue.service.js';
 import { isJobQueueConfigured } from './lib/env.js';
-import { redactError } from './lib/error-redaction.js';
+import { errorLocalizationPlugin } from './plugins/error-localization.js';
 
 const server = Fastify({
   logger: {
@@ -150,13 +150,32 @@ async function bootstrap() {
   // Both halves are locked by src/lib/error-redaction.test.ts.
   //
   // Do not move this below the registers again.
+  //
+  // I-04 / I18N-03 (2026-08-16). The handler that used to be written inline
+  // here now lives in plugins/error-localization.ts, which does the same
+  // redaction (lib/error-redaction.ts is unchanged and still decides what a
+  // client may see) and then writes the message in the caller's language.
+  //
+  // The inline version was the reason localization was dead in production. A
+  // previous pass authored a 30-code × 5-language catalogue, a resolver and a
+  // green suite, but nothing reached a real route: probing api.darshya.online
+  // with `Accept-Language: hi` still returned
+  //   GET  /api/v1/temples/__no_such__  -> {"error":"Temple not found"}
+  //   POST /api/v1/auth/login  body {}  -> {"error":"ValidationError","message":"Required"}
+  // Localizing at each call site cannot work — routes `return reply.send(...)`
+  // rather than throw, in ~90 files, 719 hand-built error bodies. The plugin's
+  // onSend hook is what covers those; both probes are pinned by
+  // plugins/error-localization.probes.test.ts against the real route files.
+  //
+  // Two constraints, both load-bearing:
+  //  - It stays ABOVE every `server.register(routes, { prefix })`, for the same
+  //    AW-08 reason the inline handler did.
+  //  - It is CALLED, not `server.register`-ed: registering would encapsulate
+  //    the handler and the hook in a child no sibling route can see.
   const isProdEnv = process.env.NODE_ENV === 'production';
-  server.setErrorHandler((err, _req, reply) => {
-    server.log.error(err);
-    captureException(err);
-    if (reply.sent) return;
-    const body = redactError(err as unknown as Record<string, unknown>, { isProd: isProdEnv });
-    void reply.code(body.statusCode).send({ error: body.error, message: body.message });
+  await errorLocalizationPlugin(server, {
+    isProd: isProdEnv,
+    onError: captureException,
   });
 
   // Security plugins

@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { astrologyFetch } from '../../../lib/astrologer-fetch';
 import { formatNumber } from '../../../lib/format-locale';
 import {
  Star,
@@ -130,7 +131,13 @@ function AstrologerDetailInner() {
   setStatus('loading');
   (async () => {
    try {
-    const r = await fetch(`${API_BASE_URL}/astrology/astrologers/${encodeURIComponent(id)}`);
+    // DF-12: this was a bare `fetch`, which never rejects on a stalled socket.
+    // The 'missing' state below — the not-found screen this finding asked for —
+    // was therefore unreachable in exactly the case the finding reported: the
+    // promise stayed pending, `setStatus` never ran again, and the page sat on
+    // "Loading astrologer…" with no error, no 404 and no way out. The deadline
+    // is what makes every branch after this line reachable.
+    const r = await astrologyFetch(`${API_BASE_URL}/astrology/astrologers/${encodeURIComponent(id)}`);
     if (!r.ok) {
      if (!cancelled) setStatus('missing');
      return;
@@ -535,9 +542,48 @@ function AstrologerDetailInner() {
  );
 }
 
+/**
+ * DF-12 — the shell that ships BEFORE any JavaScript runs.
+ *
+ * The sweep's evidence for this finding was literal: main.innerText stayed
+ * "Loading…" and there were ZERO requests to the API — so no client code ran at
+ * all. That bare "Loading…" is this Suspense fallback (the in-component spinner
+ * says "Loading astrologer…"), i.e. the prerendered shell sitting there with its
+ * bundle never taking over. A fetch deadline cannot rescue that case: nothing is
+ * running to time out.
+ *
+ * What does survive is HTML. These two anchors are server-rendered, so they work
+ * with no JavaScript, no hydration and no API — turning "a permanent spinner
+ * with no way to understand what happened or where to go" into a spinner the
+ * devotee can walk out of. The loading text stays, so a normal fast load is not
+ * dressed up as a failure.
+ */
+export function ProfileLoadingShell() {
+ return (
+  <div className="min-h-[100dvh] flex items-center justify-center bg-[#fefcf7] px-6">
+   <div className="text-center">
+    <p role="status" aria-live="polite" className="text-surface-500">
+     Loading…
+    </p>
+    <p className="mt-4 text-sm text-surface-400">
+     Taking too long?{' '}
+     <Link href="/astrology/astrologers/live" className="font-semibold text-saffron-600 underline">
+      See verified astrologers
+     </Link>{' '}
+     or go{' '}
+     <Link href="/astrology" className="font-semibold text-saffron-600 underline">
+      back to Astrology
+     </Link>
+     .
+    </p>
+   </div>
+  </div>
+ );
+}
+
 export default function AstrologerDetailPage() {
  return (
-  <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center bg-[#fefcf7]"><div className="text-surface-500">Loading…</div></div>}>
+  <Suspense fallback={<ProfileLoadingShell />}>
    <AstrologerDetailInner />
   </Suspense>
  );

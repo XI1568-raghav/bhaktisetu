@@ -81,6 +81,14 @@ export default function PujaBookScreen() {
   const [slots, setSlots] = useState<BookableSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slot, setSlot] = useState<string | null>(null);
+  /**
+   * Bumped whenever the server tells us the availability we are showing is
+   * stale — today only the 409 slot race. It exists because the obvious
+   * "refresh" (re-setting `date` to the value it already holds) is a no-op:
+   * React compares with Object.is, bails out, and the effect below never
+   * re-runs because its dependencies are referentially unchanged.
+   */
+  const [availabilityNonce, setAvailabilityNonce] = useState(0);
   const [devotees, setDevotees] = useState<DevoteeEntry[]>([
     { name: user?.fullName ?? '', gotra: '' },
   ]);
@@ -170,7 +178,7 @@ export default function PujaBookScreen() {
     return () => {
       cancelled = true;
     };
-  }, [offering, date]);
+  }, [offering, date, availabilityNonce]);
 
   const priceInr = detail && offering ? offeringPriceInr(detail, offering) : null;
 
@@ -218,8 +226,14 @@ export default function PujaBookScreen() {
       if (!res.ok || !booking) {
         setSubmitError(bookingErrorMessage(replyBody, res.status));
         // A lost slot race is recoverable in-page: re-ask for capacity so the
-        // devotee can pick another slot instead of retrying a taken one.
-        if (res.status === 409 && offering && date) setDate(date);
+        // devotee picks a slot that still exists instead of retrying the taken
+        // one. It has to go through the nonce — `setDate(date)` re-assigns the
+        // value the state already holds, React bails out on Object.is, and the
+        // availability effect never re-runs. The grid would keep showing the
+        // slot as free underneath an error saying it was taken.
+        if (res.status === 409 && offering && date) {
+          setAvailabilityNonce((n) => n + 1);
+        }
         return;
       }
       setCreated(booking);

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Globe } from "lucide-react";
+import { ChevronLeft, Globe, AlertTriangle } from "lucide-react";
 import {
  getHelpArticle,
+ isUnreviewedTranslation,
  HELP_ARTICLES,
  HELP_LANGS,
+ HELP_SOURCE_LANG,
  type HelpLang,
 } from "../../../../../lib/help-articles";
 
@@ -42,6 +44,21 @@ export async function generateMetadata({
  return {
  title: `${article.title} — Help`,
  description: article.summary,
+ /**
+  * I-09 — an unattested translation must not become the indexed answer.
+  *
+  * Five of the six seed articles carry `reviewed_by: null`, which the schema
+  * itself defines as "pending review". They are machine translations of
+  * instructions about payments, cancellation and ritual, and they were served
+  * with hreflang alternates and a content-language header asserting them as
+  * proper localizations — i.e. actively offered to Google as THE Hindi/Tamil/
+  * Telugu/Bengali/Marathi answer. `follow` stays on so the links out of the
+  * page still carry weight; only the unreviewed copy itself is withheld.
+  * Attest the translation (set `reviewed_by`) and it indexes immediately.
+  */
+ ...(isUnreviewedTranslation(article)
+ ? { robots: { index: false, follow: true } }
+ : {}),
  openGraph: {
  images: ['/images/golden-temple-og.jpg'],
  title: article.title,
@@ -222,6 +239,33 @@ export default async function HelpArticlePage({ params }: { params: Params }) {
  <h1 className="text-3xl font-bold text-surface-900 mb-4" lang={article.lang}>
  {article.title}
  </h1>
+
+ {/* I-09: the review state was carried in the data and rendered nowhere, so
+     an unchecked machine translation about refunds read with exactly the
+     authority of copy a person had signed off. Say it, above the answer,
+     and point at the English original which is the reviewed one. */}
+ {isUnreviewedTranslation(article) && (
+ <div
+ className="flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 p-3 mb-6"
+ role="note"
+ >
+ <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+ <p className="text-xs text-amber-900 leading-relaxed">
+ <strong className="font-semibold">
+ Machine translated — pending review.
+ </strong>{" "}
+ No native speaker has checked this translation yet. For anything
+ involving money or timing, the{" "}
+ <Link
+ href={`/help/articles/${HELP_SOURCE_LANG}/${article.slug}`}
+ className="underline"
+ >
+ English original
+ </Link>{" "}
+ is the version we stand behind.
+ </p>
+ </div>
+ )}
 
  <p
  className="text-lg text-surface-700 leading-relaxed mb-6 pb-6 border-b border-surface-200"

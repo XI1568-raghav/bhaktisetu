@@ -26,6 +26,9 @@ export default function GaushalaLayout() {
         <Tabs.Screen name="cows" options={{ title: 'Cows', tabBarIcon: ({ color, size }) => <TabIcon name="paw" color={color} size={size} /> }} />
         <Tabs.Screen name="donations" options={{ title: 'Donations', tabBarIcon: ({ color, size }) => <TabIcon name="heart" color={color} size={size} /> }} />
         <Tabs.Screen name="volunteers" options={{ title: 'Team', tabBarIcon: ({ color, size }) => <TabIcon name="people" color={color} size={size} /> }} />
+        {/* PAR-22: the gaushala manager had no money surface in the app at all
+            — the web /payouts page serves this role. */}
+        <Tabs.Screen name="payouts" options={{ title: 'Payouts', tabBarIcon: ({ color, size }) => <TabIcon name="cash" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }} />
         <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
