@@ -332,67 +332,77 @@ recommended — `*/10` alone is 4,320 min/month. Read
 
 ---
 
-## ▶ NEXT SESSION STARTS HERE (2026-08-15)
+## ▶ NEXT SESSION STARTS HERE (2026-08-16)
 
-**ALL 281 FIXES ARE LIVE IN PRODUCTION.** Merged as `cea39314` (PR #245), both
-Render services deployed and probe-verified 2026-08-15. Nothing is pending
-deploy. No migration outstanding — all four applied.
-
-### Final tally
+**307 of 388 closed. ALL LIVE IN PRODUCTION** — merged `ca044898` (PR #247),
+both Render services deployed and probe-verified 2026-08-16. No migration
+outstanding; all four applied.
 
 | Sev | Total | Fixed | Partial | Owner | Open |
 |---|---:|---:|---:|---:|---:|
-| P0 | 65 | 52 | 7 | 6 | **0** |
-| P1 | 155 | 119 | 24 | 12 | **0** |
-| P2 | 120 | 74 | 19 | 19 | 8 |
-| P3 | 48 | 36 | 6 | 5 | 1 |
-| **All** | **388** | **281** | **56** | **42** | **9** |
+| P0 | 65 | 54 | 1 | 8 | **0** |
+| P1 | 155 | 128 | 11 | 15 | 1 |
+| P2 | 120 | 86 | 11 | 20 | 3 |
+| P3 | 48 | 39 | 3 | 6 | **0** |
+| **All** | **388** | **307** | **26** | **49** | **4** |
 
-### Live-verified 2026-08-15 (nine probes, all pass)
+Plus 2 `wontfix` (LEG-03, CWV-01) where the findings themselves were wrong.
+Suites: api **1965** · web **2210** · mobile **165** · all three `tsc` clean.
 
-`x-powered-by` absent · `/astrology/astrologers/live` 200 ·
-robots no longer blocks `/_next/` · `/ops/scheduler` `running:true stale:false`
-(fresh boot 05:18:10) · `/pujas/home-puja/griha-pravesh/book` 307 ·
-`/health/channels` 200 (route new in this deploy — the marker that proved the
-API restarted on new code) · `/admin/{temples,priests,pujas,content}` all 401
-(exist, auth-gated — a 404 would mean missing) · `/store/products/live` 200 ·
-web `/` and `/sitemap.xml` 200.
+### The tally is partly bookkeeping — read this before quoting it
+
+21 findings came back `already_correct`: closed by earlier waves and never
+re-marked. Each cites `git show HEAD:path` with line numbers and disclaims
+credit; LEG-01, AO-13 and AO-14 were hand-verified. **The "56 partial" was
+inflated.** Treat any future partial count as suspect until re-checked.
+
+### Live-verified 2026-08-16
+
+`/temples/kashi-vishwanath` and `/tirumala-tirupati` render Devanagari and Telugu
+(I-07 — the API had shipped these names for 20/20 temples and nothing rendered
+them) · `/health/channels` 200 · `/ops/scheduler` fresh boot 12:29:24 ·
+`/astrology/astrologers/live` 200 · web `/`, `/jyotirlinga/somnath`,
+`/sitemap.xml` 200.
+
+**Known-not-live, correctly recorded as partial:** API error localization
+(I-04 / I18N-03). Probed both `/temples/<bad>` and a `POST /auth/login`
+validation error with `Accept-Language: hi` — both still answer English. The
+catalogue and serializer exist in code; the wiring does not reach these routes.
+Verifiers caught the overclaim; do not trust the lane summary over this probe.
+
+### Four findings whose own instructions were damaging
+
+LEG-03 (code hard-refuses inside-24h cancellation, so "fixing" the copy would
+publish unreachable refund tiers — manufacturing LEG-01) · DF-12 and the
+astrologer map (load-bearing; the live API overlay merges onto it) · TD-08
+(`innerText` reading `''` through a collapsed `<details>`) · PF-10 (a
+`'use client'` page cannot set a status code). DU-12's 2,128-utility codemod was
+also refused with reasoning rather than performed.
+
+### The guard bug that recurred five times
+
+A guard that scans source text matches its own documentation. Instances: a
+localStorage ban tripping on the comment explaining it; a 5xx `error.message`
+scan flagging six valid 4xx echoes; a CTA test matching a comment naming the
+CTA; the SCAL-04 ratchet held over baseline by a comment describing a DELETED
+query; and one agent catching its own draft before shipping. **Strip comments
+first, always.**
+
+### `-X ours` merge hazard (hit once, avoided once)
+
+main's squash of this branch's own PR makes every shared file conflict. `-X ours`
+is correct for code — but it applies the other side ADDITIVELY where there is no
+textual conflict. It once left two byte-identical 93-line copies and a redeclared
+const behind a clean merge exit. **Always run the full suite after a strategy
+merge.**
 
 ### What remains
 
-- **42 owner-gated** — deferred by the owner's instruction to the end. These are
-  config/account actions outside the repo, not code: WhatsApp BSP templates,
-  Razorpay live-key + Route/RazorpayX, Supabase SMTP + reset-password URL,
-  admin account for click-verification, image hosting decision.
-- **56 partial** — real improvements that did not close the whole finding.
-- **9 open** — 8 P2, 1 P3. None blocking.
+- **49 owner-gated** — config/account/legal actions outside the repo: 80G
+  registration number, WhatsApp BSP templates, FCM keys, Razorpay Route,
+  Supabase SMTP + reset-password URL, `images.darshya.online` DNS, senior
+  astrologer price band, GTM catalogue decision, legal entity/GSTIN.
+- **26 partial · 4 open** — none P0; one P1 (SCAL-04 unbounded reads).
 - **Coverage repair still owed:** `launch-readiness-delta` ran 7 agents and
-  returned only 5 area blocks with no consolidated brief — at least one agent
-  was lost to the session limit. **The true defect count is higher than 388.**
-  Re-run that workflow with its full 7 agents before treating 388 as complete.
-
-### Two defects fixed on the way out — both guards misreading their own subject
-
-1. **RES-05 vs DB-07 collided.** DB-07 changed the booking-dedup contract in the
-   final wave without updating the RES-05 tests it invalidated. The contract now
-   composes: identical repeat REUSES, differing request REFUSES by booking
-   number. Do not "restore" the old create-a-second behaviour — it is the
-   slot-squatting hole DB-07 closed (five 201s on one slot from one unpaid user,
-   `remaining` 5→0, nothing paid; `maxBookingsPerSlot` counts rows, not people).
-2. **The SCAL-04 ratchet over-reported twice** — ES6 shorthand `take` read as
-   unbounded (all five "new" unbounded reads in `routes/admin.ts` were paginated
-   endpoints using it), and comments counted as call sites (it was held over
-   baseline by a comment describing a query the same commit had DELETED).
-   Baseline tightened 94 → **91**, the true count. This was the FOURTH guard in
-   this sweep to match its own documentation — any scanner that reads source as
-   text must strip comments first.
-
-### Merge hazard worth remembering
-
-`main`'s `55c3acfe` was the squashed merge of this same branch, so merging main
-back conflicted on identical work and needed `-X ours`. That strategy then
-applied main's `PATCH /priests/:id/commission-rate` block **additively** where it
-did not textually conflict, leaving two byte-identical 93-line copies and a
-redeclared `priestCommissionSchema`. Clean merge exit, broken tree. **Always run
-the full suite after a strategy merge** — that is the only thing that caught it.
+  returned 5 area blocks with no consolidated brief. **388 is a floor.**
 
