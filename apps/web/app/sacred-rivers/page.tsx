@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SACRED_RIVERS } from '../../lib/sacred-rivers';
+import { formatNumber } from '../../lib/format-locale';
 
 export const revalidate = 86400;
 
@@ -69,7 +70,7 @@ export default function SacredRiversIndexPage() {
                 {r.states.slice(0, 4).map((s) => (
                   <span key={s} className="rounded bg-saffron-100 px-2 py-0.5 text-saffron-800">{s}</span>
                 ))}
-                <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-700">{r.length.toLocaleString()} km</span>
+                <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-700">{formatNumber(r.length)} km</span>
               </div>
             </Link>
           ))}

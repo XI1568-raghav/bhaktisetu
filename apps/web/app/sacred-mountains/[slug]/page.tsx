@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSacredMountain, SACRED_MOUNTAINS } from '../../../lib/sacred-mountains';
+import { formatNumber } from '../../../lib/format-locale';
 
 export const revalidate = 86400;
 
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const m = getSacredMountain(slug);
   if (!m) return { title: 'Not found' };
-  const heightLabel = m.height !== null ? `${m.height.toLocaleString()} m` : 'cosmic axis';
+  const heightLabel = m.height !== null ? `${formatNumber(m.height)} m` : 'cosmic axis';
   return {
     title: `${m.name} (${m.sanskrit}) — Sacred Mountain Guide`,
     description: `${m.name}: ${heightLabel}, ${m.location}. Associated with ${m.associatedDeity}. ${m.significance.slice(0, 110)}…`,
@@ -105,7 +106,7 @@ export default async function SacredMountainPage({ params }: Props) {
         <div className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="text-xs uppercase tracking-wide text-gray-500">Height</div>
           <div className="mt-1 text-sm font-semibold text-gray-900">
-            {m.height !== null ? `${m.height.toLocaleString()} m` : 'Cosmic / non-geographic'}
+            {m.height !== null ? `${formatNumber(m.height)} m` : 'Cosmic / non-geographic'}
           </div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4">

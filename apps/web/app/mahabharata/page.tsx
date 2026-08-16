@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MAHABHARATA_PARVAS } from '../../lib/mahabharata-parvas';
+import { formatNumber } from '../../lib/format-locale';
 
 export const revalidate = 86400;
 
@@ -9,7 +10,7 @@ const TOTAL_ADHYAYAS = MAHABHARATA_PARVAS.reduce((sum, p) => sum + p.adhyayaCoun
 
 export const metadata: Metadata = {
   title: `Mahabharata, All 18 Parvas: Adi, Sabha, Vana, Virata, Udyoga, Bhishma, Drona, Karna, Shalya, Sauptika, Stri, Shanti, Anushasana, Ashvamedhika, Ashramavasika, Mausala, Mahaprasthanika, Svargarohana`,
-  description: `Complete parva-by-parva guide to Vyasa's Mahabharata, all 18 books across ${TOTAL_ADHYAYAS.toLocaleString()} adhyayas, ~100,000 shlokas. Episodes, key characters, central teachings of the world's longest epic.`,
+  description: `Complete parva-by-parva guide to Vyasa's Mahabharata, all 18 books across ${formatNumber(TOTAL_ADHYAYAS)} adhyayas, ~100,000 shlokas. Episodes, key characters, central teachings of the world's longest epic.`,
   alternates: { canonical: `${BASE_URL}/mahabharata` },
   openGraph: {
     images: ['/images/golden-temple-og.jpg'],
@@ -52,7 +53,7 @@ export default function MahabharataIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-indigo-600">18 parvas · {TOTAL_ADHYAYAS.toLocaleString()} adhyayas · ~100,000 shlokas</p>
+        <p className="text-xs uppercase tracking-wider text-indigo-600">18 parvas · {formatNumber(TOTAL_ADHYAYAS)} adhyayas · ~100,000 shlokas</p>
         <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">महाभारत</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Mahabharata, All 18 Parvas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">

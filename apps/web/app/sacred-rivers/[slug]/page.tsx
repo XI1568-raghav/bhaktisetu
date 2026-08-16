@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSacredRiver, SACRED_RIVERS, sacredRiverSlugs } from '../../../lib/sacred-rivers';
 import { getTirtha } from '../../../lib/tirthas';
+import { formatNumber } from '../../../lib/format-locale';
 
 export const revalidate = 86400;
 
@@ -110,7 +111,7 @@ export default async function SacredRiverPage({ params }: Props) {
         </div>
         <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-800">Length</h2>
-          <p className="mt-2 text-sm text-gray-800">{r.length.toLocaleString()} km</p>
+          <p className="mt-2 text-sm text-gray-800">{formatNumber(r.length)} km</p>
         </div>
         <div className="rounded-2xl border border-pink-200 bg-pink-50/40 p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-pink-800">Best pilgrim season</h2>

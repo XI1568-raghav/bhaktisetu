@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PURANAS, TOTAL_VERSES, ALIGNMENT_LABELS, type PuranaAlignment } from '../../lib/puranas';
+import { formatNumber } from '../../lib/format-locale';
 
 export const revalidate = 86400;
 
@@ -96,7 +97,7 @@ export default function PuranasIndexPage() {
                 >
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs font-semibold text-gray-500">#{p.number}</span>
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{p.verseCount.toLocaleString()} verses</span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{formatNumber(p.verseCount)} verses</span>
                   </div>
                   <h3 className="mt-1 text-base font-semibold text-gray-900 group-hover:text-indigo-700">{p.name}</h3>
                   <p className="mt-0.5 font-serif text-sm text-gray-700">{p.sanskrit}</p>

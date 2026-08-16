@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SACRED_MOUNTAINS } from '../../lib/sacred-mountains';
+import { formatNumber } from '../../lib/format-locale';
 
 export const revalidate = 86400;
 
@@ -80,7 +81,7 @@ export default function SacredMountainsIndexPage() {
               </div>
               <p className="mt-1 text-xs text-gray-600">
                 {m.location.split(',')[0]} ·{' '}
-                {m.height !== null ? `${m.height.toLocaleString()} m` : 'cosmic / non-geographic'}
+                {m.height !== null ? `${formatNumber(m.height)} m` : 'cosmic / non-geographic'}
               </p>
               <p className="mt-3 line-clamp-3 text-sm text-gray-700">{m.significance}</p>
               <div className="mt-3 flex flex-wrap gap-1 text-xs font-medium uppercase tracking-wide">
