@@ -1,11 +1,12 @@
 'use client';
 
 import { Inbox } from '../../../components/Inbox';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export default function PriestMessagesPage() {
   return (
     <div className="max-w-5xl">
-      <h1 className="text-2xl font-semibold text-surface-800 mb-1">Devotee Messages</h1>
+      <h1 className={`${H1.portal} mb-1`}>Devotee Messages</h1>
       <p className="text-sm text-surface-500 mb-4">Reply to devotees you&apos;re serving and start video calls.</p>
       <Inbox role="provider" />
     </div>

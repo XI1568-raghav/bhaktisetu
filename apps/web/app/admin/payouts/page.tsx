@@ -40,6 +40,7 @@ import {
   type PayoutAccrual,
   type PayoutRequestStatus,
 } from '../revenue/payout-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const roleBadgeColors: Record<string, string> = {
   PANDIT: 'bg-saffron-50 text-saffron-700',
@@ -284,7 +285,7 @@ export default function AdminPayoutsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-surface-800">Payouts</h1>
+        <h1 className={H1.portal}>Payouts</h1>
         <p className="text-sm text-surface-500 mt-0.5">
           Settle provider payout requests and review what each provider has earned.
         </p>

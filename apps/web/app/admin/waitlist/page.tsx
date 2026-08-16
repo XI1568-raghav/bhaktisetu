@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface WaitlistStats {
   total: number;
@@ -64,7 +65,7 @@ export default function AdminWaitlistPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-surface-800">Waitlist</h1>
+        <h1 className={H1.portal}>Waitlist</h1>
         <p className="text-sm text-surface-500 mt-0.5">Signups, referrals, and conversion funnel</p>
       </div>
 

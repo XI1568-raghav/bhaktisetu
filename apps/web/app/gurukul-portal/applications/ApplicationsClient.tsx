@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, X, Forward, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface Application {
   id: string;
@@ -91,7 +92,7 @@ export default function ApplicationsClient() {
       <Link href="/gurukul-portal" className="inline-flex items-center gap-1 text-sm text-saffron-700 hover:text-saffron-800 mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to portal
       </Link>
-      <h1 className="text-3xl font-bold text-surface-900 mb-2">Admission applications</h1>
+      <h1 className={`${H1.portal} mb-2`}>Admission applications</h1>
       <p className="text-sm text-surface-600 mb-6">{items.length} total. Review applicant details and decide.</p>
 
       <div className="flex gap-2 mb-4 flex-wrap">

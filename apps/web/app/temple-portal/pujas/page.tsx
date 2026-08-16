@@ -27,6 +27,7 @@ import {
   type PublicPriestSummary,
   type PujaTypeSummary,
 } from '../../../lib/temple-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -228,7 +229,7 @@ function TemplePujasPageContent() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800">Pujas Offered</h1>
+          <h1 className={H1.portal}>Pujas Offered</h1>
           <p className="text-surface-500 mt-1">
             {pujas.length} pujas ({pujas.filter((p) => p.isActive).length} active)
           </p>

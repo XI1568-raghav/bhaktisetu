@@ -15,6 +15,7 @@ import { IndianRupee, Clock, CheckCircle2, Loader2, Inbox, Landmark } from 'luci
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface TemplePayoutRow {
   id: string;
@@ -62,7 +63,7 @@ function TemplePayoutsContent() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold text-surface-800">Temple Payouts</h1>
+        <h1 className={H1.portal}>Temple Payouts</h1>
         <p className="text-sm text-surface-500 mt-1">
           Your temple's share of every puja booked through Darshya.
         </p>

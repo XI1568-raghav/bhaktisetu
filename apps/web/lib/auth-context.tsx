@@ -633,9 +633,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
  // Try API login
  try {
+ // SEC-02 (2026-08-12): `credentials: 'include'` is what lets the browser
+ // KEEP the auth cookies this response carries. POST /auth/login calls
+ // setAuthCookies() (apps/api/src/routes/auth.ts), issuing httpOnly
+ // `darshya_session` + `darshya_refresh` — but the web is served from
+ // darshya.online and the API from api.darshya.online, so this is a
+ // cross-origin request, and `fetch` defaults to `credentials:'same-origin'`.
+ // In that mode the browser DISCARDS the response's Set-Cookie headers. The
+ // cookies were therefore never stored on the primary sign-in path, which is
+ // why the JS-readable localStorage token is still the only credential that
+ // works and why SEC-02 could not be closed. /refresh and /logout already
+ // opted in; this door had been missed.
+ //
+ // Purely additive: the JSON Bearer response and the localStorage write below
+ // are untouched, so no signed-in user is disturbed by this shipping. Retiring
+ // the localStorage copy is a separate, larger step — 95 files under apps/web
+ // hand-build `Authorization: Bearer ${session.accessToken}` and only 11 send
+ // credentials, and POST /auth/refresh still REQUIRES `refreshToken` in the
+ // body (its Zod schema), so cutting it now would 401 most of the product.
  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
+ credentials: 'include',
  body: JSON.stringify({ email: emailLower, password }),
  });
 

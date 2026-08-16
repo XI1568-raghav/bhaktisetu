@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { type UserRole, getRoleDashboardPath, getRoleLabel, useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // Maps the URL role slug to the backend MarketplaceRole enum.
 const BACKEND_ROLE: Record<string, string> = {
@@ -587,7 +588,7 @@ function OnboardingInner() {
  </p>
  <a
  href="/auth/signup"
- className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  Go to Signup
  </a>
@@ -621,7 +622,7 @@ function OnboardingInner() {
  </div>
  <a
  href={dashPath}
- className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'lg', 'w-full')}
  >
  Go to Dashboard
  <ArrowRight className="w-4 h-4" />
@@ -1135,7 +1136,7 @@ function OnboardingInner() {
  <button
  onClick={handleSubmit}
  disabled={isSubmitting}
- className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+ className={buttonClass('primary', 'lg', 'flex-1 disabled:cursor-not-allowed')}
  >
  {isSubmitting ? (
  <>
@@ -1152,7 +1153,7 @@ function OnboardingInner() {
  ) : (
  <button
  onClick={goNext}
- className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'lg', 'flex-1')}
  >
  Next
  <ArrowRight className="w-4 h-4" />

@@ -12,6 +12,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../../../lib/api-config';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 function UnsubscribeContent() {
   const params = useSearchParams();
@@ -38,7 +39,7 @@ function UnsubscribeContent() {
         {state === 'loading' && <p className="text-surface-600">Updating your preference…</p>}
         {state === 'done' && (
           <>
-            <h1 className="text-xl font-semibold text-surface-800 mb-2">You're unsubscribed</h1>
+            <h1 className={`${H1.portal} mb-2`}>You're unsubscribed</h1>
             <p className="text-surface-600">
               You'll no longer receive the weekly Darshya digest. You can re-enable it anytime from
               your profile settings.
@@ -47,13 +48,13 @@ function UnsubscribeContent() {
         )}
         {state === 'invalid' && (
           <>
-            <h1 className="text-xl font-semibold text-surface-800 mb-2">Invalid link</h1>
+            <h1 className={`${H1.portal} mb-2`}>Invalid link</h1>
             <p className="text-surface-600">This unsubscribe link is missing its identifier.</p>
           </>
         )}
         {state === 'error' && (
           <>
-            <h1 className="text-xl font-semibold text-surface-800 mb-2">Something went wrong</h1>
+            <h1 className={`${H1.portal} mb-2`}>Something went wrong</h1>
             <p className="text-surface-600">We couldn't update your preference just now. Please try again.</p>
           </>
         )}

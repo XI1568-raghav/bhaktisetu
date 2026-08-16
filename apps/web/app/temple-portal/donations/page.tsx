@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { getMyDonations, type TempleDonation } from '../../../lib/temple-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ export default function TempleDonationsPage() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800">Donations</h1>
+          <h1 className={H1.portal}>Donations</h1>
           <p className="text-surface-500 mt-1">
             Track and manage temple donations
           </p>

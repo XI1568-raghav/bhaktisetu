@@ -4,6 +4,11 @@ import { sendPush, webPushConfig, PushSubscriptionPayload } from '../lib/web-pus
 import { sendFcm, fcmConfig, isFcmRegistrationToken } from '../lib/fcm.js';
 import { prisma } from '../lib/prisma.js';
 import { listNotifications, recordNotification } from '../lib/notification-log.js';
+// TYPE-ONLY, and it must stay that way: booking-notify.service imports
+// notifyUser from this file, so a value import here would close a runtime
+// cycle. `import type` is erased at compile time, so this shares the one
+// channel-outcome vocabulary without creating one.
+import type { ChannelOutcome } from '../services/booking-notify.service.js';
 
 /**
  * Web push subscription endpoints + the devotee notification centre.
@@ -26,6 +31,55 @@ interface StoredSub extends PushSubscriptionPayload {
 }
 
 const subsByUser = new Map<string, StoredSub[]>();
+
+/**
+ * Every Web Push subscription this devotee has, from BOTH stores.
+ *
+ * NOTIF-03: `POST /test` used to read `subsByUser` alone while `notifyUser` —
+ * every real notification in the product — read the persisted rows merged with
+ * that map. The map is per-process and empty after a restart, and Render
+ * restarts on each deploy and each idle spin-down, so the probe answered 404
+ * "No subscriptions for this user" for devotees the product was delivering to
+ * perfectly well. Both paths now come through here so they cannot drift again.
+ *
+ * The database is the source of truth (Phase-2 persistence); the map still
+ * contributes any subscription registered in this process whose row failed to
+ * write, which is the fallback `/subscribe` deliberately keeps. Deduped by
+ * endpoint so a subscription held in both stores is one device, not two.
+ */
+async function loadSubscriptions(userId: string): Promise<StoredSub[]> {
+  const inMemory = subsByUser.get(userId) ?? [];
+  try {
+    const rows = await prisma.pushSubscription.findMany({ where: { userId } });
+    const fromDb: StoredSub[] = rows.map((r) => ({
+      endpoint: r.endpoint,
+      keys: { p256dh: r.p256dh, auth: r.auth },
+      createdAt: r.createdAt.getTime(),
+    }));
+    const seen = new Set(fromDb.map((s) => s.endpoint));
+    return [...fromDb, ...inMemory.filter((s) => !seen.has(s.endpoint))];
+  } catch {
+    // DB unavailable — in-memory only, same as before persistence existed.
+    return inMemory;
+  }
+}
+
+/**
+ * Drop the endpoints a send proved dead (404/410) from BOTH stores.
+ *
+ * NOTIF-03: `/test` used to prune the map only, so an endpoint the probe had
+ * just proved expired stayed in the table and was retried by every real send
+ * after it. Deleting from the table is the half that actually stops the retry.
+ */
+async function pruneExpired(userId: string, expiredEndpoints: string[]): Promise<void> {
+  if (!expiredEndpoints.length) return;
+  for (const endpoint of expiredEndpoints) {
+    await prisma.pushSubscription.deleteMany({ where: { endpoint } }).catch(() => undefined);
+  }
+  const dead = new Set(expiredEndpoints);
+  const remaining = (subsByUser.get(userId) ?? []).filter((s) => !dead.has(s.endpoint));
+  subsByUser.set(userId, remaining);
+}
 
 export async function notificationRoutes(server: FastifyInstance) {
   /**
@@ -116,7 +170,10 @@ export async function notificationRoutes(server: FastifyInstance) {
   server.post('/test', { preHandler: [authenticateUser] }, async (request, reply) => {
     const body = (request.body ?? {}) as { title?: string; body?: string; url?: string };
     const userId = request.currentUser!.id;
-    const subs = subsByUser.get(userId) ?? [];
+    // NOTIF-03: the same subscriptions the product sends to, not just the ones
+    // this process happens to remember. A 404 here has to mean "nobody to send
+    // to", never "this container restarted since you subscribed".
+    const subs = await loadSubscriptions(userId);
     if (subs.length === 0) {
       return reply.code(404).send({ error: 'No subscriptions for this user' });
     }
@@ -129,11 +186,11 @@ export async function notificationRoutes(server: FastifyInstance) {
         }),
       ),
     );
-    // Drop expired subs
-    const stillValid = subs.filter((_, i) => !results[i]?.expired);
-    if (stillValid.length !== subs.length) {
-      subsByUser.set(userId, stillValid);
-    }
+    // Drop expired subs from the table as well as the map — see pruneExpired.
+    await pruneExpired(
+      userId,
+      subs.filter((_, i) => results[i]?.expired).map((s) => s.endpoint),
+    );
     const sent = results.filter((r) => r.ok).length;
     const skipped = results.filter((r) => !r.ok && r.skipped).length;
     // NOTIF-03: a skip is not a delivery.
@@ -319,7 +376,7 @@ export async function notifyUser(
   // Written whatever the outcome — including "there was nowhere to send it",
   // which is the answer support most often needs and the one the old code
   // could not distinguish from success.
-  const log = async (push: 'sent' | 'failed' | 'no-target'): Promise<void> => {
+  const log = async (push: ChannelOutcome): Promise<void> => {
     if (!shouldRecord) return;
     try {
       await recordNotification({
@@ -343,36 +400,27 @@ export async function notifyUser(
     }
   };
 
-  // Cross-cutting Phase 2: read persisted subscriptions from the DB (the source
-  // of truth now), falling back to the in-memory map for any not-yet-persisted
-  // subs in the same process. This is what makes push survive a restart.
-  let subs: StoredSub[] = subsByUser.get(userId) ?? [];
-  try {
-    const rows = await prisma.pushSubscription.findMany({ where: { userId } });
-    const fromDb: StoredSub[] = rows.map((r) => ({
-      endpoint: r.endpoint,
-      keys: { p256dh: r.p256dh, auth: r.auth },
-      createdAt: r.createdAt.getTime(),
-    }));
-    // Merge DB subs with any in-memory-only subs (dedupe by endpoint).
-    const seen = new Set(fromDb.map((s) => s.endpoint));
-    subs = [...fromDb, ...subs.filter((s) => !seen.has(s.endpoint))];
-  } catch {
-    // DB unavailable — use in-memory only.
-  }
+  // Cross-cutting Phase 2: persisted subscriptions are the source of truth,
+  // with the in-memory map as the fallback for subs whose row failed to write.
+  // Shared with POST /test so the probe and the product can never disagree
+  // about who is reachable (NOTIF-03).
+  const subs = await loadSubscriptions(userId);
   if (!subs.length) {
     await log('no-target');
     return 0;
   }
   const results = await Promise.all(subs.map((s) => sendPush(s, payload)));
-  // Drop expired endpoints from BOTH stores.
-  const expired = subs.filter((_, i) => results[i]?.expired);
-  for (const e of expired) {
-    await prisma.pushSubscription.deleteMany({ where: { endpoint: e.endpoint } }).catch(() => undefined);
-  }
-  const stillValid = subs.filter((_, i) => !results[i]?.expired);
-  if (stillValid.length !== subs.length) subsByUser.set(userId, stillValid);
+  await pruneExpired(
+    userId,
+    subs.filter((_, i) => results[i]?.expired).map((s) => s.endpoint),
+  );
   const delivered = results.filter((r) => r.ok).length;
-  await log(delivered > 0 ? 'sent' : 'failed');
+  // NOTIF-14 × NOTIF-03: a transport that is switched off is 'skipped', never
+  // 'failed'. With VAPID unset — production today — sendPush returns
+  // `{ok:false, skipped:true}` for every device, so collapsing that into
+  // 'failed' made the whole log read as a broken transport and hid the one
+  // actionable cause: no keys are configured. Only claim 'failed' when
+  // something was genuinely attempted and rejected.
+  await log(delivered > 0 ? 'sent' : results.every((r) => r.skipped) ? 'skipped' : 'failed');
   return delivered;
 }

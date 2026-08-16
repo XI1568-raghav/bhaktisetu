@@ -3,8 +3,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { Globe, ChevronDown, Check } from 'lucide-react';
 
+import {
+ LOCALE_NATIVE_NAMES,
+ readClientLocale,
+ writeClientLocale,
+ type Locale,
+} from '../lib/i18n/locales';
+
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
+/**
+ * The languages this control can SWITCH TO. Deliberately narrower than
+ * `Locale`: hi is the only locale with a catalog behind it at all
+ * (lib/i18n/hi.json) and the `CONTENT_LABELS` map at the bottom of this file is
+ * keyed by it. Offering ta/te/bn/mr here would advertise four languages with
+ * zero translated keys each — the exact harm I-03 describes.
+ *
+ * It is NOT the set of locales this control can DISPLAY. A visitor who chose
+ * தமிழ் in the footer must not be told they are reading English — see
+ * `activeLocale` in the component below.
+ */
 export type SupportedLanguage = 'en' | 'hi';
 
 interface LanguageSwitcherProps {
@@ -16,12 +34,19 @@ interface LanguageSwitcherProps {
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 
+/**
+ * Audit I18N-04 (2026-08-15): the native labels are read from
+ * lib/i18n/locales.ts rather than re-typed here. "Four mutually inconsistent
+ * language lists" is what that finding measured, and this file was one of them.
+ */
 const LANGUAGES: { code: SupportedLanguage; label: string; nativeLabel: string }[] = [
- { code: 'en', label: 'English', nativeLabel: 'English' },
- { code: 'hi', label: 'Hindi', nativeLabel: '\u0939\u093F\u0928\u094D\u0926\u0940' },
+ { code: 'en', label: 'English', nativeLabel: LOCALE_NATIVE_NAMES.en },
+ { code: 'hi', label: 'Hindi', nativeLabel: LOCALE_NATIVE_NAMES.hi },
 ];
 
-const STORAGE_KEY = 'poojly_language';
+function isOffered(value: Locale | null | undefined): value is SupportedLanguage {
+ return value === 'en' || value === 'hi';
+}
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
@@ -32,16 +57,34 @@ export default function LanguageSwitcher({
 }: LanguageSwitcherProps) {
  const [isOpen, setIsOpen] = useState(false);
  const [language, setLanguage] = useState<SupportedLanguage>(currentLanguage || 'en');
+ /**
+  * The locale actually held in the shared store, which is not always one this
+  * control offers. The footer landings (/hi /ta /te /bn /mr) can store any of
+  * six, and this component used to compare a raw localStorage read against
+  * `'en' | 'hi'` — so a visitor who chose தமிழ் saw the switcher confidently
+  * report "English" while the middleware and the coverage notice both had them
+  * on Tamil. `null` means the visitor has never chosen anything, which is not
+  * the same as choosing English.
+  */
+ const [storedLocale, setStoredLocale] = useState<Locale | null>(null);
  const dropdownRef = useRef<HTMLDivElement>(null);
 
- // Initialize from localStorage on mount
+ /**
+  * Initialise from whichever store holds the choice — audit I-03 / I18N-05.
+  *
+  * `readClientLocale()` reads the COOKIE first and localStorage second. That
+  * order is load-bearing: the middleware writes only the cookie (a footer click
+  * on हिन्दी → /hi), so a localStorage-only read reported "English" one click
+  * after the visitor had chosen Hindi. It runs even when `currentLanguage` is
+  * supplied, because the controlling parent (components/ContentPageHeader) has
+  * that same localStorage-only blind spot and would otherwise pin this control
+  * to a stale answer.
+  */
  useEffect(() => {
- if (!currentLanguage) {
- const stored = localStorage.getItem(STORAGE_KEY) as SupportedLanguage | null;
- if (stored && (stored === 'en' || stored === 'hi')) {
- setLanguage(stored);
- }
- }
+ const stored = readClientLocale();
+ if (!stored) return;
+ setStoredLocale(stored);
+ if (!currentLanguage && isOffered(stored)) setLanguage(stored);
  }, [currentLanguage]);
 
  // Sync when controlled prop changes
@@ -73,14 +116,39 @@ export default function LanguageSwitcher({
  }
  }, [isOpen]);
 
+ /**
+  * Audit I-03 / I18N-05. This used to be `localStorage.setItem` and nothing
+  * else, which made the only in-app language control decorative: no server
+  * code can read localStorage, so the middleware, lib/i18n/server.ts and the
+  * coverage disclosure all carried on treating the visitor as English.
+  *
+  * Worse than invisible, it was undone. `syncClientLocale()` — run from the
+  * root layout on every route change — resolves a cookie/localStorage conflict
+  * in the COOKIE's favour, so a pick made here while a different locale sat in
+  * the cookie was copied back over on the very next navigation.
+  * `writeClientLocale` writes both, which is what makes the click count as the
+  * explicit choice it is.
+  */
  const handleSelect = (lang: SupportedLanguage) => {
  setLanguage(lang);
- localStorage.setItem(STORAGE_KEY, lang);
+ setStoredLocale(writeClientLocale(lang));
  setIsOpen(false);
  onLanguageChange?.(lang);
  };
 
- const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0]!;
+ /**
+  * What the control REPORTS. Normally the selected language; when the shared
+  * store holds a locale this control cannot offer (ta/te/bn/mr chosen from the
+  * footer), it reports that instead of silently claiming English.
+  */
+ const activeLocale: Locale = storedLocale && !isOffered(storedLocale) ? storedLocale : language;
+ const currentLang =
+  LANGUAGES.find((l) => l.code === activeLocale) ??
+  ({
+   code: language,
+   label: LOCALE_NATIVE_NAMES[activeLocale],
+   nativeLabel: LOCALE_NATIVE_NAMES[activeLocale],
+  } as (typeof LANGUAGES)[number]);
 
  // Compact toggle mode
  if (compact) {
@@ -108,14 +176,18 @@ export default function LanguageSwitcher({
  aria-expanded={isOpen}
  >
  <Globe className="h-4 w-4 text-surface-500" />
- <span>{currentLang.nativeLabel}</span>
+ {/* Each language's own name, marked as being in that language, so a
+     screen reader does not read हिन्दी or தமிழ் with English phonetics. */}
+ <span lang={activeLocale}>{currentLang.nativeLabel}</span>
  <ChevronDown
  className={`h-3.5 w-3.5 text-surface-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
  />
  </button>
 
  {isOpen && (
- <div className="absolute right-0 z-50 mt-1 w-44 origin-top-right rounded-xl border border-surface-100 bg-white py-1 shadow-lg ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95">
+ /* aria-haspopup="listbox" on the trigger promises a listbox, and
+    role="option" is only valid inside one. */
+ <div role="listbox" aria-label="Language" className="absolute right-0 z-50 mt-1 w-44 origin-top-right rounded-xl border border-surface-100 bg-white py-1 shadow-lg ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95">
  {LANGUAGES.map((lang) => (
  <button
  key={lang.code}
@@ -129,7 +201,7 @@ export default function LanguageSwitcher({
  aria-selected={language === lang.code}
  >
  <div className="flex items-center gap-2">
- <span className="text-base">{lang.nativeLabel}</span>
+ <span lang={lang.code} className="text-base">{lang.nativeLabel}</span>
  {lang.code !== language && (
  <span className="text-xs text-surface-400">({lang.label})</span>
  )}

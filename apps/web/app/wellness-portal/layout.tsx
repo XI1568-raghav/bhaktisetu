@@ -139,7 +139,9 @@ function WellnessPortalLayout({ children }: { children: React.ReactNode }) {
  <Menu className="w-5 h-5" />
  </button>
  <div className="ml-2 lg:ml-0">
- <h1 className="text-sm font-semibold text-surface-800 lg:hidden">Wellness Portal</h1>
+ {/* DU-05: drawer chrome, not the page title. As an h1 it was a second
+ level-1 heading below lg, competing with the page's own h1. */}
+ <div role="doc-subtitle" aria-label="Wellness Portal" className="text-sm font-semibold text-surface-800 lg:hidden">Wellness Portal</div>
  </div>
  </header>
 

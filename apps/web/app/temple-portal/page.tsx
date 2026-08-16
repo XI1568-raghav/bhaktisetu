@@ -19,6 +19,7 @@ import {
  ArrowRight,
  Calendar,
 } from 'lucide-react';
+import { H1 } from '../../components/ui/heading-recipe';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ export default function TempleDashboard() {
  <div className="space-y-6 max-w-5xl">
  {/* Welcome */}
  <div>
- <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
+ <h1 className={H1.portal}>
  {templeName}
  </h1>
  <p className="text-surface-500 mt-1">

@@ -20,6 +20,7 @@ import {
 import { API_BASE_URL } from '../../../lib/api-config';
 import { useAuth } from '../../../lib/auth-context';
 import { filterOrders, statusTabCounts } from '../../../lib/store-admin-orders';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -296,7 +297,7 @@ export default function StoreAdminOrdersPage() {
    <div className="space-y-6 max-w-6xl">
      {/* Header */}
      <div>
-       <h1 className="text-2xl font-bold text-surface-800">Orders</h1>
+       <h1 className={H1.portal}>Orders</h1>
        <p className="text-surface-500 mt-1">Manage and fulfill customer orders</p>
      </div>
 

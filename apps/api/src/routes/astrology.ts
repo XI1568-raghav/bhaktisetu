@@ -34,10 +34,102 @@ const astrologerListQuerySchema = paginationSchema.extend({
   sort: z.enum(['rating', 'price', 'experience']).optional(),
 });
 
+/**
+ * The public shape of one astrologer. Built ONLY from an approved
+ * `AstrologerProfile` row plus the in-memory presence toggle — every field here
+ * is something a real person entered about themselves.
+ */
+interface PublicAstrologer {
+  id: string;
+  userId: string;
+  name: string;
+  specializations: string[];
+  languages: string[];
+  experienceYears: number;
+  rating: number;
+  consultationCount: number;
+  perMinuteRate: number;
+  isOnline: boolean;
+  mode: ReturnType<typeof getAstrologerPresence>['mode'];
+  bio: string | null;
+  verified: boolean;
+}
+
+/**
+ * AW-02 (P0). The single reader of real astrologer supply.
+ *
+ * Both consumer directory endpoints (`GET /astrologers` and
+ * `GET /astrologers/live`) go through this, so they can never again disagree
+ * about who exists — which is exactly what went wrong: `/astrologers/live`
+ * served the 3 approved profiles while `/astrologers` served a 15-row invented
+ * fixture, and the Expo app reads the latter.
+ *
+ * `take: 100` matches the pagination clamp above; the directory is far smaller
+ * than that today and a bound keeps this public, unauthenticated route cheap.
+ */
+async function loadApprovedAstrologers(): Promise<PublicAstrologer[]> {
+  const profiles = await prisma.astrologerProfile.findMany({
+    where: { approved: true },
+    orderBy: [{ rating: 'desc' }, { totalConsultations: 'desc' }],
+    take: 100,
+  });
+  return profiles.map((p) => {
+    const presence = getAstrologerPresence(p.userId);
+    return {
+      id: p.id,
+      userId: p.userId,
+      name: p.displayName,
+      specializations: p.specialties ?? [],
+      languages: p.languages ?? [],
+      experienceYears: p.experience,
+      rating: p.rating,
+      consultationCount: p.totalConsultations,
+      perMinuteRate: Number(p.pricePerMinute),
+      isOnline: presence.online,
+      mode: presence.mode,
+      bio: p.bio,
+      verified: p.approved,
+    };
+  });
+}
+
+function filterAstrologers(
+  rows: PublicAstrologer[],
+  f: { language?: string; specialization?: string; online?: string },
+): PublicAstrologer[] {
+  let out = rows;
+  if (f.language) {
+    const want = f.language.toLowerCase();
+    out = out.filter((a) => a.languages.some((l) => l.toLowerCase() === want));
+  }
+  if (f.specialization) {
+    const want = f.specialization.toLowerCase();
+    out = out.filter((a) => a.specializations.some((s) => s.toLowerCase() === want));
+  }
+  if (f.online === 'true') out = out.filter((a) => a.isOnline);
+  return out;
+}
+
 export async function astrologyRoutes(server: FastifyInstance) {
   // ─── GET /astrologers ──────────────────────────────────────────────────────
-  // List astrologers with optional filters
-
+  // The consumer astrologer directory, paginated.
+  //
+  // AW-02 (P0): this served `astrologyService.getAstrologers()` — the 15-row
+  // in-memory fixture ('astro_001'..'astro_015') of invented people with
+  // invented ratings, review counts and ₹/min rates. `?online=true` answered
+  // "12 online", none of whom exist. The earlier pass closed the web funnel,
+  // the profile page, the reviews route and the booking route, and left this
+  // one open on the grounds that `packages/api-client`'s `useAstrologers` reads
+  // it — but that hook is the Expo app's ONLY astrologer source:
+  // apps/mobile/app/(devotee)/astrology.tsx prints "{total} astrologers online"
+  // from it, and apps/mobile/app/(astrologer)/profile.tsx looks the SIGNED-IN
+  // astrologer up inside it, so a real onboarded astrologer never finds
+  // themselves. Being read is the reason to fix it, not the reason to leave it.
+  //
+  // It now reads the same approved `AstrologerProfile` rows `/astrologers/live`
+  // serves. The fixture array is NOT deleted — it still backs
+  // GET /specializations, astrologyService.getReviews and
+  // getAstrologerByIdOrSlug. Only this door is rebound to real supply.
   server.get('/astrologers', async (request, reply) => {
     const parsed = astrologerListQuerySchema.safeParse(request.query);
     if (!parsed.success) {
@@ -45,17 +137,46 @@ export async function astrologyRoutes(server: FastifyInstance) {
     }
     const { specialization, language, priceRange, online, sort, page, limit } = parsed.data;
 
-    const result = astrologyService.getAstrologers({
+    let rows = filterAstrologers(await loadApprovedAstrologers(), {
       specialization,
       language,
-      priceRange,
-      isOnline: online !== undefined ? online === 'true' : undefined,
-      sortBy: sort,
-      page,
-      limit,
+      online,
     });
 
-    return result;
+    if (priceRange) {
+      const [minStr, maxStr] = priceRange.split('-');
+      const min = Number(minStr) || 0;
+      const max = Number(maxStr) || Infinity;
+      rows = rows.filter((a) => a.perMinuteRate >= min && a.perMinuteRate <= max);
+    }
+
+    switch (sort) {
+      case 'rating':
+        rows.sort((a, b) => b.rating - a.rating);
+        break;
+      case 'price':
+        rows.sort((a, b) => a.perMinuteRate - b.perMinuteRate);
+        break;
+      case 'experience':
+        rows.sort((a, b) => b.experienceYears - a.experienceYears);
+        break;
+      default:
+        // Online-first, then rating — same ordering as /astrologers/live.
+        rows.sort((a, b) => Number(b.isOnline) - Number(a.isOnline) || b.rating - a.rating);
+    }
+
+    const pageNum = page ?? 1;
+    const pageSize = limit ?? 15;
+    const start = (pageNum - 1) * pageSize;
+
+    return {
+      astrologers: rows.slice(start, start + pageSize),
+      total: rows.length,
+      page: pageNum,
+      limit: pageSize,
+      totalPages: Math.ceil(rows.length / pageSize),
+      source: 'live',
+    };
   });
 
   // ─── GET /astrologers/:id ──────────────────────────────────────────────────
@@ -147,38 +268,13 @@ export async function astrologyRoutes(server: FastifyInstance) {
       specialization?: string;
       online?: string;
     };
-    const profiles = await prisma.astrologerProfile.findMany({
-      where: { approved: true },
-      orderBy: [{ rating: 'desc' }, { totalConsultations: 'desc' }],
-      take: 100,
+    // AW-02: shares `loadApprovedAstrologers` with GET /astrologers so the two
+    // directories cannot state different supply for the same moment.
+    const rows = filterAstrologers(await loadApprovedAstrologers(), {
+      language,
+      specialization,
+      online,
     });
-    let rows = profiles.map((p) => {
-      const presence = getAstrologerPresence(p.userId);
-      return {
-        id: p.id,
-        userId: p.userId,
-        name: p.displayName,
-        specializations: p.specialties,
-        languages: p.languages,
-        experienceYears: p.experience,
-        rating: p.rating,
-        consultationCount: p.totalConsultations,
-        perMinuteRate: Number(p.pricePerMinute),
-        isOnline: presence.online,
-        mode: presence.mode,
-        bio: p.bio,
-        verified: p.approved,
-      };
-    });
-    if (language) {
-      rows = rows.filter((a) => a.languages.some((l) => l.toLowerCase() === language.toLowerCase()));
-    }
-    if (specialization) {
-      rows = rows.filter((a) => a.specializations.some((s) => s.toLowerCase() === specialization.toLowerCase()));
-    }
-    if (online === 'true') {
-      rows = rows.filter((a) => a.isOnline);
-    }
     // Online-first ordering.
     rows.sort((a, b) => Number(b.isOnline) - Number(a.isOnline) || b.rating - a.rating);
     return { astrologers: rows, total: rows.length, source: 'live' };
@@ -205,6 +301,29 @@ export async function astrologyRoutes(server: FastifyInstance) {
         return reply
           .code(400)
           .send({ error: 'mode must be one of: chat, call, video.' });
+      }
+
+      // AW-02 (P0): the last endpoint that would still open a consultation
+      // against an invented person. `astrologyService.startConsultation` looks
+      // the id up in the 15-row fixture, so POSTing `astro_001` answered 200
+      // with `astrologerName: "Pt. Raghunath Sharma"`, a per-minute rate and
+      // `freeMinutes: 5` — a session the platform cannot staff. Same door, same
+      // rule as POST /consultation/book (routes/consultation.ts:257-269): the
+      // only startable astrologer is an approved AstrologerProfile.
+      const looksLikeProfileId = UUID_RE.test(astrologerId);
+      const approved = looksLikeProfileId
+        ? await prisma.astrologerProfile.findUnique({ where: { id: astrologerId } })
+        : null;
+      if (!approved?.approved) {
+        request.log.warn(
+          { astrologerId, userId },
+          '[astrology] refused consult/start against a non-onboarded astrologer id',
+        );
+        return reply.code(409).send({
+          code: 'ASTROLOGER_NOT_BOOKABLE',
+          error:
+            'This astrologer is not available for consultation. Browse verified astrologers at /astrology/astrologers/live.',
+        });
       }
 
       const result = astrologyService.startConsultation(userId, astrologerId, mode);

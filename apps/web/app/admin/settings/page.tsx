@@ -33,6 +33,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { listCommissions, type Commission } from '../../../lib/commission-api';
 import { listPlans, type SubscriptionPlan } from '../../../lib/subscription-api';
 import { fetchAllAdminUsers, type AdminUserRecord } from '../users/users-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * The INTENDED platform take: `DEFAULT_PRIEST_SHARE = 0.8` in
@@ -186,7 +187,7 @@ function AdminSettingsContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-surface-800">Settings</h1>
+        <h1 className={H1.portal}>Settings</h1>
         <p className="text-sm text-surface-500 mt-0.5">
           What the platform is configured to do. Everything here is read-only — there is no
           settings endpoint, so a control on this screen could only pretend.

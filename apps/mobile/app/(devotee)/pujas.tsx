@@ -5,10 +5,10 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  Linking,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePujas } from '@poojly/api-client';
 import { selectPujaTypes } from '../../lib/api-contracts';
@@ -69,28 +69,35 @@ function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
 }
 
 /**
- * PAR-15. There is no in-app booking flow: this screen's only booking action is
- * `Linking.openURL`, which ejects the devotee into the mobile browser. Building
- * the flow is separate work (the dead `useCreateBooking` hook it would use is
- * fixed in packages/api-client), but the control must not keep claiming to be
- * something it is not — a saffron primary button reading "Book Puja" with a
- * calendar icon is the strongest possible signal that the booking happens here.
- * It says where it goes now, and announces itself to VoiceOver/TalkBack as a
- * link rather than a plain button.
+ * PAR-15. Booking now happens IN THE APP.
+ *
+ * This screen's only booking action used to be `Linking.openURL`, which ejected
+ * the devotee into the mobile browser on darshya.online. An earlier pass made
+ * that control honest about where it went ("Book on darshya.online", announced
+ * to VoiceOver as a link); this one makes the trip unnecessary — both the card
+ * and the button push /(devotee)/puja-book, which selects temple, day, slot and
+ * sankalp names and creates the booking through POST /bookings/book.
+ *
+ * The card is a button again, and truthfully so: it stays in the app. Only the
+ * card-payment step still opens the website, and that hand-off is declared on
+ * the booking screen itself rather than here.
  */
 const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
   // Slug comes from the API row (PAR-07 replaced the hardcoded catalogue this
-  // used to read), so the page that opens is the puja that was tapped.
-  const bookUrl = `https://darshya.online/pujas/book?slug=${encodeURIComponent(puja.slug)}&utm_source=mobile-app&utm_medium=puja-card`;
-  const leavesAppHint = `Opens darshya.online in your browser to book ${puja.name}`;
+  // used to read), so the screen that opens books the puja that was tapped.
+  const openBooking = () =>
+    router.push({
+      pathname: '/(devotee)/puja-book' as never,
+      params: { slug: puja.slug, name: puja.name },
+    } as never);
   return (
     <TouchableOpacity
       style={styles.pujaCard}
       activeOpacity={0.7}
-      accessibilityRole="link"
+      accessibilityRole="button"
       accessibilityLabel={puja.name}
-      accessibilityHint={leavesAppHint}
-      onPress={() => Linking.openURL(bookUrl)}
+      accessibilityHint={`Book ${puja.name}`}
+      onPress={openBooking}
     >
 
       {/* Image placeholder */}
@@ -156,13 +163,13 @@ const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
         <TouchableOpacity
           style={styles.bookButton}
           activeOpacity={0.7}
-          accessibilityRole="link"
-          accessibilityLabel={`Book ${puja.name} on darshya.online`}
-          accessibilityHint={leavesAppHint}
-          onPress={() => Linking.openURL(bookUrl)}
+          accessibilityRole="button"
+          accessibilityLabel={`Book ${puja.name}`}
+          accessibilityHint="Choose a temple, day and time slot"
+          onPress={openBooking}
         >
-          <Ionicons name="open-outline" size={16} color={colors.white} />
-          <Text style={styles.bookButtonText}>Book on darshya.online</Text>
+          <Ionicons name="calendar-outline" size={16} color={colors.white} />
+          <Text style={styles.bookButtonText}>Book this puja</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>

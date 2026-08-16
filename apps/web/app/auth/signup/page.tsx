@@ -28,6 +28,7 @@ import type { LucideIcon } from 'lucide-react';
 import { z } from 'zod';
 import { useAuth, getRoleDashboardPath, type UserRole } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // Mirrors apps/api/src/routes/auth.ts `signupSchema`. Field constraints
 // (password length + letter/digit, fullName >= 2, email format, optional
@@ -668,7 +669,7 @@ export default function SignupPage() {
  setError('');
  setStep(1);
  }}
- className="w-full flex items-center justify-center gap-2 mt-6 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'lg', 'w-full mt-6')}
  >
  Continue as {currentRoleOption?.label}
  <ArrowRight className="w-4 h-4" />
@@ -1056,7 +1057,7 @@ export default function SignupPage() {
  <button
  onClick={handleSubmit}
  disabled={isSubmitting}
- className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+ className={buttonClass('primary', 'lg', 'flex-1 disabled:cursor-not-allowed')}
  >
  {isSubmitting ? (
  <>
@@ -1108,7 +1109,7 @@ export default function SignupPage() {
  </p>
  <a
  href="/auth/login"
- className="w-full flex items-center justify-center gap-2 bg-saffron-600 hover:bg-saffron-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+ className={buttonClass('primary', 'lg', 'w-full')}
  >
  Go to Sign In
  <ArrowRight className="w-4 h-4" />
@@ -1150,7 +1151,7 @@ export default function SignupPage() {
  {onboardingPath && (
  <a
  href={onboardingPath}
- className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'lg', 'w-full')}
  >
  Complete Onboarding
  <ArrowRight className="w-4 h-4" />
@@ -1158,11 +1159,7 @@ export default function SignupPage() {
  )}
  <a
  href={dashboardPath}
- className={`w-full flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg transition-colors ${
- onboardingPath
- ? 'border border-surface-200 text-surface-600 hover:bg-surface-50'
- : 'bg-saffron-600 text-white hover:bg-saffron-700'
- }`}
+ className={buttonClass(onboardingPath ? 'secondary' : 'primary', 'lg', 'w-full')}
  >
  Go to Dashboard
  <ArrowRight className="w-4 h-4" />

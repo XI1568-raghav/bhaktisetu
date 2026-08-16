@@ -31,6 +31,7 @@ import {
  formatDate,
  timeAgo,
 } from '../../../components/support/badges';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export default function AdminSupportPage() {
  const { session } = useAuth();
@@ -91,7 +92,7 @@ export default function AdminSupportPage() {
  {/* Header */}
  <div className="flex items-center justify-between mb-6">
  <div>
- <h1 className="text-2xl font-bold text-surface-900 tracking-tight flex items-center gap-2">
+ <h1 className={`${H1.portal} flex items-center gap-2`}>
  <LifeBuoy className="w-6 h-6 text-saffron-600" />
  Support Tickets
  </h1>

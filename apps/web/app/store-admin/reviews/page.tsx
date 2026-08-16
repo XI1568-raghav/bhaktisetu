@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { getMyReviews, type StoreReview } from '../../../lib/store-admin-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ export default function StoreAdminReviewsPage() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800">Reviews</h1>
+          <h1 className={H1.portal}>Reviews</h1>
           <p className="text-surface-500 mt-1">
             See what customers are saying about your store
           </p>

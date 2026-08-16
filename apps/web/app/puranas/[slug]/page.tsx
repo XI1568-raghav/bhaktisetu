@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PURANAS, puranaSlugs, getPurana } from '../../../lib/puranas';
+import { formatNumber } from '../../../lib/format-locale';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!p) return { title: 'Not found' };
   return {
     title: `${p.name} (${p.sanskrit}) — Summary, Verse Count, Notable Stories`,
-    description: `${p.name} — ${p.verseCount.toLocaleString()} verses, presiding deity ${p.presidingDeity}. ${p.centralTheme}. ${p.summary.slice(0, 100)}`,
+    description: `${p.name} — ${formatNumber(p.verseCount)} verses, presiding deity ${p.presidingDeity}. ${p.centralTheme}. ${p.summary.slice(0, 100)}`,
     alternates: { canonical: `${BASE_URL}/puranas/${p.slug}` },
     openGraph: {
       images: ['/images/golden-temple-og.jpg'],
@@ -76,7 +77,7 @@ export default async function PuranaPage({ params }: { params: Promise<{ slug: s
         <h1 className="mt-2 font-serif text-3xl text-gray-900 sm:text-4xl">{p.sanskrit}</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900">{p.name}</p>
         <p className="mt-1 italic text-sm text-gray-600">{p.iast}</p>
-        <p className="mt-3 text-sm text-gray-700"><span className="font-semibold">Verses:</span> {p.verseCount.toLocaleString()} · <span className="font-semibold">Best known for:</span> {p.bestKnownFor}</p>
+        <p className="mt-3 text-sm text-gray-700"><span className="font-semibold">Verses:</span> {formatNumber(p.verseCount)} · <span className="font-semibold">Best known for:</span> {p.bestKnownFor}</p>
       </header>
 
       <section className="mb-8">

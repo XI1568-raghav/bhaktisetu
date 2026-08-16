@@ -125,9 +125,17 @@ describe('DU-01/06/11 — brand font tokens live in the namespace Tailwind reads
   );
 
   it('layout.tsx really does download the faces the tokens will point at', () => {
+    // I-06/I18N-06 (2026-08-15) added Tamil, Telugu and Bengali. This list is an
+    // INVENTORY, not a cap: its job is to make a silently-dropped face fail
+    // here. The reachability half — that a downloaded face is actually named by
+    // a stack a page inherits, which is where Noto Sans Devanagari failed for
+    // months — lives in __tests__/seo/indic-webfonts.test.ts.
     expect([...LOADED].sort()).toEqual([
+      '--font-noto-bengali',
       '--font-noto-devanagari',
       '--font-noto-sans',
+      '--font-noto-tamil',
+      '--font-noto-telugu',
       '--font-reader-serif',
     ]);
   });

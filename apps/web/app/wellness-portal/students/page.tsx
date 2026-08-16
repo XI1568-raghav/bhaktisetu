@@ -17,6 +17,7 @@ import {
   getMyStudents,
   type WellnessStudent,
 } from '../../../lib/wellness-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ export default function WellnessStudentsPage() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800">Students</h1>
+          <h1 className={H1.portal}>Students</h1>
           <p className="text-surface-500 mt-1">
             {students.length} total student{students.length === 1 ? '' : 's'}
             {students.length > 0 && ` (${attendedCount} have attended)`}

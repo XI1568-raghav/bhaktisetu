@@ -23,6 +23,7 @@ import {
  toggleOfferingActive,
  type Offering,
 } from '../../../lib/pandit-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -188,7 +189,7 @@ function PriestServicesPageContent() {
    {/* Header */}
    <div className="flex items-center justify-between">
     <div>
-     <h1 className="text-2xl font-bold text-surface-800">My Puja Services</h1>
+     <h1 className={H1.portal}>My Puja Services</h1>
      <p className="text-surface-500 mt-1">
       {offerings.length} services ({activeCount} active)
      </p>

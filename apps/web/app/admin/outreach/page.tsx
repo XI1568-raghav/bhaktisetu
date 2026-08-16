@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, PlayCircle } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface OutreachStats {
   daily: Array<{ date: string; sent: number; replied: number; bounced: number }>;
@@ -95,7 +96,7 @@ export default function AdminOutreachPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-surface-800">Outreach</h1>
+          <h1 className={H1.portal}>Outreach</h1>
           <p className="text-sm text-surface-500 mt-0.5">30-day email performance</p>
         </div>
         <button

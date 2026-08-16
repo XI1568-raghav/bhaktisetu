@@ -312,7 +312,7 @@ function RailCard({
       <h3 className="mt-3 font-display text-xl font-semibold leading-snug tracking-tight text-surface-900">
         {m.title}
       </h3>
-      <p className="mt-3 text-[14px] leading-relaxed text-surface-600">
+      <p className="mt-3 text-sm leading-relaxed text-surface-600">
         {m.body}
       </p>
 

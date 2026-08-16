@@ -77,8 +77,70 @@ async function safePujaSlugs(): Promise<string[]> {
   }
 }
 
+/**
+ * SEO-07 (prod sweep 2026-08-12) — two defects, one exit point.
+ *
+ * 1. DUPLICATES. Several slug sources list the same slug twice
+ *    (`deitySlugs()`, `aartiSlugs()`, `vratSlugs()`, `SHLOKAS`, …), so the
+ *    emitted sitemap carried 49 repeated <loc> values. A <loc> must be unique
+ *    inside a sitemap; repeats waste crawl budget and make the file fail
+ *    validators. Deduped here at the single exit point rather than in ~60
+ *    call sites, so a future list that gains a duplicate can never leak one.
+ *
+ * 2. lastmod. Every one of the ~1,600 entries carried `new Date()` — the
+ *    instant the sitemap was rendered. That is not when the page changed, it
+ *    is when the server booted, so the whole file claimed the entire site was
+ *    rewritten on every deploy. Google's documented response to a lastmod it
+ *    can see is unreliable (identical across all URLs, moving with no content
+ *    change) is to ignore lastmod for the site — which also throws away the
+ *    signal for the handful of pages that genuinely ARE fresh.
+ *
+ *    lastmod is now emitted only where a real date exists:
+ *      - `contentDates` — a per-URL date taken from the content itself
+ *        (currently blog post dates).
+ *      - `dailyUrls` — pages whose body is computed from the current date on
+ *        every render (panchang, daily horoscope, choghadiya/rahu-kalam/hora,
+ *        /today). These get today's date at UTC midnight, not the render
+ *        instant: the claim "this page's content is from today" is true, the
+ *        claim "it changed at 14:22:07" is not.
+ *      - everything else gets NO lastmod. The sitemap protocol makes the tag
+ *        optional and Google prefers it absent over fabricated; omitting is
+ *        the honest fallback for a page whose modification date we do not
+ *        actually know.
+ */
+function todayUtc(): Date {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+function finalizeSitemap(
+  entries: MetadataRoute.Sitemap,
+  contentDates: Map<string, Date>,
+  dailyUrls: Set<string>,
+): MetadataRoute.Sitemap {
+  const stamp = todayUtc();
+  const seen = new Set<string>();
+  const out: MetadataRoute.Sitemap = [];
+
+  for (const entry of entries) {
+    if (seen.has(entry.url)) continue;
+    seen.add(entry.url);
+
+    // Builders stamp a placeholder `lastModified`; this is the only authority.
+    const { lastModified: _placeholder, ...rest } = entry;
+    const real = contentDates.get(entry.url) ?? (dailyUrls.has(entry.url) ? stamp : undefined);
+    out.push(real ? { ...rest, lastModified: real } : rest);
+  }
+
+  return out;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Placeholder only — `finalizeSitemap` decides every entry's real lastmod.
   const now = new Date();
+  // url -> the date the page's own content carries. Populated where a real
+  // date exists; an absent key means "we do not know" and emits no lastmod.
+  const contentDates = new Map<string, Date>();
 
   const topLevelStatic: { path: string; priority: number; changeFrequency: 'daily' | 'weekly' | 'monthly' }[] = [
     { path: '', priority: 1.0, changeFrequency: 'daily' },
@@ -361,12 +423,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const { listBlogPosts } = await import('../lib/blog-posts');
     const posts = await listBlogPosts();
-    blogEntries = posts.map((p) => ({
-      url: `${BASE_URL}/blog/${p.slug}`,
-      lastModified: new Date(p.date),
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    }));
+    blogEntries = posts.map((p) => {
+      const url = `${BASE_URL}/blog/${p.slug}`;
+      const published = new Date(`${p.date}T00:00:00Z`);
+      // A real, per-post content date — the one lastmod on this site that is
+      // beyond argument. Registered so finalizeSitemap keeps it.
+      if (!Number.isNaN(published.getTime())) contentDates.set(url, published);
+      return {
+        url,
+        lastModified: published,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      };
+    });
   } catch {
     blogEntries = [];
   }
@@ -830,7 +899,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [
+  // Pages whose rendered body is derived from the current date on every
+  // request, verified against each route: /today (day deity + tithi +
+  // next-festival countdown), /panchang and /panchang/[city] (today's
+  // panchang), the per-rashi horoscope hub and its /today child (getDailyHoroscope
+  // for the current IST date), and choghadiya/rahu-kalam/hora (sunrise-relative
+  // tables for the current date, revalidate 86400). These, and only these, can
+  // honestly claim today's date as lastmod.
+  const dailyUrls = new Set<string>([
+    `${BASE_URL}/today`,
+    `${BASE_URL}/panchang`,
+    `${BASE_URL}/astrology/choghadiya`,
+    `${BASE_URL}/astrology/rahu-kalam`,
+    `${BASE_URL}/astrology/hora`,
+    ...citySlugs().map((slug) => `${BASE_URL}/panchang/${slug}`),
+    ...rashiSlugs().flatMap((slug) => [
+      `${BASE_URL}/astrology/horoscope/${slug}`,
+      `${BASE_URL}/astrology/horoscope/${slug}/today`,
+    ]),
+  ]);
+
+  return finalizeSitemap([
     ...topLevelEntries,
     ...secondaryEntries,
     ...templeEntries,
@@ -896,6 +985,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...freePanditEntries,
     ...cityPujaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
-  ];
+  ], contentDates, dailyUrls);
 }
 // force CF Pages full re-deploy ARE-phase5-1780955800
