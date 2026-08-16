@@ -5,6 +5,7 @@ import { Loader2, Upload, X, FileText } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 type LeadRole = 'TEMPLE' | 'PRIEST' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA';
 type LeadStatus = 'NEW' | 'QUEUED' | 'EMAILED' | 'REPLIED' | 'CONVERTED' | 'BOUNCED' | 'UNSUBSCRIBED';
@@ -235,7 +236,7 @@ export default function AdminLeadsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-surface-800">Lead Pipeline</h1>
+          <h1 className={H1.portal}>Lead Pipeline</h1>
           <p className="text-sm text-surface-500 mt-0.5">Provider outreach across roles</p>
         </div>
         <button

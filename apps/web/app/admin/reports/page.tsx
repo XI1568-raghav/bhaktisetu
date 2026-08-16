@@ -24,6 +24,7 @@ import {
 // AO-13: paginate the export to exhaustion. See the module for why a large
 // `limit` is not a fix (the API clamps it to 100, silently).
 import { fetchAllUsersForExport } from './export-users';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 type ExportType = 'users' | 'revenue' | 'all';
 
@@ -221,7 +222,7 @@ export default function AdminReportsPage() {
  {/* Header */}
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-lg font-semibold text-surface-800">Reports</h1>
+ <h1 className={H1.portal}>Reports</h1>
  <p className="text-sm text-surface-500 mt-0.5">Analytics, trends, and platform insights</p>
  </div>
  <div className="flex gap-2">

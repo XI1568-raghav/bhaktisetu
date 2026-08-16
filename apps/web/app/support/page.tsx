@@ -108,7 +108,7 @@ export default function SupportPage() {
  className="group bg-white rounded-xl border border-surface-200 p-5 hover:border-saffron-400 hover:-translate-y-0.5 hover:shadow-md transition-all"
  >
  <div className="text-3xl mb-3">{cat.emoji}</div>
- <h3 className="font-semibold text-surface-900 text-[15px] mb-1">{cat.name}</h3>
+ <h3 className="font-semibold text-surface-900 text-base mb-1">{cat.name}</h3>
  <p className="text-xs text-surface-500 leading-relaxed">{cat.description}</p>
  </Link>
  ))}
@@ -135,7 +135,7 @@ export default function SupportPage() {
  {String(idx + 1).padStart(2, '0')}
  </span>
  <div className="flex-1 min-w-0">
- <h4 className="font-semibold text-surface-900 text-[15px] group-hover:text-saffron-700 transition-colors">
+ <h4 className="font-semibold text-surface-900 text-base group-hover:text-saffron-700 transition-colors">
  {article.title}
  </h4>
  <p className="text-xs text-surface-500 mt-1 line-clamp-2">{article.excerpt}</p>
@@ -162,7 +162,7 @@ export default function SupportPage() {
  <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
  </div>
  <div className="flex-1">
- <h3 className="font-semibold text-surface-900 text-[15px] flex items-center gap-2">
+ <h3 className="font-semibold text-surface-900 text-base flex items-center gap-2">
  All systems operational
  <CheckCircle2 className="w-4 h-4 text-green-600" />
  </h3>
@@ -178,7 +178,7 @@ export default function SupportPage() {
  <TicketIcon className="w-6 h-6" />
  </div>
  <div className="flex-1">
- <h3 className="font-semibold text-[15px]">Still need help?</h3>
+ <h3 className="font-semibold text-base">Still need help?</h3>
  <p className="text-xs text-white/80 mt-0.5">Raise a ticket — first response in 4 hours.</p>
  </div>
  <Link
@@ -200,7 +200,7 @@ export default function SupportPage() {
  >
  <div className="flex items-center justify-between">
  <div>
- <h3 className="font-semibold text-surface-900 text-[15px]">View my tickets</h3>
+ <h3 className="font-semibold text-surface-900 text-base">View my tickets</h3>
  <p className="text-xs text-surface-500 mt-0.5">Check status of tickets you&apos;ve raised.</p>
  </div>
  <ArrowRight className="w-5 h-5 text-surface-400" />

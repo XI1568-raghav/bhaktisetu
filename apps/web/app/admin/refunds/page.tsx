@@ -55,6 +55,7 @@ import {
   type RefundBooking,
   type RefundType,
 } from './refund-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * Exact rupees, always. Compact formatting ("Rs. 3.2L") is fine for a headline
@@ -320,7 +321,7 @@ export default function AdminRefundsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-surface-800">Refunds</h1>
+        <h1 className={H1.portal}>Refunds</h1>
         <p className="text-sm text-surface-500 mt-0.5">
           Approve or decline refunds on cancelled bookings whose payment is still captured.
         </p>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { VEDAS, vedaSlugs, getVeda } from '../../../lib/vedas';
+import { formatNumber } from '../../../lib/format-locale';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!v) return { title: 'Not found' };
   return {
     title: `${v.name} (${v.sanskrit}) — ${v.bestKnownFor}`,
-    description: `${v.name} — ${v.totalMantras.toLocaleString()} mantras, ${v.shakhasExtant} extant shakhas, presiding priest ${v.associatedPriest}. ${v.summary.slice(0, 100)}`,
+    description: `${v.name} — ${formatNumber(v.totalMantras)} mantras, ${v.shakhasExtant} extant shakhas, presiding priest ${v.associatedPriest}. ${v.summary.slice(0, 100)}`,
     alternates: { canonical: `${BASE_URL}/vedas/${v.slug}` },
     openGraph: {
       images: ['/images/golden-temple-og.jpg'],
@@ -77,7 +78,7 @@ export default async function VedaPage({ params }: { params: Promise<{ slug: str
         <p className="mt-1 text-2xl font-bold text-gray-900">{v.name}</p>
         <p className="mt-1 italic text-sm text-gray-600">{v.iast} — {v.meaning}</p>
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-gray-700 sm:grid-cols-4">
-          <div><div className="text-xs uppercase text-gray-500">Mantras</div><div className="font-semibold">{v.totalMantras.toLocaleString()}</div></div>
+          <div><div className="text-xs uppercase text-gray-500">Mantras</div><div className="font-semibold">{formatNumber(v.totalMantras)}</div></div>
           <div><div className="text-xs uppercase text-gray-500">{v.mandalaLabel}</div><div className="font-semibold">{v.mandalaOrKandaCount}</div></div>
           <div><div className="text-xs uppercase text-gray-500">Shakhas extant</div><div className="font-semibold">{v.shakhasExtant} / {v.shakhasOriginal}</div></div>
           <div><div className="text-xs uppercase text-gray-500">Priest</div><div className="font-semibold">{v.associatedPriest}</div></div>

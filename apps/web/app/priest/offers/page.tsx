@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface OfferBooking {
   id: string;
@@ -184,7 +185,7 @@ function PriestOffersInner() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-surface-800">Puja Offers</h1>
+        <h1 className={H1.portal}>Puja Offers</h1>
         <p className="text-surface-500 mt-1 text-sm">
           Requests sent to you by the dispatch engine. Accept one and the booking becomes yours.
         </p>

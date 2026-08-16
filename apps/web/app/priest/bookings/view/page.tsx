@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import VideoProofUpload from '../../../../components/provider/VideoProofUpload';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 interface BookingDetail {
  id: string;
@@ -296,7 +297,7 @@ function PriestBookingDetailInner() {
  <Flame className="w-7 h-7 text-saffron-500" />
  </div>
  <div className="flex-1">
- <h1 className="text-xl font-bold text-surface-800">{booking.pujaType.name}</h1>
+ <h1 className={H1.portal}>{booking.pujaType.name}</h1>
  <p className="text-sm text-surface-500 font-mono">{booking.bookingNumber}</p>
  </div>
  <span className={`self-start text-sm font-semibold px-3 py-1 rounded-full ${statusCfg.cls}`}>

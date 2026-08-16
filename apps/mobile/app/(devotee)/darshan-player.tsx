@@ -16,6 +16,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDarshanStream } from '@poojly/api-client';
 import { selectStreamDetail } from '../../lib/api-contracts';
+import { resolveStreamPlayback } from '../../lib/stream-authority';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 // react-native-webview is optional — Expo Go ships it, bare RN may not.
@@ -96,15 +97,21 @@ export default function DarshanPlayerScreen() {
   const stream = useDarshanStream(id, { enabled: !!id });
   const data = selectStreamDetail(stream.data);
 
-  // Prefer the URL the list screen already had (it comes from GET /darshan/live,
-  // which is the authoritative live view — see PAR-21: /:id/stream reports a
-  // different status and URL for the same stream).
-  const liveUrl = passedUrl ?? data?.playbackUrl ?? data?.recentVideoUrl ?? undefined;
+  // PAR-21. This screen used to prefer `passedUrl` — a value the LIST screen
+  // captured at router.push time — over the detail response, and to raise a LIVE
+  // badge from `!!passedUrl`. Both are now decided by one pure resolver, which
+  // treats GET /darshan/:id/stream as authoritative and demotes the route
+  // parameter to a warm-start hint. Rationale in lib/stream-authority.ts.
+  const view = resolveStreamPlayback({
+    detail: data,
+    passedUrl,
+    detailPending: stream.isLoading && !stream.isError,
+  });
+  const liveUrl = view.playbackUrl;
   const title = passedTitle ?? data?.templeName ?? 'Live Darshan';
   const subtitle = passedDeity ?? '';
   const viewers = typeof data?.viewerCount === 'number' ? data.viewerCount : undefined;
-  // The header badge used to be a hardcoded red LIVE pill regardless of state.
-  const isLive = data ? data.isLive : !!passedUrl;
+  const isLive = view.isLive;
   const streamMissing = stream.isError || (!stream.isLoading && data === null);
 
   const embedUrl = youtubeEmbedUrl(liveUrl);
@@ -155,9 +162,15 @@ export default function DarshanPlayerScreen() {
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
         </View>
-        <View style={[styles.liveBadge, !isLive && styles.offlineBadge]}>
+        <View
+          style={[
+            styles.liveBadge,
+            view.badge === 'OFFLINE' && styles.offlineBadge,
+            view.badge === 'CHECKING' && styles.checkingBadge,
+          ]}
+        >
           <View style={styles.liveDot} />
-          <Text style={styles.liveText}>{isLive ? 'LIVE' : 'OFFLINE'}</Text>
+          <Text style={styles.liveText}>{view.badge}</Text>
         </View>
       </View>
 
@@ -219,10 +232,15 @@ export default function DarshanPlayerScreen() {
               <Text style={styles.statText}>{viewers.toLocaleString()} watching</Text>
             </View>
           ) : null}
-          <View style={styles.statChip}>
-            <Ionicons name="time-outline" size={14} color={colors.stone[600]} />
-            <Text style={styles.statText}>24x7 darshan</Text>
-          </View>
+          {/* The aarti window the authoritative endpoint reports. Nothing is
+              rendered when it reports none — the chip that used to sit here
+              claimed "24x7 darshan" for every temple, which no endpoint says. */}
+          {view.slotLabel ? (
+            <View style={styles.statChip}>
+              <Ionicons name="time-outline" size={14} color={colors.stone[600]} />
+              <Text style={styles.statText}>{view.slotLabel}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.actionsRow}>
@@ -286,6 +304,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   offlineBadge: { backgroundColor: colors.stone[500] },
+  checkingBadge: { backgroundColor: colors.stone[400] },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white },
   liveText: { color: colors.white, fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
   player: {

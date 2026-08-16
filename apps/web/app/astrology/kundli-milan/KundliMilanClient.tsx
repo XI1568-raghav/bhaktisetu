@@ -164,7 +164,7 @@ export default function KundliMilanClient({ options }: Props) {
        <div className="flex flex-col items-center">
         <div className="relative h-24 w-24">
          <svg viewBox="0 0 36 36" className="h-24 w-24 -rotate-90">
-          <circle cx="18" cy="18" r="16" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+          <circle cx="18" cy="18" r="16" fill="none" stroke="#e6e2db" strokeWidth="3" />
           <circle
            cx="18"
            cy="18"

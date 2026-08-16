@@ -36,6 +36,7 @@ import { friendlyApiError, serverErrorMessage } from '../../../lib/friendly-erro
 import { videoProofState } from '../video-proof';
 import AuthGuard from '../../../components/AuthGuard';
 import BookingStatusTracker, { type BookingStatus } from '../../../components/BookingStatusTracker';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -599,7 +600,7 @@ function BookingDetailContent() {
  <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
  <div>
  <div className="mb-1 flex items-center gap-3">
- <h1 className="text-xl font-bold text-surface-800 sm:text-2xl">{booking.pujaName}</h1>
+ <h1 className={H1.portal}>{booking.pujaName}</h1>
  <span
  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge.bg} ${statusBadge.color}`}
  >

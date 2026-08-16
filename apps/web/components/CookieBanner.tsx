@@ -180,7 +180,7 @@ export default function CookieBanner() {
           shrinking a DPDP/UK-GDPR disclosure is a compliance decision, not a
           layout one. */}
       <div className="mx-auto max-w-3xl rounded-xl border bg-white p-4 shadow-xl sm:p-6"
-        style={{ borderColor: "var(--color-border, #e5e7eb)" }}
+        style={{ borderColor: "var(--color-border, #e6e2db)" }}
       >
         <h2 id="darshya-cookie-title" className="text-sm font-semibold leading-snug text-surface-900 sm:text-lg">
           We use cookies for darshan, devotion, and DPDP/UK-GDPR compliance

@@ -4,25 +4,41 @@
     "darshan": "दर्शन",
     "pujas": "पूजा",
     "content": "सामग्री",
+    "yatra": "यात्रा",
     "panchang": "पंचांग",
     "donate": "दान",
     "gauseva": "गौ सेवा",
-    "gurukuls": "गुरुकुल",
-    "sanatan": "सनातन धर्म",
+    "search": "खोजें",
     "sanskrit": "संस्कृत",
     "ved": "वेद",
-    "deity": "देवता",
-    "search": "खोजें"
+    "sanatan": "सनातन धर्म",
+    "gurukuls": "गुरुकुल",
+    "deity": "देवता"
   },
   "common": {
-    "search": "खोजें"
+    "donate": "दान",
+    "search": "खोजें",
+    "all": "सभी"
   },
   "home": {
-    "featLiveDarshan": "लाइव दर्शन"
+    "heroCtaSecondary": "पूजा बुक करें",
+    "heroBadgeTemples": "मंदिर",
+    "featLiveDarshan": "लाइव दर्शन",
+    "liveDarshanLabel": "लाइव दर्शन",
+    "videoProof": "वीडियो प्रमाण",
+    "gauSevaTitle": "गौ सेवा",
+    "panchangTitle": "पंचांग",
+    "contentTitle": "सामग्री"
   },
-  "footer": {
-    "liveDarshan": "लाइव दर्शन",
-    "bookPuja": "पूजा बुक करें"
+  "pujas": {
+    "pageTitle": "पूजा बुक करें",
+    "videoProof": "वीडियो प्रमाण"
+  },
+  "darshan": {
+    "pageTitle": "लाइव दर्शन"
+  },
+  "donations": {
+    "donate": "दान"
   },
   "content": {
     "pageTitle": "भक्ति संगीत पुस्तकालय",
@@ -52,5 +68,10 @@
     "chalisa": "चालीसा",
     "muhurat": "मुहूर्त",
     "tithi": "तिथि"
+  },
+  "footer": {
+    "content": "सामग्री",
+    "liveDarshan": "लाइव दर्शन",
+    "bookPuja": "पूजा बुक करें"
   }
 }

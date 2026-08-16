@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MessageSquare, X, Send, LifeBuoy, Sparkles, UserCircle, ArrowRight, Bot } from 'lucide-react';
 import { findAutoReply } from '../lib/support';
+import { buttonClass } from './ui/button-recipe';
 
 type QuickAction = { label: string; href: string };
 
@@ -294,7 +295,7 @@ export function LiveChatWidget() {
  <div className="border-t border-amber-200 bg-amber-50 p-3">
  <button
  onClick={handleEscalate}
- className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-saffron-600 hover:bg-saffron-700 text-white text-sm font-medium rounded-lg"
+ className={buttonClass('primary', 'sm', 'w-full')}
  >
  <UserCircle className="w-4 h-4" />
  Talk to Human Agent

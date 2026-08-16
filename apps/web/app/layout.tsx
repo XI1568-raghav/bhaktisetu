@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { TITLE_TEMPLATE } from "../lib/seo/title-template";
-import { Noto_Sans, Noto_Sans_Devanagari, Crimson_Pro } from "next/font/google";
+import {
+ Noto_Sans,
+ Noto_Sans_Devanagari,
+ Noto_Sans_Tamil,
+ Noto_Sans_Telugu,
+ Noto_Sans_Bengali,
+ Crimson_Pro,
+} from "next/font/google";
 import { t } from "../lib/t";
 import {
  Flame,
@@ -59,11 +66,78 @@ import { organizationJsonLd, webSiteJsonLd } from "../lib/jsonld";
 import Link from "next/link";
 import "./globals.css";
 
+/*
+ * I-06 / I18N-06 (prod sweep 2026-08-12) — WEBFONT COVERAGE FOR THE FOUR INDIC
+ * SCRIPTS THE FOOTER ADVERTISES ON EVERY PAGE.
+ *
+ * The measurement: 11 of 20 temple names painted in a script with no loaded
+ * font, and Devanagari / Tamil / Telugu / Bengali all fell through to whatever
+ * the operating system happened to ship — different metrics per device, and on
+ * Windows frequently a last-resort face with no italic and no weights.
+ *
+ * Noto Sans Devanagari was ALREADY downloaded before this change and still
+ * painted nothing, which is the part worth understanding before editing here.
+ * The only stack that named it was globals.css's `--font-devanagari`, reachable
+ * only through the `html[lang="hi"]` rule — and the root layout renders
+ * `lang="en"` on the server for every route (see I-05: the correction is
+ * client-side, in components/TranslationCoverageNotice). So on the ~1,780
+ * English pages that carry Devanagari temple names that rule never matched.
+ * Downloading a face is not the fix; being reachable from the stack a page
+ * actually inherits is.
+ *
+ * HOW THE INDIC FACES REACH EVERY STACK WITHOUT TOUCHING globals.css.
+ * next/font emits the `variable` as
+ *     --x: '<hashed family>', '<metric fallback>', …fallback
+ * with `fallback` entries inserted VERBATIM and unquoted
+ * (next/dist/build/webpack/loaders/next-font-loader/postcss-next-font.js:110)
+ * — so a `var(--other)` in `fallback` lands as a real var() reference. Hanging
+ * the four Indic faces off --font-noto-sans and --font-reader-serif therefore
+ * extends every stack that already names those two (--font-body,
+ * --font-display, --font-sans, --font-serif, --font-devanagari) in ONE place,
+ * with no second copy of a font stack to drift. Guarded by
+ * __tests__/seo/indic-webfonts.test.ts, which resolves the stacks var() by
+ * var() rather than trusting that an import implies a rendered glyph.
+ *
+ * WHY THE INDIC FACES ARE preload: false. next/font preloads by default, and a
+ * face imported by the ROOT layout preloads on all ~1,785 routes. These four
+ * are needed by a handful of them. A browser downloads a webfont only when a
+ * glyph in the rendered text actually needs it, so opting out of preload makes
+ * them free on every page that has no Indic text and unchanged on the pages
+ * that do. Devanagari was preloading site-wide before this change; that is 4
+ * woff2 preload hints per page for a face 99% of pages never painted, and is
+ * the same waste PERF-03 recorded ("201.9 KB of font bytes, rendered in Arial
+ * anyway").
+ *
+ * WEIGHTS: the three new families are declared with no `weight`, which selects
+ * the variable font — one file covering 100-900 instead of four static cuts.
+ *
+ * Scope is deliberately the four scripts lib/i18n/locales.ts advertises
+ * (hi + mr → Devanagari, ta → Tamil, te → Telugu, bn → Bengali). Gujarati,
+ * Kannada, Malayalam and Gurmukhi are accepted by the DB enum but the web has
+ * no destination for them (locales.ts collapses them to English), so loading
+ * their faces would be bytes for a page that does not exist.
+ */
+
+/*
+ * The Indic tail below is written out in full twice on purpose. next/font
+ * options are read by a compile-time transform, not at runtime: every value
+ * must be an explicitly written literal, and hoisting the array into a shared
+ * `const` fails the build with "Font loader values must be explicitly written
+ * literals". __tests__/seo/indic-webfonts.test.ts resolves both copies and
+ * fails if either one stops reaching all four scripts, which is the guard that
+ * a shared constant would otherwise have provided.
+ */
 const notoSans = Noto_Sans({
  subsets: ["latin"],
  weight: ["300", "400", "500", "600", "700"],
  variable: "--font-noto-sans",
  display: "swap",
+ fallback: [
+  "var(--font-noto-devanagari)",
+  "var(--font-noto-tamil)",
+  "var(--font-noto-telugu)",
+  "var(--font-noto-bengali)",
+ ],
 });
 
 const notoSansDevanagari = Noto_Sans_Devanagari({
@@ -71,6 +145,28 @@ const notoSansDevanagari = Noto_Sans_Devanagari({
  weight: ["400", "500", "600", "700"],
  variable: "--font-noto-devanagari",
  display: "swap",
+ preload: false,
+});
+
+const notoSansTamil = Noto_Sans_Tamil({
+ subsets: ["tamil"],
+ variable: "--font-noto-tamil",
+ display: "swap",
+ preload: false,
+});
+
+const notoSansTelugu = Noto_Sans_Telugu({
+ subsets: ["telugu"],
+ variable: "--font-noto-telugu",
+ display: "swap",
+ preload: false,
+});
+
+const notoSansBengali = Noto_Sans_Bengali({
+ subsets: ["bengali"],
+ variable: "--font-noto-bengali",
+ display: "swap",
+ preload: false,
 });
 
 const crimsonPro = Crimson_Pro({
@@ -78,6 +174,12 @@ const crimsonPro = Crimson_Pro({
  weight: ["400", "500", "600", "700"],
  variable: "--font-reader-serif",
  display: "swap",
+ fallback: [
+  "var(--font-noto-devanagari)",
+  "var(--font-noto-tamil)",
+  "var(--font-noto-telugu)",
+  "var(--font-noto-bengali)",
+ ],
 });
 
 export const metadata: Metadata = {
@@ -262,9 +364,17 @@ export default function RootLayout({
  };
 
  return (
+ // I-05: `lang` is the language of the DOCUMENT the server rendered, and every
+ // route in this app is served from one English root layout — there is no
+ // `[locale]` segment and no second root layout, so nothing here can know the
+ // route. It is corrected on the client, per navigation, from the `<main lang>`
+ // the locale landings declare (components/TranslationCoverageNotice), which is
+ // the only truthful source available: driving it off the visitor's STORED
+ // preference put `lang="hi"` around a 100% English page. See
+ // __tests__/i18n-html-lang.test.tsx for the whole argument.
  <html
  lang="en"
- className={`${notoSans.variable} ${notoSansDevanagari.variable} ${crimsonPro.variable}`}
+ className={`${notoSans.variable} ${notoSansDevanagari.variable} ${notoSansTamil.variable} ${notoSansTelugu.variable} ${notoSansBengali.variable} ${crimsonPro.variable}`}
  >
  <head>
  {/* Resource hints — warm up connections to third-party origins we hit on nearly every page.
@@ -306,13 +416,29 @@ export default function RootLayout({
  {/* Cloudflare Web Analytics — privacy-first, no cookies. No-op when env unset. */}
  <CloudflareAnalytics />
 
- <link rel="alternate" hrefLang="en" href="https://darshya.online" />
- <link rel="alternate" hrefLang="hi" href="https://darshya.online/hi" />
- <link rel="alternate" hrefLang="ta" href="https://darshya.online/ta" />
- <link rel="alternate" hrefLang="te" href="https://darshya.online/te" />
- <link rel="alternate" hrefLang="bn" href="https://darshya.online/bn" />
- <link rel="alternate" hrefLang="mr" href="https://darshya.online/mr" />
- <link rel="alternate" hrefLang="x-default" href="https://darshya.online" />
+ {/*
+ I18N-08 (prod sweep 2026-08-12) — the seven <link rel="alternate" hrefLang>
+ tags that used to sit here have been REMOVED and must not come back.
+
+ An hreflang annotation is a claim about the CURRENT document, honoured only
+ when the target returns the same claim. Emitted from the ROOT layout they
+ shipped on all ~1,785 prerendered pages, so /aarti/vishnu-aarti told Google
+ its Hindi equivalent was the Hindi HOMEPAGE — and so did /pujas, and /store,
+ and every other route. /hi cannot return-link to any of them. Google drops a
+ cluster whose return links do not match and treats the rest of it as
+ unreliable, so the block was worse than emitting nothing on 1,784 pages and
+ pure duplication on the one page it was true for: app/page.tsx already
+ declares the same six URLs through `alternates.languages`.
+
+ A root layout has no pathname (no [locale] segment, no second root layout),
+ and reading headers() here would opt every route out of static prerendering
+ to compute something each page already knows about itself. So the cluster
+ belongs to the page: lib/seo/hreflang.ts holds the one definition.
+ Guarded by __tests__/seo/hreflang-cluster.test.ts.
+
+ The RSS link below stays — rel="alternate" with a feed type and no hrefLang
+ is feed discovery, not a language claim, and it is correct on every page.
+ */}
  <link rel="alternate" type="application/rss+xml" title="Darshya RSS" href="https://darshya.online/feed.xml" />
 
  {/* Site-wide JSON-LD: Organization + WebSite (SearchAction). Per-page JSON-LD

@@ -6,6 +6,7 @@ import { Loader2, Sparkles, X } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface MySubscription {
   id: string;
@@ -92,7 +93,7 @@ function AccountSubscriptionsInner() {
           <div className="w-14 h-14 gradient-saffron rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
             <Sparkles className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-surface-800 mb-1">My Subscriptions</h1>
+          <h1 className={`${H1.portal} mb-1`}>My Subscriptions</h1>
           <p className="text-surface-500 text-sm">Manage your Darshya plan and auto-renewal</p>
         </div>
 

@@ -75,12 +75,22 @@ function templePathBooking() {
     isVerified: true,
     status: 'active',
     userId: NEW_PRIEST_USER,
-    // A plain number, because that is what `resolvePriestShare` accepts
-    // (`typeof commissionRate === 'number'`). Noted while writing this: Prisma
-    // hands a Decimal(5,4) column back as a Decimal, which that guard rejects,
-    // so a per-pandit rate silently becomes DEFAULT_PRIEST_SHARE in production.
-    // Real, pre-existing, and NOT this finding — asserting the 0.80 fallback
-    // here would bake it in as intended behaviour.
+    // A plain number, because that is exactly what production hands over:
+    // `Priest.commissionRate` is `Float @default(0.80)` (schema.prisma), and
+    // Prisma maps Float to a JS number. `resolvePriestShare`'s
+    // `typeof commissionRate === 'number'` guard therefore passes on every real
+    // request and a negotiated rate IS honoured. This fixture is faithful to
+    // production, not a convenient simplification.
+    //
+    // An earlier revision of this comment claimed the opposite — that the column
+    // was Decimal(5,4), that Prisma returned a Decimal, and that every pandit
+    // silently fell back to DEFAULT_PRIEST_SHARE. That was wrong, and it was
+    // later re-reported as a live payout bug. The Decimal(5,4) rate is
+    // `Commission.percentage`: a different column on a different model. Should
+    // `commissionRate` ever become a Decimal, this fails at compile time, not
+    // silently — bookings.ts calls
+    // `resolvePriestShare(newPriestUser?.commissionRate)` against a parameter
+    // typed `number | null | undefined`.
     commissionRate: 0.7,
   } as never);
   // The temple path never minted one — this is the whole point.

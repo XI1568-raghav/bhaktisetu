@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search as SearchIcon, ArrowRight, BookOpen, Flame, Landmark } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api-config';
+import { contentSubtitleLabel, pujaSubtitleLabel } from '../../components/SearchSubtitle';
 
 /**
  * CM-12 (prod sweep 2026-08-12) — this page searched ONLY the static
@@ -180,7 +181,14 @@ export default function SearchClient() {
                 className="block p-4 bg-white border border-surface-200 rounded-xl hover:border-saffron-400 transition-colors"
               >
                 <h3 className="font-bold text-surface-900">{r.name}</h3>
-                {r.subtitle && <p className="text-sm text-surface-600 mt-0.5">{r.subtitle}</p>}
+                {/*
+                  CM-10: the API composes this from `p.deity ?? p.category`, so
+                  a puja with no deity arrives as the raw PujaCategory member —
+                  `special_occasion`. A deity name passes through untouched.
+                */}
+                {pujaSubtitleLabel(r.subtitle) && (
+                  <p className="text-sm text-surface-600 mt-0.5">{pujaSubtitleLabel(r.subtitle)}</p>
+                )}
               </Link>
             ))}
           </div>
@@ -226,7 +234,16 @@ export default function SearchClient() {
                 className="block p-4 bg-white border border-surface-200 rounded-xl hover:border-saffron-400 transition-colors"
               >
                 <h3 className="font-bold text-surface-900">{r.name}</h3>
-                {r.subtitle && <p className="text-sm text-surface-600 mt-0.5">{r.subtitle}</p>}
+                {/*
+                  CM-10: `${c.type}${c.deity ? ' · ' + c.deity : ''}` — the
+                  leading half is the ContentType enum (`video_reel`), the
+                  trailing half is a real deity name and is kept verbatim.
+                */}
+                {contentSubtitleLabel(r.subtitle) && (
+                  <p className="text-sm text-surface-600 mt-0.5">
+                    {contentSubtitleLabel(r.subtitle)}
+                  </p>
+                )}
               </Link>
             ))}
           </div>

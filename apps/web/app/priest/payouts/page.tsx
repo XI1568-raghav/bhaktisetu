@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -199,7 +200,7 @@ export default function PriestPayoutsPage() {
  <div className="space-y-6 max-w-5xl">
  {/* Header */}
  <div>
- <h1 className="text-lg font-semibold text-surface-800">Payouts</h1>
+ <h1 className={H1.portal}>Payouts</h1>
  <p className="text-surface-500 mt-1">Track your earnings and payout history</p>
  </div>
 

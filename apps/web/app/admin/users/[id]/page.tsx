@@ -54,6 +54,7 @@ import {
   type AdminUserDetail,
   type AdminUserProfiles,
 } from '../users-api';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 const roleLabels: Record<string, string> = {
   DEVOTEE: 'Devotee',
@@ -345,7 +346,7 @@ function AdminUserDetailContent() {
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-lg font-semibold text-surface-800">{user.fullName}</h1>
+              <h1 className={H1.portal}>{user.fullName}</h1>
               {(user.roles ?? []).map((role) => (
                 <span
                   key={role}

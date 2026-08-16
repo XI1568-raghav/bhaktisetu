@@ -74,7 +74,7 @@ export default async function PricingPage() {
  className="absolute bottom-0 left-10 w-60 h-60 rounded-full opacity-10"
  style={{ background: "#D4A438", filter: "blur(100px)" }}
  />
- <div className="relative max-w-4xl mx-auto px-6 sm:px-8 text-center">
+ <div className="relative container-wide text-center">
  <p
  className="text-xs font-semibold uppercase tracking-widest mb-4"
  style={{ color: "var(--color-primary)" }}
@@ -117,7 +117,7 @@ export default async function PricingPage() {
  {/* ── Tab Sections ───────────────────────────────────────────────── */}
  {/* For Devotees */}
  <section className="py-14 sm:py-20">
- <div className="max-w-5xl mx-auto px-6 sm:px-8">
+ <div className="container-wide">
  <div className="text-center mb-10">
  <div
  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-4"
@@ -225,7 +225,7 @@ export default async function PricingPage() {
  className="py-14 sm:py-20"
  style={{ background: "var(--color-surface)" }}
  >
- <div className="max-w-6xl mx-auto px-6 sm:px-8">
+ <div className="container-wide">
  <div className="text-center mb-12">
  <div
  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-4"
@@ -389,7 +389,7 @@ export default async function PricingPage() {
 
  {/* ── Commission Comparison Table ─────────────────────────────────── */}
  <section className="py-14 sm:py-20">
- <div className="max-w-5xl mx-auto px-6 sm:px-8">
+ <div className="container-wide">
  <div className="text-center mb-10">
  <p
  className="text-xs font-semibold uppercase tracking-widest mb-3"
@@ -512,7 +512,7 @@ export default async function PricingPage() {
  className="py-14 sm:py-20"
  style={{ background: "var(--color-surface)" }}
  >
- <div className="max-w-3xl mx-auto px-6 sm:px-8">
+ <div className="container-prose">
  <div className="text-center mb-10">
  <p
  className="text-xs font-semibold uppercase tracking-widest mb-3"
@@ -567,7 +567,7 @@ export default async function PricingPage() {
 
  {/* ── Bottom CTA ──────────────────────────────────────────────────── */}
  <section className="py-14 sm:py-20">
- <div className="max-w-3xl mx-auto px-6 sm:px-8 text-center">
+ <div className="container-prose text-center">
  <h2
  className="text-xl sm:text-2xl font-bold mb-3"
  style={{

@@ -27,6 +27,7 @@ import {
   type StoreProduct,
   type CreateStoreProductInput,
 } from '../../../lib/store-admin-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -240,7 +241,7 @@ function StoreAdminProductsPageContent() {
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800">Products</h1>
+          <h1 className={H1.portal}>Products</h1>
           <p className="text-surface-500 mt-1">
             {products.length} products &middot; {totalStock} total stock &middot;{' '}
             {outOfStock} out of stock

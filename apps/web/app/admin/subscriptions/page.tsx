@@ -33,6 +33,7 @@ import {
   fetchSubscriptionTotals,
   type SubscriptionTotals,
 } from './subscriptions-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const STATUSES = [
   { id: 'all', label: 'All' },
@@ -169,7 +170,7 @@ function AdminSubscriptionsContent() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 tracking-tight flex items-center gap-2">
+          <h1 className={`${H1.portal} flex items-center gap-2`}>
             <Sparkles className="w-6 h-6 text-saffron-600" />
             Marketplace subscriptions
           </h1>

@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { useAuth } from '../../../lib/auth-context';
 import { IndianRupee, TrendingUp, Package, Loader2 } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 type RevenueData = {
   topProducts: Array<{ productId: string; name: string; unitsSold: number; revenueInr: number }>;
@@ -67,7 +68,7 @@ export default function StoreRevenuePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-surface-800">Revenue</h1>
+        <h1 className={H1.portal}>Revenue</h1>
         <p className="text-surface-500 mt-1">Your store's earnings breakdown</p>
       </div>
 

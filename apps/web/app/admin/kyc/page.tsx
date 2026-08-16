@@ -28,6 +28,7 @@ import {
   type KycQueueStatus,
   type KycSubmission,
 } from './kyc-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const TABS: Array<{ key: KycQueueStatus; label: string; blurb: string }> = [
   { key: 'pending', label: 'Pending', blurb: 'Submitted, never decided. These providers cannot withdraw.' },
@@ -172,7 +173,7 @@ export default function AdminKycPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-surface-800">Provider KYC</h1>
+        <h1 className={H1.portal}>Provider KYC</h1>
         <p className="text-sm text-surface-500 mt-0.5">
           Verify a provider&apos;s identity and bank details. Payout requests stay blocked until this
           is done.

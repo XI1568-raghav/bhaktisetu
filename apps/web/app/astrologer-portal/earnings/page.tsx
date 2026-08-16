@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, IndianRupee, Clock, CheckCircle2, TrendingUp, Inbox } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface EarningRow {
   id: string;
@@ -65,7 +66,7 @@ export default function AstrologerEarningsPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold text-surface-800">Earnings</h1>
+        <h1 className={H1.portal}>Earnings</h1>
         <p className="text-sm text-surface-500 mt-1">
           Your net earnings — you keep {summary ? Math.round(summary.astrologerShare * 100) : 80}% of every consultation.
         </p>

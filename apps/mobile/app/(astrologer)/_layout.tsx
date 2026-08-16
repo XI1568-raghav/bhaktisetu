@@ -25,6 +25,8 @@ export default function AstrologerLayout() {
         <Tabs.Screen name="dashboard" options={{ title: 'Home', tabBarIcon: ({ color, size }) => <TabIcon name="grid" color={color} size={size} /> }} />
         <Tabs.Screen name="consultations" options={{ title: 'Sessions', tabBarIcon: ({ color, size }) => <TabIcon name="chatbubbles" color={color} size={size} /> }} />
         <Tabs.Screen name="availability" options={{ title: 'Schedule', tabBarIcon: ({ color, size }) => <TabIcon name="calendar" color={color} size={size} /> }} />
+        {/* PAR-22: /astrologer-portal/earnings had a web page and no app screen. */}
+        <Tabs.Screen name="earnings" options={{ title: 'Earnings', tabBarIcon: ({ color, size }) => <TabIcon name="cash" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }} />
         <Tabs.Screen name="subscription" options={{ title: 'Plan', tabBarIcon: ({ color, size }) => <TabIcon name="card" color={color} size={size} /> }} />
         <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />

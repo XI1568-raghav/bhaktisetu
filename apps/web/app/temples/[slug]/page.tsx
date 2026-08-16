@@ -34,6 +34,7 @@ import {
  ArrowUpRight,
 } from 'lucide-react';
 import { getTempleBySlug, getTemples, type TempleDetail } from '../../../lib/api';
+import { scriptLang } from '../../../lib/script-lang';
 import { getTempleHero, getTempleGallery, getDeityImage, remoteSrcSet, IMG_W } from '../../../lib/images';
 import {
  getTempleDetail,
@@ -503,7 +504,7 @@ function RichTemplePage({
  About {rich.name}
  </h2>
 
- <div className="space-y-5 text-[15px] leading-relaxed text-surface-600">
+ <div className="space-y-5 text-base leading-relaxed text-surface-600">
  <div>
  <h3 className="mb-2 font-semibold text-surface-800">History</h3>
  <p className="whitespace-pre-line">{rich.history}</p>
@@ -971,6 +972,18 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
  <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
  <h1 className={H1.detail}>{temple.name}</h1>
+ {/*
+   I-07: the API has shipped correct-script names for all 20 temples since the
+   nameLocal column landed (schema.prisma Temple.nameLocal, selected by
+   temple.service.ts for both list and detail, typed here as TempleDetail
+   .nameLocal) — and no temple surface ever rendered one. The puja pages
+   already do exactly this, so the treatment is theirs, not a new invention.
+   lang is set per-name because the page itself is lang="en": without it a
+   screen reader pronounces Devanagari with an English voice.
+ */}
+ {temple.nameLocal && (
+ <p lang={scriptLang(temple.nameLocal)} className="mt-1 text-lg font-serif text-white/80">{temple.nameLocal}</p>
+ )}
  <p className="mt-2 flex items-center gap-2 text-white/90">
  <MapPin className="h-4 w-4" /> {temple.city}, {temple.state}
  </p>
