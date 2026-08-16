@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { formatNumber } from '../../../lib/format-locale';
 import {
  Star,
  BadgeCheck,
@@ -290,11 +291,11 @@ function AstrologerDetailInner() {
  </div>
  <span className="text-surface-300">|</span>
  <span className="text-sm text-surface-500">
- {astrologer.reviewCount.toLocaleString()} reviews
+ {formatNumber(astrologer.reviewCount)} reviews
  </span>
  <span className="text-surface-300">|</span>
  <span className="text-sm text-surface-500">
- {astrologer.consultationCount.toLocaleString()} consultations
+ {formatNumber(astrologer.consultationCount)} consultations
  </span>
  </div>
 
@@ -437,7 +438,7 @@ function AstrologerDetailInner() {
  {renderStars(astrologer.rating, 'w-4 h-4')}
  <span className="text-sm font-semibold text-surface-700">{astrologer.rating}</span>
  <span className="text-sm text-surface-500">
- from {astrologer.reviewCount.toLocaleString()} consultations
+ from {formatNumber(astrologer.reviewCount)} consultations
  </span>
  </div>
  ) : (
@@ -459,7 +460,7 @@ function AstrologerDetailInner() {
  <span className="text-sm text-surface-500 flex items-center gap-2">
  <Users className="w-4 h-4 text-saffron-400" /> Consultations
  </span>
- <span className="text-sm font-bold text-surface-700">{astrologer.consultationCount.toLocaleString()}</span>
+ <span className="text-sm font-bold text-surface-700">{formatNumber(astrologer.consultationCount)}</span>
  </div>
  <div className="flex items-center justify-between">
  <span className="text-sm text-surface-500 flex items-center gap-2">

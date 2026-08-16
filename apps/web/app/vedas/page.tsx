@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { VEDAS, TOTAL_MANTRAS } from '../../lib/vedas';
+import { formatNumber } from '../../lib/format-locale';
 
 export const revalidate = 86400;
 
@@ -83,7 +84,7 @@ export default function VedasIndexPage() {
           >
             <div className="flex items-baseline justify-between">
               <span className="text-xs font-semibold text-gray-500">#{v.number} of 4</span>
-              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-900">{v.totalMantras.toLocaleString()} mantras</span>
+              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-900">{formatNumber(v.totalMantras)} mantras</span>
             </div>
             <h2 className="mt-1 text-xl font-bold text-gray-900 group-hover:text-indigo-700">{v.name}</h2>
             <p className="mt-1 font-serif text-lg text-gray-700">{v.sanskrit}</p>

@@ -13,6 +13,7 @@ import { CalendarDays, Clock, Loader2, Inbox, IndianRupee, Search } from 'lucide
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface TempleBooking {
   id: string;
@@ -82,7 +83,7 @@ function TempleBookingsContent() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold text-surface-800">Puja Bookings</h1>
+        <h1 className={H1.portal}>Puja Bookings</h1>
         <p className="text-sm text-surface-500 mt-1">All bookings at your temple — your seva calendar.</p>
       </div>
 

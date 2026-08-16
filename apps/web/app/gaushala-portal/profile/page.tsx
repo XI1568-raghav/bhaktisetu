@@ -5,6 +5,7 @@ import { useAuth } from '../../../lib/auth-context';
 import AuthGuard from '../../../components/AuthGuard';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { Mail, Building2, CheckCircle2, Loader2, AlertCircle, Upload, FileText } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 type Profile = {
   id: string;
@@ -113,7 +114,7 @@ function Content() {
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Gaushala Profile</h1>
+      <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>Gaushala Profile</h1>
 
       <div className="bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] p-6">
         <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-5">Manager Details</h2>

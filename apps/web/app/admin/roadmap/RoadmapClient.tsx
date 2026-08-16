@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import OrchestratorProgress from './OrchestratorProgress';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { formatDateTime } from '../../../lib/format-locale';
 
 interface RoadmapItem {
   id: string;
@@ -142,7 +144,7 @@ export default function RoadmapClient() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-surface-900">Bhaktisetu Roadmap — Year 1</h1>
+        <h1 className={H1.portal}>Bhaktisetu Roadmap — Year 1</h1>
         <p className="text-sm text-surface-500 mt-1">
           Autonomous Roadmap Engine — 60s auto-refresh. Reads git-tracked .md/.json/.yaml artifacts.
         </p>
@@ -269,7 +271,7 @@ export default function RoadmapClient() {
                       <td className="py-2 pr-3 text-surface-600">{q.estMinutes}</td>
                       <td className="py-2 pr-3">{srcBadge}</td>
                       <td className="py-2 pr-3 text-xs text-surface-400">
-                        {q.emittedAt ? new Date(q.emittedAt).toLocaleString() : ''}
+                        {q.emittedAt ? formatDateTime(q.emittedAt) : ''}
                       </td>
                     </tr>
                   );

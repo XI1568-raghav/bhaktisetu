@@ -5,6 +5,7 @@ import { Star, EyeOff, Loader2, RefreshCw, Filter } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface AdminRating {
   id: string;
@@ -92,7 +93,7 @@ export default function AdminRatingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800">Ratings Moderation</h1>
+          <h1 className={H1.portal}>Ratings Moderation</h1>
           <p className="text-sm text-surface-500 mt-1">
             All provider ratings posted on Darshya. {total} total.
           </p>

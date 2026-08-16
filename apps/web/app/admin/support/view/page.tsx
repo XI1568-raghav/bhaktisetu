@@ -41,6 +41,7 @@ import {
  formatDate,
  timeAgo,
 } from '../../../../components/support/badges';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 const AGENT_OPTIONS = ['Priya S.', 'Arjun K.', 'Neha R.', 'Rahul M.', 'Kavita B.'];
 
@@ -193,7 +194,7 @@ function AdminTicketDetailInner() {
  {cat?.emoji} {cat?.name ?? ticket.category}
  </span>
  </div>
- <h1 className="text-xl font-semibold text-surface-900 break-words">
+ <h1 className={`${H1.portal} break-words`}>
  {ticket.subject}
  </h1>
  <div className="flex items-center gap-2 mt-3 flex-wrap">

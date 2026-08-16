@@ -1,0 +1,166 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import {
+  PortalScreen,
+  Section,
+  StatCard,
+  ListRow,
+  EmptyHint,
+} from '../../lib/portal-screen';
+import { useAstrologerEarnings } from '../../lib/portal-queries';
+import { selectAstrologerEarnings, formatInr } from '../../lib/api-contracts';
+import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+
+/**
+ * PAR-22. The astrologer earnings page exists on the web
+ * (/astrologer-portal/earnings) and had no mobile equivalent — the app's
+ * astrologer tabs were dashboard / consultations / availability / messages /
+ * profile / plan, with no way to see the ledger behind the dashboard's totals.
+ *
+ * The one number this screen must not get wrong is which of the three money
+ * fields per row means "yours". The route sends all three
+ * (astrologer-portal.ts:113-127):
+ *
+ *   grossAmountInr  what the devotee paid
+ *   platformCutInr  the platform's take
+ *   earningsInr     the astrologer's own share  <- the payout
+ *
+ * `earningsInr` is the headline on every row. Gross is shown beside it, clearly
+ * labelled as the consultation price, because a provider comparing the app to
+ * their bank statement needs to see both — but it is never the big number.
+ *
+ * REVERSED rows are cancelled/refunded consultations. The server already
+ * excludes them from `summary` (AW-06); they still arrive in `data`, so they
+ * are listed and struck through rather than dropped, and the screen says so.
+ */
+export default function AstrologerEarnings() {
+  const earningsQuery = useAstrologerEarnings();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const vm = selectAstrologerEarnings(earningsQuery.data);
+  const unavailable = !earningsQuery.isLoading && vm === null;
+  const reversed = (vm?.rows ?? []).filter((r) => r.status === 'REVERSED').length;
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await earningsQuery.refetch();
+    setRefreshing(false);
+  }
+
+  const sharePct =
+    vm?.astrologerShare === null || vm?.astrologerShare === undefined
+      ? null
+      : Math.round(vm.astrologerShare * 100);
+
+  return (
+    <PortalScreen
+      title="Earnings"
+      subtitle={
+        earningsQuery.isLoading
+          ? 'Loading…'
+          : unavailable
+            ? 'Unavailable'
+            : sharePct === null
+              ? 'Your consultation ledger'
+              : `You keep ${sharePct}% of every consultation`
+      }
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
+      {unavailable ? (
+        <Text style={styles.errorBanner}>
+          Your earnings could not be loaded, so no figures are shown. This is a
+          server error, not a report that you have earned nothing. Pull down to
+          retry.
+        </Text>
+      ) : null}
+
+      {vm ? (
+        <>
+          <View style={{ flexDirection: 'row' }}>
+            <StatCard
+              label="Total earned"
+              value={vm.totalEarningsInr === null ? '—' : formatInr(vm.totalEarningsInr)}
+              accent={colors.green[600]}
+              hint="Your share, not the price"
+            />
+            <View style={{ width: spacing.sm }} />
+            <StatCard
+              label="Pending"
+              value={vm.pendingInr === null ? '—' : formatInr(vm.pendingInr)}
+              accent={colors.amber[600]}
+              hint={vm.paidInr === null ? undefined : `${formatInr(vm.paidInr)} paid`}
+            />
+          </View>
+
+          {reversed > 0 ? (
+            <Text style={styles.note}>
+              {reversed} reversed {reversed === 1 ? 'entry is' : 'entries are'}{' '}
+              listed below. Reversals are cancelled or refunded consultations and
+              are already excluded from the totals above.
+            </Text>
+          ) : null}
+
+          <Section title="Consultation ledger">
+            {vm.rows.length === 0 ? (
+              <EmptyHint text="No consultation earnings yet. They appear once a consultation completes." />
+            ) : (
+              vm.rows.map((r) => (
+                <ListRow
+                  key={r.id}
+                  primary={
+                    r.bookingId ? `Consultation ${r.bookingId.slice(0, 8)}` : 'Consultation'
+                  }
+                  secondary={[
+                    formatDay(r.createdAt),
+                    r.grossInr === null ? null : `Price ${formatInr(r.grossInr)}`,
+                    r.platformCutInr === null
+                      ? null
+                      : `Platform ${formatInr(r.platformCutInr)}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  trailing={r.earningsInr === null ? '—' : formatInr(r.earningsInr)}
+                  trailingHint="your share"
+                  status={{ label: r.status, color: statusColor(r.status) }}
+                />
+              ))
+            )}
+          </Section>
+        </>
+      ) : null}
+    </PortalScreen>
+  );
+}
+
+function statusColor(status: string): string {
+  if (status === 'PAID') return colors.green[600];
+  if (status === 'REVERSED') return colors.red[600];
+  return colors.amber[600];
+}
+
+function formatDay(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-IN');
+}
+
+const styles = StyleSheet.create({
+  errorBanner: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: colors.red[500],
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    color: colors.red[600],
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  note: {
+    marginTop: spacing.md,
+    fontSize: fontSize.sm,
+    color: colors.stone[600],
+    lineHeight: 19,
+  },
+});

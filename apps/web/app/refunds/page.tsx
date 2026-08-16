@@ -15,6 +15,27 @@ import {
  REFUND_SETTLEMENT_BANDS,
 } from "../../lib/cancellation-policy";
 
+/**
+ * Hours of notice a consultation cancellation needs to be refunded in full.
+ *
+ * Mirrors apps/api/src/routes/consultation.ts, which is the only code that
+ * decides it: a confirmed row is marked refundEligible only when
+ * `scheduledMs >= Date.now() + 24 * 60 * 60 * 1000`. apps/web cannot import
+ * from apps/api, so the number is mirrored here and
+ * __tests__/refund-page-unbacked-promises.test.ts re-reads that handler and
+ * fails if the two drift — the same anti-drift arrangement lib/cancellation-
+ * policy uses for the puja ladder.
+ */
+const CONSULTATION_REFUND_NOTICE_HOURS = 24;
+
+/**
+ * Whether Darshya may describe a donation receipt as a Section 80G exemption
+ * certificate. Same owner-controlled flag /donations and components/
+ * DonationForm.tsx read, and the same predicate apps/api/src/lib/pdf-receipt.ts
+ * gates the PDF's own 80G assertion on. One switch, every surface.
+ */
+const HAS_VERIFIED_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
+
 export const metadata: Metadata = {
  title: "Refund & Cancellation Policy",
  description:
@@ -131,9 +152,24 @@ export default function RefundsPage() {
  samagri is being prepared.
  </td>
  </tr>
+ {/* LEG-01 residue (wave 2026-08-15) — this row read "100% refund + 10%
+     platform credit", and the bullet below it repeated the offer.
+
+     There is no rail behind the credit half. CreditLedgerEntry carries a
+     `refund_to_credit` reason (apps/api/src/services/wallet.service.ts) and
+     NOTHING writes it: the only two creditUser() call sites, in
+     routes/referrals.ts and services/payment.service.ts, both pass
+     'referral_reward'. So the platform could not have issued this credit even
+     if support wanted to, on the page the checkout terms checkbox links to.
+
+     The 100% refund is real — an admin can refund in full through
+     services/refund.service.ts — so only the unbacked half is removed. Put the
+     credit back when a refund_to_credit writer exists; the test
+     __tests__/refund-page-unbacked-promises.test.ts flips its premise the
+     moment one does. */}
  <tr>
  <td className="py-1.5">Puja not performed by temple</td>
- <td className="py-1.5">100% refund + 10% platform credit</td>
+ <td className="py-1.5">100% refund</td>
  </tr>
  <tr>
  <td className="py-1.5">
@@ -161,8 +197,8 @@ export default function RefundsPage() {
  <li>
  If a puja is cancelled by the temple due to unforeseen
  circumstances (natural disaster, temple closure, priest
- unavailability), you will receive a full refund plus a 10%
- platform credit for future bookings.
+ unavailability), you receive a full refund of everything you
+ paid.
  </li>
  <li>
  Prasad delivery charges are refunded only if the entire
@@ -225,28 +261,91 @@ export default function RefundsPage() {
  </RefundSection>
 
  <RefundSection title="4. Astrology & Wellness Sessions">
+ {/* LEG-01 residue (wave 2026-08-15) — this paragraph published a SIX-hour
+     full-refund window. The handler that decides it,
+     apps/api/src/routes/consultation.ts, marks a confirmed consultation
+     refund-eligible only when the session is at least
+     CONSULTATION_REFUND_NOTICE_HOURS away
+     (`cutoffMs = Date.now() + 24 * 60 * 60 * 1000`), so a devotee cancelling
+     eight hours out read "full refund" here and the API recorded
+     refundEligible:false. Same shape as LEG-01 on the puja ladder — the
+     published promise was more generous than the engine — one product over.
+
+     Copy now states the window the handler enforces. It also stops calling
+     the outcome automatic: the endpoint sets a flag, it does not call
+     Razorpay, so a person issues the money (the same correction LEG-06 made
+     to the video-proof bullet in section 2). */}
  <p>
- Astrology and wellness consultations may be cancelled up to
- 6 hours before the scheduled session for a full refund. Once
- the session has started or the consultant has joined the
- video room, the booking is non-refundable. If the consultant
- fails to join within 15 minutes of the scheduled start, you
- are entitled to a full refund or a free reschedule.
+ Astrology and wellness consultations can be cancelled with at
+ least {CONSULTATION_REFUND_NOTICE_HOURS} hours&rsquo; notice
+ before the scheduled session and are then refunded in full.
+ Inside that window, and once the session has started or the
+ consultant has joined the video room, the booking is
+ non-refundable. If the consultant fails to join within 15
+ minutes of the scheduled start, you are entitled to a full
+ refund or a free reschedule &mdash; email {COMPANY.supportEmail}{" "}
+ and we will settle it. Consultation refunds are issued by a
+ person rather than automatically, so allow us{" "}
+ {COMPANY.grievance.acknowledgeHours} hours to come back to you.
  </p>
  </RefundSection>
 
  <RefundSection title="5. Gaushala Seva & Donations">
+ {/* COM-16 + COM-02 residue (wave 2026-08-15). This paragraph carried both
+     claims the sweep had already removed everywhere else, and carried them
+     as the LEGAL JUSTIFICATION for keeping the donor's money.
+
+     COM-16: "the funds are immediately allocated to the gaushala or
+     beneficiary". Nothing allocates them. apps/api/src/routes/donations.ts
+     writes no Commission, no PayoutRequest and no TemplePayout on any
+     donation path; the gaushala and temple portals only LIST donations.
+     The "100% to cause" badge was pulled from components/DonationForm.tsx
+     for exactly this reason, and this page then went on asserting it.
+
+     COM-02: "an 80G receipt is generated" / "Once an 80G receipt has been
+     issued and claimed for tax benefit". lib/pdf-receipt.ts now gates the
+     Section 80G assertion on is80GEligible (donee registration number AND
+     PAN), and COMPANY.donationLegal.HAS_80G_VERIFIED is false, so what a
+     donor actually receives today is a proof-of-donation receipt that says
+     on its face it is not valid for a deduction. Telling them a claimed 80G
+     deduction is why they cannot have their money back inverts that.
+
+     The 7-day case-by-case review is unchanged — it is a real process and
+     the only remedy this page can honestly offer. The 80G sentence is bound
+     to the same owner-controlled flag /donations and DonationForm read, so
+     it returns the day the registration does and not before. */}
  <p>
  Donations toward gau seva (cow feeding, medical care,
- adoption) and general charitable donations are
- non-refundable, as the funds are immediately allocated to
- the gaushala or beneficiary and an 80G receipt is generated.
- If you believe a donation was made in error, you must
- contact support@darshya.online within 7 days of the donation;
- we will review the request on a case-by-case basis. Once an
- 80G receipt has been issued and claimed for tax benefit,
- reversal is not possible.
+ adoption) and general charitable donations are treated as
+ final once paid, because they are collected on behalf of the
+ cause rather than sold to you as a service. If you believe a
+ donation was made in error, contact {COMPANY.supportEmail}{" "}
+ within 7 days of the donation with your receipt number; we
+ review every such request individually and refund through
+ Razorpay where the error is clear.
  </p>
+ {HAS_VERIFIED_80G ? (
+ <p>
+ Where a donation has been receipted under Section 80G and
+ that deduction has already been claimed, reversal is not
+ possible.
+ </p>
+ ) : (
+ <p>
+ A receipt is emailed for every donation. It is a record of
+ payment, not a Section 80G exemption certificate &mdash; see{" "}
+ <a
+ href="/donations"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ Donations
+ </a>{" "}
+ for what the receipt does and does not cover. No donation on
+ this platform has been receipted under Section 80G, so no
+ refund request is refused on that basis.
+ </p>
+ )}
  </RefundSection>
 
  <RefundSection title="6. Chadhava (Virtual Offerings)">
@@ -281,10 +380,12 @@ export default function RefundsPage() {
  <strong>{band.method}:</strong> {band.label}.
  </li>
  ))}
- <li>
- <strong>Platform credits:</strong> Applied instantly to your
- Darshya wallet.
- </li>
+ {/* LEG-01 residue (wave 2026-08-15) — a fifth row read "Platform
+     credits: Applied instantly to your Darshya wallet", the settlement
+     half of the same unbacked promise removed from the table in section
+     2. Refunds are never paid as credit: no call site writes a
+     `refund_to_credit` CreditLedgerEntry, so every refund lands back on
+     the payment method and only the four bands above apply. */}
  </ul>
  </RefundSection>
 

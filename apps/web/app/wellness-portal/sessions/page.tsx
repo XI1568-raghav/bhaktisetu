@@ -28,6 +28,7 @@ import {
  type WellnessSessionStatus,
 } from '../../../lib/wellness-api';
 import { DateTimeInput } from '../../../components/ui/DateInput';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -270,7 +271,7 @@ function WellnessSessionsPageContent() {
   <div className="space-y-6 max-w-5xl">
    <div className="flex items-center justify-between">
     <div>
-     <h1 className="text-2xl font-bold text-surface-800">Sessions</h1>
+     <h1 className={H1.portal}>Sessions</h1>
      <p className="text-surface-500 mt-1">
       {sessions.length} sessions ({activeCount} active)
      </p>

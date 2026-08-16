@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -218,7 +219,7 @@ function PriestProfilePageContent() {
  return (
  <div className="max-w-lg mx-auto py-16 text-center">
  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-4" />
- <h1 className="text-lg font-semibold text-surface-800">Your session has expired</h1>
+ <h1 className={H1.portal}>Your session has expired</h1>
  <p className="text-sm text-surface-500 mt-2">
  We could not confirm who you are, so we have not shown a profile. Sign in again to see
  your own details.
@@ -237,7 +238,7 @@ function PriestProfilePageContent() {
  return (
  <div className="max-w-lg mx-auto py-16 text-center">
  <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
- <h1 className="text-lg font-semibold text-surface-800">We could not load your profile</h1>
+ <h1 className={H1.portal}>We could not load your profile</h1>
  <p className="text-sm text-surface-500 mt-2">
  {loadError ?? 'Could not load your profile. Please try again.'}
  </p>
@@ -269,7 +270,7 @@ function PriestProfilePageContent() {
  {/* Header */}
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-2xl font-bold text-surface-800">My Profile</h1>
+ <h1 className={H1.portal}>My Profile</h1>
  <p className="text-surface-500 mt-1">Manage your priest profile and settings</p>
  </div>
  <button

@@ -29,6 +29,7 @@ import {
  fetchWithTimeout,
  loadErrorMessage,
 } from '../../lib/api-config';
+import { H1 } from '../../components/ui/heading-recipe';
 
 interface Booking {
  id: string;
@@ -138,7 +139,7 @@ function DashboardContent() {
  <div className="flex items-center justify-between">
  <div>
  <p className="text-surface-500 text-sm mb-1">{greeting}</p>
- <h1 className="text-lg font-semibold text-surface-800">
+ <h1 className={H1.portal}>
  {displayName === '' ? 'Welcome to Darshya' : displayName}
  </h1>
  {user?.fullName === '' && (

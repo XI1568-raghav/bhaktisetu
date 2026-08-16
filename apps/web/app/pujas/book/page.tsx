@@ -78,6 +78,7 @@ import {
  emptyDeliveryAddress,
  validateDeliveryAddress,
 } from '../../../lib/delivery-address';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // PostHog never throws on capture, but its singleton may not be initialised
 // in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
@@ -1312,7 +1313,7 @@ function PujaBookingInner() {
  {parkedDraftSlug && (
  <Link
  href={`/pujas/book?slug=${encodeURIComponent(parkedDraftSlug)}`}
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'lg')}
  >
  <RefreshCw className="h-4 w-4" />
  Resume your booking
@@ -1320,11 +1321,7 @@ function PujaBookingInner() {
  )}
  <Link
  href="/pujas"
- className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 font-medium ${
- parkedDraftSlug
- ? 'border-2 border-saffron-200 text-saffron-600 hover:bg-saffron-50'
- : 'bg-saffron-600 text-white hover:bg-saffron-700'
- }`}
+ className={buttonClass(parkedDraftSlug ? 'secondary' : 'primary', 'lg')}
  >
  <Flame className="h-4 w-4" />
  Browse all pujas
@@ -1348,7 +1345,7 @@ function PujaBookingInner() {
  </p>
  <Link
  href="/pujas"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'lg')}
  >
  <Flame className="h-4 w-4" />
  Browse all pujas
@@ -1369,7 +1366,7 @@ function PujaBookingInner() {
  <button
  type="button"
  onClick={() => { setLoading(true); setLoadError(null); setRetryTick((t) => t + 1); }}
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'lg')}
  >
  Retry
  </button>
@@ -1391,7 +1388,7 @@ function PujaBookingInner() {
  <p className="mb-4 text-surface-500">We could not find the puja you are looking for.</p>
  <Link
  href="/pujas"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'lg')}
  >
  Browse Pujas
  </Link>
@@ -1475,7 +1472,7 @@ function PujaBookingInner() {
  <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
  <Link
  href="/bookings"
- className="inline-flex items-center justify-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'lg')}
  >
  View Booking
  <ExternalLink className="h-4 w-4" />
@@ -1643,7 +1640,7 @@ function PujaBookingInner() {
  <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
  <Link
  href="/pujas"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  <Flame className="h-4 w-4" />
  Browse other pujas
@@ -1935,7 +1932,7 @@ function PujaBookingInner() {
  <div className="flex justify-end">
  <button
  onClick={goNext}
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-8 py-3 font-medium text-white transition-colors hover:bg-saffron-700"
+ className={buttonClass('primary', 'lg')}
  >
  Continue
  <ChevronRight className="h-4 w-4" />
@@ -2075,7 +2072,7 @@ function PujaBookingInner() {
  {!aiSankalpLoading && (
  <button
  onClick={generateAiSankalp}
- className="inline-flex items-center gap-1.5 rounded-lg bg-saffron-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'sm')}
  >
  <Sparkles className="h-3 w-3" />
  {aiSankalpResult ? 'Regenerate' : 'Generate Sankalp with AI'}
@@ -2167,7 +2164,7 @@ function PujaBookingInner() {
  <div className="flex gap-2 pt-2">
  <button
  onClick={useAiSankalp}
- className="inline-flex items-center gap-1.5 rounded-lg bg-saffron-600 px-4 py-2 text-xs font-medium text-white hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'sm')}
  >
  <Check className="h-3.5 w-3.5" />
  Use This Sankalp
@@ -2210,7 +2207,7 @@ function PujaBookingInner() {
  </button>
  <button
  onClick={goNext}
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-8 py-3 font-medium text-white transition-colors hover:bg-saffron-700"
+ className={buttonClass('primary', 'lg')}
  >
  Continue
  <ChevronRight className="h-4 w-4" />
@@ -2525,7 +2522,7 @@ function PujaBookingInner() {
  </button>
  <button
  onClick={goNext}
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-8 py-3 font-medium text-white transition-colors hover:bg-saffron-700"
+ className={buttonClass('primary', 'lg')}
  >
  Proceed to Payment
  <CreditCard className="h-4 w-4" />

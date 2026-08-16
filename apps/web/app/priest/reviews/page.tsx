@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { getMyReviews, type PriestReview } from '../../../lib/pandit-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ export default function PriestReviewsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800">Reviews</h1>
+          <h1 className={H1.portal}>Reviews</h1>
           <p className="text-surface-500 mt-1">
             See what devotees say about your puja services
           </p>

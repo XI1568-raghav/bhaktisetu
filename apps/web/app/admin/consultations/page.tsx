@@ -14,6 +14,7 @@ import {
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 type AdminConsultation = {
   id: string;
@@ -152,7 +153,7 @@ function ListContent() {
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-surface-800 flex items-center gap-2">
+          <h1 className={`${H1.portal} flex items-center gap-2`}>
             <Sparkles className="w-6 h-6 text-saffron-500" />
             Astrologer consultations
           </h1>

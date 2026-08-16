@@ -5,6 +5,7 @@ import { Search, Download, Loader2, AlertCircle } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 type Donation = {
   id: string;
@@ -141,7 +142,7 @@ function DonationsPageContent() {
     <div className="p-6 lg:p-8 space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Donations</h1>
+          <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>Donations</h1>
           <p className="text-[var(--color-text-muted)] text-sm mt-1">
             Total received: ₹{totalReceived.toLocaleString('en-IN')} · This month: ₹
             {monthReceived.toLocaleString('en-IN')}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Save, Plus, Trash2, ArrowLeft, Clock } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * Temple manager schedule self-edit. Mirrors /admin/temples/[slug] from Layer K3
@@ -115,7 +116,7 @@ export default function TempleScheduleEditor() {
       <Link href="/temple-portal" className="inline-flex items-center gap-1 text-sm text-saffron-600 hover:text-saffron-700 mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to dashboard
       </Link>
-      <h1 className="text-2xl font-semibold tracking-tight mb-1">Aarti & Darshan Schedule</h1>
+      <h1 className={`${H1.portal} mb-1`}>Aarti & Darshan Schedule</h1>
       <p className="text-sm text-surface-500 mb-6">Edit live darshan windows. Devotees see "Live" / "Next Aarti" badges based on these timings.</p>
 
       {!slug && (

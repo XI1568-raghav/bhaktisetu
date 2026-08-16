@@ -9,6 +9,7 @@ import { getTodayPanchang } from '../../lib/api';
 import { FESTIVALS, nextFestival } from '../../lib/festivals';
 import { DEITY_MANTRAS } from '../../lib/deity-mantras';
 import { getDeity } from '../../lib/deities';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 3600;
 
@@ -96,7 +97,7 @@ export default async function TodayPage() {
         <div className="flex flex-wrap gap-3">
           <Link
             href={`/deity/${todayInfo.slug}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             {todayInfo.name} pujas <ChevronRight className="w-4 h-4" />
           </Link>
@@ -205,7 +206,7 @@ export default async function TodayPage() {
           <p className="text-sm text-surface-700 max-w-xl mx-auto mb-4 line-clamp-2">{upcoming.description}</p>
           <Link
             href={`/festival/${upcoming.slug}`}
-            className="inline-flex items-center gap-1.5 px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Prepare for {upcoming.name} <ChevronRight className="w-4 h-4" />
           </Link>

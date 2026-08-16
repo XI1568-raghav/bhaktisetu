@@ -25,6 +25,11 @@ export default function WellnessLayout() {
         <Tabs.Screen name="dashboard" options={{ title: 'Home', tabBarIcon: ({ color, size }) => <TabIcon name="grid" color={color} size={size} /> }} />
         <Tabs.Screen name="sessions" options={{ title: 'Sessions', tabBarIcon: ({ color, size }) => <TabIcon name="leaf" color={color} size={size} /> }} />
         <Tabs.Screen name="students" options={{ title: 'Students', tabBarIcon: ({ color, size }) => <TabIcon name="people" color={color} size={size} /> }} />
+        {/* PAR-22: the instructor dashboard deliberately shows no money (PAR-10
+            deleted an invented earnings figure from it), so this was the only
+            place in the app an instructor could learn what they had earned —
+            and it did not exist. */}
+        <Tabs.Screen name="earnings" options={{ title: 'Earnings', tabBarIcon: ({ color, size }) => <TabIcon name="cash" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <TabIcon name="person" color={color} size={size} /> }} />
         <Tabs.Screen name="subscription" options={{ title: 'Plan', tabBarIcon: ({ color, size }) => <TabIcon name="card" color={color} size={size} /> }} />
         <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />

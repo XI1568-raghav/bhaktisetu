@@ -20,6 +20,7 @@ import {
  fetchWithTimeout,
  loadErrorMessage,
 } from '../../lib/api-config';
+import { H1 } from '../../components/ui/heading-recipe';
 
 // ─── Zero-state defaults ────────────────────────────────────────
 
@@ -238,7 +239,7 @@ export default function AstrologerDashboard() {
  <div className="space-y-6 max-w-5xl">
  {/* Welcome */}
  <div>
- <h1 className="text-2xl font-semibold tracking-tight text-surface-800">
+ <h1 className={H1.portal}>
  Namaste, {displayName.split(' ')[0]}!
  </h1>
  <div className="mt-1 flex items-center gap-3 flex-wrap">

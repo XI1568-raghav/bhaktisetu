@@ -463,7 +463,7 @@ export default async function AboutPage() {
                   </div>
 
                   <div className="px-6 pb-6 sm:px-7 sm:pb-7">
-                    <p className="text-[15px] leading-relaxed text-surface-700">
+                    <p className="text-base leading-relaxed text-surface-700">
                       {f.bio}
                     </p>
 
@@ -562,7 +562,7 @@ export default async function AboutPage() {
             <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-surface-900">
               From the first commit to the long horizon.
             </h2>
-            <p className="mt-3 text-[15px] leading-relaxed text-surface-600">
+            <p className="mt-3 text-base leading-relaxed text-surface-600">
               Scroll through where Darshya has been, where it is shipping now,
               and where we are taking it.
             </p>

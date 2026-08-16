@@ -81,7 +81,7 @@ export default function FaqPage() {
  {items.map((item) => (
  <details key={item.id} className="group">
  <summary className="flex items-center justify-between gap-4 p-4 cursor-pointer hover:bg-amber-50/40 list-none">
- <span className="font-medium text-surface-900 text-[15px]">
+ <span className="font-medium text-surface-900 text-base">
  {item.question}
  </span>
  <span className="text-saffron-600 group-open:rotate-45 transition-transform text-xl leading-none">

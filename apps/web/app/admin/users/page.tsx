@@ -20,6 +20,7 @@ import {
   patchAdminUser,
   type AdminUserRecord,
 } from './users-api';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -274,7 +275,7 @@ function AdminUsersPageContent() {
  <div className="space-y-6">
  {/* Header */}
  <div>
- <h1 className="text-lg font-semibold text-surface-800">User Management</h1>
+ <h1 className={H1.portal}>User Management</h1>
  <p className="text-sm text-surface-500 mt-0.5">Manage all platform users across roles</p>
  </div>
 

@@ -25,8 +25,10 @@ export default function TempleLayout() {
         <Tabs.Screen name="dashboard" options={{ title: 'Home', tabBarIcon: ({ color, size }) => <TabIcon name="grid" color={color} size={size} /> }} />
         <Tabs.Screen name="streams" options={{ title: 'Streams', tabBarIcon: ({ color, size }) => <TabIcon name="videocam" color={color} size={size} /> }} />
         <Tabs.Screen name="pujas" options={{ title: 'Pujas', tabBarIcon: ({ color, size }) => <TabIcon name="flame" color={color} size={size} /> }} />
+        <Tabs.Screen name="bookings" options={{ title: 'Bookings', tabBarIcon: ({ color, size }) => <TabIcon name="calendar" color={color} size={size} /> }} />
         <Tabs.Screen name="donations" options={{ title: 'Donations', tabBarIcon: ({ color, size }) => <TabIcon name="heart" color={color} size={size} /> }} />
-        <Tabs.Screen name="subscription" options={{ title: 'Plan', tabBarIcon: ({ color, size }) => <TabIcon name="card" color={color} size={size} /> }} />
+        <Tabs.Screen name="payouts" options={{ title: 'Payouts', tabBarIcon: ({ color, size }) => <TabIcon name="cash" color={color} size={size} /> }} />
+        <Tabs.Screen name="subscription" options={{ href: null, title: 'Plan' }} />
         <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
       </Tabs>
     </RoleGuard>
