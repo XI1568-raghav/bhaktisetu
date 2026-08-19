@@ -17,7 +17,11 @@ name: db-backup
 #        - (optional) HEARTBEAT_URL     (healthchecks.io free tier)
 #
 # Until secrets land, both scripts no-op and exit 0 (skipped: missing-env).
-# Workflow stays green so it doesn't spam the founder with failure emails.
+# A SKIPPED BACKUP NOW FAILS THE RUN (corrected 2026-08-20). This header used
+# to read "workflow stays green so it doesn't spam the founder" — and it did
+# stay green, every day, while taking no backup at all because the secrets were
+# never set. Silence is not kindness when the thing being silenced is "you have
+# no restore point".
 #
 # Free-tier cost: 5 min × 30 runs/mo = 150 GH Actions minutes/mo.
 # Current baseline ~1616/mo (per TASKS.md). Headroom intact within 1900 cap.
@@ -56,13 +60,54 @@ jobs:
         run: pg_dump --version
 
       - name: Run daily backup
+        id: backup
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_BACKUP_BUCKET: ${{ secrets.SUPABASE_BACKUP_BUCKET }}
           HEARTBEAT_URL: ${{ secrets.HEARTBEAT_URL }}
-        run: node scripts/backup/supabase-backup.mjs
+        run: |
+          set -uo pipefail
+          node scripts/backup/supabase-backup.mjs | tee /tmp/backup-out.json
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      # A SKIPPED BACKUP IS NOT A SUCCESSFUL BACKUP.
+      #
+      # Until 2026-08-20 this workflow reported a green check every day for
+      # producing ZERO BYTES: supabase-backup.mjs answers {"ok":true,
+      # "skipped":true,"reason":"missing-env"} when the secrets are unset, and
+      # the header above said "workflow stays green so it doesn't spam the
+      # founder with failure emails". The intent was kind; the effect was that a
+      # product holding bookings, payments and 80G donation records believed it
+      # had daily backups while having none at all, for months. Nobody can
+      # discover that from a green tick.
+      #
+      # So a skip now fails, loudly and once: the run goes red, and a single
+      # deduped issue tracks it rather than 30 identical ones.
+      - name: A skipped backup must not read as success
+        run: |
+          set -uo pipefail
+          if grep -q '"skipped":[[:space:]]*true' /tmp/backup-out.json 2>/dev/null; then
+            missing=$(grep -oE '"missing":\[[^]]*\]' /tmp/backup-out.json | head -1)
+            echo "::error::NO BACKUP WAS TAKEN. The script skipped: ${missing}. There is no restore point for today."
+            {
+              echo "### ❌ No backup was taken"
+              echo ""
+              echo "\`supabase-backup.mjs\` skipped because required secrets are unset:"
+              echo ""
+              echo "\`\`\`"
+              echo "${missing}"
+              echo "\`\`\`"
+              echo ""
+              echo "**There is no restore point for today, and there may never have been one.**"
+              echo "Set the secrets in Settings -> Secrets and variables -> Actions, then run"
+              echo "this workflow manually and confirm it uploads a non-empty dump."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Backup produced output; see the step log for the uploaded object."
+
 
       - name: Prune backups older than 30 days
         env:
