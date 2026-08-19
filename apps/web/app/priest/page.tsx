@@ -271,7 +271,7 @@ export default function PriestDashboard() {
  Namaste, {data.priest.displayName.split(' ')[0]}!
  </h1>
  <div className="mt-1 flex items-center gap-3 flex-wrap">
- <p className="text-surface-500">Here is your dashboard overview for today.</p>
+ <p className="prose-body text-surface-500">Here is your dashboard overview for today.</p>
  <KycStatusBadge state={kycState} reason={kycReason} />
  </div>
  </div>
@@ -288,7 +288,7 @@ export default function PriestDashboard() {
  <p className="font-semibold text-surface-800">
  {onDuty ? 'You are ON DUTY' : 'Go on duty for instant bookings'}
  </p>
- <p className="text-xs text-surface-500">
+ <p className="prose-body text-surface-500">
  {onDuty
  ? 'You will receive instant puja requests near you. Respond within a minute.'
  : 'Turn on to receive instant puja requests near you (Uber-style dispatch).'}

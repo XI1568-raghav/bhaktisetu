@@ -15,8 +15,11 @@ import NotFound from '../app/not-found';
  * 1. The three pages the finding names — the homepage, /pujas and
  *    /temples/[slug] — already carry width and height on every <img>. That was
  *    fixed before this pass; the first test only locks it so it cannot silently
- *    come back. 33 <img> tags across 18 other files still lack dimensions, and
- *    the ratchet stops that number growing while they are worked through.
+ *    come back. The 33 <img> tags across 24 other files that still lacked
+ *    dimensions have since been given the intrinsic ratio of the box they are
+ *    painted in (taken from the wrapper's aspect-* or its fixed w-N h-N — CSS
+ *    still does all the sizing), so the backlog is 0 and the ratchet below is
+ *    now a floor, not slack.
  *
  * 2. The 404 weight cannot be fixed from not-found.tsx. The finding's own fix
  *    text asks to "replace not-found.tsx's full-layout render with a minimal
@@ -45,11 +48,34 @@ function stripComments(src: string): string {
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
-/** Count `<img>` tags that bind a src but declare no intrinsic box. */
+/**
+ * Count `<img>` tags that bind a src but declare no intrinsic box.
+ *
+ * A forwarding wrapper — `<img {...rest} src={src} />` inside a component whose
+ * whole job is to pass the caller's props through — is NOT an offender: its
+ * dimensions arrive from the call site and there is no correct literal to put
+ * on it. Those are exempted here and covered instead by the call-site
+ * assertion below, so the exemption cannot become a way to hide a real one.
+ */
 function countImgs(src: string): { total: number; missing: number } {
   let total = 0;
   let missing = 0;
   for (const m of stripComments(src).matchAll(/<img\s([\s\S]{0,900}?)\/>/g)) {
+    const body = m[1]!;
+    if (!/src=/.test(body)) continue;
+    if (/\{\s*\.\.\.\w/.test(body)) continue; // forwards the caller's props
+    total += 1;
+    if (!/\bwidth[=\s]/.test(body) || !/\bheight[=\s]/.test(body)) missing += 1;
+  }
+  return { total, missing };
+}
+
+/** Every `<Wrapper …/>` usage of a forwarding image component. */
+function countWrapperUses(src: string, tag: string): { total: number; missing: number } {
+  let total = 0;
+  let missing = 0;
+  const re = new RegExp(`<${tag}\\s([\\s\\S]{0,900}?)\\/>`, 'g');
+  for (const m of stripComments(src).matchAll(re)) {
     const body = m[1]!;
     if (!/src=/.test(body)) continue;
     total += 1;
@@ -80,14 +106,77 @@ describe('PERF-04 — intrinsic image dimensions', () => {
 
   it('the app-wide backlog of dimensionless <img> never grows', () => {
     /*
-     * Baseline measured 2026-08-15 across app/ and components/. Ratchet only:
-     * a lower number passes silently, so fixing files never forces an edit
-     * here. Raise this only with a written reason.
+     * Baseline was 33 on 2026-08-15 and is 0 as of 2026-08-19: every <img> in
+     * app/ and components/ now declares an intrinsic box. Left at 33 this was a
+     * no-op that would have silently absorbed the fixes AND allowed 33 fresh
+     * regressions, which is the failure mode a ratchet exists to prevent.
+     *
+     * NAMES the offenders rather than printing a number, so the next person
+     * does not have to re-derive the list.
      */
-    const BASELINE_MISSING = 33;
+    const BASELINE_MISSING = 0;
     const files = [...tsxFiles(path.join(WEB_ROOT, 'app')), ...tsxFiles(path.join(WEB_ROOT, 'components'))];
-    const missing = files.reduce((n, f) => n + countImgs(readFileSync(f, 'utf8')).missing, 0);
-    expect(missing).toBeLessThanOrEqual(BASELINE_MISSING);
+    const offenders: string[] = [];
+    let missing = 0;
+    for (const f of files) {
+      const c = countImgs(readFileSync(f, 'utf8'));
+      if (c.missing > 0) {
+        missing += c.missing;
+        offenders.push(`${path.relative(WEB_ROOT, f).split(path.sep).join('/')}: ${c.missing} of ${c.total}`);
+      }
+    }
+    expect(
+      missing,
+      'these <img> tags declare no intrinsic box, so the browser reserves zero height ' +
+        'until the bytes arrive and everything below them jumps. Copy the pattern at ' +
+        'app/pujas/page.tsx:679 — width/height are the ratio of the painted box, taken ' +
+        "from the wrapper's aspect-* or its fixed w-N h-N; CSS keeps doing the sizing.\n" +
+        offenders.join('\n'),
+    ).toBeLessThanOrEqual(BASELINE_MISSING);
+  });
+
+  it('forwarding image wrappers are declared at their call sites instead', () => {
+    /*
+     * components/RemoteImage.tsx exists so a rate-limited Wikimedia hotlink
+     * removes itself rather than painting an empty box (CM-08). It spreads the
+     * caller's props onto the <img>, so the literal width/height live at the
+     * call site — and this is what checks they are actually there. Without it,
+     * routing an image through the wrapper would be a way out of the ratchet.
+     */
+    const WRAPPERS = ['RemoteImage'];
+    const files = [
+      ...tsxFiles(path.join(WEB_ROOT, 'app')),
+      ...tsxFiles(path.join(WEB_ROOT, 'components')),
+    ];
+    const offenders: string[] = [];
+    let uses = 0;
+    for (const f of files) {
+      const src = readFileSync(f, 'utf8');
+      for (const tag of WRAPPERS) {
+        const c = countWrapperUses(src, tag);
+        uses += c.total;
+        if (c.missing > 0) {
+          const rel = path.relative(WEB_ROOT, f).split(path.sep).join('/');
+          offenders.push(`${rel}: ${c.missing} <${tag}> of ${c.total}`);
+        }
+      }
+    }
+    expect(uses, 'no wrapper usage found — this assertion would measure nothing').toBeGreaterThan(0);
+    expect(offenders, 'these pass no intrinsic box through the wrapper').toEqual([]);
+  });
+
+  it('the counter can still see a dimensionless <img> (0 is not vacuous)', () => {
+    // With the backlog at 0 the ratchet passes whether or not countImgs works.
+    // Exercise it against synthetic sources so a parsing regression that makes
+    // everything look "covered" fails here instead of going unnoticed.
+    expect(countImgs('<img src={x} className="a" />').missing).toBe(1);
+    expect(countImgs('<img src={x} width={10} height={20} />').missing).toBe(0);
+    expect(countImgs('<img src={x} width={10} />').missing).toBe(1);
+    // A src-less <img> is not counted at all, and a comment quoting one cannot
+    // create a phantom offender.
+    expect(countImgs('<img alt="" />').total).toBe(0);
+    expect(countImgs('{/* <img src={x} /> */}').total).toBe(0);
+    expect(countImgs('/* <img src={x} /> */').total).toBe(0);
   });
 });
 

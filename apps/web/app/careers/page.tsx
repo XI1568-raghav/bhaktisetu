@@ -104,9 +104,8 @@ export default function CareersPage() {
  Careers at Darshya
  </p>
  <h1
- className="text-2xl sm:text-3xl font-bold mb-6"
+ className="heading-display text-2xl sm:text-3xl font-bold mb-6"
  style={{
- fontFamily: "var(--font-display)",
  color: "var(--color-text-inverse)",
  lineHeight: "var(--leading-tight)",
  }}

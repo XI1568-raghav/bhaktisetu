@@ -244,15 +244,16 @@
      DU-02: shadow-warm / -sm / -md / -lg are written 51 times across the app
      (the sign-in card among them) but no --shadow-warm* token ever existed,
      so all 51 compiled to `box-shadow: none`. Tailwind v4 needs the token in
-     @theme — a :root declaration alone does not generate the utility, which
-     is why the neutral --shadow-sm/md/lg below could be redefined in :root
-     but these could not. Same warm-tinted ramp, one step softer per weight. */
+     @theme — a :root declaration alone does not generate the utility. The
+     neutral --shadow-sm/md/lg were declared in :root for exactly that reason
+     and were therefore dead too; they now live in @theme below. Same
+     warm-tinted ramp, one step softer per weight. */
   --shadow-warm-sm: 0 1px 2px oklch(0.25 0.03 60 / 0.05), 0 1px 3px oklch(0.25 0.03 60 / 0.06);
   --shadow-warm: 0 1px 3px oklch(0.25 0.03 60 / 0.07), 0 4px 12px oklch(0.25 0.03 60 / 0.08);
   --shadow-warm-md: 0 2px 6px oklch(0.25 0.03 60 / 0.08), 0 10px 28px oklch(0.25 0.03 60 / 0.10);
   --shadow-warm-lg: 0 4px 12px oklch(0.25 0.03 60 / 0.09), 0 20px 48px oklch(0.25 0.03 60 / 0.14);
 
-  /* DU-12: --shadow-sm/md/lg are warm lab()-tinted in :root, but shadow-xl and
+  /* DU-12: shadow-xl and
      shadow-2xl (28 call sites — modals, dropdowns, the nav menu) had no token
      and fell through to Tailwind's stock rgb(0 0 0 / …), a neutral-black cast
      that reads cool against every warm surface next to it. Same hue as the
@@ -260,6 +261,19 @@
      :root, because the utilities do not exist otherwise. */
   --shadow-xl: 0 8px 24px oklch(0.25 0.03 60 / 0.10), 0 28px 64px oklch(0.25 0.03 60 / 0.16);
   --shadow-2xl: 0 12px 32px oklch(0.25 0.03 60 / 0.12), 0 40px 88px oklch(0.25 0.03 60 / 0.20);
+
+  /* DU-12 (second half): --shadow-sm/md/lg/float used to be declared in :root,
+     one block below this one. Tailwind v4 generates shadow utilities ONLY from
+     @theme, so all four were dead: `.shadow-sm/.shadow-md/.shadow-lg` compiled
+     to Tailwind's stock `#0000001a` cool black across 332 call sites, and
+     `.shadow-float` was never emitted at all (its single use rendered
+     box-shadow: none). Moving them here — same values, same warm hue as the
+     rest of the ramp — retargets all 333 sites with zero component edits.
+     Resulting blur ramp: 3 / 16 / 40 / 64 / 88px, monotonic. */
+  --shadow-sm: 0 1px 3px oklch(0.25 0.02 60 / 0.06);
+  --shadow-md: 0 4px 16px oklch(0.25 0.02 60 / 0.09);
+  --shadow-lg: 0 12px 40px oklch(0.25 0.02 60 / 0.13);
+  --shadow-float: 0 2px 8px oklch(0.25 0.02 60 / 0.07), 0 16px 48px oklch(0.25 0.02 60 / 0.08);
 
   /* ── Neutral ramp — warm ──────────────────────────────────────────────────
      DU-12: 2,128 gray/slate/stone utilities across 122 files paint Tailwind's
@@ -422,12 +436,6 @@
   --type-lg: var(--text-lg);
   --type-xl: var(--text-xl);
   --type-2xl: var(--text-2xl);
-
-  /* ── Shadows — warm-tinted ─────────────────────────────────────────────── */
-  --shadow-sm: 0 1px 3px oklch(0.25 0.02 60 / 0.06);
-  --shadow-md: 0 4px 16px oklch(0.25 0.02 60 / 0.09);
-  --shadow-lg: 0 12px 40px oklch(0.25 0.02 60 / 0.13);
-  --shadow-float: 0 2px 8px oklch(0.25 0.02 60 / 0.07), 0 16px 48px oklch(0.25 0.02 60 / 0.08);
 
   /* ── Easing curves ─────────────────────────────────────────────────────── */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -612,6 +620,49 @@ select {
     min-height: 0;
     min-width: 0;
   }
+}
+
+/* ── prose-body — ONE reading size for body copy ───────────────────────────
+   DU-10: the token layer was fixed (every --text-* step now pairs with an
+   explicit --text-*--line-height, so prose has one leading ratio) and the
+   call sites were not. A census of <p> elements carrying a max-w-* reading
+   measure found SIX reading sizes in use — text-xs 7, text-sm 70, text-base 59,
+   text-lg 44, text-xl 3, and 47 with no size class at all. Computed from the
+   shipped clamps that is 12.1px to 17.3px at a 390px viewport: a 46% spread
+   for the same role, which is the symptom the finding actually named.
+
+   --text-base is the answer: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem) = 16-17px,
+   which clears the finding's "16px+" bar, and it already pairs with
+   --leading-relaxed. This class exists so a new prose paragraph has one name to
+   reach for instead of picking a step.
+
+   NOT for metadata. Timestamps, counts and helper captions are legitimately
+   smaller — the finding explicitly allows "small sizes reserved for metadata". */
+.prose-body {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+}
+
+/* ── defer-paint — skip render work for below-fold, text-only sections ─────
+   HOME-01: the homepage's <main> is 124,211 B across 26 top-level children.
+   The measured prize for the deferral programme the finding originally asked
+   for (next/dynamic + IntersectionObserver) turned out to be ~15 KB gzipped —
+   every below-fold <img> is already loading="lazy" and the 13,886 KB of images
+   that justified it no longer exists (777.0 KB after the PERF-01 pipeline).
+   So the markup is NOT removed: doing so would cost SEO and hydration risk for
+   a rounding error in transfer.
+
+   What genuinely still costs is LAYOUT AND PAINT for five text-only, zero-image
+   sections totalling 33,532 B of markup that no first-viewport visitor sees.
+   content-visibility skips exactly that work while leaving the markup in the
+   HTML for crawlers, in-page search and hydration. contain-intrinsic-size keeps
+   the scrollbar honest so deferred sections do not cause scroll jump.
+
+   ONLY for below-fold, text-only sections. Anything above the fold, or anything
+   whose height is genuinely unknown, must not use it. */
+.defer-paint {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
 }
 
 /* ── container-wide / container-prose — two content widths, not eleven ────

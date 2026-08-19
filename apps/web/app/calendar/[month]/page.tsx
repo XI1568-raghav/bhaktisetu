@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FESTIVALS, resolveBookablePujas } from '../../../lib/festivals';
@@ -115,7 +117,7 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
 
       <header className="mb-8">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{items.length} festival{items.length === 1 ? '' : 's'} · {m.season}</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Hindu Festivals in {m.name} {YEAR}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Hindu Festivals in {m.name} {YEAR}</h1>
         <p className="mt-2 font-serif text-base text-gray-600">{m.sanskrit}</p>
         <p className="mt-3 max-w-2xl text-base text-gray-700">{m.focus}</p>
       </header>

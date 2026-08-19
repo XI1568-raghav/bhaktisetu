@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { NAKSHATRAS, nakshatraSlugs, getNakshatra } from '../../../lib/nakshatras';
@@ -100,7 +102,7 @@ export default async function NakshatraDetail({
         <div className="flex items-center gap-2 mb-2 text-xs text-surface-600 font-mono">
           <span>Nakshatra #{idx + 1} of 27</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-2 leading-tight">
+        <h1 className={`${H1.marketing} mb-2`}>
           {n.name}
           <span className="text-surface-500 text-xl sm:text-2xl font-normal ml-3">
             {n.sanskritName}

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { DARSHANAS, TOTAL_DARSHANAS, PAIR_LABELS, PAIR_ORDER, type DarshanaPair } from '../../lib/darshanas';
 
@@ -62,7 +64,7 @@ export default function DarshanasIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{TOTAL_DARSHANAS} astika darshanas · 3 complementary pairs</p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">षड्दर्शन</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>षड्दर्शन</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The 6 Darshanas — Schools of Hindu Philosophy</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
           The shad-darshana are the six classical orthodox (astika — accepting the Veda)

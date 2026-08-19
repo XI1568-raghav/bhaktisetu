@@ -249,7 +249,17 @@
     "views": "views",
     "likes": "likes",
     "search": "Search aartis, mantras, bhajans...",
-    "noContent": "No content matches your filters."
+    "noContent": "No content found.",
+    "todaysFeatured": "Today's Featured",
+    "todaysFeaturedSubtitle": "Curated daily devotional content for your spiritual journey",
+    "curatedCollections": "Curated Collections",
+    "stories": "Stories",
+    "title": "Title",
+    "deity": "Deity",
+    "type": "Type",
+    "tracks": "tracks",
+    "tryDifferentSearch": "Try a different search term.",
+    "checkBackSoon": "Check back soon for new additions."
   },
   "store": {
     "pageTitle": "Bhakti Store",

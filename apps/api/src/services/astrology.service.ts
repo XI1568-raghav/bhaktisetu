@@ -857,7 +857,15 @@ class AstrologyService {
     mode: 'chat' | 'call' | 'video',
     resolved?: ResolvedAstrologer,
   ): ConsultationSession | { error: string } {
-    const astrologer = resolved ?? ASTROLOGERS.find((a) => a.id === astrologerId);
+    // AW-02: the fixture fallback is GONE. This used to be
+    // `resolved ?? ASTROLOGERS.find(a => a.id === astrologerId)`, so a caller
+    // that passed a fixture id without a resolved profile opened a real session
+    // against an invented person. It was unreachable over HTTP — the route gates
+    // on a UUID + an approved AstrologerProfile and always passes `resolved` —
+    // which made it a landmine, not a live defect: one forgotten 4th argument
+    // stood between the fixture and a live consultation. Real supply is now the
+    // only thing this method can consult.
+    const astrologer = resolved;
     if (!astrologer) return { error: 'Astrologer not found.' };
     if (!astrologer.isOnline) return { error: 'Astrologer is currently offline.' };
     if (astrologer.isBusy) return { error: 'Astrologer is currently busy with another consultation.' };

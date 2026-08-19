@@ -833,19 +833,95 @@ export async function priestRoutes(server: FastifyInstance) {
         };
       });
 
+      // ── DI-05: DEDUPE THE TWO RAILS BEFORE MERGING, AND BEFORE SUMMING ──
+      //
+      // The rails were only ONE-WAY exclusive: createPriestPayout refuses to
+      // write a sidecar row when a live Commission exists, but the Commission
+      // mint never checked for a PriestPayout. `video_uploaded -> delivered` is
+      // a legal transition and both are in EARNING_ATTACH_STATUSES, so a booking
+      // already carrying a legacy row minted a Commission on its next move and
+      // landed on BOTH rails. This concatenation then rendered that booking
+      // twice and `summary` added the same money twice — the pandit's own screen
+      // telling him he is owed double. (The write side is symmetric now, in
+      // services/provider-earning-mint.ts guard 2; this covers rows that already
+      // exist.)
+      //
+      // Precedence: the COMMISSION row wins. That is the documented direction —
+      // payment.service defers to the ledger, so the read must too, or the two
+      // sides disagree about which rail owns the booking.
+      //
+      // Cost: ZERO extra queries for the common case. A temple-path pandit has
+      // an empty legacy rail (`legacy.total === 0`), so the whole correction is
+      // skipped. It only runs for the genuinely-overlapping ledger.
+      //
+      // Scope: bounded at RAIL_MERGE_WINDOW on the commission side, the same cap
+      // the merge itself already accepts and already discloses via
+      // `mergeTruncated`. Exact for any pandit whose ledger fits that window.
+      let dupCount = 0;
+      let dupEarned = new Prisma.Decimal(0);
+      let dupPending = new Prisma.Decimal(0);
+      let dupBookingIds: string[] = [];
+
+      if (legacy.total > 0) {
+        const commissionBookings = await prisma.commission.findMany({
+          where: { ...baseWhere },
+          select: { bookingId: true },
+          take: RAIL_MERGE_WINDOW,
+        });
+        dupBookingIds = Array.from(
+          new Set(commissionBookings.map((c) => c.bookingId).filter((id): id is string => !!id)),
+        );
+
+        if (dupBookingIds.length > 0) {
+          // ONE read of the overlapping legacy rows, bounded by the same window.
+          // Counting and summing in JS rather than firing three aggregates keeps
+          // the correction and the row-level dedupe reading the identical set —
+          // a count that disagrees with the list is how "four surfaces, four
+          // numbers" started.
+          const overlap = await prisma.priestPayout.findMany({
+            where: { priestId, bookingId: { in: dupBookingIds } },
+            select: { bookingId: true, amount: true, status: true },
+            take: RAIL_MERGE_WINDOW,
+          });
+
+          // The legacy page/total carries the caller's ?status filter, so the
+          // row subtraction has to carry it too or it corrects a number that
+          // was never counted.
+          dupCount = overlap.filter((p) => !status || p.status === status).length;
+          for (const row of overlap) {
+            if (row.status === 'completed') dupEarned = dupEarned.add(toDecimal(row.amount));
+            else if (row.status === 'pending' || row.status === 'processing') {
+              dupPending = dupPending.add(toDecimal(row.amount));
+            }
+          }
+        }
+      }
+
+      const dupSet = new Set(dupBookingIds);
+
       // Both sides are the top `window` of their own rail sorted newest-first,
       // so the first `window` entries of the sorted concatenation are the true
       // top `window` of the union.
       const merged = [
-        ...legacy.payouts.map((p) => ({ ...p, rail: 'priest_payout' as const })),
+        ...legacy.payouts
+          .filter((p) => !(p.booking?.id && dupSet.has(p.booking.id)))
+          .map((p) => ({ ...p, rail: 'priest_payout' as const })),
         ...unified,
       ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      const total = legacy.total + unifiedTotal;
+      // `total` counts rows, so it drops the duplicated LEGACY rows only — the
+      // commission rows they shadow are still in `unifiedTotal`. Floored at 0:
+      // a count can never be negative, whatever the two rails disagree about.
+      const total = Math.max(0, legacy.total + unifiedTotal - dupCount);
 
       // Money stays Decimal to the response boundary — never float-summed.
-      const totalEarned = toDecimal(legacy.summary.totalEarned).add(unifiedSummary.total);
-      const pending = toDecimal(legacy.summary.pending).add(unifiedSummary.pending);
+      // The duplicated LEGACY amounts come off, for the same reason.
+      const totalEarned = toDecimal(legacy.summary.totalEarned)
+        .add(unifiedSummary.total)
+        .sub(dupEarned);
+      const pending = toDecimal(legacy.summary.pending)
+        .add(unifiedSummary.pending)
+        .sub(dupPending);
 
       // Whichever rail settled most recently owns the "Last Payout" card.
       const legacyLast = legacy.summary.lastPayout;

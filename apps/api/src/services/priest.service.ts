@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { BookingService } from './booking.service.js';
 import { notifyUser } from '../routes/notifications.js';
 import { notifyDevotee, buildBookingCtx } from './booking-notify.service.js';
+import { mintProviderEarningForBooking } from './provider-earning-mint.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -370,18 +371,45 @@ export class PriestService {
       );
     }
 
-    const updated = await prisma.pujaBooking.update({
-      where: { id: bookingId },
-      data: {
-        priestId,
-        status: 'priest_assigned',
-      },
-      include: {
-        temple: { select: { id: true, name: true } },
-        pujaType: { select: { id: true, name: true } },
-        user: { select: { id: true, fullName: true, phone: true } },
-        priest: { select: { displayName: true } },
-      },
+    // DI-05: the assignment and the earning mint are ONE transaction.
+    //
+    // This was a bare `prisma.pujaBooking.update`. Like the dispatch-accept
+    // path it writes priestId + status:'priest_assigned' WITHOUT going through
+    // booking.service.updateBookingStatus, so the re-mint gated on
+    // EARNING_ATTACH_STATUSES never fired — even though 'priest_assigned' is in
+    // that set and this is exactly the transition it was written for. A pandit
+    // who accepted a booking in his OWN PORTAL ended up with no Commission and
+    // no PriestPayout, and /priest/payouts told him he had earned nothing.
+    //
+    // Wrapped in a transaction so a mint can never commit against an assignment
+    // that rolled back (money owed to nobody), and so the mint reads the
+    // post-write row. All four guards live in provider-earning-mint.ts.
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.pujaBooking.update({
+        where: { id: bookingId },
+        data: {
+          priestId,
+          status: 'priest_assigned',
+        },
+        include: {
+          temple: { select: { id: true, name: true } },
+          pujaType: { select: { id: true, name: true } },
+          user: { select: { id: true, fullName: true, phone: true } },
+          priest: { select: { displayName: true } },
+        },
+      });
+
+      // `include` returns every scalar, so priceAmount/priestPayout are on the
+      // row without a second read. Tests that mock update() with a partial row
+      // simply fall out at the mint's first guard rather than throwing.
+      await mintProviderEarningForBooking(tx, {
+        id: row.id ?? bookingId,
+        priestId: row.priestId ?? null,
+        priceAmount: row.priceAmount ?? 0,
+        priestPayout: row.priestPayout ?? 0,
+      });
+
+      return row;
     });
 
     // D6: notify the devotee their pandit is confirmed. Push + WhatsApp are

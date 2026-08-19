@@ -163,7 +163,7 @@ function Content() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>My Profile</h1>
+          <h1 className={H1.portal}>My Profile</h1>
           <p className="text-[var(--color-text-muted)] mt-1">Manage your astrologer profile and pricing</p>
         </div>
         <button

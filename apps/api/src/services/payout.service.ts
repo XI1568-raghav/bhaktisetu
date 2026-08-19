@@ -177,6 +177,13 @@ async function sumCommissionAmounts(
   return new Prisma.Decimal(agg._sum?.amount ?? 0);
 }
 
+/**
+ * Cap on the DI-05 legacy-rail reconciliation reads in getPayoutBalance.
+ * SCAL-04: both sides are per-provider and indexed, but "per-provider" is not
+ * a bound, so they carry an explicit one.
+ */
+const LEGACY_RAIL_SCAN_CAP = 500;
+
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */
 export async function getPayoutBalance(providerId: string) {
   const pending = await sumCommissionAmounts({
@@ -211,12 +218,75 @@ export async function getPayoutBalance(providerId: string) {
   // destroyed (provider short-paid, platform kept it) — every Monday, via the
   // weekly settlement cron. Available is exactly `pending`; in-flight is only
   // ever reported separately as pendingInr.
+  // ── DI-05: the LEGACY pandit rail, reported rather than silently omitted ──
+  //
+  // Everything above reads the Commission ledger and nothing else, so a pandit
+  // whose earnings sit on the sidecar `PriestPayout` rail saw his money on
+  // /priest/payouts and Rs 0 here — on apps/web/app/payouts/page.tsx, which is
+  // role-gated to include 'priest' and is where /settings/earnings redirects.
+  // Same pandit, same money, two screens, two answers.
+  //
+  // It is reported SEPARATELY and deliberately NOT folded into `availableInr`.
+  // That figure gates POST /payouts/request, and requestPayout sizes the actual
+  // PayoutRequest from Commission rows inside its transaction (RV-06). Adding
+  // sidecar money to it would clear the MIN_PAYOUT_INR gate on money this rail
+  // cannot settle and would fail after promising a balance — and it is the
+  // exact shape of the double-pay the two-rail invariant exists to prevent.
+  // The sidecar rail is settled by its own process (admin/bookings).
+  //
+  // Costs a non-pandit provider ONE indexed lookup that misses.
+  const priestRow = await prisma.priest.findUnique({
+    where: { userId: providerId },
+    select: { id: true },
+  });
+
+  let legacyPending = new Prisma.Decimal(0);
+  let legacyPaid = new Prisma.Decimal(0);
+
+  if (priestRow) {
+    // Exclude any booking the unified rail already owns, so the two figures on
+    // one screen can never restate the same rupee. Bounded by the provider's
+    // own commission rows; the write side (services/provider-earning-mint.ts)
+    // now keeps the rails mutually exclusive, so this only catches rows that
+    // predate that guard.
+    const ownedByUnified = await prisma.commission.findMany({
+      where: { providerId, bookingId: { not: null } },
+      select: { bookingId: true },
+      take: LEGACY_RAIL_SCAN_CAP,
+    });
+    const ownedIds = Array.from(
+      new Set(ownedByUnified.map((c) => c.bookingId).filter((id): id is string => !!id)),
+    );
+
+    const sidecar = await prisma.priestPayout.findMany({
+      where: {
+        priestId: priestRow.id,
+        ...(ownedIds.length ? { bookingId: { notIn: ownedIds } } : {}),
+      },
+      select: { bookingId: true, amount: true, status: true },
+      take: LEGACY_RAIL_SCAN_CAP,
+    });
+
+    for (const row of sidecar) {
+      const amount = new Prisma.Decimal(row.amount ?? 0);
+      if (row.status === 'completed') legacyPaid = legacyPaid.add(amount);
+      else if (row.status === 'pending' || row.status === 'processing') {
+        legacyPending = legacyPending.add(amount);
+      }
+    }
+  }
+
   // Decimal all the way through; converted to number only at this boundary,
   // where the value stops being money and becomes a display/API field.
   return {
     availableInr: pending.toDecimalPlaces(2).toNumber(),
     pendingInr: inFlight.toDecimalPlaces(2).toNumber(),
     paidOutInr: paid.toDecimalPlaces(2).toNumber(),
+    legacyPandit: {
+      hasLegacyRail: Boolean(priestRow),
+      pendingInr: legacyPending.toDecimalPlaces(2).toNumber(),
+      paidOutInr: legacyPaid.toDecimalPlaces(2).toNumber(),
+    },
   };
 }
 
@@ -596,10 +666,20 @@ export async function runWeeklySettlement(): Promise<{
   errors: number;
 }> {
   // Distinct providers holding any PENDING, unlinked commission.
-  const providers = await prisma.commission.findMany({
+  //
+  // SCAL-04 (2026-08-19): was `findMany({ select: { providerId }, distinct })`.
+  // Prisma's `distinct` is applied in the CLIENT, not in SQL — Postgres returns
+  // EVERY matching commission row and the driver dedupes them in memory, so a
+  // ledger with 200k pending rows across 500 providers materialised 200k rows to
+  // produce 500. This is the same materialise-then-distinct shape already
+  // retired at admin-metrics.ts:99; `groupBy` pushes the DISTINCT into SQL and
+  // returns one row per provider.
+  //
+  // Cron-only, so there was no request-path risk — it was simply the last
+  // instance of a pattern this finding had already replaced everywhere else.
+  const providers = await prisma.commission.groupBy({
+    by: ['providerId'],
     where: { status: 'PENDING', payoutRequestId: null },
-    select: { providerId: true },
-    distinct: ['providerId'],
   });
 
   let requestsCreated = 0;

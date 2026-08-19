@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { HINDU_SYMBOLS, type HinduSymbolCategory } from '../../lib/hindu-symbols';
 
@@ -74,7 +76,7 @@ export default function HinduSymbolsIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-amber-700">Pratika & chinha of Sanatana Dharma</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Hindu Sacred Symbols</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Hindu Sacred Symbols</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Twelve canonical symbols used across Hindu ritual, iconography and altar practice — from the primordial sound
           Om to the auspiciousness mark applied at every wedding threshold. Each entry covers the presiding deity,

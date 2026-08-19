@@ -248,8 +248,31 @@ export default function LanguageSwitcher({
  );
 }
 
-// ─── Exports for content page integration ───────────────────────────────────────
+// ─── Authored-Hindi provenance record (NOT a label store) ───────────────────────
 
+/**
+ * ⚠️ NOTHING RENDERS THIS. Do not import it to label a UI.
+ *
+ * I-03 / I18N-05: this map used to be the /content page's label store, and it
+ * was the defect. It authored 21 Hindi labels, components/ContentPageHeader.tsx
+ * read three of them, and the English twins of the other 18 sat hardcoded in
+ * app/content/page.tsx a few files away — so the page shipped English while the
+ * Hindi for it was already written and sitting in this file. Both surfaces now
+ * read lib/i18n/{en,hi}.json through lib/t.ts, which is locale-aware and which
+ * the server can also read.
+ *
+ * WHY IT IS STILL HERE. It is the human-authored SOURCE those catalog entries
+ * were lifted from, and __tests__/i18n-hi-catalog.test.ts's provenance guard
+ * reads this file (decoding the \uXXXX escapes) to prove every Devanagari
+ * string in hi.json was written by a person rather than a translation engine.
+ * Delete this map and that guard loses the corpus for 21 strings: it does not
+ * fail loudly on a missing FILE, only on an unsourced string, so the honest
+ * order is to keep the record until the provenance corpus is re-homed
+ * deliberately — not to delete it and discover the gap later.
+ *
+ * A guard against it becoming a second store again lives in
+ * __tests__/i18n/content-page-locale.i03.test.tsx.
+ */
 export const CONTENT_LABELS: Record<SupportedLanguage, Record<string, string>> = {
  en: {
  pageTitle: 'Devotional Content Library',

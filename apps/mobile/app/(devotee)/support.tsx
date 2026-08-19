@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   ScrollView,
+  Linking,
 } from 'react-native';
 import {
   useSupportTickets,
@@ -15,6 +16,7 @@ import {
 } from '@poojly/api-client';
 import { PortalScreen, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { HELP_CENTRE_LABEL, openHelpCentre } from '../../lib/help-centre';
 
 interface TicketRow {
   id: string;
@@ -89,6 +91,26 @@ export default function SupportScreen() {
           </Text>
         </View>
       ) : null}
+
+      {/*
+        I18N-09: the answer before the queue. Filing a ticket waits on a human;
+        most of what devotees ask here is already written up on the web help
+        centre, which the app previously did not link to anywhere at all.
+      */}
+      <TouchableOpacity
+        style={styles.helpBtn}
+        onPress={() => {
+          void openHelpCentre(Linking.openURL);
+        }}
+        activeOpacity={0.8}
+        accessibilityRole="link"
+        accessibilityLabel={`${HELP_CENTRE_LABEL} — opens in your browser`}
+      >
+        <Text style={styles.helpBtnText}>{HELP_CENTRE_LABEL}</Text>
+        <Text style={styles.helpBtnHint}>
+          Step-by-step guides — opens darshya.online in your browser
+        </Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.createBtn}
@@ -214,6 +236,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   createBtnText: { color: colors.white, fontWeight: '700', fontSize: fontSize.base },
+  helpBtn: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.saffron[600],
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  helpBtnText: { color: colors.saffron[600], fontWeight: '700', fontSize: fontSize.base },
+  helpBtnHint: { color: colors.stone[600], fontSize: fontSize.xs, marginTop: 2, textAlign: 'center' },
   card: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.md,

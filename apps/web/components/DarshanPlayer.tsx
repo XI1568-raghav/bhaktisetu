@@ -60,7 +60,7 @@ export default function DarshanPlayer({
  {/* Background placeholder */}
  <div className="absolute inset-0 bg-gradient-to-br from-surface-800 to-surface-900">
  {templeImage && (
- <img
+ <img width={1280} height={720} 
  src={templeImage}
  alt={templeName}
  className="w-full h-full object-cover opacity-30 blur-sm"
@@ -183,7 +183,7 @@ export default function DarshanPlayer({
  /* No stream URL — show static placeholder */
  <div className="absolute inset-0 bg-gradient-to-br from-surface-800 to-surface-900">
  {templeImage && (
- <img
+ <img width={1280} height={720} 
  src={templeImage}
  alt={templeName}
  className="w-full h-full object-cover opacity-40"

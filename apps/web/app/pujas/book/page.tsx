@@ -45,6 +45,9 @@ import { apiErrorCode, serverErrorMessage } from '../../../lib/friendly-error';
 import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { DateInput } from '../../../components/ui/DateInput';
 import { formatTrustScoreOutOf, hasMeaningfulTrustScore } from '../../../lib/trust-score';
+// CM-10: this subtitle used to interpolate puja.category, i.e. the raw Prisma
+// enum, on the CHECKOUT page — 'special_occasion' beside the price.
+import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import {
  PLATFORM_FEE_INR,
  PRASAD_DELIVERY_FEE_INR,
@@ -1523,7 +1526,10 @@ function PujaBookingInner() {
  Book {puja.name}
  </h1>
  <p className="text-surface-500">
- {puja.deity} &middot; {puja.durationMinutes} min &middot; {puja.category}
+ {puja.deity} &middot; {puja.durationMinutes} min
+ {pujaCategoryLabel(puja.category) && (
+ <> &middot; {pujaCategoryLabel(puja.category)}</>
+ )}
  </p>
  </div>
 

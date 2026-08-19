@@ -148,7 +148,7 @@ export default function CustomPlanPage() {
  <Compass className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>Custom Trip Planner</p>
  </div>
- <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className="heading-display text-2xl font-semibold" style={{ color: 'var(--color-text)' }}>
  Design your own sacred journey
  </h1>
  <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>

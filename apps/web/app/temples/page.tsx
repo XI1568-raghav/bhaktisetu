@@ -105,7 +105,7 @@ function TemplesSkeleton() {
      <h1 className={`${H1.catalogue} mb-3`}>
       Sacred Temples of India
      </h1>
-     <p className="max-w-2xl text-lg text-surface-500">Loading temples…</p>
+     <p className="prose-body max-w-2xl text-surface-500">Loading temples…</p>
      <div className="mt-8 h-[54px] max-w-2xl animate-pulse rounded-lg bg-white/70" />
     </div>
    </section>

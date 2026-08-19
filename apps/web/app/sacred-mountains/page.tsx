@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { SACRED_MOUNTAINS } from '../../lib/sacred-mountains';
 import { formatNumber } from '../../lib/format-locale';
@@ -53,7 +55,7 @@ export default function SacredMountainsIndexPage() {
         <p className="text-xs uppercase tracking-wider text-saffron-600">
           10 sacred peaks · cosmology + geography
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">
+        <h1 className={`${H1.catalogue} mt-1`}>
           Sacred Mountains of Hindu Tradition
         </h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">

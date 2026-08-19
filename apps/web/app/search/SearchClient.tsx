@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search as SearchIcon, ArrowRight, BookOpen, Flame, Landmark } from 'lucide-react';
+import { Search as SearchIcon, ArrowRight, BookOpen, Flame, Landmark, ShoppingBag } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api-config';
 import { contentSubtitleLabel, pujaSubtitleLabel } from '../../components/SearchSubtitle';
 import { buildRelaxedQueries } from '../../lib/search-relax';
@@ -45,9 +45,16 @@ interface ApiResults {
   temples: ApiHit[];
   pujas: ApiHit[];
   content: ApiHit[];
+  /**
+   * CM-12: the store bucket. The finding's own fix names "temples, pujas,
+   * content AND store products in one result set"; the endpoint had no store
+   * query and this page had no key for one, so a devotee searching for a thing
+   * the site sells got "No matches".
+   */
+  products: ApiHit[];
 }
 
-const EMPTY_API_RESULTS: ApiResults = { temples: [], pujas: [], content: [] };
+const EMPTY_API_RESULTS: ApiResults = { temples: [], pujas: [], content: [], products: [] };
 
 interface Entry {
   category: 'sanskrit' | 'ved' | 'sanatan';
@@ -125,10 +132,16 @@ export default function SearchClient() {
           // anywhere: a missing key is "the server did not say", not "there are
           // aartis and here they are".
           content: Array.isArray(body.results?.content) ? body.results!.content! : [],
+          products: Array.isArray(body.results?.products) ? body.results!.products! : [],
         }));
 
     const isEmpty = (r: ApiResults) =>
-      r.temples.length === 0 && r.pujas.length === 0 && r.content.length === 0;
+      r.temples.length === 0 &&
+      r.pujas.length === 0 &&
+      r.content.length === 0 &&
+      // CM-12: without this a products-only answer reads as empty, so the
+      // client discards a correct result and fires relaxed retries for it.
+      r.products.length === 0;
 
     (async () => {
       let exact: ApiResults;
@@ -191,7 +204,11 @@ export default function SearchClient() {
   );
   const hits = exactHits.length > 0 ? exactHits : relaxedHits;
   const totalHits =
-    hits.length + api.pujas.length + api.temples.length + api.content.length;
+    hits.length +
+    api.pujas.length +
+    api.temples.length +
+    api.content.length +
+    api.products.length;
   /** Something on this page came from a term other than the one typed. */
   const widened = relaxedTerm !== null && totalHits > 0;
   /**
@@ -277,6 +294,26 @@ export default function SearchClient() {
                 {pujaSubtitleLabel(r.subtitle) && (
                   <p className="text-sm text-surface-600 mt-0.5">{pujaSubtitleLabel(r.subtitle)}</p>
                 )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {q && api.products.length > 0 && (
+        <section className="mb-6">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-2">
+            <ShoppingBag className="w-3.5 h-3.5" /> Puja samagri &amp; store
+          </h2>
+          <div className="space-y-2">
+            {api.products.map((r) => (
+              <Link
+                key={`product-${r.id || r.slug}`}
+                href={r.href || `/store/seller/${r.slug}`}
+                className="block p-4 bg-white border border-surface-200 rounded-xl hover:border-saffron-400 transition-colors"
+              >
+                <h3 className="font-bold text-surface-900">{r.name}</h3>
+                {r.subtitle && <p className="text-sm text-surface-600 mt-0.5">{r.subtitle}</p>}
               </Link>
             ))}
           </div>

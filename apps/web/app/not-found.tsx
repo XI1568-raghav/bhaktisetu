@@ -61,8 +61,8 @@ export default function NotFound() {
       </svg>
 
       <h1
-        className="mb-2 text-xl font-semibold"
-        style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+        className="heading-display mb-2 text-xl font-semibold"
+        style={{ color: 'var(--color-text)' }}
       >
         Page not found
       </h1>

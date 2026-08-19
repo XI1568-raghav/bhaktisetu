@@ -2,6 +2,8 @@
 // longitude from simplified Meeus VSOP87. Targets "manglik dosh calculator",
 // "am i manglik", "mangal dosha check free", "kundli manglik check".
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import ManglikClient from './ManglikClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
@@ -96,7 +98,7 @@ export default function ManglikPage() {
 
    <header className="mb-8">
     <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool · no signup</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Manglik Dosh Calculator — Free Mangal Dosha Check</h1>
+    <h1 className={`${H1.catalogue} mt-1`}>Manglik Dosh Calculator — Free Mangal Dosha Check</h1>
     <p className="mt-2 text-saffron-700">मंगल दोष · Mangal Dosha</p>
     <p className="mt-4 text-base text-gray-700">
      Enter your DOB + birth time + timezone to check whether you are manglik. We compute Mars

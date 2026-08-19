@@ -10,6 +10,7 @@
  * and lists their payout request history.
  */
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { IndianRupee, Clock, CheckCircle2, Loader2, AlertCircle, Wallet, ArrowUpRight } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
@@ -25,6 +26,20 @@ interface Balance {
   availableInr: number;
   pendingInr: number;
   paidOutInr: number;
+  /**
+   * DI-05: the LEGACY pandit payout rail (PriestPayout), reported separately.
+   * This page used to read the Commission ledger only, so a pandit whose
+   * earnings sit on the sidecar rail saw his money on /priest/payouts and Rs 0
+   * here — the page /settings/earnings redirects to. It is NOT part of
+   * availableInr: POST /payouts/request settles Commission rows only, so
+   * folding it in would put a withdrawable-looking figure next to a button
+   * that cannot pay it.
+   */
+  legacyPandit?: {
+    hasLegacyRail: boolean;
+    pendingInr: number;
+    paidOutInr: number;
+  };
   kycVerified: boolean;
   kycOnFile: boolean;
 }
@@ -193,6 +208,29 @@ function PayoutsContent() {
             </div>
           </div>
         </div>
+
+        {/* DI-05: legacy pandit rail. Only rendered when this provider actually
+            has money on it, so no other role ever sees an empty extra card. */}
+        {balance?.legacyPandit?.hasLegacyRail &&
+        (balance.legacyPandit.pendingInr > 0 || balance.legacyPandit.paidOutInr > 0) ? (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p className="text-sm font-semibold text-amber-900">
+              Earlier puja earnings (settled separately)
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              {formatINR(balance.legacyPandit.pendingInr)} pending ·{' '}
+              {formatINR(balance.legacyPandit.paidOutInr)} already paid
+            </p>
+            <p className="mt-2 text-xs text-amber-700">
+              These bookings are paid out through your puja payouts, not the Withdraw
+              button above. See them in your{' '}
+              <Link href="/priest/payouts" className="underline font-medium">
+                puja payouts
+              </Link>
+              .
+            </p>
+          </div>
+        ) : null}
 
         {/* Request payout */}
         <div className="mt-6 bg-white rounded-xl border border-surface-100 p-6">

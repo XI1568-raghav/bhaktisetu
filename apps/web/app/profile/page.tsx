@@ -23,6 +23,7 @@ import {
  fetchWithTimeout,
  loadErrorMessage,
 } from '../../lib/api-config';
+import { ACCOUNT_LANGUAGES, accountLanguageLabel } from '../../lib/i18n/locales';
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
 
@@ -39,18 +40,14 @@ interface ProfileFormData {
  nriCountry: string;
 }
 
-const languages = [
- { value: 'hi', label: 'Hindi' },
- { value: 'en', label: 'English' },
- { value: 'ta', label: 'Tamil' },
- { value: 'te', label: 'Telugu' },
- { value: 'bn', label: 'Bengali' },
- { value: 'mr', label: 'Marathi' },
- { value: 'gu', label: 'Gujarati' },
- { value: 'kn', label: 'Kannada' },
- { value: 'ml', label: 'Malayalam' },
- { value: 'pa', label: 'Punjabi' },
-];
+/*
+ * I18N-07: this was a hand-retyped copy of the Prisma `Language` enum — a
+ * fourth list of languages in a product that already had three — and it offered
+ * all ten as if all ten did something. apps/api has message catalogues for five
+ * (en, hi, ta, te, kn); the other five save fine and change nothing. The list
+ * and the disclosure both live in lib/i18n/locales.ts now, checked against
+ * @poojly/shared by __tests__/i18n/profile-language-honesty.i18n07.test.tsx.
+ */
 
 const nakshatras = [
  'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
@@ -311,7 +308,7 @@ function ProfileContent() {
  <div className="relative">
  <div className="w-20 h-20 bg-saffron-100 rounded-full flex items-center justify-center overflow-hidden">
  {user?.avatarUrl ? (
- <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={80} height={80} src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" loading="lazy" decoding="async" />
  ) : (
  <User className="w-10 h-10 text-saffron-400" />
  )}
@@ -394,12 +391,16 @@ function ProfileContent() {
  onChange={(e) => updateField('preferredLanguage', e.target.value)}
  className="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
  >
- {languages.map((lang) => (
+ {ACCOUNT_LANGUAGES.map((lang) => (
  <option key={lang.value} value={lang.value}>
- {lang.label}
+ {accountLanguageLabel(lang.value)}
  </option>
  ))}
  </select>
+ <p className="mt-1.5 text-xs text-surface-500">
+ This sets the language of the messages we send you. Five of these have a
+ full catalogue; the rest are marked, and stay English until they do.
+ </p>
  </div>
 
  {/* Location */}

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { SHAKTI_PEETHS, type ShaktiPeethCountry } from '../../lib/shakti-peeths';
 
@@ -67,7 +69,7 @@ export default function ShaktiPeethIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-rose-700">Where Sati&apos;s body fell</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">The 51 Shakti Peeth</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>The 51 Shakti Peeth</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           After Sati immolated herself at Daksha Yajna, Vishnu&apos;s Sudarshana Chakra cut her body into 51 pieces
           which fell across the subcontinent. Each became a Shakti Peeth — paired with a specific Bhairava (Shiva

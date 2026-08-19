@@ -158,7 +158,7 @@ function VolunteersContent() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>Volunteers</h1>
+          <h1 className={H1.portal}>Volunteers</h1>
           <p className="text-sm mt-1 text-[var(--color-text-muted)]">{activeCount} active volunteer{activeCount === 1 ? '' : 's'}</p>
         </div>
         <button

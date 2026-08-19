@@ -124,6 +124,27 @@ describe('AstrologyService.getSpecializations', () => {
   });
 });
 
+/**
+ * AW-02: a REAL resolved astrologer, the only input startConsultation accepts
+ * now that the `ASTROLOGERS.find(...)` fallback has been removed. perMinuteRate
+ * 50 keeps the session-shape assertion below identical to what it pinned when
+ * this file drove the method with fixture id `astro_001`.
+ */
+const REAL_ID = '71e54617-6963-418e-845f-920f4350505b';
+const REAL_ASTROLOGER = {
+  id: REAL_ID,
+  userId: 'astro-user-1',
+  name: 'Acharya Vinod Sharma',
+  specializations: ['Vedic Astrology'],
+  languages: ['hi'],
+  experienceYears: 12,
+  rating: 4.8,
+  consultationCount: 90,
+  perMinuteRate: 50,
+  isOnline: true,
+  isBusy: false,
+};
+
 describe('AstrologyService.startConsultation', () => {
   it('returns error when astrologer not found', () => {
     const out = astrologyService.startConsultation('user-1', 'astro_999', 'chat');
@@ -131,23 +152,34 @@ describe('AstrologyService.startConsultation', () => {
   });
 
   it('returns error when astrologer offline', () => {
-    // astro_005 is offline per fixture data
-    const out = astrologyService.startConsultation('user-1', 'astro_005', 'chat');
+    const out = astrologyService.startConsultation('user-1', REAL_ID, 'chat', {
+      ...REAL_ASTROLOGER,
+      isOnline: false,
+    } as never);
     expect(out).toHaveProperty('error');
   });
 
   it('returns error when astrologer busy', () => {
-    // astro_003 is online but busy per fixture
-    const out = astrologyService.startConsultation('user-1', 'astro_003', 'chat');
+    // AW-02: driven by a RESOLVED profile, not by a fixture id. The fixture
+    // fallback is gone — startConsultation consults real supply only.
+    const out = astrologyService.startConsultation('user-1', REAL_ID, 'chat', {
+      ...REAL_ASTROLOGER,
+      isBusy: true,
+    } as never);
     expect(out).toEqual({ error: 'Astrologer is currently busy with another consultation.' });
   });
 
   it('creates session for available astrologer', () => {
-    const out = astrologyService.startConsultation('user-1', 'astro_001', 'video') as any;
+    const out = astrologyService.startConsultation(
+      'user-1',
+      REAL_ID,
+      'video',
+      REAL_ASTROLOGER as never,
+    ) as any;
     expect(out.error).toBeUndefined();
     expect(out.sessionId).toMatch(/^session_/);
     expect(out.userId).toBe('user-1');
-    expect(out.astrologerId).toBe('astro_001');
+    expect(out.astrologerId).toBe(REAL_ID);
     expect(out.mode).toBe('video');
     expect(out.status).toBe('waiting');
     expect(out.freeMinutes).toBe(5);

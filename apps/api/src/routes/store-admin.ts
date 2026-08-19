@@ -48,6 +48,14 @@ async function resolveStoreProfileId(userId: string): Promise<string | null> {
   return profile?.id ?? null;
 }
 
+/**
+ * SCAL-04: the merchant catalogue page. The default is generous because the
+ * store-admin page renders the full list client-side; the cap is what stops the
+ * response being sized by the catalogue.
+ */
+const STORE_PRODUCTS_PAGE_SIZE = 200;
+const STORE_PRODUCTS_MAX_LIMIT = 200;
+
 function serializeProduct(p: {
   id: string;
   storeProfileId: string;
@@ -132,11 +140,52 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     // The page previously showed the same "Add your first product" empty state
     // for both, then failed the add with an internal string.
     if (!storeProfileId) return reply.send({ products: [], storeProfileMissing: true });
-    const products = await prisma.storeProduct.findMany({
-      where: { storeProfileId },
-      orderBy: { createdAt: 'desc' },
+    // SCAL-04 (2026-08-19): no `select` and no `take` — one merchant's ENTIRE
+    // catalogue, every column including the free-text `description`. Bounded by
+    // one merchant, but unbounded in that merchant's success: the response grows
+    // with the catalogue and nothing stops it. Now an explicit column list (the
+    // exact set serializeProduct reads, nothing wider) and an explicit page.
+    const pageSize = Math.min(
+      Number((request.query as Record<string, unknown> | undefined)?.limit) ||
+        STORE_PRODUCTS_PAGE_SIZE,
+      STORE_PRODUCTS_MAX_LIMIT,
+    );
+    const pageNum = Math.max(
+      1,
+      Number((request.query as Record<string, unknown> | undefined)?.page) || 1,
+    );
+    const [products, total] = await Promise.all([
+      prisma.storeProduct.findMany({
+        where: { storeProfileId },
+        select: {
+          id: true,
+          storeProfileId: true,
+          name: true,
+          description: true,
+          price: true,
+          imageUrl: true,
+          category: true,
+          stock: true,
+          sku: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (pageNum - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.storeProduct.count({ where: { storeProfileId } }),
+    ]);
+    // `products` stays the first key so the existing merchant page keeps
+    // working; total/page/limit are additive. `total` is the paired COUNT, never
+    // the page length (SCAL-09's lying number).
+    return reply.send({
+      products: products.map(serializeProduct),
+      total,
+      page: pageNum,
+      limit: pageSize,
     });
-    return reply.send({ products: products.map(serializeProduct) });
   });
 
   // ─── POST /products ─────────────────────────────────────────────────────────

@@ -122,7 +122,7 @@ export default async function StorePage({
  <h1 className={`${H1.catalogue} mb-3`}>
  {t('pageTitle')}
  </h1>
- <p className="text-surface-500 text-lg max-w-2xl">
+ <p className="prose-body text-surface-500 max-w-2xl">
  {t('pageSubtitle')}
  </p>
 

@@ -2,10 +2,15 @@
 // deity right now. Programmatic-SEO play for long-tail "{deity} puja online"
 // queries. One file fans out to N deities via [slug] segment.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDeity, DEITIES } from '../../../lib/deities';
 import { getPujaTypes } from '../../../lib/api';
+// CM-10: the chip below is `uppercase tracking-wider`, so the raw enum used to
+// render as 'SPECIAL_OCCASION'.
+import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import { getMantrasForDeity } from '../../../lib/deity-mantras';
 
 export const revalidate = 3600;
@@ -86,7 +91,7 @@ export default async function DeityPage({ params }: Params) {
           </span>
           <span className="text-xs text-surface-500">Festival: {d.festival}</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.catalogue} mb-2`}>
           {d.name} <span className="text-2xl font-serif text-surface-500 ml-2">{d.sanskrit}</span>
         </h1>
         {d.consort ? (
@@ -153,9 +158,11 @@ export default async function DeityPage({ params }: Params) {
                 className="rounded-xl border border-surface-200 bg-white p-5 hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-center justify-between mb-2 gap-3">
-                  <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
-                    {p.category}
-                  </span>
+                  {pujaCategoryLabel(p.category) && (
+                    <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
+                      {pujaCategoryLabel(p.category)}
+                    </span>
+                  )}
                   <span className="text-xs text-surface-500">{p.durationMinutes} min</span>
                 </div>
                 <h3 className="text-lg font-semibold text-surface-900 mb-1">{p.name}</h3>

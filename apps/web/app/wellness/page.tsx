@@ -94,8 +94,8 @@ export default function WellnessPage() {
 
  <h1
  data-reveal="up-far"
- className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]"
- style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+ className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]"
+ style={{ color: 'var(--color-text)' }}
  >
  Yoga, Meditation{' '}
  <span style={{ color: 'var(--color-primary)' }}>&amp; Vipassana</span>

@@ -305,23 +305,38 @@ describe('DI-05 read path — GET /priest/payouts sees the unified rail', () => 
   });
 
   it('still returns the legacy sidecar rows, merged newest-first', async () => {
-    prismaMock.priestPayout.findMany.mockResolvedValue([
-      {
-        id: 'pp-legacy',
-        amount: new Prisma.Decimal('1200.00'),
-        status: 'completed',
-        payoutMethod: 'bank_transfer',
-        payoutReference: 'NEFT-1',
-        processedAt: new Date('2026-08-01T06:00:00.000Z'),
-        createdAt: new Date('2026-07-30T06:00:00.000Z'),
-        booking: {
-          id: 'booking-legacy',
-          bookingNumber: 'BS-20260730-AAAAA',
-          pujaType: { name: 'Rudrabhishek' },
-          temple: { name: 'Somnath' },
-        },
+    const legacyRow = {
+      id: 'pp-legacy',
+      amount: new Prisma.Decimal('1200.00'),
+      status: 'completed',
+      payoutMethod: 'bank_transfer',
+      payoutReference: 'NEFT-1',
+      processedAt: new Date('2026-08-01T06:00:00.000Z'),
+      createdAt: new Date('2026-07-30T06:00:00.000Z'),
+      booking: {
+        id: 'booking-legacy',
+        bookingNumber: 'BS-20260730-AAAAA',
+        pujaType: { name: 'Rudrabhishek' },
+        temple: { name: 'Somnath' },
       },
-    ] as never);
+    };
+    // Filter-aware: the route now also asks this table "which of these bookings
+    // do you ALSO carry?" (the rail-overlap read). A blanket mock answers "this
+    // row" to that question too, which would fake a duplicate that does not
+    // exist — `booking-legacy` is NOT the commission's `booking-temple-1`, and
+    // this test exists to prove distinct bookings both survive.
+    prismaMock.priestPayout.findMany.mockImplementation(async (args: any) => {
+      const ids: string[] | undefined = args?.where?.bookingId?.in;
+      const rows = ids ? [] : [legacyRow];
+      if (args?.select?.bookingId) {
+        return rows.map((r) => ({
+          bookingId: r.booking.id,
+          amount: r.amount,
+          status: r.status,
+        })) as never;
+      }
+      return rows as never;
+    });
     prismaMock.priestPayout.count.mockResolvedValue(1 as never);
     prismaMock.priestPayout.aggregate.mockResolvedValue({
       _sum: { amount: new Prisma.Decimal('1200.00') },

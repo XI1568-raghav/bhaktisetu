@@ -110,8 +110,8 @@ function MyClassesList() {
           Wellness
         </p>
         <h1
-          className="text-3xl font-semibold tracking-tight mb-2"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+          className="heading-display text-3xl font-semibold tracking-tight mb-2"
+          style={{ color: 'var(--color-text)' }}
         >
           My classes
         </h1>

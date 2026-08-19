@@ -21,6 +21,9 @@ import { getContent, getDailyContent, type ContentItem } from '../../lib/api';
 import ContentPageHeader from '../../components/ContentPageHeader';
 import { getContentImage, getDeityImage } from '../../lib/images';
 import { contentTypeLabel } from '../../lib/content-type-labels';
+import { resolveLocale } from '../../lib/i18n/server';
+import { DEFAULT_LOCALE, type Locale } from '../../lib/i18n/locales';
+import { t } from '../../lib/t';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/content' },
@@ -31,13 +34,18 @@ export const metadata: Metadata = {
 
 // ─── Static fallback data ─────────────────────────────────────────────────────
 
+/**
+ * I-03: the chip labels used to be English literals sitting a few lines above
+ * their own translations in lib/i18n/hi.json. They are catalog keys now, and
+ * the label is resolved per request.
+ */
 const tabs = [
- { id: 'all', label: 'All', count: 22 },
- { id: 'aarti', label: 'Aarti', count: 5 },
- { id: 'chalisa', label: 'Chalisa', count: 6 },
- { id: 'mantra', label: 'Mantra', count: 6 },
- { id: 'article', label: 'Articles', count: 5 },
-];
+ { id: 'all', labelKey: 'tabAll', count: 22 },
+ { id: 'aarti', labelKey: 'tabAarti', count: 5 },
+ { id: 'chalisa', labelKey: 'tabChalisa', count: 6 },
+ { id: 'mantra', labelKey: 'tabMantra', count: 6 },
+ { id: 'article', labelKey: 'tabArticle', count: 5 },
+] as const;
 
 const fallbackFeaturedContent: ContentItem[] = [
  {
@@ -484,7 +492,8 @@ async function fetchDailyContent() {
 
 // ─── Daily Content Section ────────────────────────────────────────────────────
 
-async function DailyContentSection() {
+async function DailyContentSection({ locale = DEFAULT_LOCALE }: { locale?: Locale }) {
+ const tr = t('content', locale);
  const daily = await fetchDailyContent();
  const dailyItems = [daily.aarti, daily.chalisa, daily.mantra, daily.article].filter(
  Boolean
@@ -496,10 +505,10 @@ async function DailyContentSection() {
  <section className="mb-12">
  <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-2 flex items-center gap-2">
  <Sparkles className="w-5 h-5 text-temple-gold" />
- Today&rsquo;s Featured
+ <span lang={tr.entry('todaysFeatured').lang}>{tr('todaysFeatured')}</span>
  </h2>
- <p className="text-sm text-surface-500 mb-6">
- Curated daily devotional content for your spiritual journey
+ <p className="text-sm text-surface-500 mb-6" lang={tr.entry('todaysFeaturedSubtitle').lang}>
+ {tr('todaysFeaturedSubtitle')}
  </p>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  {dailyItems.map((item) => (
@@ -509,8 +518,7 @@ async function DailyContentSection() {
  className="group flex gap-5 bg-white rounded-xl p-5 border border-surface-100 hover:shadow-md transition-all"
  >
  <div className="relative w-32 h-32 shrink-0 rounded-xl bg-gradient-to-br from-saffron-200 to-amber-100 flex items-center justify-center overflow-hidden">
- <img
- src={getDeityImage(
+ <img width={128} height={128}  src={getDeityImage(
  item.deity === 'Lord Hanuman' ? 'lord-hanuman' :
  item.deity === 'Lord Vishnu' ? 'lord-vishnu' :
  item.deity === 'Lord Shiva' ? 'lord-shiva' :
@@ -567,18 +575,22 @@ async function ContentListSection({
  type,
  search,
  page,
+ locale = DEFAULT_LOCALE,
 }: {
  type?: string;
  search?: string;
  page: number;
+ locale?: Locale;
 }) {
+ const tr = t('content', locale);
  const paged = await fetchContentData(type, search, page);
  const items = paged.items;
  const activeType = type || 'all';
  // HN-07: this used to read the label off the five rendered chips, so a valid
  // ContentType without a chip (bhajan, story, shloka) produced the unfiltered
  // heading and the filtered page looked identical to /content.
- const label = contentTypeLabel(activeType);
+ // I-03: and it was English-only, so it stayed English on a Hindi page.
+ const label = contentTypeLabel(activeType, locale);
 
  if (items.length === 0) {
  return (
@@ -589,10 +601,12 @@ async function ContentListSection({
  <div className="bg-white rounded-xl p-12 border border-surface-100 text-center">
  <Music className="w-12 h-12 text-surface-300 mx-auto mb-3" />
  <p className="text-surface-500">
- No content found.{' '}
- {search
- ? 'Try a different search term.'
- : 'Check back soon for new additions.'}
+ <span lang={tr.entry('noContent').lang}>{tr('noContent')}</span>{' '}
+ {search ? (
+ <span lang={tr.entry('tryDifferentSearch').lang}>{tr('tryDifferentSearch')}</span>
+ ) : (
+ <span lang={tr.entry('checkBackSoon').lang}>{tr('checkBackSoon')}</span>
+ )}
  </p>
  </div>
  </section>
@@ -607,8 +621,11 @@ async function ContentListSection({
  return (
  <section>
  <div className="flex items-center justify-between mb-6">
+ {/* I-03: `All ${label}` rendered "All All Content" on the default view —
+     `label` is already ALL_CONTENT_LABEL when nothing is filtered — and the
+     concatenation had no translatable form. The label carries the heading. */}
  <h2 className="text-2xl font-semibold tracking-tight text-surface-800">
- {search ? `Results for "${search}"` : `All ${label}`}
+ {search ? `Results for "${search}"` : label}
  </h2>
  <span className="text-sm text-surface-400">
  {paged.total} item{paged.total !== 1 ? 's' : ''}
@@ -618,14 +635,14 @@ async function ContentListSection({
  {/* List header */}
  <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-xs font-semibold text-surface-400 uppercase tracking-wider border-b border-surface-200">
  <div className="col-span-1">#</div>
- <div className="col-span-4">Title</div>
- <div className="col-span-2">Deity</div>
- <div className="col-span-1">Type</div>
+ <div className="col-span-4" lang={tr.entry('title').lang}>{tr('title')}</div>
+ <div className="col-span-2" lang={tr.entry('deity').lang}>{tr('deity')}</div>
+ <div className="col-span-1" lang={tr.entry('type').lang}>{tr('type')}</div>
  <div className="col-span-1">
  <Clock className="w-3.5 h-3.5" />
  </div>
- <div className="col-span-1">Views</div>
- <div className="col-span-1">Likes</div>
+ <div className="col-span-1" lang={tr.entry('views').lang}>{tr('views')}</div>
+ <div className="col-span-1" lang={tr.entry('likes').lang}>{tr('likes')}</div>
  <div className="col-span-1"></div>
  </div>
 
@@ -759,10 +776,26 @@ export default async function ContentPage({
  const parsedPage = Number.parseInt(pageParam ?? '1', 10);
  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
+ /**
+  * I-03. `cookies()` opts a route out of static prerendering, which is why
+  * lib/i18n/server.ts documents it as opt-in per surface — but /content
+  * already reads `searchParams`, so it is rendered per request either way and
+  * this costs nothing new. That is precisely why this page is the right first
+  * call site for the server-side translator, and why layout.tsx (which would
+  * make all ~370 routes dynamic) is still deliberately not one.
+  *
+  * The locale is resolved ONCE here and threaded down, rather than each async
+  * section reading the cookie again: three reads of the same request cannot
+  * disagree, but three dynamic-API calls are three chances for a future
+  * refactor to leave one of them behind on English.
+  */
+ const locale = await resolveLocale();
+ const tr = t('content', locale);
+
  return (
  <div className="min-h-[100dvh] bg-saffron-50">
  {/* Hero with Language Switcher */}
- <ContentPageHeader currentType={type} currentSearch={search} />
+ <ContentPageHeader currentType={type} currentSearch={search} locale={locale} />
 
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
  {/* Tabs */}
@@ -777,7 +810,7 @@ export default async function ContentPage({
  : 'text-surface-500 hover:text-surface-600 hover:bg-surface-50'
  }`}
  >
- {tab.label}
+ <span lang={tr.entry(tab.labelKey).lang}>{tr(tab.labelKey)}</span>
  <span
  className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
  activeType === tab.id
@@ -804,15 +837,18 @@ export default async function ContentPage({
  </div>
  }
  >
- <DailyContentSection />
+ <DailyContentSection locale={locale} />
  </Suspense>
  )}
 
  {/* Curated Collections (only on "All" tab without search) */}
  {activeType === 'all' && !search && (
  <section className="mb-12">
- <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-6">
- Curated Collections
+ <h2
+ className="text-2xl font-semibold tracking-tight text-surface-800 mb-6"
+ lang={tr.entry('curatedCollections').lang}
+ >
+ {tr('curatedCollections')}
  </h2>
  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
  {collections.map((col, i) => {
@@ -831,8 +867,7 @@ export default async function ContentPage({
  <div
  className={`relative aspect-square bg-gradient-to-br ${col.gradient} p-4 flex flex-col justify-end`}
  >
- <img
- src={collectionImages[i] || collectionImages[0]}
+ <img width={400} height={400}  src={collectionImages[i] || collectionImages[0]}
  alt={col.name}
  loading="lazy"
  className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity"
@@ -842,7 +877,14 @@ export default async function ContentPage({
  {col.name}
  </h3>
  <p className="text-xs text-white/70 mt-1">
- {col.href ? `${col.count} books` : `${col.count} tracks`}
+ {col.href ? (
+ `${col.count} books`
+ ) : (
+ <>
+ {col.count}{' '}
+ <span lang={tr.entry('tracks').lang}>{tr('tracks')}</span>
+ </>
+ )}
  </p>
  </div>
  </div>
@@ -863,7 +905,7 @@ export default async function ContentPage({
  </div>
  }
  >
- <ContentListSection type={type} search={search} page={page} />
+ <ContentListSection type={type} search={search} page={page} locale={locale} />
  </Suspense>
  </div>
  </div>

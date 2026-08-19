@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import RouteFallback from '../../../components/ui/RouteFallback';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 
@@ -11,9 +12,10 @@ interface Stats {
   referralCount: number;
 }
 
+// CM-15: the Suspense fallback below was an empty viewport-tall div.
 export default function WaitlistWelcomePage() {
   return (
-    <Suspense fallback={<div className="min-h-[calc(100vh-3.5rem)]" style={{ background: 'var(--color-bg, #f5f3ef)' }} />}>
+    <Suspense fallback={<RouteFallback label="Loading your waitlist spot…" className="min-h-[calc(100vh-3.5rem)]" />}>
       <WelcomeContent />
     </Suspense>
   );
@@ -97,8 +99,8 @@ function WelcomeContent() {
             You're in
           </p>
           <h1
-            className="text-2xl sm:text-3xl font-semibold tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text, #1f1b18)' }}
+            className="heading-display text-2xl sm:text-3xl font-semibold tracking-tight"
+            style={{ color: 'var(--color-text, #1f1b18)' }}
           >
             Welcome to Darshya early access
           </h1>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useMemo, useState } from 'react';
+import RouteFallback from '../../../components/ui/RouteFallback';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Search, ArrowLeft, LifeBuoy, X } from 'lucide-react';
@@ -174,8 +175,10 @@ function FaqContent() {
 
 export default function FaqPage() {
   // useSearchParams needs a Suspense boundary for this page to prerender.
+  // CM-15: the fallback was an empty min-h-[100dvh] div — one blank viewport
+  // baked into the prerendered HTML for every cold visitor.
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] bg-[#faf7f0]" />}>
+      <Suspense fallback={<RouteFallback label="Loading help centre…" className="min-h-[100dvh] bg-[#faf7f0]" />}>
       <FaqContent />
     </Suspense>
   );

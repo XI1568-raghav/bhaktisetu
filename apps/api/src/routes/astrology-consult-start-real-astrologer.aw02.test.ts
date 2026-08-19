@@ -174,14 +174,36 @@ describe('AW-02 — an approved astrologer who is offline is refused honestly', 
   });
 });
 
-describe('AW-02 — the fixture directory is still load-bearing, not deleted', () => {
-  it('startConsultation still resolves a fixture slug when called directly', async () => {
+describe('AW-02 — the fixture directory can no longer open a consultation', () => {
+  // INVERTED 2026-08-19. This block used to assert
+  // "startConsultation still resolves a fixture slug when called directly",
+  // i.e. a PASSING suite proved the fixture could still be consulted. That was
+  // a deliberate transitional guard while the selling doors were being closed
+  // one at a time, but it had become the last thing holding the landmine open:
+  // `startConsultation` fell back to `ASTROLOGERS.find(...)` whenever a caller
+  // omitted the 4th argument, so exactly one forgotten argument separated the
+  // invented 15 from a live session. The fallback is gone; this now asserts it.
+  it('refuses a fixture slug when no real profile was resolved', async () => {
     const { astrologyService } = await import('../services/astrology.service.js');
-    const anyOnline = astrologyService
-      .getAstrologers({ limit: 100 })
-      .astrologers.find((a) => a.isOnline && !a.isBusy);
-    expect(anyOnline, 'the fixture directory has been emptied').toBeTruthy();
-    const out = astrologyService.startConsultation('u1', anyOnline!.id, 'chat');
-    expect('error' in out, `fixture path broke: ${JSON.stringify(out)}`).toBe(false);
+    const out = astrologyService.startConsultation('u1', 'astro_001', 'chat');
+    expect(out).toEqual({ error: 'Astrologer not found.' });
+  });
+
+  it('opens a session only for a resolved, real, online astrologer', async () => {
+    const { astrologyService } = await import('../services/astrology.service.js');
+    const out = astrologyService.startConsultation('u1', REAL_PROFILE_ID, 'chat', {
+      id: REAL_PROFILE_ID,
+      userId: 'astro-user-1',
+      name: 'Acharya Vinod Sharma',
+      specializations: ['Vedic Astrology'],
+      languages: ['hi'],
+      experienceYears: 12,
+      rating: 4.8,
+      consultationCount: 90,
+      perMinuteRate: 25,
+      isOnline: true,
+      isBusy: false,
+    } as never);
+    expect('error' in out).toBe(false);
   });
 });

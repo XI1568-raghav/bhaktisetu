@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import AstrologyLoading from './loading';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AstrologyClient from './AstrologyClient';
@@ -168,7 +169,12 @@ export default function AstrologyPage() {
  <>
  <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(TOOLS_LD) }} />
 
- <Suspense fallback={<div className="min-h-[100dvh]" />}>
+ {/* CM-15: this was an empty min-h-[100dvh] div. AstrologyClient reads
+     useSearchParams and this route is prerenderable, so React bails out of that
+     subtree at build time and bakes THIS fallback into the static HTML — a cold
+     visitor got one blank viewport above the fold. ./loading.tsx only covers
+     client-side navigation into the segment, so it could not substitute. */}
+ <Suspense fallback={<AstrologyLoading />}>
   <AstrologyClient />
  </Suspense>
 

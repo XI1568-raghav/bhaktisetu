@@ -70,7 +70,7 @@ export default function MobileHome() {
  {liveStreams.map((s) => (
  <div key={s.name} className="shrink-0 w-[240px] rounded-2xl overflow-hidden bg-white border border-surface-200/60 shadow-sm">
  <div className="relative aspect-[16/10]">
- <img src={s.img} alt={s.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={480} height={300} src={s.img} alt={s.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
  <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
@@ -133,7 +133,7 @@ export default function MobileHome() {
  <div className="space-y-2.5">
  {popularPujas.map((p) => (
  <div key={p.name} className="flex items-center gap-3 bg-white rounded-2xl p-3 border border-surface-200/60 shadow-sm">
- <img src={p.img} alt={p.deity} className="w-14 h-14 rounded-xl object-cover" loading="lazy" decoding="async" />
+ <img width={56} height={56} src={p.img} alt={p.deity} className="w-14 h-14 rounded-xl object-cover" loading="lazy" decoding="async" />
  <div className="flex-1 min-w-0">
  <h3 className="text-sm font-semibold text-surface-900">{p.name}</h3>
  <p className="text-xs text-surface-400">{p.deity}</p>

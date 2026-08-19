@@ -1471,11 +1471,25 @@ export class PaymentService {
     // revenue.
     //
     // The unified rail wins where it exists — it is the documented direction
-    // and the only one that pays every role. Rail B stays for the bookings
-    // rail A structurally cannot reach: a Commission is only minted when a
-    // priest is already on the booking at `confirmed`, so temple-path and
-    // dispatch-assigned (T1-T3) bookings never get one and would otherwise be
-    // paid by nothing at all.
+    // and the only one that pays every role.
+    //
+    // UPDATED 2026-08-19 (DI-05). The paragraph that used to sit here said rail
+    // B stays "for the bookings rail A structurally cannot reach: a Commission
+    // is only minted when a priest is already on the booking at `confirmed`, so
+    // temple-path and dispatch-assigned (T1-T3) bookings never get one." That is
+    // NO LONGER TRUE and had become the most misleading comment in the payout
+    // code: booking.service re-mints on EARNING_ATTACH_STATUSES, and
+    // services/provider-earning-mint.ts now also mints on the two assignment
+    // paths that bypass it (dispatch.service.accept and
+    // priest.service.acceptBooking). Temple-path and dispatch-assigned bookings
+    // DO get a Commission now — which is exactly why this guard fires for them.
+    //
+    // Rail B is therefore a LEGACY rail carrying rows written before those
+    // mints existed, not a structural complement to rail A. And the exclusion is
+    // SYMMETRIC now: this guard refuses to write a sidecar row when a live
+    // Commission exists, and the mint refuses to write a Commission when a
+    // PriestPayout exists. It used to be one-way, so a booking already on rail B
+    // minted onto rail A at its next status move and was payable twice.
     const unifiedLedgerRow = await prisma.commission.findFirst({
       // A REVERSED row is a void earning that no provider owns any more — it
       // exists only as an audit record (a reschedule detaches the pandit and

@@ -3,9 +3,14 @@
 // queries (e.g. "kashi vishwanath rudrabhishek booking online"). One file
 // fans out to N temples via [slug] segment.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { resolveApiTemple } from '../../../../lib/temple-resolve';
+// CM-10: same `uppercase tracking-wider` chip as the deity page — the raw enum
+// rendered as 'SPECIAL_OCCASION'.
+import { pujaCategoryLabel } from '../../../../lib/puja-labels';
 
 export const revalidate = 3600;
 
@@ -92,7 +97,7 @@ export default async function TemplePujasPage({ params }: Params) {
       </nav>
 
       <header className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.catalogue} mb-2`}>
           Book {temple.name} pujas online
         </h1>
         <p className="text-surface-700 text-base leading-relaxed max-w-3xl">
@@ -117,9 +122,11 @@ export default async function TemplePujasPage({ params }: Params) {
               className="rounded-xl border border-surface-200 bg-white p-5 hover:shadow-sm transition-shadow"
             >
               <div className="flex items-center justify-between mb-2 gap-3">
-                <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
-                  {o.pujaType.category}
-                </span>
+                {pujaCategoryLabel(o.pujaType.category) && (
+                  <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
+                    {pujaCategoryLabel(o.pujaType.category)}
+                  </span>
+                )}
                 <span className="text-xs text-surface-500">{o.pujaType.durationMinutes} min</span>
               </div>
               <h2 className="text-lg font-semibold text-surface-900 mb-1">{o.pujaType.name}</h2>

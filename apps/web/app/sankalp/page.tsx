@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { GOTRAS, INTENTS } from '../../lib/sankalp';
 import { NAKSHATRAS } from '../../lib/nakshatras';
@@ -56,7 +58,7 @@ export default function SankalpPage() {
 
       <header className="mb-8">
         <p className="text-xs uppercase tracking-wider text-saffron-600">Free tool</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Sankalp Generator</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Sankalp Generator</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Every Vedic ritual begins with a <strong>sankalp</strong> — a formal Sanskrit declaration naming
           your gotra, place, time, and intent. This tool builds yours instantly per shastra.

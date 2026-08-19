@@ -2,6 +2,8 @@
 // timeline from janma nakshatra. Targets "vimshottari dasha calculator",
 // "current mahadasha", "dasha period calculator free".
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import DashaClient from './DashaClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
@@ -96,7 +98,7 @@ export default function DashaPage() {
 
    <header className="mb-8">
     <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool · no signup</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Vimshottari Dasha Calculator — Free 120-Year Mahadasha Timeline</h1>
+    <h1 className={`${H1.catalogue} mt-1`}>Vimshottari Dasha Calculator — Free 120-Year Mahadasha Timeline</h1>
     <p className="mt-2 text-saffron-700">विंशोत्तरी महादशा · Vimshottari Mahadasha</p>
     <p className="mt-4 text-base text-gray-700">
      Enter your DOB + birth time + timezone to compute your janma nakshatra-derived dasha sequence:

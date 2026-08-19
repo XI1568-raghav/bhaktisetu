@@ -43,7 +43,7 @@ export default function CompanionListingPage() {
  Travel Companion Service
  </div>
 
- <h1 data-reveal="cinematic" className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 data-reveal="cinematic" className="heading-display text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]" style={{ color: 'var(--color-text)' }}>
  A verified companion for every step of your{' '}
  <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>sacred journey</span>
  </h1>

@@ -67,6 +67,22 @@ interface PublicAstrologer {
  * `take: 100` matches the pagination clamp above; the directory is far smaller
  * than that today and a bound keeps this public, unauthenticated route cheap.
  */
+/**
+ * AW-02: presentation-only icon hints for specialization names. A name absent
+ * here still renders (falls back to 'star') — this map must never decide which
+ * specializations EXIST; only approved profiles do that.
+ */
+const SPECIALIZATION_ICONS: Record<string, string> = {
+  'Vedic Astrology': 'star',
+  'Tarot Reading': 'cards',
+  Numerology: 'hash',
+  Palmistry: 'hand',
+  Vastu: 'home',
+  'KP Astrology': 'compass',
+  'Prashna Kundli': 'help-circle',
+  'Nadi Astrology': 'scroll',
+};
+
 async function loadApprovedAstrologers(): Promise<PublicAstrologer[]> {
   const profiles = await prisma.astrologerProfile.findMany({
     where: { approved: true },
@@ -252,7 +268,30 @@ export async function astrologyRoutes(server: FastifyInstance) {
   // List all specializations with counts
 
   server.get('/specializations', async (request, reply) => {
-    const specializations = astrologyService.getSpecializations();
+    // AW-02: this used to return counts hardcoded from the 15-row fixture —
+    // Vedic Astrology 11, Tarot 4, Numerology 5, Palmistry 3, Vastu 5, KP 4,
+    // Prashna 4, Nadi 4. Forty specialization slots across fifteen people who do
+    // not exist, on a public unauthenticated endpoint, while real supply was
+    // three profiles. It sold nothing (no client renders it), but a public
+    // endpoint STATING fictional supply is one integration away from a UI, and
+    // it was the last reader keeping the fixture array alive.
+    //
+    // Same reader as /astrologers and /astrologers/live, so the directory and
+    // its facet counts cannot disagree about who exists.
+    const astrologers = await loadApprovedAstrologers();
+    const counts = new Map<string, number>();
+    for (const a of astrologers) {
+      for (const raw of a.specializations ?? []) {
+        const name = typeof raw === 'string' ? raw.trim() : '';
+        if (!name) continue;
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+    }
+    const specializations = Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count, icon: SPECIALIZATION_ICONS[name] ?? 'star' }))
+      // Densest real supply first; name as a stable tiebreak so the order does
+      // not wobble between requests.
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
     return { specializations };
   });
 

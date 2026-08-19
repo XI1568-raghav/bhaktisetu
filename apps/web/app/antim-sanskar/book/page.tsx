@@ -111,9 +111,8 @@ export default function AntimSanskarBookPage() {
       >
         <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
           <h1
-            className="text-2xl md:text-3xl font-semibold mb-4"
+            className="heading-display text-2xl md:text-3xl font-semibold mb-4"
             style={{
-              fontFamily: 'var(--font-display)',
               color: 'var(--color-text)',
             }}
           >
@@ -182,9 +181,8 @@ export default function AntimSanskarBookPage() {
           Antim Sanskar — Talk to Coordinator
         </p>
         <h1
-          className="text-2xl md:text-3xl font-semibold mb-3 leading-tight"
+          className="heading-display text-2xl md:text-3xl font-semibold mb-3 leading-tight"
           style={{
-            fontFamily: 'var(--font-display)',
             color: 'var(--color-text)',
           }}
         >

@@ -49,7 +49,7 @@ export default async function YatraPackagesPage() {
     <div style={{ background: 'var(--color-bg)' }}>
       <section className="py-12 md:py-16" style={{ background: 'linear-gradient(135deg, var(--color-art-3) 0%, var(--color-bg) 70%)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+          <h1 className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight" style={{ color: 'var(--color-text)' }}>
             Curated Yatra Packages
           </h1>
           <p className="mt-4 text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
@@ -78,8 +78,7 @@ export default async function YatraPackagesPage() {
                     style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
                   >
                     <div className="aspect-[16/10] relative overflow-hidden">
-                      <img
-                        src={pkg.hero_image || 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/960px-Kashi_Vishwanath.jpg'}
+                      <img width={640} height={400}                         src={pkg.hero_image || 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Kashi_Vishwanath.jpg/960px-Kashi_Vishwanath.jpg'}
                         alt={pkg.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"

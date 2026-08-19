@@ -143,6 +143,10 @@ export default function TabLayout() {
       */}
       <Tabs.Screen name="puja-book" options={{ href: null, title: 'Book a Puja' }} />
       <Tabs.Screen name="consultations" options={{ href: null, title: 'Consultations' }} />
+      {/* PAR-22 (B): real search over /temples/search + /content/search,
+          pushed from the home header. Hidden from the bar for the same
+          filesystem-routing reason as the two above. */}
+      <Tabs.Screen name="search" options={{ href: null, title: 'Search' }} />
       {/* TD10 — feature-parity sub-screens. Hidden from tab bar; reached via push. */}
       <Tabs.Screen name="darshan-player" options={{ href: null, title: 'Darshan Player' }} />
       <Tabs.Screen name="kundli" options={{ href: null, title: 'Kundli' }} />

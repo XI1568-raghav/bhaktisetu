@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { TIRTHAS, type TirthaCategory } from '../../lib/tirthas';
 
@@ -46,7 +48,7 @@ export default function TirthIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-saffron-600">12 destinations · deep guide</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Sacred Tirthas of India</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Sacred Tirthas of India</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Deep single-destination guides — darshan timings, how to reach, dress code, what to offer,
           nearby tirthas, and the legends behind each. Different from <Link href="/pilgrimage" className="text-saffron-700 underline">pilgrimage circuits</Link> (multi-destination journeys).

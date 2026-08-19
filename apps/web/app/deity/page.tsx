@@ -1,5 +1,7 @@
 // Deity index — entry into /deity/[slug] programmatic-SEO pages.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { DEITIES } from '../../lib/deities';
 
@@ -48,7 +50,7 @@ export default function DeityIndex() {
         <span className="inline-block px-2.5 py-0.5 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           🕉️ Devata
         </span>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-3">
+        <h1 className={`${H1.catalogue} mb-3`}>
           Hindu deities
         </h1>
         <p className="text-surface-700 text-base leading-relaxed max-w-3xl">

@@ -80,7 +80,7 @@ export default async function YatraDestinationDetailPage({ params }: { params: P
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-xs font-medium text-white mb-3">
               <Compass className="w-3 h-3" /> {dest.region}
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white" style={{ fontFamily: 'var(--font-display)' }}>
+            <h1 className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
               {dest.name}
             </h1>
             <p className="mt-2 text-sm md:text-base text-white/85 max-w-2xl">{dest.shortDescription}</p>

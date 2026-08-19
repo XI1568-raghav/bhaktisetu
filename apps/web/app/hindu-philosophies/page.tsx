@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { HINDU_PHILOSOPHIES, TOTAL_HINDU_PHILOSOPHIES } from '../../lib/hindu-philosophies';
 
@@ -61,7 +63,7 @@ export default function HinduPhilosophiesIndexPage() {
         <p className="text-xs uppercase tracking-wider text-saffron-600">
           {TOTAL_HINDU_PHILOSOPHIES} schools · 6 orthodox darshanas + 4 Vedanta sub-schools
         </p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">हिन्दू दर्शन</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>हिन्दू दर्शन</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">
           Hindu Philosophies — Shad Darshana &amp; Vedanta Sub-Schools
         </p>

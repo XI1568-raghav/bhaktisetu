@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const dynamicParams = false;
 export function generateStaticParams() {
@@ -485,7 +487,7 @@ export default async function CowDetailPage({
  <div className="p-6 sm:p-8">
  <div className="flex items-start justify-between mb-4">
  <div>
- <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+ <h1 className={`${H1.catalogue} mb-2`}>
  {cow.name}
  </h1>
  <div className="flex flex-wrap items-center gap-3 text-sm text-surface-500">

@@ -57,6 +57,29 @@ export type { SupportedLanguage, TranslatedLanguage };
 /** Query parameter that overrides everything for one request. */
 export const LANG_QUERY_PARAM = 'lang';
 
+/**
+ * The language a brand-new account is created with — I18N-07.
+ *
+ * Four signup paths used to answer this question independently and they did not
+ * agree: POST /auth/verify-otp, the Google upsert and the WhatsApp OTP route
+ * all wrote 'hi'; the magic-link route wrote 'en'. Two devotees could sign up
+ * for the same product minutes apart and get their errors in different
+ * languages purely by which button they pressed. Now that
+ * `resolveRequestLanguage` actually READS this column, that inconsistency is
+ * user-visible rather than cosmetic.
+ *
+ * The value is 'hi' because prisma/schema.prisma already declares
+ * `preferredLanguage Language @default(hi)`, so 'hi' is what a create that
+ * omits the field has always produced. Making the code disagree with the schema
+ * would mean a row's language depended on which code path inserted it.
+ * preferred-language-contract.i18n07.test.ts asserts the two stay equal.
+ *
+ * NOTE what this is not: it is not a claim about the visitor. It is the value
+ * stored before anyone has chosen, and a devotee who picks a language in the
+ * profile overwrites it (and clears the resolver cache) on the spot.
+ */
+export const SIGNUP_DEFAULT_LANGUAGE = 'hi' satisfies SupportedLanguage;
+
 /** How long a user's stored language choice is trusted without re-reading it. */
 export const PREFERRED_LANGUAGE_TTL_MS = 5 * 60 * 1000;
 

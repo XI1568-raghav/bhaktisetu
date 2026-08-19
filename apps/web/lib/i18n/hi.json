@@ -51,7 +51,17 @@
     "views": "दृश्य",
     "likes": "पसंद",
     "search": "शीर्षक, देवता या टैग से खोजें...",
-    "noContent": "कोई सामग्री नहीं मिली।"
+    "noContent": "कोई सामग्री नहीं मिली।",
+    "todaysFeatured": "आज का विशेष",
+    "todaysFeaturedSubtitle": "आपकी आध्यात्मिक यात्रा के लिए दैनिक भक्ति सामग्री",
+    "curatedCollections": "विशेष संग्रह",
+    "stories": "कथाएँ",
+    "title": "शीर्षक",
+    "deity": "देवता",
+    "type": "प्रकार",
+    "tracks": "ट्रैक",
+    "tryDifferentSearch": "कोई अन्य खोज शब्द आजमाएँ।",
+    "checkBackSoon": "जल्द ही नई सामग्री आएगी।"
   },
   "terms": {
     "temple": "मंदिर",

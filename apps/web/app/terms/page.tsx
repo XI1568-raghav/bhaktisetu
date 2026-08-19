@@ -33,9 +33,8 @@ export default function TermsPage() {
  Legal
  </p>
  <h1
- className="text-2xl sm:text-3xl font-bold mb-3"
+ className="heading-display text-2xl sm:text-3xl font-bold mb-3"
  style={{
- fontFamily: "var(--font-display)",
  color: "var(--color-text)",
  lineHeight: "var(--leading-tight)",
  }}

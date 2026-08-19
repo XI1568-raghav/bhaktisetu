@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SAMSKARAS, samskaraSlugs, getSamskara, STAGE_LABELS } from '../../../lib/samskaras';
@@ -73,7 +75,7 @@ export default async function SamskaraPage({ params }: { params: Promise<{ slug:
 
       <header className="mb-8 rounded-2xl border border-saffron-200 bg-gradient-to-br from-saffron-50 to-rose-50 p-6">
         <p className="text-xs uppercase tracking-wider text-saffron-700">Samskara #{s.number} of 16 · {STAGE_LABELS[s.stage]}</p>
-        <h1 className="mt-2 font-serif text-3xl text-gray-900 sm:text-4xl">{s.sanskrit}</h1>
+        <h1 className={`${H1.catalogue} mt-2`}>{s.sanskrit}</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900">{s.name}</p>
         <p className="mt-1 italic text-sm text-gray-600">{s.iast}</p>
         <p className="mt-3 text-sm text-gray-700"><span className="font-semibold">Timing:</span> {s.timing}</p>

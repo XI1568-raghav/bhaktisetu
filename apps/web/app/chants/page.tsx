@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { CHANTS, chantsByCategory } from '../../lib/chants';
 
@@ -71,7 +73,7 @@ export default function ChantsIndex() {
         <div className="inline-block px-3 py-1 mb-3 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           Sacred Mantras · Mantra Yoga
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-3 leading-tight">
+        <h1 className={`${H1.marketing} mb-3`}>
           Famous Hindu Chants
         </h1>
         <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">

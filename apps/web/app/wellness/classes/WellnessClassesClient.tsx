@@ -98,8 +98,8 @@ export default function WellnessClassesClient() {
           Live classes
         </div>
         <h1
-          className="text-2xl sm:text-3xl font-semibold tracking-tight"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+          className="heading-display text-2xl sm:text-3xl font-semibold tracking-tight"
+          style={{ color: 'var(--color-text)' }}
         >
           Upcoming yoga, meditation &amp; pranayama classes
         </h1>

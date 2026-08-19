@@ -31,7 +31,7 @@ import ParallaxLayer from '../components/motion/ParallaxLayer';
 import ScrambleReveal from '../components/motion/ScrambleReveal';
 import StickyHeadlinePin from '../components/motion/StickyHeadlinePin';
 import { brandFaqJsonLd } from '../lib/jsonld';
-import { getTempleHero, getDeityImage, getContentImage, getProductImage, IMG_W } from '../lib/images';
+import { getTempleHero, getDeityImage, getContentImage, getProductImage, IMG_W, remoteSrcSet } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
 import IntentTrio from '../components/home/IntentTrio';
@@ -372,15 +372,35 @@ export default async function HomePage() {
 
  <Link href="/darshan" data-reveal="cinematic" className="block relative rounded-xl overflow-hidden card-hover group" style={{ border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/9] relative">
- <Image
- src={getTempleHero('mahakaleshwar', IMG_W.WIDE)}
- alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
- width={1280}
- height={720}
- sizes="(max-width: 768px) 100vw, 960px"
- className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
- loading="lazy"
- unoptimized
+ {/* HOME-01: the single largest image on the page. images.unoptimized is true
+     in next.config.ts, so Next emits no srcset of its own — without the
+     explicit srcSet below EVERY viewport pulled the 960px / 189,024 B
+     candidate, a 375px phone included (measured mobile saving: 132,270 B).
+
+     The SOURCE width stays WIDE. The painted slot is ~1088 CSS px
+     (.container-wide = 72rem minus 2rem gutters at >=1024px), so the triage
+     doc's advice to drop to IMG_W.CARD (500) would be a 2.18x upscale on the
+     biggest picture on the homepage. The sizes attribute names 1088px for the
+     same reason — 960px understated the slot and made the browser pick one
+     step too small on a 2x screen.
+
+     Plain <img>, not next/image: images.unoptimized is true so <Image> renders a
+     bare <img> anyway, and its prop type OMITS srcSet — the same reason
+     app/pujas/page.tsx:679 uses <img> for the card srcSet. */}
+ <img
+   src={getTempleHero('mahakaleshwar', IMG_W.WIDE)}
+   srcSet={remoteSrcSet(getTempleHero('mahakaleshwar', IMG_W.WIDE), [
+     IMG_W.CARD,
+     IMG_W.WIDE,
+     IMG_W.HERO,
+   ])}
+   alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
+   width={1280}
+   height={720}
+   sizes="(max-width: 768px) 100vw, 1088px"
+   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+   loading="lazy"
+   decoding="async"
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
  <div className="absolute top-3 left-3 flex items-center gap-2">

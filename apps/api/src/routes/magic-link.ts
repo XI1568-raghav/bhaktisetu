@@ -3,6 +3,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { createEmailSession } from '../lib/email-session.js';
 import { sendEmail, magicLinkEmail } from '../lib/email.js';
+import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
 
 /**
  * Email magic-link authentication.
@@ -172,7 +173,7 @@ export async function magicLinkRoutes(server: FastifyInstance) {
           email: verified.email,
           phone: `email-${Date.now()}`, // temporary placeholder; will be filled when phone is verified
           fullName: verified.email.split('@')[0] ?? 'Devotee',
-          preferredLanguage: 'en',
+          preferredLanguage: SIGNUP_DEFAULT_LANGUAGE,
           isNri: false,
           subscriptionTier: 'free',
         },

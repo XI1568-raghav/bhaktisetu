@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import ShubhMuhuratClient from './ShubhMuhuratClient';
 import { EVENT_OPTIONS } from '../../../lib/shubh-muhurat';
@@ -96,7 +98,7 @@ export default function ShubhMuhuratPage() {
 
    <header className="mt-4 text-center">
     <p className="text-xs uppercase tracking-widest text-saffron-600">शुभ मुहूर्त · Shubh Muhurat Finder</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Shubh Muhurat Calculator — Best Auspicious Time</h1>
+    <h1 className={`${H1.catalogue} mt-1`}>Shubh Muhurat Calculator — Best Auspicious Time</h1>
     <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
      Pick your date + city + life event. We score every ~60-min window of the day by overlaying
      Choghadiya kind + Hora planet + Rahu/Yamaganda/Gulika avoidance — and rank the top 6 muhurats.

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getHinduSymbol, HINDU_SYMBOLS, type HinduSymbolCategory } from '../../../lib/hindu-symbols';
@@ -86,7 +88,7 @@ export default async function HinduSymbolDetailPage({ params }: Props) {
 
       <header className="mb-8">
         <p className="text-xs uppercase tracking-wider text-amber-700">{CATEGORY_LABEL[s.category]}</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">{s.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{s.name}</h1>
         <p className="mt-1 font-serif text-xl text-gray-700">{s.sanskrit}</p>
       </header>
 

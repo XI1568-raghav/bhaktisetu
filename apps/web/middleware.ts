@@ -65,6 +65,31 @@ const PORTAL_PREFIXES = [
 
 // A session exists iff the poojly_user cookie is present and non-empty.
 // We intentionally do NOT parse or trust the `role` field inside it.
+//
+// ── SEC-02, STEP 4: this gate is COSMETIC, and cannot currently be made
+//    otherwise. Stated plainly so nobody mistakes it for a security boundary.
+//
+// `poojly_user` is JS-readable and client-writable, so anyone can set it and
+// walk past this check. That buys them a rendered shell and nothing else: every
+// portal route fetches its data from the API, and the API authorises each
+// request itself (middlewares/auth.ts + requireRole). This gate exists to send
+// a signed-OUT visitor to /auth/login instead of showing them an empty screen —
+// it is UX, not authorization.
+//
+// The obvious hardening — gate on the httpOnly `darshya_session` instead — DOES
+// NOT WORK HERE, and it is worth recording why before someone tries it:
+// apps/api sets that cookie with NO `domain` option (routes/auth.ts,
+// setAuthCookies), so it is a HOST-ONLY cookie for api.darshya.online. The web
+// app is served from darshya.online, a different host, so the browser never
+// sends `darshya_session` to Next at all and `req.cookies.get('darshya_session')`
+// would be undefined for every signed-in user. Switching the gate would
+// redirect 100% of authenticated traffic to /auth/login.
+//
+// Making it real needs a cross-host session cookie (`domain=.darshya.online`,
+// which widens the cookie's exposure and is a deliberate security decision), or
+// a first-party /api proxy route on darshya.online. Both are larger changes than
+// SEC-02's localStorage work and are NOT prerequisites for it — the token can
+// leave localStorage without touching this gate at all.
 function hasSession(req: NextRequest): boolean {
   const raw = req.cookies.get('poojly_user')?.value;
   return !!raw && raw.trim().length > 0;

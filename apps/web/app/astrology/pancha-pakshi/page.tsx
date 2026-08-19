@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import PanchaPakshiClient from './PanchaPakshiClient';
 import { ACTIVITIES, ACTIVITY_COLOR, PANCHA_PAKSHI_BIRDS } from '../../../lib/pancha-pakshi';
@@ -114,7 +116,7 @@ export default function PanchaPakshiPage() {
 
      <header className="mt-4 text-center">
       <p className="text-xs uppercase tracking-wider text-saffron-600">Free Tamil Siddhar 5-bird astrology</p>
-      <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Pancha Pakshi Shastra</h1>
+      <h1 className={`${H1.catalogue} mt-1`}>Pancha Pakshi Shastra</h1>
       <p className="mt-2 text-sm text-saffron-700">பஞ்ச பட்சி சாஸ்திரம் · पञ्च पक्षी शास्त्र</p>
       <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
        Ancient Tamil Siddhar system classifying humans under 5 birds —

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CHANTS, chantSlugs, getChant } from '../../../lib/chants';
@@ -101,7 +103,7 @@ export default async function ChantDetail({
         <span className={`inline-block text-xs font-semibold px-2 py-1 rounded-full mb-3 ${catBadge[c.category]}`}>
           {c.category.charAt(0).toUpperCase() + c.category.slice(1)}
         </span>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-2 leading-tight">
+        <h1 className={`${H1.marketing} mb-2`}>
           {c.name}
           <span className="text-surface-500 text-xl sm:text-2xl font-normal ml-3">
             {c.sanskritName}

@@ -2,6 +2,8 @@
 // Targets: "free kundli milan online", "guna milan by date of birth",
 // "ashtakoot match", "marriage matching online free", "milan calculator".
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import KundliMilanClient from './KundliMilanClient';
 import { allNakshatraOptions } from '../../../lib/kundli-milan';
@@ -98,7 +100,7 @@ export default function KundliMilanPage() {
 
    <header className="mb-8">
     <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool · no signup</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Free Kundli Milan — Ashtakoot 36-Point Guna Match</h1>
+    <h1 className={`${H1.catalogue} mt-1`}>Free Kundli Milan — Ashtakoot 36-Point Guna Match</h1>
     <p className="mt-2 text-saffron-700">कुंडली मिलान · अष्टकूट गुण मिलान</p>
     <p className="mt-4 text-base text-gray-700">
      The traditional 8-fold (Ashtakoot) Vedic marriage-compatibility calculator. Pick both

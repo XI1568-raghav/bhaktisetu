@@ -22,6 +22,12 @@ const { prismaMock } = vi.hoisted(() => {
     },
     userRoleAssignment: { findMany: vi.fn() },
     user: { findMany: vi.fn() },
+    // DI-05: getPayoutBalance now also reports the LEGACY pandit rail, so it
+    // asks whether this provider is a pandit at all and, if so, reads the
+    // sidecar table. Defaults below answer "not a pandit", which is what every
+    // pre-existing case in this file assumes.
+    priest: { findUnique: vi.fn() },
+    priestPayout: { findMany: vi.fn() },
     $queryRawUnsafe: vi.fn(),
     $transaction: vi.fn(),
   };
@@ -100,6 +106,11 @@ const VERIFIED_KYC = [{ verified: true, bank_account_number: '1234', bank_ifsc: 
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // DI-05: default every provider in this file to "not a pandit", so the legacy
+  // sidecar rail contributes nothing and each case below still describes exactly
+  // the unified-rail ledger it was written for.
+  (prismaMock as any).priest.findUnique.mockResolvedValue(null);
+  (prismaMock as any).priestPayout.findMany.mockResolvedValue([]);
 });
 
 describe('payout.service — getPayoutBalance', () => {
@@ -140,13 +151,25 @@ describe('payout.service — getPayoutBalance', () => {
       { amount: 500, status: 'PAID', linked: true },
     ]);
     const b = await getPayoutBalance('prov-1');
-    expect(b).toEqual({ availableInr: 350, pendingInr: 0, paidOutInr: 500 });
+    // DI-05 added an additive legacyPandit block; the unified-rail figures
+    // this case exists to pin are unchanged, and the sidecar is empty.
+    expect(b).toEqual({
+      availableInr: 350,
+      pendingInr: 0,
+      paidOutInr: 500,
+      legacyPandit: { hasLegacyRail: false, pendingInr: 0, paidOutInr: 0 },
+    });
   });
 
   it('returns zeros for a provider with no commissions', async () => {
     wireBalance([]);
     const b = await getPayoutBalance('prov-none');
-    expect(b).toEqual({ availableInr: 0, pendingInr: 0, paidOutInr: 0 });
+    expect(b).toEqual({
+      availableInr: 0,
+      pendingInr: 0,
+      paidOutInr: 0,
+      legacyPandit: { hasLegacyRail: false, pendingInr: 0, paidOutInr: 0 },
+    });
   });
 
   // batch9-review: the in-flight query was the only one of the three with no
@@ -469,8 +492,17 @@ describe('payout.service — runWeeklySettlement', () => {
   // commission.findMany serves four different queries here; dispatch on args so
   // each one answers what the code actually asked for.
   function wireLedger(opts: { providerId: string; unlinkedInr: string }) {
+    // SCAL-04 (2026-08-19): the distinct-provider scan is a `groupBy` now, not a
+    // `findMany({ distinct })` — Prisma applies `distinct` in the CLIENT, so the
+    // old shape materialised every pending commission row to produce one row per
+    // provider. Same answer, one row per provider straight from SQL.
+    commission.groupBy.mockImplementation(async (args: any) => {
+      if (Array.isArray(args?.by) && args.by.includes('providerId')) {
+        return [{ providerId: opts.providerId }];
+      }
+      return [];
+    });
     commission.findMany.mockImplementation(async (args: any) => {
-      if (args?.distinct) return [{ providerId: opts.providerId }];
       const where = args?.where ?? {};
       if (where.status === 'PENDING' && where.payoutRequestId === null) {
         // Selected with {id, amount} inside requestPayout's transaction, and

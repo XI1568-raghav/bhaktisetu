@@ -89,7 +89,7 @@ vi.mock('next/navigation', () => ({
 // NOT mocked down to `{ API_BASE_URL }` on purpose: this suite must exercise the
 // pages' real timeout wiring, so lib/api-config is left alone entirely.
 
-const AstrologerProfilePage = (await import('../view/page')).default;
+const AstrologerProfilePage = (await import('../view/AstrologerProfileClient')).default;
 
 beforeEach(() => {
   searchParams.forEach((_v, k) => searchParams.delete(k));
@@ -161,7 +161,7 @@ describe('DF-12 — /astrology/view leaves the spinner when the API never answer
  * devotee on a permanent spinner with NO WAY to understand what happened or
  * where to go"; an anchor in the shell is the way out, and it costs nothing.
  */
-const { ProfileLoadingShell } = await import('../view/page');
+const { ProfileLoadingShell } = await import('../view/AstrologerProfileClient');
 
 describe('DF-12 — the pre-hydration shell is not a trap', () => {
   it('offers a link out that works with no JavaScript at all', () => {
@@ -255,7 +255,11 @@ describe('DF-12 ratchet — no bare fetch left on the astrology surfaces', () =>
   // watching a loader for. lib/astrologer-fetch.ts is the one place `fetch(`
   // may appear — it is the module that wraps it.
   const PAGES = [
-    'app/astrology/view/page.tsx',
+    // DF-12 (second pass): this was app/astrology/view/page.tsx. That path is now
+    // a server component that only gates the id, so pointing the ratchet at it
+    // would make this assertion pass vacuously — the fetches live in the client
+    // half, which moved here.
+    'app/astrology/view/AstrologerProfileClient.tsx',
     'app/astrology/AstrologyClient.tsx',
     'app/astrology/[id]/book/page.tsx',
     'app/astrology/astrologers/live/LiveAstrologersClient.tsx',

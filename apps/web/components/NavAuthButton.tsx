@@ -65,8 +65,7 @@ export default function NavAuthButton() {
  className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-saffron-50 transition-colors"
  >
  {user?.avatarUrl ? (
- <img
- src={user.avatarUrl}
+ <img width={32} height={32}  src={user.avatarUrl}
  alt={displayName}
  className="w-8 h-8 rounded-full object-cover"
  />

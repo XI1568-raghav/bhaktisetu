@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { FESTIVALS, resolveBookablePujas } from '../../lib/festivals';
 import { getCatalogueSlugs } from '../../lib/puja-catalogue';
@@ -93,7 +95,7 @@ export default async function CalendarPage() {
 
       <header className="mb-8">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{FESTIVALS.length} festivals · all month-by-month</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Hindu Calendar {YEAR}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Hindu Calendar {YEAR}</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Every major Hindu festival in {YEAR} with dates, presiding deity, rituals, fasting requirements,
           and direct puja booking. Lunar dates are approximate — verify with your family priest for exact muhurat.

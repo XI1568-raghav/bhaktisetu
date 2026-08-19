@@ -90,24 +90,34 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* PAR-22. This was a search affordance that does not search: a
-            magnifying glass over a placeholder naming three things it would
-            search across, whose onPress is a plain tab push. There is no
-            in-app search endpoint to wire it to (apps/web/app/search is
-            web-only), so the control describes what it actually does —
-            the same treatment PAR-15 gave the Book button. Building real
-            search is separate work; shipping a disguised tab link is a
-            credibility tax paid on every session. */}
+        {/* PAR-22. This control has now been wrong twice, in opposite
+            directions.
+
+            First it was a search affordance that did not search: a magnifying
+            glass over "Search pujas, temples, content…" whose onPress was a
+            plain tab push. The remediation relabelled it "Browse all pujas"
+            and justified that by asserting the app had nothing to query —
+            that only apps/web/app/search existed. The assertion was false;
+            two public, unauthenticated routes were already live:
+
+              GET /api/v1/temples/search   apps/api/src/routes/temples.ts:127
+              GET /api/v1/content/search   apps/api/src/routes/content.ts:47
+
+            So the honest control is the search box, and it now opens a screen
+            that actually queries both. The placeholder names only what is
+            really searched: temples and devotional content. Pujas have no
+            /search route, so they stay named as the tab they are, and
+            docs/mobile-v1-scope.md records that exclusion. */}
         <TouchableOpacity
           style={styles.searchBar}
           activeOpacity={0.7}
-          accessibilityRole="link"
-          accessibilityLabel="Browse all pujas"
-          accessibilityHint="Opens the Pujas tab"
-          onPress={() => router.push('/(devotee)/pujas' as any)}
+          accessibilityRole="search"
+          accessibilityLabel="Search temples and devotional content"
+          accessibilityHint="Opens search"
+          onPress={() => router.push('/(devotee)/search' as any)}
         >
-          <Ionicons name="flame-outline" size={18} color={colors.stone[500]} />
-          <Text style={styles.searchPlaceholder}>Browse all pujas</Text>
+          <Ionicons name="search-outline" size={18} color={colors.stone[500]} />
+          <Text style={styles.searchPlaceholder}>Search temples and aartis</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.stone[400]} />
         </TouchableOpacity>
 

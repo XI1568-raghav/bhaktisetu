@@ -120,8 +120,7 @@ export default async function PanditDetailPage({ params }: PageProps) {
      <div className="flex flex-col sm:flex-row gap-5">
       {priest.avatarUrl ? (
        // eslint-disable-next-line @next/next/no-img-element
-       <img
-        src={priest.avatarUrl}
+       <img width={80} height={80}         src={priest.avatarUrl}
         alt={priest.displayName}
         className="w-20 h-20 rounded-full object-cover shrink-0"
        />

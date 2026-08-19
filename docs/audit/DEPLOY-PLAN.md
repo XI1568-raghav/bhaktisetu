@@ -83,7 +83,7 @@ Render `autoDeploy` is **false** on both services. Deployment is manual.
 | 2 | Push branch; open PR; **commitlint runs on every PR and is the one gate never skipped** |
 | 3 | Merge to `main` once CI is green (no branch protection — convention only) |
 | 4 | Deploy API: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g -f branch=main` |
-| 5 | **Apply the migration by hand** — `migrate deploy` does NOT run on deploy. `cd apps/api`, load `.env.production` **DIRECT_URL** (not pooled), `npx prisma migrate deploy` |
+| 5 | ~~Apply the migration by hand~~ **NOT NEEDED — corrected 2026-08-19.** `prisma migrate deploy` DOES run on every API boot, by both paths: `render.yaml:21` `startCommand: pnpm --filter @poojly/api start` -> `apps/api/package.json` `"start": "prisma migrate deploy && node dist/server.js"`, and `apps/api/Dockerfile:66` `CMD ["sh","-c","npx prisma migrate deploy && node dist/server.js"]`. The old instruction here was wrong and was repeated for several sessions. Running it by hand against prod with DIRECT_URL is strictly riskier than letting boot do it — prefer redeploying the API. Verify after boot with `information_schema`, not by re-running the migration. |
 | 6 | **Redeploy the API** so it boots against the new schema (client regen) |
 | 7 | Deploy web: same workflow, `sid=srv-d970l2ks728c738fc33g` |
 | 8 | Live-verify — curl prod endpoints, load key pages, check the deploy log. Never claim green from a summary field |

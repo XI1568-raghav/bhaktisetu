@@ -113,7 +113,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  {/* ═══ HERO ═════════════════════════════════════════════ */}
  <section className="relative">
  <div className="absolute inset-0">
- <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
+ <img width={1600} height={900} src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
  </div>
 
@@ -132,7 +132,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  {yatra.region === 'himalayas' ? 'Himalayan Pilgrimage' : `${yatra.region} India pilgrimage`}
  </div>
 
- <h1 data-reveal="cinematic" className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight max-w-2xl" style={{ fontFamily: 'var(--font-display)' }}>
+ <h1 data-reveal="cinematic" className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight max-w-2xl">
  {yatra.title}
  </h1>
  <p data-reveal="up" data-delay="1" className="mt-3 text-sm text-white/80 max-w-2xl leading-relaxed">
@@ -273,7 +273,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div data-reveal="up" className="grid grid-cols-2 md:grid-cols-3 gap-3">
  {yatra.gallery.slice(0, 6).map((src, i) => (
  <div key={i} className="aspect-square rounded-xl overflow-hidden card-hover">
- <img src={src} alt={`${yatra.title} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+ <img width={400} height={400} src={src} alt={`${yatra.title} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
  </div>
  ))}
  </div>

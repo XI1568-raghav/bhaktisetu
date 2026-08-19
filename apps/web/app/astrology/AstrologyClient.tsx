@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -151,6 +151,17 @@ export default function AstrologyPage() {
  // There is deliberately no fallback. Empty means empty and a failure says it
  // failed — rendering fixtures on error is the defect this whole finding is.
  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+
+ // AW-02: the "From Rs. X/min" figure on the Live Consultation card was static
+ // copy claiming Rs 10/min. It is now the real minimum across the loaded
+ // directory, and null when nothing has loaded — so the card can say
+ // "See astrologers" rather than quote a price nobody offers.
+ const lowestRate = useMemo(() => {
+   const rates = astrologers
+     .map((a) => a.perMinuteRate)
+     .filter((r): r is number => typeof r === 'number' && Number.isFinite(r) && r > 0);
+   return rates.length ? Math.min(...rates) : null;
+ }, [astrologers]);
  useEffect(() => {
   let cancelled = false;
   (async () => {
@@ -317,8 +328,17 @@ export default function AstrologyPage() {
  </div>
  </Link>
 
- {/* Live Consultation Card */}
- <div className="group relative bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-left hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 cursor-pointer">
+ {/* Live Consultation Card
+     AW-02: was a bare <div className="... cursor-pointer"> with no href and no
+     onClick — it looked clickable and did nothing. Its price line also read
+     "From Rs. 10/min" as static copy while the cheapest REAL astrologer is
+     Rs 18/min, so the one number on the card was both invented and low.
+     Now a real Link, and the price is derived from the loaded directory (or
+     omitted entirely when no rate is known — never a made-up floor). */}
+ <Link
+ href="#online-astrologers"
+ className="group relative block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-left hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
+ >
  <div className="w-12 h-12 bg-saffron-600 rounded-xl flex items-center justify-center mb-4">
  <MessageCircle className="w-6 h-6 text-white" />
  </div>
@@ -327,16 +347,22 @@ export default function AstrologyPage() {
  Chat with verified astrologers for personalized guidance
  </p>
  <div className="inline-flex items-center gap-1 text-sm font-semibold text-saffron-600">
- From Rs. 10/min <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+ {lowestRate !== null ? `From Rs. ${lowestRate}/min` : 'See astrologers'}{' '}
+ <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
  </div>
- </div>
+ </Link>
  </div>
  </div>
  </div>
  </section>
 
  {/* ── Online Astrologers Section ──────────────────────────────────────── */}
- <section className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-12 lg:py-16">
+ {/* AW-02: id is the Live Consultation card's link target — the card used to
+     be a dead <div>, so there was nothing for it to point at. */}
+ <section
+ id="online-astrologers"
+ className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-12 lg:py-16"
+ >
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
  <div>
  <h2 className="text-2xl lg:text-3xl font-semibold tracking-tight text-surface-800">

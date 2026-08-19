@@ -128,12 +128,17 @@ describe('DU-14 — the unmigrated remainder is real, and cannot grow', () => {
   }
 
   /**
-   * Measured after the /pricing migration: 728, down from 734. This is a
+   * Measured after the /pricing migration: 728, down from 734; 724 after the
+   * DU-14 second pass put the global header + footer in app/layout.tsx on
+   * .container-wide (which removed 2) and the CM-15 fallbacks removed 2 more.
+   * LOWER THIS after every wave — a baseline left above the true count is slack
+   * a new ad-hoc container can be authored into without failing anything. This
+   * is a
    * RATCHET, not a target — it may fall as more routes migrate, and it must
    * never rise. If a new route needs a centred shell it should use
    * .container-wide / .container-prose, which this pattern does not match.
    */
-  const BASELINE = 728;
+  const BASELINE = 724;
 
   it('DU-14 is genuinely still open for the rest of the app', () => {
     expect(

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import RemoteImage from '../../components/RemoteImage';
 import Link from "next/link";
 import { getTranslations } from '../../lib/t';
 import { buttonClass } from '../../components/ui/button-recipe';
@@ -349,7 +350,7 @@ export default async function PujasPage({
  <h1 className={`${H1.catalogue} mb-3`}>
  {t('pageTitle')}
  </h1>
- <p className="text-surface-500 text-lg max-w-2xl">
+ <p className="prose-body text-surface-500 max-w-2xl">
  {t('pageSubtitle')}
  </p>
 
@@ -676,7 +677,10 @@ export default async function PujasPage({
  >
  {/* Puja image */}
  <div className="relative aspect-[16/10] bg-gradient-to-br from-saffron-100 to-amber-50">
- <img
+ {/* CM-08: RemoteImage, not <img> — Wikimedia 429s under the concurrent
+     burst a real page load makes, and with no onError these cards painted a
+     blank 382x239 hole over the gradient. */}
+ <RemoteImage
  src={pujaCardImage(puja, IMG_W.CARD)}
  srcSet={remoteSrcSet(pujaCardImage(puja, IMG_W.WIDE), [IMG_W.THUMB, IMG_W.CARD])}
  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 380px"

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { SACRED_TREES } from '../../lib/sacred-trees';
 
@@ -48,7 +50,7 @@ export default function SacredTreesIndex() {
         <div className="inline-block px-3 py-1 mb-3 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-full">
           Sacred Botany · Vrikshayurveda
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-3 leading-tight">
+        <h1 className={`${H1.marketing} mb-3`}>
           12 Sacred Trees & Plants
         </h1>
         <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">

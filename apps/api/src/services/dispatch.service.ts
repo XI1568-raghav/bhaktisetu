@@ -33,6 +33,7 @@
 
 import { prisma } from '../lib/prisma.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
+import { mintProviderEarningForBooking } from './provider-earning-mint.js';
 import { activeSlotHoldWhere } from './booking.service.js';
 import {
   notifyDevotee,
@@ -393,10 +394,26 @@ export class DispatchService {
         where: { bookingId, state: 'sent', id: { not: offer.id } },
         data: { state: 'superseded', respondedAt: now },
       });
-      await tx.pujaBooking.update({
+      const assigned = await tx.pujaBooking.update({
         where: { id: bookingId },
         data: { priestId, status: 'priest_assigned', assignedVia: 'broadcast', offerExpiresAt: null },
+        select: { id: true, priestId: true, priceAmount: true, priestPayout: true },
       });
+
+      // DI-05: MINT THE EARNING. This path never enters
+      // booking.service.updateBookingStatus, so the re-mint gated on
+      // EARNING_ATTACH_STATUSES could not fire here — and 'priest_assigned' is
+      // in that set, so it was meant to. A pandit who WON A BROADCAST therefore
+      // held no Commission and no PriestPayout, and his own /priest/payouts
+      // screen answered Rs 0 on money he was owed.
+      //
+      // Reads `assigned`, the row the update just returned, NOT the pre-update
+      // `booking` snapshot above — that one still carries priestId: null, and
+      // minting off it is the original bug wearing a new hat. Inside the same
+      // transaction as the assignment, so an assignment that rolls back cannot
+      // leave a payable behind. All four guards (idempotency, legacy rail,
+      // captured payment, linked User) live in provider-earning-mint.ts.
+      await mintProviderEarningForBooking(tx, assigned);
 
       return { bookingId, priestId };
     }).then(async (res) => {

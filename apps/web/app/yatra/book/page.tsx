@@ -236,7 +236,7 @@ function BookYatraInner() {
  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--color-primary-highlight)' }}>
  <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
  </div>
- <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Inquiry received</h1>
+ <h1 className="heading-display text-2xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Inquiry received</h1>
  <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
  Our yatra desk will confirm hotel + transport availability for {yatra.title} and email your final invoice within 24 hours.
  </p>
@@ -267,7 +267,7 @@ function BookYatraInner() {
  <Link href={`/yatra/${yatra.slug}`} className="inline-flex items-center gap-1.5 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
  <ChevronLeft className="w-3.5 h-3.5" /> Back to yatra
  </Link>
- <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className="heading-display text-xl font-semibold" style={{ color: 'var(--color-text)' }}>
  Book {yatra.title}
  </h1>
 
@@ -656,7 +656,7 @@ function BookYatraInner() {
  <aside className="md:col-span-1 h-fit sticky top-20">
  <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/10] overflow-hidden">
- <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={640} height={400} src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  <div className="p-4">
  <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{yatra.title}</h3>

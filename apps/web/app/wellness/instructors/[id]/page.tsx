@@ -208,7 +208,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
 
  <div className="flex-1">
- <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className="heading-display text-2xl font-semibold tracking-tight" style={{ color: 'var(--color-text)' }}>
  {inst.name}
  </h1>
  <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>

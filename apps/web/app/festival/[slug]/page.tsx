@@ -2,6 +2,8 @@
 // Programmatic-SEO for "{festival} 2026 puja online" + "{festival} rituals"
 // long-tail queries. Spikes hard during festival weeks.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FESTIVALS, getFestival, resolveBookablePujas } from '../../../lib/festivals';
@@ -109,7 +111,7 @@ export default async function FestivalPage({ params }: Params) {
             </span>
           ) : null}
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.catalogue} mb-2`}>
           {f.name} <span className="text-2xl font-serif text-surface-500 ml-2">{f.sanskrit}</span>
         </h1>
         <p className="text-sm text-surface-600 mb-4">

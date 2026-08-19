@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 
 
@@ -132,7 +134,7 @@ export default function ShlokaCardGenerator() {
       </nav>
 
       <header className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.catalogue} mb-2`}>
           Make a shareable shloka card
         </h1>
         <p className="text-surface-700 max-w-2xl">
@@ -210,7 +212,7 @@ export default function ShlokaCardGenerator() {
         <section>
           <div className="aspect-[1200/630] rounded-lg overflow-hidden border border-surface-200 bg-surface-50">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <img width={1200} height={630} 
               src={ogUrl}
               alt="Shloka card preview"
               className="w-full h-full object-contain"

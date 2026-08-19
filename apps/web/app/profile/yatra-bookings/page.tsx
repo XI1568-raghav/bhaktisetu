@@ -76,7 +76,7 @@ function YatraBookingsInner() {
  <Mountain className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>My Yatra Bookings</p>
  </div>
- <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className={H1.portal} style={{ color: 'var(--color-text)' }}>
  Your sacred journeys
  </h1>
  </div>
@@ -155,7 +155,7 @@ function BookingCard({ b }: { b: StoredBooking }) {
  <div className="rounded-xl p-4 flex flex-col md:flex-row gap-4 card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  {yatra && (
  <div className="md:w-40 h-28 rounded-lg overflow-hidden shrink-0">
- <img src={yatra.heroImage} alt={b.yatraTitle} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={320} height={224} src={yatra.heroImage} alt={b.yatraTitle} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  )}
  <div className="flex-1 min-w-0">

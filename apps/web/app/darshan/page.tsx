@@ -288,7 +288,7 @@ export default async function DarshanPage() {
  {t('liveNow')}
  </span>
  </div>
- <h1 className="text-3xl md:text-4xl font-semibold text-surface-800 mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+ <h1 className="heading-display text-3xl md:text-4xl font-semibold text-surface-800 mb-3">
  {t('pageTitle')}
  </h1>
  <p className="text-surface-500 text-lg max-w-2xl">

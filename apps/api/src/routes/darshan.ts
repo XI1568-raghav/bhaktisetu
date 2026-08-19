@@ -262,6 +262,13 @@ export const __testing = { deriveStreamPlayback };
 // In-process cache for /live (TTL 30s). Drops landing-page TTFB from 3+s
 // (Prisma cold connection on Render free tier) to <50ms on warm hits.
 // Aarti windows tick by the minute, so 30s staleness is invisible to users.
+/**
+ * SCAL-04: hard cap on the /live temple scan. Sized far above the live temple
+ * count so it never truncates a real page, and low enough that the response can
+ * never be sized by the temple table.
+ */
+const LIVE_DARSHAN_TEMPLE_CAP = 200;
+
 let liveCache: { at: number; payload: unknown } | null = null;
 const LIVE_TTL_MS = 30_000;
 
@@ -276,8 +283,25 @@ export async function darshanRoutes(server: FastifyInstance) {
     }
     reply.header('x-cache', 'MISS');
     try {
-      // Pull all temples + streams + timingInfo. Cheap — only ~20 rows.
+      // Pull live-darshan temples + streams + timingInfo.
+      //
+      // SCAL-04 (2026-08-19): this had NO `take`. It read every temple with
+      // liveDarshanEnabled, selecting the two widest columns on the model —
+      // `images` and the `timingInfo` JSON — on a PUBLIC, unauthenticated
+      // route. The 30s in-process cache above bounds how OFTEN it runs, not how
+      // much it reads, and a cold cache on a fresh Render dyno runs it in full.
+      //
+      // It was invisible to the SCAL-04 ratchet for the whole of its life: the
+      // detector tested the entire argument text for `take`, and the nested
+      // `darshanStream: { take: 1 }` below satisfied it. That blind spot is
+      // fixed in lib/unbounded-findmany.scal04.test.ts (topLevelProps), which
+      // is what surfaced this read.
+      //
+      // The cap is well above the current ~20 rows and above any plausible
+      // count of temples streaming simultaneously; it exists so the response
+      // size cannot be set by the size of the temple table.
       const temples = await prisma.temple.findMany({
+        take: LIVE_DARSHAN_TEMPLE_CAP,
         select: {
           id: true,
           name: true,

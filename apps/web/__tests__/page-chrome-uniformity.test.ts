@@ -34,6 +34,17 @@ const WEB = path.resolve(__dirname, '..');
 const read = (rel: string) => readFileSync(path.join(WEB, rel), 'utf8');
 const css = read('app/globals.css');
 
+/**
+ * Comment-stripped source. This file quotes class strings in its own prose, and
+ * so do the pages it scans; matching raw source lets a comment satisfy or trip
+ * an assertion.
+ */
+const readCode = (rel: string) =>
+  read(rel)
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
 /* ── every source file under app/ and components/ ────────────────────────── */
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -116,9 +127,51 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
     ['components/home/ShopStrip.tsx', 'Visit store'],
   ];
 
+  /**
+   * A className painted with the SOLID brand fill and carrying its own padding
+   * on an interactive element — the sweep's own definition of a bespoke CTA,
+   * minus the conditional fills that are segmented-filter state rather than a
+   * resting style.
+   */
+  function bespokeCtaClasses(file: string): string[] {
+    const src = readCode(file);
+    const out: string[] = [];
+    for (const m of src.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+      const cls = m[1] ?? m[2] ?? '';
+      if (!/\bbg-saffron-600(?![\w\-/])/.test(cls)) continue;
+      if (!/\bpx-\d/.test(cls)) continue;
+      if (/\b(active|selected|current)\w*\s*===?/i.test(cls)) continue;
+      const at = cls.search(/\bbg-saffron-600(?![\w\-/])/);
+      let conditional = false;
+      for (const i of cls.matchAll(/\$\{[\s\S]*?\}/g)) {
+        if (at > i.index! && at < i.index! + i[0].length) conditional = true;
+      }
+      if (conditional) continue;
+      const before = src.slice(Math.max(0, m.index! - 220), m.index!);
+      if (![...before.matchAll(/<(button|a|Link)\b/g)].pop()) continue;
+      out.push(cls.replace(/\s+/g, ' ').slice(0, 90));
+    }
+    return out;
+  }
+
   for (const [file, why] of ADOPTERS) {
     it(`${file} calls buttonClass (${why})`, () => {
-      expect(read(file)).toMatch(/buttonClass\(/);
+      expect(readCode(file)).toMatch(/buttonClass\(/);
+    });
+
+    /*
+     * The assertion above is a whole-file substring match, which one recipe
+     * call satisfies no matter how many hand-rolled CTAs sit beside it —
+     * app/pujas/page.tsx passed it while carrying 8. "Adopted" has to mean
+     * nothing bespoke is left, or the guard reports adoption that is not there.
+     */
+    it(`${file} has no bespoke CTA left beside the recipe`, () => {
+      const left = bespokeCtaClasses(file);
+      expect(
+        left,
+        `${file} is asserted "adopted" but still hand-rolls ${left.length} primary CTA(s):\n` +
+          left.join('\n'),
+      ).toEqual([]);
     });
   }
 
@@ -437,7 +490,44 @@ describe('DU-12 - the elevation ramp is one temperature', () => {
 
   const decl = (u: string) => new RegExp(`--${u}:\s*([^;]+);`).exec(css)?.[1];
 
-  for (const util of ['shadow-xl', 'shadow-2xl']) {
+  // Tailwind v4 generates shadow utilities ONLY from @theme. A --shadow-*
+  // declaration that sits in :root compiles to nothing and the utility silently
+  // falls back to Tailwind's stock cool black. `decl()` above regex-scans the
+  // SOURCE TEXT and cannot tell an effective @theme declaration from a dead
+  // :root one, so every value assertion below is meaningless without this
+  // position check. Index of the brace that closes the single @theme block.
+  const themeStart = css.indexOf('@theme');
+  const themeEnd = (() => {
+    let depth = 0;
+    for (let i = themeStart; i < css.length; i++) {
+      if (css[i] === '{') depth++;
+      else if (css[i] === '}') {
+        depth--;
+        if (depth === 0) return i;
+      }
+    }
+    return -1;
+  })();
+
+  it('the @theme block is found (the position check below is measuring something)', () => {
+    expect(themeStart).toBeGreaterThanOrEqual(0);
+    expect(themeEnd).toBeGreaterThan(themeStart);
+  });
+
+  for (const util of ['shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-float', 'shadow-xl', 'shadow-2xl']) {
+    it(`--${util} is declared INSIDE @theme, so the utility is actually generated`, () => {
+      const at = css.indexOf(`--${util}:`);
+      expect(at, `--${util} is not declared anywhere`).toBeGreaterThanOrEqual(0);
+      expect(
+        at > themeStart && at < themeEnd,
+        `--${util} is declared outside @theme (index ${at}, @theme ends ${themeEnd}) — ` +
+          'Tailwind v4 emits shadow utilities only from @theme, so this token is dead ' +
+          "and .{util} inlines Tailwind's stock cool #0000001a",
+      ).toBe(true);
+    });
+  }
+
+  for (const util of ['shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-float', 'shadow-xl', 'shadow-2xl']) {
     it(`--${util} is declared, so it stops resolving to the cool stock value`, () => {
       const v = decl(util);
       expect(v, `--${util} missing from @theme`).toBeTruthy();
@@ -448,11 +538,13 @@ describe('DU-12 - the elevation ramp is one temperature', () => {
     });
   }
 
-  it('the ramp still grows outward from lg to 2xl', () => {
-    // Take the largest blur radius in the value: shadow-lg is a single layer,
+  it('the ramp still grows outward, sm -> md -> lg -> xl -> 2xl', () => {
+    // Take the largest blur radius in the value: sm/md/lg are single layers,
     // shadow-xl/2xl are two (a tight contact shadow plus a wide ambient one).
     const maxBlur = (u: string) =>
       Math.max(...[...decl(u)!.matchAll(/(\d+)px\s+oklch/g)].map((m) => Number(m[1])));
+    expect(maxBlur('shadow-md')).toBeGreaterThan(maxBlur('shadow-sm'));
+    expect(maxBlur('shadow-lg')).toBeGreaterThan(maxBlur('shadow-md'));
     expect(maxBlur('shadow-xl')).toBeGreaterThan(maxBlur('shadow-lg'));
     expect(maxBlur('shadow-2xl')).toBeGreaterThan(maxBlur('shadow-xl'));
   });

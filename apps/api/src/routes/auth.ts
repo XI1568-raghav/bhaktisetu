@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createSupabaseClient } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
 
 // Tighter rate limit for unauthenticated credential/OTP endpoints — the
 // global 100/min is too generous for OTP-spam and credential-stuffing.
@@ -34,13 +35,58 @@ const verifyOtpSchema = z.object({
     .regex(/^\d{6}$/, 'OTP must contain only digits'),
 });
 
+/**
+ * SEC-02, STEP 1 — the credential may arrive in the BODY or in the httpOnly
+ * COOKIE.
+ *
+ * `refreshToken` was REQUIRED here, and the handler only ever read
+ * `request.body`. The httpOnly `darshya_refresh` cookie — issued at login
+ * below, scoped to /api/v1/auth — was never read at all. So a cookie-only
+ * client could sign in and authenticate, then silently lose its session at the
+ * one-hour access-token TTL because it could not refresh. THAT is why the
+ * JS-readable localStorage copy of the token could not be dropped, and why the
+ * whole of SEC-02 stalled behind this one schema.
+ *
+ * Optional, not removed: the body still wins when present, so mobile and every
+ * currently-deployed web build keep working unchanged. The 400 now fires only
+ * when BOTH sources are absent.
+ */
 const refreshSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().min(1, 'Refresh token is required').optional(),
 });
 
 const logoutSchema = z.object({
-  accessToken: z.string().min(1, 'Access token is required'),
+  accessToken: z.string().min(1, 'Access token is required').optional(),
 });
+
+/** Cookie bag off a Fastify request, tolerant of @fastify/cookie being absent. */
+type CookieBag = Record<string, string | undefined> | undefined;
+
+function firstNonEmpty(...candidates: Array<unknown>): string | null {
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) return c;
+  }
+  return null;
+}
+
+/**
+ * Body first (today's clients), then the httpOnly cookie (the secure path).
+ * Non-string body values are ignored rather than passed on — `request.body` is
+ * attacker-shaped and this value reaches createHash and Supabase.
+ */
+export function resolveRefreshToken(
+  body: { refreshToken?: string } | undefined,
+  cookies: CookieBag,
+): string | null {
+  return firstNonEmpty(body?.refreshToken, cookies?.[REFRESH_COOKIE]);
+}
+
+export function resolveAccessToken(
+  body: { accessToken?: string } | undefined,
+  cookies: CookieBag,
+): string | null {
+  return firstNonEmpty(body?.accessToken, cookies?.[SESSION_COOKIE]);
+}
 
 const googleSyncSchema = z.object({
   accessToken: z.string().min(1, 'Access token is required'),
@@ -411,7 +457,7 @@ export async function authRoutes(server: FastifyInstance) {
           phone,
           fullName: '',
           email: supabaseUser?.email || null,
-          preferredLanguage: 'hi',
+          preferredLanguage: SIGNUP_DEFAULT_LANGUAGE,
         },
       });
     } catch (dbError) {
@@ -467,7 +513,7 @@ export async function authRoutes(server: FastifyInstance) {
    * leaving the login-issued token outside the family-revoke net.
    */
   server.post('/refresh', async (request, reply) => {
-    const parseResult = refreshSchema.safeParse(request.body);
+    const parseResult = refreshSchema.safeParse(request.body ?? {});
     if (!parseResult.success) {
       return reply.code(400).send({
         error: 'Validation Error',
@@ -475,7 +521,18 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    const { refreshToken } = parseResult.data;
+    // SEC-02: body OR the httpOnly darshya_refresh cookie. 400 only when the
+    // request carries no refresh credential at all.
+    const refreshToken = resolveRefreshToken(
+      parseResult.data,
+      request.cookies as Record<string, string | undefined> | undefined,
+    );
+    if (!refreshToken) {
+      return reply.code(400).send({
+        error: 'Validation Error',
+        message: 'Refresh token is required',
+      });
+    }
 
     // Phase C P1 #4 (2026-06-08): JTI single-use replay detection.
     // Hash the opaque Supabase refresh token to use as JTI key (no plaintext in DB).
@@ -578,7 +635,7 @@ export async function authRoutes(server: FastifyInstance) {
    * Signs the user out of Supabase, invalidating the session.
    */
   server.post('/logout', async (request, reply) => {
-    const parseResult = logoutSchema.safeParse(request.body);
+    const parseResult = logoutSchema.safeParse(request.body ?? {});
     if (!parseResult.success) {
       return reply.code(400).send({
         error: 'Validation Error',
@@ -586,7 +643,19 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    const { accessToken } = parseResult.data;
+    // SEC-02: body OR the httpOnly darshya_session cookie. A cookie-only client
+    // must be able to sign OUT, or the only way to end a session is to wait for
+    // it to expire.
+    const accessToken = resolveAccessToken(
+      parseResult.data,
+      request.cookies as Record<string, string | undefined> | undefined,
+    );
+    if (!accessToken) {
+      return reply.code(400).send({
+        error: 'Validation Error',
+        message: 'Access token is required',
+      });
+    }
 
     // Phase C P1 #5 (2026-06-08): email-session revocation server-side.
     // If token matches the email-{userId}-{hex} format, mark revoked_at in email_sessions.
@@ -635,35 +704,19 @@ export async function authRoutes(server: FastifyInstance) {
   server.get('/me', { preHandler: [authenticateUser] }, async (request, reply) => {
     const currentUser = request.currentUser!;
 
-    // Demo users have synthetic ids like "demo-pandit" that aren't UUIDs;
-    // return the in-memory profile directly without hitting Postgres.
-    if (currentUser.id.startsWith('demo-')) {
-      return reply.code(200).send({
-        success: true,
-        user: {
-          id: currentUser.id,
-          phone: currentUser.phone,
-          email: currentUser.email,
-          fullName: currentUser.fullName,
-          avatarUrl: null,
-          preferredLanguage: 'en',
-          locationCity: null,
-          locationState: null,
-          isNri: false,
-          nriCountry: null,
-          gotra: null,
-          nakshatra: null,
-          rashi: null,
-          subscriptionTier: currentUser.subscriptionTier,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          addresses: [],
-          activeSubscription: null,
-          roles: currentUser.roles,
-        },
-      });
-    }
-
+    /*
+     * REMOVED (I18N-07, 2026-08-19) - a synthetic-demo branch that answered
+     * GET /me out of the in-memory demo profile, including a hardcoded
+     * `preferredLanguage: 'en'`.
+     *
+     * It had been unreachable since AW-08: middlewares/auth.ts resolves every
+     * demo token to the real User row's UUID and 401s fail-closed when the row
+     * is missing, so `currentUser.id` is never a `demo-` string here. Dead code
+     * is not why it had to go - a hardcoded language sitting in the same file
+     * as the fix is how the defect returns, and it contradicted the row this
+     * route otherwise reads. Now there is exactly one source for the field:
+     * the database.
+     */
     const user = await prisma.user.findUnique({
       where: { id: currentUser.id },
       include: {
@@ -1185,7 +1238,7 @@ export async function authRoutes(server: FastifyInstance) {
           fullName,
           avatarUrl,
           phone: null,
-          preferredLanguage: 'hi',
+          preferredLanguage: SIGNUP_DEFAULT_LANGUAGE,
         },
         include: { subscription: { where: { status: 'active' }, take: 1 } },
       });
@@ -1227,4 +1280,13 @@ export async function authRoutes(server: FastifyInstance) {
 }
 
 /** Internals reachable from tests only. */
-export const __testing = { cookieSecurityOptions };
+export const __testing = {
+  cookieSecurityOptions,
+  // SEC-02 STEP 1: the schemas and resolvers are unit-tested directly — the
+  // refresh handler itself reaches Supabase and the JTI ledger, and this
+  // contract (body OR cookie) is exactly what was blocking the migration.
+  refreshSchema,
+  logoutSchema,
+  resolveRefreshToken,
+  resolveAccessToken,
+};

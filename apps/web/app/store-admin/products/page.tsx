@@ -552,8 +552,7 @@ function StoreAdminProductsPageContent() {
                       <div className="w-10 h-10 bg-surface-100 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
                         {product.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={product.imageUrl}
+                          <img width={40} height={40}                             src={product.imageUrl}
                             alt={product.name}
                             className="w-10 h-10 object-cover rounded-lg"
                           />

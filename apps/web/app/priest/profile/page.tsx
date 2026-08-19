@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+// DU-03: the one primary-CTA recipe. Layout-only extras in the third slot —
+// never h-*, px-*, py-* or rounded-*, which is the invariant every call site holds.
+import { buttonClass } from '../../../components/ui/button-recipe';
 import {
  UserCircle,
  Star,
@@ -226,7 +229,7 @@ function PriestProfilePageContent() {
  </p>
  <a
  href={LOGIN_HREF}
- className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md', 'mt-6')}
  >
  Sign in again
  </a>
@@ -244,7 +247,7 @@ function PriestProfilePageContent() {
  </p>
  <button
  onClick={() => void fetchProfile()}
- className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md', 'mt-6')}
  >
  <RefreshCw className="w-4 h-4" />
  Try again
@@ -276,7 +279,7 @@ function PriestProfilePageContent() {
  <button
  onClick={handleSave}
  disabled={saving}
- className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+ className={buttonClass('primary', 'md')}
  >
  {saving ? (
  <Loader2 className="w-4 h-4 animate-spin" />
@@ -301,8 +304,7 @@ function PriestProfilePageContent() {
  <div className="relative">
  <div className="w-24 h-24 bg-saffron-100 rounded-full flex items-center justify-center">
  {profile.avatarUrl ? (
- <img
- src={profile.avatarUrl}
+ <img width={96} height={96}  src={profile.avatarUrl}
  alt={profile.displayName}
  className="w-24 h-24 rounded-full object-cover"
  />

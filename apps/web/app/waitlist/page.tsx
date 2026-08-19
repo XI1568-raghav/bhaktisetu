@@ -49,8 +49,8 @@ export default async function WaitlistPage({ searchParams }: WaitlistPageProps) 
           Early Access
         </p>
         <h1
-          className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.15]"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text, #1f1b18)' }}
+          className="heading-display text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.15]"
+          style={{ color: 'var(--color-text, #1f1b18)' }}
         >
           Devotion. Verified. Be among the first 1000 devotees on Darshya.
         </h1>

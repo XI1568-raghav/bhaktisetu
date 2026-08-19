@@ -58,7 +58,7 @@ export default function MobileContent() {
  }`}
  >
  <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0">
- <img src={item.img} alt={item.deity} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={48} height={48} src={item.img} alt={item.deity} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <button
  onClick={() => setPlaying(playing === item.title ? null : item.title)}
  className="absolute inset-0 flex items-center justify-center bg-black/30"

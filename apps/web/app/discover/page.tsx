@@ -1,6 +1,8 @@
 // Topical hub for 27 programmatic-SEO wisdom routes. Pure local data → SSG.
 // Crawlers get a strong internal-link hub; users get a searchable index.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 
 export const revalidate = 86400;
@@ -193,7 +195,7 @@ export default function DiscoverPage() {
 
       <header className="mb-10 max-w-3xl">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{TOTAL} curated guides</p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Discover Hindu Wisdom</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Discover Hindu Wisdom</h1>
         <p className="mt-3 text-base text-gray-700">
           Every wisdom guide on Darshya in one place — scriptures, cosmology, ritual
           practice and devotional tools. Each link below is a full canonical guide; the

@@ -79,7 +79,7 @@ export default async function BookDetailPage({
         <header className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 mb-12">
           <div className="aspect-[3/4] rounded-xl overflow-hidden border border-saffron-200 bg-white shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <img width={300} height={400} 
               src={book.coverImage}
               alt={book.title}
               className="w-full h-full object-cover"

@@ -6,6 +6,9 @@
 export const dynamicParams = true;
 export const revalidate = 3600;
 import type { Metadata } from 'next';
+// DU-03: the one primary-CTA recipe. Layout-only extras in the third slot —
+// never h-*, px-*, py-* or rounded-*, which is the invariant every call site holds.
+import { buttonClass } from '../../../components/ui/button-recipe';
 import Link from 'next/link';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { notFound, permanentRedirect } from 'next/navigation';
@@ -588,7 +591,7 @@ function RichTemplePage({
  ) : offering ? (
  <Link
  href={bookHref}
- className="inline-flex items-center gap-1 rounded-lg bg-saffron-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-saffron-700"
+ className={buttonClass('primary', 'sm')}
  >
  Book Now
  </Link>
@@ -1019,7 +1022,7 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  </span>
  <Link
  href={`/pujas/${o.pujaType.slug}`}
- className="rounded-lg bg-saffron-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'sm')}
  >
  Book
  </Link>

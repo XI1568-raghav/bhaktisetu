@@ -83,7 +83,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
 
  <div className="flex-1">
  <div className="flex flex-wrap items-center gap-2 mb-1.5">
- <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className="heading-display text-2xl font-semibold tracking-tight" style={{ color: 'var(--color-text)' }}>
  {c.name}
  </h1>
  <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 12%, transparent)', color: '#16a34a' }}>

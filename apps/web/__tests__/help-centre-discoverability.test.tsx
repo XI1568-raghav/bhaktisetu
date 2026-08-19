@@ -112,8 +112,35 @@ describe('I18N-09 — every published help article is reachable from /help', () 
     expect(HELP_LANGS.map((l) => l.code)).toEqual([...SUPPORTED_LOCALES]);
   });
 
+  /**
+   * This used to read `expect(helpHtml).toContain(String(englishCount))`, which
+   * reduced to `toContain("7")` — and the 35kB of rendered HTML contains every
+   * digit 1-9 in SVG path data alone, plus "12" and the WhatsApp number. It
+   * passed whatever the page claimed, including nothing. Extract the figure the
+   * page actually prints and compare it to the catalogue instead.
+   */
   it('states the coverage it actually has, in figures taken from the catalogue', () => {
-    expect(helpHtml).toContain(String(getHelpArticlesByLang('en').length));
+    const claimed = /(\d+) step-by-step guides and (\d+) short answers/.exec(helpHtml);
+    expect(claimed, '/help no longer prints its guide and answer counts').not.toBeNull();
+    expect(Number(claimed![1]), 'the guide count on /help is not the catalogue size').toBe(
+      getHelpArticlesByLang('en').length,
+    );
+    expect(Number(claimed![2]), 'the answer count on /help is not the FAQ size').toBe(
+      FAQ_ITEMS.length,
+    );
+  });
+
+  it("states each language's real coverage against the English catalogue", () => {
+    const english = getHelpArticlesByLang('en').length;
+    for (const lang of HELP_LANGS) {
+      if (lang.code === 'en') continue;
+      const translated = getHelpArticlesByLang(lang.code).length;
+      if (translated === 0) continue;
+      expect(
+        helpHtml,
+        `/help does not state ${lang.code} coverage as ${translated} of ${english}`,
+      ).toContain(`${translated} of ${english} guides`);
+    }
   });
 });
 

@@ -1,6 +1,7 @@
 import { Prisma, BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { platformRateOf } from '../lib/commission-math.js';
+import { mintProviderEarningForBooking } from './provider-earning-mint.js';
 import { hoursUntilSlot } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 // RV-03: imported for this module's OWN use — a bare `export … from` re-export
@@ -937,40 +938,26 @@ export class BookingService {
       // findFirst guard both minting writers use — and gated on a CAPTURED
       // payment, so it can never mint withdrawable balance for an unpaid
       // booking (the S3-08 hole, on the transition instead of the confirm).
-      if (EARNING_ATTACH_STATUSES.has(newStatus) && row.priestId) {
-        const alreadyOwned = await tx.commission.findFirst({
-          where: { bookingId: row.id },
-          select: { id: true },
+      //
+      // The guard triple used to be hand-copied here. It now lives in
+      // provider-earning-mint.ts, shared with the two assignment paths that
+      // bypass this function entirely (dispatch.service.accept and
+      // priest.service.acceptBooking) — hand-copied guards are precisely what
+      // let those two drift out of sync and keep the finding's Rs 0 screen
+      // reachable. Moving it there also CLOSED THE DOUBLE-PAYABLE: the copy
+      // checked commission + captured payment but never PriestPayout, so the
+      // rail exclusion was one-way. payment.service.createPriestPayout already
+      // refuses to write the sidecar row when a live Commission exists; the
+      // mint did not refuse the reverse, and `video_uploaded -> delivered` (both
+      // in EARNING_ATTACH_STATUSES) is a legal transition that minted a second
+      // payable onto a booking already carrying a legacy one.
+      if (EARNING_ATTACH_STATUSES.has(newStatus)) {
+        await mintProviderEarningForBooking(tx, {
+          id: row.id,
+          priestId: row.priestId ?? null,
+          priceAmount: row.priceAmount ?? 0,
+          priestPayout: row.priestPayout ?? 0,
         });
-        if (!alreadyOwned) {
-          const capturedForEarning = await tx.payment.count({
-            where: { bookingId: row.id, status: 'captured' },
-          });
-          if (capturedForEarning > 0) {
-            const priestUser = await tx.priest.findUnique({
-              where: { id: row.priestId },
-              select: { userId: true },
-            });
-            // No linked User means no payable provider — writing the row anyway
-            // is what produced the orphans RV-04 exists to stop creating.
-            if (priestUser?.userId) {
-              // amount = the PROVIDER's earning, percentage = the PLATFORM's
-              // take rate, against the same fee-inclusive base every other
-              // writer uses. lib/commission-math.ts — one column, one meaning.
-              const price = new Prisma.Decimal(row.priceAmount as Prisma.Decimal);
-              const providerEarning = new Prisma.Decimal(row.priestPayout as Prisma.Decimal);
-              await tx.commission.create({
-                data: {
-                  bookingId: row.id,
-                  providerId: priestUser.userId,
-                  amount: providerEarning,
-                  percentage: platformRateOf(price.sub(providerEarning), price),
-                  status: 'PENDING',
-                },
-              });
-            }
-          }
-        }
       }
 
       return row;

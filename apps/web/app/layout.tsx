@@ -478,7 +478,7 @@ export default function RootLayout({
    style={{ WebkitBackdropFilter: 'saturate(180%) blur(20px)' }}
  >
  <nav
- className="mx-auto max-w-7xl flex items-center h-16 px-4 sm:px-6 lg:px-8 gap-3"
+ className="container-wide flex items-center h-16 gap-3"
  aria-label="Main navigation"
  >
  {/* Logo — fixed left, shrink-0 */}
@@ -563,7 +563,7 @@ export default function RootLayout({
  {/* Decorative top border */}
  <div className="h-px bg-gradient-to-r from-transparent via-saffron-600/40 to-transparent" />
 
- <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-20">
+ <div className="container-wide py-16 lg:py-20">
  <div className="grid grid-cols-2 md:grid-cols-7 gap-10">
  {/* Brand column */}
  <div className="col-span-2">

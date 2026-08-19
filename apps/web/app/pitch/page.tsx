@@ -45,8 +45,7 @@ export default function PitchPage() {
           </a>
         </div>
         <div id="demo-reel" style={{ marginTop: 48 }}>
-          <img
-            className="pitch-media"
+          <img width={1920} height={1080}             className="pitch-media"
             src="/pitch/img/01-home-hero.png"
             alt="Darshya home — live darshan, daily panchang, temple finder"
             loading="lazy"
@@ -178,8 +177,7 @@ export default function PitchPage() {
       <Slide id="06-portals" num="06 / 12">
         <span className="pitch-eyebrow">Surface area</span>
         <h2 className="pitch-h2">One product, eight separate user journeys.</h2>
-        <img
-          className="pitch-media"
+        <img width={1920} height={1080}           className="pitch-media"
           src="/pitch/img/04-pujas-grid.png"
           alt="Puja booking with sankalp + video proof"
           loading="lazy"

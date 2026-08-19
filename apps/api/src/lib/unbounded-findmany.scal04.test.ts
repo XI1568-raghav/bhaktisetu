@@ -43,7 +43,34 @@ const SRC = join(import.meta.dirname, '..');
  * reads in routes/admin.ts that first tripped this ratchet were all paginated
  * list endpoints using shorthand `take` — false positives, every one.
  */
-const BASELINE = 89;
+/**
+ * 89 → 86 on 2026-08-19. Net −3, but the movement is FOUR fixes and one newly
+ * VISIBLE read, so the arithmetic is spelled out rather than asserted:
+ *
+ *   −1  routes/priests-public.ts — GET /api/v1/priests. Registered at
+ *       server.ts:413 with NO preHandler, so it was the only unbounded scan an
+ *       ANONYMOUS caller could trigger, over the widest rows left (bio,
+ *       languages[], specializations[]). Now skip/take with a paired count().
+ *   −1  routes/store-admin.ts — GET /products read one merchant's entire
+ *       catalogue with no select and no take. Now an explicit column list plus
+ *       skip/take.
+ *   −1  services/payout.service.ts — runWeeklySettlement's
+ *       findMany({ distinct: ['providerId'] }). Prisma applies `distinct` in
+ *       the CLIENT, so Postgres returned every pending commission row to
+ *       produce one row per provider. Now groupBy, the same shape already
+ *       retired at admin-metrics.ts:99.
+ *   −1  routes/darshan.ts — the /live temple scan, now capped.
+ *   +1  routes/darshan.ts became VISIBLE at all. See topLevelProps: the
+ *       detector used to test the whole argument text for `take`, so the nested
+ *       `darshanStream: { take: 1 }` marked the unbounded PARENT temple scan
+ *       bounded. It had been invisible to this ratchet for its entire life.
+ *
+ * So the honest reading is: three reads bounded, one blind spot closed, and the
+ * read that blind spot was hiding bounded in the same commit. The count is
+ * MEASURED, not assumed — re-derive it by temporarily setting BASELINE to 0 and
+ * reading the failure message.
+ */
+const BASELINE = 86;
 
 // −2 on 2026-08-16 — routes/admin-lead-conversion.ts, GET /admin/leads/conversion.
 //
@@ -223,16 +250,26 @@ function tsFiles(dir: string): string[] {
   return out;
 }
 
-/** The argument text of each `findMany(...)` call, paren-balanced. */
+/**
+ * The argument text of each `findMany(...)` call, paren-balanced.
+ *
+ * DEFECT FIXED 2026-08-19: the scan was `source.indexOf('findMany(')`, so
+ * `findMany (` — a single space before the paren — was ENTIRELY INVISIBLE to
+ * this ratchet. Verified by probe: a file containing
+ * `p.user.findMany ({ where: {...} })` left the total unchanged. Prettier does
+ * not produce that spacing, which is exactly why nobody noticed; a hand-edited
+ * or differently-formatted file could add an unbounded scan the guard could not
+ * see. `\s*` now spans it.
+ */
 function findManyArgs(source: string): string[] {
   const spans: string[] = [];
-  const needle = 'findMany(';
-  let from = 0;
+  const call = /\bfindMany\s*\(/g;
   for (;;) {
-    const at = source.indexOf(needle, from);
-    if (at === -1) return spans;
+    const m = call.exec(source);
+    if (!m) return spans;
+    const openParen = m.index + m[0].length - 1;
     let depth = 0;
-    let i = at + needle.length - 1;
+    let i = openParen;
     for (; i < source.length; i++) {
       const ch = source[i];
       if (ch === '(') depth++;
@@ -241,9 +278,44 @@ function findManyArgs(source: string): string[] {
         if (depth === 0) break;
       }
     }
-    spans.push(source.slice(at, i + 1));
-    from = i + 1;
+    spans.push(source.slice(m.index, i + 1));
+    call.lastIndex = i + 1;
   }
+}
+
+/**
+ * Only the DEPTH-1 properties of the argument object literal.
+ *
+ * DEFECT FIXED 2026-08-19: the bounded-check regex ran over the WHOLE argument
+ * text, so a `take` on a NESTED RELATION marked the PARENT read bounded.
+ * routes/darshan.ts was the live instance —
+ * `temple.findMany({ select: { ..., darshanStream: { orderBy, take: 1 } }, where })`
+ * — counted as bounded because of the nested `take: 1`, while the temple scan
+ * itself had no bound at all. Catalogue-sized today, but any future unbounded
+ * read that happens to include a relation with a `take` was invisible here.
+ *
+ * Walk the argument tracking bracket depth and keep only the characters sitting
+ * directly inside the outer object literal. A `}` sentinel is appended so a
+ * trailing ES6-shorthand `take` (the last property, with no following
+ * delimiter) still matches `\btake\s*[,:}]`.
+ */
+function topLevelProps(span: string): string {
+  const open = span.indexOf('(');
+  if (open === -1) return '';
+  const inner = span.slice(open + 1, span.length - 1);
+  let depth = 0;
+  let out = '';
+  for (const ch of inner) {
+    if (ch === '{' || ch === '[' || ch === '(') {
+      depth++;
+      if (depth === 1) continue;
+    } else if (ch === '}' || ch === ']' || ch === ')') {
+      depth--;
+      if (depth === 0) continue;
+    }
+    if (depth === 1) out += ch;
+  }
+  return out + '}';
 }
 
 function unboundedSites(): Array<{ file: string; snippet: string }> {
@@ -258,7 +330,10 @@ function unboundedSites(): Array<{ file: string; snippet: string }> {
       // them pushes authors toward the verbose form to appease the ratchet.
       // `\btake\s*[,:}]` covers both; `[,}]` also catches `take` as the last
       // property before the closing brace.
-      if (/\btake\s*[,:}]/.test(args) || /\bcursor\s*[,:}]/.test(args)) continue;
+      // Depth-1 ONLY. A `take` on a nested relation bounds that relation, not
+      // the parent scan — see topLevelProps.
+      const top = topLevelProps(args);
+      if (/\btake\s*[,:}]/.test(top) || /\bcursor\s*[,:}]/.test(top)) continue;
       hits.push({ file: relative(SRC, file), snippet: args.slice(0, 90).replace(/\s+/g, ' ') });
     }
   }
@@ -278,6 +353,43 @@ describe('SCAL-04 ratchet — unbounded findMany', () => {
         `Add take/cursor to the new one, or justify it in review.\n` +
         JSON.stringify(byFile, null, 2),
     ).toBeLessThanOrEqual(BASELINE);
+  });
+
+  // ── the detector's own defects, pinned ──
+  //
+  // Both of these FAIL against the pre-2026-08-19 detector, which is the only
+  // way to know a guard that scans source text actually sees what it claims to.
+
+  it('does not accept a nested-relation take as bounding the parent scan', () => {
+    const src = `
+      const rows = await prisma.temple.findMany({
+        where: { liveDarshanEnabled: true },
+        select: { id: true, darshanStream: { orderBy: { createdAt: 'desc' }, take: 1 } },
+      });
+    `;
+    const args = findManyArgs(stripComments(src));
+    expect(args).toHaveLength(1);
+    const top = topLevelProps(args[0]!);
+    // The nested `take: 1` must NOT appear among the top-level properties.
+    expect(/\btake\s*[,:}]/.test(top)).toBe(false);
+  });
+
+  it('still accepts a real top-level take, including the ES6 shorthand last', () => {
+    const withColon = `prisma.user.findMany({ where: { a: 1 }, take: 20 })`;
+    const shorthandLast = `prisma.user.findMany({ where: { a: 1 }, skip, take })`;
+    for (const src of [withColon, shorthandLast]) {
+      const args = findManyArgs(src);
+      expect(/\btake\s*[,:}]/.test(topLevelProps(args[0]!))).toBe(true);
+    }
+  });
+
+  it('sees findMany written with a space before the paren', () => {
+    // `source.indexOf('findMany(')` missed this entirely, so an unbounded read
+    // written this way was invisible to the ratchet.
+    const src = `const rows = await p.user.findMany ({ where: { blocked: false } });`;
+    const args = findManyArgs(src);
+    expect(args).toHaveLength(1);
+    expect(/\btake\s*[,:}]/.test(topLevelProps(args[0]!))).toBe(false);
   });
 
   it('keeps the broadcast recipient scans bounded', () => {

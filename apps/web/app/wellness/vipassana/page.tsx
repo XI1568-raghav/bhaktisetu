@@ -97,8 +97,8 @@ export default function VipassanaPage() {
 
  <h1
  data-reveal="up-far"
- className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]"
- style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+ className="heading-display text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]"
+ style={{ color: 'var(--color-text)' }}
  >
  Vipassana:{' '}
  <span style={{ color: 'var(--color-primary)' }}>The Art of Living</span>

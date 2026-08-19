@@ -119,8 +119,7 @@ export default async function CityPujaPage({ params }: Params) {
       </header>
 
       <figure className="mb-6">
-        <img
-          src={cp.heroSrc}
+        <img width={1200} height={400}           src={cp.heroSrc}
           alt={cp.heroAlt}
           className="w-full h-64 object-cover rounded-lg bg-saffron-100"
           loading="eager"

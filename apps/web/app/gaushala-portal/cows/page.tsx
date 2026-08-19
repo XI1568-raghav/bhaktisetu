@@ -202,7 +202,7 @@ function CowsPageContent() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>Cow Registry</h1>
+          <h1 className={H1.portal}>Cow Registry</h1>
           <p className="text-[var(--color-text-muted)] text-sm mt-1">
             {cows.length} cows registered
             {needsAttention > 0 && (

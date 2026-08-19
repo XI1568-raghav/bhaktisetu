@@ -22,8 +22,8 @@ export default function SelfOnboardPageShell(props: SelfOnboardPageShellProps) {
           {props.eyebrow}
         </p>
         <h1
-          className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.15] max-w-3xl mx-auto"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text, #1f1b18)' }}
+          className="heading-display text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.15] max-w-3xl mx-auto"
+          style={{ color: 'var(--color-text, #1f1b18)' }}
         >
           {props.title}
         </h1>

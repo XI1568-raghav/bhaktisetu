@@ -6,13 +6,24 @@ import Link from 'next/link';
 import { API_BASE_URL } from '../lib/api-config';
 import { contentSubtitleLabel, pujaSubtitleLabel } from './SearchSubtitle';
 
+/**
+ * CM-12: every string here is a promise about what the box can answer, and
+ * three of them were false. Behind this box are exactly four corpora — the
+ * API's temples / pujaTypes / contentItems / storeProducts — plus the 120-entry
+ * Sanskrit/Veda/Sanatan article index on /search. None of them holds a kundli,
+ * a saint (the 14 live only in lib/bhakti-saints.ts, routed at
+ * /bhakti-saint/<slug>) or a tirth/yatra (11 packages in lib/yatra-data.ts).
+ * Inviting those queries produced a guaranteed "No matches" on the first thing
+ * a devotee typed. Guarded by __tests__/search-store-products.cm12.test.tsx,
+ * which re-checks each claim against the corpora rather than against a list.
+ */
 const ROTATING_PLACEHOLDERS = [
-  'Search puja, temple, kundli, saint…',
-  'Find your kundli…',
-  'Look up a saint…',
+  'Search a puja, temple or aarti…',
   'Find an aarti or chalisa…',
+  'Search puja samagri…',
+  'Look up a temple by city…',
   'Search festivals + muhurat…',
-  'Find a tirth or pilgrimage…',
+  'Find a puja to book…',
 ];
 
 interface SearchResult {
@@ -29,6 +40,11 @@ interface SearchResponse {
  temples: SearchResult[];
  pujas: SearchResult[];
  content: SearchResult[];
+ /**
+  * CM-12: the store bucket. Optional because an older API build does not send
+  * it — an absent key must read as "the server did not say", not as an error.
+  */
+ products?: SearchResult[];
  total: number;
  };
 }
@@ -188,6 +204,11 @@ export function GlobalSearch() {
  { label: 'Pujas', items: data.results.pujas, format: pujaSubtitleLabel },
  { label: 'Temples', items: data.results.temples, format: (s) => (s ?? '').trim() },
  { label: 'Content', items: data.results.content, format: contentSubtitleLabel },
+ {
+ label: 'Puja samagri & store',
+ items: data.results.products ?? [],
+ format: (s) => (s ?? '').trim(),
+ },
  ] as Section[]
  ).filter((s) => s.items.length > 0)
  : [];

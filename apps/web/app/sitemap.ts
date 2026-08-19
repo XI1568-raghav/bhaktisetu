@@ -4,6 +4,7 @@ import { SHLOKAS } from '../lib/shlokas';
 import { topicSlugs as freePanditTopicSlugs } from '../lib/free-pandit-topics';
 import { CITY_PUJA_SLUGS } from '../lib/city-pujas';
 import { canonicalTempleSlug } from '../lib/temple-slug';
+import { HELP_ARTICLES, isUnreviewedTranslation } from '../lib/help-articles';
 
 const BASE_URL = 'https://darshya.online';
 // deploy-stamp 2026-06-05 #7 — CF rebuild trigger for 5f71b48 dead-href + /discover GROUPS 54->61 (HEAD was [skip ci])
@@ -899,6 +900,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  // I-09 residual (triage 2026-08-15): `/help` was in the sitemap but nothing
+  // below it was, so the seven English guides had zero crawler discovery.
+  //
+  // The filter is the load-bearing half. app/help/articles/[lang]/[slug] serves
+  // `robots: { index: false }` for exactly the articles where
+  // `isUnreviewedTranslation` is true (a non-English translation with no human
+  // reviewer). Listing a noindex URL in a sitemap is a Search Console error, so
+  // the same predicate that de-indexes an article must also keep it out of
+  // here — imported rather than re-derived so the two cannot drift.
+  const helpArticleEntries = HELP_ARTICLES.filter((a) => !isUnreviewedTranslation(a)).map(
+    (a) => ({
+      url: `${BASE_URL}/help/articles/${a.lang}/${a.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.4,
+    }),
+  );
+
   // Pages whose rendered body is derived from the current date on every
   // request, verified against each route: /today (day deity + tithi +
   // next-festival countdown), /panchang and /panchang/[city] (today's
@@ -982,6 +1001,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...langEntries,
     taChennaiEntry,
     ...shlokaEntries,
+    ...helpArticleEntries,
     ...freePanditEntries,
     ...cityPujaEntries,
     { url: `${BASE_URL}/yatra/destinations`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },

@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAstrologers, useHoroscope } from '@poojly/api-client';
+import { astrologerSupplyLabel } from '../../lib/astrologer-supply-label';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 interface Rashi {
@@ -107,7 +108,12 @@ export default function AstrologyScreen() {
   const horoscopeQuery = useHoroscope(selected ? selected.name.toLowerCase() : '');
   const [refreshing, setRefreshing] = useState(false);
 
-  const astrologerCount = astrologersQuery.data?.total ?? astrologersQuery.data?.astrologers?.length ?? 0;
+  // AW-02: `data.total` is EVERY approved astrologer, not the online ones, and
+  // this screen printed it as "{n} astrologers online" — 3 of 3 real profiles
+  // read isOnline:false, so the app claimed supply that was not there. The
+  // label derivation is a pure module so it is actually testable (the mobile
+  // runner is node-environment and renders no React Native).
+  const astrologerSupply = astrologerSupplyLabel(astrologersQuery.data as never);
   const horoscopeRaw = horoscopeQuery.data?.horoscope as { prediction?: string } | undefined;
   const dailyHoroscope =
     horoscopeRaw?.prediction ??
@@ -183,7 +189,7 @@ export default function AstrologyScreen() {
         {/* Astrology Services */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            Astrology Services{astrologerCount > 0 ? ` • ${astrologerCount} astrologers online` : ''}
+            Astrology Services{astrologerSupply}
           </Text>
           <View style={styles.servicesList}>
             {services.map((service) => (

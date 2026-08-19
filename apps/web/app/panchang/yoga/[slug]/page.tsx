@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PANCHANG_YOGAS } from '../../../../lib/panchang-yogas';
@@ -81,7 +83,7 @@ export default async function YogaDetailPage({ params }: { params: Promise<{ slu
 
     <header className="mt-4">
      <p className="text-xs uppercase tracking-wider text-saffron-600">Yoga #{y.number} of 27</p>
-     <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">{y.name} Yoga</h1>
+     <h1 className={`${H1.catalogue} mt-1`}>{y.name} Yoga</h1>
      <p className="mt-1 text-lg text-saffron-700">{y.sanskrit}</p>
      <p className="mt-2 text-sm text-gray-700"><span className="font-semibold">Presiding deity:</span> {y.deity}</p>
     </header>

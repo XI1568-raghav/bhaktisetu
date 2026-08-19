@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PANCHANG_KARANAS } from '../../../../lib/panchang-karanas';
@@ -83,7 +85,7 @@ export default async function KaranaDetailPage({ params }: { params: Promise<{ s
      <p className="text-xs uppercase tracking-wider text-saffron-600">
       Karana #{k.number} of 11 · {k.category === 'chara' ? 'Chara (Movable)' : 'Sthira (Fixed)'}
      </p>
-     <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">{k.name} Karana</h1>
+     <h1 className={`${H1.catalogue} mt-1`}>{k.name} Karana</h1>
      <p className="mt-1 text-lg text-saffron-700">{k.sanskrit}</p>
      <p className="mt-2 text-sm text-gray-700"><span className="font-semibold">Presiding deity:</span> {k.deity}</p>
     </header>

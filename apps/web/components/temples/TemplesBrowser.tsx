@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+// DU-03: the one primary-CTA recipe. Layout-only extras in the third slot —
+// never h-*, px-*, py-* or rounded-*, which is the invariant every call site holds.
+import { buttonClass } from '../ui/button-recipe';
 import { H1 } from '../ui/heading-recipe';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -335,7 +338,7 @@ export function TemplesBrowser({
  <button
  type="button"
  onClick={resetFilters}
- className="mt-4 inline-flex items-center gap-1 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'md', 'mt-4')}
  >
  Clear all filters
  </button>

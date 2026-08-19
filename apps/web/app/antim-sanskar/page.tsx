@@ -107,9 +107,8 @@ export default function AntimSanskarPage() {
             Antim Sanskar — Last Rites Support
           </p>
           <h1
-            className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] max-w-3xl"
+            className="heading-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] max-w-3xl"
             style={{
-              fontFamily: 'var(--font-display)',
               color: 'var(--color-text)',
             }}
           >

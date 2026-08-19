@@ -91,14 +91,47 @@ function robotsBlocks(route: string): boolean {
  * `description:` at the metadata root. Excludes `openGraph.description` and
  * `twitter.description`, which resolve separately and do NOT satisfy
  * <meta name="description"> — a page with only those still emits the root's.
+ *
+ * The regex alone does NOT do that: `/(^|[^\w$.])description\s*:/` happily
+ * matches the `description:` INSIDE an `openGraph: { … }` object literal, so a
+ * page carrying only an OG description used to read as covered. No page in the
+ * tree exploited that today (measured: 0), but it was a live escape hatch, so
+ * the nested blocks are brace-matched away before the test runs.
  */
 const DECLARES_DESCRIPTION = /(^|[^\w$.])description\s*:/;
+
+/** Remove `openGraph: { … }` / `twitter: { … }` object literals, braces balanced. */
+function stripNestedMetaBlocks(src: string): string {
+  let out = src;
+  for (const key of ['openGraph', 'twitter']) {
+    for (;;) {
+      const m = new RegExp(`\\b${key}\\s*:\\s*\\{`).exec(out);
+      if (!m) break;
+      let depth = 0;
+      let end = -1;
+      for (let i = m.index + m[0].length - 1; i < out.length; i++) {
+        if (out[i] === '{') depth++;
+        else if (out[i] === '}') {
+          depth--;
+          if (depth === 0) {
+            end = i;
+            break;
+          }
+        }
+      }
+      if (end < 0) break; // unbalanced — leave it rather than eat the file
+      out = out.slice(0, m.index) + out.slice(end + 1);
+    }
+  }
+  return out;
+}
 
 const declares = (file: string) =>
   fs.existsSync(file) && DECLARES_METADATA.test(stripComments(fs.readFileSync(file, 'utf8')));
 
 const describes = (file: string) =>
-  fs.existsSync(file) && DECLARES_DESCRIPTION.test(stripComments(fs.readFileSync(file, 'utf8')));
+  fs.existsSync(file) &&
+  DECLARES_DESCRIPTION.test(stripNestedMetaBlocks(stripComments(fs.readFileSync(file, 'utf8'))));
 
 /**
  * A page whose entire job is to forward to another URL.
@@ -196,7 +229,7 @@ const INHERIT_ROOT_DEFAULTS = PAGES.filter(
  * into a server shell plus a client tab bar, which is a change to render code,
  * not to metadata.
  */
-const BASELINE = 1;
+const BASELINE = 0;
 
 /**
  * The other half of the finding: 129 pages shared one <meta name="description">.
@@ -216,15 +249,37 @@ const INHERIT_ROOT_DESCRIPTION = PAGES.filter(
   .map(relOf)
   .sort();
 
-/** Same story as BASELINE, and the same single leftover. */
-const DESCRIPTION_BASELINE = 1;
+/** Same story as BASELINE. Zero: every indexable page writes its own. */
+const DESCRIPTION_BASELINE = 0;
 
 describe('[SEO-09] indexable pages do not fall through to the root title', () => {
   it('the guard is actually measuring something', () => {
     // A parsing regression that made every page look "covered" would turn the
-    // ratchet below into a test that can never fail.
+    // ratchet below into a test that can never fail. The backlog is now zero,
+    // so "some page is still uncovered" can no longer serve as the liveness
+    // proof — the DETECTORS are exercised against synthetic sources instead.
     expect(PAGES.length).toBeGreaterThan(300);
-    expect(INHERIT_ROOT_DEFAULTS.length).toBeGreaterThan(0);
+
+    // A page with no metadata at all must read as uncovered...
+    expect(DECLARES_METADATA.test('export default function P() { return <div/>; }')).toBe(false);
+    expect(DECLARES_DESCRIPTION.test('export const metadata = { title: "x" };')).toBe(false);
+    // ...and a real export must read as covered.
+    expect(DECLARES_METADATA.test('export const metadata: Metadata = { title: "x" };')).toBe(true);
+    expect(DECLARES_METADATA.test('export async function generateMetadata() {}')).toBe(true);
+    expect(DECLARES_DESCRIPTION.test('export const metadata = { description: "x" };')).toBe(true);
+    // Comment stripping is what keeps prose from marking a page covered.
+    expect(stripComments('/* export const metadata */').trim()).toBe('');
+    // A description nested under openGraph/twitter must NOT count as covered:
+    // Next resolves those separately and such a page still emits the root's
+    // <meta name="description">.
+    const ogOnly = 'export const metadata = { title: "x", openGraph: { description: "y" } };';
+    expect(DECLARES_DESCRIPTION.test(ogOnly), 'raw regex is the hole').toBe(true);
+    expect(DECLARES_DESCRIPTION.test(stripNestedMetaBlocks(ogOnly))).toBe(false);
+    expect(
+      DECLARES_DESCRIPTION.test(
+        stripNestedMetaBlocks('export const metadata = { description: "d", twitter: { card: "s" } };'),
+      ),
+    ).toBe(true);
   });
 
   it('the redirect-only exclusion covers exactly the routes that answer a redirect', () => {

@@ -63,9 +63,8 @@ export default function ContactPage() {
             Contact Us
           </p>
           <h1
-            className="text-2xl sm:text-3xl font-bold mb-4"
+            className="heading-display text-2xl sm:text-3xl font-bold mb-4"
             style={{
-              fontFamily: "var(--font-display)",
               color: "var(--color-text)",
               lineHeight: "var(--leading-tight)",
             }}
