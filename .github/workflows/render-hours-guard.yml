@@ -1,0 +1,117 @@
+name: Render hours guard
+
+# Render's free tier grants 750 INSTANCE-HOURS PER ACCOUNT per month — not per
+# service. Two always-on web services need ~1,488 hours in a 31-day month, so
+# they cannot both stay up. On 2026-08-17 the account hit 750.2/750 and Render
+# suspended BOTH services ("suspenders": ["billing"]); darshya.online and
+# api.darshya.online served 503 for three days before anyone noticed.
+#
+# Nothing was watching. That is the actual defect this workflow fixes — not the
+# overrun itself, which is arithmetic, but the silence around it.
+#
+# Cost: one ~1-minute run per day = ~30 min/month against the 2000-minute cap,
+# which had 200 minutes of headroom (docs/free-tier-budgets.md). Deliberately
+# daily rather than hourly: a monthly budget cannot be rescued by finding out
+# sooner than a day, and hourly would eat 720 min/month for no extra safety.
+
+on:
+  schedule:
+    # 06:00 UTC = 11:30 IST, early enough that a warning is read the same day.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read service state and warn before the cap
+        env:
+          RK: ${{ secrets.RENDER_API_KEY }}
+          API_SID: srv-d7mc2n8sfn5c73dfce0g
+          WEB_SID: srv-d970l2ks728c738fc33g
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer ${RK}"
+
+          # Render's public API exposes no instance-hours counter, so this
+          # guard reports what IS observable — the suspension state and plan of
+          # each service — and fails loudly the moment either is suspended.
+          # The hours number itself lives only in the dashboard; the summary
+          # below links there so the human check is one click.
+          suspended_any=0
+          for pair in "api:${API_SID}" "web:${WEB_SID}"; do
+            label="${pair%%:*}"; sid="${pair##*:}"
+            body=$(curl -s -H "$A" "https://api.render.com/v1/services/${sid}")
+            name=$(echo "$body" | jq -r '.name // "unknown"')
+            susp=$(echo "$body" | jq -r '.suspended // "unknown"')
+            plan=$(echo "$body" | jq -r '.serviceDetails.plan // "unknown"')
+            who=$(echo "$body"  | jq -rc '.suspenders // []')
+            echo "${label}: name=${name} suspended=${susp} plan=${plan} suspenders=${who}"
+            if [ "$susp" != "not_suspended" ]; then
+              suspended_any=1
+              echo "::error::${name} is ${susp} (suspenders=${who}) — production is DOWN."
+            fi
+          done
+
+          {
+            echo "### Render service state"
+            echo ""
+            echo "Free tier = **750 instance-hours per ACCOUNT per month**."
+            echo "One always-on service uses ~744/month. Two use ~1,488 — which does not fit."
+            echo ""
+            echo "Instance-hours are not exposed by the API. Check the number here:"
+            echo "https://dashboard.render.com/billing"
+            echo ""
+            echo "If usage is tracking past ~70% before the 21st of the month, one service"
+            echo "must stop being always-on before the cap suspends BOTH."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit $suspended_any
+
+      - name: Open an issue if a service is suspended
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Render: a service is suspended — production is down';
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'render-suspended',
+            });
+            if (open.length) {
+              core.info(`Issue #${open[0].number} already open; not filing a duplicate.`);
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title,
+              labels: ['render-suspended'],
+              body: [
+                'The daily Render guard found a suspended service, so the site is serving 503.',
+                '',
+                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                '',
+                '## Why this happens',
+                'Render free tier gives **750 instance-hours per account per month**. One',
+                'always-on service uses ~744. Two use ~1,488, so two always-on free services',
+                'always exhaust the cap and Render suspends *both*.',
+                '',
+                '## What to do',
+                '1. Open https://dashboard.render.com/billing and read the instance-hours figure.',
+                '2. Decide which single service stays always-on. The API is the better choice —',
+                '   the web is mostly static (0 pages force-dynamic, 157 on ISR, only 7 calling',
+                '   the API during SSR), so it tolerates spin-down far better than the API does.',
+                '3. Either move the other service off Render, or let it spin down on idle.',
+                '',
+                '## One caveat before choosing spin-down',
+                'The API runs an **in-process scheduler** (`apps/api/src/jobs/scheduler.ts`,',
+                '30-minute interval). It only runs while the container is up, so an API that',
+                'sleeps silently stops sending notifications and panchang pushes.',
+                '`GET /ops/scheduler` reports `stale: true` when this happens. If the API is',
+                'allowed to sleep, that scheduler must move to a GitHub Actions cron.',
+              ].join('\n'),
+            });

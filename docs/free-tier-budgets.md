@@ -16,7 +16,38 @@
 | **Supabase** DB                              | 500 MB                            | hard                 | Prisma writes.                                           | supabase.com/dashboard → storage    |
 | **Supabase** egress                          | 5 GB/mo                           | monthly              | API responses, image fetches.                            | supabase.com/dashboard → bandwidth  |
 | **Supabase** storage                         | 1 GB                              | hard                 | Avatar / temple image uploads.                           | supabase.com/dashboard → storage    |
-| **Render** web service                       | 750 hr/mo (always-on free)        | monthly              | API container uptime. Free spins down after 15 min idle. | render.com/dashboard                |
+| **Render** instance-hours (ACCOUNT-WIDE)     | 750 hr/mo **shared by ALL services** | monthly           | **TWO services now: `bhaktisetu` (API) + `darshya-web`. See the note below — they cannot both be always-on.** | render.com/billing |
+
+> ### ⚠ Render instance-hours — corrected 2026-08-20 after an outage
+> This row previously read *"750 hr/mo, API container uptime"*, describing **one**
+> service. The Cloudflare Pages → Render cutover added a **second** (`darshya-web`)
+> and this budget was never updated, so nothing modelled the real cost.
+>
+> The 750 hours are **per ACCOUNT, not per service**:
+>
+> | Scenario | Hours in a 31-day month | Fits in 750? |
+> |---|---:|---|
+> | 1 service always-on | 744 | yes, 6 h spare |
+> | **2 services always-on** | **1,488** | **no — over by 738** |
+>
+> On **2026-08-17** the account reached **750.2 / 750** and Render suspended **both**
+> services (`"suspenders": ["billing"]`). darshya.online and api.darshya.online
+> served HTTP 503 for three days before anyone noticed, because nothing was
+> watching. `.github/workflows/render-hours-guard.yml` now checks daily and opens
+> an issue on suspension.
+>
+> **No amount of cron tuning fixes this.** Only three workflows wake production
+> (`agents-daily`, `agents-health` ×2/day, `e2e` weekly) — about 23 h/month, or 3%
+> of a 738-hour deficit. The overrun is structural.
+>
+> If one service must sleep, it should be the **web**: it is mostly static
+> (0 pages `force-dynamic`, 157 on ISR, only 7 calling the API during SSR), so it
+> tolerates spin-down far better than the API. **But** the API runs an in-process
+> scheduler (`apps/api/src/jobs/scheduler.ts`, 30-min interval) that only ticks
+> while the container is up — an API allowed to sleep silently stops notifications
+> and panchang pushes, and `GET /ops/scheduler` will report `stale: true`. Move that
+> scheduler to a GitHub Actions cron before letting the API sleep.
+
 | **Render** build minutes                     | 500/mo                            | monthly              | API deploys.                                             | render.com/dashboard                |
 | **Cloudflare Workers** (separate from Pages) | 100k req/day                      | daily                | Not currently used; don't enable without budget.         | n/a                                 |
 | **FCM** push notifications                   | unlimited                         | n/a                  | n/a                                                      | n/a                                 |
