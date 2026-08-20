@@ -1,5 +1,5 @@
 {
-  "lastFullRefresh": "2026-08-20T01:53:24.176Z",
+  "lastFullRefresh": "2026-08-20T13:12:36.989Z",
   "entries": {
     "supabase:donations_persisted": {
       "metric": "donations_persisted",
@@ -455,811 +455,811 @@
       "metric": "funnel_events_wired",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:ab_flags_active": {
       "metric": "ab_flags_active",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:ai_pandit_responses_per_day": {
       "metric": "ai_pandit_responses_per_day",
       "stale": true,
       "error": "HTTP 500",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:wedding_muhurat_lookups": {
       "metric": "wedding_muhurat_lookups",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:voice_pandit_sessions_daily": {
       "metric": "voice_pandit_sessions_daily",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:affiliate_tracked_signups": {
       "metric": "affiliate_tracked_signups",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:sanskrit_tutor_sessions_daily": {
       "metric": "sanskrit_tutor_sessions_daily",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:preseed_landing_signups": {
       "metric": "preseed_landing_signups",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:tier2_city_mau_sum": {
       "metric": "tier2_city_mau_sum",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:sanskrit_tutor_dau": {
       "metric": "sanskrit_tutor_dau",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:nps_score": {
       "metric": "nps_score",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:ar_puja_sessions_daily": {
       "metric": "ar_puja_sessions_daily",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:city_active_users_indore": {
       "metric": "city_active_users_indore",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:city_active_users_bhopal": {
       "metric": "city_active_users_bhopal",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:city_active_users_nagpur": {
       "metric": "city_active_users_nagpur",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:city_active_users_patna": {
       "metric": "city_active_users_patna",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:city_active_users_bhubaneswar": {
       "metric": "city_active_users_bhubaneswar",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:new_cities_live_total": {
       "metric": "new_cities_live_total",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:mau_total": {
       "metric": "mau_total",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:retention_d30_pct": {
       "metric": "retention_d30_pct",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:au_signups_monthly": {
       "metric": "au_signups_monthly",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:nri_mix_pct": {
       "metric": "nri_mix_pct",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:adopt_temple_conversion_pct": {
       "metric": "adopt_temple_conversion_pct",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "posthog:festival_pre_sale_conv_pct": {
       "metric": "festival_pre_sale_conv_pct",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "render_logs:api_p95_ms": {
       "metric": "api_p95_ms",
       "stale": true,
       "error": "HTTP 404",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "cf_analytics:pages_cdn_cached": {
       "metric": "pages_cdn_cached",
       "stale": true,
       "error": "GraphQL errors: Syntax Error GraphQL (1:1) Unexpected Name \"TBD\"\n\n1: TBD-populate-before-orchestrator-go-live\n   ^\n",
-      "fetchedAt": "2026-08-19T13:11:34.805Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:pages_with_csp_nonce": {
       "metric": "pages_with_csp_nonce",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:pages_with_page_schema": {
       "metric": "pages_with_page_schema",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:wcag_fixes_shipped": {
       "metric": "wcag_fixes_shipped",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:inline_styles_remaining": {
       "metric": "inline_styles_remaining",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:fabricated_entity_removed": {
       "metric": "fabricated_entity_removed",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:posthog_web_active": {
       "metric": "posthog_web_active",
       "stale": true,
       "error": "Command failed: grep -rE 'posthog\\.init|PostHogProvider' apps/web/app/layout.tsx apps/web/components/Analytics.tsx | wc -l (target: ≥1)\n/bin/sh: 1: Syntax error: \"(\" unexpected\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:pillar_pages_shipped": {
       "metric": "pillar_pages_shipped",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:cluster_articles_shipped": {
       "metric": "cluster_articles_shipped",
       "stale": true,
       "error": "Command failed: gh-count-md-files-in-docs-agent-reports-blog-drafts-where-tag-includes-deity-of-day-cluster-and-created-after-2026-01-01\n/bin/sh: 1: gh-count-md-files-in-docs-agent-reports-blog-drafts-where-tag-includes-deity-of-day-cluster-and-created-after-2026-01-01: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:mock_fallback_killed": {
       "metric": "mock_fallback_killed",
       "stale": true,
       "error": "Command failed: grep -nE 'mockData|fallback.*mock|silent.*fallback' apps/web/app/pujas/book/page.tsx | wc -l (target: 0)\n/bin/sh: 1: Syntax error: \"(\" unexpected\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:mock_portals_cleaned": {
       "metric": "mock_portals_cleaned",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:shloka_card_live": {
       "metric": "shloka_card_live",
       "stale": true,
       "error": "Command failed: gh-1-if-apps-web-app-shloka-card-page-tsx-exists-and-route-returns-200-on-darshya-online-shloka-card-with-og-preview-and-share-buttons\n/bin/sh: 1: gh-1-if-apps-web-app-shloka-card-page-tsx-exists-and-route-returns-200-on-darshya-online-shloka-card-with-og-preview-and-share-buttons: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:referral_active": {
       "metric": "referral_active",
       "stale": true,
       "error": "Command failed: gh-1-if-apps-api-src-routes-referrals-ts-exists-and-referral-credit-100-inr-applied-on-claim-after-first-paid-booking-and-refer-page-tsx-live\n/bin/sh: 1: gh-1-if-apps-api-src-routes-referrals-ts-exists-and-referral-credit-100-inr-applied-on-claim-after-first-paid-booking-and-refer-page-tsx-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:multilingual_macros_count": {
       "metric": "multilingual_macros_count",
       "stale": true,
       "error": "Command failed: sql/cs/multilingual-macro-impact.sql\n/bin/sh: 1: sql/cs/multilingual-macro-impact.sql: Permission denied\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:i18n_coverage_pct": {
       "metric": "i18n_coverage_pct",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:images_optimized_pct": {
       "metric": "images_optimized_pct",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:pitch_deck_v2_shipped": {
       "metric": "pitch_deck_v2_shipped",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:cs_macros_count": {
       "metric": "cs_macros_count",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:render_scale_plan_documented": {
       "metric": "render_scale_plan_documented",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:dpdp_user_rights_endpoint_live": {
       "metric": "dpdp_user_rights_endpoint_live",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:programmatic_pages_live": {
       "metric": "programmatic_pages_live",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:help_articles_published": {
       "metric": "help_articles_published",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:i18n_string_coverage_pct": {
       "metric": "i18n_string_coverage_pct",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:b2b_api_endpoints_live": {
       "metric": "b2b_api_endpoints_live",
       "stale": true,
       "error": "Command failed: grep -c 'fastify.(get|post|patch|delete).*\\\"/api/v1/b2b' apps/api/src/routes/b2b-*.ts -- count of B2B REST endpoints registered; target 15\ngrep: apps/api/src/routes/b2b-*.ts: No such file or directory\ngrep: count: No such file or directory\ngrep: of: No such file or directory\ngrep: B2B: No such file or directory\ngrep: REST: No such file or directory\ngrep: endpoints: No such file or directory\ngrep: registered: No such file or directory\n/bin/sh: 1: target: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:sentry_slo_dashboard_live": {
       "metric": "sentry_slo_dashboard_live",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:burn_dashboard_live": {
       "metric": "burn_dashboard_live",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:read_replica_decision_documented": {
       "metric": "read_replica_decision_documented",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:failover_rto_minutes": {
       "metric": "failover_rto_minutes",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:failover_runbook_complete": {
       "metric": "failover_runbook_complete",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:privacy_policy_v2_live": {
       "metric": "privacy_policy_v2_live",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:cs_macros_documented": {
       "metric": "cs_macros_documented",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:wa_support_active": {
       "metric": "wa_support_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:user_interviews_completed": {
       "metric": "user_interviews_completed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:multilingual_macros_shipped": {
       "metric": "multilingual_macros_shipped",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:razorpay_verify_raw_enabled": {
       "metric": "razorpay_verify_raw_enabled",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:jti_rotation_enabled": {
       "metric": "jti_rotation_enabled",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:email_session_expiry_enforced": {
       "metric": "email_session_expiry_enforced",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:astrologer_uuid_migrated": {
       "metric": "astrologer_uuid_migrated",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:fcm_push_live": {
       "metric": "fcm_push_live",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:stripe_elements_embedded": {
       "metric": "stripe_elements_embedded",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:server_side_priest_filter": {
       "metric": "server_side_priest_filter",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:mcp_servers_configured": {
       "metric": "mcp_servers_configured",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:incorp_decision_made": {
       "metric": "incorp_decision_made",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:business_bank_open": {
       "metric": "business_bank_open",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:razorpay_live_active": {
       "metric": "razorpay_live_active",
       "value": 0,
       "stale": false,
-      "fetchedAt": "2026-08-20T01:53:24.344Z"
+      "fetchedAt": "2026-08-20T13:12:37.213Z"
     },
     "manual:stripe_live_active": {
       "metric": "stripe_live_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:city_active_tirupati": {
       "metric": "city_active_tirupati",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:city_active_delhi": {
       "metric": "city_active_delhi",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:city_active_pune": {
       "metric": "city_active_pune",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:city_active_hyderabad": {
       "metric": "city_active_hyderabad",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:first_hire_trigger_documented": {
       "metric": "first_hire_trigger_documented",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:contractor_jds_drafted": {
       "metric": "contractor_jds_drafted",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:uptime_monitors_active": {
       "metric": "uptime_monitors_active",
       "value": 4,
       "stale": false,
-      "fetchedAt": "2026-08-20T01:53:24.344Z"
+      "fetchedAt": "2026-08-20T13:12:37.213Z"
     },
     "manual:cron_auth_token_set": {
       "metric": "cron_auth_token_set",
       "value": 0,
       "stale": false,
-      "fetchedAt": "2026-08-20T01:53:24.344Z"
+      "fetchedAt": "2026-08-20T13:12:37.213Z"
     },
     "manual:sentry_dsn_active": {
       "metric": "sentry_dsn_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:refund_policy_lawyer_reviewed": {
       "metric": "refund_policy_lawyer_reviewed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:priest_contract_template": {
       "metric": "priest_contract_template",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:reddit_comments_posted": {
       "metric": "reddit_comments_posted",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:gsc_verified": {
       "metric": "gsc_verified",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:social_accounts_active": {
       "metric": "social_accounts_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:social_posts_scheduled": {
       "metric": "social_posts_scheduled",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:press_pitches_sent": {
       "metric": "press_pitches_sent",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:wa_meta_verified": {
       "metric": "wa_meta_verified",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:nri_ads_live": {
       "metric": "nri_ads_live",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:astrology_decision_made": {
       "metric": "astrology_decision_made",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:nri_sub_decision_made": {
       "metric": "nri_sub_decision_made",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:replay_24h_active": {
       "metric": "replay_24h_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:iskcon_intros_made": {
       "metric": "iskcon_intros_made",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:baps_intro_status": {
       "metric": "baps_intro_status",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:sringeri_intro_status": {
       "metric": "sringeri_intro_status",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:diaspora_orgs_engaged": {
       "metric": "diaspora_orgs_engaged",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:investor_emails_sent": {
       "metric": "investor_emails_sent",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:verified_temples_count_varanasi": {
       "metric": "verified_temples_count_varanasi",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:verified_temples_count_bengaluru": {
       "metric": "verified_temples_count_bengaluru",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:verified_temples_count_mumbai": {
       "metric": "verified_temples_count_mumbai",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:tier2_escalation_live": {
       "metric": "tier2_escalation_live",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:mobile_booking_flow_live": {
       "metric": "mobile_booking_flow_live",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:unified_search_active": {
       "metric": "unified_search_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:push_notifications_active": {
       "metric": "push_notifications_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:webhook_idempotency_active": {
       "metric": "webhook_idempotency_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:n_plus_1_queries_fixed": {
       "metric": "n_plus_1_queries_fixed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:job_queue_active": {
       "metric": "job_queue_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:rate_limit_enforced": {
       "metric": "rate_limit_enforced",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:push_deep_link_active": {
       "metric": "push_deep_link_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:sentry_release_tracking": {
       "metric": "sentry_release_tracking",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:offline_page_active": {
       "metric": "offline_page_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:unit_econ_dashboard_live": {
       "metric": "unit_econ_dashboard_live",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:accelerator_applications": {
       "metric": "accelerator_applications",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:wa_diaspora_groups_seeded": {
       "metric": "wa_diaspora_groups_seeded",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:contractors_hired": {
       "metric": "contractors_hired",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:sentry_events_monthly": {
       "metric": "sentry_events_monthly",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:supabase_backup_active": {
       "metric": "supabase_backup_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:dpdp_audit_completed": {
       "metric": "dpdp_audit_completed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:producthunt_rank_day": {
       "metric": "producthunt_rank_day",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:voice_content_published": {
       "metric": "voice_content_published",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:influencer_partnerships": {
       "metric": "influencer_partnerships",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:nri_ads_spend_monthly": {
       "metric": "nri_ads_spend_monthly",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:youtube_subscribers": {
       "metric": "youtube_subscribers",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:twitter_followers": {
       "metric": "twitter_followers",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:ios_testflight_users": {
       "metric": "ios_testflight_users",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:push_notification_open_rate": {
       "metric": "push_notification_open_rate",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:iskcon_loi_signed": {
       "metric": "iskcon_loi_signed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:baps_meeting_held": {
       "metric": "baps_meeting_held",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:angel_meetings_held": {
       "metric": "angel_meetings_held",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:b2b_pilots_scoped": {
       "metric": "b2b_pilots_scoped",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:term_sheets_received": {
       "metric": "term_sheets_received",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:verified_temples_count_delhi": {
       "metric": "verified_temples_count_delhi",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:verified_temples_count_pune": {
       "metric": "verified_temples_count_pune",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:verified_temples_count_hyderabad": {
       "metric": "verified_temples_count_hyderabad",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:iskcon_temples_onboarded": {
       "metric": "iskcon_temples_onboarded",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:cs_p50_response_minutes": {
       "metric": "cs_p50_response_minutes",
@@ -1271,241 +1271,241 @@
       "metric": "wa_bot_auto_resolve_pct",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:ios_app_store_live": {
       "metric": "ios_app_store_live",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:preseed_raised_usd": {
       "metric": "preseed_raised_usd",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:unit_econ_memo_published": {
       "metric": "unit_econ_memo_published",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:gst_tds_filings_clean": {
       "metric": "gst_tds_filings_clean",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:senior_contractor_active": {
       "metric": "senior_contractor_active",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:contractors_filled_count": {
       "metric": "contractors_filled_count",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:sentry_slo_alerts_actionable_pct": {
       "metric": "sentry_slo_alerts_actionable_pct",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:dpdp_audit_complete": {
       "metric": "dpdp_audit_complete",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:gdpr_compliance_complete": {
       "metric": "gdpr_compliance_complete",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:founder_threads_published": {
       "metric": "founder_threads_published",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:reddit_ama_upvotes": {
       "metric": "reddit_ama_upvotes",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:spaces_live_attendees_avg": {
       "metric": "spaces_live_attendees_avg",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:press_articles_published": {
       "metric": "press_articles_published",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:podcasts_guested": {
       "metric": "podcasts_guested",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:anchor_loi_signed": {
       "metric": "anchor_loi_signed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:baps_agreement_signed": {
       "metric": "baps_agreement_signed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:vc_meetings_held": {
       "metric": "vc_meetings_held",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:angellist_committed_usd": {
       "metric": "angellist_committed_usd",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:corporate_diwali_accounts": {
       "metric": "corporate_diwali_accounts",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:verified_temples_new_cities": {
       "metric": "verified_temples_new_cities",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:baps_temples_onboarded": {
       "metric": "baps_temples_onboarded",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:seed_raised_usd": {
       "metric": "seed_raised_usd",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:series_a_deck_complete": {
       "metric": "series_a_deck_complete",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:profitable_months_streak": {
       "metric": "profitable_months_streak",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:eu_nri_market_size_usd": {
       "metric": "eu_nri_market_size_usd",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:contractors_total": {
       "metric": "contractors_total",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:oncall_rotation_live": {
       "metric": "oncall_rotation_live",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:monthly_infra_cost_inr": {
       "metric": "monthly_infra_cost_inr",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:temple_master_agreement_signed": {
       "metric": "temple_master_agreement_signed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:tier1_media_pickup": {
       "metric": "tier1_media_pickup",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:csr_match_partners": {
       "metric": "csr_match_partners",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:influencer_collabs_total": {
       "metric": "influencer_collabs_total",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:podcast_episodes_aired": {
       "metric": "podcast_episodes_aired",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:whitelabel_temple_csat": {
       "metric": "whitelabel_temple_csat",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:anchor_chain_temples_committed": {
       "metric": "anchor_chain_temples_committed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:b2b_pilot_customers_signed": {
       "metric": "b2b_pilot_customers_signed",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:vc_term_sheets": {
       "metric": "vc_term_sheets",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:corporate_diwali_revenue": {
       "metric": "corporate_diwali_revenue",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:verified_temples_total": {
       "metric": "verified_temples_total",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:b2b_chain_temples_live": {
       "metric": "b2b_chain_temples_live",
@@ -1571,61 +1571,61 @@
       "metric": "max_contact_count_bumped",
       "value": 3,
       "stale": false,
-      "fetchedAt": "2026-08-20T01:53:24.231Z"
+      "fetchedAt": "2026-08-20T13:12:37.079Z"
     },
     "gh_repo:marketplace_subs_table_shipped": {
       "metric": "marketplace_subs_table_shipped",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "gh_repo:waitlist_modal_active": {
       "metric": "waitlist_modal_active",
       "stale": true,
       "error": "Command failed: TBD-populate-before-orchestrator-go-live\n/bin/sh: 1: TBD-populate-before-orchestrator-go-live: not found\n",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:temple_reply_rate_pct": {
       "metric": "temple_reply_rate_pct",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:wa_warm_intros_sent": {
       "metric": "wa_warm_intros_sent",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:razorpay_e2e_tested": {
       "metric": "razorpay_e2e_tested",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:city_focus_locked": {
       "metric": "city_focus_locked",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:resend_domain_verified": {
       "metric": "resend_domain_verified",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:resend_key_rotated": {
       "metric": "resend_key_rotated",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:founder_tweets_posted": {
       "metric": "founder_tweets_posted",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:email_v2_personalized_sent": {
       "metric": "email_v2_personalized_sent",
@@ -1637,13 +1637,13 @@
       "metric": "temple_calls_made",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:wa_warm_referrals_sent": {
       "metric": "wa_warm_referrals_sent",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "supabase:referral_paid_conversions_per_month": {
       "metric": "referral_paid_conversions_per_month",
@@ -1655,25 +1655,25 @@
       "metric": "founder_inbox_auto_ack_pct",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:warm_outreach_replies_per_week": {
       "metric": "warm_outreach_replies_per_week",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:b2b_qualified_leads": {
       "metric": "b2b_qualified_leads",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     },
     "manual:wa_broadcast_subscribers": {
       "metric": "wa_broadcast_subscribers",
       "stale": true,
       "error": "no manual value",
-      "fetchedAt": "2026-08-20T01:53:24.176Z"
+      "fetchedAt": "2026-08-20T13:12:36.989Z"
     }
   }
 }
