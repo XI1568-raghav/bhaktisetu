@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BookOpen, Clock, ArrowRight } from 'lucide-react';
 import { CHALISAS } from '../../lib/chalisas';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -72,6 +73,21 @@ export default function ChalisaIndex() {
           </Link>
         ))}
       </div>
+
+      {/* CI-05: this index offered no route to anything bookable at all. The
+          aarti index already carried this CTA; the chalisa index did not. */}
+      <section className="mt-12 rounded-2xl bg-gradient-to-br from-saffron-50 to-amber-50 border border-saffron-200 p-6 text-center">
+        <h2 className="text-xl font-bold text-surface-900 mb-2">
+          Have a chalisa recited for you
+        </h2>
+        <p className="text-sm text-surface-700 mb-4">
+          Darshya pandits recite Hanuman Chalisa, Sunderkand and the Ram Charit Manas path on
+          your behalf, recorded as video proof.
+        </p>
+        <Link href="/pujas" className={buttonClass('primary', 'md')}>
+          Browse all pujas <ArrowRight className="w-4 h-4" />
+        </Link>
+      </section>
     </main>
   );
 }

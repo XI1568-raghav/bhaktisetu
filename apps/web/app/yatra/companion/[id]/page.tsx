@@ -17,15 +17,22 @@ import {
  CheckCircle2,
 } from 'lucide-react';
 import ScrollReveal from '../../../../components/ScrollReveal';
-import { companions, getCompanionById, formatINR } from '../../../../lib/yatra-data';
+import { formatINR } from '../../../../lib/yatra-data';
+// TC-06: this route used to pre-render a bookable profile — availability
+// calendar, day rate, "Book This Companion" — for each of the eight invented
+// people in lib/yatra-data.ts. It now reads the published roster, so a URL
+// resolves only for a companion Darshya has actually recruited and vetted, and
+// every other id 404s instead of offering a stranger to escort someone's
+// elderly parent across the country.
+import { publishedCompanions, getPublishedCompanionById } from '../../../../lib/companion-roster';
 
 export function generateStaticParams() {
- return companions.map((c) => ({ id: c.id }));
+ return publishedCompanions.map((c) => ({ id: c.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
  const { id } = await params;
- const c = getCompanionById(id);
+ const c = getPublishedCompanionById(id);
  if (!c) return { title: 'Companion not found' };
  return {
  title: `${c.name} — Travel Companion`,
@@ -36,7 +43,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function CompanionDetailPage({ params }: { params: Promise<{ id: string }> }) {
  const { id } = await params;
- const c = getCompanionById(id);
+ const c = getPublishedCompanionById(id);
  if (!c) return notFound();
 
  // Generate a simple 30-day availability calendar
@@ -95,6 +102,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  </p>
 
  <div className="flex flex-wrap items-center gap-4 text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
+ {c.reviewCount > 0 && (
  <span className="flex items-center gap-1.5">
  <div className="flex items-center gap-0.5">
  {Array.from({ length: 5 }).map((_, s) => (
@@ -104,6 +112,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <span className="font-semibold" style={{ color: 'var(--color-text)' }}>{c.rating.toFixed(1)}</span>
  <span>({c.reviewCount} reviews)</span>
  </span>
+ )}
  <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {c.yatrasCompleted} yatras</span>
  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {c.experience}</span>
  </div>
@@ -228,6 +237,11 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <h2 className="text-xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  What past yatris say
  </h2>
+ {c.reviews.length === 0 && (
+ <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+ No reviews yet. Reviews appear here once a yatri who travelled with {c.name.split(' ')[0]} has rated the journey.
+ </p>
+ )}
  <div className="grid md:grid-cols-2 gap-4">
  {c.reviews.map((r, i) => (
  <div key={i} className="rounded-xl p-4" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>

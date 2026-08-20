@@ -39,11 +39,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const count = t.pujaOfferings?.filter((o) => o.isActive).length || 0;
     return {
       title: `${name} pujas — book online${count > 0 ? ` (${count} options)` : ''}`,
-      description: `Book ${name}${city ? `, ${city}` : ''} pujas online with verified pandits, video proof and 80G receipts. NRI lane available.`,
+      description: `Book ${name}${city ? `, ${city}` : ''} pujas online with video proof of the ceremony. 80G receipt where the receiving trust is 80G-registered. NRI lane available.`,
       alternates: { canonical: `https://darshya.online/temples/${slug}/pujas` },
       openGraph: {
         title: `${name} pujas — book online`,
-        description: `${count} active puja options. Verified, video-proof, 80G.`,
+        description: `${count} active puja options. Video proof of every ceremony.`,
         url: `https://darshya.online/temples/${slug}/pujas`,
         type: 'website',
         images: [`/og/temple/${slug}`],
@@ -102,7 +102,15 @@ export default async function TemplePujasPage({ params }: Params) {
         </h1>
         <p className="text-surface-700 text-base leading-relaxed max-w-3xl">
           {offerings.length > 0
-            ? `${offerings.length} verified puja${offerings.length === 1 ? '' : 's'} available at ${temple.name}${temple.city ? `, ${temple.city}` : ''}. Every booking ships with video proof, certified pandit and 80G receipt.`
+            /* TC-08: "certified pandit" named a certification that does not
+               exist. Nothing in the codebase writes Priest.isVerified,
+               Priest.verificationStatus or Priest.aadhaarVerified outside
+               prisma/seed.ts — there is no credential check, no reference
+               call, no probation and no per-pandit trust score behind the
+               word. The unconditional "80G receipt" had the same problem: a
+               receipt is only issuable where the donee holds an 80G
+               registration and PAN. */
+            ? `${offerings.length} bookable puja${offerings.length === 1 ? '' : 's'} at ${temple.name}${temple.city ? `, ${temple.city}` : ''}. Every booking ships with video proof of the ceremony, and an 80G receipt where the receiving trust is 80G-registered.`
             : `${temple.name} puja catalogue is being onboarded. Live darshan and donations are already available.`}
         </p>
       </header>
@@ -152,7 +160,7 @@ export default async function TemplePujasPage({ params }: Params) {
 
       <footer className="mt-10 border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-3">
-          <strong>Why Darshya?</strong> Every puja booking includes mandatory video proof of the ceremony, an 80G donation receipt where applicable, and a verified pandit gated on Aadhaar.
+          <strong>Why Darshya?</strong> Every puja booking includes mandatory video proof of the ceremony, and an 80G donation receipt where applicable. A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check &mdash; we do not yet run independent credential verification or temple reference checks, and we do not publish a per-pandit trust score.
         </p>
         <Link href={`/temples/${slug}`} className="text-saffron-700 hover:underline">
           ← Back to {temple.name}

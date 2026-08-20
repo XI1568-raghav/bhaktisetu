@@ -2,6 +2,8 @@
 // Targets: "kashi vishwanath darshan timings", "amarnath yatra registration",
 // "tirupati darshan slot booking", "vaishno devi how to reach".
 
+import { dedupeTirthas } from './tirtha-slug';
+
 export type TirthaCategory = 'shaiva' | 'vaishnava' | 'shakti' | 'jain' | 'sikh' | 'syncretic';
 
 export interface Tirtha {
@@ -322,7 +324,7 @@ export const TIRTHAS: Tirtha[] = [
     primaryPujas: ['Bhasma Aarti (03:00–05:00, world-unique)', 'Rudrabhishek', 'Mahamrityunjaya Jaap', 'Maha Rudra'],
     dressCode: 'Men: dhoti only for Bhasma Aarti darshan inside sanctum. Women: saree mandatory. Bhasma Aarti requires advance pass.',
     photoPolicy: 'Phones deposited; no recording',
-    significance: 'One of 12 Jyotirlingas. The only Swayambhu (self-manifested) and only south-facing (Dakshinmukhi) Jyotirlinga. Bhasma Aarti uses ash that was once from cremation grounds.',
+    significance: 'One of 12 Jyotirlingas, and the only south-facing (Dakshinmukhi) one. Bhasma Aarti uses ash that was once from cremation grounds.',
     legend: 'Demon Dushana terrorized Ujjain devotees. Shiva emerged from the ground as Mahakaleshwar and reduced him to ashes. The lord stayed, accepting ash worship as a reminder of mortality.',
     modernRelevance: 'Mahakal Lok Corridor (2022) expanded the complex with 108 carved pillars and 200+ murtis. Bhasma Aarti now slot-booked online via shrimahakaleshwar.com. Daily visitors doubled post-corridor.',
     nearbyTirthas: ['Kal Bhairav Temple', 'Harsiddhi Mata', 'Chintaman Ganesh', 'Sandipani Ashram', 'Ram Ghat'],
@@ -1632,7 +1634,7 @@ export const TIRTHAS: Tirtha[] = [
     sanskrit: 'सोमनाथ ज्योतिर्लिङ्ग मन्दिर',
     category: 'shaiva',
     state: 'Gujarat',
-    presiding: 'Bhagwan Somnath, the first and foremost of the twelve Jyotirlingas, established by Chandra Deva (Soma) himself; the swayambhu Shiva linga is in the garbhagriha facing east on the shores of the Arabian Sea',
+    presiding: 'Bhagwan Somnath, the first and foremost of the twelve Jyotirlingas, established by Chandra Deva (Soma) himself; the Shiva linga is in the garbhagriha facing east on the shores of the Arabian Sea',
     established: 'Mythological antiquity; the temple has been destroyed and rebuilt seven times; the present grand temple in Chalukya style was reconstructed in 1951 by Sardar Vallabhbhai Patel after India independence',
     bestSeason: 'October to March; Maha Shivratri (Phalguna Krishna Chaturdashi), Kartik Purnima, and the monthly Shravan Somvars draw the largest crowds; the temple is open year-round but summer Gujarat heat is intense',
     darshanTimings: '6:00 AM to 9:30 PM continuously; Aarti times — 7:00 AM (morning), 12:00 PM (noon), 7:00 PM (evening); the famous Light & Sound show on the temple precincts plays every evening at 8:00 PM in season',
@@ -1924,33 +1926,6 @@ export const TIRTHAS: Tirtha[] = [
     estimatedDailyVisitors: '8,000-15,000 regular; 50,000+ on Janmashtami + Diwali',
   },
   {
-    slug: 'somnath-jyotirlinga',
-    name: 'Somnath Jyotirlinga',
-    sanskrit: 'सोमनाथ ज्योतिर्लिङ्ग',
-    category: 'shaiva',
-    state: 'Gujarat',
-    presiding: 'Lord Shiva (Somnath — Moon Lord)',
-    established: 'Pre-Vedic origins; current temple rebuilt 1951 CE by Sardar Patel',
-    bestSeason: 'October-March; Maha Shivaratri (Feb-Mar) peak',
-    darshanTimings: '06:00-22:00 IST',
-    averageWaitTime: '1-2 hours general; 30 min VIP',
-    howToReach: 'Veraval coastline, Saurashtra Gujarat. From Veraval railway (7km) take auto. From Diu airport (90km) or Rajkot airport (190km) prepaid taxi.',
-    nearestAirport: 'Diu Airport (90km) or Rajkot Airport (190km)',
-    nearestRailway: 'Veraval Junction (VRL) — 7km; Somnath Station (1km) limited service',
-    whereToStay: 'Gujarat Tourism Toran hotels at Somnath; Maitri Dharamshala (BAPS); many budget hotels in Veraval',
-    whatToOffer: 'Bilva leaves (essential), white flowers, milk for abhishek, coconut, sandalwood paste, dakshina',
-    primaryPujas: ['somnath-darshan', 'rudrabhishek', 'maha-shivaratri-jagran', 'kartik-purnima-arati', 'sandhya-aarti'],
-    dressCode: 'Traditional attire encouraged; head covering not mandatory; bare feet inside main shrine',
-    photoPolicy: 'Photography permitted in outer courtyard and Arabian Sea-facing platform; prohibited inside garbhagriha',
-    significance: 'First of the 12 Jyotirlingas — listed first in the canonical Dwadasha Jyotirlinga Stotram by Adi Shankaracharya. Located on Arabian Sea coast where 3 rivers (Kapila, Hiran, Saraswati) meet ocean. The temple has been destroyed 17 times in history and rebuilt 7 times — symbol of Hindu civilisational resilience. Current Iyer-style structure was rebuilt 1951 by Sardar Vallabhbhai Patel after independence.',
-    legend: 'Soma the moon god was cursed by his father-in-law Daksha for showing partiality to Rohini among his 27 wives. The curse caused Soma to wane. Soma performed severe penance at this spot to Lord Shiva who granted relief — hence the waxing and waning cycle. The Jyotirlinga represents Soma rejuvenation through Shiva grace. Adi Shankaracharya visited and composed the Dwadasha Jyotirlinga Stotram here.',
-    modernRelevance: 'Maha Shivaratri 2025 saw 800,000+ pilgrims over 24 hours. Sound and light show "Sagar Tatay Somnath" runs nightly attracting cultural tourists. Strong NRI Gujarati diaspora pilgrimage from US (NJ/Bay Area), UK, Africa. Temple trust runs free Mahaprasad daily to 10,000+. Online darshan booking + live streaming launched 2020 for COVID-restricted devotees.',
-    nearbyTirthas: ['dwarka-jyotirlinga', 'porbandar-sudama-mandir', 'girnar-dattatreya', 'bhalka-tirtha'],
-    vipDarshanAvailable: true,
-    onlineBookingAvailable: true,
-    estimatedDailyVisitors: '15,000-25,000 regular; 800,000+ on Maha Shivaratri',
-  },
-  {
     slug: 'dwarka-jagat-mandir',
     name: 'Dwarka Jagat Mandir',
     sanskrit: 'द्वारका जगत मन्दिर',
@@ -2084,60 +2059,6 @@ export const TIRTHAS: Tirtha[] = [
     vipDarshanAvailable: true,
     onlineBookingAvailable: true,
     estimatedDailyVisitors: '15,000-30,000 regular; 100,000+ on Shivaratri',
-  },
-  {
-    slug: 'mahakaleshwar-ujjain',
-    name: 'Mahakaleshwar Ujjain',
-    sanskrit: 'महाकालेश्वर मन्दिर',
-    category: 'shaiva',
-    state: 'Madhya Pradesh',
-    presiding: 'Lord Shiva (Mahakal — Lord of Time + Death)',
-    established: 'Ancient pre-Vedic; current temple rebuilt 1734 CE by Ranoji Shinde',
-    bestSeason: 'October-March; Kumbh Mela (every 12 years) special period',
-    darshanTimings: '04:00-22:30 IST (continuous, including famous 04:00 Bhasma Aarti)',
-    averageWaitTime: '1-3 hours general; 1 hour VIP; Bhasma Aarti slot allocation 24-48hr advance',
-    howToReach: 'Heart of Ujjain city, Madhya Pradesh. From Indore airport (60km) take prepaid taxi. From Indore railway station (60km) shared taxi or train to Ujjain Junction (2km from temple).',
-    nearestAirport: 'Devi Ahilyabai Holkar Airport, Indore (60km)',
-    nearestRailway: 'Ujjain Junction (UJN) — 2km',
-    whereToStay: 'Many dharamshalas around temple + MPSTDC government hotels + Hotel Anjushree + budget options in Bhukhi Mata area',
-    whatToOffer: 'Bilva leaves, white flowers, milk for abhishek, sacred ash (bhasma — central to this temple), ganga jal, dakshina',
-    primaryPujas: ['mahakaleshwar-darshan', 'bhasma-aarti-special', 'rudrabhishek', 'maha-shivaratri-mahotsav', 'kumbh-mela-snan'],
-    dressCode: 'Traditional dhoti-kurta for men (no shirt for some inner rituals), saree for women; head covering for Bhasma Aarti; bare feet entire complex',
-    photoPolicy: 'Photography strictly prohibited inside garbhagriha and during Bhasma Aarti; permitted in outer courtyards',
-    significance: 'One of the 12 Jyotirlingas — the only south-facing Jyotirlinga (dakshinamukhi). Considered uniquely powerful for protection against untimely death (mrityu-bhaya). Famous for the 04:00 AM Bhasma Aarti where sacred ash (traditionally from cremation grounds, now from cow-dung) is offered to the lingam — the only daily ritual of its kind among all Jyotirlingas. Ujjain is one of seven moksha-puris (cities granting liberation) and one of four Kumbh Mela sites.',
-    legend: 'Per Skanda Purana, demon Dushana terrorised the residents of Avantika (ancient name of Ujjain). When the people performed intense Shiva worship, Lord Shiva manifested from the earth as Mahakaleshwar to slay the demon. The Bhasma Aarti tradition originates from this manifestation — Shiva at moment of demon-slaying was covered in cremation ash, hence the daily ritual recreation. The Mahabharata mentions Avantika as one of seven sacred cities.',
-    modernRelevance: 'Bhasma Aarti booking (₹250-1500 depending on slot type) is one of India most-sought spiritual experiences. Annual visitors 10M+, peaking during Maha Shivaratri (1M+ in 24 hours) and Simhastha Kumbh Mela (every 12 years, 70M+ pilgrims). Recent Mahakal Lok corridor expansion (2022) increased capacity. Strong pilgrim flow from Maharashtra, Gujarat, MP, Rajasthan.',
-    nearbyTirthas: ['omkareshwar-jyotirlinga', 'kal-bhairav-ujjain', 'harsiddhi-shakti-peeth', 'chintamani-ganesh-ujjain'],
-    vipDarshanAvailable: true,
-    onlineBookingAvailable: true,
-    estimatedDailyVisitors: '25,000-50,000 regular; 1M+ on Maha Shivaratri',
-  },
-  {
-    slug: 'omkareshwar-jyotirlinga',
-    name: 'Omkareshwar Jyotirlinga',
-    sanskrit: 'ओंकारेश्वर ज्योतिर्लिङ्ग',
-    category: 'shaiva',
-    state: 'Madhya Pradesh',
-    presiding: 'Lord Shiva (Omkar — primordial Om sound)',
-    established: 'Ancient pre-Vedic; current temple 10th-11th century CE',
-    bestSeason: 'October-March; Sawan month for serious sadhakas',
-    darshanTimings: '05:00-22:00 IST continuous',
-    averageWaitTime: '2-4 hours general; 30 min VIP via MPSTDC',
-    howToReach: 'Mandhata Island in Narmada river. From Indore (80km) taxi/bus. Ferry across river to temple.',
-    nearestAirport: 'Devi Ahilyabai Holkar Airport, Indore (80km)',
-    nearestRailway: 'Omkareshwar Road Station (12km) or Indore Junction (80km)',
-    whereToStay: 'Dharamshalas around temple + MPSTDC hotels + budget options in Mandhata',
-    whatToOffer: 'Bilva leaves, white flowers, Narmada water, milk for abhishek, dakshina',
-    primaryPujas: ['omkareshwar-darshan', 'rudrabhishek', 'maha-shivaratri-special', 'shravan-somvar', 'narmada-parikrama'],
-    dressCode: 'Traditional attire; head covering recommended for inner sanctum; bare feet inside',
-    photoPolicy: 'Photography permitted in outer area + Narmada ghat; prohibited inside garbhagriha',
-    significance: 'One of the 12 Jyotirlingas + unique island-temple shaped like Om (ॐ) when viewed from above. Two interconnected temples — Omkareshwar (island, primary) and Mamleshwar/Amaleshwar (south bank). Both must be visited to complete pilgrimage. Adi Shankaracharya took diksha here from Govindapada — Advaita Vedanta birthplace.',
-    legend: 'Demon Vindhya performed severe penance to Shiva who manifested as Omkareshwar to grant boons. Island shape spells the sacred Om — devotees believe walking around grants Om-experience. Narmada parikrama (3-year traditional vow) particularly popular among sannyasis.',
-    modernRelevance: 'Maha Shivaratri 500K+ pilgrims. Recent MP Tourism investment in pilgrim infrastructure. NRI Vaishnav + Shaiva diaspora pilgrimage from US/UK/Australia. Free Mahaprasad daily 5,000+.',
-    nearbyTirthas: ['mahakaleshwar-ujjain', 'mandhata-temple', 'amaleshwar-temple', 'siddhwarkut'],
-    vipDarshanAvailable: true,
-    onlineBookingAvailable: true,
-    estimatedDailyVisitors: '10,000-15,000 regular; 500,000+ on Maha Shivaratri',
   },
   {
     slug: 'trimbakeshwar-jyotirlinga',
@@ -2384,8 +2305,17 @@ export const TIRTHAS: Tirtha[] = [
   },
 ];
 
+/**
+ * The tirtha URLs that SERVE a page — aliases excluded.
+ *
+ * CI-07: twelve slugs now permanently redirect onto their surviving twin, and
+ * app/sitemap.ts builds the tirtha section from this function. Advertising a
+ * redirecting URL in the sitemap is the same defect the redirect was added to
+ * fix. The prerender list in app/tirth/[slug]/page.tsx adds the aliases back,
+ * because `dynamicParams` is false and an unlisted slug would 404 instead.
+ */
 export function tirthaSlugs(): string[] {
-  return TIRTHAS.map((t) => t.slug);
+  return dedupeTirthas(TIRTHAS).map((t) => t.slug);
 }
 
 export function getTirtha(slug: string): Tirtha | undefined {

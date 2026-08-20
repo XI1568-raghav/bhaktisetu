@@ -1054,3 +1054,295 @@ describe('DU-05 — no h1 archetype hard-codes a value the scale already declare
     expect(new Set(values).size, 'two archetypes collapsed onto one recipe').toBe(values.length);
   });
 });
+
+/* ═══ DU-03 — the focus ring may not re-shape the control it rings ════════ */
+
+/**
+ * The one radius the button recipe cannot pin.
+ *
+ * `components/ui/button-recipe.ts` pins ONE corner for every primary CTA —
+ * `rounded-lg`, i.e. `--radius-lg` = 1rem — and __tests__/cta-uniformity-
+ * ratchet.du03.test.ts refuses any call site that passes a `rounded-*` through
+ * the extras slot. Both were correct and both were being overridden.
+ *
+ * app/globals.css declares a global focus ring, and that rule also carried
+ * `border-radius: 4px`. Two facts make it win:
+ *
+ *   1. `@import "tailwindcss"` puts every utility inside `@layer utilities`,
+ *      and this stylesheet declares no `@layer` of its own — so the focus rule
+ *      is UNLAYERED. In the CSS cascade an unlayered declaration beats every
+ *      layered one regardless of specificity, so `border-radius: 4px` outranks
+ *      `.rounded-lg` even though both are (0,1,0).
+ *   2. `:focus-visible` matches the element itself, not a ring pseudo-element,
+ *      so the property re-shapes the CONTROL, not the outline.
+ *
+ * Compiled through @tailwindcss/postcss at HEAD, exactly that:
+ *
+ *   .rounded-lg     layer=utilities   { border-radius: var(--radius-lg) }
+ *   :focus-visible  layer=(unlayered) { outline: ...; border-radius: 4px }
+ *
+ * So every focused control in the app — every buttonClass() CTA, every
+ * `rounded-full` pill, every `rounded-2xl` modal — snapped to a 4px corner
+ * while focused. 4px is not a step on the DU-15 radius scale (0.375 / 0.625 /
+ * 1 / 1.375 / 1.75 / 2rem); it is the stock Tailwind value DU-15 removed from
+ * `--radius`. Keyboard users saw the corner pop on focus, and saw the one
+ * radius the recipe exists to guarantee replaced by a seventh.
+ *
+ * A ring does not need it. `outline` follows the element's own
+ * `border-radius` in every browser the app supports, so removing the
+ * declaration rounds the ring correctly AND leaves the control shape alone.
+ *
+ * COMMENT-FREE source: this block quotes `border-radius` in prose several
+ * times over, and the rule it guards now carries a comment saying why the
+ * property is absent. A raw-text scan would be satisfiable — and falsifiable —
+ * by its own documentation.
+ */
+describe('DU-03 — the focus ring may not re-shape the control it rings', () => {
+  const focusRule = ruleFor(':focus-visible');
+
+  it('the app really ships one global focus ring (the finding is live)', () => {
+    expect(focusRule, ':focus-visible not found in app/globals.css').toBeTruthy();
+    expect(focusRule, 'the ring itself must survive — this is not licence to delete it').toMatch(
+      /outline:\s*\d/,
+    );
+  });
+
+  it('the stylesheet is unlayered, so anything it sets outranks every utility', () => {
+    expect(
+      /@layer\s[\w\s,-]*\{/.test(CSS_NC),
+      'app/globals.css grew an @layer. The reasoning here assumes it has none: an ' +
+        'unlayered rule beats all of Tailwind layered utilities, which is why a property ' +
+        'set on :focus-visible reaches past rounded-*.',
+    ).toBe(false);
+  });
+
+  it('the button recipe really does pin exactly one corner (the other side)', () => {
+    const recipe = readFileSync(path.join(WEB, 'components/ui/button-recipe.ts'), 'utf8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const radii = [
+      ...new Set([...recipe.matchAll(/(?:^|\s|')rounded-[\w-]+/g)].map((m) => m[0].trim())),
+    ];
+    expect(radii, 'the recipe pins one radius; that is the invariant being defended').toEqual([
+      'rounded-lg',
+    ]);
+  });
+
+  it('the focus ring declares no border-radius of its own', () => {
+    const declared = /(?:^|[\s;])border-radius\s*:\s*([^;]+)/.exec(focusRule)?.[1]?.trim();
+    expect(
+      declared,
+      `:focus-visible sets border-radius: ${declared}. Unlayered, that beats every ` +
+        'rounded-* utility, so every focused control in the app repaints its corners at ' +
+        'this value — the primary CTA included, whose one radius is the whole point of ' +
+        'components/ui/button-recipe.ts. An outline already follows the border-radius of ' +
+        'the element it rings; delete the declaration rather than picking a corner here.',
+    ).toBeUndefined();
+  });
+});
+
+/* ═══ DU-10 — metadata is one declared size, not a free choice ════════════ */
+
+/**
+ * `.prose-body` gave body copy one name. Metadata never got one.
+ *
+ * Census at HEAD over `<p>` elements under app/ carrying a `max-w-*` reading
+ * measure — 219 of them:
+ *
+ *     .prose-body 3 · text-xs 7 · text-sm 83 · text-base 60 · text-lg 25 · none 41
+ *
+ * The `text-base`, `none` and `.prose-body` columns are all the one reading
+ * size (body declares `font-size: var(--text-base)`), so the body half of
+ * DU-10 is essentially closed at the token layer. What is left is 90
+ * paragraphs of METADATA split across two steps — 12.0-13.0px on `text-xs`
+ * against 13.0-14.0px on `text-sm` — with nothing to tell an author which one
+ * their caption is. The finding allows "small sizes reserved for metadata"; it
+ * does not allow two of them.
+ *
+ * `.prose-meta` is the missing name. `--text-sm` is the answer rather than
+ * `--text-xs` because RESP-05 put the xs floor at exactly the 12px legibility
+ * floor: a caption is still read, so it should not sit ON the floor.
+ *
+ * This is a UTILITY, not a sweep — the 90 call sites live in app/ and belong to
+ * other lanes. What it buys today is that the next caption has one name to
+ * reach for instead of a coin flip, and that the size it names is a token.
+ */
+describe('DU-10 — metadata has one declared size, not two', () => {
+  it('the split is live: prose still picks between text-xs and text-sm', () => {
+    const PROSE_P = /<p\s[^>]*className="([^"]*\bmax-w-[a-z0-9]+[^"]*)"/g;
+    const sized = [...CODE.matchAll(PROSE_P)].map((m) => m[1]!);
+    const xs = sized.filter((c) => /(?:^|\s)text-xs(?![\w-])/.test(c)).length;
+    const sm = sized.filter((c) => /(?:^|\s)text-sm(?![\w-])/.test(c)).length;
+    expect(
+      xs > 0 && sm > 0,
+      `metadata prose is already on one step (xs ${xs}, sm ${sm}) — if the sweep ` +
+        'finished, this guard should change rather than be deleted',
+    ).toBe(true);
+  });
+
+  it('.prose-meta is declared in globals.css', () => {
+    expect(
+      ruleFor('.prose-meta'),
+      '.prose-meta missing — metadata copy has no name, so every caption author picks ' +
+        'text-xs or text-sm by eye',
+    ).toBeTruthy();
+  });
+
+  it('it names a scale step, not a literal', () => {
+    const size = /font-size:\s*([^;]+);/.exec(ruleFor('.prose-meta'))?.[1]?.trim();
+    expect(size, '.prose-meta must declare a font-size').toBeTruthy();
+    expect(size!, 'a px/rem here would be a size sitting outside the declared scale').toMatch(
+      /^var\(--text-[\w-]+\)$/,
+    );
+  });
+
+  it('it sits above the 12px legibility floor, not on it', () => {
+    const size = resolveVar(/font-size:\s*([^;]+);/.exec(ruleFor('.prose-meta'))?.[1]?.trim());
+    const floorRem = parseFloat(/clamp\(\s*([\d.]+)rem/.exec(size ?? '')?.[1] ?? 'NaN');
+    expect(
+      floorRem * 16,
+      'RESP-05 put --text-xs exactly ON the 12px floor. A caption is still read, so the ' +
+        'one metadata size has to clear it.',
+    ).toBeGreaterThan(12);
+  });
+
+  it('it leads at the same reading ratio as body copy', () => {
+    const lead = /line-height:\s*([^;]+);/.exec(ruleFor('.prose-meta'))?.[1]?.trim();
+    const bodyLead = /line-height:\s*([^;]+);/.exec(ruleFor('.prose-body'))?.[1]?.trim();
+    expect(resolveVar(lead), 'one leading ratio for prose is the closed half of DU-10').toBe(
+      resolveVar(bodyLead),
+    );
+  });
+
+  it('it stays smaller than .prose-body, so it cannot become a second body size', () => {
+    const rem = (sel: string) =>
+      parseFloat(
+        /clamp\(\s*([\d.]+)rem/.exec(
+          resolveVar(/font-size:\s*([^;]+);/.exec(ruleFor(sel))?.[1]?.trim()) ?? '',
+        )?.[1] ?? 'NaN',
+      );
+    expect(rem('.prose-meta')).toBeLessThan(rem('.prose-body'));
+  });
+});
+
+/* ═══ DU-14 — the container scale is declared, not inherited ══════════════ */
+
+/**
+ * DU-14 counted eleven container widths over 679 centred declarations.
+ * Recounted at HEAD across app/, components/ and lib/: 723 centred
+ * declarations, still ELEVEN `max-w-*` steps —
+ *
+ *   4xl 182 · 6xl 143 · 5xl 126 · 3xl 92 · 2xl 69 · 7xl 47 · xl 33 · md 20 ·
+ *   lg 7 · xs 2 · sm 2
+ *
+ * — but only NINE distinct RESOLVED widths, because two earlier passes
+ * retargeted `--container-7xl` and `--container-5xl` onto the declared wide
+ * width. That is the number that matters: a devotee sees rendered widths, not
+ * class names.
+ *
+ * What was never checked is where the OTHER matching steps take their value
+ * from. `.container-wide` is 72rem and `.container-prose` is 48rem, and
+ * `max-w-6xl` (143 shells) and `max-w-3xl` (92 shells) land on exactly those
+ * two numbers — by coincidence. Neither token is declared in `@theme`; both
+ * fall through to the Tailwind stock scale. A Tailwind release that renumbers
+ * that scale, or a `@theme` edit that touches one and not the other, silently
+ * moves 235 page shells off the two declared widths with nothing in CI to
+ * notice. Declaring them is a zero-diff lock: same values, now owned.
+ *
+ * The remaining real gap is `--container-4xl` — 182 centred shells at 56rem, a
+ * third content width. It is NOT retargeted here and DU-14 stays open for it:
+ * two of its 188 occurrences are genuine headline measures
+ * (app/about/page.tsx beside `text-[2.5rem]`,
+ * components/motion/StickyHeadlinePin.tsx beside `lg:text-6xl`) and would be
+ * widened by 16rem. Those two have to become explicit `max-w-[56rem]` measures
+ * first — a call-site edit in app/ and components/motion, not a token edit.
+ */
+describe('DU-14 — every container step the app centres on is a declared width', () => {
+  /** Tailwind v4 stock container scale, in rem. A step absent from @theme falls
+   *  through to these — the fragility this block exists to close. */
+  const STOCK: Record<string, number> = {
+    xs: 20,
+    sm: 24,
+    md: 28,
+    lg: 32,
+    xl: 36,
+    '2xl': 42,
+    '3xl': 48,
+    '4xl': 56,
+    '5xl': 64,
+    '6xl': 72,
+    '7xl': 80,
+  };
+
+  const declaredRem = (step: string): number | undefined => {
+    const v = THEME_VARS[`--container-${step}`] ?? ROOT_VARS[`--container-${step}`];
+    return v ? parseFloat(/([\d.]+)rem/.exec(v)?.[1] ?? 'NaN') : undefined;
+  };
+  const resolvedRem = (step: string): number => declaredRem(step) ?? STOCK[step]!;
+  const utilityRem = (sel: string): number =>
+    parseFloat(/max-width:\s*([\d.]+)rem/.exec(ruleFor(sel))?.[1] ?? 'NaN');
+
+  /** A centred container: mx-auto within 40 chars of a max-w-* on one class. */
+  const CONTAINER =
+    /(?:mx-auto[^"'`]{0,40}max-w-([a-z0-9]+)|max-w-([a-z0-9]+)[^"'`]{0,40}mx-auto)/g;
+  const steps = [...CODE.matchAll(CONTAINER)].map((m) => (m[1] ?? m[2])!);
+
+  it('the census is live: the app still centres hundreds of ad-hoc containers', () => {
+    expect(steps.length, 'the container detector stopped matching').toBeGreaterThan(300);
+    expect(new Set(steps).size, 'more than one step is still in play').toBeGreaterThan(1);
+  });
+
+  it('--container-6xl is declared, not inherited from the Tailwind stock scale', () => {
+    expect(
+      declaredRem('6xl'),
+      '143 centred shells use max-w-6xl and land on .container-wide only because the ' +
+        'Tailwind stock 6xl happens to be 72rem. Declare it so the match is owned.',
+    ).toBeDefined();
+    expect(declaredRem('6xl')).toBe(utilityRem('.container-wide'));
+  });
+
+  it('--container-3xl is declared, not inherited from the Tailwind stock scale', () => {
+    expect(
+      declaredRem('3xl'),
+      '92 centred shells use max-w-3xl and land on .container-prose only because the ' +
+        'Tailwind stock 3xl happens to be 48rem. Declare it so the match is owned.',
+    ).toBeDefined();
+    expect(declaredRem('3xl')).toBe(utilityRem('.container-prose'));
+  });
+
+  it('every step that resolves to the wide width resolves to the SAME wide width', () => {
+    const wide = utilityRem('.container-wide');
+    for (const step of ['5xl', '6xl', '7xl']) {
+      expect(resolvedRem(step), `max-w-${step} no longer lands on .container-wide`).toBe(wide);
+    }
+  });
+
+  it('the resolved-width census never grows', () => {
+    /*
+     * RATCHET on RENDERED widths, not class names. Measured at HEAD: 9 distinct
+     * widths over 723 centred declarations —
+     *   72rem 316 · 56rem 182 · 48rem 92 · 42rem 69 · 36rem 33 · 28rem 20 ·
+     *   32rem 7 · 20rem 2 · 24rem 2
+     * The tail (42rem and below) is reading measures on cards and forms, not
+     * page shells; the live defect is 56rem, and closing it takes 9 to 8.
+     * Lower this after every sweep. Never raise it.
+     */
+    const BASELINE = 9;
+    const widths = new Map<number, number>();
+    for (const s of steps) {
+      const w = resolvedRem(s);
+      widths.set(w, (widths.get(w) ?? 0) + 1);
+    }
+    const listing = [...widths.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([w, n]) => `${w}rem x${n}`)
+      .join(' | ');
+    expect(
+      widths.size,
+      `${steps.length} centred containers resolve to ${widths.size} distinct widths ` +
+        `(ceiling ${BASELINE}): ${listing}. Use .container-wide / .container-prose, or ` +
+        'retarget the step in @theme once every one of its consumers is a page shell.',
+    ).toBeLessThanOrEqual(BASELINE);
+  });
+});

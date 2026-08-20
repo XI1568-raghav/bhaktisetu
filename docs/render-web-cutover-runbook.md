@@ -27,7 +27,7 @@ The autonomous cutover workflow `.github/workflows/render-cutover.yml` ran to **
 
 **Diagnostic workflow:** `.github/workflows/render-diag.yml` (`workflow_dispatch`) — modes: `deploy` (trigger deploy + poll live + curl 9 routes), `logs2` (fetch `/v1/logs` app/request/build logs), `cftoken` (verify the GH-secret CF token's ID + DNS-records GET 200 vs 403). Keep it; it's the operational telescope for the Render service.
 
-**Rollback (if ever needed):** CF dashboard → DNS → repoint apex + www CNAMEs back to `darshya.pages.dev` (the frozen deploy still served by CF Pages). Takes ~1 min DNS TTL. Render service stays live at `*.onrender.com` either way.
+**Rollback — CORRECTED 2026-08-20 (`OPS-06`):** the DNS-repoint route below was only ever valid during the cutover window. Use **`docs/runbooks/prod-rollback.md`**: redeploy the last known-good commit with `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f commit=<sha>`. Repointing DNS back to `darshya.pages.dev` would serve the CF Pages build frozen on 2026-07-08 — months of missing pages and no guarantee it still matches the current API contract — and the project may have been deleted in post-cutover cleanup (Step B3 said keep it 7 days, then delete). Treat it as gone unless you have verified otherwise in the CF dashboard.
 
 ## 🟡 Historical: autonomous cutover attempts — 2026-07-08 (prior to completion)
 
@@ -119,7 +119,23 @@ Send me the `*.onrender.com` URL and I'll curl-verify it end-to-end (home, a `[s
 ---
 
 ## Rollback (if prod breaks)
-- Cloudflare DNS → repoint apex + `www` CNAMEs back to `darshya.pages.dev`. Propagation in minutes. The old Pages deploy is still live during the rollback window.
+
+> **CORRECTED 2026-08-20 (`OPS-06`).** The DNS-repoint procedure below was written
+> for the cutover window, when the CF Pages deploy was hours old. It is no longer a
+> rollback path and following it today would serve a site frozen on 2026-07-08.
+>
+> **The current procedure is `docs/runbooks/prod-rollback.md`.** Short version:
+>
+> ```bash
+> gh workflow run render-diag.yml -f mode=deploys -f sid=srv-d970l2ks728c738fc33g   # find last good sha
+> gh workflow run render-diag.yml -f mode=deploy  -f sid=srv-d970l2ks728c738fc33g -f commit=<sha>
+> ```
+>
+> Note also that `autoDeploy: false` on both services means **pushing a revert
+> deploys nothing** — only the dispatch above changes what is serving.
+
+*Historical, cutover-window only — do not follow:*
+- ~~Cloudflare DNS → repoint apex + `www` CNAMEs back to `darshya.pages.dev`.~~ The CF Pages project's auto-deploy was killed on 2026-07-08 (`cf-kill-zombie.yml`) and Step B3 scheduled its deletion after 7 days.
 - Render service can stay (free, sleeps when idle) — no cost.
 
 ## Post-cutover cleanup (after prod verified green for ~1 day)

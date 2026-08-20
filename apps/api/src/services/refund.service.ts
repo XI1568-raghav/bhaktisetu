@@ -65,6 +65,32 @@ interface RazorpayRefundResponse {
 
 const RAZORPAY_BASE = 'https://api.razorpay.com/v1';
 
+/** Money rounds to paise, never to a float artefact. */
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/**
+ * PAY-03: the running list of Razorpay refund ids already applied to a
+ * Payment, kept in `Payment.metadata.refundIds`.
+ *
+ * Both refund rails append to it, and the `refund.created`/`refund.processed`
+ * webhook reads it before accumulating — without that the webhook would add a
+ * refund the rail had already recorded and double-count the cumulative total.
+ * Exported so payment.service's admin rail and the webhook share ONE
+ * implementation instead of two copies that can drift, which is exactly how
+ * this finding happened.
+ */
+export function appendRefundId(
+  metadata: unknown,
+  refundId: string | undefined | null,
+): string[] {
+  const prior = (metadata as { refundIds?: unknown } | null | undefined)?.refundIds;
+  const list = Array.isArray(prior) ? prior.filter((v): v is string => typeof v === 'string') : [];
+  if (refundId && !list.includes(refundId)) list.push(refundId);
+  return list;
+}
+
 function razorpayAuthHeader(): string | null {
   const key = process.env.RAZORPAY_KEY_ID;
   const secret = process.env.RAZORPAY_KEY_SECRET;
@@ -182,8 +208,47 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     return { ok: false, bookingId, error: 'Captured payment missing gatewayPaymentId' };
   }
 
+  // PAY-03 (2026-08-20): `Payment.refundAmount` is the CUMULATIVE total
+  // refunded against this capture, not the last refund. payment.service's
+  // admin rail has always read it that way — it computes what is still
+  // refundable as `paid - alreadyRefunded` and stores
+  // `alreadyRefunded + refundAmount`. This rail overwrote it with the last
+  // refund and passed the FULL `paidInr` as `refundableBefore` to the
+  // proportional ledger unwind, so the two rails disagreed at the seam:
+  //
+  //   Rs 1,100 captured, Rs 550 already refunded, second partial of Rs 275
+  //     - stored refundAmount became 275, not 825, so the next refund believed
+  //       Rs 825 was still refundable when only Rs 275 was — the devotee could
+  //       be handed back more than was ever taken;
+  //     - the unwind scaled by (1100-275)/1100 = 0.75 instead of
+  //       (550-275)/550 = 0.50, leaving the pandit Rs 330 of a Rs 440 pending
+  //       commission where Rs 220 is correct. The platform keeps paying the
+  //       provider on revenue it has already refunded.
+  //
+  // This is the DI-01/DI-02 failure class living in the SEAM between the two
+  // rails rather than inside either, which is why the shared
+  // ledger-reversal.service module did not prevent it. Do not re-introduce a
+  // non-accumulating write here: cumulative is the contract.
   const paidInr = Number(captured.amount);
-  const refundInr = refundType === 'partial' ? Math.min(amountInr!, paidInr) : paidInr;
+  const alreadyRefundedInr =
+    captured.refundAmount != null ? Number(captured.refundAmount) : 0;
+  const refundableInr = round2(Math.max(0, paidInr - alreadyRefundedInr));
+
+  if (refundableInr <= 0) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: 'payment-already-refunded',
+      bookingId,
+      paymentId: captured.id,
+      status: 'refunded',
+    };
+  }
+
+  // Whatever is asked for is clamped to what is STILL refundable, so no path
+  // can return more money than was taken (same rule as payment.service).
+  const refundInr =
+    refundType === 'partial' ? Math.min(amountInr!, refundableInr) : refundableInr;
   const refundInPaise = Math.round(refundInr * 100);
 
   const refund = await callRazorpayRefund(captured.gatewayPaymentId, refundInPaise, {
@@ -220,14 +285,21 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     };
   }
 
-  const newPaymentStatus =
-    refundType === 'partial' && refundInr < paidInr ? 'partially_refunded' : 'refunded';
+  // PAY-03: status and the ledger branch key off the CUMULATIVE total, not off
+  // the caller's `refundType`. A partial that happens to clear the remaining
+  // balance IS a full refund — before this, the last Rs 550 of a Rs 1,100
+  // capture left the payment `partially_refunded` forever and reversed the
+  // provider ledger only proportionally, so a fully-refunded booking still
+  // paid its pandit.
+  const newRefundTotalInr = round2(alreadyRefundedInr + refundInr);
+  const isFullyRefunded = newRefundTotalInr >= paidInr;
+  const newPaymentStatus = isFullyRefunded ? 'refunded' : 'partially_refunded';
 
-  // Booking only flips to 'refunded' on full refund. For partial, keep
-  // status as-is (likely cancelled) and let cancellationReason carry the
-  // marker.
+  // Booking only flips to 'refunded' once the whole capture is back. For a
+  // partial, keep status as-is (likely cancelled) and let cancellationReason
+  // carry the marker.
   const bookingDataPatch: Record<string, unknown> =
-    refundType === 'full'
+    isFullyRefunded
       ? {
           status: 'refunded',
           cancelledAt: booking.cancelledAt ?? new Date(),
@@ -247,10 +319,15 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
       where: { id: captured.id },
       data: {
         status: newPaymentStatus,
-        refundAmount: refundInr,
+        // PAY-03: CUMULATIVE, never the last refund alone.
+        refundAmount: newRefundTotalInr,
         metadata: {
           ...((captured.metadata as Record<string, unknown>) ?? {}),
           refundId: refund.id,
+          // PAY-03: every Razorpay refund id ever applied to this capture, so
+          // the refund webhook can tell "already recorded by the rail" from
+          // "a refund raised directly in the Razorpay dashboard".
+          refundIds: appendRefundId(captured.metadata, refund.id),
           refundedAt: new Date().toISOString(),
           refundReason: reason,
           refundType,
@@ -292,7 +369,12 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     // while the pandit kept the whole Rs 770 and the temple its Rs 55, so the
     // platform collected Rs 275 and paid out Rs 825. Every mid-ladder
     // cancellation was loss-making, silently.
-    if (refundType === 'full') {
+    //
+    // PAY-03 (2026-08-20): the branch key is the CUMULATIVE outcome, not the
+    // caller's `refundType`. A partial that clears the remaining balance must
+    // take the FULL reversal path, and successive partials must each scale
+    // against what was still refundable at their own moment.
+    if (isFullyRefunded) {
       // This logic used to live inline here, and payment.service's admin rail
       // never got a copy — which is how a fully refunded booking still paid the
       // pandit (~172% of booking value out the door, DI-01). It was extracted to
@@ -304,12 +386,13 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
       reversedCommissions = reversal.reversedCommissions;
       reversedTemplePayouts = reversal.reversedTemplePayouts;
     } else {
-      // `paidInr` is what was refundable before this call: the guards above
-      // reject a booking whose payment is already 'refunded', and this rail
-      // writes `refundAmount` rather than accumulating it.
+      // PAY-03: `refundableInr` — what was still refundable BEFORE this call
+      // (paid minus everything already refunded) — is what makes successive
+      // partials compose to the same ledger as one combined refund. Passing
+      // the gross `paidInr` here under-reversed every refund after the first.
       const scaled = await reduceBookingLedgerForPartialRefund(tx, bookingId, {
         refundAmount: new Prisma.Decimal(refundInr.toFixed(2)),
-        refundableBefore: new Prisma.Decimal(paidInr.toFixed(2)),
+        refundableBefore: new Prisma.Decimal(refundableInr.toFixed(2)),
         reason,
       });
       reversedCommissions = scaled.scaledCommissions;

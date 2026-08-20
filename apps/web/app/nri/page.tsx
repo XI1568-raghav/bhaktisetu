@@ -14,11 +14,30 @@ import {
 } from 'lucide-react';
 import { nriPremiumServiceJsonLd } from '../../lib/jsonld';
 import EmailCapture from '../../components/EmailCapture';
+import { COMPANY } from '../../lib/company';
+
+/**
+ * TC-01 (P0, trust). COM-02 gated every 80G claim on /gaushala, /donations,
+ * /about, /refunds, /csr-match, /gaushala/[id] and DonationForm on this one
+ * owner-controlled flag, and left ~45 other surfaces asserting a deduction the
+ * platform cannot deliver. This page was one of the worst of them: it sold a
+ * "tax-compliant 80G receipt" as a paid benefit of a ₹5,000/yr subscription.
+ *
+ * The flag is false, `eightyGNumber` and `pan` are both null, and
+ * apps/api/src/lib/pdf-receipt.ts prints "Proof of donation — not a tax
+ * exemption certificate" on every receipt because `is80GEligible()` requires a
+ * donee registration number AND PAN, and `gaushala_profiles.regn_80g` / `.pan`
+ * are read in one place and written nowhere.
+ *
+ * Every 80G sentence below is now a branch on the flag. Obtaining the 80G(5)
+ * registration is the owner's action; the copy returns the day it lands.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
   title: 'NRI Premium — Stay Connected to India',
   description:
-    'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free 80G receipts, unlimited AI Pandit. ₹5,000 per year, charged in INR (about $60).',
+    'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free donation receipt PDFs, unlimited AI Pandit. ₹5,000 per year, charged in INR (about $60).',
   alternates: { canonical: 'https://darshya.online/nri' },
   openGraph: {
     title: 'NRI Premium — Darshya',
@@ -58,8 +77,10 @@ const benefits = [
   },
   {
     icon: FileText,
-    title: 'Free 80G receipt PDFs',
-    body: 'Every donation auto-generates a tax-compliant 80G receipt. India-tax filers get the deduction; US/UK/CA filers get proof for charitable contribution claims.',
+    title: HAS_80G ? 'Free 80G receipt PDFs' : 'Free donation receipt PDFs',
+    body: HAS_80G
+      ? 'Every donation auto-generates a tax-compliant 80G receipt. India-tax filers get the deduction; US/UK/CA filers get proof for charitable contribution claims.'
+      : 'Every donation auto-generates a receipt PDF, emailed to you with its own receipt number. It is proof of payment, not a tax-exemption certificate — Darshya does not hold a Section 80G registration yet, so no donation made today can be claimed as a deduction.',
   },
   {
     icon: MessageCircle,
@@ -78,7 +99,12 @@ const comparison = [
   // code path charges anything for an 80G receipt — routes/donations.ts mints
   // the receipt number and the PDF at no cost — so the fee was fiction, and it
   // contradicted /terms (which said ₹100) and /gaushala and /donations (free).
-  { feature: '80G receipt PDF', free: 'Included', perPuja: 'Included', nri: 'Included' },
+  {
+    feature: HAS_80G ? '80G receipt PDF' : 'Donation receipt PDF',
+    free: 'Included',
+    perPuja: 'Included',
+    nri: 'Included',
+  },
   { feature: 'Live darshan replay history', free: '24 hours', perPuja: '24 hours', nri: '90 days' },
   { feature: 'Cancellation flexibility', free: '24h notice', perPuja: '24h notice', nri: '4h notice' },
 ];
@@ -88,13 +114,31 @@ const faqs = [
     q: 'How does billing work?',
     a: 'Annual subscription, billed once through Razorpay in INR (₹5,000, roughly $60 USD equivalent). Auto-renews after 365 days; cancel anytime from /account/subscriptions.',
   },
+  // TC-03 (P0, trust). This answer used to read "full refund within 14 days, no
+  // questions asked. Pro-rated refund within 90 days." Neither exists.
+  //
+  //  - subscriptionService.cancel() flips MarketplaceSubscription.status to
+  //    CANCELLED and returns "Access continues until end of current billing
+  //    period." It calls no gateway and moves no money; `refund` does not appear
+  //    anywhere in subscription.service.ts.
+  //  - subscribe() writes only a marketplaceSubscription row — no Payment, no
+  //    PujaBooking — and the one refund engine, refund.service.processRefund,
+  //    starts at prisma.pujaBooking.findUnique and refunds the Payment attached
+  //    to that booking. The annual fee is invisible to it.
+  //  - Nothing in the repo pro-rates a subscription in either direction; the
+  //    same claim was already removed from /pricing for that reason.
+  //
+  // So the honest answer is a manual, reviewed one. Restore an automatic window
+  // only when a subscription refund path exists to honour it.
   {
     q: 'Can I get a refund?',
-    a: 'Yes — full refund within 14 days, no questions asked. Pro-rated refund within 90 days. After that, refunds are case-by-case (medical, family emergency).',
+    a: 'Cancelling stops the next renewal — your access runs to the end of the year you have already paid for. The annual fee is not refunded automatically, because there is no automatic refund for a subscription in the product today. If something has genuinely gone wrong — a duplicate charge, or a benefit we did not deliver — write to support@darshya.online and a person reviews it and refunds by hand where we are at fault. Puja bookings you make are separate and follow the cancellation policy on /refunds.',
   },
   {
     q: 'What about taxes?',
-    a: 'The subscription is billed in INR and is not tax-deductible in your country (it is a service, not a donation). Your card issuer may add a foreign-transaction fee. Donations made through Darshya remain 80G-eligible in India separately.',
+    a: HAS_80G
+      ? 'The subscription is billed in INR and is not tax-deductible in your country (it is a service, not a donation). Your card issuer may add a foreign-transaction fee. Donations made through Darshya remain 80G-eligible in India separately.'
+      : 'The subscription is billed in INR and is not tax-deductible in your country (it is a service, not a donation). Your card issuer may add a foreign-transaction fee. Donations are separate, but they are not deductible either today: Darshya does not hold a Section 80G registration, so the receipt you get is proof of payment rather than a tax instrument. We will say so here the day the registration is issued.',
   },
   {
     q: 'Do I need to be NRI to subscribe?',
@@ -148,7 +192,7 @@ export default function NriPremiumLanding() {
               </Link>
             </div>
             <p className="text-xs text-surface-500 mt-4">
-              Charged ₹5,000 in INR (about $60) · your bank sets the conversion rate · cancel anytime · 14-day full refund
+              Charged ₹5,000 in INR (about $60) · your bank sets the conversion rate · cancel anytime · access runs to the end of your paid year
             </p>
           </div>
         </div>
@@ -269,7 +313,7 @@ export default function NriPremiumLanding() {
             Less than a single live darshan abroad.
           </h2>
           <p className="text-saffron-100 text-lg mb-8 max-w-2xl mx-auto">
-            ₹5,000 per year, charged in INR (about $60). Cancel anytime. Full refund within 14 days. Your home is one click away.
+            ₹5,000 per year, charged in INR (about $60). Cancel anytime — cancelling stops the next renewal and your access runs to the end of the year you have paid for. Your home is one click away.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -293,7 +337,7 @@ export default function NriPremiumLanding() {
             </li>
             <li className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-saffron-200" />
-              14-day money back
+              Access to the end of your paid year
             </li>
             <li className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-saffron-200" />

@@ -34,6 +34,110 @@ const reviewSchema = z.object({
   comment: z.string().max(2000).optional(),
 });
 
+// ─── PATCH allowlists (TC-09) ───────────────────────────────────────────────
+//
+// PATCH /providers/:type/:id used to hand `request.body` to
+// providerService.updateProvider unvalidated. That service's only defence was
+// destructuring four names away before spreading the rest into
+// `prisma.<model>.update({ data })` — a denylist of four names guarding tables
+// of twelve to eighteen columns. Everything it did not name was writable by
+// the provider themselves:
+//
+//   PanditProfile.aadhaarVerified  the flag payout eligibility keys off
+//   PanditProfile.rating / totalPujas       marketplace ranking inputs
+//   StoreProfile.commission        the PLATFORM take rate that
+//                                  store-commission.service.ts and
+//                                  payment.service.ts read to split every
+//                                  store order (default 0.20 = 20% platform)
+//   GaushalaProfile.verified       the "personally verified" trust badge
+//   TempleProfile.verified / totalStreams
+//   AstrologerProfile.rating / totalConsultations
+//
+// The replacement is a per-type ALLOWLIST, `.strict()` so an unrecognised key
+// is refused rather than silently dropped. The property that matters is the
+// default: a column added to any of these models after today is NOT writable
+// until someone deliberately adds it here. A denylist cannot have that
+// property — it fails open for every column it does not yet know about.
+//
+// Trust, moderation and money columns are deliberately absent from every list.
+// Approval and verification are admin.service.ts flows with their own audit
+// trail (see admin.service.ts approveProvider paths); this route is the
+// provider SELF-SERVICE surface and must not become a second, unaudited
+// approval rail — which is why ADMIN gets no bypass here either.
+
+const jsonValue = z.union([
+  z.record(z.string(), z.unknown()),
+  z.array(z.unknown()),
+  z.null(),
+]);
+
+const PROVIDER_PATCH_SCHEMAS: Record<ProviderTypeKey, z.ZodTypeAny> = {
+  pandit: z
+    .object({
+      templeName: z.string().max(200).nullable().optional(),
+      experience: z.number().int().min(0).max(100).optional(),
+      specialties: z.array(z.string().max(120)).max(50).optional(),
+      languages: z.array(z.string().max(60)).max(50).optional(),
+      pricePerPuja: z.number().min(0).optional(),
+      bio: z.string().max(5000).nullable().optional(),
+      city: z.string().max(120).nullable().optional(),
+      state: z.string().max(120).nullable().optional(),
+      availability: jsonValue.optional(),
+      availableForAntyeshti: z.boolean().optional(),
+    })
+    .strict(),
+  store: z
+    .object({
+      storeName: z.string().min(1).max(200).optional(),
+      gstNumber: z.string().max(32).nullable().optional(),
+      address: z.string().max(500).nullable().optional(),
+      city: z.string().max(120).nullable().optional(),
+      state: z.string().max(120).nullable().optional(),
+      categories: z.array(z.string().max(120)).max(50).optional(),
+    })
+    .strict(),
+  astrologer: z
+    .object({
+      displayName: z.string().min(1).max(200).optional(),
+      specialties: z.array(z.string().max(120)).max(50).optional(),
+      experience: z.number().int().min(0).max(100).optional(),
+      languages: z.array(z.string().max(60)).max(50).optional(),
+      pricePerMinute: z.number().min(0).optional(),
+      bio: z.string().max(5000).nullable().optional(),
+      availability: jsonValue.optional(),
+    })
+    .strict(),
+  wellness: z
+    .object({
+      displayName: z.string().min(1).max(200).optional(),
+      specialties: z.array(z.string().max(120)).max(50).optional(),
+      certifications: z.array(z.string().max(200)).max(50).optional(),
+      experience: z.number().int().min(0).max(100).optional(),
+      pricePerSession: z.number().min(0).optional(),
+      bio: z.string().max(5000).nullable().optional(),
+    })
+    .strict(),
+  gaushala: z
+    .object({
+      gaushalaName: z.string().min(1).max(200).optional(),
+      address: z.string().max(500).nullable().optional(),
+      city: z.string().max(120).nullable().optional(),
+      totalCows: z.number().int().min(0).max(100000).optional(),
+      description: z.string().max(5000).nullable().optional(),
+    })
+    .strict(),
+  temple: z
+    .object({
+      templeName: z.string().min(1).max(200).optional(),
+      deity: z.string().max(120).nullable().optional(),
+      city: z.string().max(120).nullable().optional(),
+      state: z.string().max(120).nullable().optional(),
+      address: z.string().max(500).nullable().optional(),
+      description: z.string().max(5000).nullable().optional(),
+    })
+    .strict(),
+};
+
 const PROVIDER_ROLE_MAP: Record<ProviderTypeKey, string> = {
   pandit: 'PANDIT',
   store: 'STORE_OWNER',
@@ -144,7 +248,25 @@ export async function providerRoutes(server: FastifyInstance) {
         });
       }
 
-      const body = request.body as Record<string, unknown>;
+      // TC-09: validate against the per-type allowlist BEFORE anything reaches
+      // the service. `.strict()` means an unrecognised or privileged key is a
+      // 400, not a silent drop — the caller learns their write was refused
+      // instead of believing it landed.
+      const parsedBody = PROVIDER_PATCH_SCHEMAS[canonicalType].safeParse(request.body);
+      if (!parsedBody.success) {
+        return reply.code(400).send({
+          error: 'Invalid profile update',
+          message:
+            'Only your own editable profile fields may be updated here. Verification, approval, ratings, activity counts and commission rates are not self-service.',
+          details: parsedBody.error.flatten(),
+        });
+      }
+
+      const body = parsedBody.data as Record<string, unknown>;
+      if (Object.keys(body).length === 0) {
+        return reply.code(400).send({ error: 'Invalid profile update', message: 'No updatable fields supplied.' });
+      }
+
       const result = await providerService.updateProvider(canonicalType, id, userId, body);
 
       if (!result) {

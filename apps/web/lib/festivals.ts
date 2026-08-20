@@ -338,25 +338,6 @@ export const FESTIVALS: FestivalInfo[] = [
       'Touching the rath rope grants liberation. ISKCON has replicated this in 100+ cities globally including London, NYC, Sydney.',
   },
   {
-    slug: 'guru-poornima',
-    name: 'Guru Poornima',
-    sanskrit: 'गुरु पूर्णिमा',
-    date2026: '2026-07-29',
-    deity: 'Ved Vyasa / Guru',
-    description:
-      'Honors the guru who removes darkness (gu) and brings light (ru). Marks birthday of Ved Vyasa, compiler of Vedas, Mahabharata. Disciples touch guru\'s feet, offer dakshina.',
-    rituals: [
-      'Vyasa Puja at home or ashram',
-      'Touch guru\'s feet and offer dakshina',
-      'Recite Guru Stotram',
-      'Chaturmas vrat begins for sadhus',
-    ],
-    pujasAvailable: ['satyanarayan-puja', 'guru-puja'],
-    fastingType: 'partial',
-    significance:
-      'Buddha gave his first sermon on this day. Shiva became Adi Guru, teaching Saptarishis. Chaturmas (4-month rainy retreat) begins.',
-  },
-  {
     slug: 'nag-panchami',
     name: 'Nag Panchami',
     sanskrit: 'नाग पंचमी',
@@ -773,27 +754,6 @@ export const FESTIVALS: FestivalInfo[] = [
       'Originated in 1813 when a military battalion from Hyderabad prayed at Ujjaini Mahakali during a plague outbreak; on return, they installed the Devi and began the bonam tradition. Declared the state festival of Telangana after bifurcation in 2014. The Rangam prophecy is treated as binding civic forecast.',
   },
   {
-    slug: 'teej-hartalika',
-    name: 'Hartalika Teej',
-    sanskrit: 'हरतालिका तीज',
-    date2026: '2026-08-15',
-    deity: 'Goddess Parvati',
-    deitySlug: 'parvati',
-    description:
-      'Bhadrapada Shukla Tritiya nirjala vrat observed by married women and unmarried girls of north India, Nepal, Rajasthan, and Bihar for marital longevity and the boon of a Shiva-like husband. Named "Hartalika" because Parvati\'s sakhis (her female friends) abducted her to the forest to prevent her father\'s plan to marry her to Vishnu, allowing her to continue penance for Shiva.',
-    rituals: [
-      'Sand-clay murtis of Shiva-Parvati crafted at home',
-      'Nirjala vrat — no food, no water for 24 hours',
-      'Night-long jagran with Teej katha recitation',
-      'Sindoor, mehndi, green bangles, and green saree (suhag shringar)',
-      'Visarjan of clay murtis the next morning',
-    ],
-    pujasAvailable: ['parvati-puja', 'rudrabhishek'],
-    fastingType: 'full',
-    significance:
-      'Marks Parvati\'s acceptance by Shiva after 108 lifetimes of tapasya, hence the most rigorous vrat for suhag (marital wellbeing). Considered more austere than Karva Chauth because no water is permitted. Unmarried girls observe it praying for a husband who embodies Shiva\'s qualities of detachment with devotion.',
-  },
-  {
     slug: 'mahalaya-amavasya',
     name: 'Mahalaya Amavasya',
     sanskrit: 'महालय अमावस्या',
@@ -875,27 +835,6 @@ export const FESTIVALS: FestivalInfo[] = [
     fastingType: 'partial',
     significance:
       'The cultural identity-marker of Rajasthan — recognized by UNESCO as a living tradition representing the suvasini-dharma of women’s spiritual agency. Echoes the larger Parvati-Shiva mythology where Parvati performs austerity to regain Shiva after his Tandava grief. Mughal-era Jahangir reportedly halted his army to watch the Udaipur Gangaur procession.',
-  },
-  {
-    slug: 'ananta-chaturdashi',
-    name: 'Ananta Chaturdashi',
-    sanskrit: 'अनन्त चतुर्दशी',
-    date2026: '2026-09-26',
-    deity: 'Lord Vishnu (Ananta Padmanabha)',
-    deitySlug: 'vishnu',
-    description:
-      'The 14th day of Bhadrapada Shukla Paksha — marking the worship of Vishnu in his Ananta-Shesha reclining form, and also the immersion (visarjan) day for Ganesh murtis after 10 days of Ganesh Chaturthi. Devotees tie the sacred Ananta-sutra — a 14-knotted yellow or red cotton thread — on the right wrist (men) or left wrist (women), invoking Vishnu’s 14 lokas of protection. Mumbai sees its largest visarjan procession of the year at Girgaum Chowpatty with over 200,000 Ganesh murtis immersed.',
-    rituals: [
-      'Tying the 14-knotted Ananta-sutra after Vishnu puja',
-      'Vishnu Sahasranama parayana',
-      'Ganesh visarjan procession (final day of Ganesh Chaturthi 10-day cycle)',
-      'Vrat of fasting until the puja is concluded at noon',
-      'Reading of Ananta Vrat Katha from the Bhavishyottara Purana',
-    ],
-    pujasAvailable: ['ananta-padmanabha-vrat', 'ganesh-visarjan-puja'],
-    fastingType: 'full',
-    significance:
-      'The Bhavishyottara Purana narrates Yudhishthira learning the Ananta Vrat from Krishna himself during the Pandavas’ vanavasa — restoring their fortunes lost at the dice game. The 14 knots symbolise the 14 manvantaras and the 14 worlds. The convergence with Ganesh visarjan makes it Mumbai and Pune’s largest single-day spiritual gathering — 1.5 million devotees on the streets.',
   },
   {
     slug: 'gita-jayanti',
@@ -1098,19 +1037,6 @@ export const FESTIVALS: FestivalInfo[] = [
       'The Bhavishya Purana phala-shruti declares that any woman who observes Hartalika Teej with sincere bhakti and the strict nirjala fast attains the akhand saubhagya (unbroken marital bliss) that Parvati herself received from Shiva. Lord Shiva tells Parvati that this vrata grants seven births of the same husband, freedom from widowhood, prosperity, and progeny that uphold dharma. For unmarried girls the vrata is said to secure a husband endowed with Shivas qualities of righteousness, compassion, and devotion. The Skanda Purana adds that observing Hartalika Teej dissolves all stri-paap accumulated across lifetimes, including doshas inherited from maternal lineage, and grants direct entry to Kailasa at the time of death.',
   },
   {
-    slug: 'narasimha-jayanti',
-    name: 'Narasimha Jayanti',
-    sanskrit: 'नृसिंह जयन्ती',
-    date2026: '2026-05-30',
-    deity: 'Vishnu',
-    deitySlug: 'vishnu',
-    description: 'Narasimha Jayanti commemorates the appearance of Lord Vishnu in his fierce half-man half-lion avatar to protect his young devotee Prahlada and slay the tyrant Hiranyakashipu. The festival falls on the Chaturdashi of the bright fortnight of Vaishakha and is observed at sandhya, the twilight hour, because the Puranas record that Narasimha emerged at precisely that liminal moment which is neither day nor night, fulfilling the boon that had made the demon king invulnerable in every familiar way. Devotees across India, especially in Andhra Pradesh, Maharashtra, and Karnataka where Narasimha shrines abound, observe a fast through the day and break it after the evening puja. The mood of the festival is one of protective ferocity tempered by tenderness, for the same lord who tore apart Hiranyakashipu cradled Prahlada on his lap. Reciting the Narasimha Kavacha is considered especially auspicious for removing fear, illness, and persistent obstacles.',
-    rituals: ['Bathe before dawn and take a sankalpa to fast until sunset in honor of Narasimha.', 'Visit a Narasimha shrine and offer panakam, neer mor, vada mala, and kosumalli prepared in the south Indian style.', 'Perform a homa with til, ghee, and Narasimha mantras at noon if a priest is available.', 'Recite the Narasimha Kavacha, Lakshmi Narasimha Karavalamba Stotram, and the eleven names of Narasimha through the day.', 'Light a ghee lamp at twilight, the hour of his appearance, and offer arati with red flowers.', 'Break the fast after evening puja with prasad, beginning with a sip of panakam.', 'Donate food, cloth, or books to children in remembrance of Prahlada.'],
-    pujasAvailable: ['narasimha-homa', 'lakshmi-narasimha-puja', 'narasimha-kavacha-parayan', 'sudarshana-homa'],
-    fastingType: 'one-meal',
-    significance: 'The Narasimha avatar is celebrated as the supreme guardian of devotees and the swift remover of injustice. Theologically the appearance fulfills several impossible conditions of a divine boon, illustrating the principle that dharma always finds an unforeseen path when ordinary means are exhausted. The festival therefore carries a deep message about the limits of asuric pride and the inescapability of divine justice. For families it is observed as a protective vrata, performed to shield children from harm, to overcome chronic enemies including disease and litigation, and to fortify the household against unseen negativity. Tantric traditions consider Narasimha mantras among the most potent for clearing dosha and breaking long-standing curses. The narrative of Prahlada, who held to the name of Hari even under torture, is recited to children as the archetypal lesson that devotion endures every test and that the divine never abandons one who calls in earnest.',
-  },
-  {
     slug: 'anant-chaturdashi',
     name: 'Anant Chaturdashi',
     sanskrit: 'अनन्त चतुर्दशी',
@@ -1187,6 +1113,59 @@ export const FESTIVALS: FestivalInfo[] = [
     significance: 'Kajari Teej is regarded as a powerful sumangali vrata for married women across the Hindi belt and is held to confer akhand saubhagya, the unbroken state of marital auspiciousness, when observed with the prescribed discipline. The choice of the dark monsoon clouds as the festival image reflects the deep cultural association in Sanskrit poetry between the rain bearing clouds and the longing of separated lovers, an emotion that becomes a spiritual upayoga in the form of the women longing for the divine union of Shiva and Parvati within their own hearts. Acharyas explain that the nirjala fast for the husband is in essence a transmutation of personal love into the cosmic love of Parvati for Shiva, and that the merit of the vrata accrues not only to the marriage but to the soul evolution of both partners across lifetimes. The kajari folk songs, performed only during this brief window of the year, preserve a continuous oral tradition that goes back at least to the medieval period and contain layers of bhakti, viraha, shringar, and Krishna lila themes that have shaped the devotional sensibility of north India. In Banaras the festival is paired with the famous Kajari ki Lavani performances and the swing rituals at Manikarnika and Dashashwamedh ghats, where the goddess is taken on a procession to the river for a ritual bath. For unmarried girls, the vrata is believed to grant a worthy husband within the same year, and for married women it is held to ensure widowed status is never experienced in this life or the next.',
   },
 ];
+
+/**
+ * CI-03 — retired slug -> surviving slug.
+ *
+ * Three festivals shipped as TWO records each, at two live URLs, with two
+ * different 2026 dates:
+ *
+ *   teej-hartalika     2026-08-15  vs  hartalika-teej      2026-09-14
+ *   guru-poornima      2026-07-29  vs  guru-purnima        2026-07-19
+ *   ananta-chaturdashi 2026-09-26  vs  anant-chaturdashi   2026-09-25
+ *
+ * The survivor in each pair is the one this dataset's own tithi anchors agree
+ * with: Hartalika Teej is Bhadrapada Shukla Tritiya, the day before the
+ * Ganesh Chaturthi this file dates 2026-09-15; Anant Chaturdashi is Shukla
+ * Chaturdashi, ten tithis after the same anchor; Ashadha Purnima lands on
+ * 2026-07-19/20 whether it is counted back twenty tithis from Nag Panchami
+ * (2026-08-08) or one lunation from Raksha Bandhan (2026-08-19).
+ *
+ * The retired slugs stay reachable as permanent redirects — they were indexed
+ * URLs, so dropping them to a 404 would be a second defect.
+ */
+export const FESTIVAL_ALIASES: Readonly<Record<string, string>> = {
+  'teej-hartalika': 'hartalika-teej',
+  'guru-poornima': 'guru-purnima',
+  'ananta-chaturdashi': 'anant-chaturdashi',
+};
+
+/** Canonical slug for `slug`. Unknown slugs are returned untouched. */
+export function resolveFestivalSlug(slug: string): string {
+  return FESTIVAL_ALIASES[slug] ?? slug;
+}
+
+/** The Gregorian year `date2026` is expected to fall in. */
+export const FESTIVAL_YEAR = 2026;
+
+/**
+ * CI-11 — `date2026` is not always in 2026. Maha Kumbh Mela's next occurrence
+ * is 2027-01-14, and a month filter that reads only the MONTH segment files it
+ * under "Hindu Festivals in January 2026" as upcoming. Any surface that prints
+ * a "<Month> <year>" heading must filter on the year too, which is what this
+ * helper does.
+ *
+ * @param monthIndex0 0 = January.
+ */
+export function festivalsInMonth(
+  monthIndex0: number,
+  year: number = FESTIVAL_YEAR,
+): FestivalInfo[] {
+  return FESTIVALS.filter((f) => {
+    const [y, m] = f.date2026.split('-');
+    return Number(y) === year && Number(m) === monthIndex0 + 1;
+  });
+}
 
 export function getFestival(slug: string): FestivalInfo | undefined {
   return FESTIVALS.find((f) => f.slug === slug);

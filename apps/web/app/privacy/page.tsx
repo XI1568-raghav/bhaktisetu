@@ -172,8 +172,10 @@ export default function PrivacyPage() {
  </li>
   <li>
  <strong>Supabase (Database & Auth):</strong> Stores account
- records, bookings, and content metadata in EU-region Postgres
- with row-level security policies.
+ records, bookings, and content metadata in managed Postgres.
+ Your browser never queries these tables directly; every read
+ and write passes through our authenticated API, which checks
+ your identity and role on each request.
  </li>
  <li>
  <strong>Cloudflare (CDN, DNS, Analytics):</strong> Routes web
@@ -223,7 +225,12 @@ export default function PrivacyPage() {
  </p>
  <ul>
  <li>All data transmitted over HTTPS/TLS encryption.</li>
- <li>Database hosted on Supabase with row-level security policies.</li>
+ <li>
+ Database access is restricted to our authenticated API. Every read
+ and write is authorised in the application layer against your
+ identity and role, and the database is never reachable from your
+ browser or from a mobile app.
+ </li>
  <li>Payment processing handled by PCI DSS Level 1 compliant providers.</li>
  <li>Priest access to sankalp data is limited to active bookings only.</li>
  <li>Regular security audits and vulnerability assessments.</li>

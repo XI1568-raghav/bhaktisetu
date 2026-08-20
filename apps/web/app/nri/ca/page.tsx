@@ -14,10 +14,21 @@ import { COMPANY } from '../../../lib/company';
 
 export const revalidate = 86400;
 
+/**
+ * TC-01 (P0, trust). Same gate as /gaushala, /donations and /nri. The flag is
+ * false, `eightyGNumber` and `pan` are null, and apps/api/src/lib/pdf-receipt
+ * .ts stamps every receipt "Proof of donation — not a tax exemption
+ * certificate" because `is80GEligible()` needs a donee registration number AND
+ * PAN, and neither column is ever written. Promising an Indian deduction to a
+ * Canadian filer is the same misrepresentation with an extra jurisdiction on
+ * top, so the claim is a branch on the flag rather than a sentence.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
+
 export const metadata: Metadata = {
   title: 'Canada NRI — Live Puja Booking & Darshan from India',
   description:
-    'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at verified temples in India. Live darshan, 80G receipts, weekly 1:1 priest call. CAD checkout, transparent pricing.',
+    'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at verified temples in India. Live darshan, donation receipts, weekly 1:1 priest call. CAD checkout, transparent pricing.',
   alternates: {
     canonical: 'https://darshya.online/nri/ca',
     languages: {
@@ -88,8 +99,10 @@ const benefits = [
   },
   {
     icon: FileText,
-    title: '80G receipts (India tax-deductible)',
-    body: 'Donations to registered Indian temples auto-generate 80G receipts. Useful for India-tax filers; documentation for CRA charitable contribution claims.',
+    title: HAS_80G ? '80G receipts (India tax-deductible)' : 'Donation receipts, emailed instantly',
+    body: HAS_80G
+      ? 'Donations to registered Indian temples auto-generate 80G receipts. Useful for India-tax filers; documentation for CRA charitable contribution claims.'
+      : 'Every donation auto-generates a receipt PDF with its own receipt number. It is proof of payment, not a tax-exemption certificate: Darshya holds no Section 80G registration yet, so a donation made today is not deductible in India, and it is not deductible in Canada either.',
   },
   {
     icon: Calendar,
@@ -123,7 +136,9 @@ const founderFaqs = [
   },
   {
     q: 'What about Canadian tax?',
-    a: 'Donations to Indian temples are NOT CRA-registered charities, so they do not generate Canadian charitable receipts. 80G is India-tax-deductible only. The NRI Premium subscription is a service (not a donation) and is billed in INR; no Canadian GST/HST is collected by us.',
+    a: HAS_80G
+      ? 'Donations to Indian temples are NOT CRA-registered charities, so they do not generate Canadian charitable receipts. 80G is India-tax-deductible only. The NRI Premium subscription is a service (not a donation) and is billed in INR; no Canadian GST/HST is collected by us.'
+      : 'Donations to Indian temples are NOT CRA-registered charities, so they do not generate Canadian charitable receipts. Nor are they deductible in India today: Darshya does not hold a Section 80G registration, so the receipt we issue is proof of payment and nothing more. The NRI Premium subscription is a service (not a donation) and is billed in INR; no Canadian GST/HST is collected by us.',
   },
   {
     q: 'What languages?',

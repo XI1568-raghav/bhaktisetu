@@ -241,6 +241,23 @@
      Those two have to become explicit max-w-[56rem] measures first. */
   --container-5xl: 72rem;
 
+  /* The two steps that already MATCHED the declared widths, now owned rather
+     than coincidental. Recount at HEAD: of 723 centred containers across app/,
+     components/ and lib/, 143 use max-w-6xl and 92 use max-w-3xl, and those
+     land exactly on .container-wide (72rem) and .container-prose (48rem) — but
+     only because Tailwind's stock scale happens to put 6xl at 72rem and 3xl at
+     48rem. Neither token was declared here, so 235 page shells depended on an
+     upstream default staying where it is: a Tailwind release that renumbers
+     the container scale, or a @theme edit that moves one declared width and
+     not the other, would slide them off with nothing in CI to notice.
+
+     Same values, zero rendered diff — this is a lock, not a retarget. The two
+     steps that WERE retargeted are above; --container-4xl (182 centred shells
+     at 56rem, the one remaining third width) is still open, for the reason
+     given there. Locked by __tests__/design-tokens.test.ts. */
+  --container-6xl: 72rem;
+  --container-3xl: 48rem;
+
   /* ── Letter-spacing ───────────────────────────────────────────────────── */
   --tracking-tight: -0.02em;
   --tracking-normal: 0;
@@ -680,6 +697,33 @@ select {
   line-height: var(--leading-relaxed);
 }
 
+/* ── prose-meta — ONE size for the small copy ─────────────────────────────
+   DU-10, the other end of the same finding. `.prose-body` gave body copy one
+   name; the metadata the finding explicitly permits ("small sizes reserved for
+   metadata") never got one, so it stayed a coin flip. Re-censused at HEAD over
+   the 219 <p> elements under app/ that carry a reading measure:
+
+     .prose-body 3 · text-xs 7 · text-sm 83 · text-base 60 · text-lg 25 · none 41
+
+   text-base, none and .prose-body are all the one reading size now that `body`
+   declares font-size — so the BODY half is closed at the token layer. What is
+   left is 90 captions split across two steps: 12.0-13.0px on text-xs against
+   13.0-14.0px on text-sm, for one role, with nothing to tell an author which
+   one theirs is.
+
+   --text-sm rather than --text-xs on purpose: RESP-05 put the xs floor at
+   exactly the 12px legibility floor, and a caption is still read, so the one
+   metadata size should clear the floor rather than sit on it. Same
+   --leading-relaxed as body copy, which is the ratio the whole prose range
+   already shares.
+
+   NOT a second body size — timestamps, counts, helper text and captions only.
+   Locked by __tests__/design-tokens.test.ts. */
+.prose-meta {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
 /* ── defer-paint — skip render work for below-fold, text-only sections ─────
    HOME-01: the homepage's <main> is 124,211 B across 26 top-level children.
    The measured prize for the deferral programme the finding originally asked
@@ -1084,11 +1128,34 @@ img {
   width: 100%;
 }
 
-/* Focus ring — animated outline offset */
+/* ── Focus ring — animated outline offset ─────────────────────────────────
+   DU-03: this rule used to also set `border-radius: 4px`, and that reached a
+   great deal further than a focus ring should.
+
+   `@import "tailwindcss"` puts every utility inside `@layer utilities`, and
+   this stylesheet declares no @layer of its own — so everything here is
+   UNLAYERED, and an unlayered declaration beats every layered one in the
+   cascade whatever the specificity. Compiled through @tailwindcss/postcss:
+
+     .rounded-lg     layer=utilities   { border-radius: var(--radius-lg) }
+     :focus-visible  layer=(unlayered) { outline: …; border-radius: 4px }
+
+   `:focus-visible` also matches the element itself rather than a ring
+   pseudo-element, so the property re-shaped the CONTROL. Every focused control
+   in the app therefore snapped to a 4px corner on focus — every
+   `buttonClass()` CTA (whose single pinned radius, --radius-lg = 16px, is the
+   entire point of components/ui/button-recipe.ts), every rounded-full pill,
+   every rounded-2xl modal — and 4px is not a step on the DU-15 radius scale at
+   all; it is the stock value DU-15 removed from `--radius`. Keyboard users
+   watched the corner pop, and got a seventh radius nobody declared.
+
+   The ring does not need it: `outline` already follows the element's own
+   border-radius, so with the declaration gone a rounded control rings round
+   and a square one rings square, and neither changes shape.
+   Locked by __tests__/design-tokens.test.ts. */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-  border-radius: 4px;
   transition: outline-offset 150ms ease;
 }
 

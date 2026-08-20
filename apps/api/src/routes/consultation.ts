@@ -112,8 +112,11 @@ const verifySchema = z.object({
 
 // Admin LIST query — status filter optional, paginated. Bounds tight enough
 // to prevent admin-page slowdown if rows grow into the thousands.
+// PAY-01: `payment_review` is the admin queue jobs/consultation-expire.ts now
+// parks a stale row in instead of destroying one that may hold a capture. It
+// has to be filterable or the queue is invisible to the operator who works it.
 const adminListSchema = z.object({
-  status: z.enum(['pending_payment', 'confirmed', 'completed', 'cancelled']).optional(),
+  status: z.enum(['pending_payment', 'payment_review', 'confirmed', 'completed', 'cancelled']).optional(),
   astrologerId: z.string().min(1).max(64).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
@@ -122,12 +125,257 @@ const adminListSchema = z.object({
 // Astrologer LIST query — same shape minus astrologerId (implicit: caller).
 // Astrologer side filters by their own currentUser.id; only status + paging.
 const astrologerListSchema = z.object({
-  status: z.enum(['pending_payment', 'confirmed', 'completed', 'cancelled']).optional(),
+  status: z.enum(['pending_payment', 'payment_review', 'confirmed', 'completed', 'cancelled']).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });
 
 export const __testing = { bookSchema, verifySchema, adminListSchema, astrologerListSchema, nextConsultRef };
+
+/**
+ * Minimal logger shape shared by the route (fastify's `server.log`) and the
+ * PAY-01 webhook backstop (console). Keeps ONE ledger writer callable by both.
+ */
+interface ConsultationLogger {
+  error(obj: Record<string, unknown>, msg?: string): void;
+  warn(obj: Record<string, unknown>, msg?: string): void;
+}
+
+const consoleConsultationLogger: ConsultationLogger = {
+  error: (obj, msg) => console.error(msg ?? '[consultation]', JSON.stringify(obj)),
+  warn: (obj, msg) => console.warn(msg ?? '[consultation]', JSON.stringify(obj)),
+};
+
+/** Fresh Jitsi room name for a paid consultation. */
+export function mintConsultationRoom(astrologerName: string): string {
+  const slug = (astrologerName || 'astrologer')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 24);
+  return `darshya-astrologer-${slug}-${randomBytes(12).toString('hex')}`;
+}
+
+/**
+ * P0 #AP-06 (2026-07-09): write a Commission ledger row so the astrologer's
+ * earnings are reconcilable. The booking stores astrologer_id as a TEXT
+ * (mock id / slug today, real AstrologerProfile.id once profiles are live),
+ * so resolve it to a real AstrologerProfile -> userId for providerId. If no
+ * real profile exists (mock astrologer), skip — there is no real provider
+ * to credit, and we must not violate Commission.providerId's UUID constraint.
+ * Idempotent (findFirst on bookingId).
+ *
+ * PAY-01 (2026-08-20): extracted out of the /verify-payment handler so the
+ * Razorpay webhook backstop credits the astrologer through the IDENTICAL
+ * rule. A second copy of a take-rate calculation is exactly the drift that
+ * produced the 75% underpayment fixed here on 2026-08-11 — do not re-inline.
+ */
+export async function writeConsultationCommission(
+  row: ConsultationRow,
+  log: ConsultationLogger = consoleConsultationLogger,
+): Promise<void> {
+  try {
+    const existing = await prisma.commission.findFirst({
+      where: { bookingId: row.id },
+      select: { id: true },
+    });
+    if (existing) return;
+    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.astrologer_id);
+    const profile = looksLikeUuid
+      ? await prisma.astrologerProfile.findUnique({ where: { id: row.astrologer_id }, select: { id: true, userId: true } })
+      : await prisma.astrologerProfile.findFirst({ where: { displayName: row.astrologer_name }, select: { id: true, userId: true } });
+    if (!profile?.userId) {
+      // AW-02 (2026-08-12, P0): this used to be a bare `return` — money was
+      // captured and the ledger gap was invisible. /book now refuses
+      // non-onboarded astrologer ids, so reaching here means one of:
+      //   (a) a legacy row booked against a fixture BEFORE that guard shipped
+      //       and only now being verified, or
+      //   (b) the AstrologerProfile was deleted between /book and /verify.
+      // Either way a devotee has paid and nobody can be credited — that is an
+      // operational incident, not a no-op. Log it at ERROR (greppable by
+      // `commission_gap`) and surface it on GET /consultation/admin/all via
+      // `commissionMissing` so an operator can refund. Never fabricate a
+      // provider to make the ledger look balanced.
+      log.error(
+        {
+          event: 'commission_gap',
+          consultationId: row.id,
+          reference: row.reference,
+          astrologerId: row.astrologer_id,
+          astrologerName: row.astrologer_name,
+          amountInr: Number(row.amount_inr),
+          devoteeUserId: row.user_id,
+        },
+        '[consultation] PAID consultation has no creditable astrologer — no Commission row written, manual refund required',
+      );
+      return;
+    }
+    const total = Number(row.amount_inr);
+    // Astrologer revamp (2026-08-05): align with the priest take-rate cut —
+    // platform 20% / astrologer 80% (was 30/70). Research: AstroTalk takes
+    // 50%, so even 30% was supply-competitive; 20% + demand is the win.
+    // ASTROLOGER_PLATFORM_RATE is the single source of truth.
+    // Commission.amount is the PROVIDER's earning — it is what
+    // payout.service.getPayoutBalance pays out (see lib/commission-math.ts).
+    // This wrote the PLATFORM's 20% into it while keying on a real User.id,
+    // so every astrologer's withdrawable balance was 20% of gross instead of
+    // 80% — a live 75% underpayment through the unified payout rail and the
+    // weekly settlement cron. Found by adversarial review 2026-08-11.
+    const platformCut = Math.round(total * ASTROLOGER_PLATFORM_RATE * 100) / 100;
+    const astrologerEarning = Math.round((total - platformCut) * 100) / 100;
+    await prisma.commission.create({
+      data: {
+        bookingId: row.id,
+        providerId: profile.userId,
+        amount: astrologerEarning,
+        percentage: ASTROLOGER_PLATFORM_RATE,
+        status: 'PENDING',
+      },
+    });
+
+    // AW-14 (2026-08-12, P2): AstrologerProfile.totalConsultations was a
+    // counter column NOTHING ever wrote, so it stayed 0 for life. The
+    // astrologer's own dashboard now derives its lifetime figure from the
+    // consultations table (routes/astrologer-portal.ts) — but the PUBLIC
+    // directory badge reads this column (routes/astrology.ts:82,153) and
+    // also ORDERs by it, so it has to become real. This sits inside the
+    // `existing` idempotency guard above: one increment per consultation,
+    // never on a replayed verify. Its own try — a counter is cosmetic and
+    // must never be able to unwind or mask the ledger write that preceded
+    // it. Worst case is an undercount, never a double count.
+    try {
+      await prisma.astrologerProfile.update({
+        where: { id: profile.id },
+        data: { totalConsultations: { increment: 1 } },
+      });
+    } catch (err) {
+      log.warn(
+        { err, astrologerProfileId: profile.id, consultationId: row.id },
+        '[consultation] totalConsultations increment failed (ledger row already written)',
+      );
+    }
+  } catch (err) {
+    log.warn({ err }, '[consultation] commission write failed');
+  }
+}
+
+/**
+ * PAY-01 (2026-08-20, P0): resolve a consultation by its Razorpay order id.
+ *
+ * Consultations write NO `prisma.payment` row — /book raw-INSERTs into
+ * `astrologer_consultations` carrying only `razorpay_order_id` — so the
+ * Razorpay webhook, which resolves orders via `payment.findFirst` and
+ * `findDonationByOrderId`, could never see one. Mirrors
+ * `routes/donations.findDonationByOrderId`, which exists for the same reason.
+ */
+export async function findConsultationByOrderId(
+  razorpayOrderId: string,
+): Promise<ConsultationRow | null> {
+  if (!razorpayOrderId) return null;
+  try {
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations WHERE razorpay_order_id = $1 LIMIT 1;`,
+      razorpayOrderId,
+    );
+    return (rows as ConsultationRow[])[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export interface ConsultationBackstopResult {
+  handled: boolean;
+  consultationId?: string;
+  reference?: string;
+  roomName?: string;
+  /** True when the row had already been taken out by the expiry cron. */
+  recovered?: boolean;
+  reason?: string;
+}
+
+/**
+ * PAY-01 (2026-08-20, P0): confirm a consultation from a Razorpay
+ * `payment.captured` webhook.
+ *
+ * Without this, a devotee who paid and closed the tab before /verify-payment
+ * was never confirmed — and `jobs/consultation-expire.ts` then flipped the row
+ * to `cancelled` 30 minutes later. Money captured, the record says the
+ * consultation was never ordered, no refund, no notice.
+ *
+ * The claim is a conditional UPDATE rather than read-then-write:
+ *   - it is the idempotency guard (a replayed webhook updates 0 rows), and
+ *   - it is the single-winner gate against /verify-payment running
+ *     concurrently, so the astrologer is never notified twice for one consult.
+ *
+ * It deliberately accepts `cancelled` and `payment_review` rows as well as
+ * `pending_payment`: RECOVERING a consultation the expiry cron already took
+ * out is the whole point of the finding. `paid_at` and `room_name` use
+ * COALESCE so a recovery never rewrites the original values.
+ */
+export async function finalizeConsultationPaymentFromWebhook(
+  row: ConsultationRow,
+  razorpayPaymentId: string | null,
+  log: ConsultationLogger = consoleConsultationLogger,
+): Promise<ConsultationBackstopResult> {
+  if (row.status === 'confirmed' || row.status === 'completed') {
+    return { handled: false, reason: 'already-confirmed', consultationId: row.id };
+  }
+  const roomName = row.room_name ?? mintConsultationRoom(row.astrologer_name);
+  const claimed = Number(
+    await prisma.$executeRawUnsafe(
+      `UPDATE astrologer_consultations
+          SET status = 'confirmed',
+              razorpay_payment_id = COALESCE($1, razorpay_payment_id),
+              room_name = COALESCE(room_name, $2),
+              paid_at = COALESCE(paid_at, now())
+        WHERE id = $3::uuid
+          AND status IN ('pending_payment', 'payment_review', 'cancelled');`,
+      razorpayPaymentId ?? null,
+      roomName,
+      row.id,
+    ),
+  );
+  if (!Number.isFinite(claimed) || claimed < 1) {
+    return { handled: false, reason: 'not-claimable', consultationId: row.id };
+  }
+
+  log.warn(
+    {
+      event: 'consultation_webhook_backstop',
+      consultationId: row.id,
+      reference: row.reference,
+      priorStatus: row.status,
+      razorpayPaymentId,
+    },
+    '[consultation] confirmed from the Razorpay webhook — the devotee never reached /verify-payment',
+  );
+
+  await writeConsultationCommission(row, log);
+
+  void notifyAstrologerNewConsult({
+    astrologerRef: row.astrologer_id,
+    devoteeName: null,
+    minutes: row.minutes ?? 0,
+    amountInr: Number(row.amount_inr ?? 0),
+    consultationId: row.id,
+  }).catch(() => undefined);
+  void notifyDevoteeConsultConfirmed({
+    devoteeUserId: row.user_id,
+    astrologerName: row.astrologer_name ?? 'Your astrologer',
+    minutes: row.minutes ?? 0,
+    consultationId: row.id,
+  }).catch(() => undefined);
+
+  return {
+    handled: true,
+    consultationId: row.id,
+    reference: row.reference,
+    roomName,
+    recovered: row.status === 'cancelled' || row.status === 'payment_review',
+  };
+}
+
 
 export async function consultationRoutes(server: FastifyInstance) {
   // Ephemeral Jitsi room. P0 #AP-02 (2026-07-09): the old implementation
@@ -404,12 +652,7 @@ export async function consultationRoutes(server: FastifyInstance) {
     }
 
     // Mint a fresh Jitsi room and flip status.
-    const slug = row.astrologer_name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-      .slice(0, 24);
-    const roomName = `darshya-astrologer-${slug}-${randomBytes(12).toString('hex')}`;
+    const roomName = mintConsultationRoom(row.astrologer_name);
 
     await prisma.$executeRawUnsafe(
       `UPDATE astrologer_consultations
@@ -440,99 +683,11 @@ export async function consultationRoutes(server: FastifyInstance) {
       consultationId,
     }).catch(() => undefined);
 
-    // P0 #AP-06 (2026-07-09): write a Commission ledger row so the astrologer's
-    // earnings are reconcilable. The booking stores astrologer_id as a TEXT
-    // (mock id / slug today, real AstrologerProfile.id once profiles are live),
-    // so resolve it to a real AstrologerProfile → userId for providerId. If no
-    // real profile exists (mock astrologer), skip — there is no real provider
-    // to credit, and we must not violate Commission.providerId's UUID constraint.
-    // Idempotent (findFirst on bookingId). Fire-and-forget: a ledger write
-    // failure must never block the verified response.
-    void (async () => {
-      try {
-        const existing = await prisma.commission.findFirst({
-          where: { bookingId: row.id },
-          select: { id: true },
-        });
-        if (existing) return;
-        const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.astrologer_id);
-        const profile = looksLikeUuid
-          ? await prisma.astrologerProfile.findUnique({ where: { id: row.astrologer_id }, select: { id: true, userId: true } })
-          : await prisma.astrologerProfile.findFirst({ where: { displayName: row.astrologer_name }, select: { id: true, userId: true } });
-        if (!profile?.userId) {
-          // AW-02 (2026-08-12, P0): this used to be a bare `return` — money was
-          // captured and the ledger gap was invisible. /book now refuses
-          // non-onboarded astrologer ids, so reaching here means one of:
-          //   (a) a legacy row booked against a fixture BEFORE that guard shipped
-          //       and only now being verified, or
-          //   (b) the AstrologerProfile was deleted between /book and /verify.
-          // Either way a devotee has paid and nobody can be credited — that is an
-          // operational incident, not a no-op. Log it at ERROR (greppable by
-          // `commission_gap`) and surface it on GET /consultation/admin/all via
-          // `commissionMissing` so an operator can refund. Never fabricate a
-          // provider to make the ledger look balanced.
-          server.log.error(
-            {
-              event: 'commission_gap',
-              consultationId: row.id,
-              reference: row.reference,
-              astrologerId: row.astrologer_id,
-              astrologerName: row.astrologer_name,
-              amountInr: Number(row.amount_inr),
-              devoteeUserId: row.user_id,
-            },
-            '[consultation] PAID consultation has no creditable astrologer — no Commission row written, manual refund required',
-          );
-          return;
-        }
-        const total = Number(row.amount_inr);
-        // Astrologer revamp (2026-08-05): align with the priest take-rate cut —
-        // platform 20% / astrologer 80% (was 30/70). Research: AstroTalk takes
-        // 50%, so even 30% was supply-competitive; 20% + demand is the win.
-        // ASTROLOGER_PLATFORM_RATE is the single source of truth.
-        // Commission.amount is the PROVIDER's earning — it is what
-        // payout.service.getPayoutBalance pays out (see lib/commission-math.ts).
-        // This wrote the PLATFORM's 20% into it while keying on a real User.id,
-        // so every astrologer's withdrawable balance was 20% of gross instead of
-        // 80% — a live 75% underpayment through the unified payout rail and the
-        // weekly settlement cron. Found by adversarial review 2026-08-11.
-        const platformCut = Math.round(total * ASTROLOGER_PLATFORM_RATE * 100) / 100;
-        const astrologerEarning = Math.round((total - platformCut) * 100) / 100;
-        await prisma.commission.create({
-          data: {
-            bookingId: row.id,
-            providerId: profile.userId,
-            amount: astrologerEarning,
-            percentage: ASTROLOGER_PLATFORM_RATE,
-            status: 'PENDING',
-          },
-        });
-
-        // AW-14 (2026-08-12, P2): AstrologerProfile.totalConsultations was a
-        // counter column NOTHING ever wrote, so it stayed 0 for life. The
-        // astrologer's own dashboard now derives its lifetime figure from the
-        // consultations table (routes/astrologer-portal.ts) — but the PUBLIC
-        // directory badge reads this column (routes/astrology.ts:82,153) and
-        // also ORDERs by it, so it has to become real. This sits inside the
-        // `existing` idempotency guard above: one increment per consultation,
-        // never on a replayed verify. Its own try — a counter is cosmetic and
-        // must never be able to unwind or mask the ledger write that preceded
-        // it. Worst case is an undercount, never a double count.
-        try {
-          await prisma.astrologerProfile.update({
-            where: { id: profile.id },
-            data: { totalConsultations: { increment: 1 } },
-          });
-        } catch (err) {
-          server.log.warn(
-            { err, astrologerProfileId: profile.id, consultationId: row.id },
-            '[consultation] totalConsultations increment failed (ledger row already written)',
-          );
-        }
-      } catch (err) {
-        server.log.warn({ err }, '[consultation] commission write failed');
-      }
-    })();
+    // P0 #AP-06 (2026-07-09): the Commission ledger write lives in
+    // writeConsultationCommission (below) so the PAY-01 webhook backstop runs
+    // the identical ledger rule. Fire-and-forget here: a ledger write failure
+    // must never block the verified response.
+    void writeConsultationCommission(row, server.log);
 
     return reply.send({
       verified: true,

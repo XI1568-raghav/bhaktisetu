@@ -61,6 +61,28 @@ jobs:
       - name: Test
         run: pnpm turbo test --filter=!@poojly/remotion-pitch
 
+      # OPS-01 / OPS-06 guards. `turbo test` is per-package and the repo-root
+      # vitest project (which owns `scripts/**/*.test.mjs`) is not in the task
+      # graph, so nothing under scripts/ has ever run in CI. These three files
+      # assert that the production monitors can still report failure and that
+      # the rollback lever the runbook depends on still exists - guards that
+      # never run are exactly the class of defect being fixed here.
+      #
+      # Named explicitly rather than running `vitest run scripts/`: seven other
+      # files under scripts/ fail on a clean tree today (five are plain scripts
+      # with no vitest suite in them, so vitest errors "No test suite found").
+      # Running the whole directory would red CI for pre-existing reasons and
+      # the step would be deleted within a day. Fixing those is tracked
+      # separately; widen this glob once they pass.
+      #
+      # ~10s on an already-installed runner => ~13 min/mo at ~80 runs.
+      - name: Ops guards (production monitoring + rollback lever)
+        run: >-
+          pnpm exec vitest run
+          scripts/agents/health-smoke.test.mjs
+          scripts/agents/prod-monitoring-can-fail.test.mjs
+          scripts/agents/deploy-rollback-lever.test.mjs
+
       - name: Build
         run: pnpm turbo build --filter=!@poojly/remotion-pitch
 

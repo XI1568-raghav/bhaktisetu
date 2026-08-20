@@ -6,13 +6,20 @@ import { TEMPLE_DETAILS, type TempleDetailRich } from '../../lib/temple-details'
 import { TemplesBrowser, type TempleCardData } from '../../components/temples/TemplesBrowser';
 import { canonicalTempleSlug } from '../../lib/temple-slug';
 import { dedupeTempleCards } from '../../lib/temple-grid';
-import { TRUST_SCORE_MARQUEE } from '../../lib/trust-score';
+// TC-07: TRUST_SCORE_MARQUEE is no longer imported here. This page used it to
+// decide whether a temple is a Jyotirlinga — see apiToCard below for why that
+// was both a category error and dead code.
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/temples' },
  title: 'Sacred Temples of India',
+ // TC-08: this description advertised "verified priests". Nothing writes
+ // Priest.isVerified, Priest.verificationStatus or Priest.aadhaarVerified
+ // outside prisma/seed.ts — there is no credential check, reference call,
+ // probation or per-pandit trust score behind the word, and aadhaarVerified is
+ // read in exactly one place (payment.service.ts) as a payout gate.
  description:
- 'Explore sacred temples across India. Find temples by state, deity or tradition. Watch live darshan, book pujas with verified priests, and plan your pilgrimage.',
+ 'Explore sacred temples across India. Find temples by state, deity or tradition. Watch live darshan, book pujas with video proof, and plan your pilgrimage.',
 };
 
 // Derive card data from the rich detail map (always available, no API dependency)
@@ -26,8 +33,15 @@ function richToCard(t: TempleDetailRich): TempleCardData {
  deityPrimary: t.deity,
  deityType: t.deityType,
  description: t.significance,
- isVerified: true,
- trustScore: 97,
+ // TC-07: these two used to read `isVerified: true, trustScore: 97`. 97 is a
+ // hand-typed literal on a scale whose maximum is 5 (lib/trust-score.ts), and
+ // the true flag awarded the green Verified shield in TemplesBrowser to all 25
+ // curated temples with nothing behind it. The curated map knows a temple's
+ // name, deity and classification; it cannot know whether Darshya verified
+ // that temple's account. Only the API row can say so, and TemplesData below
+ // copies it across when the two are matched.
+ isVerified: false,
+ trustScore: 0,
  liveDarshanEnabled: true,
  viewers: 0,
  isJyotirlinga: !!t.isJyotirlinga,
@@ -65,6 +79,25 @@ function apiToCard(t: TempleListItem): TempleCardData {
  ? 'Ganesha'
  : 'Other';
 
+ // TC-07: three defects here shared one root — treating trustScore as a
+ // public, meaningful, present number.
+ //
+ //   1. trustScore IS NOT SERVED. GET /temples whitelists its select and
+ //      deliberately omits it (temple.service.ts, P0 #PUB-02), so
+ //      `t.trustScore` is undefined at runtime despite being typed number.
+ //   2. Jyotirlinga status was `deityType === 'Shiva' && t.trustScore >= 4.85`,
+ //      i.e. `undefined >= 4.85` — always false, so that badge could never
+ //      render. It is also a category error: being one of the twelve
+ //      Jyotirlingas is a fact about the temple, not a function of an
+ //      operations score. It now comes from the curated fact table.
+ //   3. `popularity: t.trustScore` fed `b.popularity - a.popularity` in
+ //      TemplesBrowser, which is NaN for every API temple — "Most Popular"
+ //      ordered them arbitrarily. Real booking counts order them now.
+ //
+ // The value is fabricated underneath all of that: Temple.trustScore has no
+ // writer anywhere in the codebase, only 20 hand-typed literals in
+ // prisma/seed.ts, so nothing may present it as a computed trust metric.
+ const rich = TEMPLE_DETAILS[canonicalTempleSlug(t.slug)];
  return {
  slug: t.slug,
  name: t.name,
@@ -75,14 +108,14 @@ function apiToCard(t: TempleListItem): TempleCardData {
  deityType,
  description: t.description,
  isVerified: t.isVerified,
- trustScore: t.trustScore,
+ trustScore: 0,
  liveDarshanEnabled: t.liveDarshanEnabled,
  viewers,
- isJyotirlinga: deityType === 'Shiva' && t.trustScore >= TRUST_SCORE_MARQUEE,
- isShaktiPeetha: false,
- isDivyaDesam: false,
- popularity: t.trustScore,
- hasRichDetail: TEMPLE_DETAILS[t.slug] !== undefined,
+ isJyotirlinga: !!rich?.isJyotirlinga,
+ isShaktiPeetha: !!rich?.isShaktiPeetha,
+ isDivyaDesam: !!rich?.isDivyaDesam,
+ popularity: t._count?.bookings ?? 0,
+ hasRichDetail: rich !== undefined,
  imageUrl: firstImageUrl(t.images),
  };
 }
@@ -163,10 +196,17 @@ async function TemplesData() {
  // the sitemap; the grid now reads the same table instead of a private copy.
  const apiBySlug = new Map(result.data.map((t) => [canonicalTempleSlug(t.slug), t]));
  // Merge API image into rich-detail cards; otherwise rich card keeps imageUrl: null and falls to deity.
+ // TC-07: verification is a fact only the API row carries, so a curated card
+ // adopts the API's isVerified when the two are matched and otherwise stays
+ // unverified rather than awarding itself a shield.
  const mergedRich = richCards.map((card) => {
   const apiMatch = apiBySlug.get(card.slug);
   if (!apiMatch) return card;
-  return { ...card, imageUrl: card.imageUrl ?? firstImageUrl(apiMatch.images) };
+  return {
+   ...card,
+   imageUrl: card.imageUrl ?? firstImageUrl(apiMatch.images),
+   isVerified: apiMatch.isVerified === true,
+  };
  });
  const existingSlugs = new Set(richCards.map((t) => t.slug));
  const extraApi = result.data

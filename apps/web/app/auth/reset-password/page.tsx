@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
 import { persistAuthStorage } from '../../../lib/auth-context';
+import { API_BASE_URL, fetchWithTimeout } from '../../../lib/api-config';
 
 const MIN_PASSWORD_LENGTH = 8;
 // Mirrors the server-side signup policy (apps/api/src/routes/auth.ts) so a
@@ -110,13 +111,40 @@ export default function ResetPasswordPage() {
   }
 
   setStatus('done');
-  // Drop BOTH sessions. `supabase.auth.signOut()` alone clears only Supabase's
-  // — this app carries its own `poojly_session`/`poojly_user`, and leaving them
-  // meant the common case (user is logged in on desktop and resets because they
-  // forgot the password) bounced straight past the login page into a dashboard
-  // running on a session whose refresh token had just been revoked, then
-  // silently died within the hour. signOut is global by default, which is the
-  // right call after a password change.
+  // Drop ALL THREE session stores. `supabase.auth.signOut()` alone clears only
+  // Supabase's — this app carries its own `poojly_session`/`poojly_user`, and
+  // leaving them meant the common case (user is logged in on desktop and resets
+  // because they forgot the password) bounced straight past the login page into
+  // a dashboard running on a session whose refresh token had just been revoked,
+  // then silently died within the hour. signOut is global by default, which is
+  // the right call after a password change.
+  //
+  // AUTH-11 (2026-08-20): THE THIRD STORE WAS NEVER CLEARED, WHILE THIS PAGE
+  // CLAIMED IT WAS.
+  //
+  // The API issues two httpOnly cookies at sign-in — `darshya_session` (the
+  // access token) and `darshya_refresh` — and apps/api/src/middlewares/auth.ts
+  // accepts `darshya_session` as a credential on its own. Nothing here touched
+  // them, so after being told "You've been signed out everywhere" the browser
+  // still held a WORKING API credential for the remainder of that token's hour.
+  // POST /auth/logout is what expires those cookies and revokes the session
+  // server-side; `credentials: 'include'` is mandatory because darshya.online
+  // and api.darshya.online are different origins — without it the cookie is
+  // neither sent nor is the expiring Set-Cookie stored.
+  //
+  // Ordered before the Supabase signOut so the API can still resolve the
+  // session from the cookie, and best-effort: the password HAS changed by this
+  // point, and a failed logout must not present as a failed reset.
+  try {
+   await fetchWithTimeout(`${API_BASE_URL}/auth/logout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: '{}',
+   });
+  } catch {
+   /* best-effort — the local stores are cleared below regardless */
+  }
   await supabase.auth.signOut().catch(() => undefined);
   persistAuthStorage(null, null);
   // Hard navigation, not router.push — the auth provider holds the old session

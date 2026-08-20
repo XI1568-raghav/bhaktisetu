@@ -5,15 +5,27 @@ import type { Metadata } from 'next';
 // DU-05: the one h1 recipe per page archetype. Extras are layout-only.
 import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { FESTIVALS, getFestival, resolveBookablePujas } from '../../../lib/festivals';
+import { notFound, permanentRedirect } from 'next/navigation';
+import {
+  FESTIVAL_ALIASES,
+  FESTIVALS,
+  getFestival,
+  resolveBookablePujas,
+  resolveFestivalSlug,
+} from '../../../lib/festivals';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
 
 export async function generateStaticParams() {
-  return FESTIVALS.map((f) => ({ slug: f.slug }));
+  // CI-03: the retired duplicate slugs stay in the prerender set. `dynamicParams`
+  // is false, so a slug that is not listed here 404s outright — and these were
+  // live, indexed URLs. They render as permanent redirects instead.
+  return [
+    ...FESTIVALS.map((f) => ({ slug: f.slug })),
+    ...Object.keys(FESTIVAL_ALIASES).map((slug) => ({ slug })),
+  ];
 }
 
 interface Params {
@@ -25,6 +37,16 @@ function fmtDate(iso: string): string {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+/**
+ * CI-11: the year a festival is actually observed in, read off its own date
+ * rather than hardcoded. `date2026` is not always in 2026 — Maha Kumbh Mela's
+ * next occurrence is 2027-01-14, and the page used to title it
+ * "Maha Kumbh Mela 2026 — 14 January 2027".
+ */
+function festivalYear(iso: string): string {
+  return iso.slice(0, 4);
+}
+
 function daysUntil(iso: string): number {
   const today = new Date(new Date().toISOString().slice(0, 10));
   const target = new Date(iso);
@@ -33,14 +55,15 @@ function daysUntil(iso: string): number {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const f = getFestival(slug);
+  const f = getFestival(resolveFestivalSlug(slug));
   if (!f) return { title: 'Festival' };
+  const year = festivalYear(f.date2026);
   return {
-    title: `${f.name} 2026 — ${fmtDate(f.date2026)}, rituals, pujas online`,
-    description: `${f.name} 2026 on ${fmtDate(f.date2026)}. ${f.description.slice(0, 120)} Book ${f.deity} pujas with verified pandits + video proof.`,
+    title: `${f.name} ${year} — ${fmtDate(f.date2026)}, rituals, pujas online`,
+    description: `${f.name} ${year} on ${fmtDate(f.date2026)}. ${f.description.slice(0, 120)} Book ${f.deity} pujas with verified pandits + video proof.`,
     alternates: { canonical: `https://darshya.online/festival/${f.slug}` },
     openGraph: {
-      title: `${f.name} 2026 — ${fmtDate(f.date2026)}`,
+      title: `${f.name} ${year} — ${fmtDate(f.date2026)}`,
       description: `${f.deity} · ${f.fastingType} fast · ${f.rituals.length} rituals`,
       url: `https://darshya.online/festival/${f.slug}`,
       type: 'website',
@@ -51,7 +74,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function FestivalPage({ params }: Params) {
   const { slug } = await params;
-  const f = getFestival(slug);
+  // CI-03: one festival, one page. A retired duplicate slug redirects to the
+  // survivor rather than serving a second copy on a different date.
+  const canonical = resolveFestivalSlug(slug);
+  if (canonical !== slug) permanentRedirect(`/festival/${canonical}`);
+  const f = getFestival(canonical);
   if (!f) notFound();
 
   const days = daysUntil(f.date2026);
@@ -216,7 +243,7 @@ export default async function FestivalPage({ params }: Params) {
 
       <footer className="border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-2">
-          <strong>Note:</strong> Dates are approximate per the 2026 lunar calendar. Tithis vary slightly by region — confirm with{' '}
+          <strong>Note:</strong> Dates are approximate per the {festivalYear(f.date2026)} lunar calendar. Tithis vary slightly by region — confirm with{' '}
           <Link href="/panchang" className="text-saffron-700 hover:underline">Darshya Panchang</Link>{' '}
           for your city.
         </p>

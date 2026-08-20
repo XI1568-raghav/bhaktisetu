@@ -2,20 +2,31 @@ import type { Metadata } from 'next';
 // DU-05: the one h1 recipe per page archetype. Extras are layout-only.
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
-import { UPANISHADS } from '../../lib/upanishads';
+import {
+  UPANISHADS,
+  PRINCIPAL_UPANISHAD_SLUGS,
+  isPrincipalUpanishad,
+} from '../../lib/upanishads';
+
+// CI-14: the page was titled, described, headed and eyebrowed as a guide to
+// TEN Upanishads while rendering every record in the catalogue. Ten is still a
+// real category — it is the set Shankaracharya commented on — so the counts
+// are now read off the data and the ten are marked instead of implied.
+const TOTAL = UPANISHADS.length;
+const PRINCIPAL = PRINCIPAL_UPANISHAD_SLUGS.length;
 
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
-  title: 'The 10 Principal Upanishads (Dashopanishads), Mahavakyas & Summaries',
-  description: 'Complete guide to the 10 principal Upanishads commented on by Adi Shankaracharya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chhandogya, Brihadaranyaka. Sanskrit, mahavakyas, key concepts.',
+  title: `The Upanishads — all ${TOTAL}, with the ${PRINCIPAL} Dashopanishads, Mahavakyas & Summaries`,
+  description: `Guide to ${TOTAL} Upanishads — the ${PRINCIPAL} principal ones Adi Shankaracharya commented on (Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chhandogya, Brihadaranyaka) plus the Muktika-canon texts. Sanskrit, mahavakyas, key concepts.`,
   alternates: { canonical: `${BASE_URL}/upanishads` },
   openGraph: {
     images: ['/images/golden-temple-og.jpg'],
-    title: 'The 10 Principal Upanishads',
-    description: 'The Vedanta foundation, 10 Upanishads, 4 mahavakyas, the path of self-knowledge.',
+    title: `The Upanishads — all ${TOTAL}`,
+    description: `The Vedanta foundation — ${TOTAL} Upanishads including the ${PRINCIPAL} principal ones, 4 mahavakyas, the path of self-knowledge.`,
     url: `${BASE_URL}/upanishads`,
     type: 'website',
   },
@@ -32,7 +43,7 @@ export default function UpanishadsIndexPage() {
   const ld = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'Principal Upanishads',
+    name: 'The Upanishads',
     numberOfItems: UPANISHADS.length,
     itemListElement: UPANISHADS.map((u, idx) => ({
       '@type': 'ListItem',
@@ -59,15 +70,18 @@ export default function UpanishadsIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-indigo-600">10 principal · 4 mahavakyas · Vedanta foundation</p>
-        <h1 className={`${H1.catalogue} mt-1`}>दशोपनिषद्</h1>
-        <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The 10 Principal Upanishads</p>
+        <p className="text-xs uppercase tracking-wider text-indigo-600">{TOTAL} texts · {PRINCIPAL} principal · 4 mahavakyas · Vedanta foundation</p>
+        <h1 className={`${H1.catalogue} mt-1`}>उपनिषद्</h1>
+        <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Upanishads — all {TOTAL}</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
           The Upanishads are the philosophical conclusion of the Vedas, sitting
           (upa-ni-shad) close to the teacher. Of the 108 Upanishads in the Muktika
-          canon, ten are considered principal because Adi Shankaracharya wrote bhashyas
-          (commentaries) on them. They are the source of the four Mahavakyas and the
-          foundation of Advaita Vedanta, Vishishtadvaita and Dvaita alike.
+          canon, {PRINCIPAL} are considered principal — the Dashopanishads — because Adi
+          Shankaracharya wrote bhashyas (commentaries) on them; they are the source of
+          the four Mahavakyas and the foundation of Advaita Vedanta, Vishishtadvaita
+          and Dvaita alike. This guide covers those {PRINCIPAL} in full and{' '}
+          {TOTAL - PRINCIPAL} more from the wider canon; the principal ones are marked
+          below.
         </p>
       </header>
 
@@ -111,7 +125,14 @@ export default function UpanishadsIndexPage() {
                   href={`/upanishads/${u.slug}`}
                   className="group rounded-xl border border-gray-200 bg-white p-4 transition hover:border-indigo-300 hover:shadow-md"
                 >
-                  <h3 className="text-base font-semibold text-gray-900 group-hover:text-indigo-700">{u.name}</h3>
+                  <h3 className="text-base font-semibold text-gray-900 group-hover:text-indigo-700">
+                    {u.name}
+                    {isPrincipalUpanishad(u.slug) && (
+                      <span className="ml-2 rounded bg-indigo-100 px-1.5 py-0.5 align-middle text-xs font-semibold uppercase tracking-wide text-indigo-800">
+                        Principal
+                      </span>
+                    )}
+                  </h3>
                   <p className="mt-1 font-serif text-sm text-gray-700">{u.sanskrit}</p>
                   <p className="mt-1 text-xs text-gray-500">{u.vedaShakha}</p>
                   <p className="mt-2 text-xs text-gray-600 line-clamp-2">{u.centralTheme}</p>

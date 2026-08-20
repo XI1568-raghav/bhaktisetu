@@ -4,16 +4,27 @@ import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { CIRCUITS } from '../../lib/pilgrimage-circuits';
 
+// CI-10: the page announced "the 8 canonical circuits" above a grid of 19, and
+// two of those 19 were the SAME url — sapta-puri appears twice in CIRCUITS, at
+// ₹48,000 and at ₹35,000, with two different stop lists. One card per URL, and
+// every count on the page is read off that list rather than typed by hand.
+// FIRST wins, because `getCircuit()` — which the detail page uses — is a
+// `.find()`. Keeping the last would have made the card advertise ₹35k while
+// /pilgrimage/sapta-puri charged ₹48k.
+const CIRCUIT_CARDS = CIRCUITS.filter(
+  (c, i) => CIRCUITS.findIndex((x) => x.slug === c.slug) === i,
+);
+
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'Hindu Pilgrimage Circuits — Char Dham, Jyotirlinga, Shakti Peeth & More',
   description:
-    'Plan the 8 canonical Hindu pilgrimage circuits — Char Dham, 12 Jyotirlinga, Sapta Puri, Shakti Peethas, Pancha Bhoota, Ashta Vinayak, Panch Kedar, Do Dham.',
+    `Plan ${CIRCUIT_CARDS.length} Hindu pilgrimage circuits — Char Dham, 12 Jyotirlinga, Sapta Puri, Shakti Peethas, Pancha Bhoota, Ashta Vinayak, Panch Kedar, Do Dham and more.`,
   alternates: { canonical: 'https://darshya.online/pilgrimage' },
   openGraph: {
     title: 'Hindu Pilgrimage Circuits — Darshya',
-    description: '8 canonical yatra circuits with itineraries, costs, best season, practical tips.',
+    description: `${CIRCUIT_CARDS.length} yatra circuits with itineraries, costs, best season, practical tips.`,
     url: 'https://darshya.online/pilgrimage',
     type: 'website',
     images: ['/og/default.png'],
@@ -28,7 +39,7 @@ export default function PilgrimageIndex() {
   const itemListJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    itemListElement: CIRCUITS.map((c, i) => ({
+    itemListElement: CIRCUIT_CARDS.map((c, i) => ({
       '@type': 'ListItem',
       position: i + 1,
       url: `https://darshya.online/pilgrimage/${c.slug}`,
@@ -51,7 +62,7 @@ export default function PilgrimageIndex() {
           Hindu Pilgrimage Circuits
         </h1>
         <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
-          The 8 canonical Hindu pilgrimage circuits — from the 4-temple Char Dham
+          {CIRCUIT_CARDS.length} Hindu pilgrimage circuits — from the 4-temple Char Dham
           to the 51 Shakti Peethas. Each page covers stops, days needed, best season,
           starting cost, and practical tips. Pair any circuit with a verified yatra
           package.
@@ -59,7 +70,7 @@ export default function PilgrimageIndex() {
       </header>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-        {CIRCUITS.map((c) => (
+        {CIRCUIT_CARDS.map((c) => (
           <Link
             key={c.slug}
             href={`/pilgrimage/${c.slug}`}

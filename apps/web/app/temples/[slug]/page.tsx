@@ -234,7 +234,12 @@ export default async function TempleDetailPage({
  const ldCountryRaw = apiTemple?.country ?? 'IN';
  const ldCountry = ldCountryRaw === 'India' ? 'IN' : ldCountryRaw;
  const ldPhone = apiTemple?.phone ?? null;
- const ldTrustScore = apiTemple?.trustScore;
+ // TC-07: `ldTrustScore` used to feed an aggregateRating (removed under
+ // SEO-05, see below). It is left out entirely now: GET /temples/:slug
+ // whitelists its select and does not return trustScore at all
+ // (temple.service.ts, P0 #PUB-02/PUB-08), and the underlying column is a
+ // hand-typed seed literal with no writer anywhere in the codebase — so there
+ // is no honest number to publish here even if the field were served.
  const ld: Record<string, unknown> = {
   '@context': 'https://schema.org',
   '@type': 'PlaceOfWorship',
@@ -371,7 +376,11 @@ function RichTemplePage({
  {rich.isJyotirlinga && <HeroBadge icon={Star} text="Jyotirlinga" tone="amber" />}
  {rich.isShaktiPeetha && <HeroBadge icon={Heart} text="Shakti Peetha" tone="rose" />}
  {rich.isDivyaDesam && <HeroBadge icon={Star} text="Divya Desam" tone="amber" />}
- <HeroBadge icon={Shield} text="Verified" tone="green" />
+ {/* TC-07: this shield was unconditional — every curated temple page printed
+  a green "Verified" badge whether or not any temple account had ever been
+  verified, and whether or not the API even knew the temple. Verification is
+  a column on the temple row; if there is no row, there is no claim to make. */}
+ {apiTemple?.isVerified === true && <HeroBadge icon={Shield} text="Verified" tone="green" />}
  </div>
  <h1 className={`${H1.detail} max-w-3xl`}>
  {rich.name}
@@ -765,41 +774,30 @@ function RichTemplePage({
  <PhotoGallery slug={slug} count={rich.photoCount} heroImg={heroImg} gallery={gallery} templeName={rich.name} />
  </section>
 
- {/* 10. TESTIMONIALS */}
- {rich.testimonials && rich.testimonials.length > 0 && (
- <section data-reveal>
- <h2 className="mb-5 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
- <Heart className="h-5 w-5 text-saffron-600" />
- Tips from Devotees
- </h2>
- <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
- {rich.testimonials.map((t) => (
- <article
- key={t.name}
- className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
- >
- <div className="mb-2 flex items-center gap-1 text-amber-500">
- {Array.from({ length: t.rating }).map((_, i) => (
- <Star key={i} className="h-4 w-4 fill-amber-500" />
- ))}
- </div>
- <p className="mb-4 text-sm leading-relaxed text-surface-600">
- &ldquo;{t.text}&rdquo;
- </p>
- <div className="flex items-center gap-3">
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-saffron-100 text-sm font-bold text-saffron-700">
- {t.name.split(' ').map((n) => n[0]).join('')}
- </div>
- <div>
- <div className="text-sm font-semibold text-surface-800">{t.name}</div>
- <div className="text-xs text-surface-500">{t.city}</div>
- </div>
- </div>
- </article>
- ))}
- </div>
- </section>
- )}
+ {/* 10. DEVOTEE REVIEWS — REMOVED (TC-05).
+  This slot rendered `rich.testimonials` from lib/temple-details.ts: 51
+  hand-written testimonials across 17 temples, 46 of them five-star, each with
+  an invented full name, an invented home city, initials rendered into an
+  avatar circle and a star row. Several asserted a transaction that never
+  happened — "Booked Mangala Aarti through Darshya and reached Gate 4 at
+  2:30 AM", "Booked the Light & Sound VIP seating plus next-morning VIP
+  darshan", "Prasad delivery reached home in 4 days". Invented customer
+  testimonials on a page that then asks for money are a consumer-protection
+  problem, not decoration, and the same class as the fabricated astrologer
+  reviews removed under AW-02.
+
+  Nothing renders here now. An empty slot is honest; an invented five-star
+  review is not. The fixture rows themselves are left in
+  lib/temple-details.ts (that module is shared and typed `testimonials?:`,
+  so nothing depends on them being present) but no surface publishes them.
+
+  To restore a reviews section, render REAL rows: the API already serves
+  GET /temples/:slug/reviews from PujaBooking rows that carry a rating
+  (apps/api/src/services/temple.service.ts getReviews). Note before wiring it
+  that lib/api.ts getTempleReviews is currently mistyped — it declares
+  PaginatedResponse<TempleReview> ({ data, pagination }) while the route
+  returns { templeSlug, reviews, total, averageRating, page, limit,
+  totalPages } — so that client must be corrected first. */}
 
  {/* 11. FAQ */}
  {rich.faqs && rich.faqs.length > 0 && (

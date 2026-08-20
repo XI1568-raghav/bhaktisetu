@@ -1,10 +1,15 @@
 import type { Metadata } from 'next';
 
-// SIDE-FIX-SEO-404 (2026-06-13): flipped dynamicParams=false → true so unknown
-// content slugs (om-jai-jagdish-hare-aarti, ganesh-chalisa, etc) render the
-// graceful fallback panel via ISR instead of returning 404. Closes long-tail
-// SEO 404s eating crawl budget. Founder backfills authoritative content into
-// the API/DB; unknown slugs serve a "coming soon" loading state until then.
+// SIDE-FIX-SEO-404 (2026-06-13): flipped dynamicParams=false → true so a slug
+// that is not in generateStaticParams can still be rendered on demand via ISR
+// — which is how content added to the DB after a build becomes reachable.
+//
+// CI-04 (2026-08-20) SUPERSEDES the second half of that fix. It also made
+// unknown slugs serve a "coming soon" panel instead of 404ing, which turned
+// every typo, every crawler guess and 14 of the 27 slugs below into an
+// indexable page wearing Hanuman Chalisa's deity and 12.5M view count. A slug
+// with no row behind it now 404s (see resolveContent). dynamicParams stays
+// true: on-demand rendering of REAL rows is the part that was right.
 export const dynamicParams = true;
 export const revalidate = 3600;
 
@@ -35,8 +40,9 @@ export function generateStaticParams() {
     // P0-18 (2026-06-15 audit) — slugs linked from the content listing / API
     // response + chalisas.ts that 404'd under @cloudflare/next-on-pages because
     // they were neither in generateStaticParams nor ISR-rendered at the edge.
-    // Prerendering them here guarantees 200; getContentBySlug() falls back to
-    // the graceful loading panel when the API has no matching entry yet.
+    // Prerendering them here made them 200 unconditionally. After CI-04 a
+    // prerendered slug is only 200 when the API actually has the row — the
+    // rest 404, which is what they always were.
     'om-jai-shiv-omkara-aarti',
     'om-jai-lakshmi-mata-aarti',
     'bajrang-baan',
@@ -59,7 +65,12 @@ import {
   Tag,
   Home,
 } from 'lucide-react';
-import { getContent, getContentBySlugApi, type ContentItem } from '../../../lib/api';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { getContent, type ContentItem } from '../../../lib/api';
+import { lookupContent, type ContentLookup } from '../../../lib/content-detail';
 import AudioPlayer from '../../../components/AudioPlayer';
 import { YouTubeEmbed } from '../../../components/YouTubeEmbed';
 import { renderContentBody } from '../../../lib/markdown';
@@ -196,65 +207,6 @@ Ram Doot Atulit Bal Dhama, Anjani Putra Pavansut Nama.
   status: 'published',
 };
 
-const fallbackRelated: ContentItem[] = [
-  {
-    id: 'rel-1',
-    type: 'mantra',
-    title: 'Hanuman Beej Mantra - 108 times',
-    titleLocal: null,
-    slug: 'hanuman-beej-mantra',
-    body: '',
-    audioUrl: null,
-    videoUrl: null,
-    imageUrl: null,
-    deity: 'Lord Hanuman',
-    language: 'sanskrit',
-    durationSeconds: 1800,
-    tags: ['mantra', 'hanuman'],
-    isPremium: false,
-    viewCount: 340000,
-    likeCount: 45000,
-    status: 'published',
-  },
-  {
-    id: 'rel-2',
-    type: 'aarti',
-    title: 'Aarti Keeje Hanuman Lala Ki',
-    titleLocal: null,
-    slug: 'aarti-hanuman-lala',
-    body: '',
-    audioUrl: null,
-    videoUrl: null,
-    imageUrl: null,
-    deity: 'Lord Hanuman',
-    language: 'hindi',
-    durationSeconds: 318,
-    tags: ['aarti', 'hanuman'],
-    isPremium: false,
-    viewCount: 560000,
-    likeCount: 67000,
-    status: 'published',
-  },
-  {
-    id: 'rel-3',
-    type: 'bhajan',
-    title: 'Bajrang Baan',
-    titleLocal: null,
-    slug: 'bajrang-baan',
-    body: '',
-    audioUrl: null,
-    videoUrl: null,
-    imageUrl: null,
-    deity: 'Lord Hanuman',
-    language: 'hindi',
-    durationSeconds: 720,
-    tags: ['bhajan', 'hanuman', 'protection'],
-    isPremium: false,
-    viewCount: 780000,
-    likeCount: 92000,
-    status: 'published',
-  },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -275,30 +227,35 @@ const audioTypes = ['aarti', 'mantra', 'bhajan', 'chalisa', 'stotram'];
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
-async function getContentBySlug(slug: string): Promise<ContentItem> {
-  try {
-    // Use the direct slug endpoint for efficient fetching with full body text
-    const item = await getContentBySlugApi(slug);
-    if (item) return item;
-  } catch {
-    // API unavailable — fall back
+/**
+ * CI-04 (delta completion sweep 2026-08-20) — this route was a soft-404 farm.
+ *
+ * Any slug that the API did not have resolved to `{ ...fallbackContent, slug,
+ * title: titleCase(slug), body: 'Content is loading…' }` and returned 200
+ * forever, so /content/<anything> rendered a page carrying Hanuman Chalisa's
+ * deity, its 12.5M views, its 890k likes and its 9m42s runtime under a title
+ * invented from the URL. Fourteen of the 27 slugs in generateStaticParams
+ * have no row behind them and were prerendered into exactly that.
+ *
+ * The root cause was that the page could not distinguish "no such slug" from
+ * "the API is down" — lib/api.serverFetch throws on every non-OK status, so a
+ * 404 and a dead socket arrived as the same catch. lib/content-detail keeps
+ * the three outcomes apart; this route acts on them:
+ *
+ *   found       → render
+ *   not-found   → notFound(); a real 404, nothing invented
+ *   unavailable → an honest noindex panel (see below)
+ *
+ * The one slug that still has a repo-local fallback is hanuman-chalisa,
+ * because fallbackContent IS the Hanuman Chalisa — full verified text at its
+ * own URL, not a fixture wearing someone else's slug.
+ */
+async function resolveContent(slug: string): Promise<ContentLookup> {
+  const lookup = await lookupContent(slug);
+  if (lookup.status === 'unavailable' && slug === fallbackContent.slug) {
+    return { status: 'found', item: fallbackContent };
   }
-
-  // Fallback: if the slug matches our fallback, return that
-  if (slug === fallbackContent.slug) {
-    return fallbackContent;
-  }
-
-  // Return a generic fallback with the requested slug
-  return {
-    ...fallbackContent,
-    slug,
-    title: slug
-      .split('-')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' '),
-    body: 'Content is loading. Please check back in a moment.',
-  };
+  return lookup;
 }
 
 async function getRelatedContent(content: ContentItem): Promise<ContentItem[]> {
@@ -326,7 +283,10 @@ async function getRelatedContent(content: ContentItem): Promise<ContentItem[]> {
 
     return related;
   } catch {
-    return fallbackRelated;
+    // CI-04: the old fallback here published three fabricated rows with
+    // invented 340k/560k/780k view counts. An empty sidebar is honest; an
+    // invented one is not.
+    return [];
   }
 }
 
@@ -338,7 +298,19 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const content = await getContentBySlug(slug);
+  const lookup = await resolveContent(slug);
+
+  // CI-04: never emit indexable, self-canonical metadata for a slug we could
+  // not resolve. That is precisely what turned every typo URL into an indexed
+  // "Content is loading" page under a title invented from the URL.
+  if (lookup.status !== 'found') {
+    return {
+      title: lookup.status === 'not-found' ? 'Content not found | Darshya' : 'Content unavailable | Darshya',
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const content = lookup.item;
   return {
     title: content.title,
     alternates: { canonical: `https://darshya.online/content/${slug}` },
@@ -353,9 +325,48 @@ export async function generateMetadata({
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
+/**
+ * CI-04: the honest degradation for "the API could not be reached".
+ *
+ * It carries no deity, no view count, no like count, no runtime and no body —
+ * nothing is borrowed from another row — and generateMetadata marks it
+ * noindex, so it cannot be indexed as content the way the old panel was. It
+ * does not throw (unlike /pujas/[slug]) because this route prerenders 27 slugs
+ * and `pnpm turbo build` runs in CI with no API reachable.
+ */
+function ContentUnavailable({ slug }: { slug: string }) {
+  return (
+    <div className="bg-saffron-50 min-h-[100dvh]">
+      <div className="container-prose py-16">
+        <div className="border-surface-100 rounded-xl border bg-white p-8 text-center">
+          <h1 className={`${H1.catalogue} mb-3`}>This page could not be loaded</h1>
+          <p className="text-surface-600 mb-6 text-sm">
+            Darshya could not reach the content library just now, so we cannot show you
+            &ldquo;{slug}&rdquo;. Please try again in a moment.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href="/content" className={buttonClass('primary', 'md')}>
+              Browse all content
+            </Link>
+            <Link href="/pujas" className={buttonClass('secondary', 'md')}>
+              Browse all pujas
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function ContentDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const content = await getContentBySlug(slug);
+  const lookup = await resolveContent(slug);
+
+  // CI-04: a slug with no row behind it is a 404, not a synthesised page.
+  if (lookup.status === 'not-found') notFound();
+  if (lookup.status === 'unavailable') return <ContentUnavailable slug={slug} />;
+
+  const content = lookup.item;
   const related = await getRelatedContent(content);
 
   const isAudio = audioTypes.includes(content.type.toLowerCase());
@@ -521,6 +532,24 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
           {/* Sidebar — related content */}
           <div className="space-y-6">
             <AdSlot slotId="CONTENT_SIDEBAR" format="vertical" label="Sponsored" />
+            {/* CI-05: this route offered no path to anything bookable at all —
+                a devotee who landed here from search could read the text and
+                then had nowhere to go. */}
+            <div className="from-saffron-50 border-saffron-200 rounded-xl border bg-gradient-to-br to-amber-50 p-6">
+              <h3 className="text-surface-800 mb-2 font-bold">
+                Have this recited for you
+              </h3>
+              <p className="text-surface-600 mb-4 text-sm">
+                Darshya pandits perform pujas, paths and recitations on your behalf, recorded as
+                video proof.
+              </p>
+              <Link href="/pujas" className={buttonClass('primary', 'md')}>
+                Browse all pujas
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {related.length > 0 && (
             <div className="border-surface-100 rounded-xl border bg-white p-6">
               <h3 className="text-surface-800 mb-4 font-bold">Related Content</h3>
               <div className="space-y-4">
@@ -555,6 +584,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
                 ))}
               </div>
             </div>
+            )}
 
             {/* Quick links */}
             <div className="from-saffron-50 border-saffron-100 rounded-xl border bg-gradient-to-br to-amber-50 p-6">

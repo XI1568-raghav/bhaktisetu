@@ -55,8 +55,23 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required').optional(),
 });
 
+/**
+ * AUTH-09 (2026-08-20): sign-out scope is now something the caller states.
+ *
+ * This endpoint was unconditionally GLOBAL — `supabase.auth.signOut()` defaults
+ * to global, and the handler then burned every `refresh_token_jtis` row the
+ * user had. Signing out on a shared laptop silently ended the session on their
+ * phone, and nothing in the product mentioned it.
+ *
+ * `global` REMAINS THE DEFAULT. Flipping it would be a quiet security
+ * regression for every currently-deployed client, and global is the right
+ * behaviour after a password change or on a device you no longer trust. What
+ * changes is that it is now a decision, the response says which one was
+ * applied, and the UI can tell the user before they make it.
+ */
 const logoutSchema = z.object({
   accessToken: z.string().min(1, 'Access token is required').optional(),
+  scope: z.enum(['local', 'global']).optional(),
 });
 
 /** Cookie bag off a Fastify request, tolerant of @fastify/cookie being absent. */
@@ -657,31 +672,58 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
+    // AUTH-09: default preserved. An older client that sends no `scope` gets
+    // exactly the behaviour it has always had.
+    const scope = parseResult.data.scope ?? 'global';
+
     // Phase C P1 #5 (2026-06-08): email-session revocation server-side.
     // If token matches the email-{userId}-{hex} format, mark revoked_at in email_sessions.
     if (typeof accessToken === 'string' && /^email-/.test(accessToken)) {
       try {
-        await prisma.$executeRawUnsafe(
-          `UPDATE email_sessions SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL`,
-          accessToken,
-        );
+        if (scope === 'global') {
+          // AUTH-11: reach the user's OTHER magic-link sessions too. Revoking
+          // only the presented row is why "You've been signed out everywhere"
+          // was false for providers, whose sessions are all magic-link ones.
+          // The user is resolved by subquery rather than by parsing the token,
+          // because the id embedded in it is a uuid and the token separator is
+          // also '-'.
+          await prisma.$executeRawUnsafe(
+            `UPDATE email_sessions SET revoked_at = now()
+             WHERE user_id = (SELECT user_id FROM email_sessions WHERE id = $1)
+               AND revoked_at IS NULL`,
+            accessToken,
+          );
+        } else {
+          await prisma.$executeRawUnsafe(
+            `UPDATE email_sessions SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL`,
+            accessToken,
+          );
+        }
       } catch (err) {
         request.log.warn({ err }, 'EmailSession revoke best-effort failed');
       }
     } else if (typeof accessToken === 'string') {
       // Supabase JWT path: call signOut + best-effort revoke any JTIs for the user.
       const supabase = createSupabaseClient(accessToken);
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        request.log.warn(error, 'Supabase signOut error (non-critical)');
+      if (scope === 'global') {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          request.log.warn(error, 'Supabase signOut error (non-critical)');
+        }
       }
       // Best-effort: revoke active JTIs for this user from extracted sub claim.
       try {
         const claims = await supabase.auth.getUser(accessToken);
         const userId = claims.data?.user?.id;
-        if (userId) {
+        if (userId && scope === 'global') {
           await prisma.$executeRawUnsafe(
             `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+            userId,
+          );
+          // AUTH-11: a password user may ALSO hold a magic-link session on
+          // another device. "Everywhere" has to include it.
+          await prisma.$executeRawUnsafe(
+            `UPDATE email_sessions SET revoked_at = now() WHERE user_id = $1::uuid AND revoked_at IS NULL`,
             userId,
           );
         }
@@ -693,7 +735,13 @@ export async function authRoutes(server: FastifyInstance) {
     clearAuthCookies(reply);
     return reply.code(200).send({
       success: true,
-      message: 'Logged out successfully',
+      // AUTH-09: the caller is told what actually happened, so the UI can stop
+      // describing a multi-device sign-out as a single-device one.
+      scope,
+      message:
+        scope === 'global'
+          ? 'Signed out on this and every other device.'
+          : 'Signed out on this device.',
     });
   });
 
@@ -881,6 +929,30 @@ export async function authRoutes(server: FastifyInstance) {
 
       if (authError || !authData.session) {
         return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email or password' });
+      }
+
+      // AUTH-08 (2026-08-20): THE SUSPENSION GATE WAS MISSING FROM THE DOOR.
+      //
+      // middlewares/auth.ts refuses every AUTHENTICATED request from a blocked
+      // user with 403 "Account suspended", and the demo branch of this same
+      // handler checks `demoRow.blocked` — but the real DB path did not. So a
+      // suspended account signed in successfully, the web app stored the
+      // session and routed into a portal, and then every call inside it 403'd.
+      // friendlyApiError maps 403 to "Your session has expired. Please sign in
+      // again", which sends them back to a login that works: an endless loop
+      // with nothing anywhere naming the suspension. Blocking is an
+      // authorization decision and belongs at the door.
+      //
+      // Placed AFTER password verification on purpose: answering 403 before the
+      // credential is checked would turn this endpoint into an oracle for which
+      // addresses are suspended. Only the account's real owner learns it.
+      if (user.blocked) {
+        return reply.code(403).send({
+          error: 'Forbidden',
+          message: user.blockedReason
+            ? `Account suspended: ${user.blockedReason}`
+            : 'This account has been suspended.',
+        });
       }
 
       const role = await getPrimaryRoleForUser(user.id, user.email);
@@ -1242,6 +1314,20 @@ export async function authRoutes(server: FastifyInstance) {
         },
         include: { subscription: { where: { status: 'active' }, take: 1 } },
       });
+
+      // AUTH-08: same gate as POST /login. Google sign-in is a second door into
+      // the same account, and it had no suspension check at all — so blocking a
+      // user in the admin surface stopped nothing as long as they used the
+      // Google button. Checked after the Supabase token has been validated, so
+      // this cannot be used to enumerate suspended addresses.
+      if (dbUser.blocked) {
+        return reply.code(403).send({
+          error: 'Forbidden',
+          message: dbUser.blockedReason
+            ? `Account suspended: ${dbUser.blockedReason}`
+            : 'This account has been suspended.',
+        });
+      }
 
       const role = await getPrimaryRoleForUser(dbUser.id, dbUser.email);
 

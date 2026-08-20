@@ -206,6 +206,22 @@ export async function subscriptionRoutes(server: FastifyInstance) {
     return { isPremium };
   });
 
+  // ─── GET /entitlements — server truth for what the holder may receive ──────
+  //
+  // TC-04. `/is-premium` answers a boolean, which every consumer then has to
+  // reinterpret into "so does that mean no ads, or no surcharge, or both?" —
+  // and the one web consumer that shipped
+  // (apps/web/components/useIsPremium.ts) skipped the server entirely and
+  // tested a client-side tier string against a hardcoded set the NRI Premium
+  // tier is never written into. This endpoint answers by CAPABILITY, and it
+  // lists only capabilities that something actually enforces, so a consumer
+  // can never conclude that an unenforced benefit is live.
+
+  server.get('/entitlements', { preHandler: [authenticateUser] }, async (request) => {
+    const userId = request.currentUser!.id;
+    return subscriptionService.getEntitlements(userId);
+  });
+
   // ─── POST /cancel-auto-renew — Cancel future renewals ──────────────────────
 
   server.post('/cancel-auto-renew', { preHandler: [authenticateUser] }, async (request, reply) => {

@@ -8,7 +8,6 @@ import {
  MapPin,
  BadgeCheck,
  FileText,
- ChevronRight,
  Star,
  Users,
  IndianRupee,
@@ -36,59 +35,34 @@ export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/gaushala' },
  title: "Gau Seva — Adopt a Cow",
  description:
- "Adopt a cow at a verified gaushala. Get monthly photo updates, visit anytime, and earn divine blessings. Support cow protection across India with Darshya.",
+ "Support a gaushala through Darshya. Choose a gau seva plan, get a receipt for every contribution, and help protect India's cows.",
 };
 
 /* ── Hardcoded data (matches API) ─────────────────────────────────────────────── */
 
-// P1 #214 (2026-08-03): the detail route `/gaushala/[id]` renders ADOPTABLE-COW
-// records keyed `cow_*`. There is no `gs_*` detail page — so the "Explore
-// Gaushala" cards below linked to `/gaushala/gs_001|002|003`, all 404. Map each
-// verified gaushala to one of its adoptable cows (which has a working detail
-// page that also shows the gaushala's info) until a real `/gaushala/[gsId]`
-// route exists.
-const gaushalaToAdoptableCow: Record<string, string> = {
- gs_001: "cow_001", // Shri Krishna Gaushala → Lakshmi
- gs_002: "cow_005", // Kamdhenu Gaushala → Kamala
- gs_003: "cow_010", // Gokul Gaushala → Surabhi
-};
-
-const gaushalas = [
- {
- id: "gs_001",
- name: "Shri Krishna Gaushala",
- location: "Vrindavan, Uttar Pradesh",
- totalCows: 500,
- availableCows: 3,
- affiliation: "ISKCON-affiliated",
- image: getGaushalaImage('cow-shelter'),
- description:
- "One of the most revered gaushalas in Vrindavan, affiliated with ISKCON. Home to 500+ cows including rare indigenous breeds.",
- },
- {
- id: "gs_002",
- name: "Kamdhenu Gaushala",
- location: "Jaipur, Rajasthan",
- totalCows: 1200,
- availableCows: 5,
- affiliation: "Government Registered",
- image: getGaushalaImage('tharparkar-cow'),
- description:
- "A government-registered gaushala spanning 50 acres. Houses 1200+ rescued cows with modern veterinary facility.",
- },
- {
- id: "gs_003",
- name: "Gokul Gaushala",
- location: "Mathura, Uttar Pradesh",
- totalCows: 350,
- availableCows: 4,
- affiliation: "Organic Products Certified",
- image: getGaushalaImage('gir-cow'),
- description:
- "A heritage gaushala in Mathura, operating since 1952. Known for preserving rare Indian cow breeds and organic A2 products.",
- },
-];
-
+// TC-11 (P2, trust) — THE THREE FABRICATED GAUSHALAS ARE GONE.
+//
+// This file used to carry `const gaushalas = [...]`: three cards naming real
+// organisations in Vrindavan, Jaipur and Mathura, each stamped with a green
+// "Verified" badge and a third-party credential a developer typed into the
+// source ("ISKCON-affiliated", "Government Registered", "Organic Products
+// Certified"), under the heading "Our Verified Gaushalas" and the sentence
+// "Each gaushala is personally verified by our team. We ensure highest
+// standards of cow care and complete financial transparency."
+//
+// None of it is performed anywhere in the product. GaushalaProfile.verified
+// exists in the schema and nothing writes it — admin.service.ts approves by
+// setting `approved`, routes/gaushala-portal.ts never mentions verification,
+// and the only `verified: true` in apps/api is a MOCK fixture in
+// provider.service.ts. Nothing audits a gaushala and no endpoint publishes one's
+// finances. Awarding a named third party a credential on that basis is the most
+// exposed version of this defect on the site.
+//
+// /donations had the identical fixtures removed for the same reason (S-05) and
+// replaced with `getApprovedProviders('gaushala')` plus an honest empty state.
+// This page already renders that component at the bottom, so the deletion
+// leaves a real listing rather than a hole. Put a curated section back only when
+// there is a signed partner to put in it.
 const featuredCows = [
  {
  id: "cow_001",
@@ -233,7 +207,12 @@ const adoptionPlans = [
 const faqs = [
  {
  q: "How do I know my donation is being used properly?",
- a: "Every adopter receives monthly photo and video updates of their cow via WhatsApp and email. You can also visit the gaushala anytime during visiting hours to see your cow in person. All our gaushalas are verified and audited regularly.",
+ // TC-11: the last clause used to read "All our gaushalas are verified and
+ // audited regularly." Nothing verifies or audits a gaushala anywhere in the
+ // product — GaushalaProfile.verified is never written, the admin path sets
+ // `approved`, and no endpoint publishes a gaushala's finances. What IS true
+ // is that a gaushala is reviewed by hand before it appears in the listing.
+ a: "Every adopter receives monthly photo and video updates of their cow via WhatsApp and email. You can also visit the gaushala anytime during visiting hours to see your cow in person. Each gaushala listed on Darshya is reviewed and approved by us before it goes live; we do not audit their books, so treat the updates and your own visit as the evidence.",
  },
  {
  q: "Can I visit the cow I have adopted?",
@@ -247,7 +226,13 @@ const faqs = [
  },
  {
  q: "What happens if the cow I adopted passes away?",
- a: "In the unfortunate event, we will immediately notify you and offer the option to transfer your adoption to another cow or receive a full refund for the remaining period. We maintain complete transparency throughout.",
+ // TC-11 (adjacent, same sentence): this promised "a full refund for the
+ // remaining period" alongside "complete transparency throughout". There is
+ // no remaining period to refund — a gau seva contribution goes through the
+ // one-off donations rail, and refund.service.processRefund only ever refunds
+ // a PujaBooking. Transferring the seva is something a human can actually do;
+ // an automatic pro-rata refund is not.
+ a: "In the unfortunate event, we will notify you and move your seva to another cow at the same gaushala. If you would rather stop, write to us and we will review it by hand — a contribution is a one-off donation rather than a subscription, so there is no automatic pro-rata refund behind it.",
  },
  {
  q: "Can I gift a cow adoption to someone?",
@@ -310,7 +295,7 @@ export default function GaushalaPage() {
  </span>
  </h1>
  <p className="text-lg sm:text-xl text-surface-500 leading-relaxed mb-8 max-w-2xl mx-auto">
- Support verified gaushalas across India. Receive monthly photo
+ Support gaushalas across India. Receive monthly photo
  updates of your adopted cow, visit anytime, and contribute to the
  protection of India's sacred cows.
  </p>
@@ -341,8 +326,12 @@ export default function GaushalaPage() {
  {[
  {
  icon: BadgeCheck,
- label: "Verified Gaushalas",
- sub: "Audited & transparent",
+ // TC-11: this badge read "Verified Gaushalas / Audited & transparent".
+ // Neither happens: GaushalaProfile.verified is written nowhere, nothing
+ // audits a gaushala, and no endpoint publishes one's finances. Approval
+ // by hand before listing is the process that actually exists.
+ label: "Reviewed Gaushalas",
+ sub: "Approved before they are listed",
  },
  {
  icon: Camera,
@@ -379,90 +368,6 @@ export default function GaushalaPage() {
  </div>
  </section>
 
- {/* ── Gaushalas Section ───────────────────────────────────────────────────── */}
- <section className="py-16 lg:py-20 bg-surface-50">
- <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10">
- <div className="text-center mb-12">
- <h2 className="text-2xl font-semibold text-surface-800 mb-3">
- Our Verified Gaushalas
- </h2>
- <p className="text-surface-600 max-w-xl mx-auto">
- Each gaushala is personally verified by our team. We ensure
- highest standards of cow care and complete financial transparency.
- </p>
- </div>
-
- <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
- {gaushalas.map((gs) => (
- <div
- key={gs.id}
- className="group bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] shadow-warm-sm card-hover transition-all duration-300"
- >
- <div className="relative h-48 overflow-hidden">
- <img
- src={gs.image}
- sizes="(max-width: 768px) 100vw, 380px"
- width={500}
- height={288}
- loading="lazy"
- decoding="async"
- alt={gs.name}
- className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
- />
- <div className="absolute top-3 left-3">
- <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-xs font-semibold text-emerald-700">
- <BadgeCheck className="w-3.5 h-3.5" />
- Verified
- </span>
- </div>
- </div>
- <div className="p-5">
- <h3 className="text-lg font-bold text-surface-900 mb-1">
- {gs.name}
- </h3>
- <p className="text-sm text-surface-500 flex items-center gap-1 mb-3">
- <MapPin className="w-3.5 h-3.5" />
- {gs.location}
- </p>
- <p className="text-sm text-surface-600 mb-4 line-clamp-2">
- {gs.description}
- </p>
- <div className="flex items-center justify-between mb-4">
- <div className="text-center">
- <p className="text-lg font-bold text-surface-900">
- {gs.totalCows}+
- </p>
- <p className="text-xs text-surface-500">Total Cows</p>
- </div>
- <div className="h-8 w-px bg-surface-200" />
- <div className="text-center">
- <p className="text-lg font-bold text-emerald-600">
- {gs.availableCows}
- </p>
- <p className="text-xs text-surface-500">
- Available to Adopt
- </p>
- </div>
- <div className="h-8 w-px bg-surface-200" />
- <div className="text-center">
- <p className="text-xs font-medium text-surface-500">
- {gs.affiliation}
- </p>
- </div>
- </div>
- <Link
- href={`/gaushala/${gaushalaToAdoptableCow[gs.id] ?? gs.id}`}
- className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-saffron-50 text-saffron-700 font-medium rounded-lg hover:bg-saffron-100 transition-colors text-sm"
- >
- Explore Gaushala
- <ChevronRight className="w-4 h-4" />
- </Link>
- </div>
- </div>
- ))}
- </div>
- </div>
- </section>
 
  {/* ── Featured Cows Section ───────────────────────────────────────────────── */}
  <section id="cows" className="py-16 lg:py-20 bg-white">
@@ -642,7 +547,7 @@ export default function GaushalaPage() {
  What your gau seva pays for
  </h2>
  <p className="text-surface-400 max-w-xl mx-auto">
- Every contribution goes to a verified gaushala and is receipted. Here is
+ Every contribution goes to a gaushala we have approved for listing, and is receipted. Here is
  what it covers.
  </p>
  </div>
@@ -665,8 +570,19 @@ export default function GaushalaPage() {
  icon: Users,
  },
  {
- value: "80G",
- label: "Tax-deductible receipt on eligible donations",
+ // TC-01: the one 80G assertion on this page that escaped COM-02's gate.
+ // Everything else here branches on HAS_80G — the trust strip, the plan
+ // feature list, the tax-deductibility FAQ — and this tile went on
+ // promising "Tax-deductible receipt on eligible donations" three
+ // sections further down. There are no eligible donations: is80GEligible()
+ // needs a donee registration number AND PAN, gaushala_profiles.regn_80g
+ // and .pan are read in one place and written nowhere, so the receipt
+ // generator prints "Proof of donation — not a tax exemption certificate"
+ // on every receipt it has ever issued.
+ value: HAS_80G ? "80G" : "Receipt",
+ label: HAS_80G
+ ? "Tax-deductible receipt on eligible donations"
+ : "A PDF receipt for every contribution, emailed instantly",
  icon: IndianRupee,
  },
  ].map((stat) => (
@@ -741,7 +657,7 @@ export default function GaushalaPage() {
 
  <ApprovedProvidersStrip
  type="gaushala"
- heading="Verified gaushalas on Darshya"
+ heading="Approved gaushalas on Darshya"
  subheading="Approved gaushalas you can support directly. Each one is reviewed before being listed."
  limit={8}
  />

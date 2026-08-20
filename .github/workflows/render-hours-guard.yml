@@ -13,6 +13,34 @@ name: Render hours guard
 # which had 200 minutes of headroom (docs/free-tier-budgets.md). Deliberately
 # daily rather than hourly: a monthly budget cannot be rescued by finding out
 # sooner than a day, and hourly would eat 720 min/month for no extra safety.
+#
+# ============================================================================
+# OPS-08 - THIS GUARD IS NOT YET RUNNING ON A SCHEDULE. READ BEFORE RELYING ON IT.
+# ============================================================================
+# GitHub only honours a `schedule:` trigger from the repository's DEFAULT
+# BRANCH. This file arrived in commit 853b4cbc on `feat/recurring-razorpay-planid`
+# and, for as long as it lives only there, the cron below will never fire even
+# once. It is not "installed"; it is written.
+#
+# So between now and the merge, the suspension detection this repository has is
+# exactly what it had during the 2026-08-17 outage: nothing automatic.
+#
+# Until this branch merges to main, the ONLY way to run it is by hand:
+#     gh workflow run render-hours-guard.yml --ref feat/recurring-razorpay-planid
+# (`workflow_dispatch` DOES run from a non-default branch; `schedule` does not.)
+#
+# After the merge, confirm the schedule is actually registered rather than
+# assuming it:
+#     gh workflow list --all | grep render-hours-guard
+#     gh run list --workflow=render-hours-guard.yml --limit 5
+# A scheduled run should appear within ~24h of the merge. GitHub also disables
+# scheduled workflows in a repository with no activity for 60 days, and it
+# re-enables them only on a manual dispatch - so an empty run list months later
+# is a real state, not a display bug.
+#
+# The same caveat applies to every other workflow edited on this branch
+# (agents-health.yml, e2e.yml, db-backup.yml): their corrected behaviour starts
+# at the merge, not at the commit.
 
 on:
   schedule:

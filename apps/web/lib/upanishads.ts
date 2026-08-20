@@ -1,5 +1,12 @@
-// 10 principal Upanishads (Dashopanishads) commented on by Adi Shankaracharya.
-// Programmatic-SEO source — same pattern as gita-chapters.ts / ramayana-kandas.ts.
+// The Upanishads this site publishes: the ten Dashopanishads that Adi
+// Shankaracharya wrote bhashyas on, followed by Muktika-canon texts he did
+// not. Programmatic-SEO source — same pattern as gita-chapters.ts /
+// ramayana-kandas.ts.
+//
+// CI-14: the count here and the count /upanishads advertises drifted apart —
+// the page was titled "The 10 Principal Upanishads" above a grid of every
+// record in this file. PRINCIPAL_UPANISHAD_SLUGS below is what "principal"
+// actually means, so the page can say ten AND say how many it ships.
 
 export interface UpanishadInfo {
   slug: string;
@@ -670,21 +677,6 @@ export const UPANISHADS: UpanishadInfo[] = [
     takeaway: 'The mala in your hand is not jewellery. It is an instrument — the right wood for the right mantra, threaded right, awakened right. Then 108 becomes infinity.',
   },
   {
-    slug: 'paingala-upanishad', name: 'Paingala Upanishad', sanskrit: 'पैङ्गल उपनिषद्', iast: 'Paiṅgala Upaniṣad',
-    veda: 'Yajur', vedaShakha: 'Shukla Yajurveda — Samanya (general) Upanishad group',
-    mantraCount: 64,
-    centralTheme: 'Dialogue between sage Yajnavalkya and disciple Paingala on the Self, creation, and liberation.',
-    summary: 'The Paingala Upanishad belongs to the Shukla Yajurveda and is counted among the Samanya (general) Upanishads. It records a twelve-year tutelage in which the householder-sage Yajnavalkya systematically expounds to his disciple Paingala the entire arc of Advaita Vedanta. Across four chapters the text moves from Ishvara as the cosmic cause, through the unfolding of the five sheaths (panchakosha) and the three bodies (sthula, sukshma, karana), to the four states of consciousness (jagrat, svapna, sushupti, turiya) and culminates in the mahavakya tat tvam asi. The first chapter analyzes creation from Brahman through avidya and the cosmic egg; the second decodes the mahavakyas and the identity of jiva with Brahman; the third describes the jivanmukta who lives liberated while embodied; the fourth dwells on videhamukti, bodiless liberation. The text is unusual in its almost manual-like clarity, weaving cosmology, psychology, and soteriology into one continuous instruction. It teaches that bondage is nothing but mistaken identification with the not-Self, and liberation is the immediate recognition of one is already Brahman, undivided witness consciousness. Householders are repeatedly assured that this knowledge, not renunciation of duty, is the operative cause of moksha. The Upanishad ends by declaring that even hearing this teaching once destroys the seed of rebirth.',
-    keyConcepts: ['Tat Tvam Asi', 'Panchakosha analysis', 'Three bodies (sthula, sukshma, karana)', 'Jivanmukti', 'Videhamukti', 'Witness consciousness', 'Avidya as root of bondage', 'Yajnavalkya lineage'],
-    famousVerse: {
-      sanskrit: 'तत्त्वमस्यादिवाक्येन स्वात्मा हि प्रतिपादितः ।',
-      iast: 'tat tvam asy ādi vākyena svātmā hi pratipāditaḥ',
-      translation: 'By the great sayings beginning with "That Thou Art," ones own Self is indeed established as Brahman.',
-      reference: 'Paingala Upanishad — 2.6',
-    },
-    takeaway: 'You were never bound — recognition, not effort, is liberation.',
-  },
-  {
     slug: 'advayataraka-upanishad', name: 'Advayataraka Upanishad', sanskrit: 'अद्वयतारक उपनिषद्', iast: 'Advayatāraka Upaniṣad',
     veda: 'Yajur', vedaShakha: 'Shukla Yajurveda — Yoga Upanishad group',
     mantraCount: 19,
@@ -713,25 +705,6 @@ export const UPANISHADS: UpanishadInfo[] = [
       reference: 'Kalisantarana Upanishad — Mantra 3',
     },
     takeaway: 'In the darkest age, one Name kept on the tongue is the entire ferry across.',
-  },
-  {
-    slug: 'shandilya-upanishad',
-    name: 'Shandilya Upanishad',
-    sanskrit: 'शाण्डिल्योपनिषद्',
-    iast: 'Sandilya Upanishad',
-    veda: 'Atharva',
-    vedaShakha: 'Atharvaveda Yoga Upanishad group',
-    mantraCount: 102,
-    centralTheme: 'Eight-limbed yoga as the path to Brahman realization',
-    summary: 'The Shandilya Upanishad belongs to the Atharvaveda and is one of the principal Yoga Upanishads, presenting a detailed treatise on Ashtanga Yoga as taught by sage Shandilya to his disciple Atharvan. The text systematically expounds the eight limbs of yoga: yama, niyama, asana, pranayama, pratyahara, dharana, dhyana, and samadhi, but greatly expands each beyond the Patanjali framework, listing ten yamas and ten niyamas, several asanas, and elaborate pranayama techniques. It pays special attention to nadi purification, the awakening of kundalini, the piercing of the chakras, and the cultivation of subtle bodily centers as essential prerequisites for higher meditation. The Upanishad describes the gross, subtle, and causal bodies, the five sheaths (koshas), and the threefold avastha of waking, dream, and deep sleep, integrating them with yogic introspection. A unique contribution is its detailed teaching on saguna and nirguna Brahman, presenting first the worship of the personal deity with form and qualities and then dissolving that form into pure consciousness through the mahavakya practice of self-inquiry. The text concludes with a vision of the yogin who has crossed maya, who sees the universe as the play of Brahman, and who experiences kaivalya as the natural state.',
-    keyConcepts: ['ashtanga yoga', 'ten yamas niyamas', 'nadi shodhana', 'kundalini awakening', 'chakra dhyana', 'saguna and nirguna brahman', 'kaivalya'],
-    famousVerse: {
-      sanskrit: 'ब्रह्म सत्यं जगन्मिथ्या जीवो ब्रह्मैव नापरः।',
-      iast: 'brahma satyam jagan mithya jivo brahmaiva naparah',
-      translation: 'Brahman alone is real, the world is a passing appearance, and the individual self is none other than Brahman itself.',
-      reference: 'Shandilya Upanishad 2.2',
-    },
-    takeaway: 'Discipline the body and breath until the mind dissolves into the silent witness that is Brahman.',
   },
   {
     slug: 'mahanarayana-upanishad',
@@ -851,6 +824,72 @@ export const UPANISHADS: UpanishadInfo[] = [
 
 export function upanishadSlugs(): string[] {
   return UPANISHADS.map((u) => u.slug);
+}
+
+/**
+ * CI-08 — /ved/[slug] republishes fourteen of these Upanishads as MDX
+ * articles, and every one of those URLs declares ITSELF canonical, so one
+ * subject competes with itself across two route families. Twelve collide on
+ * the identical slug; `ishavasya-upanishad` and `shvetashvatara-upanishad`
+ * differ from the curated slugs only in transliteration — and `ishavasya`
+ * means /ved publishes the Isha Upanishad twice on its own.
+ *
+ * The curated /upanishads pages win: they carry the mantra count, mahavakya,
+ * famous verse and key concepts that the MDX articles do not.
+ *
+ * NOT YET WIRED. app/ved/[slug]/page.tsx — which is outside this lane — has to
+ * point `alternates.canonical` at `canonicalUpanishadUrl(slug)` when it
+ * returns a value. This table is the half that needs the domain knowledge.
+ */
+export const VED_ARTICLE_TO_UPANISHAD: Readonly<Record<string, string>> = {
+  'aitareya-upanishad': 'aitareya-upanishad',
+  'brihadaranyaka-upanishad': 'brihadaranyaka-upanishad',
+  'chandogya-upanishad': 'chandogya-upanishad',
+  'isha-upanishad': 'isha-upanishad',
+  'ishavasya-upanishad': 'isha-upanishad',
+  'katha-upanishad': 'katha-upanishad',
+  'kena-upanishad': 'kena-upanishad',
+  'mahanarayana-upanishad': 'mahanarayana-upanishad',
+  'maitri-upanishad': 'maitri-upanishad',
+  'mandukya-upanishad': 'mandukya-upanishad',
+  'mundaka-upanishad': 'mundaka-upanishad',
+  'prashna-upanishad': 'prashna-upanishad',
+  'shvetashvatara-upanishad': 'svetasvatara-upanishad',
+  'taittiriya-upanishad': 'taittiriya-upanishad',
+};
+
+/**
+ * The URL that should be canonical for a `content/ved` article slug, or
+ * undefined when the article is not an Upanishad this site also publishes.
+ */
+export function canonicalUpanishadUrl(vedArticleSlug: string): string | undefined {
+  const target = VED_ARTICLE_TO_UPANISHAD[vedArticleSlug];
+  return target ? `/upanishads/${target}` : undefined;
+}
+
+/**
+ * The Dashopanishads — the ten Adi Shankaracharya commented on, and the only
+ * ten the word "principal" covers. Everything else in UPANISHADS belongs to
+ * the wider Muktika canon of 108.
+ */
+export const PRINCIPAL_UPANISHAD_SLUGS: readonly string[] = [
+  'isha-upanishad',
+  'kena-upanishad',
+  'katha-upanishad',
+  'prashna-upanishad',
+  'mundaka-upanishad',
+  'mandukya-upanishad',
+  'taittiriya-upanishad',
+  'aitareya-upanishad',
+  'chandogya-upanishad',
+  'brihadaranyaka-upanishad',
+];
+
+const PRINCIPAL_SET = new Set(PRINCIPAL_UPANISHAD_SLUGS);
+
+/** Did Shankaracharya write a bhashya on it? */
+export function isPrincipalUpanishad(slug: string): boolean {
+  return PRINCIPAL_SET.has(slug);
 }
 
 export function getUpanishad(slug: string): UpanishadInfo | undefined {

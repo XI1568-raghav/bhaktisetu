@@ -140,13 +140,15 @@ export default async function UpanishadPage({ params }: { params: Promise<{ slug
         ) : (
           <Link href="/upanishads" className="rounded-xl border border-saffron-200 bg-saffron-50 p-4 text-right hover:bg-saffron-100">
             <div className="text-xs uppercase text-saffron-700">← Back to index</div>
-            <div className="mt-0.5 text-sm font-semibold text-saffron-900">All 10 Upanishads</div>
+            <div className="mt-0.5 text-sm font-semibold text-saffron-900">All {UPANISHADS.length} Upanishads</div>
           </Link>
         )}
       </nav>
 
       <section className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-base font-semibold text-gray-900">All 10 principal Upanishads</h2>
+        {/* CI-14: this list renders every record, so it cannot be labelled
+            "10 principal" — the ten are marked individually on the index. */}
+        <h2 className="text-base font-semibold text-gray-900">All {UPANISHADS.length} Upanishads</h2>
         <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
           {UPANISHADS.map((uu) => (
             <Link

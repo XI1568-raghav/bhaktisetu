@@ -13,6 +13,9 @@ import {
  fetchWithTimeout,
  isNetworkFailure,
  NETWORK_ERROR_MESSAGE,
+ UNREADABLE_RESPONSE_MESSAGE,
+ readJsonBody,
+ authHttpErrorMessage,
 } from './api-config';
 import { hasStoredProfile, reviveSessionFromCookie } from './session-revive';
 
@@ -418,12 +421,26 @@ function persistProfileOnly(usr: AuthUser): void {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * AUTH-07 retry budget for the proactive token refresh.
+ *
+ * Bounded on purpose: a browser that cannot reach the API must not sit in a
+ * retry loop for the life of the tab. Backoff is 30s, 60s, 2m, 4m, 5m (capped),
+ * which covers a Render cold start and a short connectivity gap and gives up
+ * well inside the token's own remaining life.
+ */
+const REFRESH_RETRY_BASE_MS = 30_000;
+const MAX_REFRESH_ATTEMPTS = 5;
+
 // ─── Provider ──────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
  const [user, setUser] = useState<AuthUser | null>(null);
  const [session, setSession] = useState<AuthSession | null>(null);
  const [isLoading, setIsLoading] = useState(true);
+ // AUTH-07: bumping this re-arms the proactive-refresh effect below. Without
+ // it a failed refresh could never schedule another one.
+ const [refreshAttempt, setRefreshAttempt] = useState(0);
 
  /**
  * Persists session data via the shared writer (see persistAuthStorage) and
@@ -614,6 +631,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // Proactive refresh while the tab stays open. Supabase access tokens
  // last ~1h; we refresh ~5 min before expiry so long single-page sessions
  // (gaushala dashboard, etc.) never hit a 401 mid-action.
+ //
+ // AUTH-07 (2026-08-20): THIS USED TO BE SILENT *AND* TERMINAL.
+ //
+ // The body was `if (res.ok) { … }` with no `else` and an empty `catch`, so a
+ // failed refresh set no state at all — and this effect re-arms only when one
+ // of its dependencies changes. Nothing changed, so the timer was never
+ // scheduled again. ONE transient failure (a cold dyno, a dropped connection,
+ // a 502) meant the token was never renewed, expired minutes later, and the
+ // next action the user took 401'd with no explanation. `refreshAttempt` is
+ // what lets the effect re-arm: it is a dependency, and bumping it IS the
+ // retry.
  useEffect(() => {
  if (!session || session.accessToken.startsWith('demo-')) return;
  const expMs =
@@ -622,8 +650,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  : session.expiresAt;
  if (!expMs) return;
  const refreshAt = expMs - 5 * 60_000;
- const delay = Math.max(refreshAt - Date.now(), 10_000);
+ // A retry must not wait for the (already passed) refresh point again —
+ // that is what turns a 30s backoff into a 10s-floor busy loop.
+ const delay =
+ refreshAttempt === 0
+ ? Math.max(refreshAt - Date.now(), 10_000)
+ : Math.min(REFRESH_RETRY_BASE_MS * 2 ** (refreshAttempt - 1), 5 * 60_000);
+
  const timer = setTimeout(async () => {
+ // The session cannot be renewed. Signing out is the honest end state:
+ // leaving a dead token in place makes every later action 401 with no
+ // explanation, which is exactly what this finding describes.
+ const giveUp = () => {
+ setSession(null);
+ setUser(null);
+ persistSession(null, null);
+ };
+ const retryOrGiveUp = () => {
+ if (Date.now() >= expMs || refreshAttempt >= MAX_REFRESH_ATTEMPTS) {
+ giveUp();
+ return;
+ }
+ setRefreshAttempt(refreshAttempt + 1);
+ };
+
  try {
  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
  method: 'POST',
@@ -632,18 +682,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ refreshToken: session.refreshToken }),
  });
  if (res.ok) {
- const data = await res.json();
+ const data = await readJsonBody<{ session?: AuthSession }>(res);
  if (data?.session && user) {
  setSession(data.session);
  persistSession(data.session, user);
+ setRefreshAttempt(0);
+ return;
  }
+ // 200 with a body we cannot use is not a success.
+ retryOrGiveUp();
+ return;
  }
+ if (res.status === 401 || res.status === 403) {
+ // Definitive: the refresh credential itself is dead (expired,
+ // rotated away, or family-revoked after a replay). Retrying cannot
+ // help and would only delay telling the user.
+ giveUp();
+ return;
+ }
+ retryOrGiveUp();
  } catch {
- // Silent — next API call's own retry path will surface if still bad.
+ // Network/timeout — the recoverable case, and the one the old empty
+ // catch made permanent.
+ retryOrGiveUp();
  }
  }, delay);
  return () => clearTimeout(timer);
- }, [session, user, persistSession]);
+ }, [session, user, persistSession, refreshAttempt]);
 
  /**
  * Sends OTP to the given phone number.
@@ -656,13 +721,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ phone }),
  });
 
- const data = await res.json();
-
+ // AUTH-02: status BEFORE body. A gateway 502/503 answers with HTML, and
+ // parsing that first threw a SyntaxError into the catch below — where it
+ // came back out as "Network error", a sentence that names the wrong cause.
  if (!res.ok) {
- return { success: false, message: data.message || 'Failed to send OTP' };
+ const errBody = await readJsonBody<{ message?: string }>(res);
+ return {
+ success: false,
+ message: errBody?.message || authHttpErrorMessage(res.status, 'Failed to send OTP'),
+ };
  }
 
- return { success: true, message: data.message };
+ const data = await readJsonBody<{ message?: string }>(res);
+ return { success: true, message: data?.message ?? 'OTP sent.' };
  } catch {
  return { success: false, message: 'Network error. Please check your connection.' };
  }
@@ -679,10 +750,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ phone, token }),
  });
 
- const data = await res.json();
-
+ // AUTH-02: status BEFORE body — see signInWithOtp above.
  if (!res.ok) {
- return { success: false, message: data.message || 'Verification failed' };
+ const errBody = await readJsonBody<{ message?: string }>(res);
+ return {
+ success: false,
+ message: errBody?.message || authHttpErrorMessage(res.status, 'Verification failed'),
+ };
+ }
+
+ const data = await readJsonBody<{ session?: AuthSession; user?: AuthUser; message?: string }>(res);
+ if (!data?.session || !data?.user) {
+ return { success: false, message: UNREADABLE_RESPONSE_MESSAGE };
  }
 
  const newSession: AuthSession = data.session;
@@ -697,7 +776,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
  return {
  success: true,
- message: data.message,
+ message: data.message ?? 'Signed in successfully',
  isNewUser: newUser.isNewUser,
  };
  } catch {
@@ -751,10 +830,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ email: emailLower, password }),
  });
 
- const data = await res.json();
-
+ // AUTH-02 (2026-08-20): STATUS FIRST. This used to be
+ // `const data = await res.json(); if (!res.ok) …`, and the order was the
+ // whole defect. A cold, crashed or suspended API answers through a gateway
+ // that sends 502/503 with an HTML body; `res.json()` on HTML throws a
+ // SyntaxError, which is not a network failure by isNetworkFailure's
+ // definition, so it fell through the catch below to the last line and told
+ // a user whose password was CORRECT that their email or password was
+ // wrong. They then go and reset a password that was never the problem.
+ // A 5xx is our failure and must say so.
  if (!res.ok) {
- return { success: false, message: data.message || 'Invalid email or password' };
+ const errBody = await readJsonBody<{ message?: string }>(res);
+ return {
+ success: false,
+ message:
+ errBody?.message || authHttpErrorMessage(res.status, 'Invalid email or password'),
+ };
+ }
+
+ const data = await readJsonBody<{ session?: AuthSession; user?: AuthUser }>(res);
+ if (!data?.session || !data?.user) {
+ return { success: false, message: UNREADABLE_RESPONSE_MESSAGE };
  }
 
  const newSession: AuthSession = data.session;
@@ -796,10 +892,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ ...data, role: toApiRole(data.role) }),
  });
 
- const result = await res.json();
-
+ // AUTH-02: status BEFORE body — a gateway 502 was being reported as
+ // "Registration failed", which reads as "we rejected your details".
  if (!res.ok) {
- return { success: false, message: result.message || 'Registration failed' };
+ const errBody = await readJsonBody<{ message?: string }>(res);
+ return {
+ success: false,
+ message: errBody?.message || authHttpErrorMessage(res.status, 'Registration failed'),
+ };
+ }
+
+ const result = await readJsonBody<{ session?: AuthSession; user?: AuthUser }>(res);
+ if (!result?.session || !result?.user) {
+ return { success: false, message: UNREADABLE_RESPONSE_MESSAGE };
  }
 
  const newSession: AuthSession = result.session;

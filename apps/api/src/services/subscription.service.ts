@@ -2,6 +2,14 @@ import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
+import {
+  NRI_PREMIUM_PLAN_ID,
+  NRI_PREMIUM_WITHDRAWN_MESSAGE,
+  nriPremiumEntitlementKeys,
+  advertisedFeaturesFor,
+  nriPremiumIsSellable,
+  type EntitlementKey,
+} from './subscription-entitlements.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -220,6 +228,18 @@ const PLANS: PlanDefinition[] = [
   // Stripe checkout was removed 2026-08-11. Maps to
   // ENTERPRISE so isPremium() can branch off the marketplace plan code
   // without inventing a new enum value.
+  //
+  // TC-04: these six lines are the CLAIM, not the offer. Nothing consulted the
+  // plan before granting any of them — see subscription-entitlements.ts, which
+  // records for each benefit the file that would have to enforce it. Until at
+  // least one is enforced the plan is withheld from getPlans() and both
+  // activation rails refuse it, and whatever getPlans() does return carries
+  // only the enforced subset (advertisedFeaturesFor).
+  //
+  // The literal stays here rather than being replaced by a call because
+  // apps/web/__tests__/legal-content-p1.test.ts (LEG-08) scans this file for a
+  // literal `features: [` block and cross-checks it against the published FAQ
+  // answer. Projecting on the way out preserves that contract.
   {
     id: 'nri_premium_yearly',
     name: 'NRI Premium',
@@ -284,9 +304,48 @@ export class PaymentRequiredError extends Error {
 // ─── Service ────────────────────────────────────────────────────────────────────
 
 export class SubscriptionService {
+  /**
+   * TC-04: a plan that enforces none of its advertised benefits is not
+   * offered. Withdrawing it here is what actually stops the sale — /pricing
+   * and /upgrade render whatever this returns.
+   */
+  private isOfferable(plan: PlanDefinition): boolean {
+    if (plan.id === NRI_PREMIUM_PLAN_ID) return nriPremiumIsSellable();
+    return true;
+  }
+
   getPlans(role?: string): PlanDefinition[] {
-    if (!role) return PLANS;
-    return PLANS.filter((p) => p.roles.includes(role));
+    const offerable = PLANS.filter((p) => this.isOfferable(p)).map((p) => {
+      const advertised = advertisedFeaturesFor(p.id, p.features);
+      return advertised === p.features ? p : { ...p, features: advertised };
+    });
+    if (!role) return offerable;
+    return offerable.filter((p) => p.roles.includes(role));
+  }
+
+  /**
+   * The raw definition, including plans currently withheld from sale. Used by
+   * reconciliation and by tests; never by a buying surface.
+   */
+  getPlanDefinition(planId: string): PlanDefinition | undefined {
+    return PLANS.find((p) => p.id === planId);
+  }
+
+  /**
+   * Server truth for what an active subscriber may actually receive.
+   *
+   * TC-04: the web ad-gate asked a CLIENT hook
+   * (apps/web/components/useIsPremium.ts) whether a tier string was in a
+   * hardcoded set — a set the NRI Premium tier is never written into, so the
+   * gate could not fire for the plan that sold it. Entitlements belong on the
+   * server, keyed by capability rather than by tier name, and they list only
+   * what is enforced, so no consumer can conclude a benefit is live when it
+   * is not.
+   */
+  async getEntitlements(userId: string): Promise<{ tier: string | null; entitlements: EntitlementKey[] }> {
+    const premium = await this.isPremium(userId);
+    if (!premium) return { tier: null, entitlements: [] };
+    return { tier: 'ENTERPRISE', entitlements: nriPremiumEntitlementKeys() };
   }
 
   async subscribe(
@@ -297,6 +356,13 @@ export class SubscriptionService {
   ): Promise<SubscriptionResult> {
     const plan = PLANS.find((p) => p.id === planId);
     if (!plan) throw new Error(`Plan not found: ${planId}`);
+
+    // TC-04: refuse a withdrawn plan before any write. Note this guards the
+    // SALE, not the honouring of one — an already-sold subscription is
+    // untouched, and isPremium()/getMySubscription() keep working for it.
+    if (!this.isOfferable(plan)) {
+      throw new Error(NRI_PREMIUM_WITHDRAWN_MESSAGE);
+    }
 
     if (!plan.roles.includes(role)) {
       throw new Error(`Plan ${planId} is not available for role ${role}`);
@@ -433,6 +499,12 @@ export class SubscriptionService {
     }
     if (plan.price <= 0) {
       throw new Error('Auto-renewal not supported for free plans');
+    }
+    // TC-04: never open a payment rail for a plan that delivers nothing. This
+    // is the gate that matters — refusing at activation instead would take
+    // the money first and then strand it.
+    if (!this.isOfferable(plan)) {
+      throw new Error(NRI_PREMIUM_WITHDRAWN_MESSAGE);
     }
 
     const rzpPlanId = mapToRazorpayPlanId(args.planId);

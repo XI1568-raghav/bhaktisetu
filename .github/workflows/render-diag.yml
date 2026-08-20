@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'deploys | deploy | list | logs | logs2 | cftoken | detail | resume'
+        description: 'deploys | deploy | list | logs | logs2 | cftoken | detail | resume  (to ROLL BACK: mode=deploy with -f commit=<sha>)'
         required: false
         default: 'deploys'
       sid:
@@ -11,9 +11,13 @@ on:
         required: false
         default: 'srv-d970l2ks728c738fc33g'
       branch:
-        description: 'branch to deploy (for clearCache)'
+        description: 'DEPRECATED - Render ignores this. Kept so older documented commands still parse.'
         required: false
         default: 'main'
+      commit:
+        description: 'commit SHA to deploy. THIS is the rollback lever - see docs/runbooks/prod-rollback.md. Empty = tracked-branch HEAD.'
+        required: false
+        default: ''
 jobs:
   diag:
     runs-on: ubuntu-latest
@@ -133,18 +137,41 @@ jobs:
           curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys?limit=50" \
             | jq -r '[.[] | (.deploy // .)] | group_by(.status) | .[] | "\(.[0].status): \(length)"'
 
+      # OPS-06 - this step IS the deploy mechanism, and therefore the rollback
+      # mechanism too. Both services are `autoDeploy: false` (render.yaml:28 and
+      # :60), so pushing a commit to main deploys nothing; only this dispatch
+      # does. Every runbook that said "revert the commit and push" described a
+      # pipeline that does not exist.
+      #
+      # The `branch` input was, and remains, INERT: Render's create-deploy API
+      # accepts `commitId` and `clearCache`, not a branch, and the old request
+      # body sent neither. It is kept only so previously documented commands
+      # still parse. `commit` is the input that actually changes WHAT is
+      # deployed, and it is what makes a rollback possible without first
+      # authoring, reviewing and merging a revert while production is down.
       - name: Trigger deploy + poll to live + curl
         if: ${{ github.event.inputs.mode == 'deploy' }}
         env:
           RK: ${{ secrets.RENDER_API_KEY }}
           SID: ${{ github.event.inputs.sid }}
           BRANCH: ${{ github.event.inputs.branch }}
+          COMMIT: ${{ github.event.inputs.commit }}
         run: |
           set -uo pipefail
           A="Authorization: Bearer $RK"
-          echo "=== trigger fresh deploy (clearCache: clear to pick up Dockerfile change) ==="
+          if [ -n "${BRANCH:-}" ] && [ -z "${COMMIT:-}" ]; then
+            echo "NOTE: branch='${BRANCH}' is ignored by Render. Deploying the branch this service tracks."
+            echo "NOTE: to deploy a SPECIFIC commit (this is how you roll back) pass -f commit=<sha>."
+          fi
+          if [ -n "${COMMIT:-}" ]; then
+            echo "=== trigger deploy of commit ${COMMIT} (clearCache: clear) ==="
+            body="{\"commitId\":\"${COMMIT}\",\"clearCache\":\"clear\"}"
+          else
+            echo "=== trigger fresh deploy of tracked-branch HEAD (clearCache: clear) ==="
+            body="{\"clearCache\":\"clear\"}"
+          fi
           r=$(curl -s -X POST -H "$A" -H "Content-Type: application/json" \
-            --data "{\"clearCache\":\"clear\"}" "https://api.render.com/v1/services/$SID/deploys")
+            --data "$body" "https://api.render.com/v1/services/$SID/deploys")
           did=$(echo "$r" | jq -r '.id // .deploy.id // empty')
           echo "deployId=$did  response: $(echo "$r" | jq -c '{id:.id, status:.status}')"
           [ -n "$did" ] || { echo "FAIL no deploy id"; echo "$r" | jq .; exit 1; }

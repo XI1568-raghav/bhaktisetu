@@ -8,6 +8,11 @@ import {
   reverseBookingLedger,
   reduceBookingLedgerForPartialRefund,
 } from './ledger-reversal.service.js';
+// PAY-03: ONE implementation of the "which Razorpay refund ids have already
+// been applied to this Payment" rule, shared by both refund rails and the
+// refund webhook. Two copies of a money rule is exactly how this finding
+// happened — do not inline it.
+import { appendRefundId } from './refund.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
@@ -280,6 +285,117 @@ async function writePujaCommissionOnConfirm(
   });
 }
 
+/**
+ * PAY-09 (2026-08-20, P3): claim the initiated → captured transition.
+ *
+ * Both confirmation rails — POST /payments/verify and the Razorpay webhook —
+ * computed `shouldConfirm` from a read taken BEFORE their transaction. Two
+ * overlapping reads both see `pending_payment`, both transactions commit, and
+ * both then fire the post-confirm side-effects: two tax invoices, two
+ * "confirmed" notifications, two referral-reward attempts for one booking.
+ *
+ * This conditional UPDATE is the single-winner gate. Exactly one transaction
+ * moves the row off `captured`, whichever one gets there first, and it reports
+ * 1; the loser reports 0. Run INSIDE the caller's transaction so the claim and
+ * the confirm commit or roll back together.
+ *
+ * Deliberately gates ONLY the notices. The ledger writes stay ungated — they
+ * carry their own findFirst idempotency guards, and skipping them on a lost
+ * race would risk a booking with no commission row, which is far worse than a
+ * duplicate email.
+ *
+ * A non-numeric result (no such row) counts as NOT won: silence is the safe
+ * failure for a duplicate-suppression gate.
+ */
+async function claimCaptureTransition(tx: TxClient, paymentId: string): Promise<boolean> {
+  try {
+    const claimed = await tx.$executeRawUnsafe(
+      `UPDATE payments SET status = 'captured' WHERE id = $1::uuid AND status <> 'captured';`,
+      paymentId,
+    );
+    return Number(claimed) === 1;
+  } catch {
+    return false;
+  }
+}
+
+/** PAY-02: the StoreOrder shape both the client-verify and webhook rails confirm. */
+interface StoreOrderConfirmRow {
+  id: string;
+  orderNumber: string;
+  status: string;
+  statusHistory: unknown;
+  userId: string;
+}
+
+/**
+ * PAY-08 (2026-08-20, P2): re-check slot capacity at CAPTURE time.
+ *
+ * `activeSlotHoldWhere` stops counting an unpaid `pending_payment` booking
+ * against its slot once the row is older than `UNPAID_HOLD_MINUTES` — that is
+ * deliberate (an abandoned checkout must not burn a pandit's calendar), but it
+ * means the slot can legitimately be resold to someone else while a Razorpay
+ * capture is still in flight. Razorpay retries a webhook for up to 24 hours, so
+ * a capture landing after the hold lapsed used to confirm the stale booking
+ * into a slot that was already full, in complete silence.
+ *
+ * Returns a human-readable note when confirming would oversell, or null.
+ *
+ * Deliberately advisory: the caller still confirms. A devotee who has paid must
+ * not be stranded, and an oversold slot is something an operator can move; what
+ * was missing was any detection at all. Fails OPEN (returns null) on any error —
+ * a diagnostic must never be able to block a capture.
+ */
+async function slotOversoldNote(booking: {
+  id: string;
+  createdAt: Date;
+  templePujaOfferingId: string | null;
+  scheduledDate: Date | null;
+  scheduledTimeSlot: string | null;
+}): Promise<string | null> {
+  try {
+    if (
+      !booking.templePujaOfferingId ||
+      !booking.scheduledDate ||
+      !booking.scheduledTimeSlot ||
+      !booking.createdAt
+    ) {
+      return null;
+    }
+    // Importing booking.service statically would close a cycle (booking.service
+    // imports this module). The import only happens on the rare late-capture
+    // path, never on the common one.
+    const { activeSlotHoldWhere, UNPAID_HOLD_MINUTES } = await import(
+      './booking.service.js'
+    );
+    const heldForMs = Date.now() - new Date(booking.createdAt).getTime();
+    if (heldForMs < UNPAID_HOLD_MINUTES * 60_000) return null;
+
+    const offering = await prisma.templePujaOffering.findUnique({
+      where: { id: booking.templePujaOfferingId },
+      select: { maxBookingsPerSlot: true },
+    });
+    const max = Number(offering?.maxBookingsPerSlot ?? 1);
+    const others = Number(
+      (await prisma.pujaBooking.count({
+        where: {
+          templePujaOfferingId: booking.templePujaOfferingId,
+          scheduledDate: booking.scheduledDate,
+          scheduledTimeSlot: booking.scheduledTimeSlot,
+          id: { not: booking.id },
+          ...activeSlotHoldWhere(),
+        },
+      })) ?? 0,
+    );
+    if (!Number.isFinite(others) || others < max) return null;
+    return `slot already holds ${others} of ${max} bookings (capture landed ${Math.round(
+      heldForMs / 60_000,
+    )} min after the booking was created)`;
+  } catch {
+    return null;
+  }
+}
+
 // P0 #PBO-12 (2026-07-09): single post-confirm side-effect block. The client
 // verify path ran commission + invoice + referral reward, but BOTH webhook
 // paths (Razorpay payment.captured, and the since-removed Stripe
@@ -460,6 +576,8 @@ interface VerifyPaymentResult {
 interface WebhookResult {
   handled: boolean;
   event?: string;
+  /** PAY-03: set when a refund event carried an id already applied to the Payment. */
+  duplicate?: boolean;
 }
 
 interface RefundResult {
@@ -681,7 +799,12 @@ export class PaymentService {
     // between the two updates previously left a captured Payment with a
     // pending_payment Booking until the webhook retried.
     const shouldConfirm = payment.booking.status === 'pending_payment';
+    // PAY-09: single-winner claim — see claimCaptureTransition. Without it this
+    // rail and the webhook, racing on the same booking, each sent the devotee a
+    // tax invoice and a confirmation.
+    let capturedNow = false;
     await prisma.$transaction(async (tx) => {
+      capturedNow = await claimCaptureTransition(tx, payment.id);
       await tx.payment.update({
         where: { id: payment.id },
         data: {
@@ -708,7 +831,9 @@ export class PaymentService {
     // Post-commit side-effects (invoice email + referral reward) are network
     // calls that must NOT roll back a captured payment — fire-and-forget.
     const booking = payment.booking!;
-    if (shouldConfirm) {
+    // PAY-09 — see the webhook rail for why `payment.status === 'captured'` is
+    // an escape hatch rather than a hole.
+    if (shouldConfirm && (capturedNow || payment.status === 'captured')) {
       await fireAndForgetPostConfirmSideEffects(booking.id, booking.userId);
     }
 
@@ -933,6 +1058,28 @@ export class PaymentService {
     signature: string
   ): Promise<WebhookResult> {
     // 1. Verify webhook signature
+    this.assertWebhookSignature(JSON.stringify(payload), signature);
+    return this.processWebhookEvent(payload);
+  }
+
+  /**
+   * PAY-07 (2026-08-20, P2): the signature check on its own.
+   *
+   * The route has to be able to verify BEFORE it writes the webhook-idempotency
+   * record. Recording first means an unsigned request can claim a real event's
+   * id — the record lands, the request is rejected, and Razorpay's genuine
+   * delivery is then dismissed as a duplicate and dropped in silence. That is
+   * the exact reason the Stripe webhook route was deleted on 2026-08-11, and
+   * the same ordering was left standing here.
+   *
+   * `signedPayload` is whatever Razorpay signed: the raw request bytes on the
+   * (default) raw path, the re-serialised JSON on the legacy path. Both
+   * handlers below route through this so the two can never drift apart.
+   *
+   * Throws the "signature verification failed" message the route maps to 400 —
+   * including when the secret is UNSET, which must reject, never "process".
+   */
+  assertWebhookSignature(signedPayload: string, signature: string): void {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!webhookSecret) {
       // Fail CLOSED with the signature message so the route returns 400 (never
@@ -941,16 +1088,17 @@ export class PaymentService {
     }
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(JSON.stringify(payload))
+      .update(signedPayload)
       .digest('hex');
 
+    // Timing-safe compare to defeat any timing-oracle attack on the HMAC
+    // equality check. Both sides are hex strings of the same length; if not,
+    // force a mismatch.
     const expBuf = Buffer.from(expectedSignature, 'utf8');
-    const sigBuf = Buffer.from(signature, 'utf8');
+    const sigBuf = Buffer.from(signature ?? '', 'utf8');
     if (expBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expBuf, sigBuf)) {
       throw new Error('Webhook signature verification failed.');
     }
-
-    return this.processWebhookEvent(payload);
   }
 
   /**
@@ -964,27 +1112,7 @@ export class PaymentService {
     payload: Record<string, any>,
     signature: string
   ): Promise<WebhookResult> {
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      // Fail CLOSED: no configured secret → reject with the signature message
-      // so the route returns 400, never a 200 "Internal processing error".
-      throw new Error('Webhook signature verification failed.');
-    }
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(rawBody)
-      .digest('hex');
-
-    // Use timing-safe compare to defeat any timing-oracle attacks on the
-    // HMAC equality check. Both sides are hex strings of the same length;
-    // if not, force a mismatch.
-    const a = Buffer.from(expectedSignature, 'utf8');
-    const b = Buffer.from(signature, 'utf8');
-    const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
-    if (!ok) {
-      throw new Error('Webhook signature verification failed.');
-    }
-
+    this.assertWebhookSignature(rawBody, signature);
     return this.processWebhookEvent(payload);
   }
 
@@ -992,6 +1120,33 @@ export class PaymentService {
    * Private: dispatch the verified webhook payload to the right
    * downstream Prisma updates. Both verification paths converge here.
    */
+  /**
+   * PAY-06 (2026-08-20, P1): apply a capture we DISCOVERED by polling Razorpay
+   * rather than one Razorpay pushed to us.
+   *
+   * The whole confirmation design assumed the browser survives long enough to
+   * call /verify, with the webhook as the only backstop — and nothing anywhere
+   * ever went looking for a Payment stuck at `initiated` with a real capture
+   * behind it. jobs/reconcile-payments.ts now does, and routes what it finds
+   * through THIS method so the recovery path and the webhook path are the same
+   * code. A second copy of "what confirming a capture means" is precisely the
+   * drift that produced PAY-02.
+   */
+  async applyCapturedPayment(
+    gatewayOrderId: string,
+    gatewayPaymentId: string,
+    method?: string | null,
+  ): Promise<WebhookResult> {
+    return this.processWebhookEvent({
+      event: 'payment.captured',
+      payload: {
+        payment: {
+          entity: { id: gatewayPaymentId, order_id: gatewayOrderId, method: method ?? null },
+        },
+      },
+    });
+  }
+
   private async processWebhookEvent(
     payload: Record<string, any>
   ): Promise<WebhookResult> {
@@ -1008,20 +1163,178 @@ export class PaymentService {
           include: {
             // PBO-12: include userId so applyPostConfirmSideEffects can credit
             // the referral reward on the webhook path.
-            booking: { select: { id: true, status: true, userId: true } },
+            // PAY-08: the slot coordinates + createdAt let the confirm re-check
+            // capacity — see slotOversoldNote.
+            booking: {
+              select: {
+                id: true,
+                status: true,
+                userId: true,
+                createdAt: true,
+                templePujaOfferingId: true,
+                scheduledDate: true,
+                scheduledTimeSlot: true,
+              },
+            },
+            // PAY-02 (2026-08-20, P0): a store order's Payment carries
+            // `bookingId === null` BY DESIGN — Payment.bookingId is nullable
+            // precisely so non-puja payments can use the same table. Every
+            // downstream effect in this handler was gated on `!!payment.booking`,
+            // so for a store order the webhook marked the Payment `captured` and
+            // then did nothing at all: StoreOrder stayed PENDING forever, the
+            // store owner's Commission was never written, no invoice was sent,
+            // and nothing was ever shipped. Resolving the linked order here lets
+            // the webhook run the SAME transaction verifyStoreOrderPayment runs.
+            storeOrders: {
+              select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                statusHistory: true,
+                userId: true,
+              },
+            },
           },
         });
 
         if (payment) {
-          const shouldConfirm =
-            !!payment.booking && payment.booking.status === 'pending_payment';
-          // P1-12: capture + confirm + commission ledger write in ONE
-          // transaction. The old webhook path ran payment.update + booking.update
-          // as two separate queries (a crash between them left a captured Payment
-          // with a pending booking) and wrote the commission AFTER with a
-          // swallowed catch. Now any failure rolls back the whole block.
-          await prisma.$transaction(async (tx) => {
-            await tx.payment.update({
+          const storeOrder =
+            (payment as { storeOrders?: StoreOrderConfirmRow[] }).storeOrders?.[0] ?? null;
+
+          if (payment.booking) {
+            const shouldConfirm = payment.booking.status === 'pending_payment';
+            // PAY-08: a capture can land long after the unpaid hold lapsed, and
+            // an lapsed hold stops counting against capacity — so the slot may
+            // already have been resold. Checked before the transaction so the
+            // read never runs inside it.
+            const oversold = shouldConfirm
+              ? await slotOversoldNote(payment.booking)
+              : null;
+            // P1-12: capture + confirm + commission ledger write in ONE
+            // transaction. The old webhook path ran payment.update + booking.update
+            // as two separate queries (a crash between them left a captured Payment
+            // with a pending booking) and wrote the commission AFTER with a
+            // swallowed catch. Now any failure rolls back the whole block.
+            let capturedNow = false;
+            await prisma.$transaction(async (tx) => {
+              capturedNow = await claimCaptureTransition(tx, payment.id);
+              await tx.payment.update({
+                where: { id: payment.id },
+                data: {
+                  status: 'captured',
+                  gatewayPaymentId: paymentEntity.id,
+                  method: paymentEntity.method ?? null,
+                  ...(oversold
+                    ? {
+                        metadata: {
+                          ...((payment.metadata as Record<string, unknown>) ?? {}),
+                          slotOversoldAt: new Date().toISOString(),
+                          slotOversoldNote: oversold,
+                          needsAdminReview: 'slot-capacity',
+                        },
+                      }
+                    : {}),
+                },
+              });
+              if (shouldConfirm) {
+                await tx.pujaBooking.update({
+                  where: { id: payment.booking!.id },
+                  data: { status: 'confirmed' },
+                });
+                // P1-12: commission ledger row inside the tx.
+                await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+                // RV-03: the temple's 5% share, in the SAME transaction as the
+                // commission that earned it. Without this call temples receive
+                // Rs 0.00 on every paid booking — the writer exists but nothing
+                // reaches it.
+                await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
+              }
+            });
+
+            if (oversold) {
+              // Deliberately NOT a refusal to confirm: the devotee has already
+              // paid, and stranding a paid booking is a worse failure than an
+              // oversold slot an operator can move. What was missing was the
+              // CHECK — the capture used to be applied to a resold slot in total
+              // silence. Greppable by `slot_oversold_capture`, and surfaced in
+              // the daily reconciliation sweep (jobs/reconcile-payments.ts).
+              console.error(
+                '[payment.service][PAY-08] slot_oversold_capture',
+                JSON.stringify({
+                  event: 'slot_oversold_capture',
+                  bookingId: payment.booking.id,
+                  paymentId: payment.id,
+                  gatewayOrderId: paymentEntity.order_id,
+                  note: oversold,
+                }),
+              );
+            }
+
+            // PBO-12: post-commit fire-and-forget side-effects (invoice email +
+            // referral reward). Prod confirms via webhook, so the referee credit
+            // MUST run here. Network calls — never inside the tx.
+            //
+            // PAY-09: gated on the capture transition, so only the transaction
+            // that actually performed it announces it. Client verify and this
+            // handler racing on the same booking used to send the devotee two
+            // tax invoices and two confirmations.
+            //
+            // `alreadyCaptured` keeps the RECOVERY path loud: a Payment that was
+            // already `captured` while its booking sat `pending_payment` (what
+            // jobs/reconcile-payments.ts exists to find) has no competing racer,
+            // so its claim returns 0 and the devotee would otherwise be
+            // confirmed in silence.
+            if (shouldConfirm && (capturedNow || payment.status === 'captured')) {
+              await fireAndForgetPostConfirmSideEffects(
+                payment.booking!.id,
+                payment.booking!.userId,
+              );
+            }
+          } else if (storeOrder) {
+            // PAY-02: the store-order rail, byte-for-byte the same work
+            // verifyStoreOrderPayment does — capture, PENDING → CONFIRMED with a
+            // statusHistory entry, and the store-owner Commission INSIDE the
+            // transaction (a failure must roll back the capture, never leave a
+            // captured payment with no ledger row).
+            const shouldConfirm = storeOrder.status === 'PENDING';
+            await prisma.$transaction(async (tx) => {
+              await tx.payment.update({
+                where: { id: payment.id },
+                data: {
+                  status: 'captured',
+                  gatewayPaymentId: paymentEntity.id,
+                  method: paymentEntity.method ?? null,
+                },
+              });
+              if (shouldConfirm) {
+                const existingHistory = Array.isArray(storeOrder.statusHistory)
+                  ? storeOrder.statusHistory
+                  : [];
+                await tx.storeOrder.update({
+                  where: { id: storeOrder.id },
+                  data: {
+                    status: 'CONFIRMED',
+                    statusHistory: [
+                      ...existingHistory,
+                      {
+                        status: 'CONFIRMED',
+                        changedAt: new Date().toISOString(),
+                        changedBy: 'razorpay-webhook',
+                        note: 'Razorpay webhook payment.captured',
+                      },
+                    ] as Prisma.InputJsonValue[],
+                  },
+                });
+                await writeStoreOrderCommissionOnConfirm(storeOrder.id, tx);
+              }
+            });
+            if (shouldConfirm) {
+              void sendStoreOrderInvoice(storeOrder.id);
+            }
+          } else {
+            // A Payment row with neither a booking nor a store order behind it
+            // (legacy/orphan). Record the capture; there is nothing to confirm.
+            await prisma.payment.update({
               where: { id: payment.id },
               data: {
                 status: 'captured',
@@ -1029,28 +1342,6 @@ export class PaymentService {
                 method: paymentEntity.method ?? null,
               },
             });
-            if (shouldConfirm) {
-              await tx.pujaBooking.update({
-                where: { id: payment.booking!.id },
-                data: { status: 'confirmed' },
-              });
-              // P1-12: commission ledger row inside the tx.
-              await writePujaCommissionOnConfirm(payment.booking!.id, tx);
-        // RV-03: the temple's 5% share, in the SAME transaction as the
-        // commission that earned it. Without this call temples receive Rs 0.00
-        // on every paid booking — the writer exists but nothing reaches it.
-        await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
-            }
-          });
-
-          // PBO-12: post-commit fire-and-forget side-effects (invoice email +
-          // referral reward). Prod confirms via webhook, so the referee credit
-          // MUST run here. Network calls — never inside the tx.
-          if (shouldConfirm) {
-            await fireAndForgetPostConfirmSideEffects(
-              payment.booking!.id,
-              payment.booking!.userId,
-            );
           }
         } else {
           // PBO-11 (2026-07-09): donation webhook backstop. Donations create no
@@ -1062,6 +1353,38 @@ export class PaymentService {
           const donation = await findDonationByOrderId(paymentEntity.order_id);
           if (donation && donation.status !== 'paid') {
             await finalizeDonationReceipt(donation, paymentEntity.id, undefined);
+          } else if (!donation) {
+            // PAY-01 (2026-08-20, P0): the SAME structural gap, one rail over.
+            // Astrologer consultations also write no prisma.payment row — the
+            // route raw-INSERTs into astrologer_consultations carrying only
+            // razorpay_order_id — so this handler could resolve donations and
+            // donations only. A devotee who paid and closed the tab was never
+            // confirmed, and jobs/consultation-expire.ts then flipped the row to
+            // 'cancelled' 30 minutes later: money captured, record says the
+            // consultation was never ordered, no refund, no notice.
+            //
+            // The backstop claims pending_payment / payment_review / cancelled
+            // rows, so it also RECOVERS one the expiry cron already destroyed.
+            // Dynamic import for the same reason findDonationByOrderId is a
+            // route export: it keeps fastify + the astrologer notifier out of
+            // this module's static load graph.
+            try {
+              const consult = await import('../routes/consultation.js');
+              const row = await consult.findConsultationByOrderId(
+                paymentEntity.order_id,
+              );
+              if (row) {
+                await consult.finalizeConsultationPaymentFromWebhook(
+                  row,
+                  paymentEntity.id,
+                );
+              }
+            } catch (err) {
+              console.error(
+                '[payment.service][PAY-01] consultation webhook backstop failed:',
+                err,
+              );
+            }
           }
         }
 
@@ -1094,7 +1417,13 @@ export class PaymentService {
         return { handled: true, event };
       }
 
-      case 'refund.created': {
+      // PAY-05 (2026-08-20): `refund.processed` is handled alongside
+      // `refund.created`. Razorpay accounts differ in which of the two they
+      // emit, and subscribing the wrong one silently disables this whole rail —
+      // see docs/razorpay-live-activation.md for the events the owner must
+      // subscribe. Handling both makes the code indifferent to that choice.
+      case 'refund.created':
+      case 'refund.processed': {
         const refundEntity = payload.payload?.refund?.entity;
         if (!refundEntity) break;
 
@@ -1103,18 +1432,67 @@ export class PaymentService {
         });
 
         if (payment) {
-          // refund amount from Razorpay is in paise
-          const refundAmountDecimal = refundEntity.amount / 100;
+          // PAY-03: `Payment.refundAmount` is CUMULATIVE. This branch used to
+          // OVERWRITE it with the last refund, so after a second partial the
+          // admin rail — which computes what is still refundable as
+          // `paid - alreadyRefunded` — believed far more was refundable than
+          // actually was, and the proportional ledger unwind under-reversed.
+          //
+          // Dedupe on the Razorpay refund id: both refund rails append the id
+          // they created to `metadata.refundIds`, so an event for a refund we
+          // raised ourselves is recognised and NOT counted twice. An id we have
+          // never seen is a refund raised directly in the Razorpay dashboard —
+          // exactly the case this handler exists for.
+          const seen = appendRefundId(payment.metadata, null);
+          if (refundEntity.id && seen.includes(refundEntity.id)) {
+            return { handled: true, event, duplicate: true };
+          }
 
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              refundAmount: refundAmountDecimal,
-              status:
-                refundAmountDecimal >= Number(payment.amount)
-                  ? 'refunded'
-                  : 'partially_refunded',
-            },
+          const paid = new Prisma.Decimal(payment.amount);
+          const alreadyRefunded = payment.refundAmount
+            ? new Prisma.Decimal(payment.refundAmount)
+            : new Prisma.Decimal(0);
+          // refund amount from Razorpay is in paise
+          const thisRefund = new Prisma.Decimal(refundEntity.amount ?? 0).div(100);
+          const refundableBefore = paid.minus(alreadyRefunded);
+          const applied = thisRefund.gt(refundableBefore) ? refundableBefore : thisRefund;
+          const newRefundTotal = alreadyRefunded.plus(applied);
+          const isFullRefund = newRefundTotal.gte(paid);
+
+          await prisma.$transaction(async (tx) => {
+            await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                refundAmount: newRefundTotal,
+                status: isFullRefund ? 'refunded' : 'partially_refunded',
+                metadata: {
+                  ...((payment.metadata as Record<string, unknown>) ?? {}),
+                  refundIds: appendRefundId(payment.metadata, refundEntity.id),
+                  refundId: refundEntity.id ?? null,
+                  refundedAt: new Date().toISOString(),
+                  refundSource: `razorpay-webhook:${event}`,
+                },
+              },
+            });
+
+            // PAY-05: UNWIND THE PROVIDER LEDGER. This branch called neither
+            // reverseBookingLedger nor reduceBookingLedgerForPartialRefund, so a
+            // refund raised in the Razorpay dashboard left the pandit's earning
+            // and the temple's share fully withdrawable on money already handed
+            // back — the DI-01/DI-02 defect, reachable through a third door.
+            // Same shared module both rails use; never a fourth copy.
+            if (payment.bookingId && applied.gt(0)) {
+              const reason = `Razorpay ${event} ${refundEntity.id ?? ''}`.trim();
+              if (isFullRefund) {
+                await reverseBookingLedger(tx, payment.bookingId, reason);
+              } else {
+                await reduceBookingLedgerForPartialRefund(tx, payment.bookingId, {
+                  refundAmount: applied,
+                  refundableBefore,
+                  reason,
+                });
+              }
+            }
           });
         }
 
@@ -1295,6 +1673,10 @@ export class PaymentService {
           metadata: {
             ...((payment.metadata as Record<string, unknown>) ?? {}),
             refundId: refund.id,
+            // PAY-03: every Razorpay refund id applied to this capture, so the
+            // refund webhook recognises the one this rail just created and does
+            // not accumulate it a second time.
+            refundIds: appendRefundId(payment.metadata, refund.id),
             refundedBy: adminId ?? 'system',
             refundedAt: new Date().toISOString(),
             refundAmountInr: refundAmount.toFixed(2),

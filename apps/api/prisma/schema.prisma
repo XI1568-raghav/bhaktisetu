@@ -2053,3 +2053,109 @@ model CreditLedgerEntry {
   @@index([reason])
   @@map("credit_ledger_entries")
 }
+
+// ─── OPS-05 · APPEND-ONLY MONEY AUDIT TRAIL ────────────────────────────────────
+//
+// Before this model there was NO durable record of what happened to a payment.
+// 66 models in this schema, none of them an audit log. The money state machine
+// kept only its CURRENT state — Payment.status, Commission.status,
+// PayoutRequest.status — plus a few ad-hoc breadcrumbs smeared into
+// Payment.metadata by whichever code path happened to remember (refundId,
+// refundFailureReason, refundInitiatedBy). Every one of those is overwritten by
+// the next write. So for a disputed booking nobody could answer, from anything
+// the product stores:
+//
+//   - who initiated the refund, and when;
+//   - whether the capture arrived via POST /payments/verify or the webhook;
+//   - what the status was BEFORE the write that changed it;
+//   - which Razorpay ids were involved at each step;
+//   - whether the pandit's earning was minted before or after the refund.
+//
+// The only surviving trace was the Render log stream, which on the free plan is
+// retained for days, is not queryable per-booking, and is gone entirely after a
+// service is suspended. For a platform holding bookings, payments and 80G
+// donation receipts that is a support problem and a legal one.
+//
+// SHAPE: one row per money EVENT, never mutated. The row carries its own copy of
+// actor, amount, gateway ids and before/after status, so a dispute is
+// reconstructed by reading rows in `occurred_at` order without joining anything
+// that may since have been overwritten or deleted.
+//
+// NO FOREIGN KEYS, ON PURPOSE. Three reasons: (1) declaring relations would mean
+// editing Payment/PujaBooking/Commission to add back-relation fields, and this
+// table must be addable without touching the models it observes; (2) an audit
+// row must survive the deletion of its subject — an FK with ON DELETE CASCADE
+// would erase exactly the history a dispute needs, and RESTRICT would make the
+// audit log block ordinary deletes; (3) the reference columns also hold
+// gateway-side ids (Razorpay order/payment/refund) that are not rows in this
+// database at all. Reference columns are therefore TEXT, matching the existing
+// Commission.bookingId / storeOrderId convention.
+//
+// APPEND-ONLY IS ENFORCED IN THE DATABASE, not just by convention: the migration
+// installs a BEFORE UPDATE OR DELETE trigger that raises. A log that can be
+// quietly edited is not evidence.
+//
+// There is deliberately no `updatedAt`. A row that can be updated is a bug.
+model MoneyAuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  // Dotted event name from MONEY_EVENTS in lib/audit-money.ts. TEXT rather than
+  // a Prisma enum so a new event type is a code change, not an ALTER TYPE that
+  // has to survive migrate deploy's per-migration transaction.
+  eventType   String   @map("event_type")
+  occurredAt  DateTime @default(now()) @map("occurred_at")
+
+  // WHO. 'devotee' | 'provider' | 'admin' | 'system' | 'gateway'. `actorId` is
+  // the acting User.id where a human acted; NULL for cron/webhook/system.
+  actorType   String   @default("system") @map("actor_type")
+  actorId     String?  @map("actor_id")
+
+  // WHAT THE EVENT IS ABOUT. subjectType is 'booking' | 'payment' | 'commission'
+  // | 'payout' | 'donation' | 'store_order'.
+  subjectType String   @map("subject_type")
+  subjectId   String   @map("subject_id")
+
+  // Denormalised correlation keys — every one that is known at the call site is
+  // written, so "everything that happened to this booking" is one indexed read.
+  bookingId    String? @map("booking_id")
+  paymentId    String? @map("payment_id")
+  commissionId String? @map("commission_id")
+  payoutId     String? @map("payout_id")
+
+  // HOW MUCH. Decimal(10,2) matches Payment.amount / Commission.amount exactly,
+  // so a reconstructed trail sums against the live rows without a cast.
+  amount   Decimal? @db.Decimal(10, 2)
+  currency String   @default("INR")
+
+  // GATEWAY IDENTIFIERS — the only handles Razorpay support will accept.
+  gateway          String?
+  gatewayOrderId   String? @map("gateway_order_id")
+  gatewayPaymentId String? @map("gateway_payment_id")
+  gatewayRefundId  String? @map("gateway_refund_id")
+
+  // BEFORE/AFTER. The single most valuable pair in a dispute and the one thing
+  // a mutable status column can never tell you afterwards.
+  statusBefore String? @map("status_before")
+  statusAfter  String? @map("status_after")
+
+  // At-least-once delivery is normal here (Razorpay retries a webhook for up to
+  // 24 hours). A caller that passes a stable key gets exactly one row per real
+  // event instead of one row per retry.
+  idempotencyKey String? @map("idempotency_key")
+
+  requestId String? @map("request_id")
+  ip        String?
+  note      String?
+  // Free-form context. Secret-shaped keys are stripped by the writer before it
+  // ever reaches this column — see redactMetadata() in lib/audit-money.ts.
+  metadata  Json?
+
+  @@unique([idempotencyKey])
+  @@index([bookingId, occurredAt])
+  @@index([paymentId, occurredAt])
+  @@index([commissionId])
+  @@index([payoutId])
+  @@index([actorId, occurredAt])
+  @@index([eventType, occurredAt(sort: Desc)])
+  @@index([occurredAt(sort: Desc)])
+  @@map("money_audit_events")
+}

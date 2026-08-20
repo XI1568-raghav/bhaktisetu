@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 // DU-05: the one h1 recipe per page archetype. Extras are layout-only.
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
-import { FESTIVALS, nextFestival } from '../../lib/festivals';
+import { FESTIVAL_YEAR, FESTIVALS, nextFestival } from '../../lib/festivals';
 
 export const revalidate = 86400;
 
@@ -102,6 +102,14 @@ export default function FestivalIndex() {
             </div>
             <p className="text-xs text-saffron-700 font-semibold mb-2">
               {fmtDate(f.date2026)} · {f.deity}
+              {/* CI-11: `date2026` is not always in 2026 — Maha Kumbh Mela's next
+                  occurrence is 2027-01-14. This grid sits under a "calendar 2026"
+                  heading, so an off-year date has to announce itself. */}
+              {!f.date2026.startsWith(`${FESTIVAL_YEAR}-`) && (
+                <span className="ml-2 rounded bg-surface-200 px-1.5 py-0.5 text-xs font-medium text-surface-700">
+                  Not in {FESTIVAL_YEAR}
+                </span>
+              )}
             </p>
             <p className="text-sm text-surface-700 leading-relaxed line-clamp-3">
               {f.description}

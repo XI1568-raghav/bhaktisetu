@@ -82,19 +82,145 @@ export const AUTH_FETCH_TIMEOUT_MS = 20_000;
  *
  * `init` is spread AFTER the default, so a caller that deliberately asks for
  * `credentials: 'omit'` still gets it.
+ *
+ * AUTH-01 (2026-08-20): THE HELPER USED TO DISARM ITSELF HALFWAY THROUGH.
+ *
+ * `await fetch(...)` settles when RESPONSE HEADERS arrive, not when the body
+ * has been read. The abort timer was cleared in a `finally` hung off exactly
+ * that await, so by the time any caller reached `await res.json()` the deadline
+ * was already gone and the second half of every auth round trip was completely
+ * untimed. A server that flushes headers and then stalls the body — a cold
+ * dyno, a proxy that accepted and never finished, a gateway in front of a
+ * suspended service — reproduced the original permanent spinner in full: the
+ * line after `await res.json()` never runs, so `setIsSubmitting(false)` is
+ * never reached and no error is ever set. The fix survived its own bug.
+ *
+ * The deadline now spans the WHOLE round trip. `withBodyDeadline` re-arms the
+ * remaining budget the first time a body reader is called and aborts the same
+ * controller when it lapses, so the rejection is an `AbortError` and
+ * `isNetworkFailure` still classifies it as "we never got an answer" rather
+ * than as a rejected credential.
  */
+const BODY_READERS = ['json', 'text', 'arrayBuffer', 'blob', 'formData'] as const;
+type BodyReader = (typeof BODY_READERS)[number];
+
+function isBodyReader(prop: string | symbol): prop is BodyReader {
+ return typeof prop === 'string' && (BODY_READERS as readonly string[]).includes(prop);
+}
+
+/**
+ * Wrap a Response so its body readers inherit what is LEFT of the deadline.
+ *
+ * A fresh timer per body read rather than holding the original one open: an
+ * unread response must not leave a live 20s handle behind in a long-lived tab,
+ * and a caller that reads two different readers should not have the first read
+ * cancel the second.
+ */
+function withBodyDeadline(res: Response, controller: AbortController, deadlineAt: number): Response {
+ if (typeof res !== 'object' || res === null) return res;
+ return new Proxy(res, {
+  get(target, prop, receiver) {
+   if (isBodyReader(prop)) {
+    const reader = Reflect.get(target, prop, target);
+    if (typeof reader !== 'function') return reader;
+    return (...args: unknown[]) => {
+     const remaining = Math.max(deadlineAt - Date.now(), 1);
+     let bodyTimer: ReturnType<typeof setTimeout> | undefined;
+     const deadline = new Promise<never>((_resolve, reject) => {
+      bodyTimer = setTimeout(() => {
+       // Abort the underlying stream too — otherwise the socket is left
+       // held open behind a promise nobody is waiting on any more.
+       try {
+        controller.abort();
+       } catch {
+        /* already aborted */
+       }
+       reject(
+        new DOMException(
+         `Response body stalled — no data after ${remaining}ms.`,
+         'AbortError',
+        ),
+       );
+      }, remaining);
+     });
+     const read = (reader as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+     return Promise.race([read, deadline]).finally(() => {
+      if (bodyTimer !== undefined) clearTimeout(bodyTimer);
+     });
+    };
+   }
+   // Bind to the real Response: `json`/`headers`/`clone` reach for internal
+   // slots and throw an illegal-invocation if `this` is the proxy.
+   const value = Reflect.get(target, prop, target);
+   return typeof value === 'function' ? value.bind(target) : value;
+  },
+ });
+}
+
 export async function fetchWithTimeout(
  input: RequestInfo | URL,
  init: RequestInit = {},
  timeoutMs: number = AUTH_FETCH_TIMEOUT_MS,
 ): Promise<Response> {
  const controller = new AbortController();
+ const deadlineAt = Date.now() + timeoutMs;
  const timer = setTimeout(() => controller.abort(), timeoutMs);
+ let res: Response;
  try {
-  return await fetch(input, { credentials: 'include', ...init, signal: controller.signal });
+  res = await fetch(input, { credentials: 'include', ...init, signal: controller.signal });
  } finally {
   clearTimeout(timer);
  }
+ return withBodyDeadline(res, controller, deadlineAt);
+}
+
+/**
+ * Read a JSON body without letting a NON-JSON one become the story.
+ *
+ * AUTH-02: an error page from a gateway is HTML, and `res.json()` on HTML
+ * throws a `SyntaxError`. Sign-in used to parse the body BEFORE checking
+ * `res.ok`, so a 502 landed in the same `catch` as a rejected credential and a
+ * user with the CORRECT password was told their password was wrong. Callers
+ * check `res.ok` first and use this to read whatever the body turned out to be;
+ * `null` means "the body was not JSON", never "the request failed".
+ *
+ * A stalled body still rejects — that is AUTH-01's deadline doing its job and
+ * must not be swallowed into a silent `null`.
+ */
+export async function readJsonBody<T = unknown>(res: Response): Promise<T | null> {
+ try {
+  return (await res.json()) as T;
+ } catch (err) {
+  if (isNetworkFailure(err)) throw err;
+  return null;
+ }
+}
+
+/**
+ * AUTH-02: the server answered 2xx but the body was not the JSON the contract
+ * promises — a gateway that rewrote the response, a truncated payload, an HTML
+ * interstitial. Not the user's credential, and not a clean network failure
+ * either; say so rather than picking one of the two.
+ */
+export const UNREADABLE_RESPONSE_MESSAGE =
+ 'Darshya sent a reply we could not read. Please try again in a moment.';
+
+/**
+ * The honest sentence for an auth call the server REJECTED, when the body
+ * carried no usable message of its own.
+ *
+ * AUTH-02: a 5xx is our failure, not the user's credential. Saying "invalid
+ * email or password" there sends someone to reset a password that was never
+ * wrong — which is exactly what happens while the API is down.
+ */
+export function authHttpErrorMessage(status: number, fallback: string): string {
+ if (status >= 500) {
+  return `Darshya is not responding right now (HTTP ${status}). Your details were not the problem — please try again in a moment.`;
+ }
+ if (status === 429) {
+  return 'Too many attempts. Please wait a few minutes and try again.';
+ }
+ return fallback;
 }
 
 /**

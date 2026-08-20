@@ -27,10 +27,24 @@ export default function LogoutPage() {
     };
   }, [signOut, router]);
 
+  // AUTH-09 (2026-08-20): SAY WHAT THIS ACTUALLY DOES.
+  //
+  // POST /auth/logout is global — supabase.auth.signOut() defaults to global
+  // scope and the handler burns every refresh_token_jtis row the account holds,
+  // so this ends the session on the user's phone as well as on the machine they
+  // are standing at. That is the right default on a shared or lost device, but
+  // a user who signs out of a library computer and finds their phone logged out
+  // has been surprised by their own security tool. The API names the scope it
+  // applied; this is the screen that has to put it in words.
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <Loader2 className="h-6 w-6 animate-spin text-saffron-500" />
-      <span className="ml-3 text-surface-500">Signing you out…</span>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+      <div className="flex items-center">
+        <Loader2 className="h-6 w-6 animate-spin text-saffron-500" />
+        <span className="ml-3 text-surface-500">Signing you out…</span>
+      </div>
+      <p className="text-surface-400 mt-3 max-w-xs text-xs">
+        For your security this signs you out on all your devices, not just this one.
+      </p>
     </div>
   );
 }

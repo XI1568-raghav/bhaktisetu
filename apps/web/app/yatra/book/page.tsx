@@ -424,7 +424,7 @@ function BookYatraInner() {
  <AddOnRow
  icon={Heart}
  title="Travel companion"
- desc="Verified person assists elderly with mobility, medicine, logistics."
+ desc="On request. A companion assists elderly travellers with mobility, medicine and logistics — our advisor confirms availability before your booking is held."
  price={`+${formatINR(3500)} / day`}
  active={data.addOns.companion}
  onToggle={() => setData({ ...data, addOns: { ...data.addOns, companion: !data.addOns.companion } })}

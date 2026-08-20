@@ -264,10 +264,14 @@ export default function YatraHubPage() {
  <div>
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>For Elderly Devotees</p>
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Verified travel companions who care like family
+ A travel companion for elderly devotees
  </h2>
+ {/* TC-06: this block used to describe eight invented companions as if they
+  were on the books. It now describes the service and the bar a person must
+  clear before we list them. The roster itself lives in
+  lib/companion-roster.ts and is empty until someone real has been signed. */}
  <p data-reveal="up" data-delay="1" className="text-sm leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- Our trained companions handle logistics, mobility, medication reminders, photos and family updates — so your elderly parents can focus entirely on darshan. Aadhaar verified, background checked, first-aid certified.
+ A companion handles logistics, mobility, medication reminders, photos and family updates — so your elderly parents can focus entirely on darshan. Nobody is listed until we have met them and checked their ID, references and first-aid training.
  </p>
  <Link
  href="/yatra/companion"
@@ -275,15 +279,15 @@ export default function YatraHubPage() {
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
  style={{ background: 'var(--color-primary)' }}
  >
- <Heart className="w-3.5 h-3.5" /> Meet our companions <ArrowRight className="w-3.5 h-3.5" />
+ <Heart className="w-3.5 h-3.5" /> How companions work <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
  <div data-reveal="glow" data-delay="1" className="grid grid-cols-2 gap-3">
  {[
- { icon: Shield, t: 'Background verified', s: 'Aadhaar + police check' },
- { icon: Heart, t: 'First-aid certified', s: 'Medicine + BP monitoring' },
- { icon: MapPin, t: 'GPS tracking', s: 'Real-time family updates' },
- { icon: Star, t: 'Hand-screened', s: 'Every companion is interviewed' },
+ { icon: Shield, t: 'Background check', s: 'Required before we list anyone' },
+ { icon: Heart, t: 'First-aid training', s: 'Required before we list anyone' },
+ { icon: MapPin, t: 'Location sharing', s: 'Shared with family during the yatra' },
+ { icon: Star, t: 'Interviewed in person', s: 'Required before we list anyone' },
  ].map((f) => (
  <div key={f.t} className="p-4 rounded-xl" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <f.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-primary)' }} />

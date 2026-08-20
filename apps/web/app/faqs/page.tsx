@@ -6,10 +6,22 @@ import { FAQ_GROUPS, allFaqs, faqPageJsonLd } from '../../lib/faqs';
 
 export const revalidate = 86400;
 
+// TC-01 (P0, trust). This page's own copy advertised "80G receipts" twice — in
+// the meta description Google shows and in the intro paragraph — while
+// COMPANY.donationLegal.HAS_80G_VERIFIED is false, eightyGNumber and pan are
+// null, and apps/api/src/lib/pdf-receipt.ts stamps every receipt "Proof of
+// donation — not a tax exemption certificate". A page listing 80G receipts as
+// one of the things it answers questions about is selling the deduction as a
+// product feature. It says "donation receipts" instead, which is what the
+// product actually issues.
+//
+// NOT fixed here: the FAQ ANSWERS come from lib/faqs.ts (a different lane),
+// where faqs.ts:82/89/90/117 still promise an 80G tax-deduction receipt and
+// tell the donor to supply a PAN "for the 80G receipt to be valid".
 export const metadata: Metadata = {
   title: 'FAQs — Puja Booking, Live Darshan, Pricing, Yatra',
   description:
-    'Frequently asked questions about Darshya — how to book pujas, video proof, NRI pricing, yatra packages, refunds, 80G receipts, live darshan.',
+    'Frequently asked questions about Darshya — how to book pujas, video proof, NRI pricing, yatra packages, refunds, donation receipts, live darshan.',
   alternates: { canonical: 'https://darshya.online/faqs' },
   openGraph: {
     title: 'Darshya FAQs',
@@ -37,7 +49,7 @@ export default function FaqsHub() {
         </h1>
         <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
           Quick answers to common questions about puja booking, live darshan,
-          NRI pricing, yatra packages, refunds, and 80G receipts. Can't find
+          NRI pricing, yatra packages, refunds, and donation receipts. Can't find
           your question? <Link href="/contact" className="text-saffron-700 hover:underline">Contact us</Link>.
         </p>
       </header>

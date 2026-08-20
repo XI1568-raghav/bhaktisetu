@@ -67,7 +67,7 @@
 
 | Workflow                                                        | Trigger                                                                        | Min/run            | Runs/mo           | Min/mo           |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------ | ----------------- | ---------------- |
-| `ci.yml`                                                        | PR + push to main (paths-filtered, no docs)                                    | ~5                 | ~80 push estimate | ~400             |
+| `ci.yml`                                                        | PR + push to main (paths-filtered, no docs). +~10s/run for the ops-guard step added 2026-08-20 | ~5.2               | ~80 push estimate | ~413             |
 | `e2e.yml`                                                       | **Sun weekly + manual only** (PR trigger removed 2026-07-10)                   | ~15                | 4                 | ~60              |
 | `agents-health.yml`                                             | every 12h                                                                      | ~3                 | 60                | 180              |
 | `agents-daily.yml`                                              | daily 03:30 UTC (6 producing agents; 6 paused 2026-07-17 — see header comment) | ~2                 | 30                | 60               |
@@ -82,10 +82,26 @@
 | `db-backup.yml`                                                 | **daily 19:00 UTC**                                                            | ~5                 | 30                | 150              |
 | `cxo-advisory.yml`                                              | **Mon 08:07 UTC weekly**                                                       | ~3                 | 4                 | 12               |
 | `roadmap-finalize.yml`                                          | push to main, paths-filtered on `docs/roadmap/**` only                         | ~1                 | ~10               | ~10              |
+| `render-hours-guard.yml`                                        | **daily 06:00 UTC** (added 2026-08-20; see the OPS-08 note below — the cron does not fire until this reaches `main`) | ~1 | 30 | **30** |
 | `cf-kill-zombie.yml` / `render-diag.yml` / `render-cutover.yml` | manual only                                                                    | n/a                | 0                 | 0                |
-| **Total estimate**                                              |                                                                                |                    |                   | **~1800 min/mo** |
+| **Total estimate**                                              |                                                                                |                    |                   | **~1843 min/mo** |
 
-Cap = 2000 min/mo. **Headroom: +200 min/mo.** Fleet is under cap.
+Cap = 2000 min/mo. **Headroom: +157 min/mo.** Fleet is under cap.
+
+> **Reconciled 2026-08-20.** `render-hours-guard.yml` (30 min/mo) was added on
+> `feat/recurring-razorpay-planid` and had never been counted, so the "~1800 /
+> +200" line above was describing a fleet that no longer existed. The `OPS-01`
+> and `OPS-09` corrections landed in the same wave cost **zero additional
+> minutes**: `agents-health.yml` gained a heartbeat `curl` and a conditional
+> `github-script` step (seconds, and the issue step only runs on failure), and
+> `e2e.yml` only had two `continue-on-error` flags removed. No cron frequency
+> changed.
+>
+> The one line item that DID cost minutes is the `ci.yml` "Ops guards" step.
+> `turbo test` is per-package and never ran the repo-root vitest project, so the
+> `scripts/**` guards protecting the monitors would have been dead code that
+> nothing executed. Running three named files on an already-installed runner is
+> ~10s, i.e. **~13 min/mo** at ~80 runs. Total 1830 -> 1843, headroom 170 -> 157.
 
 **Dominant consumer:** `roadmap-loop.yml` at ~720 min/mo (40% of cap) with
 2 cycles/day. The 8h→12h change 2026-07-13 cut ~360 min/mo. Six agents paused
@@ -112,6 +128,69 @@ in `agents-daily.yml` 2026-07-17 (cold-temple-outreach, daily-devotional-broadca
 | agents-daily.yml (24 agents)                | ~150                                                                 |
 | sentry-release.yml (every push)             | ~900                                                                 |
 | **Total**                                   | **~4170 min/mo** — exceeded cap by 2×, billing blocked all workflows |
+
+## Monitoring depends on this budget — read this before trimming it (`OPS-09`)
+
+Every production check this repository owns runs on the GitHub Actions quota:
+
+| Monitor | What it would catch | Min/mo |
+|---|---|---|
+| `agents-health.yml` (12h) | any prod endpoint failing, across all 8 roles | 180 |
+| `render-hours-guard.yml` (daily) | either Render service suspended | 30 |
+| `e2e.yml` (weekly) | prod regression in real browser flows | 60 |
+| `db-backup.yml` (daily) | no restore point being produced | 150 |
+
+**They share a single point of failure with each other and with the thing they
+watch.** When the Actions quota is exhausted, or billing is blocked, or Actions
+itself has an incident, all four stop simultaneously and *nothing reports it* —
+a workflow that does not run cannot open an issue about not running. This has
+already happened once to this repository (2026-05-27, "recent account payments
+have failed"; see the pre-cut table above).
+
+The only monitor that survives that is one that alarms on **absence**:
+
+- `agents-health.yml` pings `HEALTH_HEARTBEAT_URL` on every run (`/fail` when the
+  smoke found prod down). A free healthchecks.io check with a 12-hour period and
+  a 1-hour grace emails when the ping stops arriving — whether prod died, or the
+  monitor did.
+- **Owner action, unset today:** create the check, then
+  `gh secret set HEALTH_HEARTBEAT_URL --body '<ping-url>'`. Until it is set, the
+  workflow prints a warning into its job summary on every run rather than
+  quietly staying unarmed. Cost: ₹0, 0 GH minutes.
+- `db-backup.yml` already reads `HEARTBEAT_URL` for the same purpose; the two can
+  be separate checks on the same free account.
+
+Corollary for anyone cutting minutes: `agents-health.yml` and
+`render-hours-guard.yml` are the last two rows to touch. 210 min/mo is the price
+of knowing whether the product is up.
+
+## Scheduled workflows only run from the default branch (`OPS-08`)
+
+GitHub honours `schedule:` **only** on the repository's default branch. A cron
+added on a feature branch is inert until the branch merges — it is written, not
+installed, and there is no warning anywhere in the UI that says so.
+
+This currently applies to `render-hours-guard.yml`, which arrived in commit
+`853b4cbc` on `feat/recurring-razorpay-planid`. Until that merges:
+
+- its daily cron has never fired and will not fire;
+- Render-suspension detection is exactly what it was during the 2026-08-17
+  outage, i.e. nothing;
+- the only way to run it is `gh workflow run render-hours-guard.yml --ref feat/recurring-razorpay-planid`
+  (`workflow_dispatch` **does** work from a non-default branch).
+
+The same is true of every workflow *correction* made on a branch: the fixed
+behaviour of `agents-health.yml`, `e2e.yml` and `db-backup.yml` starts at the
+merge, not at the commit. After merging, verify rather than assume:
+
+```bash
+gh workflow list --all | grep render-hours-guard
+gh run list --workflow=render-hours-guard.yml --limit 5   # a scheduled run within ~24h
+```
+
+Also note GitHub disables scheduled workflows in a repository with 60 days of no
+activity and re-enables them only on a manual dispatch, so an empty run list
+months later is a real state rather than a display bug.
 
 ## Rules — read before adding/changing anything
 
