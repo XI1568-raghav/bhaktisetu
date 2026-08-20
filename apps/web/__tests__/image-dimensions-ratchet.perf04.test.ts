@@ -25,13 +25,43 @@ import NotFound from '../app/not-found';
  *    text asks to "replace not-found.tsx's full-layout render with a minimal
  *    standalone page (it does not need the mega-nav, footer, or 100+ inline SVG
  *    icons)" — but in the App Router `app/not-found.tsx` is always rendered
- *    inside `app/layout.tsx` and there is no supported way to opt out. The
- *    mega-nav, the footer and those SVGs are declared in the root layout, not
- *    here. Measured: this component renders 4,272 bytes and one <svg>, against
- *    the 199,758-259,962 bytes a 404 response actually transfers — 1.6-2.1% of
- *    it. Slimming this file further cannot move that number; the layout is
- *    where the weight is. The budget below just keeps this page from becoming
- *    part of the problem.
+ *    inside `app/layout.tsx`. The mega-nav, the footer and those SVGs are
+ *    declared in the root layout, not here, so slimming this file cannot move
+ *    the number. The budget below just keeps this page from becoming part of
+ *    the problem.
+ *
+ *    MEASURED FROM THE BUILD, 2026-08-19 (`.next` of build lshYpavE8I7iFJwQgyMlS,
+ *    2026-08-16 — prod is 503 on a Render billing suspension, so a live curl is
+ *    not available and this is the closest real artefact):
+ *
+ *      .next/server/app/_not-found.html   107,241 B   of which
+ *          inline <script> (RSC flight)    68,244 B
+ *          26 inline <svg> blocks          11,414 B
+ *          109 <a> elements
+ *          "Page not found" first appears at byte 2,102
+ *      .next/server/app/_not-found.rsc     56,718 B
+ *                                        ───────────
+ *      HTML + RSC per 404                 163,959 B
+ *      /_not-found/page JS chunks         351,864 B (shared, cached after hit 1)
+ *
+ *    This component itself renders 4,272 bytes and one <svg> — 4.0% of the HTML.
+ *    The finding's 199,758-260,000 B range is the right order of magnitude.
+ *
+ *    CORRECTION to an earlier note here, which said "there is no supported way
+ *    to opt out": for Next 15.5 there is. `app/global-not-found.tsx` renders a
+ *    standalone document that does NOT nest inside the root layout (the file
+ *    supplies its own <html>/<body>), behind `experimental.globalNotFound`. It
+ *    is implemented in the version installed here, next@15.5.20 — see
+ *    node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js,
+ *    where 'global-not-found' is a FILE_TYPE with its own
+ *    defaultGlobalNotFoundPath, and node_modules/next/dist/build/entries.js:672
+ *    and :746, which pass `isGlobalNotFoundEnabled: config.experimental
+ *    .globalNotFound ? true : undefined`. Adopting it would take the 404 from
+ *    163,959 B to roughly this component's own 4,272 B plus a minimal shell.
+ *    It is NOT adopted here: it needs a new `app/global-not-found.tsx` plus an
+ *    experimental flag in next.config.ts, and with prod down there is no way to
+ *    verify the resulting 404 actually serves before it ships. That is a
+ *    deliberate deferral, not an impossibility.
  */
 
 const WEB_ROOT = path.resolve(__dirname, '..');

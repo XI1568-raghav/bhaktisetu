@@ -209,12 +209,37 @@
      them onto .container-wide with no call-site edits and no collateral, and
      stops the masthead sitting 8rem wider than the content beneath it.
 
-     This works ONLY for 7xl. Every other step has non-container consumers — a
-     max-w-md reading measure on a <p>, for one — so the same move there would
-     silently resize things that were never page shells. Locked by
-     __tests__/design-tokens.test.ts, which re-checks the exclusivity before it
-     checks the value. */
+     Locked by __tests__/design-tokens.test.ts, which re-checks the exclusivity
+     before it checks the value. */
   --container-7xl: 72rem;
+
+  /* The same move, re-measured, is safe for ONE more step. The note that used
+     to sit here said "this works only for 7xl; every other step has
+     non-container consumers". Recounted at HEAD across app/, components/ and
+     lib/ that is not true of 5xl:
+
+       step        total   centred   carries a text-* size class
+       max-w-4xl     188     182       2
+       max-w-5xl     152     125       0
+       max-w-6xl     148     144       1
+       max-w-7xl      47      47       0
+
+     Not one of the 152 max-w-5xl sets its own type, which is the signature of
+     a reading measure, and all 27 that are not centred are provider-portal
+     page shells written `space-y-6 max-w-5xl` — a shell left-aligned in the
+     portal column, not a measure. There is no w-5xl, min-w-5xl, basis-5xl or
+     @5xl container query in the tree, so max-w-5xl is the only consumer
+     family. Retargeting it from Tailwind's stock 64rem puts all 152 on the
+     declared wide width with no call-site edits, and lands the seven provider
+     portals on the same content edge as the header and footer that already sit
+     on .container-wide above them.
+
+     4xl is the obvious next step and is deliberately NOT taken: two of its 188
+     occurrences are genuine headline measures (app/about/page.tsx beside
+     text-[2.5rem], components/motion/StickyHeadlinePin.tsx beside
+     lg:text-6xl), so this move would silently widen two headlines by 16rem.
+     Those two have to become explicit max-w-[56rem] measures first. */
+  --container-5xl: 72rem;
 
   /* ── Letter-spacing ───────────────────────────────────────────────────── */
   --tracking-tight: -0.02em;
@@ -471,6 +496,18 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
+  /* DU-10: the leading below has been declared here for a while, but the SIZE
+     never was — so an unclassed <p> fell through to the user-agent default of
+     a flat 16px while every text-base / .prose-body paragraph rendered
+     clamp(1rem, 0.97rem + 0.15vw, 1.0625rem). Identical at 390px, 16px against
+     17px from ~1440px up: the same role at two sizes, produced by the token
+     layer rather than by a call site. Measured at HEAD, 42 of the 219 <p>
+     elements under app/ that carry a reading measure set no size class at all
+     (44 of 228 counting components/ and lib/).
+
+     Declaring the declared base step here fixes all of them at once. Anything
+     carrying an explicit text-* is a class selector and still wins. */
+  font-size: var(--text-base);
   line-height: var(--leading-relaxed);
   /* RESP-01: CookieBanner is position:fixed and used to bury whatever sat at
      the bottom of the page — at 390x844 the entire /auth/login form, Sign In

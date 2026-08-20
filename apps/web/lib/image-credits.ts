@@ -28,6 +28,16 @@
  * build when a referenced file has no row, or a row names a file nothing
  * references.
  *
+ * SECOND SOURCE, added 2026-08-19 — `lib/images.ts` is not the only route from a
+ * Commons URL to an `<img>`. The temple grid never consults it for photographs:
+ * `app/temples/page.tsx:43-51,86,169` paints `firstImageUrl(t.images)` straight
+ * off the API's temple rows, whose `images` arrays are written by
+ * `apps/api/prisma/seed.ts`. That seed hotlinks 68 distinct Commons files and 55
+ * of them had no row here — 41 attribution-required — so the first pass closed
+ * the hardcoded half of the licensing problem and left the database half open.
+ * Those 55 rows are grouped at the bottom of this list and joined against the
+ * seed by `__tests__/cm08-seeded-commons-attribution.test.ts`.
+ *
  * PROVENANCE — every `author`, `license` and `licenseUrl` below was read from
  * the Commons `imageinfo` / `extmetadata` API on 2026-08-16, not transcribed by
  * hand and not inferred from the file name. When a row has to change, re-read it
@@ -152,6 +162,81 @@ export const COMMONS_CREDITS: readonly CommonsCredit[] = [
   { subject: 'Bhagavad Gita, printed edition', file: 'Bhagavad_Gita_book_(small)_01.jpg', author: 'Gpkp', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
   { subject: 'Hanuman Chalisa, printed edition', file: 'Hanuman_Chalisa_4x3.jpg', author: 'RahulKSaini', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
   { subject: 'Homemade pure ghee, Maharashtra', file: 'Pure_Ghee-Homemade-Maharashtra.jpg', author: 'Phadke09', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+
+  // ── Seeded via apps/api/prisma/seed.ts (DATABASE-sourced) ───
+  // These 55 files never appear in lib/images.ts. They reach the screen from
+  // the temples / puja_types tables: apps/api/prisma/seed.ts writes them into
+  // each row's `images` array, the API returns that array, and
+  // app/temples/page.tsx:43-51,86,169 paints `firstImageUrl(t.images)` as the
+  // card photograph. The register's first join only ever looked at
+  // lib/images.ts, so all 55 shipped uncredited — 41 of them attribution-
+  // required. Provenance read from the Commons imageinfo/extmetadata API on
+  // 2026-08-19 via the query documented at the top of this file.
+  //
+  // Where Commons' `Artist` is a boilerplate blob rather than a name, the name
+  // inside it is used and nothing else is invented: the two PlaneMad files
+  // carry a licence-negotiation paragraph that itself says to "credit the
+  // photo CC-by-sa PlaneMad"; `Vaishno_devi.jpg` and
+  // `East_Gopura_of_Rameswaram_Temple.jpg` carry "No machine-readable author
+  // provided. <name> assumed (based on copyright claims).";
+  // `Vaishno_Devi_Navratras.jpg` has NO Artist at all and its `Credit` field is
+  // https://www.maavaishnodevi.org/ — the shrine board's own site — so that
+  // stated source is the credit line rather than a guessed photographer.
+  { subject: 'Akshardham Temple — Akshardham Delhi Ricky W', file: 'Akshardham_Delhi_Ricky_W.jpg', author: 'Ricky W.', license: 'CC BY 2.5', licenseUrl: 'https://creativecommons.org/licenses/by/2.5', attributionRequired: true },
+  { subject: 'Akshardham Temple — Akshardham Dome', file: 'Akshardham_Dome.jpg', author: 'World', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Badrinath Temple — Badri Night', file: 'Badri_Night.JPG', author: 'Raji.srinivas', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Birla Mandir Hyderabad — Birla Mandir, Hyderabad', file: 'Birla_Mandir,_Hyderabad.png', author: 'Nikhilb239', license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0', attributionRequired: true },
+  { subject: 'Birla Mandir Hyderabad — Birla Temple no 1', file: 'Birla_Temple_no_1.jpg', author: 'Karthik Easvur', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Birla Mandir Hyderabad — BirlaMandir', file: 'BirlaMandir.jpg', author: 'Naveenji', license: 'CC BY-SA 3.0', licenseUrl: 'http://creativecommons.org/licenses/by-sa/3.0/', attributionRequired: true },
+  { subject: 'Dagdusheth Halwai Ganpati Temple — Dagadusheth Halwai Ganpati Temple illuminated 2', file: 'Dagadusheth_Halwai_Ganpati_Temple_illuminated_2.jpg', author: 'DesiBoy101', license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0', attributionRequired: true },
+  { subject: 'Dakshineswar Kali Temple — Dakhineshwar Temple beside the Hoogly, West Bengal', file: 'Dakhineshwar_Temple_beside_the_Hoogly,_West_Bengal.JPG', author: 'Knath', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Dakshineswar Kali Temple — Dakshineswar Kali Temple on the bank River Ganges', file: 'Dakshineswar_Kali_Temple_on_the_bank_River_Ganges.jpg', author: 'Provatkrmukherjee', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Dwarkadhish Temple — Dwarakadheesh temple, Dwaraka', file: 'Dwarakadheesh_temple,_Dwaraka.jpg', author: 'emmanueldyan (Flickr)', license: 'CC BY 2.0', licenseUrl: 'https://creativecommons.org/licenses/by/2.0', attributionRequired: true },
+  { subject: 'Dwarkadhish Temple — Dwarka Mandir', file: 'Dwarka_Mandir.jpg', author: 'Abhishek K Saxena', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Govind Dev Ji Temple — Govind Dev Ji Temple Inner Side', file: 'Govind_Dev_Ji_Temple_Inner_Side.jpg', author: 'Anildiggiwal', license: 'CC0', licenseUrl: 'http://creativecommons.org/publicdomain/zero/1.0/deed.en', attributionRequired: false },
+  { subject: 'Govind Dev Ji Temple — Govind Dev Ji Temple, Jaipur, 20191218 1059 9091', file: 'Govind_Dev_Ji_Temple,_Jaipur,_20191218_1059_9091.jpg', author: 'Jakub Hałun', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Govind Dev Ji Temple — Govind dev ji', file: 'Govind_dev_ji.jpg', author: 'Sameergoyal', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Hanuman Chalisa Path — Hanuman Chalisa img', file: 'Hanuman_Chalisa_img.jpg', author: 'Ashish.akm', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'ISKCON Bangalore (Sri Radha Krishna-Chandra Mandir) — Entrance of Iskcon temple', file: 'Entrance_of_Iskcon_temple.jpg', author: 'KeralianEditor', license: 'CC0', licenseUrl: 'http://creativecommons.org/publicdomain/zero/1.0/deed.en', attributionRequired: false },
+  { subject: 'ISKCON Bangalore (Sri Radha Krishna-Chandra Mandir) — ISKCON Banglaore Temple', file: 'ISKCON_Banglaore_Temple.jpg', author: 'Svpdasa', license: 'CC BY 3.0', licenseUrl: 'https://creativecommons.org/licenses/by/3.0', attributionRequired: true },
+  { subject: 'ISKCON Bangalore (Sri Radha Krishna-Chandra Mandir) — Iskon temple', file: 'Iskon_temple.JPG', author: 'hemant meena', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Jagannath Temple — Bird view of Jagannath Temple, Puri', file: 'Bird_view_of_Jagannath_Temple,_Puri.jpg', author: 'Government of Odisha', license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0', attributionRequired: true },
+  { subject: 'Jagannath Temple — Rath Yatra Puri 07-11027', file: 'Rath_Yatra_Puri_07-11027.jpg', author: 'G.-U. Tolkiehn', license: 'CC BY 2.5', licenseUrl: 'https://creativecommons.org/licenses/by/2.5', attributionRequired: true },
+  { subject: 'Jagannath Temple — Singhadwara', file: 'Singhadwara.jpg', author: 'Unknown', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Kapaleeshwarar Temple — Kapaleeshwarar Temple. Chennai. 2010', file: 'Kapaleeshwarar_Temple._Chennai._2010.jpg', author: 'John Hill', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Kapaleeshwarar Temple — Kapaleeswarar1', file: 'Kapaleeswarar1.jpg', author: 'Mohan Krishnan', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Kapaleeshwarar Temple — Mylapore Kapaleeshwarar temple facade', file: 'Mylapore_Kapaleeshwarar_temple_facade.jpg', author: 'PlaneMad', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Kapaleeshwarar Temple — Mylapore tank at dawn panorama', file: 'Mylapore_tank_at_dawn_panorama.jpg', author: 'PlaneMad', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Kashi Vishwanath Temple — Annapurna Entrance of kashi vishwanath temple', file: 'Annapurna_Entrance_of_kashi_vishwanath_temple.jpg', author: 'Gamerzer', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Kashi Vishwanath Temple — Ganga Dwar, Gateway of Corridor of Kashi Vishwanath Temple, Varanasi 2', file: 'Ganga_Dwar,_Gateway_of_Corridor_of_Kashi_Vishwanath_Temple,_Varanasi_2.webp', author: 'Ashvin Kaitabhya, clicked by Abhishek Pandey', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Lingaraj Temple — 11th century Lingaraja temple, Bhubaneswar Odisha India', file: '11th_century_Lingaraja_temple,_Bhubaneswar_Odisha_India.jpg', author: 'Ms Sarah Welch', license: 'CC0', licenseUrl: 'http://creativecommons.org/publicdomain/zero/1.0/deed.en', attributionRequired: false },
+  { subject: 'Lingaraj Temple — Lingaraj Temple complex at dusk during Shivratri 2020', file: 'Lingaraj_Temple_complex_at_dusk_during_Shivratri_2020.jpg', author: 'Government of Odisha', license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0', attributionRequired: true },
+  { subject: 'Lingaraj Temple — Lingaraj Temple Complex', file: 'Lingaraj_Temple_Complex.jpg', author: 'Puja Rakshit', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Lingaraj Temple — Lingaraj Temple, Bhubaneswar', file: 'Lingaraj_Temple,_Bhubaneswar.jpg', author: 'SUDEEP PRAMANIK', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Maha Mrityunjay Jaap — 1 Om', file: '1_Om.svg', author: 'The Unicode Consortium', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Meenakshi Amman Temple — India Meenakshi Temple', file: 'India_Meenakshi_Temple.jpg', author: 'Ashok666', license: 'CC BY-SA 2.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0', attributionRequired: true },
+  { subject: 'Meenakshi Amman Temple — Madurai Meenakshi temple shikhara', file: 'Madurai_Meenakshi_temple_shikhara.jpg', author: 'fraboof (Flickr)', license: 'CC BY-SA 2.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0', attributionRequired: true },
+  { subject: 'Meenakshi Amman Temple — Meenakshi Amman West Tower', file: 'Meenakshi_Amman_West_Tower.jpg', author: 'KennyOMG', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Navgraha Shanti Puja — Navagraha', file: 'Navagraha.jpg', author: 'Anant Shivaji Desai, Ravi Varma Press', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Pitru Dosh Nivaran Puja — Pinda Daan - Jagannath Ghat - Kolkata 2012-10-15 0701', file: 'Pinda_Daan_-_Jagannath_Ghat_-_Kolkata_2012-10-15_0701.JPG', author: 'Biswarup Ganguly', license: 'CC BY 3.0', licenseUrl: 'https://creativecommons.org/licenses/by/3.0', attributionRequired: true },
+  { subject: 'Ram Charit Manas Path — Rāmacaritamānasa manuscript (19th century)', file: 'Rāmacaritamānasa_manuscript_(19th_century).png', author: 'Jānak De (scribe)', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Ramanathaswamy Temple — 43Rameswaram The Great Corridor', file: '43Rameswaram_The_Great_Corridor.jpg', author: 'Messrs. Nicholas & Co', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Ramanathaswamy Temple — East Gopura of Rameswaram Temple', file: 'East_Gopura_of_Rameswaram_Temple.jpg', author: 'Vinayaraj', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Ramanathaswamy Temple — Rameswaram temple (11)', file: 'Rameswaram_temple_(11).jpg', author: 'Vinayaraj', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Satyanarayan Katha — Devotees', file: 'Devotees.jpg', author: 'Unknown', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Shirdi Sai Baba Samadhi Temple — Sai baba samadhi mandir', file: 'Sai_baba_samadhi_mandir_.jpg', author: 'Sanskar RM Khatri', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Shirdi Sai Baba Samadhi Temple — Sai gold full', file: 'Sai_gold_full.jpg', author: 'Amolthefriend', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Somnath Temple — Ancient Somnath temple, Veraval Gujarat', file: 'Ancient_Somnath_temple,_Veraval_Gujarat.jpg', author: 'Ms Sarah Welch', license: 'CC0', licenseUrl: 'http://creativecommons.org/publicdomain/zero/1.0/deed.en', attributionRequired: false },
+  { subject: 'Somnath Temple — Somanath Temple', file: 'Somanath_Temple.jpg', author: 'B. SurajPatro1997', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Sunderkand Path — Hanuman\'s visit, in bazaar art with a Marathi caption, early 1900s', file: 'Hanuman\'s_visit,_in_bazaar_art_with_a_Marathi_caption,_early_1900s.jpg', author: 'bazaar art', license: 'Public domain', licenseUrl: '', attributionRequired: false },
+  { subject: 'Swaminarayan Akshardham Gandhinagar — Akshardham Gandhinagar Gujarat', file: 'Akshardham_Gandhinagar_Gujarat.jpg', author: 'Harsh4101991', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
+  { subject: 'Tirumala Tirupati Devasthanam — Sri vari swarana radham879', file: 'Sri_vari_swarana_radham879.jpg', author: 'Phanidharvaranasi', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Tirumala Tirupati Devasthanam — Tirumala Venkateswara temple entrance 09062015', file: 'Tirumala_Venkateswara_temple_entrance_09062015.JPG', author: 'Nikhilb239', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Tirumala Tirupati Devasthanam — Tirumala View from srivari padalu', file: 'Tirumala_View_from_srivari_padalu.jpg', author: 'Phanidharvaranasi', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Vaishno Devi Bhawan — Snowfall in Vaishno Devi', file: 'Snowfall_in_Vaishno_Devi.jpg', author: 'Yatin. 123', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  { subject: 'Vaishno Devi Bhawan — Vaishno Devi Bhawan Facade Lighting', file: 'Vaishno_Devi_Bhawan_Facade_Lighting.jpg', author: 'Unknown', license: 'CC0', licenseUrl: 'http://creativecommons.org/publicdomain/zero/1.0/deed.en', attributionRequired: false },
+  { subject: 'Vaishno Devi Bhawan — Vaishno Devi Navratras', file: 'Vaishno_Devi_Navratras.jpg', author: 'maavaishnodevi.org', license: 'CC BY 3.0', licenseUrl: 'https://creativecommons.org/licenses/by/3.0', attributionRequired: true },
+  { subject: 'Vaishno Devi Bhawan — Vaishno devi', file: 'Vaishno_devi.jpg', author: 'Raju hardoi', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },
 ];
 
 /** Canonical Commons description page for a file — where the full licence lives. */

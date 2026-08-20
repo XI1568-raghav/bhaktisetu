@@ -77,7 +77,8 @@ export const AUTH_FETCH_TIMEOUT_MS = 20_000;
  * builds is untouched and still authenticates; the cookie becomes a WORKING
  * PARALLEL credential rather than a replacement. Retiring the localStorage copy
  * is the next step and cannot be taken from here — see the notes on
- * persistAuthStorage in lib/auth-context.tsx.
+ * persistAuthStorage in lib/auth-context.tsx, and lib/session-revive.ts for the
+ * cookie-only rehydration that removed the API-side half of the blocker.
  *
  * `init` is spread AFTER the default, so a caller that deliberately asks for
  * `credentials: 'omit'` still gets it.

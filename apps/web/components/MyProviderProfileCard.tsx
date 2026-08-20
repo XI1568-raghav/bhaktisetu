@@ -5,6 +5,7 @@ import { buttonClass } from './ui/button-recipe';
 import Link from 'next/link';
 import { CheckCircle2, Clock, ExternalLink, Pencil, Loader2 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import { cardBlurb } from '../lib/copy';
 import {
  API_BASE_URL,
  DATA_FETCH_TIMEOUT_MS,
@@ -172,6 +173,10 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
 
  const approved = !!profile.approved;
  const name = getDisplayName(role, profile);
+ // CM-10: an unbounded provider bio used to render under a CSS clamp alone —
+ // the whole essay in the DOM and the accessibility tree, cut mid-word wherever
+ // the box happened to end. cardBlurb keeps the first whole sentence.
+ const bio = cardBlurb(profile.bio);
 
  return (
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5 mb-6">
@@ -199,8 +204,9 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  {profile.city && (
  <p className="text-xs text-surface-500 mb-2">{profile.city}</p>
  )}
- {profile.bio && (
- <p className="text-sm text-surface-600 line-clamp-2 mb-3">{profile.bio}</p>
+ {/* The clamp stays as the narrow-width backstop. */}
+ {bio && (
+ <p className="text-sm text-surface-600 line-clamp-2 mb-3">{bio}</p>
  )}
  <div className="flex flex-wrap gap-2">
  <Link

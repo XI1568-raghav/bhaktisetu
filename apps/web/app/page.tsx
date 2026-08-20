@@ -25,7 +25,6 @@ import { getTranslations } from '../lib/t';
 import { buttonClass } from '../components/ui/button-recipe';
 import { getTodayPanchang } from '../lib/api';
 import { getPlatformCounts } from '../lib/platform-stats';
-import Image from 'next/image';
 import TextReveal from '../components/motion/TextReveal';
 import ParallaxLayer from '../components/motion/ParallaxLayer';
 import ScrambleReveal from '../components/motion/ScrambleReveal';
@@ -176,15 +175,38 @@ export default async function HomePage() {
  <ParallaxLayer speed={0.12} maxOffset={48} className="hidden md:block">
  <div data-reveal="zoom-rotate" data-delay="1" className="grid grid-cols-2 gap-2.5">
  <Link href="/darshan" className="col-span-2 rounded-xl overflow-hidden relative group" style={{ border: '1px solid var(--color-border)' }}>
- <Image
+ {/* HOME-01 (2026-08-20): this was <Image … priority unoptimized>. `priority`
+     makes next/image call ReactDOM.preload (node_modules/next/dist/client/
+     image-component.js:220), and the last real build proves what that emitted:
+
+       .next/server/app/index.html, one image preload in <head> —
+       <link rel="preload" as="image" href="…/500px-The_Golden_Temple_of_Amrithsar_7.jpg"/>
+
+     no imagesrcset, no imagesizes, no media. The box it fills is inside
+     ParallaxLayer's `hidden md:block`, so on every phone the browser fetched
+     61,099 B at the highest priority there is, into something display:none that
+     is never painted. PERF-02 banned this exact shape in app/layout.tsx; it was
+     living one level down.
+
+     Now a plain <img> (images.unoptimized is true, so <Image> rendered a bare
+     <img> anyway and its prop type omits srcSet) with a `sizes` that tells the
+     truth about the phone slot. Measured candidates: 250px 16,790 B, 330px
+     28,510 B, 500px 61,099 B.
+       phone  <768px  → declared 1px  → 250px candidate →  16,790 B (was 61,099)
+       md-lg          → >= 464 CSS px → 500px candidate →  61,099 B (unchanged)
+       >= 1216px      →    528 CSS px → 500px candidate →  61,099 B (unchanged)
+     No fetchPriority: the tag sits at byte ~22.9k of the document, so the
+     preload scanner still finds it in the first network chunk, and PERF-02's
+     rule against priority hints on maybe-unpainted resources holds here too. */}
+ <img
  src={getTempleHero('golden-temple', IMG_W.CARD)}
+ srcSet={remoteSrcSet(getTempleHero('golden-temple', IMG_W.CARD), [250, 330, IMG_W.CARD])}
  alt="Sri Harmandir Sahib (Golden Temple), live darshan"
  width={500}
  height={250}
- sizes="(max-width: 768px) 100vw, 360px"
+ sizes="(max-width: 767px) 1px, (max-width: 1215px) calc((100vw - 6rem) / 2), 528px"
  className="w-full h-40 object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
- priority
- unoptimized
+ decoding="async"
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -386,13 +408,25 @@ export default async function HomePage() {
 
      Plain <img>, not next/image: images.unoptimized is true so <Image> renders a
      bare <img> anyway, and its prop type OMITS srcSet — the same reason
-     app/pujas/page.tsx:679 uses <img> for the card srcSet. */}
+     app/pujas/page.tsx:679 uses <img> for the card srcSet.
+
+     CANDIDATE LIST CORRECTED 2026-08-20. It read [CARD, WIDE, HERO]. Adding a
+     candidate does not only give small screens a smaller file — it gives large
+     ones a LARGER file, and the three candidates measure 56,754 / 189,024 /
+     322,706 B. Against sizes="…1088px" a 1x desktop needs 1088 CSS px and picks
+     1280. So does every phone whose DPR x CSS width clears 960: the crossover
+     is DPR 2.56 at 375 CSS px, 2.46 at 390, 2.33 at 412 — so a Pixel 7 (412 @
+     2.625) and every DPR-3 handset take 1280 as well. All of them used to take
+     the 960 src. HERO therefore ADDED 133,682 B to desktop and to the densest
+     half of the phone fleet, to buy back a 1.13x upscale on the image furthest
+     below the fold. Dropping it keeps the whole
+     1x-phone win (375 CSS px → 500px candidate → 56,754 B) and returns every
+     other device to the 189,024 B it paid before any srcSet existed. */}
  <img
    src={getTempleHero('mahakaleshwar', IMG_W.WIDE)}
    srcSet={remoteSrcSet(getTempleHero('mahakaleshwar', IMG_W.WIDE), [
      IMG_W.CARD,
      IMG_W.WIDE,
-     IMG_W.HERO,
    ])}
    alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
    width={1280}
@@ -439,7 +473,22 @@ export default async function HomePage() {
  </p>
  <div className="grid grid-cols-5 grid-rows-2 gap-2 mb-4" style={{ height: '160px' }}>
  <div className="col-span-3 row-span-2 rounded-lg overflow-hidden" data-parallax="0.04">
- <img src={getDeityImage('lord-shiva', 'portrait', IMG_W.CARD)} alt="Puja ceremony" width={480} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ {/* HOME-01 (2026-08-20): 3 of 5 columns of a 494 CSS px card body, so the slot
+     is ~293 px on desktop and ~(60vw - 46px) below md — nowhere near the 500 px
+     this always downloaded. Candidates measure 250px 17,262 B / 330px 27,483 B /
+     500px 55,881 B, so a 1x desktop now saves 28,398 B and a 1x phone 38,619 B.
+     A 2x screen still resolves to 500 px, unchanged. */}
+ <img
+   src={getDeityImage('lord-shiva', 'portrait', IMG_W.CARD)}
+   srcSet={remoteSrcSet(getDeityImage('lord-shiva', 'portrait', IMG_W.CARD), [250, 330, IMG_W.CARD])}
+   sizes="(max-width: 767px) calc(60vw - 46px), 293px"
+   alt="Puja ceremony"
+   width={480}
+   height={320}
+   className="w-full h-full object-cover"
+   loading="lazy"
+   decoding="async"
+ />
  </div>
  <div className="col-span-2 rounded-lg overflow-hidden">
  <img src={getContentImage('aarti', 'thumbnail', IMG_W.THUMB)} alt="Aarti" width={320} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
@@ -692,7 +741,10 @@ export default async function HomePage() {
  <NriLaneAbTest slot="below" />
 
  {/* ═══ LIBRARY TEASER — 4-card row mirroring Library mega-panel (IA P4) ═══ */}
- <section aria-label="Discover the Library" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
+ {/* HOME-01: .defer-paint = content-visibility:auto + contain-intrinsic-size.
+     Icon-and-text only, no image, no sticky child, ~9 screens down. Buys render
+     work, not transfer bytes — the ranked list records it as such. */}
+ <section aria-label="Discover the Library" className="defer-paint py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
  <div className="container-wide">
  <div className="flex items-end justify-between mb-5">
  <div>
@@ -734,7 +786,7 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ YATRA TEASER — 3-card emerald row per audit §3 delta #1 ═══════════ */}
- <section aria-label="Pilgrimage circuits" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
+ <section aria-label="Pilgrimage circuits" className="defer-paint py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
  <div className="container-wide">
  <div className="flex items-end justify-between mb-5">
  <div>

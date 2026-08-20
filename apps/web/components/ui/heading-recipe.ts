@@ -19,9 +19,21 @@
  * visitor is being sold to, not the dashboard a provider lives in all day.
  */
 export const H1 = {
-  /** Marketing surfaces — home hero, /pricing, campaign landings. */
-  marketing:
-    'heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]',
+  /**
+   * Marketing surfaces — home hero, /pricing, campaign landings.
+   *
+   * No `leading-*`. This carried `leading-[1.1]` — an arbitrary value pinned
+   * across all three of its steps. The scale already pairs a leading with each
+   * step (--text-3xl--line-height 1.2, 4xl 1.1, 5xl 1.05) and
+   * __tests__/design-tokens.test.ts asserts that pairing tightens as type
+   * grows; the override defeated it in both directions at once — tighter than
+   * declared at 30px on a phone, looser than declared at 72px on a desktop.
+   * In Tailwind v4 `text-*` emits
+   * `line-height: var(--tw-leading, var(--text-*--line-height))` and
+   * `leading-*` sets `--tw-leading`, so a single unprefixed `leading-` beats
+   * every responsive step regardless of source order. Derive, never redefine.
+   */
+  marketing: 'heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight',
 
   /** Catalogue index pages — /pujas, /temples, /store. */
   catalogue:

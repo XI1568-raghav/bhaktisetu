@@ -223,10 +223,19 @@ export class AdminService {
         prisma.user.count({ where }),
       ]);
 
-      // Fetch role assignments for users
+      // Fetch role assignments for users.
+      //
+      // Bounded by the page (clampLimit caps `limit` at 100), so this is not a
+      // SCAL-04 ratchet entry and no `take` belongs here — truncating it would
+      // blank the Roles column for whoever fell off the end. The COLUMNS were
+      // the waste: the map below reads `userId` and `role`, and the query was
+      // returning whole rows. A user can hold all eight roles, so that is up to
+      // 800 rows of id + isPrimary + createdAt discarded per page view of the
+      // first screen an operator opens.
       const userIds = users.map((u) => u.id);
       const roleAssignments = await prisma.userRoleAssignment.findMany({
         where: { userId: { in: userIds } },
+        select: { userId: true, role: true },
       });
 
       const roleMap = new Map<string, string[]>();

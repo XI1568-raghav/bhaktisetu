@@ -292,10 +292,24 @@ export default function AstrologyPage() {
  <section className="bg-[#ede9e3]">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-24">
  <div className="text-center">
- {/* Promo badge */}
+ {/* Promo badge.
+     AW-02 (P0), last half: this read "First 5 Minutes FREE". Nothing on the
+     call path that takes the money implements a free minute —
+     /astrology/<id>/book offers a 5-minute preset and POST /consultation/book
+     charges round(pricePerMinute x minutes) with nothing deducted, so the
+     cheapest possible purchase on this funnel costs 5 x the rate. The promise
+     also advertised a capability that was deliberately DELETED: P0
+     #AP-01/AP-02 removed free-trial rooms, which is why
+     app/consultation/[id]/page.tsx tells a visitor free-trial rooms are no
+     longer resolvable. Same rule this finding already applied to the
+     fabricated "From Rs. 10/min" floor and the fabricated online count: state
+     only what the platform can honour. The free tools below genuinely are
+     free and need no signup; the live consult genuinely is billed per minute. */}
  <div className="inline-flex items-center gap-2 bg-saffron-100 border border-saffron-200 rounded-full px-5 py-2 mb-6">
  <Sparkles className="w-4 h-4 text-saffron-600" />
- <span className="text-sm font-semibold text-saffron-700">First 5 Minutes FREE</span>
+ <span className="text-sm font-semibold text-saffron-700">
+ Free Vedic tools &middot; live consults billed by the minute
+ </span>
  </div>
 
  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-surface-800 mb-5 leading-tight">
@@ -802,7 +816,10 @@ export default function AstrologyPage() {
  step: 2,
  icon: MessageCircle,
  title: 'Start Chat',
- desc: 'Connect instantly via chat, call, or video. First 5 minutes are free for new users.',
+ // AW-02: was "First 5 minutes are free for new users." — see the hero
+ // badge note above. No free minute exists on the paid path; the devotee
+ // picks a duration and pays for all of it before the room is minted.
+ desc: 'Connect via chat, call, or video. You pick the duration and pay for those minutes upfront.',
  },
  {
  step: 3,

@@ -126,6 +126,12 @@ const ROLES: Array<[string, string, string, string | null]> = [
   ['astrologer', '(astrologer)', '(astrologer)/payouts.tsx', '(astrologer)/earnings.tsx'],
   ['store owner', '(store-admin)', '(store-admin)/payouts.tsx', null],
   ['gaushala manager', '(gaushala)', '(gaushala)/payouts.tsx', null],
+  // The pandit was the ONE role the web page names that this file left out,
+  // and the omission looked like coverage: (priest)/payouts.tsx has existed the
+  // whole time. It reads /priest/payouts — the legacy PriestPayout sidecar,
+  // which is a list of payouts an admin already created. No balance, no
+  // request endpoint, no button. Seeing history is not being able to withdraw.
+  ['pandit', '(priest)', '(priest)/payouts.tsx', null],
 ];
 
 describe('PAR-22 — every provider role can reach the payout surface', () => {
@@ -199,5 +205,47 @@ describe('PAR-22 — every provider role can reach the payout surface', () => {
     for (const [, , screen] of ROLES) {
       expect(code(screen), screen).toMatch(/provider-payouts/);
     }
+  });
+});
+
+describe('PAR-22 — the pandit can ask for the money, not only look at it', () => {
+  const src = code('(priest)/payouts.tsx');
+
+  it('renders the shared withdrawal surface', () => {
+    // Not a fifth hand-written copy: the gate has four refusal reasons and the
+    // ledger has a deliberate null convention, and the copy that drifts is the
+    // one still offering a withdrawal the server refuses.
+    expect(src).toMatch(/ProviderPayouts/);
+    expect(src).toMatch(/provider-payouts/);
+  });
+
+  it('keeps the legacy PriestPayout rail instead of hiding money it cannot pay', () => {
+    // DI-05, and this is the reason the two lists have to coexist:
+    // payout.service.ts:280-290 reports `legacyPandit` SEPARATELY and keeps it
+    // OUT of availableInr, because POST /payouts/request settles Commission
+    // rows only. A pandit whose earnings sit on the sidecar rail would see the
+    // new surface say Rs 0 available. Dropping the old list to make room for
+    // the new one hides real money that is genuinely owed.
+    expect(src).toMatch(/usePriestPayouts/);
+  });
+
+  it('says on screen that the legacy rail settles separately', () => {
+    // Comments are stripped before this runs, so the sentence has to be in the
+    // rendered copy. Two money lists with no explanation read as a duplicate —
+    // or worse, as money the Request button is about to send.
+    expect(src).toMatch(/settled separately|settles separately|separate rail/i);
+  });
+
+  it('pull-to-refresh reaches the legacy list too', () => {
+    // The shared component owns the RefreshControl. A footer with its own query
+    // that the refresh does not touch is a list that silently goes stale under
+    // a control that claims to have refreshed the screen.
+    expect(src).toMatch(/onExtraRefresh/);
+    const shared = strip(readFileSync(path.join(LIB, 'provider-payouts.tsx'), 'utf8'));
+    expect(shared).toMatch(/onExtraRefresh/);
+  });
+
+  it('does not put a rupee literal on the legacy rows either', () => {
+    expect(src).not.toMatch(/['"`]\s*₹\s*[\d,]+/);
   });
 });

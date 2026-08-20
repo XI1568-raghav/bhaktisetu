@@ -202,6 +202,60 @@ export function isSlotBookable(slot: BookableSlot): boolean {
   return slot.remaining !== null && slot.remaining > 0;
 }
 
+/**
+ * What the availability read actually told us — four outcomes, not one array.
+ *
+ * The screen used to keep a bare `BookableSlot[]`, so every failure arrived at
+ * the renderer indistinguishable from a successful empty answer and was printed
+ * as a claim about the temple: "This temple has published no slots for that
+ * day. Try another day." A dropped connection is not a fact about the temple,
+ * and the advice it comes with is wrong — the next day fails identically.
+ *
+ *   live        the server answered with per-slot capacity. The real answer.
+ *   published   the server resolved nothing ({slots: []} — inactive or
+ *               unresolvable offering) but the catalogue lists slots. They are
+ *               shown with remaining=null, which isSlotBookable refuses, and
+ *               the screen has to say capacity is unknown.
+ *   none        the read SUCCEEDED and there is genuinely nothing to book.
+ *               The only outcome allowed to make a statement about the temple.
+ *   unreadable  the request threw, or returned non-2xx, or returned a body
+ *               that is not {slots: [...]}. An error plus a retry — never a
+ *               slot grid, never "no slots".
+ */
+export type SlotAvailabilityKind = 'live' | 'published' | 'none' | 'unreadable';
+
+export interface SlotAvailability {
+  kind: SlotAvailabilityKind;
+  slots: BookableSlot[];
+}
+
+/**
+ * `reply` is null exactly when the fetch threw. Passing the raw {ok, body}
+ * pair rather than a pre-parsed list is deliberate: `ok` is the only thing that
+ * separates "the server said there are no slots" from "the server did not
+ * answer", and a caller that has already thrown it away cannot get it back.
+ */
+export function resolveSlotAvailability(
+  reply: { ok: boolean; body: unknown } | null,
+  publishedSlots: Array<{ time: string; label: string }>,
+): SlotAvailability {
+  if (!reply || !reply.ok) return { kind: 'unreadable', slots: [] };
+  // A 2xx whose body is not the documented shape is still a read we could not
+  // understand. Treating it as "no slots" is the same lie with extra steps.
+  if (!isRecord(reply.body) || !Array.isArray(reply.body.slots)) {
+    return { kind: 'unreadable', slots: [] };
+  }
+  const live = selectBookableSlots(reply.body);
+  if (live.length > 0) return { kind: 'live', slots: live };
+  if (publishedSlots.length > 0) {
+    return {
+      kind: 'published',
+      slots: publishedSlots.map((s) => ({ ...s, remaining: null, total: null })),
+    };
+  }
+  return { kind: 'none', slots: [] };
+}
+
 // ─── the form ───────────────────────────────────────────────────────────────
 
 export interface DevoteeEntry {

@@ -346,9 +346,19 @@ function AstrologerDetailInner() {
  <span className="text-lg font-semibold text-surface-800">{'\u20B9'}{astrologer.perMinuteRate}</span>
  <span className="text-sm text-surface-400">/min</span>
  </div>
+ {/* AW-02 (P0), last half: this badge read "First 5 min FREE" and sat
+  DIRECTLY above the "Book Paid Consultation" button — the most expensive
+  place in the funnel to state a price the platform does not offer. The
+  button leads to /astrology/<id>/book, whose cheapest preset is 5 minutes,
+  and POST /consultation/book charges round(pricePerMinute x minutes) with
+  nothing deducted: the advertised-free five minutes cost 5 x the rate above
+  this badge. Free-trial rooms were removed outright by P0 #AP-01/AP-02, so
+  there was no implementation to restore — only a claim to stop making.
+  Replaced with the billing rule that IS true and that the book page then
+  itemises line by line. */}
  <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200/60 rounded-lg px-3 py-1.5 mb-3">
  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
- <span className="text-xs font-semibold text-amber-700">First 5 min FREE</span>
+ <span className="text-xs font-semibold text-amber-700">Billed by the minute</span>
  </div>
  <div className="flex flex-col gap-2">
  <Link
@@ -369,8 +379,20 @@ function AstrologerDetailInner() {
  disabled={!astrologer.isOnline || astrologer.isBusy}
  onClick={() => {
  if (!astrologer.isOnline || astrologer.isBusy) return;
- // Take user to the AI chat surface, pre-filled with this astrologer's name
- window.location.href = `/astrology/chat?astrologer=${encodeURIComponent(astrologer.name)}`;
+ // AW-02 (P0) — "nobody can deliver", on the one control that is enabled
+ // precisely when a human IS reachable. This used to go to
+ // `/astrology/chat?astrologer=<name>`, described in its own comment as
+ // "the AI chat surface, pre-filled with this astrologer's name". It is
+ // not pre-filled with anything: app/astrology/chat/page.tsx never reads a
+ // query param, so the name was dropped and the devotee who chose a named
+ // person silently got the bot instead, with the astrologer never notified.
+ //
+ // No astrologer-chat product exists to route to; the only path that
+ // reaches this person is the paid consultation room, which is where the
+ // sibling "Call" button on this same card was already sent for exactly
+ // this reason (P0 #AP-01/AP-02). Both online CTAs now agree, and the
+ // booking screen carries the mode choice.
+ window.location.href = `/astrology/${encodeURIComponent(astrologer.id)}/book`;
  }}
  >
  <MessageCircle className="w-4 h-4" />

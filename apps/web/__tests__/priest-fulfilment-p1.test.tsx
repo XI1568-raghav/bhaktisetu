@@ -404,6 +404,137 @@ describe('PF-04 — the pandit can close the job from the portal', () => {
     await screen.findByText('Price Breakdown');
     expect(screen.queryByRole('button', { name: /deliver/i })).toBeNull();
   });
+
+  /*
+   * PF-04, the reachability half (2026-08-19).
+   *
+   * The control above closed the literal finding — a delivery button now exists
+   * — but only on the detail page, and only for a pandit who happens to be
+   * standing on it. `getActionButton` in the LIST had no `video_uploaded`
+   * branch, so it fell through to `default: null`: the pandit's primary screen
+   * rendered a booking that is one tap from paying him with NO call to action
+   * at all, while every other actionable status on that same screen has one.
+   *
+   * The Completed tab is where those rows land (PRIEST_BOOKING_VIEWS.completed
+   * = completed + video_uploaded + delivered) and it is exactly where the
+   * dashboard's "Upload Video" quick action sends him
+   * (/priest/bookings?status=completed). So the one screen built to show him
+   * unfinished fulfilment work showed the stuck rows as inert.
+   *
+   * These assert on RENDERED OUTPUT, never on source text.
+   */
+  function listOf(rows: Array<Record<string, unknown>>) {
+    return {
+      bookings: rows,
+      total: rows.length,
+      page: 1,
+      limit: 20,
+      totalPages: 1,
+      counts: COUNTS,
+    };
+  }
+
+  it('offers the delivery control on the bookings LIST, not only on the detail page', async () => {
+    const fetchMock = mockApi((url) =>
+      url.pathname.endsWith('/priest/bookings')
+        ? ok(
+            listOf([
+              apiBooking(3, {
+                id: BOOKING_ID,
+                status: 'video_uploaded',
+                videoProofUrl: 'https://cdn.test/proof.mp4',
+                videoUploadedAt: '2026-08-12T09:00:00.000Z',
+              }),
+            ]),
+          )
+        : undefined,
+    );
+    render(<PriestBookingsPage />);
+
+    await screen.findByText('Puja 3');
+    fireEvent.click(screen.getByRole('button', { name: /deliver/i }));
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(
+        (c) => String(c[0]) === `https://api.test/bookings/${BOOKING_ID}`,
+      );
+      expect(call).toBeTruthy();
+      const init = call![1] as RequestInit;
+      expect(init.method).toBe('PATCH');
+      expect(JSON.parse(String(init.body))).toEqual({ status: 'delivered' });
+    });
+  });
+
+  it('re-reads the book after delivering so the row leaves the tab it was in', async () => {
+    const fetchMock = mockApi((url) =>
+      url.pathname.endsWith('/priest/bookings')
+        ? ok(
+            listOf([
+              apiBooking(3, {
+                id: BOOKING_ID,
+                status: 'video_uploaded',
+                videoProofUrl: 'https://cdn.test/proof.mp4',
+              }),
+            ]),
+          )
+        : undefined,
+    );
+    render(<PriestBookingsPage />);
+
+    await screen.findByText('Puja 3');
+    const before = urlsFor(fetchMock, '/priest/bookings').length;
+    fireEvent.click(screen.getByRole('button', { name: /deliver/i }));
+
+    await waitFor(() => {
+      expect(urlsFor(fetchMock, '/priest/bookings').length).toBeGreaterThan(before);
+    });
+  });
+
+  it('surfaces a rejected delivery instead of silently doing nothing', async () => {
+    mockApi((url, init) => {
+      if (url.pathname === `/bookings/${BOOKING_ID}` && init?.method === 'PATCH') {
+        return fail(409, '{"message":"Video proof required"}');
+      }
+      return url.pathname.endsWith('/priest/bookings')
+        ? ok(
+            listOf([
+              apiBooking(3, {
+                id: BOOKING_ID,
+                status: 'video_uploaded',
+                videoProofUrl: 'https://cdn.test/proof.mp4',
+              }),
+            ]),
+          )
+        : undefined;
+    });
+    render(<PriestBookingsPage />);
+
+    await screen.findByText('Puja 3');
+    fireEvent.click(screen.getByRole('button', { name: /deliver/i }));
+
+    await screen.findByRole('alert');
+    expect(screen.getByText(/Video proof required/i)).toBeTruthy();
+  });
+
+  it('never offers it on a row that is already delivered', async () => {
+    mockApi((url) =>
+      url.pathname.endsWith('/priest/bookings')
+        ? ok(
+            listOf([
+              apiBooking(4, {
+                id: BOOKING_ID,
+                status: 'delivered',
+                videoProofUrl: 'https://cdn.test/proof.mp4',
+              }),
+            ]),
+          )
+        : undefined,
+    );
+    render(<PriestBookingsPage />);
+
+    await screen.findByText('Puja 4');
+    expect(screen.queryByRole('button', { name: /deliver/i })).toBeNull();
+  });
 });
 
 // ─── PF-03 ───────────────────────────────────────────────────────────────────

@@ -70,6 +70,90 @@ const SRC = join(import.meta.dirname, '..');
  * MEASURED, not assumed — re-derive it by temporarily setting BASELINE to 0 and
  * reading the failure message.
  */
+/**
+ * 86 → 86 on 2026-08-20. NET ZERO, and the zero is the finding.
+ *
+ * A pass over the admin/leads lane went looking for the worst remaining reads
+ * BY MEASURED PAYLOAD rather than by call-site count, and came back with three
+ * repairs, none of which removes a call site. Recording it because a pass that
+ * moves nothing looks identical to a pass that never happened:
+ *
+ *   ±0  routes/admin-gurukuls.ts — GET /admin/gurukuls. Still no `take`, and
+ *       still deliberately so (the moderation screen renders the complete list;
+ *       see the refusal below). It used `include`, and `include` without
+ *       `select` returns EVERY scalar on the model — 20 declared, 12 returned
+ *       by the handler's own `.map()`. Among the 8 discarded was `description`,
+ *       a required uncapped String and the only column on Gurukul whose width
+ *       is not bounded by a short identifier: every gurukul's directory prose,
+ *       on a whole-table scan, for a screen that renders none of it. Columns
+ *       pinned; the response is byte-identical and the test asserts the body as
+ *       well as the column list.
+ *   ±0  services/admin.service.ts getUsers — the role hydration keyed
+ *       `userId: { in: page }`. Bounded by the page (clampLimit caps at 100) so
+ *       it was never a ratchet entry, but it fetched whole assignment rows to
+ *       build a map out of two columns. A user may hold all eight roles, so up
+ *       to 800 rows of id + isPrimary + createdAt per view of the first screen
+ *       an operator opens. Bounded is not the same as free.
+ *   ±0  routes/admin-leads.ts — and this one is not a payload fix at all.
+ *       THE 2026-08-14 ENTRY BELOW SHIPPED A COLUMN THAT DOES NOT EXIST. The
+ *       leaderboard `groupBy` asked for a referrer-EMAIL field; `model Waitlist`
+ *       has never had one (a referral is stored as `referredByCode`, the
+ *       referrer's `referralCode`). Prisma rejects an unknown `by` entry, the
+ *       rejection propagated out of the enclosing `Promise.all`, and the
+ *       handler's catch answered its all-zero object — so total, confirmed,
+ *       invited, converted, the 30-day series AND the leaderboard were zero.
+ *       The whole endpoint, not just the typo. The SCAL-04 fix recorded below
+ *       as a win had in fact taken /admin/waitlist/stats off the air.
+ *
+ *       Three things had to fail at once for it to survive: `waitlistModel()`
+ *       is hand-typed `(args: unknown) => Promise<any[]>` so tsc never saw the
+ *       name; the route's own test mocked `groupBy` and branched on the SAME
+ *       wrong field, so it asserted the fiction back to itself; and a dead
+ *       endpoint and an empty waitlist return identical JSON. Now grouped on
+ *       `referredByCode` with a `take: 20`-bounded code→email hydration, and
+ *       `admin-leads.waitlist-schema.scal04.test.ts` checks every field name in
+ *       those calls against prisma/schema.prisma — the only oracle available
+ *       with no database to query, and one a mock cannot agree with.
+ *
+ * THE DETECTOR WAS PROBED AGAIN AND CAME BACK HONEST. Given that six of this
+ * sweep's guards have now matched their own documentation, `stripComments` was
+ * diffed against a string/template/regex-aware stripper across all of
+ * apps/api/src: both report 86, with no per-file disagreement. So no `findMany`
+ * is currently hiding inside a string literal that the naive `/* … *\/` pass
+ * mistakes for a comment, and nothing here needs rewriting. Recorded as a
+ * NEGATIVE result so the next author does not spend the same hour on it.
+ *
+ * STILL REFUSED, unchanged and re-verified on 2026-08-20:
+ *   · `admin.service.getUsers`' role filter remains the one read that scales
+ *     with the whole USER BASE. `UserRoleAssignment` still has no `@relation`
+ *     to `User` (schema.prisma) and `User` no back-reference, so
+ *     `where: { roleAssignments: { some: { role } } }` is still rejected
+ *     outright. Worse than the read: the resolved id list goes BACK to Postgres
+ *     as an `IN (...)` in both the page query and the count, so a 200k-holder
+ *     role costs roughly two 7 MB statements outbound on top of the rows
+ *     inbound. The fix is a schema change plus a migration adding the foreign
+ *     key, and no migration in prisma/migrations even mentions
+ *     `user_role_assignments` — the table predates the tracked history, so
+ *     whether the FK already exists in prod cannot be established from this
+ *     repo. Since migrations auto-apply on API boot, guessing wrong turns a
+ *     billing outage into a boot failure. Out of this lane, and deliberately
+ *     not attempted blind.
+ *   · the `/conversion/timeline` and `/outreach/stats` day-buckets. Note that
+ *     the raw-SQL objection recorded below is now weaker than it looks:
+ *     `admin-metrics.ts loadFunnelDaily` already ships exactly this shape
+ *     (`to_char(date_trunc('day', …), 'YYYY-MM-DD')` with per-query
+ *     `.catch(() => [])`), so there is a proven in-repo pattern to copy. It was
+ *     still not copied here, for one specific reason worth writing down: the
+ *     identifiers are NOT uniform. `OutreachLog` maps its columns
+ *     (`@map("sent_at")`), while `Waitlist.createdAt` has NO `@map` at all and
+ *     is a quoted camelCase column. A copy-paste that assumes snake_case
+ *     produces a query that throws into a catch that answers zeros — the exact
+ *     failure just repaired above. With prod and the local stack both down
+ *     there is no way to execute the statement, so it stays.
+ *   · `/admin/temple-timings` and `/admin/gurukuls` return whole tables to
+ *     admin pages that expect the complete list. Unchanged: a page size without
+ *     the paired UI change truncates an operator's view with no indication.
+ */
 const BASELINE = 86;
 
 // −2 on 2026-08-16 — routes/admin-lead-conversion.ts, GET /admin/leads/conversion.

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Video, Flame, Heart, Gift, ArrowRight } from 'lucide-react';
-import { getTempleHero, getDeityImage, IMG_W } from '../../lib/images';
+import { getTempleHero, getDeityImage, remoteSrcSet, IMG_W } from '../../lib/images';
 import TextReveal from '../motion/TextReveal';
 import { liveDarshanClaim } from '../../lib/platform-stats';
 import { GAUSHALA_ENTRY_CLAIM } from '../../lib/gaushala-plans';
@@ -99,9 +99,27 @@ export default function WorshipStrip({ liveDarshanTemples = null }: Props) {
               }}
             >
               <div className="relative h-32 sm:h-36 overflow-hidden">
+                {/*
+                 * HOME-01 (2026-08-20): this carried `sizes` and no `srcSet`. A
+                 * browser ignores `sizes` when there is nothing to choose
+                 * between, so the declared slot was decoration and every device
+                 * downloaded the 500px `src`. The old declaration was wrong as
+                 * well as inert — below 640px this grid is ONE column, not the
+                 * 50vw it claimed.
+                 *
+                 * Real slots: 1 col below sm (100vw - 2rem), 2 cols to lg,
+                 * 4 cols above, which at the 72rem cap is (1152 - 64 - 48)/4 =
+                 * 260 CSS px. Measured candidates per file — jagannath
+                 * 27,304/60,931, kashi 27,426/52,125, somnath 27,364/57,283
+                 * (330px/500px). A 1x desktop now takes the 330px row: 88,245 B
+                 * saved across the three unique files (krishna resolves to the
+                 * kashi fallback and is paid for once). Every 2x screen and
+                 * every phone still resolves to 500px — unchanged, not softer.
+                 */}
                 <img
                   src={card.image}
-                  sizes="(max-width: 640px) 50vw, 300px"
+                  srcSet={remoteSrcSet(card.image, [250, 330, IMG_W.CARD])}
+                  sizes="(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) calc((100vw - 4rem) / 2), 260px"
                   width={500}
                   height={288}
                   alt={card.label}

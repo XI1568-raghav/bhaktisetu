@@ -92,6 +92,53 @@ interface CacheEntry {
 
 const preferredLanguageCache = new Map<string, CacheEntry>();
 
+/** How many users' language choices this process will hold at once. */
+export const PREFERRED_LANGUAGE_CACHE_MAX = 10_000;
+
+/** Observability seam. Nothing in the request path reads it. */
+export function preferredLanguageCacheSize(): number {
+  return preferredLanguageCache.size;
+}
+
+/**
+ * Write an entry, and keep the map from being a leak while doing it.
+ *
+ * THE DEFECT THIS CLOSES. Expiry decided whether an entry was TRUSTED, never
+ * whether it was KEPT: `expiresAt` was only ever compared on read, and the only
+ * delete in the module was the explicit `clearPreferredLanguageCache` a profile
+ * update calls. So one row was written for every authenticated user who
+ * triggered a single error response and none was ever removed — a Map that
+ * grows monotonically for the life of a process that is not restarted between
+ * deploys. Proven at 12,000 retained entries, every one of them long expired,
+ * by preferred-language-resolver.i18n07.test.ts.
+ *
+ * Pruning on write rather than on a timer keeps the cost proportional to use
+ * and adds no interval to a process that may sit idle: the sweep runs only when
+ * the map is at the cap, which on a normal day never happens. Insertion order
+ * is Map's own, so the fallback eviction after a sweep that freed nothing (all
+ * 10,000 entries live inside the same five minutes) drops the oldest first.
+ */
+function rememberPreferredLanguage(userId: string, lang: string | null, now: number): void {
+  if (
+    preferredLanguageCache.size >= PREFERRED_LANGUAGE_CACHE_MAX &&
+    !preferredLanguageCache.has(userId)
+  ) {
+    for (const [key, entry] of preferredLanguageCache) {
+      if (entry.expiresAt <= now) preferredLanguageCache.delete(key);
+    }
+    while (preferredLanguageCache.size >= PREFERRED_LANGUAGE_CACHE_MAX) {
+      const oldest = preferredLanguageCache.keys().next();
+      if (oldest.done) break;
+      preferredLanguageCache.delete(oldest.value);
+    }
+  }
+
+  preferredLanguageCache.set(userId, {
+    lang,
+    expiresAt: now + PREFERRED_LANGUAGE_TTL_MS,
+  });
+}
+
 /** Test seam, and the hook an admin "user changed their language" event would use. */
 export function clearPreferredLanguageCache(userId?: string): void {
   if (userId) preferredLanguageCache.delete(userId);
@@ -187,17 +234,11 @@ export async function resolveRequestLanguage(
   let stored: string | null = null;
   try {
     stored = await load(userId);
-    preferredLanguageCache.set(userId, {
-      lang: stored,
-      expiresAt: now + PREFERRED_LANGUAGE_TTL_MS,
-    });
+    rememberPreferredLanguage(userId, stored, now);
   } catch {
     // Negative-cache the failure too, so a database outage does not make every
     // error response re-attempt the same failing query.
-    preferredLanguageCache.set(userId, {
-      lang: null,
-      expiresAt: now + PREFERRED_LANGUAGE_TTL_MS,
-    });
+    rememberPreferredLanguage(userId, null, now);
   }
 
   return resolveLanguage({ preferredLanguage: stored, acceptLanguage });

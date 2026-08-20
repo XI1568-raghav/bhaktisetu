@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Lock, CheckCircle2, Circle } from 'lucide-react';
+import { lessonLevelLabel } from '../lib/enum-labels';
 
 interface Props {
   id: string;
@@ -32,7 +33,10 @@ export default function LessonCard({ id, title, subtitle, level, minutes, locked
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${LEVEL_COLOR[level]}`}>{level}</span>
+          {/* CM-10: this printed the raw union member, so the pill read
+              "beginner" two lines below a section heading that CSS-capitalises
+              the same value to "Beginner". */}
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${LEVEL_COLOR[level]}`}>{lessonLevelLabel(level)}</span>
           <span className="text-xs text-surface-500">{minutes} min</span>
           {completed && score !== undefined && (
             <span className="text-xs font-semibold text-emerald-700">{score}%</span>

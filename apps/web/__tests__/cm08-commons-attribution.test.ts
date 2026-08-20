@@ -120,6 +120,32 @@ function allEmittedUrls(): { label: string; url: string }[] {
   return out;
 }
 
+/**
+ * Commons files the DATABASE puts on screen.
+ *
+ * `lib/images.ts` is not the only route from a Commons URL to an `<img>`. The
+ * temple grid never consults it for photographs: `app/temples/page.tsx:43-51,86`
+ * paints `imageUrl: firstImageUrl(t.images)` straight off the API's temple rows,
+ * and line 169 merges the same API value into the rich cards. Those `images`
+ * arrays are written by `apps/api/prisma/seed.ts` and they are Commons
+ * hotlinks — 68 distinct files, 55 of which had no credit row until 2026-08-19.
+ *
+ * Counting them here is what stops the orphan assertion below from rejecting
+ * their rows as unreferenced. The forward direction (every seeded file has a
+ * row) is asserted with its own diagnostics in
+ * `__tests__/cm08-seeded-commons-attribution.test.ts`.
+ */
+function seededCommonsFiles(): Set<string> {
+  const seed = path.resolve(WEB_ROOT, '..', 'api', 'prisma', 'seed.ts');
+  const src = stripComments(readFileSync(seed, 'utf8'));
+  const files = new Set<string>();
+  for (const m of src.matchAll(/https:\/\/upload\.wikimedia\.org\/[^'"`\s)]+/g)) {
+    const f = commonsFileFromUrl(m[0]);
+    if (f) files.add(f);
+  }
+  return files;
+}
+
 /** Distinct Commons file names the app can put on screen. */
 function referencedCommonsFiles(): Set<string> {
   const files = new Set<string>();
@@ -131,6 +157,7 @@ function referencedCommonsFiles(): Set<string> {
     const f = commonsFileFromUrl(url);
     if (f) files.add(f);
   }
+  for (const f of seededCommonsFiles()) files.add(f);
   return files;
 }
 
@@ -197,6 +224,11 @@ describe('CM-08 — each row actually discharges the licence', () => {
       'Public domain',
       'CC0',
       'CC BY 2.0',
+      // Two of the DB-seeded temple photographs (Rath_Yatra_Puri_07-11027.jpg,
+      // Akshardham_Delhi_Ricky_W.jpg) are CC BY 2.5. Read from the Commons
+      // extmetadata API 2026-08-19 — this widens the vocabulary to what Commons
+      // returns, it does not loosen any obligation.
+      'CC BY 2.5',
       'CC BY 3.0',
       'CC BY 4.0',
       'CC BY-SA 2.0',

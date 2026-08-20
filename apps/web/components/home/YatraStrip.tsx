@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Mountain, ArrowRight } from 'lucide-react';
-import { getTempleHero, IMG_W } from '../../lib/images';
+import { getTempleHero, remoteSrcSet, IMG_W } from '../../lib/images';
 
 type Destination = {
   name: string;
@@ -63,9 +63,25 @@ export default function YatraStrip() {
               }}
             >
               <div className="relative h-40 sm:h-44 overflow-hidden">
+                {/*
+                 * HOME-01 (2026-08-20): `sizes` without `srcSet` is ignored, so
+                 * the declared slot never chose anything and the old value was
+                 * wrong twice over — below 768px this grid is ONE column, not
+                 * the 80vw it claimed.
+                 *
+                 * CREDITED ZERO BYTES, deliberately. The real slot is
+                 * (1088 - 32)/3 = 352 CSS px on desktop and 100vw - 2rem on a
+                 * phone, and the Commons ladder steps 330 -> 500 with nothing
+                 * between, so every device still resolves to the same 500px
+                 * candidate it downloaded before (kedarnath 99,511 B,
+                 * vaishno-devi 59,112 B, tirupati 67,065 B). This is a
+                 * correctness fix so the attribute stops lying; the saving is 0
+                 * and the ranked list says so.
+                 */}
                 <img
                   src={d.image}
-                  sizes="(max-width: 640px) 80vw, 340px"
+                  srcSet={remoteSrcSet(d.image, [250, 330, IMG_W.CARD])}
+                  sizes="(max-width: 767px) calc(100vw - 2rem), 352px"
                   width={500}
                   height={352}
                   alt={d.name}

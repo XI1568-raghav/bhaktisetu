@@ -14,6 +14,7 @@ import {
  isNetworkFailure,
  NETWORK_ERROR_MESSAGE,
 } from './api-config';
+import { hasStoredProfile, reviveSessionFromCookie } from './session-revive';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -341,10 +342,22 @@ const STORAGE_KEYS = {
  * session survives a reload — and a stale cookie from an older build is
  * actively cleared whenever localStorage works.
  *
- * NOTE: this only shrinks the blast radius. Full remediation needs the API to
- * accept the httpOnly `darshya_refresh` cookie on POST /auth/refresh (its Zod
- * schema currently REQUIRES `refreshToken` in the body), after which the web
- * can stop persisting tokens in JS-readable storage at all.
+ * NOTE: this only shrinks the blast radius, and the note that used to sit here
+ * is now OUT OF DATE — it said full remediation waited on the API accepting the
+ * httpOnly `darshya_refresh` cookie on POST /auth/refresh, "its Zod schema
+ * currently REQUIRES refreshToken in the body". It no longer does:
+ * apps/api/src/routes/auth.ts:54-55 marks the field `.optional()` and
+ * `resolveRefreshToken` (:78-82) falls back to the cookie. loadSession now uses
+ * exactly that (see the SEC-02 revive branch below), so a token-free browser
+ * can already come back signed in.
+ *
+ * What still forces this function to write the token is NOT the API. It is
+ * seven files that read `localStorage['poojly_session'].accessToken` by hand
+ * and build their own Bearer header, all outside this module:
+ *   app/auth/verify/page.tsx (writes it), app/org/page.tsx, app/org/accept,
+ *   app/org/members, app/org/settings, components/AartiOptIn,
+ *   components/NotificationPrompt.
+ * Migrate those onto useAuth()/the cookie and this write can go.
  */
 export function persistAuthStorage(sess: AuthSession | null, usr: AuthUser | null) {
   if (!sess || !usr) {
@@ -375,6 +388,29 @@ export function persistAuthStorage(sess: AuthSession | null, usr: AuthUser | nul
     removeCookie(STORAGE_KEYS.SESSION);
   } else {
     setCookie(STORAGE_KEYS.SESSION, JSON.stringify(sess), 7);
+  }
+}
+
+/**
+ * SEC-02 — persist the profile and NOTHING ELSE.
+ *
+ * Used by the cookie-revive path. That session was reconstructed from the
+ * httpOnly `darshya_refresh` cookie, which means the cookie is already a
+ * complete and durable store for it; writing a JS-readable copy alongside would
+ * hand an injected script the credential back for no gain whatsoever. The
+ * session lives in React state for the lifetime of the tab and is re-minted
+ * from the cookie on the next load.
+ *
+ * `poojly_user` carries profile fields only — never a token — and is written to
+ * both stores because middleware.ts reads the cookie while the in-app readers
+ * read localStorage.
+ */
+function persistProfileOnly(usr: AuthUser): void {
+  setCookie(STORAGE_KEYS.USER, JSON.stringify(usr), 7);
+  try {
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(usr));
+  } catch {
+    // localStorage unavailable — the cookie above is enough for the gate.
   }
 }
 
@@ -433,6 +469,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const userCookie = getCookie(STORAGE_KEYS.USER);
  if (sessCookie) storedSession = JSON.parse(sessCookie);
  if (userCookie) storedUser = JSON.parse(userCookie);
+ }
+
+ // SEC-02: the profile can be in the cookie while localStorage holds
+ // nothing — /auth/verify writes only localStorage, persistAuthStorage
+ // writes both, and a browser that evicted localStorage keeps the cookie.
+ // Fill it in before deciding this visitor is signed out.
+ if (!storedUser) {
+ const userCookie = getCookie(STORAGE_KEYS.USER);
+ if (userCookie) {
+ try {
+ storedUser = JSON.parse(userCookie);
+ } catch {
+ storedUser = null;
+ }
+ }
+ }
+
+ // ── SEC-02: no JS-readable token, but this browser has signed in before.
+ //
+ // This is the branch that makes the whole migration possible. Until now it
+ // did not exist: "no `poojly_session` in localStorage" meant "signed out",
+ // full stop, so deleting the localStorage write logged every user out on
+ // their next page load and the token could never leave.
+ //
+ // The httpOnly `darshya_refresh` cookie is now sufficient on its own — see
+ // the evidence in lib/session-revive.ts — so a token-free browser can mint
+ // a live session and come back signed in.
+ //
+ // Gated on the profile marker (`poojly_user`, token-free) so an anonymous
+ // visitor never pays a cross-origin round-trip and the homepage never needs
+ // the API to be up in order to render.
+ //
+ // NOTE the deliberate asymmetry below: the revived session is put in MEMORY
+ // ONLY. It was reconstructed from a cookie, so writing a JS-readable copy of
+ // it would re-create the exact exposure this exists to remove. That is also
+ // why this cannot yet be the only path — seven files outside this module
+ // (app/auth/verify, app/org/{page,accept,members,settings},
+ // components/AartiOptIn, components/NotificationPrompt) still read
+ // `localStorage['poojly_session'].accessToken` by hand, so the ordinary
+ // sign-in doors keep writing it until those migrate.
+ if (!storedSession && hasStoredProfile()) {
+ const revived = storedUser ? await reviveSessionFromCookie() : null;
+ if (revived && storedUser) {
+ const revivedUser: AuthUser = { ...storedUser, role: fromApiRole(storedUser.role) };
+ setSession(revived as AuthSession);
+ setUser(revivedUser);
+ persistProfileOnly(revivedUser);
+ } else {
+ // The marker outlived the cookie. Clear it: middleware.ts gates every
+ // portal on its mere presence, so leaving it behind keeps handing a
+ // signed-out visitor the portal shell instead of a clean 307 to login.
+ persistSession(null, null);
+ }
+ setIsLoading(false);
+ return;
  }
 
  if (!storedSession || !storedUser) {
@@ -648,9 +739,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // Purely additive: the JSON Bearer response and the localStorage write below
  // are untouched, so no signed-in user is disturbed by this shipping. Retiring
  // the localStorage copy is a separate, larger step — 95 files under apps/web
- // hand-build `Authorization: Bearer ${session.accessToken}` and only 11 send
- // credentials, and POST /auth/refresh still REQUIRES `refreshToken` in the
- // body (its Zod schema), so cutting it now would 401 most of the product.
+ // hand-build `Authorization: Bearer ${session.accessToken}`, and seven of them
+ // read it straight out of localStorage rather than from useAuth(), so cutting
+ // the write now would 401 those surfaces. (The other half of that sentence —
+ // "POST /auth/refresh still REQUIRES refreshToken in its Zod schema" — was
+ // true when it was written and is not any more; see persistAuthStorage.)
  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },

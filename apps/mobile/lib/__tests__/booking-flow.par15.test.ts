@@ -5,6 +5,7 @@ import {
   selectPujaBookingDetail,
   selectBookableSlots,
   isSlotBookable,
+  resolveSlotAvailability,
   buildCreateBookingBody,
   selectCreatedBooking,
   bookingErrorMessage,
@@ -156,6 +157,91 @@ describe('PAR-15 selectBookableSlots', () => {
     // bookings.ts:1815 returns {slots: []} for an unresolvable offering.
     expect(selectBookableSlots({ slots: [] })).toEqual([]);
     expect(selectBookableSlots({ error: 'Failed to fetch availability' })).toEqual([]);
+  });
+});
+
+// ─── a failed availability read is NOT "no slots" ────────────────────────
+/**
+ * The screen collapsed four different outcomes of GET /bookings/slots into one
+ * empty array, and then rendered that array as a factual claim about the
+ * temple:
+ *
+ *   fetch threw (no signal, DNS, TLS)      → setSlots([])  → "This temple has
+ *   500 Failed to fetch availability       → setSlots([])     published no slots
+ *   200 {slots: []} (offering deactivated) → fallback         for that day. Try
+ *   200 {slots: […]} (the real answer)     → live             another day."
+ *
+ * Only the last two are answers. The first two are the request failing, and
+ * telling a devotee the temple published nothing — then advising them to try
+ * another day, where the same failure will repeat — is the RES-02 shape: a
+ * failure rendered as data, with no error and no retry anywhere on screen.
+ * The web wizard has had the honest version the whole time (book/page.tsx:1852:
+ * "Couldn't load slot availability." + a Retry button).
+ */
+describe('PAR-15 resolveSlotAvailability', () => {
+  const published = [
+    { time: '06:00', label: 'Morning (6:00 AM)' },
+    { time: '18:00', label: 'Evening (6:00 PM)' },
+  ];
+
+  it('reports the LIVE capacity the server computed', () => {
+    const view = resolveSlotAvailability(
+      { ok: true, body: { slots: [{ time: '06:00', label: 'Morning', remaining: 2, total: 3 }] } },
+      published,
+    );
+    expect(view.kind).toBe('live');
+    expect(view.slots).toHaveLength(1);
+    expect(view.slots[0]!.remaining).toBe(2);
+    expect(isSlotBookable(view.slots[0]!)).toBe(true);
+  });
+
+  it('a request that THREW is unreadable, never "no slots for that day"', () => {
+    // null is the transport failure: the catch block used to land here.
+    expect(resolveSlotAvailability(null, published).kind).toBe('unreadable');
+    expect(resolveSlotAvailability(null, published).slots).toEqual([]);
+  });
+
+  it('an HTTP failure is unreadable even though its body parses cleanly', () => {
+    // bookings.ts:1872 — the 500 body is {error: 'Failed to fetch availability'}.
+    const view = resolveSlotAvailability(
+      { ok: false, body: { error: 'Failed to fetch availability' } },
+      published,
+    );
+    expect(view.kind).toBe('unreadable');
+  });
+
+  it('a 200 whose body is not the documented shape is unreadable, not empty', () => {
+    expect(resolveSlotAvailability({ ok: true, body: null }, published).kind).toBe('unreadable');
+    expect(resolveSlotAvailability({ ok: true, body: { error: 'x' } }, published).kind).toBe(
+      'unreadable',
+    );
+  });
+
+  it('falls back to the published slots with capacity UNKNOWN, and labels it as such', () => {
+    // bookings.ts:1815/1825 answer {slots: []} for an offering that cannot be
+    // resolved or is inactive. The catalogue still lists its slots, so they are
+    // shown — but nothing is known about how many seats are left, and an
+    // unknown remaining is not bookable (isSlotBookable).
+    const view = resolveSlotAvailability({ ok: true, body: { slots: [] } }, published);
+    expect(view.kind).toBe('published');
+    expect(view.slots).toHaveLength(2);
+    expect(view.slots.every((s) => s.remaining === null)).toBe(true);
+    expect(view.slots.some((s) => isSlotBookable(s))).toBe(false);
+  });
+
+  it('says NONE only when the read succeeded and the catalogue lists nothing', () => {
+    const view = resolveSlotAvailability({ ok: true, body: { slots: [] } }, []);
+    expect(view.kind).toBe('none');
+    expect(view.slots).toEqual([]);
+  });
+
+  it('never reports NONE for a failed read, whatever the catalogue says', () => {
+    // The distinction the screen was missing, stated as an invariant: an
+    // unreadable response can never become a claim about the temple.
+    for (const reply of [null, { ok: false, body: null }, { ok: true, body: 'nope' }] as const) {
+      expect(resolveSlotAvailability(reply, []).kind).not.toBe('none');
+      expect(resolveSlotAvailability(reply, published).kind).not.toBe('published');
+    }
   });
 });
 
@@ -418,5 +504,45 @@ describe('PAR-15 — a lost slot race actually re-checks availability', () => {
     expect(src).toMatch(
       /setAvailabilityNonce\(\s*\(?\s*\w+\s*\)?\s*=>\s*\w+\s*\+\s*1\s*\)/,
     );
+  });
+});
+
+describe('PAR-15 — the screen distinguishes a failed availability read from an empty one', () => {
+  /**
+   * Source guards, and the limitation is the same one stated above: this
+   * package has no React Native renderer, so the mechanism is pinned rather
+   * than the pixels. Each assertion below fails against the implementation
+   * that shipped, which set the slot list to [] in BOTH the transport-failure
+   * catch and the idle branch and had no retry control anywhere.
+   */
+  const src = code('(devotee)/puja-book.tsx');
+
+  it('classifies the response instead of collapsing it to an array', () => {
+    expect(src).toMatch(/resolveSlotAvailability\(/);
+  });
+
+  it('never sets the slot list to a bare empty array', () => {
+    // `setSlots([])` in the catch is the whole defect: a dropped connection
+    // became "This temple has published no slots for that day."
+    expect(src).not.toMatch(/setSlots\(\s*\[\s*\]\s*\)/);
+  });
+
+  it('renders the unreadable case as an error, not as an answer', () => {
+    expect(src).toMatch(/unreadable/);
+  });
+
+  it('offers a real retry control, wired to the nonce that re-runs the fetch', () => {
+    // A button is only a retry if it re-triggers the effect. The nonce is the
+    // only dependency of the availability effect that a tap can change —
+    // re-assigning `date` to itself is a no-op React bails out of.
+    expect(src).toMatch(/accessibilityLabel=["']Retry availability["']/);
+    const retry = src.split('accessibilityLabel="Retry availability"')[1] ?? '';
+    expect(retry.slice(0, 400)).toMatch(/setAvailabilityNonce/);
+  });
+
+  it('still tells the devotee when capacity is genuinely unknown', () => {
+    // The published-slot fallback must keep saying so; silently showing chips
+    // with no seat count reads as "available".
+    expect(src).toMatch(/availability unknown/);
   });
 });

@@ -250,6 +250,56 @@ function PriestBookingsInner() {
  }
  }
 
+ // PF-04, the reachability half. A delivery control was added to the detail
+ // page, and that closed the literal finding — but `getActionButton` below had
+ // no `video_uploaded` branch, so it fell through to `default: null` and this
+ // screen rendered a booking that is one tap from paying the pandit with no
+ // call to action at all. That matters because the Completed tab is precisely
+ // where those rows live (PRIEST_BOOKING_VIEWS.completed = completed +
+ // video_uploaded + delivered) and precisely where the dashboard's "Upload
+ // Video" quick action lands him — so the one screen built to show unfinished
+ // fulfilment work showed the stuck rows as inert. Any pandit who filed proof
+ // and then closed the tab had to guess that the card itself was a link.
+ //
+ // This does NOT go through handleAction: delivery is not one of the four
+ // bodyless /priest/bookings/:id/* transitions. It is the same call the detail
+ // page makes — PATCH /bookings/:id {"status":"delivered"} — which the API
+ // gates on the assigned pandit AND on a stored videoProofUrl
+ // (ASSIGNED_PRIEST_ALLOWED_TRANSITIONS + checkVideoProofGate in
+ // routes/bookings.ts), so nothing here can attest delivery of a puja with no
+ // recording on file.
+ async function handleDeliver(bookingId: string) {
+ setActionLoading(`${bookingId}-deliver`);
+ try {
+ const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}`, {
+ method: 'PATCH',
+ headers: {
+ Authorization: `Bearer ${session?.accessToken}`,
+ 'Content-Type': 'application/json',
+ },
+ body: JSON.stringify({ status: 'delivered' }),
+ });
+
+ if (!res.ok) {
+ const detail = await res.text().catch(() => '');
+ setActionError(
+ `Could not mark this booking delivered (${res.status}). ${detail.slice(0, 140)}`.trim(),
+ );
+ } else {
+ setActionError(null);
+ // Same reason as handleAction: the row changes status, so the tab counts
+ // and the page contents both have to come from the server again.
+ await fetchBookings();
+ }
+ } catch (err) {
+ setActionError(
+ err instanceof Error ? err.message : 'Network error — please try again.',
+ );
+ } finally {
+ setActionLoading(null);
+ }
+ }
+
  function getActionButton(booking: BookingItem) {
  const isLoading = (action: string) => actionLoading === `${booking.id}-${action}`;
 
@@ -320,6 +370,37 @@ function PriestBookingsInner() {
  <Video className="w-3.5 h-3.5" />
  Upload Video
  </Link>
+ );
+ case 'video_uploaded':
+ // The proof link is not decoration: without it this button would be a
+ // blind attestation that the devotee received a recording the pandit
+ // cannot see from here. It is a sibling of the card's stretched overlay
+ // anchor, not a descendant of it, so PF-17's nested-<a> hydration bug
+ // does not come back — same position the Upload Video link already
+ // occupies.
+ return (
+ <div className="flex flex-col items-end gap-1.5">
+ {booking.videoProofUrl && (
+ <a
+ href={booking.videoProofUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="inline-flex items-center gap-1 text-xs font-medium text-saffron-600 hover:text-saffron-700"
+ >
+ <Video className="w-3.5 h-3.5" />
+ Check proof
+ </a>
+ )}
+ <button
+ onClick={(e) => { e.preventDefault(); handleDeliver(booking.id); }}
+ disabled={!!actionLoading}
+ title="Confirms the devotee has received the recording and closes the booking"
+ className="inline-flex items-center gap-1.5 px-4 py-2 bg-tulsi-green-dark text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
+ >
+ {isLoading('deliver') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+ Mark Delivered
+ </button>
+ </div>
  );
  default:
  return null;

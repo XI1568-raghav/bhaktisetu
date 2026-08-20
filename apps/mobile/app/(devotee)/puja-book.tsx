@@ -17,7 +17,7 @@ import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
 import {
   selectPujaBookingDetail,
-  selectBookableSlots,
+  resolveSlotAvailability,
   selectCreatedBooking,
   buildCreateBookingBody,
   bookingErrorMessage,
@@ -29,6 +29,7 @@ import {
   type PujaBookingDetail,
   type TempleOfferingOption,
   type BookableSlot,
+  type SlotAvailability,
   type DevoteeEntry,
   type CreatedBooking,
 } from '../../lib/booking-flow';
@@ -65,6 +66,13 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * `error` as a STRING — so every recoverable failure, including a lost slot
  * race, would reach the devotee as "Request failed with status 409".
  */
+/**
+ * Nothing has been asked for yet (no temple, or no day). Deliberately NOT
+ * `none` — `none` is a statement that the temple published nothing, and the
+ * screen has not asked the server anything at this point.
+ */
+const IDLE_SLOTS: SlotAvailability = { kind: 'unreadable', slots: [] };
+
 export default function PujaBookScreen() {
   const params = useLocalSearchParams<{ slug?: string; name?: string }>();
   const slug = typeof params.slug === 'string' ? params.slug : '';
@@ -78,7 +86,18 @@ export default function PujaBookScreen() {
 
   const [offering, setOffering] = useState<TempleOfferingOption | null>(null);
   const [date, setDate] = useState<string | null>(null);
-  const [slots, setSlots] = useState<BookableSlot[]>([]);
+  /**
+   * The availability READ, not just its result.
+   *
+   * This was a bare `BookableSlot[]`, so a fetch that threw and a temple that
+   * publishes nothing arrived at the renderer as the same empty array — and the
+   * renderer printed the second meaning: "This temple has published no slots
+   * for that day. Try another day." A dropped connection is not a fact about
+   * the temple, and "try another day" is advice that cannot work. The four
+   * outcomes are kept apart in booking-flow.ts and only `none` is allowed to
+   * make a claim about the temple.
+   */
+  const [slotView, setSlotView] = useState<SlotAvailability>(IDLE_SLOTS);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slot, setSlot] = useState<string | null>(null);
   /**
@@ -145,11 +164,12 @@ export default function PujaBookScreen() {
     let cancelled = false;
     setSlot(null);
     if (!offering || !date) {
-      setSlots([]);
+      setSlotView(IDLE_SLOTS);
       return;
     }
     setSlotsLoading(true);
     (async () => {
+      let reply: { ok: boolean; body: unknown } | null = null;
       try {
         // The `templeId` query name is a legacy misnomer — the handler resolves
         // an OFFERING id first (bookings.ts:1807), which is what we send.
@@ -158,28 +178,22 @@ export default function PujaBookScreen() {
             offering.offeringId,
           )}&date=${encodeURIComponent(date)}`,
         );
-        const body: unknown = await res.json().catch(() => null);
-        if (cancelled) return;
-        const live = selectBookableSlots(body);
-        // The offering's own published slots are the fallback shape when the
-        // availability endpoint answers nothing — but with an unknown
-        // remaining, which isSlotBookable treats as unbookable rather than free.
-        setSlots(
-          live.length > 0
-            ? live
-            : offering.slots.map((s) => ({ ...s, remaining: null, total: null })),
-        );
+        reply = { ok: res.ok, body: await res.json().catch(() => null) };
       } catch {
-        if (!cancelled) setSlots([]);
-      } finally {
-        if (!cancelled) setSlotsLoading(false);
+        // `reply` stays null, which resolveSlotAvailability reads as the
+        // transport failure it is. It must NOT become an empty slot list.
+        reply = null;
       }
+      if (cancelled) return;
+      setSlotView(resolveSlotAvailability(reply, offering.slots));
+      setSlotsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, [offering, date, availabilityNonce]);
 
+  const slots = slotView.slots;
   const priceInr = detail && offering ? offeringPriceInr(detail, offering) : null;
 
   async function onSubmit() {
@@ -378,7 +392,19 @@ export default function PujaBookScreen() {
             <Text style={styles.emptyNote}>Choose a temple and a day first.</Text>
           ) : slotsLoading ? (
             <Text style={styles.emptyNote}>Checking availability…</Text>
-          ) : slots.length === 0 ? (
+          ) : slotView.kind === 'unreadable' ? (
+            /* The read failed. Say that, and say nothing about the temple —
+               the old code rendered the empty-answer copy here, which told the
+               devotee the temple publishes no slots and advised them to try
+               another day, where the same failure repeats. */
+            <Text style={styles.submitError}>
+              Slot availability could not be loaded, so no times are shown. This
+              is a network or server problem, not a report that the temple is
+              closed that day.
+            </Text>
+          ) : slotView.kind === 'none' ? (
+            /* The only branch entitled to make a claim about the temple: the
+               server answered, and the answer was that nothing is published. */
             <Text style={styles.emptyNote}>
               This temple has published no slots for that day. Try another day.
             </Text>
@@ -430,6 +456,37 @@ export default function PujaBookScreen() {
               })}
             </View>
           )}
+
+          {/* The catalogue's own slots, shown because the server resolved no
+              capacity for them. They are deliberately unselectable — an unknown
+              seat count is not an available seat — so the reason has to be on
+              screen next to them or the grid just looks broken. */}
+          {offering && date && !slotsLoading && slotView.kind === 'published' ? (
+            <Text style={styles.emptyNote}>
+              These are the times this temple publishes, but live availability
+              could not be confirmed for this day, so none can be selected yet.
+            </Text>
+          ) : null}
+
+          {/* One retry, for both failure shapes. A disabled grid or an error
+              with no way to ask again is a dead end — the whole screen ends
+              there. It bumps the nonce because that is the only dependency of
+              the availability effect a tap can actually change: re-assigning
+              `date` to itself is a no-op React bails out of. */}
+          {offering && date && !slotsLoading &&
+          (slotView.kind === 'unreadable' || slotView.kind === 'published') ? (
+            <TouchableOpacity
+              style={styles.retryBtn}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Retry availability"
+              accessibilityHint="Checks slot availability for this temple and day again"
+              onPress={() => setAvailabilityNonce((n) => n + 1)}
+            >
+              <Ionicons name="refresh" size={16} color={colors.saffron[600]} />
+              <Text style={styles.retryBtnText}>Check availability again</Text>
+            </TouchableOpacity>
+          ) : null}
 
           {/* 4 — sankalp names */}
           <Text style={styles.step}>4. In whose name?</Text>
@@ -653,6 +710,19 @@ const styles = StyleSheet.create({
   removeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: spacing.xs },
   addBtnText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.saffron[600] },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.saffron[600],
+  },
+  retryBtnText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.saffron[600] },
   summary: {
     flexDirection: 'row',
     justifyContent: 'space-between',

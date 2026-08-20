@@ -49,9 +49,31 @@ export interface ProviderPayoutsProps {
   unitNoun: string;
   /** Shown when the ledger is genuinely empty (loaded, authorised, no rows). */
   emptyLedgerText: string;
+  /**
+   * Extra sections below the ledger, for a role that has a SECOND money rail.
+   * Today only the pandit: getPayoutBalance reports `legacyPandit` separately
+   * and deliberately keeps it out of `availableInr`, because POST
+   * /payouts/request settles Commission rows only (payout.service.ts:280-290).
+   * That money is real and owed, so it is shown — below the withdrawal
+   * surface, and labelled as settling separately so nobody reads it as part of
+   * the balance the button pays out.
+   */
+  footer?: React.ReactNode;
+  /**
+   * Refetch for whatever `footer` loads. This component owns the
+   * RefreshControl, so without it a pull-to-refresh silently leaves the footer
+   * stale under a gesture that claims to have refreshed the screen.
+   */
+  onExtraRefresh?: () => Promise<unknown>;
 }
 
-export function ProviderPayouts({ title, unitNoun, emptyLedgerText }: ProviderPayoutsProps) {
+export function ProviderPayouts({
+  title,
+  unitNoun,
+  emptyLedgerText,
+  footer,
+  onExtraRefresh,
+}: ProviderPayoutsProps) {
   const balanceQuery = usePayoutBalance();
   const ledgerQuery = useProviderCommissions();
   const requestPayout = useRequestPayout();
@@ -66,7 +88,11 @@ export function ProviderPayouts({ title, unitNoun, emptyLedgerText }: ProviderPa
 
   async function onRefresh() {
     setRefreshing(true);
-    await Promise.all([balanceQuery.refetch(), ledgerQuery.refetch()]);
+    await Promise.all([
+      balanceQuery.refetch(),
+      ledgerQuery.refetch(),
+      onExtraRefresh ? onExtraRefresh() : Promise.resolve(),
+    ]);
     setRefreshing(false);
   }
 
@@ -200,6 +226,8 @@ export function ProviderPayouts({ title, unitNoun, emptyLedgerText }: ProviderPa
           ))
         )}
       </Section>
+
+      {footer}
     </PortalScreen>
   );
 }

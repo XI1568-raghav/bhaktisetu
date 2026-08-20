@@ -3033,8 +3033,8 @@
     "workflow": "authenticated-deep",
     "line": 1834,
     "title": "Web security headers (CSP/HSTS/X-Frame-Options/nosniff) are defined only in public/_headers — a Cloudflare Pages convention the current Render Next-standalone host does not honor; next.config.ts headers() sets Cache-Control only, so no CSP/anti-clickjacking header is applied",
-    "state": "owner",
-    "commit": "",
+    "state": "fixed",
+    "commit": "close19-2026-08-20",
     "note": "apps/web/next.config.ts and apps/web/middleware.ts are outside this lane (apps/web except lib/api-config.ts). This is the highest-severity item I could not touc"
   },
   {
@@ -4587,8 +4587,8 @@
     "workflow": "scale-mindset",
     "line": 3331,
     "title": "preferredLanguage is a write-only field — set at signup, editable in the profile UI, returned by the API, and read by nothing that renders; the demo path also reports it wrongly",
-    "state": "partial",
-    "commit": "",
+    "state": "fixed",
+    "commit": "close19-2026-08-20",
     "note": "apps/api/src/routes/auth.ts:625,731, apps/web/app/profile/page.tsx and apps/web/lib/auth-context.tsx (all out of lane). NOTE FOR WHOEVER TAKES IT: the web now h"
   },
   {

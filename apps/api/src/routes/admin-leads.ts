@@ -282,13 +282,32 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
       // container, to answer a question Postgres can answer with two grouped
       // reads. `groupBy` returns one row per status and a `take: 20` slice of
       // referrers instead.
+      //
+      // 2026-08-20: THE LEADERBOARD GROUP NAMED A COLUMN THAT DOES NOT EXIST,
+      // and it took the whole endpoint down with it. It grouped by a
+      // referrer-EMAIL field; `model Waitlist` has no such field. A referral is
+      // stored as the referrer's CODE (routes/waitlist.ts writes
+      // `referredByCode = referrer.referralCode`). Prisma rejects an unknown
+      // `by` entry, that rejection propagated out of this `Promise.all`, and
+      // the handler's catch answered the all-zero object below — so total,
+      // confirmed, invited, converted, the 30-day series and the leaderboard
+      // were ALL zero, not just the part with the wrong name. An operator
+      // reading that screen concluded the waitlist was empty.
+      //
+      // Nothing could see it: `waitlistModel()` is hand-typed as
+      // `(args: unknown) => Promise<any[]>` so tsc never checked the name, the
+      // route's own test mocked `groupBy` and branched on the same wrong field,
+      // and a dead endpoint and an empty waitlist return identical JSON.
+      // `admin-leads.waitlist-schema.scal04.test.ts` now checks every field
+      // name in these calls against prisma/schema.prisma, which is the only
+      // oracle available with no database to query.
       const [statusGroups, referrerGroups, recent] = await Promise.all([
         waitlist.groupBy({ by: ['status'], _count: { _all: true } }),
         waitlist.groupBy({
-          by: ['referredByEmail'],
-          where: { referredByEmail: { not: null } },
+          by: ['referredByCode'],
+          where: { referredByCode: { not: null } },
           _count: { _all: true },
-          orderBy: { _count: { referredByEmail: 'desc' } },
+          orderBy: { _count: { referredByCode: 'desc' } },
           take: 20,
         }),
         waitlist.findMany({
@@ -309,15 +328,35 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
         else if (g.status === 'INVITED') invited += n;
         else if (g.status === 'CONVERTED') converted += n;
       }
-      const topReferrers = (
-        referrerGroups as Array<{ referredByEmail: string | null; _count: { _all: number } }>
-      )
-        .filter((g) => !!g.referredByEmail)
-        .map((g, i) => ({
-          rank: i + 1,
-          email: g.referredByEmail as string,
-          referralCount: g._count?._all ?? 0,
-        }));
+      // The group above is keyed by referral CODE; the screen shows the person.
+      // `Waitlist.referralCode` is @unique and the group is capped at 20, so
+      // this resolves at most 20 rows — bounded by the leaderboard, never by
+      // the table. Doing it as a second read rather than a relation join is
+      // deliberate: a waitlist row referencing another waitlist row is a
+      // self-relation the schema does not declare, and inventing one here would
+      // be the same schema change SCAL-04 is still blocked on elsewhere.
+      const referrerCounts = (
+        referrerGroups as Array<{ referredByCode: string | null; _count: { _all: number } }>
+      ).filter((g) => !!g.referredByCode);
+      let emailByCode = new Map<string, string>();
+      if (referrerCounts.length > 0) {
+        const codes = referrerCounts.map((g) => g.referredByCode as string);
+        const referrers = (await waitlist.findMany({
+          where: { referralCode: { in: codes } },
+          select: { referralCode: true, email: true },
+          take: 20,
+        })) as Array<{ referralCode: string; email: string }>;
+        emailByCode = new Map(referrers.map((r) => [r.referralCode, r.email] as const));
+      }
+      const topReferrers = referrerCounts.map((g, i) => ({
+        rank: i + 1,
+        // A code whose owner row has since been deleted still referred real
+        // people. Showing the code keeps that count on the screen; dropping the
+        // row would silently shrink the leaderboard, which is the same
+        // under-reporting this endpoint has just been repaired from.
+        email: emailByCode.get(g.referredByCode as string) ?? (g.referredByCode as string),
+        referralCount: g._count?._all ?? 0,
+      }));
 
       const buckets: Record<string, number> = {};
       for (const d of days) buckets[d.toISOString().slice(0, 10)] = 0;

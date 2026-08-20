@@ -671,3 +671,386 @@ describe('RESP-06/07/08/09/11 — mobile tap-target floor', () => {
     ).toEqual([]);
   });
 });
+
+/* ═══ DU-14 — the SECOND container step with no non-shell consumer ════════ */
+
+/**
+ * Every `className` string literal in comment-free source, whitespace
+ * collapsed. The guards below ask "what else is on this element?", which the
+ * joined-corpus scans above cannot answer — a bare `max-w-5xl` match tells you
+ * nothing about whether the element is a page shell or a paragraph measure.
+ */
+const CLASS_STRINGS: string[] = [
+  ...CODE.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g),
+]
+  .map((m) => (m[1] ?? m[2] ?? '').replace(/\s+/g, ' ').trim())
+  .filter(Boolean);
+
+/**
+ * The 7xl block above closed the WIDEST of the eleven container steps, and its
+ * prose then said "the other ten steps all have non-container consumers, so
+ * the same move would be wrong for them". Re-measured at HEAD over app/,
+ * components/ and lib/, that is not true of 5xl:
+ *
+ *     step        total   centred   carries a text-* size class
+ *     max-w-4xl     188     182       2
+ *     max-w-5xl     152     125       0
+ *     max-w-6xl     148     144       1
+ *     max-w-7xl      47      47       0
+ *
+ * All 27 non-centred `max-w-5xl` are portal page shells written
+ * `space-y-6 max-w-5xl` — a shell left-aligned inside the portal column rather
+ * than centred, not a reading measure — and ZERO of the 152 carry a type size,
+ * which is the signature of a measure. There is no `w-5xl`, `min-w-5xl`,
+ * `basis-5xl` or `@5xl` container query anywhere in the tree either, so
+ * `--container-5xl` has exactly one consumer family: `max-w-5xl`.
+ *
+ * Retargeting it from Tailwind's stock 64rem to the declared wide width snaps
+ * 152 more declarations onto `.container-wide` with zero call-site edits, and
+ * puts the seven provider portals on the same content edge as the header and
+ * footer that already sit on `.container-wide` above them — the exact defect
+ * the app/layout.tsx pass fixed for the marketing routes.
+ *
+ * 4xl is the obvious next one and is deliberately NOT done here: 2 of its 188
+ * occurrences are genuine headline measures (`max-w-4xl` beside `text-[2.5rem]`
+ * in app/about/page.tsx and beside `lg:text-6xl` in
+ * components/motion/StickyHeadlinePin.tsx), so the token move would silently
+ * widen two headlines by 16rem. Those two have to become explicit
+ * `max-w-[56rem]` measures first.
+ */
+describe('DU-14 — max-w-5xl resolves to the declared wide width', () => {
+  const ANY_5XL = /\b(?:[a-z0-9]+:)?max-w-5xl(?![\w-])/g;
+  const TYPE_SIZE = /(?:^|\s)(?:[a-z0-9]+:)?text-(?:xs|sm|base|lg|xl|\dxl|\[)/;
+
+  it('source still ships max-w-5xl page shells (the finding is live)', () => {
+    expect([...CODE.matchAll(ANY_5XL)].length).toBeGreaterThan(100);
+  });
+
+  it('the measure detector actually fires on a measure', () => {
+    // Without this the guard below is green because it never matches anything.
+    const one = new RegExp(ANY_5XL.source);
+    expect(one.test('mt-4 max-w-5xl text-lg text-surface-600')).toBe(true);
+    expect(TYPE_SIZE.test('mt-4 max-w-5xl text-lg text-surface-600')).toBe(true);
+    expect(TYPE_SIZE.test('mx-auto max-w-5xl px-4 py-10 sm:px-6')).toBe(false);
+  });
+
+  it('no max-w-5xl is a reading measure, so retargeting cannot resize prose', () => {
+    // Non-global copy: `.test()` on a /g regex carries lastIndex between calls
+    // and would skip candidates at random.
+    const one = new RegExp(ANY_5XL.source);
+    const measures = CLASS_STRINGS.filter(
+      (cls) => one.test(cls) && TYPE_SIZE.test(cls),
+    ).map((cls) => cls.slice(0, 90));
+    expect(
+      measures,
+      'a max-w-5xl that sets its own type is a measure on a paragraph or a headline, ' +
+        'not a page shell — widening it to 72rem would change the line length of prose',
+    ).toEqual([]);
+  });
+
+  /** The other families Tailwind v4 generates from the --container-* namespace. */
+  const COLLATERAL_5XL: Array<[string, RegExp]> = [
+    ['w-5xl', /(?<![\w-])w-5xl(?![\w-])/g],
+    ['min-w-5xl', /(?<![\w-])min-w-5xl(?![\w-])/g],
+    ['basis-5xl', /(?<![\w-])basis-5xl(?![\w-])/g],
+    ['@5xl', /@5xl(?=[:/])/g],
+  ];
+
+  it('the collateral patterns match the thing they are hunting', () => {
+    const FIXTURE = 'w-5xl min-w-5xl basis-5xl @5xl:flex lg:w-5xl';
+    for (const [name, re] of COLLATERAL_5XL) {
+      expect([...FIXTURE.matchAll(re)].length, `${name} pattern matches nothing`).toBeGreaterThan(
+        0,
+      );
+    }
+    for (const [name, re] of COLLATERAL_5XL) {
+      expect([...'mx-auto max-w-5xl px-4'.matchAll(re)], `${name} misreads max-w-5xl`).toEqual([]);
+    }
+  });
+
+  it('no other utility family reads --container-5xl', () => {
+    const collateral = COLLATERAL_5XL.flatMap(([, re]) => [...CODE.matchAll(re)].map((m) => m[0]));
+    expect(
+      collateral,
+      'redefining --container-5xl would also move these, which the finding never asked for',
+    ).toEqual([]);
+  });
+
+  it('--container-5xl is redefined onto the declared wide width', () => {
+    const value = THEME_VARS['--container-5xl'];
+    expect(
+      value,
+      '--container-5xl is not redefined — max-w-5xl still resolves to Tailwind stock 64rem, ' +
+        'a width no page shell in this product declares on purpose',
+    ).toBeTruthy();
+    const wide = /max-width:\s*([\d.]+rem)/.exec(ruleFor('.container-wide'))?.[1];
+    expect(wide, '.container-wide must declare a rem max-width').toBeTruthy();
+    expect(
+      resolveVar(value),
+      `max-w-5xl must land on the same edge as .container-wide (${wide})`,
+    ).toBe(wide);
+  });
+
+  it('the two retargeted steps land on the same edge as each other', () => {
+    expect(resolveVar(THEME_VARS['--container-5xl'])).toBe(
+      resolveVar(THEME_VARS['--container-7xl']),
+    );
+  });
+
+  it('the prose width still differs from the wide one (this is not a collapse to one)', () => {
+    const rem = (s: string) => Number(/max-width:\s*([\d.]+)rem/.exec(s)?.[1] ?? NaN);
+    expect(rem(ruleFor('.container-wide'))).toBeGreaterThan(rem(ruleFor('.container-prose')));
+  });
+});
+
+/* ═══ DU-10 — the size an unclassed paragraph actually reads at ═══════════ */
+
+/**
+ * DU-10's expected state is "ONE body reading size (16px+) with one
+ * line-height ratio, used for all prose". The line-height half shipped — every
+ * `--text-*` step declares its pairing and `body` declares the same ratio, so
+ * an unclassed <p> leads correctly. The SIZE half did not: `body` declared no
+ * `font-size` at all, so an unclassed paragraph fell through to the user-agent
+ * default of a flat 16px while every `text-base` / `.prose-body` paragraph
+ * rendered `clamp(1rem, 0.97rem + 0.15vw, 1.0625rem)` — identical at 390px,
+ * 16px against 17px from about 1440px up.
+ *
+ * That is the finding's own symptom produced by the token layer rather than by
+ * a call site, and the population is not small: measured at HEAD over app/, 42
+ * of the 219 <p> elements carrying a reading measure set no size class at all —
+ * the largest bucket after text-sm.
+ *
+ * Declaring it on `body` fixes all 42 plus every unclassed <p> outside the
+ * measure heuristic, with no call-site edits. Anything carrying an explicit
+ * `text-*` is a class selector and still wins.
+ */
+describe('DU-10 — an unclassed paragraph reads at the declared body size', () => {
+  /**
+   * COMMENT-FREE source. The `body` rule now carries a comment that explains
+   * this exact fix, and a scan of the raw block would be satisfiable by the
+   * prose documenting the rule it is enforcing — the bug class this sweep has
+   * shipped repeatedly.
+   */
+  const bodyRule = block('\nbody {', CSS_NC);
+
+  it('unclassed prose really exists (the finding is live)', () => {
+    const PROSE_P = /<p\s[^>]*className="([^"]*\bmax-w-[a-z0-9]+[^"]*)"/g;
+    const unsized = [...CODE.matchAll(PROSE_P)]
+      .map((m) => m[1]!)
+      .filter((cls) => !/\bprose-body\b/.test(cls))
+      .filter((cls) => !/(?:^|\s)(?:[a-z0-9]+:)?text-(?:xs|sm|base|lg|xl|\dxl|\[)/.test(cls));
+    expect(
+      unsized.length,
+      'no unclassed prose paragraph found — either the census regex broke or the ' +
+        'call-site migration finished, in which case this guard should change',
+    ).toBeGreaterThan(20);
+  });
+
+  it('body declares a font-size, so prose is never left at the UA default', () => {
+    expect(
+      /(?:^|[\s;])font-size\s*:/.test(bodyRule),
+      'body sets line-height but no font-size, so an unclassed <p> reads a flat 16px ' +
+        'while text-base reads up to 17px — two sizes for one role, from the token layer',
+    ).toBe(true);
+  });
+
+  it('and it is the declared base step, not a literal', () => {
+    const declared = /font-size:\s*([^;]+);/.exec(bodyRule)?.[1]?.trim();
+    expect(declared, 'body must declare a font-size').toBeTruthy();
+    expect(
+      declared!,
+      'a hard-coded px/rem here would be a type size sitting outside the declared scale',
+    ).toBe('var(--text-base)');
+  });
+
+  it('.prose-body and the document body resolve to the same step', () => {
+    const prose = /font-size:\s*([^;]+);/.exec(ruleFor('.prose-body'))?.[1]?.trim();
+    const doc = /font-size:\s*([^;]+);/.exec(bodyRule)?.[1]?.trim();
+    expect(
+      resolveVar(doc),
+      'the class that exists so prose has one name to reach for must not differ from ' +
+        'the size prose gets when it reaches for nothing',
+    ).toBe(resolveVar(prose));
+  });
+});
+
+/* ═══ DU-03 / DU-05 — the shared UI layer may not re-open the sprawl ══════ */
+
+/**
+ * Measured at HEAD, the whole DU-03 backlog (213 hand-rolled saffron CTAs) and
+ * the whole DU-05 backlog (212 hand-rolled h1s of 408) lives in app/ and in
+ * components/ subtrees other than components/ui. components/ui itself is
+ * clean: every CTA in it goes through `buttonClass` and every h1 through an
+ * `H1` archetype.
+ *
+ * That is worth a HARD ZERO rather than a ratchet. components/ui is the one
+ * directory whose contents render on many routes at once, so a bespoke CTA or
+ * h1 authored here does not add one to the backlog — it adds one per consumer,
+ * invisibly. The repo-wide ratchets
+ * (__tests__/cta-uniformity-ratchet.du03.test.ts,
+ * __tests__/h1-recipe-ratchet.du05.test.ts) sit at the repo-wide count and
+ * would absorb it without a word.
+ */
+describe('DU-03 / DU-05 — the shared components/ui layer stays on the recipes', () => {
+  function uiSources(): string[] {
+    const out: string[] = [];
+    const walk = (d: string) => {
+      for (const name of readdirSync(d)) {
+        const full = path.join(d, name);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (/\.tsx?$/.test(name)) out.push(full);
+      }
+    };
+    walk(path.join(WEB, 'components/ui'));
+    return out;
+  }
+
+  const UI = uiSources().map((f) => ({
+    rel: path.relative(WEB, f).split(path.sep).join('/'),
+    src: readFileSync(f, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1'),
+  }));
+
+  it('the directory is actually being scanned', () => {
+    expect(UI.length, 'components/ui vanished, or the walk broke').toBeGreaterThan(3);
+    expect(UI.some((f) => f.rel.endsWith('button-recipe.ts'))).toBe(true);
+    expect(UI.some((f) => f.rel.endsWith('heading-recipe.ts'))).toBe(true);
+  });
+
+  /**
+   * The project's own DU-03 detector: a labelled control painted with the
+   * solid brand fill that also carries its own padding.
+   */
+  function bespokeCta(src: string): string[] {
+    const found: string[] = [];
+    for (const m of src.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+      const cls = m[1] ?? m[2] ?? '';
+      if (!/\bbg-saffron-600(?![\w\-/])/.test(cls)) continue;
+      if (!/\bpx-\d/.test(cls)) continue;
+      const before = src.slice(Math.max(0, m.index! - 220), m.index!);
+      if (![...before.matchAll(/<(button|a|Link)\b/g)].pop()) continue;
+      found.push(cls.replace(/\s+/g, ' ').slice(0, 90));
+    }
+    return found;
+  }
+
+  it('the CTA detector fires on the shape it is written for', () => {
+    const FIXTURE =
+      '<a href="/x" className="bg-saffron-600 text-white px-6 py-3 rounded-full">Book</a>';
+    expect(bespokeCta(FIXTURE).length).toBe(1);
+    expect(bespokeCta('<a className="text-saffron-600 px-6">x</a>').length).toBe(0);
+  });
+
+  it('no shared UI component hand-rolls a primary CTA', () => {
+    const bad = UI.flatMap((f) => bespokeCta(f.src).map((c) => `${f.rel} :: ${c}`));
+    expect(
+      bad,
+      "use buttonClass('primary', 'sm'|'md'|'lg') from components/ui/button-recipe — a " +
+        'bespoke CTA here ships on every route that renders the component',
+    ).toEqual([]);
+  });
+
+  it('no shared UI component hand-rolls an h1', () => {
+    const RECIPE = /H1\.(marketing|catalogue|detail|portal)\b/;
+    const bad: string[] = [];
+    for (const f of UI) {
+      for (const m of f.src.matchAll(/<h1(\s[^>]*?)?>/gs)) {
+        if (!RECIPE.test(m[1] ?? '')) bad.push(`${f.rel} :: ${(m[1] ?? '').slice(0, 80)}`);
+      }
+    }
+    expect(
+      bad,
+      'use H1.marketing / H1.catalogue / H1.detail / H1.portal from ' +
+        'components/ui/heading-recipe',
+    ).toEqual([]);
+  });
+});
+
+/* ═══ DU-05 — the archetypes derive from the scale, never redefine it ═════ */
+
+/**
+ * The four archetypes ARE the DU-05 fix, so a magic number inside one of them
+ * is worse than a magic number at a call site: it ships to every adopter at
+ * once.
+ *
+ * `H1.marketing` carried `leading-[1.1]`, an arbitrary value pinned across all
+ * three of its steps. The type scale already pairs a leading with each step
+ * (`--text-3xl--line-height: 1.2`, `4xl: 1.1`, `5xl: 1.05`) and the block above
+ * asserts that pairing tightens as type grows — which `leading-[1.1]` defeated
+ * in both directions at once: looser than declared at text-5xl on a desktop,
+ * tighter than declared at text-3xl on a phone. In Tailwind v4 `text-*` emits
+ * `line-height: var(--tw-leading, var(--text-*--line-height))` and `leading-*`
+ * sets `--tw-leading`, so the override wins regardless of source order — the
+ * responsive steps could not reach their own pairings.
+ */
+describe('DU-05 — no h1 archetype hard-codes a value the scale already declares', () => {
+  const recipe = readFileSync(path.join(WEB, 'components/ui/heading-recipe.ts'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+  const archetypes: Record<string, string> = {};
+  for (const m of recipe.matchAll(/^ {2}(\w+):\s*\n?\s*'([^']+)',/gm)) {
+    archetypes[m[1]!] = m[2]!.replace(/\s+/g, ' ').trim();
+  }
+
+  it('all four archetypes were parsed off the recipe', () => {
+    expect(Object.keys(archetypes).sort()).toEqual([
+      'catalogue',
+      'detail',
+      'marketing',
+      'portal',
+    ]);
+  });
+
+  it('the arbitrary-value detector fires on an arbitrary value', () => {
+    const BAD = 'heading-display text-3xl leading-[1.1] tracking-tight';
+    expect([...BAD.matchAll(/(?:^|\s)(?:[a-z0-9]+:)?[\w-]+-\[[^\]]+\]/g)].length).toBe(1);
+    expect(
+      [...'heading-display text-3xl tracking-tight'.matchAll(
+        /(?:^|\s)(?:[a-z0-9]+:)?[\w-]+-\[[^\]]+\]/g,
+      )].length,
+    ).toBe(0);
+  });
+
+  it('none of them uses an arbitrary bracket value', () => {
+    const bad = Object.entries(archetypes).flatMap(([k, cls]) =>
+      [...cls.matchAll(/(?:^|\s)(?:[a-z0-9]+:)?[\w-]+-\[[^\]]+\]/g)].map(
+        (m) => `H1.${k} :: ${m[0].trim()}`,
+      ),
+    );
+    expect(
+      bad,
+      'an arbitrary value inside an archetype is a magic number shipped to every ' +
+        'adopter of it. Leading comes from the --text-*--line-height pairing; size and ' +
+        'tracking come from the declared steps.',
+    ).toEqual([]);
+  });
+
+  it('none of them pins a leading at all — the step pairing decides it', () => {
+    const bad = Object.entries(archetypes)
+      .filter(([, cls]) => /(?:^|\s)(?:[a-z0-9]+:)?leading-/.test(cls))
+      .map(([k]) => `H1.${k}`);
+    expect(
+      bad,
+      'a leading-* here overrides --text-*--line-height at every responsive step of ' +
+        "the archetype at once, which is what made a marketing h1 lead at 1.1 whether " +
+        'it rendered at 30px or at 72px',
+    ).toEqual([]);
+  });
+
+  it('each archetype declares exactly one weight and at least one size step', () => {
+    for (const [k, cls] of Object.entries(archetypes)) {
+      const weights = [...cls.matchAll(/(?:^|\s)font-(?:bold|semibold|medium|normal)/g)];
+      expect(weights.length, `H1.${k} declares ${weights.length} font weights`).toBe(1);
+      const steps = [...cls.matchAll(/(?:^|\s)text-(?:xs|sm|base|lg|xl|\dxl)/g)];
+      expect(steps.length, `H1.${k} declares no size step`).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('no two archetypes are the same string', () => {
+    const values = Object.values(archetypes);
+    expect(new Set(values).size, 'two archetypes collapsed onto one recipe').toBe(values.length);
+  });
+});

@@ -31,12 +31,31 @@ export async function generateMetadata({
  if (!article) return { title: "Help Article Not Found" };
 
  const langInfo = HELP_LANGS.find((l) => l.code === article.lang);
+ /**
+  * I18N-09 residual — hreflang may not advertise what robots withholds.
+  *
+  * `isUnreviewedTranslation` already governs two of the three places a
+  * translation is offered to a crawler: this function serves
+  * `robots: { index: false }` for one (just below), and app/sitemap.ts keeps it
+  * out of the sitemap. This loop was the third and it did not apply the
+  * predicate, so the ONE indexable article in the set — the English original —
+  * still shipped `hreflang="hi|ta|te|bn|mr"` pointing at five noindex pages.
+  * That is the same claim the robots block says was withdrawn: offering an
+  * unattested machine translation about payments and ritual to Google as THE
+  * Hindi/Tamil/Telugu/Bengali/Marathi answer. An hreflang cluster whose members
+  * are noindex is also a conflicting signal Search Console reports.
+  *
+  * Filtering on the shared predicate rather than a language list means
+  * attesting a translation (`reviewed_by`) restores its hreflang, its sitemap
+  * row and its indexability in one edit. Guarded by
+  * __tests__/help-hreflang-attestation.i18n09.test.ts.
+  */
  const alternates: Record<string, string> = {};
  for (const l of HELP_LANGS) {
  const translated = HELP_ARTICLES.find(
  (a) => a.slug === slug && a.lang === l.code,
  );
- if (translated) {
+ if (translated && !isUnreviewedTranslation(translated)) {
  alternates[l.code] = `/help/articles/${l.code}/${slug}`;
  }
  }
