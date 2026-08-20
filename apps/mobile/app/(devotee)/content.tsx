@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useContent } from '@poojly/api-client';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { contentTypeLabel } from '../../lib/enum-labels';
 
 type ContentType = 'aarti' | 'chalisa' | 'mantra' | 'bhajan';
 
@@ -181,7 +182,7 @@ const ContentItemRow = React.memo(function ContentItemRow({
             <Text
               style={[styles.typeBadgeText, { color: typeColors[item.type] }]}
             >
-              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+              {contentTypeLabel(item.type)}
             </Text>
           </View>
           <Text style={styles.contentDeity}>{item.deity}</Text>

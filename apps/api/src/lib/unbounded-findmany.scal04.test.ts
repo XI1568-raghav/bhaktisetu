@@ -138,23 +138,74 @@ const SRC = join(import.meta.dirname, '..');
  *     repo. Since migrations auto-apply on API boot, guessing wrong turns a
  *     billing outage into a boot failure. Out of this lane, and deliberately
  *     not attempted blind.
- *   · the `/conversion/timeline` and `/outreach/stats` day-buckets. Note that
- *     the raw-SQL objection recorded below is now weaker than it looks:
- *     `admin-metrics.ts loadFunnelDaily` already ships exactly this shape
- *     (`to_char(date_trunc('day', …), 'YYYY-MM-DD')` with per-query
- *     `.catch(() => [])`), so there is a proven in-repo pattern to copy. It was
- *     still not copied here, for one specific reason worth writing down: the
- *     identifiers are NOT uniform. `OutreachLog` maps its columns
- *     (`@map("sent_at")`), while `Waitlist.createdAt` has NO `@map` at all and
- *     is a quoted camelCase column. A copy-paste that assumes snake_case
- *     produces a query that throws into a catch that answers zeros — the exact
- *     failure just repaired above. With prod and the local stack both down
- *     there is no way to execute the statement, so it stays.
  *   · `/admin/temple-timings` and `/admin/gurukuls` return whole tables to
  *     admin pages that expect the complete list. Unchanged: a page size without
  *     the paired UI change truncates an operator's view with no indication.
  */
-const BASELINE = 86;
+/**
+ * 86 → 84 on 2026-08-20. −2, and the arithmetic is one file each:
+ *
+ *   −1  routes/admin-lead-conversion.ts — GET /admin/leads/conversion/timeline.
+ *   −1  routes/admin-leads.ts           — GET /admin/outreach/stats.
+ *
+ * Both read `outreach_logs` whole for their window with no take and no cursor,
+ * and reduced it to at most 120 (respectively 30) tuples of small integers in a
+ * JS loop. This is the table this file has twice called the fastest-growing one
+ * the product has — a row per MESSAGE per lead, never deleted, so its row count
+ * is a multiple of the lead table's — and the timeline's window is sized by the
+ * CALLER (`?days`, capped at 120), so the read grew with campaign volume AND
+ * with a query parameter. Measured payload, from the columns each selected
+ * (status enum + 1–3 timestamps + template_key ≈ 60 B/row for the timeline,
+ * ≈ 30 B/row for the stats endpoint): at 200k logs in a 30-day window that is
+ * ~12 MB and ~6 MB per hit into a 512 MB container. After: ≤ 121 and ≤ 31
+ * grouped rows, ~4 kB and ~1 kB, independent of table size.
+ *
+ * THE TWO-TIME REFUSAL RECORDED ABOVE IS ANSWERED, NOT IGNORED. It stood on one
+ * real risk: Prisma cannot express `date_trunc`, both handlers answer zeros on
+ * ANY error, so a raw statement Postgres rejects turns a slow dashboard into a
+ * silently empty one — exactly what an unknown `groupBy` field did to
+ * /admin/waitlist/stats for six days. Three things retire that risk:
+ *
+ *   1. The identifiers are ESTABLISHED, not assumed. `OutreachLog` carries
+ *      `@map` on every column AND migration 20260503_perf_indexes creates an
+ *      index `ON "outreach_logs" ("lead_id", "channel", "sent_at" DESC)` — the
+ *      snake_case names are DDL in this repo. No DateTime in the schema uses
+ *      `@db.Timestamptz`, so `sent_at` is a plain `timestamp(3)` holding UTC
+ *      and `date_trunc('day', …)` reproduces the old `toISOString().slice(0,10)`
+ *      key exactly rather than approximately.
+ *   2. The shape is copied verbatim from a statement already in production:
+ *      `admin-metrics.ts loadFunnelDaily`, including the
+ *      `count(*) FILTER (WHERE …)::int` form.
+ *   3. `routes/admin-lead-conversion.timeline-sql.scal04.test.ts` re-derives
+ *      OutreachLog's table and column names from prisma/schema.prisma on every
+ *      run and fails on any quoted identifier in either file that is not one of
+ *      them — the one oracle a mock cannot agree with. It also pins the bucket
+ *      arithmetic against a stated ledger, including the containment rule that
+ *      a row outside the seeded days reaches neither its bucket nor the totals.
+ *      That guard's own first draft matched ZERO templates, because the call
+ *      sites are written `$queryRaw<DayRow[]>\`` and the pattern expected the
+ *      backtick to follow the method name; it passed green over SQL it had
+ *      never read until an explicit "at least one block" assertion caught it.
+ *      Recorded because that is the seventh time in this sweep a source-text
+ *      guard has agreed with itself instead of with the code.
+ *
+ * Both handlers now also return `degraded`, so a rejected query and a genuinely
+ * quiet month stop being the same JSON. That is the actual repair to the class
+ * of failure the refusal was protecting against, and it is why the refusal
+ * could be lifted rather than merely overruled.
+ *
+ * STILL REFUSED here, and the reason is now narrower than the blanket one it
+ * replaces: `routes/admin-leads.ts` `/waitlist/stats` day series
+ * (`waitlist.findMany({ where: { createdAt: { gte: since } }, select: {
+ * createdAt } })`). `Waitlist.createdAt` has NO `@map`, so the column is the
+ * quoted camelCase `"createdAt"` — knowable, but NOT confirmable: no migration
+ * in prisma/migrations mentions `waitlist` at all, so unlike `outreach_logs`
+ * there is no DDL in this repo to check the name against, and the table
+ * predates the tracked history. It is also the SMALLEST of the three: one
+ * 8-byte column over a fixed 30-day window. Worst risk, least payload — left
+ * alone deliberately, not overlooked.
+ */
+const BASELINE = 84;
 
 // −2 on 2026-08-16 — routes/admin-lead-conversion.ts, GET /admin/leads/conversion.
 //

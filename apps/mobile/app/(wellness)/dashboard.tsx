@@ -11,6 +11,7 @@ import {
 import { selectWellnessSessions, formatInr } from '../../lib/api-contracts';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing } from '../../lib/theme';
+import { wellnessSessionTypeLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-10. `sessionsQuery.data?.sessions` — GET /api/v1/wellness/sessions
@@ -90,7 +91,7 @@ export default function WellnessDashboard() {
               key={s.id}
               primary={s.title}
               secondary={[
-                s.type,
+                wellnessSessionTypeLabel(s.type),
                 s.durationMinutes !== null ? `${s.durationMinutes} min` : null,
                 s.capacity !== null ? `${s.capacity} seats` : null,
               ]

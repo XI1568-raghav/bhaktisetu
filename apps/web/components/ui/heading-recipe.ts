@@ -32,8 +32,20 @@ export const H1 = {
    * `line-height: var(--tw-leading, var(--text-*--line-height))` and
    * `leading-*` sets `--tw-leading`, so a single unprefixed `leading-` beats
    * every responsive step regardless of source order. Derive, never redefine.
+   *
+   * `text-surface-800` is a lock, not a repaint. This archetype was the only
+   * one of the four that named no colour, so its nineteen call sites rendered
+   * at whatever they inherited — today `body { color: var(--color-text) }`,
+   * and `--color-text` IS `--color-surface-800`, the token `catalogue` and
+   * `portal` already declare. Every one of the nineteen was checked first:
+   * none sits on a dark surface and none carries a colour class of its own, so
+   * nothing moves a pixel. What changes is that the colour is now stated —
+   * DU-05 counted SEVEN colour tokens for this one role, and an archetype
+   * whose colour comes from an ancestor is one coloured section away from an
+   * eighth, silently. A marketing title over an image belongs on `H1.detail`.
    */
-  marketing: 'heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight',
+  marketing:
+    'heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-surface-800',
 
   /** Catalogue index pages — /pujas, /temples, /store. */
   catalogue:

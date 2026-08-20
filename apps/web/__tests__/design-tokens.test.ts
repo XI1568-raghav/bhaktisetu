@@ -1346,3 +1346,309 @@ describe('DU-14 — every container step the app centres on is a declared width'
     ).toBeLessThanOrEqual(BASELINE);
   });
 });
+
+/* ═══ DU-05 — an archetype that does not name its colour does not own it ══ */
+
+/**
+ * Three of the four h1 archetypes declare the colour they paint in
+ * (`catalogue` and `portal` on `text-surface-800`, `detail` on `text-white`
+ * over its image). `marketing` declared none, so its nineteen call sites —
+ * /chakras, /chants, /faqs, /muhurat, /nakshatra, /nava-graha, /pilgrimage,
+ * /pricing, /rashi, /sacred-trees, /vrat, /why-darshya, their eight [slug]
+ * detail pages and the home hero — rendered at whatever `color` they
+ * inherited. Today that is `body { color: var(--color-text) }`, and
+ * `--color-text` IS `--color-surface-800`, so the rendered result matches the
+ * other two exactly: declaring it is a zero-pixel change.
+ *
+ * It is not a zero-RISK omission. DU-05 counted SEVEN colour tokens across ten
+ * h1s; the archetypes exist so that number cannot grow back. An archetype
+ * whose colour comes from an ancestor is one coloured section away from an
+ * eighth — and the failure is silent, because nothing in the recipe says what
+ * the colour was supposed to be.
+ *
+ * Verified before declaring: none of the nineteen sits on a dark surface, and
+ * none carries a colour class of its own, so no call site is being overridden.
+ * components/home/HeroCopyVariant.tsx additionally pins
+ * `style={{ color: 'var(--color-text)' }}` inline, which outranks any class
+ * either way.
+ */
+describe('DU-05 — every h1 archetype declares the colour it renders in', () => {
+  const recipeSrc = readFileSync(path.join(WEB, 'components/ui/heading-recipe.ts'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+  const arche: Record<string, string> = {};
+  for (const m of recipeSrc.matchAll(/^ {2}(\w+):\s*\n?\s*'([^']+)',/gm)) {
+    arche[m[1]!] = m[2]!.replace(/\s+/g, ' ').trim();
+  }
+
+  /** A resting text colour. Deliberately not `text-<step>` — `text-3xl` is a size. */
+  const COLOUR =
+    /(?:^|\s)text-(?:white|black|surface-\d{2,3}|saffron-\d{2,3}|maroon-\d{2,3}|vermillion-\d{2,3}|gold-\d{2,3})(?![\w-])/;
+
+  it('all four archetypes were parsed (a parse regression cannot vacuously pass this)', () => {
+    expect(Object.keys(arche).sort()).toEqual(['catalogue', 'detail', 'marketing', 'portal']);
+  });
+
+  it('the colour detector tells a colour from a size step', () => {
+    expect(COLOUR.test('heading-display text-3xl font-semibold')).toBe(false);
+    expect(COLOUR.test('text-3xl text-surface-800')).toBe(true);
+    expect(COLOUR.test('text-white drop-shadow-lg')).toBe(true);
+  });
+
+  it('no archetype leaves its colour to whatever ancestor it lands under', () => {
+    const bare = Object.entries(arche)
+      .filter(([, cls]) => !COLOUR.test(cls))
+      .map(([k]) => `H1.${k}`);
+    expect(
+      bare,
+      'these archetypes inherit their colour. DU-05 counted seven colour tokens for one ' +
+        'role; an archetype that does not name its own is how the eighth arrives. Declare ' +
+        'the token the call sites already render at.',
+    ).toEqual([]);
+  });
+
+  it('the light-surface archetypes agree on one token', () => {
+    const of = (k: string) => COLOUR.exec(arche[k] ?? '')?.[0]?.trim();
+    expect(of('marketing'), 'marketing and catalogue are both light-surface page titles').toBe(
+      of('catalogue'),
+    );
+    expect(of('portal')).toBe(of('catalogue'));
+  });
+
+  it('that token is the colour the body already renders at, so declaring it moved nothing', () => {
+    const token = COLOUR.exec(arche.catalogue ?? '')?.[0]?.trim()?.replace(/^text-/, '');
+    expect(token, 'catalogue lost its colour token').toBeTruthy();
+    const bodyColour = resolveVar(/(?:^|[\s;])color:\s*([^;]+);/.exec(ruleFor('body'))?.[1]?.trim());
+    const archeColour = resolveVar(THEME_VARS[`--color-${token}`] ?? ROOT_VARS[`--color-${token}`]);
+    expect(archeColour, `--color-${token} is not declared`).toBeTruthy();
+    expect(
+      bodyColour,
+      `body renders at ${bodyColour} but the h1 archetypes declare --color-${token} = ` +
+        `${archeColour}. Once those differ, declaring the token on H1.marketing is no longer ` +
+        'a zero-pixel change and the nineteen marketing call sites need a look.',
+    ).toBe(archeColour);
+  });
+});
+
+/* ═══ DU-14 — no container width is borrowed from the upstream default ════ */
+
+/**
+ * The block above locked the four steps that matter most — `7xl` and `5xl`
+ * retargeted onto the wide width, `6xl` and `3xl` declared at the values they
+ * already had. Seven steps the app actually ships were still absent from
+ * `@theme` and resolved out of `tailwindcss/theme.css`:
+ *
+ *   max-w-4xl 188 · max-w-2xl 140 · max-w-md 52 · max-w-xl 50 · max-w-sm 16 ·
+ *   max-w-lg 14 · max-w-xs 7     (measured at HEAD across app/, components/, lib/)
+ *
+ * That is 467 declarations — 182 of them centred page shells at 56rem — whose
+ * rendered width was a property of the installed Tailwind version rather than
+ * of this product. Declaring each at the value it already resolves to is a
+ * zero-pixel change; the only thing it changes is that a `tailwindcss` upgrade
+ * which renumbers the scale now moves nothing.
+ *
+ * `--container-4xl` is the one step declared but deliberately NOT retargeted
+ * onto the wide width, and the last test is why: two of its 188 occurrences are
+ * genuine headline measures rather than page shells (app/about/page.tsx beside
+ * `text-[2.5rem]`, components/motion/StickyHeadlinePin.tsx beside
+ * `lg:text-6xl`), and folding 4xl into 72rem would widen those two headlines by
+ * 16rem. That test closes itself: the moment no `max-w-4xl` consumer sets its
+ * own type size, it stops permitting 56rem and starts demanding the retarget.
+ */
+describe('DU-14 — every container step the app ships is declared in @theme', () => {
+  const STEPS = [
+    '3xs', '2xs', 'xs', 'sm', 'md', 'lg', 'xl',
+    '2xl', '3xl', '4xl', '5xl', '6xl', '7xl',
+  ];
+  const declared = (step: string): string | undefined =>
+    THEME_VARS[`--container-${step}`] ?? ROOT_VARS[`--container-${step}`];
+  const rem = (v: string | undefined): number =>
+    parseFloat(/([\d.]+)rem/.exec(v ?? '')?.[1] ?? 'NaN');
+  const utilityRem = (sel: string): number =>
+    parseFloat(/max-width:\s*([\d.]+)rem/.exec(ruleFor(sel))?.[1] ?? 'NaN');
+
+  /** Every `max-w-<step>` / `min-w-<step>` written in source, comment-free. */
+  const used = new Map<string, number>();
+  for (const m of CODE.matchAll(/\b(?:max|min)-w-([a-z0-9]+)\b/g)) {
+    if (!STEPS.includes(m[1]!)) continue;
+    used.set(m[1]!, (used.get(m[1]!) ?? 0) + 1);
+  }
+
+  it('the census is live (a regex regression cannot vacuously pass this)', () => {
+    expect(used.size, 'no container-scale utility found at all').toBeGreaterThan(6);
+    expect([...used.values()].reduce((a, b) => a + b, 0)).toBeGreaterThan(500);
+  });
+
+  it('no step the app ships takes its width from tailwindcss/theme.css', () => {
+    const inherited = [...used.entries()]
+      .filter(([step]) => declared(step) === undefined)
+      .sort((a, b) => b[1] - a[1])
+      .map(([step, n]) => `--container-${step} (${n} uses)`);
+    expect(
+      inherited,
+      'these widths are a property of the installed Tailwind version, not of this product: ' +
+        'a release that renumbers the container scale moves them with nothing in CI to ' +
+        'notice. Declare each at the value it already resolves to — that is a zero-pixel ' +
+        'change — in the @theme block of app/globals.css.',
+    ).toEqual([]);
+  });
+
+  it('the declared scale stays monotonic, so a bigger step is never a narrower box', () => {
+    const ladder = STEPS.filter((s) => declared(s) !== undefined).map(
+      (s) => [s, rem(declared(s))] as const,
+    );
+    expect(ladder.length, 'nothing declared to check').toBeGreaterThan(4);
+    for (let i = 1; i < ladder.length; i++) {
+      expect(
+        ladder[i]![1],
+        `--container-${ladder[i]![0]} (${ladder[i]![1]}rem) is narrower than ` +
+          `--container-${ladder[i - 1]![0]} (${ladder[i - 1]![1]}rem)`,
+      ).toBeGreaterThanOrEqual(ladder[i - 1]![1]);
+    }
+  });
+
+  it('--container-4xl sits between the two declared content widths', () => {
+    expect(rem(declared('4xl'))).toBeGreaterThan(utilityRem('.container-prose'));
+    expect(rem(declared('4xl'))).toBeLessThanOrEqual(utilityRem('.container-wide'));
+  });
+
+  it('once max-w-4xl has no headline measure left, it must fold into the wide width', () => {
+    /*
+     * A consumer that sets its own type size beside max-w-4xl is a measure for
+     * that headline, not a page shell, and retargeting the token would widen
+     * it. While any survive, 56rem is the correct value. When the last one
+     * becomes an explicit max-w-[56rem] this flips and demands the retarget
+     * that takes the resolved-width census from 9 distinct widths to 8.
+     */
+    const measures: string[] = [];
+    for (const m of CODE.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+      const cls = m[1] ?? m[2] ?? '';
+      if (!/\bmax-w-4xl\b/.test(cls)) continue;
+      if (!/\b(?:[a-z0-9]+:)?text-(?:\[|xs\b|sm\b|base\b|lg\b|xl\b|\dxl\b)/.test(cls)) continue;
+      measures.push(cls.replace(/\s+/g, ' ').slice(0, 100));
+    }
+    if (measures.length === 0) {
+      expect(
+        rem(declared('4xl')),
+        'every max-w-4xl is a page shell now, so the 182 centred ones must land on the ' +
+          'declared wide width like max-w-5xl/6xl/7xl already do. Retarget --container-4xl ' +
+          'and drop the DU-14 resolved-width BASELINE from 9 to 8.',
+      ).toBe(utilityRem('.container-wide'));
+    } else {
+      expect(
+        rem(declared('4xl')),
+        `${measures.length} max-w-4xl consumers still set their own type size and would be ` +
+          `widened by a retarget:\n${measures.join('\n')}`,
+      ).toBeLessThan(utilityRem('.container-wide'));
+    }
+  });
+});
+
+/* ═══ DU-10 — the lead paragraph is the third role, and it had no name ════ */
+
+/**
+ * `.prose-body` named the reading size and `.prose-meta` named the caption
+ * size. The role between them — the deck under an h1, the one-sentence
+ * standfirst that introduces a section — was never named, so every author
+ * picked a step. Measured at HEAD across app/, components/ and lib/:
+ *
+ *   <p> at text-lg 143 · text-xl 51 · text-2xl 76      (270 across 156+ files)
+ *
+ * Three sizes for one role, one level up from the body copy the finding
+ * measured at five. `.prose-lead` is `--text-lg`, the step 143 of those 270
+ * already use, on the `--leading-relaxed` the rest of the prose range shares.
+ *
+ * The guards below are what stop it becoming a fourth body size: strictly
+ * larger than `.prose-body`, strictly smaller than the smallest step any h1
+ * archetype uses, and no arbitrary value.
+ *
+ * The last test is the other end of the finding — "12px/13.4px is below
+ * comfortable reading size". A paragraph carrying a `max-w-*` reading measure
+ * is body copy by construction, and eleven of them still render at `--text-xs`,
+ * whose clamp floors at exactly the 12px legibility floor. Those are call-site
+ * edits under app/, so this is a ceiling rather than a ban: it can only fall.
+ */
+describe('DU-10 — the lead paragraph has one declared size', () => {
+  const size = (sel: string) =>
+    resolveVar(/font-size:\s*([^;]+);/.exec(ruleFor(sel))?.[1]?.trim());
+  /** The floor of a clamp() step, which is what a phone actually renders. */
+  const floorPx = (v: string | undefined): number => {
+    const c = /clamp\(\s*([\d.]+)rem/.exec(v ?? '');
+    if (c) return parseFloat(c[1]!) * 16;
+    const r = /([\d.]+)rem/.exec(v ?? '');
+    return r ? parseFloat(r[1]!) * 16 : NaN;
+  };
+
+  it('.prose-lead is declared in globals.css', () => {
+    expect(
+      ruleFor('.prose-lead'),
+      '.prose-lead missing — the deck under an h1 has no name, so its 270 call sites go on ' +
+        'choosing between text-lg, text-xl and text-2xl for one role',
+    ).toBeTruthy();
+  });
+
+  it('it is a declared step, not a hand-picked value', () => {
+    const raw = /font-size:\s*([^;]+);/.exec(ruleFor('.prose-lead'))?.[1]?.trim();
+    expect(raw, '.prose-lead must declare a font-size').toBeTruthy();
+    expect(raw, 'a literal size here is the magic number the finding is about').toMatch(
+      /^var\(--text-[\w-]+\)$/,
+    );
+    expect(resolveVar(raw), 'the step it names is not declared in @theme').toBeTruthy();
+  });
+
+  it('it cannot become a second body size — it is strictly larger than .prose-body', () => {
+    expect(floorPx(size('.prose-lead'))).toBeGreaterThan(floorPx(size('.prose-body')));
+    expect(floorPx(size('.prose-body'))).toBeGreaterThan(floorPx(size('.prose-meta')));
+  });
+
+  it('it cannot become a heading — it stays under the smallest step any h1 uses', () => {
+    const recipeSrc = readFileSync(path.join(WEB, 'components/ui/heading-recipe.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    const steps = [
+      ...recipeSrc.matchAll(/(?:^|\s)(?:[a-z0-9]+:)?text-(xs|sm|base|lg|xl|\dxl)(?![\w-])/g),
+    ].map((m) => m[1]!);
+    expect(steps.length, 'no h1 size step parsed off the recipe').toBeGreaterThan(0);
+    const smallest = Math.min(
+      ...steps.map((s) => floorPx(THEME_VARS[`--text-${s}`] ?? ROOT_VARS[`--text-${s}`])),
+    );
+    expect(floorPx(size('.prose-lead'))).toBeLessThan(smallest);
+  });
+
+  it('the whole prose range shares one leading ratio', () => {
+    const lead = /line-height:\s*([^;]+);/.exec(ruleFor('.prose-lead'))?.[1]?.trim();
+    const body = /line-height:\s*([^;]+);/.exec(ruleFor('.prose-body'))?.[1]?.trim();
+    expect(lead, '.prose-lead must declare a line-height').toBeTruthy();
+    expect(lead).toBe(body);
+  });
+
+  it('body copy under a reading measure never floors below the metadata size', () => {
+    /*
+     * RATCHET — lower after every sweep, never raise. Measured at HEAD: of the
+     * 237 <p> elements carrying a max-w-* reading measure, eleven are text-xs.
+     * Those are the "12px body copy" half of DU-10 and every one is a
+     * call-site edit under app/.
+     */
+    const BASELINE = 11;
+    const metaFloor = floorPx(size('.prose-meta'));
+    expect(metaFloor, '.prose-meta lost its size, so this guard has no floor').toBeGreaterThan(0);
+    const offenders: string[] = [];
+    for (const m of CODE.matchAll(/<p\b([^>]*)>/g)) {
+      const attrs = m[1]!;
+      if (!/\bmax-w-/.test(attrs)) continue;
+      const step = /\btext-(xs|sm|base|lg|xl|\dxl)\b/.exec(attrs)?.[1];
+      if (!step) continue;
+      const f = floorPx(THEME_VARS[`--text-${step}`] ?? ROOT_VARS[`--text-${step}`]);
+      if (f < metaFloor) {
+        offenders.push(`text-${step} :: ${attrs.replace(/\s+/g, ' ').trim().slice(0, 80)}`);
+      }
+    }
+    expect(
+      offenders.length,
+      `${offenders.length} measured paragraphs render below the ${metaFloor}px floor ` +
+        `.prose-meta declares (ceiling ${BASELINE}). Use .prose-body, or .prose-meta if it ` +
+        `is genuinely metadata.\n${offenders.slice(0, 15).join('\n')}`,
+    ).toBeLessThanOrEqual(BASELINE);
+  });
+});

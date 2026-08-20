@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { apiBase } from '../../lib/api';
+import { applicationStatusLabel } from '../../lib/enum-labels';
 
 interface Gurukul {
   id: string;
@@ -277,7 +278,7 @@ export default function GurukulPortalScreen() {
                     <View style={styles.cardHead}>
                       <Text style={styles.cardTitle}>{a.studentName}</Text>
                       <View style={[styles.badge, { backgroundColor: status.bg }]}>
-                        <Text style={[styles.badgeText, { color: status.fg }]}>{a.status}</Text>
+                        <Text style={[styles.badgeText, { color: status.fg }]}>{applicationStatusLabel(a.status)}</Text>
                       </View>
                     </View>
                     <Text style={styles.cardMeta}>age {a.studentAgeYears}</Text>

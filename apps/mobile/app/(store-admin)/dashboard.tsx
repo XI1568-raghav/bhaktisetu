@@ -10,6 +10,7 @@ import {
 } from '../../lib/portal-screen';
 import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing } from '../../lib/theme';
+import { storeOrderStatusLabel } from '../../lib/enum-labels';
 
 function inr(v: number | undefined): string {
   return `₹${(v ?? 0).toLocaleString('en-IN')}`;
@@ -72,7 +73,7 @@ export default function StoreDashboard() {
             <ListRow
               key={o.id}
               primary={`${o.id} • ${o.customer ?? 'Customer'}`}
-              secondary={o.status ?? ''}
+              secondary={storeOrderStatusLabel(o.status)}
               trailing={inr(o.amount)}
             />
           ))

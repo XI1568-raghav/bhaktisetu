@@ -18,7 +18,7 @@ import { apiBase } from '../../lib/api';
 import {
   selectPujaBookingDetail,
   resolveSlotAvailability,
-  selectCreatedBooking,
+  createBookingOutcome,
   buildCreateBookingBody,
   bookingErrorMessage,
   resumePaymentUrl,
@@ -236,21 +236,25 @@ export default function PujaBookScreen() {
         body: JSON.stringify(body),
       });
       const replyBody: unknown = await res.json().catch(() => null);
-      const booking = selectCreatedBooking(replyBody);
-      if (!res.ok || !booking) {
-        setSubmitError(bookingErrorMessage(replyBody, res.status));
+      // Three outcomes, not two. A 2xx whose body does not parse into a booking
+      // means a `pending_payment` row EXISTS and is holding a seat, so the
+      // devotee must be sent to look rather than to retry — retrying is what
+      // mints the second hold. See createBookingOutcome.
+      const outcome = createBookingOutcome({ ok: res.ok, status: res.status, body: replyBody });
+      if (outcome.kind === 'created') {
+        setCreated(outcome.booking);
+        return;
+      }
+      setSubmitError(outcome.message);
+      if (outcome.kind === 'failed' && res.status === 409 && offering && date) {
         // A lost slot race is recoverable in-page: re-ask for capacity so the
         // devotee picks a slot that still exists instead of retrying the taken
         // one. It has to go through the nonce — `setDate(date)` re-assigns the
         // value the state already holds, React bails out on Object.is, and the
         // availability effect never re-runs. The grid would keep showing the
         // slot as free underneath an error saying it was taken.
-        if (res.status === 409 && offering && date) {
-          setAvailabilityNonce((n) => n + 1);
-        }
-        return;
+        setAvailabilityNonce((n) => n + 1);
       }
-      setCreated(booking);
     } catch {
       setSubmitError('Could not reach the server. Your booking was not created.');
     } finally {

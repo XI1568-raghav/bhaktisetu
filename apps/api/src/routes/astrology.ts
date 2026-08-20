@@ -143,9 +143,9 @@ export async function astrologyRoutes(server: FastifyInstance) {
   // themselves. Being read is the reason to fix it, not the reason to leave it.
   //
   // It now reads the same approved `AstrologerProfile` rows `/astrologers/live`
-  // serves. The fixture array is NOT deleted — it still backs
-  // GET /specializations, astrologyService.getReviews and
-  // getAstrologerByIdOrSlug. Only this door is rebound to real supply.
+  // serves. With this door rebound the fixture had no readers left, and it has
+  // since been deleted outright — see the deletion note in
+  // services/astrology.service.ts.
   server.get('/astrologers', async (request, reply) => {
     const parsed = astrologerListQuerySchema.safeParse(request.query);
     if (!parsed.success) {
@@ -235,9 +235,8 @@ export async function astrologyRoutes(server: FastifyInstance) {
     // Sharma" as a profile and /astrology/astro_001/book drew a live pay
     // button over him. POST /consultation/book already refuses any id that is
     // not an approved AstrologerProfile — an id the platform will not sell is
-    // an id it must not describe either. The in-memory directory still backs
-    // GET /astrologers (packages/api-client's useAstrologers reads that list),
-    // so it is not deleted here; it is simply no longer reachable as a person.
+    // an id it must not describe either. The in-memory directory has since been
+    // deleted; a slug now resolves to nothing anywhere in the service.
     return reply.code(404).send({ error: 'Astrologer not found.' });
   });
 
@@ -259,8 +258,9 @@ export async function astrologyRoutes(server: FastifyInstance) {
     if (!UUID_RE.test(id)) {
       return reply.code(404).send({ error: 'Astrologer not found.' });
     }
-    // Real astrologers have no review store yet (REVIEWS is keyed by fixture
-    // slug). An empty page is the truthful answer — never borrow a fixture's.
+    // Real astrologers have no review store yet — there is no astrologer review
+    // table, and the generated fixture testimonials that used to fill this page
+    // are deleted. An empty page is the truthful answer.
     return { reviews: [], total: 0, page: page ?? 1, limit: limit ?? 5, totalPages: 0 };
   });
 
@@ -274,7 +274,8 @@ export async function astrologyRoutes(server: FastifyInstance) {
     // not exist, on a public unauthenticated endpoint, while real supply was
     // three profiles. It sold nothing (no client renders it), but a public
     // endpoint STATING fictional supply is one integration away from a UI, and
-    // it was the last reader keeping the fixture array alive.
+    // it was the last reader keeping the fixture array alive — rebinding it is
+    // what made the fixture deletable.
     //
     // Same reader as /astrologers and /astrologers/live, so the directory and
     // its facet counts cannot disagree about who exists.

@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useWellnessSessions } from '@poojly/api-client';
 import { selectWellnessSessions, type WellnessSessionVM } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { humanizeEnum, wellnessSessionTypeLabel } from '../../lib/enum-labels';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.72;
@@ -208,7 +209,7 @@ function YogaContent({
                 <Text style={styles.sessionTitle} numberOfLines={1}>
                   {session.title}
                 </Text>
-                <Text style={styles.sessionCategory}>{session.category}</Text>
+                <Text style={styles.sessionCategory}>{humanizeEnum(session.category)}</Text>
                 <View style={styles.sessionMeta}>
                   <Text style={styles.sessionInstructor}>{session.when ?? ''}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
@@ -288,7 +289,7 @@ function MeditationContent({ playingId, setPlayingId }: { playingId: string | nu
             </View>
             <View style={styles.trackRight}>
               <View style={styles.trackCategoryBadge}>
-                <Text style={styles.trackCategoryText}>{track.category}</Text>
+                <Text style={styles.trackCategoryText}>{humanizeEnum(track.category)}</Text>
               </View>
               <Text style={styles.trackPlays}>
                 {track.plays >= 1000
@@ -330,7 +331,7 @@ function AyurvedaContent() {
           </View>
           <View style={styles.tipInfo}>
             <View style={styles.tipCategoryBadge}>
-              <Text style={styles.tipCategoryText}>{tip.category}</Text>
+              <Text style={styles.tipCategoryText}>{humanizeEnum(tip.category)}</Text>
             </View>
             <Text style={styles.tipTitle}>{tip.title}</Text>
             <Text style={styles.tipDescription} numberOfLines={2}>
@@ -355,7 +356,7 @@ function toYogaSession(s: WellnessSessionVM): YogaSession {
   return {
     id: s.id,
     title: s.title,
-    category: s.type ?? 'Wellness',
+    category: wellnessSessionTypeLabel(s.type) || 'Wellness',
     duration: s.durationMinutes !== null ? `${s.durationMinutes} min` : '—',
     seats: s.capacity !== null ? `${s.capacity} seats` : null,
     price:

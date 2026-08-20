@@ -223,6 +223,40 @@ export default function PrivacyPage() {
  We implement appropriate technical and organizational measures
  to protect your data:
  </p>
+ {/*
+  TC-10. This bullet used to read "Database hosted on Supabase with
+  row-level security policies." That was a false security representation,
+  not an overstatement: the 67 Prisma models are covered by zero RLS
+  statements across 36 Prisma migrations and all of apps/api. The only
+  ENABLE ROW LEVEL SECURITY / CREATE POLICY in the repository covers two
+  auxiliary tables outside the Prisma chain (antim_sanskar_pandits,
+  wedding_vendors, in supabase/migrations). Even if a policy existed, the
+  application path would bypass it: Prisma connects as the Supabase
+  `postgres` owner role, which is exempt unless FORCE ROW LEVEL SECURITY
+  is set (it is set nowhere), and the admin Supabase client uses the
+  service-role key, which bypasses RLS by design.
+
+  What replaced it is verified true rather than merely safer: apps/web
+  makes no PostgREST table query at all — the only browser Supabase data
+  call in the app is `supabase.storage.from(bucket)` in
+  components/provider/VideoProofUpload.tsx, which is Storage, not a table
+  — and apps/mobile has no Supabase client. That property is now pinned
+  by app/privacy/__tests__/privacy-claims-stay-true.test.ts, so the
+  sentence cannot quietly become false again.
+
+  TO MAKE THE ORIGINAL CLAIM TRUE (do not restore the sentence before all
+  four are done): (1) ENABLE ROW LEVEL SECURITY plus a deny-by-default
+  CREATE POLICY per user-data table, added as ordinary Prisma migrations
+  so they are versioned and auto-applied on API boot; (2) ALTER TABLE ...
+  FORCE ROW LEVEL SECURITY on each, or move Prisma off the owner role to
+  a non-owner application role, otherwise every policy is inert for the
+  path that carries all the traffic; (3) stop the admin client's
+  service-role key from serving user-scoped reads, since it bypasses RLS
+  unconditionally; (4) a migration test asserting relrowsecurity is true
+  for every table this policy names. Steps 1, 2 and 4 are code; step 3 is
+  an architecture change. Until then this bullet must describe
+  application-layer authorisation, which is what actually runs.
+ */}
  <ul>
  <li>All data transmitted over HTTPS/TLS encryption.</li>
  <li>

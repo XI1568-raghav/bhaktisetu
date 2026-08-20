@@ -10,6 +10,7 @@ import {
 } from '../../lib/portal-screen';
 import { selectAstrologerDashboard, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { consultationStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-13, the app half.
@@ -137,7 +138,7 @@ export default function AstrologerDashboard() {
                 .join(' • ')}
               trailing={c.amountInr === null ? undefined : formatInr(c.amountInr)}
               status={{
-                label: c.status ?? 'scheduled',
+                label: consultationStatusLabel(c.status) || 'Scheduled',
                 color: c.status === 'confirmed' ? colors.green[600] : colors.amber[600],
               }}
             />

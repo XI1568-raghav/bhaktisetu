@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useAdminRevenue } from '@poojly/api-client';
 import { PortalScreen, Section, StatCard, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { subscriptionPlanLabel, userRoleLabel } from '../../lib/enum-labels';
 
 /**
  * Shape of `GET /api/v1/admin/revenue` (apps/api/src/services/admin.service.ts
@@ -125,7 +126,7 @@ export default function AdminRevenue() {
                 <View key={`${s.plan}-${s.role}`} style={styles.streamCard}>
                   <View style={styles.streamHead}>
                     <Text style={styles.streamName}>
-                      {s.plan} · {s.role}
+                      {subscriptionPlanLabel(s.plan)} · {userRoleLabel(s.role)}
                     </Text>
                     <Text style={styles.streamAmount}>{exactInr(s.totalAmount)}</Text>
                   </View>

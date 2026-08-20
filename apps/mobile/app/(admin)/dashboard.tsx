@@ -10,6 +10,7 @@ import {
 } from '../../lib/portal-screen';
 import { selectAdminDashboard, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { approvalStatusLabel, transactionStatusLabel, transactionTypeLabel, userRoleLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-04. Two defects lived here.
@@ -117,11 +118,11 @@ export default function AdminDashboard() {
               data.recentTransactions.slice(0, 5).map((t) => (
                 <ListRow
                   key={t.id}
-                  primary={t.type ?? 'Transaction'}
+                  primary={transactionTypeLabel(t.type) || 'Transaction'}
                   secondary={t.createdAt?.slice(0, 10)}
                   trailing={t.amount === null ? undefined : formatInr(t.amount)}
                   status={{
-                    label: t.status ?? 'unknown',
+                    label: transactionStatusLabel(t.status) || 'Unknown',
                     color:
                       t.status === 'COMPLETED'
                         ? colors.green[600]
@@ -142,8 +143,8 @@ export default function AdminDashboard() {
             <ListRow
               key={u.id}
               primary={u.fullName}
-              secondary={`${u.role} • ${u.email ?? u.phone}`}
-              status={{ label: u.status ?? 'pending', color: colors.amber[600] }}
+              secondary={`${userRoleLabel(u.role)} • ${u.email ?? u.phone}`}
+              status={{ label: approvalStatusLabel(u.status) || 'Pending', color: colors.amber[600] }}
             />
           ))
         )}

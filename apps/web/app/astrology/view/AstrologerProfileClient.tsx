@@ -74,10 +74,13 @@ interface Review {
  * or an honest "not available" pointing at the real directory. Nothing is
  * defaulted, nothing is rounded, nothing is remembered.
  *
- * Reviews are deliberately NOT fetched: GET /astrology/astrologers/:id/reviews
- * is still served from the same in-memory mock directory
- * (apps/api/src/routes/astrology.ts:113 -> astrologyService.getReviews), so
- * calling it would import the fiction back through a different door.
+ * Reviews are deliberately NOT fetched. When this was written the endpoint was
+ * still served from the in-memory mock directory, so calling it would have
+ * imported the fiction back through a different door. That directory has since
+ * been deleted and GET /astrology/astrologers/:id/reviews now answers an empty
+ * page for every real astrologer — there is no astrologer review table yet, so
+ * there is still nothing to render. Wire this up only once real reviews are
+ * persisted.
  */
 
 /** Coerce the API payload into the view model without inventing anything. */

@@ -3,9 +3,27 @@ import { z } from 'zod';
 import crypto from 'node:crypto';
 import { authenticateUser } from '../middlewares/auth.js';
 import { subscriptionService, PaymentRequiredError } from '../services/subscription.service.js';
+import {
+  NRI_PREMIUM_WITHDRAWN_DETAIL,
+  NRI_PREMIUM_WITHDRAWN_MESSAGE,
+} from '../services/subscription-entitlements.js';
 import { checkAndRecord } from '../lib/webhook-idempotency.js';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
+
+// ─── Withdrawn-plan refusal (TC-04) ─────────────────────────────────────────
+//
+// Both activation rails throw NRI_PREMIUM_WITHDRAWN_MESSAGE for a plan whose
+// benefits are unenforced, and both routes echo the thrown message to the
+// caller — which on /upgrade is rendered straight into the page. So the
+// message is buyer copy. The engineering explanation, which names the
+// registry file, goes to the log instead of to the devotee; before this split
+// the devotee received the file path.
+function logIfWithdrawnPlan(server: FastifyInstance, message: string): void {
+  if (message === NRI_PREMIUM_WITHDRAWN_MESSAGE) {
+    server.log.warn(NRI_PREMIUM_WITHDRAWN_DETAIL);
+  }
+}
 
 const subscribeSchema = z.object({
   planId: z.string().min(1, 'planId is required'),
@@ -62,6 +80,7 @@ export async function subscriptionRoutes(server: FastifyInstance) {
       if (err instanceof PaymentRequiredError) {
         return reply.code(402).send({ error: message, code: err.code, payWith: '/api/v1/subscriptions/create' });
       }
+      logIfWithdrawnPlan(server, message);
       return reply.code(400).send({ error: message });
     }
   });
@@ -188,6 +207,7 @@ export async function subscriptionRoutes(server: FastifyInstance) {
       return { subscription: result };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create subscription';
+      logIfWithdrawnPlan(server, message);
       return reply.code(400).send({ error: message });
     }
   });

@@ -400,6 +400,55 @@ export function bookingErrorMessage(body: unknown, statusCode: number): string {
 }
 
 /**
+ * What the create call actually told us — three outcomes, not two.
+ *
+ * The screen used to decide with `!res.ok || !booking`, which folds two
+ * unrelated events into one sentence:
+ *
+ *   failed      the server refused (4xx/5xx) or the request never arrived.
+ *               Nothing was created. Retrying is the right advice.
+ *   uncertain   the server ACCEPTED (2xx) but the body did not parse into a
+ *               booking. A `PujaBooking` row now exists at `pending_payment`
+ *               holding one of the offering’s seats. Retrying mints a SECOND
+ *               row and a SECOND hold for one customer intent — which is
+ *               exactly how the ghost bookings in DB-03 accumulated, and the
+ *               reason this module refuses to call /create-order at all.
+ *   created     the documented 201 `{ booking }`.
+ *
+ * Under the old shape the uncertain case reached the devotee as “Could not
+ * create the booking (status 201)”: a self-contradiction attached to the one
+ * instruction that makes the problem worse.
+ *
+ * `reply` is null exactly when the fetch threw — the request never reached the
+ * server, so nothing can have been created and that case IS a failure.
+ */
+export type CreateBookingOutcome =
+  | { kind: 'created'; booking: CreatedBooking }
+  | { kind: 'failed'; message: string }
+  | { kind: 'uncertain'; message: string };
+
+export function createBookingOutcome(
+  reply: { ok: boolean; status: number; body: unknown } | null,
+): CreateBookingOutcome {
+  if (!reply) {
+    return {
+      kind: 'failed',
+      message: 'Could not reach the server. Your booking was not created.',
+    };
+  }
+  if (!reply.ok) {
+    return { kind: 'failed', message: bookingErrorMessage(reply.body, reply.status) };
+  }
+  const booking = selectCreatedBooking(reply.body);
+  if (booking) return { kind: 'created', booking };
+  return {
+    kind: 'uncertain',
+    message:
+      'The server accepted the booking but did not describe it. Open My Bookings to check before trying again — a second attempt would hold a second slot.',
+  };
+}
+
+/**
  * The page that finishes payment for a booking that already exists.
  *
  * NOT /pujas/book — that is the wizard, and sending someone there after the

@@ -258,6 +258,37 @@
   --container-6xl: 72rem;
   --container-3xl: 48rem;
 
+  /* The seven steps that were never declared at all. Same argument as the two
+     above, applied to the rest of the scale rather than to the two that
+     happened to match. Recount at HEAD across app/, components/ and lib/:
+
+       max-w-4xl 188 · max-w-2xl 140 · max-w-md 52 · max-w-xl 50 ·
+       max-w-sm 16 · max-w-lg 14 · max-w-xs 7
+
+     467 declarations, 182 of them centred page shells at 56rem, whose rendered
+     width lived in node_modules/tailwindcss/theme.css. Each value below is
+     exactly what that file already resolves to (verified against
+     tailwindcss@4.2.4), so this is a lock and not a retarget: zero rendered
+     diff, and a Tailwind release that renumbers the container scale now moves
+     nothing. `min-w-*` and the `@container` size queries read the same keys
+     and are unaffected for the same reason.
+
+     --container-4xl is declared here but deliberately NOT folded into the wide
+     width, which is the one open half of DU-14. Two of its 188 occurrences are
+     headline measures rather than page shells (app/about/page.tsx beside
+     text-[2.5rem], components/motion/StickyHeadlinePin.tsx beside
+     lg:text-6xl); a retarget would widen those two headlines by 16rem. The
+     guard in __tests__/design-tokens.test.ts closes itself — the moment no
+     max-w-4xl consumer sets its own type size, it stops permitting 56rem and
+     starts demanding 72rem. */
+  --container-xs: 20rem;
+  --container-sm: 24rem;
+  --container-md: 28rem;
+  --container-lg: 32rem;
+  --container-xl: 36rem;
+  --container-2xl: 42rem;
+  --container-4xl: 56rem;
+
   /* ── Letter-spacing ───────────────────────────────────────────────────── */
   --tracking-tight: -0.02em;
   --tracking-normal: 0;
@@ -721,6 +752,29 @@ select {
    Locked by __tests__/design-tokens.test.ts. */
 .prose-meta {
   font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+/* ── prose-lead — ONE size for the deck under a heading ───────────────────
+   DU-10, the third and last role in the same finding. `.prose-body` named the
+   reading size and `.prose-meta` named the caption size; the paragraph BETWEEN
+   them — the deck under an h1, the one-sentence standfirst that opens a
+   section — never got a name, so every author picked a step. Censused at HEAD
+   across app/, components/ and lib/:
+
+     <p> at text-lg 143 · text-xl 51 · text-2xl 76      (270 in 156+ files)
+
+   Three sizes for one role, which is the same defect the finding measured one
+   level down at five. --text-lg is the answer because 143 of the 270 already
+   use it, it is the step directly above the body size rather than a jump into
+   the heading range, and it already pairs with --leading-relaxed like the rest
+   of the prose range.
+
+   NOT a second body size and NOT a heading. Locked by
+   __tests__/design-tokens.test.ts, which fails if it ever stops sitting
+   strictly between .prose-body and the smallest step any h1 archetype uses. */
+.prose-lead {
+  font-size: var(--text-lg);
   line-height: var(--leading-relaxed);
 }
 

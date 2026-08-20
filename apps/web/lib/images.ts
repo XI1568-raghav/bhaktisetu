@@ -77,8 +77,38 @@ function snapToLadder(width: number): number {
  * the og-image placeholder, and it was being requested at 1280 (160,061 B)
  * where 500 costs 52,125 B.
  *
- * Only under-1280 files need a row — anything wider is never overshot. Keys
- * are the DECODED Commons file name, which is what `ladderWidth` looks up.
+ * COMPLETENESS IS THE WHOLE MECHANISM — corrected 2026-08-20. This block used
+ * to say "Only under-1280 files need a row — anything wider is never
+ * overshot", and listed 9 rows. That reasoning is circular: you cannot know a
+ * file is wider than 1280 without measuring it, and nothing forced the
+ * measurement. Re-read from the Commons `imageinfo` API on 2026-08-20, 17 of
+ * the 70 files referenced here are narrower than IMG_W.HERO — the widest slot
+ * every getter is exercised at — and 8 of those 17 had no row:
+ *
+ *   Red_Sindhi_Cow_at_Pakistan.jpg 960 · (1)_Aarti_Thali,_Prayer_Plate_India.jpg
+ *   1024 · Dwarakadheesh_Temple,_2014.jpg 1024 · Surabhi_Cow_Vrindavan.jpg 1024
+ *   · Ganesha_Basohli_…_p73.jpg 1033 · Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg
+ *   1057 · StandingHanumanCholaDynasty11thCentury.jpg 1058 ·
+ *   Vishnu_from_Gita_Govinda.jpg 1112
+ *
+ * Their 1280px thumbs cost 2,764,770 B against 1,684,784 B for the widest step
+ * the sources can actually satisfy (HEAD, 2026-08-20) — 1,079,986 B spent
+ * making eight images blurrier. `Dwarakadheesh_Temple,_2014.jpg` is
+ * `IMAGES.temples['dwarkadhish'].hero`, so `/temples/dwarkadhish` was shipping
+ * a 266,721 B upscale where 176,149 B is the real file.
+ *
+ * The overshoot assertion in `commons-asset-integrity.test.ts` could not catch
+ * any of it: it reads `COMMONS_INTRINSIC_WIDTH[file]` and skips the check when
+ * the lookup is `undefined`, so a missing row reads as "no violation". The
+ * table therefore records EVERY referenced file now, wide ones included, and
+ * `cm08-intrinsic-width-completeness.test.ts` fails when a referenced file has
+ * no row — which is what makes that older assertion able to fail at all.
+ *
+ * Keys are the DECODED Commons file name, which is what `ladderWidth` looks
+ * up. Values are `imageinfo.width`, read from
+ *   https://commons.wikimedia.org/w/api.php?action=query&format=json
+ *     &prop=imageinfo&iiprop=size&titles=File:<name>
+ * never guessed — a wrong number here silently disables the clamp.
  * `commons-asset-integrity.test.ts` fails if a key here stops being
  * referenced, so the table cannot quietly drift into fiction.
  */
@@ -92,6 +122,67 @@ export const COMMONS_INTRINSIC_WIDTH: Readonly<Record<string, number>> = {
  'Navaratri_Bajan.jpg': 800,
  'Swaminarayan_Akshardham,_Delhi.jpg': 800,
  'Saraswati.jpg': 925,
+ 'Red_Sindhi_Cow_at_Pakistan.jpg': 960,
+ '(1)_Aarti_Thali,_Prayer_Plate_India.jpg': 1024,
+ 'Dwarakadheesh_Temple,_2014.jpg': 1024,
+ 'Surabhi_Cow_Vrindavan.jpg': 1024,
+ 'Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg': 1033,
+ 'Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg': 1057,
+ 'StandingHanumanCholaDynasty11thCentury.jpg': 1058,
+ 'Vishnu_from_Gita_Govinda.jpg': 1112,
+ 'Goshala-ISKCON.jpg': 1280,
+ 'The_Hindu_Goddess_Shri_Lakshmi_LACMA_M.87.210_(1_of_2).jpg': 1325,
+ 'Priest_performing_Homa.jpg': 1363,
+ 'Lord_Rama_with_arrows.jpg': 1366,
+ 'GHANTI.jpg': 1463,
+ 'JanakpurChhathParvaFestival.jpg': 1600,
+ 'Night_view_of_Srisailam_Temple_South_Gopuram.jpg': 1752,
+ 'A_beautiful_photo_of_cows_grazing_in_the_field.jpg': 1836,
+ 'Gayatri_japa.jpg': 1903,
+ 'The_Rangoli_of_Lights.jpg': 1932,
+ 'Surya_with_Adityas_and_attendants.jpg': 1994,
+ 'Hindu_pooja_thali.jpg': 2000,
+ '1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg': 2031,
+ 'Grishneshwar_temple_in_Aurangabad_district.jpg': 2048,
+ '02_Mahashivratree_festival.JPG': 2112,
+ 'Gangotri_Temple_2.jpg': 2272,
+ 'Yamunotri_temple_and_ashram.jpg': 2304,
+ 'Indian_Arati_diya.jpg': 2342,
+ 'Shree_Siddhivinayak_Temple_Mumbai.jpg': 2410,
+ 'Ramanathaswamy_temple7.JPG': 2448,
+ 'Brass_standing_figure_of_Krishna_playing_the_flute._Wellcome_M0012566.jpg': 2520,
+ 'Bangalore_Shiva.jpg': 2560,
+ 'Omkareswar_Jyotirlinga.jpg': 2560,
+ 'Nageshwar.JPG': 2571,
+ 'From_Abhisheka_To_Panchamrutha.jpg': 2592,
+ 'Vrindavan,_India_(21178969102).jpg': 2848,
+ 'Khairathabad_Vinayakudu_2021.jpg': 3000,
+ 'Marble_Dagadusheth_Halwai_Ganapati_Statue_from_Maliyas.com_Jaipur_India.jpg': 3000,
+ 'Navratri_Kalash_Puja.jpg': 3072,
+ 'Gir_cow.jpg': 3264,
+ 'Holi_Festival_of_Colors.jpg': 3456,
+ 'ILRI,_Stevie_Mann_-_Women_washing_and_cow_drinking_at_a_river_in_Rajasthan,_India.jpg': 3504,
+ 'Hanuman_Chalisa_4x3.jpg': 3600,
+ '(A)_puja_fire,_Havanam.jpg': 3872,
+ 'Badrinath_Temple_,_Uttarakhand.jpg': 4000,
+ 'Rudraksha_mala.jpg': 4000,
+ 'Kedarnath_Temple_in_Rainy_season.jpg': 4073,
+ 'Baidyanath_temple_and_temple_complex,_Deoghar_04.jpg': 4080,
+ 'Bhagavad_Gita_book_(small)_01.jpg': 4080,
+ 'Tirumala_090615.jpg': 4096,
+ 'Shardiya_Navratri_Festival_in_Pune_2020.jpg': 4128,
+ 'The_Golden_Temple_of_Amrithsar_7.jpg': 4176,
+ 'Rakhi_1.JPG': 4272,
+ 'An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg': 4365,
+ 'Mahakaleshwar_Temple,_Ujjain.jpg': 4608,
+ 'Vaishno_Devi_Bhawan.jpg': 4608,
+ 'Sahiwala_01.JPG': 5184,
+ 'Tharparkar_01.JPG': 5184,
+ 'Somanath_mandir_(cropped).jpg': 5712,
+ 'A_beautiful_gaze.jpg': 6000,
+ 'Pure_Ghee-Homemade-Maharashtra.jpg': 6000,
+ 'Shri_Jagannath_temple.jpg': 6000,
+ 'Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg': 6000,
 };
 
 /** Commons file names are percent-encoded in URLs; the table is keyed decoded. */

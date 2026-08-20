@@ -208,17 +208,56 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
     const outreach = outreachModel();
     const days = lastNDays(30);
     if (!outreach) {
+      // No delegate means the table was never migrated. Zeros are the only
+      // honest answer, but they are a degraded answer, not a measured one.
       return {
         daily: days.map((d) => ({ date: d.toISOString().slice(0, 10), sent: 0, replied: 0, bounced: 0 })),
         totals: { sent: 0, replied: 0, bounced: 0 },
+        degraded: true,
       };
     }
     try {
       const since = days[0]!;
-      const logs = await outreach.findMany({
-        where: { sentAt: { gte: since } },
-        select: { status: true, sentAt: true },
-      });
+      // ── SCAL-04: the day buckets are grouped by Postgres ──────────────────
+      //
+      // This read had no take and no cursor: every outreach row of the last 30
+      // days, two columns wide, walked in JS to produce 30 tuples of three
+      // integers. `outreach_logs` gains a row per MESSAGE per lead and never
+      // loses one, so it grows faster than any other table here and the scan
+      // grows with campaign volume rather than with anything on the screen.
+      //
+      // Identical technique and identical justification to the sibling fix in
+      // routes/admin-lead-conversion.ts `/conversion/timeline` — see the long
+      // note there for why the raw statement is safe to write without a
+      // database to run it against: the column names come from
+      // `@map(...)` in prisma/schema.prisma AND from the DDL of migration
+      // 20260503_perf_indexes, the query shape is copied from admin-metrics
+      // `loadFunnelDaily` which is already in production, and
+      // `admin-lead-conversion.timeline-sql.scal04.test.ts` checks every
+      // quoted identifier in BOTH files against the schema on every run.
+      //
+      // The `outreachModel()` guard above is kept: when the delegate is not
+      // generated at all there is no table to query, and answering zeros
+      // without a round trip is the behaviour this endpoint already had.
+      type DayRow = {
+        day: string | null;
+        sent: number | bigint | null;
+        replied: number | bigint | null;
+        bounced: number | bigint | null;
+      };
+      const toCount = (n: number | bigint | null | undefined): number =>
+        n == null ? 0 : typeof n === 'bigint' ? Number(n) : n;
+
+      const rows = await prisma.$queryRaw<DayRow[]>`
+        SELECT to_char(date_trunc('day', "sent_at"), 'YYYY-MM-DD') AS day,
+               count(*) FILTER (WHERE "status"::text IN ('SENT', 'DELIVERED', 'OPENED'))::int AS sent,
+               count(*) FILTER (WHERE "status"::text = 'REPLIED')::int AS replied,
+               count(*) FILTER (WHERE "status"::text IN ('BOUNCED', 'FAILED'))::int AS bounced
+        FROM "outreach_logs"
+        WHERE "sent_at" >= ${since}
+        GROUP BY 1
+      `;
+
       const buckets: Record<string, { sent: number; replied: number; bounced: number }> = {};
       for (const d of days) {
         buckets[d.toISOString().slice(0, 10)] = { sent: 0, replied: 0, bounced: 0 };
@@ -226,30 +265,36 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
       let totalSent = 0;
       let totalReplied = 0;
       let totalBounced = 0;
-      for (const l of logs as Array<{ status: string; sentAt: Date }>) {
-        const k = startOfDayUtc(new Date(l.sentAt)).toISOString().slice(0, 10);
-        const b = buckets[k];
+      for (const r of rows ?? []) {
+        // Same containment rule the JS loop had: a row outside the seeded days
+        // counted toward neither its bucket nor the totals, so the totals stay
+        // the sum of what is rendered rather than a second, larger number.
+        const b = r.day ? buckets[r.day] : undefined;
         if (!b) continue;
-        if (l.status === 'SENT' || l.status === 'DELIVERED' || l.status === 'OPENED') {
-          b.sent++;
-          totalSent++;
-        } else if (l.status === 'REPLIED') {
-          b.replied++;
-          totalReplied++;
-        } else if (l.status === 'BOUNCED' || l.status === 'FAILED') {
-          b.bounced++;
-          totalBounced++;
-        }
+        b.sent += toCount(r.sent);
+        b.replied += toCount(r.replied);
+        b.bounced += toCount(r.bounced);
+        totalSent += toCount(r.sent);
+        totalReplied += toCount(r.replied);
+        totalBounced += toCount(r.bounced);
       }
       const daily = days.map((d) => {
         const k = d.toISOString().slice(0, 10);
         return { date: k, ...buckets[k]! };
       });
-      return { daily, totals: { sent: totalSent, replied: totalReplied, bounced: totalBounced } };
+      return {
+        daily,
+        totals: { sent: totalSent, replied: totalReplied, bounced: totalBounced },
+        degraded: false,
+      };
     } catch {
+      // Additive `degraded`: a rejected query and a quiet month used to return
+      // byte-identical JSON, which is precisely how the /admin/waitlist/stats
+      // outage recorded below stayed invisible.
       return {
         daily: days.map((d) => ({ date: d.toISOString().slice(0, 10), sent: 0, replied: 0, bounced: 0 })),
         totals: { sent: 0, replied: 0, bounced: 0 },
+        degraded: true,
       };
     }
   });

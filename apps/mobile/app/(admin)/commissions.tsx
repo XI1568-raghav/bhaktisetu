@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useAdminCommissions } from '@poojly/api-client';
 import { PortalScreen, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { commissionStatusLabel } from '../../lib/enum-labels';
 
 type CommissionStatus = 'PENDING' | 'PAID' | 'REVERSED';
 
@@ -147,7 +148,7 @@ export default function AdminCommissions() {
                     { backgroundColor: `${statusColor(c.status)}1A`, borderColor: statusColor(c.status) },
                   ]}
                 >
-                  <Text style={[styles.pillText, { color: statusColor(c.status) }]}>{c.status}</Text>
+                  <Text style={[styles.pillText, { color: statusColor(c.status) }]}>{commissionStatusLabel(c.status)}</Text>
                 </View>
               </View>
               {/*

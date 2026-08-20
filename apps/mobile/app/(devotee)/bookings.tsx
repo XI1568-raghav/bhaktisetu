@@ -10,6 +10,7 @@ import {
   type BookingRow,
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { bookingStatusLabel } from '../../lib/enum-labels';
 
 /** Narrow an `unknown` field off a booking row to a non-empty string. */
 function text(v: unknown): string | undefined {
@@ -129,7 +130,7 @@ export default function DevoteeBookings() {
                   : `${date} ${time}`.trim() || 'Schedule TBD'
               }
               trailing={amountNum === null ? undefined : formatInr(amountNum)}
-              status={{ label: text(b.status) ?? 'pending', color }}
+              status={{ label: bookingStatusLabel(text(b.status)) || 'Pending', color }}
             />
           );
         })

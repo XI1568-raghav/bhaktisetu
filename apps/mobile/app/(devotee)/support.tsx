@@ -17,6 +17,7 @@ import {
 import { PortalScreen, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { HELP_CENTRE_LABEL, openHelpCentre } from '../../lib/help-centre';
+import { supportTicketCategoryLabel, supportTicketStatusLabel } from '../../lib/enum-labels';
 
 interface TicketRow {
   id: string;
@@ -131,7 +132,7 @@ export default function SupportScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardPrimary}>{t.subject ?? '(no subject)'}</Text>
                 <Text style={styles.cardSecondary}>
-                  {(t.category ?? '—')} • {(t.priority ?? 'normal')}
+                  {supportTicketCategoryLabel(t.category) || '—'} • {(t.priority ?? 'normal')}
                   {t.createdAt ? ` • ${new Date(t.createdAt).toLocaleDateString('en-IN')}` : ''}
                 </Text>
               </View>
@@ -141,7 +142,7 @@ export default function SupportScreen() {
                   { backgroundColor: `${statusColor(t.status)}1A`, borderColor: statusColor(t.status) },
                 ]}
               >
-                <Text style={[styles.pillText, { color: statusColor(t.status) }]}>{t.status ?? 'open'}</Text>
+                <Text style={[styles.pillText, { color: statusColor(t.status) }]}>{supportTicketStatusLabel(t.status) || 'Open'}</Text>
               </View>
             </View>
           </View>

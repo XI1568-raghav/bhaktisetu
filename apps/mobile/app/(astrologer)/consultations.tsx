@@ -7,6 +7,7 @@ import {
 } from '@poojly/api-client';
 import { PortalScreen, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { consultationStatusLabel, consultationTypeLabel } from '../../lib/enum-labels';
 
 interface Consultation {
   id: string;
@@ -162,8 +163,7 @@ export default function Consultations() {
               <View style={styles.cardHeader}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardPrimary}>
-                    {clientName}
-                    {c.type ? ` • ${String(c.type).toUpperCase()}` : ''}
+                    {[clientName, consultationTypeLabel(c.type)].filter(Boolean).join(' • ')}
                   </Text>
                   <Text style={styles.cardSecondary}>
                     {c.durationMinutes ? `${c.durationMinutes} min • ` : ''}
@@ -176,7 +176,7 @@ export default function Consultations() {
                     { backgroundColor: `${statusColor(c.status)}1A`, borderColor: statusColor(c.status) },
                   ]}
                 >
-                  <Text style={[styles.pillText, { color: statusColor(c.status) }]}>{c.status}</Text>
+                  <Text style={[styles.pillText, { color: statusColor(c.status) }]}>{consultationStatusLabel(c.status)}</Text>
                 </View>
               </View>
 

@@ -10,7 +10,11 @@ vi.mock('../middlewares/auth.js', () => ({
 
 import Fastify from 'fastify';
 import { subscriptionRoutes } from './subscriptions.js';
-import { nriPremiumEntitlementKeys } from '../services/subscription-entitlements.js';
+import {
+  NRI_PREMIUM_PLAN_ID,
+  NRI_PREMIUM_WITHDRAWN_DETAIL,
+  nriPremiumEntitlementKeys,
+} from '../services/subscription-entitlements.js';
 
 /**
  * TC-04 — the HTTP half.
@@ -92,5 +96,51 @@ describe('GET /subscriptions/plans no longer offers a plan that delivers nothing
     expect(plans.find((p) => p.id === 'nri_premium_yearly')).toBeUndefined();
     // The plans that DO deliver what they sell are still listed.
     expect(plans.find((p) => p.id === 'astro_monthly')).toBeDefined();
+  });
+});
+
+describe('TC-04 — the refusal a withdrawn plan returns over HTTP', () => {
+  const INTERNALS = /apps\/|src\/|\.ts\b/;
+
+  it('POST /subscribe answers 400 without leaking a repo path or the plan id', async () => {
+    const res = await makeApp().inject({
+      method: 'POST',
+      url: '/api/v1/subscriptions/subscribe',
+      payload: { planId: NRI_PREMIUM_PLAN_ID, role: 'DEVOTEE' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    const error = res.json().error as string;
+    expect(error).toMatch(/not currently sold/i);
+    expect(error).not.toMatch(INTERNALS);
+    expect(error).not.toContain(NRI_PREMIUM_PLAN_ID);
+  });
+
+  it('POST /create answers 400 without leaking a repo path or the plan id', async () => {
+    const res = await makeApp().inject({
+      method: 'POST',
+      url: '/api/v1/subscriptions/create',
+      payload: { planId: NRI_PREMIUM_PLAN_ID, role: 'DEVOTEE' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    const error = res.json().error as string;
+    expect(error).toMatch(/not currently sold/i);
+    expect(error).not.toMatch(INTERNALS);
+    expect(error).not.toContain(NRI_PREMIUM_PLAN_ID);
+  });
+
+  it('the operator detail reaches the log instead of the devotee', async () => {
+    const app = makeApp();
+    await app.ready();
+    const warn = vi.spyOn(app.log, 'warn');
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/subscriptions/create',
+      payload: { planId: NRI_PREMIUM_PLAN_ID, role: 'DEVOTEE' },
+    });
+
+    expect(warn).toHaveBeenCalledWith(NRI_PREMIUM_WITHDRAWN_DETAIL);
   });
 });

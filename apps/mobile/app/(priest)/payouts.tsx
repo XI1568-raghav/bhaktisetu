@@ -4,6 +4,7 @@ import { usePriestPayouts } from '@poojly/api-client';
 import { ProviderPayouts } from '../../lib/provider-payouts';
 import { Section, ListRow } from '../../lib/portal-screen';
 import { colors, spacing, fontSize } from '../../lib/theme';
+import { payoutStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-22 — the pandit's payout surface, and the one role the earlier pass
@@ -79,7 +80,7 @@ function LegacyPanditRail({
           trailing={formatRupees(p.amount)}
           trailingHint="your share"
           status={{
-            label: p.status,
+            label: payoutStatusLabel(p.status),
             color: p.status.toLowerCase() === 'paid' ? colors.green[600] : colors.amber[600],
           }}
         />

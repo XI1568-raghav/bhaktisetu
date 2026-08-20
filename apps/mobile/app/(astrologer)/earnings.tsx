@@ -12,6 +12,7 @@ import {
 import { useAstrologerEarnings } from '../../lib/portal-queries';
 import { selectAstrologerEarnings, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { commissionStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-22. The astrologer earnings page exists on the web
@@ -145,7 +146,7 @@ export default function AstrologerEarnings() {
                     .join(' · ')}
                   trailing={r.earningsInr === null ? '—' : formatInr(r.earningsInr)}
                   trailingHint="your share"
-                  status={{ label: r.status, color: statusColor(r.status) }}
+                  status={{ label: commissionStatusLabel(r.status), color: statusColor(r.status) }}
                 />
               ))
             )}

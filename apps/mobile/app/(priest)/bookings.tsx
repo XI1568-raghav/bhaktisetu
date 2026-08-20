@@ -4,6 +4,7 @@ import { api, usePriestBookings } from '@poojly/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { PortalScreen, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { bookingStatusLabel } from '../../lib/enum-labels';
 
 const FILTERS: { key: string; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -153,7 +154,7 @@ export default function PriestBookings() {
                     { backgroundColor: `${color}1A`, borderColor: color },
                   ]}
                 >
-                  <Text style={[styles.pillText, { color }]}>{b.status}</Text>
+                  <Text style={[styles.pillText, { color }]}>{bookingStatusLabel(b.status)}</Text>
                 </View>
               </View>
 

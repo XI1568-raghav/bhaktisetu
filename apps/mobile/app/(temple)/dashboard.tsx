@@ -20,6 +20,7 @@ import {
   useTemplePortalStreams,
 } from '../../lib/portal-queries';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { bookingStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-09. Two defects, one screen.
@@ -152,7 +153,7 @@ export default function TempleDashboard() {
               primary={b.pujaName ?? b.bookingNumber ?? 'Booking'}
               secondary={[b.devotee, b.scheduledDate?.slice(0, 10)].filter(Boolean).join(' • ')}
               trailing={b.priceInr === null ? undefined : formatInr(b.priceInr)}
-              status={b.status ? { label: b.status, color: colors.stone[500] } : undefined}
+              status={b.status ? { label: bookingStatusLabel(b.status), color: colors.stone[500] } : undefined}
             />
           ))
         )}

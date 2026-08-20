@@ -18,6 +18,7 @@ import { useDarshanStream } from '@poojly/api-client';
 import { selectStreamDetail } from '../../lib/api-contracts';
 import { resolveStreamPlayback } from '../../lib/stream-authority';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { streamStatusLabel } from '../../lib/enum-labels';
 
 // react-native-webview is optional — Expo Go ships it, bare RN may not.
 // We require() it lazily so a missing module gracefully degrades to "Open in YouTube".
@@ -270,7 +271,7 @@ export default function DarshanPlayerScreen() {
           </Text>
           {data ? (
             <Text style={styles.aboutMeta}>
-              {data.templeName ? `${data.templeName} · ` : ''}status: {data.status}
+              {data.templeName ? `${data.templeName} · ` : ''}status: {streamStatusLabel(data.status)}
               {data.startedAt ? ` · since ${data.startedAt.slice(11, 16)} UTC` : ''}
             </Text>
           ) : null}
