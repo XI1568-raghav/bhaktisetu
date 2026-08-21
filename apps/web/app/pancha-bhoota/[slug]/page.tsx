@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PANCHA_BHOOTA, getPanchaBhootaBySlug } from '../../../lib/pancha-bhoota';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 
@@ -187,6 +189,10 @@ export default async function PanchaBhootaDetailPage({ params }: { params: Promi
           </Link>
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'pancha-bhoota',
+        subject: t.templeName,
+      })}
     </main>
   );
 }

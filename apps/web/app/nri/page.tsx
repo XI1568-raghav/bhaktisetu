@@ -10,11 +10,18 @@ import {
   MessageCircle,
   CheckCircle2,
   ArrowRight,
-  Star,
+  Info,
 } from 'lucide-react';
 import { nriPremiumServiceJsonLd } from '../../lib/jsonld';
 import EmailCapture from '../../components/EmailCapture';
 import { COMPANY } from '../../lib/company';
+import { CANCELLATION_BADGE_LABEL } from '../../lib/cancellation-policy';
+import { buttonClass } from '../../components/ui/button-recipe';
+import {
+  NRI_PREMIUM_IS_SELLABLE,
+  NRI_PREMIUM_WITHDRAWN_NOTICE,
+  NRI_CANCELLATION_SENTENCE,
+} from './plan-availability';
 
 /**
  * TC-01 (P0, trust). COM-02 gated every 80G claim on /gaushala, /donations,
@@ -33,6 +40,36 @@ import { COMPANY } from '../../lib/company';
  * registration is the owner's action; the copy returns the day it lands.
  */
 const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
+
+/**
+ * TC-01, second pass. Gating the VISIBLE copy above left this page still
+ * shipping the deduction promise to the reader that matters most for a tax
+ * assertion: `nriPremiumServiceJsonLd` (lib/jsonld.ts:222) describes the plan
+ * as including "free 80G receipts", and the page renders that object verbatim
+ * inside `<script type="application/ld+json">`. tc01-80g-surface-coverage
+ * .test.tsx says so in its own helper — it deletes every <script> before
+ * asserting and names the five lines of lib/jsonld.ts still doing this.
+ *
+ * lib/jsonld.ts is another lane, so the page sanitises what IT emits. The
+ * transform is conditional and idempotent: gate lib/jsonld.ts, or set the
+ * owner flag, and it passes the object straight through.
+ */
+function honestServiceDescription(description: string): string {
+  if (HAS_80G || !/80G/i.test(description)) return description;
+  const cleaned = description.replace(/free 80G receipts/gi, 'free donation receipt PDFs');
+  // Belt and braces: any 80G phrasing this does not recognise gets its whole
+  // clause dropped rather than published.
+  if (!/80G/i.test(cleaned)) return cleaned;
+  return cleaned
+    .split(/(?<=\.)\s+/)
+    .filter((sentence) => !/80G/i.test(sentence))
+    .join(' ');
+}
+
+const nriServiceJsonLd = {
+  ...nriPremiumServiceJsonLd,
+  description: honestServiceDescription(nriPremiumServiceJsonLd.description),
+};
 
 export const metadata: Metadata = {
   title: 'NRI Premium — Stay Connected to India',
@@ -106,13 +143,39 @@ const comparison = [
     nri: 'Included',
   },
   { feature: 'Live darshan replay history', free: '24 hours', perPuja: '24 hours', nri: '90 days' },
-  { feature: 'Cancellation flexibility', free: '24h notice', perPuja: '24h notice', nri: '4h notice' },
+  // TC-03. This row read "24h notice / 24h notice / 4h notice" and sold the
+  // shorter window as a Premium perk. There is no such perk and there cannot
+  // be one today: booking.service.ts throws "Cancellation is not allowed
+  // within 24 hours of the scheduled puja time." for every devotee, no
+  // subscription tier is consulted anywhere in cancellation.service.ts, and
+  // lib/cancellation-policy records that the 4-24h and <4h tiers of
+  // DEFAULT_CANCEL_POLICY are unreachable for a devotee cancel and therefore
+  // "no consumer surface may advertise them". Advertising the unreachable tier
+  // as the reason to pay ₹5,000 is the worst version of that.
+  //
+  // The policy is identical for all three columns, so the row now says so and
+  // is generated from the shared constant rather than typed.
+  {
+    feature: 'Puja cancellation policy',
+    free: CANCELLATION_BADGE_LABEL,
+    perPuja: CANCELLATION_BADGE_LABEL,
+    nri: CANCELLATION_BADGE_LABEL,
+  },
 ];
 
 const faqs = [
+  // TC-03. These three answers gave operating instructions for a purchase that
+  // cannot be made ("cancel anytime from /account/subscriptions", "anyone can
+  // subscribe", "book any open slot from /priests directly after subscribing").
+  // The plan is withdrawn, and the priest-call answer describes an entitlement
+  // the registry calls a supply commitment nobody has made:
+  // consultation.ts is paid per session with no premium waiver and no weekly
+  // allowance counter.
   {
     q: 'How does billing work?',
-    a: 'Annual subscription, billed once through Razorpay in INR (₹5,000, roughly $60 USD equivalent). Auto-renews after 365 days; cancel anytime from /account/subscriptions.',
+    a: NRI_PREMIUM_IS_SELLABLE
+      ? 'Annual subscription, billed once through Razorpay in INR (₹5,000, roughly $60 USD equivalent). Auto-renews after 365 days; cancel anytime from /account/subscriptions.'
+      : 'It does not, currently — the tier is withdrawn and nothing can be billed for it. When it was on sale it was an annual subscription charged once through Razorpay in INR (₹5,000, roughly $60 USD equivalent), auto-renewing after 365 days, cancellable from /account/subscriptions. If you already hold one, that is still how it works and it runs to its end date.',
   },
   // TC-03 (P0, trust). This answer used to read "full refund within 14 days, no
   // questions asked. Pro-rated refund within 90 days." Neither exists.
@@ -130,9 +193,19 @@ const faqs = [
   //
   // So the honest answer is a manual, reviewed one. Restore an automatic window
   // only when a subscription refund path exists to honour it.
+  // TC-03, second pass. The replacement written above still contained a promise
+  // of its own — "your access runs to the end of the year you have already paid
+  // for" — and it is false. `cancel()` performs one write,
+  // `marketplaceSubscription.update({ data: { status: 'CANCELLED' } })`, and
+  // every consumer of the entitlement filters on `status: 'ACTIVE'`
+  // (`isPremium()` in subscription.service.ts, `getActivePlan()` in
+  // lib/ai-usage.ts). MarketplaceSubscription carries no cancelAtPeriodEnd,
+  // no grace column and no deferred job, so access ends at the moment of
+  // cancellation. The sentence lives in ./plan-availability so the hero, the
+  // FAQ and the closing CTA cannot drift apart again.
   {
     q: 'Can I get a refund?',
-    a: 'Cancelling stops the next renewal — your access runs to the end of the year you have already paid for. The annual fee is not refunded automatically, because there is no automatic refund for a subscription in the product today. If something has genuinely gone wrong — a duplicate charge, or a benefit we did not deliver — write to support@darshya.online and a person reviews it and refunds by hand where we are at fault. Puja bookings you make are separate and follow the cancellation policy on /refunds.',
+    a: `${NRI_CANCELLATION_SENTENCE} The annual fee is not refunded automatically, because there is no automatic refund for a subscription in the product today: the only refund engine reads a puja booking, and a subscription has none. If something has genuinely gone wrong — a duplicate charge, or a benefit we did not deliver — write to ${COMPANY.supportEmail} and a person reviews it and issues the refund by hand in the payment gateway where we are at fault. Puja bookings you make are separate and follow the cancellation policy on /refunds.`,
   },
   {
     q: 'What about taxes?',
@@ -142,11 +215,15 @@ const faqs = [
   },
   {
     q: 'Do I need to be NRI to subscribe?',
-    a: 'No, anyone can subscribe. The tier is named for who it most benefits — Indians abroad who want India-rate pricing and live priest connection. Domestic users are welcome.',
+    a: NRI_PREMIUM_IS_SELLABLE
+      ? 'No, anyone can subscribe. The tier is named for who it most benefits — Indians abroad who want India-rate pricing and live priest connection. Domestic users are welcome.'
+      : 'Nobody can subscribe today, NRI or not — the tier is withdrawn. The name describes who it was designed for, not a restriction: when it returns it will be open to domestic devotees too.',
   },
   {
     q: 'How is the 1:1 priest call scheduled?',
-    a: 'Book any open slot from /priests directly after subscribing. The first call is auto-scheduled within 7 days. Each subsequent week unlocks one new free slot.',
+    a: NRI_PREMIUM_IS_SELLABLE
+      ? 'Book any open slot from /priests directly after subscribing. The first call is auto-scheduled within 7 days. Each subsequent week unlocks one new free slot.'
+      : 'It is not scheduled yet, and this is the benefit the tier is most blocked on. Consultations are booked and paid per session at /priests; there is no weekly free allowance in the product, and building one needs a priest roster that can actually staff it, not just code. That is one of the reasons the tier is on hold.',
   },
   {
     q: 'What languages are supported?',
@@ -159,7 +236,7 @@ export default function NriPremiumLanding() {
     <main className="bg-surface-50 min-h-[100dvh]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(nriPremiumServiceJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(nriServiceJsonLd) }}
       />
       <section className="relative overflow-hidden bg-gradient-to-br from-saffron-50 via-cream-50 to-saffron-100/30 border-b border-surface-200/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
@@ -174,26 +251,75 @@ export default function NriPremiumLanding() {
               <span className="text-saffron-700">at India prices.</span>
             </h1>
             <p className="text-lg md:text-xl text-surface-600 mb-8 leading-relaxed">
-              Annual all-access for NRIs. Drop the surcharge on every puja, get a free weekly 1:1 priest call, and unlimited AI Pandit guidance — all for less than the cost of a single live darshan booking abroad.
+              {NRI_PREMIUM_IS_SELLABLE
+                ? 'Annual all-access for NRIs. Drop the surcharge on every puja, get a free weekly 1:1 priest call, and unlimited AI Pandit guidance — all for less than the cost of a single live darshan booking abroad.'
+                : 'This is the page for Darshya NRI Premium, the annual all-access tier for the Indian diaspora. It is on hold. What follows describes what the tier was specified to do, so you can decide whether it is worth waiting for.'}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-              <Link
-                href="/auth?redirect=/upgrade"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
-              >
-                Go Premium — ₹5,000 / year (about $60)
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="#compare"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-surface-50 text-surface-800 font-medium rounded-lg border border-surface-200 transition-all"
-              >
-                Compare plans
-              </Link>
-            </div>
-            <p className="text-xs text-surface-500 mt-4">
-              Charged ₹5,000 in INR (about $60) · your bank sets the conversion rate · cancel anytime · access runs to the end of your paid year
-            </p>
+            {/* TC-03 root cause. This page is a hardcoded shopfront that never
+                consulted the server about whether the thing it sells is for
+                sale. It is not: all six NRI Premium benefits carry
+                `enforcedBy: null`, so nriPremiumIsSellable() is false,
+                getPlans() drops the plan, and both activation rails answer 400
+                with the withdrawal message. "Go Premium" led a devotee to
+                /upgrade to be refused. Publishing a refund policy for a
+                purchase that cannot complete is the same finding one layer up,
+                so the buy affordance is gated on the mirrored server fact and
+                the page prints the server's own refusal instead. */}
+            {NRI_PREMIUM_IS_SELLABLE ? (
+              <>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                  <Link
+                    href="/auth?redirect=/upgrade"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
+                  >
+                    Go Premium — ₹5,000 / year (about $60)
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href="#compare"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-surface-50 text-surface-800 font-medium rounded-lg border border-surface-200 transition-all"
+                  >
+                    Compare plans
+                  </Link>
+                </div>
+                <p className="text-xs text-surface-500 mt-4">
+                  Charged ₹5,000 in INR (about $60) · your bank sets the conversion rate · cancel anytime · cancelling ends access immediately, it does not run to the end of the year you paid for
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto max-w-2xl rounded-xl border border-amber-300 bg-amber-50 p-5 text-left">
+                  <p className="flex items-start gap-2 text-sm font-semibold text-amber-900">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                    NRI Premium is not currently sold
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-amber-900/90">
+                    {NRI_PREMIUM_WITHDRAWN_NOTICE}
+                  </p>
+                </div>
+                <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center items-center">
+                  {/* DU-03: the one primary-CTA recipe, not a hand-rolled
+                      saffron fill — cta-uniformity-ratchet.du03 counts those
+                      and only lets the total fall. */}
+                  <Link
+                    href="/pricing"
+                    className={buttonClass('primary', 'lg', 'shadow-md shadow-saffron-600/20')}
+                  >
+                    See what you can book today
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href="#compare"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-surface-50 text-surface-800 font-medium rounded-lg border border-surface-200 transition-all"
+                  >
+                    Compare plans
+                  </Link>
+                </div>
+                <p className="text-xs text-surface-500 mt-4">
+                  Nothing on this page can be charged to you while the tier is withdrawn. Everything free on Darshya — live darshan, panchang, the temple and puja catalogue — stays available without an account.
+                </p>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -202,8 +328,15 @@ export default function NriPremiumLanding() {
         <h2 className="text-3xl md:text-4xl font-bold text-surface-900 text-center mb-3">
           What you get
         </h2>
+        {/* TC-03. Not one of the six is enforced today — the registry in
+            apps/api/src/services/subscription-entitlements.ts names, per
+            benefit, the file that would have to gate it and does not. That is
+            exactly why the plan was withdrawn, so the section says what it is
+            describing rather than presenting the list as delivered goods. */}
         <p className="text-surface-600 text-center mb-12 max-w-2xl mx-auto">
-          Six benefits that pay for the subscription on a single booking.
+          {NRI_PREMIUM_IS_SELLABLE
+            ? 'Six benefits that pay for the subscription on a single booking.'
+            : 'What the tier was designed to include. None of it is on sale today — we withdrew it because we could not yet deliver every item on this list.'}
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {benefits.map((b) => {
@@ -229,8 +362,15 @@ export default function NriPremiumLanding() {
           <h2 className="text-3xl md:text-4xl font-bold text-surface-900 text-center mb-3">
             Compare plans
           </h2>
+          {/* TC-03. Every difference this table claims for the NRI Premium
+              column is one of the six benefits carrying `enforcedBy: null`, so
+              none of them is enforced anywhere in the product. Gating each row
+              would leave an empty table; saying so once above it is honest and
+              keeps the specification readable. */}
           <p className="text-surface-600 text-center mb-12 max-w-2xl mx-auto">
-            One annual fee. No surprise charges per booking.
+            {NRI_PREMIUM_IS_SELLABLE
+              ? 'One annual fee. No surprise charges per booking.'
+              : 'What the tier was specified to change. None of these differences is enforced in the product today — the NRI Premium column describes the design, not current behaviour.'}
           </p>
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="w-full text-sm border border-surface-200 rounded-xl overflow-hidden">
@@ -261,21 +401,15 @@ export default function NriPremiumLanding() {
         </div>
       </section>
 
-      <section className="bg-gradient-to-br from-saffron-50 to-cream-50 border-y border-surface-200/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 text-center">
-          <div className="flex items-center justify-center gap-1 mb-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Star key={i} className="w-5 h-5 text-saffron-500 fill-saffron-500" />
-            ))}
-          </div>
-          <p className="text-lg md:text-xl text-surface-800 italic mb-4 leading-relaxed">
-            &ldquo;Saved over $400 in NRI surcharges on Janmashtami booking alone. The weekly priest call has been the most meaningful part — feels like home.&rdquo;
-          </p>
-          <p className="text-sm text-surface-600">
-            <strong className="text-surface-800">Anjali R.</strong> · NRI Premium since 2026
-          </p>
-        </div>
-      </section>
+      {/* TC-03. A five-star testimonial ("Anjali R. · NRI Premium since 2026",
+          "Saved over $400 in NRI surcharges on Janmashtami booking alone")
+          stood here. It is fabricated twice over: the plan is withdrawn from
+          sale, so there is no such subscriber, and the saving it describes is
+          the one benefit the entitlement registry calls impossible —
+          `booking.nri_surcharge_waived` is `enforcedBy: null` with the note
+          "No surcharge waiver exists on any booking path. The NRI multiplier
+          is applied without consulting any subscription." Deleted rather than
+          rewritten: there is no real review to put in its place. */}
 
       <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
         <h2 className="text-3xl md:text-4xl font-bold text-surface-900 text-center mb-12">
@@ -298,10 +432,17 @@ export default function NriPremiumLanding() {
       </section>
 
       <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* TC-03. The subtitle offered "our NRI festival calendar + a $10 trial
+            credit when we launch your country premium tier". There is no
+            credit — `trial credit` appeared in exactly this one string in the
+            whole repo — no country-specific tier anywhere in the plan
+            definitions, and no calendar mailing. EmailCapture posts to
+            POST /waitlist and stores a row; that is the whole mechanism, so
+            that is what the copy may promise. */}
         <EmailCapture
           source="nri-landing"
-          title="Not ready to subscribe yet?"
-          subtitle="Get our NRI festival calendar + a $10 trial credit when we launch your country premium tier."
+          title={NRI_PREMIUM_IS_SELLABLE ? 'Not ready to subscribe yet?' : 'Want to know when the tier is back?'}
+          subtitle="Leave your email and we will write to you when there is something to buy. It is stored as a waitlist entry and used for nothing else."
           cta="Notify me"
         />
       </section>
@@ -310,21 +451,35 @@ export default function NriPremiumLanding() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 text-center">
           <Sparkles className="w-10 h-10 text-saffron-200 mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Less than a single live darshan abroad.
+            {NRI_PREMIUM_IS_SELLABLE
+              ? 'Less than a single live darshan abroad.'
+              : 'Everything free on Darshya is still yours.'}
           </h2>
           <p className="text-saffron-100 text-lg mb-8 max-w-2xl mx-auto">
-            ₹5,000 per year, charged in INR (about $60). Cancel anytime — cancelling stops the next renewal and your access runs to the end of the year you have paid for. Your home is one click away.
+            {NRI_PREMIUM_IS_SELLABLE
+              ? `₹5,000 per year, charged in INR (about $60). ${NRI_CANCELLATION_SENTENCE}`
+              : 'The paid tier is withdrawn until we can deliver what it promises. Live darshan, panchang, the temple and puja catalogue and the AI Pandit free tier need no subscription and no account.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {NRI_PREMIUM_IS_SELLABLE ? (
+              <Link
+                href="/auth?redirect=/upgrade"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-saffron-800 hover:bg-saffron-50 font-semibold rounded-lg shadow-md transition-all"
+              >
+                Go Premium
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <Link
+                href="/pujas"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-saffron-800 hover:bg-saffron-50 font-semibold rounded-lg shadow-md transition-all"
+              >
+                Browse pujas
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
             <Link
-              href="/auth?redirect=/upgrade"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-saffron-800 hover:bg-saffron-50 font-semibold rounded-lg shadow-md transition-all"
-            >
-              Go Premium
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/upgrade"
+              href="/pricing"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-saffron-800/40 hover:bg-saffron-800/60 text-white font-medium rounded-lg border border-saffron-400/30 transition-all"
             >
               See all plans
@@ -335,9 +490,12 @@ export default function NriPremiumLanding() {
               <CheckCircle2 className="w-4 h-4 text-saffron-200" />
               Razorpay secure checkout
             </li>
+            {/* TC-03. This tile read "Access to the end of your paid year".
+                cancel() flips status to CANCELLED and isPremium() /
+                getActivePlan() both require ACTIVE, so it does not. */}
             <li className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-saffron-200" />
-              Access to the end of your paid year
+              Cancelling ends access at once
             </li>
             <li className="flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-saffron-200" />

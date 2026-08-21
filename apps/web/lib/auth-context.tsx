@@ -7,6 +7,7 @@ import {
  useState,
  useCallback,
  type ReactNode,
+ type MouseEvent as ReactMouseEvent,
 } from 'react';
 import {
  API_BASE_URL,
@@ -59,6 +60,50 @@ export interface AuthSession {
  expiresAt: number;
 }
 
+/**
+ * AUTH-09 — how far a sign-out reaches.
+ *
+ * `global` ends every session the account holds (the API burns every
+ * `refresh_token_jtis` row); `local` ends only the one on this device.
+ * Mirrors `logoutSchema` in apps/api/src/routes/auth.ts.
+ */
+export type SignOutScope = 'local' | 'global';
+
+export interface SignOutOptions {
+ scope?: SignOutScope;
+}
+
+/**
+ * What `signOut` will actually be handed at runtime.
+ *
+ * Eight portal layouts wire it straight into a button — `onClick={signOut}` in
+ * app/{admin,astrologer-portal,gaushala-portal,priest,store-admin,
+ * temple-portal,wellness-portal}/layout.tsx and app/dashboard/page.tsx — so the
+ * first argument is frequently a React MouseEvent and not an options bag. A
+ * bare `(options?: SignOutOptions)` signature makes every one of those eight a
+ * compile error (TypeScript's weak-type check: a MouseEvent shares no property
+ * with SignOutOptions), which is why the previous pass left the signature
+ * alone. Admitting the event in the type — and ignoring it at runtime via
+ * `readSignOutScope` — keeps those call sites untouched and still gives callers
+ * that DO pass options full checking on `scope`.
+ */
+export type SignOutArg = SignOutOptions | ReactMouseEvent;
+
+/**
+ * Reads a scope out of whatever `signOut` was called with.
+ *
+ * Deliberately structural rather than a cast: `onClick={signOut}` passes a
+ * MouseEvent, which has no `scope`, so this returns undefined and the API's
+ * global default applies — the pre-existing behaviour of every such button.
+ * An unrecognised string is also treated as absent rather than forwarded, so a
+ * typo can never widen or narrow a sign-out by accident.
+ */
+function readSignOutScope(arg: SignOutArg | undefined): SignOutScope | undefined {
+ if (!arg || typeof arg !== 'object') return undefined;
+ const raw = (arg as { scope?: unknown }).scope;
+ return raw === 'local' || raw === 'global' ? raw : undefined;
+}
+
 interface AuthContextValue {
  user: AuthUser | null;
  session: AuthSession | null;
@@ -68,7 +113,12 @@ interface AuthContextValue {
  verifyOtp: (phone: string, token: string) => Promise<{ success: boolean; message: string; isNewUser?: boolean }>;
  signInWithCredentials: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
  signUpWithCredentials: (data: SignUpData) => Promise<{ success: boolean; message: string; accessToken?: string; userId?: string }>;
- signOut: () => Promise<void>;
+ /**
+  * AUTH-09: the argument is OPTIONAL and omitting it keeps today's behaviour
+  * exactly — no `scope` on the wire, and the API's own default (global) applies.
+  * See the implementation for why global must stay the default.
+  */
+ signOut: (options?: SignOutArg) => Promise<void>;
  refreshUser: () => Promise<void>;
  demoSignIn: () => void;
 }
@@ -938,8 +988,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
  /**
  * Signs out the user and clears the session.
+ *
+ * AUTH-09 — scope is now sayable, and it was not before.
+ *
+ * POST /auth/logout accepts `scope: 'local' | 'global'`
+ * (apps/api/src/routes/auth.ts `logoutSchema`), but this function hardcoded a
+ * body of `{ accessToken }`, so every sign-out in the product was global and no
+ * screen could offer "just this device" even if it wanted to. The local session
+ * is cleared either way; what `scope` decides is whether the user's OTHER
+ * devices stay signed in.
+ *
+ * GLOBAL REMAINS THE DEFAULT, and deliberately by OMISSION rather than by
+ * sending `scope: 'global'`: every current caller invokes `signOut()` bare, and
+ * the API reads an absent field as global. Defaulting to `local` here would
+ * silently stop revoking other sessions on a lost or shared device — a security
+ * regression dressed as a UX improvement. Callers that want the narrow scope
+ * must ask for it, and should say so in the UI first (see /auth/logout, which
+ * discloses the multi-device effect).
  */
- const signOut = useCallback(async () => {
+ const signOut = useCallback(async (options?: SignOutArg) => {
+ const scope = readSignOutScope(options);
  try {
  if (session?.accessToken && !session.accessToken.startsWith('demo-')) {
  // P1#4: credentials:'include' ensures the HttpOnly `darshya_session`
@@ -949,7 +1017,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  credentials: 'include',
- body: JSON.stringify({ accessToken: session.accessToken }),
+ body: JSON.stringify({
+   accessToken: session.accessToken,
+   // Omitted, not defaulted — see the note above.
+   ...(scope ? { scope } : {}),
+ }),
  });
  }
  } catch {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { CIRCUITS, getCircuit } from '../lib/pilgrimage-circuits';
+import { CIRCUITS, CIRCUIT_ALIASES, canonicalCircuitSlug, getCircuit } from '../lib/pilgrimage-circuits';
 import PilgrimageIndex, { metadata } from '../app/pilgrimage/page';
 
 // CI-10 — /pilgrimage announced "The 8 canonical Hindu pilgrimage circuits" in
@@ -8,13 +8,31 @@ import PilgrimageIndex, { metadata } from '../app/pilgrimage/page';
 // paragraph, directly above a grid of nineteen cards. Two of those cards were
 // the SAME URL (/pilgrimage/sapta-puri) advertised at two prices — ₹48,000 and
 // ₹35,000 — with two different stop lists behind them.
+//
+// 2026-08-21: the duplicate is now deleted at source and the two remaining
+// one-subject-two-URLs pairs (ashta-vinayak / ashta-vinayak-maharashtra and
+// dwadasha-aditya / dwadasha-aditya-circuit) are merged behind
+// CIRCUIT_ALIASES. The premise guard that used to require a duplicate to
+// exist is therefore inverted: the source must now carry NONE.
 
 const DISTINCT = new Set(CIRCUITS.map((c) => c.slug));
 
 describe('CI-10 — /pilgrimage counts what it actually ships', () => {
-  it('the source really does carry a duplicate circuit', () => {
-    // Premise guard for the render-level dedupe below.
-    expect(DISTINCT.size).toBeLessThan(CIRCUITS.length);
+  it('the source carries no duplicate circuit at all', () => {
+    expect(DISTINCT.size).toBe(CIRCUITS.length);
+  });
+
+  it('every retired circuit slug resolves onto a circuit that exists', () => {
+    expect(Object.keys(CIRCUIT_ALIASES).length).toBeGreaterThan(0);
+    for (const [retired, survivor] of Object.entries(CIRCUIT_ALIASES)) {
+      // The retired slug must not also be a live record, or the redirect would
+      // shadow a real page.
+      expect(DISTINCT.has(retired), `${retired} is still a live circuit`).toBe(false);
+      expect(getCircuit(survivor), `${retired} -> ${survivor} does not exist`).toBeDefined();
+      // Idempotent: an alias target is never itself an alias key, so the
+      // route's 308 cannot loop.
+      expect(canonicalCircuitSlug(survivor)).toBe(survivor);
+    }
   });
 
   it('never claims a number of circuits it does not have', () => {

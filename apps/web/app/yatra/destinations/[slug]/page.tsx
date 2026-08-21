@@ -9,6 +9,8 @@ import {
   type AffiliatePartner,
 } from '../../../../lib/yatra-destinations';
 import { remoteImage, remoteSrcSet, IMG_W } from '../../../../lib/images';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../../lib/detail-route-cta';
 
 type Params = { slug: string };
 
@@ -160,6 +162,10 @@ export default async function YatraDestinationDetailPage({ params }: { params: P
           </aside>
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'yatra/destinations',
+        subject: dest.name,
+      })}
     </div>
   );
 }

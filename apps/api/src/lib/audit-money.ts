@@ -145,6 +145,11 @@ export interface MoneyEventInput {
    * Stable key for an at-least-once source. Razorpay retries a webhook for up
    * to 24 hours; with a key the trail keeps one row per real event instead of
    * one per retry.
+   *
+   * Pass the bare natural key — a `razorpay_payment_id`, a webhook event id, a
+   * payout id. The writer namespaces it by `eventType` before storing, so the
+   * SAME gateway id used for PAYMENT_VERIFIED and PAYMENT_CAPTURED yields two
+   * rows, not one silently-swallowed one. Do NOT pre-prefix it yourself.
    */
   idempotencyKey?: string | null;
 
@@ -175,8 +180,31 @@ const MAX_METADATA_DEPTH = 4;
 const SECRET_KEY_PATTERN =
   /(signature|secret|password|passwd|token|authorization|api[-_]?key|private[-_]?key)/i;
 
-/** `-1234.50`, `1234`, `0.05` — anything Postgres will accept as DECIMAL(10,2). */
+/** `-1234.50`, `1234`, `0.05` — the shapes Postgres parses as a numeric literal. */
 const DECIMAL_PATTERN = /^-?\d{1,12}(\.\d+)?$/;
+
+/**
+ * ...but parsing is not fitting. `amount` is DECIMAL(10,2): precision 10, scale
+ * 2, so EIGHT integer digits and a hard ceiling of 99999999.99. A ninth digit
+ * raises 22003 numeric_field_overflow, which aborts the INSERT — and because
+ * `recordMoneyEvent` swallows every error by contract, the entire audit row
+ * would vanish silently.
+ *
+ * This is reachable, not theoretical: Razorpay reports every amount in PAISE,
+ * so a webhook's `payload.payment.entity.amount` for a ₹12,00,000 donation is
+ * 120000000 — nine digits. Any call site that forwards the gateway figure
+ * without converting loses the audit row for exactly the outsized transaction
+ * most likely to be disputed. Out-of-range values are therefore diverted into
+ * `metadata.unparseableAmount` by the same path as unparseable ones: the column
+ * goes NULL, the figure is preserved, and the EVENT still lands.
+ */
+const MAX_INTEGER_DIGITS = 8;
+
+function withinColumnWidth(text: string): boolean {
+  const integerPart = (text.replace('-', '').split('.')[0] ?? '');
+  // Leading zeros are not significant digits — '0000001234.50' fits fine.
+  return integerPart.replace(/^0+(?=\d)/, '').length <= MAX_INTEGER_DIGITS;
+}
 
 function clip(value: unknown, max: number): string | null {
   if (value === null || value === undefined) return null;
@@ -215,10 +243,12 @@ export function normalizeAmount(input: AmountLike | null | undefined): {
   if (input === null || input === undefined) return { value: null, raw: null };
   if (typeof input === 'number') {
     if (!Number.isFinite(input)) return { value: null, raw: String(input) };
-    return { value: input.toFixed(2), raw: null };
+    const fixed = input.toFixed(2);
+    return withinColumnWidth(fixed) ? { value: fixed, raw: null } : { value: null, raw: fixed };
   }
   const text = String(input).trim();
   if (!DECIMAL_PATTERN.test(text)) return { value: null, raw: text || null };
+  if (!withinColumnWidth(text)) return { value: null, raw: text };
   return { value: text, raw: null };
 }
 
@@ -258,6 +288,33 @@ export async function recordMoneyEvent(input: MoneyEventInput): Promise<MoneyAud
     if (!subjectId) return { ok: false, wrote: false, reason: 'missing-subject-id' };
     const subjectType = clip(input.subjectType, MAX_STATUS);
     if (!subjectType) return { ok: false, wrote: false, reason: 'missing-subject-type' };
+    const eventType = clip(input.eventType, MAX_STATUS) as string;
+
+    /**
+     * NAMESPACE THE KEY BY EVENT TYPE.
+     *
+     * `idempotency_key` is UNIQUE across the WHOLE table and the INSERT is
+     * `ON CONFLICT DO NOTHING`, so two different events sharing one key means
+     * the second is silently discarded — and reported as
+     * `{ ok: true, wrote: false, reason: 'duplicate' }`, i.e. as success.
+     *
+     * The natural key at nearly every wiring site is a gateway id, and the same
+     * gateway id legitimately belongs to several distinct events: POST
+     * /payments/verify records PAYMENT_VERIFIED keyed on `razorpay_payment_id`
+     * and the webhook records PAYMENT_CAPTURED keyed on the same id. Un-prefixed,
+     * whichever landed second would be erased and the trail would show a capture
+     * with no verification — precisely the "which rail got there first" question
+     * this module exists to answer. Prefixing removes the footgun at the source
+     * so no call site has to know about it, while a genuine retry of the SAME
+     * event still collapses to one row.
+     *
+     * Clipping happens AFTER prefixing: clip the caller key first and a long key
+     * would push the prefix straight back off the end and reinstate the collision.
+     */
+    const callerIdempotencyKey = clip(input.idempotencyKey, MAX_ID);
+    const idempotencyKey = callerIdempotencyKey
+      ? clip(`${eventType}:${callerIdempotencyKey}`, MAX_ID)
+      : null;
 
     const id = randomUUID();
     const when =
@@ -292,7 +349,7 @@ export async function recordMoneyEvent(input: MoneyEventInput): Promise<MoneyAud
     const rows = await prisma.$executeRawUnsafe(
       INSERT_SQL,
       id,
-      clip(input.eventType, MAX_STATUS),
+      eventType,
       occurredAt,
       clip(input.actorType, MAX_STATUS) ?? 'system',
       clip(input.actorId, MAX_ID),
@@ -310,7 +367,7 @@ export async function recordMoneyEvent(input: MoneyEventInput): Promise<MoneyAud
       clip(input.gatewayRefundId, MAX_ID),
       clip(input.statusBefore, MAX_STATUS),
       clip(input.statusAfter, MAX_STATUS),
-      clip(input.idempotencyKey, MAX_ID),
+      idempotencyKey,
       clip(input.requestId, MAX_ID),
       clip(input.ip, MAX_ID),
       clip(input.note, MAX_NOTE),
@@ -321,7 +378,7 @@ export async function recordMoneyEvent(input: MoneyEventInput): Promise<MoneyAud
     // logged. That is a SUCCESS for an idempotent trail, and a different fact
     // from a failed write, so it gets its own outcome rather than `ok:false`.
     if (Number(rows) > 0) return { ok: true, wrote: true, id };
-    if (input.idempotencyKey) return { ok: true, wrote: false, reason: 'duplicate' };
+    if (idempotencyKey) return { ok: true, wrote: false, reason: 'duplicate' };
     // No key, no rows: the driver did not report a count (a mock, or a client
     // that returns undefined). Report the row as written — refusing to would
     // claim a failure that did not happen.

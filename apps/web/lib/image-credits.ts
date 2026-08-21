@@ -277,3 +277,129 @@ export function creditLine(credit: CommonsCredit): string {
   const who = credit.author.trim() || 'Unknown author';
   return `${credit.subject} — ${who}, ${credit.license}`;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * CM-08, THIRD SOURCE — files we HOST, added 2026-08-21.
+ *
+ * The two joins above both describe HOTLINKS: `lib/images.ts` and the seeded
+ * `temples.images` arrays point a browser at upload.wikimedia.org, and the
+ * bytes are served by Wikimedia with the file's own provenance attached.
+ *
+ * `apps/web/public/` is different in kind. Those bytes are served by
+ * darshya.online, which makes us the distributor, and a licence's conditions
+ * bind the distributor directly. Nothing in this repo had ever recorded where
+ * such a file came from, and one of them is a third-party photograph:
+ *
+ *   public/images/golden-temple-og.jpg  1200x630, 136,622 B
+ *     = a CROP of File:The_Golden_Temple_of_Amrithsar_7.jpg
+ *       (Commons imageinfo 2026-08-21: 4176x2784 = 1.50:1, Shagil Kannur,
+ *        CC BY-SA 4.0, AttributionRequired: true)
+ *     introduced by 73943b61, whose commit body itself calls it a "CC-SA
+ *     Wikimedia asset", and named as og:image / twitter:image by ~100 route
+ *     files. `sharp(...).metadata()` on the shipped file reported
+ *     `exif: false, icc: false` and no comment segment: the artifact that
+ *     Facebook, X, LinkedIn and WhatsApp fetch and re-host named no author,
+ *     no licence, no source, and did not say it had been modified.
+ *
+ * 1.50:1 -> 1.905:1 is not a resize, it is an ADAPTATION, so CC BY-SA 4.0
+ * 3(b)(1) also applies: the adapted card must carry the same licence. A
+ * preview card in a WhatsApp thread cannot reach /credits, so the credit has
+ * to live in the file. `commonsAttributionText()` below is that credit, and
+ * `__tests__/cm08-self-hosted-image-attribution.test.ts` reads it back out of
+ * the bytes on disk — and fails when any raster in public/ has no row here, so
+ * the next downloaded photograph cannot repeat 73943b61.
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+export interface SelfHostedImage {
+  /** POSIX path under `apps/web/public`, with a leading slash. */
+  path: string;
+  /**
+   * `original`   — artwork made for Darshya; no third-party rights.
+   * `screenshot` — a capture of our own UI. Any third-party photograph inside
+   *                the frame is a hotlink credited on /credits.
+   * `commons`    — a copy or derivative of a Wikimedia Commons file. We are
+   *                the distributor, so the licence binds us directly.
+   */
+  origin: 'original' | 'screenshot' | 'commons';
+  /** `commons` only: the Commons file. Must have a COMMONS_CREDITS row. */
+  commonsFile?: string;
+  /** `commons` only: what we changed — CC BY(-SA) 4.0 3(a)(1)(B). */
+  modification?: string;
+  /** Why the file exists / where it is used. */
+  note?: string;
+}
+
+export const SELF_HOSTED_IMAGES: readonly SelfHostedImage[] = [
+  {
+    path: '/images/golden-temple-og.jpg',
+    origin: 'commons',
+    commonsFile: 'The_Golden_Temple_of_Amrithsar_7.jpg',
+    modification:
+      'cropped from 4176x2784 to 1200x630, re-encoded as JPEG and given a visible credit line',
+    note: 'og:image / twitter:image for ~100 routes. Self-hosted by 73943b61 because Wikimedia 429s a link-audit burst.',
+  },
+  {
+    path: '/og/default.png',
+    origin: 'original',
+    note: 'Brand share card: flat saffron gradient, wordmark, three pill labels, translucent Om glyph. Site-wide og:image default.',
+  },
+  {
+    path: '/og/nri-premium.jpg',
+    origin: 'original',
+    note: 'Brand share card for /nri and /nri/ca. Same gradient system as og/default.png.',
+  },
+  { path: '/logo.png', origin: 'original', note: 'Darshya shikhara-and-flame mark.' },
+
+  // Pitch-deck captures of our own UI (apps/remotion-pitch consumes these).
+  // Third-party photographs appear inside the frames as rendered page content;
+  // those files are hotlinks credited in COMMONS_CREDITS above.
+  { path: '/pitch/img/01-home-hero.png', origin: 'screenshot' },
+  { path: '/pitch/img/01-home-scroll.png', origin: 'screenshot' },
+  { path: '/pitch/img/02-temples-grid.png', origin: 'screenshot' },
+  { path: '/pitch/img/03-temple-detail.png', origin: 'screenshot' },
+  { path: '/pitch/img/04-pujas-grid.png', origin: 'screenshot' },
+  { path: '/pitch/img/05-puja-detail.png', origin: 'screenshot' },
+  { path: '/pitch/img/06-darshan.png', origin: 'screenshot' },
+  { path: '/pitch/img/07-panchang.png', origin: 'screenshot' },
+  { path: '/pitch/img/08-astrology.png', origin: 'screenshot' },
+  { path: '/pitch/img/09-gaushala.png', origin: 'screenshot' },
+  { path: '/pitch/img/10-store.png', origin: 'screenshot' },
+  { path: '/pitch/img/11-yatra.png', origin: 'screenshot' },
+  { path: '/pitch/img/12-ai-chat-input.png', origin: 'screenshot' },
+];
+
+/**
+ * The attribution a self-hosted Commons derivative must carry INSIDE its own
+ * bytes, so it survives being fetched and re-hosted by a scraper.
+ *
+ * Covers all four obligations in one string: creator and licence (3(a)(1)(A)),
+ * a link to the licence and to the material (3(a)(1)(A)(iii)/(iv)), the fact
+ * that the work was modified (3(a)(1)(B)), and — for a ShareAlike source —
+ * the same licence on the adaptation (3(b)(1)).
+ *
+ * Throws rather than degrading: a silent `undefined` here would produce a file
+ * that looks credited and is not.
+ */
+export function commonsAttributionText(entry: SelfHostedImage): string {
+  if (entry.origin !== 'commons' || !entry.commonsFile) {
+    throw new Error(`commonsAttributionText: ${entry.path} is not a Commons derivative`);
+  }
+  const row = BY_FILE.get(entry.commonsFile);
+  if (!row) {
+    throw new Error(
+      `commonsAttributionText: ${entry.commonsFile} has no COMMONS_CREDITS row, so ` +
+        'this derivative would ship crediting nobody.',
+    );
+  }
+  const who = row.author.trim() || 'Unknown author';
+  const parts = [
+    `Photograph: ${who}.`,
+    `Source: ${commonsSourcePage(row.file)}`,
+    row.licenseUrl ? `Licence: ${row.license} (${row.licenseUrl}).` : `Licence: ${row.license}.`,
+    `Modified by Darshya (https://darshya.online): ${entry.modification ?? 'unspecified'}.`,
+  ];
+  if (/BY-SA|GFDL/i.test(row.license)) {
+    parts.push(`This adapted image is also released under ${row.license} (ShareAlike).`);
+  }
+  return parts.join(' ');
+}

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SAPTA_RISHIS, rishiSlugs, getRishi } from '../../../lib/sapta-rishis';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -160,6 +162,10 @@ export default async function RishiDetailPage({ params }: Props) {
           ))}
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'sapta-rishis',
+        subject: r.name,
+      })}
     </main>
   );
 }

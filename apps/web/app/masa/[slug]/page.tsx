@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { VEDIC_MONTHS, getVedicMonthBySlug } from '../../../lib/vedic-months';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 
@@ -149,6 +151,10 @@ export default async function MasaDetailPage({ params }: { params: Promise<{ slu
           </Link>
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'masa',
+        subject: month.name,
+      })}
     </main>
   );
 }

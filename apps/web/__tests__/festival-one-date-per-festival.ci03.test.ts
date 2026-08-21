@@ -79,4 +79,37 @@ describe('CI-03 — one festival, one page, one date', () => {
     const rows = FESTIVALS.filter((f) => nameKey(f.name) === nameKey('Narasimha Jayanti'));
     expect(rows.map((r) => `${r.slug} @ ${r.date2026}`)).toHaveLength(1);
   });
+
+  // The 2026-08-20 wave deleted the duplicate Narasimha Jayanti record but left
+  // the survivor on 2026-05-19, a date this dataset's OWN Vaishakha ladder
+  // rules out. Narasimha Jayanti is Vaishakha Shukla Chaturdashi, so it must
+  // land between two anchors already in this file:
+  //
+  //   akshaya-tritiya    2026-04-19  Vaishakha Shukla Tritiya
+  //   varuthini-ekadashi 2026-05-12  Vaishakha KRISHNA Ekadashi (post-Purnima)
+  //
+  // Shukla Chaturdashi is eleven tithis after Shukla Tritiya and one day
+  // before Vaishakha Purnima, which those two anchors put at 2026-05-01.
+  // 2026-05-19 is a week PAST the Krishna Ekadashi — it is not in Vaishakha's
+  // bright fortnight at all.
+  it('Narasimha Jayanti sits in the Vaishakha Shukla window this dataset itself defines', () => {
+    const narasimha = getFestival('narasimha-jayanti');
+    const tritiya = getFestival('akshaya-tritiya');
+    const krishnaEkadashi = getFestival('varuthini-ekadashi');
+    expect(narasimha).toBeDefined();
+    expect(tritiya).toBeDefined();
+    expect(krishnaEkadashi).toBeDefined();
+
+    // Strictly inside the fortnight the two anchors bracket.
+    expect(narasimha!.date2026 > tritiya!.date2026).toBe(true);
+    expect(narasimha!.date2026 < krishnaEkadashi!.date2026).toBe(true);
+
+    // Tritiya -> Chaturdashi is eleven tithis. Tithi length varies, so allow a
+    // single day of slack; 2026-05-19 misses by nineteen.
+    const gapDays =
+      (Date.parse(`${narasimha!.date2026}T00:00:00Z`) -
+        Date.parse(`${tritiya!.date2026}T00:00:00Z`)) /
+      86_400_000;
+    expect(Math.abs(gapDays - 11)).toBeLessThanOrEqual(1);
+  });
 });

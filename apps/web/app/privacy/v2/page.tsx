@@ -152,16 +152,58 @@ export default function PrivacyV2Page() {
  </PolicySection>
 
  <PolicySection title="5. Cross-border data transfer">
+ {/*
+  TC-10. This section used to open with "Primary data centres are in
+  Mumbai, India (Supabase ap-south-1)." That was false, and falsely
+  reassuring in the direction that matters: it told an Indian data
+  principal their data stays in India, when no part of the deployment is
+  in India at all.
+
+  What the repository actually shows:
+   - render.yaml pins BOTH services (the `bhaktisetu` API and
+     `darshya-web`) to `region: oregon`. Every application server is in
+     the United States. Render does not offer an India region, so no
+     Render deployment could have put primary compute in Mumbai.
+   - The recorded production database host is
+     `aws-1-ap-northeast-1.pooler.supabase.com` — AWS Tokyo. It appears in
+     three tracked audit artifacts: docs/audit/prod-sweep-raw-2026-08-12.md,
+     docs/audit/agent-results-wave1.json and
+     docs/audit/agent-results-partials.json. `ap-south-1` appears nowhere
+     as a Supabase region; the only ap-south-1 in the tree is AWS_REGION
+     for S3/IVS in .env.example, which is a different service.
+
+  The compute region is named here because render.yaml pins it and
+  app/privacy/__tests__/privacy-data-residency.test.ts cross-checks the two
+  — move the service to Frankfurt or Singapore without updating this
+  sentence and that test fails. The database region is deliberately NOT
+  named: it lives in a deployment environment variable rather than in the
+  repo, so a region id here could rot silently, which is exactly how
+  `ap-south-1` came to sit next to a Tokyo database and how the sibling
+  policy came to say "EU-region" about the same one. What is stated
+  instead is the property that holds whichever region is configured, and
+  that is the property the DPDP transfer question turns on: the data is
+  outside India.
+
+  TO NAME THE DATABASE REGION HERE: pin it in the repository first (an
+  asserted region in render.yaml env config, or a startup check that
+  resolves the DIRECT_URL host and refuses to boot on a mismatch), then
+  add it to the cross-check in the test above. Until then this paragraph
+  must stay at the jurisdiction level.
+ */}
  <p>
- Primary data centres are in Mumbai, India (Supabase ap-south-1). Some
- processors operate in the US (Anthropic for AI Pandit, Resend for
- transactional email) or EU (Cloudflare edge POPs).
+ Your personal data is stored and processed outside India. Our application
+ servers run in the United States (Render, Oregon region), and our managed
+ Postgres database is hosted by Supabase in an Asia-Pacific region outside
+ India. Some processors operate in the US (Anthropic for AI Pandit, Resend
+ for transactional email) or the EU (Cloudflare edge POPs).
  </p>
  <p>
  EU/UK personal data crossing to the US is protected via Standard Contractual
- Clauses (SCCs) and supplementary measures per Schrems II. Indian data crossing
- abroad complies with DPDP Section 16. California data transfers are limited
- to service-provider relationships permitted under CCPA §1798.140.
+ Clauses (SCCs) and supplementary measures per Schrems II. Because none of the
+ infrastructure above sits in India, personal data of users in India is
+ transferred abroad in every case; those transfers are made in line with DPDP
+ Section 16. California data transfers are limited to service-provider
+ relationships permitted under CCPA §1798.140.
  </p>
  </PolicySection>
 

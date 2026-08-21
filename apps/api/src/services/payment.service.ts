@@ -345,17 +345,38 @@ interface StoreOrderConfirmRow {
  * not be stranded, and an oversold slot is something an operator can move; what
  * was missing was any detection at all. Fails OPEN (returns null) on any error —
  * a diagnostic must never be able to block a capture.
+ *
+ * BOTH capture→confirm anchors are covered (extended 2026-08-21). A PujaBooking
+ * is anchored either on `templePujaOfferingId` (temple catalog) or on
+ * `priestPujaOfferingId` (pandit-direct) — two different columns on the same
+ * row, each with its own `maxBookingsPerSlot`. The first pass handled only the
+ * temple column and returned null for a pandit booking, which left the
+ * STRICTEST capacity in the product (PriestPujaOffering.maxBookingsPerSlot
+ * defaults to 1 — one devotee per pandit per slot) as the one case with no
+ * detection at all. The predicate below mirrors booking.service's own
+ * `capacityWhere` (booking.service.ts:1326) rather than inventing a second
+ * definition of "the same slot".
  */
 async function slotOversoldNote(booking: {
   id: string;
   createdAt: Date;
   templePujaOfferingId: string | null;
+  priestPujaOfferingId?: string | null;
   scheduledDate: Date | null;
   scheduledTimeSlot: string | null;
 }): Promise<string | null> {
   try {
+    // Temple anchor wins when both are somehow set: it is the column
+    // booking.service's create path checks capacity against.
+    const anchor: { column: 'templePujaOfferingId' | 'priestPujaOfferingId'; id: string } | null =
+      booking.templePujaOfferingId
+        ? { column: 'templePujaOfferingId', id: booking.templePujaOfferingId }
+        : booking.priestPujaOfferingId
+          ? { column: 'priestPujaOfferingId', id: booking.priestPujaOfferingId }
+          : null;
+
     if (
-      !booking.templePujaOfferingId ||
+      !anchor ||
       !booking.scheduledDate ||
       !booking.scheduledTimeSlot ||
       !booking.createdAt
@@ -371,15 +392,21 @@ async function slotOversoldNote(booking: {
     const heldForMs = Date.now() - new Date(booking.createdAt).getTime();
     if (heldForMs < UNPAID_HOLD_MINUTES * 60_000) return null;
 
-    const offering = await prisma.templePujaOffering.findUnique({
-      where: { id: booking.templePujaOfferingId },
-      select: { maxBookingsPerSlot: true },
-    });
+    const offering =
+      anchor.column === 'templePujaOfferingId'
+        ? await prisma.templePujaOffering.findUnique({
+            where: { id: anchor.id },
+            select: { maxBookingsPerSlot: true },
+          })
+        : await prisma.priestPujaOffering.findUnique({
+            where: { id: anchor.id },
+            select: { maxBookingsPerSlot: true },
+          });
     const max = Number(offering?.maxBookingsPerSlot ?? 1);
     const others = Number(
       (await prisma.pujaBooking.count({
         where: {
-          templePujaOfferingId: booking.templePujaOfferingId,
+          [anchor.column]: anchor.id,
           scheduledDate: booking.scheduledDate,
           scheduledTimeSlot: booking.scheduledTimeSlot,
           id: { not: booking.id },
@@ -388,7 +415,8 @@ async function slotOversoldNote(booking: {
       })) ?? 0,
     );
     if (!Number.isFinite(others) || others < max) return null;
-    return `slot already holds ${others} of ${max} bookings (capture landed ${Math.round(
+    const anchorLabel = anchor.column === 'priestPujaOfferingId' ? 'pandit' : 'temple';
+    return `${anchorLabel} slot already holds ${others} of ${max} bookings (capture landed ${Math.round(
       heldForMs / 60_000,
     )} min after the booking was created)`;
   } catch {
@@ -739,7 +767,22 @@ export class PaymentService {
       where: { gatewayOrderId: razorpayOrderId },
       include: {
         booking: {
-          select: { id: true, bookingNumber: true, status: true, userId: true },
+          // PAY-08: the slot coordinates ride along so this rail can run the
+          // same capacity re-check the webhook rail runs. `createdAt` is what
+          // tells us the unpaid hold has lapsed; both offering columns are
+          // needed because a booking is anchored on the temple catalog OR on a
+          // pandit's own catalog.
+          select: {
+            id: true,
+            bookingNumber: true,
+            status: true,
+            userId: true,
+            createdAt: true,
+            templePujaOfferingId: true,
+            priestPujaOfferingId: true,
+            scheduledDate: true,
+            scheduledTimeSlot: true,
+          },
         },
       },
     });
@@ -799,6 +842,13 @@ export class PaymentService {
     // between the two updates previously left a captured Payment with a
     // pending_payment Booking until the webhook retried.
     const shouldConfirm = payment.booking.status === 'pending_payment';
+    // PAY-08: the client-verify rail confirms too, and it is NOT immune to the
+    // late-capture race the webhook rail guards. This is the browser callback
+    // from the Razorpay modal; the unpaid hold is only UNPAID_HOLD_MINUTES (30)
+    // long, so a devotee who is interrupted mid-checkout and finishes paying an
+    // hour later arrives HERE, into a slot that may already have been resold.
+    // Read before the transaction so it never runs inside one.
+    const oversold = shouldConfirm ? await slotOversoldNote(payment.booking) : null;
     // PAY-09: single-winner claim — see claimCaptureTransition. Without it this
     // rail and the webhook, racing on the same booking, each sent the devotee a
     // tax invoice and a confirmation.
@@ -810,6 +860,16 @@ export class PaymentService {
         data: {
           status: 'captured',
           gatewayPaymentId: razorpayPaymentId,
+          ...(oversold
+            ? {
+                metadata: {
+                  ...((payment.metadata as Record<string, unknown>) ?? {}),
+                  slotOversoldAt: new Date().toISOString(),
+                  slotOversoldNote: oversold,
+                  needsAdminReview: 'slot-capacity',
+                },
+              }
+            : {}),
         },
       });
       if (shouldConfirm) {
@@ -827,6 +887,23 @@ export class PaymentService {
         await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
       }
     });
+
+    if (oversold) {
+      // Same marker string the webhook rail emits, so one grep
+      // (`slot_oversold_capture`) and one reconciliation query cover all
+      // confirm rails instead of the queue silently missing a third of them.
+      console.error(
+        '[payment.service][PAY-08] slot_oversold_capture',
+        JSON.stringify({
+          event: 'slot_oversold_capture',
+          rail: 'client-verify',
+          bookingId: payment.booking!.id,
+          paymentId: payment.id,
+          gatewayOrderId: razorpayOrderId,
+          note: oversold,
+        }),
+      );
+    }
 
     // Post-commit side-effects (invoice email + referral reward) are network
     // calls that must NOT roll back a captured payment — fire-and-forget.
@@ -1164,7 +1241,10 @@ export class PaymentService {
             // PBO-12: include userId so applyPostConfirmSideEffects can credit
             // the referral reward on the webhook path.
             // PAY-08: the slot coordinates + createdAt let the confirm re-check
-            // capacity — see slotOversoldNote.
+            // capacity — see slotOversoldNote. BOTH offering columns are
+            // selected: a booking is anchored on the temple catalog OR on a
+            // pandit's own catalog, and omitting the pandit column made the
+            // re-check silently return null for every pandit-direct booking.
             booking: {
               select: {
                 id: true,
@@ -1172,6 +1252,7 @@ export class PaymentService {
                 userId: true,
                 createdAt: true,
                 templePujaOfferingId: true,
+                priestPujaOfferingId: true,
                 scheduledDate: true,
                 scheduledTimeSlot: true,
               },
@@ -1502,10 +1583,34 @@ export class PaymentService {
       default: {
         // Recurring devotional subscriptions (UPI Autopay mandate lifecycle).
         // subscription.* events carry the subscription entity, not a payment.
+        //
+        // PAY-04 (2026-08-21): the MIRROR of the fan-out in
+        // routes/subscriptions.ts. This branch used to drive the recurring
+        // mandate store ONLY, so an owner who subscribed `subscription.*` to
+        // the payments url instead — the runbook's table has two rows and
+        // nothing stops a mistake — silently stopped provisioning every paid
+        // marketplace role plan. Both endpoints now drive both stores; the
+        // shared `razorpay` dedupe namespace makes subscribing both urls safe.
         if (event.startsWith('subscription.')) {
           const subEntity = payload.payload?.subscription?.entity;
-          await handleSubscriptionEvent(event, subEntity);
-          return { handled: true, event };
+          const mandate = await handleSubscriptionEvent(event, subEntity);
+
+          // Dynamic import: keeps subscription.service out of this module's
+          // static graph (payment.service is imported by half the domain) and
+          // is only paid on the rare subscription event, never on a capture.
+          let marketplaceHandled = false;
+          try {
+            const { subscriptionService } = await import('./subscription.service.js');
+            const r = await subscriptionService.handleSubscriptionEvent(event, payload);
+            marketplaceHandled = r.handled;
+          } catch (err) {
+            console.error(
+              '[payment.service][PAY-04] marketplace subscription rail failed',
+              JSON.stringify({ event, subscriptionId: subEntity?.id ?? null }),
+              err,
+            );
+          }
+          return { handled: mandate.handled || marketplaceHandled, event };
         }
         // Unhandled event type — acknowledge but don't process
         return { handled: false, event };

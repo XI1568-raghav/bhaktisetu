@@ -6,6 +6,8 @@ import { notFound } from 'next/navigation';
 import { getSacredRiver, SACRED_RIVERS, sacredRiverSlugs } from '../../../lib/sacred-rivers';
 import { getTirtha } from '../../../lib/tirthas';
 import { formatNumber } from '../../../lib/format-locale';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 
@@ -181,6 +183,10 @@ export default async function SacredRiverPage({ params }: Props) {
           </Link>
         ) : <span />}
       </nav>
+      {detailCta({
+        routePrefix: 'sacred-rivers',
+        subject: r.name,
+      })}
     </main>
   );
 }

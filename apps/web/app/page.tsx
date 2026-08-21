@@ -198,9 +198,29 @@ export default async function HomePage() {
      No fetchPriority: the tag sits at byte ~22.9k of the document, so the
      preload scanner still finds it in the first network chunk, and PERF-02's
      rule against priority hints on maybe-unpainted resources holds here too. */}
+ {/* HOME-01 (2026-08-21) — why there is a 120 px candidate. Dropping
+     `priority` stopped next/image emitting a preload, but REACT 19 emits one of
+     its own for the first non-lazy <img> it renders and copies `sizes` across.
+     Read out of the SSR'd document on 2026-08-21, it is the page's only
+     <link rel="preload">:
+       <link rel="preload" as="image"
+             imagesrcset="…250px… 250w, …330px… 330w, …500px… 500w"
+             imagesizes="(max-width: 767px) 1px, …">
+     It carries no `media`, and a React-emitted preload cannot be given one, so
+     a phone DOES fetch a candidate for a box inside `hidden md:block` —
+     display:none, never painted. Every other <img> on this page is
+     loading="lazy", which makes this preload the WHOLE of a phone's at-load
+     image budget.
+     120 is a real Commons ladder step, so the 1 px declared slot resolves to it
+     instead of to 250. Measured over the wire 2026-08-21 (HEAD to Commons):
+     120px = 4,543 B vs 250px = 16,790 B — 12,247 B, 72.9% of that budget, no
+     longer spent on an invisible box.
+     Nothing that PAINTS can select it: the box exists only at >=768 px, where
+     the narrowest slot is (768 - 96) / 2 = 336 CSS px, and 336 already resolves
+     to the 500 px candidate at DPR 1. Desktop is byte-for-byte unchanged. */}
  <img
  src={getTempleHero('golden-temple', IMG_W.CARD)}
- srcSet={remoteSrcSet(getTempleHero('golden-temple', IMG_W.CARD), [250, 330, IMG_W.CARD])}
+ srcSet={remoteSrcSet(getTempleHero('golden-temple', IMG_W.CARD), [120, 250, 330, IMG_W.CARD])}
  alt="Sri Harmandir Sahib (Golden Temple), live darshan"
  width={500}
  height={250}
@@ -287,7 +307,16 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ QUICK ACTIONS — 6 chip row (IA P4) ═══════════════════════════ */}
- <section aria-label="Quick actions" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
+ {/* HOME-01 (2026-08-21): row 10 of the ranked deferral list in
+     docs/audit/triage-2026-08-15.md, and one of the two rows on that list
+     that were never actually deferred. Re-measured from the SSR'd document on
+     2026-08-21: 5,099 B of markup, 6 inline <svg>, 6 <a>, ZERO images, and the
+     6th top-level child of a 26-child page — roughly 1,200 px down on a 375 px
+     phone against the audit's own 720 px fold. .defer-paint is
+     content-visibility:auto, so the markup stays in the HTML for crawlers and
+     find-in-page while layout and paint are skipped until it is scrolled near.
+     Buys no transfer bytes; it is render work, and the ranked list says so. */}
+ <section aria-label="Quick actions" className="defer-paint py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
  <div className="container-wide">
  <div className="flex md:grid md:grid-cols-6 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
  {[
@@ -339,7 +368,13 @@ export default async function HomePage() {
  <div data-reveal="fade" className="scroll-divider max-w-xs mx-auto" />
 
  {/* ═══ WHAT WE OFFER — cascade card grid ════════════════════════════ */}
- <section className="py-6 md:py-8">
+ {/* HOME-01 (2026-08-21): row 9 of the ranked deferral list, the other row
+     that was listed and never deferred. Re-measured from the SSR'd document
+     on 2026-08-21: 6,530 B of markup and 8 inline <svg> — the largest
+     image-free section on the page — sitting 9th of 26 children. aria-label
+     added so the guard can anchor on it without matching one of the three
+     other `<section className="py-6 md:py-8">` openers. */}
+ <section aria-label="What Darshya offers" className="defer-paint py-6 md:py-8">
  <div className="container-wide">
  <div className="flex items-center gap-2.5 mb-3">
  <Zap className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />

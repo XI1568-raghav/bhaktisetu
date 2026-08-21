@@ -8,6 +8,9 @@ import {
   CATEGORY_DESCRIPTIONS,
   type YajnaModernStatus,
 } from '../../../lib/vedic-yajnas';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 
 export const revalidate = 86400;
 
@@ -51,6 +54,10 @@ export default async function VedicYajnaDetailPage({ params }: Props) {
   const { slug } = await params;
   const y = getVedicYajna(slug);
   if (!y) notFound();
+
+  // Only catalogue-confirmed slugs become links; an unreachable API yields
+  // an empty set and the CTA degrades to the browse exit (DF-02 rule).
+  const catalogue = await getCatalogueSlugs();
 
   const idx = VEDIC_YAJNAS.findIndex((x) => x.slug === y.slug);
   const prev = idx > 0 ? VEDIC_YAJNAS[idx - 1] : null;
@@ -183,6 +190,12 @@ export default async function VedicYajnaDetailPage({ params }: Props) {
           ))}
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'vedic-yajnas',
+        subject: y.name,
+        relatedPujas: [y.name],
+        catalogue,
+      })}
     </main>
   );
 }

@@ -4,6 +4,8 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MUHURATS, muhuratSlugs, getMuhurat } from '../../../lib/muhurats';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -209,6 +211,10 @@ export default async function MuhuratDetail({
           </div>
         </section>
       )}
+      {detailCta({
+        routePrefix: 'muhurat',
+        subject: m.name,
+      })}
     </main>
   );
 }

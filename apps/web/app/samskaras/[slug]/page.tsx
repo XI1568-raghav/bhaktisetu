@@ -4,6 +4,9 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SAMSKARAS, samskaraSlugs, getSamskara, STAGE_LABELS } from '../../../lib/samskaras';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -36,6 +39,10 @@ export default async function SamskaraPage({ params }: { params: Promise<{ slug:
   const { slug } = await params;
   const s = getSamskara(slug);
   if (!s) notFound();
+
+  // Only catalogue-confirmed slugs become links; an unreachable API yields
+  // an empty set and the CTA degrades to the browse exit (DF-02 rule).
+  const catalogue = await getCatalogueSlugs();
 
   const idx = SAMSKARAS.findIndex((x) => x.slug === s.slug);
   const prev = idx > 0 ? SAMSKARAS[idx - 1] : undefined;
@@ -161,6 +168,12 @@ export default async function SamskaraPage({ params }: { params: Promise<{ slug:
           ))}
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'samskaras',
+        subject: s.name,
+        relatedPujas: [s.name],
+        catalogue,
+      })}
     </main>
   );
 }

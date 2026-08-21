@@ -41,6 +41,10 @@ const OWNED: Record<string, readonly { slug: string }[]> = {
   TIRTHAS,
   UPANISHADS,
   JYOTIRLINGAS,
+  // 2026-08-21: lib/pilgrimage-circuits.ts came into the content-data lane.
+  // Its one duplicate (the second `sapta-puri`) is deleted at source, so it
+  // graduates from RATCHET to a hard zero.
+  CIRCUITS,
 };
 
 /**
@@ -57,7 +61,6 @@ const RATCHET: Record<string, { rows: readonly { slug: string }[]; extras: numbe
   MUHURATS: { rows: MUHURATS, extras: 4 },
   SHLOKAS: { rows: SHLOKAS, extras: 2 },
   VRATS: { rows: VRATS, extras: 9 },
-  CIRCUITS: { rows: CIRCUITS, extras: 1 },
 };
 
 describe('CI-02 — no encyclopedia record is unreachable behind a duplicate slug', () => {

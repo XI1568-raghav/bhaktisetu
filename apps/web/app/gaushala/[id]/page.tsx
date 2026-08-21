@@ -294,6 +294,35 @@ const allCows: Record<
 };
 
 /* Default fallback for unknown IDs */
+/**
+ * TC-11 (P2, trust) — whether anything on this page may name a donee.
+ *
+ * Every record in `allCows` below is a fixture typed into this file, and there
+ * is no counted adoptable inventory anywhere in the product: `GET /gaushala/:id`
+ * deliberately returns `cows: []` rather than grafting fixtures onto a real
+ * gaushala, and `GET /gaushala/cows` is served from an in-memory array in
+ * gaushala.service.ts. DF-08 kept the fixtures on purpose — deleting them
+ * empties the page — under a "sample listings" disclosure on the index.
+ *
+ * What the index does NOT do, and this page did, is push the fixture's
+ * `gaushalaName` into the live donation flow. Every CTA here was built as
+ *   /donations?causeId=gs_001&causeKind=gaushala&causeName=Shri%20Krishna%20Gaushala
+ * and the primary button read "Donate to Shri Krishna Gaushala". `gs_001` is
+ * not a row: `resolveGaushalaDonee()` refuses it and POST /donations/create-order
+ * answers 400 `gaushala_not_onboarded`. So the page named a real third-party
+ * organisation as the recipient of a donation it cannot receive and cannot be
+ * paid, and the devotee filled a form that could only fail. No money is
+ * misrouted — the API blocks it — but the claim is false before the API ever
+ * sees it.
+ *
+ * The index already models the honest flow: link to /donations with the plan
+ * prefilled and let the devotee pick a gaushala that is actually approved. This
+ * page does the same while the listing is a sample. The real-record branch is
+ * kept, not deleted, because it is the shape a DB-backed cow must use; flip
+ * this constant in the change that makes `allCows` come from an endpoint.
+ */
+const LISTING_IS_SAMPLE = true;
+
 const defaultCow = {
  id: "cow_001",
  name: "Lakshmi",
@@ -517,6 +546,24 @@ export default async function CowDetailPage({
  {cow.description}
  </p>
 
+ {/* TC-11. /gaushala carries a "sample listings" disclosure and this page,
+     which is where the money button lives, carried none — a devotee arriving
+     from search saw an individually named animal with a health status, a
+     monthly update timeline and a donate button, with nothing telling them it
+     is illustrative. */}
+ {LISTING_IS_SAMPLE && (
+ <div className="mb-6 p-4 rounded-xl bg-surface-100 border border-surface-200">
+ <p className="text-sm text-surface-700 leading-relaxed">
+ <strong className="text-surface-900">This is a sample listing.</strong>{" "}
+ {cow.name}, the gaushala named here and the updates below are
+ illustrative — they show how gau seva works on Darshya. There is no
+ adoptable-cow inventory yet, so a contribution funds cow care at an
+ approved gaushala you choose on the donation page rather than
+ reserving this animal.
+ </p>
+ </div>
+ )}
+
  {/* Adoption status */}
  {cow.isAdopted ? (
  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
@@ -543,10 +590,20 @@ export default async function CowDetailPage({
  {adoptionPlans.map((plan) => (
  // Gau-seva revamp: plan buttons were dead <button> with no onClick. Point
  // each to the donations flow with the planId prefilled so the devotee pays
- // the real plan amount (Razorpay + 80G receipt), not a dead click.
+ // the real plan amount through Razorpay, not a dead click. (The receipt is
+ // a proof-of-donation PDF, not an 80G instrument — HAS_80G_VERIFIED is
+ // false and the generator stamps every receipt "Proof of donation — not a
+ // tax exemption certificate".)
+ //
+ // TC-11: the cause is no longer prefilled from the fixture. See
+ // LISTING_IS_SAMPLE above.
  <Link
  key={plan.id}
- href={`/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}&planId=${encodeURIComponent(plan.id)}`}
+ href={
+ LISTING_IS_SAMPLE
+ ? `/donations?planId=${encodeURIComponent(plan.id)}`
+ : `/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}&planId=${encodeURIComponent(plan.id)}`
+ }
  className={`relative p-3 rounded-xl border text-left transition-all hover:shadow-md block ${
  plan.popular
  ? "border-emerald-400 bg-white ring-1 ring-emerald-200"
@@ -571,11 +628,17 @@ export default async function CowDetailPage({
  ))}
  </div>
  <Link
- href={`/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}`}
+ href={
+ LISTING_IS_SAMPLE
+ ? "/donations"
+ : `/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}`
+ }
  className="w-full mt-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-md shadow-emerald-500/20 btn-press flex items-center justify-center gap-2"
  >
  <Heart className="w-5 h-5" />
- Donate to {cow.gaushalaName}
+ {LISTING_IS_SAMPLE
+ ? "Choose a gaushala to support"
+ : `Donate to ${cow.gaushalaName}`}
  </Link>
  </div>
  )}
@@ -645,19 +708,27 @@ export default async function CowDetailPage({
  {!cow.isAdopted && (
  <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl p-6 text-white shadow-lg">
  <h3 className="text-lg font-bold mb-2">
- Adopt {cow.name} Today
+ {LISTING_IS_SAMPLE ? "Support gau seva today" : `Adopt ${cow.name} Today`}
  </h3>
  <p className="text-emerald-100 text-sm mb-4 leading-relaxed">
- Your seva directly provides food, shelter, and medical care.
- Receive monthly photo updates.
+ Your seva directly provides food, shelter, and medical care at an
+ approved gaushala.
  </p>
+ {/* TC-11: "Visit your cow anytime", "Monthly photo & video updates" and
+     a "Digital adoption certificate" are per-animal entitlements of an
+     adoption that cannot happen — POST /gaushala/adopt was deleted under
+     COM-19 and no donation attaches a cow to a donor. The receipt is the
+     one item on the list the product actually issues. */}
  <div className="space-y-2 mb-5">
- {[
+ {(LISTING_IS_SAMPLE
+ ? ["Donation receipt PDF, emailed instantly"]
+ : [
  "Monthly photo & video updates",
  "Visit your cow anytime",
  "Donation receipt PDF, emailed instantly",
  "Digital adoption certificate",
- ].map((item) => (
+ ]
+ ).map((item) => (
  <div
  key={item}
  className="flex items-center gap-2 text-sm text-emerald-50"
@@ -668,7 +739,11 @@ export default async function CowDetailPage({
  ))}
  </div>
  <Link
- href={`/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}`}
+ href={
+ LISTING_IS_SAMPLE
+ ? "/donations"
+ : `/donations?causeId=${encodeURIComponent(cow.gaushalaId)}&causeKind=gaushala&causeName=${encodeURIComponent(cow.gaushalaName)}`
+ }
  className="w-full py-3 bg-white text-emerald-700 font-bold rounded-xl hover:bg-emerald-50 transition-all btn-press flex items-center justify-center gap-2"
  >
  <Heart className="w-5 h-5" />
@@ -702,6 +777,27 @@ export default async function CowDetailPage({
 
  <div className="h-px bg-surface-100" />
 
+ {/* TC-11. This block published a phone number, an email address, opening
+     hours and a facilities list for a named third-party organisation, all
+     typed into this file. The "gaushala" email (info@krishnagaushala.org,
+     seva@kamdhenugaushala.in) is on a real outside domain we do not
+     control, and the "gaushala" phone number is Darshya's own WhatsApp line
+     (+91 92551 09400 — the same number /faqs publishes as ours), so a
+     devotee ringing the gaushala reached us. Contact details for a sample
+     listing are directed at the only inbox that can actually answer. */}
+ {LISTING_IS_SAMPLE ? (
+ <div className="space-y-3">
+ <div className="flex items-center gap-2 text-sm text-surface-600">
+ <Mail className="w-4 h-4 text-surface-400" />
+ {COMPANY.supportEmail}
+ </div>
+ <p className="text-xs text-surface-500 leading-relaxed">
+ Sample listing — we do not publish contact details or visiting hours
+ for a gaushala until it is onboarded. Write to us and we will point
+ you at an approved one.
+ </p>
+ </div>
+ ) : (
  <div className="space-y-3">
  <div className="flex items-center gap-2 text-sm text-surface-600">
  <Phone className="w-4 h-4 text-surface-400" />
@@ -716,9 +812,14 @@ export default async function CowDetailPage({
  {gsInfo.hours}
  </div>
  </div>
+ )}
 
  <div className="h-px bg-surface-100" />
 
+ {/* TC-11: "Veterinary Hospital", "50-Acre Campus", "Modern Veterinary
+     ICU" are facility claims about a named outside organisation, typed
+     into this file and inspected by nobody. */}
+ {!LISTING_IS_SAMPLE && (
  <div>
  <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-2">
  Facilities
@@ -734,6 +835,7 @@ export default async function CowDetailPage({
  ))}
  </div>
  </div>
+ )}
  </div>
  </div>
 

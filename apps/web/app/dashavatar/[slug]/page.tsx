@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DASHAVATAR, avatarSlugs, getAvatar, YUGA_LABELS } from '../../../lib/dashavatar';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -36,6 +39,10 @@ export default async function AvatarDetailPage({ params }: Props) {
   const { slug } = await params;
   const a = getAvatar(slug);
   if (!a) notFound();
+
+  // Only catalogue-confirmed slugs become links; an unreachable API yields
+  // an empty set and the CTA degrades to the browse exit (DF-02 rule).
+  const catalogue = await getCatalogueSlugs();
 
   const idx = DASHAVATAR.findIndex((x) => x.slug === a.slug);
   const prev = idx > 0 ? DASHAVATAR[idx - 1] : null;
@@ -159,6 +166,12 @@ export default async function AvatarDetailPage({ params }: Props) {
           ))}
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'dashavatar',
+        subject: a.name,
+        relatedPujas: [a.name],
+        catalogue,
+      })}
     </main>
   );
 }

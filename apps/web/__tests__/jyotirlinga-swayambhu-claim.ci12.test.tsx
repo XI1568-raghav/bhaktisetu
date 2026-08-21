@@ -13,6 +13,17 @@ import JyotirlingaIndexPage from '../app/jyotirlinga/page';
 
 const SWAYAMBHU_COUNT = JYOTIRLINGAS.filter((j) => j.swayambhu).length;
 
+/** "swayambhu", "svayambhu", "self-manifest(ed)", "self manifest(ed)". */
+const SELF_MANIFEST = /s[vw]ayambhu|self[\s-]manifest/i;
+
+/** Every string reachable from a record, including inside nested arrays. */
+function strings(value: unknown, out: string[] = []): string[] {
+  if (typeof value === 'string') out.push(value);
+  else if (Array.isArray(value)) for (const v of value) strings(v, out);
+  else if (value && typeof value === 'object') for (const v of Object.values(value)) strings(v, out);
+  return out;
+}
+
 describe('CI-12 — the swayambhu claim matches the swayambhu data', () => {
   it('the data really is split, not unanimous', () => {
     expect(SWAYAMBHU_COUNT).toBeGreaterThan(0);
@@ -65,11 +76,22 @@ describe('CI-12 — the swayambhu claim matches the swayambhu data', () => {
       for (const tslug of byJyotirlinga[jslug] ?? []) {
         const t = TIRTHAS.find((x) => x.slug === tslug);
         if (!t) continue;
-        const prose = `${t.presiding} ${t.significance} ${t.established}`;
-        expect(prose, `${tslug} calls a non-swayambhu Jyotirlinga swayambhu`).not.toMatch(
-          /swayambhu/i,
-        );
+        // 2026-08-21: this used to read only presiding/significance/established,
+        // so a contradiction in `legend`, `history` or `modernRelevance` would
+        // have shipped unseen. Walk EVERY string on the record instead.
+        expect(
+          strings(t).join('  '),
+          `${tslug} calls a non-swayambhu Jyotirlinga swayambhu`,
+        ).not.toMatch(SELF_MANIFEST);
       }
+    }
+  });
+
+  it('the Jyotirlinga records do not contradict their own swayambhu flag', () => {
+    for (const j of JYOTIRLINGAS.filter((x) => !x.swayambhu)) {
+      expect(strings(j).join('  '), `${j.slug} prose vs swayambhu: false`).not.toMatch(
+        SELF_MANIFEST,
+      );
     }
   });
 });

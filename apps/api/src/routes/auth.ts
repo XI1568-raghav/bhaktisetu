@@ -320,7 +320,24 @@ function cookieSecurityOptions(): {
   };
 }
 
-function setAuthCookies(
+/**
+ * SEC-02, prerequisite — EXPORTED so the other session-minting routes can issue
+ * the same cookies with the same flags.
+ *
+ * `POST /auth/magic-link/verify` (routes/magic-link.ts) mints a Supabase
+ * session and returns it as JSON but never sets these cookies, so a magic-link
+ * user — which is every provider onboarded through the partnerships pipeline —
+ * has no `darshya_session` at all and is structurally stuck on the JS-readable
+ * localStorage token SEC-02 is about. That route could not call this function
+ * while it was module-private; its only alternatives were to duplicate the
+ * flags (which is how httpOnly/Secure/SameSite drift apart) or to leave
+ * magic-link users unmigratable, and the second is what kept SEC-02 open.
+ *
+ * Callers: pass the raw access + refresh tokens. Flags come from
+ * cookieSecurityOptions() — do not re-declare them at the call site.
+ * Contract pinned by auth.setauthcookies-export.sec02.test.ts.
+ */
+export function setAuthCookies(
   reply: import('fastify').FastifyReply,
   accessToken: string,
   refreshToken: string,

@@ -1381,8 +1381,8 @@
   "workflow": "authenticated-deep",
   "line": 639,
   "title": "No UI anywhere can mark a booking delivered — the final fulfilment step is curl-only",
-  "state": "partial",
-  "commit": "verify-wave-2026-08-19",
+  "state": "owner",
+  "commit": "wave-hard-2026-08-21",
   "note": "[independently verified] verified: apps/web/__tests__/priest-fulfilment-p1.test.tsx — 2 tests, 2 red before (no button matchi"
  },
  {
@@ -2011,8 +2011,8 @@
   "workflow": "authenticated-deep",
   "line": 1098,
   "title": "The main consumer astrology funnel sells consultations with 15 fictional astrologers — money is captured, no Commission row is written, nobody can deliver",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": "TWO remainders, deliberately not over-claimed. (1) OWNER, unchanged from last wave: real astrologer supply. GET /astrology/astrologers/live serves 3 approved pr"
  },
  {
@@ -2697,8 +2697,8 @@
   "workflow": "authenticated-deep",
   "line": 1584,
   "title": "No shared Button primitive: the primary CTA ships in 11 pixel heights, 11 paddings, 4 radii and 5 type styles across the 10 measured screens",
-  "state": "open",
-  "commit": "wave-2026-08-21",
+  "state": "partial",
+  "commit": "wave-hard-2026-08-21",
   "note": "~280 hand-rolled bg-saffron-600 controls and the lint rule remain. A repo-wide Button migration is a separate piece of work."
  },
  {
@@ -5119,8 +5119,8 @@
   "workflow": "scale-mindset",
   "line": 3565,
   "title": "A pandit paid through the temple booking path sees ₹0 in their own payout portal while being genuinely owed money",
-  "state": "partial",
-  "commit": "verify-wave-2026-08-19",
+  "state": "owner",
+  "commit": "wave-hard-2026-08-21",
   "note": "[independently verified] The finding's second half is untouched: four surfaces still report four different numbers for one pandit (/payouts/balance, /payouts/pandit/mine, the booking co"
  },
  {
@@ -5483,8 +5483,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Recurring UPI Autopay mandates never activate: the only writer of recurring_subscriptions.status hangs off a webhook endpoint that is never subscribed to subscription events",
-  "state": "open",
-  "commit": "-",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5497,8 +5497,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The refund webhook handles an event the runbook never subscribes to — and even when it fires it neither reverses the ledger nor accumulates the refund total",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5539,8 +5539,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "A late webhook confirms a booking whose slot was already resold — capture is never re-checked against capacity",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5693,8 +5693,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "All seven /auth/* routes are fully static with no Cache-Control override, so Next's default one-year shared-cache header lands on sign-in HTML",
-  "state": "open",
-  "commit": "-",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5749,8 +5749,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The daily backup is engineered to exit 0 while producing zero bytes, and no restore has ever been recorded as tested",
-  "state": "open",
-  "commit": "-",
+  "state": "partial",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5763,8 +5763,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Backups are uploaded into the same Supabase project they are supposed to insure — one account suspension takes the database and every backup together",
-  "state": "open",
-  "commit": "-",
+  "state": "partial",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5819,8 +5819,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Two schema-application mechanisms contradict each other, and the boot-time one logs DDL failures and starts serving anyway",
-  "state": "open",
-  "commit": "-",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5847,8 +5847,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "All production monitoring depends on the same GitHub Actions quota that has already been exhausted once",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "owner",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5875,8 +5875,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Production database passwords remain in git history in three commits; untracking the file did not remove them and only rotation will",
-  "state": "open",
-  "commit": "-",
+  "state": "partial",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -5917,8 +5917,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The site publishes Hartalika Teej on two different 2026 dates at two live URLs, and Narasimha Jayanti twice in May with an 11-day gap",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -6001,8 +6001,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Internal roadmap ticket IDs and the retired brand name \"Bhaktisetu\" render in published encyclopedia prose",
-  "state": "open",
-  "commit": "-",
+  "state": "partial",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -6015,8 +6015,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "/pilgrimage announces \"the 8 canonical circuits\" above a grid of 19, two of which are the same URL at two different prices and two different scriptural attributions",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -6085,8 +6085,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "45 published articles list Wikipedia as a source with no CC BY-SA licence notice anywhere; /credits covers images only",
-  "state": "open",
-  "commit": "-",
+  "state": "partial",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -6099,8 +6099,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "5 of the 16 temple links on pilgrimage-circuit pages point at slugs with no curated temple entry",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {
@@ -6239,8 +6239,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The Privacy Policy's Data Security section claims Supabase row-level security as a safeguard — RLS is enabled on 2 of 66 tables, both auxiliary, and none of the user, payment or KYC tables has a policy",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": ""
  },
  {

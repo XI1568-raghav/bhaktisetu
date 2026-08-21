@@ -1652,3 +1652,292 @@ describe('DU-10 — the lead paragraph has one declared size', () => {
     ).toBeLessThanOrEqual(BASELINE);
   });
 });
+
+/* ═══ DU-03 — the CTA census must count every channel the fill arrives on ══ */
+
+/**
+ * The DU-03 ratchet (__tests__/cta-uniformity-ratchet.du03.test.ts) counts one
+ * spelling of the resting primary fill: the literal class `bg-saffron-600`. At
+ * HEAD that finds 213 hand-rolled CTAs. It is blind to three other spellings
+ * that paint THE SAME PIXEL on the same kind of control:
+ *
+ *   `bg-orange-600`             — DU-09 aliased --color-orange-600 onto
+ *                                 --color-saffron-600, so this IS #9e6229.
+ *   `bg-[var(--color-primary)]` — --color-primary IS #9e6229 (DU-04 picked it).
+ *   `style={{ background: 'var(--color-primary)' }}` — the same value again,
+ *                                 and an inline style beats every class, so
+ *                                 these are the un-tokenizable ones. DU-05
+ *                                 ratcheted the identical defect for inline
+ *                                 `fontFamily` on h1 down to 1.
+ *
+ * Two things follow, and both are why this is a guard rather than a note in a
+ * handoff. First the backlog is understated: 213 counted against 77 uncounted
+ * is a 36% shortfall, so "213 left" is not the size of DU-03. Second, and
+ * worse, the ratchet is GAMEABLE in the wrong direction — rewriting
+ * `className="… bg-saffron-600 …"` as `style={{ background:
+ * 'var(--color-primary)' }}` lowers the DU-03 number while making that CTA
+ * strictly harder to fix, and every suite stays green. A ceiling that can be
+ * met by making the defect worse is the failure mode this sweep keeps hitting.
+ *
+ * So each channel gets its own ratchet, and the UNION gets one too — that last
+ * one is the assertion laundering cannot satisfy.
+ *
+ * Comments are stripped before any scan: the pages and this file both quote CTA
+ * class strings in prose.
+ */
+describe('DU-03 — every channel the resting primary fill arrives on is counted', () => {
+  const relOf = (f: string) => path.relative(WEB, f).split(path.sep).join('/');
+  const strip = (s: string) =>
+    s
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+  /** The DU-03 population rule: a labelled `<button|a|Link>` opened just above. */
+  const labelled = (src: string, at: number, back: number): boolean =>
+    /<(?:button|a|Link)\b/.test(src.slice(Math.max(0, at - back), at));
+
+  /**
+   * A fill written inside a `${cond ? … : …}` slot is a selected STATE on a
+   * segmented control, not a resting CTA — the same carve-out the class ratchet
+   * makes with its fillIsConditional().
+   */
+  const interpolated = (cls: string, re: RegExp): boolean => {
+    const at = cls.search(re);
+    if (at < 0) return false;
+    for (const m of cls.matchAll(/\$\{[\s\S]*?\}/g)) {
+      if (at > m.index! && at < m.index! + m[0].length) return true;
+    }
+    return false;
+  };
+
+  const SAFFRON = /\bbg-saffron-600(?![\w\-/])/;
+  const ALIAS = /\bbg-(?:orange-600|\[var\(--color-primary\)\])(?![\w\-/])/;
+  const INLINE = /background(?:Color)?\s*:\s*['"`]\s*var\(\s*--color-primary\s*(?:,[^)]*)?\)/;
+
+  /** Class-spelled resting fills on a self-padded labelled control. */
+  function scanClasses(src: string, fill: RegExp, skipSaffron: boolean): string[] {
+    const hits: string[] = [];
+    for (const m of src.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+      const cls = m[1] ?? m[2] ?? '';
+      if (!fill.test(cls)) continue;
+      if (skipSaffron && SAFFRON.test(cls)) continue;
+      if (!/\bpx-\d/.test(cls)) continue;
+      if (/\b(active|selected|current)\w*\s*===?/i.test(cls)) continue;
+      if (interpolated(cls, fill)) continue;
+      if (!labelled(src, m.index!, 220)) continue;
+      hits.push(cls.replace(/\s+/g, ' ').slice(0, 90));
+    }
+    return hits;
+  }
+
+  /** Inline-styled resting fills on a labelled control. */
+  function scanInline(src: string): string[] {
+    const hits: string[] = [];
+    for (const m of src.matchAll(/style=\{\{[^{}]*\}\}/g)) {
+      const seg = m[0];
+      if (!INLINE.test(seg)) continue;
+      if (seg.includes('?')) continue;
+      if (!labelled(src, m.index!, 320)) continue;
+      hits.push(seg.replace(/\s+/g, ' ').slice(0, 90));
+    }
+    return hits;
+  }
+
+  const alias: string[] = [];
+  const inline: string[] = [];
+  const classic: string[] = [];
+  for (const f of sourceFiles()) {
+    const src = strip(readFileSync(f, 'utf8'));
+    for (const h of scanClasses(src, ALIAS, true)) alias.push(`${relOf(f)} :: ${h}`);
+    for (const h of scanClasses(src, SAFFRON, false)) classic.push(`${relOf(f)} :: ${h}`);
+    for (const h of scanInline(src)) inline.push(`${relOf(f)} :: ${h}`);
+  }
+
+  it('the three spellings resolve to one pixel, so they are one role', () => {
+    // If they ever stop being the same colour, this block is measuring two
+    // different things and the union ceiling below means nothing.
+    const saffron = THEME_VARS['--color-saffron-600'];
+    expect(saffron, '--color-saffron-600 missing from @theme').toMatch(/^#/);
+    expect(
+      resolveVar(THEME_VARS['--color-orange-600']),
+      'DU-09 aliased orange onto the saffron ramp; if that is undone, bg-orange-600 is a ' +
+        'second brand orange again and belongs to DU-09, not here',
+    ).toBe(saffron);
+    expect(
+      resolveVar(ROOT_VARS['--color-primary']),
+      '--color-primary is the token DU-04 picked as THE resting fill; it has to be the ' +
+        'same weight the CTA class paints',
+    ).toBe(saffron);
+  });
+
+  it('the detectors bite on the exact shapes they are written for', () => {
+    // Proved against fixtures, not against the live count: a "> 0" assertion on
+    // real offenders becomes a landmine the day the backlog is cleared.
+    expect(
+      scanClasses('<button className="rounded bg-orange-600 px-4 py-2 text-white">Save</button>', ALIAS, true),
+    ).toHaveLength(1);
+    expect(
+      scanClasses('<Link href="/x" className="px-4 py-2 bg-[var(--color-primary)] text-white">Go</Link>', ALIAS, true),
+    ).toHaveLength(1);
+    expect(
+      scanInline("<a href=\"/x\" className=\"px-4 py-2\" style={{ background: 'var(--color-primary)' }}>Go</a>"),
+    ).toHaveLength(1);
+
+    // …and must NOT bite on a selected filter chip, which is a state, not a CTA.
+    expect(
+      scanClasses(
+        "<button className={`px-3 py-1 ${on ? 'bg-[var(--color-primary)] text-white' : ''}`}>All</button>",
+        ALIAS,
+        true,
+      ),
+    ).toEqual([]);
+
+    // …nor on the highlight token, which is a different value.
+    expect(
+      scanInline("<button className=\"px-4 py-2\" style={{ background: 'var(--color-primary-highlight)' }}>x</button>"),
+    ).toEqual([]);
+
+    // …and the classic scan must still reproduce the DU-03 population, or the
+    // union ceiling below is quietly counting fewer things than it claims.
+    expect(scanClasses('<a className="bg-saffron-600 px-5 py-2">Book</a>', SAFFRON, false)).toHaveLength(1);
+  });
+
+  it('the aliased-class channel only shrinks', () => {
+    /*
+     * RATCHET. Measured at HEAD: 10 — five `bg-[var(--color-primary)]` in the
+     * gaushala portal (cows x2, donations, profile, volunteers) and five
+     * `bg-orange-600` in app/org (members, page, settings) and
+     * app/pancha-bhoota (index, [slug]). Every one is a call-site edit outside
+     * the design lane; the target is buttonClass('primary','md') like the 213.
+     */
+    const BASELINE = 10;
+    expect(
+      alias.length,
+      `${alias.length} primary CTAs paint the fill with an aliased class the DU-03 ratchet ` +
+        `cannot see (ceiling ${BASELINE}). Same pixel, same role — use ` +
+        "buttonClass('primary','md') from components/ui/button-recipe.\n" +
+        alias.join('\n'),
+    ).toBeLessThanOrEqual(BASELINE);
+  });
+
+  it('the inline-style channel only shrinks', () => {
+    /*
+     * RATCHET, and the one that should reach zero first: an inline style beats
+     * every class, so these CTAs cannot be moved by ANY token change — the
+     * recipe is powerless against them. That is exactly the argument DU-05 made
+     * when it ratcheted inline `fontFamily` on h1 down to 1.
+     *
+     * Measured at HEAD: 67 across 38 files, heaviest in app/wellness (15),
+     * app/yatra + /yatra-packages (17) and app/pujas/home-puja + /marriage (10).
+     */
+    const BASELINE = 67;
+    expect(
+      inline.length,
+      `${inline.length} primary CTAs paint the fill with an inline style (ceiling ` +
+        `${BASELINE}). An inline style outranks every class, so no token and no recipe can ` +
+        "ever reach these. Delete the style object and use buttonClass('primary','md').\n" +
+        [...new Set(inline.map((s) => s.split(' :: ')[0]))].slice(0, 20).join('\n'),
+    ).toBeLessThanOrEqual(BASELINE);
+  });
+
+  it('the total cannot be lowered by moving a CTA between channels', () => {
+    /*
+     * THE ANTI-LAUNDERING CEILING, and the reason the three subtotals above are
+     * not enough on their own. Rewriting one `bg-saffron-600` CTA as an inline
+     * style lowers the DU-03 ratchet by one and raises the inline ratchet by
+     * one — both ceilings still hold, CI is green, and the app got worse. This
+     * total is flat under that move and falls only when a CTA adopts the
+     * recipe.
+     *
+     * Measured at HEAD: 213 class + 10 aliased + 67 inline = 290.
+     */
+    const BASELINE = 290;
+    const total = classic.length + alias.length + inline.length;
+    expect(
+      total,
+      `${total} hand-rolled primary CTAs across all three fill channels ` +
+        `(${classic.length} bg-saffron-600 + ${alias.length} aliased + ${inline.length} ` +
+        `inline), ceiling ${BASELINE}. This number falls only when a CTA adopts ` +
+        'buttonClass(); it does not move when one is respelled.',
+    ).toBeLessThanOrEqual(BASELINE);
+  });
+});
+
+/* ═══ DU-10 — a prose utility silently outranks the size class beside it ══ */
+
+/**
+ * `.prose-body` / `.prose-meta` / `.prose-lead` are declared in a stylesheet
+ * that opens no `@layer` of its own, while `@import "tailwindcss"` puts every
+ * utility inside `@layer utilities`. Unlayered beats layered regardless of
+ * specificity or source order, so those three classes outrank `text-xs` …
+ * `text-2xl` AND every responsive step of them.
+ *
+ * That is deliberate — it is what lets one class name end the size sprawl
+ * without an `!important` — but it has a sharp edge the sweep has to survive: a
+ * paragraph written `className="prose-lead text-2xl"` READS as 24px and RENDERS
+ * at 18px, and `className="prose-body md:text-lg"` reads as a responsive lift
+ * that never happens. The DU-10 handoff states the rule in prose ("remove the
+ * old text-* when adding .prose-lead, do not stack them") and prose is not a
+ * guard: 270 lead paragraphs are still to be converted, by whichever lane owns
+ * each page, and a stacked leftover is invisible in review.
+ *
+ * Zero today. Held at zero.
+ */
+describe('DU-10 — a prose utility is never stacked on the size class it beats', () => {
+  const relOf = (f: string) => path.relative(WEB, f).split(path.sep).join('/');
+  const strip = (s: string) =>
+    s
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+  /** Every `text-<step>` in a class string, responsive prefixes included. */
+  const SIZE = /(?:^|\s)(?:[a-z0-9]+:)?(text-(?:xs|sm|base|lg|xl|\dxl))(?![\w-])/g;
+  const PROSE = /\bprose-(?:body|meta|lead)\b/;
+
+  function stacked(src: string): string[] {
+    const hits: string[] = [];
+    for (const m of src.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+      const cls = m[1] ?? m[2] ?? '';
+      if (!PROSE.test(cls)) continue;
+      const sizes = [...cls.matchAll(SIZE)].map((s) => s[1]!);
+      if (sizes.length) {
+        hits.push(`${sizes.join(' ')}  ::  ${cls.replace(/\s+/g, ' ').slice(0, 90)}`);
+      }
+    }
+    return hits;
+  }
+
+  it('the premise holds: globals.css opens no layer, so these classes outrank utilities', () => {
+    expect(
+      (CSS_NC.match(/@layer\b/g) ?? []).length,
+      'globals.css declares an @layer. Everything in this stylesheet just dropped below ' +
+        'Tailwind utilities in the cascade: .prose-body now LOSES to text-lg, the tap-target ' +
+        'floor loses to h-9, and .container-wide loses to max-w-7xl. None of that is visible ' +
+        'in a diff of the call sites.',
+    ).toBe(0);
+  });
+
+  it('the detector bites (a regex regression cannot vacuously pass this)', () => {
+    expect(stacked('<p className="prose-lead text-2xl max-w-2xl">x</p>')).toHaveLength(1);
+    expect(stacked('<p className="prose-body md:text-lg">x</p>')).toHaveLength(1);
+    expect(stacked('<p className="prose-body max-w-2xl text-surface-600">x</p>')).toEqual([]);
+    expect(stacked('<p className="text-lg max-w-2xl">x</p>')).toEqual([]);
+  });
+
+  it('no element carries a prose utility and a size utility at once', () => {
+    const offenders: string[] = [];
+    for (const f of sourceFiles()) {
+      const src = strip(readFileSync(f, 'utf8'));
+      for (const h of stacked(src)) offenders.push(`${relOf(f)} :: ${h}`);
+    }
+    expect(
+      offenders,
+      `${offenders.length} elements stack a Tailwind size on a prose utility. The prose ` +
+        'utility is unlayered and wins, so the size class beside it is dead text describing ' +
+        'a render that does not happen. Delete the text-* — that is the whole point of the ' +
+        'swap.\n' + offenders.slice(0, 20).join('\n'),
+    ).toEqual([]);
+  });
+});

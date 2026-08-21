@@ -4,6 +4,11 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getTirtha, tirthaSlugs, TIRTHAS } from '../../../lib/tirthas';
+// CI-05: 84 shrine pages that printed "✓ Online booking available" above a
+// list of "Primary pujas performed here" rendered as inert text. The badge is
+// now a statement about the shrine that sits next to a control that acts on it.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 import {
   TIRTHA_ALIASES,
   canonicalTirthaSlug,
@@ -59,6 +64,10 @@ export default async function TirthaPage({ params }: Props) {
 
   // Walk the deduped catalogue so prev/next never lands on a redirecting URL.
   const nearby = resolveNearbyTirthas(t.nearbyTirthas);
+
+  // Only slugs the live catalogue confirms become links; an unreachable API
+  // yields an empty set and the CTA degrades to the browse exit (DF-02 rule).
+  const catalogue = await getCatalogueSlugs();
 
   const cards = dedupeTirthas(TIRTHAS);
   const idx = cards.findIndex((x) => x.slug === canonical);
@@ -154,6 +163,13 @@ export default async function TirthaPage({ params }: Props) {
         <p className="mt-3 text-sm text-gray-700"><strong>What to offer:</strong> {t.whatToOffer}</p>
       </section>
 
+      {detailCta({
+        routePrefix: 'tirth',
+        subject: t.name,
+        relatedPujas: t.primaryPujas,
+        catalogue,
+      })}
+
       <section className="mb-8 grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
           <div className="text-xs uppercase tracking-wide text-amber-700">Dress code</div>
@@ -168,9 +184,16 @@ export default async function TirthaPage({ params }: Props) {
       <section className="mb-8">
         <h2 className="mb-2 text-xl font-semibold text-gray-900">Modern access</h2>
         <p className="text-base leading-relaxed text-gray-700">{t.modernRelevance}</p>
-        <div className="mt-3 flex gap-2 text-xs">
-          {t.onlineBookingAvailable && <span className="rounded bg-emerald-100 px-2 py-1 font-semibold text-emerald-800">✓ Online booking available</span>}
-          {t.vipDarshanAvailable && <span className="rounded bg-indigo-100 px-2 py-1 font-semibold text-indigo-800">✓ VIP darshan available</span>}
+        {/* CI-05: these two pills used to read "✓ Online booking available" and
+            "✓ VIP darshan available" with nothing to click, on 84 pages. They
+            describe facilities the SHRINE runs — Tirupati's own slot system,
+            Vaishno Devi's VIP darshan — not Darshya inventory, and worded as
+            they were they read as an unclickable Darshya promise. They are
+            attributed now, and the control that Darshya can actually honour is
+            the CTA above. */}
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          {t.onlineBookingAvailable && <span className="rounded bg-emerald-100 px-2 py-1 font-semibold text-emerald-800">Temple runs its own online darshan booking</span>}
+          {t.vipDarshanAvailable && <span className="rounded bg-indigo-100 px-2 py-1 font-semibold text-indigo-800">Temple offers paid VIP darshan</span>}
         </div>
       </section>
 

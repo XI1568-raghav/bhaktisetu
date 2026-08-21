@@ -4,6 +4,8 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getHinduSymbol, HINDU_SYMBOLS, type HinduSymbolCategory } from '../../../lib/hindu-symbols';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 
@@ -182,6 +184,10 @@ export default async function HinduSymbolDetailPage({ params }: Props) {
           </Link>
         ) : <div />}
       </nav>
+      {detailCta({
+        routePrefix: 'hindu-symbols',
+        subject: s.name,
+      })}
     </main>
   );
 }

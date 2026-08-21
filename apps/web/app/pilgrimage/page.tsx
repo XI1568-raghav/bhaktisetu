@@ -5,12 +5,17 @@ import Link from 'next/link';
 import { CIRCUITS } from '../../lib/pilgrimage-circuits';
 
 // CI-10: the page announced "the 8 canonical circuits" above a grid of 19, and
-// two of those 19 were the SAME url — sapta-puri appears twice in CIRCUITS, at
+// two of those 19 were the SAME url — sapta-puri appeared twice in CIRCUITS, at
 // ₹48,000 and at ₹35,000, with two different stop lists. One card per URL, and
 // every count on the page is read off that list rather than typed by hand.
 // FIRST wins, because `getCircuit()` — which the detail page uses — is a
 // `.find()`. Keeping the last would have made the card advertise ₹35k while
 // /pilgrimage/sapta-puri charged ₹48k.
+//
+// The duplicate is now gone at source (CIRCUITS is 16 distinct records), so
+// this filter is a no-op today. It stays as a render-level backstop: if a
+// duplicate is ever reintroduced the grid still shows one card per URL rather
+// than two contradicting each other, and the CI-02 uniqueness test fails.
 const CIRCUIT_CARDS = CIRCUITS.filter(
   (c, i) => CIRCUITS.findIndex((x) => x.slug === c.slug) === i,
 );

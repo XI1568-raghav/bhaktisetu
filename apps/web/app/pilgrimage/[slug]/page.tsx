@@ -1,12 +1,39 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { CIRCUITS, getCircuit, circuitSlugs } from '../../../lib/pilgrimage-circuits';
+import { notFound, permanentRedirect } from 'next/navigation';
+import {
+  CIRCUITS,
+  CIRCUIT_ALIASES,
+  canonicalCircuitSlug,
+  getCircuit,
+  circuitSlugs,
+} from '../../../lib/pilgrimage-circuits';
+import { getTempleDetail } from '../../../lib/temple-details';
+import { canonicalTempleSlug } from '../../../lib/temple-slug';
 
 export const revalidate = 86400;
 
+/**
+ * CI-16 — a stop is a link only when /temples/<slug> actually renders.
+ *
+ * The route used to emit `<Link href={`/temples/${s.templeSlug}`}>` for every
+ * stop that carried a templeSlug, unchecked. Five of the sixteen distinct
+ * slugs named no curated temple, so five stop names looked clickable and went
+ * to a 404. Gating on the resolver rather than on a hand-kept deny-list means
+ * this cannot rot back open as the temple catalogue changes.
+ */
+function templeHref(templeSlug: string | undefined): string | null {
+  if (!templeSlug) return null;
+  const canonical = canonicalTempleSlug(templeSlug);
+  return getTempleDetail(canonical) ? `/temples/${canonical}` : null;
+}
+
+// CI-10: the retired circuit slugs stay in the prerender set so that the URLs
+// they were indexed at 308 onto the survivor instead of 404ing. circuitSlugs()
+// stays canonical-only — app/sitemap.ts builds from it and a sitemap must not
+// advertise a redirect.
 export async function generateStaticParams() {
-  return circuitSlugs().map((slug) => ({ slug }));
+  return [...circuitSlugs(), ...Object.keys(CIRCUIT_ALIASES)].map((slug) => ({ slug }));
 }
 
 interface PageProps {
@@ -15,7 +42,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const c = getCircuit(slug);
+  const c = getCircuit(canonicalCircuitSlug(slug));
   if (!c) return { title: 'Pilgrimage circuit not found' };
   return {
     title: `${c.name} — ${c.stops.length}-temple circuit, ${c.totalDays.min}-${c.totalDays.max} days`,
@@ -37,7 +64,11 @@ function formatInr(n: number): string {
 
 export default async function CircuitDetail({ params }: PageProps) {
   const { slug } = await params;
-  const c = getCircuit(slug);
+  // CI-10: one circuit, one URL. A retired slug redirects onto the survivor
+  // rather than serving a second copy of the same itinerary.
+  const canonical = canonicalCircuitSlug(slug);
+  if (canonical !== slug) permanentRedirect(`/pilgrimage/${canonical}`);
+  const c = getCircuit(canonical);
   if (!c) notFound();
 
   const breadcrumb = {
@@ -111,7 +142,9 @@ export default async function CircuitDetail({ params }: PageProps) {
       <section className="mb-10">
         <h2 className="text-2xl font-bold text-surface-900 mb-4">Stops in this circuit</h2>
         <ol className="space-y-3">
-          {c.stops.map((s, i) => (
+          {c.stops.map((s, i) => {
+            const href = templeHref(s.templeSlug);
+            return (
             <li key={s.name} className="flex gap-4 p-4 rounded-lg border border-surface-200 bg-white">
               <span className="shrink-0 w-8 h-8 rounded-full bg-saffron-100 text-saffron-800 font-bold text-sm flex items-center justify-center">
                 {i + 1}
@@ -119,8 +152,8 @@ export default async function CircuitDetail({ params }: PageProps) {
               <div className="flex-1">
                 <div className="flex items-baseline justify-between flex-wrap gap-2">
                   <h3 className="text-lg font-semibold text-surface-900">
-                    {s.templeSlug ? (
-                      <Link href={`/temples/${s.templeSlug}`} className="hover:text-saffron-700 hover:underline">{s.name}</Link>
+                    {href ? (
+                      <Link href={href} className="hover:text-saffron-700 hover:underline">{s.name}</Link>
                     ) : s.name}
                   </h3>
                   <span className="text-xs text-surface-500">{s.bestMonths}</span>
@@ -128,7 +161,8 @@ export default async function CircuitDetail({ params }: PageProps) {
                 <p className="text-sm text-surface-700 mt-1">{s.deity} · {s.state}</p>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ol>
       </section>
 

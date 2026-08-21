@@ -55,8 +55,17 @@ export async function generateMetadata({
   const name = gaushala?.name ?? 'Gaushala';
   return {
     title: `${name} — Gau Seva`,
+    // TC-11. The fallback said "Support a verified gaushala on Darshya. Your
+    // donation reaches the shelter directly." Two claims, neither backed:
+    // nothing in the product writes GaushalaProfile.verified (the admin path
+    // sets `approved`, the gaushala portal never mentions verification), and
+    // "reaches the shelter directly" is a settlement promise — the money lands
+    // in Darshya's Razorpay account and the gaushala's share is released by
+    // hand, because no automated payout rail is live. "Approved" is the word
+    // for the process that actually runs, and it is the word /gaushala already
+    // uses.
     description: gaushala?.description?.slice(0, 155) ||
-      'Support a verified gaushala on Darshya. Your donation reaches the shelter directly.',
+      'Support an approved gaushala on Darshya. Contributions are recorded against the shelter and appear in its portal.',
     alternates: { canonical: `https://darshya.online/gaushala/profile/${id}` },
   };
 }
@@ -108,12 +117,20 @@ export default async function GaushalaProfilePage({
                   </p>
                 )}
               </div>
-              {gaushala.verified && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  <BadgeCheck className="h-3.5 w-3.5" />
-                  Verified gaushala
-                </span>
-              )}
+              {/* TC-11. This badge read "Verified gaushala", gated on
+                  GaushalaProfile.verified. Nothing in the product ever writes
+                  that column — admin.service.ts sets `approved`,
+                  routes/gaushala-portal.ts does not mention verification, and
+                  the only `verified: true` in apps/api is a mock fixture — so
+                  the badge is unreachable today and one manual SQL update away
+                  from publishing a credential nobody checked. What the API
+                  guarantees instead is real and worth saying: GET /gaushala/:id
+                  filters `where: { approved: true }`, so reaching this page at
+                  all means the profile was approved by hand before listing. */}
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <BadgeCheck className="h-3.5 w-3.5" />
+                Approved gaushala
+              </span>
             </div>
 
             {gaushala.description && (

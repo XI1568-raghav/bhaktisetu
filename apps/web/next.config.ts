@@ -336,6 +336,47 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // AUTH-10 — sign-in HTML must never sit in a shared cache.
+        //
+        // All seven /auth/* routes are `'use client'` pages with no
+        // `revalidate` and no `dynamic` export, so Next prerenders them. For a
+        // prerendered app-router page Next derives the response header from
+        // `getCacheControlHeader({ revalidate: false })`
+        // (next/dist/server/lib/cache-control.js), whose final branch returns
+        // `s-maxage=${CACHE_ONE_YEAR}` — a ONE-YEAR shared-cache lifetime on
+        // the sign-in shell. Measured on prod 2026-08-11:
+        // `/auth/login` -> `Cache-Control: s-maxage=31536000`.
+        //
+        // Why that is a real outage and not a nit: darshya.online sits behind
+        // Cloudflare. Any shared cache holding a PRE-DEPLOY /auth/login shell
+        // keeps serving <script src="/_next/static/chunks/…"> URLs the new
+        // build no longer emits. The document paints, the chunks 404,
+        // hydration never runs — so the Sign In button is inert and its
+        // spinner never resolves. That is the owner-reported P0 symptom, and
+        // it is unreproducible from a healthy cache, which is why testing
+        // against a warm origin kept coming back clean.
+        //
+        // This belongs here rather than in the pages for two reasons. Render
+        // ignores public/_headers (SEC-01), so next.config `headers()` is the
+        // only mechanism that reaches a browser. And Next deliberately yields
+        // to it — next/dist/server/send-payload.js:
+        //     // If cache control is already set on the response we don't
+        //     // override it to allow users to customize it via next.config
+        //     if (cacheControl && !res.getHeader('Cache-Control')) { … }
+        // so this rule, applied before the render, beats the one-year default.
+        //
+        // `/auth/:path*` also matches the RSC/prefetch payloads for the same
+        // pathnames, which carry the same stale-chunk references.
+        // Guarded by app/auth/__tests__/auth-cache-control.auth10.test.ts.
+        source: '/auth/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'private, no-cache, no-store, max-age=0, must-revalidate',
+          },
+        ],
+      },
+      {
         // Long-cache static image + font assets served from /public.
         // These paths are versioned implicitly by filename, so immutable is safe.
         source: '/:all*\\.(jpg|jpeg|png|webp|avif|svg|ico|woff|woff2)',

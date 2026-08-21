@@ -301,7 +301,14 @@ export const FESTIVALS: FestivalInfo[] = [
     slug: 'narasimha-jayanti',
     name: 'Narasimha Jayanti',
     sanskrit: 'नृसिंह जयंती',
-    date2026: '2026-05-19',
+    // CI-03 — Vaishakha Shukla Chaturdashi. Was 2026-05-19, which this file's
+    // own Vaishakha ladder rules out: akshaya-tritiya (Vaishakha Shukla
+    // Tritiya) is dated 2026-04-19 and varuthini-ekadashi (Vaishakha KRISHNA
+    // Ekadashi, i.e. after Purnima) 2026-05-12, putting Vaishakha Purnima on
+    // 2026-05-01 and Chaturdashi the day before it. 2026-05-19 fell a week
+    // past the Krishna Ekadashi — outside the bright fortnight entirely.
+    // Locked by __tests__/festival-one-date-per-festival.ci03.test.ts.
+    date2026: '2026-04-30',
     deity: 'Lord Narasimha',
     deitySlug: 'vishnu',
     description:

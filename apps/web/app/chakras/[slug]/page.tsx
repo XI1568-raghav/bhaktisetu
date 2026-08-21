@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CHAKRAS, getChakra } from '../../../lib/chakras';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 
@@ -258,6 +260,10 @@ export default async function ChakraDetail({
           {next.english} ({next.iast}) →
         </Link>
       </nav>
+      {detailCta({
+        routePrefix: 'chakras',
+        subject: c.english,
+      })}
     </main>
   );
 }

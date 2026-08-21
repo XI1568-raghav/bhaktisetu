@@ -225,7 +225,11 @@ describe('OPS-05: a retried webhook does not inflate the trail', () => {
     });
     const sql = String(prismaMock.$executeRawUnsafe.mock.calls[0]?.[0]);
     expect(sql).toMatch(/ON CONFLICT \("idempotency_key"\) DO NOTHING/i);
-    expect(lastInsert().idempotency_key).toBe('razorpay:evt_1');
+    // Tightened, not relaxed: the stored key is now the caller's key namespaced
+    // by the event type, so one gateway id cannot make two different events
+    // erase each other. See 'one gateway id must not make two events collide'.
+    expect(lastInsert().idempotency_key).toBe('payment.captured:razorpay:evt_1');
+    expect(String(lastInsert().idempotency_key)).toContain('razorpay:evt_1');
   });
 
   it('reports a suppressed duplicate as a success, distinct from a failure', async () => {
@@ -687,5 +691,142 @@ describe('OPS-05: the model is shaped like an audit record', () => {
 
   it('maps to money_audit_events', () => {
     expect(fields).toMatch(/@@map\("money_audit_events"\)/);
+  });
+});
+
+/**
+ * OPS-05 follow-up A — the audit row must survive an amount the column cannot
+ * hold.
+ *
+ * `amount` is DECIMAL(10,2): precision 10, scale 2, so eight integer digits and
+ * a hard ceiling of 99999999.99. `normalizeAmount` accepted up to TWELVE
+ * integer digits, so a nine-digit value passed the guard, reached `$12::decimal`
+ * and raised 22003 numeric_field_overflow — which aborts the whole INSERT, and
+ * `recordMoneyEvent` then swallows it as `{ ok: false }`. The event vanishes.
+ *
+ * That is not a hypothetical. Razorpay reports every amount in PAISE: a webhook
+ * body's `payload.payment.entity.amount` for a ₹12,00,000 temple donation is
+ * 120000000 — nine digits. Any wiring that forwards the gateway figure without
+ * dividing loses the ENTIRE audit row, and it loses it for exactly the outsized
+ * transaction most likely to be disputed. The module already has the right
+ * answer for a value it cannot store — null the column, keep the text in
+ * `metadata.unparseableAmount` — it just never applied it to range.
+ */
+describe('OPS-05: an amount the column cannot hold must not delete the event', () => {
+  it('refuses a value wider than DECIMAL(10,2) instead of letting it abort the INSERT', () => {
+    // The exact boundary: eight integer digits is the widest the column takes.
+    expect(normalizeAmount('99999999.99')).toEqual({ value: '99999999.99', raw: null });
+    expect(normalizeAmount('-99999999.99')).toEqual({ value: '-99999999.99', raw: null });
+    // Nine digits overflows DECIMAL(10,2) — must be diverted, not bound.
+    expect(normalizeAmount('100000000')).toEqual({ value: null, raw: '100000000' });
+    expect(normalizeAmount('-100000000.00')).toEqual({ value: null, raw: '-100000000.00' });
+    // Leading zeros are not significant digits.
+    expect(normalizeAmount('0000001234.50')).toEqual({ value: '0000001234.50', raw: null });
+    // A JS number goes through the same ceiling, not just a string.
+    expect(normalizeAmount(1e12)).toEqual({ value: null, raw: '1000000000000.00' });
+  });
+
+  it('still writes the row, with the out-of-range amount preserved in metadata', async () => {
+    const result = await recordMoneyEvent({
+      eventType: MONEY_EVENTS.DONATION_RECEIVED,
+      subjectType: 'donation',
+      subjectId: 'don-1',
+      // Paise, as Razorpay reports it. Nine digits.
+      amount: '120000000',
+      note: 'gateway figure forwarded without converting paise to rupees',
+    });
+
+    // The whole point: the event is still on the record.
+    expect(result).toMatchObject({ ok: true, wrote: true });
+    const row = lastInsert();
+    expect(row.amount).toBeNull();
+    expect(JSON.parse(String(row.metadata))).toMatchObject({ unparseableAmount: '120000000' });
+  });
+});
+
+/**
+ * OPS-05 follow-up B — an idempotency key must not let one event erase another.
+ *
+ * `idempotency_key` is UNIQUE across the whole table and the INSERT is
+ * `ON CONFLICT ("idempotency_key") DO NOTHING`, but the key was stored exactly
+ * as the caller passed it, with no reference to WHICH event it identifies. The
+ * natural key at almost every wiring site is a gateway id, and the same gateway
+ * id legitimately belongs to several distinct events:
+ *
+ *   POST /payments/verify  -> PAYMENT_VERIFIED, keyed on razorpay_payment_id
+ *   webhook payment.captured -> PAYMENT_CAPTURED, keyed on the same id
+ *
+ * Whichever landed second was silently discarded — and reported as
+ * `{ ok: true, wrote: false, reason: 'duplicate' }`, i.e. as success. The trail
+ * would then show a capture with no verification, or a verification with no
+ * capture, which is precisely the "which rail got there first" question this
+ * module's own header says it exists to answer. Namespacing the stored key by
+ * event type removes the footgun at the source, so no wiring agent has to know
+ * about it, while leaving a genuine retry of the SAME event collapsing exactly
+ * as before.
+ */
+describe('OPS-05: one gateway id must not make two events collide', () => {
+  it('namespaces the stored key by event type so distinct events both survive', async () => {
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_VERIFIED,
+      subjectType: 'payment',
+      subjectId: 'pay-1',
+      idempotencyKey: 'pay_XYZ',
+    });
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
+      subjectType: 'payment',
+      subjectId: 'pay-1',
+      idempotencyKey: 'pay_XYZ',
+    });
+
+    const keys = prismaMock.$executeRawUnsafe.mock.calls.map(
+      (c: unknown[]) => boundColumns(c).idempotency_key,
+    );
+    expect(keys).toEqual(['payment.verified:pay_XYZ', 'payment.captured:pay_XYZ']);
+    // The property that matters: two real events, two distinct unique keys, so
+    // Postgres keeps both rows.
+    expect(new Set(keys).size).toBe(2);
+  });
+
+  it('still collapses a genuine retry of the same event', async () => {
+    const once = {
+      eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
+      subjectType: 'payment' as const,
+      subjectId: 'pay-1',
+      idempotencyKey: 'evt_RETRIED',
+    };
+    await recordMoneyEvent(once);
+    await recordMoneyEvent(once);
+    const keys = prismaMock.$executeRawUnsafe.mock.calls.map(
+      (c: unknown[]) => boundColumns(c).idempotency_key,
+    );
+    expect(new Set(keys).size).toBe(1);
+    expect(keys[0]).toBe('payment.captured:evt_RETRIED');
+  });
+
+  it('keeps the namespaced key inside the column budget', async () => {
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYOUT_PROCESSED,
+      subjectType: 'payout',
+      subjectId: 'po-1',
+      idempotencyKey: 'k'.repeat(500),
+    });
+    // Clipping happens AFTER prefixing, or a long caller key would push the
+    // event-type prefix straight back off the end and reinstate the collision.
+    const key = String(lastInsert().idempotency_key);
+    expect(key.length).toBeLessThanOrEqual(200);
+    expect(key.startsWith('payout.processed:')).toBe(true);
+  });
+
+  it('writes no key at all when the caller names none', async () => {
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.BOOKING_CREATED,
+      subjectType: 'booking',
+      subjectId: 'bk-1',
+    });
+    // NULLs never collide in a Postgres unique index; a bare event-type prefix
+    // would collide with every other keyless event of that type and drop them.
+    expect(lastInsert().idempotency_key).toBeNull();
   });
 });

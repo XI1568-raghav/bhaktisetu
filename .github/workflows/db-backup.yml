@@ -1,36 +1,89 @@
 name: db-backup
 
-# R-Q2-IT-003 — Daily Supabase Postgres pg_dump → object store (default
-# Supabase Storage, S3-compatible swap via env). 30-day retention.
+# Daily Supabase Postgres pg_dump -> object store. 30-day retention.
 #
 # Schedule: 19:00 UTC (= 00:30 IST next day). Low-traffic window for India ops.
 #
-# Founder-action required before this workflow produces useful artifacts:
-#   1. Decide vendor (default Supabase Storage; R2/B2 alternative requires
-#      CFO sign-off — see PR description for R-Q2-IT-003).
-#   2. Create bucket `db-backups` in chosen vendor.
-#   3. Set GH Actions secrets:
-#        - SUPABASE_DB_URL              (use DIRECT_URL, NOT pooled — pg_dump
-#                                        needs a direct session)
-#        - SUPABASE_SERVICE_ROLE_KEY    (NEVER expose to client)
-#        - SUPABASE_URL                 (e.g. https://abc.supabase.co)
-#        - (optional) HEARTBEAT_URL     (healthchecks.io free tier)
+# ============================================================================
+# WHAT THIS WORKFLOW HAS ACTUALLY DONE SO FAR: NOTHING. READ BEFORE TRUSTING IT.
+# ============================================================================
+# OPS-02. The required secrets have never been set, so every run since this
+# workflow was created produced ZERO BYTES and reported a green tick. The script
+# answered {"ok":true,"skipped":true} and the header here used to say the
+# workflow "stays green so it doesn't spam the founder with failure emails". The
+# intent was kind; the effect was that a product holding bookings, payments and
+# 80G donation records believed it had daily backups while having none, for
+# months, and nobody could discover that from the checkmark.
 #
-# Until secrets land, both scripts no-op and exit 0 (skipped: missing-env).
-# A SKIPPED BACKUP NOW FAILS THE RUN (corrected 2026-08-20). This header used
-# to read "workflow stays green so it doesn't spam the founder" — and it did
-# stay green, every day, while taking no backup at all because the secrets were
-# never set. Silence is not kindness when the thing being silenced is "you have
-# no restore point".
+# Corrected 2026-08-20: a skip now FAILS the run (step "A skipped backup must
+# not read as success", below).
+# Extended 2026-08-21 (OPS-02/OPS-03): a run also fails when
+#   - the dump is empty, too small, or not a readable pg_restore archive;
+#   - the uploaded object cannot be read back at the expected size;
+#   - the ONLY destination is the same Supabase project as the database
+#     (OPS-03 — that is a second copy, not a backup).
 #
-# Free-tier cost: 5 min × 30 runs/mo = 150 GH Actions minutes/mo.
-# Current baseline ~1616/mo (per TASKS.md). Headroom intact within 1900 cap.
+# ---------------------------------------------------------------------------
+# OWNER SETUP — three required secrets, and one optional set for offsite.
+# ---------------------------------------------------------------------------
+# GitHub -> repo Settings -> Secrets and variables -> Actions -> New repository
+# secret. Names must match EXACTLY.
+#
+#   1. SUPABASE_DB_URL           Supabase -> Project Settings -> Database ->
+#                                Connection string -> URI. Use the DIRECT
+#                                connection (port 5432), NOT the pooled one
+#                                (port 6543) — pg_dump needs a direct session.
+#   2. SUPABASE_URL              Supabase -> Project Settings -> API -> Project
+#                                URL, e.g. https://<ref>.supabase.co
+#   3. SUPABASE_SERVICE_ROLE_KEY Supabase -> Project Settings -> API -> service_role
+#                                key. Server-side only; never ship to a client.
+#
+# Optional but STRONGLY recommended (OPS-03 — otherwise the backup lives in the
+# same account as the database and one suspension takes both):
+#   BACKUP_S3_ENDPOINT           e.g. https://<accountid>.r2.cloudflarestorage.com
+#   BACKUP_S3_BUCKET             e.g. darshya-db-backups
+#   BACKUP_S3_ACCESS_KEY_ID
+#   BACKUP_S3_SECRET_ACCESS_KEY
+#   BACKUP_S3_REGION             optional; defaults to "auto" (correct for R2)
+#   ALLOW_SAME_PROJECT_BACKUP    set to the literal string "true" ONLY to accept
+#                                a same-project backup knowingly. The run then
+#                                succeeds with a loud warning.
+#   HEARTBEAT_URL                optional healthchecks.io URL (dead-man switch)
+#
+# HOW TO CONFIRM THE FIRST REAL BACKUP IS NON-EMPTY (do this once, by hand):
+#   0. This file is on `main` already, so it IS dispatchable — but a dispatch
+#      runs whichever copy lives on the branch you pick. The verification
+#      guards described below only exist on the branch carrying them until it
+#      merges, so run the dispatch against that branch, or merge first.
+#   1. Actions -> db-backup -> "Run workflow" on the default branch.
+#   2. The run must be GREEN. Open the "Run daily backup" step and read the
+#      single JSON line. It must contain "ok":true, NO "skipped", a "sizeBytes"
+#      in the millions, a "tocEntries" in the hundreds, and "offsite":true.
+#   3. The job summary prints the same numbers. "0 bytes" or "skipped" is a
+#      failure, and the run will be red.
+#   4. Supabase -> Storage -> bucket db-backups -> backups/YYYY/MM/DD/ — the
+#      object must be listed with a non-zero size matching "sizeBytes".
+#   5. Then run the restore drill (below) once. A backup nobody has restored is
+#      a hypothesis.
+#
+# NOTE: the schedule only fires from the repository's DEFAULT BRANCH. Edits made
+# on a feature branch change nothing until they merge.
+#
+# Free-tier cost: 5 min x 30 runs/mo = 150 GH Actions minutes/mo, UNCHANGED by
+# the 2026-08-21 additions (a `pg_restore --list` and one HEAD request are
+# seconds). The restore-drill job below is workflow_dispatch-only and costs
+# 0 scheduled minutes. See docs/free-tier-budgets.md.
 
 on:
   schedule:
     # Daily at 19:00 UTC = 00:30 IST next day (cron uses UTC).
     - cron: '0 19 * * *'
   workflow_dispatch:
+    inputs:
+      restore_drill:
+        description: 'Also run the restore drill (restores the newest dump into a throwaway Postgres and counts rows)'
+        type: boolean
+        default: false
 
 jobs:
   backup:
@@ -66,33 +119,47 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_BACKUP_BUCKET: ${{ secrets.SUPABASE_BACKUP_BUCKET }}
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_REGION: ${{ secrets.BACKUP_S3_REGION }}
+          BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          ALLOW_SAME_PROJECT_BACKUP: ${{ secrets.ALLOW_SAME_PROJECT_BACKUP }}
           HEARTBEAT_URL: ${{ secrets.HEARTBEAT_URL }}
         run: |
+          # `set +e` is deliberate. GitHub runs `run:` under `bash -e`, so a
+          # non-zero node exit would abort the step before the JSON is copied
+          # anywhere and the assertion step below would have nothing to explain.
+          # The exit code is preserved by hand on the last line.
+          set +e
           set -uo pipefail
-          node scripts/backup/supabase-backup.mjs | tee /tmp/backup-out.json
-          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          node scripts/backup/supabase-backup.mjs > /tmp/backup-out.json 2>/tmp/backup-err.json
+          code=$?
+          cat /tmp/backup-out.json /tmp/backup-err.json
+          # The script writes its failure JSON to stderr; keep whichever is
+          # non-empty so the assertion below always has something to read.
+          if [ ! -s /tmp/backup-out.json ]; then cp /tmp/backup-err.json /tmp/backup-out.json; fi
+          exit $code
 
-      # A SKIPPED BACKUP IS NOT A SUCCESSFUL BACKUP.
+      # A SKIPPED BACKUP IS NOT A SUCCESSFUL BACKUP, AND NEITHER IS AN EMPTY ONE.
       #
-      # Until 2026-08-20 this workflow reported a green check every day for
-      # producing ZERO BYTES: supabase-backup.mjs answers {"ok":true,
-      # "skipped":true,"reason":"missing-env"} when the secrets are unset, and
-      # the header above said "workflow stays green so it doesn't spam the
-      # founder with failure emails". The intent was kind; the effect was that a
-      # product holding bookings, payments and 80G donation records believed it
-      # had daily backups while having none at all, for months. Nobody can
-      # discover that from a green tick.
-      #
-      # So a skip now fails, loudly and once: the run goes red, and a single
-      # deduped issue tracks it rather than 30 identical ones.
-      - name: A skipped backup must not read as success
+      # `if: always()` so this reports even when the step above already failed —
+      # otherwise the operator sees a bare non-zero exit with no explanation of
+      # WHICH guard tripped.
+      - name: Assert a real, verified, offsite backup was produced
+        if: always()
         run: |
           set -uo pipefail
-          if grep -q '"skipped":[[:space:]]*true' /tmp/backup-out.json 2>/dev/null; then
+          if [ ! -s /tmp/backup-out.json ]; then
+            echo "::error::The backup script produced no output at all."
+            exit 1
+          fi
+
+          if grep -q '"skipped":[[:space:]]*true' /tmp/backup-out.json; then
             missing=$(grep -oE '"missing":\[[^]]*\]' /tmp/backup-out.json | head -1)
             echo "::error::NO BACKUP WAS TAKEN. The script skipped: ${missing}. There is no restore point for today."
             {
-              echo "### ❌ No backup was taken"
+              echo "### No backup was taken"
               echo ""
               echo "\`supabase-backup.mjs\` skipped because required secrets are unset:"
               echo ""
@@ -101,13 +168,52 @@ jobs:
               echo "\`\`\`"
               echo ""
               echo "**There is no restore point for today, and there may never have been one.**"
-              echo "Set the secrets in Settings -> Secrets and variables -> Actions, then run"
-              echo "this workflow manually and confirm it uploads a non-empty dump."
+              echo "Set the three secrets named in the header of this workflow"
+              echo "(Settings -> Secrets and variables -> Actions), then run this workflow"
+              echo "manually and confirm it uploads a non-empty dump."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "Backup produced output; see the step log for the uploaded object."
 
+          if ! grep -q '"ok":[[:space:]]*true' /tmp/backup-out.json; then
+            stage=$(grep -oE '"stage":"[^"]*"' /tmp/backup-out.json | head -1)
+            echo "::error::Backup failed at ${stage}. There is no restore point for today."
+            {
+              echo "### Backup failed"
+              echo ""
+              echo "\`\`\`json"
+              cat /tmp/backup-out.json
+              echo "\`\`\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          size=$(grep -oE '"sizeBytes":[0-9]+' /tmp/backup-out.json | head -1 | cut -d: -f2)
+          toc=$(grep -oE '"tocEntries":[0-9]+' /tmp/backup-out.json | head -1 | cut -d: -f2)
+          : "${size:=0}"
+          : "${toc:=0}"
+          if [ "$size" -le 0 ]; then
+            echo "::error::Backup reported success with ${size} bytes. That is not a restore point."
+            exit 1
+          fi
+
+          {
+            echo "### Backup verified"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| bytes | ${size} |"
+            echo "| pg_restore TOC entries | ${toc} |"
+            if grep -q '"offsite":[[:space:]]*true' /tmp/backup-out.json; then
+              echo "| offsite | yes |"
+            else
+              echo "| offsite | **NO — same account as the database** |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if ! grep -q '"offsite":[[:space:]]*true' /tmp/backup-out.json; then
+            echo "::warning::This backup is NOT offsite. It lives in the same Supabase project as the database it backs up, so one account action destroys both. Configure BACKUP_S3_* (Cloudflare R2 free tier)."
+          fi
 
       - name: Prune backups older than 30 days
         env:
@@ -115,3 +221,102 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_BACKUP_BUCKET: ${{ secrets.SUPABASE_BACKUP_BUCKET }}
         run: node scripts/backup/prune-old-backups.mjs
+
+  # ==========================================================================
+  # RESTORE DRILL — the other half of OPS-02.
+  #
+  # "No restore has ever been recorded as tested" was literally true: the DR
+  # drill history table in docs/runbooks/db-restore.md is empty. A dump nobody
+  # has restored is a hypothesis, not a backup, and the failure modes it hides
+  # (missing extension, ownership, a dump of the wrong database) only surface
+  # during a restore.
+  #
+  # workflow_dispatch-only, so it costs ZERO scheduled minutes. Run it once
+  # after the first real backup, then quarterly, and record the result in
+  # docs/runbooks/db-restore.md -> "DR drill history".
+  #
+  # It restores into a throwaway Postgres SERVICE CONTAINER inside the runner —
+  # it can never touch production, staging, or any Supabase project.
+  # ==========================================================================
+  restore-drill:
+    if: github.event_name == 'workflow_dispatch' && inputs.restore_drill
+    needs: backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: drill
+          POSTGRES_DB: drill
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install postgresql-client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download the newest dump from the backup bucket
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_BACKUP_BUCKET: ${{ secrets.SUPABASE_BACKUP_BUCKET }}
+        run: node scripts/backup/fetch-latest-backup.mjs /tmp/drill.dump
+
+      - name: Restore into the throwaway database
+        env:
+          PGPASSWORD: drill
+        run: |
+          set -euo pipefail
+          # --no-owner/--no-privileges: the dump's roles do not exist here.
+          #
+          # A non-zero exit is EXPECTED and tolerated. A Supabase dump carries
+          # `CREATE EXTENSION vector` (pgvector) and role grants that a stock
+          # postgres:15 image cannot satisfy, so pg_restore always reports some
+          # errors. Concretely, the three tables with an
+          # `Unsupported("vector(1024)")` column — content_items, temples,
+          # puja_types — will NOT restore here. That is a limitation of this
+          # drill container, not of the dump.
+          #
+          # The row-count assertion below is therefore the real gate, and its
+          # floor (50) sits well under the ~67 models in schema.prisma minus
+          # those three. If you want a drill that restores 100% of the dump,
+          # run the manual checklist in docs/runbooks/db-restore.md against a
+          # throwaway Supabase project, which has pgvector.
+          pg_restore --no-owner --no-privileges --jobs 2 \
+            -h localhost -p 5432 -U postgres -d drill /tmp/drill.dump || true
+
+      - name: Assert the restored database actually holds data
+        env:
+          PGPASSWORD: drill
+        run: |
+          set -euo pipefail
+          tables=$(psql -h localhost -U postgres -d drill -tAc \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")
+          users=$(psql -h localhost -U postgres -d drill -tAc \
+            "SELECT count(*) FROM public.users" || echo 0)
+          echo "tables=$tables users=$users"
+          {
+            echo "### Restore drill"
+            echo ""
+            echo "| Check | Value |"
+            echo "|---|---|"
+            echo "| public tables restored | ${tables} |"
+            echo "| rows in \`users\` | ${users} |"
+            echo ""
+            echo "Record this run in \`docs/runbooks/db-restore.md\` under **DR drill history**."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$tables" -lt 50 ]; then
+            echo "::error::Only ${tables} tables restored. The dump is not a usable restore point."
+            exit 1
+          fi

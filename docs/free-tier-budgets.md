@@ -67,7 +67,9 @@
 
 | Workflow                                                        | Trigger                                                                        | Min/run            | Runs/mo           | Min/mo           |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------ | ----------------- | ---------------- |
-| `ci.yml`                                                        | PR + push to main (paths-filtered, no docs). +~10s/run for the ops-guard step added 2026-08-20 | ~5.2               | ~80 push estimate | ~413             |
+| `ci.yml`                                                        | PR + push to main (paths-filtered, no docs). +~10s/run for the ops-guard step added 2026-08-20; +~2s more 2026-08-21 (two backup guard files added to the same step) | ~5.25              | ~80 push estimate | ~416             |
+| `commitlint.yml`                                                | **every PR, no paths filter** (the one gate never skipped). +~5s/run 2026-08-21 for the OPS-11 secret scan | ~0.6               | ~20               | ~12              |
+| `ai-review.yml`                                                 | PR, paths-filtered (`apps/**`, `packages/**`, `.github/workflows/**`, `scripts/agents/**`) | ~2                 | ~15               | ~30              |
 | `e2e.yml`                                                       | **Sun weekly + manual only** (PR trigger removed 2026-07-10)                   | ~15                | 4                 | ~60              |
 | `agents-health.yml`                                             | every 12h                                                                      | ~3                 | 60                | 180              |
 | `agents-daily.yml`                                              | daily 03:30 UTC (6 producing agents; 6 paused 2026-07-17 — see header comment) | ~2                 | 30                | 60               |
@@ -84,9 +86,29 @@
 | `roadmap-finalize.yml`                                          | push to main, paths-filtered on `docs/roadmap/**` only                         | ~1                 | ~10               | ~10              |
 | `render-hours-guard.yml`                                        | **daily 06:00 UTC** (added 2026-08-20; see the OPS-08 note below — the cron does not fire until this reaches `main`) | ~1 | 30 | **30** |
 | `cf-kill-zombie.yml` / `render-diag.yml` / `render-cutover.yml` | manual only                                                                    | n/a                | 0                 | 0                |
-| **Total estimate**                                              |                                                                                |                    |                   | **~1843 min/mo** |
+| **Total estimate**                                              |                                                                                |                    |                   | **~1888 min/mo** |
 
-Cap = 2000 min/mo. **Headroom: +157 min/mo.** Fleet is under cap.
+Cap = 2000 min/mo. **Headroom: +112 min/mo.** Fleet is under cap.
+
+> **Reconciled again 2026-08-21 (OPS-02 / OPS-11).** Two workflows that have been
+> running for months were **never in this table**: `commitlint.yml` (~12 min/mo —
+> every PR, deliberately unfiltered) and `ai-review.yml` (~30 min/mo). That is
+> ~42 min/mo of real burn the budget did not model, and it is the same class of
+> error as the Render row: a number that describes a fleet that no longer exists.
+> Adding them takes the honest total from ~1843 to ~1888 before any new work.
+>
+> This wave's actual additions cost **~5 min/mo total**:
+>
+> | Change | Minutes/mo |
+> |---|---:|
+> | `commitlint.yml` secret-scan step (OPS-11) — ~5s on an already-checked-out runner, PRs only | ~+2 |
+> | `ci.yml` ops-guard step gains the two `scripts/backup/test/*` files — ~+2s/run | ~+3 |
+> | `db-backup.yml` dump verification (`pg_restore --list` + one HEAD request) | **0** (seconds, inside the existing 5-min budget) |
+> | `db-backup.yml` `restore-drill` job | **0 scheduled** — `workflow_dispatch` only, gated on an input. ~6 min per manual run; expected quarterly. |
+>
+> The restore drill is deliberately not on a schedule. A quarterly manual drill
+> costs ~24 min/year; a daily one would cost ~180 min/mo and buy nothing, because
+> what it verifies (that the dump restores) does not change day to day.
 
 > **Reconciled 2026-08-20.** `render-hours-guard.yml` (30 min/mo) was added on
 > `feat/recurring-razorpay-planid` and had never been counted, so the "~1800 /

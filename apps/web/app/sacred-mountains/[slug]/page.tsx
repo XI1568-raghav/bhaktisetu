@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSacredMountain, SACRED_MOUNTAINS } from '../../../lib/sacred-mountains';
 import { formatNumber } from '../../../lib/format-locale';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 
@@ -186,6 +188,10 @@ export default async function SacredMountainPage({ params }: Props) {
           <div />
         )}
       </nav>
+      {detailCta({
+        routePrefix: 'sacred-mountains',
+        subject: m.name,
+      })}
     </main>
   );
 }

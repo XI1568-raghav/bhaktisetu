@@ -4,6 +4,8 @@ import { H1 } from '../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PANCHANG_YOGAS } from '../../../../lib/panchang-yogas';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../../lib/detail-route-cta';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -144,6 +146,8 @@ export default async function YogaDetailPage({ params }: { params: Promise<{ slu
       <Link href="/astrology/shubh-muhurat" className="font-semibold text-saffron-700 hover:underline">Shubh Muhurat finder</Link>.
      </p>
     </div>
+
+    {detailCta({ routePrefix: 'panchang/yoga', subject: `${y.name} Yoga` })}
    </main>
   </>
  );

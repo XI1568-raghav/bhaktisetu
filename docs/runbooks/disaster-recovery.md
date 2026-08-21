@@ -51,6 +51,22 @@ gh run watch
 # Red with "NO BACKUP WAS TAKEN"       = the secrets are still unset and there is none.
 ```
 
+Since 2026-08-21 the run also goes red when the dump is empty, too small, or not
+a readable `pg_restore` archive, when the uploaded object cannot be read back at
+the expected size, and when the only destination is the same Supabase project as
+the database (`OPS-02` / `OPS-03`). Green now means something.
+
+**And then prove the restore, which has never been done:**
+
+```bash
+gh workflow run db-backup.yml -f restore_drill=true
+gh run watch
+```
+
+That restores the newest dump into a throwaway Postgres inside the runner and
+fails if fewer than 50 tables come back. Record the result in
+`docs/runbooks/db-restore.md` → *DR drill history*, which is empty today.
+
 ## Scenario 1 — both hosts return 503
 
 **This is the outage that actually happened** (2026-08-17 to 2026-08-20). It is
@@ -92,6 +108,23 @@ account reached 750.2 / 750 and Render suspended **both** services with
 Roll back with `docs/runbooks/prod-rollback.md`. Do **not** push a revert and
 wait: both services are `autoDeploy: false`, so nothing deploys on push.
 
+### 3b — the API restarts forever and never serves
+
+Symptom: the Render log shows `prisma migrate deploy` failing, the container
+exits, Render restarts it, and the same migration fails again. The service is
+**down**, not serving an old schema — the API start command is
+`prisma migrate deploy && node dist/server.js`, so a failed migration means
+`node` is never reached.
+
+This is the correct failure mode (it never serves against a schema the code does
+not expect) but it does not self-heal, and the failed migration is now recorded
+in `_prisma_migrations`, which blocks every later migration too.
+
+Recovery, and why it happens at all — including the 16 objects that
+`ensure-schema.ts` and the migrations both create — are in
+**`docs/runbooks/schema-authority.md`**. Read that before touching anything
+under `apps/api/prisma/`.
+
 ## Scenario 4 — data loss (corruption, accidental delete)
 
 1. Freeze writes in the Supabase dashboard before anything else.
@@ -100,8 +133,10 @@ wait: both services are `autoDeploy: false`, so nothing deploys on push.
    procedure has no input.
 3. Restore into a **fresh** project or staging, never over prod, following
    `docs/runbooks/db-restore.md`.
-4. `OPS-03` applies: if the Supabase project itself is what was lost, the backups
-   went with it. Moving backup storage off Supabase is an open owner action.
+4. `OPS-03` applies: if the Supabase project itself is what was lost, a
+   same-project backup went with it. The **code** for an offsite mirror now
+   exists (see below); whether one is configured is visible in the backup run's
+   JSON as `"offsite":true|false`.
 
 ## Scenario 5 — Razorpay outage
 
@@ -128,7 +163,10 @@ them as things to arrange, not as steps to execute.
 
 Related and still open: `OPS-11` — production database passwords remain in three
 commits of git history; untracking the file did not remove them. Rotation is an
-owner action, tracked in `docs/audit/OWNER-ACTIONS.md`.
+owner action. **The exact steps, per credential, are in
+`docs/runbooks/secret-rotation.md`** (added 2026-08-21), which also names the
+three commits and records what classes of credential the leaked file holds
+without reproducing any value.
 
 ## Customer compensation
 
@@ -142,11 +180,34 @@ Do not publish the matrix to customers until one of those is true.
 
 These are the gaps this runbook cannot paper over.
 
-1. **A proven restore point.** Set the `db-backup.yml` secrets, run it, and
-   record a successful restore into staging. Until then RPO is unbounded.
-   (`OPS-02`)
-2. **Backups outside Supabase.** Same-project backups do not survive an account
-   suspension — the exact failure mode already seen on Render. (`OPS-03`)
+1. **A proven restore point.** Owner action, ~10 minutes. Set the three secrets
+   named in the header of `.github/workflows/db-backup.yml`
+   (`SUPABASE_DB_URL` — the DIRECT connection, port 5432, not the pooled 6543 —
+   plus `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`), dispatch the workflow,
+   and confirm the JSON line reports a `sizeBytes` in the millions. Then
+   dispatch it again with `-f restore_drill=true` and record the result in
+   `docs/runbooks/db-restore.md`. Until both are done RPO is unbounded and RTO
+   is a guess. (`OPS-02`)
+2. **Backups outside Supabase.** Owner action, ~15 minutes, free. Same-project
+   backups do not survive an account suspension — the exact failure mode already
+   seen on Render. The code path exists as of 2026-08-21; only the credentials
+   are missing:
+   1. Cloudflare dashboard → **R2** → *Create bucket* → `darshya-db-backups`
+      (free tier: 10 GB stored, no egress fee; a dump is tens of MB, so a
+      30-day retention is ~1 GB).
+   2. R2 → **Manage API Tokens** → *Create API token* → **Object Read & Write**,
+      scoped to that one bucket. Copy the Access Key ID, the Secret Access Key,
+      and the S3 endpoint (`https://<accountid>.r2.cloudflarestorage.com`).
+   3. GitHub → Settings → Secrets and variables → Actions, add
+      `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`,
+      `BACKUP_S3_SECRET_ACCESS_KEY`. Leave `BACKUP_S3_REGION` unset — it
+      defaults to `auto`, which is correct for R2.
+   4. Dispatch `db-backup.yml` and confirm the output JSON now contains
+      `"offsite":true` and a `destinations` array with two entries.
+   Until then the backup job **refuses to run** rather than writing a copy into
+   the account it is meant to insure. Set `ALLOW_SAME_PROJECT_BACKUP=true` only
+   as a deliberate stopgap; the run then succeeds with a warning that says
+   plainly that the copy is not protected. (`OPS-03`)
 3. **A monitor that is not GitHub Actions.** Every check listed here runs on the
    quota it is meant to protect. (`OPS-09`)
 4. **One service off always-on**, or the 750-hour cap suspends both again next

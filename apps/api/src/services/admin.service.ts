@@ -161,9 +161,194 @@ interface ReportsResponse {
   geographicDistribution: Array<{ state: string; users: number; pct: number }>;
 }
 
+/**
+ * The row shape `getUsers` enriches. Structural rather than Prisma's `User` so
+ * the two producers (the plain paged read and the role-filtered JOIN
+ * hydration) are checked against what the mapper actually reads.
+ */
+interface AdminUserRow {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  subscriptionTier: unknown;
+  blocked: boolean;
+  blockedAt: Date | null;
+  blockedReason: string | null;
+  createdAt: Date;
+}
+
 // ─── Service ────────────────────────────────────────────────────────────────────
 
 export class AdminService {
+  /**
+   * SCAL-04 — one page of the users holding `role`, resolved by a JOIN that
+   * Postgres performs, instead of by shipping every holder id both ways.
+   *
+   * WHY RAW SQL AND NOT PRISMA. `UserRoleAssignment` still has no `@relation`
+   * to `User` (prisma/schema.prisma: `userId String @map("user_id") @db.Uuid`,
+   * and `model User` has no back-reference), so
+   * `where: { roleAssignments: { some: { role } } }` is rejected outright.
+   * Declaring the relation means a schema change plus a migration adding the
+   * foreign key, and migrations auto-apply on API boot — guessing wrong there
+   * turns a slow screen into a boot failure. A JOIN needs no relation and no
+   * migration.
+   *
+   * WHY THE IDENTIFIERS ARE SAFE. Every name quoted below is one Prisma itself
+   * already emits against this database: `@@map("users")` /
+   * `@@map("user_role_assignments")`, `@map("user_id")`, `@map("created_at")`,
+   * `@map("full_name")`, and the unmapped `id` / `email` / `phone` / `role`.
+   * If any of them were wrong the EXISTING `userRoleAssignment.findMany` in the
+   * fallback below would already be failing in production. `"users"` is
+   * additionally DDL in this repo (prisma/migrations/20260427_chat and others).
+   * `admin.service.role-filter-sql.scal04.test.ts` re-derives all of them from
+   * prisma/schema.prisma on every run, which is the one oracle a mock cannot
+   * agree with.
+   *
+   * `ra."role"::text = $1` deliberately avoids naming the Postgres enum type —
+   * the same shape `routes/admin-metrics.ts` already runs in production
+   * (`"status"::text = 'captured'`), and the only identifier in this statement
+   * that could not be derived from the schema.
+   *
+   * NO `DISTINCT` IS NEEDED and adding one would be misleading:
+   * `@@unique([userId, role])` means a fixed role matches at most one
+   * assignment row per user, so the JOIN cannot duplicate a user and
+   * `count(*)` is already the holder count. That is the same guarantee the
+   * `distinct: ['userId']` in the fallback was relying on — Prisma applies that
+   * one in the CLIENT, so it was never doing work Postgres wasn't.
+   *
+   * Returns `null` if the statement cannot be executed, so the caller keeps the
+   * previous behaviour rather than 500-ing the operator's main screen. This is
+   * NOT a swallowing catch: the fallback answers the SAME rows and the SAME
+   * total, only slowly, and the failure is logged at error level.
+   */
+  private async resolveRolePageIds(args: {
+    role: string;
+    search: string | null;
+    limit: number;
+    skip: number;
+  }): Promise<{ ids: string[]; total: number } | null> {
+    const { role, search, limit, skip } = args;
+    // Matches Prisma's `contains` semantics exactly: ILIKE for the two
+    // `mode: 'insensitive'` columns, LIKE for `phone`, which had no mode.
+    // Irrelevant when `search` is null — the guard disjunct is TRUE then — but
+    // it must still be a non-null text so Postgres can type the parameter.
+    const pattern = search === null ? '%' : `%${search}%`;
+    try {
+      const [idRows, countRows] = await Promise.all([
+        prisma.$queryRaw<Array<{ id: string }>>`
+          SELECT u."id"
+          FROM "users" u
+          JOIN "user_role_assignments" ra ON ra."user_id" = u."id"
+          WHERE ra."role"::text = ${role}
+            AND (
+              ${search}::text IS NULL
+              OR u."full_name" ILIKE ${pattern}
+              OR u."email" ILIKE ${pattern}
+              OR u."phone" LIKE ${pattern}
+            )
+          ORDER BY u."created_at" DESC
+          LIMIT ${limit} OFFSET ${skip}
+        `,
+        prisma.$queryRaw<Array<{ count: number | bigint | null }>>`
+          SELECT count(*)::int AS count
+          FROM "users" u
+          JOIN "user_role_assignments" ra ON ra."user_id" = u."id"
+          WHERE ra."role"::text = ${role}
+            AND (
+              ${search}::text IS NULL
+              OR u."full_name" ILIKE ${pattern}
+              OR u."email" ILIKE ${pattern}
+              OR u."phone" LIKE ${pattern}
+            )
+        `,
+      ]);
+      // `$queryRaw` returns an array or throws. Anything else means the client
+      // under us is not answering SQL at all, and coercing that to "zero users
+      // hold this role" would be the lying-number defect SCAL-09 exists to
+      // prevent — an operator reads an empty PANDIT page as "we have no
+      // pandits". Treat it as unavailable and let the caller fall back.
+      if (!Array.isArray(idRows) || !Array.isArray(countRows)) {
+        throw new Error('role JOIN returned a non-array result');
+      }
+      return {
+        ids: idRows.map((r) => r.id),
+        total: Number(countRows[0]?.count ?? 0),
+      };
+    } catch (err) {
+      console.error(
+        '[admin.service.getUsers] role JOIN unavailable — falling back to id resolution',
+        err,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * SCAL-04 — the page + total for a role-filtered admin user list.
+   *
+   * Fast path: `resolveRolePageIds` returns at most `limit` ids, so the
+   * hydration below is bounded by construction (`take: ids.length`, which can
+   * never truncate because the ids are already the page). The row ORDER comes
+   * from the SQL, not from Postgres' answer to `IN (...)`, or the operator's
+   * "newest first" list would come back shuffled.
+   *
+   * Slow path: the pre-2026-08-21 behaviour, kept verbatim. It is the only
+   * unbounded `findMany` left in this service and it stays deliberately — it is
+   * the correctness net under an unverifiable statement, not an oversight.
+   * Delete it (and this branch) once the JOIN has been observed answering on a
+   * live database; see the SCAL-04 note in
+   * apps/api/src/lib/unbounded-findmany.scal04.test.ts.
+   */
+  private async loadRoleFilteredPage(args: {
+    role: string;
+    search: string | null;
+    limit: number;
+    skip: number;
+  }): Promise<{ users: AdminUserRow[]; total: number }> {
+    const { role, search, limit, skip } = args;
+
+    const fast = await this.resolveRolePageIds(args);
+    if (fast) {
+      if (fast.ids.length === 0) return { users: [], total: fast.total };
+      const rows = (await prisma.user.findMany({
+        where: { id: { in: fast.ids } },
+        take: fast.ids.length,
+      })) as unknown as AdminUserRow[];
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      return {
+        users: fast.ids
+          .map((id) => byId.get(id))
+          .filter((u): u is AdminUserRow => u !== undefined),
+        total: fast.total,
+      };
+    }
+
+    const where: Record<string, unknown> = {
+      id: {
+        in: (
+          await prisma.userRoleAssignment.findMany({
+            where: { role: role as UserRole },
+            select: { userId: true },
+            distinct: ['userId'],
+          })
+        ).map((h) => h.userId),
+      },
+    };
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search } },
+      ];
+    }
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+      prisma.user.count({ where }),
+    ]);
+    return { users: users as unknown as AdminUserRow[], total };
+  }
+
   async getUsers(filters: UserFilters) {
     try {
       // SCAL-09: `filters.limit` arrived unbounded from routes/admin.ts, and a
@@ -195,9 +380,16 @@ export class AdminService {
       // to User (prisma/schema.prisma), so Prisma rejects that argument
       // outright — verified live: `Unknown argument 'roleAssignments'` → HTTP
       // 500 "Failed to list users". Adding the relation is a schema change.
-      // Until then, resolve the role to its user ids first and constrain on
-      // `id`: one narrow indexed column, bounded by how many people hold that
-      // role, and it gives the page and the count the same answer.
+      //
+      // SCAL-04 (2026-08-21): resolving the role to EVERY holder id and passing
+      // that list back as `IN (...)` is correct but is the one read in this
+      // service that scales with the whole USER BASE, twice over — the id list
+      // goes outbound in the page query AND in the count. Both statements are
+      // now served by a single JOIN that Postgres resolves itself, so the page
+      // costs `limit` rows and the count costs none. See loadRoleFilteredPage.
+      let users: AdminUserRow[];
+      let total: number;
+
       if (filters.role) {
         if (!USER_ROLES.has(filters.role)) {
           // An unknown role matches nobody. Say so honestly (empty page, total
@@ -205,23 +397,23 @@ export class AdminService {
           // answering 500 to what is really a bad query parameter.
           return { users: [], total: 0, page, limit };
         }
-        const holders = await prisma.userRoleAssignment.findMany({
-          where: { role: filters.role as UserRole },
-          select: { userId: true },
-          distinct: ['userId'],
-        });
-        where.id = { in: holders.map((h) => h.userId) };
-      }
-
-      const [users, total] = await Promise.all([
-        prisma.user.findMany({
-          where,
+        ({ users, total } = await this.loadRoleFilteredPage({
+          role: filters.role,
+          search: filters.search ?? null,
+          limit,
           skip,
-          take: limit,
-          orderBy: { createdAt: 'desc' },
-        }),
-        prisma.user.count({ where }),
-      ]);
+        }));
+      } else {
+        [users, total] = await Promise.all([
+          prisma.user.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+          }),
+          prisma.user.count({ where }),
+        ]);
+      }
 
       // Fetch role assignments for users.
       //

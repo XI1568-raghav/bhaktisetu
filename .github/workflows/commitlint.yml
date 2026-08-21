@@ -50,6 +50,87 @@ jobs:
           echo "from=$BASE" >> "$GITHUB_OUTPUT"
           echo "Linting commits from $BASE to HEAD"
 
+      # ── OPS-11 — secret scan on the PR's added lines ──────────────────────
+      #
+      # This repository has already lost credentials to git history once.
+      # `docs/chat-archive/038e0002-5099-4d22-83b2-f98bbf480df7.md` was
+      # committed in cc02057d (2026-04-28), modified in aafa9386, and untracked
+      # in 085dd3ca (2026-08-19). Untracking removed it from the tip; the blob
+      # is still reachable from the first two commits and always will be until
+      # the history is rewritten. Only rotation actually closes it — see
+      # docs/runbooks/secret-rotation.md.
+      #
+      # It lives HERE rather than in ci.yml because ci.yml carries
+      # `paths-ignore: docs/**, **/*.md` — and the file that leaked was a
+      # markdown file under docs/. A scanner that skips the file type that
+      # already burned you is decoration. This workflow has no paths filter.
+      #
+      # Added lines only, so a pre-existing match in an untouched file cannot
+      # block unrelated work. Placeholder-looking values are ignored, and NO
+      # MATCHED VALUE IS EVER PRINTED — only the file, the line number and the
+      # rule name.
+      #
+      # Free tier: ~5s on an already-checked-out runner, ~20 PRs/mo => <2 min/mo.
+      - name: Secret scan (added lines only)
+        run: |
+          set -euo pipefail
+          BASE="${{ steps.range.outputs.from }}"
+          git diff --unified=0 "$BASE"...HEAD > /tmp/pr.diff || git diff --unified=0 "$BASE" HEAD > /tmp/pr.diff
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const RULES = [
+            ['postgres-dsn-with-password', /postgres(?:ql)?:\/\/[^\s:@/]+:([^\s@/]+)@[^\s/]+/g],
+            ['jwt-like-key',               /\b(eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})\b/g],
+            ['razorpay-live-key',          /\b(rzp_live_[A-Za-z0-9]{10,})\b/g],
+            ['github-token',               /\b(ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})\b/g],
+            ['resend-api-key',             /\b(re_[A-Za-z0-9]{8}_[A-Za-z0-9]{20,})\b/g],
+            ['aws-access-key-id',          /\b(AKIA[0-9A-Z]{16})\b/g],
+            ['private-key-block',          /(-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----)/g],
+          ];
+
+          // A value that is obviously a placeholder is not a leak. Keep this
+          // list tight: every entry here is a way for a real secret to pass.
+          const PLACEHOLDER =
+            /^(?:pw|pass|password|passwd|secret|changeme|example|test|dummy|placeholder|redacted|xxx+|yyy+|\*+|\.\.\.|your[-_a-z]*|my[-_a-z]*|<[^>]*>|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|%[A-Z_]+%|\[[^\]]*\])$/i;
+          const looksPlaceholder = (v) =>
+            PLACEHOLDER.test(v) || v.includes('<') || v.includes('$') || v.includes('...') || v.length < 8;
+
+          const diff = readFileSync('/tmp/pr.diff', 'utf8');
+          let file = '(unknown)';
+          let hunkLine = 0;
+          const hits = [];
+
+          for (const raw of diff.split('\n')) {
+            if (raw.startsWith('+++ b/')) { file = raw.slice(6); hunkLine = 0; continue; }
+            const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)/.exec(raw);
+            if (hunk) { hunkLine = Number(hunk[1]); continue; }
+            if (!raw.startsWith('+') || raw.startsWith('+++')) continue;
+            const line = raw.slice(1);
+            const n = hunkLine++;
+            // The scanner's own rule table is not a leak.
+            if (file === '.github/workflows/commitlint.yml') continue;
+            for (const [name, re] of RULES) {
+              re.lastIndex = 0;
+              let m;
+              while ((m = re.exec(line)) !== null) {
+                const value = m[1] ?? m[0];
+                if (name !== 'private-key-block' && looksPlaceholder(value)) continue;
+                hits.push({ file, line: n, name });
+              }
+            }
+          }
+
+          if (hits.length > 0) {
+            for (const h of hits) {
+              console.log(`::error file=${h.file},line=${h.line}::Possible secret (${h.name}) on an added line. The value is not printed. Remove it, then ROTATE it — a commit is enough to require rotation. See docs/runbooks/secret-rotation.md.`);
+            }
+            console.log(`\n${hits.length} possible secret(s) in this PR. Nothing was printed.`);
+            process.exit(1);
+          }
+          console.log('Secret scan: no credential-shaped values on added lines.');
+          NODE
+
       - name: Run commitlint
         # The previous `npx --yes -p @commitlint/cli -p @commitlint/config-conventional`
         # form fetched both packages into the npx cache, but commitlint's internal

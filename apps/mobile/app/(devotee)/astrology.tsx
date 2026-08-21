@@ -13,7 +13,35 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAstrologers, useHoroscope } from '@poojly/api-client';
 import { astrologerSupplyLabel } from '../../lib/astrologer-supply-label';
+import { webOrigin, hostOf } from '../../lib/web-origin';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+
+/**
+ * PAR-22 — the two controls on this screen that leave the app.
+ *
+ * They did two things wrong, and neither needed a WebView to fix.
+ *
+ * 1. They were SILENT about leaving. A TouchableOpacity that calls
+ *    Linking.openURL and reports itself to assistive tech as nothing reads as
+ *    an in-app screen; "Ask AI Jyotish" on a button that opens the mobile
+ *    browser is the same promise the audit removed from "Book Puja". Every
+ *    other bounce-out in the app already announces itself — see
+ *    app/(devotee)/search.tsx:78-85 and app/(devotee)/support.tsx:107-113.
+ *
+ * 2. They hardcoded `https://darshya.online` while every API call goes through
+ *    apiBase(), so a build pointed at a LAN or staging API sent the devotee to
+ *    production. Same defect PAR-15 fixed in the payment hand-off; the origin
+ *    is now resolved by lib/web-origin.ts.
+ *
+ * What is NOT fixed here, and why: an in-app WebView. `react-native-webview`
+ * is not a declared dependency, and it is not merely missing — the app already
+ * require()s it in app/(devotee)/darshan-player.tsx, where the require always
+ * throws in this tree, so the in-app darshan player never renders either.
+ * Installing it is a native-module change that needs a new EAS build and the
+ * root lockfile, i.e. an owner action. See
+ * lib/__tests__/astrology-bounceout-honesty.par22.test.ts.
+ */
+const WEB = webOrigin();
 
 interface Rashi {
   id: string;
@@ -192,17 +220,30 @@ export default function AstrologyScreen() {
             Astrology Services{astrologerSupply}
           </Text>
           <View style={styles.servicesList}>
-            {services.map((service) => (
+            {services.map((service) => {
+              // Kundli has a real in-app screen; everything else is still a
+              // browser hand-off, and the control has to say which it is.
+              const inApp = service.name.toLowerCase().includes('kundli');
+              return (
               <TouchableOpacity
                 key={service.id}
                 style={styles.serviceCard}
                 activeOpacity={0.7}
+                accessibilityRole={inApp ? 'button' : 'link'}
+                accessibilityLabel={service.name}
+                accessibilityHint={
+                  inApp
+                    ? 'Opens the kundli generator in the app'
+                    : `Opens ${hostOf(WEB.origin)} in your browser`
+                }
                 onPress={() => {
-                  if (service.name.toLowerCase().includes('kundli')) {
+                  if (inApp) {
                     router.push('/(devotee)/kundli' as any);
                     return;
                   }
-                  Linking.openURL(`https://darshya.online/astrology?utm_source=mobile-app&utm_medium=service-card&service=${encodeURIComponent(service.name)}`);
+                  Linking.openURL(
+                    `${WEB.origin}/astrology?utm_source=mobile-app&utm_medium=service-card&service=${encodeURIComponent(service.name)}`,
+                  );
                 }}
               >
                 <View style={styles.serviceIconContainer}>
@@ -223,9 +264,14 @@ export default function AstrologyScreen() {
                     </View>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.stone[300]} />
+                <Ionicons
+                  name={inApp ? 'chevron-forward' : 'open-outline'}
+                  size={18}
+                  color={colors.stone[300]}
+                />
               </TouchableOpacity>
-            ))}
+              );
+            })}
           </View>
         </View>
 
@@ -237,9 +283,24 @@ export default function AstrologyScreen() {
             <Text style={styles.aiCardDescription}>
               Get instant astrological insights powered by AI. Ask about your birth chart, compatibility, muhurat, and more.
             </Text>
-            <TouchableOpacity style={styles.aiButton} activeOpacity={0.7} onPress={() => Linking.openURL('https://darshya.online/astrology/chat?utm_source=mobile-app&utm_medium=ai-cta')}>
-              <Ionicons name="chatbubble-ellipses" size={16} color={colors.white} />
-              <Text style={styles.aiButtonText}>Ask AI Jyotish</Text>
+            <TouchableOpacity
+              style={styles.aiButton}
+              activeOpacity={0.7}
+              accessibilityRole="link"
+              accessibilityLabel={`Ask AI Jyotish on ${hostOf(WEB.origin)}`}
+              accessibilityHint={`Opens ${hostOf(WEB.origin)} in your browser`}
+              onPress={() =>
+                Linking.openURL(
+                  `${WEB.origin}/astrology/chat?utm_source=mobile-app&utm_medium=ai-cta`,
+                )
+              }
+            >
+              <Ionicons name="open-outline" size={16} color={colors.white} />
+              {/* The label names the destination: the assistant runs on the
+                  website, and a bare "Ask AI Jyotish" reads as an in-app chat. */}
+              <Text style={styles.aiButtonText}>
+                Ask AI Jyotish on {hostOf(WEB.origin)}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

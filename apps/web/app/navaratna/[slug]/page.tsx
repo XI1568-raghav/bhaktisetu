@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { NAVARATNA, NAVARATNA_SLUGS, getNavaratnaBySlug } from '../../../lib/navaratna';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -190,6 +192,10 @@ export default async function NavaratnaDetailPage({ params }: { params: Promise<
           </Link>
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'navaratna',
+        subject: n.englishName,
+      })}
     </main>
   );
 }

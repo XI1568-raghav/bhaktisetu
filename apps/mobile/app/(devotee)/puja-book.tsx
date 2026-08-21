@@ -23,6 +23,7 @@ import {
   bookingErrorMessage,
   resumePaymentUrl,
   offeringPriceInr,
+  bookingPriceBreakdown,
   isSlotBookable,
   upcomingDateKeys,
   BookingInputError,
@@ -33,6 +34,7 @@ import {
   type DevoteeEntry,
   type CreatedBooking,
 } from '../../lib/booking-flow';
+import { webOrigin, hostOf } from '../../lib/web-origin';
 import { formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -72,6 +74,16 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * screen has not asked the server anything at this point.
  */
 const IDLE_SLOTS: SlotAvailability = { kind: 'unreadable', slots: [] };
+
+/**
+ * The website this build pays on. Resolved from EXPO_PUBLIC_WEB_URL, else from
+ * the API host, else production with `matchesEnvironment: false`. It used to be
+ * the literal darshya.online, which sent a devotee on a LAN or staging build to
+ * production to pay for a booking that only exists on the server they booked
+ * against. Module scope: env is baked at build time and cannot change while the
+ * app runs.
+ */
+const WEB = webOrigin();
 
 export default function PujaBookScreen() {
   const params = useLocalSearchParams<{ slug?: string; name?: string }>();
@@ -194,7 +206,24 @@ export default function PujaBookScreen() {
   }, [offering, date, availabilityNonce]);
 
   const slots = slotView.slots;
-  const priceInr = detail && offering ? offeringPriceInr(detail, offering) : null;
+  /**
+   * The CHARGED amount, not the puja price.
+   *
+   * This was `offeringPriceInr(detail, offering)` printed under the word
+   * "Total". createBooking charges `pujaPrice + PLATFORM_FEE_INR` and the
+   * Razorpay order is minted from that sum, so the very next screen — the web
+   * `/bookings/pay` page this one hands off to — asked for ₹1,151 against a
+   * "Total" of ₹1,100. That gap is CM-03, which the web wizard was fixed for;
+   * moving checkout into the app re-created it here.
+   *
+   * `prasadDeliveryRequested` is false because buildCreateBookingBody sends
+   * false — the app has no address picker, and the route rejects the flag
+   * without an address. When that changes, pass it here and the prasad row
+   * below appears on its own.
+   */
+  const price = bookingPriceBreakdown(detail, offering, {
+    prasadDeliveryRequested: false,
+  });
 
   async function onSubmit() {
     setSubmitError(null);
@@ -277,10 +306,12 @@ export default function PujaBookScreen() {
               {detail?.name ?? 'Your puja'} at {offering?.templeName ?? 'the temple'} on{' '}
               {formatDateLabel(date)} · {slotLabelFor(slots, slot)}.
             </Text>
-            {/* The one thing this screen must not blur. */}
+            {/* The one thing this screen must not blur — and the amount, because
+                the page it hands off to will ask for exactly this figure. */}
             <Text style={styles.successWarn}>
-              Not paid yet. The seat is held for a short while — complete payment
-              to confirm it.
+              Not paid yet
+              {price.totalInr === null ? '' : ` — ${formatInr(price.totalInr)} due`}. The
+              seat is held for a short while; complete payment to confirm it.
             </Text>
           </View>
 
@@ -288,17 +319,34 @@ export default function PujaBookScreen() {
             style={styles.primaryBtn}
             activeOpacity={0.85}
             accessibilityRole="link"
-            accessibilityLabel="Pay on darshya.online"
-            accessibilityHint="Opens darshya.online in your browser to complete payment for this booking"
-            onPress={() => Linking.openURL(resumePaymentUrl(created.id))}
+            accessibilityLabel={`Pay on ${hostOf(WEB.origin)}`}
+            accessibilityHint={`Opens ${hostOf(
+              WEB.origin,
+            )} in your browser, where you sign in and then complete payment for this booking`}
+            onPress={() => Linking.openURL(resumePaymentUrl(created.id, WEB.origin))}
           >
             <Ionicons name="open-outline" size={18} color={colors.white} />
-            <Text style={styles.primaryBtnText}>Pay on darshya.online</Text>
+            <Text style={styles.primaryBtnText}>Pay on {hostOf(WEB.origin)}</Text>
           </TouchableOpacity>
+          {/* The origin could not be established from this build's API host, so
+              it fell back to production. Saying nothing would send the devotee
+              to a site that has never heard of the booking they just made. */}
+          {WEB.matchesEnvironment ? null : (
+            <Text style={styles.submitError}>
+              This build talks to a different server than {hostOf(WEB.origin)}, so
+              that site will not know about this booking. Set EXPO_PUBLIC_WEB_URL
+              to the website that pairs with this build&apos;s API.
+            </Text>
+          )}
+          {/* The sign-in step is real and must not be a surprise: the app's
+              session lives in secure storage and the browser does not share
+              it, so the website will ask who you are before it will take a
+              card. The link goes to the login page carrying the booking id,
+              because the payment page's own guard drops it. */}
           <Text style={styles.note}>
             Card payment happens on the website — the app does not carry a card
-            form yet. Your booking is already saved, so you can also pay later
-            from My Bookings.
+            form yet, and the site will ask you to sign in first. Your booking
+            is already saved, so you can also pay later from My Bookings.
           </Text>
 
           <TouchableOpacity
@@ -558,11 +606,36 @@ export default function PujaBookScreen() {
             multiline
           />
 
-          {/* summary + submit */}
+          {/* summary + submit.
+              Itemised, because the total is not the puja price: the server
+              adds a flat platform fee to every booking and mints the Razorpay
+              order from the sum. Printing the puja price alone under "Total"
+              is what made the pay page quote a bigger number than this screen
+              had promised. */}
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Puja</Text>
+            <Text style={styles.feeValue}>
+              {price.pujaPriceInr === null
+                ? 'Price on request'
+                : formatInr(price.pujaPriceInr)}
+            </Text>
+          </View>
+          {price.pujaPriceInr === null ? null : (
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Platform fee</Text>
+              <Text style={styles.feeValue}>{formatInr(price.platformFeeInr)}</Text>
+            </View>
+          )}
+          {price.pujaPriceInr !== null && price.prasadFeeInr > 0 ? (
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Prasad delivery</Text>
+              <Text style={styles.feeValue}>{formatInr(price.prasadFeeInr)}</Text>
+            </View>
+          ) : null}
           <View style={styles.summary}>
             <Text style={styles.summaryLabel}>Total</Text>
             <Text style={styles.summaryValue}>
-              {priceInr === null ? 'Price on request' : formatInr(priceInr)}
+              {price.totalInr === null ? 'Price on request' : formatInr(price.totalInr)}
             </Text>
           </View>
 
@@ -582,8 +655,8 @@ export default function PujaBookScreen() {
             </Text>
           </TouchableOpacity>
           <Text style={styles.note}>
-            This reserves your slot. Payment is the next step and happens on
-            darshya.online.
+            This reserves your slot. Payment is the next step and happens on{' '}
+            {hostOf(WEB.origin)}.
           </Text>
 
           <View style={{ height: spacing.xl }} />
@@ -727,6 +800,15 @@ const styles = StyleSheet.create({
     borderColor: colors.saffron[600],
   },
   retryBtnText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.saffron[600] },
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  feeLabel: { fontSize: fontSize.sm, color: colors.stone[600] },
+  feeValue: { fontSize: fontSize.sm, color: colors.stone[700], fontWeight: '600' },
   summary: {
     flexDirection: 'row',
     justifyContent: 'space-between',

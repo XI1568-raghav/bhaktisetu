@@ -205,6 +205,74 @@ const SRC = join(import.meta.dirname, '..');
  * 8-byte column over a fixed 30-day window. Worst risk, least payload — left
  * alone deliberately, not overlooked.
  */
+/**
+ * 84 → 84 on 2026-08-21. NET ZERO ON PURPOSE, and the zero is the report.
+ *
+ * THE STANDING REFUSAL IS ANSWERED IN PART. `admin.service.getUsers`' role
+ * filter — recorded three times above as the one read in this API that scales
+ * with the whole USER BASE — no longer runs on a request that filters by role.
+ * `?role=PANDIT` is now served by
+ *
+ *   SELECT u."id" FROM "users" u
+ *   JOIN "user_role_assignments" ra ON ra."user_id" = u."id"
+ *   WHERE ra."role"::text = $1 ... ORDER BY u."created_at" DESC LIMIT $n OFFSET $m
+ *
+ * plus the matching `count(*)::int`, and a page hydration bounded by
+ * construction (`take: ids.length`, where the ids ARE the page). Measured
+ * payload for the shape that was there: the holder resolution returned one
+ * uuid per holder and then sent that list BACK to Postgres in TWO statements,
+ * so at 200k DEVOTEE holders it was ~7 MB inbound and ~7 MB outbound twice —
+ * roughly 21 MB of wire per dashboard hit, against a 512 MB container. After:
+ * `limit` uuids in (≤ 100 × 36 B ≈ 3.6 kB), one integer for the count, nothing
+ * outbound but the role string. Independent of how many people hold the role.
+ *
+ * THE REFUSAL'S REASON WAS REAL AND IS NOT BEING WAVED AWAY. It said the fix
+ * needs a `@relation` on `UserRoleAssignment` plus a migration adding the
+ * foreign key, and that migrations auto-apply on API boot so guessing wrong
+ * turns a slow screen into a boot failure. All of that still holds — which is
+ * exactly why this is a JOIN and not a relation: a JOIN needs no schema change
+ * and no migration. What the refusal did not consider is that the identifiers
+ * were never actually unknown. Every name the statement quotes is one the
+ * Prisma client ALREADY emits against this database through the very
+ * `userRoleAssignment.findMany` being replaced, so if `@@map` or `@map` were
+ * wrong that call would already be failing in production. `"users"` is
+ * additionally DDL here. The one identifier that genuinely cannot be derived —
+ * the Postgres enum type name — is avoided by `ra."role"::text = $1`, the shape
+ * routes/admin-metrics.ts already runs in production as
+ * `"status"::text = 'captured'`.
+ *
+ * NO `DISTINCT` IS NEEDED and its absence is not an oversight:
+ * `@@unique([userId, role])` (schema.prisma:887) means a fixed role matches at
+ * most one assignment row per user, so the JOIN cannot duplicate a user and
+ * `count(*)` IS the holder count. The `distinct: ['userId']` it replaces was
+ * applied in the Prisma CLIENT anyway — it never removed a row Postgres sent.
+ *
+ * SO WHY IS THE COUNT UNCHANGED. Because production is suspended (Render
+ * billing, 2026-08-17) and no statement in this repo can be executed against a
+ * database right now. Shipping an unverifiable statement as the ONLY path
+ * would put the operator's main screen one wrong identifier away from a 500, on
+ * a scale problem that arrives at 200k users in a product that has not yet
+ * taken payment. So the previous id-resolution path is retained as a fallback
+ * behind a logged catch, and THAT is the `findMany` this ratchet still counts.
+ * It is not a swallowing catch: the fallback returns the SAME rows and the SAME
+ * total, only slowly, and `services/admin.service.role-filter-sql.scal04.test.ts`
+ * pins that equivalence along with the identifier derivation — every table and
+ * column in both statements is re-derived from prisma/schema.prisma on each
+ * run, so a `@map` rename fails the test rather than production.
+ *
+ * TO TAKE THIS TO 83, the next agent needs ONE observation, not more code:
+ * with any running API, `GET /api/v1/admin/users?role=PANDIT` as an admin, and
+ * check the API log for `role JOIN unavailable`. If that line is absent the
+ * JOIN executed; delete the fallback branch in `loadRoleFilteredPage`
+ * (everything after `if (fast) { ... }`), delete the two fallback tests in the
+ * guard file, and lower BASELINE to 83. If the line is present, the log
+ * carries the Postgres error and names the wrong identifier.
+ *
+ * STILL REFUSED, unchanged: `/admin/temple-timings` and `/admin/gurukuls`
+ * return whole tables to admin pages that expect the complete list, and the
+ * `/waitlist/stats` day series (see the 2026-08-20 note — smallest payload,
+ * least confirmable column name).
+ */
 const BASELINE = 84;
 
 // −2 on 2026-08-16 — routes/admin-lead-conversion.ts, GET /admin/leads/conversion.

@@ -48,6 +48,9 @@ import { canonicalTempleSlug } from '../../../lib/temple-slug';
 import { resolveApiTemple } from '../../../lib/temple-resolve';
 import { matchTempleOffering, templeBookHref } from '../../../lib/temple-booking';
 import TempleBookPujaCta from '../../../components/temple/TempleBookPujaCta';
+import TempleDevoteeReviews from '../../../components/temple/TempleDevoteeReviews';
+import { getTempleDevoteeReviews, type TempleReviews } from '../../../lib/reviews';
+import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-score';
 import TempleHeartShareButtons from '../../../components/TempleHeartShareButtons';
 import AnalyticsEvent from '../../../components/AnalyticsEvent';
 import { TEMPLE_DETAILS } from '../../../lib/temple-details';
@@ -65,41 +68,18 @@ export function generateStaticParams() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Fallback temple from API (when no rich detail exists)
+// TC-07: a dead `apiFallback: TempleDetail` literal used to sit here — an
+// invented temple that declared `isVerified: true` and `trustScore: 90`.
+//
+// Both values are fabricated and one is not even on the right scale:
+// TRUST_SCORE_MAX is 5 (lib/trust-score.ts), so 90 is eighteen times the
+// maximum a real row can hold. Nothing read the const — the page 404s when
+// neither the rich map nor the API knows the temple, so there was never a
+// path that substituted it — which is precisely why it was dangerous: a
+// ready-made "verified, trust 90" temple sitting one `??` away from being
+// wired into a render. Deleted rather than corrected; a fallback that
+// manufactures a verification badge has no honest value to fall back to.
 // ──────────────────────────────────────────────────────────────
-
-const apiFallback: TempleDetail = {
- id: '1',
- name: 'Temple',
- nameLocal: null,
- slug: '',
- description:
- 'Rich detail for this temple is coming soon. Please explore available pujas and darshan options below.',
- deityPrimary: 'Deity',
- deities: [],
- tradition: 'hindu',
- addressLine: '',
- city: '',
- state: '',
- pincode: '',
- country: 'India',
- lat: 0,
- lng: 0,
- phone: null,
- email: null,
- websiteUrl: null,
- images: [],
- timingInfo: null,
- isVerified: true,
- verificationDate: null,
- trustScore: 90,
- liveDarshanEnabled: false,
- streamUrl: null,
- status: 'active',
- priests: [],
- pujaOfferings: [],
- darshanStream: [],
-};
 
 // `canonicalTempleSlug` now lives in lib/temple-slug.ts. It used to be defined
 // here AND re-implemented independently in app/sitemap.ts (as
@@ -215,6 +195,13 @@ export default async function TempleDetailPage({
  // simple layout below (200, real content) rather than 404ing a working page.
  if (!rich && !apiTemple) notFound();
 
+ // TC-05: the real devotee reviews — rated PujaBooking rows at this temple.
+ // Keyed on the API row's own slug (the long `<name>-<city>` form the route
+ // looks up), and skipped entirely when the API has no row, so a curated-only
+ // page makes no request. `getTempleDevoteeReviews` never throws: a reviews
+ // outage renders the honest empty state, it does not 500 the temple page.
+ const reviews: TempleReviews = await getTempleDevoteeReviews(apiTemple?.slug ?? null);
+
  // JSON-LD LocalBusiness/PlaceOfWorship schema for Google rich snippets.
  // PlaceOfWorship is Schema.org's canonical type for temples/mosques/churches;
  // Google surfaces it with map cards, hours, ratings.
@@ -268,10 +255,19 @@ export default async function TempleDetailPage({
   // deciding where to send money, as if it were the average of real user
   // reviews. There is no review behind it and ratingCount: 1 names a reviewer
   // who does not exist. That is a misrepresentation first and a spammy-markup
-  // manual-action risk second. Re-add ONLY when it is computed from real rows
-  // in the `reviews` table, with the true ratingCount.
-  // The trust score itself is fine and is still rendered on the page — as a
-  // trust score, labelled as one.
+  // manual-action risk second.
+  //
+  // TC-07: the last line of this comment used to read "The trust score itself
+  // is fine and is still rendered on the page — as a trust score, labelled as
+  // one." Neither clause survives. It is NOT fine — `Temple.trustScore` has no
+  // writer anywhere in the codebase, so every value is a seed literal — and it
+  // is NOT rendered here any more, by this page or its /pujas child. Left
+  // corrected rather than deleted because a stale comment asserting the
+  // opposite is how the next agent re-adds the tag.
+  //
+  // Re-add an aggregateRating ONLY when it is computed from the rated
+  // PujaBooking rows that `lib/reviews.ts` already reads, with the true
+  // ratingCount from that route's `total` — not from trustScore.
  };
  const ldScript = (
   <script
@@ -296,7 +292,7 @@ export default async function TempleDetailPage({
   <>
    {ldScript}
    {analyticsTag}
-   <RichTemplePage slug={slug} rich={rich} apiTemple={apiTemple} />
+   <RichTemplePage slug={slug} rich={rich} apiTemple={apiTemple} reviews={reviews} />
   </>
  );
  }
@@ -306,7 +302,7 @@ export default async function TempleDetailPage({
   <>
    {ldScript}
    {analyticsTag}
-   <SimpleTemplePage slug={slug} temple={apiTemple!} />
+   <SimpleTemplePage slug={slug} temple={apiTemple!} reviews={reviews} />
   </>
  );
 }
@@ -319,10 +315,12 @@ function RichTemplePage({
  slug,
  rich,
  apiTemple,
+ reviews,
 }: {
  slug: string;
  rich: TempleDetailRich;
  apiTemple: TempleDetail | null;
+ reviews: TempleReviews;
 }) {
  const heroImg = getTempleHero(slug);
  const gallery = getTempleGallery(slug, IMG_W.CARD);
@@ -381,6 +379,27 @@ function RichTemplePage({
   verified, and whether or not the API even knew the temple. Verification is
   a column on the temple row; if there is no row, there is no claim to make. */}
  {apiTemple?.isVerified === true && <HeroBadge icon={Shield} text="Verified" tone="green" />}
+ {/* TC-07: the trust score, GATED rather than deleted.
+  `canPublishTrustScore` is false while `TRUST_SCORE_IS_COMPUTED` is false
+  (lib/trust-score.ts) — nothing anywhere writes `Temple.trustScore`, every
+  value in the database is one of twenty literals typed into
+  apps/api/prisma/seed.ts before the platform had taken a booking, so there
+  is no measurement to publish. Nothing renders here today, and the second
+  gate is belt-and-braces: GET /temples/:slug whitelists its select and
+  omits trustScore, so the field is `undefined` at runtime regardless.
+
+  Kept as a gate and not as a deletion for two reasons. The honest
+  presentation should come back on the same day the writer lands — flip the
+  one flag and this renders, on the one scale, through the one formatter —
+  and a deletion leaves nothing for a reader to find, which is how
+  `ratingValue: trustScore / 20` got written twice. */}
+ {canPublishTrustScore(apiTemple?.trustScore) && (
+  <HeroBadge
+   icon={Shield}
+   text={`Trust ${formatTrustScoreOutOf(apiTemple?.trustScore)}`}
+   tone="green"
+  />
+ )}
  </div>
  <h1 className={`${H1.detail} max-w-3xl`}>
  {rich.name}
@@ -774,8 +793,8 @@ function RichTemplePage({
  <PhotoGallery slug={slug} count={rich.photoCount} heroImg={heroImg} gallery={gallery} templeName={rich.name} />
  </section>
 
- {/* 10. DEVOTEE REVIEWS — REMOVED (TC-05).
-  This slot rendered `rich.testimonials` from lib/temple-details.ts: 51
+ {/* 10. DEVOTEE REVIEWS (TC-05).
+  This slot used to render `rich.testimonials` from lib/temple-details.ts: 51
   hand-written testimonials across 17 temples, 46 of them five-star, each with
   an invented full name, an invented home city, initials rendered into an
   avatar circle and a star row. Several asserted a transaction that never
@@ -786,18 +805,19 @@ function RichTemplePage({
   problem, not decoration, and the same class as the fabricated astrologer
   reviews removed under AW-02.
 
-  Nothing renders here now. An empty slot is honest; an invented five-star
-  review is not. The fixture rows themselves are left in
-  lib/temple-details.ts (that module is shared and typed `testimonials?:`,
-  so nothing depends on them being present) but no surface publishes them.
+  The fixture rows are still in lib/temple-details.ts (that module is shared —
+  hero copy, timings, FAQs, similar-temple links — and `testimonials` is
+  optional, so nothing depends on them being present). Deleting the structure
+  is the trap that broke the astrologer overlay; what matters is that no
+  surface PUBLISHES them, which __tests__/temple-testimonials-fabricated
+  .tc05.test.tsx pins.
 
-  To restore a reviews section, render REAL rows: the API already serves
-  GET /temples/:slug/reviews from PujaBooking rows that carry a rating
-  (apps/api/src/services/temple.service.ts getReviews). Note before wiring it
-  that lib/api.ts getTempleReviews is currently mistyped — it declares
-  PaginatedResponse<TempleReview> ({ data, pagination }) while the route
-  returns { templeSlug, reviews, total, averageRating, page, limit,
-  totalPages } — so that client must be corrected first. */}
+  What renders now is the real thing: rated PujaBooking rows served by
+  GET /temples/:slug/reviews. Where there are none, the section says so.
+  See lib/reviews.ts for why it does not route through lib/api.ts, and for
+  the correction to the "getTempleReviews is mistyped" note (it is not —
+  serverFetch's normalizePaginated rewrites that payload). */}
+ <TempleDevoteeReviews templeName={rich.name} reviews={reviews} reveal />
 
  {/* 11. FAQ */}
  {rich.faqs && rich.faqs.length > 0 && (
@@ -950,7 +970,15 @@ function RichTemplePage({
 // SIMPLE PAGE — fallback when no rich detail exists
 // ══════════════════════════════════════════════════════════════
 
-function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail }) {
+function SimpleTemplePage({
+ slug,
+ temple,
+ reviews,
+}: {
+ slug: string;
+ temple: TempleDetail;
+ reviews: TempleReviews;
+}) {
  const heroImg = getTempleHero(slug);
  const gallery = getTempleGallery(slug, IMG_W.CARD);
 
@@ -1043,6 +1071,11 @@ function SimpleTemplePage({ slug, temple }: { slug: string; temple: TempleDetail
  </div>
  </section>
  )}
+
+ {/* TC-05: the api-only layout gets the same real-reviews section as the
+ rich one. These are the temples the API actually seeded, so they are the
+ ones most likely to have a rated booking behind them. */}
+ <TempleDevoteeReviews templeName={temple.name} reviews={reviews} />
  </div>
 
  <aside className="space-y-4">

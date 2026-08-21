@@ -92,8 +92,11 @@ Once Razorpay emails "Account activated":
 4. **Do not** commit secrets to git. Render env vars only.
 5. Trigger a manual deploy on Render to pick up new env vars.
 
-Web side: the public `NEXT_PUBLIC_RAZORPAY_KEY_ID` on Cloudflare Pages
-must mirror the live `rzp_live_*` Key ID — secret stays server-only.
+Web side: the public `NEXT_PUBLIC_RAZORPAY_KEY_ID` on the **Render** web
+service (`darshya-web`) must mirror the live `rzp_live_*` Key ID — secret
+stays server-only. (The web app was cut over from Cloudflare Pages to
+Render; Cloudflare is DNS/edge only. Setting this on Cloudflare has no
+effect and leaves checkout on the demo key.)
 
 ## 7. Webhooks — required for async reconciliation
 
@@ -101,18 +104,80 @@ Razorpay Dashboard → **Account & Settings → Webhooks → + Add New**:
 
 | Webhook URL | Events |
 |---|---|
-| `https://api.darshya.online/api/v1/payments/webhook` | `payment.captured`, `payment.failed`, `refund.processed` |
-| `https://api.darshya.online/api/v1/subscriptions/webhook` | `subscription.activated`, `subscription.charged`, `subscription.cancelled` |
+| `https://api.darshya.online/api/v1/payments/webhook` | `payment.captured`, `payment.failed`, `refund.created`, `refund.processed` |
+| `https://api.darshya.online/api/v1/subscriptions/webhook` | `subscription.authenticated`, `subscription.activated`, `subscription.charged`, `subscription.pending`, `subscription.halted`, `subscription.paused`, `subscription.resumed`, `subscription.cancelled`, `subscription.completed`, `subscription.expired` |
+
+**Tick every event in both rows.** The two lists are not "nice to have" —
+each maps to a branch that does real work, and an unsubscribed event is
+indistinguishable from a broken feature:
+
+- `refund.created` **and** `refund.processed` (PAY-05). Razorpay accounts
+  differ in which of the two they emit for a refund raised from the
+  dashboard, and that is the ONLY signal we get for one. The handler is
+  written to accept either, so subscribe both and the choice stops
+  mattering. If neither is ticked, a refund you issue by hand in the
+  Razorpay dashboard never reverses the pandit's earning or the temple's
+  share in our ledger — the provider stays able to withdraw money that has
+  already gone back to the devotee.
+- The full `subscription.*` set (PAY-04). Ticking only
+  activated/charged/cancelled leaves a mandate stuck showing its last
+  known state: `halted` (the RBI dunning window after a failed debit) and
+  `paused` never reach us, so a dead mandate keeps rendering as a live one
+  to the devotee and to the gaushala/temple counting on the income.
+  `subscription.authenticated` is the one that fires when the devotee
+  finishes authorising the UPI Autopay mandate on Razorpay's page.
+
+Both endpoints now drive **both** subscription stores (the marketplace role
+plans and the recurring UPI Autopay mandates), so pointing `subscription.*`
+at the wrong url is no longer silently destructive. Razorpay stamps one
+`x-razorpay-event-id` per event and both endpoints share one dedupe
+namespace, so subscribing an event to both urls cannot double-process it.
+Prefer the split above anyway — it keeps the Razorpay dashboard readable.
 
 For each webhook:
 1. Generate a **Webhook Secret** (long random string — Razorpay can
    auto-generate or you can paste your own, e.g. `openssl rand -hex 32`).
 2. Set on Render: `RAZORPAY_WEBHOOK_SECRET = <secret>`.
-   - If you use the same secret for both endpoints (recommended), one
-     env var is enough. If different, the subscription webhook handler
-     will need a second var (`RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET`).
+   - Simplest: use the **same** secret for both endpoints and set this
+     one var.
+   - If you give the subscriptions endpoint a **different** secret, set
+     `RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET` to it as well. The
+     subscriptions handler prefers that var and falls back to
+     `RAZORPAY_WEBHOOK_SECRET`; leaving it unset while the dashboard uses
+     a second secret rejects every subscription event with 400, which
+     looks exactly like "recurring is broken".
 3. Razorpay will POST a test event when you click **Send Test
    Webhook** — confirm 200 OK in Render logs.
+
+## 7b. Recurring UPI Autopay — the two owner-side prerequisites
+
+Webhooks alone do not make a mandate. Two things must exist in the
+Razorpay dashboard before `POST /api/v1/recurring/subscribe` can return a
+mandate link a devotee can open:
+
+1. **Subscriptions must be enabled on the account.** Dashboard →
+   **Subscriptions**. If the product is not enabled the create call 404s
+   and the intent row stays `pending` with no `mandateUrl` — the devotee
+   sees a dead button, not an error.
+2. **One Razorpay Plan per catalog plan.** Dashboard → **Subscriptions →
+   Plans → Create Plan**, then copy each `plan_xxx` id into Render:
+
+   | Catalog plan | Amount | Billing | Render env var |
+   |---|---|---|---|
+   | Gau Seva — Daily Feeding | ₹51 | daily | `RAZORPAY_PLAN_RECURRING_GAU_FEED_DAILY` |
+   | Gau Palan — Monthly Care | ₹3,000 | monthly | `RAZORPAY_PLAN_RECURRING_GAU_PALAN_MONTHLY` |
+   | Wellness Batch — Monthly | ₹299 | monthly | `RAZORPAY_PLAN_RECURRING_WELLNESS_BATCH_MONTHLY` |
+   | Monthly Seva | ₹501 | monthly | `RAZORPAY_PLAN_RECURRING_TEMPLE_SEVA_MONTHLY` |
+
+   Every amount is under the ₹15,000 UPI Autopay no-PIN cap on purpose —
+   donations and wellness do not qualify for the enhanced ₹1 L tier, so a
+   plan priced above ₹15,000 would force the devotee to re-enter their UPI
+   PIN on every debit and kill the retention the recurring rail exists for.
+
+   With the env var unset the code falls back to the raw REST endpoint with
+   an inline plan. That works, but it mints a NEW Razorpay plan per
+   subscriber, so the dashboard becomes unreadable and per-plan reporting
+   is impossible. Set the four vars.
 
 ## 8. Render env vars — final checklist
 
@@ -122,9 +187,20 @@ On Render → apps/api → Environment, set:
 RAZORPAY_KEY_ID=rzp_live_xxx
 RAZORPAY_KEY_SECRET=<live secret>
 RAZORPAY_WEBHOOK_SECRET=<webhook secret>
+
+# Only if the subscriptions webhook uses a DIFFERENT secret (see §7).
+RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET=<subscription webhook secret>
+
+# Recurring UPI Autopay plan ids (see §7b). Without these every
+# subscriber mints their own throwaway Razorpay plan.
+RAZORPAY_PLAN_RECURRING_GAU_FEED_DAILY=plan_xxx
+RAZORPAY_PLAN_RECURRING_GAU_PALAN_MONTHLY=plan_xxx
+RAZORPAY_PLAN_RECURRING_WELLNESS_BATCH_MONTHLY=plan_xxx
+RAZORPAY_PLAN_RECURRING_TEMPLE_SEVA_MONTHLY=plan_xxx
 ```
 
-On Cloudflare Pages → apps/web → Environment variables (production):
+On Render → `darshya-web` → Environment (NOT Cloudflare — the web app
+runs on Render; Cloudflare only fronts DNS):
 
 ```
 NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_xxx

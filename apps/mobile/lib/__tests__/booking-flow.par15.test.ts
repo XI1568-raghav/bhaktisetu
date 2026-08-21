@@ -367,9 +367,26 @@ describe('PAR-15 bookingErrorMessage', () => {
 });
 
 describe('PAR-15 resumePaymentUrl', () => {
+  /**
+   * The origin is now a REQUIRED argument rather than a baked-in
+   * `https://darshya.online`. These two assertions are unchanged in substance
+   * — the production origin is still passed here, so the page and the
+   * parameter are pinned exactly as before — and the environment behaviour the
+   * new signature exists for is covered in pay-handoff-origin.par15.test.ts.
+   */
+  const PROD = 'https://darshya.online';
+  /** The target the web login page forwards to after sign-in. */
+  const target = (url: string) =>
+    decodeURIComponent(new RegExp('[?&]redirect=([^&]+)').exec(url)?.[1] ?? '');
+
   it('points at the resume-payment page, with its `id` parameter', () => {
-    const url = resumePaymentUrl('bk111111-1111-4000-8000-000000000001');
-    expect(url).toMatch(/^https:\/\/darshya\.online\/bookings\/pay\?id=/);
+    // Unchanged in substance. The page is now reached through the login gate,
+    // because AuthGuard drops the query string off a direct link and the id
+    // with it — see pay-handoff-origin.par15.test.ts — so the assertion moves
+    // onto the redirect target, which is the address that actually loads.
+    const url = resumePaymentUrl('bk111111-1111-4000-8000-000000000001', PROD);
+    expect(url.startsWith('https://darshya.online/')).toBe(true);
+    expect(target(url)).toMatch(/^\/bookings\/pay\?id=/);
     expect(url).toContain('bk111111-1111-4000-8000-000000000001');
   });
 
@@ -377,7 +394,7 @@ describe('PAR-15 resumePaymentUrl', () => {
     // /pujas/book posts /bookings/create-order, which mints a SECOND booking
     // and a second slot hold for one customer intent. That is how the DB-03
     // ghost bookings accumulated.
-    const url = resumePaymentUrl('bk-1');
+    const url = resumePaymentUrl('bk-1', PROD);
     expect(url).not.toContain('/pujas/book');
     expect(url).not.toContain('create-order');
   });

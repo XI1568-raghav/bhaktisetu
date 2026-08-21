@@ -154,12 +154,74 @@ export function selectPujaBookingDetail(payload: unknown): PujaBookingDetail | n
   };
 }
 
-/** What the devotee actually pays at this temple: the override, else the base. */
+/** The puja price at this temple: the override, else the base. NOT the total. */
 export function offeringPriceInr(
   detail: PujaBookingDetail,
   offering: TempleOfferingOption,
 ): number | null {
   return offering.priceInr ?? detail.basePriceInr;
+}
+
+// ─── what the devotee is actually charged ───────────────────────────────────
+/**
+ * THE FEE SCHEDULE. The puja price is not the total, and this screen used to
+ * say it was.
+ *
+ * `createBooking` charges the puja price PLUS a flat platform fee, plus a
+ * prasad-delivery fee when that is requested:
+ *
+ *     priceAmount = pujaPrice + PLATFORM_FEE_INR (+ PRASAD_DELIVERY_FEE_INR)
+ *     — apps/api/src/services/booking.service.ts
+ *
+ * and the Razorpay order is minted from `priceAmount`
+ * (payment.service.ts:702), so `/bookings/pay` — the page this screen hands
+ * off to — renders "Pay ₹1,151" for a ₹1,100 puja. The screen previously
+ * printed "Total ₹1,100", which is the CM-03 defect the web wizard was fixed
+ * for in 2026-08: an advertised price that grows on the payment sheet.
+ *
+ * ⚠ THE API IS THE SOURCE OF TRUTH. These two numbers live here only so the
+ * app can show what the server will collect. Drift is a mischarge, so
+ * `__tests__/booking-fee-disclosure.par15.test.ts` parses the API constants
+ * and asserts equality — and asserts equality with the web mirror
+ * (apps/web/lib/puja-pricing.ts) too, so the two clients cannot quote
+ * different totals for one booking.
+ */
+
+/** Flat platform fee added to every puja booking. */
+export const PLATFORM_FEE_INR = 51;
+
+/** Added only when the devotee opts into prasad delivery. */
+export const PRASAD_DELIVERY_FEE_INR = 150;
+
+export interface PujaPriceBreakdown {
+  /** The puja itself. null when no temple is chosen or no price is published. */
+  pujaPriceInr: number | null;
+  platformFeeInr: number;
+  /** 0 unless prasad delivery was requested. */
+  prasadFeeInr: number;
+  /** What will be collected. null exactly when the puja price is unknown. */
+  totalInr: number | null;
+}
+
+export function bookingPriceBreakdown(
+  detail: PujaBookingDetail | null,
+  offering: TempleOfferingOption | null,
+  opts: { prasadDeliveryRequested?: boolean } = {},
+): PujaPriceBreakdown {
+  const pujaPriceInr = detail && offering ? offeringPriceInr(detail, offering) : null;
+  const prasadFeeInr = opts.prasadDeliveryRequested ? PRASAD_DELIVERY_FEE_INR : 0;
+  // A price of exactly 0 is a real price here and totals to the bare platform
+  // fee, because that IS what the server would collect. The web mirror returns
+  // 0 for a 0 input instead, and the difference is deliberate: its input is a
+  // bare number, so it has to overload 0 to mean "nothing chosen yet". This
+  // signature has `null` for that, so 0 can mean zero.
+  const known = typeof pujaPriceInr === 'number' && pujaPriceInr >= 0;
+  return {
+    pujaPriceInr,
+    platformFeeInr: PLATFORM_FEE_INR,
+    prasadFeeInr,
+    totalInr: known ? pujaPriceInr + PLATFORM_FEE_INR + prasadFeeInr : null,
+  };
 }
 
 // ─── GET /api/v1/bookings/slots?templeId=<offeringId>&date=YYYY-MM-DD ───────
@@ -456,11 +518,39 @@ export function createBookingOutcome(
  * page below is built for precisely this case and is documented as never
  * re-posting /create-order (apps/web/app/bookings/pay/page.tsx:20-27). Its
  * query parameter is `id`.
+ *
+ * `webOrigin` is REQUIRED and carries no default. It used to be the literal
+ * `https://darshya.online`, while every API call in the app went through
+ * `apiBase()` — so any build not pointed at production created a real booking
+ * on ITS server and then opened PRODUCTION to pay for an id that does not
+ * exist there, after the slot hold had already been taken. A default here
+ * would let the next call site re-introduce that by omission with the type
+ * checker silent; lib/web-origin.ts resolves the value.
+ *
+ * AND IT GOES THROUGH THE LOGIN GATE, DELIBERATELY.
+ *
+ * `/bookings/pay` is wrapped in <AuthGuard> (pay/page.tsx:445), and AuthGuard
+ * redirects an unauthenticated visitor to
+ * `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`
+ * (AuthGuard.tsx:37) — `pathname` ONLY. The `?id=<bookingId>` is dropped, so
+ * after signing in the devotee arrives at a payment page with no booking to
+ * pay for, while the slot hold their booking took is already running.
+ *
+ * They will be unauthenticated almost every time: the app keeps its session in
+ * expo-secure-store and the website keeps its in
+ * localStorage['poojly_session'], and opening a link in the mobile browser
+ * shares neither. So the link addresses the login page itself with a redirect
+ * that keeps the query string. `safeRedirect` returns a root-relative target
+ * verbatim (login/page.tsx:31) and the already-authenticated effect forwards to
+ * the same target (login/page.tsx:117-120), so one URL is correct in both
+ * states. Repairing AuthGuard to forward `pathname + search` is the root cause
+ * and is a web-lane change; this URL keeps working after that lands.
  */
-export function resumePaymentUrl(bookingId: string): string {
-  return `https://darshya.online/bookings/pay?id=${encodeURIComponent(
+export function resumePaymentUrl(bookingId: string, webOrigin: string): string {
+  const target = `/bookings/pay?id=${encodeURIComponent(
     bookingId,
   )}&utm_source=mobile-app&utm_medium=booking-payment`;
+  return `${webOrigin.replace(/\/+$/, '')}/auth/login?redirect=${encodeURIComponent(target)}`;
 }
 
 // ─── dates ──────────────────────────────────────────────────────────────────

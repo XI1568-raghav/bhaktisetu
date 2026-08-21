@@ -146,7 +146,42 @@ The last query should return a timestamp close to the backup date.
 5. Update PostHog + Sentry release tags with restore note.
 6. Post in #ops: "Restore complete from $DATE backup; RTO Xh Ymin".
 
-## DR drill checklist (annual)
+## DR drill — the automated one (do this first)
+
+> `OPS-02`. Added 2026-08-21. This exists because the manual checklist below has
+> been in this file since 2026-06-14 and **has never been performed** — the
+> history table underneath it is empty, and an empty drill history means every
+> claim in this runbook is untested.
+
+One command, ~6 minutes, zero scheduled CI cost:
+
+```bash
+gh workflow run db-backup.yml -f restore_drill=true
+gh run watch
+```
+
+What it does, in the `restore-drill` job of `.github/workflows/db-backup.yml`:
+
+1. Downloads the **newest** object from the backup bucket
+   (`scripts/backup/fetch-latest-backup.mjs` — read-only; it cannot write to or
+   delete from the bucket).
+2. `pg_restore`s it into a **throwaway Postgres service container inside the
+   GitHub runner**. It cannot reach production, staging, or any Supabase
+   project, and the container is destroyed with the runner.
+3. Asserts the restored database actually holds data: it counts `public` tables
+   and rows in `users`, prints both in the job summary, and **fails the run if
+   fewer than 50 tables restored**.
+
+Run it once as soon as the first real backup exists, then quarterly. Record each
+run in the history table below — the automated job prints exactly the numbers
+that table wants.
+
+It does **not** replace the full manual drill for RTO measurement: the runner
+restores into a local container, which is faster than restoring into a fresh
+Supabase project over the network. Use the manual checklist when you need a
+real RTO figure.
+
+## DR drill checklist (annual, manual — for a real RTO number)
 
 - [ ] Pick a recent dump (≤7 days old)
 - [ ] Provision a throwaway Supabase project (free tier)
@@ -157,7 +192,14 @@ The last query should return a timestamp close to the backup date.
 
 ## DR drill history
 
-_(append entries as drills complete)_
+> **AS OF 2026-08-21 THIS TABLE IS EMPTY, AND THAT IS THE FINDING.** No restore
+> of this database has ever been performed or recorded. RPO 24h / RTO 4h at the
+> top of this file are targets, not measurements. Do not quote them to anyone —
+> a counterparty, an investor, a user — as if they had been demonstrated.
+>
+> There is also nothing to drill against yet: the daily backup has never
+> produced an object, because its secrets have never been set. See the owner
+> setup block at the top of `.github/workflows/db-backup.yml`.
 
 | Date | Source dump | Target | Elapsed | Notes |
 |---|---|---|---|---|

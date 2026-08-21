@@ -75,13 +75,30 @@ jobs:
       # the step would be deleted within a day. Fixing those is tracked
       # separately; widen this glob once they pass.
       #
-      # ~10s on an already-installed runner => ~13 min/mo at ~80 runs.
-      - name: Ops guards (production monitoring + rollback lever)
+      # The two backup files were added to this list on 2026-08-21 (OPS-02 /
+      # OPS-03). `scripts/backup/test/backup.test.mjs` had existed since
+      # 2026-06-14 and had never executed anywhere: not in `turbo test` (wrong
+      # project), not here (not named). The guard on the one script that decides
+      # whether this product has a restore point was dead the whole time.
+      #
+      # Windows note for whoever runs these locally: the three
+      # `scripts/backup/*.mjs` files were CRLF in the working tree until
+      # 2026-08-21, and vitest's transform fails on a CRLF `.mjs` with
+      # `SyntaxError: Invalid or unexpected token` pointing at the IMPORT line
+      # in the test rather than at the module. `.gitattributes` already says
+      # `* text=auto eol=lf`, so the index was always LF and CI was never
+      # affected — only the Windows checkout. If it reappears, re-run
+      # `git add --renormalize .`.
+      #
+      # ~12s on an already-installed runner => ~16 min/mo at ~80 runs.
+      - name: Ops guards (production monitoring + rollback lever + backups)
         run: >-
           pnpm exec vitest run
           scripts/agents/health-smoke.test.mjs
           scripts/agents/prod-monitoring-can-fail.test.mjs
           scripts/agents/deploy-rollback-lever.test.mjs
+          scripts/backup/test/backup.test.mjs
+          scripts/backup/test/backup-integrity.test.mjs
 
       - name: Build
         run: pnpm turbo build --filter=!@poojly/remotion-pitch

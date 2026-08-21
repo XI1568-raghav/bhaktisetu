@@ -391,10 +391,21 @@ export default function GaushalaPage() {
  Each cow has a unique story. Choose one to bring into your
  family and provide lifelong care.
  </p>
+ {/* TC-11, second pass. The disclaimer DF-08 added to make the fixtures
+     honest reintroduced the exact claim TC-11 had just removed ("a
+     verified partner gaushala" — nothing in the product writes
+     GaushalaProfile.verified; the admin path sets `approved`) and added a
+     new one on top of it: nothing assigns a cow to a donor. The only
+     endpoint that ever did was POST /gaushala/adopt, deleted under COM-19
+     and now held down by apps/api/src/routes/gaushala.adopt-removed.test.ts.
+     A confirmed donation writes a Donation row against a gaushala donee and
+     stops there. So the disclosure now says what a contribution actually
+     buys, and drops the word the product has not earned. */}
  <p className="text-sm text-surface-500 mt-2">
- These are sample listings that show how adoption works. Your seva is
- assigned to a real cow at a verified partner gaushala when your
- contribution is confirmed.
+ These are sample listings that show how adoption works — they are not an
+ inventory of animals you can claim. A contribution funds cow care at an
+ approved gaushala; it does not reserve a particular cow, and no cow shown
+ here is allocated to a donor.
  </p>
  </div>
  </div>

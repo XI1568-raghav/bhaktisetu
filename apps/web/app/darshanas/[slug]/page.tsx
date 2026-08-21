@@ -4,6 +4,8 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DARSHANAS, darshanaSlugs, getDarshana } from '../../../lib/darshanas';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -174,6 +176,10 @@ export default async function DarshanaPage({ params }: { params: Promise<{ slug:
           ))}
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'darshanas',
+        subject: d.name,
+      })}
     </main>
   );
 }

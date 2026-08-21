@@ -357,10 +357,41 @@ export class SubscriptionService {
     const plan = PLANS.find((p) => p.id === planId);
     if (!plan) throw new Error(`Plan not found: ${planId}`);
 
-    // TC-04: refuse a withdrawn plan before any write. Note this guards the
-    // SALE, not the honouring of one — an already-sold subscription is
-    // untouched, and isPremium()/getMySubscription() keep working for it.
-    if (!this.isOfferable(plan)) {
+    // TC-04: refuse a withdrawn plan before any write — but only as a SALE.
+    //
+    // This guard originally covered every call and carried a comment claiming
+    // "an already-sold subscription is untouched". That was true of the READS
+    // (isPremium, getMySubscription) and false of the one write that matters.
+    // `handleSubscriptionEvent` routes both `subscription.activated` and
+    // `subscription.charged` — the annual RENEWAL event — straight into
+    // subscribe(), so for anyone who bought NRI Premium before the withdrawal
+    // the renewal became: Razorpay debits ₹5,000, this throws, no row is
+    // written, and their endDate never moves. The route catches the throw and
+    // answers HTTP 200 (routes/subscriptions.ts:174), and the event id is
+    // recorded in the idempotency store BEFORE the handler runs, so Razorpay
+    // neither retries nor can the event be replayed. The charge is simply lost.
+    //
+    // Refusing to sell and refusing to honour are different decisions. Once
+    // the gateway has taken the devotee's money the only lawful options are to
+    // provision or to refund; throwing does neither and is strictly the worst
+    // of the three. So a withdrawn plan is still refused for every new sale,
+    // and honoured when the caller carries gateway evidence that the money was
+    // already collected.
+    //
+    // `demo_mode` is deliberately NOT such evidence — it is minted by the demo
+    // branch of createRazorpaySubscription with no charge behind it, and that
+    // branch is unreachable for a withdrawn plan anyway. Only the verified
+    // webhook rail can honour one.
+    //
+    // This is not a bypass of the withdrawal. Reaching here requires BOTH a
+    // Razorpay HMAC that timingSafeEqual accepts (routes/subscriptions.ts:141)
+    // AND a local `razorpay_subscription_create` Transaction row naming this
+    // plan — and createRazorpaySubscription refuses to write one for a
+    // withdrawn plan. So the honouring branch can only ever fire for a mandate
+    // that was opened while the plan was still on sale. There is no input a
+    // caller controls that turns it into a new sale.
+    const gatewayAlreadyCollected = evidence?.source === 'razorpay_webhook';
+    if (!this.isOfferable(plan) && !gatewayAlreadyCollected) {
       throw new Error(NRI_PREMIUM_WITHDRAWN_MESSAGE);
     }
 
