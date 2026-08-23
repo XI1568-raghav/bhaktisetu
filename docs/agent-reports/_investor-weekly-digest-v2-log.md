@@ -1,6 +1,8 @@
 # investor-weekly-digest-v2 log
 
 
+- 2026-08-23T04:08:48.486Z — ok=false mrr=n/a gmv=n/a users=n/a
+
 - 2026-08-16T04:10:59.691Z — ok=true mrr=0 gmv=0 users=0
 
 - 2026-08-09T04:49:30.896Z — ok=true mrr=0 gmv=0 users=0
