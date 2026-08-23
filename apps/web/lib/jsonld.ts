@@ -1,7 +1,31 @@
 // Shared JSON-LD schema builders. Render via:
 //   <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 
+import { COMPANY } from './company';
+import { NRI_PREMIUM_IS_SELLABLE } from '../app/nri/plan-availability';
+
 export const SITE_URL = 'https://darshya.online';
+
+/**
+ * TC-01 (P0, trust) — the 80G gate, applied to structured data.
+ *
+ * COM-02 gated the 80G deduction promise on ~7 rendered pages and left this
+ * file alone, which made it the worst-placed copy of the claim in the repo: a
+ * JSON-LD payload is machine-readable, is quoted back by Google to devotees who
+ * never open the page, and is syndicated into rich results. Five lines here
+ * asserted a deduction the platform cannot deliver, one of them
+ * ("80G receipts use real PAN and donee 80G registration numbers") a direct
+ * statement about `is80GEligible()`, which returns false for every donation
+ * because `gaushala_profiles.regn_80g` and `.pan` are read in one place and
+ * written nowhere.
+ *
+ * `HAS_80G_VERIFIED` is false, `eightyGNumber` and `pan` are both null, and
+ * apps/api/src/lib/pdf-receipt.ts prints "Proof of donation — not a tax
+ * exemption certificate" on every receipt it mints. Same owner-controlled gate
+ * as lib/company.ts, app/gaushala/page.tsx, app/nri/page.tsx and lib/faqs.ts —
+ * flip the flag and every sentence below returns unchanged.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const organizationJsonLd = {
   '@context': 'https://schema.org',
@@ -207,6 +231,33 @@ export function placeJsonLd(args: {
   };
 }
 
+/**
+ * What a donation receipt actually is, in structured data.
+ *
+ * Kept as its own trailing sentence on purpose: app/nri/page.tsx sanitises the
+ * description it emits by dropping any sentence containing "80G" while the
+ * owner flag is false, so the disclaimer has to be separable from the sentence
+ * that names the receipt at all. That page-level sanitiser is now a no-op for
+ * the false branch's first three sentences and stays correct either way.
+ */
+const RECEIPT_CLAUSE = HAS_80G
+  ? 'Donations made on Darshya receive an 80G receipt PDF carrying the donee registration number and PAN.'
+  : 'Donations made on Darshya receive a numbered receipt PDF by email. That receipt is proof of payment and not an 80G tax-exemption certificate, because Darshya holds no Section 80G registration.';
+
+/**
+ * TC-04 (P1) — the Offer this file published for a plan the API refuses to sell.
+ *
+ * `nri_premium_yearly` is withdrawn: all six of its benefits carry
+ * `enforcedBy: null` in apps/api/src/services/subscription-entitlements.ts, so
+ * `nriPremiumIsSellable()` is false, `getPlans()` filters it out and both
+ * activation rails answer 400. This object nonetheless shipped
+ * `offers[0] = { price: '5000', availability: InStock }`, which is a
+ * machine-readable in-stock ₹5,000 offer for something nobody can buy, and
+ * app/nri/page.tsx spreads it and overrides only `description` — so the Offer
+ * reached Google verbatim. The offers array is dropped entirely while the plan
+ * is withdrawn rather than marked Discontinued: a Discontinued Offer still
+ * publishes the price.
+ */
 export const nriPremiumServiceJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Service',
@@ -219,16 +270,24 @@ export const nriPremiumServiceJsonLd = {
   },
   areaServed: ['United States', 'United Kingdom', 'Canada', 'Australia', 'India'],
   description:
-    'Annual all-access subscription for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest video call, priority booking, free 80G receipts, unlimited AI Pandit chat.',
-  offers: [
-    {
-      '@type': 'Offer',
-      price: '5000',
-      priceCurrency: 'INR',
-      url: `${SITE_URL}/nri`,
-      availability: 'https://schema.org/InStock',
-    },
-  ],
+    'Annual all-access subscription for the Indian diaspora, billed in INR through Razorpay.' +
+    (NRI_PREMIUM_IS_SELLABLE
+      ? ''
+      : ' This tier is not currently sold — Darshya withdrew it rather than charge for benefits it could not yet deliver, and existing subscriptions keep running to their end date.') +
+    ` ${RECEIPT_CLAUSE}`,
+  ...(NRI_PREMIUM_IS_SELLABLE
+    ? {
+        offers: [
+          {
+            '@type': 'Offer',
+            price: '5000',
+            priceCurrency: 'INR',
+            url: `${SITE_URL}/nri`,
+            availability: 'https://schema.org/InStock',
+          },
+        ],
+      }
+    : {}),
 };
 
 // Brand-entity FAQ — targets "what is darshya", "who founded darshya",
@@ -244,7 +303,9 @@ export const brandFaqJsonLd = {
       acceptedAnswer: {
         '@type': 'Answer',
         text:
-          "Darshya is India's devotional super-app at darshya.online. Devotees worldwide book pujas at verified temples with priest video proof, watch live darshan, read panchang, talk to verified astrologers, donate to gaushalas with 80G receipts, and shop sacred items — all in one place. Available in English, Hindi, Tamil, Telugu, Bengali, and Marathi.",
+          "Darshya is India's devotional super-app at darshya.online. Devotees worldwide book pujas at verified temples with priest video proof, watch live darshan, read panchang, talk to verified astrologers, donate to gaushalas" +
+          (HAS_80G ? ' with 80G receipts' : ' and receive a numbered donation receipt') +
+          ', and shop sacred items — all in one place. Available in English, Hindi, Tamil, Telugu, Bengali, and Marathi.',
       },
     },
     {
@@ -261,8 +322,21 @@ export const brandFaqJsonLd = {
       name: 'Is Darshya legitimate and safe to use?',
       acceptedAnswer: {
         '@type': 'Answer',
+        // TC-01 + TC-08. The removed sentence made two claims that are false in
+        // the code. "80G receipts use real PAN and donee 80G registration
+        // numbers" is a direct statement about `is80GEligible()`, which needs
+        // BOTH a donee registration number and a PAN and never gets either —
+        // `gaushala_profiles.regn_80g` and `.pan` are read in one place and
+        // written nowhere, which is why pdf-receipt.ts stamps every receipt
+        // "Proof of donation — not a tax exemption certificate". And "Priests
+        // are Aadhaar-verified" describes a public credential check that does
+        // not exist: `Priest.aadhaarVerified` has no writer outside
+        // apps/api/prisma/seed.ts and is read in exactly one place,
+        // payment.service.ts, as a PAYOUT gate.
         text:
-          'Yes. Every puja booking on Darshya requires the priest to upload a video recording before payout — no video, no money. Priests are Aadhaar-verified, temples are vetted before they go live, and 80G receipts use real PAN and donee 80G registration numbers. Payments process through Razorpay, billed in INR.',
+          'Yes. Every puja booking on Darshya requires the priest to upload a video recording before payout — no video, no money. A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check: we do not yet run independent credential verification or temple reference checks.' +
+          (HAS_80G ? ' 80G receipts use real PAN and donee 80G registration numbers.' : '') +
+          ' Payments process through Razorpay, billed in INR.',
       },
     },
     {
@@ -271,7 +345,9 @@ export const brandFaqJsonLd = {
       acceptedAnswer: {
         '@type': 'Answer',
         text:
-          'Darshya is the only Indian devotional app that makes priest video proof mandatory for every puja booking — not optional, not opt-out. It also offers transparent NRI pricing, gaushala donations with real 80G receipts, and one unified app for puja, darshan, astrology, panchang, gaushala seva, and store. Sri Mandir focuses on puja-only; Utsav focuses on community; AstroSage focuses on jyotish.',
+          'Darshya is the only Indian devotional app that makes priest video proof mandatory for every puja booking — not optional, not opt-out. It also offers transparent NRI pricing, gaushala donations with' +
+          (HAS_80G ? ' real 80G receipts' : ' a numbered receipt for every contribution') +
+          ', and one unified app for puja, darshan, astrology, panchang, gaushala seva, and store. Sri Mandir focuses on puja-only; Utsav focuses on community; AstroSage focuses on jyotish.',
       },
     },
     {
@@ -279,8 +355,14 @@ export const brandFaqJsonLd = {
       name: 'Where can I download or use Darshya?',
       acceptedAnswer: {
         '@type': 'Answer',
+        // LEG-09 + TC-01. "donate in USD" outlived the rail that could take
+        // USD: the Stripe checkout was removed 2026-08-11 and every payment
+        // now goes through Razorpay in INR, so the card's issuer does the
+        // conversion. The 80G half is gated like every other surface.
         text:
-          'Use Darshya on the web at https://darshya.online from any device. The Android app is rolling out on Google Play. The iOS app is on the roadmap. NRI devotees in the United States, United Kingdom, Canada, Australia, the UAE, and Singapore can book and donate in USD with full 80G receipts where eligible.',
+          'Use Darshya on the web at https://darshya.online from any device. The Android app is rolling out on Google Play. The iOS app is on the roadmap. NRI devotees in the United States, United Kingdom, Canada, Australia, the UAE, and Singapore can book and donate with an international card, billed in INR through Razorpay' +
+          (HAS_80G ? ', with full 80G receipts where eligible' : '') +
+          '.',
       },
     },
   ],

@@ -25,6 +25,7 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 import { getYatraBySlug, yatras, formatINR } from '../../../lib/yatra-data';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 export function generateStaticParams() {
  return yatras.map((y) => ({ slug: y.slug }));
 }
@@ -153,8 +154,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div data-reveal="spring" data-delay="3" className="mt-8 flex flex-wrap items-center gap-3">
  <Link
  href={`/yatra/${yatra.slug}/book`}
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Book This Yatra <ArrowRight className="w-3.5 h-3.5" />
  </Link>
@@ -484,8 +484,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div data-reveal="spring" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
  <Link
  href={`/yatra/${yatra.slug}/book`}
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Book This Yatra <ArrowRight className="w-3.5 h-3.5" />
  </Link>

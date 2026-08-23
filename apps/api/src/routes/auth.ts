@@ -336,11 +336,27 @@ function cookieSecurityOptions(): {
  * Callers: pass the raw access + refresh tokens. Flags come from
  * cookieSecurityOptions() — do not re-declare them at the call site.
  * Contract pinned by auth.setauthcookies-export.sec02.test.ts.
+ *
+ * NOT EVERY SESSION IS A SUPABASE SESSION (SEC-02 step 1, 2026-08-23).
+ * The defaults here describe the /login shape: a 1-hour Supabase access token
+ * paired with a 7-day refresh token. `POST /auth/magic-link/verify` is a
+ * different animal — `createEmailSession` mints an `email_sessions` row that
+ * lives SEVEN DAYS and there is no refresh token at all behind it (that route
+ * literally answers `refreshToken: ''`). Handing those values here unmodified
+ * would write a 1-hour cookie over a 7-day session — signing the provider out
+ * six days early, with an empty `darshya_refresh` that /auth/refresh can only
+ * ever reject, since /refresh is a Supabase exchange. Hence the two knobs:
+ *   - pass `null`/`''` for `refreshToken` to skip the refresh cookie entirely;
+ *   - pass `sessionMaxAge` (seconds) when the session's real lifetime is not
+ *     SESSION_TTL_SECONDS.
+ * Both default to today's behaviour, so /login, /verify-otp, /signup, /refresh
+ * and Google sync are untouched.
  */
 export function setAuthCookies(
   reply: import('fastify').FastifyReply,
   accessToken: string,
-  refreshToken: string,
+  refreshToken: string | null,
+  options?: { sessionMaxAge?: number },
 ): void {
   // setCookie is added by @fastify/cookie. If the plugin isn't registered
   // yet (current state of this app — see auth-model docs), the call throws.
@@ -349,17 +365,25 @@ export function setAuthCookies(
   // wired in server bootstrap, cookies start flowing automatically.
   const r = reply as any;
   if (typeof r.setCookie !== 'function') return;
+  const sessionMaxAge =
+    typeof options?.sessionMaxAge === 'number' && options.sessionMaxAge > 0
+      ? Math.floor(options.sessionMaxAge)
+      : SESSION_TTL_SECONDS;
   try {
     r.setCookie(SESSION_COOKIE, accessToken, {
       ...cookieSecurityOptions(),
       path: '/',
-      maxAge: SESSION_TTL_SECONDS,
+      maxAge: sessionMaxAge,
     });
-    r.setCookie(REFRESH_COOKIE, refreshToken, {
-      ...cookieSecurityOptions(),
-      path: REFRESH_COOKIE_PATH,
-      maxAge: REFRESH_TTL_SECONDS,
-    });
+    // An empty refresh cookie is strictly worse than none: it is sent on every
+    // /api/v1/auth call and can only produce a failed exchange.
+    if (refreshToken) {
+      r.setCookie(REFRESH_COOKIE, refreshToken, {
+        ...cookieSecurityOptions(),
+        path: REFRESH_COOKIE_PATH,
+        maxAge: REFRESH_TTL_SECONDS,
+      });
+    }
   } catch {
     // best-effort; JSON Bearer response remains the contract of record
   }

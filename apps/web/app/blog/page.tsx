@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Mail, Sparkles } from 'lucide-react';
 import { listBlogPosts } from '../../lib/blog-posts';
 
+import { buttonClass } from '../../components/ui/button-recipe';
 export const revalidate = 3600; // GH unauth: 60/hr — 1h cache safe.
 
 export const metadata: Metadata = {
@@ -127,11 +128,7 @@ export default async function BlogPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Link
                     href="/waitlist"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
-                    style={{
-                      background: 'var(--color-primary)',
-                      color: 'var(--color-text-inverse)',
-                    }}
+                    className={buttonClass('primary', 'md', 'btn-press')}
                   >
                     Join the waitlist <ArrowRight className="w-3.5 h-3.5" />
                   </Link>

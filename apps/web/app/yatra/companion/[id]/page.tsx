@@ -26,6 +26,7 @@ import { formatINR } from '../../../../lib/yatra-data';
 // elderly parent across the country.
 import { publishedCompanions, getPublishedCompanionById } from '../../../../lib/companion-roster';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
 export function generateStaticParams() {
  return publishedCompanions.map((c) => ({ id: c.id }));
 }
@@ -133,8 +134,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>per day · all inclusive</p>
  <Link
  href="/yatra"
- className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'w-full btn-press')}
  >
  Book This Companion <ArrowRight className="w-3 h-3" />
  </Link>
@@ -269,7 +269,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <p className="text-sm mb-5" style={{ color: 'var(--color-text-muted)' }}>
  Select your yatra first — we&apos;ll attach {c.name.split(' ')[0]} to your booking and confirm within 2 hours.
  </p>
- <Link href="/yatra" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/yatra" className={buttonClass('primary', 'md', 'btn-press')}>
  Choose Your Yatra <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>

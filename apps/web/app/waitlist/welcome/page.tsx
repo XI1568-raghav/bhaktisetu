@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RouteFallback from '../../../components/ui/RouteFallback';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 
 interface Stats {
@@ -175,8 +176,7 @@ function WelcomeContent() {
               type="button"
               onClick={copyLink}
               disabled={!shareUrl}
-              className="text-xs px-2.5 py-1 rounded-md font-medium disabled:opacity-50"
-              style={{ background: 'var(--color-primary, #ea580c)', color: '#fff' }}
+              className={buttonClass('primary', 'md')}
             >
               {copied ? 'Copied' : 'Copy'}
             </button>

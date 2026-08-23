@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../../lib/auth-context';
 import AiChat from '../../components/AiChat';
 import VoicePanditButton from '../../components/VoicePanditButton';
+import { buttonClass } from '../../components/ui/button-recipe';
 import {
  getAllConversations,
  deleteConversation,
@@ -159,10 +160,7 @@ export default function AskPanditPage() {
 
  <button
  onClick={handleNewConversation}
- className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg text-sm font-medium shadow-sm transition-all"
- style={{
- background: 'var(--color-primary, #c2410c)',
- }}
+ className={buttonClass('primary', 'md', 'w-full shadow-sm')}
  onMouseEnter={(e) => {
  e.currentTarget.style.transform = 'translateY(-2px)';
  e.currentTarget.style.boxShadow = '0 4px 12px rgba(194,65,12,0.25)';

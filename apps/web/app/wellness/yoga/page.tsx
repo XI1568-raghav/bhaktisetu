@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../../components/ScrollReveal';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/yoga' },
  title: 'Yoga — Live Classes & Expert Instructors',
@@ -120,8 +121,7 @@ export default function YogaPage() {
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <a
  href="#schedule"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  View Schedule <Calendar className="w-4 h-4" />
  </a>
@@ -271,7 +271,7 @@ export default function YogaPage() {
  <span className="text-xs" style={{ color: s.spots <= 5 ? '#b91c1c' : 'var(--color-text-faint)' }}>
  {s.spots} spots left
  </span>
- <button className="text-xs font-medium px-2.5 py-1 rounded-md text-white" style={{ background: 'var(--color-primary)' }}>
+ <button className={buttonClass('primary', 'md')}>
  Book
  </button>
  </div>
@@ -308,7 +308,7 @@ export default function YogaPage() {
  <span className="text-xs" style={{ color: s.spots <= 5 ? '#b91c1c' : 'var(--color-text-faint)' }}>
  {s.spots} spots left
  </span>
- <button className="text-xs font-medium px-2.5 py-1 rounded-md text-white" style={{ background: 'var(--color-primary)' }}>
+ <button className={buttonClass('primary', 'md')}>
  Book
  </button>
  </div>
@@ -374,8 +374,7 @@ export default function YogaPage() {
  <div data-reveal="blur" data-delay="2">
  <Link
  href="/wellness"
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Book a Session <ArrowRight className="w-4 h-4" />
  </Link>

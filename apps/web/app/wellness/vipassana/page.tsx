@@ -14,6 +14,7 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 import { FLAGSHIP_CENTERS, VIPASSANA_CENTERS } from '../../../lib/vipassana-centers';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/vipassana' },
  title: 'Vipassana — 10-Day Silent Meditation Retreats',
@@ -111,8 +112,7 @@ export default function VipassanaPage() {
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <Link
  href="/wellness/vipassana/centers"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Find a Center <Globe2 className="w-4 h-4" />
  </Link>
@@ -217,8 +217,7 @@ export default function VipassanaPage() {
  href={c.bookingUrl}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Apply on dhamma.org <ArrowRight className="w-3 h-3" />
  </a>
@@ -330,8 +329,7 @@ export default function VipassanaPage() {
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
  <Link
  href="/wellness/vipassana/centers"
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Find a Center <ArrowRight className="w-4 h-4" />
  </Link>

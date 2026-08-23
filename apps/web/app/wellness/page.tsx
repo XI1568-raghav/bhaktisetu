@@ -14,6 +14,7 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 import UpcomingClassesSection from './UpcomingClassesSection';
 import FeaturedInstructorsSection from './FeaturedInstructorsSection';
 
+import { buttonClass } from '../../components/ui/button-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness' },
  title: 'Yoga, Meditation & Vipassana',
@@ -113,8 +114,7 @@ export default function WellnessPage() {
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <Link
  href="/wellness/classes"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Browse live classes <ArrowRight className="w-4 h-4" />
  </Link>
@@ -246,8 +246,7 @@ export default function WellnessPage() {
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
  <Link
  href="/wellness/meditation"
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Free Guided Session <ArrowRight className="w-4 h-4" />
  </Link>

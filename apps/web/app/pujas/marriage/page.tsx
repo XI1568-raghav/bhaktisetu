@@ -28,6 +28,7 @@ import { getPublicPriests, type PriestSummary } from '../../../lib/pandit-api';
 import { remoteImage, IMG_W } from '../../../lib/images';
 import { PanditAvatar } from '../PanditAvatar';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 const MARRIAGE_KEYWORDS = ['marriage', 'wedding', 'vivah', 'kalyanam', 'anand karaj'];
 
 export const metadata: Metadata = {
@@ -76,8 +77,7 @@ export default async function MarriagePage() {
  <div className="mt-8 flex flex-wrap gap-3">
  <Link
  href="/pujas/marriage/book"
- className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg font-semibold text-white transition-colors"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md')}
  >
  Book Your Pandit
  <ArrowRight className="w-4 h-4" />

@@ -19,6 +19,7 @@ import {
  Star,
 } from 'lucide-react';
 import ScrollReveal from '../../components/ScrollReveal';
+import { buttonClass } from '../../components/ui/button-recipe';
 import {
  yatras,
  formatINR,
@@ -88,8 +89,7 @@ export default function YatraHubPage() {
  <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-3 flex-wrap">
  <Link
  href="/yatra/plan"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-all btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Plan Custom Trip <ArrowRight className="w-3.5 h-3.5" />
  </Link>
@@ -276,8 +276,7 @@ export default function YatraHubPage() {
  <Link
  href="/yatra/companion"
  data-reveal="spring" data-delay="2"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  <Heart className="w-3.5 h-3.5" /> How companions work <ArrowRight className="w-3.5 h-3.5" />
  </Link>
@@ -313,8 +312,7 @@ export default function YatraHubPage() {
  <Link
  href="/yatra/plan"
  data-reveal="spring" data-delay="2"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Plan Custom Yatra <ArrowRight className="w-3.5 h-3.5" />
  </Link>

@@ -14,10 +14,32 @@ export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';
 
+/**
+ * TC-01 (P0) / TC-08 (P1) — this page is the site's "honest comparison", and
+ * three of its rows made claims the product cannot back.
+ *
+ *  - 80G: `HAS_80G_VERIFIED` is false, `eightyGNumber` and `pan` are both null,
+ *    and apps/api/src/lib/pdf-receipt.ts stamps every receipt "Proof of
+ *    donation — not a tax exemption certificate". Gated on the same
+ *    owner-controlled flag as lib/company.ts and app/gaushala/page.tsx.
+ *  - Pandit vetting: `Priest.isVerified`, `.verificationStatus` and
+ *    `.aadhaarVerified` have no writer outside apps/api/prisma/seed.ts. There
+ *    is no credential upload, no reference workflow, no probation job and no
+ *    trust-score column anywhere in the schema. The replacement wording is the
+ *    sentence already shipping at app/temples/[slug]/pujas/page.tsx, reused
+ *    verbatim so the two surfaces cannot drift.
+ *  - Live darshan count: apps/api/prisma/seed/darshan-streams.ts defines 20
+ *    streams and skips any whose temple is not seeded, so "25+ temples" was
+ *    never true, and "optional premium" sold a darshan tier that does not
+ *    exist on any rail (TC-13).
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
+
 export const metadata: Metadata = {
   title: 'Why Darshya — vs Sri Mandir, Utsav, AstroSage | Devotional App Comparison',
-  description:
-    'Compare Darshya with Sri Mandir, Utsav, AstroSage, AppsForBharat. Video proof guarantee, NRI-fair pricing, gaushala donations, 80G receipts. Solo founder, devotee-first.',
+  description: HAS_80G
+    ? 'Compare Darshya with Sri Mandir, Utsav, AstroSage, AppsForBharat. Video proof guarantee, NRI-fair pricing, gaushala donations, 80G receipts. Solo founder, devotee-first.'
+    : 'Compare Darshya with Sri Mandir, Utsav, AstroSage, AppsForBharat. Video proof guarantee, NRI-fair pricing, gaushala donations, numbered donation receipts. Solo founder, devotee-first.',
   alternates: { canonical: `${BASE_URL}/why-darshya` },
   openGraph: {
     title: 'Why Darshya — How we compare',
@@ -55,28 +77,30 @@ const ROWS: Row[] = [
     detail: 'We show domestic + NRI rate side-by-side at checkout with clear cost breakdown (processing fees, gaushala donation, infra).',
   },
   {
-    feature: 'Verified pandits (Aadhaar + Vedic credentials)',
-    darshya: '✓ All pandits, displayed trust score',
+    feature: 'Pandit checks before payout',
+    darshya: '~ Aadhaar KYC only, no trust score',
     sriMandir: '~ Pandits onboarded by aggregator',
     utsav: '~ Temple-only model',
     astrosage: 'N/A',
-    detail: 'Aadhaar + gurukul reference + 2 senior pandit refs + 30-day video probation.',
+    detail: 'A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check — we do not yet run independent credential verification or temple reference checks, and we do not publish a per-pandit trust score. What every booking does carry is mandatory video proof of the ceremony.',
   },
   {
     feature: 'Live darshan (free)',
-    darshya: '✓ 25+ temples, free with optional premium',
+    darshya: '✓ Free for everyone, no signup',
     sriMandir: '✓ 30+ temples',
     utsav: '~ Limited',
     astrosage: '✗',
-    detail: 'Major temples include Kashi Vishwanath, Tirupati, Siddhivinayak, Somnath, Mahakaleshwar, Jagannath Puri.',
+    detail: 'Major temples include Kashi Vishwanath, Tirupati, Siddhivinayak, Somnath and Jagannath Puri. The list that is live right now is on /darshan. There is no paid darshan tier — every stream is free.',
   },
   {
-    feature: '80G tax receipts',
-    darshya: '✓ Auto-issued, PAN-validated',
+    feature: HAS_80G ? '80G tax receipts' : 'Donation receipts',
+    darshya: HAS_80G ? '✓ Auto-issued, PAN-validated' : '✓ Auto-issued, numbered, emailed',
     sriMandir: '~ Some donations only',
     utsav: '~ Manual on request',
     astrosage: '✗',
-    detail: 'Format DR-YYYYMMDD-XXXX, downloadable from account within 24h. Requires donee 80G registration.',
+    detail: HAS_80G
+      ? 'Format DR-YYYYMMDD-XXXX, downloadable from account within 24h. Requires donee 80G registration.'
+      : 'Format DR-YYYYMMDD-XXXX, downloadable from your account within 24h. It is proof of payment, not a tax-exemption certificate: Darshya holds no Section 80G registration yet, so a donation made today cannot be claimed as an income-tax deduction.',
   },
   {
     feature: 'Gaushala seva integration',

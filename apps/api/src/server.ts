@@ -65,6 +65,7 @@ import { mediaRoutes } from './routes/media.js';
 import { whatsappOtpRoutes } from './routes/whatsapp-otp.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { healthChannelRoutes } from './routes/health-channels.js';
+import { healthRoutes } from './routes/health.js';
 import { semanticSearchRoutes } from './routes/semantic-search.js';
 import { cronRoutes } from './routes/cron.js';
 import { adminCronRoutes } from './routes/admin-cron.js';
@@ -280,16 +281,21 @@ async function bootstrap() {
 
   // Health + readiness probes (excluded from rate-limit allowList above).
   //
-  // /health = LIVENESS — intentionally cheap + static. Load balancers (Render
-  // healthCheckPath) hit this on every tick, so it must never false-negative
-  // under DB/Redis pressure. Returns 200 as long as the process is alive.
+  // OPS-04 — /health used to be a static `{status:'ok'}` literal: a 200 for as
+  // long as the Node process had a heartbeat, with the database unreachable.
+  // `render.yaml` sets `healthCheckPath: /health` and every uptime monitor
+  // points at the same URL, so the one probe that decides whether this service
+  // is alive could never go red. It now performs a real `SELECT 1` — cached per
+  // 5s window, bounded by a 2s timeout, and only `degraded` (503) after three
+  // consecutive failures so a two-second blip cannot trigger a Render restart
+  // loop (the start command re-runs `prisma migrate deploy`). See routes/health.ts.
   //
   // NOTE on the "second /health": cron.ts:92 also declares `server.get('/health')`,
   // but that route is registered under the `/api/v1/cron` prefix (see
   // server.register(cronRoutes, { prefix: '/api/v1/cron' }) below), so it
   // resolves to /api/v1/cron/health — NOT a root-level duplicate of this /health.
   // Only ONE root /health exists. No removal needed.
-  server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+  await server.register(healthRoutes);
 
   // NOTIF-01: the scheduler was dead for the entire life of the product and
   // nothing surfaced that. Age of the last completed tick is the signal — a

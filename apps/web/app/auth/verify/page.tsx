@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { buttonClass } from '../../../components/ui/button-recipe';
 import {
   API_BASE_URL,
   fetchWithTimeout,
@@ -82,25 +83,27 @@ function VerifyInner() {
           return;
         }
 
-        // AUTH-03 (2026-08-20): THE MAGIC LINK CARRIES NO ROLE.
+        // AUTH-03 (2026-08-23): THE MAGIC LINK NOW CARRIES ITS ROLE.
         //
-        // POST /auth/magic-link/verify answers `{ id, email, fullName, phone }`
-        // and nothing else. Persisting that verbatim made every provider a
-        // devotee — `fromApiRole(undefined)` returns 'devotee' — and this page
-        // then hardcoded /dashboard on top. A temple manager or pandit
-        // provisioned through the partnerships pipeline has NO password (there
-        // is no password column on User), so this link is their only door, and
-        // it dropped them outside their own portal on every single sign-in.
+        // History: this response used to be `{ id, email, fullName, phone }` and
+        // nothing else, so `fromApiRole(undefined)` made every provider a
+        // devotee. A temple manager or pandit provisioned through the
+        // partnerships pipeline has NO password (there is no password column on
+        // User), so this link is their only door, and it dropped them outside
+        // their own portal on every single sign-in. The stopgap was a blocking
+        // GET /auth/me from this page.
         //
-        // The server already knows: GET /auth/me runs getPrimaryRoleForUser and
-        // returns the web-facing role. Ask it, with the session we were just
-        // handed. Best-effort — a failed /me must still leave the user SIGNED
-        // IN as a devotee rather than turning a valid link into an error page.
-        const role = await resolveRole(data.session.accessToken);
+        // apps/api/src/routes/magic-link.ts now runs getPrimaryRoleForUser on
+        // the /verify reply itself — the same resolver /login, /verify-otp and
+        // /me use — so the answer arrives with the session and the extra
+        // cross-origin round-trip in front of the slowest sign-in door in the
+        // product is gone. `fromApiRole` still applies the web↔API bridge
+        // (`pandit` → `priest`) and still falls back to devotee, so an older API
+        // build that omits the field signs the user in rather than erroring.
         const verifiedUser = {
           ...(data.user as Partial<AuthUser>),
           id: data.user.id,
-          role: fromApiRole(role ?? (data.user as Partial<AuthUser>).role),
+          role: fromApiRole((data.user as Partial<AuthUser>).role),
         } as AuthUser;
 
         // A-003: persistAuthStorage writes the `poojly_user` COOKIE as well as
@@ -150,35 +153,12 @@ function VerifyInner() {
       <p className="text-sm text-surface-500 mb-6 text-center max-w-sm">{errorMessage}</p>
       <Link
         href="/auth/login"
-        className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white"
-        style={{ background: 'var(--color-primary)' }}
+        className={buttonClass('primary', 'md')}
       >
         Request a new link
       </Link>
     </Centered>
   );
-}
-
-/**
- * AUTH-03 — ask the server which role this account actually holds.
- *
- * Returns `null` rather than throwing: a provider holding a valid link must not
- * be shown "Sign-in link not valid" because a role lookup was slow. They land
- * on the devotee dashboard in that case, which is the pre-existing behaviour,
- * and the next full page load re-reads the role through AuthProvider.
- */
-async function resolveRole(accessToken: string): Promise<string | null> {
-  try {
-    const res = await fetchWithTimeout(`${API_BASE_URL}/auth/me`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      credentials: 'include',
-    });
-    if (!res.ok) return null;
-    const body = await readJsonBody<{ user?: { role?: string } }>(res);
-    return body?.user?.role ?? null;
-  } catch {
-    return null;
-  }
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

@@ -6,7 +6,9 @@ import { useAuth, getRoleLabel, getRoleDashboardPath } from '../lib/auth-context
 import { buttonClass } from './ui/button-recipe';
 
 export default function NavAuthButton() {
- const { user, isAuthenticated, isLoading, signOut } = useAuth();
+ // AUTH-09: no `signOut` here on purpose — the Sign Out item navigates to
+ // /auth/logout, which runs it and discloses the multi-device effect first.
+ const { user, isAuthenticated, isLoading } = useAuth();
  const [menuOpen, setMenuOpen] = useState(false);
  const menuRef = useRef<HTMLDivElement>(null);
 
@@ -189,11 +191,30 @@ export default function NavAuthButton() {
  Restart guided tour
  </button>
  )}
+ {/*
+   AUTH-09 (2026-08-23): hand off to /auth/logout instead of signing out here.
+
+   This is the sign-out almost every user actually presses, and it used to be
+   `await signOut(); window.location.href = '/'`. POST /auth/logout is GLOBAL —
+   supabase.auth.signOut() defaults to global scope and the handler burns every
+   refresh_token_jtis row the account holds — so pressing this ended the session
+   on the user's phone too, and neither this menu nor the '/' it landed on ever
+   said so. The disclosure and the scope argument both shipped earlier, but they
+   shipped on the SHARED path; this call site bypassed them, so the primary door
+   kept the old silent behaviour.
+
+   /auth/logout runs the same global signOut() and then lands on '/' — identical
+   outcome — but it puts "this signs you out on all your devices" on screen while
+   it happens. Guarded by app/auth/__tests__/nav-signout-discloses.auth09.test.tsx
+   and app/auth/logout/__tests__/discloses-all-devices.test.tsx.
+
+   A per-device choice (signOut({ scope: 'local' }) vs 'global') belongs in
+   account settings, not in a one-tap header menu — see the AUTH-09 note.
+ */}
  <button
- onClick={async () => {
+ onClick={() => {
  setMenuOpen(false);
- await signOut();
- window.location.href = '/';
+ window.location.href = '/auth/logout';
  }}
  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
  >

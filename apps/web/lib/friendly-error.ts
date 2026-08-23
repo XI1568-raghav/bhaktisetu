@@ -103,3 +103,38 @@ export function friendlyApiError(err: unknown): { message: string; reauth: boole
     reauth: false,
   };
 }
+
+/**
+ * AUTH-06 (2026-08-23) — the link that makes `reauth: true` actionable.
+ *
+ * `friendlyApiError` has returned a `reauth` flag since #208 and not one of the
+ * six call sites reads it. They render "Your session has expired. Please sign in
+ * again to continue." next to a Retry button, and Retry re-fires the request
+ * that just 401'd. Telling someone to sign in again while handing them a control
+ * that cannot is worse than saying nothing: it looks like the way out.
+ *
+ * Two rules are baked in here rather than left to each caller:
+ *
+ *  1. ROOT-RELATIVE ONLY. app/auth/login's own `safeRedirect` (P0-1, 2026-07-17)
+ *     drops anything that is not root-relative or same-origin, so an off-origin
+ *     value would silently land the user on their dashboard instead of where
+ *     they were. Not emitting it means the URL never reaches a rendered link at
+ *     all, which is the stronger position.
+ *  2. NEVER BACK INTO /auth. A signed-out user sent to
+ *     `/auth/login?redirect=/auth/login` bounces in a circle.
+ *
+ * Encoding matters too: `/bookings/view?id=BS-…` must arrive as ONE parameter,
+ * so the caller passes a raw `usePathname()` (plus search, if it has it) and
+ * this function does the encoding once.
+ */
+export function reauthLoginHref(pathname: string | null | undefined): string {
+  const LOGIN = '/auth/login';
+  if (!pathname) return LOGIN;
+  const target = pathname.trim();
+  // Root-relative, and not protocol-relative ("//evil.com" is off-origin).
+  if (!target.startsWith('/') || target.startsWith('//')) return LOGIN;
+  // /auth/login, /auth/logout, /auth/verify … all send a signed-out user in a
+  // loop or straight back out again.
+  if (target === '/auth' || target.startsWith('/auth/')) return LOGIN;
+  return `${LOGIN}?redirect=${encodeURIComponent(target)}`;
+}

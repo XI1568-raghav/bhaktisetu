@@ -30,6 +30,12 @@ import { notifyUser } from '../routes/notifications.js';
 import { sendEmail, payoutSettledEmail } from '../lib/email.js';
 import { sendWhatsappTemplate } from '../lib/whatsapp.js';
 import { recordNotification } from '../lib/notification-log.js';
+// OPS-05: durable money trail. Never throws, never joins the caller's
+// transaction. A payout is a real-world bank transfer an admin performs by
+// hand, so the ONLY record that it was authorised — and by whom — is what this
+// service writes. `PayoutRequest.processedBy` is a mutable column on a row a
+// later action overwrites; the trail is not.
+import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { Prisma } from '@prisma/client';
 import type { ProviderRole, PayoutRequestStatus } from '@prisma/client';
 
@@ -414,6 +420,23 @@ export async function requestPayout(
     return request;
   }, TX_OPTS);
 
+  // OPS-05 — after the transaction RESOLVES. `created.amount` is the figure
+  // the transaction actually sized from the rows it linked, not the advisory
+  // pre-check balance, so the trail agrees with the ledger.
+  void recordMoneyEvent({
+    eventType: MONEY_EVENTS.PAYOUT_REQUESTED,
+    actorType: 'provider',
+    actorId: providerId,
+    subjectType: 'payout',
+    subjectId: created.id,
+    payoutId: created.id,
+    amount: created.amount,
+    statusAfter: 'pending',
+    idempotencyKey: created.id,
+    note: `${role} payout requested via ${method}`,
+    metadata: { role, method, kycVerified: kyc.verified, skipKyc: opts.skipKyc === true },
+  });
+
   // Notify the provider the request is in (fire-and-forget).
   void notifyUser(providerId, {
     title: 'Payout requested',
@@ -444,9 +467,18 @@ export async function processPayout(
   // POST /payout-requests/:id/process) pushed another "Your payout of ₹9,000 has
   // been sent." for a transfer that happened once. A provider who gets three of
   // those reasonably opens a ticket asking where the other ₹18,000 is.
+  // OPS-05: the pre-image, captured for the audit trail only. `req` outside the
+  // transaction is the POST-update row, so the status this call transitioned
+  // FROM is unrecoverable afterwards — and it is the field that separates
+  // "completed a pending request" from "completed a rejected one", which is the
+  // exact hollow-request vector the guards below exist to refuse. Written to a
+  // closure variable rather than threaded through the return shape so no
+  // existing caller of processPayout sees a different object.
+  let statusBefore: string | null = null;
   const { req, changed } = await prisma.$transaction(async (tx) => {
     const req = await tx.payoutRequest.findUnique({ where: { id: payoutId } });
     if (!req) throw new Error('Payout request not found.');
+    statusBefore = req.status;
     if (req.status === 'completed') return { req, changed: false };
 
     if (action === 'complete') {
@@ -529,6 +561,38 @@ export async function processPayout(
   }, TX_OPTS);
 
   if (changed) {
+    // OPS-05 — after the transaction resolves. The money itself moves outside
+    // this system (a bank/UPI transfer an admin performs by hand), so this row
+    // is the platform's only durable statement of who authorised it, out of
+    // what status, and against which external reference.
+    void recordMoneyEvent({
+      eventType:
+        action === 'complete'
+          ? MONEY_EVENTS.PAYOUT_PROCESSED
+          : action === 'reject'
+            ? MONEY_EVENTS.PAYOUT_REJECTED
+            : MONEY_EVENTS.PAYOUT_FAILED,
+      actorType: 'admin',
+      actorId: adminId,
+      subjectType: 'payout',
+      subjectId: req.id,
+      payoutId: req.id,
+      amount: req.amount,
+      statusBefore,
+      statusAfter: req.status,
+      // The payout id alone would collapse a reject followed by a later
+      // complete into one row; the writer namespaces by event type, so the
+      // two distinct events survive while a retry of the same one does not.
+      idempotencyKey: req.id,
+      note: failureReason ?? reference ?? null,
+      metadata: {
+        action,
+        providerId: req.providerId,
+        role: req.role,
+        reference: (req as { reference?: string | null }).reference ?? reference ?? null,
+      },
+    });
+
     void notifyUser(req.providerId, {
       title: action === 'complete' ? 'Payout sent' : 'Payout update',
       body:

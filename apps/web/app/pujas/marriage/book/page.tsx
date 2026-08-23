@@ -28,6 +28,7 @@ import {
 import { DateInput } from '../../../../components/ui/DateInput';
 import { WizardSteps } from '../../../../components/ui/WizardSteps';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
 type StepId = 1 | 2 | 3 | 4 | 5;
 
 const steps = [
@@ -139,8 +140,7 @@ export default function BookMarriage() {
  <div className="mt-6 flex flex-col gap-2">
  <a
  href={`tel:${opsPhone}`}
- className="block py-3 rounded-lg font-semibold text-white"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md')}
  >
  Call the coordinator
  </a>
@@ -574,8 +574,7 @@ export default function BookMarriage() {
  <button
  onClick={handlePay}
  disabled={paying}
- className="w-full mt-5 py-4 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'w-full mt-5')}
  >
  {paying ? (
  <>
@@ -609,8 +608,7 @@ export default function BookMarriage() {
  <button
  onClick={goNext}
  disabled={!canProceed()}
- className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-lg font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'disabled:cursor-not-allowed')}
  >
  Continue
  <ChevronRight className="w-4 h-4" />

@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import { H1 } from '../../../components/ui/heading-recipe';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 interface MySubscription {
   id: string;
   plan: string;
@@ -113,8 +114,7 @@ function AccountSubscriptionsInner() {
             <p className="text-surface-600 mb-4">You don&rsquo;t have an active subscription.</p>
             <button
               onClick={() => router.push('/upgrade')}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-              style={{ background: 'var(--color-primary, #c2410c)' }}
+              className={buttonClass('primary', 'md')}
             >
               See plans
             </button>

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { homePujaCategories } from '../../../lib/home-pujas';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pujas/home-puja' },
  title: 'Home Puja — Book a Pandit at Your Residence',
@@ -71,8 +72,7 @@ export default function HomePujaHubPage() {
  <div className="mt-7 flex flex-wrap gap-3">
  <a
  href="#categories"
- className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-colors"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md')}
  >
  Browse All Home Pujas
  <ArrowRight className="w-4 h-4" />

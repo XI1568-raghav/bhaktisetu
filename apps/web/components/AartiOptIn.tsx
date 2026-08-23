@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import { API_BASE_URL } from '../lib/api-config';
 
+import { buttonClass } from '../components/ui/button-recipe';
 /**
  * AartiOptIn — toggle that requests browser notification permission, registers
  * the device with FCM (web push via firebase-messaging or VAPID fallback),
@@ -186,8 +187,7 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
             type="button"
             onClick={optedIn ? disable : enable}
             disabled={busy}
-            className="text-xs font-medium px-3 py-1.5 mt-3 rounded-md text-white disabled:opacity-50"
-            style={{ background: 'var(--color-primary)' }}
+            className={buttonClass('primary', 'md', 'mt-3')}
           >
             {busy ? 'Working…' : optedIn ? 'Turn off' : 'Enable reminders'}
           </button>

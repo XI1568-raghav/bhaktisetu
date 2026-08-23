@@ -20,6 +20,7 @@
  */
 
 import { ArrowUpRight, Percent } from "lucide-react";
+import { buttonClass } from '../components/ui/button-recipe';
 import {
  getPlanById,
  getUpgradePlan,
@@ -79,11 +80,7 @@ export function CommissionBanner({ currentPlanId, role }: CommissionBannerProps)
  {upgradePlan && (
  <a
  href="/pricing"
- className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium shrink-0 btn-press transition-colors"
- style={{
- background: "var(--color-primary)",
- color: "var(--color-text-inverse)",
- }}
+ className={buttonClass('primary', 'md', 'shrink-0 btn-press')}
  >
  Upgrade to {upgradePlan.name}
  <ArrowUpRight className="w-3.5 h-3.5" />

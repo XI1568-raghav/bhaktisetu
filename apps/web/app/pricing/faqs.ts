@@ -39,6 +39,26 @@ export interface PricingFaq {
  answer: string;
 }
 
+/**
+ * TC-12 (P2) — the short form of the payout answer below, for supply pages
+ * that only have room for a sentence.
+ *
+ * /list-temple published "Settlements within 7 days." to temple trusts. There
+ * is no seven-day settlement: `payout.service` refuses every withdrawal —
+ * self-serve AND the weekly sweep — until an admin has set
+ * `provider_kyc.verified` with a bank account on file, and the transfer itself
+ * is manual (apps/api/src/routes/admin-bookings.ts:622, "The actual bank
+ * transfer stays owner-gated on RazorpayX/Cashfree"). Neither rail is enabled.
+ *
+ * Exported so the supply pages and the /pricing FAQ cannot publish two
+ * different settlement promises. Restore a dated SLA in BOTH places on the day
+ * the rail is live and the settlement cron runs — not before.
+ */
+export const PAYOUT_TIMING_SHORT =
+ 'Your share is credited to your earnings balance as soon as the payment is confirmed. ' +
+ 'Withdrawals are released by hand once we verify your KYC and bank details — automated ' +
+ 'bank transfers are not live yet, so we do not print a settlement date we cannot hold to.';
+
 export const PRICING_FAQS: PricingFaq[] = [
  {
  question: "How does billing work?",

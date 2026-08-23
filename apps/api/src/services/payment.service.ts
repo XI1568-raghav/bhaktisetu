@@ -13,6 +13,11 @@ import {
 // refund webhook. Two copies of a money rule is exactly how this finding
 // happened — do not inline it.
 import { appendRefundId } from './refund.service.js';
+// OPS-05: the durable money trail. `recordMoneyEvent` never throws, never
+// rejects and never joins the caller's transaction, so every call below is
+// safe to `void` — a logging failure must not roll back a real capture. Record
+// AFTER the write it describes, and after a `$transaction` has RESOLVED.
+import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
@@ -730,6 +735,24 @@ export class PaymentService {
       select: { id: true },
     });
 
+    // OPS-05 — rupees, never the paise figure sent to the gateway.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_INITIATED,
+      actorType: 'devotee',
+      actorId: userId,
+      subjectType: 'payment',
+      subjectId: payment.id,
+      bookingId: booking.id,
+      paymentId: payment.id,
+      amount: booking.priceAmount,
+      currency: booking.currency,
+      gateway: 'razorpay',
+      gatewayOrderId: razorpayOrder.id,
+      statusAfter: 'initiated',
+      idempotencyKey: razorpayOrder.id,
+      note: `Razorpay order opened for ${booking.bookingNumber}`,
+    });
+
     return {
       orderId: razorpayOrder.id,
       amount: amountInPaise,
@@ -904,6 +927,35 @@ export class PaymentService {
         }),
       );
     }
+
+    // OPS-05 — the client-verify rail, recorded AFTER the transaction commits.
+    // `payment.status` is the pre-image read before the update; it is the one
+    // fact the mutable status column can never answer afterwards, and the
+    // reason a dispute can tell "verified then captured" from "captured twice".
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_VERIFIED,
+      actorType: userId ? 'devotee' : 'system',
+      actorId: userId ?? null,
+      subjectType: 'payment',
+      subjectId: payment.id,
+      bookingId: payment.booking!.id,
+      paymentId: payment.id,
+      amount: payment.amount,
+      currency: payment.currency,
+      gateway: 'razorpay',
+      gatewayOrderId: razorpayOrderId,
+      gatewayPaymentId: razorpayPaymentId,
+      statusBefore: payment.status,
+      statusAfter: 'captured',
+      idempotencyKey: razorpayPaymentId,
+      note: 'client-verify rail (POST /payments/verify)',
+      metadata: {
+        rail: 'client-verify',
+        confirmedBooking: shouldConfirm,
+        capturedNow,
+        ...(oversold ? { slotOversoldNote: oversold } : {}),
+      },
+    });
 
     // Post-commit side-effects (invoice email + referral reward) are network
     // calls that must NOT roll back a captured payment — fire-and-forget.
@@ -1332,6 +1384,38 @@ export class PaymentService {
               }
             });
 
+            // OPS-05 — the gateway rail. `actorType:'gateway'` is the whole
+            // point of that enum: "Razorpay told us" is a different fact from
+            // "the devotee's browser told us", and folding the two together is
+            // what makes "which rail got there first" unanswerable in a
+            // dispute. Keyed on the gateway payment id, which the writer
+            // namespaces by event type — so this row coexists with the
+            // PAYMENT_VERIFIED row carrying the same id instead of erasing it.
+            void recordMoneyEvent({
+              eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
+              actorType: 'gateway',
+              subjectType: 'payment',
+              subjectId: payment.id,
+              bookingId: payment.booking.id,
+              paymentId: payment.id,
+              amount: payment.amount,
+              currency: payment.currency,
+              gateway: 'razorpay',
+              gatewayOrderId: paymentEntity.order_id,
+              gatewayPaymentId: paymentEntity.id,
+              statusBefore: payment.status,
+              statusAfter: 'captured',
+              idempotencyKey: paymentEntity.id,
+              note: `razorpay webhook ${event}`,
+              metadata: {
+                rail: 'webhook',
+                method: paymentEntity.method ?? null,
+                confirmedBooking: shouldConfirm,
+                capturedNow,
+                ...(oversold ? { slotOversoldNote: oversold } : {}),
+              },
+            });
+
             if (oversold) {
               // Deliberately NOT a refusal to confirm: the devotee has already
               // paid, and stranding a paid booking is a worse failure than an
@@ -1408,6 +1492,24 @@ export class PaymentService {
                 });
                 await writeStoreOrderCommissionOnConfirm(storeOrder.id, tx);
               }
+            });
+            // OPS-05 — same capture event, the store-order rail.
+            void recordMoneyEvent({
+              eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
+              actorType: 'gateway',
+              subjectType: 'store_order',
+              subjectId: storeOrder.id,
+              paymentId: payment.id,
+              amount: payment.amount,
+              currency: payment.currency,
+              gateway: 'razorpay',
+              gatewayOrderId: paymentEntity.order_id,
+              gatewayPaymentId: paymentEntity.id,
+              statusBefore: payment.status,
+              statusAfter: 'captured',
+              idempotencyKey: paymentEntity.id,
+              note: `razorpay webhook ${event} (store order ${storeOrder.orderNumber})`,
+              metadata: { rail: 'webhook-store-order', confirmedOrder: shouldConfirm },
             });
             if (shouldConfirm) {
               void sendStoreOrderInvoice(storeOrder.id);
@@ -1493,6 +1595,31 @@ export class PaymentService {
               },
             },
           });
+
+          // OPS-05 — a failure is a money event too: it is the row that
+          // explains why a booking the devotee insists they paid for never
+          // confirmed.
+          void recordMoneyEvent({
+            eventType: MONEY_EVENTS.PAYMENT_FAILED,
+            actorType: 'gateway',
+            subjectType: 'payment',
+            subjectId: payment.id,
+            bookingId: payment.bookingId,
+            paymentId: payment.id,
+            amount: payment.amount,
+            currency: payment.currency,
+            gateway: 'razorpay',
+            gatewayOrderId: paymentEntity.order_id,
+            gatewayPaymentId: paymentEntity.id,
+            statusBefore: payment.status,
+            statusAfter: 'failed',
+            idempotencyKey: paymentEntity.id,
+            note: paymentEntity.error_description ?? `razorpay webhook ${event}`,
+            metadata: {
+              failureCode: paymentEntity.error_code ?? null,
+              method: paymentEntity.method ?? null,
+            },
+          });
         }
 
         return { handled: true, event };
@@ -1574,6 +1701,33 @@ export class PaymentService {
                 });
               }
             }
+          });
+
+          // OPS-05 — recorded AFTER the transaction commits. This is the branch
+          // for a refund raised directly in the Razorpay dashboard, where the
+          // platform has no other record of who authorised it; without this row
+          // the trail shows a capture followed by an unexplained balance change.
+          void recordMoneyEvent({
+            eventType: MONEY_EVENTS.REFUND_COMPLETED,
+            actorType: 'gateway',
+            subjectType: 'payment',
+            subjectId: payment.id,
+            bookingId: payment.bookingId,
+            paymentId: payment.id,
+            amount: applied,
+            currency: payment.currency,
+            gateway: 'razorpay',
+            gatewayPaymentId: refundEntity.payment_id ?? payment.gatewayPaymentId,
+            gatewayRefundId: refundEntity.id ?? null,
+            statusBefore: payment.status,
+            statusAfter: isFullRefund ? 'refunded' : 'partially_refunded',
+            idempotencyKey: refundEntity.id ?? null,
+            note: `razorpay webhook ${event}`,
+            metadata: {
+              rail: 'razorpay-webhook',
+              refundedTotal: newRefundTotal.toFixed(2),
+              refundableBefore: refundableBefore.toFixed(2),
+            },
           });
         }
 
@@ -1845,6 +1999,37 @@ export class PaymentService {
           reason,
         });
       }
+    });
+
+    // OPS-05 — the admin refund rail, recorded AFTER the transaction commits.
+    // This is THE row the finding was written for: "who initiated the refund,
+    // and when, and on whose authority" was previously only `metadata.refundedBy`,
+    // which the next refund on the same capture overwrites. `statusBefore` is
+    // the pre-image read at the top of this method.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.REFUND_COMPLETED,
+      actorType: adminId ? 'admin' : 'system',
+      actorId: adminId ?? null,
+      subjectType: 'payment',
+      subjectId: payment.id,
+      bookingId: booking.id,
+      paymentId: payment.id,
+      amount: refundAmount,
+      currency: payment.currency,
+      gateway: 'razorpay',
+      gatewayPaymentId: payment.gatewayPaymentId,
+      gatewayRefundId: refund.id,
+      statusBefore: payment.status,
+      statusAfter: newPaymentStatus,
+      idempotencyKey: refund.id,
+      note: reason,
+      metadata: {
+        rail: 'admin',
+        tierLabel: tierLabel ?? null,
+        refundFraction: refundFraction ?? null,
+        refundedTotal: newRefundTotal.toFixed(2),
+        fullyRefunded: isFullRefund,
+      },
     });
 
     // NOTIF-04 (2026-08-12): TELL THE DEVOTEE. This rail was 100% silent.

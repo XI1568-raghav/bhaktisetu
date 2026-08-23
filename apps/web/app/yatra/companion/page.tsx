@@ -24,6 +24,7 @@ import { formatINR } from '../../../lib/yatra-data';
 // profiles in lib/yatra-data.ts are no longer rendered as bookable people.
 import { publishedCompanions } from '../../../lib/companion-roster';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/yatra/companion' },
  title: 'Travel Companions for elderly yatris',
@@ -125,7 +126,7 @@ export default function CompanionListingPage() {
  as soon as a companion who fits is available.
  </p>
  <div className="flex items-center gap-3 flex-wrap">
- <Link href="/yatra/plan" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/yatra/plan" className={buttonClass('primary', 'md', 'btn-press')}>
  Tell us your yatra plan <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  <Link href="tel:+919255109400" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
@@ -212,8 +213,7 @@ export default function CompanionListingPage() {
 
  <Link
  href={`/yatra/companion/${c.id}`}
- className="mt-3 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'mt-3 btn-press')}
  >
  Book Companion <ArrowRight className="w-3 h-3" />
  </Link>
@@ -315,7 +315,7 @@ export default function CompanionListingPage() {
  : 'Tell us your dates and we will quote a companion as soon as one is available in your region.'}
  </p>
  <div className="flex items-center justify-center gap-3 flex-wrap">
- <Link href="/yatra" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/yatra" className={buttonClass('primary', 'md', 'btn-press')}>
  Browse Yatras <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  <Link href="tel:+919255109400" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>

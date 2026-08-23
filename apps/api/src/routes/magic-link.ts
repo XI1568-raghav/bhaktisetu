@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { createEmailSession } from '../lib/email-session.js';
 import { sendEmail, magicLinkEmail } from '../lib/email.js';
 import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
+import { getPrimaryRoleForUser, setAuthCookies } from './auth.js';
 
 /**
  * Email magic-link authentication.
@@ -188,6 +189,29 @@ export async function magicLinkRoutes(server: FastifyInstance) {
     // the (now fail-closed) middleware would reject this token. See A-005.
     const { token: sessionToken, expiresAt: sessionExpiresAt } = await createEmailSession(user.id);
 
+    // SEC-02 step 1 (2026-08-23): issue the httpOnly `darshya_session` cookie
+    // this door never issued. Every provider onboarded through the partnerships
+    // pipeline signs in here and nowhere else, so without this they hold no
+    // cookie credential at all and are structurally stuck on the JS-readable
+    // localStorage token — which is why the localStorage write in apps/web
+    // could not be deleted and SEC-02 could not close.
+    //
+    // The two arguments that are NOT /auth/login's defaults, and why:
+    //   • maxAge tracks THIS session's real expiry. The email_sessions row lives
+    //     7 days (EMAIL_SESSION_TTL_MS); setAuthCookies' default is the 1-hour
+    //     Supabase access TTL, which would sign the provider out six days early.
+    //   • no refresh cookie. There is no refresh token on this path (see the
+    //     empty string below — kept for wire compatibility) because there is no
+    //     Supabase session behind an email-session token for POST /auth/refresh
+    //     to exchange. An empty `darshya_refresh` could only ever fail.
+    // The cookie authenticates as-is: middlewares/auth.ts reads darshya_session
+    // and validates `email-*` tokens against the email_sessions table.
+    const sessionMaxAge = Math.max(
+      1,
+      Math.floor((sessionExpiresAt.getTime() - Date.now()) / 1000),
+    );
+    setAuthCookies(reply, sessionToken, null, { sessionMaxAge });
+
     return reply.send({
       ok: true,
       session: {
@@ -201,6 +225,14 @@ export async function magicLinkRoutes(server: FastifyInstance) {
         email: user.email,
         fullName: user.fullName,
         phone: user.phone,
+        // AUTH-03 (2026-08-23): this door answered with no role, so the web
+        // client's `fromApiRole(undefined)` made every magic-link user a
+        // devotee — and a magic link is the ONLY credential a partnerships-
+        // provisioned provider has (no password column on User). A temple
+        // manager was bounced out of /temple-portal on every single sign-in.
+        // Same resolver /login, /verify-otp, /me and Google sync already use,
+        // so all five doors now agree on one answer.
+        role: await getPrimaryRoleForUser(user.id, user.email),
       },
     });
   });

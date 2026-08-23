@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { Beef, Heart, IndianRupee, HandHeart, Plus, Settings, Users } from 'lucide-react';
 import { H1 } from '../../components/ui/heading-recipe';
 
+import { buttonClass } from '../../components/ui/button-recipe';
 type DashboardStats = {
  totalCows: number;
  totalDonors: number;
@@ -179,8 +180,7 @@ export default function GaushalaDashboard() {
  </p>
  <Link
  href="/gaushala-portal/profile"
- className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'mt-4')}
  >
  <Settings className="w-4 h-4" />
  Set up my gaushala

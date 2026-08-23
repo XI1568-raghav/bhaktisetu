@@ -25,6 +25,7 @@ import {
 } from "../../lib/help-articles";
 import { FAQ_ITEMS, FAQ_SECTIONS } from "../../lib/support";
 
+import { buttonClass } from '../../components/ui/button-recipe';
 /**
  * I-09 / I18N-09 (prod sweep 2026-08-12) — THE HELP CENTRE THAT LINKED TO
  * NOTHING.
@@ -360,11 +361,7 @@ export default function HelpPage() {
  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
  <Link
  href="/support/ticket/new"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
- style={{
- background: "var(--color-primary)",
- color: "var(--color-text-inverse)",
- }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  <Mail className="w-3.5 h-3.5" />
  Raise a ticket

@@ -2,6 +2,7 @@
 
 import { Mail, Clock, Send, Briefcase, Handshake, Scale, Newspaper, MessageSquare } from "lucide-react";
 import Link from "next/link";
+import { buttonClass } from '../../components/ui/button-recipe';
 import {
   COMPANY,
   grievanceOfficerLine,
@@ -272,8 +273,7 @@ export default function ContactPage() {
                   </div>
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
-                    style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+                    className={buttonClass('primary', 'md', 'btn-press')}
                   >
                     <Send className="w-3.5 h-3.5" />
                     Open in email

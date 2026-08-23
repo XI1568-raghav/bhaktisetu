@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Calendar, Users, Check, X, MapPin, Clock, ArrowRight } from 'lucide-react';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 interface YatraPackage {
   id: string;
   slug: string;
@@ -167,8 +168,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
 
               <Link
                 href={`/yatra-packages/${pkg.slug}/book`}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white"
-                style={{ background: 'var(--color-primary)' }}
+                className={buttonClass('primary', 'md', 'mt-5 w-full')}
               >
                 Reserve seat <ArrowRight className="w-4 h-4" />
               </Link>

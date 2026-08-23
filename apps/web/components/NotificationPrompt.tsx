@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Bell, BellOff, X } from 'lucide-react';
 import { API_BASE_URL } from '../lib/api-config';
 
+import { buttonClass } from '../components/ui/button-recipe';
 /**
  * Web push subscription prompt. Three states:
  *   - hidden: feature unsupported, user dismissed today, or already subscribed
@@ -161,8 +162,7 @@ export function NotificationPrompt() {
               <button
                 onClick={enable}
                 disabled={state === 'busy'}
-                className="text-xs font-medium px-3 py-1.5 rounded-md text-white disabled:opacity-50"
-                style={{ background: 'var(--color-primary)' }}
+                className={buttonClass('primary', 'md')}
               >
                 {state === 'busy' ? 'Enabling…' : 'Enable'}
               </button>

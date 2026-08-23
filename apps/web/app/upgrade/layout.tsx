@@ -20,8 +20,11 @@ import type { ReactNode } from 'react';
  */
 export const metadata: Metadata = {
   title: 'Upgrade to Bhakti Pass',
+  // TC-03/LEG-09: "and dollars" outlived the USD rail. Stripe was removed
+  // 2026-08-11 and every plan is charged in INR through Razorpay, so no plan
+  // on this page has a dollar price to compare.
   description:
-    'Compare the Darshya membership plans — what each includes, what it costs in rupees and dollars, and switch plan in a single step.',
+    'Compare the Darshya membership plans — what each includes, what it costs in rupees, and switch plan in a single step.',
   robots: { index: false, follow: true },
 };
 

@@ -22,6 +22,7 @@ import {
 import { getYatraBySlug, formatINR } from '../../../lib/yatra-data';
 import { DateInput } from '../../../components/ui/DateInput';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 type Traveler = {
  name: string;
  age: string;
@@ -247,7 +248,7 @@ function BookYatraInner() {
  <p className="text-xl font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</p>
  </div>
  <div className="flex items-center justify-center gap-3">
- <Link href="/profile/yatra-bookings" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/profile/yatra-bookings" className={buttonClass('primary', 'md')}>
  View my inquiries
  </Link>
  <Link href="/yatra" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
@@ -611,8 +612,7 @@ function BookYatraInner() {
  <button
  onClick={handlePay}
  disabled={submitting || !canSubmitInquiry}
- className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg text-white btn-press disabled:opacity-60"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'w-full btn-press')}
  >
  {submitting ? (
  <><Loader2 className="w-4 h-4 animate-spin" /> Sending inquiry...</>
@@ -643,8 +643,7 @@ function BookYatraInner() {
  <button
  onClick={() => setStep(step + 1)}
  disabled={!canContinue}
- className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white disabled:opacity-40 btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Continue <ChevronRight className="w-3.5 h-3.5" />
  </button>

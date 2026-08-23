@@ -24,6 +24,7 @@ import { homePujaCategories } from '../../../../lib/home-pujas';
 import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api';
 import { PanditAvatar } from '../../PanditAvatar';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -135,8 +136,7 @@ export default async function HomePujaDetail({ params }: Props) {
 
  <Link
  href={`/pujas/home-puja/${cat.slug}/book`}
- className="block w-full text-center py-3.5 rounded-lg font-semibold text-white transition-colors"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'w-full text-center')}
  >
  Book Now
  </Link>
@@ -396,8 +396,7 @@ export default async function HomePujaDetail({ params }: Props) {
  <div className="mt-6">
  <Link
  href={`/pujas/home-puja/${cat.slug}/book`}
- className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg font-semibold text-white transition-colors"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md')}
  >
  Book Now
  <ArrowRight className="w-4 h-4" />

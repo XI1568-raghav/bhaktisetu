@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react';
 import Link from 'next/link';
 import { Flame, X, ArrowRight } from 'lucide-react';
 
+import { buttonClass } from '../../components/ui/button-recipe';
 type AartiSlot = { label: string; hour: number; minute: number };
 
 const AARTI_SLOTS: AartiSlot[] = [
@@ -140,8 +141,7 @@ export default function StickyAartiCta(): JSX.Element | null {
     >
       <Link
         href="/today"
-        className="pointer-events-auto group inline-flex h-14 items-center gap-3 rounded-full px-5 text-white shadow-lg shadow-black/10 ring-1 ring-black/5 transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-        style={{ backgroundColor: 'var(--color-primary, #ea580c)' }}
+        className={buttonClass('primary', 'md', 'pointer-events-auto group shadow-lg shadow-black/10 ring-1 ring-black/5 hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70')}
         aria-label={`${label} starts in ${countdown}, open today schedule`}
       >
         <Flame className="h-5 w-5 shrink-0" aria-hidden="true" />

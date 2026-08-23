@@ -33,6 +33,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { formatClassPrice, formatClassWhen } from '../classes/WellnessClassesClient';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 type EnrolmentSession = {
   id: string;
   title: string;
@@ -201,8 +202,7 @@ function MyClassesList() {
                         href={e.session.roomUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white"
-                        style={{ background: 'var(--color-primary)' }}
+                        className={buttonClass('primary', 'md')}
                       >
                         <CheckCircle2 className="w-4 h-4" /> Join the live room
                       </a>

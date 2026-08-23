@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MapPin, Clock, Briefcase, Heart, Zap, Users, BookOpen, Coffee } from "lucide-react";
 
+import { buttonClass } from '../../components/ui/button-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/careers' },
  title: "Careers",
@@ -276,11 +277,7 @@ export default function CareersPage() {
  </p>
  <a
  href="mailto:careers@darshya.online"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
- style={{
- background: "var(--color-primary)",
- color: "var(--color-text-inverse)",
- }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Email careers@darshya.online
  </a>

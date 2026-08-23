@@ -96,6 +96,24 @@ function looksLikeSession(value: unknown): value is RevivedSession {
  * (FST_ERR_CTP_EMPTY_JSON_BODY, a 400) before the handler's
  * `request.body ?? {}` ever runs.
  *
+ * ⚠ THIS DOES NOT COVER MAGIC-LINK USERS, AND THAT GATES SEC-02 STEP 4.
+ * POST /auth/refresh is a SUPABASE exchange. A magic-link sign-in has no
+ * Supabase session behind it — apps/api/src/routes/magic-link.ts mints an
+ * `email_sessions` row via createEmailSession and answers `refreshToken: ''`,
+ * and that route deliberately issues NO `darshya_refresh` cookie (an empty one
+ * could only ever fail). So for every provider onboarded through the
+ * partnerships pipeline this call has no credential to send and 400s.
+ * Harmless today: AuthProvider only reaches here when localStorage holds no
+ * session, and those users still get a `poojly_session` written at
+ * app/auth/verify. It stops being harmless the moment that write is deleted —
+ * they would revive-fail, have their profile marker cleared, and be signed out
+ * on reload. What they hold instead is a 7-day httpOnly `darshya_session` whose
+ * maxAge now matches EMAIL_SESSION_TTL_MS, and which
+ * apps/api/src/middlewares/auth.ts validates directly. The migration for them is
+ * therefore "send the cookie" (fetchWithTimeout already defaults
+ * `credentials: 'include'`), NOT "revive a JS token" — or a dedicated
+ * email-session refresh endpoint if a JS-side token is genuinely required.
+ *
  * Never throws — an unreachable API on a cold Render dyno must degrade to
  * "signed out", not to an unhandled rejection during mount.
  */

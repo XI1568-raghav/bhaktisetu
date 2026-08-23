@@ -35,6 +35,7 @@ import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import { formatClassPrice, formatClassWhen, type WellnessClass } from '../WellnessClassesClient';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
 type ClassDetail = WellnessClass & { roomUrl?: string | null };
 
 let razorpayScriptPromise: Promise<void> | null = null;
@@ -270,8 +271,7 @@ export default function ClassDetailClient() {
         </p>
         <Link
           href="/wellness/classes"
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white"
-          style={{ background: 'var(--color-primary)' }}
+          className={buttonClass('primary', 'md')}
         >
           Back to all classes
         </Link>
@@ -359,8 +359,7 @@ export default function ClassDetailClient() {
               href={detail.roomUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white"
-              style={{ background: 'var(--color-primary)' }}
+              className={buttonClass('primary', 'md')}
             >
               Join the live room
             </a>
@@ -390,8 +389,7 @@ export default function ClassDetailClient() {
               type="button"
               onClick={handleEnrol}
               disabled={enrolling || isFull}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white disabled:opacity-60"
-              style={{ background: 'var(--color-primary)' }}
+              className={buttonClass('primary', 'md')}
             >
               {enrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {isFull ? 'Class is full' : `Enrol — ${formatClassPrice(detail.priceInr)}`}

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../../components/ScrollReveal';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/meditation' },
  title: 'Meditation — Guided Sessions & Daily Practice',
@@ -110,8 +111,7 @@ export default function MeditationPage() {
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <a
  href="#player"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Try Free Session <Play className="w-4 h-4" />
  </a>
@@ -312,8 +312,7 @@ export default function MeditationPage() {
 
  <div data-reveal="up" data-delay="5">
  <button
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Join Free Challenge <ArrowRight className="w-4 h-4" />
  </button>
@@ -394,7 +393,7 @@ export default function MeditationPage() {
  <span className="text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
  {session.price === 0 ? 'Free' : `\u20B9${session.price}`}
  </span>
- <button className="text-xs font-medium px-3 py-1.5 rounded-lg text-white" style={{ background: 'var(--color-primary)' }}>
+ <button className={buttonClass('primary', 'md')}>
  Book
  </button>
  </div>
@@ -424,8 +423,7 @@ export default function MeditationPage() {
  </Link>
  <Link
  href="/wellness/vipassana"
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Vipassana Retreats <ArrowRight className="w-4 h-4" />
  </Link>

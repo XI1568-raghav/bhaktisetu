@@ -7,6 +7,7 @@ import { Sparkles, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
 import AuthGuard from '../../components/AuthGuard';
+import { NRI_PREMIUM_IS_SELLABLE } from '../nri/plan-availability';
 
 interface PlanCard {
   id: string;
@@ -20,6 +21,53 @@ interface PlanCard {
   highlight: boolean;
   badge?: string;
 }
+
+/**
+ * TC-03 / TC-04 (P0/P1, trust) — /upgrade was the only page left offering a buy
+ * click on a plan the server refuses to sell.
+ *
+ * `nri_premium_yearly` is withdrawn: all six of its benefits carry
+ * `enforcedBy: null` in apps/api/src/services/subscription-entitlements.ts, so
+ * `nriPremiumIsSellable()` is false, `getPlans()` filters the plan out of
+ * GET /subscriptions/plans, and BOTH activation rails throw
+ * NRI_PREMIUM_WITHDRAWN_MESSAGE, which the routes return as a 400. This page
+ * did not consult any of that — it hardcoded the card, listed all six
+ * unenforced benefits (including "Free 80G receipt PDF", which is TC-01's
+ * claim on a surface with a price next to it), and pointed "Go Premium" at a
+ * request that can only fail. A devotee read the refusal only AFTER clicking,
+ * because `data.error` is rendered into the error banner below.
+ *
+ * Gated on the same constant /nri uses — app/nri/plan-availability.ts, which
+ * mirrors the server fact and is drift-tested against the API source by
+ * __tests__/tc03-nri-plan-availability.test.tsx. Wire one benefit, flip that
+ * one constant, and the card comes back with its rail unchanged.
+ *
+ * NOTE for whoever owns apps/web/__tests__: `upgrade-paid-plan-rail.test.tsx`
+ * (PM-04) clicks `getByRole('button', { name: /go premium/i })` to prove the
+ * ₹5,000 plan uses the paid rail. That card no longer renders, so that ONE
+ * case must be retired — the price-based rail rule it guards is still covered
+ * by the ₹99 and ₹499 cases in the same file, and by the server-side
+ * subscriptions.paid-gate test.
+ */
+const NRI_PREMIUM_CARD: PlanCard = {
+  id: 'nri_premium_yearly',
+  name: 'NRI Premium',
+  price: 5000,
+  priceUsd: 60,
+  cadence: 'per year',
+  description: 'Annual all-access tier for our diaspora community',
+  features: [
+    'No ads anywhere on Darshya',
+    'No NRI surcharge on bookings',
+    'Priority booking 7 days early',
+    'Weekly 1:1 priest call (Jitsi)',
+    'Free 80G receipt PDF',
+    'Unlimited AI astro chat',
+  ],
+  cta: 'Go Premium',
+  highlight: false,
+  badge: 'For NRI',
+};
 
 const PLAN_CARDS: PlanCard[] = [
   {
@@ -66,25 +114,7 @@ const PLAN_CARDS: PlanCard[] = [
     cta: 'Subscribe',
     highlight: true,
   },
-  {
-    id: 'nri_premium_yearly',
-    name: 'NRI Premium',
-    price: 5000,
-    priceUsd: 60,
-    cadence: 'per year',
-    description: 'Annual all-access tier for our diaspora community',
-    features: [
-      'No ads anywhere on Darshya',
-      'No NRI surcharge on bookings',
-      'Priority booking 7 days early',
-      'Weekly 1:1 priest call (Jitsi)',
-      'Free 80G receipt PDF',
-      'Unlimited AI astro chat',
-    ],
-    cta: 'Go Premium',
-    highlight: false,
-    badge: 'For NRI',
-  },
+  ...(NRI_PREMIUM_IS_SELLABLE ? [NRI_PREMIUM_CARD] : []),
 ];
 
 export default function UpgradePage() {

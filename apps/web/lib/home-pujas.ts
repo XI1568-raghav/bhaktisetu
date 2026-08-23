@@ -59,7 +59,19 @@ export type Pandit = {
  credentials: string[];
  weddingsPerformed?: number;
  availability: { date: string; slots: string[] }[];
- reviews: { author: string; city: string; rating: number; text: string; date: string }[];
+ // TC-05: `reviews: { author, city, rating, text, date }[]` used to sit here and
+ // every one of the 13 pandits below carried five of them -- 65 invented
+ // customer reviews, mostly `rating: 5`, signed with full names of people who do
+ // not exist. Three of them repeated the marriageTestimonials rows verbatim
+ // (Aanya & Kabir Malhotra, Divya & Karthik Iyer, Simran & Jaspreet Singh).
+ //
+ // NOTHING rendered them: the only two readers of these arrays,
+ // app/pujas/marriage/book/page.tsx and app/pujas/home-puja/book/
+ // BookHomePujaClient.tsx, read `rating`, `reviewCount` and `weddingsPerformed`
+ // and never touch `reviews`. Deleted rather than left in place for the same
+ // reason the dead `trustScore: 90` fallback on /temples/[slug] was deleted
+ // under TC-07: a ready-made block of five-star testimonials sitting one
+ // `.map()` away from a render has no honest value to fall back to.
 };
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -612,13 +624,6 @@ export const homePandits: Pandit[] = [
  { date: '2026-04-27', slots: ['Evening'] },
  { date: '2026-04-28', slots: ['Morning', 'Afternoon'] },
  ],
- reviews: [
- { author: 'Rajesh Agarwal', city: 'Lucknow', rating: 5, text: 'Acharya Tripathi ji conducted our Griha Pravesh flawlessly. He explained every step and was punctual. Highly recommended.', date: '2026-03-15' },
- { author: 'Priyanka Singh', city: 'Prayagraj', rating: 5, text: 'The Rudrabhishek was deeply moving. His Sanskrit pronunciation is impeccable and he answered all our questions patiently.', date: '2026-02-28' },
- { author: 'Sunil Verma', city: 'Varanasi', rating: 4.5, text: 'Excellent pandit. Brought all samagri and the ceremony felt authentic. Slight delay arriving but made up for it.', date: '2026-02-10' },
- { author: 'Meera Joshi', city: 'Kanpur', rating: 5, text: 'Did Shraadh for my father during Pitra Paksh. Very emotional and well-conducted. Our family felt truly at peace.', date: '2025-10-05' },
- { author: 'Amit Shukla', city: 'Varanasi', rating: 5, text: 'We called him from the US for my uncle\u2019s Tripindi Shraadh. Conducted via video but very authentic. Will book again.', date: '2025-09-22' },
- ],
  },
  {
  id: 'p2',
@@ -648,13 +653,6 @@ export const homePandits: Pandit[] = [
  { date: '2026-04-26', slots: ['Evening'] },
  { date: '2026-04-27', slots: ['Morning', 'Afternoon', 'Evening'] },
  { date: '2026-04-28', slots: ['Morning'] },
- ],
- reviews: [
- { author: 'Sunita Chaudhary', city: 'Jaipur', rating: 5, text: 'Satyanarayan Katha felt like family gathering. His narration is beautiful.', date: '2026-04-02' },
- { author: 'Mohan Lal', city: 'Ajmer', rating: 5, text: 'Booked for Navratri Ashtami. Kanya pujan was conducted with care.', date: '2026-03-29' },
- { author: 'Kavita Mehta', city: 'Udaipur', rating: 4.5, text: 'Very learned pandit. Came prepared with all items.', date: '2026-03-12' },
- { author: 'Ravi Bhati', city: 'Jodhpur', rating: 5, text: 'Shraadh was conducted with full traditions. He guided us at every step.', date: '2026-02-20' },
- { author: 'Anuradha Goyal', city: 'Jaipur', rating: 4.5, text: 'Diwali Lakshmi puja was divine. Traditional chopda pujan for our shop was appreciated.', date: '2025-11-05' },
  ],
  },
  {
@@ -687,13 +685,6 @@ export const homePandits: Pandit[] = [
  { date: '2026-04-27', slots: ['Afternoon'] },
  { date: '2026-04-28', slots: ['Morning', 'Evening'] },
  ],
- reviews: [
- { author: 'Krishnan Swaminathan', city: 'Chennai', rating: 5, text: 'Perfect Tamil-style Griha Pravesh. All traditions were followed.', date: '2026-03-18' },
- { author: 'Lakshmi Iyer', city: 'Coimbatore', rating: 5, text: 'Ayushya homam for my son was conducted with great devotion.', date: '2026-03-01' },
- { author: 'Ramesh Pillai', city: 'Bangalore', rating: 4.5, text: 'Traveled to Bangalore for our flat puja. Very punctual and thorough.', date: '2026-02-15' },
- { author: 'Nithya Menon', city: 'Pondicherry', rating: 5, text: 'Ganesh Chaturthi puja was divine. His Atharvashirsha recitation is powerful.', date: '2025-08-28' },
- { author: 'Vinod Rao', city: 'Chennai', rating: 5, text: 'Family is very happy. Will book again for next year.', date: '2025-07-10' },
- ],
  },
  {
  id: 'p4',
@@ -723,13 +714,6 @@ export const homePandits: Pandit[] = [
  { date: '2026-04-26', slots: ['Morning', 'Afternoon', 'Evening'] },
  { date: '2026-04-27', slots: ['Evening'] },
  { date: '2026-04-28', slots: ['Morning', 'Afternoon'] },
- ],
- reviews: [
- { author: 'Deepika Kulkarni', city: 'Mumbai', rating: 5, text: 'Our Ganpati aagman was beautiful. Pandit ji was patient with our elderly grandmother.', date: '2026-04-05' },
- { author: 'Arjun Mehta', city: 'Thane', rating: 4.5, text: 'Good knowledge, on-time, fair pricing. Will recommend.', date: '2026-03-22' },
- { author: 'Shruti Deshmukh', city: 'Navi Mumbai', rating: 5, text: 'Satyanarayan katha with English translation for our kids was wonderful.', date: '2026-03-08' },
- { author: 'Rohit Joshi', city: 'Pune', rating: 4.5, text: 'Drove to Pune from Mumbai for our home warming. Very dedicated.', date: '2026-02-25' },
- { author: 'Neha Sharma', city: 'Mumbai', rating: 4.5, text: 'Diwali Lakshmi puja at our office was well-organized.', date: '2025-11-12' },
  ],
  },
  {
@@ -762,13 +746,6 @@ export const homePandits: Pandit[] = [
  { date: '2026-04-27', slots: ['Morning', 'Evening'] },
  { date: '2026-04-28', slots: ['Afternoon'] },
  ],
- reviews: [
- { author: 'Jignesh Patel', city: 'Ahmedabad', rating: 5, text: 'Best Griha Pravesh we could have asked for. His Vastu analysis was spot on.', date: '2026-04-10' },
- { author: 'Dhwani Shah', city: 'Surat', rating: 5, text: 'Navratri puja across 9 days was stunning. Daily routine was well-planned.', date: '2025-10-20' },
- { author: 'Hemant Joshi', city: 'Vadodara', rating: 4.5, text: 'Very professional and deeply knowledgeable. Recommended.', date: '2026-02-14' },
- { author: 'Falguni Mehta', city: 'Gandhinagar', rating: 5, text: 'Rudrabhishek was performed with great devotion on Shivratri.', date: '2026-02-26' },
- { author: 'Parth Desai', city: 'Rajkot', rating: 5, text: 'He drove to Rajkot without complaint. Ceremony was flawless.', date: '2026-01-18' },
- ],
  },
  {
  id: 'p6',
@@ -798,13 +775,6 @@ export const homePandits: Pandit[] = [
  { date: '2026-04-26', slots: ['Morning', 'Afternoon'] },
  { date: '2026-04-27', slots: ['Morning'] },
  { date: '2026-04-28', slots: ['Evening'] },
- ],
- reviews: [
- { author: 'Soumya Banerjee', city: 'Kolkata', rating: 5, text: 'Our Durga puja at home felt like pandal experience. Dhunuchi naach and all.', date: '2025-10-15' },
- { author: 'Arundhati Sen', city: 'Howrah', rating: 5, text: 'Satyanarayan katha in Bengali tradition was what our grandmother wanted.', date: '2026-03-20' },
- { author: 'Partha Das', city: 'Siliguri', rating: 4.5, text: 'Travels to Siliguri happily. Very accommodating pandit.', date: '2026-02-12' },
- { author: 'Ipsita Roy', city: 'Durgapur', rating: 5, text: 'Shraadh for my father-in-law was deeply respectful and thorough.', date: '2025-12-05' },
- { author: 'Anirban Ghosh', city: 'Kolkata', rating: 4.5, text: 'Rudrabhishek on Shivratri was powerful. Will book again.', date: '2026-03-07' },
  ],
  },
  {
@@ -836,13 +806,6 @@ export const homePandits: Pandit[] = [
  { date: '2026-04-27', slots: ['Morning', 'Afternoon'] },
  { date: '2026-04-28', slots: ['Morning', 'Evening'] },
  ],
- reviews: [
- { author: 'Varun Khanna', city: 'Gurugram', rating: 5, text: 'Rudrabhishek at home was very peaceful. Pandit ji was patient with our kids.', date: '2026-04-01' },
- { author: 'Pooja Bansal', city: 'Noida', rating: 4.5, text: 'Birthday puja for my husband. He enjoyed the Ayushya Homam.', date: '2026-03-10' },
- { author: 'Rohit Chopra', city: 'Delhi', rating: 5, text: 'Best Ganesh Chaturthi puja our family has done. English explanation helped relatives from abroad.', date: '2025-09-02' },
- { author: 'Neetu Arora', city: 'Ghaziabad', rating: 4.5, text: 'Satyanarayan katha went well. Good quality prasad too.', date: '2026-02-22' },
- { author: 'Sanjay Puri', city: 'Faridabad', rating: 4.5, text: 'Prompt, courteous, knowledgeable. Recommended.', date: '2026-01-30' },
- ],
  },
  {
  id: 'p8',
@@ -873,13 +836,6 @@ export const homePandits: Pandit[] = [
  { date: '2026-04-26', slots: ['Evening'] },
  { date: '2026-04-27', slots: ['Morning', 'Afternoon'] },
  { date: '2026-04-28', slots: ['Morning', 'Afternoon', 'Evening'] },
- ],
- reviews: [
- { author: 'Srinivas Rao', city: 'Hyderabad', rating: 5, text: 'Telugu-style Griha Pravesh at our new flat. Parents were delighted.', date: '2026-04-14' },
- { author: 'Madhuri Reddy', city: 'Secunderabad', rating: 5, text: 'Ayushya homam for our newborn was very thorough.', date: '2026-03-25' },
- { author: 'Kiran Kumar', city: 'Vijayawada', rating: 4.5, text: 'Great pandit, clear instructions over WhatsApp beforehand.', date: '2026-02-18' },
- { author: 'Divya Menon', city: 'Visakhapatnam', rating: 5, text: 'Diwali Lakshmi puja with Kubera yagna was elaborate. Loved it.', date: '2025-11-01' },
- { author: 'Ramesh Chowdary', city: 'Hyderabad', rating: 4.5, text: 'Very disciplined and punctual. Family recommends him.', date: '2026-01-08' },
  ],
  },
 ];
@@ -920,13 +876,6 @@ export const weddingPandits: Pandit[] = [
  { date: '2026-04-27', slots: ['Consultation'] },
  { date: '2026-04-28', slots: ['Consultation', 'Muhurat check'] },
  ],
- reviews: [
- { author: 'Aanya & Kabir Malhotra', city: 'Delhi', rating: 5, text: 'Our 7 pheras were the most beautiful moment of our lives. Acharya ji explained each rite in English for my American in-laws.', date: '2026-02-14' },
- { author: 'Sakshi & Aryan Shah', city: 'Mumbai', rating: 5, text: 'He flew to Mumbai for our destination wedding. Worth every rupee.', date: '2025-12-28' },
- { author: 'Meera & Vikram Singhania', city: 'Jaipur', rating: 5, text: 'Traditional Marwari wedding with full Vedic rituals. Perfection.', date: '2025-11-10' },
- { author: 'Riya & Arjun Kapoor', city: 'Varanasi', rating: 5, text: 'Ganga ghat wedding was magical. His voice fills the air.', date: '2025-09-18' },
- { author: 'Priya & Rohan Mehta', city: 'Lucknow', rating: 5, text: 'Pre-wedding muhurat consultation was detailed and reassuring.', date: '2025-08-05' },
- ],
  },
  {
  id: 'w2',
@@ -958,13 +907,6 @@ export const weddingPandits: Pandit[] = [
  { date: '2026-04-26', slots: ['Booked'] },
  { date: '2026-04-27', slots: ['Consultation'] },
  { date: '2026-04-28', slots: ['Consultation'] },
- ],
- reviews: [
- { author: 'Shreya & Rohit Deshpande', city: 'Pune', rating: 5, text: 'Full Marathi wedding tradition. Mangalashtake brought tears to everyone\u2019s eyes.', date: '2026-01-20' },
- { author: 'Madhura & Sameer Kulkarni', city: 'Mumbai', rating: 5, text: 'Cobbled together court marriage + Vedic at our farmhouse. Well-organized.', date: '2025-12-10' },
- { author: 'Aparna & Tushar Patil', city: 'Nashik', rating: 4.5, text: 'Grandfather was very happy. Traditions fully followed.', date: '2025-11-22' },
- { author: 'Radha & Omkar Jadhav', city: 'Kolhapur', rating: 5, text: 'Pandit ji even taught us the proper mantra pronunciations beforehand.', date: '2025-10-08' },
- { author: 'Devyani & Mihir Kale', city: 'Nagpur', rating: 5, text: 'Traveled to Nagpur for our wedding. Very professional.', date: '2025-08-30' },
  ],
  },
  {
@@ -998,13 +940,6 @@ export const weddingPandits: Pandit[] = [
  { date: '2026-04-27', slots: ['Consultation'] },
  { date: '2026-04-28', slots: ['Consultation'] },
  ],
- reviews: [
- { author: 'Divya & Karthik Iyer', city: 'Chennai', rating: 5, text: 'Three-day Tamil Iyer wedding conducted flawlessly. Mama elders approved.', date: '2026-02-05' },
- { author: 'Sneha & Kiran Raju', city: 'Hyderabad', rating: 5, text: 'Telugu Pelli with Jeelakarra-Bellam and Kalyanam. Beautiful.', date: '2025-12-15' },
- { author: 'Anushka & Gautam Menon', city: 'Bangalore', rating: 5, text: 'His ghana paath of the mangal sutras gave us goosebumps.', date: '2025-11-28' },
- { author: 'Lavanya & Prakash Pillai', city: 'Coimbatore', rating: 5, text: 'Four priests coordinated under him for our grand wedding.', date: '2025-10-12' },
- { author: 'Bharathi & Raghavan', city: 'Madurai', rating: 5, text: 'At 30+ years of experience, nobody can match him.', date: '2025-09-02' },
- ],
  },
  {
  id: 'w4',
@@ -1037,13 +972,6 @@ export const weddingPandits: Pandit[] = [
  { date: '2026-04-27', slots: ['Booked'] },
  { date: '2026-04-28', slots: ['Consultation'] },
  ],
- reviews: [
- { author: 'Simran & Jaspreet Singh', city: 'Amritsar', rating: 5, text: 'Four laavaan were sung with such devotion. Our families cried.', date: '2026-03-18' },
- { author: 'Harleen & Arvind', city: 'Delhi', rating: 5, text: 'Blended Sikh-Hindu wedding. Both families felt honored.', date: '2026-02-22' },
- { author: 'Gurpreet & Manveer', city: 'Chandigarh', rating: 5, text: 'Granthi ji explained each laavaan meaning. Magical.', date: '2025-12-28' },
- { author: 'Navneet & Kuljeet', city: 'Ludhiana', rating: 4.5, text: 'Very respectful, punctual. All rites followed.', date: '2025-11-15' },
- { author: 'Preet & Rajveer', city: 'Jalandhar', rating: 5, text: 'Our Anand Karaj was everything we dreamed.', date: '2025-09-20' },
- ],
  },
  {
  id: 'w5',
@@ -1075,13 +1003,6 @@ export const weddingPandits: Pandit[] = [
  { date: '2026-04-26', slots: ['Consultation'] },
  { date: '2026-04-27', slots: ['Consultation'] },
  { date: '2026-04-28', slots: ['Consultation', 'Booked'] },
- ],
- reviews: [
- { author: 'Ananya & Rohit Sharma', city: 'Delhi', rating: 5, text: 'Clean, legal Arya Samaj wedding in 2 hours. Registration certificate same day.', date: '2026-04-02' },
- { author: 'Kritika & Danish', city: 'Gurugram', rating: 5, text: 'Inter-faith ceremony handled with grace. Both families happy.', date: '2026-03-12' },
- { author: 'Shilpa & Naveen', city: 'Noida', rating: 4.5, text: 'Fair pricing, all paperwork handled.', date: '2026-02-25' },
- { author: 'Ritika & Puneet', city: 'Ghaziabad', rating: 5, text: 'Court marriage + small Vedic ceremony. Perfect for our situation.', date: '2025-12-08' },
- { author: 'Priya & Arjun', city: 'Jaipur', rating: 4.5, text: 'Traveled for our destination Arya Samaj wedding. Very cooperative.', date: '2025-10-18' },
  ],
  },
 ];
@@ -1253,29 +1174,36 @@ export const marriageAddOns = [
  'Destination wedding travel',
 ];
 
-export const marriageTestimonials = [
- {
- couple: 'Aanya & Kabir Malhotra',
- location: 'Delhi',
- date: 'Feb 2026',
- rating: 5,
- panditName: 'Acharya Vidyadhar Bhatt',
- text: 'Our 7 pheras were the most beautiful moment of our lives. Acharya ji explained every rite in English for my American in-laws, and switched to flawless Sanskrit for the sacred parts. Every guest said the wedding felt truly spiritual, not performative.',
- },
- {
- couple: 'Divya & Karthik Iyer',
- location: 'Chennai',
- date: 'Feb 2026',
- rating: 5,
- panditName: 'Acharya Sundaresan Shastri',
- text: 'Three-day Tamil Iyer wedding. Every last detail — the Mangal Snanam, Kashi Yatra, Oonjal — was conducted flawlessly. Even our most traditional relatives could not find a single fault.',
- },
- {
- couple: 'Simran & Jaspreet Singh',
- location: 'Amritsar',
- date: 'Mar 2026',
- rating: 5,
- panditName: 'Giani Harpreet Singh Ji',
- text: 'The four laavaan were sung with such devotion that our whole family had tears. Giani ji also accommodated the Hindu Ganesh Puja on my mother\u2019s side. Truly a blended ceremony done right.',
- },
-];
+// TC-05 (P1, trust) -- THE THREE INVENTED WEDDING TESTIMONIALS ARE GONE.
+//
+// This array used to hold three entries, every one `rating: 5`, each naming a
+// couple, a city, a month in early 2026 and an officiating pandit -- and every
+// one of them was written by a developer. There have been no completed
+// weddings: nothing in the product has ever recorded a rated wedding booking.
+// app/pujas/marriage/page.tsx rendered them under "Couples who said yes with
+// Darshya" / "Real stories from recent weddings", which made them the strongest
+// social proof on a page that takes bookings from Rs 11,000 up. The pandit names
+// were the worst part -- a real trade credential (Acharya, Giani) attached to a
+// person who does not exist, credited with officiating a wedding that did not
+// happen.
+//
+// The temple half of TC-05 had the identical defect and was closed by publishing
+// the REAL reviews instead: GET /temples/:slug/reviews reads PujaBooking rows
+// with a non-null rating, i.e. a devotee who actually paid for and received the
+// puja (lib/reviews.ts). There is no wedding equivalent -- no endpoint serves
+// rated wedding bookings -- so the honest replacement here is nothing, not
+// different data.
+//
+// Emptied rather than deleted: app/pujas/marriage/page.tsx maps over this array,
+// so the export and its shape must survive, and the shape is what a real source
+// would have to fill. Put rows back only from a rated booking, never by hand.
+export type MarriageTestimonial = {
+ couple: string;
+ location: string;
+ date: string;
+ rating: number;
+ panditName: string;
+ text: string;
+};
+
+export const marriageTestimonials: MarriageTestimonial[] = [];

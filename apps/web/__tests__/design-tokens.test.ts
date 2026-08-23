@@ -1830,8 +1830,16 @@ describe('DU-03 — every channel the resting primary fill arrives on is counted
      *
      * Measured at HEAD: 67 across 38 files, heaviest in app/wellness (15),
      * app/yatra + /yatra-packages (17) and app/pujas/home-puja + /marriage (10).
+     *
+     * 2026-08-23 sweep: 65 of the 67 adopted buttonClass('primary','md') and
+     * their style objects are gone. The 2 survivors are square icon-only
+     * controls — the 56px round play/pause on /wellness/meditation and the
+     * 44px send button in AiChat — where the recipe's `px-5` and `rounded-lg`
+     * would reshape an icon target that has no label to pad. They need a
+     * genuine icon-button variant on the recipe (components/ui, not this
+     * lane), so they stay counted rather than laundered into a class.
      */
-    const BASELINE = 67;
+    const BASELINE = 2;
     expect(
       inline.length,
       `${inline.length} primary CTAs paint the fill with an inline style (ceiling ` +
@@ -1851,8 +1859,9 @@ describe('DU-03 — every channel the resting primary fill arrives on is counted
      * recipe.
      *
      * Measured at HEAD: 213 class + 10 aliased + 67 inline = 290.
+     * 2026-08-23 sweep: 65 inline CTAs adopted the recipe → 213 + 10 + 2 = 225.
      */
-    const BASELINE = 290;
+    const BASELINE = 225;
     const total = classic.length + alias.length + inline.length;
     expect(
       total,

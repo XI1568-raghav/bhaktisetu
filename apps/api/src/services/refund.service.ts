@@ -7,6 +7,12 @@ import {
   reduceBookingLedgerForPartialRefund,
 } from './ledger-reversal.service.js';
 import { cancellationService } from './cancellation.service.js';
+// OPS-05: durable money trail. Never throws, never joins the caller's
+// transaction — see lib/audit-money.ts. Refunds are the single most disputed
+// money event on this platform and the one the product stored least about:
+// who asked for it, on whose authority, and what the payment status was
+// before, all lived in an overwritable `Payment.metadata` blob.
+import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 
 // Refund automation against Razorpay's REST API.
 //
@@ -277,6 +283,26 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     } catch {
       // best effort
     }
+    // OPS-05 — a refund the gateway REFUSED. Previously this survived only as
+    // `metadata.refundFailureReason`, which the next refund attempt overwrites,
+    // so a devotee chasing money that never arrived left no trace of the
+    // attempts made on their behalf.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.REFUND_FAILED,
+      actorType: initiatedBy === 'system' ? 'system' : 'admin',
+      subjectType: 'payment',
+      subjectId: captured.id,
+      bookingId,
+      paymentId: captured.id,
+      amount: refundInr,
+      currency: captured.currency,
+      gateway: 'razorpay',
+      gatewayPaymentId: captured.gatewayPaymentId,
+      statusBefore: captured.status,
+      statusAfter: captured.status,
+      note: failureReason,
+      metadata: { refundType, initiatedBy, reason },
+    });
     return {
       ok: false,
       bookingId,
@@ -284,6 +310,29 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
       error: failureReason,
     };
   }
+
+  // OPS-05 — the gateway accepted the refund. Recorded here, before the local
+  // transaction, because the money has ALREADY left at this point: if the
+  // transaction below fails, the devotee has still been refunded and that is
+  // precisely the state an audit trail must be able to show. No local write
+  // precedes this one, so there is nothing to record "after".
+  void recordMoneyEvent({
+    eventType: MONEY_EVENTS.REFUND_INITIATED,
+    actorType: initiatedBy === 'system' ? 'system' : 'admin',
+    subjectType: 'payment',
+    subjectId: captured.id,
+    bookingId,
+    paymentId: captured.id,
+    amount: refundInr,
+    currency: captured.currency,
+    gateway: 'razorpay',
+    gatewayPaymentId: captured.gatewayPaymentId,
+    gatewayRefundId: refund.id,
+    statusBefore: captured.status,
+    idempotencyKey: refund.id,
+    note: reason,
+    metadata: { refundType, initiatedBy, refundableBeforeInr: refundableInr },
+  });
 
   // PAY-03: status and the ledger branch key off the CUMULATIVE total, not off
   // the caller's `refundType`. A partial that happens to clear the remaining
@@ -399,6 +448,55 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
       reversedTemplePayouts = scaled.scaledTemplePayouts;
     }
   });
+
+  // OPS-05 — recorded AFTER the transaction commits, never inside it: the
+  // event is "this happened", and it has not happened until the transaction
+  // commits. `statusBefore` is the pre-image read at the top of this function.
+  void recordMoneyEvent({
+    eventType: MONEY_EVENTS.REFUND_COMPLETED,
+    actorType: initiatedBy === 'system' ? 'system' : 'admin',
+    subjectType: 'payment',
+    subjectId: captured.id,
+    bookingId,
+    paymentId: captured.id,
+    amount: refundInr,
+    currency: captured.currency,
+    gateway: 'razorpay',
+    gatewayPaymentId: captured.gatewayPaymentId,
+    gatewayRefundId: refund.id,
+    statusBefore: captured.status,
+    statusAfter: newPaymentStatus,
+    idempotencyKey: refund.id,
+    note: reason,
+    metadata: {
+      refundType,
+      initiatedBy,
+      refundedTotalInr: newRefundTotalInr,
+      fullyRefunded: isFullyRefunded,
+    },
+  });
+
+  // OPS-05 — and the ledger unwind that rode along with it. "Was the pandit's
+  // earning minted before or after the refund" is one of the questions this
+  // module was written to answer, and the reversal itself leaves no other
+  // durable evidence of how many rows it touched.
+  if (reversedCommissions > 0 || reversedTemplePayouts > 0) {
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.COMMISSION_REVERSED,
+      actorType: initiatedBy === 'system' ? 'system' : 'admin',
+      subjectType: 'booking',
+      subjectId: bookingId,
+      bookingId,
+      paymentId: captured.id,
+      amount: refundInr,
+      currency: captured.currency,
+      gatewayRefundId: refund.id,
+      statusAfter: isFullyRefunded ? 'reversed' : 'reduced',
+      idempotencyKey: refund.id,
+      note: reason,
+      metadata: { reversedCommissions, reversedTemplePayouts, fullyRefunded: isFullyRefunded },
+    });
+  }
 
   // Best-effort success email — never block on send failure.
   let emailAlreadySent = false;
