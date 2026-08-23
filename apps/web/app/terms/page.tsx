@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CANCELLATION_POLICY_SENTENCE } from "../../lib/cancellation-policy";
 import { COMPANY, operatedByLine, postalContactLine, legalContactEmail } from "../../lib/company";
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
  title: "Terms of Service",
@@ -33,11 +34,7 @@ export default function TermsPage() {
  Legal
  </p>
  <h1
- className="heading-display text-2xl sm:text-3xl font-bold mb-3"
- style={{
- color: "var(--color-text)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.catalogue} mb-3`}
  >
  Terms of Service
  </h1>

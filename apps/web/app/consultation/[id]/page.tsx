@@ -7,6 +7,7 @@ import { ArrowLeft, AlertCircle, Loader2, LogIn } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 function buildAuthHeaders(accessToken: string | undefined): Record<string, string> {
   return accessToken ? { authorization: `Bearer ${accessToken}` } : {};
@@ -95,7 +96,7 @@ function ConsultationRoomContent() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
         <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
-        <h1 className="text-surface-800 mb-2 text-xl font-semibold">Invalid consultation link</h1>
+        <h1 className={`${H1.portal} mb-2`}>Invalid consultation link</h1>
         <Link href="/astrology" className="text-saffron-600 text-sm hover:underline">
           Browse astrologers →
         </Link>
@@ -116,7 +117,7 @@ function ConsultationRoomContent() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
         <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
-        <h1 className="text-surface-800 mb-2 text-xl font-semibold">Consultation not found</h1>
+        <h1 className={`${H1.portal} mb-2`}>Consultation not found</h1>
         <p className="text-surface-600 mb-4 max-w-sm text-sm">
           This room isn&apos;t linked to a paid consultation. Free-trial rooms are no longer
           available — please book a consultation to join a call.
@@ -132,7 +133,7 @@ function ConsultationRoomContent() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
         <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
-        <h1 className="text-surface-800 mb-2 text-xl font-semibold">
+        <h1 className={`${H1.portal} mb-2`}>
           You can&apos;t join this call
         </h1>
         <p className="text-surface-600 mb-4 max-w-sm text-sm">
@@ -160,7 +161,7 @@ function ConsultationRoomContent() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
         <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
-        <h1 className="text-surface-800 mb-2 text-xl font-semibold">Something went wrong</h1>
+        <h1 className={`${H1.portal} mb-2`}>Something went wrong</h1>
         <p className="text-surface-600 mb-4 text-sm">
           We couldn&apos;t verify your consultation. Please try again.
         </p>

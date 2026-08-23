@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CITY_PUJAS, CITY_PUJA_SLUGS, getCityPuja } from '../../../../lib/city-pujas';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 // NOTE: no `runtime = 'edge'` — forbidden under @opennextjs/cloudflare (Node
 // runtime only, via nodejs_compat). revalidate=86400 keeps ISR (daily regen);
@@ -109,7 +110,7 @@ export default async function CityPujaPage({ params }: Params) {
       </nav>
 
       <header className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-display text-surface-900 mb-3">
+        <h1 className={`${H1.catalogue} mb-3`}>
           {cp.pujadisplay} in {cp.citydisplay} — Book Verified Pandits | Darshya
         </h1>
         <p className="text-base text-surface-700">

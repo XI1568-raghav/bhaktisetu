@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { loadAllManifests } from "../../../lib/books";
 import { BookCard } from "../../../components/books/BookCard";
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   title: "Sacred Texts — Bhagavad Gita, Ramayana, Upanishads",
@@ -34,10 +35,10 @@ export default async function BooksIndexPage() {
         </Link>
 
         <header className="mb-10">
-          <h1 className="text-4xl sm:text-5xl font-semibold text-surface-900 tracking-tight">
+          <h1 className={H1.marketing}>
             Sacred Texts
           </h1>
-          <p className="mt-3 text-lg text-surface-600 max-w-2xl">
+          <p className="prose-lead mt-3 text-surface-600 max-w-2xl">
             The foundational scriptures of Sanatana Dharma — Bhagavad Gita,
             Valmiki Ramayana, and the principal Upanishads. Sanskrit alongside
             English translations from public-domain sources (Sri Aurobindo,

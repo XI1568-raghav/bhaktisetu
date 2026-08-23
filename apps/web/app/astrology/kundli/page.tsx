@@ -24,6 +24,7 @@ import { calculateKundli, type KundliData } from '../../../lib/vedic-astrology';
 import { DateInput } from '../../../components/ui/DateInput';
 import CityAutocomplete from '../../../components/ui/CityAutocomplete';
 import type { CityRecord } from '../../../lib/indian-cities';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
@@ -670,7 +671,7 @@ export default function KundliPage() {
  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
  <Link
  href="/astrology"
- className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-bold rounded-lg hover:bg-saffron-700 transition-all shadow-md"
+ className={buttonClass('primary', 'md', 'shadow-md')}
  >
  Consult an Astrologer <ArrowRight className="w-4 h-4" />
  </Link>

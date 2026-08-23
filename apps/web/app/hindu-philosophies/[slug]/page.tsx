@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getHinduPhilosophy, HINDU_PHILOSOPHIES } from '../../../lib/hindu-philosophies';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -96,7 +97,7 @@ export default async function HinduPhilosophyDetailPage({
       <header className="mb-8">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{CATEGORY_LABEL[p.category]}</p>
         <p className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">{p.sanskrit}</p>
-        <h1 className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">{p.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{p.name}</h1>
       </header>
 
       <section className="mb-8 grid gap-3 rounded-2xl border border-gray-200 bg-white p-5 sm:grid-cols-3">

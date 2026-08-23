@@ -11,6 +11,8 @@ import {
  Clock,
 } from 'lucide-react';
 import { SUPPORT_CATEGORIES, POPULAR_ARTICLES } from '../../lib/support';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata = {
  alternates: { canonical: 'https://darshya.online/support' },
@@ -29,10 +31,10 @@ export default function SupportPage() {
  <LifeBuoy className="w-3.5 h-3.5" />
  Darshya Support Center
  </div>
- <h1 className="text-4xl lg:text-5xl font-[family-name:var(--font-display)] font-bold text-surface-900 tracking-tight mb-4">
+ <h1 className={`${H1.marketing} mb-4`}>
  How can we help you today?
  </h1>
- <p className="text-surface-600 text-base lg:text-lg max-w-2xl mx-auto mb-8">
+ <p className="prose-lead text-surface-600 max-w-2xl mx-auto mb-8">
  Search articles, browse categories, or talk to a human — we&apos;re here 8am to 11pm IST, every day.
  </p>
 
@@ -77,7 +79,7 @@ export default function SupportPage() {
  </a>
  <Link
  href="/support/ticket/new"
- className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-saffron-600 hover:bg-saffron-700 text-white text-sm font-semibold transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  <TicketIcon className="w-4 h-4" />
  Open Ticket

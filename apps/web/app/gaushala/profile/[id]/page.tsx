@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ChevronLeft, MapPin, BadgeCheck, Heart, Info } from 'lucide-react';
 import { getGaushalaImage, remoteImage, IMG_W } from '../../../../lib/images';
 import { API_BASE_URL } from '../../../../lib/api-config';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 /**
  * COM-07 (prod sweep 2026-08-12): /gaushala rendered a strip headed "Verified
@@ -107,7 +108,7 @@ export default async function GaushalaProfilePage({
           <div className="p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-surface-900 sm:text-3xl">
+                <h1 className={H1.catalogue}>
                   {gaushala.name}
                 </h1>
                 {gaushala.location && (

@@ -13,6 +13,7 @@ import {
  Truck,
 } from 'lucide-react';
 import { useCart } from './CartContext';
+import { buttonClass } from '../components/ui/button-recipe';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -95,7 +96,7 @@ export default function CartDrawer() {
  <Link
  href="/store"
  onClick={closeCart}
- className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-semibold rounded-xl hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  Browse Store
  <ArrowRight className="w-4 h-4" />

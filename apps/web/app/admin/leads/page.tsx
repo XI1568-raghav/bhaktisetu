@@ -6,6 +6,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type LeadRole = 'TEMPLE' | 'PRIEST' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA';
 type LeadStatus = 'NEW' | 'QUEUED' | 'EMAILED' | 'REPLIED' | 'CONVERTED' | 'BOUNCED' | 'UNSUBSCRIBED';
@@ -241,7 +242,7 @@ export default function AdminLeadsPage() {
         </div>
         <button
           onClick={() => setImportOpen(true)}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium bg-saffron-600 text-white rounded-lg hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           <Upload className="w-4 h-4" /> Import CSV
         </button>
@@ -511,7 +512,7 @@ export default function AdminLeadsPage() {
               <button
                 onClick={submitNote}
                 disabled={!noteInput.trim()}
-                className="px-3 py-1.5 text-sm bg-saffron-600 text-white rounded-lg disabled:opacity-50"
+                className={buttonClass('primary', 'md')}
               >
                 Add
               </button>
@@ -551,7 +552,7 @@ export default function AdminLeadsPage() {
               <button
                 onClick={submitImport}
                 disabled={importBusy || !importJson.trim()}
-                className="px-3 py-1.5 text-sm bg-saffron-600 text-white rounded-lg disabled:opacity-50"
+                className={buttonClass('primary', 'md')}
               >
                 {importBusy ? 'Importing...' : 'Import'}
               </button>

@@ -25,6 +25,8 @@ import Link from 'next/link';
 import { Mail, ArrowLeft, Loader2, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
 import { API_BASE_URL, fetchWithTimeout } from '../../../lib/api-config';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -90,7 +92,7 @@ export default function ForgotPasswordPage() {
   return (
    <div className="shadow-warm overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
     <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
-    <h1 className="text-surface-800 mb-2 text-xl font-bold">Check your email</h1>
+    <h1 className={`${H1.portal} mb-2`}>Check your email</h1>
     <p className="text-surface-500 mb-6 text-sm">
      If an account exists for{' '}
      <span className="text-surface-700 font-medium">{email.trim()}</span>, we&apos;ve sent a{' '}
@@ -113,7 +115,7 @@ export default function ForgotPasswordPage() {
 
  return (
   <div className="shadow-warm overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8">
-   <h1 className="text-surface-800 mb-2 text-xl font-bold">Reset your password</h1>
+   <h1 className={`${H1.portal} mb-2`}>Reset your password</h1>
    <p className="text-surface-500 mb-6 text-sm">
     Enter the email you signed up with and we&apos;ll send you a link to choose a new password.
    </p>
@@ -150,7 +152,7 @@ export default function ForgotPasswordPage() {
    <button
     onClick={handleSubmit}
     disabled={status === 'submitting'}
-    className="bg-saffron-600 hover:bg-saffron-700 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+    className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
    >
     {status === 'submitting' && mode === 'reset' ? (
      <>

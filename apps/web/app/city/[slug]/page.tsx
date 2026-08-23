@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { getCity, CITIES } from '../../../lib/cities';
 import { getTemples } from '../../../lib/api';
 import { getDeity } from '../../../lib/deities';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const dynamicParams = false;
 export const revalidate = 3600;
@@ -143,7 +144,7 @@ export default async function CityPage({ params }: Params) {
             </ul>
             <Link
               href="/temples"
-              className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse all temples →
             </Link>

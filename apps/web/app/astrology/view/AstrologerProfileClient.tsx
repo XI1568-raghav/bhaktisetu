@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { astrologyFetch } from '../../../lib/astrologer-fetch';
 import { formatNumber } from '../../../lib/format-locale';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  Star,
  BadgeCheck,
@@ -208,7 +210,7 @@ function AstrologerDetailInner() {
   return (
    <div className="min-h-[100dvh] bg-surface-50 flex items-center justify-center px-6">
     <div className="max-w-md text-center">
-     <h1 className="text-xl font-semibold text-surface-800 mb-2">
+     <h1 className={`${H1.portal} mb-2`}>
       This astrologer profile is not available
      </h1>
      <p className="text-sm text-surface-500 mb-6">
@@ -218,7 +220,7 @@ function AstrologerDetailInner() {
      <div className="flex flex-col sm:flex-row gap-3 justify-center">
       <Link
        href="/astrology/astrologers/live"
-       className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm bg-saffron-600 text-white"
+       className={buttonClass('primary', 'md')}
       >
        See verified astrologers <ArrowRight className="w-4 h-4" />
       </Link>
@@ -289,7 +291,7 @@ function AstrologerDetailInner() {
  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
  <div>
  <div className="flex items-center gap-2 mb-1">
- <h1 className="text-2xl lg:text-3xl font-bold text-surface-800">
+ <h1 className={H1.catalogue}>
  {astrologer.name}
  </h1>
  </div>
@@ -366,7 +368,7 @@ function AstrologerDetailInner() {
  <div className="flex flex-col gap-2">
  <Link
  href={`/astrology/${encodeURIComponent(astrologer.id)}/book`}
- className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm bg-saffron-600 text-white shadow-md shadow-saffron-500/25 hover:bg-saffron-700 transition-all duration-200"
+ className={buttonClass('primary', 'md', 'shadow-md shadow-saffron-500/25')}
  >
  <Video className="w-4 h-4" />
  Book Paid Consultation

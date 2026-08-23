@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { FAQ_GROUPS, allFaqs, faqPageJsonLd } from '../../lib/faqs';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -47,7 +48,7 @@ export default function FaqsHub() {
         <h1 className={`${H1.marketing} mb-3`}>
           Frequently Asked Questions
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
           Quick answers to common questions about puja booking, live darshan,
           NRI pricing, yatra packages, refunds, and donation receipts. Can't find
           your question? <Link href="/contact" className="text-saffron-700 hover:underline">Contact us</Link>.
@@ -92,7 +93,7 @@ export default function FaqsHub() {
         <h2 className="text-xl font-bold text-surface-900 mb-2">Still have questions?</h2>
         <p className="text-surface-700 text-sm mb-4">We respond within 24 hours on weekdays.</p>
         <div className="flex flex-wrap gap-3 justify-center">
-          <Link href="/contact" className="px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700">
+          <Link href="/contact" className={buttonClass('primary', 'md')}>
             Contact us
           </Link>
           <a href="https://wa.me/919255109400" className="px-5 py-2 border border-saffron-600 text-saffron-700 rounded-md text-sm font-semibold hover:bg-saffron-50">

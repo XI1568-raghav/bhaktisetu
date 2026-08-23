@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import RoiCalculator from './RoiCalculator';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 
 export const metadata: Metadata = {
@@ -110,17 +112,17 @@ export default function ForTempleChainsPage() {
           <p className="mb-4 inline-block rounded-full bg-saffron-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-saffron-800">
             B2B SaaS pilot · Q4 2026
           </p>
-          <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
+          <h1 className={H1.marketing}>
             One stack for your temple chain, ashram network or matha.
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-surface-700">
+          <p className="prose-lead mt-4 max-w-2xl text-surface-700">
             White-label donor CRM, 80G automation, puja bookings and live darshan — built on the same
             infrastructure thousands of devotees already trust on darshya.online.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href="/contact?topic=b2b-pilot"
-              className="rounded-full bg-saffron-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-saffron-700"
+              className={buttonClass('primary', 'md', 'shadow-sm')}
             >
               Apply for 90-day pilot
             </Link>
@@ -251,7 +253,7 @@ export default function ForTempleChainsPage() {
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href="/contact?topic=b2b-pilot"
-              className="rounded-full bg-saffron-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-saffron-700"
+              className={buttonClass('primary', 'md', 'shadow-sm')}
             >
               Apply for pilot
             </Link>

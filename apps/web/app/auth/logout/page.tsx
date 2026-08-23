@@ -42,7 +42,7 @@ export default function LogoutPage() {
         <Loader2 className="h-6 w-6 animate-spin text-saffron-500" />
         <span className="ml-3 text-surface-500">Signing you out…</span>
       </div>
-      <p className="text-surface-400 mt-3 max-w-xs text-xs">
+      <p className="prose-meta text-surface-400 mt-3 max-w-xs">
         For your security this signs you out on all your devices, not just this one.
       </p>
     </div>

@@ -20,6 +20,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, Clock, Users, Loader2, AlertCircle, Leaf } from 'lucide-react';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export interface WellnessClass {
   id: string;
@@ -98,8 +99,7 @@ export default function WellnessClassesClient() {
           Live classes
         </div>
         <h1
-          className="heading-display text-2xl sm:text-3xl font-semibold tracking-tight"
-          style={{ color: 'var(--color-text)' }}
+          className={H1.catalogue}
         >
           Upcoming yoga, meditation &amp; pranayama classes
         </h1>

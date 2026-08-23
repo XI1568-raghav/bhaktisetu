@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Calendar, Users, MapPin, ArrowRight } from 'lucide-react';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   title: 'Yatra Packages — Curated Pilgrimage Tours',
@@ -49,7 +50,7 @@ export default async function YatraPackagesPage() {
     <div style={{ background: 'var(--color-bg)' }}>
       <section className="py-12 md:py-16" style={{ background: 'linear-gradient(135deg, var(--color-art-3) 0%, var(--color-bg) 70%)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight" style={{ color: 'var(--color-text)' }}>
+          <h1 className={H1.marketing}>
             Curated Yatra Packages
           </h1>
           <p className="mt-4 text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>

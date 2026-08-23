@@ -40,6 +40,7 @@ import {
  Compass,
 } from 'lucide-react';
 import { DateInput } from '../../components/ui/DateInput';
+import { H1 } from '../../components/ui/heading-recipe';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -312,13 +313,13 @@ export default function AstrologyPage() {
  </span>
  </div>
 
- <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-surface-800 mb-5 leading-tight">
+ <h1 className={`${H1.marketing} mb-5`}>
  Connect with India&apos;s<br />
  <span className="text-[var(--color-primary)]">
  Top Astrologers
  </span>
  </h1>
- <p className="text-lg text-surface-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+ <p className="prose-lead text-surface-500 max-w-2xl mx-auto mb-10 leading-relaxed">
  Get accurate predictions, personalized remedies, and spiritual guidance from
  verified astrologers. Available 24/7 via chat, call, or video.
  </p>

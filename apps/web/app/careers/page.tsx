@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MapPin, Clock, Briefcase, Heart, Zap, Users, BookOpen, Coffee } from "lucide-react";
 
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/careers' },
  title: "Careers",
@@ -105,11 +106,8 @@ export default function CareersPage() {
  Careers at Darshya
  </p>
  <h1
- className="heading-display text-2xl sm:text-3xl font-bold mb-6"
- style={{
- color: "var(--color-text-inverse)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.catalogue} mb-6`}
+ style={{ color: "var(--color-text-inverse)" }}
  >
  Build Technology That Serves Faith
  </h1>

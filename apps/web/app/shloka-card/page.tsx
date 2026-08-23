@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 // DU-05: the one h1 recipe per page archetype. Extras are layout-only.
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 
 // Viral feature: shareable shloka card generator (Day 31-60 plan).
@@ -280,7 +281,7 @@ export default function ShlokaCardGenerator() {
         </p>
         <Link
           href="/shlokas"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Browse our shloka library
         </Link>

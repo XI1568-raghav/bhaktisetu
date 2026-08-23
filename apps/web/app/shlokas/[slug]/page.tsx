@@ -5,6 +5,7 @@ import { SHLOKAS, getShloka, shlokaOgUrl } from '../../../lib/shlokas';
 import { articleJsonLd, breadcrumbJsonLd } from '../../../lib/jsonld';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -99,7 +100,7 @@ export default async function ShlokaPage({
       </p>
 
       <h1
-        className="text-2xl sm:text-4xl text-surface-900 leading-relaxed mb-6 whitespace-pre-line"
+        className={`${H1.catalogue} mb-6 whitespace-pre-line`}
         style={{ fontFamily: 'var(--font-noto-devanagari)' }}
       >
         {s.text}

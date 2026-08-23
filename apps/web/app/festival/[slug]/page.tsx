@@ -14,6 +14,7 @@ import {
   resolveFestivalSlug,
 } from '../../../lib/festivals';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -217,7 +218,7 @@ export default async function FestivalPage({ params }: Params) {
           </p>
           <Link
             href="/pujas"
-            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+            className={buttonClass('primary', 'md', 'mt-3')}
           >
             Browse all pujas →
           </Link>

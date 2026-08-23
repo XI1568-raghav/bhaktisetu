@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DateInput } from '../../../components/ui/DateInput';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 function apiBase(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
@@ -188,7 +189,7 @@ function InquiryForm() {
 export default function InquiryPage() {
   return (
     <main className="min-h-[100dvh] bg-amber-50/40 py-12 px-4">
-      <h1 className="font-serif text-3xl text-amber-900 text-center">Wedding inquiry</h1>
+      <h1 className={`${H1.catalogue} text-center`}>Wedding inquiry</h1>
       <p className="mt-2 text-stone-700 text-center max-w-2xl mx-auto">
         Tell us a little about your wedding. A Darshya concierge will respond within 24 hours.
       </p>

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 
 import { localeHref, normalizeLocale } from '../lib/i18n/locales';
+import { buttonClass } from '../components/ui/button-recipe';
+import { H1 } from '../components/ui/heading-recipe';
 
 // Shared shell for /hi /ta /te /bn /mr landing pages. Each lang file passes
 // pre-translated strings; this component renders the layout.
@@ -63,16 +65,16 @@ export function LangLanding(props: LangLandingProps) {
         <div className="inline-block px-3 py-1 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           🕉️ {props.pillText}
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-4 leading-tight">
+        <h1 className={`${H1.marketing} mb-4`}>
           {props.heroTitle}
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
           {props.heroSubtitle}
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link
             href={href('/pujas')}
-            className="px-6 py-3 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
             prefetch={false}
           >
             {props.ctaBookLabel}
@@ -106,7 +108,7 @@ export function LangLanding(props: LangLandingProps) {
         <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">{props.nriBody}</p>
         <Link
           href={href('/nri')}
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
           prefetch={false}
         >
           {props.nriCta}

@@ -6,6 +6,7 @@ import { Search } from 'lucide-react';
 import LanguageSwitcher, { type SupportedLanguage } from './LanguageSwitcher';
 import { DEFAULT_LOCALE, readClientLocale, type Locale } from '../lib/i18n/locales';
 import { t } from '../lib/t';
+import { H1 } from '../components/ui/heading-recipe';
 
 interface ContentPageHeaderProps {
  currentType?: string;
@@ -72,13 +73,13 @@ export default function ContentPageHeader({
  <div className="flex items-start justify-between gap-4">
  <div className="flex-1">
  <h1
- className="text-3xl md:text-4xl font-bold text-white mb-3"
+ className={`${H1.detail} mb-3`}
  lang={tr.entry('pageTitle').lang}
  >
  {tr('pageTitle')}
  </h1>
  <p
- className="text-saffron-100 text-lg max-w-2xl"
+ className="prose-lead text-saffron-100 max-w-2xl"
  lang={tr.entry('pageSubtitle').lang}
  >
  {tr('pageSubtitle')}

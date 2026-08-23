@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { NAKSHATRAS } from '../../lib/nakshatras';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -58,7 +59,7 @@ export default function NakshatraIndex() {
         <h1 className={`${H1.marketing} mb-3`}>
           The 27 Nakshatras
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-3xl mx-auto">
           Vedic lunar mansions — each 13°20′ of the zodiac, ruled by a planet and presided over by a
           deity. Your janma nakshatra shapes personality, career, marriage compatibility, and
           dharmic path. Click any nakshatra for the full reading.
@@ -110,7 +111,7 @@ export default function NakshatraIndex() {
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/astrology"
-            className="px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Free birth chart →
           </Link>

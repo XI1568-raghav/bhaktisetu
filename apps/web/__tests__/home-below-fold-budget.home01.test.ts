@@ -89,7 +89,10 @@ describe('[HOME-01] the homepage cannot silently grow more below-fold sections',
   const sections = (page.match(/<section[\s>]/g) ?? []).length;
 
   it('counts real sections (the ratchet is measuring something)', () => {
-    expect(sections).toBeGreaterThan(5);
+    // Floor lowered 5 -> 3 alongside the 14 -> 4 ratchet below. This canary
+    // exists so a regex that silently stops matching cannot be mistaken for a
+    // page that got smaller; 3 keeps it doing that job at the new size.
+    expect(sections).toBeGreaterThan(3);
   });
 
   it('holds the section count at or below its measured baseline', () => {
@@ -102,12 +105,34 @@ describe('[HOME-01] the homepage cannot silently grow more below-fold sections',
     // failing. The number below is the count measured on 2026-08-20 (14 <section>
     // openings in app/page.tsx after comment stripping), written down so the
     // ratchet has something outside itself to hold against.
-    const BASELINE = 14;
+    // 2026-08-23 homepage revamp: RATCHET LOWERED 14 -> 4.
+    //
+    // Ten <section> blocks were deleted from app/page.tsx, not moved. Listing
+    // them because "the ratchet went down" is only trustworthy if the deletions
+    // are auditable:
+    //
+    //   category colour strip   the header already carries the same 5 mega-menus
+    //   quick actions           6 equal choices directly under a single-CTA hero
+    //   trust strip (4 cards)   2 of the 4 claims were contradicted by the code
+    //   what we offer           duplicated the category strip one screen above
+    //   AI Pandit mockup        not a revenue line
+    //   Bhakti Store showcase   every store checkout 400s (non-UUID product ids)
+    //   more features row       feature inventory, not an offer
+    //   final CTA               a second filled primary competing with the hero
+    //   library teaser          WisdomStrip already routes to the library
+    //   yatra teaser            yatra is a lead form; no gateway loads in it
+    //
+    // Two sections were ADDED as components (ThisWeek, WhatYouGet), so they sit
+    // outside this regex — see the denominator note below.
+    const BASELINE = 4;
     expect(
       sections,
-      `the homepage grew past ${BASELINE} sections. Below-fold markup was 109,855 B ` +
-        'and below-fold images 777.0 KB at that count; adding to it without ' +
-        're-measuring is how HOME-01 came back.',
+      `app/page.tsx grew past ${BASELINE} <section> openings. ` +
+        'NOTE THE DENOMINATOR: this regex reads app/page.tsx ONLY, so a section ' +
+        'moved into components/home/ is invisible to it. Moving a section into a ' +
+        'component to get under this number buys ratchet headroom without ' +
+        'removing anything real — do not do that. Below-fold markup was 109,855 B ' +
+        'and below-fold images 777.0 KB when this stood at 14.',
     ).toBeLessThanOrEqual(BASELINE);
   });
 });
@@ -318,19 +343,32 @@ describe('[HOME-01] the deepest text-only sections skip render work too', () => 
    * This buys ZERO transfer bytes — it is render work, and the ranked
    * deliverable lists it as such rather than counting it as a byte saving.
    */
-  const DEEP = ['Discover the Library', 'Pilgrimage circuits'];
+  /*
+   * 2026-08-23 homepage revamp: both of these were DELETED rather than kept and
+   * deferred, so there is no .defer-paint left to assert.
+   *
+   *   'Discover the Library'  WisdomStrip, four sections earlier, already routes
+   *                           into the same library. Two teasers, one destination.
+   *   'Pilgrimage circuits'   yatra has no Prisma model at all; bookings go to a
+   *                           raw table via $executeRawUnsafe and no payment
+   *                           gateway loads anywhere in the flow. It was also the
+   *                           heaviest image payload on the page at ~217 KB.
+   *
+   * Kept as deletion guards rather than removed outright: content-visibility
+   * bought ZERO transfer bytes on either (both are image-free, which is why they
+   * ranked 9th and 10th and not 1st). Re-adding one "because it is deferred
+   * anyway" would put the render work AND the markup back for nothing.
+   */
+  const DELETED = ['Discover the Library', 'Pilgrimage circuits'];
 
-  for (const label of DEEP) {
-    it('the "' + label + '" section carries .defer-paint', () => {
-      const at = page.indexOf('aria-label="' + label + '"');
-      expect(at, 'no section labelled ' + label).toBeGreaterThan(-1);
-      const open = page.lastIndexOf('<section', at);
-      expect(open, 'aria-label is not inside a <section>').toBeGreaterThan(-1);
-      const head = page.slice(open, at + 400);
+  for (const label of DELETED) {
+    it('the "' + label + '" section stays deleted', () => {
       expect(
-        head,
-        label + ' paints on first load though it is text-only and deep below the fold',
-      ).toMatch(/className="[^"]*\bdefer-paint\b/);
+        page.indexOf('aria-label="' + label + '"'),
+        label + ' is back on the homepage. It was removed in the 2026-08-23 revamp; ' +
+          'see the comment above for why. If it is genuinely wanted again, re-measure ' +
+          'the below-fold budget and raise the section ratchet deliberately.',
+      ).toBe(-1);
     });
   }
 });

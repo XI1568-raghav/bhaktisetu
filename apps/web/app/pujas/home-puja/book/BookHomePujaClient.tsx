@@ -25,6 +25,7 @@ import { DateInput } from '../../../../components/ui/DateInput';
 import { WizardSteps } from '../../../../components/ui/WizardSteps';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 type StepId = 1 | 2 | 3 | 4 | 5;
 
 const steps = [
@@ -101,7 +102,7 @@ function BookHomePujaInner() {
  return (
  <div className="min-h-[100dvh] flex items-center justify-center p-6">
  <div className="text-center">
- <h1 className="text-2xl font-bold text-surface-800">Puja not found</h1>
+ <h1 className={H1.portal}>Puja not found</h1>
  <Link href="/pujas/home-puja" className="text-saffron-600 font-medium mt-4 inline-block">
  Browse home pujas
  </Link>
@@ -209,7 +210,7 @@ function BookHomePujaInner() {
 
  {/* Header */}
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
- <h1 className="text-2xl md:text-3xl font-bold text-surface-800 tracking-tight">
+ <h1 className={H1.catalogue}>
  Book {category.name}
  </h1>
  <p className="text-surface-500 mt-1 text-sm">{category.tagline}</p>

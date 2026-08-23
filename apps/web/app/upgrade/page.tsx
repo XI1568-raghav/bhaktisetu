@@ -8,6 +8,7 @@ import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
 import AuthGuard from '../../components/AuthGuard';
 import { NRI_PREMIUM_IS_SELLABLE } from '../nri/plan-availability';
+import { H1 } from '../../components/ui/heading-recipe';
 
 interface PlanCard {
   id: string;
@@ -204,7 +205,7 @@ function UpgradeInner() {
           <div className="w-16 h-16 gradient-saffron rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-surface-800 mb-2">
+          <h1 className={`${H1.catalogue} mb-2`}>
             {t('pageTitle')}
           </h1>
           <p className="text-surface-500 max-w-xl mx-auto">

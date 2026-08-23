@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -313,7 +314,7 @@ function PriestBookingsInner() {
  <button
  onClick={(e) => { e.preventDefault(); handleAction(booking.id, 'accept'); }}
  disabled={!!actionLoading}
- className="inline-flex items-center gap-1.5 px-4 py-2 bg-saffron-600 text-white text-xs font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+ className={buttonClass('primary', 'md')}
  >
  {isLoading('accept') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
  Accept

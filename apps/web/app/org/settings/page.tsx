@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface PlanStatus {
   plan: "free" | "pro" | "enterprise";
@@ -48,7 +50,7 @@ function OrgSettingsContent() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="text-3xl font-bold mb-6">Org Settings</h1>
+      <h1 className={`${H1.portal} mb-6`}>Org Settings</h1>
 
       {status && (
         <div className="mb-6 rounded-lg border bg-white p-6">
@@ -84,7 +86,7 @@ function OrgSettingsContent() {
             </ul>
             {status?.plan !== t.id && (
               <button
-                className="mt-4 w-full rounded bg-orange-600 px-4 py-2 text-white disabled:opacity-50"
+                className={buttonClass('primary', 'md', 'mt-4 w-full')}
                 onClick={() => alert("Upgrade flow uses /api/v1/subscriptions Razorpay endpoint.")}
               >
                 Upgrade

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DASHAVATAR, YUGA_ORDER, YUGA_LABELS, type AvatarYuga } from '../../lib/dashavatar';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -62,7 +63,7 @@ export default function DashavatarIndexPage() {
       </nav>
 
       <header className="mb-8 rounded-xl bg-gradient-to-br from-saffron-50 via-amber-50 to-rose-50 p-6 ring-1 ring-saffron-200">
-        <h1 className="text-3xl font-bold text-saffron-900 sm:text-4xl">Dashavatar — दशावतार</h1>
+        <h1 className={H1.catalogue}>Dashavatar — दशावतार</h1>
         <p className="mt-2 text-lg text-amber-900">The ten incarnations of Vishnu</p>
         <p className="mt-3 max-w-3xl text-gray-800">
           Whenever dharma declines and adharma rises, Vishnu descends. The ten classical avataras — from the fish who saved the Vedas at the first deluge to the future rider who will end Kali Yuga — span the four yugas and trace the moral arc of cosmic history.

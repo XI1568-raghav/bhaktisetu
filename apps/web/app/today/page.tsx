@@ -10,6 +10,7 @@ import { FESTIVALS, nextFestival } from '../../lib/festivals';
 import { DEITY_MANTRAS } from '../../lib/deity-mantras';
 import { getDeity } from '../../lib/deities';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 3600;
 
@@ -76,7 +77,7 @@ export default async function TodayPage() {
             Today on Darshya
           </span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-3">
+        <h1 className={`${H1.marketing} mb-3`}>
           {dayName}, {now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}
         </h1>
         <p className="text-base text-surface-600">{dateLong}</p>

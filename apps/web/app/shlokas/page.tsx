@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SHLOKAS } from '../../lib/shlokas';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   title: 'Sanskrit Shlokas — Sacred Verses with Meaning',
@@ -21,7 +23,7 @@ export default function ShlokasIndexPage() {
   return (
     <main className="max-w-4xl mx-auto px-6 py-10">
       <header className="mb-10">
-        <h1 className="text-3xl sm:text-4xl font-semibold text-surface-900 mb-3">
+        <h1 className={`${H1.catalogue} mb-3`}>
           Sanskrit Shlokas
         </h1>
         <p className="text-surface-700 text-base leading-relaxed mb-4">
@@ -32,7 +34,7 @@ export default function ShlokasIndexPage() {
         </p>
         <Link
           href="/shloka-card"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           ✨ Make your own shareable card →
         </Link>

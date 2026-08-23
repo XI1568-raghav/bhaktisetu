@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/weddings/packages' },
@@ -69,7 +70,7 @@ export default function PackagesPage() {
     <main className="min-h-[100dvh] bg-amber-50/40 py-12 px-4 sm:px-8">
       <div className="max-w-6xl mx-auto">
         <header className="text-center">
-          <h1 className="font-serif text-4xl text-amber-900">Wedding packages</h1>
+          <h1 className={H1.catalogue}>Wedding packages</h1>
           <p className="mt-2 text-stone-700 max-w-2xl mx-auto">
             All packages are end-to-end. Pricing is for ceremonies in India; NRI weddings carry a
             travel and consultation surcharge.

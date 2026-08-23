@@ -82,7 +82,7 @@ export default function HinduSymbolsIndexPage() {
           Om to the auspiciousness mark applied at every wedding threshold. Each entry covers the presiding deity,
           traditional meaning, ritual use, placement guidance, and the materials it is most commonly crafted in.
         </p>
-        <p className="mt-3 max-w-3xl rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-900">
+        <p className="prose-body mt-3 max-w-3xl rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-amber-900">
           <strong>Scholarly note on the swastika:</strong> the swastika presented here is the ancient Indo-Vedic
           auspiciousness symbol attested on Indus Valley seals from c. 2500 BCE and in continuous Hindu, Buddhist and
           Jain ritual use for roughly four thousand years. The 20th-century German Hakenkreuz adopted by the Nazi

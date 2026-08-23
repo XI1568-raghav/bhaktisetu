@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Upload, Video, Loader2, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '../../lib/supabase';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 interface Props {
   bookingId: string;
@@ -162,7 +163,7 @@ export default function VideoProofUpload({
             type="button"
             onClick={handleManualSubmit}
             disabled={uploading || !manualUrl.trim()}
-            className="px-4 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+            className={buttonClass('primary', 'md')}
           >
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
           </button>

@@ -6,6 +6,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Donation = {
   id: string;
@@ -151,7 +152,7 @@ function DonationsPageContent() {
         <button
           onClick={exportCsv}
           disabled={filtered.length === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50"
+          className={buttonClass('primary', 'md')}
         >
           <Download className="w-4 h-4" />
           Export CSV

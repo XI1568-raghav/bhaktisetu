@@ -40,6 +40,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 interface OfferBooking {
   id: string;
@@ -228,7 +229,7 @@ function PriestOffersInner() {
           <p className="text-sm text-red-700">{loadError}</p>
           <button
             onClick={() => void fetchOffers()}
-            className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+            className={buttonClass('primary', 'md', 'mt-4')}
           >
             <RefreshCw className="w-4 h-4" />
             Try again

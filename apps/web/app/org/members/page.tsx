@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface Member {
   id: string;
@@ -98,7 +100,7 @@ function OrgMembersContent() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="text-3xl font-bold mb-6">Members</h1>
+      <h1 className={`${H1.portal} mb-6`}>Members</h1>
 
       <section className="mb-8 rounded-lg border bg-white p-6">
         <h2 className="text-lg font-semibold mb-3">Invite teammate</h2>
@@ -119,7 +121,7 @@ function OrgMembersContent() {
             <option value="MEMBER">Member</option>
             <option value="ADMIN">Admin</option>
           </select>
-          <button className="rounded bg-orange-600 px-4 py-2 text-white">
+          <button className={buttonClass('primary', 'md')}>
             Send invite
           </button>
         </form>

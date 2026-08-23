@@ -2697,8 +2697,8 @@
   "workflow": "authenticated-deep",
   "line": 1584,
   "title": "No shared Button primitive: the primary CTA ships in 11 pixel heights, 11 paddings, 4 radii and 5 type styles across the 10 measured screens",
-  "state": "partial",
-  "commit": "wave-hard-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": "~280 hand-rolled bg-saffron-600 controls and the lint rule remain. A repo-wide Button migration is a separate piece of work."
  },
  {
@@ -5595,8 +5595,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Magic-link sign-in returns no role, so every provider provisioned through the partnerships pipeline is stored as a devotee and permanently bounced out of their own portal",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": ""
  },
  {
@@ -5903,8 +5903,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "48 duplicate slugs across 10 encyclopedia datasets — the second record is unreachable, and index pages render twin cards to one URL with contradictory facts",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": ""
  },
  {
@@ -5945,8 +5945,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "37 of 64 detail routes — at least 455 encyclopedia pages including all 84 pilgrimage-site pages — offer no path to anything bookable",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": ""
  },
  {
@@ -6001,8 +6001,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Internal roadmap ticket IDs and the retired brand name \"Bhaktisetu\" render in published encyclopedia prose",
-  "state": "partial",
-  "commit": "wave-hard-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": ""
  },
  {
@@ -6029,8 +6029,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Maha Kumbh Mela is dated 2027-01-14 but renders inside \"Hindu Festivals in January 2026\" as an upcoming 14 January event",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": ""
  },
  {
@@ -6071,8 +6071,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "/upanishads is titled and described as a guide to 10 Upanishads while listing 48",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": ""
  },
  {
@@ -6281,8 +6281,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "/faqs sells a Rs 199/month Premium plan with an aarti download library and multi-camera angles — no such plan, no such features — and claims live darshan from 30+ temples against a 20-temple catalogue",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": ""
  }
 ]

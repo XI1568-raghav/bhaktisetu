@@ -24,6 +24,7 @@ import {
  type Offering,
 } from '../../../lib/pandit-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -196,7 +197,7 @@ function PriestServicesPageContent() {
     </div>
     <button
      onClick={openAddForm}
-     className="inline-flex items-center gap-2 px-4 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+     className={buttonClass('primary', 'md')}
     >
      <Plus className="w-4 h-4" />
      Add Puja
@@ -323,7 +324,7 @@ function PriestServicesPageContent() {
        <button
         type="submit"
         disabled={saving}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+        className={buttonClass('primary', 'md')}
        >
         {saving ? (
          <Loader2 className="w-4 h-4 animate-spin" />

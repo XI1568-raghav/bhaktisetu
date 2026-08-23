@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import ChoghadiyaClient from './ChoghadiyaClient';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -161,7 +162,7 @@ export default function ChoghadiyaPage() {
      panchang + nakshatra + a pandit reading of your kundli.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/panchang" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/panchang" className={buttonClass('primary', 'md')}>
       Today's Panchang
      </Link>
      <Link href="/muhurat" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">

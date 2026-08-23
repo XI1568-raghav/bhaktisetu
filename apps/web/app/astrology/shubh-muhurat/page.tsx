@@ -4,6 +4,7 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import ShubhMuhuratClient from './ShubhMuhuratClient';
 import { EVENT_OPTIONS } from '../../../lib/shubh-muhurat';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -160,7 +161,7 @@ export default function ShubhMuhuratPage() {
      behind any window — and reconcile with a pandit for a final wedding/griha-pravesh date.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/astrology/choghadiya" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/astrology/choghadiya" className={buttonClass('primary', 'md')}>
       Choghadiya
      </Link>
      <Link href="/astrology/hora" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

@@ -6,6 +6,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Volunteer = {
   id: string;
@@ -163,7 +164,7 @@ function VolunteersContent() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]"
+          className={buttonClass('primary', 'md')}
         >
           <UserPlus className="w-4 h-4" />
           Add Volunteer

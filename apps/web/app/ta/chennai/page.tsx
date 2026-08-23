@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -129,16 +131,16 @@ export default function TamilChennaiLanding() {
         <div className="inline-block px-3 py-1 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           🕉️ சென்னை · தமிழ்நாடு · சனாதன தர்மம்
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-4 leading-tight">
+        <h1 className={`${H1.marketing} mb-4`}>
           தர்ஷ்யா சென்னை
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
           மயிலாப்பூர் கபாலீஸ்வரர் முதல் ECR இஸ்கான் வரை — சென்னை மெட்ரோவின் 5 அணைய ஆலயங்களில் சரிபார்க்கப்பட்ட பண்டிதர்களுடன் பூஜை, வீடியோ ஆதாரம், நேரலை தரிசனம், 80G ரசீது.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link
             href="/pujas?city=chennai"
-            className="px-6 py-3 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             சென்னையில் பூஜை முன்பதிவு செய்க
           </Link>
@@ -236,7 +238,7 @@ export default function TamilChennaiLanding() {
         </p>
         <Link
           href="/nri"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           NRI தொகுப்பு காண்க →
         </Link>

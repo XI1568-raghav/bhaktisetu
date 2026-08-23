@@ -24,6 +24,8 @@ import {
 // sentence cannot drift away from the number the devotee is actually charged.
 import { PLATFORM_FEE_INR } from '../../lib/puja-pricing';
 import { rightsContactEmail } from "../../lib/company";
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -164,10 +166,10 @@ export default async function UkLaunchPage() {
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-saffron-200 bg-white/80 px-3 py-1 text-xs font-semibold text-saffron-800">
             <MapPin className="h-3.5 w-3.5" /> UK launch · London / Birmingham / Leicester
           </div>
-          <h1 className="font-display text-4xl font-bold leading-tight text-surface-900 sm:text-5xl lg:text-6xl">
+          <h1 className={H1.marketing}>
             Pujas, darshan & 80G receipts for the UK diaspora.
           </h1>
-          <p className="mt-6 max-w-3xl text-lg text-surface-700 sm:text-xl">
+          <p className="prose-lead mt-6 max-w-3xl text-surface-700">
             Built for the UK Hindu, Jain & Sikh diaspora. Book pujas at any Indian temple, watch
             live aarti darshan, get 80G receipts on donations — all from your UK bank card.
             Prices below are shown in £ for reference; you are charged in INR, so your bank
@@ -176,7 +178,7 @@ export default async function UkLaunchPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/pujas?cc=GB"
-              className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-semibold text-white shadow-sm hover:bg-saffron-700"
+              className={buttonClass('primary', 'md', 'shadow-sm')}
             >
               Browse pujas <ArrowRight className="h-4 w-4" />
             </Link>
@@ -285,7 +287,7 @@ export default async function UkLaunchPage() {
               </p>
               <Link
                 href="/pujas?cc=GB"
-                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-saffron-700"
+                className={buttonClass('primary', 'md', 'mt-4')}
               >
                 Browse pujas <ArrowRight className="h-4 w-4" />
               </Link>

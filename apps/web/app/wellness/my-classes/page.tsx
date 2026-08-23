@@ -34,6 +34,7 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import { formatClassPrice, formatClassWhen } from '../classes/WellnessClassesClient';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 type EnrolmentSession = {
   id: string;
   title: string;
@@ -111,8 +112,7 @@ function MyClassesList() {
           Wellness
         </p>
         <h1
-          className="heading-display text-3xl font-semibold tracking-tight mb-2"
-          style={{ color: 'var(--color-text)' }}
+          className={`${H1.catalogue} mb-2`}
         >
           My classes
         </h1>

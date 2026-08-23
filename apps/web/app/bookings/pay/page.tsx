@@ -32,6 +32,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Razorpay ───────────────────────────────────────────────────
 
@@ -412,7 +413,7 @@ function ResumePaymentContent() {
                   type="button"
                   onClick={handlePay}
                   disabled={paying}
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-saffron-600 px-6 py-3.5 font-semibold text-white transition-colors hover:bg-saffron-700 disabled:opacity-60"
+                  className={buttonClass('primary', 'md', 'mt-5 w-full')}
                 >
                   {paying && <Loader2 className="h-4 w-4 animate-spin" />}
                   Pay ₹{booking.amount.toLocaleString('en-IN')}

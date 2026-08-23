@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import CookieSettingsButton from "../../../components/CookieSettingsButton";
 import { rightsContactEmail } from "../../../lib/company";
+import { H1 } from '../../../components/ui/heading-recipe';
 
 
 export const metadata: Metadata = {
@@ -26,7 +27,7 @@ export default function CookiePolicyPage() {
  <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-saffron-700">
  Legal
  </p>
- <h1 className="text-3xl font-semibold text-surface-900 sm:text-4xl">
+ <h1 className={H1.catalogue}>
  Cookie Policy
  </h1>
  <p className="mt-3 text-base text-surface-700">

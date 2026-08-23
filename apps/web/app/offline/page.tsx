@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { WifiOff, Home, Flame } from "lucide-react";
 import RefreshButton from "./refresh-button";
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -20,7 +21,7 @@ export default function OfflinePage() {
           <WifiOff className="w-8 h-8 text-saffron-600" aria-hidden="true" />
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-semibold text-surface-900 mb-3">
+        <h1 className={`${H1.catalogue} mb-3`}>
           You are offline
         </h1>
 

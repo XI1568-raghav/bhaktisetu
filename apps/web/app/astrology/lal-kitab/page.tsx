@@ -4,6 +4,7 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import LalKitabClient from './LalKitabClient';
 import { GRAHAS, PROBLEMS } from '../../../lib/lal-kitab';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -182,7 +183,7 @@ export default function LalKitabPage() {
      <p className="font-serif text-lg text-gray-900">Want a Lal Kitab pandit to read your custom chart?</p>
      <p className="mt-2 text-sm text-gray-700">Free Farman lookup gives you the household remedy. A Lal Kitab pandit reads your exact chart, identifies hidden dosha, and prescribes a 40 / 90 / lifetime karma plan.</p>
      <div className="mt-4 flex flex-wrap justify-center gap-3">
-      <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">Ask a Lal Kitab Pandit</Link>
+      <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>Ask a Lal Kitab Pandit</Link>
       <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">Free Kundli</Link>
       <Link href="/astrology/dasha" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">Vimshottari Dasha</Link>
       <Link href="/astrology/sade-sati" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">Sade Sati Check</Link>

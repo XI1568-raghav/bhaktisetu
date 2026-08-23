@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL, fetchWithTimeout, isNetworkFailure } from '../../../../lib/api-config';
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 /**
  * The REAL astrologer directory.
@@ -292,7 +293,7 @@ export default function LiveAstrologersClient() {
       <div className="mt-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-wider text-saffron-600">Verified · onboarded</p>
-          <h1 className="mt-1 text-2xl lg:text-3xl font-semibold tracking-tight text-surface-800">
+          <h1 className={`${H1.catalogue} mt-1`}>
             Live astrologer directory
           </h1>
           <p className="text-surface-500 mt-1 max-w-2xl text-sm">

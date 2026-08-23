@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { FESTIVAL_YEAR, FESTIVALS, nextFestival } from '../../lib/festivals';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -82,7 +83,7 @@ export default function FestivalIndex() {
           </p>
           <Link
             href={`/festival/${upcoming.slug}`}
-            className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Plan {upcoming.name} →
           </Link>

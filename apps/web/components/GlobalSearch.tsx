@@ -5,6 +5,7 @@ import { Search, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '../lib/api-config';
 import { contentSubtitleLabel, pujaSubtitleLabel } from './SearchSubtitle';
+import { buttonClass } from '../components/ui/button-recipe';
 
 /**
  * CM-12: every string here is a promise about what the box can answer, and
@@ -308,7 +309,7 @@ export function GlobalSearch() {
  <Link
  href="/pujas"
  onClick={closeSearch}
- className="inline-flex min-h-[44px] items-center rounded-lg bg-saffron-600 px-4 text-sm font-semibold text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Browse all pujas
  </Link>

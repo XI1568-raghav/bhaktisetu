@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { CHAKRAS } from '../../lib/chakras';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -89,7 +90,7 @@ export default function ChakrasIndex() {
         <h1 className={`${H1.marketing} mb-3`}>
           The 7 Chakras
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-3xl mx-auto">
           The seven energy centres of the subtle body — from Muladhara at the base of the spine
           to Sahasrara at the crown. Each chakra has a bija mantra, presiding deity, petals,
           element, and an awakening practice. Click any chakra for full Tantric detail.
@@ -146,7 +147,7 @@ export default function ChakrasIndex() {
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/chants"
-            className="px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Sacred mantras →
           </Link>

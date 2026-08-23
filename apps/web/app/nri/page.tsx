@@ -17,6 +17,7 @@ import EmailCapture from '../../components/EmailCapture';
 import { COMPANY } from '../../lib/company';
 import { CANCELLATION_BADGE_LABEL } from '../../lib/cancellation-policy';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
   NRI_PREMIUM_IS_SELLABLE,
   NRI_PREMIUM_WITHDRAWN_NOTICE,
@@ -245,7 +246,7 @@ export default function NriPremiumLanding() {
               <Globe2 className="w-3.5 h-3.5" />
               Built for the Indian diaspora
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-surface-900 mb-6 leading-tight">
+            <h1 className={`${H1.marketing} mb-6`}>
               Stay connected to India,
               <br />
               <span className="text-saffron-700">at India prices.</span>
@@ -270,7 +271,7 @@ export default function NriPremiumLanding() {
                 <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                   <Link
                     href="/auth?redirect=/upgrade"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
+                    className={buttonClass('primary', 'md', 'shadow-md shadow-saffron-600/20')}
                   >
                     Go Premium — ₹5,000 / year (about $60)
                     <ArrowRight className="w-4 h-4" />
@@ -455,7 +456,7 @@ export default function NriPremiumLanding() {
               ? 'Less than a single live darshan abroad.'
               : 'Everything free on Darshya is still yours.'}
           </h2>
-          <p className="text-saffron-100 text-lg mb-8 max-w-2xl mx-auto">
+          <p className="prose-lead text-saffron-100 mb-8 max-w-2xl mx-auto">
             {NRI_PREMIUM_IS_SELLABLE
               ? `₹5,000 per year, charged in INR (about $60). ${NRI_CANCELLATION_SENTENCE}`
               : 'The paid tier is withdrawn until we can deliver what it promises. Live darshan, panchang, the temple and puja catalogue and the AI Pandit free tier need no subscription and no account.'}

@@ -5,6 +5,7 @@ import { Loader2, PlayCircle } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 interface OutreachStats {
   daily: Array<{ date: string; sent: number; replied: number; bounced: number }>;
@@ -102,7 +103,7 @@ export default function AdminOutreachPage() {
         <button
           onClick={runNow}
           disabled={running || !token}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 disabled:opacity-50"
+          className={buttonClass('primary', 'md')}
         >
           {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
           Run outreach now

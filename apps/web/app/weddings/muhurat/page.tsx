@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { DateInput } from '../../../components/ui/DateInput';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const NAKSHATRAS = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
@@ -83,7 +84,7 @@ export default function MuhuratPage() {
   return (
     <main className="min-h-[100dvh] bg-amber-50/40 py-10 px-4 sm:px-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="font-serif text-3xl sm:text-4xl text-amber-900">Find your muhurat</h1>
+        <h1 className={H1.catalogue}>Find your muhurat</h1>
         <p className="text-stone-700 mt-2">
           We compute the most auspicious wedding dates from your nakshatras using classical Vedic
           rules (Brihat Samhita, Muhurta Chintamani).

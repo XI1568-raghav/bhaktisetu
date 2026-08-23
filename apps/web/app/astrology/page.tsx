@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import AstrologyClient from './AstrologyClient';
 import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -222,7 +223,7 @@ export default function AstrologyPage() {
     {/* AW-03: the live directory is the only surface listing real onboarded
         astrologers. It existed as an API route with no page and no inbound
         link, so real supply was unreachable from the consumer funnel. */}
-    <Link href="/astrology/astrologers/live" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+    <Link href="/astrology/astrologers/live" className={buttonClass('primary', 'md')}>
      See Live Astrologers
     </Link>
     <Link href="/ask-pandit" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

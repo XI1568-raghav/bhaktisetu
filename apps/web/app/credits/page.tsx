@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { COMMONS_CREDITS, commonsSourcePage } from "../../lib/image-credits";
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/credits' },
@@ -37,11 +38,7 @@ export default function CreditsPage() {
  Credits
  </p>
  <h1
- className="heading-display text-2xl sm:text-3xl font-bold mb-3"
- style={{
- color: "var(--color-text)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.catalogue} mb-3`}
  >
  Image Credits & Attribution
  </h1>

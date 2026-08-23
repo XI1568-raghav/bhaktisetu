@@ -2,6 +2,7 @@
 
 import { getTempleHero } from '../../../lib/images';
 import { MapPin, Star, Users, Search, Shield } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const temples = [
  { name: 'Kashi Vishwanath', city: 'Varanasi', deity: 'Lord Shiva', rating: 4.9, live: true, viewers: 12450, verified: true, img: getTempleHero('kashi-vishwanath') },
@@ -16,7 +17,7 @@ export default function MobileTemples() {
  <div className="bg-surface-50">
  {/* Header */}
  <div className="px-5 pt-4 pb-3">
- <h1 className="text-xl font-bold text-surface-900 tracking-tight">Temples</h1>
+ <h1 className={H1.portal}>Temples</h1>
  <p className="text-xs text-surface-400 mt-0.5">Explore sacred temples across India</p>
  </div>
 

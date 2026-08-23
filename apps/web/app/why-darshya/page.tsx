@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { COMPANY } from '../../lib/company';
+import { buttonClass } from '../../components/ui/button-recipe';
 import {
   CANCELLATION_BADGE_LABEL,
   CANCELLATION_BADGE_DESC,
@@ -227,7 +228,7 @@ export default function WhyDarshya() {
         <h1 className={`${H1.marketing} mb-3`}>
           Why Darshya?
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-3xl mx-auto">
           How we compare with Sri Mandir, Utsav, AppsForBharat, AstroSage. We&apos;ll be honest
           about where competitors lead — and where we choose to differ deliberately.
         </p>
@@ -347,7 +348,7 @@ export default function WhyDarshya() {
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/pujas"
-            className="px-6 py-3 bg-saffron-600 text-white rounded-md text-base font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Browse pujas →
           </Link>

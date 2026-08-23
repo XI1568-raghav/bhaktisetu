@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  ArrowLeft,
  ChevronLeft,
@@ -158,7 +159,7 @@ function ScreenHeader({ title, subtitle }: { title: string; subtitle?: string })
  return (
  <div className="px-5 pt-3 pb-2">
  {subtitle && <p className="text-xs text-surface-400 font-medium">{subtitle}</p>}
- <h1 className="text-lg font-bold text-surface-900 tracking-tight">{title}</h1>
+ <h1 className={H1.portal}>{title}</h1>
  </div>
  );
 }
@@ -190,7 +191,7 @@ function DevoteeScreen1() {
  <div className="w-20 h-20 bg-saffron-100 rounded-3xl flex items-center justify-center mb-5">
  <Heart className="w-10 h-10 text-saffron-600" />
  </div>
- <h1 className="text-2xl font-bold text-surface-900 tracking-tight">
+ <h1 className={H1.portal}>
  Pooj<span className="text-saffron-600">ly</span>
  </h1>
  <p className="text-sm text-surface-500 mt-2 leading-relaxed">Your divine companion for darshan, pujas, and spiritual growth</p>
@@ -249,7 +250,7 @@ function DevoteeScreen3() {
  <div className="bg-surface-50">
  <div className="px-5 pt-3 pb-2">
  <p className="text-xs text-surface-400 font-medium">Namaste</p>
- <h1 className="text-lg font-bold text-surface-900 tracking-tight">Arjun Sharma</h1>
+ <h1 className={H1.portal}>Arjun Sharma</h1>
  </div>
  <div className="px-5 mb-3">
  <div className="relative">
@@ -431,7 +432,7 @@ function DevoteeScreen6() {
  <span className="text-lg font-bold text-saffron-700">AS</span>
  </div>
  <div>
- <h1 className="text-base font-bold text-surface-900">Arjun Sharma</h1>
+ <h1 className={H1.portal}>Arjun Sharma</h1>
  <p className="text-xs text-surface-400">+91 98765 43210</p>
  <span className="text-[8px] font-semibold text-saffron-700 bg-saffron-100 px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 mt-0.5">
  <Shield className="w-2 h-2" /> Bhakti Pass
@@ -595,7 +596,7 @@ function PanditScreen4() {
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
  <p className="text-xs text-surface-400">Good morning</p>
- <h1 className="text-lg font-bold text-surface-900">Pt. Ramesh</h1>
+ <h1 className={H1.portal}>Pt. Ramesh</h1>
  </div>
  <div className="flex items-center gap-2">
  <div className="w-8 h-8 bg-saffron-50 rounded-full flex items-center justify-center relative">
@@ -822,7 +823,7 @@ function StoreScreen4() {
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
  <p className="text-xs text-surface-400">Store Dashboard</p>
- <h1 className="text-lg font-bold text-surface-900">Kashi Puja Samagri</h1>
+ <h1 className={H1.portal}>Kashi Puja Samagri</h1>
  </div>
  <div className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center">
  <Bell className="w-4 h-4 text-emerald-600" />
@@ -982,7 +983,7 @@ function AstrologerScreen3() {
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
  <p className="text-xs text-surface-400">Welcome back</p>
- <h1 className="text-lg font-bold text-surface-900">Acharya Vinod</h1>
+ <h1 className={H1.portal}>Acharya Vinod</h1>
  </div>
  <div className="flex items-center gap-2">
  <div className="px-3 py-1 bg-green-500 rounded-full flex items-center gap-1">
@@ -1199,7 +1200,7 @@ function WellnessScreen3() {
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
  <p className="text-xs text-surface-400">Namaste</p>
- <h1 className="text-lg font-bold text-surface-900">Guru Nirmala</h1>
+ <h1 className={H1.portal}>Guru Nirmala</h1>
  </div>
  <div className="w-8 h-8 bg-teal-50 rounded-full flex items-center justify-center">
  <Bell className="w-4 h-4 text-teal-600" />
@@ -1390,7 +1391,7 @@ function TempleScreen3() {
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
  <p className="text-xs text-surface-400">Temple Dashboard</p>
- <h1 className="text-base font-bold text-surface-900">Kashi Vishwanath</h1>
+ <h1 className={H1.portal}>Kashi Vishwanath</h1>
  </div>
  <div className="flex items-center gap-2">
  <div className="px-2.5 py-0.5 bg-green-500 rounded-full flex items-center gap-1">
@@ -1592,7 +1593,7 @@ function GaushalaScreen3() {
  <div className="px-5 pt-3 pb-2 flex items-center justify-between">
  <div>
  <p className="text-xs text-surface-400">Gaushala Dashboard</p>
- <h1 className="text-base font-bold text-surface-900">Govardhan Gaushala</h1>
+ <h1 className={H1.portal}>Govardhan Gaushala</h1>
  </div>
  <div className="w-8 h-8 bg-lime-50 rounded-full flex items-center justify-center">
  <Bell className="w-4 h-4 text-lime-600" />

@@ -25,6 +25,7 @@ import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api
 import { PanditAvatar } from '../../PanditAvatar';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -89,10 +90,10 @@ export default async function HomePujaDetail({ params }: Props) {
  Home Puja
  </div>
  <div className="text-sm text-surface-500 mb-2">{cat.nameLocal}</div>
- <h1 className="text-3xl md:text-5xl font-bold text-surface-800 tracking-tight leading-tight">
+ <h1 className={H1.marketing}>
  {cat.name} at Home
  </h1>
- <p className="mt-4 text-lg text-surface-500 max-w-2xl leading-relaxed">{cat.description}</p>
+ <p className="prose-lead mt-4 text-surface-500 max-w-2xl leading-relaxed">{cat.description}</p>
 
  <div className="mt-6 flex flex-wrap gap-3">
  <div className="inline-flex items-center gap-2 bg-white border border-[var(--color-border)] px-3 py-2 rounded-lg text-sm text-surface-700">

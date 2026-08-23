@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { VRATS, vratsByCategory } from '../../lib/vrats';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -66,7 +67,7 @@ export default function VratIndex() {
         <h1 className={`${H1.marketing} mb-3`}>
           Vrats Guide
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-3xl mx-auto">
           A vrat is a sacred vow — fasting paired with prayer, restraint, and devotion. Each
           tradition has specific rules, deities, mantras, and benefits. Done with shraddha
           (faith), vrats are said to fulfill desires, remove obstacles, and accelerate spiritual
@@ -81,7 +82,7 @@ export default function VratIndex() {
         </p>
         <Link
           href="/today"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Today&apos;s panchang →
         </Link>
@@ -131,7 +132,7 @@ export default function VratIndex() {
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/ask-pandit"
-            className="px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Book a pandit →
           </Link>

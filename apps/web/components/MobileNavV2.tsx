@@ -17,6 +17,7 @@ import {
   type CategoryKey,
 } from '../lib/category-tree';
 import { useAuth } from '../lib/auth-context';
+import { buttonClass } from '../components/ui/button-recipe';
 
 const ACCOUNT_LINKS_AUTHED = [
   { href: '/dashboard', label: 'My Dashboard' },
@@ -342,7 +343,7 @@ export function MobileNavV2() {
             <Link
               href="/ask-pandit"
               onClick={close}
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-white bg-saffron-600 hover:bg-saffron-700 rounded-lg transition-colors btn-press"
+              className={buttonClass('primary', 'md', 'w-full btn-press')}
             >
               <MessageCircleQuestion className="w-4 h-4" />
               Ask Pandit

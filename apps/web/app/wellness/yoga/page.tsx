@@ -16,6 +16,7 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/yoga' },
  title: 'Yoga — Live Classes & Expert Instructors',
@@ -107,8 +108,7 @@ export default function YogaPage() {
 
  <h1
  data-reveal="up-far"
- className="heading-display text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]"
- style={{ color: 'var(--color-text)' }}
+ className={H1.catalogue}
  >
  Live Yoga Classes with{' '}
  <span style={{ color: 'var(--color-primary)' }}>Expert Instructors</span>

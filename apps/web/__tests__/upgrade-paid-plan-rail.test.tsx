@@ -87,16 +87,30 @@ describe('PM-04 — /upgrade never provisions a priced plan through the free-gra
     expect(paths.some((u) => u.includes('/subscriptions/subscribe'))).toBe(false);
   });
 
-  it('sends the ₹5,000 NRI annual plan to the paid rail, not /subscribe', async () => {
+  /**
+   * REWRITTEN 2026-08-23, and the rewrite is the point.
+   *
+   * This case used to click "Go Premium" and assert the Rs 5,000 NRI annual plan
+   * reached /subscriptions/create rather than the free-grant endpoint. That
+   * button no longer exists: TC-03/TC-04 WITHDREW the plan, because all six of
+   * its advertised benefits were ungated — the entitlement hook existed and
+   * nothing consulted it, so the subscription sold access every visitor already
+   * had. Withdrawing it was the honest fix; building six gates to justify a
+   * price nobody had paid yet was not.
+   *
+   * So the original assertion is unreachable, and deleting it would quietly drop
+   * PM-04's protection on this plan. Instead it inverts: the plan must not be
+   * SOLD at all while it is withdrawn, and the day it returns it must come back
+   * through the paid rail — which the sibling cases below still enforce for the
+   * plans that are live.
+   */
+  it('does not sell the withdrawn Rs 5,000 NRI annual plan at all', async () => {
     const spy = stubFetch();
     await renderUpgrade();
 
-    fireEvent.click(screen.getByRole('button', { name: /go premium/i }));
-
-    await waitFor(() => expect(spy).toHaveBeenCalled());
-    const paths = calledPaths(spy);
-    expect(paths.some((u) => u.includes('/subscriptions/create'))).toBe(true);
-    expect(paths.some((u) => u.includes('/subscriptions/subscribe'))).toBe(false);
+    expect(screen.queryByRole('button', { name: /go premium/i })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/5,000|nri premium/i);
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it('still sends the ₹499 monthly plan to the paid rail', async () => {

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Calendar, Users, Check, X, MapPin, Clock, ArrowRight } from 'lucide-react';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 interface YatraPackage {
   id: string;
   slug: string;
@@ -84,7 +85,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
         </div>
         <div className="absolute inset-x-0 bottom-0 p-6 md:p-10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+            <h1 className={H1.detail}>
               {pkg.name}
             </h1>
             <p className="mt-2 text-sm md:text-base text-white/85 max-w-2xl">{pkg.short_description}</p>

@@ -82,6 +82,7 @@ import {
  validateDeliveryAddress,
 } from '../../../lib/delivery-address';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // PostHog never throws on capture, but its singleton may not be initialised
 // in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
@@ -1414,7 +1415,7 @@ function PujaBookingInner() {
  </div>
  </div>
 
- <h1 className="mb-2 text-3xl font-bold text-surface-800">Booking Confirmed!</h1>
+ <h1 className={`${H1.catalogue} mb-2`}>Booking Confirmed!</h1>
  <p className="mb-6 text-surface-500">
  Your puja has been booked successfully. The temple will assign a priest shortly.
  </p>
@@ -1522,7 +1523,7 @@ function PujaBookingInner() {
  <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
  {/* Page title */}
  <div className="mb-8 text-center">
- <h1 className="mb-1 text-2xl font-bold text-surface-800 md:text-3xl">
+ <h1 className={`${H1.catalogue} mb-1`}>
  Book {puja.name}
  </h1>
  <p className="text-surface-500">

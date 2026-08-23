@@ -6,6 +6,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { Mail, Building2, CheckCircle2, Loader2, AlertCircle, Upload, FileText } from 'lucide-react';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Profile = {
   id: string;
@@ -165,7 +166,7 @@ function Content() {
           <button
             onClick={handleSave}
             disabled={saving || !form.gaushalaName.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-sm font-medium hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {saving ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { computeMilan, type MilanReport } from '../../../lib/kundli-milan';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Option = { slug: string; label: string };
 type Props = { options: Option[] };
@@ -131,7 +132,7 @@ export default function KundliMilanClient({ options }: Props) {
     <div className="mt-5 flex flex-wrap items-center gap-3">
      <button
       type="submit"
-      className="rounded-full bg-saffron-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-saffron-700 focus:outline-none focus:ring-2 focus:ring-saffron-300"
+      className={buttonClass('primary', 'md', 'shadow-sm focus:outline-none focus:ring-2 focus:ring-saffron-300')}
      >
       Compute 36-Point Match
      </button>
@@ -275,7 +276,7 @@ export default function KundliMilanClient({ options }: Props) {
       <div className="mt-4 flex flex-wrap justify-center gap-3">
        <Link
         href="/ask-pandit"
-        className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+        className={buttonClass('primary', 'md')}
        >
         Ask a Pandit Live
        </Link>

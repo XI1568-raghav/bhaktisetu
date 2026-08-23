@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { H1 } from '../components/ui/heading-recipe';
 
 interface SelfOnboardPageShellProps {
   eyebrow: string;
@@ -22,7 +23,7 @@ export default function SelfOnboardPageShell(props: SelfOnboardPageShellProps) {
           {props.eyebrow}
         </p>
         <h1
-          className="heading-display text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.15] max-w-3xl mx-auto"
+          className={`${H1.catalogue} max-w-3xl mx-auto`}
           style={{ color: 'var(--color-text, #1f1b18)' }}
         >
           {props.title}

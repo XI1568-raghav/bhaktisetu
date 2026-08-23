@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { getContentImage, getDeityImage } from '../../../lib/images';
 import { Play, Pause, Clock, Heart, SkipForward, SkipBack } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const tabs = ['Aarti', 'Chalisa', 'Mantra', 'Bhajan'];
 
@@ -25,7 +26,7 @@ export default function MobileContent() {
  <div className="bg-surface-50 min-h-full flex flex-col">
  {/* Header */}
  <div className="px-5 pt-4 pb-2">
- <h1 className="text-xl font-bold text-surface-900 tracking-tight">Content</h1>
+ <h1 className={H1.portal}>Content</h1>
  <p className="text-xs text-surface-400 mt-0.5">Aartis, mantras, chalisas & more</p>
  </div>
 

@@ -4,6 +4,7 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import KaalSarpClient from './KaalSarpClient';
 import { KAAL_SARP_TYPES } from '../../../lib/kaal-sarp';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -169,7 +170,7 @@ export default function KaalSarpPage() {
      a pandit can prescribe a combined upaya that resolves multiple doshas in one ritual.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/astrology/manglik" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/astrology/manglik" className={buttonClass('primary', 'md')}>
       Manglik Dosh
      </Link>
      <Link href="/astrology/sade-sati" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">

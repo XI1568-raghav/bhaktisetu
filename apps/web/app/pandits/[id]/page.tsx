@@ -12,6 +12,8 @@ import {
  Flame,
 } from 'lucide-react';
 import { getPublicPriest, type Offering } from '../../../lib/pandit-api';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 
 interface PageProps {
@@ -88,7 +90,7 @@ function OfferingCard({
     <div className="shrink-0">
      <Link
       href={`/checkout/offering/${offering.id}`}
-      className="inline-flex items-center justify-center px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+      className={buttonClass('primary', 'md')}
      >
       Book This Puja
      </Link>
@@ -133,7 +135,7 @@ export default async function PanditDetailPage({ params }: PageProps) {
       )}
       <div className="flex-1 min-w-0">
        <div className="flex items-center gap-2 mb-2">
-        <h1 className="text-2xl font-semibold text-surface-800">
+        <h1 className={H1.portal}>
          {priest.displayName}
         </h1>
         {priest.isVerified && (

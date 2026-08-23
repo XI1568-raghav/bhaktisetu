@@ -105,7 +105,7 @@ export default async function PricingPage() {
    company.ts so the day a GSTIN is issued this sentence becomes the
    tax-inclusive one instead of staying wrong. */}
  <p
- className="text-xs sm:text-sm max-w-2xl mx-auto mt-5 leading-relaxed"
+ className="prose-meta max-w-2xl mx-auto mt-5"
  style={{ color: "var(--color-text-faint)" }}
  data-testid="pricing-tax-treatment"
  >
@@ -271,7 +271,7 @@ export default async function PricingPage() {
  Plan prices are temporarily unavailable.
  </p>
  <p
- className="text-xs mt-2 max-w-md mx-auto leading-relaxed"
+ className="prose-meta mt-2 max-w-md mx-auto"
  style={{ color: "var(--color-text-muted)" }}
  >
  We could not reach our billing system, so we are showing no price

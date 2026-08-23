@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { COMPANY } from "../../lib/company";
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 /**
  * COM-02 (prod sweep 2026-08-12): every 80G claim on this page is gated on the
@@ -288,13 +290,13 @@ export default function GaushalaPage() {
  <Leaf className="w-4 h-4" />
  Gau Seva — A Sacred Act of Devotion
  </div>
- <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-surface-800 leading-tight mb-6">
+ <h1 className={`${H1.marketing} mb-6`}>
  Adopt a Cow,{" "}
  <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron-600 to-amber-600">
  Earn Divine Blessings
  </span>
  </h1>
- <p className="text-lg sm:text-xl text-surface-500 leading-relaxed mb-8 max-w-2xl mx-auto">
+ <p className="prose-lead text-surface-500 leading-relaxed mb-8 max-w-2xl mx-auto">
  Support gaushalas across India. Receive monthly photo
  updates of your adopted cow, visit anytime, and contribute to the
  protection of India's sacred cows.
@@ -302,7 +304,7 @@ export default function GaushalaPage() {
  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
  <a
  href="#cows"
- className="inline-flex items-center gap-2 px-8 py-3.5 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-all shadow-sm btn-press"
+ className={buttonClass('primary', 'md', 'shadow-sm btn-press')}
  >
  <Heart className="w-5 h-5" />
  Adopt a Cow
@@ -652,7 +654,7 @@ export default function GaushalaPage() {
  <h2 className="text-2xl font-semibold text-white mb-4">
  Begin Your Gau Seva Today
  </h2>
- <p className="text-saffron-100 text-lg mb-8 max-w-2xl mx-auto">
+ <p className="prose-lead text-saffron-100 mb-8 max-w-2xl mx-auto">
  The scriptures say that serving a cow is equivalent to serving all
  33 crore devas. Start your journey of divine blessings today.
  </p>

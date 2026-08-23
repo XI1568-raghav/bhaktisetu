@@ -32,6 +32,7 @@ import { useAuth } from "../../../lib/auth-context";
 import type { ProviderRole } from "../../../lib/subscription-api";
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 /** Web roles that the API actually sells marketplace plans to. */
 const PROVIDER_ROLES: ProviderRole[] = [
   "priest",
@@ -90,8 +91,7 @@ function SubscriptionInner() {
                 />
                 <div>
                   <h1
-                    className="text-lg font-semibold mb-1"
-                    style={{ color: "var(--color-text)" }}
+                    className={`${H1.portal} mb-1`}
                   >
                     Subscription
                   </h1>

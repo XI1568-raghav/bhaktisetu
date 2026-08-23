@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { MUHURATS, muhuratsByCategory } from '../../lib/muhurats';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -64,7 +65,7 @@ export default function MuhuratIndex() {
         <h1 className={`${H1.marketing} mb-3`}>
           Muhurat Guide
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-3xl mx-auto">
           The Vedic science of choosing the right time. From daily Brahma Muhurta and Rahu Kalam to
           wedding and griha-pravesh dates — auspicious windows govern how energy flows. Time is the
           fifth essential resource in Vedic culture (along with people, place, intention, ritual).
@@ -78,7 +79,7 @@ export default function MuhuratIndex() {
         </p>
         <Link
           href="/today"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Today&apos;s panchang →
         </Link>
@@ -128,7 +129,7 @@ export default function MuhuratIndex() {
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/ask-pandit"
-            className="px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Ask a pandit →
           </Link>

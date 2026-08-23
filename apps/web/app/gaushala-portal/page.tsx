@@ -145,7 +145,7 @@ export default function GaushalaDashboard() {
  <div className="p-6 lg:p-8 space-y-8">
  {/* Header */}
  <div>
- <h1 className={H1.portal} style={{ color: 'var(--color-text)' }}>Jai Gau Mata</h1>
+ <h1 className={H1.portal}>Jai Gau Mata</h1>
  <div className="mt-1 flex items-center gap-3 flex-wrap">
  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
  Welcome back, {user?.fullName}. Here&apos;s your gaushala overview.

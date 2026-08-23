@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { computeDasha, DASHA_LORD_PLANET_HINDI, DASHA_LORD_NATURE, type DashaResult } from '../../../lib/dasha-vimshottari';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type TimezoneOption = { value: number; label: string };
 
@@ -90,7 +91,7 @@ export default function DashaClient({ options }: { options: TimezoneOption[] }) 
 
     <button
      type="submit"
-     className="mt-4 w-full rounded-full bg-saffron-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-saffron-700 sm:w-auto"
+     className={buttonClass('primary', 'md', 'mt-4 w-full shadow-sm sm:w-auto')}
     >
      Compute My Dasha
     </button>

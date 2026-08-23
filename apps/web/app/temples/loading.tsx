@@ -27,7 +27,7 @@ export default function TemplesLoading() {
       <section className="bg-[#ede9e3] py-12 md:py-16">
         <div className="container-wide">
           <div className="h-9 w-72 max-w-full animate-pulse rounded bg-white/70" />
-          <p className="mt-3 max-w-2xl text-lg text-surface-500">Loading temples…</p>
+          <p className="prose-lead mt-3 max-w-2xl text-surface-500">Loading temples…</p>
           <div className="mt-8 h-[54px] max-w-2xl animate-pulse rounded-lg bg-white/70" />
         </div>
       </section>

@@ -11,6 +11,7 @@ import {
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -98,7 +99,7 @@ export default async function VedicYajnaDetailPage({ params }: Props) {
             {CATEGORY_LABELS[y.category]}
           </span>
         </div>
-        <h1 className="text-3xl font-bold text-saffron-900 sm:text-4xl">{y.name}</h1>
+        <h1 className={H1.catalogue}>{y.name}</h1>
         <p className="mt-1 text-2xl text-amber-900" lang="sa">{y.sanskrit}</p>
         <p className="mt-3 max-w-3xl text-sm text-gray-700">{CATEGORY_DESCRIPTIONS[y.category]}</p>
       </header>

@@ -27,6 +27,8 @@ import {
  formatUpcomingFestivals,
 } from '../../lib/panchang-calendar';
 import { FESTIVALS } from '../../lib/festivals';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/panchang' },
@@ -211,7 +213,7 @@ async function PanchangDetailsSection({
  </a>
  <a
  href="/panchang"
- className="px-3 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg"
+ className={buttonClass('primary', 'md')}
  >
  Today
  </a>
@@ -449,10 +451,10 @@ export default async function PanchangPage({
  {/* Hero */}
  <section className="bg-gradient-to-r from-saffron-600 via-saffron-500 to-temple-gold py-12 md:py-16">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
- <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+ <h1 className={`${H1.detail} mb-3`}>
  Daily Panchang
  </h1>
- <p className="text-saffron-100 text-lg max-w-2xl">
+ <p className="prose-lead text-saffron-100 max-w-2xl">
  Complete Hindu calendar with tithi, nakshatra, yoga, karana, muhurat,
  and festival information for spiritual guidance.
  </p>

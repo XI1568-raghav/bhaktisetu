@@ -18,6 +18,7 @@ import { organizationJsonLd, brandFaqJsonLd } from '../../lib/jsonld';
 import { fetchPublicStats, type PublicStats } from '../../lib/live-stats';
 import ScrollReveal from '../../components/ScrollReveal';
 import RoadmapRail, { type Milestone } from '../../components/RoadmapRail';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const metadata: Metadata = {
   title: 'About Darshya · The story, the founders, the road ahead',
@@ -297,7 +298,7 @@ export default async function AboutPage() {
 
             <p
               data-reveal="up"
-              className="mt-7 max-w-2xl text-lg leading-relaxed text-surface-600 sm:text-xl"
+              className="prose-lead mt-7 max-w-2xl leading-relaxed text-surface-600"
             >
               Darshya is being built to give every devotee — in India and across
               the world — an honest, traceable bridge to the temples, priests, and
@@ -308,7 +309,7 @@ export default async function AboutPage() {
             <div data-reveal="up" className="mt-9 flex flex-wrap items-center gap-3">
               <Link
                 href="#founders"
-                className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-saffron-700"
+                className={buttonClass('primary', 'md')}
               >
                 Meet the founders
                 <ArrowRight className="h-4 w-4" />
@@ -613,7 +614,7 @@ export default async function AboutPage() {
             </h2>
             <p
               data-reveal="up"
-              className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-surface-300 sm:text-lg"
+              className="prose-lead mx-auto mt-5 max-w-xl leading-relaxed text-surface-300"
             >
               Founder, temple admin, priest, devotee, or just curious. There
               are two real humans on the other side and we would rather hear
@@ -625,7 +626,7 @@ export default async function AboutPage() {
             >
               <a
                 href="mailto:support@darshya.online"
-                className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-saffron-700"
+                className={buttonClass('primary', 'md')}
               >
                 <Mail className="h-4 w-4" />
                 support@darshya.online

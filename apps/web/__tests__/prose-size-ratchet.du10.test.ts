@@ -118,8 +118,15 @@ describe('[DU-10] prose paragraphs converge on one reading size', () => {
      * this after each sweep. text-sm/text-xs are deliberately NOT ratcheted
      * here: many are legitimate metadata captions and a blind ceiling would
      * push someone to enlarge a timestamp to make CI green.
+     *
+     * 2026-08-23 sweep: every remaining <p> that carries a reading measure AND
+     * an oversized step — 46 of them across app/ and components/ — dropped the
+     * text-* and took `.prose-lead`. The measure is the project's own proxy for
+     * "this is prose, not a caption", and all 46 read as decks under a heading,
+     * so none of them was a judgement call. Zero, and it stays zero: a new
+     * text-lg deck under a max-w-* now fails here on the first run.
      */
-    const BASELINE = 44;
+    const BASELINE = 0;
     expect(
       OFF_SIZE.length,
       `${OFF_SIZE.length} prose paragraphs read larger than the one body size ` +

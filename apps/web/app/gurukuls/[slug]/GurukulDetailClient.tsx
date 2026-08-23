@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Globe, Phone, Mail, CheckCircle2, Home, Users } from 'lucide-react';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface Program {
   id: string; name: string; durationMonths: number; modeOfStudy: string;
@@ -48,7 +50,7 @@ export default function GurukulDetailClient({ slug }: { slug: string }) {
           <span className="text-xs font-semibold uppercase tracking-wider text-saffron-700">{g.tradition}</span>
           {g.isVerified && <span className="inline-flex items-center gap-1 text-xs text-emerald-700"><CheckCircle2 className="w-3.5 h-3.5" />Verified</span>}
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-surface-900">{g.name}</h1>
+        <h1 className={H1.catalogue}>{g.name}</h1>
         <div className="mt-2 flex items-center gap-4 text-sm text-surface-500 flex-wrap">
           <span className="inline-flex items-center gap-1"><MapPin className="w-4 h-4" />{g.city}, {g.state}</span>
           {g.isResidential && <span className="inline-flex items-center gap-1"><Home className="w-4 h-4" />Residential</span>}
@@ -82,7 +84,7 @@ export default function GurukulDetailClient({ slug }: { slug: string }) {
                     {p.feeAnnualInr ? ` - INR ${p.feeAnnualInr.toLocaleString('en-IN')}/yr` : ''}
                   </div>
                 </div>
-                <Link href={`/gurukuls/apply/${p.id}`} className="px-4 py-2 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 shrink-0">
+                <Link href={`/gurukuls/apply/${p.id}`} className={buttonClass('primary', 'md', 'shrink-0')}>
                   Apply
                 </Link>
               </div>

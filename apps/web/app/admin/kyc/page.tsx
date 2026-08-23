@@ -267,7 +267,7 @@ export default function AdminKycPage() {
                   >
                     <td className="py-2.5 px-5">
                       <p className="font-medium text-surface-800 truncate max-w-[240px]">{s.fullName}</p>
-                      {s.email && <p className="text-xs text-surface-400 truncate max-w-[240px]">{s.email}</p>}
+                      {s.email && <p className="prose-meta text-surface-400 truncate max-w-[240px]">{s.email}</p>}
                     </td>
                     <td className="py-2.5 px-4 text-surface-500">{formatDay(s.submittedAt)}</td>
                     <td className="py-2.5 px-4">

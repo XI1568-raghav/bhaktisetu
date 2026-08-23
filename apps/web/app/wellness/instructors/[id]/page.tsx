@@ -17,6 +17,7 @@ import WellnessEnrolButton from './WellnessEnrolButton';
 // classes from the live feed and falls back to the catalogue, never to a
 // bare /wellness.
 import InstructorClasses from './InstructorClasses';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 // ─── Static instructor data (mirrors API) ──────────────────────────────────
 
@@ -178,7 +179,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  return (
  <div className="min-h-[60vh] flex items-center justify-center">
  <div className="text-center">
- <h1 className="text-2xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Instructor not found</h1>
+ <h1 className={`${H1.portal} mb-2`}>Instructor not found</h1>
  <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>The instructor you are looking for does not exist.</p>
  <Link href="/wellness" className="text-sm font-medium" style={{ color: 'var(--color-primary)' }}>Back to Wellness</Link>
  </div>
@@ -214,7 +215,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
 
  <div className="flex-1">
- <h1 className="heading-display text-2xl font-semibold tracking-tight" style={{ color: 'var(--color-text)' }}>
+ <h1 className={H1.portal}>
  {inst.name}
  </h1>
  <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>

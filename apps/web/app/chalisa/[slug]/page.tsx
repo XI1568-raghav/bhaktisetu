@@ -15,6 +15,7 @@ import { BROWSE_PUJAS_HREF, pujaLinkLabel, resolveContentPujas } from '../../../
 // so an unknown deity is a hard 404. deityHref() repairs the spelling drift and
 // returns null for a deity with no page.
 import { deityHref } from '../../../lib/content-deity-link';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -87,7 +88,7 @@ export default async function ChalisaPage({ params }: Params) {
             Chalisa to {c.deity}
           </span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-2">{c.name}</h1>
+        <h1 className={`${H1.marketing} mb-2`}>{c.name}</h1>
         <p className="text-3xl font-serif text-saffron-700 mb-4">{c.sanskrit}</p>
         <p className="text-base text-surface-700 max-w-2xl mx-auto mb-4">{c.description}</p>
         <div className="inline-flex flex-wrap items-center justify-center gap-4 text-xs text-surface-500">

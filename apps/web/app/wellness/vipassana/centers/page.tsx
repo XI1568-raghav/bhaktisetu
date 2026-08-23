@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 // DU-05: the one h1 recipe per page archetype. Extras are layout-only.
 import { H1 } from '../../../../components/ui/heading-recipe';
 import Link from 'next/link';
+import { buttonClass } from '../../../../components/ui/button-recipe';
 import {
   VIPASSANA_CENTERS,
   LINEAGE_LABEL,
@@ -184,7 +185,7 @@ export default function VipassanaCentersIndexPage() {
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
             href="/wellness/vipassana/learn"
-            className="inline-flex items-center gap-1 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Learn the technique first →
           </Link>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, Globe, AlertTriangle } from "lucide-react";
+import { H1 } from '../../../../../components/ui/heading-recipe';
 import {
  getHelpArticle,
  isUnreviewedTranslation,
@@ -255,7 +256,7 @@ export default async function HelpArticlePage({ params }: { params: Params }) {
  <span>{article.category.replace("-", " ")}</span>
  </div>
 
- <h1 className="text-3xl font-bold text-surface-900 mb-4" lang={article.lang}>
+ <h1 className={`${H1.catalogue} mb-4`} lang={article.lang}>
  {article.title}
  </h1>
 

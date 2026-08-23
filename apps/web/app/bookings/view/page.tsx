@@ -37,6 +37,7 @@ import { videoProofState } from '../video-proof';
 import AuthGuard from '../../../components/AuthGuard';
 import BookingStatusTracker, { type BookingStatus } from '../../../components/BookingStatusTracker';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -528,7 +529,7 @@ function BookingDetailContent() {
  <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
  <Link
  href="/bookings"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  View All Bookings
  </Link>
@@ -940,7 +941,7 @@ function BookingDetailContent() {
  <button
  onClick={handleSubmitReview}
  disabled={reviewRating === 0 || submittingReview}
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-saffron-700 disabled:cursor-not-allowed disabled:opacity-50"
+ className={buttonClass('primary', 'md', 'disabled:cursor-not-allowed')}
  >
  {submittingReview ? (
  <>

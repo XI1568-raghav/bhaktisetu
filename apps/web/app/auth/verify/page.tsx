@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
   API_BASE_URL,
   fetchWithTimeout,
@@ -149,7 +150,7 @@ function VerifyInner() {
   return (
     <Centered>
       <AlertCircle className="w-10 h-10 text-saffron-600 mb-3" />
-      <h1 className="text-lg font-semibold text-surface-800 mb-1">Sign-in link not valid</h1>
+      <h1 className={`${H1.portal} mb-1`}>Sign-in link not valid</h1>
       <p className="text-sm text-surface-500 mb-6 text-center max-w-sm">{errorMessage}</p>
       <Link
         href="/auth/login"

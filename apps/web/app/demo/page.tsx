@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
  Heart,
  BookOpen,
@@ -107,7 +108,7 @@ export default function DemoHub() {
  <Smartphone className="w-3.5 h-3.5 text-saffron-400" />
  <span className="text-xs font-semibold text-saffron-400">Mobile App Preview</span>
  </div>
- <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-[family-name:var(--font-display)]">
+ <h1 className={H1.detail}>
  See Pooj<span className="text-saffron-400">ly</span> in Action
  </h1>
  <p className="text-surface-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">

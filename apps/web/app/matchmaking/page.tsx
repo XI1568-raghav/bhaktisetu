@@ -3,6 +3,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -102,7 +103,7 @@ export default function MatchmakingPage() {
 
    <header className="mb-10 text-center">
     <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool + verified pandits</p>
-    <h1 className="mt-2 font-serif text-4xl text-gray-900 sm:text-5xl">Kundli Matching for Marriage</h1>
+    <h1 className={`${H1.marketing} mt-2`}>Kundli Matching for Marriage</h1>
     <p className="mt-3 text-saffron-700">गुण मिलान · Ashtakoot Guna Milan</p>
     <p className="mx-auto mt-5 max-w-2xl text-base text-gray-700">
      Vedic horoscope matching across 8 kootas — Varna, Vashya, Tara, Yoni, Graha Maitri, Gana,

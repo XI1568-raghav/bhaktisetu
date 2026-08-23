@@ -4,6 +4,7 @@ import { ArrowRight, Mail, Sparkles } from 'lucide-react';
 import { listBlogPosts } from '../../lib/blog-posts';
 
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 export const revalidate = 3600; // GH unauth: 60/hr — 1h cache safe.
 
 export const metadata: Metadata = {
@@ -43,11 +44,7 @@ export default async function BlogPage() {
             Blog
           </p>
           <h1
-            className="heading-display text-2xl sm:text-3xl font-bold mb-3"
-            style={{
-              color: 'var(--color-text)',
-              lineHeight: 'var(--leading-tight)',
-            }}
+            className={`${H1.catalogue} mb-3`}
           >
             Stories, Insights & Updates
           </h1>

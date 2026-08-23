@@ -29,6 +29,7 @@ import { friendlyApiError } from '../../lib/friendly-error';
 import { videoProofState } from './video-proof';
 import AuthGuard from '../../components/AuthGuard';
 import { H1 } from '../../components/ui/heading-recipe';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -337,7 +338,7 @@ function BookingsContent() {
  </div>
  <Link
  href="/pujas"
- className="hidden items-center gap-2 rounded-lg bg-saffron-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-saffron-700 sm:inline-flex"
+ className={buttonClass('primary', 'md', 'hidden sm:inline-flex')}
  >
  <Flame className="h-4 w-4" />
  Book a Puja
@@ -426,7 +427,7 @@ function BookingsContent() {
  </p>
  <Link
  href="/pujas"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  <Flame className="h-4 w-4" />
  Explore Pujas

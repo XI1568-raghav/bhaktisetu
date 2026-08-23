@@ -8,6 +8,7 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import SadeSatiClient from './SadeSatiClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -160,7 +161,7 @@ export default function SadeSatiPage() {
      Cross-check with these tools or talk to a pandit for a personalized Shani Shanti plan.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/astrology/dasha" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/astrology/dasha" className={buttonClass('primary', 'md')}>
       Check My Vimshottari Dasha
      </Link>
      <Link href="/pujas/maha-mrityunjaya" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

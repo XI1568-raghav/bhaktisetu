@@ -1,3 +1,4 @@
+import { H1 } from '../../components/ui/heading-recipe';
 export const revalidate = 60;
 
 export const metadata = {
@@ -94,7 +95,7 @@ export default async function StatusPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-12">
-      <h1 className="text-3xl font-bold text-gray-900">Status</h1>
+      <h1 className={H1.catalogue}>Status</h1>
       <p className="mt-2 text-gray-600">
         Real-time uptime for Darshya services. Updates every 60 seconds.
       </p>

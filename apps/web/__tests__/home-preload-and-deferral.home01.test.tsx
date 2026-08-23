@@ -57,10 +57,20 @@ vi.mock('../lib/platform-stats', async (orig) => ({
     pujaTypes: 10,
   }),
 }));
-// Async server component: it suspends under renderToStaticMarkup and is not
-// what any assertion here is about. Stubbed to a marker element.
+// Async server components: they suspend under renderToStaticMarkup (which is
+// synchronous and cannot await a nested async component) and neither is what
+// any assertion here is about. Stubbed to marker elements.
+//
+// 2026-08-23: NextFestivalStrip was replaced on the homepage by ThisWeek, which
+// is async for the same reason — it resolves festival CTAs against the live
+// catalogue instead of writing pujasAvailable[0] into an href. The stub moved
+// with it. NextFestivalStrip's own mock is kept because the component file
+// still exists and other suites render it directly.
 vi.mock('../components/home/NextFestivalStrip', () => ({
   default: () => React.createElement('div', { 'data-stub': 'NextFestivalStrip' }),
+}));
+vi.mock('../components/home/ThisWeek', () => ({
+  default: () => React.createElement('div', { 'data-stub': 'ThisWeek' }),
 }));
 
 const WEB_ROOT = path.resolve(__dirname, '..');
@@ -200,10 +210,39 @@ describe('[HOME-01] rows 9 and 10 of the ranked deferral list are deferred', () 
    * Both are image-free, so this buys ZERO transfer bytes. It is layout and
    * paint work, and it is listed as such rather than counted as a saving.
    */
-  const ROWS: [label: string, bytes: number, svgs: number][] = [
-    ['What Darshya offers', 6530, 8],
-    ['Quick actions', 5099, 6],
-  ];
+  /*
+   * 2026-08-23 homepage revamp: BOTH rows on this list were DELETED rather
+   * than deferred, so there is nothing left here to assert.
+   *
+   *   'What Darshya offers' (6,530 B, 8 inline svg) duplicated the category
+   *   colour strip that sat directly above it — the same five destinations,
+   *   twice, one screen apart.
+   *
+   *   'Quick actions' (5,099 B, 6 inline svg) put six equal-weight choices
+   *   immediately below a hero whose whole job is to narrow to one.
+   *
+   * content-visibility bought zero transfer bytes on either (both are
+   * image-free, which is why they were rows 9 and 10 rather than rows 1 and 2).
+   * Deleting them buys the render work AND the markup. The guard is kept as an
+   * empty list rather than removed so that re-adding either section without
+   * reading this comment fails the "no section may reappear" check below.
+   */
+  const ROWS: [label: string, bytes: number, svgs: number][] = [];
+
+  const DELETED = ['What Darshya offers', 'Quick actions'];
+
+  for (const label of DELETED) {
+    it(`"${label}" stays deleted rather than coming back undeferred`, async () => {
+      const doc = await homeDoc();
+      expect(
+        doc.querySelector(`section[aria-label="${label}"]`),
+        `${label} is back on the homepage. It was removed in the 2026-08-23 revamp ` +
+          '(duplicate destinations / six equal choices under a single-CTA hero). ' +
+          'If it is genuinely wanted again, re-measure the below-fold budget first ' +
+          'and move it back into ROWS above with .defer-paint.',
+      ).toBeNull();
+    });
+  }
 
   for (const [label, bytes, svgs] of ROWS) {
     it(`"${label}" (${bytes} B, ${svgs} inline svg) carries .defer-paint`, async () => {

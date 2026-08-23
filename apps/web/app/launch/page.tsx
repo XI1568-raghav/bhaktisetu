@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import EmailCapture from '../../components/EmailCapture';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   title: 'Darshya is launching — India’s devotional super app',
@@ -74,11 +76,11 @@ export default function LaunchPage() {
           <span className="text-saffron-700 bg-saffron-100 mb-6 inline-block rounded-full px-3 py-1 text-xs font-bold tracking-wider uppercase">
             🚀 Launching on Product Hunt
           </span>
-          <h1 className="text-surface-900 mb-6 text-4xl leading-tight font-bold sm:text-5xl lg:text-6xl">
+          <h1 className={`${H1.marketing} mb-6`}>
             India’s devotional super app —{' '}
             <span className="text-saffron-700">finally in one place.</span>
           </h1>
-          <p className="text-surface-700 mx-auto mb-10 max-w-2xl text-lg leading-relaxed sm:text-xl">
+          <p className="prose-lead text-surface-700 mx-auto mb-10 max-w-2xl leading-relaxed">
             Live darshan, puja booking with video proof, daily panchang, Sanskrit + Vedic learning,
             gurukul admissions, gaushala seva and AI pandit guidance. Built for the 1.4 billion who
             practice Sanatan Dharma — and the 35 million NRIs who miss home.
@@ -86,7 +88,7 @@ export default function LaunchPage() {
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/"
-              className="bg-saffron-600 hover:bg-saffron-700 rounded-md px-7 py-3 text-base font-semibold text-white"
+              className={buttonClass('primary', 'md')}
             >
               Try Darshya now
             </Link>
@@ -158,7 +160,7 @@ export default function LaunchPage() {
               </ul>
               <Link
                 href="/nri"
-                className="bg-saffron-600 hover:bg-saffron-700 inline-block rounded-md px-5 py-2.5 text-sm font-semibold text-white"
+                className={buttonClass('primary', 'md')}
               >
                 See NRI plan →
               </Link>
@@ -209,7 +211,7 @@ export default function LaunchPage() {
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/"
-            className="bg-saffron-600 hover:bg-saffron-700 rounded-md px-7 py-3 text-base font-semibold text-white"
+            className={buttonClass('primary', 'md')}
           >
             Open Darshya
           </Link>

@@ -29,6 +29,7 @@ import { remoteImage, IMG_W } from '../../../lib/images';
 import { PanditAvatar } from '../PanditAvatar';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 const MARRIAGE_KEYWORDS = ['marriage', 'wedding', 'vivah', 'kalyanam', 'anand karaj'];
 
 export const metadata: Metadata = {
@@ -68,10 +69,10 @@ export default async function MarriagePage() {
  <Heart className="w-3.5 h-3.5" />
  Vivah Sanskara
  </div>
- <h1 className="text-4xl md:text-6xl font-bold text-surface-800 tracking-tight leading-[1.05]">
+ <h1 className={H1.marketing}>
  Book a Pandit for <span className="text-saffron-600">Your Wedding</span>
  </h1>
- <p className="mt-6 text-lg text-surface-600 max-w-xl leading-relaxed">
+ <p className="prose-lead mt-6 text-surface-600 max-w-xl leading-relaxed">
  Sampoorna vivah sanskar with all 7 pheras, kanyadaan, and saptapadi — by Vedic-certified pandits. From simple court-marriage blessings to grand traditional ceremonies.
  </p>
  <div className="mt-8 flex flex-wrap gap-3">

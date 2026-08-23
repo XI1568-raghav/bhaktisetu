@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  API_BASE_URL,
  fetchWithTimeout,
@@ -179,17 +181,17 @@ export default function AuthCallbackPage() {
  {status === 'working' ? (
  <>
  <Loader2 className="w-8 h-8 text-saffron-600 animate-spin mx-auto mb-4" />
- <h1 className="text-base font-semibold text-surface-800 mb-1">Signing you in</h1>
+ <h1 className={`${H1.portal} mb-1`}>Signing you in</h1>
  <p className="text-sm text-surface-500">Hold on while we finish the Google sign-in.</p>
  </>
  ) : (
  <>
  <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
- <h1 className="text-base font-semibold text-surface-800 mb-1">{errorTitle}</h1>
+ <h1 className={`${H1.portal} mb-1`}>{errorTitle}</h1>
  <p className="text-sm text-surface-500 mb-6">{errorMessage}</p>
  <Link
  href="/auth/login"
- className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Back to login
  </Link>

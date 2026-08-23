@@ -29,6 +29,7 @@ import {
 } from '../../../lib/temple-api';
 import { DateTimeInput } from '../../../components/ui/DateInput';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -210,7 +211,7 @@ function TempleDarshanPageContent() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+          className={buttonClass('primary', 'md')}
         >
           <Plus className="w-4 h-4" />
           Schedule Stream
@@ -354,7 +355,7 @@ function TempleDarshanPageContent() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-60"
+                className={buttonClass('primary', 'md')}
               >
                 {submitting ? (
                   <>

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PANCHA_BHOOTA } from '../../lib/pancha-bhoota';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -82,8 +84,8 @@ export default function PanchaBhootaIndexPage() {
         <nav className="text-sm text-gray-600 mb-4">
           <Link href="/" className="hover:text-saffron-600">Home</Link> / <span className="text-gray-900">Pancha Bhoota Stalam</span>
         </nav>
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">5 Pancha Bhoota Stalam</h1>
-        <p className="text-lg text-gray-700 max-w-3xl mb-3">
+        <h1 className={`${H1.marketing} mb-3`}>5 Pancha Bhoota Stalam</h1>
+        <p className="prose-lead text-gray-700 max-w-3xl mb-3">
           Five Tamil Nadu Shiva temples, each manifesting one of the pancha bhoota (five great elements) of the cosmos —
           earth, water, fire, air, and ether. Visiting all five in sequence is considered one of the most powerful Shaiva
           pilgrimages in South India.
@@ -142,10 +144,10 @@ export default function PanchaBhootaIndexPage() {
             mirroring the cosmological evolution of the elements from gross to subtle.
           </p>
           <div className="flex flex-wrap gap-3 mt-4">
-            <Link href="/jyotirlinga" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+            <Link href="/jyotirlinga" className={buttonClass('primary', 'md')}>
               12 Jyotirlingas
             </Link>
-            <Link href="/tirth" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
+            <Link href="/tirth" className={buttonClass('primary', 'md')}>
               Tirth destinations
             </Link>
             <Link href="/pilgrimage" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">

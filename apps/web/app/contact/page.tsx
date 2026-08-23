@@ -3,6 +3,7 @@
 import { Mail, Clock, Send, Briefcase, Handshake, Scale, Newspaper, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
   COMPANY,
   grievanceOfficerLine,
@@ -64,11 +65,7 @@ export default function ContactPage() {
             Contact Us
           </p>
           <h1
-            className="heading-display text-2xl sm:text-3xl font-bold mb-4"
-            style={{
-              color: "var(--color-text)",
-              lineHeight: "var(--leading-tight)",
-            }}
+            className={`${H1.catalogue} mb-4`}
           >
             We&apos;re Here to Help
           </h1>

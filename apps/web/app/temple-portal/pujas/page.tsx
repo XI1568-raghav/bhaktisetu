@@ -28,6 +28,7 @@ import {
   type PujaTypeSummary,
 } from '../../../lib/temple-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -241,7 +242,7 @@ function TemplePujasPageContent() {
           }}
           disabled={!!templeLinkIssue}
           title={templeLinkIssue ?? undefined}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className={buttonClass('primary', 'md', 'disabled:cursor-not-allowed')}
         >
           <Plus className="w-4 h-4" /> Add Puja
         </button>
@@ -389,7 +390,7 @@ function TemplePujasPageContent() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+                className={buttonClass('primary', 'md')}
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

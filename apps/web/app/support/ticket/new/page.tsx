@@ -22,6 +22,8 @@ import {
 } from '../../../../lib/support';
 import { createTicket, newTicketSchema } from '../../../../lib/support-api';
 import { useAuth } from '../../../../lib/auth-context';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 export default function NewTicketPage() {
  const router = useRouter();
@@ -142,7 +144,7 @@ export default function NewTicketPage() {
  <TicketIcon className="w-5 h-5 text-saffron-700" />
  </div>
  <div>
- <h1 className="text-xl font-semibold text-surface-900">Open a new ticket</h1>
+ <h1 className={H1.portal}>Open a new ticket</h1>
  <p className="text-xs text-surface-500 mt-0.5">
  First response in 4 hours (urgent tickets prioritized).
  </p>
@@ -266,7 +268,7 @@ export default function NewTicketPage() {
  <button
  type="submit"
  disabled={submitting}
- className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-saffron-600 hover:bg-saffron-700 text-white text-sm font-semibold transition-colors disabled:opacity-60"
+ className={buttonClass('primary', 'md')}
  >
  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
  {submitting ? 'Submitting...' : 'Submit ticket'}

@@ -119,10 +119,17 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
   const ADOPTERS: Array<[string, string]> = [
     ['components/HomeHeroCta.tsx', 'the single hero conversion control'],
     ['components/NavAuthButton.tsx', 'header Sign In, present on all ten screens'],
-    ['app/page.tsx', 'homepage section CTAs'],
+    // 2026-08-23 revamp: app/page.tsx is deliberately NOT on this list any
+    // more. It used to carry six hand-placed section CTAs (AI Pandit, store,
+    // final CTA, …); all six sections were deleted and the only conversion
+    // control the page still owns is <HomeHeroCta />, which is on this list in
+    // its own right. Asserting `buttonClass(` appears in page.tsx would now be
+    // asserting that a CTA exists there, which is the opposite of the intent.
+    // The bespoke-CTA sweep below still runs against it — see HOME_NO_CTA.
     ['app/pujas/page.tsx', 'catalogue Apply / Load more / empty-state CTA'],
     ['app/pricing/page.tsx', 'Get Started Free / Start Free / Subscribe'],
     ['app/auth/login/page.tsx', 'the three submit buttons'],
+    ['components/home/ThisWeek.tsx', 'the dated booking CTA and its browse fallback'],
     ['components/home/NextFestivalStrip.tsx', 'the seasonal booking CTA'],
     ['components/home/ShopStrip.tsx', 'Visit store'],
   ];
@@ -174,6 +181,21 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
       ).toEqual([]);
     });
   }
+
+  /*
+   * app/page.tsx keeps the bespoke-CTA half of the guard without the
+   * "must call buttonClass" half. The homepage composes components; if a
+   * hand-rolled saffron button is ever authored back into the page itself,
+   * this fails even though the page legitimately calls no recipe.
+   */
+  it('app/page.tsx hand-rolls no CTA of its own (HOME_NO_CTA)', () => {
+    const left = bespokeCtaClasses('app/page.tsx');
+    expect(
+      left,
+      'app/page.tsx hand-rolls a primary CTA. The homepage owns exactly one ' +
+        'conversion control, <HomeHeroCta />, and it uses the recipe:\n' + left.join('\n'),
+    ).toEqual([]);
+  });
 
   it('the recipe is importable from a module a Server Component can call', () => {
     const recipe = read('components/ui/button-recipe.ts');
@@ -360,14 +382,29 @@ describe('DU-09 — the two undeclared Tailwind oranges are gone', () => {
     expect(offenders.map(rel)).toEqual([]);
   });
 
-  it('what replaced them is on the declared saffron ramp', () => {
+  it('every hex the homepage still paints is declared in globals.css', () => {
+    /*
+     * This used to anchor on the category colour strip's `label: 'Worship'`
+     * row and check only that row's hexes. The strip was deleted in the
+     * 2026-08-23 revamp — the header already carries the same five mega-menus —
+     * which left the assertion with nothing to find and no way to fail.
+     *
+     * Replaced with the general form the narrow check was standing in for,
+     * which is strictly stronger: no literal hex may appear on the homepage
+     * unless globals.css declares it. That survives any section being added or
+     * removed, which is exactly what went wrong here.
+     */
     const home = read('app/page.tsx');
-    const worship = /label: 'Worship'[^\n]*/.exec(home)?.[0] ?? '';
-    expect(worship).toBeTruthy();
-    for (const hex of worship.match(/#[0-9a-fA-F]{6}/g) ?? []) {
-      const declared = new RegExp(`:\\s*${hex}\\s*;`, 'i').test(css);
-      expect(declared, `${hex} is not declared in globals.css`).toBe(true);
-    }
+    const undeclared = [...new Set(home.match(/#[0-9a-fA-F]{6}/g) ?? [])].filter(
+      (hex) => !new RegExp(`:\\s*${hex}\\s*;`, 'i').test(css),
+    );
+    expect(
+      undeclared,
+      'app/page.tsx paints a colour globals.css does not declare. Add it to the ' +
+        '@theme block or use an existing token — 16 undeclared warm hexes across ' +
+        '10 screens is how the "stitched together by different people" signal ' +
+        'got onto the conversion path in the first place.',
+    ).toEqual([]);
   });
 
   it('the app manifest theme colour is the brand primary, not stock orange', () => {
@@ -410,7 +447,20 @@ describe('DU-10 / RESP-05 — nothing under the 12px legibility floor', () => {
 describe('RESP-09 / RESP-11 — the targets the CSS floor cannot reach', () => {
   it('the homepage section CTAs opt into tap-safe', () => {
     const home = read('app/page.tsx');
-    expect((home.match(/className="tap-safe /g) ?? []).length).toBeGreaterThanOrEqual(5);
+    /*
+     * Floor lowered 5 -> 3 by the 2026-08-23 revamp. The bare inline anchors
+     * that needed the opt-in went out with the sections that held them — the
+     * library teaser's "Browse all", the yatra teaser's "See circuits", the
+     * store showcase's "Shop essentials". The three that remain are the
+     * "see all" links on Live Darshan, Puja and Astrology.
+     *
+     * Deliberately still a floor and not an exact count: the failure this
+     * guards is a bare <a> shipped WITHOUT the opt-in, because the global
+     * 44px floor in globals.css reaches button/[role=button]/nav li>a and
+     * footer li>a — not a naked inline anchor. Adding a legitimate link
+     * should not be a red test.
+     */
+    expect((home.match(/className="tap-safe /g) ?? []).length).toBeGreaterThanOrEqual(3);
   });
 
   it('the footer language switcher does too (six 18px links on one row)', () => {

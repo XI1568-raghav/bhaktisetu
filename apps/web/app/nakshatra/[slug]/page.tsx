@@ -4,6 +4,7 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { NAKSHATRAS, nakshatraSlugs, getNakshatra } from '../../../lib/nakshatras';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -198,7 +199,7 @@ export default async function NakshatraDetail({
         </p>
         <Link
           href="/astrology"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Free Kundli →
         </Link>

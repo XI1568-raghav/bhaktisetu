@@ -15,6 +15,7 @@ import ScrollReveal from '../../../components/ScrollReveal';
 import { FLAGSHIP_CENTERS, VIPASSANA_CENTERS } from '../../../lib/vipassana-centers';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/vipassana' },
  title: 'Vipassana — 10-Day Silent Meditation Retreats',
@@ -98,8 +99,7 @@ export default function VipassanaPage() {
 
  <h1
  data-reveal="up-far"
- className="heading-display text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]"
- style={{ color: 'var(--color-text)' }}
+ className={H1.catalogue}
  >
  Vipassana:{' '}
  <span style={{ color: 'var(--color-primary)' }}>The Art of Living</span>

@@ -426,7 +426,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
                 )}
               </div>
 
-              <h1 className="text-surface-800 mb-2 text-2xl font-bold sm:text-3xl">
+              <h1 className={`${H1.catalogue} mb-2`}>
                 {content.title}
               </h1>
               {content.titleLocal && (

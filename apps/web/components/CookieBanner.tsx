@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { buttonClass } from '../components/ui/button-recipe';
 
 type ConsentCategory = "essential" | "analytics" | "marketing";
 
@@ -260,7 +261,7 @@ export default function CookieBanner() {
             <button
               type="button"
               onClick={() => save({ analytics, marketing })}
-              className="inline-flex h-11 items-center justify-center rounded-lg bg-saffron-600 px-4 text-sm font-medium text-white hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Save preferences
             </button>
@@ -268,7 +269,7 @@ export default function CookieBanner() {
             <button
               type="button"
               onClick={() => save({ analytics: true, marketing: true })}
-              className="inline-flex h-11 items-center justify-center rounded-lg bg-saffron-600 px-4 text-sm font-medium text-white hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Accept all
             </button>

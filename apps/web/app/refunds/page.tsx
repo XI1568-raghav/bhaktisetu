@@ -1,6 +1,7 @@
 // TODO(2026-06): v2 draft pending lawyer review — see docs/legal/refund-policy-v2-draft.md
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
+import { H1 } from '../../components/ui/heading-recipe';
 import {
  COMPANY,
  grievanceOfficerLine,
@@ -67,11 +68,7 @@ export default function RefundsPage() {
  Legal
  </p>
  <h1
- className="heading-display text-2xl sm:text-3xl font-bold mb-3"
- style={{
- color: "var(--color-text)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.catalogue} mb-3`}
  >
  Refund Policy
  </h1>

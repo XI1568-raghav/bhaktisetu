@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { BHAKTI_SAINTS, bhaktiSaintSlugs, getBhaktiSaint } from '../../../lib/bhakti-saints';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -90,7 +91,7 @@ export default async function BhaktiSaintDetailPage({ params }: Props) {
           <span className="rounded-full bg-white px-3 py-1 text-sm text-amber-900 ring-1 ring-amber-300">{s.region}</span>
           <span className="rounded-full bg-white px-3 py-1 text-sm text-saffron-900 ring-1 ring-saffron-300">Deity: {s.deity}</span>
         </div>
-        <h1 className="text-3xl font-bold text-indigo-900 sm:text-4xl">{s.name}</h1>
+        <h1 className={H1.catalogue}>{s.name}</h1>
         <p className="mt-1 text-2xl text-saffron-900" lang="sa">{s.sanskrit}</p>
         <p className="mt-1 text-sm italic text-gray-600">{s.iast}</p>
         <p className="mt-3 text-gray-800">{s.bestKnownFor}</p>

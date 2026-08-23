@@ -23,6 +23,8 @@ import {
   REFUND_SETTLEMENT_SENTENCE,
 } from '../../lib/cancellation-policy';
 import { NRI_PREMIUM_IS_SELLABLE } from '../nri/plan-availability';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -276,10 +278,10 @@ export default async function NRIPujasPillarPage() {
             <Globe2 className="h-3.5 w-3.5" />
             For NRIs in USA, UK, Canada, Australia, Singapore, UAE
           </span>
-          <h1 className="mt-4 font-display text-4xl md:text-5xl font-semibold leading-tight text-surface-900">
+          <h1 className={`${H1.marketing} mt-4`}>
             Book a Puja at an India Temple — from Anywhere in the World
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-surface-700">
+          <p className="prose-lead mt-4 max-w-2xl text-surface-700">
             The complete NRI guide to booking authentic Hindu pujas at India temples — mandatory
             video proof on WhatsApp, international-card checkout billed in INR, and{' '}
             {HAS_80G ? '80G tax receipts' : 'a numbered receipt for every donation'}. Prasad ships
@@ -288,7 +290,7 @@ export default async function NRIPujasPillarPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/pujas"
-              className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse {countedNoun(stats.pujaTypeCount, 'pujas')}
               <ArrowRight className="h-4 w-4" />
@@ -461,7 +463,7 @@ export default async function NRIPujasPillarPage() {
             <div>
               <Link
                 href="/gift"
-                className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-700"
+                className={buttonClass('primary', 'md')}
               >
                 Send a gift puja
                 <ArrowRight className="h-4 w-4" />
@@ -513,7 +515,7 @@ export default async function NRIPujasPillarPage() {
           <div className="flex flex-col gap-2 md:items-end">
             <Link
               href="/pujas"
-              className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse pujas
               <ArrowRight className="h-4 w-4" />

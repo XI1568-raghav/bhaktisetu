@@ -1169,16 +1169,54 @@ describe('DU-03 — the focus ring may not re-shape the control it rings', () =>
  * reach for instead of a coin flip, and that the size it names is a token.
  */
 describe('DU-10 — metadata has one declared size, not two', () => {
-  it('the split is live: prose still picks between text-xs and text-sm', () => {
-    const PROSE_P = /<p\s[^>]*className="([^"]*\bmax-w-[a-z0-9]+[^"]*)"/g;
-    const sized = [...CODE.matchAll(PROSE_P)].map((m) => m[1]!);
-    const xs = sized.filter((c) => /(?:^|\s)text-xs(?![\w-])/.test(c)).length;
-    const sm = sized.filter((c) => /(?:^|\s)text-sm(?![\w-])/.test(c)).length;
+  /*
+   * CHANGED DELIBERATELY, 2026-08-23, on this guard's own written instruction.
+   *
+   * It used to assert `xs > 0 && sm > 0` — "the two-step split is still live" —
+   * with the note "if the sweep finished, this guard should change rather than
+   * be deleted". The 2026-08-23 DU-10 sweep finished the xs half: every <p>
+   * that carried a reading measure at text-xs was read and moved to
+   * .prose-meta or .prose-body, and the census is now xs 0 / sm 86. The old
+   * assertion is therefore an old fiction, and leaving it red would push the
+   * next author to re-introduce a 12px caption to make CI green — the exact
+   * inversion this file keeps warning about.
+   *
+   * So it becomes the two halves of the same claim, and both are stronger than
+   * what it replaced: the closed half may not reopen, and the open half may
+   * only shrink.
+   */
+  const PROSE_P = /<p\s[^>]*className="([^"]*\bmax-w-[a-z0-9]+[^"]*)"/g;
+  const measuredProse = [...CODE.matchAll(PROSE_P)].map((m) => m[1]!);
+
+  it('the census is live (a regex regression cannot vacuously pass the two below)', () => {
+    expect(measuredProse.length, 'no measured <p> found at all').toBeGreaterThan(150);
+  });
+
+  it('the 12px step is gone from measured prose and may not come back', () => {
+    const xs = measuredProse.filter((c) => /(?:^|\s)text-xs(?![\w-])/.test(c));
     expect(
-      xs > 0 && sm > 0,
-      `metadata prose is already on one step (xs ${xs}, sm ${sm}) — if the sweep ` +
-        'finished, this guard should change rather than be deleted',
-    ).toBe(true);
+      xs,
+      `${xs.length} measured paragraphs are back on text-xs, which RESP-05 put exactly ON ` +
+        'the 12px legibility floor. Captions are still read: use .prose-meta.\n' +
+        xs.slice(0, 10).join('\n'),
+    ).toEqual([]);
+  });
+
+  it('the text-sm half only shrinks', () => {
+    /*
+     * RATCHET, and the other half of the same finding. 86 measured paragraphs
+     * still say text-sm where they mean "this is metadata". They are not a
+     * blind sweep — .prose-meta IS --text-sm, so each one is a rename that
+     * needs someone to confirm the paragraph is a caption and not body copy
+     * that was shrunk. Lower this as they convert; it may not rise.
+     */
+    const BASELINE = 86;
+    const sm = measuredProse.filter((c) => /(?:^|\s)text-sm(?![\w-])/.test(c));
+    expect(
+      sm.length,
+      `${sm.length} measured paragraphs pick text-sm by hand (ceiling ${BASELINE}). ` +
+        '.prose-meta declares that same step by name.',
+    ).toBeLessThanOrEqual(BASELINE);
   });
 
   it('.prose-meta is declared in globals.css', () => {
@@ -1629,8 +1667,15 @@ describe('DU-10 — the lead paragraph has one declared size', () => {
      * 237 <p> elements carrying a max-w-* reading measure, eleven are text-xs.
      * Those are the "12px body copy" half of DU-10 and every one is a
      * call-site edit under app/.
+     *
+     * 2026-08-23 sweep: enumerated and closed. Twelve survived to this pass
+     * (one of the eleven had already gone, and two more had appeared). Each was
+     * read before it was moved: the four truncated ids/emails in the admin
+     * tables and the three pieces of legal micro-copy took `.prose-meta`, the
+     * five that are section decks or a scholarly note took `.prose-body`.
+     * Zero, and it stays zero.
      */
-    const BASELINE = 11;
+    const BASELINE = 0;
     const metaFloor = floorPx(size('.prose-meta'));
     expect(metaFloor, '.prose-meta lost its size, so this guard has no floor').toBeGreaterThan(0);
     const offenders: string[] = [];
@@ -1810,8 +1855,12 @@ describe('DU-03 — every channel the resting primary fill arrives on is counted
      * `bg-orange-600` in app/org (members, page, settings) and
      * app/pancha-bhoota (index, [slug]). Every one is a call-site edit outside
      * the design lane; the target is buttonClass('primary','md') like the 213.
+     *
+     * 2026-08-23 sweep: all 10 adopted buttonClass('primary','md'). The
+     * channel is closed and may not reopen — a new aliased fill on a padded
+     * control fails here immediately.
      */
-    const BASELINE = 10;
+    const BASELINE = 0;
     expect(
       alias.length,
       `${alias.length} primary CTAs paint the fill with an aliased class the DU-03 ratchet ` +
@@ -1860,8 +1909,12 @@ describe('DU-03 — every channel the resting primary fill arrives on is counted
      *
      * Measured at HEAD: 213 class + 10 aliased + 67 inline = 290.
      * 2026-08-23 sweep: 65 inline CTAs adopted the recipe → 213 + 10 + 2 = 225.
+     * Same sweep, class channels: 212 + 10 more adopted it → 1 + 0 + 2 = 3.
+     * The 3 that remain are named in the three subtotal ratchets above: one
+     * `<span>` badge the detector mis-attributes to the <Link> above it, and
+     * two square icon-only controls with no label to pad.
      */
-    const BASELINE = 225;
+    const BASELINE = 3;
     const total = classic.length + alias.length + inline.length;
     expect(
       total,

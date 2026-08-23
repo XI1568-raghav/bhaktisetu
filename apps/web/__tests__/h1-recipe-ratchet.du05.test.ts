@@ -79,8 +79,32 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
      * RATCHET. Lower it after every sweep. Left above the true count it is
      * slack a new bespoke h1 can be authored into without failing anything,
      * which is exactly how 279 files diverged while CI stayed green.
+     *
+     * 2026-08-23 sweep: 199 of the 212 took an archetype, chosen from the h1's
+     * own declaration rather than from the route name — light copy over a photo
+     * or a dark bar is `detail`; a title whose largest step is 2xl or smaller,
+     * and every title on a portal route, is `portal`; 5xl-and-up is the
+     * `marketing` ramp and the rest is `catalogue`. The 13 that remain each
+     * need a person:
+     *
+     *   5 are SMALL WHITE h1s (app/darshan/[id] x2, app/demo/[role] x2,
+     *     app/mobile/darshan) — 16-24px light copy on a dark bar. `detail` is
+     *     the only light archetype and it is a 30/36px hero; `portal` is
+     *     text-surface-800, i.e. dark ink on a dark surface. Neither is right,
+     *     so the recipe is missing a fifth thing — a portal archetype with an
+     *     inverse colour — and __tests__/design-tokens.test.ts:988 pins the
+     *     archetype list at exactly four keys. That is a coordinated change.
+     *   4 do not declare a size at all or use an arbitrary one:
+     *     app/about/page.tsx (text-[2.5rem], and also DU-14 part 1),
+     *     app/auth/login/page.tsx (a flex row of nodes, no size),
+     *     app/pitch/page.tsx x2 (`pitch-h1`, a bespoke class in the deck CSS).
+     *   4 cannot be reached by a className codemod: app/chakras/[slug] builds
+     *     its class from a template literal, app/global-error.tsx paints inline
+     *     because no stylesheet is loaded under it (DU-13 documents it as the
+     *     exception), and app/help/articles/[lang]/[slug] emits raw HTML with
+     *     `class=`, not `className=`.
      */
-    const BASELINE = 212;
+    const BASELINE = 13;
     const byRecipe = new Map<string, string[]>();
     for (const o of HAND_ROLLED) {
       const cls =

@@ -10,6 +10,7 @@ import {
 import DarshanBrowser from '../../components/DarshanBrowser';
 import DarshanScheduleRemindButton from '../../components/DarshanScheduleRemindButton';
 import { darshanScheduleRows } from '../../lib/darshan-schedule';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/darshan' },
@@ -288,10 +289,10 @@ export default async function DarshanPage() {
  {t('liveNow')}
  </span>
  </div>
- <h1 className="heading-display text-3xl md:text-4xl font-semibold text-surface-800 mb-3">
+ <h1 className={`${H1.catalogue} mb-3`}>
  {t('pageTitle')}
  </h1>
- <p className="text-surface-500 text-lg max-w-2xl">
+ <p className="prose-lead text-surface-500 max-w-2xl">
  {t('pageSubtitle')}
  </p>
 

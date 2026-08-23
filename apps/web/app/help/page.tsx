@@ -26,6 +26,7 @@ import {
 import { FAQ_ITEMS, FAQ_SECTIONS } from "../../lib/support";
 
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 /**
  * I-09 / I18N-09 (prod sweep 2026-08-12) — THE HELP CENTRE THAT LINKED TO
  * NOTHING.
@@ -105,11 +106,7 @@ export default function HelpPage() {
  Help Center
  </p>
  <h1
- className="heading-display text-2xl sm:text-3xl font-bold mb-5"
- style={{
- color: "var(--color-text)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.catalogue} mb-5`}
  >
  How Can We Help You?
  </h1>
@@ -281,7 +278,7 @@ export default function HelpPage() {
  </h2>
  </div>
  <p
- className="text-xs leading-relaxed mb-5 max-w-2xl"
+ className="prose-body mb-5 max-w-2xl"
  style={{ color: "var(--color-text-muted)" }}
  >
  Translation is behind the English catalogue. Only the guides listed

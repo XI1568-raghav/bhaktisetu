@@ -16,6 +16,8 @@ import {
  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 function initialsOf(name: string | null | undefined): string {
  if (!name) return '👤';
@@ -54,7 +56,7 @@ export default function MobileProfile() {
  <span className="text-xl font-bold text-saffron-700">{initialsOf(user?.fullName)}</span>
  </div>
  <div className="flex-1">
- <h1 className="text-lg font-bold text-surface-900">
+ <h1 className={H1.portal}>
  {user?.fullName ?? 'Guest'}
  </h1>
  <p className="text-xs text-surface-400">
@@ -75,7 +77,7 @@ export default function MobileProfile() {
  ) : (
  <a
  href="/auth/login"
- className="text-xs font-semibold text-white bg-saffron-600 px-3 py-1.5 rounded-xl"
+ className={buttonClass('primary', 'md')}
  >
  Sign In
  </a>

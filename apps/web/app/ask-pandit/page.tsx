@@ -16,6 +16,7 @@ import { useAuth } from '../../lib/auth-context';
 import AiChat from '../../components/AiChat';
 import VoicePanditButton from '../../components/VoicePanditButton';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
  getAllConversations,
  deleteConversation,
@@ -318,7 +319,7 @@ export default function AskPanditPage() {
  </span>
  </div>
  <div>
- <h1 className="text-base font-semibold text-surface-800">
+ <h1 className={H1.portal}>
  Pandit Ji
  </h1>
  <p className="text-xs text-surface-400 hidden sm:block">

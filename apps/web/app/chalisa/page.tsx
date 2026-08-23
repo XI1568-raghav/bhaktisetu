@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BookOpen, Clock, ArrowRight } from 'lucide-react';
 import { CHALISAS } from '../../lib/chalisas';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -36,10 +37,10 @@ export default function ChalisaIndex() {
       />
 
       <header className="mb-10 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-3">
+        <h1 className={`${H1.marketing} mb-3`}>
           Hindu Chalisa Lyrics
         </h1>
-        <p className="text-lg text-surface-700 max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 max-w-2xl mx-auto">
           40-verse devotional hymns to the principal deities. Each chalisa with significance, benefits, opening verses, and meaning.
         </p>
       </header>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { computeNumerology, type NumerologyResult, type NumberMeaning } from '../../../lib/numerology';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export default function NumerologyClient() {
  const [dob, setDob] = useState('');
@@ -67,7 +68,7 @@ export default function NumerologyClient() {
     <div className="mt-5 flex flex-wrap items-center gap-3">
      <button
       type="submit"
-      className="rounded-full bg-saffron-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-saffron-700 focus:outline-none focus:ring-2 focus:ring-saffron-300"
+      className={buttonClass('primary', 'md', 'shadow-sm focus:outline-none focus:ring-2 focus:ring-saffron-300')}
      >
       Compute My Numbers
      </button>
@@ -111,7 +112,7 @@ export default function NumerologyClient() {
        numbers with your kundli&rsquo;s graha balance before recommending any spelling tweak.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask Pandit Live
        </Link>
        <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

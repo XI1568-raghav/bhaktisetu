@@ -26,6 +26,7 @@ import ScrollReveal from '../../../components/ScrollReveal';
 import { getYatraBySlug, yatras, formatINR } from '../../../lib/yatra-data';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export function generateStaticParams() {
  return yatras.map((y) => ({ slug: y.slug }));
 }
@@ -133,7 +134,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  {yatra.region === 'himalayas' ? 'Himalayan Pilgrimage' : `${yatra.region} India pilgrimage`}
  </div>
 
- <h1 data-reveal="cinematic" className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight max-w-2xl">
+ <h1 data-reveal="cinematic" className={`${H1.detail} max-w-2xl`}>
  {yatra.title}
  </h1>
  <p data-reveal="up" data-delay="1" className="mt-3 text-sm text-white/80 max-w-2xl leading-relaxed">

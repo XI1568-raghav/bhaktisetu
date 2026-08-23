@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { useReadingProgress } from "@poojly/api-client";
 import { useAuth } from "../../lib/auth-context";
+import { buttonClass } from '../../components/ui/button-recipe';
 
 interface Props {
   bookSlug: string;
@@ -18,7 +19,7 @@ export function ContinueReadingCTA({ bookSlug }: Props) {
   return (
     <Link
       href={`/content/books/${bookSlug}/${progress.chapterSlug}`}
-      className="inline-flex items-center gap-3 px-5 py-3 rounded-xl bg-saffron-600 text-white hover:bg-saffron-700 shadow-md hover:shadow-lg transition-all"
+      className={buttonClass('primary', 'md', 'shadow-md hover:shadow-lg')}
     >
       <BookOpen className="w-5 h-5" />
       <div className="text-left">

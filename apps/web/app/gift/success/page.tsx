@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { MessageCircle } from 'lucide-react';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * This page was the Stripe return URL for the gift-puja checkout: it read
@@ -33,7 +35,7 @@ export default function GiftSuccessPage() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-2xl border border-surface-100 p-8 shadow-sm text-center">
           <MessageCircle className="w-12 h-12 text-saffron-600 mx-auto mb-3" />
-          <h1 className="text-2xl font-bold text-surface-800 mb-2">
+          <h1 className={`${H1.portal} mb-2`}>
             Gift puja requests are handled by our team
           </h1>
           <p className="text-sm text-surface-500 mb-6">
@@ -44,7 +46,7 @@ export default function GiftSuccessPage() {
           </p>
           <Link
             href="/gift"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Request a gift puja
           </Link>

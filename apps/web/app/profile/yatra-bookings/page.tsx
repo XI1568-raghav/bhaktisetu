@@ -77,7 +77,7 @@ function YatraBookingsInner() {
  <Mountain className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>My Yatra Bookings</p>
  </div>
- <h1 className={H1.portal} style={{ color: 'var(--color-text)' }}>
+ <h1 className={H1.portal}>
  Your sacred journeys
  </h1>
  </div>

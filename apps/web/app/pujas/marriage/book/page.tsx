@@ -29,6 +29,7 @@ import { DateInput } from '../../../../components/ui/DateInput';
 import { WizardSteps } from '../../../../components/ui/WizardSteps';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 type StepId = 1 | 2 | 3 | 4 | 5;
 
 const steps = [
@@ -177,7 +178,7 @@ export default function BookMarriage() {
 
  {/* Header */}
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
- <h1 className="text-2xl md:text-3xl font-bold text-surface-800 tracking-tight">
+ <h1 className={H1.catalogue}>
  Book your wedding pandit
  </h1>
  <p className="text-surface-500 mt-1 text-sm">Sampoorna vivah sanskar in 5 steps.</p>

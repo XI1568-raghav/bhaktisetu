@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -50,14 +52,14 @@ export default function CartPage() {
  <div className="w-24 h-24 bg-saffron-50 rounded-full flex items-center justify-center mx-auto mb-6">
  <ShoppingCart className="w-12 h-12 text-saffron-300" />
  </div>
- <h1 className="text-2xl font-bold text-surface-800 mb-2">Your Cart is Empty</h1>
+ <h1 className={`${H1.portal} mb-2`}>Your Cart is Empty</h1>
  <p className="text-surface-500 mb-8 max-w-md mx-auto">
  Explore our collection of authentic puja essentials, handcrafted idols,
  and sacred items sourced from trusted artisans.
  </p>
  <Link
  href="/store"
- className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  <ShoppingBag className="w-5 h-5" />
  Continue Shopping
@@ -74,7 +76,7 @@ export default function CartPage() {
  {/* Header */}
  <div className="flex items-center justify-between mb-8">
  <div>
- <h1 className="text-2xl font-semibold tracking-tight text-surface-800">Shopping Cart</h1>
+ <h1 className={H1.portal}>Shopping Cart</h1>
  <p className="text-surface-500 mt-1">{itemCount} item{itemCount !== 1 ? 's' : ''} in your cart</p>
  </div>
  <button

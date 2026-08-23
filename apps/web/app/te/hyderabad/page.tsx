@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -140,16 +142,16 @@ export default function TeluguHyderabadLanding() {
         <div className="inline-block px-3 py-1 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           🕉️ హైదరాబాద్ · తెలంగాణ · సనాతన ధర్మం
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-4 leading-tight">
+        <h1 className={`${H1.marketing} mb-4`}>
           దర్శ్యా హైదరాబాద్
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
           బిర్లా మందిర్ నుండి చిల్కూర్ బాలాజీ వరకు — హైదరాబాద్ మెట్రోలోని 5 యాంకర్ ఆలయాల వద్ద ధృవీకరించబడిన పండితులతో పూజ, వీడియో ప్రూఫ్, ప్రత్యక్ష దర్శనం, 80G రసీదు.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link
             href="/pujas?city=hyderabad"
-            className="px-6 py-3 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             హైదరాబాద్‌లో పూజ బుక్ చేయండి
           </Link>
@@ -247,7 +249,7 @@ export default function TeluguHyderabadLanding() {
         </p>
         <Link
           href="/nri"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           NRI ప్యాకేజీ చూడండి →
         </Link>

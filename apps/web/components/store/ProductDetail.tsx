@@ -21,6 +21,7 @@ import {
 import { useCart, type CartProduct } from '../CartContext';
 import { PRODUCTS, type Product } from '../../lib/products';
 import { getProductImage, remoteSrcSet, IMG_W } from '../../lib/images';
+import { H1 } from '../../components/ui/heading-recipe';
 
 /**
  * COM-10 (prod sweep 2026-08-12): the product detail body used to live inside
@@ -188,7 +189,7 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
           <div className="space-y-6">
             <div>
               <p className="text-sm text-saffron-600 font-medium mb-1">{product.category}</p>
-              <h1 className="text-2xl lg:text-3xl font-bold text-surface-800 mb-3">
+              <h1 className={`${H1.catalogue} mb-3`}>
                 {product.title}
               </h1>
 

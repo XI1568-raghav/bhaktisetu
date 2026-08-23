@@ -10,6 +10,8 @@ import {
 } from '../../../lib/pilgrimage-circuits';
 import { getTempleDetail } from '../../../lib/temple-details';
 import { canonicalTempleSlug } from '../../../lib/temple-slug';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -117,7 +119,7 @@ export default async function CircuitDetail({ params }: PageProps) {
       </nav>
 
       <header className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2 leading-tight">{c.name}</h1>
+        <h1 className={`${H1.catalogue} mb-2`}>{c.name}</h1>
         {c.sanskritName && (
           <p className="text-lg text-saffron-700 mb-3" lang="sa">{c.sanskritName}</p>
         )}
@@ -193,7 +195,7 @@ export default async function CircuitDetail({ params }: PageProps) {
           {c.relatedYatra && (
             <Link
               href={`/yatra/${c.relatedYatra}/book`}
-              className="px-5 py-2.5 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Request booking →
             </Link>

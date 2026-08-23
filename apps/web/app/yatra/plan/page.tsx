@@ -25,6 +25,7 @@ import { sacredSites, formatINR } from '../../../lib/yatra-data';
 import { DateInput } from '../../../components/ui/DateInput';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 type PlanData = {
  destinations: string[]; // site ids
  startDate: string;
@@ -149,7 +150,7 @@ export default function CustomPlanPage() {
  <Compass className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>Custom Trip Planner</p>
  </div>
- <h1 className="heading-display text-2xl font-semibold" style={{ color: 'var(--color-text)' }}>
+ <h1 className={H1.portal}>
  Design your own sacred journey
  </h1>
  <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>

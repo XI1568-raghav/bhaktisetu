@@ -52,12 +52,12 @@ const cards = (liveDarshanTemples: number | null): WorshipCard[] => [
   },
   {
     href: '/donations',
-    label: 'Donate (80G)',
-    body: 'Tax deductible giving',
+    label: 'Gau Seva',
+    body: 'Feed a cow from Rs 51 a day',
     cta: 'Donate now',
     Icon: Gift,
     image: getTempleHero('somnath', IMG_W.CARD),
-    badge: '80G',
+    badge: 'Seva',
   },
 ];
 

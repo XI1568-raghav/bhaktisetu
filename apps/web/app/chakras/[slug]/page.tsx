@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { CHAKRAS, getChakra } from '../../../lib/chakras';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -230,7 +231,7 @@ export default async function ChakraDetail({
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/chants"
-            className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Sacred mantras →
           </Link>

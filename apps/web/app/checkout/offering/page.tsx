@@ -30,6 +30,8 @@ import {
   pujaTotalInr,
 } from '../../../lib/puja-pricing';
 import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Razorpay loader ───────────────────────────────────────────
 // RES-04 (2026-08-12): the loader used to live inline here (and, verbatim, in
@@ -363,7 +365,7 @@ function OfferingCheckoutInner() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
               <div>
-                <h1 className="text-lg font-semibold text-surface-800">
+                <h1 className={H1.portal}>
                   Could not load this puja
                 </h1>
                 <p className="text-sm text-surface-600 mt-1">
@@ -385,7 +387,7 @@ function OfferingCheckoutInner() {
             <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-7 h-7 text-green-600" />
             </div>
-            <h1 className="text-2xl font-semibold text-surface-800 mb-2">
+            <h1 className={`${H1.portal} mb-2`}>
               Booking confirmed
             </h1>
             <p className="text-sm text-surface-600">
@@ -401,7 +403,7 @@ function OfferingCheckoutInner() {
             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 href={`/dashboard/bookings`}
-                className="inline-flex items-center justify-center px-5 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700"
+                className={buttonClass('primary', 'md')}
               >
                 View my bookings
               </Link>
@@ -437,7 +439,7 @@ function OfferingCheckoutInner() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="text-lg font-semibold text-surface-800">
+                <h1 className={H1.portal}>
                   {offering.name}
                 </h1>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-saffron-50 text-saffron-700">
@@ -609,7 +611,7 @@ function OfferingCheckoutInner() {
           type="button"
           disabled={!canPay}
           onClick={handlePayment}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 disabled:bg-surface-300 disabled:cursor-not-allowed transition-colors"
+          className={buttonClass('primary', 'md', 'w-full disabled:bg-surface-300 disabled:cursor-not-allowed')}
         >
           {paymentLoading ? (
             <>

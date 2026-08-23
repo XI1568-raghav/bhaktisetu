@@ -15,6 +15,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { IndianRupee, Clock, CheckCircle2, Loader2, AlertCircle, Wallet, ArrowUpRight } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth, type UserRole } from '../../lib/auth-context';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
   API_BASE_URL,
   DATA_FETCH_TIMEOUT_MS,
@@ -142,7 +144,7 @@ function PayoutsContent() {
   return (
     <div className="min-h-[100dvh] bg-surface-50">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <h1 className="text-2xl font-bold text-surface-800">Payouts</h1>
+        <h1 className={H1.portal}>Payouts</h1>
         <p className="text-sm text-surface-500 mt-1">Withdraw your earnings to your bank / UPI.</p>
 
         {loadError && (
@@ -253,7 +255,7 @@ function PayoutsContent() {
               <button
                 onClick={requestPayout}
                 disabled={requesting || loading || !balance || balance.availableInr <= 0}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700 disabled:opacity-50"
+                className={buttonClass('primary', 'md')}
               >
                 {requesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
                 {requesting ? 'Requesting…' : 'Request payout'}

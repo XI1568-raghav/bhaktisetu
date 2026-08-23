@@ -116,8 +116,16 @@ describe('[DU-03] the CTA backlog has a ceiling and it only falls', () => {
      * Left above the true count it is slack a new off-scale button can be
      * authored into without failing anything, which is how DU-03 stayed open
      * while every suite was green.
+     *
+     * 2026-08-23 sweep: 212 of the 213 adopted buttonClass('primary','md').
+     * The 1 survivor is the detector's only false positive in the whole
+     * population — app/calendar/[month]/page.tsx, where the saffron pill is a
+     * `<span>` "TODAY" badge sitting inside a day <Link>, so the 220-character
+     * lookbehind sees a control that does not own the class. It is not a CTA
+     * and must not be given a 44px button body; it also keeps the
+     * "detector still finds things" canary above zero.
      */
-    const BASELINE = 213;
+    const BASELINE = 1;
     expect(
       OFFENDERS.length,
       `${OFFENDERS.length} labelled saffron CTAs carry their own padding (ceiling ${BASELINE}). ` +

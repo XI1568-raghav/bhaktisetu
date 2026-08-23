@@ -1,6 +1,7 @@
 'use client';
 
 import { getTempleHero, getDeityImage } from '../../lib/images';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
  Flame,
  Play,
@@ -35,7 +36,7 @@ export default function MobileHome() {
  <div className="flex items-center justify-between">
  <div>
  <p className="text-xs text-surface-400 font-medium">Namaste</p>
- <h1 className="text-xl font-bold text-surface-900 tracking-tight">Arjun Sharma</h1>
+ <h1 className={H1.portal}>Arjun Sharma</h1>
  </div>
  <div className="flex items-center gap-2">
  <button className="w-9 h-9 bg-surface-100 rounded-xl flex items-center justify-center">

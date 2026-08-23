@@ -17,6 +17,7 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/meditation' },
  title: 'Meditation — Guided Sessions & Daily Practice',
@@ -97,8 +98,7 @@ export default function MeditationPage() {
 
  <h1
  data-reveal="up-far"
- className="heading-display text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]"
- style={{ color: 'var(--color-text)' }}
+ className={H1.catalogue}
  >
  Find stillness with{' '}
  <span style={{ color: 'var(--color-primary)' }}>Guided Meditation</span>

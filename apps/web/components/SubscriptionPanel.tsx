@@ -11,6 +11,7 @@ import {
  CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import { H1 } from '../components/ui/heading-recipe';
 import {
  listPlans,
  getMySubscription,
@@ -197,7 +198,7 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  return (
  <div className="space-y-6 max-w-5xl">
  <div>
- <h1 className="text-lg font-semibold text-surface-800">{title ?? 'Subscription'}</h1>
+ <h1 className={H1.portal}>{title ?? 'Subscription'}</h1>
  <p className="text-surface-500 mt-1 text-sm">
  {description ??
  'Choose a marketplace plan to unlock listings, lower commission, and premium tooling.'}

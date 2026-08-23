@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Save, Plus, Trash2, ArrowLeft, Clock } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 /**
  * Temple manager schedule self-edit. Mirrors /admin/temples/[slug] from Layer K3
@@ -184,7 +185,7 @@ export default function TempleScheduleEditor() {
             type="button"
             onClick={save}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 hover:bg-saffron-700 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save schedule'}
           </button>

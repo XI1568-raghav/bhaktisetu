@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { getPublicPriests, type PriestSummary } from '../../lib/pandit-api';
 import { remoteImage, IMG_W } from '../../lib/images';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pandits' },
@@ -133,7 +134,7 @@ export default async function PanditsListingPage() {
    {/* Hero */}
    <section className="bg-gradient-to-b from-saffron-50 to-[var(--color-bg)] py-12 px-4">
     <div className="max-w-6xl mx-auto">
-     <h1 className="text-3xl sm:text-4xl font-semibold text-surface-800 mb-3">
+     <h1 className={`${H1.catalogue} mb-3`}>
       Verified Pandits
      </h1>
      <p className="text-surface-600 max-w-2xl">

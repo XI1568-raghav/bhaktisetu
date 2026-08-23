@@ -27,6 +27,7 @@ import { formatINR } from '../../../../lib/yatra-data';
 import { publishedCompanions, getPublishedCompanionById } from '../../../../lib/companion-roster';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 export function generateStaticParams() {
  return publishedCompanions.map((c) => ({ id: c.id }));
 }
@@ -91,7 +92,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
 
  <div className="flex-1">
  <div className="flex flex-wrap items-center gap-2 mb-1.5">
- <h1 className="heading-display text-2xl font-semibold tracking-tight" style={{ color: 'var(--color-text)' }}>
+ <h1 className={H1.portal}>
  {c.name}
  </h1>
  <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 12%, transparent)', color: '#16a34a' }}>

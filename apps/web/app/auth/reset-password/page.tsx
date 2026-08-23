@@ -25,6 +25,8 @@ import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-re
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
 import { persistAuthStorage } from '../../../lib/auth-context';
 import { API_BASE_URL, fetchWithTimeout } from '../../../lib/api-config';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const MIN_PASSWORD_LENGTH = 8;
 // Mirrors the server-side signup policy (apps/api/src/routes/auth.ts) so a
@@ -166,14 +168,14 @@ export default function ResetPasswordPage() {
   return (
    <div className="shadow-warm overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
     <AlertCircle className="mx-auto mb-4 h-12 w-12 text-amber-500" />
-    <h1 className="text-surface-800 mb-2 text-xl font-bold">This link is no longer valid</h1>
+    <h1 className={`${H1.portal} mb-2`}>This link is no longer valid</h1>
     <p className="text-surface-500 mb-6 text-sm">
      Password reset links expire an hour after they are sent, and can only be used once.
      Request a fresh one and it will work.
     </p>
     <Link
      href="/auth/forgot-password"
-     className="bg-saffron-600 hover:bg-saffron-700 inline-flex items-center justify-center rounded-lg px-6 py-3 font-medium text-white"
+     className={buttonClass('primary', 'md')}
     >
      Send a new reset link
     </Link>
@@ -185,14 +187,14 @@ export default function ResetPasswordPage() {
   return (
    <div className="shadow-warm overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
     <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
-    <h1 className="text-surface-800 mb-2 text-xl font-bold">Password updated</h1>
+    <h1 className={`${H1.portal} mb-2`}>Password updated</h1>
     <p className="text-surface-500 mb-6 text-sm">
      You&apos;ve been signed out everywhere. Sign in with your new password —
      taking you to the sign-in page…
     </p>
     <Link
      href="/auth/login"
-     className="bg-saffron-600 hover:bg-saffron-700 inline-flex items-center justify-center rounded-lg px-6 py-3 font-medium text-white"
+     className={buttonClass('primary', 'md')}
     >
      Sign in
     </Link>
@@ -202,7 +204,7 @@ export default function ResetPasswordPage() {
 
  return (
   <div className="shadow-warm overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8">
-   <h1 className="text-surface-800 mb-2 text-xl font-bold">Choose a new password</h1>
+   <h1 className={`${H1.portal} mb-2`}>Choose a new password</h1>
    <p className="text-surface-500 mb-6 text-sm">
     At least {MIN_PASSWORD_LENGTH} characters, including a letter and a number.
     You&apos;ll use this to sign in from now on.
@@ -266,7 +268,7 @@ export default function ResetPasswordPage() {
    <button
     onClick={handleSubmit}
     disabled={status === 'submitting'}
-    className="bg-saffron-600 hover:bg-saffron-700 flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+    className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
    >
     {status === 'submitting' ? (
      <>

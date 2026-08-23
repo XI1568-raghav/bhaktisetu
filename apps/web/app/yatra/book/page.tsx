@@ -23,6 +23,7 @@ import { getYatraBySlug, formatINR } from '../../../lib/yatra-data';
 import { DateInput } from '../../../components/ui/DateInput';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 type Traveler = {
  name: string;
  age: string;
@@ -237,7 +238,7 @@ function BookYatraInner() {
  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--color-primary-highlight)' }}>
  <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
  </div>
- <h1 className="heading-display text-2xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Inquiry received</h1>
+ <h1 className={`${H1.portal} mb-2`}>Inquiry received</h1>
  <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
  Our yatra desk will confirm hotel + transport availability for {yatra.title} and email your final invoice within 24 hours.
  </p>
@@ -268,7 +269,7 @@ function BookYatraInner() {
  <Link href={`/yatra/${yatra.slug}`} className="inline-flex items-center gap-1.5 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
  <ChevronLeft className="w-3.5 h-3.5" /> Back to yatra
  </Link>
- <h1 className="heading-display text-xl font-semibold" style={{ color: 'var(--color-text)' }}>
+ <h1 className={H1.portal}>
  Book {yatra.title}
  </h1>
 

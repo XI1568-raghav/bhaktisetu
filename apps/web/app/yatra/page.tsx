@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../components/ScrollReveal';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
  yatras,
  formatINR,
@@ -70,8 +71,7 @@ export default function YatraHubPage() {
 
  <h1
  data-reveal="cinematic"
- className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.05]"
- style={{ color: 'var(--color-text)' }}
+ className={H1.marketing}
  >
  Plan Your{' '}
  <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>Sacred Journey</span>

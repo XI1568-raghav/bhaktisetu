@@ -15,6 +15,7 @@ import UpcomingClassesSection from './UpcomingClassesSection';
 import FeaturedInstructorsSection from './FeaturedInstructorsSection';
 
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness' },
  title: 'Yoga, Meditation & Vipassana',
@@ -95,8 +96,7 @@ export default function WellnessPage() {
 
  <h1
  data-reveal="up-far"
- className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]"
- style={{ color: 'var(--color-text)' }}
+ className={H1.marketing}
  >
  Yoga, Meditation{' '}
  <span style={{ color: 'var(--color-primary)' }}>&amp; Vipassana</span>

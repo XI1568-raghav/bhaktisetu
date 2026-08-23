@@ -10,6 +10,8 @@ import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import { astrologyFetch, isAstrologyNetworkFailure } from '../../../../lib/astrologer-fetch';
 import { DateTimeInput } from '../../../../components/ui/DateInput';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 type Astrologer = {
   id: string;
@@ -251,7 +253,7 @@ function BookContent() {
         <div className="text-center max-w-md">
           <h2 className="text-xl font-bold text-surface-700 mb-2">Astrologer unavailable</h2>
           <p className="text-surface-500 mb-6">{fetchError ?? 'Could not load this astrologer.'}</p>
-          <Link href="/astrology" className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700">
+          <Link href="/astrology" className={buttonClass('primary', 'md')}>
             Browse Astrologers
           </Link>
         </div>
@@ -272,7 +274,7 @@ function BookContent() {
         <div className="bg-white rounded-xl border border-surface-100 p-6 lg:p-8 mb-6">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-surface-800 mb-1">Book {astrologer.name}</h1>
+              <h1 className={`${H1.portal} mb-1`}>Book {astrologer.name}</h1>
               <p className="text-sm text-surface-500">
                 {astrologer.specializations.slice(0, 3).join(' · ')}
               </p>

@@ -6,6 +6,7 @@ import { getLiveProduct } from '../../../../lib/store-live';
 import AddToCartButton from '../../../../components/store/AddToCartButton';
 import type { CartProduct } from '../../../../components/CartContext';
 import { productJsonLd, SITE_URL } from '../../../../lib/jsonld';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 /**
  * COM-11: the detail page for a real seller's product.
@@ -121,7 +122,7 @@ export default async function SellerProductPage({ params }: { params: Promise<Pa
           <div className="space-y-5">
             <div>
               <p className="text-sm text-saffron-600 font-medium mb-1">{product.category}</p>
-              <h1 className="text-2xl lg:text-3xl font-bold text-surface-800 mb-2">
+              <h1 className={`${H1.catalogue} mb-2`}>
                 {product.title}
               </h1>
               {product.storeName && (

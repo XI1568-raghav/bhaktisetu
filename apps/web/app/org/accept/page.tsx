@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -65,7 +66,7 @@ function AcceptInner() {
 export default function AcceptInvitePage() {
   return (
     <main className="mx-auto max-w-xl px-4 py-20 text-center">
-      <h1 className="text-2xl font-bold mb-4">Accept invitation</h1>
+      <h1 className={`${H1.portal} mb-4`}>Accept invitation</h1>
       <Suspense fallback={<p>Loading...</p>}>
         <AcceptInner />
       </Suspense>

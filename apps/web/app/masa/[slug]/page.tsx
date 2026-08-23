@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { VEDIC_MONTHS, getVedicMonthBySlug } from '../../../lib/vedic-months';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -66,7 +68,7 @@ export default async function MasaDetailPage({ params }: { params: Promise<{ slu
           <span className="text-sm font-semibold text-saffron-600">Month {month.number}</span>
           <span className="text-xs text-gray-500">{month.gregorianRange}</span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-1">{month.name}</h1>
+        <h1 className={`${H1.marketing} mb-1`}>{month.name}</h1>
         <p className="text-2xl text-gray-700 mb-4">{month.sanskrit}</p>
       </section>
 
@@ -129,7 +131,7 @@ export default async function MasaDetailPage({ params }: { params: Promise<{ slu
           <Link href="/aditya" className="px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 text-sm">
             12 Adityas
           </Link>
-          <Link href="/calendar" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
+          <Link href="/calendar" className={buttonClass('primary', 'md')}>
             Festival calendar
           </Link>
           <Link href="/vrat" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">

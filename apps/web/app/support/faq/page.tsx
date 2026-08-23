@@ -5,6 +5,8 @@ import RouteFallback from '../../../components/ui/RouteFallback';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Search, ArrowLeft, LifeBuoy, X } from 'lucide-react';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
   FAQ_ITEMS,
   FAQ_SECTIONS,
@@ -75,7 +77,7 @@ function FaqContent() {
             <LifeBuoy className="w-3.5 h-3.5" />
             FAQ
           </div>
-          <h1 className="text-4xl font-[family-name:var(--font-display)] font-bold text-surface-900 tracking-tight mb-3">
+          <h1 className={`${H1.catalogue} mb-3`}>
             Frequently asked questions
           </h1>
           <p className="text-surface-600 mb-6">
@@ -161,7 +163,7 @@ function FaqContent() {
               </p>
               <Link
                 href="/support/ticket/new"
-                className="inline-flex px-4 py-2 rounded-lg bg-saffron-600 hover:bg-saffron-700 text-white text-sm font-semibold"
+                className={buttonClass('primary', 'md')}
               >
                 Raise a ticket
               </Link>

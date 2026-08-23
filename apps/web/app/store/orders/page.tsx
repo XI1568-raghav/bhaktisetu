@@ -35,6 +35,8 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 interface OrderItem {
   productId: string;
@@ -139,7 +141,7 @@ function StoreOrdersInner() {
           Back to store
         </Link>
 
-        <h1 className="text-2xl font-bold text-surface-800 mb-1">My Orders</h1>
+        <h1 className={`${H1.portal} mb-1`}>My Orders</h1>
         <p className="text-surface-500 text-sm mb-8">
           Every order you have placed in the Darshya store, with its current status.
         </p>
@@ -172,7 +174,7 @@ function StoreOrdersInner() {
             </p>
             <Link
               href="/store"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse the store
             </Link>

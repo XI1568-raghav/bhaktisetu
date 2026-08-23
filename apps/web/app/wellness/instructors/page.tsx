@@ -23,6 +23,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CalendarDays, Leaf } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
   fetchWellnessClasses,
   formatClassPrice,
@@ -99,8 +100,7 @@ export default function WellnessInstructorsIndexPage() {
             Wellness
           </p>
           <h1
-            className="heading-display text-3xl font-semibold tracking-tight mb-3"
-            style={{ color: 'var(--color-text)' }}
+            className={`${H1.catalogue} mb-3`}
           >
             Instructors teaching on Darshya
           </h1>

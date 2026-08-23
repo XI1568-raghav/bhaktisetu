@@ -13,6 +13,7 @@ import { Verse } from "./Verse";
 import { ChapterNav } from "./ChapterNav";
 import { ScrollProgressBar } from "./ScrollProgressBar";
 import { ReaderControls } from "./ReaderControls";
+import { H1 } from '../../components/ui/heading-recipe';
 
 const PREFS_STORAGE_KEY = "poojly_reader_prefs";
 
@@ -84,7 +85,7 @@ export function ReaderClient({ chapter, bookTitle, prev, next }: Props) {
           <p className="text-xs uppercase tracking-widest reader-verse-num mb-2">
             {bookTitle} · Chapter {chapter.number}
           </p>
-          <h1 className="text-3xl sm:text-4xl font-semibold leading-tight">
+          <h1 className={H1.catalogue}>
             {chapter.title}
           </h1>
           {chapter.titleSanskrit && (

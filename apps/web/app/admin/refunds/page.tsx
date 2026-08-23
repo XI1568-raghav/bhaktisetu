@@ -56,6 +56,7 @@ import {
   type RefundType,
 } from './refund-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 /**
  * Exact rupees, always. Compact formatting ("Rs. 3.2L") is fine for a headline
@@ -408,7 +409,7 @@ export default function AdminRefundsPage() {
                     <td className="py-2.5 px-4 text-surface-500">
                       {formatDay(b.cancelledAt)}
                       {b.cancellationReason && (
-                        <p className="text-xs text-surface-400 truncate max-w-[220px]">
+                        <p className="prose-meta text-surface-400 truncate max-w-[220px]">
                           {b.cancellationReason}
                         </p>
                       )}
@@ -426,7 +427,7 @@ export default function AdminRefundsPage() {
                         <button
                           type="button"
                           onClick={() => openDialog('refund', b)}
-                          className="px-3 py-1.5 bg-saffron-600 text-white text-xs font-medium rounded-md hover:bg-saffron-700 transition-colors"
+                          className={buttonClass('primary', 'md')}
                         >
                           Refund
                         </button>

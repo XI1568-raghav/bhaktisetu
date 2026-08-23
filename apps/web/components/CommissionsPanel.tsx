@@ -11,6 +11,7 @@ import {
  ArrowUpRight,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import { H1 } from '../components/ui/heading-recipe';
 import {
  listMyCommissions,
  listCommissions,
@@ -161,7 +162,7 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  return (
  <div className="space-y-6 max-w-5xl">
  <div>
- <h1 className="text-lg font-semibold text-surface-800">
+ <h1 className={H1.portal}>
  {title ?? (mode === 'admin' ? 'All commissions' : 'My commissions')}
  </h1>
  <p className="text-surface-500 mt-1 text-sm">

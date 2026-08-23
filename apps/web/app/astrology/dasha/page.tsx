@@ -7,6 +7,7 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import DashaClient from './DashaClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -156,7 +157,7 @@ export default function DashaPage() {
      the pandit&rsquo;s craft. Use our free tools, then book a consultation.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/astrology/nakshatra-finder" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/astrology/nakshatra-finder" className={buttonClass('primary', 'md')}>
       Find My Nakshatra
      </Link>
      <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

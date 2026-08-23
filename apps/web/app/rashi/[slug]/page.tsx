@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { RASHI_PROFILES, rashiProfileSlugs, getRashiProfile } from '../../../lib/rashi-profiles';
 import { getRashi, pujasForRashi } from '../../../lib/rashis';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -223,7 +224,7 @@ export default async function RashiDetail({
         </p>
         <Link
           href={`/astrology/horoscope/${slug}`}
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Today&apos;s {cap} horoscope →
         </Link>

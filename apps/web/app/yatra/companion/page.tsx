@@ -25,6 +25,7 @@ import { formatINR } from '../../../lib/yatra-data';
 import { publishedCompanions } from '../../../lib/companion-roster';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/yatra/companion' },
  title: 'Travel Companions for elderly yatris',
@@ -50,7 +51,7 @@ export default function CompanionListingPage() {
  Travel Companion Service
  </div>
 
- <h1 data-reveal="cinematic" className="heading-display text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]" style={{ color: 'var(--color-text)' }}>
+ <h1 data-reveal="cinematic" className={H1.catalogue}>
  A verified companion for every step of your{' '}
  <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>sacred journey</span>
  </h1>

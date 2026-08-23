@@ -8,6 +8,7 @@ import {
 } from "../../../../lib/books";
 import { ChapterTOC } from "../../../../components/books/ChapterTOC";
 import { ContinueReadingCTA } from "../../../../components/books/ContinueReadingCTA";
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 type Params = { slug: string };
 
@@ -95,7 +96,7 @@ export default async function BookDetailPage({
                 {book.titleSanskrit}
               </p>
             )}
-            <h1 className="text-3xl sm:text-4xl font-semibold text-surface-900 tracking-tight">
+            <h1 className={H1.catalogue}>
               {book.title}
             </h1>
             {book.subtitle && (

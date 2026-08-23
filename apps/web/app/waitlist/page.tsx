@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import WaitlistForm from './WaitlistForm';
+import { H1 } from '../../components/ui/heading-recipe';
 
 
 export const metadata: Metadata = {
@@ -49,7 +50,7 @@ export default async function WaitlistPage({ searchParams }: WaitlistPageProps) 
           Early Access
         </p>
         <h1
-          className="heading-display text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.15]"
+          className={H1.catalogue}
           style={{ color: 'var(--color-text, #1f1b18)' }}
         >
           Devotion. Verified. Be among the first 1000 devotees on Darshya.

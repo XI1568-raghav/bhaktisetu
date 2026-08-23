@@ -11,6 +11,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { COMPANY } from '../../../lib/company';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -160,7 +162,7 @@ export default function CanadaNriLanding() {
               <MapPin className="w-3.5 h-3.5" />
               For Indo-Canadians in Toronto, Vancouver, Brampton, Mississauga
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-surface-900 mb-6 leading-tight">
+            <h1 className={`${H1.marketing} mb-6`}>
               India temples, from
               <br />
               <span className="text-saffron-700">your Canada home.</span>
@@ -171,7 +173,7 @@ export default function CanadaNriLanding() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
               <Link
                 href="/pujas"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
+                className={buttonClass('primary', 'md', 'shadow-md shadow-saffron-600/20')}
               >
                 Browse pujas
                 <ArrowRight className="w-4 h-4" />
@@ -270,7 +272,7 @@ export default function CanadaNriLanding() {
           </p>
           <Link
             href="/nri"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
+            className={buttonClass('primary', 'md', 'shadow-md shadow-saffron-600/20')}
           >
             See NRI Premium tier
             <ArrowRight className="w-4 h-4" />

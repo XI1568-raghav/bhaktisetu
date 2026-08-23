@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Calendar, MapPin, ArrowRight, Mountain } from 'lucide-react';
 import { getTranslations } from '../../../lib/t';
 import { yatraDestinations, formatINRPrice } from '../../../lib/yatra-destinations';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   title: 'Top 10 Yatra Destinations in India — Booking, Itineraries & Best Time',
@@ -30,7 +31,7 @@ export default async function YatraDestinationsPage() {
             <Mountain className="w-3.5 h-3.5" />
             {t('destinationsBadge')}
           </div>
-          <h1 className="heading-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-tight max-w-3xl" style={{ color: 'var(--color-text)' }}>
+          <h1 className={`${H1.marketing} max-w-3xl`}>
             {t('destinationsTitle')}
           </h1>
           <p className="mt-4 text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../../../lib/auth-context';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 function apiBase(): string {
   const b = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
@@ -81,7 +83,7 @@ export default function ApplyClient({ programId }: { programId: string }) {
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-surface-900 mb-2">Apply to Gurukul</h1>
+      <h1 className={`${H1.catalogue} mb-2`}>Apply to Gurukul</h1>
       <p className="text-sm text-surface-600 mb-6">All fields are required unless marked optional. Applications for those under 18 require parent/guardian consent.</p>
 
       {!isAuthenticated && (
@@ -162,7 +164,7 @@ export default function ApplyClient({ programId }: { programId: string }) {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <button type="submit" disabled={submitting || !isAuthenticated} className="w-full px-4 py-3 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="submit" disabled={submitting || !isAuthenticated} className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}>
           {submitting ? 'Submitting...' : 'Submit application'}
         </button>
       </form>

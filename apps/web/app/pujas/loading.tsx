@@ -32,7 +32,7 @@ export default function PujasLoading() {
       <section className="bg-[#ede9e3] py-12 md:py-16">
         <div className="container-wide">
           <div className="h-9 w-80 max-w-full animate-pulse rounded bg-white/70" />
-          <p className="mt-3 max-w-2xl text-lg text-surface-500">Loading pujas…</p>
+          <p className="prose-lead mt-3 max-w-2xl text-surface-500">Loading pujas…</p>
 
           {/* Trust badges */}
           <div className="mt-6 flex flex-wrap gap-4">

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { CIRCUITS } from '../../lib/pilgrimage-circuits';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 // CI-10: the page announced "the 8 canonical circuits" above a grid of 19, and
 // two of those 19 were the SAME url — sapta-puri appeared twice in CIRCUITS, at
@@ -66,7 +67,7 @@ export default function PilgrimageIndex() {
         <h1 className={`${H1.marketing} mb-3`}>
           Hindu Pilgrimage Circuits
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-3xl mx-auto">
           {CIRCUIT_CARDS.length} Hindu pilgrimage circuits — from the 4-temple Char Dham
           to the 51 Shakti Peethas. Each page covers stops, days needed, best season,
           starting cost, and practical tips. Pair any circuit with a verified yatra
@@ -110,7 +111,7 @@ export default function PilgrimageIndex() {
         </p>
         <Link
           href="/yatra"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Browse yatra packages →
         </Link>

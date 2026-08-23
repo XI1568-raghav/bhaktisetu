@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getSacredTree, SACRED_TREES } from '../../../lib/sacred-trees';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -98,7 +99,7 @@ export default async function SacredTreeDetail({
         <div className="inline-block px-3 py-1 mb-3 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-full">
           Sacred Tree · {t.sanskrit}
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2 leading-tight">
+        <h1 className={`${H1.catalogue} mb-2`}>
           {t.name}
         </h1>
         <div className="text-surface-600 italic mb-1">{t.botanicalName}</div>

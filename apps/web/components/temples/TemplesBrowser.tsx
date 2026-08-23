@@ -210,7 +210,7 @@ export function TemplesBrowser({
  <h1 className={`${H1.catalogue} mb-3`}>
  Sacred Temples of India
  </h1>
- <p className="max-w-2xl text-lg text-surface-500">
+ <p className="prose-lead max-w-2xl text-surface-500">
  Explore verified Jyotirlingas, Shakti Peethas and Divya Desams. Watch live darshan,
  book pujas with video proof, and plan your pilgrimage.
  </p>

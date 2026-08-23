@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { H1 } from '../../components/ui/heading-recipe';
 import {
  COMPANY,
  deliveryFeeLine,
@@ -36,11 +37,7 @@ export default function ShippingPage() {
  Legal
  </p>
  <h1
- className="heading-display text-2xl sm:text-3xl font-bold mb-3"
- style={{
- color: "var(--color-text)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.catalogue} mb-3`}
  >
  Shipping &amp; Delivery Policy
  </h1>

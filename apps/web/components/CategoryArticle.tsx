@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 // discharged — the notice, the link back to each cited article, and the named
 // licence all come from the shared helper so they cannot drift from /credits.
 import { wikipediaAttribution } from '../lib/encyclopedia-attribution';
+import { H1 } from '../components/ui/heading-recipe';
 
 interface Props {
   category: KnowledgeCategory;
@@ -34,7 +35,7 @@ export default function CategoryArticle({ category, slug, categoryLabel }: Props
         {article.frontmatter.subTopic && (
           <div className="text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-1">{article.frontmatter.subTopic}</div>
         )}
-        <h1 className="text-3xl md:text-4xl font-bold text-surface-900 leading-tight">{article.frontmatter.title}</h1>
+        <h1 className={H1.catalogue}>{article.frontmatter.title}</h1>
         <p className="text-lg text-surface-600 mt-3">{article.frontmatter.summary}</p>
         <div className="mt-3 inline-flex items-center gap-2 text-xs text-surface-500">
           <Clock className="w-3.5 h-3.5" /> {article.frontmatter.readingMinutes} min read

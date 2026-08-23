@@ -53,7 +53,7 @@ export default function SacredTreesIndex() {
         <h1 className={`${H1.marketing} mb-3`}>
           12 Sacred Trees & Plants
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-3xl mx-auto">
           From the cosmic Peepal of the Bhagavad Gita to the ever-fragrant Tulsi of every Vaishnava
           courtyard — twelve trees and plants that anchor Hindu ritual, festival, and daily worship.
           Spiritual significance, associated deity, planting muhurta, and traditional uses.

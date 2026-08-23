@@ -3,46 +3,34 @@ import Link from 'next/link';
 import {
  ArrowRight,
  Play,
- Users,
  Shield,
  Video,
  Gift,
  Sparkles,
- Music,
- Calendar,
- Heart,
  Moon,
  ChevronDown,
- Zap,
- CheckCircle,
- Leaf,
- Flame,
- Stars,
- Compass,
- BookOpen,
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
-import { buttonClass } from '../components/ui/button-recipe';
 import { getTodayPanchang } from '../lib/api';
 import { getPlatformCounts } from '../lib/platform-stats';
-import TextReveal from '../components/motion/TextReveal';
+// ParallaxLayer is the only motion component this page actually renders.
+// TextReveal, ScrambleReveal and StickyHeadlinePin were imported here and
+// never used in the JSX — three dead imports the bundler still had to resolve,
+// and a StickyHeadlinePin that nobody could find on the page because it was
+// never mounted. TextReveal is still live inside the strip components.
 import ParallaxLayer from '../components/motion/ParallaxLayer';
-import ScrambleReveal from '../components/motion/ScrambleReveal';
-import StickyHeadlinePin from '../components/motion/StickyHeadlinePin';
 import { brandFaqJsonLd } from '../lib/jsonld';
-import { getTempleHero, getDeityImage, getContentImage, getProductImage, IMG_W, remoteSrcSet } from '../lib/images';
+import { getTempleHero, getDeityImage, getContentImage, IMG_W, remoteSrcSet } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
 import IntentTrio from '../components/home/IntentTrio';
 import ContinueJourneyCard from '../components/home/ContinueJourneyCard';
+import ThisWeek from '../components/home/ThisWeek';
+import WhatYouGet from '../components/home/WhatYouGet';
 import WorshipStrip from '../components/home/WorshipStrip';
 import WisdomStrip from '../components/home/WisdomStrip';
 import ConsultStrip from '../components/home/ConsultStrip';
-import ShopStrip from '../components/home/ShopStrip';
-import YatraStrip from '../components/home/YatraStrip';
-import TrustStrip from '../components/home/TrustStrip';
 import EmailCapture from '../components/EmailCapture';
-import NextFestivalStrip from '../components/home/NextFestivalStrip';
 import HowItWorks from '../components/home/HowItWorks';
 import HeroCopyVariant from '../components/home/HeroCopyVariant';
 import NriLaneAbTest from '../components/home/NriLaneAbTest';
@@ -268,149 +256,28 @@ export default async function HomePage() {
  <ContinueJourneyCard />
  <IntentTrio liveDarshanTemples={counts.liveDarshanTemples} />
 
- {/* ═══ NEXT FESTIVAL countdown — relocated below intent trio per user feedback 2026-06-07 ═════ */}
- <NextFestivalStrip />
+ {/* ═══ THE DATED SURFACE ═══════════════════════════════════════════
+     Supersedes NextFestivalStrip, which showed exactly one festival and had
+     no browse-fallback story of its own. Urgency here is a tithi, not a
+     discount timer — the deadline is real, which is the only kind of urgency
+     the CCPA dark-pattern guidelines leave open. Every CTA resolves against
+     the live catalogue; when nothing resolves the card offers the guide
+     rather than a dead /pujas/<slug>. */}
+ <ThisWeek />
 
  {/* CM-13: the answer to "how do I know the puja actually happened?", placed
      where the buyer asks it rather than ten screens down. */}
  <HowItWorks />
 
- {/* ═══ CATEGORY COLOR STRIP — 5 brand worlds visible above fold ═══════ */}
- {/* User complaint 2026-06-05: above-fold reads as saffron monoculture. */}
- {/* This strip immediately signals Worship saffron, Library indigo, Astrology indigo, Yatra emerald, Shop amber. */}
- <section aria-label="Browse by category" className="py-5 md:py-7" style={{ background: 'var(--color-bg)' }}>
- <div className="container-wide">
- <div className="flex md:grid md:grid-cols-5 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
- {[
- { label: 'Worship', sub: 'Darshan, Puja, Aarti', href: '/pujas', Icon: Flame, bg: '#FFF8F0', border: '#FDD8AF', text: '#7d4e1f', icon: '#9e6229' },
- { label: 'Library', sub: '500 plus wisdom guides', href: '/discover', Icon: BookOpen, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
- { label: 'Astrology', sub: 'Kundli, Horoscope, Doshas', href: '/astrology', Icon: Stars, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
- { label: 'Yatra', sub: 'Pilgrimage, Wellness', href: '/yatra', Icon: Compass, bg: '#ECFDF5', border: '#A7F3D0', text: '#065F46', icon: '#059669' },
- { label: 'Shop', sub: 'Prasad, Idols, Rudraksha', href: '/store', Icon: Heart, bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: '#D97706' },
- ].map((cat) => (
- <Link
- key={cat.label}
- href={cat.href}
- prefetch={false}
- className="snap-start shrink-0 md:shrink flex flex-col items-start justify-between gap-2 min-w-[164px] md:min-w-0 p-3.5 rounded-xl card-hover transition-all"
- style={{ background: cat.bg, border: `1px solid ${cat.border}` }}
- >
- <cat.Icon className="w-5 h-5" style={{ color: cat.icon }} />
- <div>
- <p className="text-sm font-semibold" style={{ color: cat.text }}>{cat.label}</p>
- <p className="text-xs mt-0.5" style={{ color: cat.text, opacity: 0.75 }}>{cat.sub}</p>
- </div>
- </Link>
- ))}
- </div>
- </div>
- </section>
+ {/* The five things the system refuses to operate without. Replaces the four
+     hardcoded trust cards that used to sit here — two of which had rotted into
+     claims the code contradicts. Every row is derived from a module with a
+     drift test rather than written as a literal. */}
+ <WhatYouGet />
 
- {/* ═══ QUICK ACTIONS — 6 chip row (IA P4) ═══════════════════════════ */}
- {/* HOME-01 (2026-08-21): row 10 of the ranked deferral list in
-     docs/audit/triage-2026-08-15.md, and one of the two rows on that list
-     that were never actually deferred. Re-measured from the SSR'd document on
-     2026-08-21: 5,099 B of markup, 6 inline <svg>, 6 <a>, ZERO images, and the
-     6th top-level child of a 26-child page — roughly 1,200 px down on a 375 px
-     phone against the audit's own 720 px fold. .defer-paint is
-     content-visibility:auto, so the markup stays in the HTML for crawlers and
-     find-in-page while layout and paint are skipped until it is scrolled near.
-     Buys no transfer bytes; it is render work, and the ranked list says so. */}
- <section aria-label="Quick actions" className="defer-paint py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
- <div className="container-wide">
- <div className="flex md:grid md:grid-cols-6 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
- {[
- { label: 'Darshan', href: '/darshan', Icon: Video, color: 'var(--color-primary)' },
- { label: 'Book Puja', href: '/pujas', Icon: Flame, color: 'var(--color-primary)' },
- { label: 'Kundli', href: '/astrology/kundli', Icon: Stars, color: '#4f46e5' },
- { label: 'Panchang', href: '/panchang', Icon: Calendar, color: '#d97706' },
- { label: 'Donate', href: '/donations', Icon: Heart, color: '#059669' },
- { label: 'Yatra', href: '/yatra', Icon: Compass, color: '#059669' },
- ].map((chip) => (
- <Link
- key={chip.label}
- href={chip.href}
- prefetch={false}
- className="snap-start shrink-0 md:shrink flex flex-col items-center justify-center gap-1.5 min-w-[88px] md:min-w-0 px-3 py-3 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
- >
- <chip.Icon className="w-5 h-5" style={{ color: chip.color }} />
- <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{chip.label}</span>
- </Link>
- ))}
- </div>
- </div>
- </section>
 
- {/* ═══ TRUST STRIP — verified, video-proof, 80G, NRI-friendly ═══ */}
- <section aria-label="Trust signals" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="container-wide">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- {[
- { icon: Shield, title: 'Verified Temples', desc: 'Manager-signed, on-site audit', accent: 'var(--color-primary)' },
- { icon: Video, title: 'Video Proof', desc: 'Every puja recorded + shared', accent: '#059669' },
- { icon: CheckCircle, title: '80G Receipts', desc: 'Tax-deductible donations', accent: '#059669' },
- { icon: Heart, title: 'NRI Friendly', desc: 'Book from 40+ countries', accent: 'var(--color-primary)' },
- ].map((t, i) => (
- <div key={t.title} data-reveal="cascade" data-delay={String(i + 1)} className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
- <t.icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: t.accent }} />
- <div>
- <p className="text-xs font-semibold leading-tight" style={{ color: 'var(--color-text)' }}>{t.title}</p>
- <p className="text-xs mt-0.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>{t.desc}</p>
- </div>
- </div>
- ))}
- </div>
- </div>
- </section>
 
- {/* animated divider */}
- <div data-reveal="fade" className="scroll-divider max-w-xs mx-auto" />
 
- {/* ═══ WHAT WE OFFER — cascade card grid ════════════════════════════ */}
- {/* HOME-01 (2026-08-21): row 9 of the ranked deferral list, the other row
-     that was listed and never deferred. Re-measured from the SSR'd document
-     on 2026-08-21: 6,530 B of markup and 8 inline <svg> — the largest
-     image-free section on the page — sitting 9th of 26 children. aria-label
-     added so the guard can anchor on it without matching one of the three
-     other `<section className="py-6 md:py-8">` openers. */}
- <section aria-label="What Darshya offers" className="defer-paint py-6 md:py-8">
- <div className="container-wide">
- <div className="flex items-center gap-2.5 mb-3">
- <Zap className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
- <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>{t('everythingOneApp')}</p>
- </div>
- <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug mb-5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('everythingTitle')}
- </h2>
- <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
- {[
- { title: t('featLiveDarshan'), desc: t('featLiveDarshanDesc'), href: '/darshan' },
- { title: t('featVerifiedPujas'), desc: t('featVerifiedPujasDesc'), href: '/pujas' },
- { title: t('featDharmicYatra'), desc: t('featDharmicYatraDesc'), href: '/yatra' },
- { title: t('featAiPandit'), desc: t('featAiPanditDesc'), href: '/ask-pandit' },
- { title: t('featSacredContent'), desc: t('featSacredContentDesc'), href: '/content' },
- { title: t('featAstrology'), desc: t('featAstrologyDesc'), href: '/astrology' },
- { title: t('featWellness'), desc: t('featWellnessDesc'), href: '/wellness' },
- ].map((item, i) => (
- <Link
- key={item.title}
- href={item.href}
- data-reveal="cascade"
- data-delay={String(i + 1)}
- className="group flex gap-2.5 p-3 rounded-xl transition-all card-hover"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
- >
- <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
- <div>
- <h3 className="text-sm font-medium group-hover:underline" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
- <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{item.desc}</p>
- </div>
- </Link>
- ))}
- </div>
- </div>
- </section>
 
  {/* ═══ LIVE DARSHAN — cinematic image reveal ════════════════════════ */}
  <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
@@ -526,7 +393,27 @@ export default async function HomePage() {
  />
  </div>
  <div className="col-span-2 rounded-lg overflow-hidden">
- <img src={getContentImage('aarti', 'thumbnail', IMG_W.THUMB)} alt="Aarti" width={320} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ {/* HOME-01 (2026-08-23 re-rank): this was the only <img> on the homepage with
+     neither srcSet nor sizes, so every device took the 250px / 15,277 B
+     candidate. Slot maths: .container-wide is 1088 CSS px of content at
+     >=1024px, the md:grid-cols-2 gap-5 card is (1088-20)/2 = 534, p-5 leaves a
+     494px body, and grid-cols-5 gap-2 makes col-span-2 = 2*92.4 + 8 = ~193px.
+     Below md the same chain gives ~(40vw - 34px) — 116px at a 375px viewport.
+     Candidates are [120, 250] and deliberately NOT 500: 1x phone takes 120 /
+     5,144 B (-10,133 B) and every other device still resolves to 250, exactly
+     what it pays today. Offering a wider step is the trap documented on the
+     Live Darshan tile, where it ADDED 133,682 B to desktop and DPR-3 phones. */}
+ <img
+   src={getContentImage('aarti', 'thumbnail', IMG_W.THUMB)}
+   srcSet={remoteSrcSet(getContentImage('aarti', 'thumbnail', IMG_W.THUMB), [120, IMG_W.THUMB])}
+   sizes="(max-width: 767px) calc(40vw - 34px), 193px"
+   alt="Aarti"
+   width={320}
+   height={320}
+   className="w-full h-full object-cover"
+   loading="lazy"
+   decoding="async"
+ />
  </div>
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center" style={{ background: 'var(--color-art-3)' }}>
  <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>HD</p>
@@ -619,249 +506,18 @@ export default async function HomePage() {
  </section>
 
  {/* animated divider */}
- <div data-reveal="fade" className="scroll-divider max-w-xs mx-auto" />
 
- {/* ═══ AI PANDIT — blur-in chat mockup ════════════════════════════ */}
- <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="container-wide">
- <div className="grid md:grid-cols-2 gap-8 items-center">
- <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('aiGuideLabel')}</p>
- <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('aiGuideTitle')}
- </h2>
- <p data-reveal="up" data-delay="1" className="text-xs leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- {t('aiGuideDesc')}
- </p>
- <div data-reveal="spring" data-delay="2">
- <Link href="/ask-pandit" className={buttonClass('primary', 'md', 'btn-press')}>
- {t('askYourQuestion')} <ArrowRight className="w-3.5 h-3.5" />
- </Link>
- </div>
- </div>
 
- <div data-reveal="glow" data-delay="1" className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface-2, #fff)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
- <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: '1px solid var(--color-divider)' }}>
- <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'var(--color-art-2)' }}>
- <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
- </div>
- <div>
- <p className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{t('panditJi')}</p>
- <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>{t('aiSpiritualGuide')}</p>
- </div>
- </div>
- <div className="p-4 space-y-3">
- <div className="flex justify-end">
- <div className="px-3 py-2 rounded-2xl rounded-br-md text-xs max-w-[80%]" style={{ background: 'var(--color-primary)', color: '#fff' }}>
- What does the Gita say about duty?
- </div>
- </div>
- <div className="flex justify-start">
- <div className="px-3 py-2 rounded-2xl rounded-bl-md text-xs max-w-[85%]" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
- <p className="mb-1.5">The Bhagavad Gita teaches us in Chapter 2, Verse 47:</p>
- <p className="italic text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>{"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"}</p>
- <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>&quot;You have the right to perform your duty, but not to the fruits of your actions.&quot;</p>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
- </section>
 
- {/* ═══ BHAKTI STORE — showcase ═══════════════════════════════════ */}
- <section className="py-6 md:py-8">
- <div className="container-wide">
- <div className="grid md:grid-cols-2 gap-8 items-center">
- <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('bhaktiStoreLabel')}</p>
- <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('bhaktiStoreTitle')}
- </h2>
- <p data-reveal="up" data-delay="1" className="text-xs leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- {t('bhaktiStoreDesc')}
- </p>
- <div data-reveal="up" data-delay="2" className="flex flex-wrap gap-2 mb-5">
- {['Puja Essentials', 'Rudraksha & Malas', 'Idols', 'Books', 'Organic'].map((tag) => (
- <span key={tag} className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>{tag}</span>
- ))}
- </div>
- <div data-reveal="spring" data-delay="3">
- <Link href="/store" className={buttonClass('primary', 'md', 'btn-press')}>
- {t('shopEssentials')} <ArrowRight className="w-3.5 h-3.5" />
- </Link>
- </div>
- </div>
- <div className="grid grid-cols-2 gap-3">
- {[
- { name: 'Brass Puja Thali', price: '₹1,299', img: getProductImage('brass-puja-thali', IMG_W.THUMB) },
- { name: 'Rudraksha Mala', price: '₹599', img: getProductImage('rudraksha-mala', IMG_W.THUMB) },
- { name: 'Sandalwood Incense', price: '₹249', img: getProductImage('incense-sticks', IMG_W.THUMB) },
- { name: 'Ganesh Murti', price: '₹2,499', img: getProductImage('ganesh-murti', IMG_W.THUMB) },
- ].map((p, i) => (
- <div key={p.name} data-reveal="cascade" data-delay={String(i + 1)} className="rounded-xl overflow-hidden card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <div className="aspect-square">
- <img src={p.img} alt={p.name} width={250} height={250} className="w-full h-full object-cover" loading="lazy" decoding="async" />
- </div>
- <div className="p-2.5">
- <p className="text-xs font-medium truncate" style={{ color: 'var(--color-text)' }}>{p.name}</p>
- <p className="text-xs mt-0.5" style={{ color: 'var(--color-primary)' }}>{p.price}</p>
- </div>
- </div>
- ))}
- </div>
- </div>
- </div>
- </section>
-
- {/* ═══ MORE FEATURES — cascade compact row ═══════════════════════ */}
- <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="container-wide">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- {[
- { title: t('gauSevaTitle'), desc: t('gauSevaDesc'), href: '/gaushala', icon: Heart },
- { title: t('panchangTitle'), desc: t('panchangDesc'), href: '/panchang', icon: Calendar },
- { title: t('contentTitle'), desc: t('contentDesc'), href: '/content', icon: Music },
- { title: t('wellnessTitle'), desc: t('wellnessDesc'), href: '/wellness', icon: Leaf },
- ].map((item, i) => (
- <Link
- key={item.title}
- href={item.href}
- prefetch={false}
- data-reveal="cascade"
- data-delay={String(i + 1)}
- className="group p-3 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
- >
- <item.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-primary)' }} />
- <h3 className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
- <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{item.desc}</p>
- </Link>
- ))}
- </div>
- </div>
- </section>
-
- {/* ═══ FINAL CTA — cinematic + spring ════════════════════════════ */}
- <section className="py-6 md:py-8">
- <div className="container-wide text-center">
- <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('finalCtaTitle')}
- </h2>
- <p data-reveal="up" data-delay="1" className="text-xs max-w-sm mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
- {t('finalCtaDesc')}
- </p>
- <div data-reveal="spring" data-delay="2" className="flex items-center justify-center gap-3">
- <Link href="/auth/login" className={buttonClass('primary', 'md', 'btn-press')}>
- {tCommon('getStarted')} <ArrowRight className="w-3.5 h-3.5" />
- </Link>
- <Link
- href="/temples"
- className={buttonClass('secondary', 'md')}
- >
- {t('exploreFirst')}
- </Link>
- </div>
- </div>
- </section>
 
  {/* ═══ 5-CATEGORY DISCOVERY STRIPS ═══════════════════════════════════ */}
  <WorshipStrip liveDarshanTemples={counts.liveDarshanTemples} />
  <WisdomStrip />
  <ConsultStrip />
- <ShopStrip />
- <YatraStrip />
 
  {/* ═══ A/B nri_lane_above_fold — below slot (R-Q1-E-009) ═════════════ */}
  <NriLaneAbTest slot="below" />
 
- {/* ═══ LIBRARY TEASER — 4-card row mirroring Library mega-panel (IA P4) ═══ */}
- {/* HOME-01: .defer-paint = content-visibility:auto + contain-intrinsic-size.
-     Icon-and-text only, no image, no sticky child, ~9 screens down. Buys render
-     work, not transfer bytes — the ranked list records it as such. */}
- <section aria-label="Discover the Library" className="defer-paint py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="container-wide">
- <div className="flex items-end justify-between mb-5">
- <div>
- <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#4f46e5' }}>Library</p>
- <h2 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- 500+ guides across scripture, practice, saints and the calendar.
- </h2>
- </div>
- <Link href="/discover" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#4f46e5' }}>
- Browse all <ArrowRight className="w-3 h-3" />
- </Link>
- </div>
- <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
- {[
- { Icon: BookOpen, title: 'Scriptures', desc: 'Vedas, Upanishads, Puranas, Gita, Ramayana.', href: '/discover#scriptures' },
- { Icon: Music, title: 'Devotional', desc: 'Aarti, chalisa, mantra, bhajan, sankalp.', href: '/discover#practice' },
- { Icon: Users, title: 'Saints & Deities', desc: '12 bhakti saints, 10 mahavidyas, navadurga.', href: '/discover#saints' },
- { Icon: Calendar, title: 'Calendar & Cosmology', desc: 'Festivals, tithi, nakshatra, ekadashi.', href: '/discover#cosmology' },
- ].map((card) => (
- <Link
- key={card.title}
- href={card.href}
- prefetch={false}
- className="group flex flex-col gap-2 p-4 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
- >
- <card.Icon className="w-5 h-5" style={{ color: '#4f46e5' }} />
- <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
- <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
- </Link>
- ))}
- </div>
- <div className="sm:hidden mt-4 text-center">
- <Link href="/discover" className="tap-safe items-center gap-1 text-xs font-medium" style={{ color: '#4f46e5' }}>
- Browse all 500+ guides <ArrowRight className="w-3 h-3" />
- </Link>
- </div>
- </div>
- </section>
-
- {/* ═══ YATRA TEASER — 3-card emerald row per audit §3 delta #1 ═══════════ */}
- <section aria-label="Pilgrimage circuits" className="defer-paint py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
- <div className="container-wide">
- <div className="flex items-end justify-between mb-5">
- <div>
- <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#059669' }}>Yatra</p>
- <h2 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Walk the sacred circuits of India. Char Dham, 12 Jyotirlinga, 62 Tirth.
- </h2>
- </div>
- <Link href="/yatra" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
- Plan a trip <ArrowRight className="w-3 h-3" />
- </Link>
- </div>
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- {[
- { Icon: Compass, title: 'Char Dham', desc: 'Yamunotri, Gangotri, Kedarnath, Badrinath. Himalayan moksha route.', href: '/pilgrimage/char-dham' },
- { Icon: Flame, title: '12 Jyotirlinga', desc: 'Shiva self-manifest lights from Somnath to Rameswaram.', href: '/jyotirlinga' },
- { Icon: Leaf, title: '62 Tirth Guides', desc: 'Darshan timings, dress code, vip-darshan tips per shrine.', href: '/tirth' },
- ].map((card) => (
- <Link
- key={card.title}
- href={card.href}
- prefetch={false}
- className="group flex flex-col gap-2 p-4 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
- >
- <card.Icon className="w-5 h-5" style={{ color: '#059669' }} />
- <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
- <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
- </Link>
- ))}
- </div>
- <div className="sm:hidden mt-4 text-center">
- <Link href="/yatra" className="tap-safe items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
- Plan a trip <ArrowRight className="w-3 h-3" />
- </Link>
- </div>
- </div>
- </section>
-
- <TrustStrip verifiedTemples={counts.verifiedTemples} />
 
  {/* Daily-panchang waitlist — single-field email capture, source-tagged for funnel */}
  <section className="container-prose py-12">

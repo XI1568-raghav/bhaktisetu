@@ -6,6 +6,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Cow = {
   id: string;
@@ -212,7 +213,7 @@ function CowsPageContent() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] transition-colors"
+          className={buttonClass('primary', 'md')}
         >
           <Plus className="w-4 h-4" />
           Register Cow
@@ -424,7 +425,7 @@ function CowsPageContent() {
               <button
                 onClick={addHealthRecord}
                 disabled={savingRecord || !newRecord.notes.trim()}
-                className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
+                className={buttonClass('primary', 'md')}
               >
                 {savingRecord ? 'Saving…' : 'Add Record'}
               </button>

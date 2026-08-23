@@ -42,6 +42,7 @@ import {
  timeAgo,
 } from '../../../../components/support/badges';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../../components/ui/button-recipe';
 
 const AGENT_OPTIONS = ['Priya S.', 'Arjun K.', 'Neha R.', 'Rahul M.', 'Kavita B.'];
 
@@ -290,7 +291,7 @@ function AdminTicketDetailInner() {
  <button
  onClick={sendReply}
  disabled={sendingReply || !reply.trim()}
- className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-saffron-600 hover:bg-saffron-700 disabled:opacity-50 text-white text-sm font-semibold"
+ className={buttonClass('primary', 'md')}
  >
  {sendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
  {sendingReply ? 'Sending…' : 'Send reply'}

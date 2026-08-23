@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import RouteFallback from '../../../components/ui/RouteFallback';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 
 interface Stats {
@@ -100,7 +101,7 @@ function WelcomeContent() {
             You're in
           </p>
           <h1
-            className="heading-display text-2xl sm:text-3xl font-semibold tracking-tight"
+            className={H1.catalogue}
             style={{ color: 'var(--color-text, #1f1b18)' }}
           >
             Welcome to Darshya early access

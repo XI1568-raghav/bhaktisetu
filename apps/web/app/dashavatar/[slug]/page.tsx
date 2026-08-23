@@ -5,6 +5,7 @@ import { DASHAVATAR, avatarSlugs, getAvatar, YUGA_LABELS } from '../../../lib/da
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -82,7 +83,7 @@ export default async function AvatarDetailPage({ params }: Props) {
           <span className="rounded-full bg-saffron-600 px-3 py-1 text-sm font-semibold text-white">#{a.number} of 10</span>
           <span className="rounded-full bg-white px-3 py-1 text-sm text-amber-900 ring-1 ring-amber-300">{YUGA_LABELS[a.yuga]}</span>
         </div>
-        <h1 className="text-3xl font-bold text-saffron-900 sm:text-4xl">{a.name}</h1>
+        <h1 className={H1.catalogue}>{a.name}</h1>
         <p className="mt-1 text-2xl text-amber-900" lang="sa">{a.sanskrit}</p>
         <p className="mt-1 text-sm italic text-gray-600">{a.iast}</p>
         <p className="mt-3 text-gray-800"><strong>Form:</strong> {a.form}</p>

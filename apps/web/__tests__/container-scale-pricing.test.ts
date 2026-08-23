@@ -84,10 +84,17 @@ describe('DU-14 — /pricing has one content width per section, not four', () =>
 
     expect(lines.length, 'the paragraph measures were converted; that is the wrong fix').toBe(6);
     for (const l of lines) {
+      // A measure sets its type EITHER with a Tailwind size utility OR with one
+      // of this project's named prose roles. `.prose-meta`, `.prose-body` and
+      // `.prose-lead` each declare a font-size in globals.css — they ARE the
+      // DU-10 abstraction that exists so authors stop picking an arbitrary step,
+      // so an assertion accepting only `text-*` marks the correct pattern as the
+      // violation. Corrected 2026-08-23 after it flagged `prose-meta max-w-2xl`
+      // on /pricing, which is exactly what DU-10 asks an author to write.
       expect(
         l.trim(),
         'this centres a width but sets no type — that is a shell, not a measure',
-      ).toMatch(/text-(xs|sm|base|lg|xl)\b/);
+      ).toMatch(/text-(xs|sm|base|lg|xl)\b|\bprose-(meta|body|lead)\b/);
     }
   });
 

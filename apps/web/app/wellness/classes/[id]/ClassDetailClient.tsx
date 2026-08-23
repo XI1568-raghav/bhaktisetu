@@ -36,6 +36,7 @@ import { API_BASE_URL } from '../../../../lib/api-config';
 import { formatClassPrice, formatClassWhen, type WellnessClass } from '../WellnessClassesClient';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 type ClassDetail = WellnessClass & { roomUrl?: string | null };
 
 let razorpayScriptPromise: Promise<void> | null = null;
@@ -263,7 +264,7 @@ export default function ClassDetailClient() {
   if (loadError) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+        <h1 className={`${H1.portal} mb-2`}>
           Class unavailable
         </h1>
         <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
@@ -303,8 +304,7 @@ export default function ClassDetailClient() {
       </Link>
 
       <h1
-        className="heading-display text-2xl sm:text-3xl font-semibold tracking-tight"
-        style={{ color: 'var(--color-text)' }}
+        className={H1.catalogue}
       >
         {detail.title}
       </h1>

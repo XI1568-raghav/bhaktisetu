@@ -11,6 +11,7 @@ import { resolveApiTemple } from '../../../../lib/temple-resolve';
 // CM-10: same `uppercase tracking-wider` chip as the deity page — the raw enum
 // rendered as 'SPECIAL_OCCASION'.
 import { pujaCategoryLabel } from '../../../../lib/puja-labels';
+import { buttonClass } from '../../../../components/ui/button-recipe';
 
 export const revalidate = 3600;
 
@@ -118,7 +119,7 @@ export default async function TemplePujasPage({ params }: Params) {
       {offerings.length === 0 ? (
         <div className="rounded-lg border border-surface-200 bg-surface-50 p-6 text-center">
           <p className="text-surface-700 mb-4">No active puja offerings yet for this temple.</p>
-          <Link href={`/temples/${slug}`} className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700">
+          <Link href={`/temples/${slug}`} className={buttonClass('primary', 'md')}>
             View temple page →
           </Link>
         </div>

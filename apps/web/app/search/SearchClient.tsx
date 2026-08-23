@@ -7,6 +7,8 @@ import { Search as SearchIcon, ArrowRight, BookOpen, Flame, Landmark, ShoppingBa
 import { API_BASE_URL } from '../../lib/api-config';
 import { contentSubtitleLabel, pujaSubtitleLabel } from '../../components/SearchSubtitle';
 import { buildRelaxedQueries } from '../../lib/search-relax';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 /**
  * CM-12 (prod sweep 2026-08-12) — this page searched ONLY the static
@@ -226,7 +228,7 @@ export default function SearchClient() {
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-surface-900 mb-2">Search Darshya</h1>
+      <h1 className={`${H1.catalogue} mb-2`}>Search Darshya</h1>
       <p className="text-sm text-surface-600 mb-6">
         Pujas you can book, temples, and the Sanskrit / Veda / Sanatan Dharma library.
       </p>
@@ -242,7 +244,7 @@ export default function SearchClient() {
             autoFocus
           />
         </div>
-        <button type="submit" className="px-5 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700">
+        <button type="submit" className={buttonClass('primary', 'md')}>
           Search
         </button>
       </form>
@@ -384,7 +386,7 @@ export default function SearchClient() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/pujas"
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-saffron-600 px-4 text-sm font-semibold text-white hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse all pujas
             </Link>

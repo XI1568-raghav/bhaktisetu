@@ -4,6 +4,7 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CHANTS, chantSlugs, getChant } from '../../../lib/chants';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -173,7 +174,7 @@ export default async function ChantDetail({
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/ask-pandit"
-            className="px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Ask a pandit →
           </Link>

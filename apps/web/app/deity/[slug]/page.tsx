@@ -20,6 +20,7 @@ import { getPujaTypes } from '../../../lib/api';
 // render as 'SPECIAL_OCCASION'.
 import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import { getMantrasForDeity } from '../../../lib/deity-mantras';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 3600;
 export const dynamicParams = false;
@@ -166,7 +167,7 @@ export default async function DeityPage({ params }: Params) {
             </p>
             <Link
               href="/pujas"
-              className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse all pujas →
             </Link>

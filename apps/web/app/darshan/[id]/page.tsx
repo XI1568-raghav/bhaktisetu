@@ -42,6 +42,7 @@ import DarshanPlayer from '../../../components/DarshanPlayer';
 import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
 import AdSlot from '../../../components/AdSlot';
 import { getTempleHero } from '../../../lib/images';
+import { buttonClass } from '../../../components/ui/button-recipe';
 import {
  currentAartiState,
  getScheduleForTemple,
@@ -495,7 +496,7 @@ export default async function DarshanDetailPage({
  <div className="flex flex-col sm:flex-row gap-3 justify-center">
  <a
  href="/darshan"
- className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-saffron-600 text-white font-semibold text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  Browse All Live Streams
  <ChevronRight className="w-4 h-4" />
@@ -808,7 +809,7 @@ export default async function DarshanDetailPage({
  Join the community chat and submit prayer requests during live
  darshan.
  </p>
- <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors">
+ <button className={buttonClass('primary', 'md')}>
  <MessageCircle className="w-4 h-4" />
  Join Chat
  </button>

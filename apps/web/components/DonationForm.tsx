@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../lib/auth-context';
 import { API_BASE_URL } from '../lib/api-config';
 import { COMPANY } from '../lib/company';
+import { buttonClass } from '../components/ui/button-recipe';
 
 /**
  * COM-02 (prod sweep 2026-08-12): this form asserted Section 80G eligibility in
@@ -407,7 +408,7 @@ export default function DonationForm({
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link
             href="/donations"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-saffron-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-saffron-700"
+            className={buttonClass('primary', 'md', 'flex-1')}
           >
             <Heart className="h-4 w-4" /> Donate to another cause
           </Link>

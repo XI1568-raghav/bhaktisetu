@@ -30,6 +30,7 @@ import {
  loadErrorMessage,
 } from '../../lib/api-config';
 import { H1 } from '../../components/ui/heading-recipe';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 interface Booking {
  id: string;
@@ -260,7 +261,7 @@ function DashboardContent() {
  <button
  type="button"
  onClick={() => { setIsLoadingData(true); void fetchDashboardData(); }}
- className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg text-sm hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md', 'mt-3')}
  >
  Retry
  </button>
@@ -276,7 +277,7 @@ function DashboardContent() {
  </p>
  <a
  href="/pujas"
- className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg text-sm hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  <Flame className="w-4 h-4" />
  Explore Pujas

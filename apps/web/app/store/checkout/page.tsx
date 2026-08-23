@@ -22,6 +22,8 @@ import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -126,7 +128,7 @@ function CheckoutContent() {
  <p className="text-surface-500 mb-6">Add some items to your cart first.</p>
  <Link
  href="/store"
- className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Browse Store
  </Link>
@@ -400,7 +402,7 @@ function CheckoutContent() {
  Back to Cart
  </Link>
 
- <h1 className="text-2xl font-bold text-surface-800 mb-8">Checkout</h1>
+ <h1 className={`${H1.portal} mb-8`}>Checkout</h1>
 
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
  {/* Left: Form */}
