@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
- ArrowLeft,
  Star,
  Calendar,
  Clock,
@@ -12,6 +11,12 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../../../components/ScrollReveal';
 import WellnessEnrolButton from './WellnessEnrolButton';
+// CI-05: this profile's only exits were /wellness and the category listing;
+// the section's bookable unit is /wellness/classes/<id> and nothing here
+// reached it. InstructorClasses resolves this instructor's real upcoming
+// classes from the live feed and falls back to the catalogue, never to a
+// bare /wellness.
+import InstructorClasses from './InstructorClasses';
 
 // ─── Static instructor data (mirrors API) ──────────────────────────────────
 
@@ -182,6 +187,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  }
 
  const categoryLink = inst.category === 'vipassana' ? '/wellness/vipassana' : inst.category === 'meditation' ? '/wellness/meditation' : '/wellness/yoga';
+ const categoryLabel = inst.category === 'vipassana' ? 'Vipassana' : inst.category === 'meditation' ? 'meditation' : 'yoga';
 
  return (
  <ScrollReveal>
@@ -416,18 +422,12 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
  </section>
 
- {/* ═══ BACK LINK ═════════════════════════════════════════════════════ */}
- <section className="py-8">
- <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
- <Link
- href="/wellness"
- className="inline-flex items-center gap-1.5 text-sm font-medium link-underline"
- style={{ color: 'var(--color-primary)' }}
- >
- <ArrowLeft className="w-4 h-4" /> Back to Wellness
- </Link>
- </div>
- </section>
+ {/* ═══ BOOKING EXIT ═══════════════════════════════════════════════════ */}
+ <InstructorClasses
+   instructorName={inst.name}
+   categoryHref={categoryLink}
+   categoryLabel={categoryLabel}
+ />
 
  </div>
  </ScrollReveal>

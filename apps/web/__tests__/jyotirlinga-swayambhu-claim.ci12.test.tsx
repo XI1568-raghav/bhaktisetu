@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { JYOTIRLINGAS } from '../lib/jyotirlingas';
 import { TIRTHAS } from '../lib/tirthas';
+import { TEMPLE_DETAILS } from '../lib/temple-details';
 import JyotirlingaIndexPage from '../app/jyotirlinga/page';
 
 // CI-12 — /jyotirlinga told the reader "Each Jyotirlinga is a swayambhu
@@ -82,6 +83,43 @@ describe('CI-12 — the swayambhu claim matches the swayambhu data', () => {
         expect(
           strings(t).join('  '),
           `${tslug} calls a non-swayambhu Jyotirlinga swayambhu`,
+        ).not.toMatch(SELF_MANIFEST);
+      }
+    }
+  });
+
+  // 2026-08-23: /tirth was cleaned but /temples was not — lib/temple-details.ts
+  // backs `/temples/[slug]` and carried the SAME three contradictions.
+  it('/temples no longer says Mahakaleshwar is the ONLY swayambhu Jyotirlinga', () => {
+    const mahakal = TEMPLE_DETAILS['mahakaleshwar'];
+    expect(mahakal).toBeDefined();
+    expect(mahakal!.significance).not.toMatch(/only\s+Jyotirlinga\s+that\s+is\s+s[vw]ayambhu/i);
+    expect(mahakal!.significance).not.toMatch(/only\s+s[vw]ayambhu/i);
+    // The claim the data DOES support — one dakshinmukhi Jyotirlinga — stays.
+    expect(JYOTIRLINGAS.filter((j) => j.dakshinmukhi)).toHaveLength(1);
+    expect(mahakal!.significance).toMatch(/only south-facing/i);
+  });
+
+  it('no temple page calls a Jyotirlinga swayambhu that the Jyotirlinga data denies', () => {
+    const denied = JYOTIRLINGAS.filter((j) => !j.swayambhu).map((j) => j.slug);
+    // Jyotirlinga slug -> every TEMPLE_DETAILS key that renders that shrine.
+    // `rameshwar` has two temple records (`rameswaram` and `rameshwaram`);
+    // both render, so both are checked.
+    const byJyotirlinga: Record<string, string[]> = {
+      somnath: ['somnath'],
+      'kashi-vishwanath': ['kashi-vishwanath'],
+      rameshwar: ['rameswaram', 'rameshwaram'],
+    };
+    // Guard the map itself: if a non-swayambhu Jyotirlinga gains a temple
+    // record under an unlisted key this test must not silently skip it.
+    expect(Object.keys(byJyotirlinga).sort()).toEqual([...denied].sort());
+    for (const jslug of denied) {
+      for (const tslug of byJyotirlinga[jslug] ?? []) {
+        const t = TEMPLE_DETAILS[tslug];
+        if (!t) continue;
+        expect(
+          strings(t).join('  '),
+          `TEMPLE_DETAILS.${tslug} calls a non-swayambhu Jyotirlinga swayambhu`,
         ).not.toMatch(SELF_MANIFEST);
       }
     }

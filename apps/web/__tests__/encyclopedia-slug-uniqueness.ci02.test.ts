@@ -45,6 +45,11 @@ const OWNED: Record<string, readonly { slug: string }[]> = {
   // Its one duplicate (the second `sapta-puri`) is deleted at source, so it
   // graduates from RATCHET to a hard zero.
   CIRCUITS,
+  // 2026-08-23: lib/muhurats.ts came into the encyclopedia-data lane. Its four
+  // duplicates (the SECOND amrit-siddhi-yoga, tripushkar-yoga,
+  // guru-pushya-yoga and sarvartha-siddhi-yoga records) are deleted at source,
+  // so it graduates from RATCHET to a hard zero.
+  MUHURATS,
 };
 
 /**
@@ -58,7 +63,6 @@ const RATCHET: Record<string, { rows: readonly { slug: string }[]; extras: numbe
   CHALISAS: { rows: CHALISAS, extras: 7 },
   CHANTS: { rows: CHANTS, extras: 1 },
   DEITIES: { rows: DEITIES, extras: 14 },
-  MUHURATS: { rows: MUHURATS, extras: 4 },
   SHLOKAS: { rows: SHLOKAS, extras: 2 },
   VRATS: { rows: VRATS, extras: 9 },
 };

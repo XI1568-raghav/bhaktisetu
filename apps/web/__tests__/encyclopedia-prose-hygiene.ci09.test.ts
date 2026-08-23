@@ -71,7 +71,10 @@ const RATCHET: Record<string, { rows: readonly unknown[]; brand: number; ticket:
   CHALISAS: { rows: CHALISAS, brand: 0, ticket: 0 },
   CHANTS: { rows: CHANTS, brand: 0, ticket: 0 },
   DEITIES: { rows: DEITIES, brand: 0, ticket: 0 },
-  MUHURATS: { rows: MUHURATS, brand: 36, ticket: 7 },
+  // 2026-08-23: lib/muhurats.ts came into the encyclopedia-data lane and was
+  // cleaned at source — 'Bhaktisetu' rewritten to 'Darshya' and the seven
+  // parenthetical roadmap ids deleted from `modernApplication` prose.
+  MUHURATS: { rows: MUHURATS, brand: 0, ticket: 0 },
   SHLOKAS: { rows: SHLOKAS, brand: 0, ticket: 0 },
   VRATS: { rows: VRATS, brand: 0, ticket: 0 },
 };

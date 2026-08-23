@@ -3,6 +3,12 @@ import { Clock, ArrowLeft } from 'lucide-react';
 import { getArticle, getAllArticles, type KnowledgeCategory } from '../lib/content';
 import MdxRender from './MdxRender';
 import { notFound } from 'next/navigation';
+// CI-15: Wikipedia text is CC BY-SA 4.0 and attribution is a CONDITION of that
+// licence, not a courtesy. Every /ved, /sanatan and /sanskrit article renders
+// through this component, so this is the one place the obligation is
+// discharged — the notice, the link back to each cited article, and the named
+// licence all come from the shared helper so they cannot drift from /credits.
+import { wikipediaAttribution } from '../lib/encyclopedia-attribution';
 
 interface Props {
   category: KnowledgeCategory;
@@ -17,6 +23,7 @@ export default function CategoryArticle({ category, slug, categoryLabel }: Props
   const related = (article.frontmatter.related ?? [])
     .map((s) => all.find((a) => a.frontmatter.slug === s))
     .filter(Boolean) as typeof all;
+  const attribution = wikipediaAttribution(article.frontmatter.sources);
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
@@ -44,6 +51,35 @@ export default function CategoryArticle({ category, slug, categoryLabel }: Props
           <ul className="text-sm text-surface-600 space-y-1 list-disc list-inside">
             {article.frontmatter.sources.map((s, i) => (<li key={i}>{s}</li>))}
           </ul>
+          {attribution && (
+            <div className="mt-3 border-t border-surface-200 pt-3 text-xs text-surface-600">
+              <p>{attribution.notice}</p>
+              <ul className="mt-1.5 space-y-0.5">
+                {attribution.sources.map((s) => (
+                  <li key={s.url}>
+                    <a
+                      href={s.url}
+                      rel="noopener"
+                      className="text-saffron-700 underline hover:text-saffron-800"
+                    >
+                      {s.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1.5">
+                Licence:{' '}
+                <a
+                  href={attribution.license.url}
+                  rel="noopener"
+                  className="text-saffron-700 underline hover:text-saffron-800"
+                >
+                  {attribution.license.name}
+                </a>
+                . Darshya's derived text is shared under the same licence.
+              </p>
+            </div>
+          )}
         </aside>
       )}
 

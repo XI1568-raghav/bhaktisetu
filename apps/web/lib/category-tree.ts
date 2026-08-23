@@ -99,7 +99,12 @@ export const CATEGORY_TREE: Category[] = [
         hubLabel: 'Browse all scriptures',
         items: [
           { label: 'Vedas', href: '/vedas', description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda.' },
-          { label: 'Upanishads', href: '/upanishads', description: '108 Upanishads · Vedanta core texts.' },
+          // Counts are literals, not imports: this module is pulled into four
+          // 'use client' nav components, so importing UPANISHADS/JYOTIRLINGAS
+          // to derive them would ship 130 KB of encyclopedia prose to every
+          // route. __tests__/category-tree-counts.ci12-ci14.test.ts pins each
+          // number to the runtime dataset instead.
+          { label: 'Upanishads', href: '/upanishads', description: '48 Upanishads · 10 principal · Vedanta core texts.' },
           { label: 'Puranas', href: '/puranas', description: '18 Mahapuranas · itihasa-purana corpus.' },
           { label: 'Bhagavad Gita', href: '/gita', description: '18 chapters of the Gita.' },
           { label: 'Ramayana', href: '/ramayana', description: '7 Kandas of Valmiki Ramayana.' },
@@ -137,7 +142,7 @@ export const CATEGORY_TREE: Category[] = [
           { label: 'Dashavatar (10)', href: '/dashavatar', description: '10 avatars of Vishnu.' },
           { label: 'Sapta Rishis (7)', href: '/sapta-rishis', description: '7 Vedic sages.' },
           { label: 'Dwadasha Aditya (12)', href: '/aditya', description: '12 forms of Surya.' },
-          { label: 'Jyotirlinga (12)', href: '/jyotirlinga', description: '12 self-manifested Shiva lingas.' },
+          { label: 'Jyotirlinga (12)', href: '/jyotirlinga', description: '12 Shiva light-abodes · 9 self-manifested.' },
           { label: 'Shakti Peeth (51)', href: '/shakti-peeth', description: '51 seats of Sati across the subcontinent.' },
           { label: 'Pancha Bhoota (5)', href: '/pancha-bhoota', description: '5 element-temples of Shiva.' },
           { label: 'Ashta Lakshmi (8)', href: '/ashta-lakshmi', description: '8 forms of Lakshmi.' },
