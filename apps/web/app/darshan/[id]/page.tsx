@@ -151,14 +151,26 @@ const YOUTUBE_STREAMS: Record<string, string> = {
  'iskcon-vrindavan': ytEmbed('UCAA6IsLVfbHrP1I_lzxv09Q'),
 };
 
+// DF-10 (2026-08-24): `viewerCount`/`peakViewers` are pinned to 0 throughout
+// this library. They previously carried invented audiences — 12450/24000 for
+// Kashi, 28300/52000 for Tirupati — which is the same figure the 2026-05-02
+// content audit deleted from the homepage (docs/content-audit-2026-05-02.md:31)
+// and which then went on shipping here. Nothing on this page counts an
+// audience; the DF-10 note at the stream-info block below already says why the
+// "{viewerCount} watching" line was removed, and the numbers feeding it are now
+// removed too so a future edit cannot resurrect the line from live-looking data.
+//
+// Kept as 0 rather than deleted because DarshanStream requires both fields as
+// `number` (lib/api.ts:370-371); 0 is this codebase's "not counted" and it is
+// what suppresses the player badge (components/DarshanPlayer.tsx:225).
 const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  'kashi-vishwanath': {
  id: 'live-kashi',
  templeId: 'temple-kashi',
  playbackUrl: ytEmbed('UCdMj2twWfMHXrWgX5oVdoyA'),
  status: 'live',
- viewerCount: 12450,
- peakViewers: 24000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -174,8 +186,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-somnath',
  playbackUrl: ytEmbed('UCT1egsvA08YcdMLiEu1DTRg'),
  status: 'live',
- viewerCount: 8450,
- peakViewers: 15200,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -191,8 +203,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-ttd',
  playbackUrl: ytEmbed('UCS2Y83GD-fc7qqgNW5uj41g'),
  status: 'live',
- viewerCount: 28300,
- peakViewers: 52000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -208,8 +220,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-golden',
  playbackUrl: ytEmbed('UCYn6UEtQ771a_OWSiNBoG8w'),
  status: 'live',
- viewerCount: 15600,
- peakViewers: 32000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -225,8 +237,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-shirdi',
  playbackUrl: ytEmbed('UCKGvJDh7g_Kzocbwy7aKicA'),
  status: 'live',
- viewerCount: 6200,
- peakViewers: 18000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -242,8 +254,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-siddhi',
  playbackUrl: ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
  status: 'live',
- viewerCount: 8760,
- peakViewers: 14000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -259,8 +271,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-mahakal',
  playbackUrl: ytEmbed('UC7q12ONY2mvuq066rreluhQ'),
  status: 'live',
- viewerCount: 9400,
- peakViewers: 22000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -276,8 +288,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-vaishno',
  playbackUrl: ytEmbed('UCFYQr1l7ereS27SrLJ8bBtw'),
  status: 'live',
- viewerCount: 5800,
- peakViewers: 16000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -293,8 +305,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-jagannath',
  playbackUrl: ytEmbed('UCstacpPsNLSiGcYe7qbF14Q'),
  status: 'live',
- viewerCount: 7300,
- peakViewers: 45000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -336,6 +348,10 @@ const fallbackSchedule = [
  { time: '9:00 PM', event: 'Shayan Aarti', status: 'upcoming' },
 ];
 
+// DF-10: the `viewers` key is gone from these rows (9800 / 5420 / 0 — invented,
+// and 0 for Kedarnath was no better sourced than the other two). The Related
+// Temples list only ever rendered `isLive` as a digit-free LIVE pill, so the
+// numbers were dead weight that any future edit could have wired to the screen.
 const fallbackRelatedTemples = [
  {
  name: 'Mahakaleshwar Temple',
@@ -343,7 +359,6 @@ const fallbackRelatedTemples = [
  deity: 'Lord Shiva',
  slug: 'mahakaleshwar',
  isLive: true,
- viewers: 9800,
  },
  {
  name: 'Somnath Temple',
@@ -351,7 +366,6 @@ const fallbackRelatedTemples = [
  deity: 'Lord Shiva',
  slug: 'somnath',
  isLive: true,
- viewers: 5420,
  },
  {
  name: 'Kedarnath Temple',
@@ -359,7 +373,6 @@ const fallbackRelatedTemples = [
  deity: 'Lord Shiva',
  slug: 'kedarnath',
  isLive: false,
- viewers: 0,
  },
 ];
 
@@ -871,7 +884,6 @@ export default async function DarshanDetailPage({
  deity: s.temple.deityPrimary,
  slug: s.temple.slug,
  isLive: s.status === 'live',
- viewers: s.viewerCount,
  streamId: s.id,
  }))
  : fallbackRelatedTemples.map((t) => ({

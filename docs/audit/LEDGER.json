@@ -163,8 +163,8 @@
   "workflow": "launch-readiness-delta",
   "line": 77,
   "title": "Real astrologers with 0 consultations are shown a hardcoded 12,450-review wall and \"Top Rated / 10K+ Consults\" badges next to a paid CTA",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "LANE GATE, not a business gate: app/astrology/** is on my explicit do-not-touch list this wave. Whoever owns it needs to (a) delete the hardcoded revi"
  },
  {
@@ -457,8 +457,8 @@
   "workflow": "launch-readiness-delta",
   "line": 205,
   "title": "Store-owner products are invisible on the storefront — the supply side of the marketplace has no shelf",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "Same owner decision as COM-01 — one catalogue, one keyspace, and a handle column on StoreProduct so the seller PDP can live under /store/[handle] inst"
  },
  {
@@ -555,8 +555,8 @@
   "workflow": "launch-readiness-delta",
   "line": 247,
   "title": "Store product images are full-resolution Wikimedia hotlinks — 5.7 MB downloaded for a 600px card",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "OWNER: the self-host step. It requires downloading 24 third-party binary images from Wikimedia into apps/web/public and committing them — a licensing/attributio"
  },
  {
@@ -765,8 +765,8 @@
   "workflow": "launch-readiness-delta",
   "line": 341,
   "title": "Advertised commission rate differs from the charged rate for most roles — including one role over-charged",
-  "state": "fixed",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "already_fixed · Does not reproduce as published. The four-column tier ladder is gone from the rendered table; l"
  },
  {
@@ -863,8 +863,8 @@
   "workflow": "launch-readiness-delta",
   "line": 383,
   "title": "Senior astrologers are priced 2-4x below the market ceiling, capping the highest-margin repeat revenue line",
-  "state": "owner",
-  "commit": "wave-2026-08-15",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": ""
  },
  {
@@ -1381,8 +1381,8 @@
   "workflow": "authenticated-deep",
   "line": 639,
   "title": "No UI anywhere can mark a booking delivered — the final fulfilment step is curl-only",
-  "state": "owner",
-  "commit": "wave-hard-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "[independently verified] verified: apps/web/__tests__/priest-fulfilment-p1.test.tsx — 2 tests, 2 red before (no button matchi"
  },
  {
@@ -2879,8 +2879,8 @@
   "workflow": "authenticated-deep",
   "line": 1715,
   "title": "Cookie consent card buries the entire /auth/login form at 390x844 — Sign In is invisible and un-tappable on first visit",
-  "state": "owner",
-  "commit": "376153d5",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "OWNER/COMPLIANCE: the consent card cannot shrink further without deciding what may be dropped from the notice, or moving to a compact bar with a 'more options' "
  },
  {
@@ -4447,8 +4447,8 @@
   "workflow": "scale-mindset",
   "line": 3269,
   "title": "Accept-Language is never negotiated — no i18n config, no middleware locale logic, no redirect",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "OWNER DECISION, not code: whether a first-time visitor whose browser asks for Hindi should be switched, or only offered. Recommendation is to keep offering unti"
  },
  {
@@ -4545,8 +4545,8 @@
   "workflow": "scale-mindset",
   "line": 3313,
   "title": "Five layers disagree about which languages exist; bn and mr are offered in the UI but silently fall back to English, while kn is supported but offered nowhere",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "OWNER DECISION FIRST, with a concrete copy estimate: either author bn + mr error catalogs in apps/api/src/lib/error-i18n.ts (30 codes each = 60 strings, and the"
  },
  {
@@ -4993,8 +4993,8 @@
   "workflow": "scale-mindset",
   "line": 3509,
   "title": "Raw developer error text is rendered to users; the friendly-error helper exists but is wired into only 2 surfaces",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "apps/web/app is outside this lane. lib/friendly-error.ts already exists and is tested; this is a call-site change on that page plus suppressing the empty-state "
  },
  {
@@ -5133,8 +5133,8 @@
   "workflow": "scale-mindset",
   "line": 3571,
   "title": "Zero UNIQUE constraints on any money table — every idempotency guard is an application-level TOCTOU",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "Needs a Prisma migration. apps/api/prisma/schema.prisma and prisma/migrations/** are serialised to another agent this session, so I stopped as instruc"
  },
  {
@@ -5147,8 +5147,8 @@
   "workflow": "scale-mindset",
   "line": 3577,
   "title": "commissions.booking_id is text pointing at a uuid primary key, with no index, no foreign key, and 2 existing orphans",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "Needs a Prisma migration (schema.prisma + prisma/migrations/** are owned by another agent this session). TWO PARTS, and the first one is safe while th"
  },
  {
@@ -5161,8 +5161,8 @@
   "workflow": "scale-mindset",
   "line": 3583,
   "title": "/admin/revenue and /admin/commissions report figures 5.8x apart, both labelled commissions",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "apps/web/app/admin/revenue/page.tsx and apps/web/app/admin/commissions/page.tsx still both label their figure 'commissions' with no unit. The API now hands them"
  },
  {
@@ -5259,8 +5259,8 @@
   "workflow": "scale-mindset",
   "line": 3627,
   "title": "Brand webfonts have been dead for some time: Fontshare API returns 'temporarily restricted', 5,545 of 5,604 measured glyphs paint in Arial while 201.9 KB of unused Google woff2 still downloads",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "TWO gates, both outside what code can decide here. (1) OWNER: downloading and licensing the Satoshi + Cabinet Grotesk woff2 files into apps/web/public"
  },
  {

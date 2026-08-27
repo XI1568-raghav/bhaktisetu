@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
-import { adminService } from '../services/admin.service.js';
+import { adminService, UnsupportedUserStatusError } from '../services/admin.service.js';
 import { prisma } from '../lib/prisma.js';
 import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
 import { resolveProviderRole } from '../services/payout.service.js';
@@ -198,6 +198,13 @@ export async function adminRoutes(server: FastifyInstance) {
 
       return result;
     } catch (err) {
+      // LC-11: `?status=` naming something this endpoint cannot express is a
+      // bad request, not a server fault. Until 2026-08-24 the service ignored
+      // the parameter entirely and answered 200 with an unfiltered list, which
+      // is the worst of the three options — the operator cannot tell.
+      if (err instanceof UnsupportedUserStatusError) {
+        return reply.code(400).send({ error: err.message, supported: err.supported });
+      }
       request.log.error({ err }, 'admin /users failed');
       return reply.code(500).send({ error: 'Failed to list users' });
     }

@@ -5,7 +5,6 @@ import { H1 } from '../../components/ui/heading-recipe';
 import {
  Flame,
  Play,
- Users,
  Star,
  Clock,
  Sparkles,
@@ -15,10 +14,16 @@ import {
  Search,
 } from 'lucide-react';
 
+// DF-10 (2026-08-24): the `viewers` key is gone from these rows. It held
+// 12450 / 28300 / 8760 — the same invented figures the 2026-05-02 content audit
+// deleted from the homepage (docs/content-audit-2026-05-02.md:31), rendered
+// here as "12.5K" beside a Users icon, which reads as telemetry. Nothing in
+// this app counts an audience, so per lib/platform-stats.ts:5-24 the claim
+// keeps its meaning and loses its digits: the LIVE pill on each card stays.
 const liveStreams = [
- { name: 'Kashi Vishwanath', city: 'Varanasi', deity: 'Lord Shiva', viewers: 12450, img: getTempleHero('kashi-vishwanath') },
- { name: 'Tirupati Balaji', city: 'Tirumala', deity: 'Lord Venkateswara', viewers: 28300, img: getTempleHero('tirumala-tirupati') },
- { name: 'Siddhivinayak', city: 'Mumbai', deity: 'Lord Ganesha', viewers: 8760, img: getTempleHero('siddhivinayak') },
+ { name: 'Kashi Vishwanath', city: 'Varanasi', deity: 'Lord Shiva', img: getTempleHero('kashi-vishwanath') },
+ { name: 'Tirupati Balaji', city: 'Tirumala', deity: 'Lord Venkateswara', img: getTempleHero('tirumala-tirupati') },
+ { name: 'Siddhivinayak', city: 'Mumbai', deity: 'Lord Ganesha', img: getTempleHero('siddhivinayak') },
 ];
 
 const popularPujas = [
@@ -76,10 +81,6 @@ export default function MobileHome() {
  <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
  LIVE
- </div>
- <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-md backdrop-blur-sm">
- <Users className="w-2.5 h-2.5" />
- {(s.viewers / 1000).toFixed(1)}K
  </div>
  <div className="absolute bottom-2.5 left-2.5">
  <p className="text-white text-xs font-semibold drop-shadow-lg">{s.name}</p>

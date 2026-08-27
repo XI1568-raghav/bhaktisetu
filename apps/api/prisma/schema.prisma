@@ -568,6 +568,12 @@ model TemplePayout {
 
   @@index([templeId, status])
   @@index([status])
+  // DI-07 (2026-08-24): Postgres does NOT create an index for the referencing
+  // side of a foreign key — only the referenced side gets one, from its
+  // primary key. So the `booking` relation above bought this table nothing on
+  // the read path, and temple-payout.service.ts:76 scans the whole ledger on
+  // every confirm looking for an existing row by bookingId.
+  @@index([bookingId])
   @@map("temple_payouts")
 }
 
@@ -1099,6 +1105,24 @@ model Commission {
   // (bookingId, storeOrderId, wellnessEnrollmentId) is set per row. bookingId
   // was previously non-null + the only key, so store orders + wellness
   // enrollments never got a Commission row (payouts were never written).
+  //
+  // DI-07 (2026-08-24): `bookingId` stays a bare String with NO `@db.Uuid` and
+  // NO `@relation`, and that is not an oversight to be tidied away later. The
+  // column is polymorphic across TWO booking tables:
+  //   * `puja_bookings` (Prisma model PujaBooking) — payment.service.ts:266
+  //   * `astrologer_consultations` (raw SQL, created by
+  //     routes/consultation.ts ensureConsultationTables, NOT in this schema)
+  //     — consultation.ts:178 writes `bookingId: row.id` from that table.
+  // Both have UUID primary keys, so the VALUES are all uuids, but there is no
+  // single referent — a foreign key is not merely "harder later", it is
+  // impossible without first adding a `bookingKind` discriminator or splitting
+  // the column. An earlier audit note read the consultation-backed rows as
+  // "orphans"; they are not, they are the second legitimate kind.
+  //   Corollary: do NOT "fix" this to `@db.Uuid` casually. That emits
+  //   ALTER COLUMN ... USING booking_id::uuid, which rewrites a money table and
+  //   aborts API boot on the first non-uuid legacy value (consultation
+  //   astrologer ids were slugs until 2026-08-12). Migrations auto-apply on
+  //   boot, so that failure mode is an outage.
   bookingId             String?          @map("booking_id")
   storeOrderId          String?          @map("store_order_id")
   wellnessEnrollmentId  String?          @map("wellness_enrollment_id")
@@ -1116,6 +1140,17 @@ model Commission {
 
   @@index([providerId])
   @@index([status])
+  // DI-07 (2026-08-24): bookingId is the ONLY polymorphic key that had no
+  // index, and it is the one the confirm-path idempotency guard reads on every
+  // single payment (payment.service.ts writePujaCommissionOnConfirm, plus
+  // consultation.ts, provider-earning-mint.ts, booking.service.ts). Every
+  // confirm was a sequential scan of the whole commission ledger, inside the
+  // payment transaction. storeOrderId and wellnessEnrollmentId below were
+  // already covered; this closes the gap.
+  //
+  // NOT `@db.Uuid`, and deliberately no @relation — see the DI-07 note on the
+  // bookingId field above: the column points at TWO different tables.
+  @@index([bookingId])
   @@index([storeOrderId])
   @@index([wellnessEnrollmentId])
   @@index([payoutRequestId])

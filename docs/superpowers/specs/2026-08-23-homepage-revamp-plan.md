@@ -1,7 +1,9 @@
 # Homepage Revamp — Plan (2026-08-23)
 
-> Status: **AWAITING FOUNDER APPROVAL.** No page code written. Do not start building until
-> the six open questions at the bottom are answered.
+> Status: **PHASE 2 BUILT AND VERIFIED 2026-08-24. NOT DEPLOYED** (Render suspended).
+> The six questions at the bottom were answered on 2026-08-23 — see "SHIPPED" at the
+> end of this file for the decisions taken and what actually changed.
+> Phases 0, 1 and 3 are still open; Phase 3 is the highest-value work here.
 > Presentation copy: https://claude.ai/code/artifact/ad4fefe8-890e-4a8d-9e81-d34cbe626cc1
 > This is the first formal homepage spec in `docs/superpowers/specs/`.
 
@@ -313,3 +315,96 @@ Hold baselines: `tsc` clean + full web suite green at whatever tonight's run rec
 **Nothing deploys while Render is suspended.**
 Where content doesn't exist (3 screenshots, Durga/Surya SKUs, founder photo) — say so, leave the slot
 empty, never hardcode a placeholder that reads as real.
+
+---
+
+## SHIPPED — Phase 2 built and verified 2026-08-24
+
+> Status changed from AWAITING APPROVAL. Founder answered the six questions on
+> 2026-08-23; sections 1-8 built against `next dev --turbopack` on localhost:3000.
+> **Not deployed** — Render is still suspended (founder: "live next week").
+
+### Founder decisions taken
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Hosting | Render stays; live next week. Change nothing |
+| 2 | ₹51 fee | **One total, split on tap** — fee folded into the quoted total |
+| 3 | NRI lane | Keep honest inline card **+** activate Razorpay international **+** re-open ₹5,000/yr plan |
+| 4 | Brand colour | Not asked; taken as code-wins (`#9e6229`). `cta-contrast.test.ts` locks it; `#E16318` fails AA on white. BRAND_GUIDELINES.md flagged for token-sync |
+| 5 | Sankalp-headcount pricing | Yes, **as a separate project after** the homepage |
+| 6 | Founder identity | Name + signed letter + **shared** support number (not personal WhatsApp) |
+
+**Q3 caveat recorded:** Razorpay international needs founder video-KYC, and
+re-opening NRI Premium needs a product decision on which benefit gets a non-null
+`enforcedBy`. Neither is homepage work. **No NRI Premium upsell was put on the
+homepage** — advertising a plan `getPlans()` filters out would recreate exactly
+the class of false claim this revamp deleted.
+
+### What actually changed
+
+`app/page.tsx` — **14 `<section>` → 4**, 45,257 → 25,762 bytes. Ten sections deleted:
+store showcase, yatra teaser, 3 duplicate Live Darshan blocks, final-CTA second
+primary, category strip, quick actions, what-we-offer, more-features, library teaser.
+Also removed: 3 dead motion imports (`TextReveal`/`ScrambleReveal`/`StickyHeadlinePin`
+were imported and never rendered) and the `<TrustStrip>` mount.
+
+**New:** `components/home/WhatYouGet.tsx` (5 rows, each derived from a module with a
+drift test — never a string literal) and `components/home/ThisWeek.tsx` (dated board,
+fail-closed catalogue resolution, `data-bookable` attribute so coverage is measurable
+from the DOM).
+
+**12 false claims deleted** across `page.tsx`, `TrustStrip`, `WorshipStrip`,
+`HeroCopyVariant`, `NriLaneAbTest` — 80G/tax-deductible, "manager-signed / on-site
+audit", "Live video proof".
+
+### Baseline — RECORDED, clean tree, nothing else writing
+
+```
+Test Files  305 passed (305)
+     Tests  3230 passed (3230)
+  Duration  829s
+tsc --noEmit  clean
+```
+
+**The "3082" in the original brief appears nowhere in the repo.** Prior written
+baselines were 265/265 (AUDIT.md) and 328/328 (SESSION-STATE.md). 3230 is the first
+recorded full-suite number and includes 30 tests added by this work
+(`home-truthful-claims` 17, `home-this-week` 13).
+
+### Tests changed, and why (all deliberate, none weakened)
+
+- `home-below-fold-budget` — section ratchet **14 → 4** with the ten deletions listed
+  inline; floor 5 → 3; `DEEP` defer-paint checks became **deletion guards**.
+- `home-preload-and-deferral` — stubbed `ThisWeek` (async server component suspends
+  under sync `renderToStaticMarkup`, same reason `NextFestivalStrip` was stubbed);
+  `ROWS` emptied, replaced by deletion guards.
+- `page-chrome-uniformity` — `app/page.tsx` removed from `ADOPTERS` (it owns no CTA
+  now); added `HOME_NO_CTA` bespoke-CTA guard so it still can't hand-roll one;
+  DU-09 **generalised** from "the Worship row's hexes" to "every hex in page.tsx is a
+  declared token" (strictly stronger, section-independent); tap-safe floor 5 → 3.
+
+### Known state on localhost right now
+
+All three dated cards render `data-bookable="false"` → "How to observe it".
+That is the fail-closed path working: `getCatalogueSlugs()` returns an empty Set when
+the API is unreachable, so nothing emits a dead `/pujas/<slug>`. Onam and Janmashtami
+both resolve to `satyanarayan-katha` once the API is up — pinned by `home-this-week`.
+
+### Provenance warning
+
+This work was committed by a **concurrent session** at 21:24 on 2026-08-23 inside
+`68caf1d8 "fix: close 8 more findings; 362 of 449"` — swept up by `git add -A`.
+It is not separable from that audit wave without a manual cherry-pick.
+
+### Not built, deliberately
+
+- **Founder identity section** — needs a real name, photo and support number. Left out
+  rather than placeheld.
+- **"What you receive" screenshot strip** — the 3 screenshots that matter (sankalp
+  step, booking confirmation, proof row) do not exist in `public/`. Must be captured
+  from the running app.
+- **WhatsApp "remind me"** replacing EmailCapture — real work, not a copy swap.
+- **Phase 1 and Phase 3 entirely** — see the sequencing section above. Phase 3
+  (commerce on `/panchang` + `/today`, consuming `GET /panchang/vrats`) remains the
+  highest-value work in this document.

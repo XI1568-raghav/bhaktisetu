@@ -1,13 +1,22 @@
 'use client';
 
 import { getTempleHero } from '../../../lib/images';
-import { Play, Users, Clock, Bell, MapPin } from 'lucide-react';
+import { Play, Clock, Bell, MapPin } from 'lucide-react';
 
+// DF-10 (2026-08-24): the `viewers` key is gone from these rows. It held
+// 12450 / 28300 / 8760 / 9800 — the first of which is the exact figure the
+// 2026-05-02 content audit deleted from the homepage as fabricated
+// (docs/content-audit-2026-05-02.md:31); it was rendered here as "12.5K" under
+// a Users icon. There is no presence service, no analytics client, and the
+// YouTube embeds expose no viewer API to us, so nothing could ever have
+// produced these. Per lib/platform-stats.ts:5-24 the copy loses its digits
+// rather than falling back to a literal — the LIVE pill still carries the
+// state claim on every card.
 const liveStreams = [
- { name: 'Kashi Vishwanath', city: 'Varanasi', deity: 'Lord Shiva', viewers: 12450, event: 'Morning Aarti', img: getTempleHero('kashi-vishwanath') },
- { name: 'Tirupati Balaji', city: 'Tirumala', deity: 'Lord Venkateswara', viewers: 28300, event: 'Suprabhatam', img: getTempleHero('tirumala-tirupati') },
- { name: 'Siddhivinayak', city: 'Mumbai', deity: 'Lord Ganesha', viewers: 8760, event: 'Abhishek', img: getTempleHero('siddhivinayak') },
- { name: 'Mahakaleshwar', city: 'Ujjain', deity: 'Lord Shiva', viewers: 9800, event: 'Bhasma Aarti', img: getTempleHero('kashi-vishwanath') },
+ { name: 'Kashi Vishwanath', city: 'Varanasi', deity: 'Lord Shiva', event: 'Morning Aarti', img: getTempleHero('kashi-vishwanath') },
+ { name: 'Tirupati Balaji', city: 'Tirumala', deity: 'Lord Venkateswara', event: 'Suprabhatam', img: getTempleHero('tirumala-tirupati') },
+ { name: 'Siddhivinayak', city: 'Mumbai', deity: 'Lord Ganesha', event: 'Abhishek', img: getTempleHero('siddhivinayak') },
+ { name: 'Mahakaleshwar', city: 'Ujjain', deity: 'Lord Shiva', event: 'Bhasma Aarti', img: getTempleHero('kashi-vishwanath') },
 ];
 
 const upcoming = [
@@ -25,7 +34,11 @@ export default function MobileDarshan() {
  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
  LIVE
  </div>
- <span className="text-xs text-surface-500">4 streams active</span>
+ {/* Counted, not asserted: this is the length of the list rendered directly
+   below, so it cannot drift from what the reader can see. It was a hardcoded
+   "4" that would have kept claiming four the moment a row was added or
+   removed. */}
+ <span className="text-xs text-surface-500">{liveStreams.length} streams active</span>
  </div>
  <h1 className="text-xl font-bold text-white tracking-tight mt-1">Live Darshan</h1>
  </div>
@@ -41,10 +54,6 @@ export default function MobileDarshan() {
  <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
  <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
  LIVE
- </div>
- <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-black/50 text-white text-[8px] px-1 py-0.5 rounded backdrop-blur-sm">
- <Users className="w-2 h-2" />
- {(s.viewers / 1000).toFixed(1)}K
  </div>
  <button className="absolute inset-0 flex items-center justify-center">
  <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">

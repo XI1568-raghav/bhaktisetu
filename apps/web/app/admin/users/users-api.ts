@@ -17,12 +17,27 @@
  *    it had to stop, so a partial directory is never presented as the whole
  *    one.
  *
- * 2. The `role` query param is applied AFTER pagination, inside the service
- *    (`enriched.filter(...)` on an already-sliced page), while `total` stays
- *    the unfiltered count. Sending `?role=PANDIT` therefore returns "the
- *    pandits that happen to be on page N" alongside a total that counts
- *    everyone. So role filtering is deliberately NOT delegated to the API —
- *    it runs here, over the complete set.
+ * 2. The `role` and `status` query params were both broken on the server, so
+ *    this module fetched everything and the page filtered locally. BOTH ARE
+ *    FIXED NOW and the note that used to stand here is out of date:
+ *      - `?role=` constrains the query (a JOIN), so the page and `total` agree
+ *        — SCAL-09, then SCAL-04;
+ *      - `?status=` maps to `User.blocked` instead of being silently ignored,
+ *        and an unsupported value is a 400 rather than an unfiltered 200 —
+ *        LC-11, 2026-08-24.
+ *
+ *    Client-side filtering stays anyway, for a reason that is about THIS page
+ *    rather than about the API: the table offers a third status, `pending`,
+ *    which is not a `User` column at all — it means "a provider profile on this
+ *    account is unapproved" and it arrives from /admin/pending-approvals. The
+ *    server cannot express it, so delegating the status filter would quietly
+ *    drop that option. Pagination is local for the same reason: `filtered`
+ *    spans all three filters at once.
+ *
+ *    The cost is the 4,000-row ceiling below, which is reported honestly
+ *    (`complete: false` → the page's "list is incomplete" banner). Moving this
+ *    screen to server-driven paging is the real fix and is a separate change:
+ *    it needs the pending set to become a server-side predicate first.
  */
 
 import {
@@ -121,7 +136,8 @@ function rethrow(err: unknown): never {
  *
  * `search` IS delegated — admin.service builds a real `where.OR` for it before
  * paginating, so the server's `total` is correct for a search. Role and status
- * are not (see the module header).
+ * are server-side too now, but this page still filters them locally; the module
+ * header says why.
  */
 export async function fetchAllAdminUsers(
   token: string | undefined,

@@ -25,14 +25,28 @@ export const revalidate = 300;
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
 
+// DF-10 (2026-08-24): every `viewerCount`/`peakViewers` below is pinned to 0.
+// They used to carry invented audiences (12450 for Kashi, 28300 for Tirupati —
+// the same figures the 2026-05-02 content audit deleted from the homepage, see
+// docs/content-audit-2026-05-02.md:31). Nothing here counts viewers: no
+// analytics client is mounted, and the YouTube embeds expose no viewer API to
+// us. Per lib/platform-stats.ts:5-24 an uncounted number must lose its digits
+// rather than fall back to a literal, and the LIVE pill already makes the
+// liveness claim without one.
+//
+// 0 rather than a deleted field because DarshanStream requires both as `number`
+// (lib/api.ts:370-371), and 0 is how the rest of this codebase says "not
+// counted" — DarshanPlayer renders its counter only when the value is positive
+// (components/DarshanPlayer.tsx:225). See the note in fetchLiveStreams below
+// for the one consumer that does NOT yet guard on that.
 const fallbackLiveStreams: DarshanStream[] = [
  {
  id: 'live-1',
  templeId: 't1',
  playbackUrl: 'https://www.youtube.com/embed/RwSHT3yg7MI',
  status: 'live',
- viewerCount: 12450,
- peakViewers: 18200,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -48,8 +62,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't2',
  playbackUrl: 'https://www.youtube.com/embed/t5nRpg1j98k',
  status: 'live',
- viewerCount: 28300,
- peakViewers: 35000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -65,8 +79,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't3',
  playbackUrl: 'https://www.youtube.com/embed/MNbnux_0U_E',
  status: 'live',
- viewerCount: 8760,
- peakViewers: 12000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -82,8 +96,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't4',
  playbackUrl: 'https://www.youtube.com/embed/sJtJdv3ecDc',
  status: 'live',
- viewerCount: 9800,
- peakViewers: 14000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -99,8 +113,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't5',
  playbackUrl: 'https://www.youtube.com/embed/2nUrc1wE6do',
  status: 'live',
- viewerCount: 5420,
- peakViewers: 8000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -116,8 +130,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't6',
  playbackUrl: 'https://www.youtube.com/embed/iVbl-AzlnOQ',
  status: 'live',
- viewerCount: 15200,
- peakViewers: 22000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -133,8 +147,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't7',
  playbackUrl: 'https://www.youtube.com/embed/B-9kVJ2orYA',
  status: 'live',
- viewerCount: 7100,
- peakViewers: 10000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -150,8 +164,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't8',
  playbackUrl: 'https://www.youtube.com/embed/aZf664dsd9k',
  status: 'live',
- viewerCount: 4320,
- peakViewers: 6500,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -237,6 +251,18 @@ const fallbackScheduledStreams: DarshanStream[] = [
 
 // ─── Data Fetching ────────────────────────────────────────────────────────────
 
+// DF-10 follow-up, NOT fixable from this file: DarshanBrowser prints the count
+// unconditionally (components/DarshanBrowser.tsx:282-285 —
+// `stream.viewerCount.toLocaleString('en-IN')` beside an Eye icon, with no
+// `> 0` guard the way DarshanPlayer has at components/DarshanPlayer.tsx:225).
+// So the zeroed fallbacks above surface as a literal "0" on each card until
+// that badge gains the same guard or is removed. "0 watching" is still an
+// unmeasured claim, just a discouraging one — it is not the end state.
+//
+// The same invented figures also live in the API fallback table
+// (apps/api/src/routes/darshan.ts:20-124), which is what these local fallbacks
+// stand in for when the API is unreachable. Zeroing one side does not zero the
+// other.
 async function fetchLiveStreams(): Promise<{ streams: DarshanStream[]; upcoming: { templeSlug: string; nextSlot: string; startsInMin: number }[] }> {
  try {
  const res = await getLiveDarshan();
