@@ -1,5 +1,23 @@
 // Home Puja + Marriage Ceremony — data module
-// Verified pandit directory, ceremony categories, sample bookings for demo.
+//
+// Ceremony categories, pricing tiers and marriage metadata. The header used to
+// read "Verified pandit directory, ceremony categories, sample bookings for
+// demo" — every clause of which was a problem:
+//
+//   - "Verified" is a vetting claim (TC-08) that nothing performs. The
+//     `homePandits` / `weddingPandits` arrays below are hand-typed and still
+//     carry `verified: { aadhaar, background, vedicCert }` flags, star ratings
+//     and weddingsPerformed counts. They are NOT deleted here because two
+//     booking steps render them and would break with an empty list —
+//     app/pujas/marriage/book/page.tsx (step 3) and
+//     app/pujas/home-puja/book/BookHomePujaClient.tsx. The real directory
+//     already exists and both LANDING pages already use it
+//     (`getPublicPriests()` in lib/pandit-api.ts), so the fix is to point the
+//     two booking steps at it — a change in files outside this module.
+//   - "sample bookings for demo" described `sampleBookings`, three fabricated
+//     CONFIRMED bookings, deleted below.
+//
+// Nothing in this file should be read as a verification record.
 
 export type PricingTier = {
  basic: number;
@@ -1007,55 +1025,21 @@ export const weddingPandits: Pandit[] = [
  },
 ];
 
-// ──────────────────────────────────────────────────────────────────────────
-// SAMPLE BOOKINGS
-// ──────────────────────────────────────────────────────────────────────────
-
-export const sampleBookings = [
- {
- id: 'BS-20260418-00142',
- category: 'griha-pravesh',
- categoryName: 'Griha Pravesh',
- panditId: 'p5',
- panditName: 'Acharya Hardik Mehta',
- date: '2026-04-24',
- slot: 'Morning',
- tier: 'standard',
- amount: 11500,
- customerName: 'Jignesh Patel',
- city: 'Ahmedabad',
- status: 'confirmed',
- },
- {
- id: 'BS-20260419-00158',
- category: 'marriage',
- categoryName: 'Hindu Vivah (Traditional)',
- panditId: 'w1',
- panditName: 'Acharya Vidyadhar Bhatt',
- date: '2026-05-12',
- slot: 'Evening',
- tier: 'premium',
- amount: 101000,
- customerName: 'Aanya & Kabir',
- city: 'Delhi',
- status: 'confirmed',
- },
- {
- id: 'BS-20260420-00189',
- category: 'satyanarayan-katha',
- categoryName: 'Satyanarayan Katha',
- panditId: 'p4',
- panditName: 'Pandit Mukesh Shukla',
- date: '2026-04-23',
- slot: 'Evening',
- tier: 'basic',
- amount: 2100,
- customerName: 'Deepika Kulkarni',
- city: 'Mumbai',
- status: 'confirmed',
- },
-];
-
+// TC-05 / precedent — SAMPLE BOOKINGS, deleted.
+//
+// `sampleBookings` was three hand-typed CONFIRMED bookings carrying
+// real-format booking numbers (the `BS-YYYYMMDD-XXXXX` shape the API actually
+// mints), amounts up to Rs 1,01,000, pandit ids, cities and customer names —
+// one of them "Aanya & Kabir", the same invented couple that appeared in the
+// deleted marriageTestimonials rows.
+//
+// Nothing in apps/web read it: the export had zero importers. It is deleted on
+// the same precedent as the dead `trustScore: 90` fallback on /temples/[slug]
+// and the per-pandit `reviews` arrays above — a ready-made block of fabricated
+// completed transactions sitting one `.map()` away from a render has no honest
+// value to keep. Real booking rows come from the API; there is no fixture
+// shape a page should ever fall back to for them.
+//
 // ──────────────────────────────────────────────────────────────────────────
 // MARRIAGE CEREMONY META
 // ──────────────────────────────────────────────────────────────────────────

@@ -74,7 +74,7 @@ export default function DarshanPlayer({
  <Lock className="w-8 h-8 text-temple-gold" />
  </div>
  <h3 className="text-white font-bold text-lg mb-1">Premium Darshan</h3>
- <p className="text-surface-400 text-sm text-center max-w-xs mb-4">
+ <p className="text-surface-400 prose-meta text-center max-w-xs mb-4">
  Upgrade to Darshya Premium for exclusive HD darshan from{' '}
  {templeName}
  </p>

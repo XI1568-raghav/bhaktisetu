@@ -251,7 +251,7 @@ export default function NriPremiumLanding() {
               <br />
               <span className="text-saffron-700">at India prices.</span>
             </h1>
-            <p className="text-lg md:text-xl text-surface-600 mb-8 leading-relaxed">
+            <p className="prose-lead text-surface-600 mb-8 leading-relaxed">
               {NRI_PREMIUM_IS_SELLABLE
                 ? 'Annual all-access for NRIs. Drop the surcharge on every puja, get a free weekly 1:1 priest call, and unlimited AI Pandit guidance — all for less than the cost of a single live darshan booking abroad.'
                 : 'This is the page for Darshya NRI Premium, the annual all-access tier for the Indian diaspora. It is on hold. What follows describes what the tier was specified to do, so you can decide whether it is worth waiting for.'}

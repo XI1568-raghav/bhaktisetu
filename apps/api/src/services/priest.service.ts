@@ -4,6 +4,8 @@ import { BookingService } from './booking.service.js';
 import { notifyUser } from '../routes/notifications.js';
 import { notifyDevotee, buildBookingCtx } from './booking-notify.service.js';
 import { mintProviderEarningForBooking } from './provider-earning-mint.js';
+// OPS-05 — the durable money trail. Post-commit only; never inside a tx.
+import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -384,6 +386,9 @@ export class PriestService {
     // Wrapped in a transaction so a mint can never commit against an assignment
     // that rolled back (money owed to nobody), and so the mint reads the
     // post-write row. All four guards live in provider-earning-mint.ts.
+    // OPS-05: carried out of the transaction so the mint is recorded only once
+    // the assignment is durable — recordMoneyEvent takes no `tx` on purpose.
+    let mintOutcome = 'no-provider-on-booking';
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.pujaBooking.update({
         where: { id: bookingId },
@@ -402,7 +407,7 @@ export class PriestService {
       // `include` returns every scalar, so priceAmount/priestPayout are on the
       // row without a second read. Tests that mock update() with a partial row
       // simply fall out at the mint's first guard rather than throwing.
-      await mintProviderEarningForBooking(tx, {
+      mintOutcome = await mintProviderEarningForBooking(tx, {
         id: row.id ?? bookingId,
         priestId: row.priestId ?? null,
         priceAmount: row.priceAmount ?? 0,
@@ -410,6 +415,16 @@ export class PriestService {
       });
 
       return row;
+    });
+
+    // OPS-05: the pandit accepted in his own portal — the second of the two
+    // DI-05 doors that used to leave him with no ledger row at all. Recorded
+    // after the transaction commits; a no-op unless a row was actually minted.
+    await recordProviderEarningMinted({
+      bookingId,
+      outcome: mintOutcome,
+      rail: 'priest-portal-accept-booking',
+      actorType: 'provider',
     });
 
     // D6: notify the devotee their pandit is confirmed. Push + WhatsApp are

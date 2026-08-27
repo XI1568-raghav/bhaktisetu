@@ -168,8 +168,8 @@ export default function PriestDashboard() {
  } else {
  setDutyError(
  next
- ? `Could not go on duty (HTTP ${res.status}) — you are still OFF duty and will not receive instant requests. Try again.`
- : `Could not go off duty (HTTP ${res.status}) — you are still ON duty. Try again.`,
+ ? 'Could not go on duty — you are still OFF duty and will not receive instant requests. Try again.'
+ : 'Could not go off duty — you are still ON duty. Try again.',
  );
  }
  } catch {
@@ -200,7 +200,12 @@ export default function PriestDashboard() {
  setOnDuty(payload.priest?.isOnDuty === true);
  setFetchError(null);
  } else {
- setFetchError(`Could not load dashboard (status ${res.status}). Showing baseline.`);
+ // RES-09: this carried `(status ${res.status})`. The wording otherwise
+ // stays as it was — __tests__/resilience-load-honesty.test.tsx (RES-06)
+ // waits on this exact banner to know both dashboard fetches have
+ // settled before asserting the KYC state, so the leading clause is the
+ // test's handle on "the load failed", not decoration.
+ setFetchError('Could not load dashboard right now. Showing baseline figures.');
  setData(zeroDashboard(displayName));
  }
  } catch (e) {

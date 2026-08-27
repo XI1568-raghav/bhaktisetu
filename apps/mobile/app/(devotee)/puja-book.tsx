@@ -24,6 +24,8 @@ import {
   resumePaymentUrl,
   offeringPriceInr,
   bookingPriceBreakdown,
+  bookingRequestHeaders,
+  partitionOfferings,
   isSlotBookable,
   upcomingDateKeys,
   BookingInputError,
@@ -156,8 +158,13 @@ export default function PujaBookScreen() {
           );
         } else {
           setDetail(parsed);
-          // One temple offers it — pre-select rather than make it a chore.
-          const only = parsed.offerings.length === 1 ? parsed.offerings[0] : undefined;
+          // One BOOKABLE temple offers it — pre-select rather than make it a
+          // chore. PAR-15 (4): this used to read `parsed.offerings.length === 1`
+          // and would happily pre-select an UNVERIFIED sole offering, loading
+          // the form with a booking the server refuses with a 409 that the
+          // devotee could not avoid — there was no other row to pick.
+          const { bookable } = partitionOfferings(parsed.offerings);
+          const only = bookable.length === 1 ? bookable[0] : undefined;
           if (only) setOffering(only);
         }
       } catch {
@@ -225,6 +232,17 @@ export default function PujaBookScreen() {
     prasadDeliveryRequested: false,
   });
 
+  /**
+   * PAR-15 (4). Which temples the server will actually accept, kept apart from
+   * the ones it refuses. Memoised on the detail object rather than recomputed
+   * per render because the picker is rendered on every keystroke in the
+   * sankalp field.
+   */
+  const { bookable: bookableOfferings, unverified: unverifiedOfferings } = useMemo(
+    () => partitionOfferings(detail?.offerings ?? []),
+    [detail],
+  );
+
   async function onSubmit() {
     setSubmitError(null);
     if (!detail) return;
@@ -258,10 +276,17 @@ export default function PujaBookScreen() {
     try {
       const res = await fetch(`${apiBase()}/api/v1/bookings/book`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        // PAR-15 (3). The recoverable failures on this screen — SLOT_UNAVAILABLE
+        // and TEMPLE_NOT_VERIFIED — are the two the API translates, and the
+        // route resolves the language from `accept-language` ONLY (pickLang,
+        // not pickLangFor: it never reads the stored preference server-side).
+        // Sending no header meant a Hindi devotee lost a slot race and was told
+        // so in English, on the one screen where the message is the only thing
+        // they can act on.
+        headers: bookingRequestHeaders({
+          token,
+          preferredLanguage: user?.preferredLanguage,
+        }),
         body: JSON.stringify(body),
       });
       const replyBody: unknown = await res.json().catch(() => null);
@@ -386,31 +411,68 @@ export default function PujaBookScreen() {
               yet.
             </Text>
           ) : (
-            detail.offerings.map((o) => {
-              const active = offering?.offeringId === o.offeringId;
-              const p = offeringPriceInr(detail, o);
-              return (
-                <TouchableOpacity
+            <>
+              {/* PAR-15 (4). Only the verified offerings are selectable — the
+                  server rejects the rest with a 409 before it looks at
+                  anything else on this form (booking.service.ts:466). The
+                  " · Verified" suffix that used to distinguish them read as a
+                  badge rather than as a gate. */}
+              {bookableOfferings.length === 0 ? (
+                <Text style={styles.emptyNote}>
+                  Every temple offering this puja is still awaiting
+                  verification, so it cannot be booked yet. They are listed
+                  below.
+                </Text>
+              ) : null}
+              {bookableOfferings.map((o) => {
+                const active = offering?.offeringId === o.offeringId;
+                const p = offeringPriceInr(detail, o);
+                return (
+                  <TouchableOpacity
+                    key={o.offeringId}
+                    style={[styles.option, active && styles.optionActive]}
+                    activeOpacity={0.8}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    onPress={() => setOffering(o)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.optionTitle}>{o.templeName}</Text>
+                      <Text style={styles.optionSub}>
+                        {[o.city, o.state].filter(Boolean).join(', ') || 'Location not listed'}
+                      </Text>
+                    </View>
+                    <Text style={styles.optionPrice}>
+                      {p === null ? 'Price on request' : formatInr(p)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {/* Shown, not hidden. A temple a devotee can find on the website
+                  disappearing from the app with no explanation is its own
+                  defect; the row states the reason and refuses the tap. */}
+              {unverifiedOfferings.map((o) => (
+                <View
                   key={o.offeringId}
-                  style={[styles.option, active && styles.optionActive]}
-                  activeOpacity={0.8}
+                  style={[styles.option, styles.optionDisabled]}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                  onPress={() => setOffering(o)}
+                  accessibilityState={{ selected: false, disabled: true }}
+                  accessibilityLabel={`${o.templeName} — not accepting bookings yet, awaiting verification`}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.optionTitle}>{o.templeName}</Text>
+                    <Text style={[styles.optionTitle, styles.optionTitleDisabled]}>
+                      {o.templeName}
+                    </Text>
                     <Text style={styles.optionSub}>
                       {[o.city, o.state].filter(Boolean).join(', ') || 'Location not listed'}
-                      {o.isVerified ? ' · Verified' : ''}
+                    </Text>
+                    <Text style={styles.optionUnverified}>
+                      Awaiting verification — cannot take bookings yet
                     </Text>
                   </View>
-                  <Text style={styles.optionPrice}>
-                    {p === null ? 'Price on request' : formatInr(p)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })
+                </View>
+              ))}
+            </>
           )}
 
           {/* 2 — date */}
@@ -743,6 +805,11 @@ const styles = StyleSheet.create({
   optionTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
   optionSub: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
   optionPrice: { fontSize: fontSize.base, fontWeight: '800', color: colors.saffron[700] },
+  // PAR-15 (4). An unverified temple is listed but not selectable. No price is
+  // shown on these rows: a price on an unbookable row is an offer.
+  optionDisabled: { backgroundColor: colors.stone[50], borderColor: colors.stone[200] },
+  optionTitleDisabled: { color: colors.stone[500] },
+  optionUnverified: { fontSize: fontSize.xs, color: colors.stone[400], marginTop: 4 },
   chipScroll: { marginBottom: spacing.xs },
   dateChip: {
     width: 56,

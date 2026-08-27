@@ -86,7 +86,7 @@ export default async function YatraDestinationDetailPage({ params }: { params: P
             <h1 className={H1.detail}>
               {dest.name}
             </h1>
-            <p className="mt-2 text-sm md:text-base text-white/85 max-w-2xl">{dest.shortDescription}</p>
+            <p className="mt-2 prose-body text-white/85 max-w-2xl">{dest.shortDescription}</p>
             <div className="mt-4 flex flex-wrap items-center gap-4 text-xs md:text-sm text-white/80">
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {dest.durationDays} days</span>
               <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {dest.state}</span>

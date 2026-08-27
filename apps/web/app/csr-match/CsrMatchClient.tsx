@@ -80,7 +80,7 @@ export default function CsrMatchClient() {
           Live transparency dashboard. Diwali-aligned launch.
         </p>
         <p
-          className="mt-6 max-w-2xl mx-auto text-sm text-surface-700 bg-white border border-saffron-200 rounded-lg px-4 py-3 text-left"
+          className="mt-6 max-w-2xl mx-auto prose-meta text-surface-700 bg-white border border-saffron-200 rounded-lg px-4 py-3 text-left"
           data-testid="csr-credential-line"
         >
           {csrCredentialLine()}

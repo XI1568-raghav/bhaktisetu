@@ -75,7 +75,7 @@ function DemoChatPageInner() {
       <div className="text-center mb-8">
         <Sparkles className="w-10 h-10 text-saffron-600 mx-auto mb-3" />
         <h1 className={H1.portal}>Demo: Chat with a provider</h1>
-        <p className="text-sm text-surface-500 mt-2 max-w-lg mx-auto">
+        <p className="prose-meta text-surface-500 mt-2 max-w-lg mx-auto">
           Skip payment, instantly open a conversation with one of our seeded demo providers.
           Then sign in as that provider in another browser to chat back.
         </p>

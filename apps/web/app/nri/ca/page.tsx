@@ -167,7 +167,7 @@ export default function CanadaNriLanding() {
               <br />
               <span className="text-saffron-700">your Canada home.</span>
             </h1>
-            <p className="text-lg md:text-xl text-surface-600 mb-8 leading-relaxed">
+            <p className="prose-lead text-surface-600 mb-8 leading-relaxed">
               Book pujas at verified India temples. Watch live aarti. Get video proof of every booking. Built for the Canadian Hindu, Punjabi, Tamil, and Gujarati diaspora — from morning Kashi sandhya to evening Tirupati suprabhatam, on your timezone.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">

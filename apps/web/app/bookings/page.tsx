@@ -420,7 +420,7 @@ function BookingsContent() {
  <Inbox className="h-8 w-8 text-saffron-400" />
  </div>
  <h3 className="mb-2 text-lg font-semibold text-surface-700">No bookings yet</h3>
- <p className="mb-6 max-w-sm text-center text-sm text-surface-500">
+ <p className="mb-6 max-w-sm text-center prose-meta text-surface-500">
  {activeTab === 'all'
  ? 'Explore our pujas to book your first sacred ritual.'
  : `You have no ${activeTab} bookings at the moment.`}

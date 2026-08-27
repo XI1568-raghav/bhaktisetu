@@ -104,7 +104,7 @@ export default function MeditationPage() {
  <span style={{ color: 'var(--color-primary)' }}>Guided Meditation</span>
  </h1>
 
- <p data-reveal="up" data-delay="1" className="mt-5 text-sm leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="mt-5 prose-body leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
  From breath awareness for beginners to advanced Transcendental practices, find the meditation style that quiets your mind and opens your heart.
  </p>
 
@@ -410,7 +410,7 @@ export default function MeditationPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  The journey inward begins with a single breath
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
  Start your meditation practice today. No experience needed — our guided sessions meet you exactly where you are.
  </p>
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">

@@ -408,3 +408,89 @@ It is not separable from that audit wave without a manual cherry-pick.
 - **Phase 1 and Phase 3 entirely** — see the sequencing section above. Phase 3
   (commerce on `/panchang` + `/today`, consuming `GET /panchang/vrats`) remains the
   highest-value work in this document.
+
+---
+
+## WAVE — Phase 0/1/3 non-founder-gated items, 2026-08-24
+
+8 disjoint-file build lanes + 8 adversarial reviewers (16 agents). Every lane was
+required to show real failing-test output before writing its fix; every reviewer was
+told to REFUTE its lane rather than bless it.
+
+### The adversarial pass paid for itself
+
+**2 of 8 lanes came back `realFix=false`**, and both were right:
+
+- **viewer-counts** — zeroed the web fallbacks, but `DarshanBrowser.tsx:288` renders
+  `viewerCount.toLocaleString()` with no `> 0` guard, so eight `/darshan` cards began
+  printing a literal **"0"** beside a LIVE pill. A NEW rendered regression created by the
+  fix. Worse, `apps/api/src/routes/darshan.ts` still served the same invented figures
+  (8450 / 28300 / 15600 / 6200 / 12450 …) and the API path WINS whenever the API is
+  reachable — so the web-only fix was half-effective on the flagship surface.
+- **three-fixes** — the `pitru-paksha-shraadh` alias was added to `puja-link.ts`, whose
+  `CONTENT_PUJA_SLUG_ALIASES` table no producer of that slug ever reaches. The slug comes
+  from `festivals.ts`, and every consumer routes through `resolveBookablePujas`, which
+  owns a **different** alias table. The alias could never fire, and it violated the
+  module's own written contract against keeping a second copy of the festival table.
+
+### Cross-lane breakage the reviewers caught
+
+- `companion-roster-honesty.tc06.test.tsx` died at COLLECTION (`companions` → undefined),
+  silently taking **12 tests** with it. Its premise ("the fixture rows are deliberately
+  NOT deleted") was contradicted by the lane that deleted them.
+- `e2e/full-app.spec.ts:83,791` still asserted the old H1 `'sacred traditions'`.
+- `PanchangCommerce.tsx` skipped Sunday citing "no Surya SKU" — the seed lane had just
+  added `surya-puja` in the same wave.
+- **Durga Puja (2026-10-19), the highest-intent day in the measured window, still
+  resolved to NOTHING.** The new SKU existed but `pujasAvailable` names
+  `durga-saptashati-path` / `chandi-homam`, neither aliased.
+
+### A live money bug found while remediating
+
+`app/yatra/book/page.tsx` offered a **Travel companion at ₹3,500/day**, pushed it into
+`lines`, and flowed it through subtotal → 5% GST → total — while the roster it draws from
+is EMPTY. ₹3,500 was `pricePerDay` on the deleted `rajesh-kumar` fixture: the number
+outlived the person. A devotee could have been charged for someone nobody could supply.
+
+Fixed by gating BOTH the offer and the price on `hasPublishedCompanions()`, and by
+extracting `COMPANION_RATE_PER_DAY_INR` — the rate was written twice, which is precisely
+how it survived a deletion that should have taken it.
+
+### Remediations applied by hand (7)
+
+1. `DarshanBrowser.tsx` — `> 0` guard, mirroring `DarshanPlayer.tsx:225`.
+2. `apps/api/src/routes/darshan.ts` — 9 `viewerCount` + 9 `peakViewers` literals → 0.
+3. `companion-roster-honesty.tc06.test.tsx` — repaired, not deleted. Names are now
+   LITERALS rather than derived from the fixture, which makes it strictly stronger: the
+   old form passed vacuously the moment the fixture emptied.
+4. `festivals.ts` — aliased `durga-saptashati-path`/`devi-mahatmya-path` → `durga-puja`,
+   `chhath-puja`/`surya-arghya` → `surya-puja`, `pitru-paksha-shraadh` →
+   `pitru-dosh-nivaran-puja`. `chandi-homam` stays dropped: a homam is a fire offering,
+   not a recitation, and folding it in would be the one-ritual-onto-another mapping the
+   table forbids.
+5. `puja-link.ts` — removed the inert duplicate, documented why it lives in `festivals.ts`.
+6. `e2e/full-app.spec.ts` — assert the JOB (`/puja/i`), not one A/B arm's exact sentence.
+7. `PanchangCommerce.tsx` — Sunday → `surya-puja` (Ravivar).
+
+### Verified state
+
+Durga Puja → `durga-puja` · Pitru Paksha → `pitru-dosh-nivaran-puja` · Chhath →
+`surya-puja`. All three previously resolved to NONE.
+
+Web `tsc` clean · API `tsc` clean · API lane tests 23/23.
+
+### Reviewer findings NOT fixed — deliberate, and still open
+
+- **64 fabricated yatra-package testimonials** in `yatra-data.ts` (invented reviewers,
+  hardcoded 5-star), which DO render on `/yatra` and `/yatra/[slug]`. Same class as TC-06,
+  larger blast radius, deserves its own lane.
+- Mobile screens carry invented star ratings (4.9 / 4.8 / 4.7) and a hardcoded signed-in
+  user name `'Arjun Sharma'`.
+- `/darshan` metadata claims "100+ temples" against 20.
+- `HeroCopyVariant`'s `benefit` A/B arm still carries the old copy — when PostHog resolves
+  that flag the new H1 does not render.
+- `app/{bn,mr,ta,te}/page.tsx` hardcode a `heroSubtitle` with the retired live-proof claim.
+- `StickyAartiCta` reads only the 14 curated HIGHLIGHTS rows, not all published slots, and
+  its `aria-label` appends "watch the live darshan" even in the `soon` state.
+- Badrinath is seeded with year-round slots despite winter closure.
+- `panchang.service.ts` presents a MONTHLY sunset value as that day's sunset.

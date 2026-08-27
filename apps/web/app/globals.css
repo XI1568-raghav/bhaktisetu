@@ -6,6 +6,106 @@
    Warm amber accent · Organic illustration palette
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Brand faces, self-hosted ─────────────────────────────────────────────
+   PERF-03 (closed 2026-08-28). Until now there was not ONE @font-face in the
+   app and public/fonts did not exist, so 'Satoshi' and 'Cabinet Grotesk' —
+   named at the head of --font-body and --font-display, and reached by 105
+   var(--font-display) call sites, 142 `font-display` utilities and all four
+   H1 archetypes in components/ui/heading-recipe.ts — resolved to nothing and
+   every glyph painted in the next entry of the stack.
+
+   WHERE THE FILES CAME FROM. Nothing was downloaded. These five woff2 have
+   been git-tracked in this repository since 2026-07-15 at
+   apps/remotion-pitch/public/fonts, where the pitch reel bundles them so
+   headless Chromium renders the real brand face
+   (apps/remotion-pitch/src/components/FontStyle.tsx). They are copied here
+   byte for byte — verified by sha256 — so the licence question for these exact
+   files was answered by the owner when they were committed.
+
+   THE STACKS ABOVE ARE UNCHANGED AND MUST STAY THAT WAY. Both already lead
+   with these literal family names, which is precisely the handover the
+   2026-08-12 sweep designed: declare an @font-face of that name and the brand
+   takes over with no call-site edit anywhere. See the PERF-03 notes further
+   down, on the display stack in the theme block and the body stack in :root.
+
+   DO NOT WRITE THE THEME AT-RULE'S NAME, AS A LITERAL, ANYWHERE ABOVE THAT
+   BLOCK — not even inside a comment, and not even quoted inside a sentence
+   like this one. __tests__/radius-scale.test.ts finds the block with a plain
+   indexOf of that token against the RAW file and never strips comments, so
+   the first textual match wins: an earlier mention aims its brace scan at
+   whatever rule happens to follow, and every --radius-* step then reads as
+   undefined. That is a latent defect in that guard rather than in this file —
+   it survives today only because the sole earlier mention sits on the line
+   directly above the real block — but until it strips comments the constraint
+   is real. It cost four red tests on the way in, twice.
+
+   WEIGHTS. Fontshare ships Satoshi at 300/400/500/700/900 — there is no 600 —
+   and three cuts are vendored: 400/500/700. Measured utility usage across
+   app/ + components/ + lib/:
+       font-semibold (600) 2,499 · font-medium (500) 1,420
+       font-bold     (700)   890 · font-normal (400)    65
+   600 is the site's most-used weight. Default CSS matching searches UPWARD
+   from a desired weight above 500, so a plain `font-weight: 500` on Medium
+   would send all 2,499 semibold call sites to Bold and make font-semibold
+   pixel-identical to font-bold at 3,389 call sites — the site's own two
+   emphasis levels collapsed into one and the whole product visibly heavier.
+   Declaring Medium over the range `500 600` merges 600 with the rarer
+   font-medium instead and keeps the semibold/bold contrast that carries every
+   CTA and heading. Do not "tidy" that range back to a single number.
+
+   Cabinet Grotesk deliberately gets no such range: it is the DISPLAY face,
+   only 400 and 700 are vendored, and all four H1 archetypes are font-semibold
+   — 600 → 700 is the right answer for a display heading.
+
+   ₹ IS NOT IN SATOSHI. Decoded from the shipped cmap: Satoshi covers U+20AC
+   (€) but NOT U+20B9 (₹), and there are 651 literal ₹ in 137 files under
+   app/, components/ and lib/, plus every runtime-formatted price. So
+   var(--font-noto-sans) sitting directly behind 'Satoshi' is load-bearing and
+   Noto Sans must stay PRELOADED in app/layout.tsx — it draws the currency
+   symbol of every price at first paint. Cabinet Grotesk does carry U+20B9.
+
+   font-display: swap on every face, and the two first-paint cuts
+   (Satoshi-Regular for body copy, CabinetGrotesk-Bold for the h1) are
+   preloaded from app/layout.tsx. The other three load on demand.
+
+   All of the above is asserted in __tests__/brand-webfonts.perf03.test.ts,
+   which decodes the woff2 cmap rather than trusting this comment. */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Medium.woff2') format('woff2');
+  font-weight: 500 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cabinet Grotesk';
+  src: url('/fonts/CabinetGrotesk-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cabinet Grotesk';
+  src: url('/fonts/CabinetGrotesk-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── Tailwind v4 @theme — keeps all existing class names working ────────── */
 @theme {
   /* ── Warm saffron-tinted neutrals — remapped to new palette ──────────── */
@@ -124,9 +224,11 @@
      runtime, and left `font-serif` (445 call sites) falling through to
      Tailwind's stock `ui-serif` and `.font-display` (41 call sites) not
      existing at all. They also named Satoshi / Cabinet Grotesk / Crimson Pro
-     by literal family name — Satoshi and Cabinet Grotesk are not loaded
-     anywhere since PERF-03 dropped the api.fontshare.com stylesheet, and
-     next/font never exposes a literal family name, only the CSS variable.
+     by literal family name, and next/font never exposes a literal family
+     name, only the CSS variable — so Crimson Pro had to become
+     var(--font-reader-serif). Satoshi and Cabinet Grotesk KEEP their literal
+     names, and as of 2026-08-28 those names resolve: the @font-face block at
+     the top of this file self-hosts both from public/fonts.
 
      Every stack below now leads with a face app/layout.tsx actually
      downloads: --font-noto-sans (Noto Sans), --font-reader-serif (Crimson
@@ -136,12 +238,14 @@
 
      Satoshi and Cabinet Grotesk keep their place at the HEAD of the sans and
      display stacks — that is PERF-03's contract, guarded by
-     __tests__/seo/head-resource-budget.test.ts: self-host the licensed woff2
-     under public/fonts with an @font-face of that name and the brand face
-     takes over with no edit here. They are placeholders, never the only thing
-     in front of the fallback, so a downloaded face always paints today.
-     JetBrains Mono, Fira Code and Inter had no such plan behind them and are
-     gone. --font-sans aliases --font-body so the sans stack has one home. */
+     __tests__/seo/head-resource-budget.test.ts. That contract was CASHED IN on
+     2026-08-28: the @font-face block at the top of this file declares both
+     names against self-hosted woff2, and the brand face took over with no edit
+     to any stack below, exactly as designed. They are still never the only
+     thing in front of the fallback — Satoshi has no U+20B9, so Noto Sans draws
+     the ₹ in every price. JetBrains Mono, Fira Code and Inter had no such plan
+     behind them and are gone. --font-sans aliases --font-body so the sans
+     stack has one home. */
   --font-sans: var(--font-body);
   --font-display: 'Cabinet Grotesk', var(--font-noto-sans), system-ui, sans-serif;
   --font-serif: var(--font-reader-serif), Georgia, 'Times New Roman', serif;
@@ -483,10 +587,13 @@
      homepage painted in Arial, while next/font/google still downloaded 201.9 KB
      of Noto Sans / Noto Sans Devanagari / Crimson Pro that no stack referenced.
      var(--font-noto-sans) is that already-downloaded family, so it now paints
-     instead of Arial at zero extra bytes. The brand faces stay FIRST: drop the
-     licensed Satoshi / Cabinet Grotesk woff2 into public/fonts, declare them
-     with next/font/local, and they take over with no change here.
-     Guarded by __tests__/seo/head-resource-budget.test.ts.
+     instead of Arial at zero extra bytes. The brand faces stayed FIRST, and on
+     2026-08-28 they were self-hosted from public/fonts via the @font-face block
+     at the top of this file — no change was needed on this line, which was the
+     point. Noto Sans stays behind Satoshi and stays preloaded: Satoshi's cmap
+     has no U+20B9, so it is what draws the ₹ in all 651 prices.
+     Guarded by __tests__/seo/head-resource-budget.test.ts and
+     __tests__/brand-webfonts.perf03.test.ts.
 
      DU-01/11 (prod sweep 2026-08-12): --font-display / --font-body /
      --font-mono / --font-devanagari were declared HERE and nowhere else, so
@@ -857,13 +964,13 @@ select {
    the h1 on marketing, catalogue and detail surfaces; portal chrome stays on
    the body face.
 
-   OWNER-GATED, and deliberately harmless until it is not: PERF-03 removed the
-   api.fontshare.com stylesheet, so no licensed display face is bundled today
-   and --font-display currently resolves to the Noto Sans that layout.tsx
-   already downloads. Every call site below is therefore correct and invisible.
-   Drop a licensed woff2 under public/fonts with an @font-face named at the
-   head of --font-display and the hierarchy appears everywhere at once, with
-   no further call-site edits. */
+   NO LONGER INVISIBLE (2026-08-28). This rule was written while no display
+   face was bundled, so --font-display resolved to Noto Sans and every call
+   site below was correct but had no visible effect. PERF-03 self-hosted
+   Cabinet Grotesk from public/fonts (@font-face at the top of this file) and
+   the hierarchy appeared everywhere at once, with no call-site edit — which is
+   what this rule existed to make possible. All four H1 archetypes are
+   font-semibold and Cabinet Grotesk has no 600 cut, so they render its Bold. */
 .heading-display {
   font-family: var(--font-display);
 }

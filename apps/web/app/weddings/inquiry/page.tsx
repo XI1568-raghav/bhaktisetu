@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DateInput } from '../../../components/ui/DateInput';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { UserFacingError, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
 
 function apiBase(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
@@ -50,10 +51,18 @@ function InquiryForm() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      if (!res.ok) {
+        // RES-09: this rendered the literal string "Request failed: 400" to a
+        // prospective wedding client. The API's own sentence is used when it
+        // sent one; a non-JSON body (a gateway's HTML) is never shown.
+        const detail = await res.text().catch(() => '');
+        throw new UserFacingError(
+          serverErrorText(detail, 'We could not send your enquiry. Please try again.'),
+        );
+      }
       setStatus('sent');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(userFacingMessage(err, 'We could not send your enquiry. Please try again.'));
       setStatus('error');
     }
   }

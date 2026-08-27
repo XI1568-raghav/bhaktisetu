@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { DateInput } from '../../../components/ui/DateInput';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { useAuth } from '../../../lib/auth-context';
+import { fetchWithTimeout } from '../../../lib/api-config';
 
 const NAKSHATRAS = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
@@ -38,6 +39,9 @@ function apiBase(): string {
     process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
   return raw.endsWith('/api/v1') ? raw : `${raw.replace(/\/$/, '')}/api/v1`;
 }
+
+/** Deliberately generous — see the note at the call site. */
+const MUHURAT_TIMEOUT_MS = 45_000;
 
 const LOGIN_HREF = `/auth/login?redirect=${encodeURIComponent('/weddings/muhurat')}`;
 
@@ -97,14 +101,33 @@ export default function MuhuratPage() {
       const body: Record<string, unknown> = { ...form };
       if (!body.brideNakshatra) delete body.brideNakshatra;
       if (!body.groomNakshatra) delete body.groomNakshatra;
-      const res = await fetch(`${apiBase()}/weddings/muhurat`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const res = await fetchWithTimeout(
+        `${apiBase()}/weddings/muhurat`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+          // fetchWithTimeout defaults to credentials:'include'. This call is
+          // cross-origin (api.darshya.online) and the bare fetch it replaces
+          // used the default 'same-origin', which sends nothing cross-origin.
+          // Keeping that explicit: switching to 'include' would need the API
+          // to answer Access-Control-Allow-Credentials or the browser blocks
+          // the response outright.
+          credentials: 'omit',
         },
-        body: JSON.stringify(body),
-      });
+        // The last bare fetch on an auth surface. Every other one got a budget
+        // when the "infinite spinner, no error" P0 was traced to a promise that
+        // never settles; this one was left alone because nobody had measured
+        // how long the mhah-panchang Ayanamsa/dasha scan takes over a wide date
+        // window, and a blind 15s cap could turn a slow success into a failure.
+        // 45s does not need that measurement: it is three times the app's data
+        // budget and still finite, so a half-open socket ends in a sentence the
+        // user can act on instead of a spinner that never stops.
+        MUHURAT_TIMEOUT_MS,
+      );
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           setNeedsSignIn(true);

@@ -91,13 +91,42 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const puja = await loadPuja(slug);
   if (!puja) return { title: 'Puja temples' };
   const count = puja.temples?.filter((t) => t.isActive).length || 0;
+  // TC-08 / TC-01 — these two descriptions carried three claims the product
+  // does not back, and nothing rendered them into a test, so TC-07's pass over
+  // this page never saw them.
+  //
+  //   1. "Verified pandits" / "certified pandits". No vetting runs: the priest
+  //      verification columns have no writer outside apps/api/prisma/seed.ts,
+  //      and there is no credential upload, reference workflow or probation
+  //      job. Both strings are already in the VETTING_FICTIONS list of
+  //      __tests__/trust-copy-lane.tc01-tc13.test.tsx; this surface was simply
+  //      never in its SURFACES array. Nothing replaces them, because this page
+  //      has no reason to raise the subject — the honest wording for surfaces
+  //      that DO raise it is the canonical clause pinned by
+  //      __tests__/pandit-vetting-claim.tc08.test.tsx.
+  //
+  //   2. "80G receipts" / "80G". COMPANY.donationLegal.HAS_80G_VERIFIED is
+  //      false. Unlike /why-darshya, which restores its 80G row the day that
+  //      flag flips, this claim is DELETED rather than flag-gated: a puja
+  //      booking is a paid service, not a donation, so no 80G registration
+  //      would ever make it deductible. There is nothing here to restore.
+  //
+  //   3. "N verified temples". The list below is filtered on `isActive` only,
+  //      and each card renders its own "Verified" chip gated on the
+  //      per-offering `o.isVerified` — so the prose asserted for all N exactly
+  //      what the markup admits is true only for some. The per-card gate is
+  //      the real signal (Temple.isVerified is written by
+  //      apps/api/src/routes/admin.ts on temple create) and it stays.
+  //
+  // What survives is what the page can source: a count of active offerings,
+  // the price ordering, and video proof — mandatory on every puja booking.
   return {
     title: `${puja.name} temples — book online${count > 0 ? ` (${count} options)` : ''}`,
-    description: `Top temples for ${puja.name}. Verified pandits, video proof, 80G receipts. Compare prices across ${count} active temples.`,
+    description: `Book ${puja.name} online at ${count} temple${count === 1 ? '' : 's'}. Compare prices, lowest first. Every booking ships with video proof of the ceremony.`,
     alternates: { canonical: `https://darshya.online/pujas/${slug}/temples` },
     openGraph: {
       title: `${puja.name} temples — book online`,
-      description: `${count} verified temples. Video proof, 80G, certified pandits.`,
+      description: `${count} temple${count === 1 ? '' : 's'} offering ${puja.name}. Compare prices, lowest first. Video proof on every booking.`,
       url: `https://darshya.online/pujas/${slug}/temples`,
       type: 'website',
       images: [`/og/puja/${slug}`],
@@ -171,16 +200,26 @@ export default async function PujaTemplesPage({ params }: Params) {
         {puja.nameLocal ? (
           <p className="text-base font-serif text-surface-500 mb-3">{puja.nameLocal}</p>
         ) : null}
+        {/* TC-08 / TC-01 — see generateMetadata above. This sentence said
+            "N verified temple(s) offer …" over a list filtered on isActive
+            alone, and promised "an 80G receipt where applicable" on a paid
+            service that no 80G registration would make deductible. The count
+            and the price ordering are checkable and stay; the verification
+            claim moves to where it is actually sourced, the per-card chip
+            below, and the 80G clause is gone rather than deferred. */}
         <p className="text-surface-700 text-base leading-relaxed max-w-3xl">
           {offerings.length > 0
-            ? `${offerings.length} verified temple${offerings.length === 1 ? '' : 's'} offer ${puja.name}. Compare prices and locations, lowest price first. Every booking ships with video proof and an 80G receipt where applicable.`
-            : `${puja.name} catalogue is being onboarded at more temples. Book at any of our verified partners while we expand.`}
+            ? `${offerings.length} temple${offerings.length === 1 ? ' offers' : 's offer'} ${puja.name}. Compare prices and locations, lowest price first. Every booking ships with video proof of the ceremony.`
+            : `${puja.name} catalogue is being onboarded at more temples. Browse the pujas we already offer while we expand.`}
         </p>
       </header>
 
       {offerings.length === 0 ? (
         <div className="rounded-lg border border-surface-200 bg-surface-50 p-6 text-center">
-          <p className="text-surface-700 mb-4">No verified temples for this puja yet.</p>
+          {/* "No verified temples for this puja yet" said the temples exist but
+              failed a check. Nothing checks them; there simply is no active
+              offering. Say that instead. */}
+          <p className="text-surface-700 mb-4">No temples offer this puja yet.</p>
           <Link
             href={`/pujas/${slug}`}
             className={buttonClass('primary', 'md')}

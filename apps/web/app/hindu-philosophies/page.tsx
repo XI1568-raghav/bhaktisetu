@@ -105,7 +105,7 @@ export default function HinduPhilosophiesIndexPage() {
           <h2 className="text-xl font-semibold text-gray-900">Major Vedanta Sub-Schools</h2>
           <span className="text-xs text-gray-500">{vedantaSchools.length} traditions</span>
         </div>
-        <p className="mb-4 max-w-3xl text-sm text-gray-600">
+        <p className="mb-4 max-w-3xl prose-body text-gray-600">
           Vedanta is a family of traditions that share the Upanishads, Brahma Sutras, and Bhagavad
           Gita (the prasthana-trayi) as authoritative, while differing rigorously on the nature of
           Brahman, the self, the world, and liberation. Each sub-school below is presented on its

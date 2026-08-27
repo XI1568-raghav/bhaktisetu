@@ -75,7 +75,7 @@ export default function ShaktiPeethIndexPage() {
           which fell across the subcontinent. Each became a Shakti Peeth — paired with a specific Bhairava (Shiva
           form) and Devi manifestation. Together they form the most powerful Tantric sadhana grid in Sanatana Dharma.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           Numbering follows the Pithanirnaya tradition. Some texts list 52 or 108 — we cover the canonical 51 from
           Devi Bhagavata Purana. See also{' '}
           <Link href="/tirth" className="text-rose-700 underline">12 Sacred Tirthas</Link> and{' '}

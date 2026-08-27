@@ -167,7 +167,7 @@ export default function WellnessStudentsPage() {
           <h3 className="text-lg font-semibold text-surface-700">
             No students yet
           </h3>
-          <p className="text-sm text-surface-500 mt-1 max-w-sm text-center">
+          <p className="prose-meta text-surface-500 mt-1 max-w-sm text-center">
             {students.length === 0
               ? 'Students appear here once devotees enrol in any of your wellness sessions.'
               : 'No students match the current filter.'}

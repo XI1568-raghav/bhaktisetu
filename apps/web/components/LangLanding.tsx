@@ -105,7 +105,7 @@ export function LangLanding(props: LangLandingProps) {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-2">{props.nriHeading}</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">{props.nriBody}</p>
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">{props.nriBody}</p>
         <Link
           href={href('/nri')}
           className={buttonClass('primary', 'md')}

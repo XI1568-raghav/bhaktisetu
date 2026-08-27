@@ -242,7 +242,7 @@ export default function MarathiPuneLanding() {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-2">परदेशातील मराठी मंडळींसाठी (NRI Marathi)</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">
           अमेरिका, ब्रिटन, ऑस्ट्रेलिया, सिंगापूर — आई-वडिलांच्या / कुटुंबाच्या नावाने पुण्यातील मंदिरात पूजा. व्हिडिओ पुरावा तुमच्या WhatsApp वर. वार्षिक सदस्यता ₹5000 / $60.
         </p>
         <Link

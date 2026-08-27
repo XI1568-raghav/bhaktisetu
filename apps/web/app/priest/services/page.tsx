@@ -25,6 +25,7 @@ import {
 } from '../../../lib/pandit-api';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -81,7 +82,7 @@ function PriestServicesPageContent() {
    const data = await listMyOfferings(token);
    setOfferings(data);
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Failed to load pujas');
+   setError(userFacingMessage(err, 'Could not load your pujas. Please try again.'));
   } finally {
    setLoading(false);
   }
@@ -141,7 +142,7 @@ function PriestServicesPageContent() {
    }
    resetForm();
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Failed to save puja');
+   setError(userFacingMessage(err, 'Could not save this puja. Please try again.'));
   } finally {
    setSaving(false);
   }
@@ -160,7 +161,7 @@ function PriestServicesPageContent() {
    setOfferings((o) => o.map((s) => (s.id === id ? updated : s)));
   } catch (err) {
    setOfferings(prev);
-   setError(err instanceof Error ? err.message : 'Toggle failed');
+   setError(userFacingMessage(err, 'Could not change this puja. Please try again.'));
   } finally {
    setBusyId(null);
   }
@@ -177,7 +178,7 @@ function PriestServicesPageContent() {
    await deleteOffering(token, id);
   } catch (err) {
    setOfferings(prev);
-   setError(err instanceof Error ? err.message : 'Delete failed');
+   setError(userFacingMessage(err, 'Could not delete this puja. Please try again.'));
   } finally {
    setBusyId(null);
   }

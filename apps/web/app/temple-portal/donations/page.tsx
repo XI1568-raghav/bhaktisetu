@@ -167,7 +167,7 @@ export default function TempleDonationsPage() {
           <h3 className="text-lg font-semibold text-surface-700">
             No donations yet
           </h3>
-          <p className="text-sm text-surface-500 mt-1 max-w-md text-center">
+          <p className="prose-meta text-surface-500 mt-1 max-w-md text-center">
             Temple donations will appear here once the donation flow is enabled
             for your temple. Devotees will be able to give via the temple
             details page.

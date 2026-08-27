@@ -96,28 +96,19 @@ function looksLikeSession(value: unknown): value is RevivedSession {
  * (FST_ERR_CTP_EMPTY_JSON_BODY, a 400) before the handler's
  * `request.body ?? {}` ever runs.
  *
- * ⚠ THIS DOES NOT COVER MAGIC-LINK USERS, AND THAT GATES SEC-02 STEP 4.
- * POST /auth/refresh is a SUPABASE exchange. A magic-link sign-in has no
- * Supabase session behind it — apps/api/src/routes/magic-link.ts mints an
- * `email_sessions` row via createEmailSession and answers `refreshToken: ''`,
- * and that route deliberately issues NO `darshya_refresh` cookie (an empty one
- * could only ever fail). So for every provider onboarded through the
- * partnerships pipeline this call has no credential to send and 400s.
- * Harmless today: AuthProvider only reaches here when localStorage holds no
- * session, and those users still get a `poojly_session` written at
- * app/auth/verify. It stops being harmless the moment that write is deleted —
- * they would revive-fail, have their profile marker cleared, and be signed out
- * on reload. What they hold instead is a 7-day httpOnly `darshya_session` whose
- * maxAge now matches EMAIL_SESSION_TTL_MS, and which
- * apps/api/src/middlewares/auth.ts validates directly. The migration for them is
- * therefore "send the cookie" (fetchWithTimeout already defaults
- * `credentials: 'include'`), NOT "revive a JS token" — or a dedicated
- * email-session refresh endpoint if a JS-side token is genuinely required.
+ * ⚠ IT DOES NOT COVER MAGIC-LINK USERS. POST /auth/refresh is a SUPABASE
+ * exchange, and a magic-link sign-in has no Supabase session behind it —
+ * apps/api/src/routes/magic-link.ts mints an `email_sessions` row via
+ * createEmailSession, answers `refreshToken: ''`, and deliberately issues NO
+ * `darshya_refresh` cookie (an empty one could only ever fail). So for every
+ * provider onboarded through the partnerships pipeline this call has no
+ * credential to send and can only 400. That is what
+ * reviveEmailSessionFromCookie below exists for; see reviveSessionFromCookie.
  *
  * Never throws — an unreachable API on a cold Render dyno must degrade to
  * "signed out", not to an unhandled rejection during mount.
  */
-export async function reviveSessionFromCookie(): Promise<RevivedSession | null> {
+async function reviveSupabaseSessionFromCookie(): Promise<RevivedSession | null> {
   try {
     const res = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
@@ -131,4 +122,65 @@ export async function reviveSessionFromCookie(): Promise<RevivedSession | null> 
   } catch {
     return null;
   }
+}
+
+/**
+ * SEC-02 STEP 2 — the revive path for magic-link / email sessions.
+ *
+ * These are the users with no password at all: there is no password column on
+ * User, so a partnerships-provisioned pandit or temple manager holds exactly one
+ * credential, the link that was emailed to them. Their session is an
+ * `email_sessions` row, not a Supabase one, so the /auth/refresh exchange above
+ * has nothing to trade and answers 400 for them every time.
+ *
+ * `POST /auth/session/revive` is the counterpart: it validates the 7-day
+ * httpOnly `darshya_session` cookie against `email_sessions` (rejecting revoked,
+ * expired and blocked) and reports the session back. It mints nothing and does
+ * not extend the cookie — a sliding 7-day session would be a policy change, not
+ * a revive.
+ *
+ * Empty JSON body, deliberately: the cookie is the credential and there is no
+ * token to send. `body: '{}'` rather than no body at all because Fastify
+ * rejects a POST that declares `Content-Type: application/json` with an empty
+ * payload (FST_ERR_CTP_EMPTY_JSON_BODY, a 400) before the handler runs.
+ */
+export async function reviveEmailSessionFromCookie(): Promise<RevivedSession | null> {
+  try {
+    const res = await fetchWithTimeout(`${API_BASE_URL}/auth/session/revive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: '{}',
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return looksLikeSession(data?.session) ? (data.session as RevivedSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Bring a token-free browser back, whichever door it originally signed in
+ * through.
+ *
+ * ORDER MATTERS AND IS NOT ARBITRARY. Supabase first, because that is the
+ * overwhelming majority (email+password, phone OTP, Google) and a hit there
+ * costs exactly one round-trip — the email-session call must never fire for
+ * them, or every cold page load grows a second cross-origin request. The
+ * fallback runs only after /auth/refresh has already refused, which for a
+ * magic-link browser it always will: it holds no `darshya_refresh` cookie at
+ * all, so that request carries no refresh credential and 400s without touching
+ * Supabase.
+ *
+ * Both refusing means signed out, which is the correct answer for a browser
+ * whose cookies have expired — AuthProvider then clears the stale profile
+ * marker so middleware.ts stops waving a dead session into the portal shell.
+ *
+ * Never throws, for the same reason the helpers above do not.
+ */
+export async function reviveSessionFromCookie(): Promise<RevivedSession | null> {
+  const supabase = await reviveSupabaseSessionFromCookie();
+  if (supabase) return supabase;
+  return reviveEmailSessionFromCookie();
 }

@@ -57,26 +57,54 @@ describe('PAR-22 — the astrology bounce-outs say they leave the app', () => {
     expect(raw).not.toBe(src);
   });
 
-  it('every openURL on this screen sits on a control announced as a link', () => {
-    // A TouchableOpacity that ejects the devotee into the browser and reports
-    // itself to VoiceOver as nothing is the defect; the count is derived so a
-    // third bounce-out added later cannot slip past.
-    const bounceOuts = (src.match(/Linking\.openURL\(/g) ?? []).length;
-    expect(bounceOuts).toBeGreaterThan(0);
-    // Both spellings count: a literal role, and a ternary that picks `link`
-    // when the control leaves the app and `button` when it does not — the
-    // service list needs the second, because its Kundli entry routes in-app.
-    const linkRoles = (
-      src.match(/accessibilityRole=(?:["']link["']|\{[^}]*['"]link['"][^}]*\})/g) ?? []
-    ).length;
-    expect(linkRoles).toBeGreaterThanOrEqual(bounceOuts);
+  /**
+   * REWRITTEN, DELIBERATELY — the original contract is superseded, not weakened.
+   *
+   * These two assertions used to count `Linking.openURL(` on the screen and
+   * require a matching number of `accessibilityRole="link"` spellings and a
+   * literal "in your browser" hint. That was exactly right while every
+   * hand-off was UNCONDITIONALLY a browser hand-off.
+   *
+   * PAR-22 (C) made the destination a runtime fact. `openWebHandoff` pushes
+   * app/(devotee)/web-view.tsx when the optional react-native-webview module
+   * resolves and falls back to `Linking.openURL` when it does not. Against that
+   * code the old assertions are not merely unenforceable — they are actively
+   * wrong: they would REQUIRE the screen to hardcode "in your browser" on a
+   * control that, in a build with the module installed, does not go there. A
+   * literal claim about a runtime destination is the very defect this file was
+   * written to stop, one level up.
+   *
+   * The replacement is strictly stronger. It does not check that the copy
+   * happens to say the right thing; it checks that the copy CANNOT say the
+   * wrong thing, because role, hint and glyph all come out of
+   * `describeWebHandoff` — the same function that decides the route. Unit
+   * coverage that the two agree on every combination lives in
+   * lib/__tests__/in-app-web.par22.test.ts.
+   */
+  it('every hand-off is routed and described by the same decision', () => {
+    // Derived counts, so a third bounce-out added later cannot slip past.
+    const handoffs = (src.match(/openWebHandoff\(/g) ?? []).length;
+    expect(handoffs).toBeGreaterThan(0);
+    const described = (src.match(/describeWebHandoff\(/g) ?? []).length;
+    expect(described).toBe(handoffs);
   });
 
-  it('each one carries a hint naming the browser hand-off', () => {
+  it('no control hardcodes where the tap goes', () => {
+    // The old failure this file caught — a silent bounce-out — plus the new
+    // one it must catch: a control that announces a destination it no longer
+    // controls. `Linking.openURL` survives only as the injected fallback.
+    expect(src).not.toMatch(/accessibilityRole=["']link["']/);
+    expect(src).not.toMatch(/in your browser['"`]/);
+    expect(src).not.toMatch(/Linking\.openURL\(/);
+    expect(src).toMatch(/openExternal:\s*Linking\.openURL/);
+  });
+
+  it('every hand-off control still carries a hint at all', () => {
+    // The original intent, preserved: a control that ejects the devotee and
+    // reports itself to VoiceOver as nothing is the defect.
     const hints = (src.match(/accessibilityHint=/g) ?? []).length;
-    const bounceOuts = (src.match(/Linking\.openURL\(/g) ?? []).length;
-    expect(hints).toBeGreaterThanOrEqual(bounceOuts);
-    expect(src).toMatch(/in your browser/);
+    const handoffs = (src.match(/openWebHandoff\(/g) ?? []).length;
+    expect(hints).toBeGreaterThanOrEqual(handoffs);
   });
 
   it('the AI CTA no longer promises an in-app chat it does not open', () => {
@@ -144,6 +172,11 @@ describe('PAR-22 — the WebView dependency the app already assumes is absent', 
       'app/(devotee)/darshan-player.tsx',
       'app/(devotee)/astrology.tsx',
       'app/(devotee)/puja-book.tsx',
+      // PAR-22 (C) added a second consumer of the optional module and the one
+      // place it is now resolved. Both are scanned so the registry above stays
+      // exhaustive rather than merely historical.
+      'app/(devotee)/web-view.tsx',
+      'lib/webview-module.ts',
     ]) {
       const s = stripComments(readFileSync(path.join(MOBILE, rel), 'utf8'));
       for (const m of s.matchAll(/require\(\s*['"]([^.'"][^'"]*)['"]\s*\)/g)) {

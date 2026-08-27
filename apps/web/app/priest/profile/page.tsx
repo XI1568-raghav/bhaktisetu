@@ -26,6 +26,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { UserFacingError, userFacingMessage } from '../../../lib/friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -120,7 +121,8 @@ function PriestProfilePageContent() {
  return;
  }
  if (!res.ok) {
- throw new Error(`Could not load your profile (HTTP ${res.status}).`);
+ // RES-09: an HTTP status is not something a pandit can act on.
+ throw new UserFacingError('Could not load your profile. Please try again.');
  }
  const data = await res.json();
  setProfile(data);
@@ -183,12 +185,12 @@ function PriestProfilePageContent() {
  setTimeout(() => setSaved(false), 3000);
  } else {
  // P0 #pp-06: show the server message, not a silent fail.
- let msg = `Save failed (HTTP ${res.status})`;
+ let msg = 'Could not save your profile. Please try again.';
  try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
  setSaveError(msg);
  }
  } catch (err) {
- setSaveError(err instanceof Error ? err.message : 'Network error — please retry.');
+ setSaveError(userFacingMessage(err, 'Network error — please retry.'));
  } finally {
  setSaving(false);
  }

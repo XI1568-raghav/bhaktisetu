@@ -118,7 +118,7 @@ export default function NavadurgaPage() {
       <p className="text-xs uppercase tracking-wider text-saffron-600">Free 9-day Navratri guide</p>
       <h1 className={`${H1.catalogue} mt-1`}>Navadurga — 9 Forms of Maa Durga</h1>
       <p className="mt-2 text-sm text-saffron-700">नवदुर्गा · The 9 nights of Shakti</p>
-      <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+      <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
        9 sequential manifestations of Adi-Shakti, worshipped one per night
        through Navratri. Each form rules a planet, a chakra, and a stage of
        spiritual journey. Per Devi Mahatmya (Chandi Path), Markandeya Purana &amp; Devi Bhagavata Purana.

@@ -296,7 +296,7 @@ export default function LiveAstrologersClient() {
           <h1 className={`${H1.catalogue} mt-1`}>
             Live astrologer directory
           </h1>
-          <p className="text-surface-500 mt-1 max-w-2xl text-sm">
+          <p className="text-surface-500 mt-1 max-w-2xl prose-body">
             Every astrologer here is a real, approved Darshya profile. Availability comes from
             their own go-online status, so an &ldquo;Online&rdquo; badge means they are at their
             desk right now.
@@ -380,7 +380,7 @@ export default function LiveAstrologersClient() {
       {state === 'ready' && astrologers.length === 0 && (
         <div className="mt-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
           <p className="font-serif text-lg text-surface-800">No astrologers are listed yet</p>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-surface-600">
+          <p className="mx-auto mt-2 max-w-xl prose-meta text-surface-600">
             No approved astrologer has gone live on Darshya so far. As soon as one is verified they
             appear here. In the meantime the free Vedic calculators are open to everyone.
           </p>

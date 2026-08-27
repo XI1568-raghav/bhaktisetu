@@ -278,7 +278,7 @@ export default async function MarriagePage() {
  <h3 className="text-lg font-semibold text-surface-800 mb-2">
  Verified pandits coming soon
  </h3>
- <p className="text-sm text-surface-500 max-w-md mx-auto">
+ <p className="prose-meta text-surface-500 max-w-md mx-auto">
  We are onboarding Vedic-certified wedding pandits. New profiles will appear here shortly.
  </p>
  </div>

@@ -244,7 +244,7 @@ export default function TeluguHyderabadLanding() {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-2">విదేశాల్లోని తెలుగువారికి (NRI Telugus)</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">
           USA (న్యూజెర్సీ, బే ఏరియా, టెక్సాస్), UK, ఆస్ట్రేలియా, సింగపూర్ — మీ తల్లిదండ్రులు/కుటుంబం పేరిట హైదరాబాద్ ఆలయంలో పూజ. వీడియో ప్రూఫ్ మీ WhatsApp‌లో. వార్షిక సభ్యత్వం ₹5000 / $60.
         </p>
         <Link

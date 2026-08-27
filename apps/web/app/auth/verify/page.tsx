@@ -151,7 +151,7 @@ function VerifyInner() {
     <Centered>
       <AlertCircle className="w-10 h-10 text-saffron-600 mb-3" />
       <h1 className={`${H1.portal} mb-1`}>Sign-in link not valid</h1>
-      <p className="text-sm text-surface-500 mb-6 text-center max-w-sm">{errorMessage}</p>
+      <p className="prose-meta text-surface-500 mb-6 text-center max-w-sm">{errorMessage}</p>
       <Link
         href="/auth/login"
         className={buttonClass('primary', 'md')}

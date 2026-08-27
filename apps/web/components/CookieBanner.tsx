@@ -172,7 +172,12 @@ export default function CookieBanner() {
       role="dialog"
       aria-modal="false"
       aria-labelledby="darshya-cookie-title"
-      className="fixed inset-x-0 bottom-0 z-[80] px-4 pb-4 sm:px-6 sm:pb-6"
+      // RESP-01 (second pass): the outer gutter is the cheapest height in the
+      // whole banner — px-3/pb-3 below sm gives the card 16px more width (fewer
+      // wrapped lines) AND 4px less height, with no change to a single word of
+      // the notice. Measured at 390x844 against the compiled bundle: 278px →
+      // 262px, i.e. the banner's top edge moves from y=566 to y=582.
+      className="fixed inset-x-0 bottom-0 z-[80] px-3 pb-3 sm:px-6 sm:pb-6"
     >
       {/* RESP-01: at 390x844 this card was 347px — 41% of the viewport — which
           left 497px for a 632px sign-in form. Tighter type and padding on
@@ -180,7 +185,7 @@ export default function CookieBanner() {
           every breakpoint: nothing is clamped, collapsed or removed, because
           shrinking a DPDP/UK-GDPR disclosure is a compliance decision, not a
           layout one. */}
-      <div className="mx-auto max-w-3xl rounded-xl border bg-white p-4 shadow-xl sm:p-6"
+      <div className="mx-auto max-w-3xl rounded-xl border bg-white p-3 shadow-xl sm:p-6"
         style={{ borderColor: "var(--color-border, #e6e2db)" }}
       >
         <h2 id="darshya-cookie-title" className="text-sm font-semibold leading-snug text-surface-900 sm:text-lg">
@@ -238,7 +243,7 @@ export default function CookieBanner() {
             viewport. A 2-up grid on mobile drops that to ~96px. The disclosure
             copy above is untouched — shortening a DPDP/UK-GDPR notice is not a
             layout decision. */}
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="mt-2.5 grid grid-cols-2 gap-1.5 sm:mt-4 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <button
             type="button"
             onClick={() => save({ analytics: false, marketing: false })}

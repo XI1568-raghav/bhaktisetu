@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { getMyReviews, type PriestReview } from '../../../lib/pandit-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ export default function PriestReviewsPage() {
       const rows = await getMyReviews(token);
       setReviews(rows);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load reviews');
+      setError(userFacingMessage(err, 'Could not load your reviews. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -233,7 +234,7 @@ export default function PriestReviewsPage() {
           <h3 className="text-lg font-semibold text-surface-700">
             No reviews yet
           </h3>
-          <p className="text-sm text-surface-500 mt-1 max-w-sm text-center">
+          <p className="prose-meta text-surface-500 mt-1 max-w-sm text-center">
             {ratingFilter === 'all'
               ? 'Devotees can leave reviews after completing bookings.'
               : 'No reviews match the selected filter.'}

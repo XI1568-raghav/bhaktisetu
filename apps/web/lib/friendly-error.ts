@@ -91,7 +91,19 @@ export function friendlyApiError(err: unknown): { message: string; reauth: boole
       reauth: false,
     };
   }
-  if (/network|failed to fetch|fetch failed|econn|timeout|timed out/i.test(raw)) {
+  // RES-09 (2026-08-28): this list was Chromium-shaped. Every browser words a
+  // failed fetch differently and only Chrome's and Firefox's were here —
+  // Chrome "Failed to fetch", Firefox "NetworkError when attempting to fetch
+  // resource." (caught by `network`), Safari/iOS "Load failed" and "The
+  // Internet connection appears to be offline.", neither of which matched. On
+  // an iPhone those fell through to the generic bucket, so a devotee on a
+  // dropped connection was told "We could not load this right now" — no
+  // mention of the connection, which is the one thing they could have fixed.
+  if (
+    /network|failed to fetch|fetch failed|load failed|connection appears to be offline|econn|timeout|timed out/i.test(
+      raw,
+    )
+  ) {
     return {
       message: 'Could not reach the server. Please check your connection and try again.',
       reauth: false,
@@ -99,9 +111,82 @@ export function friendlyApiError(err: unknown): { message: string; reauth: boole
   }
   // 404 / not-found and anything else → a neutral, non-technical message.
   return {
-    message: 'We could not load this right now. Please try again.',
+    message: GENERIC_ERROR_MESSAGE,
     reauth: false,
   };
+}
+
+/**
+ * The bucket `friendlyApiError` lands in when it recognises nothing. Exported
+ * because `userFacingMessage` needs to tell "I classified this" apart from
+ * "I gave up" — see below.
+ */
+export const GENERIC_ERROR_MESSAGE = 'We could not load this right now. Please try again.';
+
+/**
+ * RES-09 (2026-08-28) — the seam that was missing, and the reason the pattern
+ * kept coming back.
+ *
+ * `friendlyApiError` maps a RAW error to friendly copy. But most screens do
+ * this instead:
+ *
+ *     if (!res.ok) throw new Error(`Could not load X (${res.status}). ${body}`)
+ *     …
+ *     catch (err) { setError(err instanceof Error ? err.message : '…') }
+ *
+ * and the message they render is whatever `err.message` happens to hold —
+ * their own composed string on a bad status, but the PLATFORM's on anything
+ * else: "Failed to fetch", "Load failed", "NetworkError when attempting to
+ * fetch resource", "Unexpected token '<' … is not valid JSON". Dropping
+ * `friendlyApiError` in on top of that is not enough either: it cannot tell a
+ * sentence the product wrote from one the browser wrote, so it flattens the
+ * good one to GENERIC_ERROR_MESSAGE.
+ *
+ * `UserFacingError` is that missing distinction. A screen throws one when it
+ * has already built copy fit for a user; `userFacingMessage` passes those
+ * straight through and routes everything else through `friendlyApiError`.
+ */
+export class UserFacingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UserFacingError';
+    // Subclassing a built-in loses the prototype link when the class is
+    // downlevelled. Without this the `instanceof` below silently returns false
+    // and every deliberate message falls through to the generic bucket.
+    Object.setPrototypeOf(this, UserFacingError.prototype);
+  }
+}
+
+/**
+ * The server's own sentence out of an error response BODY AS TEXT, else
+ * `fallback`. The text form matters: these screens read `await res.text()`
+ * because an error response is not guaranteed to be JSON at all — a gateway or
+ * a proxy answers HTML, and `JSON.parse` throwing is exactly the signal that
+ * there is nothing quotable in there. Never renders the raw body.
+ */
+export function serverErrorText(text: string, fallback: string): string {
+  if (!text || !text.trim()) return fallback;
+  try {
+    return serverErrorMessage(JSON.parse(text), fallback);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * What to show the user for a caught error.
+ *
+ *  - a `UserFacingError` → its own message, untouched
+ *  - anything `friendlyApiError` recognises (auth, rate limit, 5xx, network)
+ *    → that classification, which is more specific than a page's own copy
+ *  - anything else → the caller's `fallback` if it has one, since a page can
+ *    say "Could not load your payouts" where this helper can only say "this"
+ */
+export function userFacingMessage(err: unknown, fallback?: string): string {
+  if (err instanceof UserFacingError && err.message.trim()) return err.message;
+  const { message } = friendlyApiError(err);
+  if (message === GENERIC_ERROR_MESSAGE && fallback && fallback.trim()) return fallback;
+  return message;
 }
 
 /**

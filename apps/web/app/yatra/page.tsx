@@ -80,7 +80,7 @@ export default function YatraHubPage() {
  <p
  data-reveal="up"
  data-delay="2"
- className="mt-4 text-sm leading-relaxed max-w-lg"
+ className="mt-4 prose-body leading-relaxed max-w-lg"
  style={{ color: 'var(--color-text-muted)' }}
  >
  Char Dham, 12 Jyotirlingas, Amarnath, Vaishno Devi — fully curated yatras with verified guides, comfortable stays, helicopter options and trained companions for elderly devotees.
@@ -306,7 +306,7 @@ export default function YatraHubPage() {
  <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Can&apos;t find your perfect yatra?
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
  Pick your destinations, dates and preferences — our team will craft a personalized itinerary within 24 hours.
  </p>
  <Link

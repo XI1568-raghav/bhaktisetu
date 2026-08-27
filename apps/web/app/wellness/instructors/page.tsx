@@ -104,7 +104,7 @@ export default function WellnessInstructorsIndexPage() {
           >
             Instructors teaching on Darshya
           </h1>
-          <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="prose-body mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
             Everyone here has at least one live class scheduled. Prices are what those
             classes actually cost.
           </p>

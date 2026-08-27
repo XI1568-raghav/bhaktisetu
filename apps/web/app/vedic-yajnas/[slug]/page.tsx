@@ -101,7 +101,7 @@ export default async function VedicYajnaDetailPage({ params }: Props) {
         </div>
         <h1 className={H1.catalogue}>{y.name}</h1>
         <p className="mt-1 text-2xl text-amber-900" lang="sa">{y.sanskrit}</p>
-        <p className="mt-3 max-w-3xl text-sm text-gray-700">{CATEGORY_DESCRIPTIONS[y.category]}</p>
+        <p className="mt-3 max-w-3xl prose-body text-gray-700">{CATEGORY_DESCRIPTIONS[y.category]}</p>
       </header>
 
       <section className="mb-8 grid gap-4 sm:grid-cols-3">

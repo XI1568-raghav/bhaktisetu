@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePujas } from '@poojly/api-client';
 import { selectPujaTypes } from '../../lib/api-contracts';
+import { PLATFORM_FEE_INR } from '../../lib/booking-flow';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 type PujaCategory = 'all' | 'shiva' | 'vishnu' | 'devi' | 'ganesh' | 'navagraha';
@@ -30,11 +31,31 @@ type PujaCategory = 'all' | 'shiva' | 'vishnu' | 'devi' | 'ganesh' | 'navagraha'
  *   Ganesh Atharvashirsha    app ₹751     does not exist (the puja is Ganesh Puja)
  *
  * A devotee tapped a price in the app and was charged a different one on the
- * web checkout. Price now comes from `basePrice` / `nriPrice` and nothing else.
+ * web checkout. Price now comes from `basePrice` and nothing else.
  *
  * Also deleted: `rating`, `reviews`, `temple`, `city`. The puja-types endpoint
  * returns none of them, and inventing a 4.9 (1,240 reviews) badge on a ritual
  * is a fabricated social proof claim.
+ *
+ * PAR-15 (2), 2026-08-28 — NRI PRICE REMOVED, and the platform fee added.
+ *
+ * The card rendered `NRI: ₹{nriPriceInr}` on every row. No booking path
+ * charges it: booking.service.ts:540 is `const pujaPrice = basePrice;`, and the
+ * S3-09 comment above it states that NRI pricing only returns as a
+ * server-QUOTED unit price rendered from the same value the gateway is asked
+ * for. With this repo's own fixtures the card advertised ₹5,100 for a puja
+ * that bills ₹1,151 — a 4.4x displayed-vs-charged gap aimed at the
+ * highest-ARPU cohort in the catalogue.
+ *
+ * This was NOT an open product call, which is how it was last written up. The
+ * web made the call on 2026-08-12 and deleted its own NRI line for exactly
+ * this reason (apps/web/app/pujas/[slug]/page.tsx:353-363 — "advertises a
+ * premium that is never collected"). Mobile was the surface nobody went back
+ * to. Both lines return together when a server-quoted NRI amount exists.
+ *
+ * The same edit adds what the web card has and this one lacked: the ₹51
+ * platform fee, so the number does not grow between the card and the Pay
+ * button (CM-03).
  */
 interface Puja {
   id: string;
@@ -43,7 +64,6 @@ interface Puja {
   deity?: string;
   category: Exclude<PujaCategory, 'all'>;
   priceInr: number | null;
-  nriPriceInr: number | null;
   durationMinutes: number | null;
   description: string;
   samagriIncluded: boolean;
@@ -151,12 +171,25 @@ const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
                 ? 'Price on request'
                 : `\u20B9${puja.priceInr.toLocaleString('en-IN')}`}
             </Text>
-            {puja.nriPriceInr !== null ? (
-              <Text style={styles.pujaNriPrice}>
-                NRI: {'\u20B9'}
-                {puja.nriPriceInr.toLocaleString('en-IN')}
+            {/* CM-03 on the catalogue. The fee travels with the price, so the
+                number does not change between this card and the Pay button \u2014
+                the API adds PLATFORM_FEE_INR to every booking
+                (booking.service.ts), and the web card already discloses it
+                (apps/web/app/pujas/[slug]/page.tsx:346-352).
+
+                "from" is deliberate and not hedging: a temple may set a
+                priceOverride, which is resolved on the booking screen once a
+                temple is chosen, so this card can only state the floor. It
+                understates and never overstates, which is the safe direction
+                for a quote. */}
+            {puja.priceInr === null ? null : (
+              <Text style={styles.pujaFeeNote}>
+                {'+ \u20B9'}
+                {PLATFORM_FEE_INR.toLocaleString('en-IN')} platform fee \u00B7 from{' '}
+                {'\u20B9'}
+                {(puja.priceInr + PLATFORM_FEE_INR).toLocaleString('en-IN')} total
               </Text>
-            ) : null}
+            )}
           </View>
         </View>
 
@@ -188,7 +221,6 @@ export default function PujasScreen() {
     deity: p.deity,
     category: inferCategory(p.deity ?? ''),
     priceInr: p.priceInr,
-    nriPriceInr: p.nriPriceInr,
     durationMinutes: p.durationMinutes,
     description: p.description ?? '',
     samagriIncluded: p.samagriIncluded,
@@ -452,7 +484,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.saffron[700],
   },
-  pujaNriPrice: {
+  pujaFeeNote: {
     fontSize: fontSize.xs,
     color: colors.stone[400],
     marginTop: 1,

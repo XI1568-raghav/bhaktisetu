@@ -243,10 +243,29 @@ type TxClient = Prisma.TransactionClient | typeof prisma;
  * backfill, so this creates no retroactive payable. They stay unmatched and
  * inert exactly as before.
  */
+/**
+ * What a mint produced, handed back so the CALLER can put it on the money
+ * trail after its transaction commits (OPS-05).
+ *
+ * The row is created inside the caller's `$transaction`, but the audit write
+ * must not be: `recordMoneyEvent` deliberately accepts no `tx`, because a
+ * failed audit INSERT inside the caller's transaction aborts it in Postgres
+ * and would roll back a real capture. So the mint is returned rather than
+ * logged here, and every caller records it after its `$transaction` resolves.
+ * `null` means no row was written — an existing commission, no pandit, or a
+ * pandit with no linked User — and callers must NOT log a mint for it.
+ */
+interface MintedCommission {
+  commissionId: string;
+  providerId: string;
+  /** The PROVIDER's earning in rupees — `Commission.amount`, per commission-math. */
+  amount: Prisma.Decimal;
+}
+
 async function writePujaCommissionOnConfirm(
   bookingId: string,
   tx: TxClient = prisma,
-): Promise<void> {
+): Promise<MintedCommission | null> {
   const booking = await tx.pujaBooking.findUnique({
     where: { id: bookingId },
     select: {
@@ -257,17 +276,17 @@ async function writePujaCommissionOnConfirm(
       priest: { select: { userId: true } },
     },
   });
-  if (!booking || !booking.priestId) return;
+  if (!booking || !booking.priestId) return null;
   // No linked User → no payable provider. Writing the row anyway is what
   // produced the orphans this fix exists to stop creating.
   const providerUserId = booking.priest?.userId;
-  if (!providerUserId) return;
+  if (!providerUserId) return null;
 
   const existing = await tx.commission.findFirst({
     where: { bookingId: booking.id },
     select: { id: true },
   });
-  if (existing) return;
+  if (existing) return null;
   // Decimal.js arithmetic — never coerce money to JS Number for the
   // ledger. percentage column is Decimal(5,4); it gets rounded by the
   // DB driver but the *input* must already be exact rational division.
@@ -279,7 +298,7 @@ async function writePujaCommissionOnConfirm(
   const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
   const providerEarning = new Prisma.Decimal(booking.priestPayout as Prisma.Decimal);
   const percentage = platformRateOf(price.sub(providerEarning), price);
-  await tx.commission.create({
+  const created = (await tx.commission.create({
     data: {
       bookingId: booking.id,
       providerId: providerUserId,
@@ -287,7 +306,13 @@ async function writePujaCommissionOnConfirm(
       percentage,
       status: 'PENDING',
     },
-  });
+  })) as { id: string } | undefined;
+
+  // OPS-05: hand the mint back rather than logging it here — see
+  // MintedCommission. A driver that returns nothing (a mock) must not be
+  // reported as a mint the caller can key an audit row on.
+  if (!created?.id) return null;
+  return { commissionId: created.id, providerId: providerUserId, amount: providerEarning };
 }
 
 /**
@@ -872,6 +897,10 @@ export class PaymentService {
     // hour later arrives HERE, into a slot that may already have been resold.
     // Read before the transaction so it never runs inside one.
     const oversold = shouldConfirm ? await slotOversoldNote(payment.booking) : null;
+    // OPS-05: carried OUT of the transaction so the mint can be recorded after
+    // it commits. Nothing may be logged from inside — a failed audit INSERT in
+    // the caller's tx aborts it in Postgres and rolls back the capture.
+    let mintedCommission: MintedCommission | null = null;
     // PAY-09: single-winner claim — see claimCaptureTransition. Without it this
     // rail and the webhook, racing on the same booking, each sent the devotee a
     // tax invoice and a confirmation.
@@ -903,7 +932,7 @@ export class PaymentService {
         // P1-12: write the commission ledger row INSIDE the same transaction.
         // A failure here rolls back the capture+confirm (better than a silent
         // missing payout row). Idempotent via the findFirst guard inside.
-        await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+        mintedCommission = await writePujaCommissionOnConfirm(payment.booking!.id, tx);
         // RV-03: the temple's 5% share, in the SAME transaction as the
         // commission that earned it. Without this call temples receive Rs 0.00
         // on every paid booking — the writer exists but nothing reaches it.
@@ -926,6 +955,37 @@ export class PaymentService {
           note: oversold,
         }),
       );
+    }
+
+    // OPS-05 — the provider's earning, recorded AFTER the transaction commits.
+    // COMMISSION_REVERSED was already on the trail and COMMISSION_MINTED was
+    // not, so a reconstructed dispute showed an earning being VOIDED that never
+    // appeared to have been CREATED. `mintedCommission` is null whenever no row
+    // was written (already minted, no pandit, pandit with no linked User), and
+    // a null must never be logged as a mint.
+    if (mintedCommission) {
+      const minted: MintedCommission = mintedCommission;
+      void recordMoneyEvent({
+        eventType: MONEY_EVENTS.COMMISSION_MINTED,
+        actorType: 'system',
+        subjectType: 'commission',
+        subjectId: minted.commissionId,
+        bookingId: payment.booking!.id,
+        paymentId: payment.id,
+        commissionId: minted.commissionId,
+        // Commission.amount is the PROVIDER's earning (lib/commission-math.ts),
+        // in rupees. Not the booking price, not the platform's cut.
+        amount: minted.amount,
+        currency: payment.currency,
+        statusAfter: 'PENDING',
+        idempotencyKey: minted.commissionId,
+        note: 'provider earning minted on the client-verify confirm rail',
+        metadata: {
+          rail: 'client-verify',
+          providerId: minted.providerId,
+          gatewayPaymentId: razorpayPaymentId,
+        },
+      });
     }
 
     // OPS-05 — the client-verify rail, recorded AFTER the transaction commits.
@@ -1349,6 +1409,9 @@ export class PaymentService {
             // with a pending booking) and wrote the commission AFTER with a
             // swallowed catch. Now any failure rolls back the whole block.
             let capturedNow = false;
+            // OPS-05: carried OUT of the transaction, same contract as the
+            // client-verify rail — the mint is recorded only after commit.
+            let mintedCommission: MintedCommission | null = null;
             await prisma.$transaction(async (tx) => {
               capturedNow = await claimCaptureTransition(tx, payment.id);
               await tx.payment.update({
@@ -1375,7 +1438,7 @@ export class PaymentService {
                   data: { status: 'confirmed' },
                 });
                 // P1-12: commission ledger row inside the tx.
-                await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+                mintedCommission = await writePujaCommissionOnConfirm(payment.booking!.id, tx);
                 // RV-03: the temple's 5% share, in the SAME transaction as the
                 // commission that earned it. Without this call temples receive
                 // Rs 0.00 on every paid booking — the writer exists but nothing
@@ -1383,6 +1446,34 @@ export class PaymentService {
                 await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
               }
             });
+
+            // OPS-05 — the provider's earning, minted on the gateway rail.
+            // Same contract as the client-verify rail: after commit, never on
+            // a null. Only ONE of the two rails ever mints for a booking — the
+            // loser's writePujaCommissionOnConfirm hits its findFirst guard and
+            // returns null — so the trail names which rail actually did it.
+            if (mintedCommission) {
+              const minted: MintedCommission = mintedCommission;
+              void recordMoneyEvent({
+                eventType: MONEY_EVENTS.COMMISSION_MINTED,
+                actorType: 'gateway',
+                subjectType: 'commission',
+                subjectId: minted.commissionId,
+                bookingId: payment.booking.id,
+                paymentId: payment.id,
+                commissionId: minted.commissionId,
+                amount: minted.amount,
+                currency: payment.currency,
+                statusAfter: 'PENDING',
+                idempotencyKey: minted.commissionId,
+                note: 'provider earning minted on the Razorpay webhook confirm rail',
+                metadata: {
+                  rail: 'webhook',
+                  providerId: minted.providerId,
+                  gatewayPaymentId: paymentEntity.id,
+                },
+              });
+            }
 
             // OPS-05 — the gateway rail. `actorType:'gateway'` is the whole
             // point of that enum: "Razorpay told us" is a different fact from
@@ -2173,6 +2264,31 @@ export class PaymentService {
       select: { id: true },
     });
     if (unifiedLedgerRow) {
+      // OPS-05 — record the SKIP, not just the write. This branch is the guard
+      // WORKING, and it is the fact a "why was this pandit never paid on rail
+      // B" question turns on. Without a row here the trail is silent, and
+      // silence is indistinguishable from the call never having been made.
+      void recordMoneyEvent({
+        eventType: MONEY_EVENTS.PAYOUT_REJECTED,
+        actorType: 'system',
+        subjectType: 'booking',
+        subjectId: bookingId,
+        bookingId,
+        commissionId: unifiedLedgerRow.id,
+        amount: booking.priestPayout,
+        currency: booking.currency,
+        statusAfter: 'skipped',
+        // No payout row exists to key on, and the decision is once-per-booking.
+        idempotencyKey: bookingId,
+        note: 'legacy PriestPayout rail refused — the unified rail (Commission) owns this booking',
+        metadata: {
+          rail: 'legacy-priest-payout',
+          outcome: 'commission-ledger-owns-this-booking',
+          bookingStatus: booking.status,
+          priestId: booking.priestId,
+        },
+      });
+
       return {
         skipped: true as const,
         reason: 'commission-ledger-owns-this-booking' as const,
@@ -2195,6 +2311,36 @@ export class PaymentService {
         booking: {
           select: { bookingNumber: true },
         },
+      },
+    });
+
+    // OPS-05 — rail B had no audit trail at all. `PRIEST_PAYOUT_CREATED` was a
+    // declared event with no call site anywhere in the repo, so the moment a
+    // booking landed on the LEGACY rail went unrecorded while the unified
+    // rail's reversal was logged. Recorded AFTER the row lands, and `void`ed:
+    // this is the last statement before the return and no money outcome may
+    // depend on the log. Rupees, not paise — `priestPayout` is DECIMAL(10,2).
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PRIEST_PAYOUT_CREATED,
+      actorType: 'system',
+      subjectType: 'payout',
+      subjectId: payout.id,
+      bookingId,
+      payoutId: payout.id,
+      amount: booking.priestPayout,
+      currency: booking.currency,
+      // There is no prior payout — the guard above throws when one exists — so
+      // the pre-image is the absence of a row, not a status.
+      statusBefore: null,
+      statusAfter: 'pending',
+      idempotencyKey: payout.id,
+      note: 'legacy PriestPayout rail (rail B) minted',
+      metadata: {
+        rail: 'legacy-priest-payout',
+        payoutMethod: 'bank_transfer',
+        bookingStatus: booking.status,
+        bookingNumber: booking.bookingNumber,
+        priestId: booking.priestId,
       },
     });
 

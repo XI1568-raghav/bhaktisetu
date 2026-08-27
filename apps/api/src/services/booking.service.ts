@@ -2,6 +2,8 @@ import { Prisma, BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { platformRateOf } from '../lib/commission-math.js';
 import { mintProviderEarningForBooking } from './provider-earning-mint.js';
+// OPS-05 — the durable money trail. Post-commit only; never inside a tx.
+import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
 import { hoursUntilSlot } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 // RV-03: imported for this module's OWN use — a bare `export … from` re-export
@@ -828,6 +830,9 @@ export class BookingService {
     // TOCTOU against the payment-path writer with no unique constraint behind
     // it; running inside a transaction narrows that window (the DB-level fix is
     // a UNIQUE index on commissions.booking_id — owner-gated schema change).
+    // OPS-05: carried out of the transaction — the mint is recorded only after
+    // it commits, because recordMoneyEvent must never join the caller's tx.
+    let mintOutcome = 'no-provider-on-booking';
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.pujaBooking.update({
         where: { id: bookingId },
@@ -952,7 +957,7 @@ export class BookingService {
       // in EARNING_ATTACH_STATUSES) is a legal transition that minted a second
       // payable onto a booking already carrying a legacy one.
       if (EARNING_ATTACH_STATUSES.has(newStatus)) {
-        await mintProviderEarningForBooking(tx, {
+        mintOutcome = await mintProviderEarningForBooking(tx, {
           id: row.id,
           priestId: row.priestId ?? null,
           priceAmount: row.priceAmount ?? 0,
@@ -961,6 +966,17 @@ export class BookingService {
       }
 
       return row;
+    });
+
+    // OPS-05: the temple-path re-mint — a pandit attached to an already-paid
+    // booking after the fact. Recorded here, post-commit, and a no-op unless a
+    // row was actually minted (the four guards in provider-earning-mint.ts
+    // decline far more often than they mint).
+    await recordProviderEarningMinted({
+      bookingId,
+      outcome: mintOutcome,
+      rail: `booking-status-${newStatus}`,
+      actorType: 'system',
     });
 
     // P0 #pp-02 (2026-07-09): when a booking reaches video_uploaded/delivered,

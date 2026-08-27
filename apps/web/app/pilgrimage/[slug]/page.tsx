@@ -187,7 +187,7 @@ export default async function CircuitDetail({ params }: PageProps) {
 
       <section className="rounded-xl border border-saffron-200 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center mb-8">
         <h2 className="text-xl font-bold text-surface-900 mb-2">Ready to plan your {c.name}?</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">
           Get a customized itinerary from our yatra desk — hotels, transport, and
           temple coordination handled. Starting {formatInr(c.startingFromInr)}.
         </p>

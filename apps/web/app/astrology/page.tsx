@@ -183,7 +183,7 @@ export default function AstrologyPage() {
   <div className="text-center">
    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tools · no signup</p>
    <h2 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">17 free astrology calculators</h2>
-   <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+   <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
     Use any of these instantly — fully Vedic, no signup, no email. When you want a pandit-led
     consult on top of the numbers, every result page links straight to live astrologers.
    </p>

@@ -74,7 +74,7 @@ export default function YogaIndexPage() {
      <p className="text-xs uppercase tracking-wider text-saffron-600">4th anga of Panchang</p>
      <h1 className={`${H1.catalogue} mt-1`}>27 Nitya Yogas</h1>
      <p className="mt-2 text-sm text-saffron-700">सत्ताईस नित्य योग</p>
-     <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+     <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
       Each nitya yoga lasts approximately one day. Computed from Sun-longitude + Moon-longitude
       divided into 27 parts of 13°20′. Nine yogas are universally inauspicious — Drik Panchang
       flags them daily so you can skip new ventures, marriage, and travel.

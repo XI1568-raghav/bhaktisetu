@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { UserFacingError, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -167,7 +168,11 @@ function PriestBookingsInner() {
  );
  if (!res.ok) {
  const detail = await res.text().catch(() => '');
- throw new Error(`Could not load your bookings (${res.status}). ${detail.slice(0, 140)}`.trim());
+ // RES-09: the status code and 140 raw characters of the response body
+ // were rendered straight to a pandit. Keep the server's sentence only.
+ throw new UserFacingError(
+  serverErrorText(detail, 'Could not load your bookings. Please try again.'),
+ );
  }
  const data = await res.json();
  setBookings(data.bookings || []);
@@ -175,9 +180,7 @@ function PriestBookingsInner() {
  setTotal(typeof data.total === 'number' ? data.total : (data.bookings?.length ?? 0));
  setTotalPages(Math.max(1, data.totalPages ?? 1));
  } catch (err) {
- setLoadError(
- err instanceof Error ? err.message : 'Could not load your bookings. Please try again.',
- );
+ setLoadError(userFacingMessage(err, 'Could not load your bookings. Please try again.'));
  setBookings([]);
  } finally {
  setLoading(false);
@@ -234,7 +237,7 @@ function PriestBookingsInner() {
  if (!res.ok) {
  const detail = await res.text().catch(() => '');
  setActionError(
- `Could not ${action} this booking (${res.status}). ${detail.slice(0, 140)}`.trim(),
+ serverErrorText(detail, `Could not ${action} this booking. Please try again.`),
  );
  } else {
  setActionError(null);
@@ -243,9 +246,7 @@ function PriestBookingsInner() {
  await fetchBookings();
  }
  } catch (err) {
- setActionError(
- err instanceof Error ? err.message : 'Network error — please try again.',
- );
+ setActionError(userFacingMessage(err, 'Network error — please try again.'));
  } finally {
  setActionLoading(null);
  }
@@ -284,7 +285,7 @@ function PriestBookingsInner() {
  if (!res.ok) {
  const detail = await res.text().catch(() => '');
  setActionError(
- `Could not mark this booking delivered (${res.status}). ${detail.slice(0, 140)}`.trim(),
+ serverErrorText(detail, 'Could not mark this booking delivered. Please try again.'),
  );
  } else {
  setActionError(null);
@@ -293,9 +294,7 @@ function PriestBookingsInner() {
  await fetchBookings();
  }
  } catch (err) {
- setActionError(
- err instanceof Error ? err.message : 'Network error — please try again.',
- );
+ setActionError(userFacingMessage(err, 'Network error — please try again.'));
  } finally {
  setActionLoading(null);
  }
@@ -474,7 +473,7 @@ function PriestBookingsInner() {
  className="flex flex-col items-center justify-center gap-3 rounded-xl border border-red-200 bg-red-50 py-12 px-4 text-center"
  >
  <h3 className="text-lg font-semibold text-red-800">Could not load your bookings</h3>
- <p className="text-sm text-red-700 max-w-md">{loadError}</p>
+ <p className="prose-meta text-red-700 max-w-md">{loadError}</p>
  <button
  type="button"
  onClick={() => void fetchBookings()}

@@ -148,7 +148,7 @@ export default async function DonationsLandingPage({
             <h1 className={`${H1.catalogue} mb-3`}>
               {t('pageTitle')}
             </h1>
-            <p className="mb-6 text-base text-surface-600 sm:text-lg">
+            <p className="mb-6 prose-lead text-surface-600">
               {t('pageSubtitle')}
             </p>
 

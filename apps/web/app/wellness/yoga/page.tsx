@@ -114,7 +114,7 @@ export default function YogaPage() {
  <span style={{ color: 'var(--color-primary)' }}>Expert Instructors</span>
  </h1>
 
- <p data-reveal="up" data-delay="1" className="mt-5 text-sm leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="mt-5 prose-body leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
  From gentle Hatha to powerful Ashtanga, find the style that resonates with you. Morning and evening sessions, private bookings, and a growing video library.
  </p>
 
@@ -368,7 +368,7 @@ export default function YogaPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Ready to step on the mat?
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
  Book a private session or join a group class. First-time students get 50% off their first session.
  </p>
  <div data-reveal="blur" data-delay="2">

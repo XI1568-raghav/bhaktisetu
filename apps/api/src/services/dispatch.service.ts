@@ -34,6 +34,8 @@
 import { prisma } from '../lib/prisma.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
 import { mintProviderEarningForBooking } from './provider-earning-mint.js';
+// OPS-05 — the durable money trail. Post-commit only; never inside a tx.
+import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
 import { activeSlotHoldWhere } from './booking.service.js';
 import {
   notifyDevotee,
@@ -315,6 +317,12 @@ export class DispatchService {
    */
   async accept(bookingId: string, priestId: string): Promise<{ bookingId: string; priestId: string }> {
     const now = new Date();
+    // OPS-05: the mint happens inside the transaction below, but the audit row
+    // must be written after it commits (recordMoneyEvent takes no `tx` — a
+    // failed audit INSERT would abort the caller's transaction and roll back
+    // the assignment). Carried out on a closure variable rather than the tx
+    // return value so `accept`'s public shape is unchanged.
+    let mintOutcome = 'no-provider-on-booking';
     return prisma.$transaction(async (tx) => {
       // We need the date+slot to build the lock key, and the lock has to be the
       // FIRST statement in the transaction (see below), so read the booking
@@ -413,10 +421,19 @@ export class DispatchService {
       // transaction as the assignment, so an assignment that rolls back cannot
       // leave a payable behind. All four guards (idempotency, legacy rail,
       // captured payment, linked User) live in provider-earning-mint.ts.
-      await mintProviderEarningForBooking(tx, assigned);
+      mintOutcome = await mintProviderEarningForBooking(tx, assigned);
 
       return { bookingId, priestId };
     }).then(async (res) => {
+      // OPS-05: record the mint now the assignment is durable. A pandit who
+      // WON A BROADCAST is exactly the case DI-05 was filed for, so this is
+      // the mint most worth having on the trail. No-op unless it minted.
+      await recordProviderEarningMinted({
+        bookingId,
+        outcome: mintOutcome,
+        rail: 'dispatch-accept-offer',
+        actorType: 'provider',
+      });
       // Post-commit: notify devotee + update the winner's acceptance rate.
       const b = await prisma.pujaBooking.findUnique({
         where: { id: bookingId },

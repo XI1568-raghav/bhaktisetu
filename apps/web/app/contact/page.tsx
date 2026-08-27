@@ -70,7 +70,7 @@ export default function ContactPage() {
             We&apos;re Here to Help
           </h1>
           <p
-            className="text-sm max-w-xl leading-relaxed"
+            className="prose-body max-w-xl leading-relaxed"
             style={{ color: "var(--color-text-muted)" }}
           >
             Whether you have a question about a puja booking, need technical

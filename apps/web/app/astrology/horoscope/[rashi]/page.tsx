@@ -122,7 +122,7 @@ export default async function RashiPage({ params }: Params) {
         >
           Today&apos;s reading <ArrowRight className="w-4 h-4" />
         </Link>
-        <p className="text-lg text-surface-700 leading-relaxed">
+        <p className="prose-lead text-surface-700 leading-relaxed">
           {daily.prediction}
         </p>
         <p className="mt-3 text-xs text-surface-500">

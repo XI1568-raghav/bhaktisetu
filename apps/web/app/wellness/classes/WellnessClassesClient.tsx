@@ -103,7 +103,7 @@ export default function WellnessClassesClient() {
         >
           Upcoming yoga, meditation &amp; pranayama classes
         </h1>
-        <p className="mt-3 text-sm max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+        <p className="mt-3 prose-body max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
           Every class below is scheduled by a verified instructor on Darshya. Enrol to reserve your
           seat; the live room link appears here once your payment is confirmed.
         </p>

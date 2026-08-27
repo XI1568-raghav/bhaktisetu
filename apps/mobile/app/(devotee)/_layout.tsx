@@ -147,6 +147,13 @@ export default function TabLayout() {
           pushed from the home header. Hidden from the bar for the same
           filesystem-routing reason as the two above. */}
       <Tabs.Screen name="search" options={{ href: null, title: 'Search' }} />
+      {/* PAR-22 (C): the in-app browser. Pushed by lib/in-app-web.ts when the
+          optional react-native-webview module resolves; today the require
+          throws in every build from this tree and the screen renders its
+          browser hand-off, so declaring it changes nothing on the bar and
+          everything the moment the module is installed. Same href:null reason
+          as the three above. */}
+      <Tabs.Screen name="web-view" options={{ href: null, title: 'Darshya' }} />
       {/* TD10 — feature-parity sub-screens. Hidden from tab bar; reached via push. */}
       <Tabs.Screen name="darshan-player" options={{ href: null, title: 'Darshan Player' }} />
       <Tabs.Screen name="kundli" options={{ href: null, title: 'Kundli' }} />

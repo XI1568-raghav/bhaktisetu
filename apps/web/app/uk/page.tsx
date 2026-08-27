@@ -280,7 +280,7 @@ export default async function UkLaunchPage() {
               <p className="text-sm font-medium text-surface-900">
                 Puja prices are temporarily unavailable.
               </p>
-              <p className="mt-2 max-w-xl text-sm text-surface-600">
+              <p className="mt-2 max-w-xl prose-meta text-surface-600">
                 We could not reach our catalogue, so we are showing no price rather than one we
                 cannot honour at checkout. Every live puja and its current price is on the browse
                 page.

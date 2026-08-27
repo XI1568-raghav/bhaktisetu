@@ -72,7 +72,7 @@ export default function SanatanPillarPage() {
           <h1 className={`${H1.marketing} mt-3`}>
             Sanatana Dharma — A Complete Guide to the Eternal Way
           </h1>
-          <p className="mt-4 text-lg text-surface-700 leading-relaxed">
+          <p className="mt-4 prose-lead text-surface-700 leading-relaxed">
             Sanatana Dharma — सनातन धर्म, literally "the eternal order" — is the indigenous spiritual tradition of
             the Indian subcontinent. It is what most of the modern world calls "Hinduism," though the name itself is
             a colonial-era simplification of a far older, far more pluralistic family of paths. This guide walks

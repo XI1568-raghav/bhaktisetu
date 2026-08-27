@@ -139,7 +139,7 @@ export default async function PricingPage() {
    provider pays is the one in the table further down, on every plan
    including the free one, so the page now says exactly that. */}
  <p
- className="text-sm sm:text-base max-w-2xl mx-auto leading-relaxed"
+ className="prose-body max-w-2xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-faint)" }}
  data-testid="pricing-commission-intro"
  >
@@ -188,7 +188,7 @@ export default async function PricingPage() {
  Always Free for Devotees
  </h2>
  <p
- className="text-sm max-w-xl mx-auto leading-relaxed"
+ className="prose-body max-w-xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-muted)" }}
  >
  Browse temples, watch live darshan, read spiritual content, and
@@ -306,7 +306,7 @@ export default async function PricingPage() {
    features (they appear as bullets on the cards below, and the free
    tiers really are capped). The commission half was not. */}
  <p
- className="text-sm max-w-xl mx-auto leading-relaxed"
+ className="prose-body max-w-xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-muted)" }}
  data-testid="pricing-provider-plans-intro"
  >
@@ -467,7 +467,7 @@ export default async function PricingPage() {
  What Darshya Takes
  </h2>
  <p
- className="text-sm max-w-xl mx-auto leading-relaxed"
+ className="prose-body max-w-xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-muted)" }}
  >
  The platform&apos;s share of each transaction, by provider type.

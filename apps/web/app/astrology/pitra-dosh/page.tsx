@@ -107,7 +107,7 @@ export default function PitraDoshPage() {
       <p className="text-xs uppercase tracking-wider text-saffron-600">Free ancestral karma analyser</p>
       <h1 className={`${H1.catalogue} mt-1`}>Pitra Dosha Calculator</h1>
       <p className="mt-2 text-sm text-saffron-700">पितृ दोष निवारण</p>
-      <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+      <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
        Pitra Dosha = ancestral karma debt. Identified through Sun / Moon / Rahu / Ketu / Jupiter
        placements per Brihat Parashara. Manifests as repeated obstacles in progeny, marriage,
        wealth, or family — patterns that recur across generations. Use the symptom checker below

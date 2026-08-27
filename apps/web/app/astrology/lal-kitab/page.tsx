@@ -111,7 +111,7 @@ export default function LalKitabPage() {
      <h1 className={`${H1.catalogue} mt-1`}>
       Lal Kitab Upay &amp; Farman Finder
      </h1>
-     <p className="mt-2 max-w-3xl text-sm text-gray-700">
+     <p className="mt-2 max-w-3xl prose-body text-gray-700">
       Pick your life problem → identify the troubling graha → get 3 universal Farman + house-by-house remedy.
       All 108 graha-in-house combinations covered with traditional household upay — water, jaggery, mustard oil,
       copper, silver, feeding crows + black dog. Zero gemstone cost. Run for 40 consecutive days for visible change.

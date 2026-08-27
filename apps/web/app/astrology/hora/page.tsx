@@ -109,7 +109,7 @@ export default function HoraPage() {
    <header className="mt-4 text-center">
     <p className="text-xs uppercase tracking-widest text-saffron-600">होरा चक्र · Hora / Planetary Hour</p>
     <h1 className={`${H1.catalogue} mt-1`}>Hora Today — Free Planetary Hour Calculator</h1>
-    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+    <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
      24 planetary horas per day in Chaldean order — Saturn → Jupiter → Mars → Sun → Venus → Mercury → Moon → repeat.
      First hora at sunrise = today's weekday lord. Pick a task-aligned hora for instant muhurat selection.
     </p>

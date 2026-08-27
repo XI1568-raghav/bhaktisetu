@@ -302,8 +302,26 @@ export const brandFaqJsonLd = {
       name: 'What is Darshya?',
       acceptedAnswer: {
         '@type': 'Answer',
+        // TC-01 (2026-08-28): "verified astrologers" was a vetting claim the
+        // data model cannot record. AstrologerProfile (apps/api/prisma/schema
+        // .prisma) carries ONLY `approved` — no isVerified, no aadhaarVerified,
+        // no verificationStatus — while Priest has all three and Temple has
+        // isVerified. TC-02 established the same fact when it removed the
+        // "Aadhaar + qualification verified badge" from /become-astrologer;
+        // this copy of it survived because the lane's vetting guard enumerates
+        // the rendered pages and never the structured data.
+        //
+        // `approved` is real and enforced: an admin writes it, and
+        // astrology.service.ts admits only an approved profile into a
+        // consultation. It is also the word already shipping on the funnel
+        // (LiveAstrologersClient.tsx:300, "a real, approved Darshya profile").
+        //
+        // "verified temples" is left ALONE on purpose — Temple.isVerified is a
+        // real indexed column with a writer, and lib/platform-stats.ts filters
+        // the count it publishes on exactly that flag. Scrubbing the word
+        // wholesale would delete a true claim to fix a false one.
         text:
-          "Darshya is India's devotional super-app at darshya.online. Devotees worldwide book pujas at verified temples with priest video proof, watch live darshan, read panchang, talk to verified astrologers, donate to gaushalas" +
+          "Darshya is India's devotional super-app at darshya.online. Devotees worldwide book pujas at verified temples with priest video proof, watch live darshan, read panchang, talk to approved astrologers, donate to gaushalas" +
           (HAS_80G ? ' with 80G receipts' : ' and receive a numbered donation receipt') +
           ', and shop sacred items — all in one place. Available in English, Hindi, Tamil, Telugu, Bengali, and Marathi.',
       },

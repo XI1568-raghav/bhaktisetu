@@ -132,7 +132,7 @@ export default function RahuKalamPage() {
    <header className="mt-4 text-center">
     <p className="text-xs uppercase tracking-widest text-saffron-600">राहु काल · Rahu Kalam / Rahu Kaal</p>
     <h1 className={`${H1.catalogue} mt-1`}>Rahu Kalam Today — Free Calculator</h1>
-    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+    <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
      The three daily ~90-minute inauspicious windows — Rahu Kalam, Yamaganda, Gulika Kalam — computed from
      today's sunrise/sunset per the standard Muhurta Chintamani weekday tables. Pick your city below.
     </p>

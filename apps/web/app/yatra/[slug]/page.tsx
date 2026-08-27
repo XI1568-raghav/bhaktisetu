@@ -137,7 +137,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <h1 data-reveal="cinematic" className={`${H1.detail} max-w-2xl`}>
  {yatra.title}
  </h1>
- <p data-reveal="up" data-delay="1" className="mt-3 text-sm text-white/80 max-w-2xl leading-relaxed">
+ <p data-reveal="up" data-delay="1" className="mt-3 prose-body text-white/80 max-w-2xl leading-relaxed">
  {yatra.subtitle}
  </p>
 
@@ -479,7 +479,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <h2 data-reveal="cinematic" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Ready for {yatra.title}?
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-lg mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-lg mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
  Secure your dates with a ₹5,000 booking advance. Balance payable 30 days before departure.
  </p>
  <div data-reveal="spring" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">

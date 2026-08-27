@@ -229,17 +229,30 @@ export default async function StorePage({
  </a>
  </h3>
 
- <div className="flex items-center gap-1 mt-2">
- <div className="flex items-center gap-0.5 bg-tulsi-green-dark/10 px-1.5 py-0.5 rounded">
- <Star className="w-3 h-3 text-tulsi-green-dark fill-tulsi-green-dark" />
- <span className="text-xs font-bold text-tulsi-green-dark">
- {product.rating}
- </span>
- </div>
- <span className="text-xs text-surface-400">
- ({product.reviewCount.toLocaleString("en-IN")})
- </span>
- </div>
+ {/* LEG-17: a star rating and a review tally used to render here —
+     `{product.rating}` in a badge and `({product.reviewCount})` beside
+     it. Both were fabricated on BOTH data paths, so there was no input
+     that made them true:
+
+       - Seed path (the live one, `isMedusaEnabled()` is false):
+         lib/products.ts hardcodes `rating: 4.7, reviewCount: 342` on
+         prod_001, and all 24 seed rows carry one: ratings 4.4-4.9 and
+         review counts 145-2,100, totalling 12,366 reviews that do not
+         exist. This catalogue has never taken an order — the same
+         premise the removed discount badge below rests on — so it has
+         never collected a review either.
+       - Medusa path: lib/medusa.ts maps every real product with
+         `rating: 4.5, reviewCount: 0`, printing a 4.5-star average
+         explicitly derived from zero reviews.
+
+     A `Review` model and a GET /store/reviews route both exist
+     (apps/api), so this is a real number's placeholder, not a missing
+     feature: restore the badge when the grid is joined to that table
+     and only for products that actually have reviews. A fabricated star
+     average is the strongest purchase signal on a product grid, which
+     makes it the same consumer-protection defect as the fabricated
+     reference price, not a lesser one.
+     Guarded by __tests__/leg17-store-fabricated-review-counts.test.tsx. */}
 
  {/* LEG-17: the struck-through `compareAtPrice` that sat beside this
      price is gone — see the note on the removed discount badge above. */}

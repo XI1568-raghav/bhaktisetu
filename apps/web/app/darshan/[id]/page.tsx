@@ -502,7 +502,7 @@ export default async function DarshanDetailPage({
  <Video className="w-12 h-12 text-saffron-400 mx-auto mb-4 opacity-80" />
  <h1 className="text-2xl font-bold text-white mb-2">{name}</h1>
  <p className="text-surface-400 mb-1">Live darshan coming soon</p>
- <p className="text-sm text-surface-500 max-w-md mx-auto mb-6">
+ <p className="prose-meta text-surface-500 max-w-md mx-auto mb-6">
  We don&rsquo;t have an active live stream for this temple yet. Browse the temples
  streaming right now below, or visit our full directory.
  </p>

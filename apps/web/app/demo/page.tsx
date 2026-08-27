@@ -111,7 +111,7 @@ export default function DemoHub() {
  <h1 className={H1.detail}>
  See Pooj<span className="text-saffron-400">ly</span> in Action
  </h1>
- <p className="text-surface-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">
+ <p className="text-surface-400 mt-3 max-w-lg mx-auto prose-body leading-relaxed">
  Walk through the complete app experience for every user type &mdash;
  from signup and onboarding to daily use on Android and iOS.
  </p>

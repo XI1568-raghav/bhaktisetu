@@ -20,6 +20,20 @@ import {
  CheckCircle2,
 } from 'lucide-react';
 import { getYatraBySlug, formatINR } from '../../../lib/yatra-data';
+import { hasPublishedCompanions } from '../../../lib/companion-roster';
+
+/**
+ * The companion day rate, in one place.
+ *
+ * It was previously written twice — once in the quote arithmetic and once in
+ * the add-on label — and both copies were inherited from `pricePerDay` on the
+ * `rajesh-kumar` fixture that TC-06 deleted. A duplicated rate is how the first
+ * one survived a deletion that should have taken it: whoever removed the people
+ * had no single place to look for the price attached to them.
+ *
+ * This rate is only ever charged while `hasPublishedCompanions()` is true.
+ */
+const COMPANION_RATE_PER_DAY_INR = 3500;
 import { DateInput } from '../../../components/ui/DateInput';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
@@ -129,8 +143,12 @@ function BookYatraInner() {
  if (data.addOns.specialPuja) {
  lines.push({ label: 'Special puja at temple', amount: 2100 });
  }
- if (data.addOns.companion) {
- const comp = 3500 * data.companionDays;
+ // Gated on the published roster, not just the toggle. TC-06 deleted the eight
+ // invented companions; ₹3,500 was `pricePerDay` on the `rajesh-kumar` row and
+ // outlived it. With an empty roster this line quoted a devotee — and flowed
+ // into subtotal, GST and total — for a person nobody can supply.
+ if (data.addOns.companion && hasPublishedCompanions()) {
+ const comp = COMPANION_RATE_PER_DAY_INR * data.companionDays;
  lines.push({ label: `Travel companion × ${data.companionDays} days`, amount: comp });
  }
  if (data.addOns.insurance) {
@@ -423,11 +441,15 @@ function BookYatraInner() {
  onToggle={() => setData({ ...data, addOns: { ...data.addOns, specialPuja: !data.addOns.specialPuja } })}
  />
 
- <AddOnRow
+ {/* The whole add-on is hidden while no companion is published. Offering a
+     toggle for something that cannot be delivered is the same defect as
+     quoting for it — see lib/companion-roster.ts. */}
+{hasPublishedCompanions() && (<>
+<AddOnRow
  icon={Heart}
  title="Travel companion"
  desc="On request. A companion assists elderly travellers with mobility, medicine and logistics — our advisor confirms availability before your booking is held."
- price={`+${formatINR(3500)} / day`}
+ price={`+${formatINR(COMPANION_RATE_PER_DAY_INR)} / day`}
  active={data.addOns.companion}
  onToggle={() => setData({ ...data, addOns: { ...data.addOns, companion: !data.addOns.companion } })}
  />
@@ -442,6 +464,7 @@ function BookYatraInner() {
  </div>
  </div>
  )}
+</>)}
 
  <AddOnRow
  icon={Shield}

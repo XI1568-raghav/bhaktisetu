@@ -34,7 +34,7 @@ export default async function YatraDestinationsPage() {
           <h1 className={`${H1.marketing} max-w-3xl`}>
             {t('destinationsTitle')}
           </h1>
-          <p className="mt-4 text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="mt-4 prose-body leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
             {t('destinationsSubtitle')}
           </p>
         </div>

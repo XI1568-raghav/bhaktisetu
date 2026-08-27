@@ -55,7 +55,7 @@ export default async function WaitlistPage({ searchParams }: WaitlistPageProps) 
         >
           Devotion. Verified. Be among the first 1000 devotees on Darshya.
         </h1>
-        <p className="mt-4 text-sm leading-relaxed max-w-xl mx-auto" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
+        <p className="mt-4 prose-body leading-relaxed max-w-xl mx-auto" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
           Live darshan from verified temples, video-proof pujas, AI Pandit, daily panchang. Join the
           waitlist to lock your spot and unlock priority access.
         </p>

@@ -119,7 +119,7 @@ export default function PanchaPakshiPage() {
       <p className="text-xs uppercase tracking-wider text-saffron-600">Free Tamil Siddhar 5-bird astrology</p>
       <h1 className={`${H1.catalogue} mt-1`}>Pancha Pakshi Shastra</h1>
       <p className="mt-2 text-sm text-saffron-700">பஞ்ச பட்சி சாஸ்திரம் · पञ्च पक्षी शास्त्र</p>
-      <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+      <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
        Ancient Tamil Siddhar system classifying humans under 5 birds —
        Vulture, Owl, Crow, Cock, Peacock — by birth nakshatra. Each bird has
        lucky days, direction, color, deity, mantra, and a daily activity

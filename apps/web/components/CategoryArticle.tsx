@@ -36,7 +36,7 @@ export default function CategoryArticle({ category, slug, categoryLabel }: Props
           <div className="text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-1">{article.frontmatter.subTopic}</div>
         )}
         <h1 className={H1.catalogue}>{article.frontmatter.title}</h1>
-        <p className="text-lg text-surface-600 mt-3">{article.frontmatter.summary}</p>
+        <p className="prose-lead text-surface-600 mt-3">{article.frontmatter.summary}</p>
         <div className="mt-3 inline-flex items-center gap-2 text-xs text-surface-500">
           <Clock className="w-3.5 h-3.5" /> {article.frontmatter.readingMinutes} min read
         </div>

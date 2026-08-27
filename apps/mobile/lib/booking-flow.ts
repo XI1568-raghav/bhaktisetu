@@ -154,6 +154,108 @@ export function selectPujaBookingDetail(payload: unknown): PujaBookingDetail | n
   };
 }
 
+// ─── which offerings can actually be booked ─────────────────────────────────
+/**
+ * PAR-15 (4). The picker offered temples the server refuses.
+ *
+ * booking.service.ts:466 rejects an unverified temple outright:
+ *
+ *     if (!offering.temple?.isVerified) {
+ *       throw new Error('This temple has not been verified yet.');
+ *     }
+ *
+ * which routes/bookings.ts:650 classifies as a 409 TEMPLE_NOT_VERIFIED. The
+ * screen rendered every offering the catalogue returned and appended
+ * " · Verified" to the ones that were — which reads as a badge, a nice-to-have,
+ * not as the difference between a temple that can be booked and one that
+ * cannot. So the devotee chose the unverified temple, picked a day, waited for
+ * the slot read, typed the sankalp names, submitted, and only then learned it
+ * was never possible.
+ *
+ * The two groups are kept apart HERE rather than filtered away, because
+ * dropping the row would make a temple that is visible on the website vanish
+ * from the app with no reason given. The screen shows them, greyed, with the
+ * reason.
+ */
+export interface OfferingPartition {
+  /** The server will accept these. Catalogue order preserved. */
+  bookable: TempleOfferingOption[];
+  /** Real temples, listed, but a booking against them 409s today. */
+  unverified: TempleOfferingOption[];
+}
+
+export function partitionOfferings(offerings: TempleOfferingOption[]): OfferingPartition {
+  const bookable: TempleOfferingOption[] = [];
+  const unverified: TempleOfferingOption[] = [];
+  for (const o of offerings) (o.isVerified ? bookable : unverified).push(o);
+  return { bookable, unverified };
+}
+
+// ─── the request headers ────────────────────────────────────────────────────
+/**
+ * PAR-15 (3). Localised errors arrived in English.
+ *
+ * routes/bookings.ts:898 resolves the reply language with
+ *
+ *     pickLang(request.headers['accept-language'], query.lang)
+ *
+ * and note which function that is NOT: `pickLangFor`, the one that also
+ * consults the user's stored `preferredLanguage`. This call site does not. The
+ * header is therefore the ONLY channel by which this route can be told what
+ * language to answer in — and the app sent none, so every recoverable failure
+ * on the one screen that takes money-shaped input reached a Hindi devotee in
+ * English, while lib/error-i18n.ts has carried the Hindi, Tamil, Telugu and
+ * Kannada strings for SLOT_UNAVAILABLE and TEMPLE_NOT_VERIFIED all along.
+ *
+ * The value comes from `AuthUser.preferredLanguage` — a deliberate profile
+ * choice, which is what pickLangFor's own docblock says should outrank a
+ * handset locale. The app has no device-locale module (expo-localization is
+ * not a dependency), so the profile is the only signal available, and sending
+ * nothing when it is absent is correct: `pickLang` then defaults to English,
+ * exactly as today.
+ */
+const LANGUAGE_TAG_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
+
+/**
+ * A header-safe Accept-Language value, or null when there is nothing to send.
+ *
+ * The validation is not decoration. React Native's fetch does not reject a
+ * header value containing CR or LF, and `preferredLanguage` is a field the
+ * profile screen writes; the day it becomes free text, an unvalidated value
+ * here is request splitting. The tag is passed through rather than mapped to
+ * the five translated languages on purpose — `pickLang` already splits the
+ * primary subtag and falls back to English for anything it has no catalogue
+ * for, and duplicating that table here is how the two drift.
+ */
+export function acceptLanguageFor(preferredLanguage: string | null | undefined): string | null {
+  if (typeof preferredLanguage !== 'string') return null;
+  const tag = preferredLanguage.trim();
+  if (tag.length === 0 || tag.length > 35) return null;
+  return LANGUAGE_TAG_RE.test(tag) ? tag : null;
+}
+
+/**
+ * Headers for POST /api/v1/bookings/book.
+ *
+ * One place, because the screen used to build them inline and a second inline
+ * copy is how the bearer or the language goes missing from one call and not
+ * the other. The Accept-Language key is OMITTED rather than set empty: an
+ * empty header is a malformed request that happens to produce the same
+ * fallback.
+ */
+export function bookingRequestHeaders(input: {
+  token: string;
+  preferredLanguage?: string | null;
+}): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${input.token}`,
+  };
+  const lang = acceptLanguageFor(input.preferredLanguage);
+  if (lang) headers['Accept-Language'] = lang;
+  return headers;
+}
+
 /** The puja price at this temple: the override, else the base. NOT the total. */
 export function offeringPriceInr(
   detail: PujaBookingDetail,
@@ -362,6 +464,17 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export function buildCreateBookingBody(form: BookingFormState): CreateBookingBody {
   if (!form.offering) {
     throw new BookingInputError('Choose the temple where the puja should be performed.');
+  }
+  // PAR-15 (4). The server refuses an unverified temple with a 409
+  // (booking.service.ts:466). Refusing here means the devotee is told before
+  // they fill in the sankalp names rather than after — and it covers the path
+  // the picker cannot: the screen pre-selects a sole offering, so a puja
+  // offered by exactly one unverified temple used to arrive with the form
+  // already pointed at a booking that could never succeed.
+  if (!form.offering.isVerified) {
+    throw new BookingInputError(
+      'This temple is not verified yet, so it cannot take bookings. Choose another temple.',
+    );
   }
   if (!form.scheduledDate || !DATE_RE.test(form.scheduledDate)) {
     throw new BookingInputError('Choose a date for the puja.');

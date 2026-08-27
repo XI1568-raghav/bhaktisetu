@@ -222,7 +222,7 @@ export default function StoreAdminReviewsPage() {
           <h3 className="text-lg font-semibold text-surface-700">
             No reviews yet
           </h3>
-          <p className="text-sm text-surface-500 mt-1 max-w-md text-center">
+          <p className="prose-meta text-surface-500 mt-1 max-w-md text-center">
             {ratingFilter === 'all'
               ? 'Customers can leave reviews after their orders are delivered. Per-product reviews will appear here once that flow ships.'
               : 'No reviews match the selected filter.'}

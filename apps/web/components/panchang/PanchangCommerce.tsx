@@ -155,12 +155,19 @@ function tithiIntent(tithi: string): RitualIntent | undefined {
  * `lakshmi-puja` — the repo has already decided those weekdays name those
  * pujas. Saturday is the Sunderkand reading kept for Shani's day.
  *
- * SUNDAY IS DELIBERATELY ABSENT. Sunday is Surya's day and the catalogue holds
- * no Surya SKU — the same inventory gap ThisWeek.tsx:43-47 records for Chhath.
- * Inventing a Sunday row would mean recommending a ritual for the wrong reason,
- * so Sunday falls through to the browse card until a Surya SKU exists.
+ * Sunday is Surya's day. It was absent from this table when the component was
+ * written, because the catalogue then held no Surya SKU. A concurrent lane
+ * seeded `surya-puja` on 2026-08-24 (apps/api/prisma/seed.ts), and that SKU's
+ * own description names "every Sunday" among its occasions — so the gap closed
+ * and Sunday is now mapped. It resolves through the catalogue like every other
+ * row, so it still degrades to the browse card wherever the SKU is not live.
  */
 const VAR_INTENTS: Readonly<Record<number, RitualIntent>> = {
+  0: {
+    slug: 'surya-puja',
+    occasion: 'Ravivar',
+    reason: "Sunday is Surya's day; the arghya is the offering kept for it.",
+  },
   1: {
     slug: 'rudrabhishek',
     occasion: 'Somvar',

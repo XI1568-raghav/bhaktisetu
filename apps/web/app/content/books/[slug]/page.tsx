@@ -100,7 +100,7 @@ export default async function BookDetailPage({
               {book.title}
             </h1>
             {book.subtitle && (
-              <p className="text-lg text-surface-600 mt-2">{book.subtitle}</p>
+              <p className="prose-lead text-surface-600 mt-2">{book.subtitle}</p>
             )}
             {book.tradition && (
               <p className="text-sm text-saffron-700 mt-1">{book.tradition}</p>

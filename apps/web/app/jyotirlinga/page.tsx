@@ -66,7 +66,7 @@ export default function JyotirlingaIndexPage() {
           the linga was installed. Bhasma Aarti at Mahakal, Sphatika Linga at Rameshwar,
           22 Theerthams, Kanwar Yatra at Vaidyanath — found nowhere else.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           For broader pilgrim destinations including Vaishnava + Shakti sites, see{' '}
           <Link href="/tirth" className="text-saffron-700 underline">the Sacred Tirthas guide</Link>.
           For multi-destination journeys see{' '}

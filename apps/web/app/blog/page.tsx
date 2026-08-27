@@ -49,7 +49,7 @@ export default async function BlogPage() {
             Stories, Insights & Updates
           </h1>
           <p
-            className="text-sm max-w-xl leading-relaxed"
+            className="prose-body max-w-xl leading-relaxed"
             style={{ color: 'var(--color-text-muted)' }}
           >
             Exploring the intersection of technology and tradition. Updated as
@@ -116,7 +116,7 @@ export default async function BlogPage() {
                   First essays loading…
                 </h2>
                 <p
-                  className="text-sm leading-relaxed mb-6 max-w-md mx-auto"
+                  className="prose-meta leading-relaxed mb-6 max-w-md mx-auto"
                   style={{ color: 'var(--color-text-muted)' }}
                 >
                   Our editors are reviewing the latest drafts. Join the

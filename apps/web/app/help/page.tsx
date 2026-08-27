@@ -349,7 +349,7 @@ export default function HelpPage() {
  Still Need Help?
  </h2>
  <p
- className="text-sm leading-relaxed mb-6 max-w-md mx-auto"
+ className="prose-body leading-relaxed mb-6 max-w-md mx-auto"
  style={{ color: "var(--color-text-muted)" }}
  >
  Our support team is available Monday through Saturday to assist

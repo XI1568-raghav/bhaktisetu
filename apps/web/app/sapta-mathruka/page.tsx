@@ -59,7 +59,7 @@ export default function SaptaMathrukaIndexPage() {
           multiplication. From Brahmani (wisdom) to Chamunda (death of fear), they form the complete Tantric
           mother-grid.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           See also <Link href="/ashta-lakshmi" className="text-rose-700 underline">8 Ashta Lakshmi</Link>,{' '}
           <Link href="/shakti-peeth" className="text-rose-700 underline">51 Shakti Peeth</Link> and{' '}
           <Link href="/nava-graha" className="text-rose-700 underline">Nava Graha</Link>.

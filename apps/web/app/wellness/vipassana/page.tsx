@@ -105,7 +105,7 @@ export default function VipassanaPage() {
  <span style={{ color: 'var(--color-primary)' }}>The Art of Living</span>
  </h1>
 
- <p data-reveal="up" data-delay="1" className="mt-5 text-sm leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="mt-5 prose-body leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
  A 2,500-year-old technique of self-observation that leads to the total purification of the mind. Rediscover the deepest levels of your consciousness through 10 days of noble silence.
  </p>
 
@@ -174,7 +174,7 @@ export default function VipassanaPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Where to sit your first course
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
  Six of the most established centers in the Goenka tradition. Course applications go directly to each center via dhamma.org — Darshya is a discovery resource, not a booking middleman. {VIPASSANA_CENTERS.length} centers in the full directory.
  </p>
 
@@ -323,7 +323,7 @@ export default function VipassanaPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Ready to take the 10-day journey?
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
  Pick a center from our directory and apply directly with them. Or read the complete preparation guide before deciding.
  </p>
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">

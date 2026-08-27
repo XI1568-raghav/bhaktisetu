@@ -151,7 +151,7 @@ export default async function PanditsListingPage() {
        <h2 className="text-lg font-semibold text-surface-800 mb-2">
         No pandits listed yet
        </h2>
-       <p className="text-sm text-surface-500 max-w-md mx-auto">
+       <p className="prose-meta text-surface-500 max-w-md mx-auto">
         We are onboarding verified pandits. New profiles appear here once
         reviewed by our team.
        </p>

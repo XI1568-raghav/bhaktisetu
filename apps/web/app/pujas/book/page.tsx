@@ -1653,7 +1653,7 @@ function PujaBookingInner() {
  <p className="mb-1 font-semibold text-surface-700">
  No temple is offering this puja right now
  </p>
- <p className="mx-auto mb-4 max-w-sm text-sm text-surface-500">
+ <p className="mx-auto mb-4 max-w-sm prose-meta text-surface-500">
  We only list temples that have completed verification, and none of them
  currently has {puja.name} open for booking. Please pick another puja, or
  check back shortly.

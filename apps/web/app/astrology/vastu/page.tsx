@@ -104,7 +104,7 @@ export default function VastuPage() {
    <header className="mt-4 text-center">
     <p className="text-xs uppercase tracking-widest text-saffron-600">वास्तु शास्त्र · Vastu Shastra Calculator</p>
     <h1 className={`${H1.catalogue} mt-1`}>Vastu Calculator — 8-Direction Room Scorer</h1>
-    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+    <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
      Pick the direction your home faces, then place each room in a disha. We score every placement
      against classical Vastu texts (Mayamatam, Vishwakarma Prakash, Brihat Samhita) and flag any Vastu doshas.
     </p>

@@ -111,6 +111,33 @@ function hasSession(req: NextRequest): boolean {
  * whatever is already stored) but never WRITTEN by one. `Next-Router-Prefetch`
  * is what next/link sends; `Sec-Purpose` / `Purpose` cover browser-level
  * speculation-rules prefetches and the Google prefetch proxy.
+ *
+ * ── 2026-08-28. Two changes have been proposed to this function and BOTH are
+ *    regressions. Measured against next 15.5.20 in this workspace, and pinned
+ *    by __tests__/i18n-prefetch-detection.i08.test.ts:
+ *
+ *    • "the next-router-prefetch branch is dead, drop it" — it is not. The
+ *      classic prefetch path sets it for PrefetchKind.AUTO, which is the
+ *      <Link> default and what every `/`- and `?lang=`-targeting link in this
+ *      app uses (client/components/router-reducer/fetch-server-response.js:77).
+ *      Middleware runs inside the Next server on Render, so no adapter is
+ *      between the browser and this line to remove it. The segment cache sends
+ *      the same header with the value '2', which is why this is a truthiness
+ *      check and not `=== '1'`.
+ *
+ *    • "detect the prefetch by the `_rsc` union query instead" — `_rsc` is a
+ *      cache-buster appended to EVERY RSC fetch, navigations included
+ *      (router-reducer/set-cache-busting-search-param.js:52-56). Using it here
+ *      classifies a real click as a prefetch, so the root redirect stops
+ *      firing and `?lang=` stops storing the choice — i.e. it un-fixes I-08.
+ *
+ *    THE GAP THAT IS REAL: `prefetch` (PrefetchKind.FULL) and the segment
+ *    cache's FetchStrategy.Full send `RSC: 1` with no prefetch header at all,
+ *    so they are indistinguishable from a soft navigation and this function
+ *    cannot see them. Latent today — no <Link> to `/` or `?lang=` sets
+ *    `prefetch`, and experimental.clientSegmentCache is off — but if that
+ *    changes, the fix is at the call site (drop the prefetch, or make the
+ *    redirect safe for the Router Cache), never in header sniffing.
  */
 function isPrefetch(req: NextRequest): boolean {
   const h = req.headers;

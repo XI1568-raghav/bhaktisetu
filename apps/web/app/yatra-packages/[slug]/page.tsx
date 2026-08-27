@@ -88,7 +88,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
             <h1 className={H1.detail}>
               {pkg.name}
             </h1>
-            <p className="mt-2 text-sm md:text-base text-white/85 max-w-2xl">{pkg.short_description}</p>
+            <p className="mt-2 prose-body text-white/85 max-w-2xl">{pkg.short_description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-4 text-xs md:text-sm text-white/80">
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {pkg.duration_days} days</span>
               <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {seatsLeft} of {pkg.max_group_size} seats left</span>

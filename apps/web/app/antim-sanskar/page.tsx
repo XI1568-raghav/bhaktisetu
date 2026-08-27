@@ -203,7 +203,7 @@ export default function AntimSanskarPage() {
             Transparent pricing
           </h2>
           <p
-            className="text-sm mb-10 max-w-2xl"
+            className="prose-body mb-10 max-w-2xl"
             style={{ color: 'var(--color-text-muted)' }}
           >
             Three options to choose from. The amount is settled on-site after

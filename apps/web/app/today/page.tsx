@@ -223,7 +223,7 @@ export default async function TodayPage() {
           <div className="inline-block px-4 py-1.5 bg-white rounded-full text-sm font-semibold text-saffron-700 mb-4">
             {daysToFest === 0 ? 'Today!' : daysToFest === 1 ? 'Tomorrow' : `In ${daysToFest} days`}
           </div>
-          <p className="text-sm text-surface-700 max-w-xl mx-auto mb-4 line-clamp-2">{upcoming.description}</p>
+          <p className="prose-meta text-surface-700 max-w-xl mx-auto mb-4 line-clamp-2">{upcoming.description}</p>
           <Link
             href={`/festival/${upcoming.slug}`}
             className={buttonClass('primary', 'md')}

@@ -4,10 +4,20 @@ import type { Metadata } from 'next';
 // DU-05: the one h1 recipe per page archetype. Extras are layout-only.
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
+// CI-12: this hub advertised /jyotirlinga as "All 12 swayambhu Shiva abodes",
+// while the dataset behind that page flags Somnath, Kashi Vishwanath and
+// Rameshwar `swayambhu: false` and its own badges show nine. Both numbers are
+// derived here for the same reason app/jyotirlinga/page.tsx derives them — a
+// literal is what let the two drift apart in the first place. This is a server
+// component, so the import costs the client bundle nothing.
+import { JYOTIRLINGAS } from '../../lib/jyotirlingas';
 
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';
+
+const JYOTIRLINGA_SWAYAMBHU = JYOTIRLINGAS.filter((j) => j.swayambhu).length;
+const JYOTIRLINGA_INSTALLED = JYOTIRLINGAS.length - JYOTIRLINGA_SWAYAMBHU;
 
 type DiscoverItem = {
   label: string;
@@ -97,7 +107,7 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Vedic Yajnas', href: '/vedic-yajnas', description: 'Agnihotra, Soma, Vajapeya, Ashwamedha and 6 more — fire-altar rituals with mantra, materials and procedure.', count: '10 yajnas' },
       { label: 'Rudraksha', href: '/rudraksha', description: '1-mukhi to 18-mukhi rudraksha beads — deity, planet, benefits, wearing rules and identification.', count: '18 mukhi' },
       { label: 'Sacred Tirthas', href: '/tirth', description: 'Single-destination pilgrim guides — Kashi, Tirupati, Vaishno Devi, Char Dham and more.', count: '12 tirthas' },
-      { label: '12 Jyotirlinga', href: '/jyotirlinga', description: 'All 12 swayambhu Shiva abodes in canonical order — Bhasma Aarti, Sphatika Linga, 22 Theertham and signature rituals.', count: '12 jyotirlinga' },
+      { label: `${JYOTIRLINGAS.length} Jyotirlinga`, href: '/jyotirlinga', description: `All ${JYOTIRLINGAS.length} Shiva light-abodes in canonical order — ${JYOTIRLINGA_SWAYAMBHU} swayambhu, ${JYOTIRLINGA_INSTALLED} with an installed linga. Bhasma Aarti, Sphatika Linga, 22 Theertham and signature rituals.`, count: `${JYOTIRLINGAS.length} jyotirlinga` },
       { label: '51 Shakti Peeth', href: '/shakti-peeth', description: "Where Sati's body fell — across India, Nepal, Bangladesh, Sri Lanka, Pakistan and Tibet. Devi-Bhairava pairings and Navratri rituals.", count: '51 peeths' },
       { label: '5 Pancha Bhoota Stalam', href: '/pancha-bhoota', description: 'Five Tamil Nadu Shiva temples representing the five elements — Earth, Water, Fire, Air, Ether.', count: '5 temples' },
       { label: '9 Navaratna Gems', href: '/navaratna', description: 'Nine sacred gems of Vedic gemology — one per Nava-Graha. Finger, metal, day, mantra, benefits.', count: '9 gems' },

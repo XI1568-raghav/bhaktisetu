@@ -112,7 +112,7 @@ export default function CareersPage() {
  Build Technology That Serves Faith
  </h1>
  <p
- className="text-sm sm:text-base max-w-2xl mx-auto leading-relaxed"
+ className="prose-body max-w-2xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-faint)" }}
  >
  We&apos;re a small team solving a massive problem: making India&apos;s $58B
@@ -266,7 +266,7 @@ export default function CareersPage() {
  Don&apos;t See Your Role?
  </h2>
  <p
- className="text-sm leading-relaxed mb-6 max-w-xl mx-auto"
+ className="prose-body leading-relaxed mb-6 max-w-xl mx-auto"
  style={{ color: "var(--color-text-muted)" }}
  >
  We are always looking for exceptional people who share our mission.

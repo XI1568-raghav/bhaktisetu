@@ -288,7 +288,7 @@ export default async function HelpArticlePage({ params }: { params: Params }) {
  )}
 
  <p
- className="text-lg text-surface-700 leading-relaxed mb-6 pb-6 border-b border-surface-200"
+ className="prose-lead text-surface-700 leading-relaxed mb-6 pb-6 border-b border-surface-200"
  lang={article.lang}
  >
  {article.summary}

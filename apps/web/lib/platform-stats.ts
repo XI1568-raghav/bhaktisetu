@@ -52,7 +52,12 @@ function strictCount(value: unknown): number | null {
 }
 
 /**
- * Pull the catalogue size out of GET /temples. Anything else yields null.
+ * Pull the row count out of a GET /temples envelope. Anything else yields null.
+ *
+ * This parser is filter-agnostic: it reports whatever the request asked the API
+ * to count. `getPlatformCounts` below is what constrains that request to the
+ * VERIFIED subset, because the caller publishes the figure as "N verified
+ * temples" — see the note on the `?isVerified=true` param there.
  *
  * CM-11 re-open: this used to read `payload.pagination.total` ONLY, and the API
  * does not send that. Read off the running API on 2026-08-14:
@@ -145,7 +150,17 @@ export async function getPlatformCounts(): Promise<PlatformCounts> {
   };
 
   const [templesPayload, darshanPayload] = await Promise.all([
-    read('/temples?limit=1'),
+    // TC-01/TC-12 (2026-08-28): `?isVerified=true` is REQUIRED, not cosmetic.
+    // verifiedTempleClaim() publishes this number as "N verified temples", and
+    // the API applies the verification filter only when the param is present:
+    // routes/temples.ts:109 passes `undefined` when it is absent, and
+    // temple.service.ts:51 then skips `where.isVerified` entirely, so the
+    // `prisma.temple.count({ where })` at temple.service.ts:114 counts every
+    // ACTIVE temple. Without this param the trust strip asserts verification
+    // over rows nobody verified. It read true on 2026-08-13 only because all
+    // 20 seeded temples happened to be is_verified; the first unverified
+    // active listing silently makes the sentence false.
+    read('/temples?limit=1&isVerified=true'),
     read('/darshan/live'),
   ]);
 

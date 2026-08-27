@@ -48,14 +48,25 @@ describe('CI-08 — /ved defers to /upanishads for the fourteen it republishes',
     }
   });
 
-  it('a /ved article that is not an Upanishad still claims itself', async () => {
-    expect(canonicalUpanishadUrl('rigveda-overview')).toBeUndefined();
-    expect(await canonicalFor('rigveda-overview')).toBe(
-      'https://darshya.online/ved/rigveda-overview',
-    );
-    expect(await canonicalFor('purusha-sukta')).toBe(
-      'https://darshya.online/ved/purusha-sukta',
-    );
+  // REWRITTEN 2026-08-28. This case used `rigveda-overview` as its example of
+  // "an article nobody else publishes". That was true of the /upanishads
+  // family and false of the site: /vedas/rigveda is the same subject, curated
+  // and richer, and it is the OTHER half of CI-08 — the four Vedas were
+  // duplicated exactly as the fourteen Upanishads were. `rigveda-overview` now
+  // defers to /vedas/rigveda (see ved-veda-canonical.ci08.test.ts), so keeping
+  // the old expectation would have pinned the bug in place.
+  //
+  // The case itself is still worth having, so it keeps its meaning and swaps
+  // in articles that genuinely have no twin in either family.
+  it('a /ved article that no other family publishes still claims itself', async () => {
+    for (const slug of ['purusha-sukta', 'aranyakas-overview', 'rigveda-structure']) {
+      expect(canonicalUpanishadUrl(slug), slug).toBeUndefined();
+      expect(await canonicalFor(slug), slug).toBe(`https://darshya.online/ved/${slug}`);
+    }
+  });
+
+  it('and the four Vedas now defer to the curated /vedas pages', async () => {
+    expect(await canonicalFor('rigveda-overview')).toBe('https://darshya.online/vedas/rigveda');
   });
 
   it('the page derives the canonical from the helper, not a second copy of the table', () => {

@@ -53,7 +53,7 @@ export default async function YatraPackagesPage() {
           <h1 className={H1.marketing}>
             Curated Yatra Packages
           </h1>
-          <p className="mt-4 text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="mt-4 prose-body leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
             Multi-day all-inclusive pilgrimage tours operated by Darshya. Hotel, transport, pandit + meals included. Limited group sizes for personal experience.
           </p>
         </div>

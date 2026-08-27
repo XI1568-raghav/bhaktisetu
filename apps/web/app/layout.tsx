@@ -377,6 +377,29 @@ export default function RootLayout({
  className={`${notoSans.variable} ${notoSansDevanagari.variable} ${notoSansTamil.variable} ${notoSansTelugu.variable} ${notoSansBengali.variable} ${crimsonPro.variable}`}
  >
  <head>
+ {/*
+ PERF-03 (closed 2026-08-28) — the two brand cuts that paint the FIRST
+ VIEWPORT of every route, self-hosted from public/fonts and declared in
+ app/globals.css.
+
+ Only two of the five vendored cuts are preloaded, and the choice is not
+ aesthetic: `body` renders at weight 400 on --font-body, which is Satoshi
+ Regular; and all four H1 archetypes in components/ui/heading-recipe.ts are
+ `font-semibold` on the display face, which — Cabinet Grotesk having no 600
+ cut — resolves to Cabinet Grotesk Bold. Satoshi Medium, Satoshi Bold and
+ Cabinet Grotesk Regular load on demand, because a preload in a ROOT LAYOUT
+ fires on all ~1,785 routes whether the route paints that weight or not. That
+ is the same mistake PERF-02 removed one tag above, in a different costume.
+
+ crossOrigin is REQUIRED even though these are same-origin. Font fetches are
+ always CORS-mode, so a preload without it is not matched to the real request
+ and the browser downloads the file twice.
+
+ Guarded by __tests__/brand-webfonts.perf03.test.ts.
+ */}
+ <link rel="preload" as="font" type="font/woff2" href="/fonts/Satoshi-Regular.woff2" crossOrigin="anonymous" />
+ <link rel="preload" as="font" type="font/woff2" href="/fonts/CabinetGrotesk-Bold.woff2" crossOrigin="anonymous" />
+
  {/* Resource hints — warm up connections to third-party origins we hit on nearly every page.
      NOT api/cdn.fontshare.com: that stylesheet was removed (PERF-03) and a
      preconnect to an origin nothing requests costs a DNS+TLS handshake for
@@ -395,9 +418,12 @@ export default function RootLayout({
  live homepage with CDP CSS.getPlatformFontsForNode: 5,545 of 5,604 glyphs
  painted in Arial, 0 in any webfont — while every page paid a
  render-blocking cross-origin round trip in <head> for that one comment.
- The brand faces are now self-hostable via next/font/local; until Satoshi and
- Cabinet Grotesk woff2 are licensed and dropped into public/fonts, the
- already-downloaded Noto Sans backs --font-body/--font-display (globals.css).
+ CLOSED 2026-08-28: Satoshi and Cabinet Grotesk are now self-hosted from
+ public/fonts and declared with @font-face in globals.css, from the five woff2
+ this repo has carried at apps/remotion-pitch/public/fonts since 2026-07-15.
+ Nothing is fetched from fontshare, or from any other origin, ever again.
+ Noto Sans still backs both stacks and still PRELOADS, because Satoshi's cmap
+ has no U+20B9 and it is what draws the ₹ in every price.
 
  PERF-02 — the global `<link rel="preload" as="image" fetchPriority="high">`
  that used to sit here has been removed and must not come back. A ROOT LAYOUT
@@ -573,7 +599,7 @@ export default function RootLayout({
  Darsh<span className="text-saffron-400">ya</span>
  </span>
  </div>
- <p className="text-sm text-surface-500 mb-6 max-w-xs leading-relaxed">
+ <p className="prose-meta text-surface-500 mb-6 max-w-xs leading-relaxed">
  {tFooter('tagline')}
  </p>
  <div className="flex items-center gap-2">

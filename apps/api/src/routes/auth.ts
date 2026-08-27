@@ -687,6 +687,116 @@ export async function authRoutes(server: FastifyInstance) {
   });
 
   /**
+   * POST /session/revive — SEC-02 step 2.
+   *
+   * THE GAP THIS FILLS. apps/web/lib/session-revive.ts rehydrates a browser
+   * that holds no JS-readable token by POSTing /auth/refresh. That route is a
+   * SUPABASE exchange, and a magic-link sign-in has no Supabase session behind
+   * it: routes/magic-link.ts mints an `email_sessions` row, answers
+   * `refreshToken: ''`, and deliberately issues no `darshya_refresh` cookie
+   * because an empty one could only ever fail. So every provider onboarded
+   * through the partnerships pipeline — the population whose ONLY credential is
+   * a magic link, since there is no password column on User — had no revive
+   * path at all. Harmless only while app/auth/verify still writes
+   * `poojly_session` to localStorage; the moment SEC-02 deletes that write,
+   * those users are signed out on their next reload. This route is the gate on
+   * that deletion.
+   *
+   * IT VALIDATES AND REPORTS; IT MINTS NOTHING. /auth/refresh rotates because a
+   * Supabase access token lives one hour. An email session lives seven days and
+   * its token IS the cookie, so minting a second row per page load would grow
+   * `email_sessions` without expiring the first. The cookie's lifetime is not
+   * extended either — a sliding 7-day session is a policy change, not a revive.
+   *
+   * TWO CHECKS THAT ARE NOT CEREMONY. `authenticateUser` PREFERS the
+   * Authorization header (middlewares/auth.ts extractBearerToken), so being
+   * authenticated does not by itself mean the cookie belongs to the caller:
+   *   - the cookie must be an `email-*` token, or a Supabase user could ask
+   *     this route to read their httpOnly access cookie back to them, turning
+   *     it into a general token-read oracle for the credential /auth/refresh is
+   *     careful to rotate;
+   *   - and it must be THIS user's, or a Bearer for account A plus a cookie for
+   *     account B would be answered with B's session token.
+   *
+   * THE RESIDUAL EXPOSURE, STATED. This hands script on the page the value of
+   * an httpOnly cookie. It is the same trade /auth/refresh already makes, and
+   * against today it is strictly better: that identical token currently sits in
+   * localStorage, readable by XSS with no network call and surviving the tab.
+   * Removing the trade entirely needs middlewares/auth.ts to treat an EMPTY
+   * `Authorization: Bearer ` as absent (extractBearerToken returns '' today,
+   * which suppresses the cookie fallback) before apps/web's hand-built Bearer
+   * call sites can drop the header — outside this route's lane.
+   *
+   * Not rate-limited on purpose: it is unreachable without a valid session
+   * cookie, and the sensitive-auth bucket (10/min per IP) would throttle
+   * ordinary page loads for everyone behind one office NAT. The global limiter
+   * still applies.
+   */
+  server.post('/session/revive', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const cookies = request.cookies as Record<string, string | undefined> | undefined;
+    const token = (cookies?.[SESSION_COOKIE] ?? '').trim();
+    const currentUser = request.currentUser!;
+
+    if (!token.startsWith('email-')) {
+      return reply.code(400).send({
+        error: 'Bad Request',
+        message: 'No email session cookie on this request.',
+      });
+    }
+    if (!token.startsWith(`email-${currentUser.id}-`)) {
+      return reply.code(401).send({
+        error: 'Unauthorized',
+        message: 'Session cookie does not match the authenticated account.',
+      });
+    }
+
+    // Re-read the row for its real expiry. The middleware validated the same
+    // row a moment ago but does not surface it, and the client needs the
+    // instant so it knows when to stop trusting what it just received.
+    let expiresAt: Date | null = null;
+    try {
+      const rows = await prisma.$queryRawUnsafe<Array<{ expires_at: Date }>>(
+        `SELECT expires_at FROM email_sessions WHERE id = $1 AND revoked_at IS NULL LIMIT 1`,
+        token,
+      );
+      const row = rows?.[0];
+      if (row) expiresAt = new Date(row.expires_at);
+    } catch (err) {
+      request.log.error({ err }, 'SEC-02 revive: email_sessions lookup failed');
+    }
+    // Fail closed, matching middlewares/auth.ts (A-005): a session we cannot
+    // read is not a session we hand back.
+    if (!expiresAt || expiresAt.getTime() <= Date.now()) {
+      return reply.code(401).send({
+        error: 'Unauthorized',
+        message: 'Invalid or expired email session.',
+      });
+    }
+
+    const role = await getPrimaryRoleForUser(currentUser.id, currentUser.email);
+
+    return reply.code(200).send({
+      success: true,
+      session: {
+        // SECONDS, like /auth/refresh and magic-link /verify. apps/web reads a
+        // value under 1e12 as seconds; milliseconds here would look like a 1970
+        // expiry and trigger a refresh on every mount.
+        accessToken: token,
+        refreshToken: '',
+        expiresIn: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
+        expiresAt: Math.floor(expiresAt.getTime() / 1000),
+      },
+      user: {
+        id: currentUser.id,
+        email: currentUser.email,
+        fullName: currentUser.fullName,
+        phone: currentUser.phone,
+        role,
+      },
+    });
+  });
+
+  /**
    * POST /logout
    * Signs the user out of Supabase, invalidating the session.
    */

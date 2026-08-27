@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAstrologers, useHoroscope } from '@poojly/api-client';
 import { astrologerSupplyLabel } from '../../lib/astrologer-supply-label';
+import { openWebHandoff, describeWebHandoff } from '../../lib/in-app-web';
+import { WEBVIEW_AVAILABLE } from '../../lib/webview-module';
 import { webOrigin, hostOf } from '../../lib/web-origin';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -33,13 +35,28 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  *    production. Same defect PAR-15 fixed in the payment hand-off; the origin
  *    is now resolved by lib/web-origin.ts.
  *
- * What is NOT fixed here, and why: an in-app WebView. `react-native-webview`
- * is not a declared dependency, and it is not merely missing — the app already
- * require()s it in app/(devotee)/darshan-player.tsx, where the require always
- * throws in this tree, so the in-app darshan player never renders either.
- * Installing it is a native-module change that needs a new EAS build and the
- * root lockfile, i.e. an owner action. See
- * lib/__tests__/astrology-bounceout-honesty.par22.test.ts.
+ * 3. THE IN-APP VIEW — added later, and NOT gated on the dependency.
+ *    An earlier pass recorded "an in-app WebView needs react-native-webview,
+ *    which is an owner action" and stopped there. The dependency really is
+ *    undeclared, but it was never a prerequisite for the CODE: darshan-player
+ *    has require()d the same module behind a try/catch since PAR-05 and
+ *    degrades cleanly when the require throws, which it always does here. So
+ *    both controls now route through `openWebHandoff`, which pushes
+ *    app/(devotee)/web-view.tsx when the module resolves and falls back to
+ *    exactly the previous `Linking.openURL` behaviour when it does not — the
+ *    branch every build from this tree takes today. Installing the package is
+ *    all that remains, and it needs no further change on this screen.
+ *
+ *    Because the destination is now a RUNTIME fact, the role, hint and glyph
+ *    cannot be literals any more: `describeWebHandoff` derives them from the
+ *    same call that decides the route, so a control cannot announce a browser
+ *    hand-off and then stay in the app, or the reverse. That is strictly
+ *    stronger than the hardcoded `accessibilityRole="link"` it replaces.
+ *
+ *    What the in-app view buys is the BACK STACK and the app-exit — not the
+ *    session. The website's session lives in localStorage['poojly_session'],
+ *    the app's in expo-secure-store, and a WebView shares neither. See
+ *    lib/in-app-web.ts.
  */
 const WEB = webOrigin();
 
@@ -153,6 +170,21 @@ export default function AstrologyScreen() {
     setRefreshing(false);
   }
 
+  /**
+   * PAR-22. Both hand-offs on this screen resolve through one options object,
+   * so the two controls can never disagree about whether this build can show
+   * the website in-app. `WEBVIEW_AVAILABLE` is false in every build produced
+   * from this tree today — the module is not declared — so both still open the
+   * browser, and both still SAY so, because the copy is derived rather than
+   * written.
+   */
+  const handoffOpts = { webViewAvailable: WEBVIEW_AVAILABLE, origin: WEB.origin };
+  const AI_CHAT_TARGET = {
+    url: `${WEB.origin}/astrology/chat?utm_source=mobile-app&utm_medium=ai-cta`,
+    title: 'AI Jyotish Assistant',
+  };
+  const aiAffordance = describeWebHandoff(AI_CHAT_TARGET, handoffOpts, hostOf(WEB.origin));
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -221,29 +253,36 @@ export default function AstrologyScreen() {
           </Text>
           <View style={styles.servicesList}>
             {services.map((service) => {
-              // Kundli has a real in-app screen; everything else is still a
-              // browser hand-off, and the control has to say which it is.
+              // Kundli has a real in-app screen; everything else is a web page.
+              // Whether that page stays in the app is now a RUNTIME fact, so
+              // the control cannot state it as a literal — `describeWebHandoff`
+              // returns the role, hint and glyph from the same call that
+              // decides the route.
               const inApp = service.name.toLowerCase().includes('kundli');
+              const target = {
+                url: `${WEB.origin}/astrology?utm_source=mobile-app&utm_medium=service-card&service=${encodeURIComponent(service.name)}`,
+                title: service.name,
+              };
+              const affordance = describeWebHandoff(target, handoffOpts, hostOf(WEB.origin));
               return (
               <TouchableOpacity
                 key={service.id}
                 style={styles.serviceCard}
                 activeOpacity={0.7}
-                accessibilityRole={inApp ? 'button' : 'link'}
+                accessibilityRole={inApp ? 'button' : affordance.role}
                 accessibilityLabel={service.name}
                 accessibilityHint={
-                  inApp
-                    ? 'Opens the kundli generator in the app'
-                    : `Opens ${hostOf(WEB.origin)} in your browser`
+                  inApp ? 'Opens the kundli generator in the app' : affordance.hint
                 }
                 onPress={() => {
                   if (inApp) {
                     router.push('/(devotee)/kundli' as any);
                     return;
                   }
-                  Linking.openURL(
-                    `${WEB.origin}/astrology?utm_source=mobile-app&utm_medium=service-card&service=${encodeURIComponent(service.name)}`,
-                  );
+                  openWebHandoff(target, handoffOpts, {
+                    push: (r) => router.push(r as never),
+                    openExternal: Linking.openURL,
+                  });
                 }}
               >
                 <View style={styles.serviceIconContainer}>
@@ -265,7 +304,7 @@ export default function AstrologyScreen() {
                   </View>
                 </View>
                 <Ionicons
-                  name={inApp ? 'chevron-forward' : 'open-outline'}
+                  name={inApp ? 'chevron-forward' : affordance.icon}
                   size={18}
                   color={colors.stone[300]}
                 />
@@ -286,16 +325,17 @@ export default function AstrologyScreen() {
             <TouchableOpacity
               style={styles.aiButton}
               activeOpacity={0.7}
-              accessibilityRole="link"
+              accessibilityRole={aiAffordance.role}
               accessibilityLabel={`Ask AI Jyotish on ${hostOf(WEB.origin)}`}
-              accessibilityHint={`Opens ${hostOf(WEB.origin)} in your browser`}
+              accessibilityHint={aiAffordance.hint}
               onPress={() =>
-                Linking.openURL(
-                  `${WEB.origin}/astrology/chat?utm_source=mobile-app&utm_medium=ai-cta`,
-                )
+                openWebHandoff(AI_CHAT_TARGET, handoffOpts, {
+                  push: (r) => router.push(r as never),
+                  openExternal: Linking.openURL,
+                })
               }
             >
-              <Ionicons name="open-outline" size={16} color={colors.white} />
+              <Ionicons name={aiAffordance.icon} size={16} color={colors.white} />
               {/* The label names the destination: the assistant runs on the
                   website, and a bare "Ask AI Jyotish" reads as an in-app chat. */}
               <Text style={styles.aiButtonText}>

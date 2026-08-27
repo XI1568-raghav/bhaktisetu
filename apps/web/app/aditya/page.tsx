@@ -58,7 +58,7 @@ export default function AdityaIndexPage() {
           mantras (Mitraya, Ravaye, Suryaya…) invoke these Adityas. From Vivasvan (father of dharma) to Trivikrama
           (Vishnu&apos;s solar form), they form the complete solar grid of Sanatana Dharma.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           See also <Link href="/nava-graha" className="text-amber-700 underline">Nava Graha</Link>,{' '}
           <Link href="/ashta-lakshmi" className="text-amber-700 underline">Ashta Lakshmi</Link> and{' '}
           <Link href="/dashavatar" className="text-amber-700 underline">Dashavatar of Vishnu</Link>.

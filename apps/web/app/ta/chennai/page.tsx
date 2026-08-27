@@ -233,7 +233,7 @@ export default function TamilChennaiLanding() {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-2">வெளிநாட்டில் உள்ள தமிழர்களுக்கு (NRI Tamils)</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">
           சிங்கப்பூர், மலேசியா, அமெரிக்கா, இங்கிலாந்து — உங்கள் பெற்றோர்/குடும்பத்தின் பெயரில் சென்னை ஆலயத்தில் பூஜை. வீடியோ ஆதாரம் உங்கள் WhatsApp இல். ஆண்டு சந்தா ₹5000 / $60.
         </p>
         <Link

@@ -118,7 +118,7 @@ function ConsultationRoomContent() {
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
         <AlertCircle className="text-saffron-600 mb-4 h-12 w-12" />
         <h1 className={`${H1.portal} mb-2`}>Consultation not found</h1>
-        <p className="text-surface-600 mb-4 max-w-sm text-sm">
+        <p className="text-surface-600 mb-4 max-w-sm prose-meta">
           This room isn&apos;t linked to a paid consultation. Free-trial rooms are no longer
           available — please book a consultation to join a call.
         </p>
@@ -136,7 +136,7 @@ function ConsultationRoomContent() {
         <h1 className={`${H1.portal} mb-2`}>
           You can&apos;t join this call
         </h1>
-        <p className="text-surface-600 mb-4 max-w-sm text-sm">
+        <p className="text-surface-600 mb-4 max-w-sm prose-meta">
           {session?.accessToken
             ? "This consultation belongs to another user, or it hasn't been paid for yet."
             : 'Please sign in to join your consultation.'}

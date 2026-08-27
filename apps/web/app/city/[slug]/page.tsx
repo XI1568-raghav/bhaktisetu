@@ -101,7 +101,7 @@ export default async function CityPage({ params }: Params) {
         <p className="text-surface-700 text-base leading-relaxed max-w-3xl mb-4">
           {c.description}
         </p>
-        <p className="text-surface-600 text-sm leading-relaxed max-w-3xl">
+        <p className="text-surface-600 prose-body leading-relaxed max-w-3xl">
           {c.significance}
         </p>
       </header>

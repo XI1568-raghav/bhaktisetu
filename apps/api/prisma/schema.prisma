@@ -2194,3 +2194,49 @@ model MoneyAuditEvent {
   @@index([occurredAt(sort: Desc)])
   @@map("money_audit_events")
 }
+
+// ─── AUTH-05: MAGIC-LINK SINGLE-USE LEDGER ────────────────────────────────────
+//
+// routes/magic-link.ts used to say, in its own header, that no table was needed:
+// the token is a stateless HMAC and "single-use enforcement is by timestamp
+// (15 min TTL)". PJ-08 then introduced ONBOARDING_TOKEN_TTL_MIN = 72 hours and
+// made that link the ONLY credential a partnerships-provisioned provider holds
+// (there is no password column on User). A three-day link sitting in a
+// forwarded email or a mail-scanner log therefore authenticated as that temple
+// manager again and again, with no way to revoke it.
+//
+// One row per minted token; /verify consumes it with a single conditional
+// UPDATE and the row count is the whole decision. An ABSENT row counts as
+// consumed, so links minted before this ledger existed cannot bypass it.
+//
+// Written and read through $executeRawUnsafe rather than this delegate — the
+// same choice lib/email-session.ts makes for `email_sessions` — so the routes
+// stay usable in tests that mock prisma without a generated client. The model is
+// declared here anyway so the table is a described object rather than invisible
+// drift, and so the index names in
+// migrations/20260828000000_auth05_magic_link_token_ledger match Prisma's own.
+//
+// No relation to User on purpose: /verify CREATES the account on first sign-in,
+// so at mint time there is often no user row to point at, and a foreign key
+// would fail the ledger write for exactly the new-provider case this is for.
+model MagicLinkToken {
+  // sha256 of the token string, hex — NEVER the token. A plaintext ledger of
+  // live credentials would let anyone with read access to this table sign in as
+  // every pending recipient.
+  id String @id
+
+  userEmail String @map("user_email")
+
+  // Copied from the signed payload so expired rows can be swept without parsing
+  // tokens. Not the authority: verifyToken's own timestamp check rejects first.
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  // NULL until the link is used. The single-use flag.
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@index([userEmail])
+  @@map("magic_link_tokens")
+}

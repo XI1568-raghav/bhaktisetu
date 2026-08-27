@@ -1591,8 +1591,8 @@
   "workflow": "authenticated-deep",
   "line": 786,
   "title": "The unified provider payouts page is unreachable from the pandit portal",
-  "state": "partial",
-  "commit": "wave-triage26-final",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
   "note": "Which payout rail is canonical for pandits. The two rails are deliberately mutually exclusive and picking one moves real money, so per instruction I did not gue"
  },
  {
@@ -5259,8 +5259,8 @@
   "workflow": "scale-mindset",
   "line": 3627,
   "title": "Brand webfonts have been dead for some time: Fontshare API returns 'temporarily restricted', 5,545 of 5,604 measured glyphs paint in Arial while 201.9 KB of unused Google woff2 still downloads",
-  "state": "partial",
-  "commit": "wave-triage26-2026-08-24",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
   "note": "TWO gates, both outside what code can decide here. (1) OWNER: downloading and licensing the Satoshi + Cabinet Grotesk woff2 files into apps/web/public"
  },
  {
@@ -5623,8 +5623,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Magic-link tokens are stateless with no single-use ledger — the 72-hour provider onboarding link can be replayed without limit and cannot be revoked",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
   "note": ""
  },
  {
@@ -5777,8 +5777,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Render's health check and every uptime monitor point at a stub that returns 200 with the database unreachable, while the DB-aware /ready probe goes unused",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
   "note": ""
  },
  {
@@ -6085,8 +6085,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "45 published articles list Wikipedia as a source with no CC BY-SA licence notice anywhere; /credits covers images only",
-  "state": "partial",
-  "commit": "wave-hard-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
   "note": ""
  },
  {

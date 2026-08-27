@@ -240,7 +240,7 @@ export default function WellnessPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Start your practice today
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
  Join thousands of practitioners on Darshya. Your first guided meditation session is free.
  </p>
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">

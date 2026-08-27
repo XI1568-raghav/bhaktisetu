@@ -85,7 +85,7 @@ export default function RudrakshaIndexPage() {
           a presiding deity and planetary energy. This guide covers all 14 mukhi varieties plus 4 special naturally-conjoined
           beads, each with its beej mantra, wearing day, hand, energising ritual and traditional benefits per Shiva Purana.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           See also{' '}
           <Link href="/jyotirlinga" className="text-amber-700 underline">12 Jyotirlinga</Link>,{' '}
           <Link href="/chants" className="text-amber-700 underline">Sanskrit mantras</Link>, and{' '}

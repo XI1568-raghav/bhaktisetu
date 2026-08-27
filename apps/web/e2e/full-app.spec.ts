@@ -79,11 +79,16 @@ test.describe('1. Home Page', () => {
   test('hero loads with brand name and CTAs', async ({ page }) => {
     await navigateTo(page, '/');
 
-    // Hero heading
-    await expect(page.locator('h1')).toContainText('sacred traditions');
+    // Hero heading. CM-13 replaced the brand-first H1 ("Darshya, your bridge to
+    // sacred traditions") with one that states the job, so this asserts the JOB
+    // rather than the exact sentence — the copy is A/B tested via hero_copy_v2
+    // and both arms must satisfy it.
+    await expect(page.locator('h1')).toContainText(/puja/i);
 
-    // CTA buttons
-    await expect(page.locator('a:has-text("Explore Temples")').first()).toBeVisible();
+    // CTA buttons. The secondary is a lowercase-t text link, not a filled
+    // button — CM-13/CM-14 demoted it deliberately (3 of 4 temples cannot take
+    // money), and a regression test pins that it stays a text link.
+    await expect(page.locator('a:has-text("Explore temples")').first()).toBeVisible();
     await expect(page.locator('a:has-text("Book a Puja")').first()).toBeVisible();
   });
 
@@ -788,8 +793,8 @@ test.describe('39. Responsive - Home at 375px', () => {
 
   test('home page renders at mobile width', async ({ page }) => {
     await navigateTo(page, '/');
-    await expect(page.locator('h1')).toContainText('sacred traditions');
-    await expect(page.locator('a:has-text("Explore Temples")').first()).toBeVisible();
+    await expect(page.locator('h1')).toContainText(/puja/i);
+    await expect(page.locator('a:has-text("Explore temples")').first()).toBeVisible();
   });
 });
 

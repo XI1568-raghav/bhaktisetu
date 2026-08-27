@@ -41,6 +41,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { UserFacingError, serverErrorText } from '../../../lib/friendly-error';
 
 interface OfferBooking {
   id: string;
@@ -108,8 +109,11 @@ function PriestOffersInner() {
       });
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
-        throw new Error(
-          `Could not load your offers (HTTP ${res.status}). ${detail.slice(0, 140)}`.trim(),
+        // RES-09: the status code plus 140 raw characters of the body were
+        // rendered to the pandit. The server's own sentence survives; the
+        // developer framing does not.
+        throw new UserFacingError(
+          serverErrorText(detail, 'Could not load your offers. Please try again.'),
         );
       }
       const data = await res.json();
@@ -152,7 +156,7 @@ function PriestOffersInner() {
       if (!res.ok) {
         // The server is the only thing that knows whether the offer is still
         // open — another pandit may have taken it a second ago.
-        setActionError(payload.error ?? `Could not ${action} this offer (HTTP ${res.status}).`);
+        setActionError(payload.error ?? `Could not ${action} this offer. Please try again.`);
         return;
       }
       setOffers((prev) => prev.filter((o) => o.bookingId !== bookingId));

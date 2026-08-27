@@ -96,7 +96,7 @@ export default function KaranaIndexPage() {
      <p className="text-xs uppercase tracking-wider text-saffron-600">5th anga of Panchang</p>
      <h1 className={`${H1.catalogue} mt-1`}>11 Karanas</h1>
      <p className="mt-2 text-sm text-saffron-700">एकादश करण</p>
-     <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+     <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
       A karana is half a tithi (~12 hours). Seven <strong>chara</strong> karanas rotate, four
       <strong> sthira</strong> karanas are fixed near full moon and new moon. <strong>Vishti / Bhadra</strong>{' '}
       is the most-avoided karana — universally inauspicious for all auspicious work.

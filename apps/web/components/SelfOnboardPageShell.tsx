@@ -29,7 +29,7 @@ export default function SelfOnboardPageShell(props: SelfOnboardPageShellProps) {
           {props.title}
         </h1>
         <p
-          className="mt-4 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto"
+          className="mt-4 prose-body leading-relaxed max-w-2xl mx-auto"
           style={{ color: 'var(--color-text-muted, #6b6258)' }}
         >
           {props.subtitle}

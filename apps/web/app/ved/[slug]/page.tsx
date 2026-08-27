@@ -10,6 +10,10 @@ import { detailCta } from '../../../lib/detail-route-cta';
 // family is the survivor; this route defers to it via the shared mapping
 // rather than keeping a second copy of the slug table.
 import { canonicalUpanishadUrl } from '../../../lib/upanishads';
+// CI-08, same finding one shelf up: the four <veda>-overview articles shadow
+// the curated /vedas/<slug> pages the same way. Derived from VEDAS rather than
+// tabulated — see the module for why, and for where it should eventually live.
+import { canonicalVedaUrl } from '../canonical';
 
 interface Params { slug: string }
 
@@ -21,12 +25,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const a = getArticle('ved', slug);
   if (!a) return { title: 'Article not found' };
-  const upanishadUrl = canonicalUpanishadUrl(slug);
+  // Upanishad first: it is the narrower, more specific claim, and no article
+  // is matched by both (guarded in __tests__/ved-veda-canonical.ci08.test.ts).
+  const twin = canonicalUpanishadUrl(slug) ?? canonicalVedaUrl(slug);
   return {
     title: `${a.frontmatter.title} — Vedas`,
     alternates: {
-      canonical: upanishadUrl
-        ? `https://darshya.online${upanishadUrl}`
+      canonical: twin
+        ? `https://darshya.online${twin}`
         : `https://darshya.online/ved/${slug}`,
     },
     description: a.frontmatter.summary,

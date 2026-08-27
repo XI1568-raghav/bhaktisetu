@@ -106,7 +106,7 @@ export default function HindiLanding() {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-2">विदेश में रहते हैं?</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">
           NRI के लिए विशेष लेन — अपने नाम से भारत के मंदिर में पूजा, वीडियो प्रमाण आपके WhatsApp पर। साल भर सदस्यता ₹5000 / $60।
         </p>
         <Link

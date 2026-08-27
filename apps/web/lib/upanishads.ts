@@ -837,9 +837,14 @@ export function upanishadSlugs(): string[] {
  * The curated /upanishads pages win: they carry the mantra count, mahavakya,
  * famous verse and key concepts that the MDX articles do not.
  *
- * NOT YET WIRED. app/ved/[slug]/page.tsx — which is outside this lane — has to
- * point `alternates.canonical` at `canonicalUpanishadUrl(slug)` when it
- * returns a value. This table is the half that needs the domain knowledge.
+ * WIRED. app/ved/[slug]/page.tsx points `alternates.canonical` at
+ * `canonicalUpanishadUrl(slug)` whenever it returns a value; the consumption
+ * is pinned by __tests__/ved-route-canonical-render.ci08.test.ts. (The comment
+ * here said "NOT YET WIRED" long after it was — corrected 2026-08-28.)
+ *
+ * The same finding applies one shelf up, to the four Vedas: see
+ * app/ved/canonical.ts for `canonicalVedaUrl`, which derives its mapping from
+ * VEDAS instead of tabulating it.
  */
 export const VED_ARTICLE_TO_UPANISHAD: Readonly<Record<string, string>> = {
   'aitareya-upanishad': 'aitareya-upanishad',

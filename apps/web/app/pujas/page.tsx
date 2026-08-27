@@ -635,7 +635,7 @@ export default async function PujasPage({
  'No pujas available right now'
  )}
  </h3>
- <p className="text-sm text-surface-500 mt-1 max-w-md mx-auto">
+ <p className="prose-meta text-surface-500 mt-1 max-w-md mx-auto">
  {filtersActive
  ? 'Try a wider price range or a different deity — or browse the full catalogue.'
  : 'Please check back shortly.'}

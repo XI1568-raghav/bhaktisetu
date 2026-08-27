@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { UserFacingError, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -115,8 +116,10 @@ export default function PriestPayoutsPage() {
  });
  if (!res.ok) {
  const detail = await res.text().catch(() => '');
- throw new Error(
- `Could not load your payouts (${res.status}). ${detail.slice(0, 140)}`.trim(),
+ // RES-09: the status code and a 140-char slice of the raw body were being
+ // rendered to a pandit. The server's own sentence is kept when it wrote one.
+ throw new UserFacingError(
+ serverErrorText(detail, 'Could not load your payouts. Please try again.'),
  );
  }
  const data = await res.json();
@@ -129,9 +132,7 @@ export default function PriestPayoutsPage() {
  setSummary(null);
  setTotal(0);
  setTotalPages(1);
- setLoadError(
- err instanceof Error ? err.message : 'Could not load your payouts. Please try again.',
- );
+ setLoadError(userFacingMessage(err, 'Could not load your payouts. Please try again.'));
  } finally {
  setLoading(false);
  }

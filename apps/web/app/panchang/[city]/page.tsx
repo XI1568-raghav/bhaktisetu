@@ -339,7 +339,7 @@ export default async function PanchangCityPage({ params }: { params: Promise<{ c
       Panchang {city!.name}
      </h1>
      <p className="mt-1 text-lg text-saffron-700">{city!.hindi} · {city!.state}</p>
-     <p className="mt-2 max-w-3xl text-sm text-gray-700">
+     <p className="mt-2 max-w-3xl prose-body text-gray-700">
       Today&apos;s tithi, nakshatra, sunrise, sunset and muhurat timings calculated for {city!.name} ({coords!.lat.toFixed(2)}°N, {coords!.lon.toFixed(2)}°E). All times in IST.
      </p>
     </header>

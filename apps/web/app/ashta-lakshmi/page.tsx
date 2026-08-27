@@ -58,7 +58,7 @@ export default function AshtaLakshmiIndexPage() {
           (primordial) to Vidya (knowledge), this is the complete Tantric grid worshipped on Diwali and Varalakshmi
           Vrata. Each form has its own beej mantra, vahana, signature festival and vrata.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           See also <Link href="/shakti-peeth" className="text-pink-700 underline">51 Shakti Peeth</Link>,{' '}
           <Link href="/dashavatar" className="text-pink-700 underline">Dashavatar of Vishnu</Link> and{' '}
           <Link href="/nava-graha" className="text-pink-700 underline">Nava Graha</Link>.
