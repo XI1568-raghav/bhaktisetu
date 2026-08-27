@@ -13,6 +13,7 @@ import {
   X,
   LogOut,
   ChevronRight,
+  IndianRupee,
   Star,
   MessageSquare,
   Sparkles,
@@ -30,7 +31,15 @@ const sidebarLinks = [
   { href: '/priest/bookings', label: 'Bookings', icon: Calendar },
   { href: '/priest/services', label: 'My Services', icon: Flame },
   { href: '/priest/reviews', label: 'Reviews', icon: Star },
-  { href: '/priest/payouts', label: 'Payouts', icon: Wallet },
+  // PF-19: "Payouts" used to point at /priest/payouts, the LEGACY read-only
+  // PriestPayout ledger, which has no withdraw control. The unified provider
+  // rail at /payouts is the only screen with a "Request payout" button and it
+  // names 'priest' in its own PROVIDER_ROLES, so the pandit could see money
+  // and never ask for it. The legacy ledger keeps its own entry: the two rails
+  // are mutually exclusive by design (createPriestPayout skips bookings a
+  // Commission row already owns) and historical rows must stay readable.
+  { href: '/payouts', label: 'Payouts', icon: Wallet },
+  { href: '/priest/payouts', label: 'Puja payouts', icon: IndianRupee },
   { href: '/priest/subscription', label: 'Subscription', icon: Sparkles },
   { href: '/priest/profile', label: 'Profile', icon: UserCircle },
 ];

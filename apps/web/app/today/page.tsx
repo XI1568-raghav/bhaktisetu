@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { Calendar, Sunrise, Sparkles, Music, BookOpen, ChevronRight, Clock } from 'lucide-react';
 import { getTodayPanchang } from '../../lib/api';
 import { FESTIVALS, nextFestival } from '../../lib/festivals';
+import { getCatalogueSlugs } from '../../lib/puja-catalogue';
+import { BROWSE_PUJAS_HREF, pujaLinkLabel, resolveContentPujas } from '../../lib/puja-link';
 import { DEITY_MANTRAS } from '../../lib/deity-mantras';
 import { getDeity } from '../../lib/deities';
 import { buttonClass } from '../../components/ui/button-recipe';
@@ -54,6 +56,23 @@ export default async function TodayPage() {
 
   // Tolerant fetch — panchang API may be cold/down.
   const panchang = await getTodayPanchang().catch(() => null);
+
+  // DF-02/CI-01 rule applied to the "Suggested puja" tile.
+  //
+  // `DAY_DEITY[*].suggestedPuja` is a hand-written editorial slug and it was
+  // interpolated straight into `/pujas/<slug>`. That route sets
+  // `dynamicParams = false` (app/pujas/[slug]/page.tsx), so any slug the
+  // catalogue does not sell is a hard 404, not a soft empty state. Four of the
+  // seven weekdays shipped one: Sunday's `surya-namaskar` is not sold at all,
+  // and Tuesday/Thursday/Saturday named `sundarkand-path`/`satyanarayan-puja`,
+  // whose real catalogue spellings are `sunderkand-path`/`satyanarayan-katha`.
+  //
+  // Routing through resolveContentPujas both applies those spelling aliases and
+  // refuses to emit a link the live catalogue has not confirmed — an unreadable
+  // catalogue yields an empty result, and the tile degrades to /pujas rather
+  // than guessing.
+  const catalogue = await getCatalogueSlugs();
+  const suggestedPujaSlug = resolveContentPujas([todayInfo.suggestedPuja], catalogue)[0] ?? null;
 
   const upcoming = nextFestival(now);
   const daysToFest = upcoming ? daysUntil(upcoming.date2026) : null;
@@ -215,13 +234,22 @@ export default async function TodayPage() {
       ) : null}
 
       <section className="mb-8 grid sm:grid-cols-3 gap-3">
+        {/* When nothing resolves the copy loses the ritual name as well as the
+            deep link — naming a puja the catalogue has not confirmed is the
+            same promise-with-nothing-behind-it the href fix removes. */}
         <Link
-          href={`/pujas/${todayInfo.suggestedPuja}`}
+          href={suggestedPujaSlug ? `/pujas/${suggestedPujaSlug}` : BROWSE_PUJAS_HREF}
           className="block rounded-xl border border-surface-200 bg-white p-5 hover:border-saffron-300 hover:bg-saffron-50 transition"
         >
           <span className="text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-1 block">Suggested puja</span>
-          <span className="text-lg font-bold text-surface-900 capitalize">{todayInfo.suggestedPuja.replace(/-/g, ' ')}</span>
-          <span className="block text-sm text-surface-600 mt-1">Most-recommended ritual for {dayName}</span>
+          <span className={`text-lg font-bold text-surface-900${suggestedPujaSlug ? ' capitalize' : ''}`}>
+            {suggestedPujaSlug ? pujaLinkLabel(suggestedPujaSlug) : 'Browse all pujas'}
+          </span>
+          <span className="block text-sm text-surface-600 mt-1">
+            {suggestedPujaSlug
+              ? `Most-recommended ritual for ${dayName}`
+              : `Find the right ritual for ${dayName} with a verified pandit`}
+          </span>
         </Link>
         <Link
           href="/astrology/horoscope"

@@ -52,6 +52,12 @@ export function humanizeEnum(value: string | null | undefined): string {
  * that ISN'T (an acronym, a "&", a Devanagari form) has somewhere to live.
  */
 export const PUJA_SLUG_LABELS: Readonly<Record<string, string>> = Object.freeze({
+  // Added 2026-08-24 with the two peak-window SKUs (apps/api/prisma/seed.ts,
+  // rows 11-12). These are the two slugs the dated calendar reaches for on its
+  // three biggest days — Navaratri and Dussehra name `durga-puja`, Chhath names
+  // `surya-puja` — so they are exactly the ones that would have rendered as
+  // "Book durga puja" in NextFestivalStrip's CTA if nobody had mapped them.
+  'durga-puja': 'Durga Puja',
   'ganesh-puja': 'Ganesh Puja',
   'hanuman-chalisa-path': 'Hanuman Chalisa Path',
   'lakshmi-puja': 'Lakshmi Puja',
@@ -62,6 +68,7 @@ export const PUJA_SLUG_LABELS: Readonly<Record<string, string>> = Object.freeze(
   rudrabhishek: 'Rudrabhishek',
   'satyanarayan-katha': 'Satyanarayan Katha',
   'sunderkand-path': 'Sunderkand Path',
+  'surya-puja': 'Surya Puja',
 });
 
 /**

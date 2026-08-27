@@ -29,6 +29,7 @@ import {
 import { FESTIVALS } from '../../lib/festivals';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import PanchangCommerce from '../../components/panchang/PanchangCommerce';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/panchang' },
@@ -387,6 +388,36 @@ async function PanchangDetailsSection({
  </div>
  </div>
  )}
+
+ {/* The page's only commerce. It sits BELOW the five limbs, the muhurat
+     windows and the observance, because it is a consequence of them — the
+     tithi and the var it recommends against are the ones printed above, so a
+     reader can check the recommendation against the table rather than take it
+     on trust. Sri Mandir places their three paid puja cards in the same
+     position, and carries none at all on their evergreen aarti/chalisa
+     articles; the dated surface is the one that earns a CTA.
+
+     Its own Suspense boundary: PanchangCommerce awaits the puja catalogue
+     (10-minute revalidate, but a cold miss is a network round trip) and the
+     panchang itself must not wait behind it. */}
+ <Suspense
+ fallback={
+ <div className="bg-white rounded-xl p-6 border border-surface-100 animate-pulse">
+ <div className="h-5 bg-surface-200 rounded w-56 mb-4" />
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ {Array.from({ length: 2 }).map((_, i) => (
+ <div key={i} className="h-40 bg-surface-100 rounded-xl" />
+ ))}
+ </div>
+ </div>
+ }
+ >
+ <PanchangCommerce
+ tithi={panchang.tithi}
+ date={displayDate}
+ rahuKaal={panchang.rahuKaal}
+ />
+ </Suspense>
  </>
  );
 }

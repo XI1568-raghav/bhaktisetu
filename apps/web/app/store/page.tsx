@@ -202,13 +202,17 @@ export default async function StorePage({
  </div>
  )}
 
- {product.discount > 0 && (
- <div className="absolute top-3 right-3">
- <span className="bg-tulsi-green-dark text-white text-xs font-bold px-2 py-1 rounded-full">
- -{product.discount}%
- </span>
- </div>
- )}
+ {/* LEG-17: a "-32%" badge used to render here from `product.discount`,
+     a hardcoded seed field in lib/products.ts. It was computed against
+     `compareAtPrice`, a reference price no product was ever sold at —
+     this catalogue has never taken an order. A discount claim measured
+     against a price that was never charged is a fabricated discount
+     under the Consumer Protection Act 2019, and unlike the expired
+     festival-sale banner COM-13 removed from this page it carried no
+     end date, so it could never expire on its own. Re-introduce a
+     badge only from a dated prior-price record the component can hide
+     once it lapses. Guarded by
+     __tests__/leg17-store-fabricated-reference-price.test.tsx. */}
 
  </div>
 
@@ -237,12 +241,11 @@ export default async function StorePage({
  </span>
  </div>
 
+ {/* LEG-17: the struck-through `compareAtPrice` that sat beside this
+     price is gone — see the note on the removed discount badge above. */}
  <div className="mt-2 flex items-baseline gap-2">
  <span className="text-lg font-bold text-surface-800">
  ₹{product.price.toLocaleString("en-IN")}
- </span>
- <span className="text-sm text-surface-400 line-through">
- ₹{product.compareAtPrice.toLocaleString("en-IN")}
  </span>
  </div>
 
@@ -260,7 +263,11 @@ export default async function StorePage({
  handle: product.handle,
  title: product.title,
  price: product.price,
- compareAtPrice: product.compareAtPrice,
+ // LEG-17: never carry the fabricated seed reference price into the
+ // cart. CartProduct.compareAtPrice is `number | null`, and the cart
+ // persists to localStorage under poojly_cart, so passing it here
+ // would outlive this page.
+ compareAtPrice: null,
  image: getProductImage(product.imageKey, IMG_W.CARD),
  category: product.category,
  inStock: product.inStock,

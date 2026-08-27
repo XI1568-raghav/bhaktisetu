@@ -11,7 +11,6 @@ import {
  ArrowLeft,
  Truck,
  Shield,
- Tag,
  LogIn,
 } from 'lucide-react';
 import { useCart } from '../../../components/CartContext';
@@ -120,16 +119,16 @@ export default function CartPage() {
  </button>
  </div>
 
- {/* Price */}
+ {/* Price — LEG-17: no struck-through `compareAtPrice`.
+     Carts persist in localStorage under poojly_cart (never
+     renamed), so a cart saved before this change still carries
+     the fabricated reference price. Not rendering it here is
+     what makes the fix retroactive; removing it at the source
+     alone would leave existing carts showing it. */}
  <div className="flex items-baseline gap-2 mt-2">
  <span className="text-lg font-bold text-surface-800">
  {formatPrice(item.product.price)}
  </span>
- {item.product.compareAtPrice && (
- <span className="text-sm text-surface-400 line-through">
- {formatPrice(item.product.compareAtPrice)}
- </span>
- )}
  </div>
 
  {/* Quantity & subtotal */}
@@ -218,21 +217,11 @@ export default function CartPage() {
  <span className="font-bold text-surface-800 text-xl">{formatPrice(total)}</span>
  </div>
 
- {/* Savings */}
- {items.some((i) => i.product.compareAtPrice) && (
- <div className="flex items-center gap-2 bg-tulsi-green-light/20 text-tulsi-green text-xs font-semibold px-3 py-2 rounded-lg">
- <Tag className="w-4 h-4" />
- You are saving{' '}
- {formatPrice(
- items.reduce(
- (sum, i) =>
- sum + ((i.product.compareAtPrice ?? i.product.price) - i.product.price) * i.quantity,
- 0
- )
- )}{' '}
- on this order!
- </div>
- )}
+ {/* LEG-17: a "You are saving ₹X on this order!" banner used to sum
+     `compareAtPrice - price` across the cart. Every rupee of that
+     figure came from a fabricated reference price, so the banner
+     quantified a saving that no buyer ever received. Restore it only
+     when a dated prior-price record backs the comparison. */}
  </div>
 
  {/* Actions */}

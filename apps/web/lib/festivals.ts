@@ -1197,8 +1197,18 @@ export function nextFestival(today: Date = new Date()): FestivalInfo | undefined
  * so several entries name the right ritual with the wrong slug. These are the
  * cases where the festival slug and a catalogue slug denote the SAME ritual —
  * nothing here maps one ritual onto a different one. Everything not listed
- * (durga-puja, kali-puja, chandi-homam, …) names a puja the platform genuinely
- * does not sell, and is dropped rather than redirected somewhere plausible.
+ * (kali-homam, chandi-homam, …) names a puja the platform genuinely does not
+ * sell, and is dropped rather than redirected somewhere plausible.
+ *
+ * 2026-08-24: the catalogue gained `durga-puja` and `surya-puja`, so the two
+ * they unblock moved OUT of the dropped set and INTO the table below. Before
+ * that, the festival literally named "Durga Puja" (2026-10-19 — measured as the
+ * highest-intent day in the 90-day window) resolved to nothing at all, because
+ * its `pujasAvailable` is ['durga-saptashati-path', 'chandi-homam'].
+ *
+ * `chandi-homam` stays dropped on purpose. A homam is a fire offering, not a
+ * recitation; folding it into the Saptashati path would be exactly the
+ * one-ritual-onto-another mapping this table forbids.
  */
 const PUJA_SLUG_ALIASES: Record<string, string> = {
   // Satyanarayan Katha is the Satyanarayan puja; 26 festival rows use one of
@@ -1227,6 +1237,21 @@ const PUJA_SLUG_ALIASES: Record<string, string> = {
   'shiva-abhishekam': 'rudrabhishek',
   // Hanuman Chalisa Path.
   'hanuman-chalisa': 'hanuman-chalisa-path',
+  // Durga Saptashati IS the durga-puja SKU: that row's own description opens
+  // "Durga Saptashati — also called the Devi Mahatmya or Chandi Path"
+  // (apps/api/prisma/seed.ts:831). Same ritual, two spellings.
+  'durga-saptashati-path': 'durga-puja',
+  'durga-saptashati': 'durga-puja',
+  'devi-mahatmya-path': 'durga-puja',
+  // Chhath's arghya to Surya is the surya-puja SKU (seed.ts:853).
+  'chhath-puja': 'surya-puja',
+  'surya-arghya': 'surya-puja',
+  // Pitru/Pitra Paksha shraadh resolves to the nivaran puja the catalogue
+  // sells. Pitru Paksha is the year's highest-intent shraadh window and it
+  // resolved to nothing until this row existed.
+  'pitru-paksha-shraadh': 'pitru-dosh-nivaran-puja',
+  'pitra-paksha-shraadh': 'pitru-dosh-nivaran-puja',
+  'pitru-paksha': 'pitru-dosh-nivaran-puja',
 };
 
 /**

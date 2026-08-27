@@ -737,8 +737,8 @@
   "workflow": "launch-readiness-delta",
   "line": 329,
   "title": "Paid plans sell a commission discount that is implemented nowhere — ₹4,999/mo buys nothing",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "Owner decides: implement the tier→commission override in apps/api/src/lib/commission-math.ts and have all five Commission writers resolve through it ("
  },
  {
@@ -793,8 +793,8 @@
   "workflow": "launch-readiness-delta",
   "line": 353,
   "title": "NRI Premium ₹5,000/year sells at least two benefits that do not exist",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "Two reasons. (1) Lane: the feature list is server data in apps/api, explicitly DO-NOT-TOUCH for this cluster, and it is what /pricing renders verbatim"
  },
  {
@@ -863,8 +863,8 @@
   "workflow": "launch-readiness-delta",
   "line": 383,
   "title": "Senior astrologers are priced 2-4x below the market ceiling, capping the highest-margin repeat revenue line",
-  "state": "fixed",
-  "commit": "wave-triage26-2026-08-24",
+  "state": "open",
+  "commit": "wave-triage26-final",
   "note": ""
  },
  {
@@ -1591,8 +1591,8 @@
   "workflow": "authenticated-deep",
   "line": 786,
   "title": "The unified provider payouts page is unreachable from the pandit portal",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "Which payout rail is canonical for pandits. The two rails are deliberately mutually exclusive and picking one moves real money, so per instruction I did not gue"
  },
  {
@@ -2571,8 +2571,8 @@
   "workflow": "authenticated-deep",
   "line": 1489,
   "title": "API GET /admin/users silently ignores the status filter, and applies the role filter after pagination",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-final",
   "note": "apps/api/** is on this cluster's explicit DO-NOT-TOUCH list (another agent owns it this wave). No API edit made. Note the fix is a pure service-layer "
  },
  {
@@ -3173,8 +3173,8 @@
   "workflow": "authenticated-deep",
   "line": 1931,
   "title": "Cancellation and refund confirmations never state the amount, and the refund dialog promises the full payment back",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "Two blockers. (1) Lane: apps/web/app/bookings/view/page.tsx is not a legal or policy page and is not in my edit list; the devotee-booking ar"
  },
  {
@@ -3313,8 +3313,8 @@
   "workflow": "authenticated-deep",
   "line": 2035,
   "title": "Store runs a permanently-live 'Akshaya Tritiya Sale — offer valid till April 30' with struck-through MRPs, four months after that date",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "Two blocks. (1) LANE: the render sites are apps/web/app/store/** and the data is apps/web/lib/products.ts, feeding lib/store-pricing.ts — app/store/**"
  },
  {
@@ -3537,8 +3537,8 @@
   "workflow": "authenticated-deep",
   "line": 2199,
   "title": "Website muhurat finder sends no Authorization header — it 401s for every visitor, while the mobile version works",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "Both files are in DO-NOT-TOUCH lanes (apps/web and apps/api) with other agents editing them. The fix is one of two one-liners and needs an o"
  },
  {
@@ -4055,8 +4055,8 @@
   "workflow": "scale-mindset",
   "line": 3097,
   "title": "Admin user list filters by role in JavaScript after pagination, and searches with an unindexed ILIKE",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-final",
   "note": "The ILIKE half needs a Prisma migration: CREATE EXTENSION pg_trgm plus GIN trigram indexes on users(full_name) and users(email). apps/api/prisma/** is off-limit"
  },
  {
@@ -4853,8 +4853,8 @@
   "workflow": "scale-mindset",
   "line": 3447,
   "title": "\"Set reminder\" bell on the darshan schedule writes to localStorage and nothing else",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "apps/web/components is outside this lane. Closing it also needs an API decision that is not free: either a DarshanReminder table (which means a Prisma migration"
  },
  {
@@ -4993,8 +4993,8 @@
   "workflow": "scale-mindset",
   "line": 3509,
   "title": "Raw developer error text is rendered to users; the friendly-error helper exists but is wired into only 2 surfaces",
-  "state": "fixed",
-  "commit": "wave-triage26-2026-08-24",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "apps/web/app is outside this lane. lib/friendly-error.ts already exists and is tested; this is a call-site change on that page plus suppressing the empty-state "
  },
  {
@@ -5049,8 +5049,8 @@
   "workflow": "scale-mindset",
   "line": 3533,
   "title": "Offline fallback is inconsistent across routes, and nothing recovers when the connection returns",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-final",
   "note": "apps/web/public/sw.js and the root layout are outside this lane. Two independent pieces: an 'online' listener that calls router.refresh()/location.reload() plus"
  },
  {

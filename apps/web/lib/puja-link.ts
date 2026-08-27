@@ -38,6 +38,9 @@ import { resolveBookablePujas } from './festivals';
  *   wednesday-ganesh-puja
  *   pitra-dosh-shanti        "shanti" and "nivaran" are the same remedy; the
  *                              festival table already maps two other spellings
+ *   pitru-paksha-shraadh     the Pitru Paksha shraadh, named for the fortnight
+ *                              it is performed in (same shape as the Lakshmi
+ *                              and Ganesh rows above)
  */
 export const CONTENT_PUJA_SLUG_ALIASES: Readonly<Record<string, string>> = {
   'sundara-kanda-parayana': 'sunderkand-path',
@@ -47,6 +50,26 @@ export const CONTENT_PUJA_SLUG_ALIASES: Readonly<Record<string, string>> = {
   'ganesh-chaturthi-puja': 'ganesh-puja',
   'wednesday-ganesh-puja': 'ganesh-puja',
   'pitra-dosh-shanti': 'pitru-dosh-nivaran-puja',
+  // The one spelling lib/festivals.ts uses for the shraadh itself
+  // (festivals.ts:418, the `pitru-paksha` row). Pitru Paksha is the year's
+  // highest-intent shraadh window and pitru-dosh-nivaran-puja is the SKU sold
+  // for it, so without this row that entire fortnight resolved to nothing
+  // bookable on every surface that goes through resolveContentPujas.
+  //
+  // `pitru-paksha-shraadh` deliberately does NOT live here. It is produced only
+  // by festivals.ts (the `pitru-paksha` row's pujasAvailable), and every
+  // consumer of that field routes through resolveBookablePujas, which owns its
+  // own alias table. A copy here would never fire, and would be exactly the
+  // second-copy drift the header above forbids. It is registered in
+  // festivals.ts PUJA_SLUG_ALIASES instead, where it actually resolves.
+  //
+  // Still deliberately NOT aliased anywhere, both named on neighbouring
+  // festival rows:
+  //   tripindi-shraddha  (festivals.ts) a distinct, venue-qualified rite
+  //                        performed at Trimbakeshwar/Gaya — the same class of
+  //                        qualifier this table refuses to upgrade elsewhere.
+  //   pitru-tarpana      (festivals.ts) the water/til offering, a component
+  //                        rite, not this puja.
 };
 
 /** Where a page sends a devotee when nothing in its editorial list resolves. */

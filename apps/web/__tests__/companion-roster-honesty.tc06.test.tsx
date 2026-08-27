@@ -18,10 +18,20 @@
  * other end does not exist. Of every fabricated surface in this sweep this is
  * the one with a physical-safety consequence.
  *
- * The fixture rows are deliberately NOT deleted — `lib/yatra-data.ts` is shared
- * with the yatra packages and sacred sites, and `TravelCompanion` is the shape
- * a real roster will take. What these tests pin is that nothing PUBLISHES them:
- * both routes read `lib/companion-roster.ts`, which lists only people Darshya
+ * ── 2026-08-24: the fixtures were DELETED, and this file was repaired ──────
+ * This suite originally pinned a weaker fact — that the eight invented rows
+ * survived in `lib/yatra-data.ts` but nothing PUBLISHED them. The rows have
+ * since been removed outright, so `import { companions }` resolved to
+ * `undefined` and the whole file died at collection (`Cannot read properties
+ * of undefined (reading 'map')`), taking all 12 tests with it silently.
+ *
+ * The names are now pinned as literals below rather than derived from the
+ * fixture, which makes the assertion STRONGER: the old form could only prove
+ * "these rows are not published", and would have passed vacuously the moment
+ * the fixture emptied. The literal form proves "these people appear nowhere",
+ * and cannot be satisfied by deleting the thing it reads.
+ *
+ * Both routes read `lib/companion-roster.ts`, which lists only people Darshya
  * has actually signed and vetted.
  */
 
@@ -30,7 +40,6 @@ import { render } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { companions } from '../lib/yatra-data';
 import { publishedCompanions, getPublishedCompanionById } from '../lib/companion-roster';
 
 const notFound = vi.fn(() => {
@@ -57,11 +66,38 @@ const read = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8'
 const stripComments = (src: string) =>
   src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
-/** The eight invented people, read from the fixture so the list cannot drift. */
-const FIXTURE_IDS = companions.map((c) => c.id);
-const FIXTURE_NAMES = companions.map((c) => c.name);
-/** The sixteen invented people who "reviewed" them. */
-const FIXTURE_REVIEW_AUTHORS = companions.flatMap((c) => c.reviews.map((r) => r.author));
+// Pinned as literals, NOT derived from the fixture — see the header. These are
+// the eight people TC-06 found being sold as elderly-care escorts, and the ids
+// `/yatra/companion/[id]` used to pre-render a bookable profile for each.
+const FIXTURE_NAMES = [
+  'Rajesh Kumar', 'Priya Sharma', 'Mohammed Aslam', 'Lakshmi Iyer',
+  'Vikram Nayar', 'Anita Deshmukh', 'Suresh Nair', 'Meena Agarwal',
+];
+const FIXTURE_IDS = [
+  'rajesh-kumar', 'priya-sharma', 'mohammed-aslam', 'lakshmi-iyer',
+  'vikram-nayar', 'anita-deshmukh', 'suresh-nair', 'meena-agarwal',
+];
+
+/** The sixteen invented people who "reviewed" the eight above. Literals for
+ *  the same reason as FIXTURE_NAMES — recovered from ba7dbb0b. */
+const FIXTURE_REVIEW_AUTHORS = [
+  'Seema Gupta, Delhi',
+  'Anil Desai, Mumbai',
+  'Kamla Devi, Kanpur',
+  'Veena Iyer, Chennai',
+  'Gaurav Mehta, Delhi',
+  'Pankaj Sharma, Jammu',
+  'Nirmal Saxena, Lucknow',
+  'Shanti Bhatia, Delhi',
+  'Neeta Agarwal, Delhi',
+  'Hari Chand, Hyderabad',
+  'Prema Kulkarni, Bhopal',
+  'Ram Lal, Jodhpur',
+  'Murali Krishnan, Chennai',
+  'Rani Pillai, Mumbai',
+  'Vijay Singh, Bhopal',
+  'Sushma Jain, Indore',
+];
 
 function bodyText(): string {
   return (document.body.textContent ?? '').replace(/\s+/g, ' ');
@@ -71,11 +107,14 @@ function hrefs(): string[] {
   return Array.from(document.querySelectorAll('a')).map((a) => a.getAttribute('href') ?? '');
 }
 
-describe('TC-06 — the fixture roster is still there, and nothing publishes it', () => {
-  it('the fixture the bug lived in is intact, so this test is testing a gate and not a deletion', () => {
+describe('TC-06 — the invented roster is gone, and nothing publishes it', () => {
+  it('every invented person is gone from the module they lived in', () => {
     expect(FIXTURE_IDS.length).toBeGreaterThanOrEqual(8);
     expect(FIXTURE_NAMES).toContain('Rajesh Kumar');
-    expect(FIXTURE_REVIEW_AUTHORS.length).toBeGreaterThanOrEqual(16);
+    // ...and none of them survives in the data module they were deleted from.
+    const src = stripComments(read('lib/yatra-data.ts'));
+    for (const name of FIXTURE_NAMES) expect(src).not.toContain(name);
+    expect(src).not.toMatch(/export const companions/);
   });
 
   it('publishes nobody from the invented fixture', () => {

@@ -10,12 +10,14 @@
  *
  * Two API behaviours this module exists to work around, both load-bearing:
  *
- * 1. `limit` DEFAULTS TO 20 (admin.service.getUsers). `getUsers(token)` with no
- *    params therefore returned 20 of 23 users and the page counted, filtered
- *    and paginated that array — AO-07. `fetchAllAdminUsers` walks pages until
- *    the server's own `total` is satisfied and reports `complete: false` when
- *    it had to stop, so a partial directory is never presented as the whole
- *    one.
+ * 1. `limit` DEFAULTS TO 20 AND IS CAPPED AT 100 (admin.service.getUsers, via
+ *    `clampLimit(value, 20, 100)`). `getUsers(token)` with no params therefore
+ *    returned 20 of 23 users and the page counted, filtered and paginated that
+ *    array — AO-07. `fetchAllAdminUsers` walks pages until the server's own
+ *    `total` is satisfied and reports `complete: false` when it had to stop,
+ *    so a partial directory is never presented as the whole one. The CAP is
+ *    the half that bit later: the walk asked for 200, and every response it
+ *    could ever get looked "short" — see PAGE_SIZE below.
  *
  * 2. The `role` and `status` query params were both broken on the server, so
  *    this module fetched everything and the page filtered locally. BOTH ARE
@@ -98,9 +100,26 @@ export class AdminUserNotFoundError extends Error {
   }
 }
 
-const PAGE_SIZE = 200;
-/** 20 x 200 = 4,000 users before the directory admits it is partial. */
-const MAX_PAGES = 20;
+/**
+ * The page size asked for, and it is the SERVER'S cap on purpose.
+ *
+ * This was 200 until 2026-08-27, and the API clamps `limit` to
+ * `clampLimit(value, 20, 100)` (apps/api/src/lib/pagination.ts), so page 1 came
+ * back with 100 rows. The walk below then compared that 100 against the 200 it
+ * had REQUESTED, read the short page as "the server has nothing more", and
+ * stopped — with `complete: true`. The directory silently ended at the
+ * hundredth account: the table filtered 100 rows, the footer went on showing
+ * the server's real `total` beside them, and the "list is incomplete" banner
+ * never rendered because nothing believed the list was incomplete. That is
+ * SCAL-09's lying number rebuilt on the client by the fix for it.
+ *
+ * Asking for exactly what the server will give makes the request honest, and
+ * the termination test below no longer depends on this constant agreeing with
+ * the API at all.
+ */
+const PAGE_SIZE = 100;
+/** 40 x 100 = 4,000 users before the directory admits it is partial. */
+const MAX_PAGES = 40;
 
 function authHeaders(token: string | undefined): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -155,7 +174,7 @@ export async function fetchAllAdminUsers(
       const res = await fetchWithTimeout(`${API_BASE_URL}/admin/users?${qs.toString()}`, {
         headers: authHeaders(token),
       });
-      const body = await asJson<{ users?: AdminUserRecord[]; total?: number }>(
+      const body = await asJson<{ users?: AdminUserRecord[]; total?: number; limit?: number }>(
         res,
         'Failed to load users',
       );
@@ -163,8 +182,17 @@ export async function fetchAllAdminUsers(
       users.push(...batch);
       if (typeof body.total === 'number') total = body.total;
 
+      // The page size the SERVER used, which is not necessarily the one we
+      // asked for — `getUsers` clamps `limit` and echoes the clamped value
+      // back. Measuring "short page" against the requested size is what
+      // truncated this directory at 100 rows while calling it complete; a
+      // short page is only evidence the directory ended when it is short
+      // against the size the server actually served.
+      const servedLimit =
+        typeof body.limit === 'number' && body.limit > 0 ? body.limit : PAGE_SIZE;
+
       // A short page means the server has nothing more, whatever `total` says.
-      if (batch.length < PAGE_SIZE || users.length >= total) {
+      if (batch.length < servedLimit || users.length >= total) {
         complete = true;
         break;
       }

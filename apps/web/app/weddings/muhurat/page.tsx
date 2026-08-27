@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { DateInput } from '../../../components/ui/DateInput';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { useAuth } from '../../../lib/auth-context';
 
 const NAKSHATRAS = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
@@ -38,7 +39,10 @@ function apiBase(): string {
   return raw.endsWith('/api/v1') ? raw : `${raw.replace(/\/$/, '')}/api/v1`;
 }
 
+const LOGIN_HREF = `/auth/login?redirect=${encodeURIComponent('/weddings/muhurat')}`;
+
 export default function MuhuratPage() {
+  const { session } = useAuth();
   const [form, setForm] = useState({
     brideDob: '',
     brideTob: '06:30',
@@ -53,14 +57,41 @@ export default function MuhuratPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MuhuratResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // PAR-14: an error that can only be cleared by signing in needs a door, not
+  // just a sentence. Tracked separately so the alert can render the link.
+  const [needsSignIn, setNeedsSignIn] = useState(false);
 
   function update<K extends keyof typeof form>(k: K, v: string) {
     setForm((s) => ({ ...s, [k]: v }));
   }
 
+  /*
+   * PAR-14: this handler used to POST with `headers: {'content-type': ...}`
+   * and nothing else. POST /weddings/muhurat is registered behind
+   * `preHandler: [authenticateUser]` (apps/api/src/routes/weddings.ts), so
+   * every web visitor got 401 — signed in or not — and the catch below
+   * rendered the literal string "Request failed: 401". The mobile client
+   * always sent the token, which is why the same feature worked there.
+   *
+   * Two things are fixed: the token is attached when we have one, and a
+   * visitor without one is no longer fired at an authenticated endpoint just
+   * to be told a status code. See the note by LOGIN_HREF above — whether this
+   * endpoint should be public at all is an API-side decision (the wedding
+   * inquiry auto-reply emails this page's URL to signed-out prospects), and
+   * that lives in apps/api/src/routes/weddings.ts, not here.
+   */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNeedsSignIn(false);
+
+    const token = session?.accessToken;
+    if (!token) {
+      setNeedsSignIn(true);
+      setError('Sign in to compute your muhurat dates.');
+      return;
+    }
+
     setLoading(true);
     try {
       const body: Record<string, unknown> = { ...form };
@@ -68,14 +99,32 @@ export default function MuhuratPage() {
       if (!body.groomNakshatra) delete body.groomNakshatra;
       const res = await fetch(`${apiBase()}/weddings/muhurat`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          setNeedsSignIn(true);
+          setError('Your session has expired. Sign in again to compute your muhurat dates.');
+          return;
+        }
+        const detail = await res.json().catch(() => ({} as Record<string, unknown>));
+        const message =
+          typeof (detail as { message?: unknown }).message === 'string'
+            ? (detail as { message: string }).message
+            : typeof (detail as { error?: unknown }).error === 'string'
+              ? (detail as { error: string }).error
+              : 'We could not compute your muhurat dates just now. Please try again.';
+        setError(message);
+        return;
+      }
       const data: MuhuratResponse = await res.json();
       setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } catch {
+      setError('We could not reach the muhurat service. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -209,8 +258,19 @@ export default function MuhuratPage() {
         </form>
 
         {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+          <div
+            role="alert"
+            className="mt-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg"
+          >
             {error}
+            {needsSignIn && (
+              <>
+                {' '}
+                <Link href={LOGIN_HREF} className="font-semibold underline underline-offset-2">
+                  Sign in
+                </Link>
+              </>
+            )}
           </div>
         )}
 

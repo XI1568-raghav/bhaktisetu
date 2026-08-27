@@ -751,8 +751,22 @@ function PujaBookingInner() {
  let cancelled = false;
  (async () => {
  try {
+ // days=30 is the picker's own ceiling, not a guess: `bookingWindowMax`
+ // above is getMaxDate() = istDatePlusDays(30), and that is what DateInput
+ // receives as `max`, so nothing past today+30 is selectable.
+ //
+ // The horizon used to be 60, and that was actively worse rather than
+ // merely wasteful. The endpoint does NOT return a day-per-entry array: it
+ // scores every day in the horizon and returns only the TOP FIVE
+ // (apps/api/src/lib/puja-muhurat.ts:246 `findPujaMuhurats(…, topN = 5)`,
+ // called with 5 at apps/api/src/services/panchang.service.ts:750). Over a
+ // 60-day horizon all five winners can fall in days 31-60 — beyond `max` —
+ // and then `muhuratMarkers`, `avoidDates` and `selectedDayMuhurat` are all
+ // keyed on dates the devotee can never pick and the whole shubh-window
+ // layer renders as nothing. Halving the horizon to the selectable window
+ // also halves the server-side computePanchang loop (30 days instead of 60).
  const res = await fetch(
- `${API_BASE_URL}/panchang/puja-muhurat?pujaType=${pujaType}&days=60`,
+ `${API_BASE_URL}/panchang/puja-muhurat?pujaType=${pujaType}&days=30`,
  );
  if (!res.ok) throw new Error('muhurat unavailable');
  const data = await res.json();

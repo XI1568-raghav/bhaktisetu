@@ -72,7 +72,13 @@ export default async function SellerProductPage({ params }: { params: Promise<Pa
     handle: product.handle,
     title: product.title,
     price: product.price,
-    compareAtPrice: product.compareAtPrice ?? product.price,
+    // LEG-17: was `product.compareAtPrice ?? product.price`. A seller who
+    // listed no reference price got one MANUFACTURED equal to their price on
+    // the way into the cart, and the cart then struck it through — "₹499
+    // ~~₹499~~". getLiveProduct already returns null unless the seller's own
+    // compareAtPrice is strictly greater than the price, so pass it through
+    // and let null stay null.
+    compareAtPrice: product.compareAtPrice,
     image: product.imageUrl ?? '',
     category: product.category,
     inStock: product.stock > 0,

@@ -332,8 +332,14 @@ function getFestivalsForDate(date: Date): { festivals: string[]; vrat: string[];
 
 /**
  * Get special vrat info based on tithi.
+ *
+ * `sunset` is threaded in only for Pradosh: unlike every other vrat here,
+ * Pradosh is defined by a window rather than by the whole solar day, and that
+ * window is anchored to sunset. Passing the already-computed city sunset keeps
+ * the number derived from the same CITY_TIMES table Rahu Kaal uses, instead of
+ * restating a clock time as a literal in prose.
  */
-function getVratFromTithi(tithiName: string, dayOfWeek: number): { vrat: string[]; info: string | null } {
+function getVratFromTithi(tithiName: string, dayOfWeek: number, sunset: string): { vrat: string[]; info: string | null } {
   const vrats: string[] = [];
   let info: string | null = null;
 
@@ -355,7 +361,39 @@ function getVratFromTithi(tithiName: string, dayOfWeek: number): { vrat: string[
     vrats.push('Sankashti Chaturthi Vrat');
     info = 'Sankashti Chaturthi — fast for Lord Ganesha. Break fast after moonrise with modak offerings.';
   }
+  // Pradosh — trayodashi, the 13th tithi. It falls twice a lunar month (once
+  // per paksha), which is exactly why it has to be derived from the tithi index
+  // rather than listed: FESTIVALS_DB (line 157+) is a once-a-year table and
+  // could never carry a ~24x/year observance. This is the dated occasion the
+  // Shiva SKUs hang off outside Maha Shivaratri.
+  if (tithiName.includes('Trayodashi')) {
+    vrats.push('Pradosh Vrat');
+    const paksha = tithiName.includes('Shukla') ? 'Shukla' : 'Krishna';
+    // Only the START of the window is stated. The length of pradosh kaal
+    // differs between panchang traditions and nothing in this codebase
+    // computes it, so the copy drops the end time rather than inventing one.
+    info = (info ? info + ' ' : '') +
+      `Pradosh Vrat — ${paksha} Trayodashi, fast for Lord Shiva. Puja is performed in the pradosh kaal, the evening window opening at sunset (${sunset}).`;
+  }
   if (dayOfWeek === 1) { // Monday
+    // Somvar — Monday is Shiva's weekday, and a Monday fast is a vrat in its
+    // own right, not merely a favourable day. Promoting it into vrat[] (the
+    // info sentence below already existed) is what puts it into
+    // GET /panchang/vrats, adding ~4 dated Shiva occasions a month.
+    //
+    // KNOWN GAP: Shravan Somvar — the Mondays of the lunar month Shravana,
+    // the highest-intent Shiva Mondays of the year — is NOT emitted. Naming
+    // it requires the lunar masa, and masa is computed nowhere in this repo:
+    // computePanchang resolves tithi/nakshatra/yoga/karana only (line 416-419)
+    // and lib/muhurat.ts exports no masa helper. Inferring Shravana from the
+    // Gregorian month would be wrong roughly half the time, so plain Somvar is
+    // emitted until a real masa calculation exists.
+    vrats.push('Somvar Vrat');
+    if (tithiName.includes('Trayodashi')) {
+      // Som Pradosh: the two coincide. Worth naming because the overlap is the
+      // strongest single Shiva signal the calendar produces.
+      info = (info ? info + ' ' : '') + 'Som Pradosh — Pradosh falling on a Monday, doubly auspicious for Shiva worship.';
+    }
     info = (info ? info + ' ' : '') + 'Monday — Lord Shiva\'s day. Shiva puja and Rudrabhishek recommended.';
   }
   if (dayOfWeek === 2) { // Tuesday
@@ -395,7 +433,7 @@ export function computePanchang(date: Date, city: string = 'Delhi') {
 
   // Festival lookup
   const festivalInfo = getFestivalsForDate(date);
-  const vratInfo = getVratFromTithi(tithiName, dayOfWeek);
+  const vratInfo = getVratFromTithi(tithiName, dayOfWeek, sunTimes.sunset);
 
   // Merge vrat info
   const allVrat = [...new Set([...festivalInfo.vrat, ...vratInfo.vrat])];

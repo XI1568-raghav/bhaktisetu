@@ -1,8 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
 
+/*
+ * NOTIF-15 — this control used to be a bell that announced "Reminder set for
+ * <slot>". It never set one. All it does, and all it has ever done, is push an
+ * id into the localStorage array below: no API call, no push subscription, no
+ * scheduled row. The server side needed to deliver one does exist in part
+ * (PushSubscription, lib/fcm.ts, the master-cron notification pipeline), but
+ * there is no DarshanReminder model and no endpoint to write to, so nothing
+ * downstream could ever fire.
+ *
+ * The wording and the icon now describe the real behaviour — a device-local
+ * bookmark. The storage key is unchanged on purpose: renaming a poojly_* key
+ * would silently drop every slot devotees have already saved.
+ */
 const REMINDERS_KEY = 'poojly_darshan_reminders';
 
 function readReminders(): string[] {
@@ -52,7 +65,11 @@ export default function DarshanScheduleRemindButton({
    : [...current, reminderId];
   writeReminders(next);
   setReminded(next.includes(reminderId));
-  setToast(next.includes(reminderId) ? `Reminder set for ${label}` : `Reminder cleared for ${label}`);
+  setToast(
+   next.includes(reminderId)
+    ? `Saved ${label} on this device`
+    : `Removed ${label} from your saved slots`,
+  );
  }
 
  return (
@@ -61,12 +78,15 @@ export default function DarshanScheduleRemindButton({
     type="button"
     onClick={toggle}
     aria-pressed={reminded}
-    aria-label={reminded ? `Cancel reminder for ${label}` : `Set reminder for ${label}`}
+    aria-label={
+     reminded ? `Remove ${label} from your saved slots` : `Save ${label} on this device`
+    }
+    title="Saved on this device. Darshya does not send a notification for this yet."
     className={`transition-colors ${
      reminded ? 'text-saffron-600 hover:text-saffron-700' : 'text-surface-600 hover:text-surface-400'
     }`}
    >
-    <Bell className={`w-4 h-4 ${reminded ? 'fill-saffron-500' : ''}`} />
+    <Bookmark className={`w-4 h-4 ${reminded ? 'fill-saffron-500' : ''}`} />
    </button>
    {toast && (
     <div

@@ -803,6 +803,66 @@ const pujaTypesData = [
     videoProofMandatory: true,
     sortOrder: 10,
   },
+  // ── Rows 11-12: the peak-window inventory gap (measured 2026-08-24) ──
+  //
+  // Over 2026-08-24 → 2026-11-22 the editorial calendar (apps/web/lib/festivals.ts)
+  // carries 22 dated festivals. Nine of them resolved to NO bookable puja at
+  // all, and the three largest commerce days in that window were among them:
+  // Sharad Navaratri (2026-10-12), Durga Puja (2026-10-19) and Chhath
+  // (2026-11-15). `resolveBookablePujas` matches a festival's `pujasAvailable`
+  // against live catalogue slugs EXACTLY and drops anything unmatched rather
+  // than redirecting a devotee to a different ritual — so a missing SKU does
+  // not degrade the festival page, it blanks the CTA entirely.
+  //
+  // These two rows are seeded under the literal slugs the calendar already
+  // names — `durga-puja` (Navaratri + Dussehra) and `surya-puja` (Chhath) — so
+  // no alias entry is needed for them to resolve.
+  //
+  // `images: []` is deliberate, not a TODO. The rule set at the top of this
+  // array is that every URL here returned HTTP 200 when it was authored; no
+  // Commons asset could be verified for these two at authoring time, and an
+  // unverified URL is a broken image on a storefront. `apps/web/app/pujas/
+  // [slug]/page.tsx:174` already guards `images.length > 0`, so an empty array
+  // renders the text-only layout instead of a dead <Image>.
+  {
+    name: 'Durga Puja',
+    nameLocal: 'दुर्गा पूजा',
+    slug: 'durga-puja',
+    description: 'Durga Saptashati — also called the Devi Mahatmya or Chandi Path — is the 700-verse hymn to the Goddess that forms chapters 81 to 93 of the Markandeya Purana, and is the principal liturgical text of both Sharad Navaratri and Durga Puja. Its thirteen adhyayas are grouped into three charitas, each with its own presiding form of Devi: the Prathama Charita (chapter 1, the slaying of Madhu and Kaitabha, presided by Mahakali), the Madhyama Charita (chapters 2-4, the slaying of Mahishasura, presided by Mahalakshmi), and the Uttama Charita (chapters 5-13, the slaying of Shumbha and Nishumbha, presided by Mahasaraswati). A complete parayan is preceded by the three angas — Devi Kavacha, Argala Stotram and Keelakam — without which the recitation is traditionally held to be incomplete. Across Navaratri the nine forms of Nava Durga are invoked one per tithi — Shailaputri, Brahmacharini, Chandraghanta, Kushmanda, Skandamata, Katyayani, Kalaratri, Mahagauri and Siddhidatri — beginning with Ghatasthapana on Ashwin Shukla Pratipada, when barley is sown in earth beside the kalash. The most charged window of the year is the Sandhi Puja, the forty-eight minutes spanning the closing quarter-hour-and-a-half of Ashtami and the opening of Navami, when 108 earthen lamps and 108 lotuses are offered together. Devotees undertake this path for Sharad Navaratri, Durga Puja, Dussehra, Chaitra Navaratri, and on the Ashtami tithi of any month — for protection from adversaries, relief from bhaya and abhichara, courage in litigation and long disputes, and the removal of graha-pida. The booking covers Kavacha-Argala-Keelaka, the full Saptashati parayan with sankalp in your name and gotra, Kumari pujan where the host temple permits it, aarti, and a tamper-proof video of the entire recitation.',
+    // First row to carry the `festival` member of PujaCategory
+    // (schema.prisma:83-91). The member has existed since the enum was written
+    // and apps/api/src/lib/astro-mappings.ts:157 already recommends against it,
+    // but no seeded row had ever used it — which is part of why the dated
+    // calendar had nothing to sell. `pujaCategoryLabel` (apps/web/lib/
+    // puja-labels.ts) has no entry for it and title-cases to "Festival", so no
+    // underscore or raw enum reaches a storefront.
+    category: 'festival' as const,
+    deity: 'Goddess Durga (Chandi)',
+    durationMinutes: 180,
+    basePrice: 2201,
+    nriPrice: 19999,
+    samagriIncluded: true,
+    samagriItems: ['Red hibiscus (japa pushpa) — 108 blooms', 'Red chunari with gota border', 'Sindoor for Sindoor Khela', 'Durga Saptashati (Gita Press edition)', 'Bel patra and Aparajita flowers', 'Barley seed (jau) for Ghatasthapana sowing', 'Earthen kalash with mango leaves and coconut', 'Cow ghee for the 108 Sandhi Puja lamps', 'Kumkum, roli, akshat, kalava', 'Batasha, khoya peda and panchamrit', 'Camphor and dhoop', 'Red asana cloth'],
+    images: [],
+    videoProofMandatory: true,
+    sortOrder: 11,
+  },
+  {
+    name: 'Surya Puja',
+    nameLocal: 'सूर्य पूजा',
+    slug: 'surya-puja',
+    description: 'Surya Puja is the offering of arghya to the Sun — the one deity of the Hindu pantheon visible to the eye — performed with the Aditya Hridayam, the hymn Sage Agastya taught Rama on the battlefield before the final encounter with Ravana (Valmiki Ramayana, Yuddha Kanda). The ritual opens with twelve rounds of Surya Namaskar recited against the twelve names of the Sun — Mitra, Ravi, Surya, Bhanu, Khaga, Pushan, Hiranyagarbha, Marichi, Aditya, Savitr, Arka and Bhaskara — followed by 108 chants of the Gayatri Mantra, which is itself addressed to Savitr (Rigveda 3.62.10), and arghya poured from a copper vessel with red flowers and akshat while facing the rising disc. The great occasion for this puja is Chhath, the four-day Kartik vrat of Bihar, Jharkhand and eastern Uttar Pradesh — Nahay Khay, Kharna, Sandhya Arghya at sunset, and Usha Arghya at sunrise — in which the vratin keeps a thirty-six-hour nirjala fast and offers thekua, sugarcane and seasonal fruit from a bamboo soop while standing waist-deep in the river. Chhath is the one major Hindu vrat with no priest and no idol: the devotee offers directly to Surya and to Chhathi Maiya, the goddess Usha. Beyond Chhath, Surya Puja is performed on Ratha Saptami, Makar Sankranti, and every Sunday, and is the prescribed shanti for a weak or afflicted Sun in the natal chart — recommended for disorders of the eyes, bones and heart, for pitru-sthana affliction in the ninth house, and for matters requiring the favour of government or authority. The booking includes Aditya Hridayam parayan, the twelve-name Surya Namaskar, 108 Gayatri chants, arghya offered at the prescribed hour, prasad, and certified HD video.',
+    category: 'festival' as const,
+    deity: 'Surya Dev (Chhathi Maiya)',
+    durationMinutes: 90,
+    basePrice: 1051,
+    nriPrice: 9499,
+    samagriIncluded: true,
+    samagriItems: ['Copper arghya vessel (tamba lota)', 'Red hibiscus and marigold flowers', 'Raw milk and Gangajal for arghya', 'Akshat and roli', 'Thekua (Chhath prasad)', 'Whole sugarcane sticks', 'Seasonal fruit — banana, coconut, singhara', 'Bamboo soop and daura', 'Red cloth and copper Surya yantra', 'Cow ghee diya and camphor', 'Aditya Hridayam printed copy'],
+    images: [],
+    videoProofMandatory: true,
+    sortOrder: 12,
+  },
 ];
 
 // ─── CONTENT DATA is imported from ./content-data.ts ─────────────────────────
@@ -1012,12 +1072,92 @@ async function main() {
 
   // ── 7. Temple-puja offerings ──
   console.log('📋 Upserting temple-puja offerings...');
+  // Deity-anchored inventory. Measured 2026-08-24: this map named 5 of the 20
+  // seeded temples, so 15 temple pages — Vaishno Devi, Shirdi, Badrinath,
+  // Meenakshi Amman, Dwarkadhish, ISKCON Bangalore, Dagdusheth and eight more —
+  // had zero bookable offerings. A temple page with nothing to book converts no
+  // amount of festival traffic.
+  //
+  // The rule for filling the gap is NOT "give every temple the whole
+  // catalogue". A Ganesha-only shrine listing a Chhath arghya, or a Gaudiya
+  // Vaishnava mandir listing a Rudrabhishek, tells a devotee in one glance that
+  // nobody behind this shopfront has been inside a mandir — which costs more
+  // trust than the missing row earned. Every pairing below is anchored in a
+  // shrine or observance that the temple's own seeded `deities` /
+  // `description` / `timingInfo` fields already attest to, and the WHY is
+  // recorded where the pairing is not self-evident from the presiding deity.
   const offeringPlan: Record<string, string[]> = {
-    'kashi-vishwanath-varanasi': ['rudrabhishek', 'maha-mrityunjay-jaap', 'navgraha-shanti-puja', 'sunderkand-path', 'hanuman-chalisa-path'],
+    // Shiva jyotirlinga on the Ganga ghats. Varanasi is named in the
+    // pitru-dosh SKU's own description as a recognised shraddh tirtha, and the
+    // ghats below the temple are the archetypal Chhath arghya site.
+    'kashi-vishwanath-varanasi': ['rudrabhishek', 'maha-mrityunjay-jaap', 'navgraha-shanti-puja', 'sunderkand-path', 'hanuman-chalisa-path', 'pitru-dosh-nivaran-puja', 'surya-puja'],
     'tirumala-tirupati': ['satyanarayan-katha', 'lakshmi-puja', 'ganesh-puja', 'ram-charit-manas-path', 'navgraha-shanti-puja'],
     'siddhivinayak-mumbai': ['ganesh-puja', 'lakshmi-puja', 'navgraha-shanti-puja', 'satyanarayan-katha', 'hanuman-chalisa-path'],
+    // Shiva jyotirlinga at the Triveni Sangam of Hiran, Kapila and Saraswati —
+    // the confluence is why this temple, not the deity, carries pitru rites.
     'somnath-gujarat': ['rudrabhishek', 'maha-mrityunjay-jaap', 'navgraha-shanti-puja', 'pitru-dosh-nivaran-puja', 'sunderkand-path'],
-    'jagannath-puri': ['satyanarayan-katha', 'sunderkand-path', 'ram-charit-manas-path', 'hanuman-chalisa-path', 'ganesh-puja'],
+    // Jagannath is worshipped in the Odia tradition as Surya-Narayan, and the
+    // Puri compound holds a Surya shrine — Chhath is observed on the Odisha
+    // coast as well as in Bihar.
+    'jagannath-puri': ['satyanarayan-katha', 'sunderkand-path', 'ram-charit-manas-path', 'hanuman-chalisa-path', 'ganesh-puja', 'surya-puja'],
+    // Swaminarayan mandir whose seeded `deities` are the five paired murtis.
+    // Lakshmi-Narayan carries the Vishnu rites; Sita-Ram carries the Manas
+    // path. Nothing Shaiva or Ganapatya is offered here despite the Shiv-
+    // Parvati murti — the sampradaya does not sell those as seva.
+    'akshardham-delhi': ['satyanarayan-katha', 'lakshmi-puja', 'ram-charit-manas-path'],
+    // Gaudiya Vaishnava. Satyanarayan on Purnima and the Lakshmi-Narasimha /
+    // Srinivasa Govinda shrines are the anchors; the Awadhi Ramcharitmanas is
+    // deliberately NOT listed — ISKCON's recitation canon is the Bhagavatam.
+    'iskcon-bangalore': ['satyanarayan-katha', 'lakshmi-puja'],
+    // Shiva temple whose consort shrine is Karpagambal (Parvati) — Navaratri
+    // at Kapaleeshwarar is an Ambal festival, which is what anchors the Devi
+    // path. Tamil Shaiva temples all carry a navagraha shrine.
+    'kapaleeshwarar-chennai': ['rudrabhishek', 'maha-mrityunjay-jaap', 'ganesh-puja', 'navgraha-shanti-puja', 'durga-puja'],
+    // Shakta. Bhavatarini Kali takes the Chandi path; the twelve Shiva temples
+    // along the riverfront take the abhishek; the Radha-Krishna temple in the
+    // same compound takes the Satyanarayan katha. Kolkata's Chhath is kept on
+    // this stretch of the Hooghly.
+    'dakshineswar-kolkata': ['durga-puja', 'rudrabhishek', 'satyanarayan-katha', 'surya-puja'],
+    'birla-mandir-hyderabad': ['satyanarayan-katha', 'lakshmi-puja', 'navgraha-shanti-puja'],
+    // Ganesha-only shrine — the same three as Siddhivinayak minus the navagraha
+    // and Hanuman rows, which have no shrine here to stand on.
+    'dagdusheth-pune': ['ganesh-puja', 'lakshmi-puja', 'satyanarayan-katha'],
+    // Seeded `deities` list Swaminarayan and Gunatitanand Swami and nothing
+    // else, so only the two Narayan-tradition rows qualify: the Satyanarayan
+    // vrat, and the Diwali Chopda Pujan that is a Lakshmi puja in all but name.
+    'akshardham-gandhinagar': ['satyanarayan-katha', 'lakshmi-puja'],
+    'govind-dev-ji-jaipur': ['satyanarayan-katha', 'lakshmi-puja', 'ram-charit-manas-path'],
+    // Shakta. The three pindis in the cave ARE Maha Kali, Maha Lakshmi and
+    // Maha Saraswati, which is why both the Devi path and the Lakshmi puja are
+    // anchored here rather than borrowed. Hanuman is on the yatra route itself
+    // — Banganga and the Langur Veer shrine.
+    'vaishno-devi-katra': ['durga-puja', 'lakshmi-puja', 'hanuman-chalisa-path'],
+    // Not a deity temple — the Sansthan's three principal festivals are
+    // Ramnavami, Guru Purnima and Vijayadashami, which is what anchors the
+    // Manas path; the Maruti mandir at Shirdi predates Baba. Satyanarayan puja
+    // is the standard household seva booked here.
+    'shirdi-sai-baba': ['satyanarayan-katha', 'ram-charit-manas-path', 'hanuman-chalisa-path'],
+    // The one temple where the Rama rows are not a stretch but the founding
+    // story: Rama installed this jyotirlinga, and Agni Theertham is where the
+    // tarpan is performed. Four of the four festival-dark SKUs land here.
+    'ramanathaswamy-rameshwaram': ['rudrabhishek', 'maha-mrityunjay-jaap', 'ram-charit-manas-path', 'sunderkand-path', 'pitru-dosh-nivaran-puja'],
+    // Shakta by tradition but a twin sanctum: Meenakshi is Parvati and
+    // Sundareshwarar is Shiva, so both the Devi path and the Shaiva rows are
+    // anchored in an actual sanctum rather than inferred from the tradition.
+    'meenakshi-madurai': ['durga-puja', 'rudrabhishek', 'maha-mrityunjay-jaap', 'navgraha-shanti-puja'],
+    // Krishna at Dwarka; Rukmini takes the Lakshmi puja, and the Dandi Hanuman
+    // shrine at Bet Dwarka takes the Chalisa.
+    'dwarkadhish-dwarka': ['satyanarayan-katha', 'lakshmi-puja', 'hanuman-chalisa-path'],
+    // Brahma Kapal, on the bank of the Alaknanda a short walk above the temple,
+    // is the pind-daan site that anchors the pitru row. Deliberately NO
+    // surya-puja: the seeded timingInfo says "Closed in winter (approx
+    // Nov-Apr)" and Chhath 2026 falls on 15 November — selling an arghya at a
+    // shut temple takes money for a ritual nobody can perform.
+    'badrinath-uttarakhand': ['satyanarayan-katha', 'lakshmi-puja', 'pitru-dosh-nivaran-puja'],
+    // The presiding deity is Harihara — literally Shiva and Vishnu in one
+    // linga, bathed as both — so the Shaiva rows and the Vishnu katha sit on
+    // the same murti. Parvati is a seeded deity here for the Devi path.
+    'lingaraj-bhubaneswar': ['rudrabhishek', 'maha-mrityunjay-jaap', 'satyanarayan-katha', 'durga-puja'],
   };
   const slots = ['06:00', '07:00', '08:00', '12:00', '13:00', '17:00', '18:00'];
   let offeringCount = 0;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { WifiOff, Home, Flame } from "lucide-react";
 import RefreshButton from "./refresh-button";
+import OnlineRecovery from "./online-recovery";
 import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
@@ -56,6 +57,13 @@ export default function OfflinePage() {
             Go home
           </Link>
         </div>
+
+        {/* RES-13: the shell used to be terminal — the service worker served it
+            on a failed navigation and nothing ever re-issued the request, so
+            the devotee sat here after the connection came back until they
+            reloaded by hand. This listens for the browser's `online` event and
+            reloads, which fetches the route still in the address bar. */}
+        <OnlineRecovery />
 
         <p className="text-xs text-surface-500 mt-8">
           Some pages may still load from your device&apos;s cache. Tap any

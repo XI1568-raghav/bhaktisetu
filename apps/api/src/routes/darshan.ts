@@ -8,6 +8,20 @@ import { authenticateUser } from '../middlewares/auth.js';
 // Channel IDs verified 2026-05-02 against https://www.youtube.com/feeds/videos.xml?channel_id=...
 // (200 = real channel; 404 = dead). Use only OFFICIAL temple/board YouTube channels.
 const TEMPLE_LIVE_STREAMS = [
+  // viewerCount / peakViewers are 0 ON PURPOSE, and must stay 0.
+  //
+  // These rows are the fallback served whenever no temple has
+  // liveDarshanEnabled, and :478 passes the value straight to the client —
+  // so this table, not the web fallback, is what a devotee normally sees.
+  // Until 2026-08-24 it carried invented figures (8450, 28300, 15600, 6200,
+  // 12450, 8760, 9400, 5800, 7300). Nothing ever produced them: the only real
+  // counter in this file is the `viewerCount: { increment: 1 }` on the join
+  // endpoint, which writes to liveDarshanStream rows and never touches these.
+  // The web client suppresses the badge entirely at 0 (DarshanBrowser.tsx,
+  // DarshanPlayer.tsx:225), which is the intended rendering: no count, no
+  // badge. Putting a number back here puts a lie on the flagship surface.
+  // Doctrine: apps/web/lib/platform-stats.ts:5-24.
+
   {
     id: 'live-somnath',
     templeSlug: 'somnath-gujarat',
@@ -17,8 +31,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UCT1egsvA08YcdMLiEu1DTRg', // Shree Somnath (official)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCT1egsvA08YcdMLiEu1DTRg&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1590077428593-a55bb07c4665?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 8450,
-    peakViewers: 15200,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: 'Live aarti & darshan',
   },
   {
@@ -30,8 +44,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UCS2Y83GD-fc7qqgNW5uj41g', // SVBC TTD (official)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCS2Y83GD-fc7qqgNW5uj41g&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 28300,
-    peakViewers: 52000,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: '24/7 Live (SVBC)',
   },
   {
@@ -43,8 +57,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UCYn6UEtQ771a_OWSiNBoG8w', // SGPC, Sri Amritsar (official)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCYn6UEtQ771a_OWSiNBoG8w&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1514222134-b57cbb8ce073?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 15600,
-    peakViewers: 32000,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: '24/7 Live Gurbani',
   },
   {
@@ -56,8 +70,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UCKGvJDh7g_Kzocbwy7aKicA', // Shree Saibaba Sansthan Trust (official)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCKGvJDh7g_Kzocbwy7aKicA&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 6200,
-    peakViewers: 18000,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: 'Kakad Aarti, Dhup Aarti, Shej Aarti',
   },
   {
@@ -69,8 +83,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UCdMj2twWfMHXrWgX5oVdoyA', // Shree Kashi Vishwanath Mandir Trust (official, embedded on shrikashivishwanath.org)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCdMj2twWfMHXrWgX5oVdoyA&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 12450,
-    peakViewers: 24000,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: 'Mangala Aarti, Shringar Aarti, Bhog Aarti',
   },
   {
@@ -82,8 +96,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UCF9FdiMBENIbM6jb44zWmCQ', // Shree Siddhivinayak Ganapati Temple Trust (official)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCF9FdiMBENIbM6jb44zWmCQ&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1604948501466-4e9c339b9c24?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 8760,
-    peakViewers: 14000,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: 'Kakad Aarti 5:30 AM, Madhyanh Aarti 12 PM',
   },
   {
@@ -95,8 +109,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UC7q12ONY2mvuq066rreluhQ', // Mahakaleshwar Jyotirlinga Live Darshan — daily Bhasma Aarti
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UC7q12ONY2mvuq066rreluhQ&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1604948501466-4e9c339b9c24?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 9400,
-    peakViewers: 22000,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: 'Bhasma Aarti 4 AM (most sacred)',
   },
   {
@@ -108,8 +122,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UCFYQr1l7ereS27SrLJ8bBtw', // Shri Mata Vaishno Devi Shrine Board (official). Embed-allowed (verified 2026-05-04). Reverted from UCziZy6xAlJWPzgIY4duxAeQ Shraddha MH ONE because that channel uses KDigital licensed audio which BLOCKS iframe embed (returns "Video unavailable — content from KDigital, blocked from display on this website").
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCFYQr1l7ereS27SrLJ8bBtw&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 5800,
-    peakViewers: 16000,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: 'Periodic live darshan (Shrine Board)',
   },
   {
@@ -121,8 +135,8 @@ const TEMPLE_LIVE_STREAMS = [
     youtubeChannelId: 'UCstacpPsNLSiGcYe7qbF14Q', // Shree Jagannatha Temple Administration, Puri (official, verified 2026-05-02 — daily Dhwaja Bandha Ritual + Patitapabana Darshan)
     playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCstacpPsNLSiGcYe7qbF14Q&autoplay=1',
     thumbnailUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 7300,
-    peakViewers: 45000,
+    viewerCount: 0,
+    peakViewers: 0,
     availability: 'Festival & daily darshan',
   },
 ];

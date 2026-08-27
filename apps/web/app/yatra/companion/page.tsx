@@ -168,7 +168,14 @@ export default function CompanionListingPage() {
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{c.age} yrs · {c.gender === 'male' ? 'Male' : 'Female'} · {c.city}</p>
  </div>
 
- {/* Rating */}
+ {/* Rating. TC-06: this card printed five stars and c.rating.toFixed(1)
+ unconditionally. The fixture rows it was written against carried
+ 60-124 invented reviews each, so the zero case never showed — but the
+ first genuinely recruited companion has no reviews at all, and this
+ would have rendered a flat "0.0 (0)" star row as if yatris had rated
+ them badly. The detail page already gated on reviewCount; the card
+ now does too, and says plainly that nobody has rated them yet. */}
+ {c.reviewCount > 0 ? (
  <div className="mt-2 flex items-center gap-1.5">
  <div className="flex items-center gap-0.5">
  {Array.from({ length: 5 }).map((_, s) => (
@@ -178,6 +185,9 @@ export default function CompanionListingPage() {
  <span className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{c.rating.toFixed(1)}</span>
  <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>({c.reviewCount})</span>
  </div>
+ ) : (
+ <p className="mt-2 text-xs" style={{ color: 'var(--color-text-faint)' }}>No yatri ratings yet</p>
+ )}
 
  <div className="mt-3 flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <Sparkles className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {c.yatrasCompleted} yatras completed

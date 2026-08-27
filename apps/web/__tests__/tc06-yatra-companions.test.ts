@@ -87,22 +87,22 @@ const INVENTED_NAMES = [
 
 /** The sixteen invented people who "reviewed" the eight invented people. */
 const INVENTED_REVIEW_AUTHORS = [
-  'Seema Gupta',
-  'Anil Desai',
-  'Kamla Devi',
-  'Veena Iyer',
-  'Gaurav Mehta',
-  'Pankaj Sharma',
-  'Nirmal Saxena',
-  'Shanti Bhatia',
-  'Neeta Agarwal',
-  'Hari Chand',
-  'Prema Kulkarni',
-  'Ram Lal',
-  'Murali Krishnan',
-  'Rani Pillai',
-  'Vijay Singh',
-  'Sushma Jain',
+  'Seema Gupta, Delhi',
+  'Anil Desai, Mumbai',
+  'Kamla Devi, Kanpur',
+  'Veena Iyer, Chennai',
+  'Gaurav Mehta, Delhi',
+  'Pankaj Sharma, Jammu',
+  'Nirmal Saxena, Lucknow',
+  'Shanti Bhatia, Delhi',
+  'Neeta Agarwal, Delhi',
+  'Hari Chand, Hyderabad',
+  'Prema Kulkarni, Bhopal',
+  'Ram Lal, Jodhpur',
+  'Murali Krishnan, Chennai',
+  'Rani Pillai, Mumbai',
+  'Vijay Singh, Bhopal',
+  'Sushma Jain, Indore',
 ];
 
 describe('TC-06 — the invented companion fixture is deleted from lib/yatra-data.ts', () => {
@@ -133,8 +133,12 @@ describe('TC-06 — the invented companion fixture is deleted from lib/yatra-dat
   it('asserts no verification a check never performed', () => {
     // The exact literal the finding is about: three government/medical
     // verification claims hardcoded to true for a person who does not exist.
+    //
+    // `verified: {` on its own also opens the TravelCompanion interface, which
+    // stays — a type is a contract, not a claim. What must not exist is a
+    // verified OBJECT LITERAL, i.e. a check asserted as a value for somebody.
     const src = stripComments(read(YATRA_DATA));
-    expect(src).not.toMatch(/verified:\s*\{/);
+    expect(src).not.toMatch(/verified:\s*\{\s*aadhaar:\s*(true|false)/);
     expect(src).not.toMatch(/aadhaar:\s*true/);
     expect(src).not.toMatch(/background:\s*true/);
     expect(src).not.toMatch(/medical:\s*true/);
@@ -225,8 +229,14 @@ describe('TC-06 — /yatra/companion renders no uncounted number', () => {
   it('reads the roster module, never the fixture', () => {
     const src = stripComments(read(LISTING));
     expect(src).toMatch(/publishedCompanions/);
-    expect(src).not.toMatch(/from '\.\.\/\.\.\/\.\.\/lib\/yatra-data'[\s\S]*companions/);
     for (const name of INVENTED_NAMES) expect(src).not.toContain(name);
+    // The page still needs formatINR from yatra-data, so pin the import's
+    // named bindings rather than the module path: nothing roster-shaped may
+    // come across from there again.
+    const named = /import\s*\{([^}]*)\}\s*from '[^']*lib\/yatra-data'/.exec(src);
+    expect(named).not.toBeNull();
+    const bindings = named![1].split(',').map((b) => b.trim()).filter(Boolean);
+    expect(bindings).toEqual(['formatINR']);
   });
 });
 
