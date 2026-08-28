@@ -84,17 +84,16 @@ describe('LC-11 — the status filter constrains the query, not nothing', () => 
     expect(prismaMock.user.count.mock.calls[0]![0]!.where).toEqual(listWhere);
   });
 
-  it('role + status: the JOIN carries the status predicate in BOTH statements', async () => {
-    const statements: Array<{ sql: string; values: unknown[] }> = [];
-    prismaMock.$queryRaw.mockImplementation((strings: any, ...values: unknown[]) => {
-      const sql = Array.from(strings as string[])
-        .join('?')
-        .replace(/\s+/g, ' ')
-        .trim();
-      statements.push({ sql, values });
-      if (/count\(\*\)/i.test(sql)) return Promise.resolve([{ count: 1 }]);
-      return Promise.resolve([{ id: 'u-1' }]);
-    });
+  // REWRITTEN 2026-08-28 (SCAL-04). These were TWO tests — one for the raw-SQL
+  // JOIN's two statements, one for the id-resolution fallback beneath it —
+  // because `?role=` had two code paths and LC-11's rule ("the status predicate
+  // must be in BOTH the page and the count, or `?role=PANDIT&status=blocked`
+  // pages one set and counts another") had to hold on each. There is now one
+  // path: the role is a Prisma relation predicate on the SAME `where` object
+  // the count already receives, so the two-sets failure is not merely tested
+  // against, it is unconstructable. The assertion is not weakened — it still
+  // demands role AND status on both reads, and object identity between them.
+  it('role + status: both predicates constrain the page AND the count', async () => {
     prismaMock.user.findMany.mockResolvedValue([
       {
         id: 'u-1',
@@ -108,25 +107,6 @@ describe('LC-11 — the status filter constrains the query, not nothing', () => 
         createdAt: new Date(),
       },
     ]);
-
-    await service.getUsers({ role: 'PANDIT', status: 'blocked' });
-
-    // The guard's own failure mode first: a pattern that matches nothing passes
-    // green over SQL it never read.
-    expect(statements).toHaveLength(2);
-    for (const s of statements) {
-      expect(s.sql).toContain('u."blocked" = ?');
-      expect(s.values).toContain(true);
-    }
-    // Applying it to the page but not to count(*) is SCAL-09 one level down.
-    expect(statements.some((s) => /count\(\*\)/i.test(s.sql))).toBe(true);
-  });
-
-  it('role + status on the fallback path filters both reads identically', async () => {
-    // The JOIN is unavailable; the id-resolution path must answer the same
-    // rows, which means it must apply the same status predicate.
-    prismaMock.$queryRaw.mockRejectedValue(new Error('relation does not exist'));
-    prismaMock.userRoleAssignment.findMany.mockResolvedValue([{ userId: 'u-1' }]);
     prismaMock.user.count.mockResolvedValue(1);
 
     await service.getUsers({ role: 'PANDIT', status: 'blocked' });
@@ -134,8 +114,12 @@ describe('LC-11 — the status filter constrains the query, not nothing', () => 
     const listWhere = prismaMock.user.findMany.mock.calls[0]![0]!.where;
     const countWhere = prismaMock.user.count.mock.calls[0]![0]!.where;
     expect(listWhere.blocked).toBe(true);
-    expect(listWhere.id).toEqual({ in: ['u-1'] });
+    expect(listWhere.roleAssignments).toEqual({ some: { role: 'PANDIT' } });
+    // Applying either predicate to the page but not to the count is SCAL-09 one
+    // level down.
     expect(countWhere).toEqual(listWhere);
+    // And no hand-written SQL is involved in answering it any more.
+    expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
   });
 
   it('a status this endpoint cannot express is refused, never answered empty', async () => {

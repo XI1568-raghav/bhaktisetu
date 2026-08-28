@@ -793,8 +793,8 @@
   "workflow": "launch-readiness-delta",
   "line": 353,
   "title": "NRI Premium ₹5,000/year sells at least two benefits that do not exist",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": "Two reasons. (1) Lane: the feature list is server data in apps/api, explicitly DO-NOT-TOUCH for this cluster, and it is what /pricing renders verbatim"
  },
  {
@@ -1381,8 +1381,8 @@
   "workflow": "authenticated-deep",
   "line": 639,
   "title": "No UI anywhere can mark a booking delivered — the final fulfilment step is curl-only",
-  "state": "fixed",
-  "commit": "wave-triage26-2026-08-24",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": "[independently verified] verified: apps/web/__tests__/priest-fulfilment-p1.test.tsx — 2 tests, 2 red before (no button matchi"
  },
  {
@@ -3537,8 +3537,8 @@
   "workflow": "authenticated-deep",
   "line": 2199,
   "title": "Website muhurat finder sends no Authorization header — it 401s for every visitor, while the mobile version works",
-  "state": "partial",
-  "commit": "wave-triage26-final",
+  "state": "fixed",
+  "commit": "wave-45-final",
   "note": "Both files are in DO-NOT-TOUCH lanes (apps/web and apps/api) with other agents editing them. The fix is one of two one-liners and needs an o"
  },
  {
@@ -3789,8 +3789,8 @@
   "workflow": "scale-mindset",
   "line": 2981,
   "title": "Card and hero copy is a 1,144-character scripture excerpt; raw enum values like \"special_occasion\" are shown to customers",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": "[independently verified] apps/api CONTRACT CHANGE, out of lane this wave: add a shortDescription/cardBlurb field (100-140 chars, benefit-first) to the puja type model, return it from GE"
  },
  {
@@ -3985,8 +3985,8 @@
   "workflow": "scale-mindset",
   "line": 3067,
   "title": "111 of 205 findMany calls have no take or cursor; the worst ship 15-33 MB per request",
-  "state": "partial",
-  "commit": "wave-final30-partial",
+  "state": "fixed",
+  "commit": "wave-45-final",
   "note": "[unverified — wave stopped early] 94 unbounded findMany calls remain. Top files: admin.service 10, store-admin 6, payout.service 6, admin-bookings 5, admin.ts 5, store-orders 5. Most are bounded"
  },
  {
@@ -4447,8 +4447,8 @@
   "workflow": "scale-mindset",
   "line": 3269,
   "title": "Accept-Language is never negotiated — no i18n config, no middleware locale logic, no redirect",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": "OWNER DECISION, not code: whether a first-time visitor whose browser asks for Hindi should be switched, or only offered. Recommendation is to keep offering unti"
  },
  {
@@ -4993,8 +4993,8 @@
   "workflow": "scale-mindset",
   "line": 3509,
   "title": "Raw developer error text is rendered to users; the friendly-error helper exists but is wired into only 2 surfaces",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": "apps/web/app is outside this lane. lib/friendly-error.ts already exists and is tested; this is a call-site change on that page plus suppressing the empty-state "
  },
  {
@@ -5049,8 +5049,8 @@
   "workflow": "scale-mindset",
   "line": 3533,
   "title": "Offline fallback is inconsistent across routes, and nothing recovers when the connection returns",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": "apps/web/public/sw.js and the root layout are outside this lane. Two independent pieces: an 'online' listener that calls router.refresh()/location.reload() plus"
  },
  {
@@ -5161,8 +5161,8 @@
   "workflow": "scale-mindset",
   "line": 3583,
   "title": "/admin/revenue and /admin/commissions report figures 5.8x apart, both labelled commissions",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": "apps/web/app/admin/revenue/page.tsx and apps/web/app/admin/commissions/page.tsx still both label their figure 'commissions' with no unit. The API now hands them"
  },
  {
@@ -5679,8 +5679,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Signing out on one device signs the user out of every device, with no indication anywhere that it will",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": ""
  },
  {
@@ -5805,8 +5805,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The written rollback procedure cannot work — it says push a revert, but both services are autoDeploy:false and no workflow deploys from main",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": ""
  },
  {
@@ -5833,8 +5833,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The new Render suspension guard lives only on a feature branch, so its schedule will never fire",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": ""
  },
  {
@@ -5861,8 +5861,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The disaster-recovery runbook describes infrastructure that does not exist — following it at 2am wastes the whole recovery window",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": ""
  },
  {
@@ -6043,8 +6043,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "/jyotirlinga states every one of the twelve is swayambhu while its own badges mark nine, and /tirth says Mahakaleshwar is the only one",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": ""
  },
  {
@@ -6155,8 +6155,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Every one of NRI Premium's six advertised benefits is ungated — the entitlement hook has zero call sites, and the AI paywall does not recognise the plan code the subscription is created with",
-  "state": "fixed",
-  "commit": "wave-45-2026-08-31",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": ""
  },
  {

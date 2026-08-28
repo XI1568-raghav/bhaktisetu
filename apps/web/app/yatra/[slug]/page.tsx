@@ -434,6 +434,18 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Stories from past devotees
  </h2>
+ {/* Every package used to ship three hand-typed testimonials with a name,
+     a city, a star rating and a date, and this grid rendered them. They
+     are gone (lib/yatra-data.ts `reviews`), so the section now says what
+     is true instead of standing empty over its own heading — the same
+     empty state /yatra/companion/[id] already renders for the roster
+     TC-06 emptied. Pinned by
+     __tests__/yatra-package-reviews-fabricated.test.tsx. */}
+ {yatra.reviews.length === 0 && (
+ <p data-reveal="up" className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+ No reviews yet. Stories appear here once a devotee who travelled this yatra with us has rated the journey.
+ </p>
+ )}
  <div data-reveal="up" className="grid md:grid-cols-3 gap-4">
  {yatra.reviews.map((r, i) => (
  <div key={i} className="rounded-xl p-4" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>

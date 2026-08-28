@@ -42,6 +42,33 @@ export interface Product {
  currency: string;
  category: string;
  collection: string;
+ /**
+  * A merchandising badge, or `null` for no badge at all.
+  *
+  * LEG-17 (residue): this field may describe the PRODUCT, never its
+  * PERFORMANCE. Six rows carried 'Bestseller' (x2), 'Popular' (x2), 'Top
+  * Rated' and 'Trending' — the same four claims the main LEG-17 pass had just
+  * deleted from this file as numbers, restated as adjectives and still
+  * rendered as a pill on /store, on the product page and on its related rail.
+  * The catalogue has never taken an order and every `rating` below is null, so
+  * nothing measures sales, popularity or a star average; store-filters.ts made
+  * the identical ruling when it stopped ordering the default shelf by
+  * `reviewCount`.
+  *
+  * The honest default is ABSENCE, exactly as it is for `compareAtPrice`,
+  * `rating` and `reviewCount`: every render site is guarded by
+  * `{product.tag && ...}`, so an unsubstantiable badge simply does not appear.
+  * Inventing a replacement adjective would trade one unverified claim for
+  * another. 'Premium', 'Certified', 'Handcrafted', 'Pure & Natural', 'Gaushala
+  * Sourced', 'Gift Pick' and the two festival badges stayed because they
+  * describe the item or the occasion. 'New Arrival' stayed because it is true:
+  * store-filters.ts records that listing order is the order products were
+  * added, and that row is the last in the array.
+  *
+  * Restore a performance badge only from a counted source — orders placed, or
+  * the `Review` table in apps/api. Guarded by
+  * __tests__/leg17-store-unearned-badges.test.tsx.
+  */
  tag: string | null;
  inStock: boolean;
  freeDelivery: boolean;
@@ -82,7 +109,7 @@ export const PRODUCTS: Product[] = [
  currency: 'INR',
  category: 'Puja Essentials',
  collection: 'puja-essentials',
- tag: 'Bestseller',
+ tag: null,
  inStock: true,
  freeDelivery: true,
  rating: null,
@@ -136,7 +163,7 @@ export const PRODUCTS: Product[] = [
  currency: 'INR',
  category: 'Puja Essentials',
  collection: 'puja-essentials',
- tag: 'Top Rated',
+ tag: null,
  inStock: true,
  freeDelivery: false,
  rating: null,
@@ -246,7 +273,7 @@ export const PRODUCTS: Product[] = [
  currency: 'INR',
  category: 'Rudraksha & Malas',
  collection: 'rudraksha-malas',
- tag: 'Popular',
+ tag: null,
  inStock: true,
  freeDelivery: false,
  rating: null,
@@ -412,7 +439,7 @@ export const PRODUCTS: Product[] = [
  currency: 'INR',
  category: 'Puja Samagri',
  collection: 'puja-samagri',
- tag: 'Popular',
+ tag: null,
  inStock: true,
  freeDelivery: true,
  rating: null,
@@ -468,7 +495,7 @@ export const PRODUCTS: Product[] = [
  currency: 'INR',
  category: 'Books & Scriptures',
  collection: 'books-scriptures',
- tag: 'Bestseller',
+ tag: null,
  inStock: true,
  freeDelivery: false,
  rating: null,
@@ -551,7 +578,7 @@ export const PRODUCTS: Product[] = [
  currency: 'INR',
  category: 'Spiritual Jewellery',
  collection: 'spiritual-jewellery',
- tag: 'Trending',
+ tag: null,
  inStock: true,
  freeDelivery: false,
  rating: null,

@@ -87,12 +87,55 @@ function userColumn(field: string): string {
 }
 
 /**
- * The columns the JOIN path matches with a wildcard pattern, read out of the
- * service's own SQL. `I?LIKE` catches both the two ILIKE columns and the
- * case-sensitive LIKE on phone.
+ * The columns the admin user search matches with a wildcard pattern.
+ *
+ * DERIVATION CHANGED 2026-08-28 (SCAL-04), and the change is why this file
+ * failed rather than passing vacuously. It used to read the service's own
+ * hand-written SQL (`u."full_name" ILIKE ?`). That SQL is gone: `?role=` is now
+ * a Prisma relation predicate and there is no `$queryRaw` in admin.service.ts
+ * at all, so the old pattern matched NOTHING and `searchedColumns` came back
+ * empty — the exact vacuous-guard failure the "this guard read the service"
+ * assertion below exists to catch. It caught it.
+ *
+ * The oracle is now the Prisma predicate itself: the `where.OR = [ … ]` array
+ * that carries the search, with each `field: { contains: … }` mapped through
+ * `@map` to its physical column. Prisma compiles `contains` to `LIKE '%…%'`
+ * (or `ILIKE` with `mode: 'insensitive'`), so this is the same set of
+ * leading-wildcard matches the trigram indexes have to serve.
+ *
+ * The block is located by its own `where.OR = [` assignment and bracket-matched
+ * to its close, then EXACTLY ONE such block is required. Scanning the whole
+ * file for `{ contains:` would have picked up any other model's search — the
+ * nested-structure-for-top-level mistake this sweep has now made eight times.
  */
+function searchPredicateBlocks(src: string): string[] {
+  const blocks: string[] = [];
+  const open = /where\.OR\s*=\s*\[/g;
+  for (;;) {
+    const m = open.exec(src);
+    if (!m) return blocks;
+    let depth = 0;
+    let i = m.index + m[0].length - 1;
+    for (; i < src.length; i += 1) {
+      if (src[i] === '[') depth += 1;
+      else if (src[i] === ']') {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+    }
+    blocks.push(src.slice(m.index, i + 1));
+    open.lastIndex = i + 1;
+  }
+}
+
+const SEARCH_BLOCKS = searchPredicateBlocks(serviceSrc);
+
 const searchedColumns = new Set(
-  Array.from(serviceSrc.matchAll(/u\."(\w+)"\s+I?LIKE/gi)).map((m) => m[1]!),
+  SEARCH_BLOCKS.flatMap((block) =>
+    Array.from(block.matchAll(/(\w+)\s*:\s*\{\s*contains\s*:/g)).map((m) =>
+      userColumn(m[1]!),
+    ),
+  ),
 );
 
 describe('SCAL-09 — the admin user search has an index that can serve it', () => {
@@ -104,7 +147,14 @@ describe('SCAL-09 — the admin user search has an index that can serve it', () 
 
   it('this guard read the service, and the service still searches three columns', () => {
     // Without this, "every searched column is indexed" is vacuously true over
-    // an empty set — the way a guard passes green having matched nothing.
+    // an empty set — the way a guard passes green having matched nothing. This
+    // assertion has now earned its keep once: it is what failed when SCAL-04
+    // deleted the raw SQL the previous derivation was reading.
+    //
+    // Exactly one predicate block: `getUsers` builds ONE `where` that serves
+    // both the page and the count, so a second search predicate in this file
+    // would mean the two reads can disagree — SCAL-09's original defect.
+    expect(SEARCH_BLOCKS).toHaveLength(1);
     expect(searchedColumns).toEqual(
       new Set([userColumn('fullName'), userColumn('email'), userColumn('phone')]),
     );

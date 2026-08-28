@@ -298,15 +298,59 @@ async function writePujaCommissionOnConfirm(
   const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
   const providerEarning = new Prisma.Decimal(booking.priestPayout as Prisma.Decimal);
   const percentage = platformRateOf(price.sub(providerEarning), price);
-  const created = (await tx.commission.create({
-    data: {
-      bookingId: booking.id,
-      providerId: providerUserId,
-      amount: providerEarning,
-      percentage,
-      status: 'PENDING',
-    },
-  })) as { id: string } | undefined;
+  // DI-06: `createMany({ skipDuplicates })`, not `create`, and the difference
+  // is the whole point of the fix.
+  //
+  // migrations/20260824000000_di0607_money_key_indexes added the UNIQUE index
+  // `commissions_booking_id_key`, which is the right constraint — the findFirst
+  // above was an application-level TOCTOU with nothing behind it. But a
+  // constraint changes what the LOSER of that race experiences. Both
+  // confirmation rails (POST /payments/verify and the Razorpay webhook) can be
+  // in flight for one booking at once — that is why `claimCaptureTransition`
+  // exists, and its comment records the decision to leave the ledger writes
+  // ungated because they "carry their own findFirst idempotency guards". Under
+  // a bare `create`, the second INSERT now raises 23505 → P2002, and because
+  // P1-12 moved this writer INSIDE the caller's `$transaction`, that aborts the
+  // whole Postgres transaction: catching the error in JavaScript does not
+  // recover it (Prisma issues no per-query savepoint), so the capture, the
+  // booking confirm and the temple share roll back with it, and the caller
+  // answers 500 for money Razorpay has already taken.
+  //
+  // `skipDuplicates` compiles to `INSERT ... ON CONFLICT DO NOTHING`, which is
+  // not an error and therefore cannot poison the transaction. The loser writes
+  // nothing — precisely what the findFirst guard was reaching for.
+  //
+  // It is equally correct where the constraint does NOT exist: that migration
+  // creates each UNIQUE index only after proving the key is clean and announces
+  // a skip with RAISE WARNING, so on a dirty table there may be no constraint
+  // at all. With none, ON CONFLICT never fires and the guard above does all the
+  // work, exactly as before.
+  const inserted = (await tx.commission.createMany({
+    data: [
+      {
+        bookingId: booking.id,
+        providerId: providerUserId,
+        amount: providerEarning,
+        percentage,
+        status: 'PENDING',
+      },
+    ],
+    skipDuplicates: true,
+  })) as { count?: number } | undefined;
+
+  // `count: 0` means the conflict fired: the other rail owns this booking's
+  // commission. That is idempotent success, not failure — but this transaction
+  // minted nothing, so it must not hand the caller a mint to log. Reporting one
+  // would put a second COMMISSION_MINTED on the money trail for one earning.
+  if (inserted?.count !== 1) return null;
+
+  // `createMany` returns only a count on PostgreSQL, so the id comes from a
+  // read-back on the key we just inserted — a single index lookup, on the
+  // index DI-07 added (`commissions_booking_id_idx`).
+  const created = (await tx.commission.findFirst({
+    where: { bookingId: booking.id },
+    select: { id: true },
+  })) as { id: string } | null | undefined;
 
   // OPS-05: hand the mint back rather than logging it here — see
   // MintedCommission. A driver that returns nothing (a mock) must not be
@@ -563,14 +607,23 @@ async function writeStoreOrderCommissionOnConfirm(
   const storeShare = total.mul(new Prisma.Decimal(1).minus(platformRate));
   const percentage = total.gt(0) ? platformRate : new Prisma.Decimal(0);
 
-  await tx.commission.create({
-    data: {
-      storeOrderId: order.id,
-      providerId: storeProfile.userId,
-      amount: storeShare,
-      percentage,
-      status: 'PENDING',
-    },
+  // DI-06: same reasoning as writePujaCommissionOnConfirm above — the UNIQUE
+  // index `commissions_store_order_id_key` makes a lost race a P2002 that
+  // aborts the enclosing capture transaction, so the INSERT is conflict
+  // tolerant. Nothing downstream needs the row's id here, so there is no
+  // read-back: a skipped insert and a written one are indistinguishable to this
+  // caller, which is exactly the idempotency the findFirst guard promises.
+  await tx.commission.createMany({
+    data: [
+      {
+        storeOrderId: order.id,
+        providerId: storeProfile.userId,
+        amount: storeShare,
+        percentage,
+        status: 'PENDING',
+      },
+    ],
+    skipDuplicates: true,
   });
 }
 

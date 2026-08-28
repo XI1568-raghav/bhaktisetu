@@ -126,7 +126,7 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
 
                 {product.tag && (
                   <div className="absolute top-4 left-4">
-                    <span className="bg-saffron-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                    <span data-product-tag className="bg-saffron-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
                       {product.tag}
                     </span>
                   </div>
@@ -361,7 +361,7 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     {rp.tag && (
-                      <span className="absolute top-3 left-3 bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                      <span data-product-tag className="absolute top-3 left-3 bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
                         {rp.tag}
                       </span>
                     )}

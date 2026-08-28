@@ -37,7 +37,15 @@ const BENEFITS = [
   },
   {
     title: 'Verified-gaushala badge',
-    body: 'Submit registration + 80G certificate once. Verified badge boosts donor conversion 3-4×.',
+    // TC-12: this used to end "Verified badge boosts donor conversion 3-4x".
+    // Nobody measured that. The gaushala rail has processed no donations, so
+    // no verified cohort has ever been compared with an unverified one — the
+    // multiplier was a number typed to make registering look worth it, aimed
+    // at trusts that hand over a PAN and an 80G certificate on the strength of
+    // it. Same defect as the Rs 500 tier this page also carried, one
+    // abstraction up: not a feature that does not exist, but a RESULT that was
+    // never obtained. The badge is now described by what it is.
+    body: 'Submit registration + 80G certificate once. Donors see a verified badge on your listing.',
   },
   {
     title: 'Cow-count + photo proof',

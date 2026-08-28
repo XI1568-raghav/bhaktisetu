@@ -196,7 +196,7 @@ export default async function StorePage({
 
  {product.tag && (
  <div className="absolute top-3 left-3">
- <span className="bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+ <span data-product-tag className="bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
  {product.tag}
  </span>
  </div>

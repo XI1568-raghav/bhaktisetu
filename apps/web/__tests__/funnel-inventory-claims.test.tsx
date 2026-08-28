@@ -203,6 +203,134 @@ describe('TC-12 — no supply page promises an audience or a settlement date', (
   });
 });
 
+/**
+ * The homepage itself was never in the CM-11 sweep.
+ *
+ * FUNNEL_SOURCES above lists the three home COMPONENTS plus /waitlist, and the
+ * rule it locks — "a funnel surface may print an inventory number ONLY if a
+ * server-side count produced it" — was applied to each of them. `app/page.tsx`,
+ * the page that mounts them, was never scanned, and it carries an inventory
+ * number of its own: the astrology card's fourth tile is
+ * `<p data-counter data-counter-target="15+">15+</p><p>Astrologers</p>`, a
+ * count-up animation that reads as a live metric.
+ *
+ * Fifteen is not an approximation of anything. It is the size of the in-memory
+ * astrologer fixture, and AW-02 spent a whole pass removing it: its test header
+ * is titled "the LAST door that still sold the 15 invented astrologers" and it
+ * rebound the directory, the profile page, the reviews endpoint, the booking
+ * endpoint and the Expo app's only astrologer source onto real supply — three
+ * approved profiles. Every door but this one. The homepage kept advertising the
+ * fixture's headcount at five times the real roster.
+ *
+ * The correction is the one lib/platform-stats.ts already prescribes for the
+ * pandit headcount, and for the same reason: "Three seeded priests is a true
+ * number that reads as an empty marketplace, and the honest move on a trust
+ * strip is to make a claim that is not about volume at all." So the tile makes
+ * a claim about vetting instead of volume, and this guard keeps any headcount
+ * from returning to it.
+ *
+ * WHY THIS SCANS TAG-STRIPPED PROSE. In JSX the number and the noun it counts
+ * live in different elements, so an adjacency regex over raw source cannot see
+ * "15+ Astrologers" at all. `prose()` strips comments first (via `code()`) and
+ * then tags, which is also what keeps the block you are reading — and the
+ * explanatory JSX comment left in app/page.tsx — from tripping the guard that
+ * bans the string they both quote.
+ */
+describe('CM-11 — the homepage prints no inventory number of its own', () => {
+  /** `code()` with JSX tags removed, so text split across elements reads as text. */
+  function prose(rel: string): string {
+    return code(rel)
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ');
+  }
+
+  /** "15+ Astrologers", "200+ verified temples", "500 + pandits". */
+  const HEADCOUNT =
+    /\b\d[\d,]*\s*\+\s*(?:verified\s+|vetted\s+)?(astrologers?|pandits?|priests?|temples?|devotees?|gaushalas?|instructors?|gurukuls?)\b/i;
+
+  it('app/page.tsx claims no supply headcount', () => {
+    expect(
+      prose('app/page.tsx'),
+      'the homepage prints a supply headcount nothing counted',
+    ).not.toMatch(HEADCOUNT);
+  });
+
+  it('nor does any of the components it mounts', () => {
+    for (const rel of ['components/home/TrustStrip.tsx', 'components/home/IntentTrio.tsx', 'components/home/WorshipStrip.tsx']) {
+      expect(prose(rel), rel).not.toMatch(HEADCOUNT);
+    }
+  });
+
+  it('the guard has teeth — it flags the tile that actually shipped', () => {
+    // Exactly the shape the astrology card rendered, tags and all.
+    expect(prose_of('<p data-counter data-counter-target="15+">15+</p><p>Astrologers</p>')).toMatch(
+      HEADCOUNT,
+    );
+    expect(prose_of('<span>200+</span> <span>verified temples</span>')).toMatch(HEADCOUNT);
+    // ...and does not flag a claim about vetting rather than volume, which is
+    // what replaced it. A guard that failed on the corrected text would force
+    // the bug back in.
+    expect(prose_of('<p>Verified</p><p>Astrologers</p>')).not.toMatch(HEADCOUNT);
+    expect(prose_of('<p>Aadhaar-verified pandits</p>')).not.toMatch(HEADCOUNT);
+    // A real, counted figure rendered from a variable is not a literal and
+    // cannot match — that is the whole point of the CM-11 rule.
+    expect(prose_of('<p>{verifiedTempleClaim(counts.verifiedTemples)}</p>')).not.toMatch(HEADCOUNT);
+  });
+
+  /** The same tag-strip applied to a literal, for the teeth cases above. */
+  function prose_of(src: string): string {
+    return src.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+  }
+});
+
+/**
+ * TC-12, the other half: a supply page may not quote a RESULT it never measured.
+ *
+ * The existing guards cover what a supply page promises to PAY (no weekly bank
+ * credit, no settlement window) and what it claims to HAVE (no headcount, no
+ * devotee audience). Neither covers what it claims the provider will EARN by
+ * joining, and app/list-gaushala carried exactly that: "Verified badge boosts
+ * donor conversion 3-4x."
+ *
+ * There is no such measurement. The gaushala donation rail has processed no
+ * donations, so no verified-badge cohort has ever been compared with an
+ * unverified one — the multiplier is a number typed to make registering look
+ * worth it, aimed at trusts that will hand over a PAN and an 80G certificate on
+ * the strength of it. Same defect as the Rs 500 tier two benefit cards above
+ * it, one abstraction up: not a feature that does not exist, but a result that
+ * was never obtained.
+ */
+describe('TC-12 — no supply page quotes a conversion lift nobody measured', () => {
+  /** "boosts donor conversion 3-4x", "increases bookings by 40%", "doubles ... 2x". */
+  const UNMEASURED_LIFT =
+    /\b(boosts?|boosting|increases?|lifts?|improves?|doubles?|triples?|grows?)\b[^.!?]{0,60}?\b\d+(?:\s*[-–]\s*\d+)?\s*(?:x\b|×|%)/i;
+
+  /** "3x more donors", "2x higher". */
+  const BARE_MULTIPLIER = /\b\d+(?:\s*[-–]\s*\d+)?\s*(?:x\b|×)\s*(?:more|higher|better|faster)\b/i;
+
+  it.each(SUPPLY_PAGES)('%s quotes no unmeasured performance lift', (rel) => {
+    const src = code(rel);
+    expect(src, `${rel} quotes a result the platform has never measured`).not.toMatch(
+      UNMEASURED_LIFT,
+    );
+    expect(src, `${rel} quotes a bare multiplier`).not.toMatch(BARE_MULTIPLIER);
+  });
+
+  it('the guard has teeth, and spares the claims that are true', () => {
+    expect('Verified badge boosts donor conversion 3-4×.').toMatch(UNMEASURED_LIFT);
+    expect('Verified badge boosts donor conversion 3-4x.').toMatch(UNMEASURED_LIFT);
+    expect('Listing increases your bookings by 40%.').toMatch(UNMEASURED_LIFT);
+    expect('3x more donors').toMatch(BARE_MULTIPLIER);
+    // The flat 80% provider share is the shipped commercial term, not a boast.
+    expect('Earn 80% of every booking').not.toMatch(UNMEASURED_LIFT);
+    expect('You keep 80% of the fee; Darshya keeps 20%.').not.toMatch(UNMEASURED_LIFT);
+    // A badge described by what it IS rather than by what it lifts.
+    expect('Submit registration + 80G certificate once. Donors see a verified badge on your listing.').not.toMatch(
+      UNMEASURED_LIFT,
+    );
+  });
+});
+
 describe('lib/platform-stats — counts are parsed strictly or not at all', () => {
   it('reads the total off a paginated temples payload', async () => {
     const { templeTotalFromPayload } = await import('../lib/platform-stats');

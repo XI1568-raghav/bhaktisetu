@@ -177,8 +177,17 @@ export function describeWebHandoff(
  * codebase and it matches NOTHING. react-native-webview compares the pattern
  * against the ORIGIN ONLY, never the full URL:
  *
- *   extractOrigin  = /^[A-Za-z][A-Za-z0-9+\-.]+:(\/\/)?[^/]*/
- *   toRegex(entry) = `^${escapeStringRegexp(entry).replace(/\\\*/g, '.*')}`
+ * Spelled out below in RegExp(...) form rather than pasted as regex literals,
+ * and that is load-bearing: both of the library's literals END IN A STAR
+ * FOLLOWED BY A SLASH, which is this comment's own terminator. Pasting them
+ * verbatim closes the block early and hands the rest of this paragraph to the
+ * parser as code — which is exactly what happened here: it broke `tsc` for the
+ * entire package and silently un-collected two test files, while the commit
+ * that shipped it was titled "both suites fully green". Keep them quoted.
+ *
+ *   extractOrigin  = RegExp("^[A-Za-z][A-Za-z0-9+\\-.]+:(//)?[^/]*")
+ *   toRegex(entry) = "^" + escapeStringRegexp(entry), with each escaped star
+ *                    then replaced by ".*"
  *   passes         = compiled.some((re) => new RegExp(re).test(extractOrigin(url)))
  *
  * `extractOrigin('https://darshya.online/astrology')` stops at the first path

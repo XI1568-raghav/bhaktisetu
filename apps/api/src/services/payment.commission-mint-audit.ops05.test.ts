@@ -105,8 +105,22 @@ beforeEach(() => {
     templeId: null,
     platformCommission: new Prisma.Decimal('1000.00'),
   } as never);
-  prismaMock.commission.findFirst.mockResolvedValue(null as never);
-  prismaMock.commission.create.mockResolvedValue({ id: 'cm-minted-1' } as never);
+  // DI-06 (2026-08-28): the writer now inserts with
+  // `createMany({ skipDuplicates })` — ON CONFLICT DO NOTHING — because a bare
+  // `create` losing the two-rail race raises P2002 INSIDE the caller's
+  // `$transaction` and aborts the capture with it. `createMany` returns only a
+  // count on PostgreSQL, so the id comes from a read-back on the key.
+  //
+  // Modelled as a stateful fake rather than two `mockResolvedValueOnce` calls
+  // deliberately: the tests below that need "a row already exists" override
+  // `findFirst` wholesale, and a leftover once-queue would fire before their
+  // override and silently invert what they assert.
+  let commissionRow: { id: string } | null = null;
+  prismaMock.commission.findFirst.mockImplementation(async () => commissionRow as never);
+  prismaMock.commission.createMany.mockImplementation(async () => {
+    commissionRow = { id: 'cm-minted-1' };
+    return { count: 1 } as never;
+  });
   // The temple share is a separate writer on the same confirm path and is not
   // what this file is about — short it out on its own idempotency guard.
   prismaMock.templePayout.findFirst.mockResolvedValue({ id: 'tp-existing' } as never);
@@ -175,6 +189,7 @@ describe('OPS-05 — a minted provider earning reaches the money trail', () => {
     await verify();
 
     expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
     // No row was minted, so no mint may be claimed. Logging one here would
     // report a second earning that does not exist.
     expect(
@@ -195,6 +210,7 @@ describe('OPS-05 — a minted provider earning reaches the money trail', () => {
     await verify();
 
     expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
     expect(
       recordedEvents().filter((e) => e.eventType === MONEY_EVENTS.COMMISSION_MINTED),
     ).toHaveLength(0);

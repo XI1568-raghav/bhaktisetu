@@ -268,7 +268,7 @@ function loadErrorStatus(cause: unknown): number {
  * AUTH-06 (2026-08-28) — whether this failure means "sign in again".
  *
  * `friendlyApiError` has returned a `reauth` flag since P1 #208 and no screen
- * read it. `loadErrorMessage` never had one at all: it answers a 401/403 with
+ * read it. `loadErrorMessage` never had one at all: it answers a 401 with
  * "Your session has expired — sign in again to see your live figures." and
  * hands back a bare string, so the ten surfaces that render it cannot tell a
  * dead session from a 500 and cannot offer the link that sentence instructs
@@ -286,8 +286,30 @@ function loadErrorStatus(cause: unknown): number {
  * into disagreeing about the same cause.
  */
 export function loadErrorIsReauth(cause: unknown): boolean {
- const status = loadErrorStatus(cause);
- return status === 401 || status === 403;
+ return loadErrorStatus(cause) === 401;
+}
+
+/**
+ * AUTH-06 (2026-08-28, second pass) — 403 is NOT a reason to sign in again,
+ * and saying it was turned this fix into the bug it was fixing.
+ *
+ * `loadErrorIsReauth` answered true for 401 OR 403, and `loadErrorMessage`
+ * answered both with "Your session has expired — sign in again to see your live
+ * figures." A 403 never means an expired session here: every one of the ~40
+ * `reply.code(403)` sites in the API is an authorization outcome, and
+ * apps/api/src/middlewares/auth.ts:80 says so outright — "403 (not 401) signals
+ * 'we know who you are, you just can't be here' so the frontend can show a
+ * 'account suspended' screen instead of bouncing back to login". The two
+ * populations are a suspended account (rejectIfBlocked, :88) and role guards.
+ *
+ * Because <ReauthPrompt> renders INSTEAD of Retry, a suspended provider was
+ * given one control, it took her to a sign-in that SUCCEEDED, the redirect
+ * carried her back to the same refusal, and the loop closed — while the one
+ * sentence that could have ended it ("Account suspended — contact support")
+ * was thrown away on the way past.
+ */
+export function loadErrorIsForbidden(cause: unknown): boolean {
+ return loadErrorStatus(cause) === 403;
 }
 
 /**
@@ -309,6 +331,13 @@ export function loadErrorMessage(cause: unknown): string {
  if (Number.isFinite(status)) {
   if (loadErrorIsReauth(cause)) {
    return 'Your session has expired — sign in again to see your live figures.';
+  }
+  // AUTH-06: signing in again cannot lift a suspension or grant a role, so this
+  // must not borrow the sentence above. Naming support is the only exit, and
+  // the placeholder warning still has to be said — the zeros on screen are
+  // fabricated whatever the reason the real numbers did not arrive.
+  if (loadErrorIsForbidden(cause)) {
+   return 'You do not have access to these figures — the numbers below are placeholders, not your real data. Contact support@darshya.online if you think that is wrong.';
   }
   return `Couldn't load live data (HTTP ${status}). The figures below are placeholders, not your real numbers — retry.`;
  }

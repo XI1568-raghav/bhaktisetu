@@ -94,6 +94,89 @@ describe('DI-06/DI-07 — schema.prisma money key declarations', () => {
   });
 });
 
+/**
+ * DI-07 (the half that is a REFUSAL, now enforced instead of merely commented).
+ *
+ * `commissions.booking_id` is a bare `String?` with no `@db.Uuid` and no
+ * `@relation`, and it must stay that way until a product decision is taken. It
+ * is POLYMORPHIC across two booking tables:
+ *
+ *   · `puja_bookings` — Prisma model PujaBooking, written by
+ *     payment.service.ts writePujaCommissionOnConfirm;
+ *   · `astrologer_consultations` — a raw-SQL table created at runtime by
+ *     routes/consultation.ts `ensureConsultationTables` (line 42,
+ *     `id UUID PRIMARY KEY`), which does not appear in schema.prisma at all.
+ *     consultation.ts writes `bookingId: row.id` from it.
+ *
+ * Re-verified against HEAD on 2026-08-28: both writers are still there, and
+ * `astrologer_consultations` is still absent from schema.prisma. So there is no
+ * single referent, and a foreign key is not "harder, later" — it is impossible
+ * without a `bookingKind` discriminator or a column split, which changes every
+ * writer and is not a schema decision.
+ *
+ * The `@db.Uuid` half is worse than impossible, it is an outage: Prisma emits
+ * `ALTER COLUMN ... USING booking_id::uuid`, which rewrites a money table and
+ * aborts on the first non-uuid legacy value — and migrations auto-apply on API
+ * boot. An earlier audit note read the consultation-backed rows as "orphans" to
+ * be deleted first; they are not orphans, they are the second legitimate kind,
+ * and acting on that note would have deleted real astrologer payables.
+ *
+ * This block exists because the reasoning above currently lives only in a
+ * comment above the field, and a comment does not stop the next person tidying
+ * a bare String into an outage. The detector is proved against synthetic bad
+ * input first, so it cannot pass green having matched nothing.
+ */
+describe('DI-07 — commissions.booking_id stays polymorphic until a discriminator exists', () => {
+  /** The one declaration line for a field inside an already-extracted model block. */
+  function fieldLine(block: string, field: string): string {
+    const line = block
+      .split('\n')
+      .find((l) => new RegExp(`^\\s{2}${field}\\s`).test(l));
+    if (!line) throw new Error(`field ${field} not found in the given model block`);
+    return line;
+  }
+
+  /** What must NOT be on that line, and why. */
+  function violations(line: string): string[] {
+    const found: string[] = [];
+    if (/@db\.Uuid/.test(line)) found.push('@db.Uuid');
+    if (/@relation/.test(line)) found.push('@relation');
+    return found;
+  }
+
+  it('the detector rejects the two changes it exists to prevent', () => {
+    // Proved against synthetic input, because the real schema is (correctly) in
+    // the passing state — a guard only asserted against the good case has never
+    // been shown to be able to fail.
+    expect(violations('  bookingId             String?          @map("booking_id") @db.Uuid')).toEqual([
+      '@db.Uuid',
+    ]);
+    expect(
+      violations(
+        '  booking               PujaBooking?     @relation(fields: [bookingId], references: [id])',
+      ),
+    ).toEqual(['@relation']);
+    expect(violations('  bookingId             String?          @map("booking_id")')).toEqual([]);
+  });
+
+  it('the field it reads is the top-level Commission.bookingId, not some nested one', () => {
+    const line = fieldLine(commission, 'bookingId');
+    expect(line).toMatch(/@map\("booking_id"\)/);
+    // Comments are already stripped from `commission`, so the prose above the
+    // field — which names both `@db.Uuid` and `@relation` — cannot trip this.
+    expect(line).not.toMatch(/\/\//);
+  });
+
+  it('carries neither @db.Uuid nor @relation', () => {
+    expect(
+      violations(fieldLine(commission, 'bookingId')),
+      'commissions.booking_id is polymorphic across puja_bookings and the raw-SQL ' +
+        'astrologer_consultations table; a foreign key needs a bookingKind discriminator ' +
+        'first, and @db.Uuid emits an ALTER COLUMN that aborts API boot on legacy values',
+    ).toEqual([]);
+  });
+});
+
 describe('DI-06/DI-07 — the migration that ships the indexes', () => {
   const dirs = readdirSync(migrationsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory())

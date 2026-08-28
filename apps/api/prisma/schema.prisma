@@ -190,6 +190,11 @@ model User {
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
 
+  // SCAL-04: the back-reference Prisma requires before
+  // `where: { roleAssignments: { some: { role } } }` is a legal argument. See
+  // the note on model UserRoleAssignment for why this took four passes to land.
+  roleAssignments UserRoleAssignment[]
+
   addresses       UserAddress[]
   bookings        PujaBooking[]
   payments        Payment[]
@@ -889,6 +894,31 @@ model UserRoleAssignment {
   role      UserRole
   isPrimary Boolean  @default(false) @map("is_primary")
   createdAt DateTime @default(now()) @map("created_at")
+
+  // SCAL-04 (2026-08-28): this relation is what `admin.service.getUsers` needs
+  // to answer `?role=PANDIT` with `where: { roleAssignments: { some: { role } } }`.
+  // Without it Prisma rejects that argument outright ("Unknown argument
+  // 'roleAssignments'"), which is why the endpoint spent months first reading
+  // EVERY holder id and sending the list back as an `IN (...)`, and then
+  // running a hand-written `$queryRaw` JOIN behind a fallback. Both are gone.
+  //
+  // Three earlier passes refused to declare it because a foreign key is a
+  // migration, migrations auto-apply on API boot (apps/api/package.json
+  // `prisma migrate deploy && node dist/server.js`), no migration in this repo
+  // mentions `user_role_assignments` — the table predates the tracked history —
+  // and a migration that fails on live data takes the API down.
+  //
+  // migrations/20260828100000_scal04_user_role_assignment_fk answers that:
+  // the constraint is added NOT VALID, which reads no existing row and so
+  // cannot fail on data; it is skipped if `pg_constraint` already has it; and
+  // it is wrapped in EXCEPTION WHEN OTHERS so the migration commits regardless.
+  // If the constraint never lands, the QUERY IS UNAFFECTED — Prisma builds the
+  // join from this schema, never from the database's constraint catalogue.
+  //
+  // Cascade, not Prisma's default Restrict for a required relation: nothing in
+  // apps/api/src deletes a User today, and Restrict would silently convert a
+  // future working delete into a foreign-key error.
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, role])
   @@index([userId])

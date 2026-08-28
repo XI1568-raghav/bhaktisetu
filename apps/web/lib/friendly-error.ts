@@ -53,12 +53,67 @@ export function apiErrorCode(body: unknown): string | null {
   return typeof code === 'string' && code.trim() ? code.trim() : null;
 }
 
-/** True if the message looks like an auth/session failure (401/403). */
+/**
+ * True if the message looks like an AUTHENTICATION failure — 401, "we do not
+ * know who you are". The only error class for which signing in again is the
+ * remedy.
+ *
+ * AUTH-06 (2026-08-28): 403 and "forbidden" used to be in here, and that was
+ * wrong in a way that only became load-bearing when AUTH-06 wired `reauth` up
+ * to <ReauthPrompt> — which renders INSTEAD of Retry. See `isForbiddenError`.
+ */
 export function isAuthError(message: string): boolean {
-  return /401|403|unauthorized|unauthenticated|forbidden|demo tokens|invalid.*token|session expired/i.test(
+  return /401|unauthorized|unauthenticated|demo tokens|invalid.*token|session expired/i.test(
     message,
   );
 }
+
+/**
+ * True if the message looks like an AUTHORIZATION refusal — 403, "we know
+ * exactly who you are and you still cannot have this".
+ *
+ * AUTH-06 (2026-08-28) — why this had to be split out of `isAuthError`.
+ *
+ * A 403 never means an expired session in this API. Every one of the ~40
+ * `reply.code(403)` sites is an authorization outcome, and the middleware says
+ * so in its own words (apps/api/src/middlewares/auth.ts:80): "403 (not 401)
+ * signals 'we know who you are, you just can't be here' so the frontend can
+ * show a 'account suspended' screen instead of bouncing back to login". The two
+ * populations are a SUSPENDED account (rejectIfBlocked, :88 — body "Account
+ * suspended: <reason>") and role/ownership guards. Every session failure is a
+ * 401.
+ *
+ * While `reauth` was a flag nobody read, folding 403 in here only mis-worded a
+ * sentence. Once AUTH-06 made <ReauthPrompt> REPLACE the Retry button, it
+ * became a trap: a suspended devotee was told her session had expired, given a
+ * "Sign in again" button, signed in successfully — the block is enforced per
+ * request, not at the door — was sent by `reauthLoginHref(pathname)` straight
+ * back to the page that refused her, and got the same sentence again. A loop
+ * whose only exit is the one control that cannot work is exactly the pathology
+ * AUTH-06 exists to remove.
+ *
+ * Deliberately DISJOINT from `isAuthError` rather than merely ordered ahead of
+ * it, so no future caller can get the wrong answer by testing them in the wrong
+ * order. "Unauthorized" (401's name) is not matched here: the `not authorised`
+ * pattern requires the word break, so 403's "Not authorized for this
+ * consultation." matches and 401's "Unauthorized" does not.
+ */
+export function isForbiddenError(message: string): boolean {
+  return /\b403\b|forbidden|account suspended|\bnot authori[sz]ed\b|role required|insufficient_scope|\bnotorgmember\b|\bnot owner\b/i.test(
+    message,
+  );
+}
+
+/**
+ * What to say when the server refused on authorization grounds. Names support
+ * because that is the ONLY exit from a suspension — and because "please try
+ * again" is advice that can never succeed against one. Says nothing about which
+ * of the two 403 populations this is: `friendlyApiError` sees a bare message,
+ * and guessing "your account is suspended" at a devotee who merely followed a
+ * stale link would be worse than the generic truth.
+ */
+export const FORBIDDEN_ERROR_MESSAGE =
+  'You do not have access to this. Contact support@darshya.online if you think that is wrong.';
 
 /** True if the message looks like a rate-limit (429). */
 export function isRateLimitError(message: string): boolean {
@@ -73,6 +128,12 @@ export function isRateLimitError(message: string): boolean {
 export function friendlyApiError(err: unknown): { message: string; reauth: boolean } {
   const raw = err instanceof Error ? err.message : String(err ?? '');
 
+  // AUTH-06: authorization BEFORE authentication. The two predicates are
+  // disjoint so the order cannot change the answer, but a 403 reaching the
+  // 401 branch is the specific mistake this ordering documents against.
+  if (isForbiddenError(raw)) {
+    return { message: FORBIDDEN_ERROR_MESSAGE, reauth: false };
+  }
   if (isAuthError(raw)) {
     return {
       message: 'Your session has expired. Please sign in again to continue.',

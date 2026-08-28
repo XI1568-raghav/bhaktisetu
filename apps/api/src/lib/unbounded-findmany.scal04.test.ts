@@ -273,7 +273,76 @@ const SRC = join(import.meta.dirname, '..');
  * `/waitlist/stats` day series (see the 2026-08-20 note — smallest payload,
  * least confirmable column name).
  */
-const BASELINE = 84;
+/**
+ * 84 → 83 on 2026-08-28. −1, and it is THE one the four notes above kept
+ * refusing: `admin.service.getUsers`' role filter, recorded here four separate
+ * times as the only read in this API that scales with the whole USER BASE.
+ *
+ *   −1  services/admin.service.ts — the `userRoleAssignment.findMany({ where:
+ *       { role } })` holder scan, which since 2026-08-21 had survived as the
+ *       fallback under the raw-SQL JOIN. Both it and the JOIN are DELETED. The
+ *       endpoint is now one Prisma predicate on the same `where` object the
+ *       count already used:
+ *
+ *         where.roleAssignments = { some: { role } }
+ *
+ * WHAT ACTUALLY CHANGED, SINCE THE NOTE ABOVE PRESCRIBED SOMETHING ELSE. The
+ * 2026-08-21 entry said taking this to 83 needed ONE OBSERVATION, not more
+ * code: hit `GET /api/v1/admin/users?role=PANDIT` against any running API and
+ * check the log for `role JOIN unavailable`. That route is still shut — Render
+ * billing, and the local seeded stack is down — so the observation could not be
+ * made. It is also no longer required, and that is the point: the observation
+ * existed only to prove that hand-written identifiers were correct. A Prisma
+ * relation predicate has no hand-written identifiers. There is nothing left to
+ * observe, so the fallback is not "bypassed pending verification", it is gone.
+ *
+ * THE REFUSAL'S REASON WAS REAL AND IS RETIRED, NOT OVERRULED. It stood on one
+ * thing: `where: { roleAssignments: { some: { role } } }` needs a `@relation`
+ * on `UserRoleAssignment`, a relation needs a foreign key, migrations
+ * auto-apply on API boot (`prisma migrate deploy && node dist/server.js`), NO
+ * migration in prisma/migrations mentions `user_role_assignments` — the table
+ * predates the tracked history — and production is suspended, so whether the
+ * key already exists and whether orphan rows exist are both unknowable. Every
+ * clause of that is still true. What retires it is that
+ * `ADD CONSTRAINT ... NOT VALID` does not read a single existing row: Postgres
+ * skips the verification scan and enforces the key on new and updated rows
+ * only. Unknown data cannot abort a statement that never looks at it. The
+ * migration (20260828100000_scal04_user_role_assignment_fk) additionally skips
+ * on a `pg_constraint` hit and wraps the ALTER in `EXCEPTION WHEN OTHERS`, so
+ * it commits either way, and `VALIDATE CONSTRAINT` — the half that DOES scan,
+ * and the half that CAN fail — is deliberately left as a manual follow-up for
+ * whoever next has a live database.
+ *
+ * AND IF THE CONSTRAINT NEVER LANDS, THE QUERY IS UNAFFECTED. Prisma builds the
+ * join from schema.prisma, never from the database's constraint catalogue. So
+ * the worst case of this migration is the behaviour the product has had since
+ * launch, with the scale fix already in effect.
+ *
+ * MEASURED PAYLOAD for the shape that is gone, from the columns it selected:
+ * the holder scan returned one 36-byte uuid per holder and then sent that list
+ * BACK to Postgres in two statements, so a 200k-holder role cost ~7 MB inbound
+ * plus ~7 MB outbound twice — roughly 21 MB of wire per dashboard hit into a
+ * 512 MB container. After: `limit` rows (≤ 100) and one integer, with the role
+ * string as the only thing outbound. Independent of how many people hold it.
+ *
+ * `services/admin.service.role-filter-sql.scal04.test.ts` IS DELETED, not left
+ * passing. Its entire subject — two `$queryRaw` statements and the id fallback
+ * beneath them — no longer exists, and its central job (re-deriving every
+ * quoted table and column from prisma/schema.prisma) is meaningless once there
+ * is no quoted identifier in the file. Every guarantee it held that still means
+ * something moved to `services/admin.service.role-relation.scal04.test.ts`:
+ * page bounded and offset, total from a COUNT and never from the page length,
+ * page and count constrained by the SAME predicate, unknown role never reaching
+ * the database, and no read of the assignment table except the page-bounded
+ * roles hydration. That file additionally pins the schema declaration and the
+ * five properties that make the migration un-failable.
+ *
+ * STILL REFUSED, unchanged: `/admin/temple-timings` and `/admin/gurukuls`
+ * return whole tables to admin pages that expect the complete list, and the
+ * `/waitlist/stats` day series (see the 2026-08-20 note — smallest payload,
+ * least confirmable column name).
+ */
+const BASELINE = 83;
 
 // −2 on 2026-08-16 — routes/admin-lead-conversion.ts, GET /admin/leads/conversion.
 //

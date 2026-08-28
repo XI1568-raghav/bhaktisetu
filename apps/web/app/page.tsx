@@ -475,9 +475,25 @@ export default async function HomePage() {
  <p className="text-sm font-semibold mt-0.5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}></p>
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Lucky: 7</p>
  </div>
- {/* Kundli chart icon */}
+ {/* CM-11 / AW-02: this tile was a `data-counter` count-up reading "15+"
+     above the word "Astrologers". Fifteen was not an estimate — it is the
+     size of the in-memory astrologer fixture, and AW-02 ("the LAST door
+     that still sold the 15 invented astrologers") rebound the directory,
+     the profile page, the reviews and booking endpoints and the Expo
+     app's only astrologer source onto real supply: three approved
+     profiles. The homepage was the door it missed, advertising the
+     fixture's headcount at five times the real roster, animated so it
+     read as a live metric.
+
+     The replacement follows the ruling lib/platform-stats.ts already made
+     for the pandit headcount — "the honest move on a trust strip is to
+     make a claim that is not about volume at all". This makes a claim
+     about vetting instead, which is true of every profile the directory
+     will serve. Restore a number here only if it comes from a server
+     count, the way `verifiedTempleClaim` does. Guarded by
+     __tests__/funnel-inventory-claims.test.tsx. */}
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center items-center text-center" style={{ background: 'rgba(79, 70, 229, 0.10)' }}>
- <p data-counter data-counter-target="15+" className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#4f46e5' }}>15+</p>
+ <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#4f46e5' }}>Verified</p>
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Astrologers</p>
  </div>
  </div>

@@ -217,8 +217,20 @@ root cause as the checkout exclusion in §1. Documented in the code.
 
 ### 5.3 Session-dropping hand-offs (PAR-22 C, open)
 
-**23 `Linking.openURL` call sites** exist in `apps/mobile`. They fall into three
-groups, and only the first is a defect.
+**19 `Linking.openURL` occurrences** exist in `apps/mobile` outside the tests:
+**16 real invocations**, plus **3 places the function is passed as a value** to a
+helper that calls it (`astrology.tsx` x2, `support.tsx` x1), spread across 14
+files. They fall into three groups, and only the first is a defect.
+
+> **This count is parsed, not grepped, and that changed it.** The figure here
+> used to read 23. It was reached with a text search, which counted four
+> *comment* mentions — in `pujas.tsx`, `store.tsx`, `yatra-detail.tsx` and
+> `booking-flow.ts` — describing bounce-outs that PAR-15, PAR-16 and PAR-18 had
+> already **removed**. A text search cannot tell a call from a paragraph about a
+> call, which is the same mistake in the same direction as the JSDoc break that
+> took `tsc` down in `lib/in-app-web.ts`. `mobile-v1-scope.par22.test.ts` now
+> re-derives this number from the tree with the TypeScript parser on every run,
+> so it fails instead of rotting.
 
 > Line numbers below were measured on 2026-08-20 and are indicative only —
 > several of these files were being edited concurrently by other work in the
@@ -230,8 +242,7 @@ the user to sign in again:**
 
 | Call site | Destination |
 |---|---|
-| `app/(devotee)/astrology.tsx:205` | hardcoded `https://darshya.online/astrology…` |
-| `app/(devotee)/astrology.tsx:240` | hardcoded `https://darshya.online/astrology…` |
+| `app/(devotee)/astrology.tsx` (x2, indirect — see below) | hardcoded `https://darshya.online/astrology…` |
 | `app/(devotee)/temples.tsx:43` | temple detail page |
 | `app/(devotee)/donations.tsx:129` | donation payment |
 | `app/(devotee)/upgrade.tsx:118` | plan upgrade |
@@ -240,19 +251,47 @@ the user to sign in again:**
 | `lib/inbox.tsx:525` | web inbox surface |
 | `app/(devotee)/search.tsx:70` | non-live temple + content results (new; inherits the same constraint) |
 
-**Blocked on the same missing dependency as §5.1** — the fix is one shared
-in-app browser route mirroring the optional-require guard already at
-`darshan-player.tsx:22-29`, and that guard is exactly what cannot be relied on
-until `react-native-webview` is a real dependency.
+`astrology.tsx` is the one entry whose **mechanism has already changed**: it no
+longer calls `Linking.openURL` itself. Both controls route through
+`openWebHandoff` in `lib/in-app-web.ts`, passing `Linking.openURL` as the
+`openExternal` dependency — which is why the parser counts them as value
+references rather than invocations. The destination is unchanged **today**,
+because `openWebHandoff` falls back to the browser whenever
+`WEBVIEW_AVAILABLE` is false, and it is false in every build produced from this
+tree.
+
+**The in-app route is written and dormant; only the dependency is missing.**
+This entry no longer describes work to do in `apps/mobile`. `lib/in-app-web.ts`
+(routing + origin equality + navigation guard), `lib/webview-module.ts` (the
+single optional `require`) and `app/(devotee)/web-view.tsx` (the screen, with
+its `href:null` tab declaration) all exist and are covered by tests. The
+remaining cost is the install itself:
+
+```
+npx expo install react-native-webview      # in apps/mobile
+```
+
+It touches `apps/mobile/package.json` **and regenerates the root
+`pnpm-lock.yaml`**, which every workspace and every `pnpm install
+--frozen-lockfile` job shares (`ci.yml:50`, `e2e.yml`, `sentry-release.yml` and
+four agent workflows), and a native module additionally needs a fresh EAS build
+under the owner's Expo account. Two tests are deliberate tripwires that will go
+**red on purpose** the moment it lands, and must be updated in the same change:
+`astrology-bounceout-honesty.par22.test.ts` (drop `'react-native-webview'` from
+`KNOWN_ABSENT`) and `mobile-v1-scope.par22.test.ts` (the assertion that it is
+not a declared dependency). That is them working.
 
 **(b) Correctly external — leave alone.** `mailto:` / `tel:` in
 `gurukul-detail.tsx:72,77,83`; Jitsi room URLs in `consultations.tsx:69`,
 `(astrologer)/consultations.tsx:60,66` and `inbox.tsx:412` (a video SDK, not a
 web page); `support.tsx:103`; `darshan-player.tsx:133` (YouTube fallback).
 
-**(c) Catalogue deep links** — `pujas.tsx:74`, `store.tsx:31`,
-`yatra-detail.tsx:54`, `booking-flow.ts:7`. Lower priority: these open public
-pages where losing the session costs nothing.
+**(c) Catalogue deep links — this group is now empty.** It used to list
+`pujas.tsx`, `store.tsx`, `yatra-detail.tsx` and `booking-flow.ts`. **None of
+those four calls `Linking.openURL` any more** — PAR-15, PAR-16 and PAR-18
+replaced every one with an in-app flow, and what a grep still finds in them is
+a comment recording the behaviour that was removed. They are named here only so
+the next reader does not re-add them from a search hit.
 
 ### 5.4 `content.tsx` renders hardcoded rows
 
@@ -270,8 +309,21 @@ reachable.
 Mobile v1 is complete when, and only when:
 
 1. Every screen listed in §1 and §2 reads a real endpoint and renders an honest
-   empty/error state — **met today**; `apps/mobile` is 247/247 tests green with
-   `tsc --noEmit` clean.
+   empty/error state — **met today**; `apps/mobile` is **600/600 tests green
+   across 23 files** with `tsc --noEmit` clean (measured 2026-08-28; the figure
+   here previously read 247/247).
+
+   > `tsc --noEmit` was **not** clean when that line was last written, and the
+   > suite was not fully green either. `lib/in-app-web.ts` documented
+   > react-native-webview's `originWhitelist` internals by pasting the library's
+   > two regex literals into a JSDoc block; both end in a star followed by a
+   > slash, which closed the comment early and handed the rest of the paragraph
+   > to the parser as code. The package emitted 18+ syntax errors and two test
+   > files — `in-app-web.par22.test.ts` and `webview-origin-guard.par22.test.ts`,
+   > 57 assertions between them — could not be collected at all, so vitest
+   > reported them as failed *files* and the assertions silently stopped running.
+   > `source-parses.par22.test.ts` now parses every `.ts`/`.tsx` under `lib/` and
+   > `app/` with the TypeScript parser so this class cannot return.
 2. §5.1 is closed: a devotee can pay for a booking without leaving the app.
 3. §5.3 (a) is closed: no signed-in action drops the session into a browser.
 
