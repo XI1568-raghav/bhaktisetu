@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../lib/api-config';
 import { friendlyApiError } from '../../lib/friendly-error';
+import ReauthPrompt from '../../components/ReauthPrompt';
 // DB-09: whether a stored videoProofUrl is something a browser can open, and
 // what to render when the status promised a video that is not there.
 import { videoProofState } from './video-proof';
@@ -354,6 +355,18 @@ function BookingsContent() {
  className="mb-4 flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
  >
  <span>Could not load your bookings. {loadError.message}</span>
+ {/* AUTH-06: INSTEAD of Retry, never beside it. `reauth` means the
+ request 401'd, and Retry re-fires it with the same dead credential —
+ so leaving it there puts the one control that cannot work next to a
+ sentence telling the devotee to sign in again, and makes the useless
+ one look like the way out. Every other failure keeps Retry, which is
+ the right control for a 5xx or a dropped connection. */}
+ {loadError.reauth ? (
+ <ReauthPrompt
+ message=""
+ className="flex shrink-0 flex-col items-start gap-2 self-start sm:self-auto"
+ />
+ ) : (
  <button
  type="button"
  onClick={() => void refetch()}
@@ -363,6 +376,7 @@ function BookingsContent() {
  <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
  Retry
  </button>
+ )}
  </div>
  )}
  {/* Tabs */}

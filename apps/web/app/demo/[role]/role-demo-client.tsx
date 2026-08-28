@@ -374,7 +374,7 @@ function DevoteeScreen5() {
  </div>
  <span className="text-xs text-surface-500">12.4K watching</span>
  </div>
- <h1 className="text-base font-bold text-white mt-1">Kashi Vishwanath</h1>
+ <h1 className={`${H1.portalInverse} mt-1`}>Kashi Vishwanath</h1>
  <p className="text-xs text-surface-500">Morning Aarti &middot; Varanasi</p>
  </div>
  <div className="flex items-center gap-2">
@@ -1799,7 +1799,7 @@ export function RoleDemoClient({ role }: { role: string }) {
 
  {/* Screen title + step */}
  <div className="text-center pt-6 pb-4 px-6">
- <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+ <h1 className={H1.portalInverse}>
  {currentEntry.title}
  </h1>
  <p className="text-surface-500 text-sm mt-1">

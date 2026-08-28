@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, ArrowRight, Award, IndianRupee } from 'lucide-react';
+import { MapPin, ArrowRight, Award } from 'lucide-react';
 import { getApprovedProviders, type ProviderListingType, type ApprovedProvider } from '../lib/api';
 import ProviderBadge, { RatingDisplay } from './provider/ProviderBadge';
 
@@ -174,10 +174,27 @@ export async function ApprovedProvidersStrip({
 
  <div className="flex items-center justify-between pt-2 border-t border-surface-100">
  <RatingDisplay avg={ratingAvg} count={ratingCount} size="xs" />
+ {/* PM-10 (F051) — this rendered `<IndianRupee />` and then
+   `{price.replace('₹','')}`, i.e. it took the currency OFF the string
+   getPriceLabel had just formatted and replaced it with a decorative
+   lucide SVG. The rendered TEXT was therefore "25 / min" — the exact
+   bare number the finding quotes, on the exact surface it names
+   ("Verified astrologers on Darshya" at /astrology).
+
+   A glyph drawn as an icon is not a glyph anyone can read as text:
+   a screen reader announces nothing for an unlabelled inline SVG, and
+   copy-paste, browser translate, in-page find, print stylesheets and
+   every text scraper get the price with no currency at all. The other
+   five per-minute surfaces in the app (AstrologyClient,
+   LiveAstrologersClient, AstrologerProfileClient and the two booking
+   steps) all print ₹ as text; this was the outlier.
+
+   A previous pass read getPriceLabel — which does format `₹${n}` — and
+   concluded the finding was already fixed. It is 130 lines above the
+   line that undid it. */}
  {price && (
  <span className="text-xs font-semibold text-surface-700 inline-flex items-center">
- <IndianRupee className="w-3 h-3" />
- {price.replace('₹', '')}
+ {price}
  </span>
  )}
  </div>

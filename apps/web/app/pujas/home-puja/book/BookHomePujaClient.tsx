@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -8,25 +8,38 @@ import {
  ChevronRight,
  ChevronLeft,
  Calendar,
- MapPin,
  User,
  Package,
  CreditCard,
  Star,
- BadgeCheck,
- Clock,
  Home,
  Shield,
  Sparkles,
  Phone,
 } from 'lucide-react';
-import { homePujaCategories, homePandits, type Pandit } from '../../../../lib/home-pujas';
+import { homePujaCategories } from '../../../../lib/home-pujas';
+import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api';
+import { remoteImage, IMG_W } from '../../../../lib/images';
+import { PanditAvatar } from '../../PanditAvatar';
 import { DateInput } from '../../../../components/ui/DateInput';
 import { WizardSteps } from '../../../../components/ui/WizardSteps';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
 type StepId = 1 | 2 | 3 | 4 | 5;
+
+/**
+ * TC-05 / TC-08. Step 2 used to list `homePandits` filtered by the category's
+ * `recommendedPanditIds` — eight hand-typed people with invented names, cities,
+ * university credentials, star ratings, review counts in the hundreds, per-tier
+ * prices and a `verified: { aadhaar, background, vedicCert }` block, under the
+ * heading "N verified specialists available for <ceremony>".
+ *
+ * It now reads the real directory over `GET /priests`. That list can be empty,
+ * and a required step over an empty list is an unfinishable checkout, so "no
+ * preference" is a selectable value and travels through to the coordinator.
+ */
+const NO_PREFERENCE = 'no-preference';
 
 const steps = [
  { id: 1 as StepId, label: 'Event details', icon: Calendar },
@@ -64,10 +77,35 @@ function BookHomePujaInner() {
  () => homePujaCategories.find((c) => c.slug === slug),
  [slug],
  );
- const pandits = useMemo(
- () => homePandits.filter((p) => category?.recommendedPanditIds.includes(p.id) ?? false),
- [category],
- );
+ const [priests, setPriests] = useState<PriestSummary[] | null>(null);
+
+ useEffect(() => {
+  let cancelled = false;
+  // getPublicPriests catches its own failures and answers [], so an API that is
+  // down yields the same honest "no preference only" step as an API with no
+  // published pandits — never a fabricated roster.
+  void getPublicPriests().then((list) => {
+   if (!cancelled) setPriests(list);
+  });
+  return () => {
+   cancelled = true;
+  };
+ }, []);
+
+ // The deleted fixture mapped each category to four hand-picked ids. The real
+ // directory carries `specializations`, so match on those and fall back to the
+ // whole list rather than showing an empty step when nobody is tagged.
+ const pandits = useMemo(() => {
+  const all = priests ?? [];
+  if (!category) return all;
+  const needle = category.name.toLowerCase();
+  const matched = all.filter((p) =>
+   p.specializations.some(
+    (s) => s.toLowerCase().includes(needle) || needle.includes(s.toLowerCase()),
+   ),
+  );
+  return matched.length > 0 ? matched : all;
+ }, [category, priests]);
 
  const [step, setStep] = useState<StepId>(1);
 
@@ -95,7 +133,14 @@ function BookHomePujaInner() {
  const [paying, setPaying] = useState(false);
  const [paid, setPaid] = useState(false);
 
- const selectedPandit: Pandit | undefined = pandits.find((p) => p.id === panditId);
+ const selectedPandit = pandits.find((p) => p.id === panditId);
+ // One derivation for the confirmation screen, the review row, the sticky
+ // sidebar and the coordinator email, so the four cannot disagree.
+ const panditLabel = selectedPandit
+  ? selectedPandit.displayName
+  : panditId === NO_PREFERENCE
+   ? 'No preference — coordinator to match'
+   : '';
  const totalAmount = category ? category.pricing[tier] : 0;
 
  if (!category) {
@@ -146,7 +191,7 @@ function BookHomePujaInner() {
  if (paid) {
  const callbackSubject = encodeURIComponent(`Home Puja request — ${category.name}`);
  const callbackBody = encodeURIComponent(
- `I'd like to book a home puja.\n\nCategory: ${category.name}\nPreferred pandit: ${selectedPandit?.name ?? 'No preference'}\nPreferred date: ${date || 'Flexible'}\nTime slot: ${slot || 'Flexible'}\nTier: ${tier}\n\nPlease call me to confirm.`,
+ `I'd like to book a home puja.\n\nCategory: ${category.name}\nPreferred pandit: ${panditLabel || 'No preference'}\nPreferred date: ${date || 'Flexible'}\nTime slot: ${slot || 'Flexible'}\nTier: ${tier}\n\nPlease call me to confirm.`,
  );
  const opsPhone = '+919255109400';
  return (
@@ -160,9 +205,9 @@ function BookHomePujaInner() {
  Online booking for <span className="font-semibold text-surface-800">{category.name}</span> isn&apos;t available yet.
  Our pooja coordinator will call you to confirm the date, pandit, and pricing.
  </p>
- {selectedPandit && (
+ {panditLabel && (
  <p className="mt-3 text-surface-500 text-sm">
- Preferred pandit: <span className="font-medium text-surface-700">{selectedPandit.name}</span>
+ Preferred pandit: <span className="font-medium text-surface-700">{panditLabel}</span>
  {date && <> · {date}</>}
  </p>
  )}
@@ -315,7 +360,11 @@ function BookHomePujaInner() {
  <div>
  <h2 className="text-xl font-bold text-surface-800 mb-1">Select pandit</h2>
  <p className="text-sm text-surface-500 mb-6">
- {pandits.length} verified specialists available for {category.name}.
+ {priests === null
+ ? 'Loading pandits\u2026'
+ : pandits.length > 0
+ ? `${pandits.length} pandit${pandits.length === 1 ? '' : 's'} listed on Darshya. Pick one, or let the coordinator match you.`
+ : `No pandit profiles are published yet. The pooja coordinator will match you with a pandit for ${category.name} when they call.`}
  </p>
 
  <div className="space-y-3">
@@ -330,40 +379,78 @@ function BookHomePujaInner() {
  >
  <input
  type="radio"
+ name="home-puja-pandit"
  checked={panditId === p.id}
  onChange={() => setPanditId(p.id)}
  className="sr-only"
  />
- <div
- className="w-14 h-14 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0"
- style={{ background: p.avatarBg }}
- >
- {p.initials}
- </div>
+ <PanditAvatar
+ src={p.avatarUrl ? remoteImage(p.avatarUrl, IMG_W.THUMB) : null}
+ name={p.displayName}
+ className="w-14 h-14 rounded-lg text-lg"
+ />
  <div className="flex-1 min-w-0">
- <div className="flex items-start gap-1.5">
- <div className="font-semibold text-surface-800">{p.name}</div>
- <BadgeCheck className="w-4 h-4 text-tulsi-green flex-shrink-0 mt-0.5" />
+ <div className="font-semibold text-surface-800">{p.displayName}</div>
+ {p.specializations.length > 0 && (
+ <div className="text-xs text-surface-500 mt-0.5 truncate">
+ {p.specializations.slice(0, 3).join(' \u00b7 ')}
  </div>
- <div className="text-xs text-surface-500 mt-0.5">{p.title}</div>
- <div className="flex items-center gap-2 mt-1.5 text-xs">
+ )}
+ <div className="flex items-center gap-2 mt-1.5 text-xs flex-wrap">
+ {/* TC-05: a rating renders only where a devotee actually left one.
+     The deleted fixture printed 4.7-4.9 for every row. */}
+ {p.ratingCount > 0 ? (
+ <span className="flex items-center gap-1">
  <Star className="w-3 h-3 text-temple-gold fill-temple-gold" />
- <span className="font-semibold">{p.rating}</span>
- <span className="text-surface-400">({p.reviewCount})</span>
- <span className="text-surface-300">·</span>
- <span className="text-surface-500">{p.experience} yrs</span>
- <span className="text-surface-300">·</span>
- <span className="text-surface-500">{p.city}</span>
+ <span className="font-semibold">{p.ratingAvg.toFixed(1)}</span>
+ <span className="text-surface-400">({p.ratingCount})</span>
+ </span>
+ ) : (
+ <span className="text-surface-400">No reviews yet</span>
+ )}
+ {p.experienceYears > 0 && (
+ <>
+ <span className="text-surface-300">&middot;</span>
+ <span className="text-surface-500">{p.experienceYears}+ yrs</span>
+ </>
+ )}
  </div>
+ {p.languages.length > 0 && (
+ <div className="text-xs text-surface-500 mt-1">
+ Languages: {p.languages.slice(0, 4).join(', ')}
  </div>
- <div className="text-right">
- <div className="text-xs text-surface-400">from</div>
- <div className="font-bold text-surface-800">
- ₹{p.pricing.homePuja.basic.toLocaleString('en-IN')}
- </div>
+ )}
  </div>
  </label>
  ))}
+
+ {/* The directory can legitimately be empty, and a required step over an
+     empty list is an unfinishable checkout. "No preference" is a real
+     selection and travels through to the coordinator request. */}
+ <label
+ className={`flex gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+ panditId === NO_PREFERENCE
+ ? 'border-saffron-500 bg-saffron-50'
+ : 'border-[var(--color-border)] bg-white hover:border-saffron-300'
+ }`}
+ >
+ <input
+ type="radio"
+ name="home-puja-pandit"
+ checked={panditId === NO_PREFERENCE}
+ onChange={() => setPanditId(NO_PREFERENCE)}
+ className="sr-only"
+ />
+ <div className="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center flex-shrink-0">
+ <User className="w-6 h-6 text-surface-400" />
+ </div>
+ <div className="flex-1 min-w-0">
+ <div className="font-semibold text-surface-800">No preference</div>
+ <div className="text-xs text-surface-500 mt-0.5">
+ The pooja coordinator matches a pandit to your ceremony, date and language.
+ </div>
+ </div>
+ </label>
  </div>
  </div>
  )}
@@ -480,7 +567,7 @@ function BookHomePujaInner() {
 
  <div className="space-y-3">
  <Row label="Puja" value={category.name} />
- <Row label="Pandit" value={selectedPandit?.name ?? '—'} />
+ <Row label="Pandit" value={panditLabel || '—'} />
  <Row label="Date" value={date || '—'} />
  <Row label="Slot" value={slot ? timeSlots.find((t) => t.id === slot)?.label ?? slot : '—'} />
  <Row label="Address" value={`${address}, ${city} ${pincode}`} />
@@ -578,10 +665,10 @@ function BookHomePujaInner() {
  <span className="text-surface-500">Duration</span>
  <span className="font-medium text-surface-800">{category.duration}</span>
  </div>
- {selectedPandit && (
+ {panditLabel && (
  <div className="flex justify-between">
  <span className="text-surface-500">Pandit</span>
- <span className="font-medium text-surface-800 text-right">{selectedPandit.name}</span>
+ <span className="font-medium text-surface-800 text-right">{panditLabel}</span>
  </div>
  )}
  {date && (

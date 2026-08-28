@@ -229,22 +229,47 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
 /* ══ DU-05 / DU-06 ═══════════════════════════════════════════════════════ */
 
 describe('DU-05 / DU-06 — one h1 recipe per archetype, on the display face', () => {
-  const recipe = read('components/ui/heading-recipe.ts');
+  /*
+   * COMMENT-FREE, as everything else in this file that scans source text is.
+   * This block used the raw `read`, and heading-recipe.ts documents each
+   * archetype in prose that names the other archetypes — so a key scan and a
+   * `heading-display` lookup were both satisfiable by documentation. Nothing
+   * was wrong at HEAD, but the fifth archetype added below arrives with a long
+   * note, and this is the file's own stated rule.
+   */
+  const recipe = readCode('components/ui/heading-recipe.ts');
 
-  it('defines exactly the four archetypes the finding asked for', () => {
+  it('defines exactly the five archetypes the app ships', () => {
+    /*
+     * Four were what DU-05 asked for. `portalInverse` is the fifth, added
+     * 2026-08-28: portal chrome on a DARK surface, which the finding's four
+     * names did not cover and which five h1s needed (app/darshan/[id] x2,
+     * app/demo/[role] x2, app/mobile/darshan — small light copy on a dark bar,
+     * where `detail` is a 30/36px display-face hero and `portal` is dark ink).
+     */
     const keys = [...recipe.matchAll(/^\s{2}(\w+):/gm)].map((m) => m[1]);
-    expect(keys.sort()).toEqual(['catalogue', 'detail', 'marketing', 'portal']);
+    expect(keys.sort()).toEqual([
+      'catalogue',
+      'detail',
+      'marketing',
+      'portal',
+      'portalInverse',
+    ]);
   });
 
-  it('marketing, catalogue and detail carry the display face; portal does not', () => {
+  it('marketing, catalogue and detail carry the display face; the portal pair does not', () => {
     const entry = (k: string) =>
-      new RegExp(`${k}:\\s*\\n?\\s*'([^']+)'`).exec(recipe)?.[1] ?? '';
+      new RegExp(`\\b${k}:\\s*\\n?\\s*'([^']+)'`).exec(recipe)?.[1] ?? '';
     for (const k of ['marketing', 'catalogue', 'detail']) {
       expect(entry(k), k).toContain('heading-display');
     }
-    expect(entry('portal'), 'a provider lives in the dashboard all day').not.toContain(
-      'heading-display',
-    );
+    for (const k of ['portal', 'portalInverse']) {
+      expect(entry(k), 'a provider lives in the dashboard all day').not.toContain(
+        'heading-display',
+      );
+    }
+    expect(entry('portal'), 'the portal entry stopped parsing').toMatch(/text-\w+/);
+    expect(entry('portalInverse'), 'the portalInverse entry stopped parsing').toMatch(/text-\w+/);
   });
 
   it('.heading-display resolves to the display token, not a literal family', () => {

@@ -3,9 +3,16 @@
 > **Status: authoritative.** Written 2026-08-20 for `OPS-06`.
 > Supersedes the rollback paragraphs in `docs/deploy-runbook-2026-04-28.md`
 > (§"Rollback procedures") and `docs/sentry-releases.md` (§"Reverting a bad
-> release"). Both of those say *revert the commit and push*. **That does
+> release"). Both of those used to say *revert the commit and push*. **That does
 > nothing.** See "Why the old procedure cannot work" below before you argue
 > with this file.
+>
+> Updated 2026-08-28: both of those sections have since been rewritten to point
+> here, each keeping the old command visible and explicitly marked as deploying
+> nothing — so a reader who half-remembers it is corrected rather than left to
+> re-derive the failure. `docs/render-web-cutover-runbook.md` was corrected the
+> same way on 2026-08-20. If you find any *other* page still presenting a revert
+> as a rollback, it is stale and this file wins.
 
 ## TL;DR
 

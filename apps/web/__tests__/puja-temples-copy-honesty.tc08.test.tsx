@@ -241,17 +241,19 @@ describe('TC-08 — the page asserts no verification for temples it does not che
  * what it was meant to check, on stripped source, so the finding no longer
  * rests on it.
  *
- * NOT a red-then-green fix: both surfaces below already pass. It is a
- * regression guard, and it is load-bearing because the identical assertion
- * fails today on two surfaces this lane cannot edit — app/pujas/book/page.tsx
- * (canPublishTrustScore 0, formatTrustScoreOutOf 1, still gated on the weaker
- * hasMeaningfulTrustScore) and app/pujas/[slug]/page.tsx (canPublishTrustScore
- * 0, formatTrustScoreOutOf 1, ungated). Add them here when they are fixed.
+ * 2026-08-28: the two surfaces this block previously listed as unreachable —
+ * app/pujas/book/page.tsx (gated on the weaker `hasMeaningfulTrustScore`) and
+ * app/pujas/[slug]/page.tsx (no gate at all) — are now in the array and were
+ * confirmed RED against it before being fixed. Both rendered a filled amber
+ * star beside "4.9/5", which a devotee reads as a customer rating, over a
+ * column nothing in the codebase writes.
  */
 describe('TC-07 — every surface that prints the score checks whether it means anything', () => {
   const GATED_SURFACES = [
     'app/pujas/[slug]/temples/page.tsx',
     'app/temples/[slug]/page.tsx',
+    'app/pujas/[slug]/page.tsx',
+    'app/pujas/book/page.tsx',
   ];
 
   const count = (src: string, re: RegExp) => (src.match(re) ?? []).length;

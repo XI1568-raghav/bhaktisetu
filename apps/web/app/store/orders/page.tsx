@@ -35,6 +35,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -98,12 +99,17 @@ function StoreOrdersInner() {
   const [orders, setOrders] = useState<StoreOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // AUTH-06: the flag `friendlyApiError` has returned since P1 #208 and that
+  // no page read. A 401 here is a dead session, and the sentence it produces
+  // instructs the buyer to sign in again — so something has to let them.
+  const [reauth, setReauth] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError(null);
+      setReauth(false);
       try {
         const headers: Record<string, string> = { 'content-type': 'application/json' };
         if (session?.accessToken) headers.authorization = `Bearer ${session.accessToken}`;
@@ -119,7 +125,11 @@ function StoreOrdersInner() {
         if (cancelled) return;
         // Never fall back to sample orders — an unreadable list must read as
         // unreadable, not as "you have no orders".
-        setError(friendlyApiError(err).message);
+        // AUTH-06: and when the reason is a dead session, say so with a link
+        // that can fix it — this page reads the flag now instead of dropping it.
+        const { message, reauth: needsReauth } = friendlyApiError(err);
+        setError(message);
+        setReauth(needsReauth);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -161,7 +171,11 @@ function StoreOrdersInner() {
           <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
             <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
             <p className="text-sm font-medium text-red-800">We could not load your orders</p>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
+            {reauth ? (
+              <ReauthPrompt message={error} className="mt-2 flex flex-col items-center gap-3" />
+            ) : (
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            )}
           </div>
         )}
 

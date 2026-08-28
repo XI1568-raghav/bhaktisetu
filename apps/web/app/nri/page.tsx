@@ -72,15 +72,36 @@ const nriServiceJsonLd = {
   description: honestServiceDescription(nriPremiumServiceJsonLd.description),
 };
 
+/**
+ * TC-04, item 4 — the metadata was NOT gated on `NRI_PREMIUM_IS_SELLABLE`,
+ * while the whole page body was.
+ *
+ * These three strings are what Google prints in a SERP entry and what
+ * WhatsApp, Slack and iMessage render in a link preview, so the one channel
+ * that reaches someone who has never opened the site went on advertising
+ * "₹5,000 per year" and the six unenforced benefits — long after both
+ * activation rails started answering 400 with the withdrawal message. A search
+ * snippet also outlives the deploy that changed the page.
+ *
+ * Gated, not deleted: the priced copy is the `true` branch and returns intact
+ * the day a benefit gets a non-null `enforcedBy`. The withdrawn-state copy
+ * still describes what /nri is for — it remains a real landing page for the
+ * diaspora with nothing to sell — and keeps the word "receipt" without the 80G
+ * claim beside it, which TC-01 requires separately.
+ *
+ * Guarded by __tests__/tc04-nri-withdrawn-metadata.test.tsx.
+ */
 export const metadata: Metadata = {
   title: 'NRI Premium — Stay Connected to India',
-  description:
-    'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free donation receipt PDFs, unlimited AI Pandit. ₹5,000 per year, charged in INR (about $60).',
+  description: NRI_PREMIUM_IS_SELLABLE
+    ? 'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free donation receipt PDFs, unlimited AI Pandit. ₹5,000 per year, charged in INR (about $60).'
+    : 'Book pujas at Indian temples from abroad, watch live darshan in your timezone, and donate to temples and gaushalas with a receipt emailed to you. Built for the Indian diaspora. The NRI Premium membership is not currently sold.',
   alternates: { canonical: 'https://darshya.online/nri' },
   openGraph: {
     title: 'NRI Premium — Darshya',
-    description:
-      'Annual all-access tier built for the Indian diaspora. ₹5,000 per year, charged in INR (about $60).',
+    description: NRI_PREMIUM_IS_SELLABLE
+      ? 'Annual all-access tier built for the Indian diaspora. ₹5,000 per year, charged in INR (about $60).'
+      : 'Pujas, live darshan and donations at Indian temples, for the Indian diaspora. The NRI Premium membership is not currently sold.',
     url: 'https://darshya.online/nri',
     type: 'website',
     images: ['/og/nri-premium.jpg'],
@@ -88,7 +109,9 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'NRI Premium — Darshya',
-    description: 'Annual all-access for the Indian diaspora. ₹5,000/yr, charged in INR.',
+    description: NRI_PREMIUM_IS_SELLABLE
+      ? 'Annual all-access for the Indian diaspora. ₹5,000/yr, charged in INR.'
+      : 'Pujas, live darshan and donations at Indian temples, for the Indian diaspora.',
   },
 };
 

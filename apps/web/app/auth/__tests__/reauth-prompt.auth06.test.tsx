@@ -85,6 +85,16 @@ describe('AUTH-06 — ReauthPrompt renders the way out, not just the diagnosis',
     expect(document.body.textContent ?? '').toMatch(/sign in/i);
   });
 
+  it('renders no paragraph when the caller passes an empty message', () => {
+    // /bookings already prints the sentence in its own alert row and only wants
+    // the control. `message=""` therefore means "I said it" — distinct from
+    // omitting the prop, which means "say it for me". Without this the prompt
+    // emitted an empty <p> into the middle of that row.
+    const { container } = render(<ReauthPrompt message="" />);
+    expect(container.querySelector('p')).toBeNull();
+    expect(container.querySelector('a[href^="/auth/login"]')).not.toBeNull();
+  });
+
   it('offers no Retry — retrying a 401 re-fires the same dead session', () => {
     render(<ReauthPrompt />);
     expect(screen.queryByRole('button', { name: /retry|try again/i })).toBeNull();

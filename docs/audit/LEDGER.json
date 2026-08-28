@@ -737,8 +737,8 @@
   "workflow": "launch-readiness-delta",
   "line": 329,
   "title": "Paid plans sell a commission discount that is implemented nowhere — ₹4,999/mo buys nothing",
-  "state": "partial",
-  "commit": "wave-triage26-final",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "Owner decides: implement the tier→commission override in apps/api/src/lib/commission-math.ts and have all five Commission writers resolve through it ("
  },
  {
@@ -765,8 +765,8 @@
   "workflow": "launch-readiness-delta",
   "line": 341,
   "title": "Advertised commission rate differs from the charged rate for most roles — including one role over-charged",
-  "state": "partial",
-  "commit": "wave-triage26-2026-08-24",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "already_fixed · Does not reproduce as published. The four-column tier ladder is gone from the rendered table; l"
  },
  {
@@ -793,8 +793,8 @@
   "workflow": "launch-readiness-delta",
   "line": 353,
   "title": "NRI Premium ₹5,000/year sells at least two benefits that do not exist",
-  "state": "partial",
-  "commit": "wave-triage26-final",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "Two reasons. (1) Lane: the feature list is server data in apps/api, explicitly DO-NOT-TOUCH for this cluster, and it is what /pricing renders verbatim"
  },
  {
@@ -863,8 +863,8 @@
   "workflow": "launch-readiness-delta",
   "line": 383,
   "title": "Senior astrologers are priced 2-4x below the market ceiling, capping the highest-margin repeat revenue line",
-  "state": "open",
-  "commit": "wave-triage26-final",
+  "state": "partial",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -2795,8 +2795,8 @@
   "workflow": "authenticated-deep",
   "line": 1656,
   "title": "Reading size for body copy varies from 12px to 18px across the product — five different paragraph styles, and 12px/13.4px is below comfortable reading size",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "The other half — one prose size for all body copy — is unclosed. The five per-page paragraph styles the sweep measured (12px on /priest through 18px on /pujas) "
  },
  {
@@ -2851,8 +2851,8 @@
   "workflow": "authenticated-deep",
   "line": 1695,
   "title": "Page container width changes route to route — 11 distinct max-w values across 679 container declarations",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "~700 declarations remain on /pricing, the detail routes, the seven provider portals and the content library. Not migrated; the guard states this explicitly."
  },
  {
@@ -3173,8 +3173,8 @@
   "workflow": "authenticated-deep",
   "line": 1931,
   "title": "Cancellation and refund confirmations never state the amount, and the refund dialog promises the full payment back",
-  "state": "partial",
-  "commit": "wave-triage26-final",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "Two blockers. (1) Lane: apps/web/app/bookings/view/page.tsx is not a legal or policy page and is not in my edit list; the devotee-booking ar"
  },
  {
@@ -3313,8 +3313,8 @@
   "workflow": "authenticated-deep",
   "line": 2035,
   "title": "Store runs a permanently-live 'Akshaya Tritiya Sale — offer valid till April 30' with struck-through MRPs, four months after that date",
-  "state": "partial",
-  "commit": "wave-triage26-final",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "Two blocks. (1) LANE: the render sites are apps/web/app/store/** and the data is apps/web/lib/products.ts, feeding lib/store-pricing.ts — app/store/**"
  },
  {
@@ -3789,8 +3789,8 @@
   "workflow": "scale-mindset",
   "line": 2981,
   "title": "Card and hero copy is a 1,144-character scripture excerpt; raw enum values like \"special_occasion\" are shown to customers",
-  "state": "partial",
-  "commit": "verify-wave-2026-08-19",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "[independently verified] apps/api CONTRACT CHANGE, out of lane this wave: add a shortDescription/cardBlurb field (100-140 chars, benefit-first) to the puja type model, return it from GE"
  },
  {
@@ -4447,8 +4447,8 @@
   "workflow": "scale-mindset",
   "line": 3269,
   "title": "Accept-Language is never negotiated — no i18n config, no middleware locale logic, no redirect",
-  "state": "partial",
-  "commit": "wave-triage26-2026-08-24",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "OWNER DECISION, not code: whether a first-time visitor whose browser asks for Hindi should be switched, or only offered. Recommendation is to keep offering unti"
  },
  {
@@ -4993,8 +4993,8 @@
   "workflow": "scale-mindset",
   "line": 3509,
   "title": "Raw developer error text is rendered to users; the friendly-error helper exists but is wired into only 2 surfaces",
-  "state": "partial",
-  "commit": "wave-triage26-final",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "apps/web/app is outside this lane. lib/friendly-error.ts already exists and is tested; this is a call-site change on that page plus suppressing the empty-state "
  },
  {
@@ -5049,8 +5049,8 @@
   "workflow": "scale-mindset",
   "line": 3533,
   "title": "Offline fallback is inconsistent across routes, and nothing recovers when the connection returns",
-  "state": "partial",
-  "commit": "wave-triage26-final",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "apps/web/public/sw.js and the root layout are outside this lane. Two independent pieces: an 'online' listener that calls router.refresh()/location.reload() plus"
  },
  {
@@ -5161,8 +5161,8 @@
   "workflow": "scale-mindset",
   "line": 3583,
   "title": "/admin/revenue and /admin/commissions report figures 5.8x apart, both labelled commissions",
-  "state": "partial",
-  "commit": "wave-triage26-2026-08-24",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "apps/web/app/admin/revenue/page.tsx and apps/web/app/admin/commissions/page.tsx still both label their figure 'commissions' with no unit. The API now hands them"
  },
  {
@@ -5679,8 +5679,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Signing out on one device signs the user out of every device, with no indication anywhere that it will",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -5749,8 +5749,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The daily backup is engineered to exit 0 while producing zero bytes, and no restore has ever been recorded as tested",
-  "state": "partial",
-  "commit": "wave-hard-2026-08-21",
+  "state": "owner",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -5763,8 +5763,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Backups are uploaded into the same Supabase project they are supposed to insure — one account suspension takes the database and every backup together",
-  "state": "partial",
-  "commit": "wave-hard-2026-08-21",
+  "state": "owner",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -5805,8 +5805,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The written rollback procedure cannot work — it says push a revert, but both services are autoDeploy:false and no workflow deploys from main",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -5833,8 +5833,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The new Render suspension guard lives only on a feature branch, so its schedule will never fire",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -5861,8 +5861,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The disaster-recovery runbook describes infrastructure that does not exist — following it at 2am wastes the whole recovery window",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -5875,8 +5875,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Production database passwords remain in git history in three commits; untracking the file did not remove them and only rotation will",
-  "state": "partial",
-  "commit": "wave-hard-2026-08-21",
+  "state": "owner",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -5987,8 +5987,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The same subjects are published across two or three competing route families — 14 Upanishads, all 6 darshanas, the 4 Vedas — every URL self-canonical",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -6043,8 +6043,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "/jyotirlinga states every one of the twelve is swayambhu while its own badges mark nine, and /tirth says Mahakaleshwar is the only one",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -6155,8 +6155,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Every one of NRI Premium's six advertised benefits is ungated — the entitlement hook has zero call sites, and the AI paywall does not recognise the plan code the subscription is created with",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -6169,8 +6169,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Fabricated five-star customer reviews are rendered as real on 17 temple pages and on the wedding page, several of them claiming to have booked through Darshya, against zero reviews and zero completed weddings in the database",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -6197,8 +6197,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The temple 'Trust score' is a hand-typed seed literal, and the comparison page publishes a four-factor methodology for how it is computed — while also using it to rank which temple the devotee sees first",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {
@@ -6267,8 +6267,8 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Supply-acquisition pages promise a 10,000-devotee audience, 7-day settlements, and a Rs 500/month cow-seva tier that does not exist — and a guard test forbidding that exact tier checks only two homepage components",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": ""
  },
  {

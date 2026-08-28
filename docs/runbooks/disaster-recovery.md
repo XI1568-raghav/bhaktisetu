@@ -45,11 +45,17 @@ produces those numbers.
 **Before treating any RPO as real, run this and read the output:**
 
 ```bash
-gh workflow run db-backup.yml
+gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid
 gh run watch
 # Green plus a non-empty uploaded object = a restore point exists.
 # Red with "NO BACKUP WAS TAKEN"       = the secrets are still unset and there is none.
 ```
+
+`--ref` is load-bearing until this branch merges. `db-backup.yml` is on `main`,
+so it dispatches — but a dispatch runs the copy on the ref you name, and `main`
+still holds the 72-line pre-guard version with no skip check, no size check and
+no `restore_drill` input. Without the `--ref` you get exactly the workflow whose
+silent zero-byte success is the finding, and it will report green.
 
 Since 2026-08-21 the run also goes red when the dump is empty, too small, or not
 a readable `pg_restore` archive, when the uploaded object cannot be read back at
@@ -59,7 +65,7 @@ the database (`OPS-02` / `OPS-03`). Green now means something.
 **And then prove the restore, which has never been done:**
 
 ```bash
-gh workflow run db-backup.yml -f restore_drill=true
+gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid -f restore_drill=true
 gh run watch
 ```
 
@@ -136,7 +142,11 @@ under `apps/api/prisma/`.
 4. `OPS-03` applies: if the Supabase project itself is what was lost, a
    same-project backup went with it. The **code** for an offsite mirror now
    exists (see below); whether one is configured is visible in the backup run's
-   JSON as `"offsite":true|false`.
+   JSON as `"offsite":true|false`. Steps 1 and 2 of the restore runbook read the
+   dump *out of the Supabase project*, so in this scenario they have no endpoint
+   to call — use `docs/runbooks/db-restore.md` → **"Steps 1–2, ALTERNATE — when
+   Supabase itself is what you lost"**, which pulls the byte-identical object
+   from the `BACKUP_S3_*` store instead. Everything from step 3 on is unchanged.
 
 ## Scenario 5 — Razorpay outage
 
@@ -161,12 +171,36 @@ The rest of that section — independent forensic firm, crisis PR retainer, cybe
 liability insurance claim — describes relationships that **do not exist**. Treat
 them as things to arrange, not as steps to execute.
 
-Related and still open: `OPS-11` — production database passwords remain in three
-commits of git history; untracking the file did not remove them. Rotation is an
-owner action. **The exact steps, per credential, are in
-`docs/runbooks/secret-rotation.md`** (added 2026-08-21), which also names the
-three commits and records what classes of credential the leaked file holds
-without reproducing any value.
+Related and still open: `OPS-11` — a production database password remains in git
+history; untracking the file did not remove it. Rotation is an owner action.
+**The exact steps, per credential, are in `docs/runbooks/secret-rotation.md`**
+(added 2026-08-21), which names the commits and records what classes of
+credential the leaked file holds without reproducing any value.
+
+Re-measured 2026-08-28 with `scripts/secret-scan.mjs` against the historical
+blobs, values classified by length and character class only and never printed.
+It confirms that runbook's headline finding and sharpens one detail:
+
+- The live-shaped credential — 16 characters, mixed upper/lower/digit, one
+  percent-encoded character, no placeholder marker — is present in
+  **`cc02057d` only**. `aafa9386` (`fix(security): close 3 critical pre-investor
+  diligence gaps`, same day) had already replaced it with a 22-character
+  placeholder. Three commits touch the file; **one** carries the credential.
+  That narrows what a history rewrite would have to reach, and changes nothing
+  about the need to rotate: it was pushed.
+- No `eyJ`-prefixed token appears in either blob, so the real `service_role` key
+  — which is a JWT — probably did not leak. The single `rzp_live_` occurrence is
+  a mention, not a key: no key-shaped characters follow it.
+
+**Prevention, code side, shipped 2026-08-28:** `.githooks/pre-commit` now runs
+`scripts/secret-scan.mjs` over the staged diff on *every* commit, before its
+existing roadmap check can exit early. This closes the direct-push-to-`main` gap
+that the CI scan (pull requests only) cannot see, and it deliberately carries no
+path filter — the file that leaked was markdown under `docs/`, which `ci.yml`
+skips. Hooks are per-clone: `pnpm install` wires them via the root `prepare`
+script, and you can confirm with `git config --get core.hooksPath` (must print
+`.githooks`). It is shape-based, so a credential with no recognisable prefix
+still passes, and it can do nothing about what is already in history.
 
 ## Customer compensation
 

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Star,
   ShoppingCart,
   Zap,
   Truck,
@@ -133,13 +132,14 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
                   </div>
                 )}
 
-                {product.discount > 0 && (
-                  <div className="absolute top-4 right-4">
-                    <span className="bg-tulsi-green-dark text-white text-sm font-bold px-3 py-1.5 rounded-full">
-                      -{product.discount}%
-                    </span>
-                  </div>
-                )}
+                {/* LEG-17: a "-32%" corner badge rendered `product.discount`
+                    here. That field was `(compareAtPrice - price) /
+                    compareAtPrice` over a reference price no product was ever
+                    sold at, so the percentage measured a saving nobody
+                    received. `discount` has been removed from the seed shape
+                    outright — it had no independent source to be restored
+                    from. Guarded by
+                    __tests__/leg17-pdp-cart-fabricated-price.test.tsx. */}
 
                 {/* Action buttons */}
                 <div className="absolute bottom-4 right-4 flex gap-2">
@@ -193,33 +193,31 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
                 {product.title}
               </h1>
 
-              {/* Rating */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 bg-tulsi-green/10 px-2.5 py-1 rounded-lg">
-                  <Star className="w-4 h-4 text-tulsi-green fill-tulsi-green" />
-                  <span className="text-sm font-bold text-tulsi-green">{product.rating}</span>
-                </div>
-                <span className="text-sm text-surface-500">
-                  {product.reviewCount.toLocaleString('en-IN')} reviews
-                </span>
-              </div>
+              {/* LEG-17: a star badge (`{product.rating}`) and an "N reviews"
+                  tally rendered here. Both were fabricated on BOTH data paths,
+                  so no input made them true: the 24 seed rows hardcoded
+                  ratings 4.4-4.9 and counts of 145-2,100 (12,366 reviews for a
+                  catalogue that has never taken an order), and lib/medusa gave
+                  every real product `rating: 4.5, reviewCount: 0` — a 4.5-star
+                  average from zero reviews. Both fields are now nullable and
+                  null. A `Review` model and GET /store/reviews exist in
+                  apps/api, so restore this badge when the PDP is joined to
+                  that table and only for products that actually have reviews:
+                  a star average is the strongest purchase signal on the page,
+                  which makes an invented one the same consumer-protection
+                  defect as an invented price, not a lesser one. */}
             </div>
 
-            {/* Price */}
+            {/* Price — LEG-17: the struck-through `compareAtPrice` and the
+                "Save ₹600" chip beside it are gone. The chip was the worst of
+                the set: it did not merely imply a saving, it quantified one,
+                on the surface with the highest purchase intent. See the note
+                on the removed corner badge above for why the underlying field
+                could never be true. */}
             <div className="flex items-baseline gap-3">
               <span className="text-lg font-semibold text-surface-800">
                 {formatPrice(product.price)}
               </span>
-              {product.compareAtPrice && (
-                <>
-                  <span className="text-lg text-surface-400 line-through">
-                    {formatPrice(product.compareAtPrice)}
-                  </span>
-                  <span className="text-sm font-semibold text-tulsi-green bg-tulsi-green-light/20 px-2 py-0.5 rounded">
-                    Save {formatPrice(product.compareAtPrice - product.price)}
-                  </span>
-                </>
-              )}
             </div>
 
             <p className="text-sm text-surface-500 leading-relaxed">Inclusive of all taxes</p>
@@ -372,20 +370,12 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
                     <h3 className="text-sm font-medium text-surface-800 line-clamp-2 group-hover:text-saffron-600 transition-colors">
                       {rp.title}
                     </h3>
-                    <div className="flex items-center gap-1 mt-2">
-                      <div className="flex items-center gap-0.5 bg-tulsi-green/10 px-1.5 py-0.5 rounded">
-                        <Star className="w-3 h-3 text-tulsi-green fill-tulsi-green" />
-                        <span className="text-xs font-bold text-tulsi-green">{rp.rating}</span>
-                      </div>
-                      <span className="text-xs text-surface-400">({rp.reviewCount})</span>
-                    </div>
+                    {/* LEG-17: the related rail carried the same fabricated
+                        star badge, "(342)" review tally and struck-through
+                        reference price as the main product above. Removed for
+                        the same reason — see the notes on the price block. */}
                     <div className="mt-2 flex items-baseline gap-2">
                       <span className="text-lg font-bold text-surface-800">{formatPrice(rp.price)}</span>
-                      {rp.compareAtPrice && (
-                        <span className="text-sm text-surface-400 line-through">
-                          {formatPrice(rp.compareAtPrice)}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </Link>

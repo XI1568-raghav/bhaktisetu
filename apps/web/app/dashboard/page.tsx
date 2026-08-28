@@ -75,7 +75,7 @@ const statusLabels: Record<string, string> = {
 };
 
 function DashboardContent() {
- const { user, session, signOut } = useAuth();
+ const { user, session } = useAuth();
  const [bookings, setBookings] = useState<Booking[]>([]);
  const [bookingsCount, setBookingsCount] = useState(0);
  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
@@ -161,13 +161,22 @@ function DashboardContent() {
  >
  <Settings className="w-5 h-5 text-surface-600" />
  </a>
- <button
- onClick={signOut}
+ {/* AUTH-09: this was `onClick={signOut}`, which sends the DEFAULT scope —
+     global. POST /auth/logout burns every refresh_token_jtis row the account
+     holds, so pressing this on a shared machine also ended the session on the
+     user's phone, and nothing on this screen or the one it landed on said so.
+
+     /auth/logout runs the identical global sign-out and puts "this signs you
+     out on all your devices" on screen while it happens. Same fix already
+     applied to components/NavAuthButton.tsx. A user who wants the narrow
+     scope has the choice on /profile → Security. */}
+ <a
+ href="/auth/logout"
  className="p-2.5 bg-surface-800/10 hover:bg-surface-800/20 rounded-lg transition-colors"
  title="Sign Out"
  >
  <LogOut className="w-5 h-5 text-surface-600" />
- </button>
+ </a>
  </div>
  </div>
  </div>

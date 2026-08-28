@@ -83,14 +83,32 @@ export function unguardedAvatarImgs(src: string): number {
 /**
  * The five surfaces measured on 2026-08-19 at 47064e6d. Repo-relative, posix.
  * This list may only shrink.
+ *
+ * 2026-08-28: it shrank to nothing. All five are now routed through
+ * `components/AvatarWithFallback.tsx`, which carries the same one-way failed
+ * state `app/pujas/PanditAvatar.tsx` uses and takes the per-surface fallback as
+ * a prop, so the two pages that fell back to a `UserCircle`/`User` icon rather
+ * than to initials keep their own presentation. The empty set now means the
+ * subset check below is an absolute one: NO surface anywhere may paint an
+ * avatar URL without an error path.
  */
-const KNOWN_UNGUARDED = new Set<string>([
-  'app/pandits/page.tsx',
-  'app/pandits/[id]/page.tsx',
-  'app/priest/profile/page.tsx',
-  'app/profile/page.tsx',
-  'components/NavAuthButton.tsx',
-]);
+const KNOWN_UNGUARDED = new Set<string>([]);
+
+/**
+ * The five surfaces the coverage gap named, plus the two the original finding
+ * named. Each must READ its avatar through a guarded component rather than
+ * merely contain no `<img>` — deleting the avatar entirely would satisfy the
+ * negative check while removing the feature.
+ */
+const MUST_BE_GUARDED: { rel: string; via: string }[] = [
+  { rel: 'app/pandits/page.tsx', via: 'AvatarWithFallback' },
+  { rel: 'app/pandits/[id]/page.tsx', via: 'AvatarWithFallback' },
+  { rel: 'app/priest/profile/page.tsx', via: 'AvatarWithFallback' },
+  { rel: 'app/profile/page.tsx', via: 'AvatarWithFallback' },
+  { rel: 'components/NavAuthButton.tsx', via: 'AvatarWithFallback' },
+  { rel: 'app/pujas/marriage/page.tsx', via: 'PanditAvatar' },
+  { rel: 'app/pujas/home-puja/[slug]/page.tsx', via: 'PanditAvatar' },
+];
 
 function scan(): { file: string; count: number }[] {
   const files = [
@@ -117,32 +135,65 @@ describe('PF-04 — no NEW surface paints an unguarded avatar', () => {
     expect(unguardedAvatarImgs('// <img src={p.avatarUrl} />\n')).toBe(0);
   });
 
-  it('still sees the surfaces it is meant to be watching', () => {
-    // If a refactor moved every avatar behind a wrapper this drops to 0 and the
-    // subset check below becomes vacuous — so say so out loud rather than
-    // silently guarding nothing. Update KNOWN_UNGUARDED and delete this line
-    // only when the count is genuinely 0 because the defect is genuinely gone.
-    expect(scan().length).toBeGreaterThan(0);
+  /**
+   * REPLACES 'still sees the surfaces it is meant to be watching', which
+   * asserted `scan().length > 0` so that an empty allowlist could not make the
+   * subset check vacuous. Now that the count is legitimately 0, that guard
+   * would fail on the fixed tree — its own comment said to delete it "only when
+   * the count is genuinely 0 because the defect is genuinely gone".
+   *
+   * The anti-vacuity job moves here and gets stronger: instead of requiring
+   * that offenders still exist, it requires that each named surface still READS
+   * an avatar and reads it through a guarded component. Deleting the avatar
+   * would have satisfied the old negative check; it fails this one.
+   */
+  it.each(MUST_BE_GUARDED)('$rel routes its avatar through $via', ({ rel, via }) => {
+    const raw = readFileSync(path.join(WEB_ROOT, rel), 'utf8');
+    const src = stripComments(raw);
+    expect(unguardedAvatarImgs(raw), `${rel} regressed to a bare <img>`).toBe(0);
+    expect(src, `${rel} no longer uses ${via}`).toContain(via);
+    // The avatar must still be rendered, not quietly dropped.
+    expect(src, `${rel} no longer reads an avatar at all`).toMatch(/avatarUrl/);
   });
 
-  it('no surface outside the recorded five renders an avatar without onError', () => {
+  it('no surface anywhere renders an avatar without an error path', () => {
     const fresh = scan().filter((o) => !KNOWN_UNGUARDED.has(o.file));
     expect(
       fresh,
       'this <img> reads an avatar URL behind a falsy-only guard, so a ' +
         'present-but-dead URL renders as a broken-image icon rather than ' +
-        'falling back. Route it through app/pujas/PanditAvatar.tsx, which swaps ' +
-        'to an initials tile on error and removes the <img> so there is no ' +
-        'request loop.\n' +
+        'falling back. Route it through components/AvatarWithFallback.tsx, ' +
+        'which swaps to the fallback on error and removes the <img> so there ' +
+        'is no request loop.\n' +
         fresh.map((o) => `${o.file}: ${o.count}`).join('\n'),
     ).toEqual([]);
   });
 
-  it('the two pages PF-04 named stay routed through PanditAvatar', () => {
-    for (const rel of ['app/pujas/marriage/page.tsx', 'app/pujas/home-puja/[slug]/page.tsx']) {
-      const src = readFileSync(path.join(WEB_ROOT, rel), 'utf8');
-      expect(unguardedAvatarImgs(src), `${rel} regressed`).toBe(0);
-      expect(stripComments(src), `${rel} no longer uses PanditAvatar`).toContain('PanditAvatar');
+  it('the shared fallback really does remove the <img> rather than re-point it', () => {
+    // An onError that reassigns src to another remote URL which itself fails is
+    // an infinite request loop. Both wrappers must use one-way state.
+    for (const rel of ['components/AvatarWithFallback.tsx', 'app/pujas/PanditAvatar.tsx']) {
+      const src = stripComments(readFileSync(path.join(WEB_ROOT, rel), 'utf8'));
+      expect(src, `${rel} has no failure state`).toMatch(/useState/);
+      expect(src, `${rel} reassigns src on error`).not.toMatch(/onError=\{[^}]*\.src\s*=/);
     }
+  });
+});
+
+/**
+ * The seed is what puts the dead host into the database in the first place.
+ * With the fallback in place a broken URL degrades gracefully, but a fresh
+ * environment should not reproduce the defect at all.
+ */
+describe('PF-04 — the seed no longer writes the dead host', () => {
+  it('apps/api/prisma/seed.ts references images.darshya.online nowhere', () => {
+    const seed = readFileSync(
+      path.resolve(WEB_ROOT, '../api/prisma/seed.ts'),
+      'utf8',
+    );
+    const live = seed
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    expect(live).not.toMatch(/images\.darshya\.online/);
   });
 });

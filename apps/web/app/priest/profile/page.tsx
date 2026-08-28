@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 // DU-03: the one primary-CTA recipe. Layout-only extras in the third slot —
 // never h-*, px-*, py-* or rounded-*, which is the invariant every call site holds.
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { AvatarWithFallback } from '../../../components/AvatarWithFallback';
 import {
  UserCircle,
  Star,
@@ -304,15 +305,21 @@ function PriestProfilePageContent() {
  <div className="flex flex-col sm:flex-row items-center gap-6">
  {/* Avatar */}
  <div className="relative">
+ {/* PF-04: was a FALSY-only guard, so a present-but-dead avatar URL —
+     `priests.avatar_url` is the column holding the dead
+     `images.darshya.online` host — rendered as a broken-image icon on the
+     pandit's own profile. The UserCircle fallback is kept exactly as it
+     was; AvatarWithFallback takes it as a prop precisely so surfaces that
+     do not fall back to initials keep their own presentation. */}
  <div className="w-24 h-24 bg-saffron-100 rounded-full flex items-center justify-center">
- {profile.avatarUrl ? (
- <img width={96} height={96}  src={profile.avatarUrl}
+ <AvatarWithFallback
+ src={profile.avatarUrl}
+ width={96}
+ height={96}
  alt={profile.displayName}
  className="w-24 h-24 rounded-full object-cover"
+ fallback={<UserCircle className="w-14 h-14 text-saffron-400" />}
  />
- ) : (
- <UserCircle className="w-14 h-14 text-saffron-400" />
- )}
  </div>
  <button className="absolute bottom-0 right-0 w-8 h-8 bg-saffron-600 text-white rounded-full flex items-center justify-center text-xs shadow-lg hover:bg-saffron-700 transition-colors">
  +

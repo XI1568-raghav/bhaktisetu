@@ -44,7 +44,7 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import { apiErrorCode, serverErrorMessage } from '../../../lib/friendly-error';
 import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { DateInput } from '../../../components/ui/DateInput';
-import { formatTrustScoreOutOf, hasMeaningfulTrustScore } from '../../../lib/trust-score';
+import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-score';
 // CM-10: this subtitle used to interpolate puja.category, i.e. the raw Prisma
 // enum, on the CHECKOUT page — 'special_occasion' beside the price.
 import { pujaCategoryLabel } from '../../../lib/puja-labels';
@@ -1721,8 +1721,16 @@ function PujaBookingInner() {
  {/* trustScore is 0-5 (see lib/trust-score.ts). The 2026-08-03 note here
    claimed 0-100 — taken from this file's own MOCK fixtures, which used 98/96/95
    while the API served 4.9. That made the `>= 20` guard hide the badge on every
-   REAL temple. Scale and threshold now come from one shared module. */}
- {hasMeaningfulTrustScore(temple.trustScore) && (
+   REAL temple. Scale and threshold now come from one shared module.
+
+   TC-07: the gate is `canPublishTrustScore`, not `hasMeaningfulTrustScore`.
+   The weaker one only asks whether the number is thick enough to render; it
+   is not the right question, because nothing in the codebase WRITES
+   `Temple.trustScore` — every value is a literal typed into
+   apps/api/prisma/seed.ts. This is the temple picker on the booking flow, so
+   a fabricated star here is the number a devotee actually chooses on.
+   Guarded by __tests__/puja-temples-copy-honesty.tc08.test.tsx. */}
+ {canPublishTrustScore(temple.trustScore) && (
  <span className="flex items-center gap-1 text-xs text-surface-400">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
  {formatTrustScoreOutOf(temple.trustScore)}

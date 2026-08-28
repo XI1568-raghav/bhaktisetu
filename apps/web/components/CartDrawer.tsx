@@ -121,15 +121,15 @@ export default function CartDrawer() {
  {item.product.title}
  </h3>
 
+ {/* LEG-17: no struck-through `compareAtPrice`. Carts persist in
+     localStorage under poojly_cart (never renamed), so a cart saved
+     before this change still carries the fabricated reference price;
+     not rendering it here is what makes the fix retroactive. Same
+     treatment as the /store/cart line item. */}
  <div className="flex items-baseline gap-2 mt-1">
  <span className="text-sm font-bold text-surface-900">
  {formatPrice(item.product.price)}
  </span>
- {item.product.compareAtPrice && (
- <span className="text-xs text-surface-400 line-through">
- {formatPrice(item.product.compareAtPrice)}
- </span>
- )}
  </div>
 
  {/* Quantity controls */}

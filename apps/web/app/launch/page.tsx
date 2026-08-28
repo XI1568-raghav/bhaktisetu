@@ -3,6 +3,38 @@ import Link from 'next/link';
 import EmailCapture from '../../components/EmailCapture';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import { COMPANY } from '../../lib/company';
+import {
+  NRI_PREMIUM_IS_SELLABLE,
+  NRI_PREMIUM_WITHDRAWN_NOTICE,
+} from '../nri/plan-availability';
+
+/**
+ * PM-05 — /launch was the last NRI Premium shopfront with no gate on it.
+ *
+ * TC-03/TC-04 withdrew `nri_premium_yearly` properly: all six of its benefits
+ * carry `enforcedBy: null` in apps/api/src/services/subscription-entitlements.ts,
+ * so `nriPremiumIsSellable()` is false, `getPlans()` drops the plan and both
+ * activation rails answer 400. /nri branches on the mirrored constant in twelve
+ * places; /upgrade omits the card. This page referenced neither constant and
+ * sold the tier outright, with three defects stacked:
+ *
+ *  1. "$399/yr Premium." The plan is Rs 5,000/year, `priceUsd: 60`. $399 is
+ *     6.6x the only USD figure that exists and appears in no plan definition,
+ *     no test and no other page — someone reading /launch then /nri saw two
+ *     prices for one SKU differing by a factor of six.
+ *  2. Five unenforced benefits listed as present tense, under a "See NRI plan"
+ *     call to action leading to a page that cannot sell them.
+ *  3. "80G tax receipt within 24h" while `HAS_80G_VERIFIED` is false, `pan` is
+ *     null and `eightyGNumber` is null — a deduction a donor cannot claim.
+ *
+ * The section now describes what a devotee abroad can actually do today, all of
+ * it already claimed elsewhere on this page, and prints the server's own
+ * withdrawal sentence instead of a price. When a benefit is wired and
+ * NRI_PREMIUM_IS_SELLABLE flips, the tier copy returns — sourced from the same
+ * constant, not retyped here.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
   title: 'Darshya is launching — India’s devotional super app',
@@ -53,18 +85,33 @@ const FEATURES: { title: string; body: string; href: string }[] = [
     href: '/gurukuls',
   },
   {
-    title: 'Gaushala seva + 80G receipts',
-    body: 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Verified gaushalas, real photos, 80G tax receipt within 24h.',
+    // PM-05: this promised "80G receipts" in the title and "80G tax receipt
+    // within 24h" in the body. HAS_80G_VERIFIED is false and both the
+    // registration number and the PAN are null, so the receipt generator prints
+    // "Proof of donation — not a tax exemption certificate" on every receipt it
+    // has ever issued. /gaushala, /donations, /list-temple, /faqs and /csr-match
+    // all branch on the same constant; this card was the outlier.
+    title: HAS_80G ? 'Gaushala seva + 80G receipts' : 'Gaushala seva, with proof',
+    body: HAS_80G
+      ? 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Verified gaushalas, real photos, 80G tax receipt emailed to you.'
+      : 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Verified gaushalas, real photos, and a donation receipt PDF emailed for every contribution.',
     href: '/gaushala',
   },
 ];
 
+/**
+ * PM-05: these five replace the NRI Premium benefit list. Every one of them is
+ * a capability this page already claims in `FEATURES` above and that a devotee
+ * abroad can use today without buying anything — no tier, no gate, nothing
+ * pending. The list the tier WAS specified to include lives on /nri, framed as
+ * a specification rather than an offer.
+ */
 const NRI_BULLETS = [
-  'No NRI surcharge on bookings (Premium tier)',
-  'Priority booking 7 days early',
-  'Free 80G receipt PDF',
-  'Weekly 1:1 priest call (Jitsi)',
-  'Unlimited AI astro chat',
+  'Live darshan from verified temples — free, no account needed',
+  'Book a puja in India from any time zone',
+  'A recording of the sankalp and the ritual, sent to your inbox',
+  'Daily panchang and festival reminders by email',
+  'Pay per booking — nothing recurring to cancel',
 ];
 
 export default function LaunchPage() {
@@ -143,13 +190,24 @@ export default function LaunchPage() {
                 For NRI
               </span>
               <h2 className="text-surface-900 mb-4 text-3xl font-bold">
-                $399/yr Premium. Made for the diaspora.
+                {NRI_PREMIUM_IS_SELLABLE
+                  ? 'Premium. Made for the diaspora.'
+                  : 'Made for the diaspora.'}
               </h2>
               <p className="text-surface-700 mb-6 leading-relaxed">
-                Skip the time-zone math + WhatsApp middlemen + temple no-shows. Book pujas in India
-                with video proof, get 80G receipts, talk to a priest weekly — all on a single annual
-                subscription.
+                Skip the time-zone math, the WhatsApp middlemen and the temple no-shows. Book a puja
+                in India from wherever you are and get the ritual back on video.
               </p>
+              {!NRI_PREMIUM_IS_SELLABLE && (
+                <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4">
+                  <p className="text-sm font-semibold text-amber-900">
+                    The annual NRI Premium tier is not on sale
+                  </p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-amber-900/90">
+                    {NRI_PREMIUM_WITHDRAWN_NOTICE}
+                  </p>
+                </div>
+              )}
               <ul className="mb-6 space-y-2">
                 {NRI_BULLETS.map((b) => (
                   <li key={b} className="text-surface-800 flex items-start gap-2 text-sm">
@@ -162,15 +220,23 @@ export default function LaunchPage() {
                 href="/nri"
                 className={buttonClass('primary', 'md')}
               >
-                See NRI plan →
+                {NRI_PREMIUM_IS_SELLABLE ? 'See NRI plan →' : 'What the NRI tier was for →'}
               </Link>
             </div>
             <div>
               <EmailCapture
                 source="launch-nri"
-                title="Get the NRI festival calendar"
-                subtitle="2026 calendar (PDF) + $10 launch credit when we activate your country."
-                cta="Send me the PDF"
+                title="Festival reminders for the diaspora"
+                // PM-05 / TC-03 class: this offered "2026 calendar (PDF) + $10
+                // launch credit when we activate your country". POST /waitlist
+                // creates a Waitlist row, generates a referral code and sends a
+                // confirmation email — it never touches the wallet, and of the
+                // five CreditLedgerReason values only `referral_reward` is live,
+                // so no path can issue a launch credit. No job mails a calendar
+                // PDF either. EmailCapture's own default subtitle was corrected
+                // for exactly this in TC-03; this page overrode it.
+                subtitle="Tithi, nakshatra and festival dates by email. Free, unsubscribe any time."
+                cta="Keep me posted"
               />
             </div>
           </div>
@@ -185,8 +251,8 @@ export default function LaunchPage() {
             Hi — I’m building Darshya because every existing devotional app either tries to be a
             content silo, a single-temple booking page or a chat box. None of them respect the
             actual texture of daily Hindu practice: a quick panchang glance at sunrise, a live aarti
-            during commute, a pandit call before a real ritual, a 80G donation receipt for tax
-            filing, a Sanskrit shloka shared on a family WhatsApp.
+            during commute, a pandit call before a real ritual, a donation receipt that arrives
+            without a phone call, a Sanskrit shloka shared on a family WhatsApp.
           </p>
           <p>
             Darshya is one app for all of it. Video proof on every puja so trust is engineered, not
@@ -204,9 +270,13 @@ export default function LaunchPage() {
       {/* Final CTA */}
       <section className="bg-surface-900 px-4 py-14 text-center text-white sm:px-6">
         <h2 className="mb-4 text-3xl font-bold">Try Darshya today</h2>
+        {/* PM-05: this closed with "Premium when you want puja with proof +
+            ad-free + priority calls" — two of those three are unenforced NRI
+            Premium benefits on a tier that is withdrawn, and the third is not
+            behind a paywall at all. Puja booking is pay-per-booking. */}
         <p className="text-surface-300 mx-auto mb-8 max-w-xl">
-          Free forever for daily darshan + panchang + shlokas. Premium when you want puja with proof
-          + ad-free + priority calls.
+          Free forever for daily darshan + panchang + shlokas. Pay only when you book a puja —
+          there is nothing to subscribe to.
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Link

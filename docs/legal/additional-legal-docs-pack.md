@@ -52,6 +52,18 @@ C. Cross-border data flow
 - Backups: daily `pg_dump` into Supabase Storage — i.e. **the same Supabase
   project the database lives in**, so backup residency equals database
   residency and a single account suspension takes both.
+- **There is no backup today.** The workflow's three secrets have never been
+  set; every run produced zero bytes (`OPS-02`). Do not represent a backup
+  regime, an RPO or an RTO to any counterparty until
+  `docs/runbooks/db-restore.md` → *DR drill history* has a row in it. Those
+  numbers are targets, and no restore has ever been performed.
+- **Forward-looking, and it changes this section the day it happens:** the code
+  now supports a second, offsite backup destination (`OPS-03`). If the owner
+  configures it with Cloudflare R2 — the recommended option — then **Cloudflare
+  becomes a processor of a full copy of the production database**, not merely a
+  DNS and CDN provider, and the R2 bucket's jurisdiction becomes part of the
+  backup residency answer. Update the sub-processor entry and the residency
+  statement below **before** signing anything, not after.
 - UK + EU NRI access processed under the DPDP framework
 - US NRI data processed with CCPA-compliant safeguards
 
@@ -62,7 +74,9 @@ D. Sub-processor list (transparency)
 - PostHog (analytics — Hungary + US)
 - FCM (push notifications — Google US)
 - Sentry (error tracking — US)
-- Cloudflare (DNS + CDN — Global; Pages is **not** a hosting layer)
+- Cloudflare (DNS + CDN — Global; Pages is **not** a hosting layer). **If R2 is
+  configured as the offsite backup destination (`OPS-03`), Cloudflare's role
+  changes to a processor of database backups and this entry must be rewritten.**
 - Render (web + API hosting — US, `oregon` region)
 - Supabase (database + backup storage — region [verify])
 

@@ -295,7 +295,15 @@ export default function AdminRevenuePage() {
   }
 
   const totalRevenue = dashboard.totalRevenue;
-  const totalCommissions = revenue.totalCommissions;
+  // DI-08. `getRevenue().totalCommissions` is the PLATFORM'S TAKE — admin.service.ts
+  // sets it to `platformTakeInr`, summed through lib/commission-math.ts. It is NOT
+  // the commission ledger's total, which is the PROVIDERS' earnings and at a 20%
+  // take is exactly 4x larger (0.8 / 0.2). Labelled "Commissions Earned" here and
+  // "Total earned (paid)" on /admin/commissions, the two read as the same quantity,
+  // and the recorded live pair (1,142.91 here against 6,580 there) was investigated
+  // as a reconciliation break when it is mostly two different words for two
+  // different halves of one split. Kept under a name only one of them can have.
+  const platformTake = revenue.totalCommissions;
   const totalSubscriptions = revenue.totalSubscriptions;
 
   // AO-11. Two halves of one liability:
@@ -314,7 +322,7 @@ export default function AdminRevenuePage() {
 
   const overviewCards = [
     { label: 'Total Revenue', value: formatInrCompact(totalRevenue), icon: IndianRupee, color: 'bg-green-50 text-green-600' },
-    { label: 'Commissions Earned', value: formatInrCompact(totalCommissions), icon: Wallet, color: 'bg-saffron-50 text-saffron-600' },
+    { label: 'Platform take (our revenue)', value: formatInrCompact(platformTake), icon: Wallet, color: 'bg-saffron-50 text-saffron-600' },
     { label: 'Subscriptions', value: formatInrCompact(totalSubscriptions), icon: CreditCard, color: 'bg-blue-50 text-blue-600' },
     { label: 'Pending Payouts', value: pendingPayoutsDisplay, icon: Send, color: 'bg-amber-50 text-amber-600' },
   ];

@@ -12,7 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { isRenderableInApp } from '../../lib/in-app-web';
+import {
+  isRenderableInApp,
+  webViewOriginWhitelist,
+  makeNavigationGuard,
+} from '../../lib/in-app-web';
 import { WebViewComp } from '../../lib/webview-module';
 import { webOrigin, hostOf } from '../../lib/web-origin';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
@@ -85,6 +89,22 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  */
 
 const WEB = webOrigin();
+
+/**
+ * Both derived once, from lib/in-app-web.ts, and never spelled inline.
+ *
+ * `originWhitelist` used to be written here as `[`${WEB.origin}/*`]`, which
+ * matched nothing at all — react-native-webview compares the entry against the
+ * ORIGIN, which never carries a trailing slash, so the `/ *` suffix made the
+ * pattern unsatisfiable and every in-frame link tap would have been handed to
+ * the OS. That is the exact eject this screen was built to remove, and it was
+ * dormant only because the module is absent. `webViewOriginWhitelist` is the
+ * shape the library actually matches; `NAVIGATION_GUARD` is the check that
+ * holds, because the whitelist's regex is start-anchored only and would admit
+ * `https://darshya.online.evil.example`.
+ */
+const ORIGIN_WHITELIST = webViewOriginWhitelist(WEB.origin);
+const NAVIGATION_GUARD = makeNavigationGuard(WEB.origin);
 
 export default function InAppWebScreen() {
   const params = useLocalSearchParams<{ url?: string; title?: string }>();
@@ -197,7 +217,8 @@ export default function InAppWebScreen() {
             sharedCookiesEnabled
             thirdPartyCookiesEnabled
             domStorageEnabled
-            originWhitelist={[`${WEB.origin}/*`]}
+            originWhitelist={ORIGIN_WHITELIST}
+            onShouldStartLoadWithRequest={NAVIGATION_GUARD}
             setSupportMultipleWindows={false}
             onLoadEnd={() => setLoading(false)}
             onError={() => {

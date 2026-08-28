@@ -306,7 +306,15 @@ const CANONICAL_VETTING_CLAUSE =
 const VETTING_FICTIONS: RegExp[] = [
   /verified pandits?/i,
   /certified pandits?/i,
-  /vedic certified/i,
+  // Hyphen-tolerant, and widened past the noun "pandit". The wedding funnel
+  // shipped every one of these variants and NONE of them matched the original
+  // list: "Vedic-certified pandits" (hyphen), "Vedic-certified officiants" and
+  // "verified specialists" (synonym). A fiction list that only catches the
+  // exact phrasing of the first surface it was written for is a list that
+  // certifies the next surface as clean.
+  /vedic[-\s]certified/i,
+  /certified officiants?/i,
+  /verified (specialists?|officiants?|priests?)/i,
   /Vedic credential verification/i,
   /30-day video probation/i,
   /probationary first-30-day/i,
@@ -348,6 +356,86 @@ describe('TC-08 — no lane surface publishes a vetting step that does not run',
     expect(text.length).toBeGreaterThan(500);
     expect(text).toContain(CANONICAL_VETTING_CLAUSE);
     expect(text).not.toMatch(/displayed trust score/i);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// TC-08 — the wedding funnel
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * A SECOND surface list, deliberately not folded into SURFACES above.
+ *
+ * SURFACES requires the canonical clause verbatim, which is right for a page
+ * that RAISES pandit vetting and has to answer it honestly. The three pages
+ * below simply stop raising it: the wedding funnel sells a ceremony, and after
+ * the fictions come out there is nothing left on it for the clause to correct.
+ * Forcing a 130-character disclaimer onto a page that no longer makes the claim
+ * would be the same defect pointed the other way. These are guarded by absence.
+ *
+ * `/pujas/marriage` was the loudest instance in the product: a static
+ * `{ icon: Shield, label: 'Vedic certified' }` hero badge — no data behind it at
+ * all, the same three words for every visitor — over a page quoting ₹11,000+,
+ * plus "Vedic-certified pandits" in the <title> description, in the hero, in the
+ * section subhead, in the empty state, and a per-card "Verified pandit" line.
+ * That last one deserves its own note: `GET /priests` filters
+ * `isVerified: true AND status: 'active'` (apps/api/src/routes/priests-public.ts),
+ * so EVERY priest this page can receive has `isVerified === true` and the
+ * ternary's false branch was unreachable — a constant rendered as a per-pandit
+ * judgement. And `Priest.isVerified` has no writer outside apps/api/prisma/seed.ts:
+ * admin.ts's priest route writes `commissionRate` only, and priest.service.ts
+ * only ever SELECTs the column. Verified against HEAD, not taken from the note.
+ */
+const FICTION_FREE_SURFACES = [
+  'app/pujas/marriage/page.tsx',
+  'app/pujas/marriage/book/page.tsx',
+  'app/pujas/home-puja/book/BookHomePujaClient.tsx',
+];
+
+describe('TC-08 — the wedding funnel claims no vetting either', () => {
+  // The global afterEach unmocks lib/company only; a doMock survives
+  // resetModules, so this one has to be dropped here or it leaks forward.
+  afterEach(() => {
+    vi.doUnmock('../lib/pandit-api');
+  });
+
+  for (const rel of FICTION_FREE_SURFACES) {
+    it(`${rel} makes no unbacked pandit-vetting claim`, () => {
+      // Comments FIRST: each of these files documents the claim it removed in
+      // order to explain why, and a raw scan would match that documentation.
+      const src = code(rel);
+      for (const fiction of VETTING_FICTIONS) {
+        expect(src, `${rel} still claims ${fiction}`).not.toMatch(fiction);
+      }
+    });
+  }
+
+  it('/pujas/marriage renders no vetting claim and no static credential badge', async () => {
+    vi.doMock('../lib/pandit-api', () => ({ getPublicPriests: async () => [] }));
+    vi.resetModules();
+    const MarriagePage = (await import('../app/pujas/marriage/page')).default;
+    const text = await textOfAsync(MarriagePage());
+    // Sanity: the page mounted, so the absences below mean something.
+    expect(text.length).toBeGreaterThan(1000);
+    for (const fiction of VETTING_FICTIONS) {
+      expect(text, `rendered /pujas/marriage still claims ${fiction}`).not.toMatch(fiction);
+    }
+  });
+
+  it('its metadata sells no certification either', async () => {
+    vi.doMock('../lib/pandit-api', () => ({ getPublicPriests: async () => [] }));
+    vi.resetModules();
+    const { metadata } = await import('../app/pujas/marriage/page');
+    const meta = `${metadata.title} ${metadata.description}`;
+    for (const fiction of VETTING_FICTIONS) {
+      expect(meta, `/pujas/marriage metadata still claims ${fiction}`).not.toMatch(fiction);
+    }
+  });
+
+  it('the per-card verification line is gone, not merely re-worded', () => {
+    // The false branch was unreachable — see the block comment above. A
+    // rewording that keeps the ternary keeps a constant dressed as a judgement.
+    expect(code('app/pujas/marriage/page.tsx')).not.toMatch(/Profile under review/);
   });
 });
 

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Upload, X, FileText } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
-import { friendlyApiError } from '../../../lib/friendly-error';
+import { friendlyApiError, userFacingMessage } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
@@ -104,6 +105,11 @@ export default function AdminLeadsPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // AUTH-06: `friendlyApiError` has returned this flag since P1 #208 and no
+  // page ever read it. It is per-ERROR, not per-page: the list can be on
+  // screen and correct while the PATCH that changes a lead's status is the
+  // request that 401s.
+  const [reauth, setReauth] = useState(false);
   const [selected, setSelected] = useState<LeadDetail | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [importOpen, setImportOpen] = useState(false);
@@ -112,12 +118,33 @@ export default function AdminLeadsPage() {
   const [statusBusy, setStatusBusy] = useState(false);
   const [decisionReason, setDecisionReason] = useState('');
 
+  /**
+   * AUTH-06 — the one place that decides both what to say about a failure and
+   * whether the only control worth offering is "sign in again".
+   *
+   * Three of the four handlers below used to render `err.message` verbatim,
+   * and `authFetch` throws an Error whose message is the status line itself,
+   * so an expired session put the literal "401 Unauthorized" in front of an
+   * admin — the raw-status leak P1 #208 was filed for, still live here. The
+   * fourth mapped it to friendly copy that told the admin to sign in again
+   * next to nothing that could.
+   */
+  const applyError = (err: unknown, fallback: string) => {
+    setReauth(friendlyApiError(err).reauth);
+    setError(userFacingMessage(err, fallback));
+  };
+
+  const clearError = () => {
+    setError(null);
+    setReauth(false);
+  };
+
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
-      setError(null);
+      clearError();
       try {
         const params = new URLSearchParams();
         if (roleFilter !== 'ALL') params.set('role', roleFilter);
@@ -134,7 +161,7 @@ export default function AdminLeadsPage() {
         setTotal(data.total);
       } catch (err) {
         // P1 #208: friendly copy instead of raw "401 Unauthorized".
-        if (!cancelled) setError(friendlyApiError(err).message);
+        if (!cancelled) applyError(err, 'Could not load the lead queue.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -186,7 +213,7 @@ export default function AdminLeadsPage() {
       setSelected({ ...selected, notes: r.lead.notes });
       setNoteInput('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Note failed');
+      applyError(err, 'Could not save that note.');
     }
   };
 
@@ -206,7 +233,7 @@ export default function AdminLeadsPage() {
       setLeads((prev) => prev.map((l) => (l.id === r.lead.id ? { ...l, status: r.lead.status } : l)));
       setDecisionReason('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Status update failed');
+      applyError(err, 'Could not update that lead.');
     } finally {
       setStatusBusy(false);
     }
@@ -215,9 +242,27 @@ export default function AdminLeadsPage() {
   const submitImport = async () => {
     if (!token) return;
     setImportBusy(true);
-    setError(null);
+    clearError();
+    /**
+     * The paste is parsed OUTSIDE the network try on purpose. Routing this
+     * handler through `applyError` must not flatten SyntaxError's own message
+     * — "Unexpected token } in JSON at position 14" is the only thing on
+     * screen that tells the admin which character of their paste is wrong, and
+     * a generic sentence would be a downgrade. It is also unambiguously not a
+     * session problem, so it must never raise the sign-in affordance.
+     */
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(importJson);
+      parsed = JSON.parse(importJson);
+    } catch (err) {
+      setReauth(false);
+      setError(
+        `That could not be read as JSON: ${err instanceof Error ? err.message : 'invalid input'}`,
+      );
+      setImportBusy(false);
+      return;
+    }
+    try {
       const res = await authFetch<{ inserted: number; skipped: number }>(token, '/admin/leads/import', {
         method: 'POST',
         body: JSON.stringify(parsed),
@@ -227,7 +272,7 @@ export default function AdminLeadsPage() {
       alert(`Imported ${res.inserted} leads, skipped ${res.skipped}`);
       setPage(1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
+      applyError(err, 'Could not import those leads.');
     } finally {
       setImportBusy(false);
     }
@@ -303,7 +348,12 @@ export default function AdminLeadsPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">{error}</div>
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+          {/* AUTH-06: a dead session gets the one control that can fix it. There
+              is no Retry on this page, but the same rule applies to the copy —
+              "sign in again" must be something the admin can press. */}
+          {reauth ? <ReauthPrompt message={error} /> : error}
+        </div>
       )}
 
       {/* Leads table */}

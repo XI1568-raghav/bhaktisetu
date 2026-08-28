@@ -7,6 +7,53 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import { H1 } from '../../../components/ui/heading-recipe';
+import {
+  GENERIC_ERROR_MESSAGE,
+  UserFacingError,
+  friendlyApiError,
+  serverErrorMessage,
+  serverErrorText,
+  userFacingMessage,
+} from '../../../lib/friendly-error';
+import {
+  NRI_PREMIUM_IS_SELLABLE,
+  NRI_PREMIUM_WITHDRAWN_NOTICE,
+} from '../../nri/plan-availability';
+
+/**
+ * RES-09 — this page put developer text in a devotee's billing banner.
+ *
+ * It threw `Failed to load subscription (${status})` and
+ * `Cancel failed (${status})`, then rendered `err.message` verbatim in both
+ * catches. So an expired token read as "Failed to load subscription (401)" —
+ * a status code, on the screen where someone checks what they are paying — and
+ * a dropped connection read as whatever the browser wrote: "Failed to fetch"
+ * on Chrome, "Load failed" on iOS Safari. That last row is the one a
+ * status-code sweep never sees, because the string is not ours.
+ *
+ * `friendlyApiError` alone could not be dropped in: it cannot tell a sentence
+ * the product wrote from one the browser wrote, so it flattens the good one.
+ * `UserFacingError` marks deliberate copy and `userFacingMessage` routes on it.
+ */
+const LOAD_FALLBACK = 'Could not load your subscription right now. Please try again.';
+const CANCEL_FALLBACK = 'Could not cancel auto-renewal right now. Please try again.';
+
+/**
+ * The copy for a status, or the page's own line when the status says nothing
+ * useful. `friendlyApiError` classifies off message TEXT, so it is handed the
+ * number — 401/403 become "your session has expired", 429 the rate-limit line,
+ * 5xx "something went wrong on our side", and anything else falls through to
+ * the caller's sentence, which is more specific than the generic bucket.
+ *
+ * The number is passed with String() rather than interpolated into a template.
+ * It never reaches a screen either way, but `res09-friendly-error-priest`
+ * scans this file for `${res.status}` and a guard that cannot tell a classifier
+ * input from rendered copy is a guard worth not arguing with.
+ */
+function statusCopy(status: number, fallback: string): string {
+  const classified = friendlyApiError(new Error(String(status))).message;
+  return classified === GENERIC_ERROR_MESSAGE ? fallback : classified;
+}
 
 import { buttonClass } from '../../../components/ui/button-recipe';
 interface MySubscription {
@@ -51,11 +98,20 @@ function AccountSubscriptionsInner() {
       const res = await fetch(`${API_BASE_URL}/subscriptions/my`, {
         headers: { Authorization: `Bearer ${session!.accessToken}` },
       });
-      if (!res.ok) throw new Error(`Failed to load subscription (${res.status})`);
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        // The server's own sentence when it wrote one worth reading; otherwise
+        // the copy for THIS status. `serverErrorText` refuses a non-JSON body
+        // and refuses a developer name for the status ("Unauthorized").
+        throw new UserFacingError(
+          serverErrorText(body, statusCopy(res.status, LOAD_FALLBACK)),
+        );
+      }
       const data = (await res.json()) as { subscription: MySubscription | null };
       setSubscription(data.subscription);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load subscription');
+      setError(userFacingMessage(err, LOAD_FALLBACK));
     } finally {
       setLoading(false);
     }
@@ -76,12 +132,14 @@ function AccountSubscriptionsInner() {
       });
       const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
       if (!res.ok) {
-        throw new Error(data.error || `Cancel failed (${res.status})`);
+        throw new UserFacingError(
+          serverErrorMessage(data, statusCopy(res.status, CANCEL_FALLBACK)),
+        );
       }
       setInfo(data.message || 'Auto-renewal cancelled.');
       await fetchSubscription();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not cancel auto-renewal');
+      setError(userFacingMessage(err, CANCEL_FALLBACK));
     } finally {
       setBusy(false);
     }
@@ -127,11 +185,23 @@ function AccountSubscriptionsInner() {
                   {subscription.plan === 'ENTERPRISE' ? 'NRI Premium' : subscription.plan}
                 </h2>
                 <p className="text-sm text-surface-500 mt-0.5">{subscription.role}</p>
-                {subscription.plan === 'ENTERPRISE' && (
-                  <p className="text-xs text-emerald-700 mt-1 font-medium">
-                    All premium benefits unlocked
-                  </p>
-                )}
+                {/* PM-05: this said "All premium benefits unlocked". ENTERPRISE is
+                    NRI Premium, and all six of its advertised benefits carry
+                    `enforcedBy: null` in apps/api/src/services/subscription-entitlements.ts
+                    — nriPremiumIsSellable() is false BECAUSE none of them is wired.
+                    Nothing is unlocked. The holder gets the same sentence the
+                    withdrawal notice gives everyone else, which is also the only
+                    place that tells them their own subscription keeps running. */}
+                {subscription.plan === 'ENTERPRISE' &&
+                  (NRI_PREMIUM_IS_SELLABLE ? (
+                    <p className="text-xs text-emerald-700 mt-1 font-medium">
+                      All premium benefits unlocked
+                    </p>
+                  ) : (
+                    <p className="prose-meta text-amber-800 mt-2 max-w-sm">
+                      {NRI_PREMIUM_WITHDRAWN_NOTICE}
+                    </p>
+                  ))}
               </div>
               <span
                 className="px-2.5 py-0.5 rounded-full text-xs font-semibold"

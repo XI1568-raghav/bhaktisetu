@@ -95,6 +95,68 @@ tables. Non-destructive, `IF NOT EXISTS`, and **proven to apply inside a single
 transaction** against the local stack, so it will not hit the 25001
 CONCURRENTLY trap that blocked this repo's migrations for two months.
 
+### Post-deploy owner check — PM-03 (pandit commission rate)
+
+`prisma/seed.ts` wrote `commissionRate: 0.70` on the priest `create:` branch
+until 2026-08-28. That literal is now removed, so the `@default(0.80)` column
+default applies to every newly-seeded pandit. But the removal is **not
+retroactive**, and migration `20260812000000_priest_commission_rate_80` cannot
+help: it already ran, and on a database that was seeded *after* it ran its
+backfill `UPDATE` matched zero rows.
+
+No blanket backfill migration is shipped for this on purpose. `PATCH
+/admin/priests/:id/commission-rate` is a real, owner-authenticated write path,
+so `0.70` in that column can legitimately mean "negotiated", and a migration
+that rewrote every 0.70 row would silently overwrite a deal the owner made.
+
+Once prod is restored, **read before writing**:
+
+```sql
+-- 1. Who is below the 80% default, and were they ever negotiated?
+SELECT p.id, u.email, p.commission_rate, p.created_at
+FROM priests p JOIN users u ON u.id = p.user_id
+WHERE p.commission_rate < 0.80
+ORDER BY p.created_at;
+```
+
+Rows whose email is one of the three seeded demo pandits, or that predate any
+`admin_audit_log` entry for a commission-rate change, are seed artefacts and
+should be corrected:
+
+```sql
+-- 2. Only after confirming step 1. Name the ids explicitly; do NOT run this
+--    as a blanket `WHERE commission_rate = 0.70`.
+UPDATE priests SET commission_rate = 0.80 WHERE id IN (...);
+```
+
+Any commission rows already stamped at the old rate stay as they are —
+`Commission.percentage` is immutable by design and reconciliation depends on it.
+
+### Post-deploy owner check — PF-04 (dead avatar host)
+
+`prisma/seed.ts` wrote two `https://images.darshya.online/priests/*.jpg` URLs
+into `priests.avatar_url`. That hostname has no DNS record. Both are now `null`
+in the seed, and every avatar surface falls back on `onError` as well as on
+absence, so the broken-image icon is gone either way — but the seed's `update:`
+branch does not touch `avatar_url`, so **existing rows keep the dead URL**.
+
+Once prod is restored:
+
+```sql
+-- Expect 2 rows.
+SELECT id, display_name, avatar_url FROM priests
+WHERE avatar_url LIKE 'https://images.darshya.online/%';
+
+UPDATE priests SET avatar_url = NULL
+WHERE avatar_url LIKE 'https://images.darshya.online/%';
+```
+
+**Do not "fix" this with a DNS record alone.** No origin in this project serves
+`/priests/*.jpg`, so a CNAME would resolve and then 404 — the broken image
+survives. If real headshots are wanted, upload them to the Supabase Storage
+public bucket (`**.supabase.co` is already in `next.config.ts` remotePatterns)
+and store those URLs.
+
 ### Cost discipline
 
 **One push = one Render web build + one API build.** This repo burned its

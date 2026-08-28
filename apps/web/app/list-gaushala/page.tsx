@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import SelfOnboardPageShell from '../../components/SelfOnboardPageShell';
 import SelfOnboardForm, { ExtraInput, ExtraCheckbox } from '../../components/SelfOnboardForm';
+import { GAUSHALA_PLANS } from '../../lib/gaushala-plans';
 
 
 export const metadata: Metadata = {
@@ -9,6 +10,25 @@ export const metadata: Metadata = {
   description:
     'Receive 80G donations online for cow seva. Verified gaushalas only. Instant tax receipts to donors.',
 };
+
+/**
+ * TC-12: this page told gaushala owners "Devotees can subscribe to ₹500/month
+ * 'feed a cow' plans". There has never been a ₹500 monthly tier — the ladder
+ * in lib/gaushala-plans.ts runs ₹51/day, ₹3,000/month, ₹30,000/year,
+ * ₹2,25,000 one-time — and DF-06 had already removed the identical claim from
+ * the homepage Worship rail four months earlier. It survived here because the
+ * guard for it only read the two home components; a gaushala reading this page
+ * was being recruited on a recurring-revenue feature that was never built,
+ * which is the same false fact aimed at the supply side instead of the demand
+ * side.
+ *
+ * The prices are now interpolated off the ladder rather than retyped, so the
+ * pitch cannot drift from the plans /gaushala actually renders. Guarded by
+ * __tests__/funnel-inventory-claims.test.tsx.
+ */
+const RECURRING_TIERS = GAUSHALA_PLANS.filter((p) => p.period !== 'one-time')
+  .map((p) => `${p.price}${p.period === '/day' ? ' a day' : p.period === '/month' ? ' a month' : ' a year'}`)
+  .join(', ');
 
 const BENEFITS = [
   {
@@ -24,8 +44,8 @@ const BENEFITS = [
     body: 'Show the cows your donors are feeding. Monthly photos build long-term donor loyalty.',
   },
   {
-    title: 'Recurring monthly seva',
-    body: 'Devotees can subscribe to ₹500/month "feed a cow" plans. Predictable income for the gaushala.',
+    title: 'Recurring cow seva',
+    body: `Devotees can subscribe to recurring "feed a cow" plans — ${RECURRING_TIERS}. Predictable income for the gaushala.`,
   },
 ];
 

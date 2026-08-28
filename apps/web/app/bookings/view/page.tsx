@@ -249,6 +249,28 @@ function getStatusBadge(status: BookingDetail['status']) {
  return map[status] || { label: status, color: 'text-surface-600', bg: 'bg-surface-100' };
 }
 
+/**
+ * LEG-07 — the response shape of GET /bookings/:id/cancel-quote.
+ *
+ * Mirrors apps/api/src/routes/bookings.ts. `refundAmountInr` is what the
+ * devotee gets back and `feeAmountInr` is what is retained; both come from
+ * cancellationService.computeDevoteeRefund, which is also what the auto-refund
+ * cron and the admin ladder refund run, so this is a preview of the real
+ * payout rather than a second opinion about it.
+ */
+type CancelQuote = {
+ refundAmountInr: number;
+ feeAmountInr: number;
+ refundFraction: number;
+ tierLabel?: string | null;
+ refundDaysLabel?: string | null;
+};
+
+/** `825` → `"₹825"`. One formatter, so the two dialogs cannot disagree. */
+function inr(amount: number): string {
+ return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+}
+
 // ─── Component ──────────────────────────────────────────────────
 
 function BookingDetailContent() {
@@ -291,6 +313,27 @@ function BookingDetailContent() {
  const [refundReason, setRefundReason] = useState('');
  const [refundRequested, setRefundRequested] = useState(false);
  const [refundError, setRefundError] = useState<string | null>(null);
+
+ // LEG-07 — what this cancellation is actually worth, in rupees.
+ //
+ // Both confirm dialogs used to state no amount at all, and the refund one
+ // promised "Your payment will be returned within 5-7 business days" — true in
+ // exactly ONE of the four tiers in cancellation.service.ts. A devotee
+ // cancelling 30 hours out read an unconditional full refund and was paid 75%.
+ //
+ // GET /bookings/:id/cancel-quote has been able to answer this the whole time:
+ // it runs cancellationService.computeDevoteeRefund, the SAME function the two
+ // executors use, so the quoted figure and the paid figure cannot disagree.
+ // Nothing in apps/web had ever called it.
+ //
+ // `quote === null` while loading; `quoteFailed` means we could not get a
+ // number and must fall back to the published policy rather than guess one.
+ const [cancelQuote, setCancelQuote] = useState<CancelQuote | null>(null);
+ const [quoteLoading, setQuoteLoading] = useState(false);
+ const [quoteFailed, setQuoteFailed] = useState(false);
+ // Held so the success state can echo the figure the devotee agreed to, even
+ // though the quote is cleared when the dialog closes.
+ const [refundedAmountInr, setRefundedAmountInr] = useState<number | null>(null);
 
  // S2C-03 (2026-08-10): every failure path used to fall back to a hardcoded
  // "completed" booking — a temple, a priest, a video-proof URL and a ₹1,301
@@ -403,6 +446,59 @@ function BookingDetailContent() {
  // refunded while the booking was still live and their money untouched; the
  // pandit still turns up. The sibling handleReschedule below already checks
  // res.ok — this now matches it.
+ // LEG-07: fetch the real refund figure before either confirm dialog can be
+ // acted on. Called from the two "open the dialog" handlers rather than from an
+ // effect, so a devotee who never opens a dialog costs no request, and the
+ // quote is always as fresh as the moment they asked — the tier depends on how
+ // many hours remain, so a quote fetched at page load can be stale by the time
+ // it is read.
+ const loadCancelQuote = async () => {
+ setCancelQuote(null);
+ setQuoteFailed(false);
+ setQuoteLoading(true);
+ try {
+ const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel-quote`, {
+ headers: {
+ Authorization: `Bearer ${session?.accessToken ?? ''}`,
+ },
+ });
+ if (!res.ok) {
+ setQuoteFailed(true);
+ return;
+ }
+ const body = (await res.json()) as Partial<CancelQuote>;
+ // A malformed body must fail to the published policy, not render "₹NaN".
+ if (typeof body?.refundAmountInr !== 'number' || !Number.isFinite(body.refundAmountInr)) {
+ setQuoteFailed(true);
+ return;
+ }
+ setCancelQuote({
+ refundAmountInr: body.refundAmountInr,
+ feeAmountInr:
+ typeof body.feeAmountInr === 'number' && Number.isFinite(body.feeAmountInr)
+ ? body.feeAmountInr
+ : Math.max(0, booking ? booking.amountPaid - body.refundAmountInr : 0),
+ refundFraction: typeof body.refundFraction === 'number' ? body.refundFraction : 0,
+ tierLabel: body.tierLabel ?? null,
+ refundDaysLabel: body.refundDaysLabel ?? null,
+ });
+ } catch {
+ setQuoteFailed(true);
+ } finally {
+ setQuoteLoading(false);
+ }
+ };
+
+ const openCancelConfirm = () => {
+ setShowCancelConfirm(true);
+ void loadCancelQuote();
+ };
+
+ const openRefundConfirm = () => {
+ setShowRefundConfirm(true);
+ void loadCancelQuote();
+ };
+
  const handleCancelBooking = async () => {
  if (!booking) return;
  setCancelling(true);
@@ -491,6 +587,9 @@ function BookingDetailContent() {
  return;
  }
  setRefundRequested(true);
+ // LEG-07: hold the quoted figure so the success state can name it. Read
+ // here because the quote is cleared when the dialog closes below.
+ setRefundedAmountInr(cancelQuote ? cancelQuote.refundAmountInr : null);
  setBooking({ ...booking, status: 'cancelled' });
  } catch (err) {
  // A network/timeout failure used to surface the browser's own
@@ -1089,16 +1188,36 @@ function BookingDetailContent() {
  <>
  {showCancelConfirm ? (
  <div className="rounded-lg border border-red-200 bg-red-50 p-3">
- {/* S2C-03: don't promise a refund on a booking nothing was paid for. */}
+ {/* S2C-03: don't promise a refund on a booking nothing was paid for.
+     LEG-07: when one WAS paid, state the amount. "Any refund due under
+     the cancellation policy" told the devotee nothing they could check,
+     while GET /bookings/:id/cancel-quote could name the figure. */}
  <p className="mb-3 text-sm text-red-700">
- {booking.amountPaid > 0
- ? 'Are you sure you want to cancel this booking? Any refund due under the cancellation policy will be processed within 5-7 business days.'
- : 'Are you sure you want to cancel this booking?'}
+ {booking.amountPaid === 0
+ ? 'Are you sure you want to cancel this booking?'
+ : quoteLoading
+ ? 'Working out what you get back…'
+ : cancelQuote
+ ? `Cancel this booking? You get ${inr(cancelQuote.refundAmountInr)} back${
+ cancelQuote.feeAmountInr > 0
+ ? `, and ${inr(cancelQuote.feeAmountInr)} is retained under the cancellation policy`
+ : ''
+ }${cancelQuote.tierLabel ? ` (${cancelQuote.tierLabel})` : ''}. Refunds reach your account in ${cancelQuote.refundDaysLabel ?? '5-7 business days'}.`
+ : 'Cancel this booking? We could not work out your exact refund just now — how much comes back depends on how close the slot is.'}
  </p>
+ {booking.amountPaid > 0 && quoteFailed && (
+ <p className="mb-3 text-xs text-red-700">
+ See the{' '}
+ <Link href="/refunds" className="underline">
+ cancellation &amp; refund policy
+ </Link>{' '}
+ for the tiers, or contact support before confirming.
+ </p>
+ )}
  <div className="flex gap-2">
  <button
  onClick={handleCancelBooking}
- disabled={cancelling}
+ disabled={cancelling || (booking.amountPaid > 0 && quoteLoading)}
  className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
  >
  {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
@@ -1113,7 +1232,7 @@ function BookingDetailContent() {
  </div>
  ) : (
  <button
- onClick={() => setShowCancelConfirm(true)}
+ onClick={openCancelConfirm}
  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
  >
  <XCircle className="h-4 w-4" />
@@ -1132,9 +1251,45 @@ function BookingDetailContent() {
  {isRefundable && (
  showRefundConfirm ? (
  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
- <p className="mb-2 text-sm text-amber-800">
- Confirm cancellation &amp; refund. Your payment will be returned within 5-7 business days.
+ {/* LEG-07. This read "Confirm cancellation & refund. Your payment will
+     be returned within 5-7 business days." — an unconditional promise of
+     the FULL payment, true in exactly one of the four tiers in
+     cancellation.service.ts DEFAULT_CANCEL_POLICY. A devotee cancelling
+     30 hours out was promised everything and paid 75%.
+
+     The figure now comes from GET /bookings/:id/cancel-quote, which runs
+     the same computeDevoteeRefund the auto-refund cron and the admin
+     ladder refund run, so the quote cannot disagree with the payout.
+     When the quote cannot be obtained the dialog says so and points at
+     the published policy rather than substituting a number. */}
+ {quoteLoading ? (
+ <p className="mb-2 text-sm text-amber-800">Working out what you get back…</p>
+ ) : cancelQuote ? (
+ <>
+ <p className="mb-1 text-sm font-semibold text-amber-900">
+ You get {inr(cancelQuote.refundAmountInr)} back
+ {cancelQuote.tierLabel ? ` — ${cancelQuote.tierLabel}` : ''}
  </p>
+ <p className="mb-2 text-xs text-amber-800">
+ {cancelQuote.feeAmountInr > 0
+ ? `${inr(cancelQuote.feeAmountInr)} of the ${inr(
+ cancelQuote.refundAmountInr + cancelQuote.feeAmountInr,
+ )} you paid is retained under the cancellation policy. `
+ : 'Nothing is retained. '}
+ The refund reaches your account in{' '}
+ {cancelQuote.refundDaysLabel ?? '5-7 business days'}.
+ </p>
+ </>
+ ) : (
+ <p className="mb-2 text-sm text-amber-800">
+ We could not work out your exact refund just now. How much comes back
+ depends on how close the slot is — see the{' '}
+ <Link href="/refunds" className="underline">
+ cancellation &amp; refund policy
+ </Link>
+ , or contact support before confirming.
+ </p>
+ )}
  <textarea
  value={refundReason}
  onChange={(e) => setRefundReason(e.target.value.slice(0, 200))}
@@ -1143,9 +1298,13 @@ function BookingDetailContent() {
  className="mb-2 w-full rounded-md border border-amber-300 px-2 py-1.5 text-xs text-surface-700"
  />
  <div className="flex gap-2">
+ {/* LEG-07: not confirmable while the amount is unknown — the devotee
+     is agreeing to a figure, not to a dialog. A FAILED quote still
+     allows confirm: the published policy is shown instead, and
+     blocking the refund outright would be worse than an unquoted one. */}
  <button
  onClick={handleRequestRefund}
- disabled={refunding}
+ disabled={refunding || quoteLoading}
  className="flex-1 rounded-lg bg-amber-700 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-800 disabled:opacity-50"
  >
  {refunding ? 'Submitting…' : 'Confirm refund'}
@@ -1163,7 +1322,7 @@ function BookingDetailContent() {
  </div>
  ) : (
  <button
- onClick={() => setShowRefundConfirm(true)}
+ onClick={openRefundConfirm}
  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-amber-300 py-2.5 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-50"
  >
  <XCircle className="h-4 w-4" />
@@ -1174,7 +1333,13 @@ function BookingDetailContent() {
 
  {refundRequested && (
  <div className="rounded-lg border border-tulsi-green-light/50 bg-tulsi-green-light/10 p-3 text-xs text-tulsi-green-dark">
- Refund requested. It will be processed within 1 hour and credited within 5-7 business days.
+ {/* LEG-07: echo the figure the devotee just agreed to. Without it the
+     only record of the amount was the dialog they had already dismissed,
+     and the confirmation email (refund.service.refundSuccessEmail) was
+     the first place a number appeared. */}
+ {refundedAmountInr !== null
+ ? `Refund of ${inr(refundedAmountInr)} requested. It will be processed within 1 hour and credited within 5-7 business days.`
+ : 'Refund requested. It will be processed within 1 hour and credited within 5-7 business days.'}
  </div>
  )}
 

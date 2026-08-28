@@ -86,9 +86,19 @@
 | `roadmap-finalize.yml`                                          | push to main, paths-filtered on `docs/roadmap/**` only                         | ~1                 | ~10               | ~10              |
 | `render-hours-guard.yml`                                        | **daily 06:00 UTC** (added 2026-08-20; see the OPS-08 note below — the cron does not fire until this reaches `main`) | ~1 | 30 | **30** |
 | `cf-kill-zombie.yml` / `render-diag.yml` / `render-cutover.yml` | manual only                                                                    | n/a                | 0                 | 0                |
-| **Total estimate**                                              |                                                                                |                    |                   | **~1888 min/mo** |
+| **Total estimate**                                              |                                                                                |                    |                   | **~1853 min/mo** |
 
-Cap = 2000 min/mo. **Headroom: +112 min/mo.** Fleet is under cap.
+Cap = 2000 min/mo. **Headroom: +147 min/mo.** Fleet is under cap.
+
+> **Arithmetic corrected 2026-08-28.** This line read `~1888` / `+112`, and the
+> rows above it do not sum to that. Adding the Min/mo column:
+> 416 + 12 + 30 + 60 + 180 + 60 + 40 + 0 + 3 + 10 + 30 + 0 + 720 + 90 + 150 + 12
+> + 10 + 30 + 0 = **1853**. The 2026-08-21 note below is self-inconsistent in the
+> same direction: it says the two omitted workflows are "~42 min/mo" and take the
+> total "from ~1843 to ~1888", but 1843 + 42 = 1885. The error is conservative —
+> it over-states burn, so nothing was under-budgeted — but a budget nobody can
+> re-add is a budget nobody checks, which is how the four omitted workflows got
+> in. Re-derive by summing the column, not by trusting this cell.
 
 > **Reconciled again 2026-08-21 (OPS-02 / OPS-11).** Two workflows that have been
 > running for months were **never in this table**: `commitlint.yml` (~12 min/mo —
@@ -109,6 +119,19 @@ Cap = 2000 min/mo. **Headroom: +112 min/mo.** Fleet is under cap.
 > The restore drill is deliberately not on a schedule. A quarterly manual drill
 > costs ~24 min/year; a daily one would cost ~180 min/mo and buy nothing, because
 > what it verifies (that the dump restores) does not change day to day.
+
+> **2026-08-28 wave (OPS-02 / OPS-03 / OPS-08 / OPS-10 / OPS-11): ~+2 min/mo.**
+>
+> | Change | Minutes/mo |
+> |---|---:|
+> | `ci.yml` ops-guard step gains `scripts/test/ops-runbook-honesty.test.mjs` and `scripts/test/secret-scan.test.mjs` — ~+1.5s/run at ~80 runs | ~+2 |
+> | `.githooks/pre-commit` secret scan (OPS-11) | **0** — runs on the committer's machine, never on a runner |
+> | Root `prepare` → `scripts/install-git-hooks.mjs` | **0** on CI: the script returns immediately when `CI` is set |
+> | Documentation rewrites (runbooks, multi-region stubs, legal pack) | **0** — `ci.yml` is `paths-ignore: docs/**` |
+>
+> No cron was added, removed or re-timed. The only new *scheduled* workflow in
+> this repository remains `render-hours-guard.yml`, which is counted above and
+> which does not fire at all until the branch merges — see the next section.
 
 > **Reconciled 2026-08-20.** `render-hours-guard.yml` (30 min/mo) was added on
 > `feat/recurring-razorpay-planid` and had never been counted, so the "~1800 /
@@ -198,12 +221,37 @@ This currently applies to `render-hours-guard.yml`, which arrived in commit
 - its daily cron has never fired and will not fire;
 - Render-suspension detection is exactly what it was during the 2026-08-17
   outage, i.e. nothing;
-- the only way to run it is `gh workflow run render-hours-guard.yml --ref feat/recurring-razorpay-planid`
-  (`workflow_dispatch` **does** work from a non-default branch).
+- there is **no way to run it at all** — not on a schedule, and not by hand.
+
+That last point corrects this page. It previously said the guard could still be
+dispatched with `--ref`, and that is wrong in the direction that matters. GitHub
+registers a `workflow_dispatch` trigger only for a workflow file that exists on
+the **default branch**; `--ref` chooses *which copy of an already-registered
+workflow* to execute, and cannot conjure a trigger for a file `main` has never
+seen. The command this page used to recommend —
+
+```bash
+# DOES NOT WORK while the file is absent from main. Kept only so a reader who
+# remembers it from an earlier revision of this page is corrected, not left to
+# re-derive the failure.
+gh workflow run render-hours-guard.yml --ref feat/recurring-razorpay-planid
+#   could not find any workflows named render-hours-guard.yml
+```
+
+Verified 2026-08-28: `git cat-file -e main:.github/workflows/render-hours-guard.yml`
+still fails, so the file is not on `main`. The workflow's own header was corrected
+on 2026-08-21 and this page was not; they agree from today.
+**Merging to `main` is therefore not a nice-to-have that "installs the cron" —
+it is the only action that makes the file do anything.**
 
 The same is true of every workflow *correction* made on a branch: the fixed
 behaviour of `agents-health.yml`, `e2e.yml` and `db-backup.yml` starts at the
-merge, not at the commit. After merging, verify rather than assume:
+merge, not at the commit. `db-backup.yml` differs from the other three in one
+useful way — it already exists on `main`, so it *is* dispatchable, and `--ref`
+genuinely does select this branch's guarded copy. `main` still carries the
+72-line pre-guard version with no skip check and no `restore_drill` input, so
+dispatch it as `gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid`
+until the merge. After merging, verify rather than assume:
 
 ```bash
 gh workflow list --all | grep render-hours-guard

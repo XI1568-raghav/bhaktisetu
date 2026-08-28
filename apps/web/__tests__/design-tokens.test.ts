@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { markdownToHtml } from '../lib/markdown';
 
 /**
  * Design-token contract for the Tailwind v4 theme layer.
@@ -711,12 +712,14 @@ const CLASS_STRINGS: string[] = [
  * footer that already sit on `.container-wide` above them — the exact defect
  * the app/layout.tsx pass fixed for the marketing routes.
  *
- * 4xl is the obvious next one and is deliberately NOT done here: 2 of its 188
- * occurrences are genuine headline measures (`max-w-4xl` beside `text-[2.5rem]`
- * in app/about/page.tsx and beside `lg:text-6xl` in
- * components/motion/StickyHeadlinePin.tsx), so the token move would silently
- * widen two headlines by 16rem. Those two have to become explicit
- * `max-w-[56rem]` measures first.
+ * 4xl was the obvious next one and used to be deliberately NOT done here: 2 of
+ * its 188 occurrences were genuine headline measures (`max-w-4xl` beside
+ * `text-[2.5rem]` in app/about/page.tsx and beside `lg:text-6xl` in
+ * components/motion/StickyHeadlinePin.tsx), so the token move would have
+ * silently widened two headlines by 16rem. Both became explicit
+ * `max-w-[56rem]` measures on 2026-08-28 — same rendered width, now stated as a
+ * measure instead of borrowed from a page-shell token — and `--container-4xl`
+ * was retargeted to 72rem in the same change. DU-14's last third width is gone.
  */
 describe('DU-14 — max-w-5xl resolves to the declared wide width', () => {
   const ANY_5XL = /\b(?:[a-z0-9]+:)?max-w-5xl(?![\w-])/g;
@@ -953,16 +956,29 @@ describe('DU-03 / DU-05 — the shared components/ui layer stays on the recipes'
   });
 
   it('no shared UI component hand-rolls an h1', () => {
-    const RECIPE = /H1\.(marketing|catalogue|detail|portal)\b/;
+    /* Every key heading-recipe.ts exports, in its declaration order, with the
+     * trailing `\b` that stops `portal` matching the prefix of a name the
+     * recipe never exported. (Order itself is irrelevant — the engine
+     * backtracks out of the `portal` prefix into `portalInverse`; asserted in
+     * __tests__/h1-recipe-ratchet.du05.test.ts rather than assumed here.) */
+    const RECIPE = /H1\.(marketing|catalogue|detail|portal|portalInverse)\b/;
     const bad: string[] = [];
     for (const f of UI) {
       for (const m of f.src.matchAll(/<h1(\s[^>]*?)?>/gs)) {
         if (!RECIPE.test(m[1] ?? '')) bad.push(`${f.rel} :: ${(m[1] ?? '').slice(0, 80)}`);
       }
     }
+
+    expect(
+      RECIPE.test('className={H1.portalInverse}'),
+      'the detector must recognise the fifth archetype, or adopting it reads as a ' +
+        'hand-rolled h1 and this guard silently stops closing',
+    ).toBe(true);
+    expect(RECIPE.test('className={H1.portalish}')).toBe(false);
+
     expect(
       bad,
-      'use H1.marketing / H1.catalogue / H1.detail / H1.portal from ' +
+      'use H1.marketing / H1.catalogue / H1.detail / H1.portal / H1.portalInverse from ' +
         'components/ui/heading-recipe',
     ).toEqual([]);
   });
@@ -995,12 +1011,23 @@ describe('DU-05 — no h1 archetype hard-codes a value the scale already declare
     archetypes[m[1]!] = m[2]!.replace(/\s+/g, ' ').trim();
   }
 
-  it('all four archetypes were parsed off the recipe', () => {
+  /*
+   * FIVE since 2026-08-28. `portalInverse` is portal chrome on a dark surface
+   * — `portal`'s size and weight, `portal`'s colour inverted. It exists
+   * because five h1s (app/darshan/[id] x2, app/demo/[role] x2,
+   * app/mobile/darshan) are small light copy on a dark bar, which `detail`
+   * (a 30/36px display-face hero) and `portal` (text-surface-800, dark ink)
+   * both paint wrong, so they had gone on hand-rolling four recipes for one
+   * role. This list is pinned rather than derived on purpose: a sixth key is a
+   * design decision, and it should have to be made here.
+   */
+  it('all five archetypes were parsed off the recipe', () => {
     expect(Object.keys(archetypes).sort()).toEqual([
       'catalogue',
       'detail',
       'marketing',
       'portal',
+      'portalInverse',
     ]);
   });
 
@@ -1204,13 +1231,21 @@ describe('DU-10 — metadata has one declared size, not two', () => {
 
   it('the text-sm half only shrinks', () => {
     /*
-     * RATCHET, and the other half of the same finding. 86 measured paragraphs
-     * still say text-sm where they mean "this is metadata". They are not a
-     * blind sweep — .prose-meta IS --text-sm, so each one is a rename that
-     * needs someone to confirm the paragraph is a caption and not body copy
-     * that was shrunk. Lower this as they convert; it may not rise.
+     * RATCHET, and the other half of the same finding. It read 86 — the count
+     * at the time the sweep that wrote it started — and was never lowered when
+     * that sweep finished. Re-measured on 2026-08-28 with this block's own
+     * detector: ZERO of the 229 measured paragraphs pick text-sm by hand. So
+     * the ceiling was 86 units of slack sitting on a closed backlog, and the
+     * next author could have hand-picked eighty-six metadata sizes back into
+     * the product without CI saying a word — which is the precise way DU-10
+     * opened in the first place (five paragraph styles, nothing counting them).
+     *
+     * Set to the TRUE count. This is now the same shape as its sibling above
+     * ('the 12px step is gone from measured prose'): a closed half that may not
+     * reopen. .prose-meta IS --text-sm, so any new caption has a name to reach
+     * for and needs no hand-picked step.
      */
-    const BASELINE = 86;
+    const BASELINE = 0;
     const sm = measuredProse.filter((c) => /(?:^|\s)text-sm(?![\w-])/.test(c));
     expect(
       sm.length,
@@ -1288,13 +1323,14 @@ describe('DU-10 — metadata has one declared size, not two', () => {
  * moves 235 page shells off the two declared widths with nothing in CI to
  * notice. Declaring them is a zero-diff lock: same values, now owned.
  *
- * The remaining real gap is `--container-4xl` — 182 centred shells at 56rem, a
- * third content width. It is NOT retargeted here and DU-14 stays open for it:
- * two of its 188 occurrences are genuine headline measures
- * (app/about/page.tsx beside `text-[2.5rem]`,
- * components/motion/StickyHeadlinePin.tsx beside `lg:text-6xl`) and would be
- * widened by 16rem. Those two have to become explicit `max-w-[56rem]` measures
- * first — a call-site edit in app/ and components/motion, not a token edit.
+ * The last real gap was `--container-4xl` — 182 centred shells at 56rem, a
+ * third content width — and it is closed as of 2026-08-28. The two genuine
+ * headline measures that blocked it (app/about/page.tsx beside `text-[2.5rem]`,
+ * components/motion/StickyHeadlinePin.tsx beside `lg:text-6xl`) became explicit
+ * `max-w-[56rem]`, which is zero-pixel because that is the width they already
+ * rendered at; `--container-4xl` then moved to 72rem and its 182 page shells
+ * joined 5xl/6xl/7xl on `.container-wide`. The resolved-width census below went
+ * from 8 distinct widths to 7.
  */
 describe('DU-14 — every container step the app centres on is a declared width', () => {
   /** Tailwind v4 stock container scale, in rem. A step absent from @theme falls
@@ -1358,15 +1394,26 @@ describe('DU-14 — every container step the app centres on is a declared width'
 
   it('the resolved-width census never grows', () => {
     /*
-     * RATCHET on RENDERED widths, not class names. Measured at HEAD: 9 distinct
-     * widths over 723 centred declarations —
-     *   72rem 316 · 56rem 182 · 48rem 92 · 42rem 69 · 36rem 33 · 28rem 20 ·
-     *   32rem 7 · 20rem 2 · 24rem 2
+     * RATCHET on RENDERED widths, not class names.
+     *
+     * The 9 this used to allow was already one step of slack: re-measured on
+     * 2026-08-28 with this block's own detector the census was EIGHT, not nine
+     * — the 20rem x2 bucket in the old listing had gone and 24rem was down to
+     * one — so a ninth width could have been authored back in without failing
+     * anything. That is the exact failure mode the comment below warns about,
+     * sitting inside the guard that warns about it.
+     *
+     * Re-measured after the --container-4xl retarget (56rem -> 72rem, the last
+     * open half of DU-14): SEVEN distinct widths over 720 centred declarations —
+     *   72rem 497 · 48rem 92 · 42rem 70 · 36rem 33 · 28rem 20 · 32rem 7 · 24rem 1
+     * The 182 shells that rendered at 56rem are now part of the 72rem bucket.
      * The tail (42rem and below) is reading measures on cards and forms, not
-     * page shells; the live defect is 56rem, and closing it takes 9 to 8.
-     * Lower this after every sweep. Never raise it.
+     * page shells.
+     *
+     * Set to the TRUE count, not one above it. Lower it after every sweep;
+     * never raise it.
      */
-    const BASELINE = 9;
+    const BASELINE = 7;
     const widths = new Map<number, number>();
     for (const s of steps) {
       const w = resolvedRem(s);
@@ -1388,9 +1435,10 @@ describe('DU-14 — every container step the app centres on is a declared width'
 /* ═══ DU-05 — an archetype that does not name its colour does not own it ══ */
 
 /**
- * Three of the four h1 archetypes declare the colour they paint in
+ * Four of the five h1 archetypes declare the colour they paint in
  * (`catalogue` and `portal` on `text-surface-800`, `detail` on `text-white`
- * over its image). `marketing` declared none, so its nineteen call sites —
+ * over its image, `portalInverse` on `text-white` over a dark bar).
+ * `marketing` declared none, so its nineteen call sites —
  * /chakras, /chants, /faqs, /muhurat, /nakshatra, /nava-graha, /pilgrimage,
  * /pricing, /rashi, /sacred-trees, /vrat, /why-darshya, their eight [slug]
  * detail pages and the home hero — rendered at whatever `color` they
@@ -1424,8 +1472,14 @@ describe('DU-05 — every h1 archetype declares the colour it renders in', () =>
   const COLOUR =
     /(?:^|\s)text-(?:white|black|surface-\d{2,3}|saffron-\d{2,3}|maroon-\d{2,3}|vermillion-\d{2,3}|gold-\d{2,3})(?![\w-])/;
 
-  it('all four archetypes were parsed (a parse regression cannot vacuously pass this)', () => {
-    expect(Object.keys(arche).sort()).toEqual(['catalogue', 'detail', 'marketing', 'portal']);
+  it('all five archetypes were parsed (a parse regression cannot vacuously pass this)', () => {
+    expect(Object.keys(arche).sort()).toEqual([
+      'catalogue',
+      'detail',
+      'marketing',
+      'portal',
+      'portalInverse',
+    ]);
   });
 
   it('the colour detector tells a colour from a size step', () => {
@@ -1454,6 +1508,22 @@ describe('DU-05 — every h1 archetype declares the colour it renders in', () =>
     expect(of('portal')).toBe(of('catalogue'));
   });
 
+  it('the dark-surface portal archetype inverts the colour and NOTHING else', () => {
+    /*
+     * `portalInverse` earns its key by being one property different from
+     * `portal`. If it is allowed to drift in size or weight it stops being an
+     * inversion and becomes the sixth h1 treatment — which is the finding.
+     */
+    const strip = (c: string) => c.replace(COLOUR, ' ').replace(/\s+/g, ' ').trim();
+    expect(COLOUR.exec(arche.portalInverse ?? '')?.[0]?.trim()).toBe('text-white');
+    expect(
+      strip(arche.portalInverse ?? ''),
+      'portalInverse is portal on a dark surface, not a sixth treatment: only the colour ' +
+        'may differ, or a dashboard title changes rank because the bar under it is dark',
+    ).toBe(strip(arche.portal ?? ''));
+    expect(strip(arche.portal ?? ''), 'both archetypes lost their size step').toMatch(/text-\w+/);
+  });
+
   it('that token is the colour the body already renders at, so declaring it moved nothing', () => {
     const token = COLOUR.exec(arche.catalogue ?? '')?.[0]?.trim()?.replace(/^text-/, '');
     expect(token, 'catalogue lost its colour token').toBeTruthy();
@@ -1466,6 +1536,178 @@ describe('DU-05 — every h1 archetype declares the colour it renders in', () =>
         `${archeColour}. Once those differ, declaring the token on H1.marketing is no longer ` +
         'a zero-pixel change and the nineteen marketing call sites need a look.',
     ).toBe(archeColour);
+  });
+});
+
+/* ═══ DU-05 — a body heading is not the page title ═══════════════════════ */
+
+/**
+ * The two h1s the DU-05 sweep kept classifying as "unreachable by a className
+ * codemod", which was true and was also the wrong diagnosis.
+ *
+ * `lib/markdown.ts` and the near-identical renderer inlined in
+ * `app/help/articles/[lang]/[slug]/page.tsx` build their output as template
+ * strings, so their headings are raw HTML with `class=`, not `className=` — no
+ * class sweep could ever have touched them. But putting an `H1` archetype on
+ * them would have been wrong anyway: every consumer of both renderers ALREADY
+ * renders the page title as an `H1.catalogue` (app/blog/[slug],
+ * app/content/[slug], and the help article page itself), so a `# ` in a body
+ * was emitting a SECOND level-1 heading on a page that had one. app/blog/[slug]
+ * even strips a leading `#` from the body for exactly this reason — but with a
+ * non-global regex, so only the first one.
+ *
+ * That is the DU-05 clause "exactly one h1 per page", broken from inside a
+ * string. The fix is the tag, not the class: the body ladder shifts down one
+ * level (`#`->h2, `##`->h3, `###`->h4) and every rendered size stays where it
+ * was, so it is a zero-pixel change that removes two h1s from the census and
+ * leaves each body heading correctly nested under the title.
+ *
+ * The last test here is the load-bearing one. The demotion is only correct
+ * while the consumers really do render an h1 of their own; if one ever stops,
+ * this stops being a fix and starts being a page with no level-1 heading —
+ * which is the OTHER open half of DU-05 ("two of the ten screens have no h1").
+ */
+describe('DU-05 — the markdown renderers do not emit a second h1', () => {
+  const HELP = 'app/help/articles/[lang]/[slug]/page.tsx';
+
+  /** Comment-free: both renderers now document their own tags in prose. */
+  const stripped = (rel: string) =>
+    readFileSync(path.join(WEB, rel), 'utf8')
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+  it('the shared renderer turns a body `# ` into an h2, not an h1', () => {
+    const html = markdownToHtml('# Section\n\nSome copy.\n');
+    expect(html, 'a body heading may not be a second level-1 heading').not.toMatch(/<h1[\s>]/);
+    expect(html).toMatch(/<h2[^>]*>Section<\/h2>/);
+  });
+
+  it('the ladder under it is still a ladder', () => {
+    expect(markdownToHtml('## Two')).toMatch(/<h3[^>]*>Two<\/h3>/);
+    expect(markdownToHtml('### Three')).toMatch(/<h4[^>]*>Three<\/h4>/);
+  });
+
+  it('the shift moved the tag and not the type — every size is where it was', () => {
+    expect(markdownToHtml('# One')).toMatch(/<h2 class="text-2xl /);
+    expect(markdownToHtml('## Two')).toMatch(/<h3 class="text-xl /);
+    expect(markdownToHtml('### Three')).toMatch(/<h4 class="text-lg /);
+  });
+
+  it('the help-centre renderer emits no h1 either', () => {
+    const emitted = [...stripped(HELP).matchAll(/<h([1-6]) class=/g)].map((m) => Number(m[1]));
+    expect(emitted.length, 'the help renderer stopped emitting headings at all').toBeGreaterThan(1);
+    expect(
+      emitted.filter((n) => n === 1),
+      `${HELP} emits a raw-HTML <h1> from article-body markdown, on a page whose own ` +
+        'title is already an H1.catalogue',
+    ).toEqual([]);
+  });
+
+  it('every consumer still renders a page h1 of its own — the demotion depends on it', () => {
+    const CONSUMERS = ['app/blog/[slug]/page.tsx', 'app/content/[slug]/page.tsx', HELP];
+    for (const rel of CONSUMERS) {
+      expect(
+        stripped(rel),
+        `${rel} renders body markdown but no longer renders a page h1 of its own. The ` +
+          'body ladder was demoted BECAUSE the title h1 was there; without it this route ' +
+          'now has no level-1 heading at all.',
+      ).toMatch(/<h1[^>]*H1\.\w+/);
+    }
+  });
+});
+
+/* ═══ DU-05 — the other half: a screen with no h1 at all ═════════════════ */
+
+/**
+ * "two of the ten screens have no h1" was the second clause of DU-05's
+ * headline, and it is CLOSED at HEAD — by two different earlier waves, neither
+ * of which said so, which is why it kept being handed on as open.
+ *
+ * The prod sweep named them precisely (docs/audit/prod-sweep-raw-2026-08-12.md
+ * :1612, :1692): `/auth/login`, whose title was a
+ * `span.text-surface-800.text-xl.font-semibold`, and the puja error state,
+ * where "document.querySelectorAll('h1').length is 0; the title is a <p>".
+ *
+ * Both now render one. app/auth/login/page.tsx grew an h1 (still hand-rolled —
+ * it is one of the six on the __tests__/h1-recipe-ratchet.du05.test.ts
+ * backlog — but it exists, and "no h1" and "an h1 not on the recipe" are
+ * different defects). The error state was fixed at the root by DU-13:
+ * components/ui/ErrorState renders `H1.catalogue`, and all SIX route-segment
+ * boundaries delegate to it, so the one component closed six screens.
+ *
+ * This is a guard rather than a note because a recovery screen is precisely
+ * the screen nobody looks at: it renders only after something has already gone
+ * wrong, so a regression here is invisible until a customer meets it at the
+ * worst possible moment.
+ */
+describe('DU-05 — every recovery screen still renders a page title', () => {
+  const clean = (rel: string) =>
+    readFileSync(path.join(WEB, rel), 'utf8')
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+  /** Every route-segment error boundary under app/, found rather than listed. */
+  const boundaries: string[] = [];
+  const walkBoundaries = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      if (name === 'node_modules' || name === '.next') continue;
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) walkBoundaries(full);
+      else if (name === 'error.tsx') {
+        boundaries.push(path.relative(WEB, full).split(path.sep).join('/'));
+      }
+    }
+  };
+  walkBoundaries(path.join(WEB, 'app'));
+
+  it('the boundaries are actually being found (an empty walk cannot pass the rest)', () => {
+    expect(boundaries.length, 'no app/**/error.tsx found at all').toBeGreaterThanOrEqual(6);
+  });
+
+  it('the shared recovery component renders exactly one h1, on an archetype', () => {
+    const src = clean('components/ui/ErrorState.tsx');
+    const h1s = [...src.matchAll(/<h1(\s[^>]*?)?>/gs)];
+    expect(h1s.length, 'components/ui/ErrorState must render exactly one h1').toBe(1);
+    expect(
+      h1s[0]![1] ?? '',
+      'the recovery title is the page title on six routes at once — it goes on an ' +
+        'H1 archetype, not a bespoke recipe',
+    ).toMatch(/H1\.\w+/);
+  });
+
+  /** A boundary with no page title: no h1 of its own, and not delegating. */
+  const isTitleless = (src: string) => !/<h1[\s>]/.test(src) && !/\bErrorState\b/.test(src);
+
+  it('the titleless detector fires on the shape DU-05 measured, and not on the fixes', () => {
+    expect(isTitleless('return <p style={{fontSize:"1.25rem"}}>Something went wrong</p>;')).toBe(
+      true,
+    );
+    expect(isTitleless('return <ErrorState title="Couldn\'t load this puja" />;')).toBe(false);
+    expect(isTitleless('return <h1 className={H1.catalogue}>{title}</h1>;')).toBe(false);
+  });
+
+  it('every error boundary renders a title — its own h1, or the shared component', () => {
+    const titleless = boundaries.filter((rel) => isTitleless(clean(rel)));
+    expect(
+      titleless,
+      'these boundaries render no page title at all: a screen-reader user who lands on ' +
+        'one gets nothing in the heading list, and it is the moment a customer most needs ' +
+        'to know where they are. Use components/ui/ErrorState.',
+    ).toEqual([]);
+  });
+
+  it('the two screens the sweep named still have their h1', () => {
+    expect(
+      clean('app/auth/login/page.tsx'),
+      'the /auth/login title went back to being a span — DU-05 named this screen by name',
+    ).toMatch(/<h1[\s>]/);
+    expect(
+      clean('app/global-error.tsx'),
+      'app/global-error.tsx cannot use ErrorState (it replaces the root layout, so no ' +
+        'stylesheet is loaded under it) — but it still needs an h1 of its own',
+    ).toMatch(/<h1[\s>]/);
   });
 });
 
@@ -1486,13 +1728,18 @@ describe('DU-05 — every h1 archetype declares the colour it renders in', () =>
  * zero-pixel change; the only thing it changes is that a `tailwindcss` upgrade
  * which renumbers the scale now moves nothing.
  *
- * `--container-4xl` is the one step declared but deliberately NOT retargeted
- * onto the wide width, and the last test is why: two of its 188 occurrences are
- * genuine headline measures rather than page shells (app/about/page.tsx beside
- * `text-[2.5rem]`, components/motion/StickyHeadlinePin.tsx beside
- * `lg:text-6xl`), and folding 4xl into 72rem would widen those two headlines by
- * 16rem. That test closes itself: the moment no `max-w-4xl` consumer sets its
- * own type size, it stops permitting 56rem and starts demanding the retarget.
+ * `--container-4xl` was the one step declared but deliberately NOT retargeted
+ * onto the wide width, and the last test is why: two of its 188 occurrences
+ * were genuine headline measures rather than page shells (app/about/page.tsx
+ * beside `text-[2.5rem]`, components/motion/StickyHeadlinePin.tsx beside
+ * `lg:text-6xl`), and folding 4xl into 72rem would have widened those two
+ * headlines by 16rem.
+ *
+ * That test closed itself on 2026-08-28, exactly as written: both measures
+ * became explicit `max-w-[56rem]` (zero-pixel — it is the width they already
+ * rendered at), the census of max-w-4xl consumers that set their own type size
+ * fell to zero, and the test stopped permitting 56rem and started demanding
+ * 72rem. It is now the guard that the retarget stays.
  */
 describe('DU-14 — every container step the app ships is declared in @theme', () => {
   const STEPS = [
@@ -1556,8 +1803,14 @@ describe('DU-14 — every container step the app ships is declared in @theme', (
      * A consumer that sets its own type size beside max-w-4xl is a measure for
      * that headline, not a page shell, and retargeting the token would widen
      * it. While any survive, 56rem is the correct value. When the last one
-     * becomes an explicit max-w-[56rem] this flips and demands the retarget
-     * that takes the resolved-width census from 9 distinct widths to 8.
+     * becomes an explicit max-w-[56rem] this flips and demands the retarget.
+     *
+     * It flipped on 2026-08-28 and the branch below is now the live one: zero
+     * measures, `--container-4xl: 72rem`, and the resolved-width census down
+     * from 8 distinct widths to 7 (the ceiling was 9 at the time, i.e. it had a
+     * step of slack; see the BASELINE note above). Both branches are kept —
+     * re-introducing a max-w-4xl headline measure has to be a red test, not a
+     * silent 16rem widening of that headline.
      */
     const measures: string[] = [];
     for (const m of CODE.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {

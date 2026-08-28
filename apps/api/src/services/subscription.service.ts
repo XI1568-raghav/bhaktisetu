@@ -45,6 +45,37 @@ interface SubscriptionResult {
 
 // ─── Plan Definitions ───────────────────────────────────────────────────────────
 
+/**
+ * PM-01 (2026-08-28) — the commission bullets are gone from this table.
+ *
+ * Six plans below used to advertise a commission benefit next to their price:
+ * plan-pandit-pro "15% lower commission" (Rs 2,999/mo), plan-astro-pro
+ * "10% lower commission" (Rs 1,999/mo), plan-store-basic "Lower commission"
+ * (Rs 1,499/mo), plan-store-pro "Lowest commission" (Rs 3,999/mo), and
+ * plan-store-free / plan-wellness-free "Standard commission" — which only
+ * means anything if some other plan is cheaper on commission.
+ *
+ * No plan changes any rate. `commissionOverride` / `commission_override`
+ * appear nowhere in apps/api, and the five services that write a Commission
+ * row (booking.service, payment.service, store-commission.service,
+ * routes/consultation, routes/wellness-sessions) each apply a flat rate that
+ * never reads a subscription. A store owner paying Rs 3,999/month for "Lowest
+ * commission" is charged the same 20% as the free tier.
+ *
+ * A previous wave stopped the claim at one renderer — a filter in
+ * apps/web/app/pricing/page.tsx — and recorded that no live surface still
+ * carried it. That missed apps/web/components/SubscriptionPanel.tsx, which
+ * prints `plan.features` from GET /subscriptions/plans verbatim on
+ * /priest/subscription, /astrologer-portal/subscription, /store/subscription
+ * and /wellness-portal/subscription, each next to a Subscribe button.
+ * Filtering at one consumer does not unpublish what the API still serves to
+ * every other one.
+ *
+ * If a tier-based commission discount is ever actually implemented (it would
+ * live in apps/api/src/lib/commission-math.ts), the bullets may come back —
+ * `subscription.service.pm01.test.ts` will fail and force that to be a
+ * deliberate decision rather than a drift.
+ */
 const PLANS: PlanDefinition[] = [
   // Pandit plans
   {
@@ -77,7 +108,7 @@ const PLANS: PlanDefinition[] = [
     price: 2999,
     currency: 'INR',
     interval: 'month',
-    features: ['Unlimited bookings', 'Top listing', 'Verified badge', 'Video consultation', 'Dedicated support', '15% lower commission'],
+    features: ['Unlimited bookings', 'Top listing', 'Verified badge', 'Video consultation', 'Dedicated support'],
     popular: false,
   },
   // Astrologer plans
@@ -111,7 +142,7 @@ const PLANS: PlanDefinition[] = [
     price: 1999,
     currency: 'INR',
     interval: 'month',
-    features: ['Unlimited everything', 'Video calls', 'Top listing', 'Verified badge', '10% lower commission'],
+    features: ['Unlimited everything', 'Video calls', 'Top listing', 'Verified badge'],
     popular: false,
   },
   // Store Owner plans
@@ -123,7 +154,7 @@ const PLANS: PlanDefinition[] = [
     price: 0,
     currency: 'INR',
     interval: 'forever',
-    features: ['10 product listings', 'Standard commission', 'Basic analytics'],
+    features: ['10 product listings', 'Basic analytics'],
     popular: false,
   },
   {
@@ -134,7 +165,7 @@ const PLANS: PlanDefinition[] = [
     price: 1499,
     currency: 'INR',
     interval: 'month',
-    features: ['100 product listings', 'Lower commission', 'Advanced analytics', 'Priority support'],
+    features: ['100 product listings', 'Advanced analytics', 'Priority support'],
     popular: true,
   },
   {
@@ -145,7 +176,7 @@ const PLANS: PlanDefinition[] = [
     price: 3999,
     currency: 'INR',
     interval: 'month',
-    features: ['Unlimited listings', 'Lowest commission', 'Featured placement', 'Dedicated account manager'],
+    features: ['Unlimited listings', 'Featured placement', 'Dedicated account manager'],
     popular: false,
   },
   // Wellness plans
@@ -157,7 +188,7 @@ const PLANS: PlanDefinition[] = [
     price: 0,
     currency: 'INR',
     interval: 'forever',
-    features: ['5 sessions/month', 'Basic profile', 'Standard commission'],
+    features: ['5 sessions/month', 'Basic profile'],
     popular: false,
   },
   {

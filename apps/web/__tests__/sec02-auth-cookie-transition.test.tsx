@@ -21,10 +21,21 @@
  *
  * These tests bind to the two halves that matter:
  *   1. the login call must opt into credentials mode, or no cookie is ever set;
- *   2. the localStorage session must STILL be written, because 95 files under
- *      apps/web build `Authorization: Bearer ${session.accessToken}` by hand and
- *      only 11 send credentials. Dropping the localStorage copy before those
- *      migrate would 401 most of the product — i.e. log everyone out on deploy.
+ *   2. sign-in must leave a WORKING session behind — the reason the localStorage
+ *      copy could not simply be dropped.
+ *
+ * REWRITTEN 2026-08-28, SEC-02 step 4. Clause 2 used to read "the localStorage
+ * session must STILL be written", and the test below was named "...the Bearer
+ * path must not break yet". That contract is superseded, deliberately: the
+ * hand-built Bearer readers it protected have all been migrated
+ * (app/org/{page,accept,members,settings}, components/AartiOptIn,
+ * components/NotificationPrompt), persistAuthStorage no longer writes the token
+ * to any JS-readable store, and lib/session-revive brings a token-free browser
+ * back from the httpOnly cookies. The PROPERTY the old assertion was really
+ * defending — "after sign-in the app holds a usable access token, so nobody is
+ * logged out on deploy" — is kept and now asserted where the token actually
+ * lives: React state, via useAuth(). What changed is only that the token is no
+ * longer readable by an injected script, which is the whole finding.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -71,12 +82,20 @@ let signIn: SignIn | null = null;
 let signOutFn: (() => Promise<void>) | null = null;
 
 function Probe() {
-  const { signInWithCredentials, signOut, isLoading } = useAuth();
+  const { signInWithCredentials, signOut, isLoading, session } = useAuth();
   useEffect(() => {
     signIn = signInWithCredentials;
     signOutFn = signOut;
   }, [signInWithCredentials, signOut]);
-  return <span data-testid="state">{isLoading ? 'loading' : 'ready'}</span>;
+  return (
+    <>
+      <span data-testid="state">{isLoading ? 'loading' : 'ready'}</span>
+      {/* SEC-02 step 4: the access token lives in React state now, not in any
+          store a script can read, so this is where "is the user still signed
+          in?" has to be observed. */}
+      <span data-testid="access-token">{session?.accessToken ?? ''}</span>
+    </>
+  );
 }
 
 async function mountProvider() {
@@ -124,7 +143,7 @@ describe('SEC-02 — sign-in lets the browser keep the httpOnly auth cookies', (
     ).toBe('include');
   });
 
-  it('still writes the localStorage session — the Bearer path must not break yet', async () => {
+  it('leaves a usable session in memory and NOTHING in localStorage', async () => {
     installFetchSpy();
     await mountProvider();
 
@@ -132,9 +151,16 @@ describe('SEC-02 — sign-in lets the browser keep the httpOnly auth cookies', (
       await signIn!('real-user@example.com', 'a-real-password');
     });
 
-    const stored = localStorage.getItem('poojly_session');
-    expect(stored, 'dropping this before the 95 Bearer call sites migrate logs everyone out').toBeTruthy();
-    expect(JSON.parse(stored!).accessToken).toBe(API_SESSION.accessToken);
+    // The property the superseded assertion was defending: sign-in must not
+    // leave the app without a credential, or the deploy logs everyone out.
+    expect(
+      screen.getByTestId('access-token'),
+      'sign-in produced no usable access token at all — that IS the log-everyone-out failure',
+    ).toHaveTextContent(API_SESSION.accessToken);
+
+    // ...and the part that changed: it is no longer readable by an injected
+    // script. This is SEC-02 itself, not a detail of it.
+    expect(localStorage.getItem('poojly_session')).toBeNull();
   });
 
   it('never puts a token back into a JS-readable cookie (A-007 must not regress)', async () => {

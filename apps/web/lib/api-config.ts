@@ -254,6 +254,43 @@ export const NETWORK_ERROR_MESSAGE =
 export const DATA_FETCH_TIMEOUT_MS = 15_000;
 
 /**
+ * The HTTP status a failure carries, if it carries one. Callers pass either a
+ * `Response` (whose `status` lives on the prototype, so `in` finds it) or the
+ * thrown value from a network/timeout failure, which has none.
+ */
+function loadErrorStatus(cause: unknown): number {
+ return typeof cause === 'object' && cause !== null && 'status' in cause
+  ? Number((cause as { status: unknown }).status)
+  : Number.NaN;
+}
+
+/**
+ * AUTH-06 (2026-08-28) — whether this failure means "sign in again".
+ *
+ * `friendlyApiError` has returned a `reauth` flag since P1 #208 and no screen
+ * read it. `loadErrorMessage` never had one at all: it answers a 401/403 with
+ * "Your session has expired — sign in again to see your live figures." and
+ * hands back a bare string, so the ten surfaces that render it cannot tell a
+ * dead session from a 500 and cannot offer the link that sentence instructs
+ * the user to press. Telling someone to sign in again beside a Retry that
+ * re-fires the request that just 401'd is worse than saying nothing: the Retry
+ * looks like the way out.
+ *
+ * The signature of `loadErrorMessage` cannot change — every caller stores its
+ * result in `string | null` state — so the flag ships alongside it. A caller
+ * renders `<ReauthPrompt message={loadError} />` (default export,
+ * components/ReauthPrompt.tsx) INSTEAD of its Retry button when this is true,
+ * or links `reauthLoginHref(pathname)` from lib/friendly-error.ts directly.
+ *
+ * Both this and the sentence read one classification, so they cannot drift
+ * into disagreeing about the same cause.
+ */
+export function loadErrorIsReauth(cause: unknown): boolean {
+ const status = loadErrorStatus(cause);
+ return status === 401 || status === 403;
+}
+
+/**
  * The one honest sentence to render when a data load fails.
  *
  * RES-02 (2026-08-12): 7 of 10 authenticated pages answered an HTTP 500 by
@@ -268,12 +305,9 @@ export const DATA_FETCH_TIMEOUT_MS = 15_000;
  * failure, or the thrown value for a network/timeout failure.
  */
 export function loadErrorMessage(cause: unknown): string {
- const status =
-  typeof cause === 'object' && cause !== null && 'status' in cause
-   ? Number((cause as { status: unknown }).status)
-   : Number.NaN;
+ const status = loadErrorStatus(cause);
  if (Number.isFinite(status)) {
-  if (status === 401 || status === 403) {
+  if (loadErrorIsReauth(cause)) {
    return 'Your session has expired — sign in again to see your live figures.';
   }
   return `Couldn't load live data (HTTP ${status}). The figures below are placeholders, not your real numbers — retry.`;

@@ -43,6 +43,7 @@ import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
 import AdSlot from '../../../components/AdSlot';
 import { getTempleHero } from '../../../lib/images';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  currentAartiState,
  getScheduleForTemple,
@@ -500,7 +501,7 @@ export default async function DarshanDetailPage({
  <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
  <div className="bg-surface-800 border border-surface-700 rounded-2xl p-8 text-center">
  <Video className="w-12 h-12 text-saffron-400 mx-auto mb-4 opacity-80" />
- <h1 className="text-2xl font-bold text-white mb-2">{name}</h1>
+ <h1 className={`${H1.portalInverse} mb-2`}>{name}</h1>
  <p className="text-surface-400 mb-1">Live darshan coming soon</p>
  <p className="prose-meta text-surface-500 max-w-md mx-auto mb-6">
  We don&rsquo;t have an active live stream for this temple yet. Browse the temples
@@ -655,7 +656,7 @@ export default async function DarshanDetailPage({
  <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
  <div className="flex items-start justify-between">
  <div>
- <h1 className="text-xl sm:text-2xl font-bold text-white">
+ <h1 className={H1.portalInverse}>
  {stream.temple.name}
  </h1>
  <div className="flex items-center gap-3 mt-2 text-sm text-surface-400">

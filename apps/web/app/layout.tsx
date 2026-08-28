@@ -9,6 +9,7 @@ import {
  Crimson_Pro,
 } from "next/font/google";
 import { t } from "../lib/t";
+import { footerDonateLink } from "../lib/footer-donate-link";
 import {
  Flame,
  Heart,
@@ -56,6 +57,7 @@ import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { SentryProvider } from "../components/SentryProvider";
 import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
+import ConnectivityBar from "../components/ConnectivityBar";
 import { TranslationCoverageNotice } from "../components/TranslationCoverageNotice";
 import AdSenseScript from "../components/AdSenseScript";
 import { GA4Script } from "../lib/ga4";
@@ -286,6 +288,22 @@ const moreLinks = [
 const highlightLink = { href: "/ask-pandit", labelKey: "askPandit" as const, icon: MessageCircleQuestion };
 
 type FooterLink = { href: string; t: 'footer' | 'terms' | 'nav'; key: string };
+
+/**
+ * TC-01 — the donate link's label is decided in lib/footer-donate-link.ts,
+ * gated on `COMPANY.donationLegal.HAS_80G_VERIFIED`.
+ *
+ * It was hardcoded to `{ t: "footer", key: "donate80G" }` here, which
+ * lib/i18n/en.json resolves to "Donate (80G)". This footer is rendered by the
+ * root layout, so that promised an income-tax deduction on EVERY page of the
+ * site while the flag is false and both `eightyGNumber` and `pan` are null.
+ *
+ * The rule lives in its own module because this file cannot be rendered under
+ * vitest, so an inline ternary could only be checked by scanning source — and
+ * a regex cannot tell which branch of a ternary actually runs. See
+ * __tests__/tc01-footer-80g-every-page.test.ts, which exercises both states.
+ */
+const donateFooterLink: FooterLink = footerDonateLink();
 const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  {
  titleKey: "explore",
@@ -293,7 +311,7 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  { href: "/temples", t: "nav", key: "temples" },
  { href: "/darshan", t: "footer", key: "liveDarshan" },
  { href: "/pujas", t: "footer", key: "bookPuja" },
- { href: "/donations", t: "footer", key: "donate80G" },
+ donateFooterLink,
  { href: "/yatra", t: "footer", key: "dharmicYatra" },
  { href: "/panchang", t: "nav", key: "panchang" },
  ],
@@ -486,6 +504,14 @@ export default function RootLayout({
  >
  Skip to main content
  </a>
+ {/* RES-13: the global connectivity bar. Mounted here, above the providers,
+     because a user whose connection drops on an already-rendered route saw
+     nothing at all — every subsequent fetch failed and each surface rendered
+     its own error, so the product read as broken rather than disconnected.
+     It renders nothing until an 'online'/'offline' EVENT arrives (it never
+     reads navigator.onLine, which lies behind a captive portal) and recovers
+     with router.refresh() rather than a reload. */}
+ <ConnectivityBar />
  <SentryErrorBoundary>
  <QueryProvider>
  <AuthProvider>

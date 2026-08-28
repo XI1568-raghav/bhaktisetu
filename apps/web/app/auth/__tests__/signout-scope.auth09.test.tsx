@@ -184,7 +184,15 @@ describe('AUTH-09 — signOut can state its scope', () => {
   it('clears the local session whichever scope was used', async () => {
     installFetchSpy();
     await signedIn();
-    expect(localStorage.getItem('poojly_session')).toBeTruthy();
+    // REWRITTEN 2026-08-28 (SEC-02 step 4). The pre-condition used to be
+    // `poojly_session` being truthy; that key is no longer written at all —
+    // the access token lives in React state and the httpOnly cookies. The
+    // token-free profile marker is what a signed-in browser still has locally,
+    // and it is the thing signOut must clear: middleware.ts gates every portal
+    // on its mere presence, so leaving it behind keeps handing a signed-out
+    // visitor the portal shell. The assertion is not weakened — the
+    // post-condition still requires BOTH keys gone.
+    expect(localStorage.getItem('poojly_user')).toBeTruthy();
 
     await act(async () => {
       await signOutFn!({ scope: 'local' });

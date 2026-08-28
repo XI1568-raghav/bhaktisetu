@@ -128,12 +128,17 @@ export function nriPremiumFeatures(): string[] {
  * declares. For NRI Premium these differ: the definition keeps its original
  * six-line claim list, and the offer carries only the enforced subset.
  *
- * The declared literal has to stay in the source of subscription.service.ts
- * because apps/web/__tests__/legal-content-p1.test.ts (LEG-08) scans that file
- * for a literal `features: [` block and cross-checks it against the published
- * FAQ answer. That guard lives in another lane, so the projection happens on
- * the way OUT of getPlans() rather than at the definition — same guarantee for
- * every buyer-facing path, no cross-lane edit.
+ * The projection happens on the way OUT of getPlans() rather than at the
+ * definition, which gives the same guarantee on every buyer-facing path with
+ * one edit.
+ *
+ * (2026-08-28: this note used to say the literal had to stay put because
+ * LEG-08 in apps/web/__tests__/legal-content-p1.test.ts scraped a literal
+ * `features: [` block out of subscription.service.ts. That is no longer true —
+ * LEG-08 was re-cut for TC-13 and now reads the DERIVED list, requiring every
+ * ENFORCED benefit to appear in the published FAQ answer and no UNENFORCED one
+ * to. Keeping the literal is still right, because it is the record of what was
+ * claimed, but it is a choice now rather than a constraint.)
  */
 export function advertisedFeaturesFor(planId: string, declared: string[]): string[] {
   if (planId === NRI_PREMIUM_PLAN_ID) return nriPremiumFeatures();

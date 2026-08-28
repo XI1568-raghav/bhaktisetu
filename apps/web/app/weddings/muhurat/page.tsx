@@ -43,6 +43,10 @@ function apiBase(): string {
 /** Deliberately generous — see the note at the call site. */
 const MUHURAT_TIMEOUT_MS = 45_000;
 
+/**
+ * Only reachable now when the API rejects a session we DID send (401/403).
+ * A signed-out visitor never sees it: the endpoint is public. See `submit`.
+ */
 const LOGIN_HREF = `/auth/login?redirect=${encodeURIComponent('/weddings/muhurat')}`;
 
 export default function MuhuratPage() {
@@ -70,19 +74,29 @@ export default function MuhuratPage() {
   }
 
   /*
-   * PAR-14: this handler used to POST with `headers: {'content-type': ...}`
-   * and nothing else. POST /weddings/muhurat is registered behind
-   * `preHandler: [authenticateUser]` (apps/api/src/routes/weddings.ts), so
-   * every web visitor got 401 — signed in or not — and the catch below
-   * rendered the literal string "Request failed: 401". The mobile client
-   * always sent the token, which is why the same feature worked there.
+   * PAR-14, in two parts, both now landed.
    *
-   * Two things are fixed: the token is attached when we have one, and a
-   * visitor without one is no longer fired at an authenticated endpoint just
-   * to be told a status code. See the note by LOGIN_HREF above — whether this
-   * endpoint should be public at all is an API-side decision (the wedding
-   * inquiry auto-reply emails this page's URL to signed-out prospects), and
-   * that lives in apps/api/src/routes/weddings.ts, not here.
+   * Part one (earlier): this handler used to POST with
+   * `headers: {'content-type': ...}` and nothing else, against a route
+   * registered behind `preHandler: [authenticateUser]`. Every web visitor got
+   * 401 — signed in or not — and the catch below rendered the literal string
+   * "Request failed: 401". The mobile client always sent the token, which is
+   * why the same feature worked there.
+   *
+   * Part two (this change): the API-side half. POST /weddings/muhurat is now
+   * PUBLIC and rate-limited per IP instead of authenticated
+   * (apps/api/src/routes/weddings.ts) — the compute concern that motivated the
+   * gate is a request-rate concern, and the gate was blocking the journey the
+   * route exists for: /weddings/inquiry emails this page's URL to a brand-new
+   * prospect who is by definition signed out. So the pre-flight sign-out gate
+   * that used to live here is GONE. A visitor with no session submits the form
+   * and gets dates.
+   *
+   * The bearer is still attached WHEN WE HAVE ONE, and the 401/403 branch
+   * below is kept: both are the cheap side of the asymmetry. If an older API
+   * is still deployed, or a future variant re-scopes this per-user, a signed-in
+   * visitor keeps working and a rejected one still gets a door rather than a
+   * status code. What is not kept is refusing to ask.
    */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,11 +104,6 @@ export default function MuhuratPage() {
     setNeedsSignIn(false);
 
     const token = session?.accessToken;
-    if (!token) {
-      setNeedsSignIn(true);
-      setError('Sign in to compute your muhurat dates.');
-      return;
-    }
 
     setLoading(true);
     try {
@@ -105,10 +114,13 @@ export default function MuhuratPage() {
         `${apiBase()}/weddings/muhurat`,
         {
           method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          // No `Authorization: Bearer undefined` for a signed-out visitor: an
+          // empty/garbage bearer is worse than none, because middlewares/auth.ts
+          // treats a present-but-unparseable Authorization header as an attempt
+          // to authenticate rather than as anonymous traffic.
+          headers: token
+            ? { 'content-type': 'application/json', Authorization: `Bearer ${token}` }
+            : { 'content-type': 'application/json' },
           body: JSON.stringify(body),
           // fetchWithTimeout defaults to credentials:'include'. This call is
           // cross-origin (api.darshya.online) and the bare fetch it replaces

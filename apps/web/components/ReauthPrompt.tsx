@@ -38,9 +38,17 @@ export default function ReauthPrompt({
 
   return (
     <div className={className ?? 'flex flex-col items-start gap-3'} role="status">
-      <p className="text-sm text-surface-600">
-        {message ?? 'Your session has expired. Please sign in again to continue.'}
-      </p>
+      {/*
+        An EMPTY string means "the caller already printed the sentence" — the
+        /bookings alert row does, and an empty <p> dropped into the middle of it
+        is dead markup a screen reader still walks into. Omitting the prop
+        entirely still means "say it for me", which is the common case.
+      */}
+      {message !== '' && (
+        <p className="text-sm text-surface-600">
+          {message ?? 'Your session has expired. Please sign in again to continue.'}
+        </p>
+      )}
       {/*
         DU-03: the one primary-CTA recipe, not a hand-rolled inline fill. An
         inline `style` outranks every class, so no token can reach it — and

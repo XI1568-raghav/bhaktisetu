@@ -44,6 +44,23 @@ export interface OptionalWebViewProps {
   onLoadEnd?: () => void;
   onError?: () => void;
   onNavigationStateChange?: (state: { canGoBack?: boolean; url?: string }) => void;
+  /**
+   * The only per-navigation veto this component offers, and the reason it is
+   * declared here at all.
+   *
+   * `originWhitelist` is compared against the ORIGIN ONLY and its compiled
+   * regex is anchored at the start and nowhere else, so it cannot express
+   * "exactly this origin" — `https://darshya.online` also matches
+   * `https://darshya.online.evil.example`. This prop can, because the decision
+   * is a function. lib/in-app-web.ts's `makeNavigationGuard` builds it; see
+   * the note there for the mechanics.
+   *
+   * Returning false aborts the navigation. The initial `source` load is
+   * subject to it too, so the guard must accept the URL the screen was opened
+   * with — which it does, since the same `isRenderableInApp` already gated
+   * that URL before the screen was pushed.
+   */
+  onShouldStartLoadWithRequest?: (req: { url?: string | null }) => boolean;
   sharedCookiesEnabled?: boolean;
   thirdPartyCookiesEnabled?: boolean;
   domStorageEnabled?: boolean;

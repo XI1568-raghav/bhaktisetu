@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
-import { API_BASE_URL } from '../lib/api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../lib/api-config';
+import { useAuth } from '../lib/auth-context';
 
 import { buttonClass } from '../components/ui/button-recipe';
 /**
@@ -20,15 +21,24 @@ import { buttonClass } from '../components/ui/button-recipe';
 
 const STORAGE_KEY = 'darshya_aarti_opt_in';
 
-function getAccessToken(): string | null {
-  try {
-    const raw = localStorage.getItem('poojly_session');
-    if (!raw) return null;
-    return JSON.parse(raw)?.accessToken ?? null;
-  } catch {
-    return null;
-  }
-}
+/**
+ * SEC-02 step 3 — this file used to hand-build its own Bearer from
+ * `localStorage['poojly_session'].accessToken`, and used the presence of that
+ * value as its "is anyone signed in" test.
+ *
+ * Both were wrong for the same reason. Six files read that key by hand, and
+ * between them they are what keeps the access token in localStorage:
+ * lib/auth-context cannot stop WRITING it while surfaces outside that module
+ * read it directly. And a browser revived from the httpOnly `darshya_session`
+ * cookie — which lib/auth-context does today, keeping the revived session in
+ * MEMORY ONLY — has no such key, so it failed the probe and was treated as
+ * anonymous even though the app knows exactly who it is.
+ *
+ * `useAuth()` answers both questions from one owner. `credentials: 'include'`
+ * (the default inside `fetchWithTimeout`) is the other half: the API is a
+ * different ORIGIN, `fetch` defaults to 'same-origin', and without it the
+ * cookie that authenticates a token-free browser is never sent.
+ */
 
 function detectPlatform(): 'web' | 'ios' | 'android' {
   if (typeof navigator === 'undefined') return 'web';
@@ -52,6 +62,8 @@ interface AartiOptInProps {
 }
 
 export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
+  const { session, isAuthenticated } = useAuth();
+  const token = session?.accessToken;
   const [optedIn, setOptedIn] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -69,8 +81,7 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
     setBusy(true);
     setError('');
     try {
-      const token = getAccessToken();
-      if (!token) throw new Error('Sign in to enable aarti reminders');
+      if (!isAuthenticated) throw new Error('Sign in to enable aarti reminders');
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         throw new Error('This browser does not support push notifications');
       }
@@ -101,19 +112,23 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
       const subJson = sub.toJSON();
       const deviceToken = subJson.endpoint || JSON.stringify(subJson);
 
-      const resp = await fetch(`${API_BASE_URL}/notifications/register-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const resp = await fetchWithTimeout(
+        `${API_BASE_URL}/notifications/register-token`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            deviceToken,
+            platform: detectPlatform(),
+            language: navigator.language?.slice(0, 2),
+            aartiOptIn: true,
+          }),
         },
-        body: JSON.stringify({
-          deviceToken,
-          platform: detectPlatform(),
-          language: navigator.language?.slice(0, 2),
-          aartiOptIn: true,
-        }),
-      });
+        DATA_FETCH_TIMEOUT_MS,
+      );
       if (!resp.ok) throw new Error('Server rejected token');
 
       localStorage.setItem(STORAGE_KEY, '1');
@@ -129,19 +144,22 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
     setBusy(true);
     setError('');
     try {
-      const token = getAccessToken();
       const reg = await navigator.serviceWorker?.getRegistration();
       const sub = await reg?.pushManager.getSubscription();
       const deviceToken = sub?.endpoint;
-      if (token && deviceToken) {
-        await fetch(`${API_BASE_URL}/notifications/unregister-token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+      if (deviceToken) {
+        await fetchWithTimeout(
+          `${API_BASE_URL}/notifications/unregister-token`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ deviceToken }),
           },
-          body: JSON.stringify({ deviceToken }),
-        });
+          DATA_FETCH_TIMEOUT_MS,
+        );
       }
       try {
         await sub?.unsubscribe();

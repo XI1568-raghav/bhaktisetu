@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getHinduPhilosophy, HINDU_PHILOSOPHIES } from '../../../lib/hindu-philosophies';
+// CI-08: the six orthodox darshanas are also published at /darshanas/<slug>
+// from a strictly richer dataset. Those six defer; the four Vedanta
+// sub-schools have no twin and stay canonical here.
+import { canonicalDarshanaUrl } from '../../../lib/darshanas';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -29,10 +33,13 @@ export async function generateMetadata({
   const description = p.centralThesis.length > 160
     ? `${p.centralThesis.slice(0, 157)}…`
     : p.centralThesis;
+  const twin = canonicalDarshanaUrl(p.slug);
   return {
     title,
     description,
-    alternates: { canonical: `${BASE_URL}/hindu-philosophies/${p.slug}` },
+    alternates: {
+      canonical: twin ? `${BASE_URL}${twin}` : `${BASE_URL}/hindu-philosophies/${p.slug}`,
+    },
     openGraph: {
       images: ['/images/golden-temple-og.jpg'],
       title: `${p.name} (${p.sanskrit})`,

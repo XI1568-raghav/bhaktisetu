@@ -123,17 +123,33 @@ function renderMarkdown(md: string): string {
  closeList();
  continue;
  }
+ /*
+  * DU-05 — a body heading is not a page title.
+  *
+  * These two used to emit h2/h1, so a `# ` anywhere in an article body produced
+  * a SECOND level-1 heading on a page that already renders the article title as
+  * an H1.catalogue below. That is the DU-05 clause "exactly one h1 per page"
+  * broken from inside a template string, which is why no className codemod
+  * could reach it — the h1 here is raw HTML with `class=`, not `className=`.
+  *
+  * The ladder shifts down one level and each rendered size stays exactly where
+  * it was, so this is a zero-pixel change: only the tag moves, and body
+  * headings now sit under the article title instead of beside it. The same
+  * shift was applied to the shared renderer in lib/markdown.ts, whose `# `
+  * reached the blog and content pages the same way. Guarded in
+  * __tests__/design-tokens.test.ts.
+  */
  if (line.startsWith("## ")) {
  closeList();
  out.push(
- `<h2 class="text-xl font-semibold text-surface-900 mt-8 mb-3">${escapeHtml(line.slice(3))}</h2>`,
+ `<h3 class="text-xl font-semibold text-surface-900 mt-8 mb-3">${escapeHtml(line.slice(3))}</h3>`,
  );
  continue;
  }
  if (line.startsWith("# ")) {
  closeList();
  out.push(
- `<h1 class="text-2xl font-bold text-surface-900 mt-8 mb-4">${escapeHtml(line.slice(2))}</h1>`,
+ `<h2 class="text-2xl font-bold text-surface-900 mt-8 mb-4">${escapeHtml(line.slice(2))}</h2>`,
  );
  continue;
  }

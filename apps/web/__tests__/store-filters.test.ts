@@ -20,18 +20,20 @@ const P = (over: Partial<FilterableProduct>): FilterableProduct => ({
   category: 'Puja Essentials',
   collection: 'puja-essentials',
   price: 100,
-  rating: 4.5,
-  reviewCount: 10,
   freeDelivery: false,
   tag: null,
   ...over,
 });
 
+// LEG-17: `rating` and `reviewCount` used to be part of every fixture here,
+// and three cases below sorted and filtered on them. Both fields are gone from
+// FilterableProduct — see the rewritten cases at the end of
+// `filterAndSortProducts` for why.
 const CATALOGUE: FilterableProduct[] = [
-  P({ title: 'Rudraksha Mala', collection: 'rudraksha-malas', price: 899, rating: 4.8, reviewCount: 120 }),
-  P({ title: 'Brass Diya', collection: 'puja-essentials', price: 249, rating: 4.1, reviewCount: 40 }),
-  P({ title: 'Ganesh Idol', collection: 'idols-murtis', price: 2999, rating: 3.6, reviewCount: 5, freeDelivery: true }),
-  P({ title: 'Bhagavad Gita', collection: 'books-scriptures', price: 349, rating: 4.9, reviewCount: 300 }),
+  P({ title: 'Rudraksha Mala', collection: 'rudraksha-malas', price: 899 }),
+  P({ title: 'Brass Diya', collection: 'puja-essentials', price: 249 }),
+  P({ title: 'Ganesh Idol', collection: 'idols-murtis', price: 2999, freeDelivery: true }),
+  P({ title: 'Bhagavad Gita', collection: 'books-scriptures', price: 349 }),
 ];
 
 describe('parseStoreFilters', () => {
@@ -47,6 +49,9 @@ describe('parseStoreFilters', () => {
         price: 'under-500',
         sort: 'price-asc',
         delivery: 'free',
+        // LEG-17: `rating: '4plus'` was read here too. The param is now
+        // ignored rather than rejected, so an old bookmark still resolves —
+        // it just no longer narrows the grid by an invented star average.
         rating: '4plus',
       }),
     ).toEqual({
@@ -55,7 +60,6 @@ describe('parseStoreFilters', () => {
       price: 'under-500',
       sort: 'price-asc',
       freeDelivery: true,
-      topRated: true,
     });
   });
 
@@ -106,12 +110,6 @@ describe('filterAndSortProducts', () => {
     expect(out.map((p) => p.price)).toEqual([2999, 899, 349, 249]);
   });
 
-  it('sorts rating high to low', () => {
-    const out = filterAndSortProducts(CATALOGUE, { ...DEFAULT_STORE_FILTERS, sort: 'rating-desc' });
-    expect(out[0].title).toBe('Bhagavad Gita');
-    expect(out[out.length - 1].title).toBe('Ganesh Idol');
-  });
-
   it('free-delivery toggle keeps only free-delivery products', () => {
     const out = filterAndSortProducts(CATALOGUE, {
       ...DEFAULT_STORE_FILTERS,
@@ -120,9 +118,34 @@ describe('filterAndSortProducts', () => {
     expect(out.map((p) => p.title)).toEqual(['Ganesh Idol']);
   });
 
-  it('4+ rating toggle drops lower-rated products', () => {
-    const out = filterAndSortProducts(CATALOGUE, { ...DEFAULT_STORE_FILTERS, topRated: true });
-    expect(out.map((p) => p.title)).not.toContain('Ganesh Idol');
+  /**
+   * LEG-17 — replaces, deliberately, two cases that encoded a contract this
+   * repo has since decided was the defect:
+   *
+   *   it('sorts rating high to low', ...)        // sort: 'rating-desc'
+   *   it('4+ rating toggle drops lower-rated products', ...)  // topRated
+   *
+   * Both were correct about the code and wrong about the product. The `rating`
+   * they ordered and filtered on was hardcoded 4.4-4.9 on all 24 seed rows and
+   * synthesised as a flat 4.5 (from zero reviews) for every real Medusa
+   * product, so neither control could ever act on a fact. The default sort was
+   * worse still: it ranked the whole grid by an invented `reviewCount`, which
+   * is what every first-time visitor saw before touching a control. Restore
+   * these cases when /store is joined to the `Review` table in apps/api.
+   */
+  it('the default sort leaves the catalogue in its authored order', () => {
+    const out = filterAndSortProducts(CATALOGUE, DEFAULT_STORE_FILTERS);
+    expect(out.map((p) => p.title)).toEqual(CATALOGUE.map((p) => p.title));
+  });
+
+  it('a stale ?rating=4plus link narrows nothing', () => {
+    const out = filterAndSortProducts(CATALOGUE, parseStoreFilters({ rating: '4plus' }));
+    expect(out).toHaveLength(CATALOGUE.length);
+  });
+
+  it('a stale ?sort=rating-desc link falls back to the default order', () => {
+    const out = filterAndSortProducts(CATALOGUE, parseStoreFilters({ sort: 'rating-desc' }));
+    expect(out.map((p) => p.title)).toEqual(CATALOGUE.map((p) => p.title));
   });
 
   it('combines filters (category + price + sort)', () => {
@@ -157,9 +180,8 @@ describe('buildStoreQuery', () => {
       q: 'mala',
       category: 'rudraksha-malas',
       price: '500-1000' as const,
-      sort: 'rating-desc' as const,
+      sort: 'price-desc' as const,
       freeDelivery: true,
-      topRated: true,
     };
     const qs = buildStoreQuery(filters);
     const parsed = parseStoreFilters(Object.fromEntries(new URLSearchParams(qs.slice(1))));

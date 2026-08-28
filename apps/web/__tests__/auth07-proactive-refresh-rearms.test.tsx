@@ -50,13 +50,22 @@ function seedSession(msUntilExpiry: number) {
   localStorage.setItem('poojly_user', JSON.stringify(USER));
 }
 
-let authState: { isAuthenticated: boolean } = { isAuthenticated: false };
+// SEC-02 step 4: the access token is no longer written to localStorage, so
+// "did the retried refresh actually replace the token?" has to be read where
+// the token now lives — React state.
+let authState: { isAuthenticated: boolean; accessToken: string | null } = {
+  isAuthenticated: false,
+  accessToken: null,
+};
 
 function Probe() {
   const auth = useAuth();
   useEffect(() => {
-    authState = { isAuthenticated: auth.isAuthenticated };
-  }, [auth.isAuthenticated]);
+    authState = {
+      isAuthenticated: auth.isAuthenticated,
+      accessToken: auth.session?.accessToken ?? null,
+    };
+  }, [auth.isAuthenticated, auth.session?.accessToken]);
   return <span data-testid="state">{auth.isLoading ? 'loading' : 'ready'}</span>;
 }
 
@@ -73,7 +82,7 @@ async function mountAndSettle() {
 
 beforeEach(() => {
   localStorage.clear();
-  authState = { isAuthenticated: false };
+  authState = { isAuthenticated: false, accessToken: null };
   vi.useFakeTimers();
 });
 
@@ -139,8 +148,13 @@ describe('AUTH-07 — the refresh timer re-arms after a failure', () => {
 
     expect(attempt).toBeGreaterThan(1);
     expect(authState.isAuthenticated).toBe(true);
-    const stored = JSON.parse(localStorage.getItem('poojly_session') ?? '{}');
-    expect(stored.accessToken).toBe('fresh-token');
+    // REWRITTEN 2026-08-28 (SEC-02 step 4). This used to read the refreshed
+    // token back out of `localStorage['poojly_session']`; that write is gone,
+    // deliberately, because a JS-readable copy of the access token is the whole
+    // finding. The property being guarded is unchanged and is asserted at full
+    // strength: the retry did not merely stop erroring, it installed the NEW
+    // token, so the next request goes out with a live credential.
+    expect(authState.accessToken).toBe('fresh-token');
   });
 
   it('signs the user out visibly when the refresh credential is rejected', async () => {
@@ -163,7 +177,11 @@ describe('AUTH-07 — the refresh timer re-arms after a failure', () => {
     // A 401 on refresh is definitive. Leaving the dead token in place made
     // every subsequent action 401 with no explanation; sign out instead.
     expect(authState.isAuthenticated).toBe(false);
+    expect(authState.accessToken).toBeNull();
     expect(localStorage.getItem('poojly_session')).toBeNull();
+    // The profile marker must go too, or middleware.ts keeps waving this
+    // signed-out browser into the portal shell.
+    expect(localStorage.getItem('poojly_user')).toBeNull();
   });
 
   it('does not retry forever — it stops once the token itself has expired', async () => {

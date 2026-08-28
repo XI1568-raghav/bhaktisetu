@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { useAuth } from "../../../lib/auth-context";
+import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
 
 interface Member {
   id: string;
@@ -16,22 +18,44 @@ interface Member {
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-function authHeader(): HeadersInit {
-  if (typeof window === "undefined") return {};
-  let token: string | null = null;
-  try {
-    const raw = window.localStorage.getItem("poojly_session");
-    if (raw) token = JSON.parse(raw)?.accessToken ?? null;
-  } catch {
-    // ignore
-  }
-  if (!token) token = window.localStorage.getItem("poojly_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
+/**
+ * SEC-02 step 3 — this file used to hand-build its own Bearer by reading
+ * `localStorage['poojly_session'].accessToken` (and an older `poojly_token`).
+ *
+ * It was one of the last three doing so, and between them they are the whole
+ * reason lib/auth-context still WROTE the access token to localStorage:
+ * deleting the write logs each such surface out on its next load. With the
+ * token owned by `useAuth()` alone, step 4 changes one file instead of seven.
+ *
+ * `credentials: 'include'` is the other half and is not optional: the API is a
+ * different ORIGIN (api.darshya.online), `fetch` defaults to 'same-origin',
+ * and without it the httpOnly `darshya_session` cookie — the credential a
+ * cookie-revived browser has INSTEAD of a token — is never sent. Same SITE, so
+ * SameSite=Lax still permits it. `fetchWithTimeout` defaults that flag on,
+ * which is why it is used here rather than bare `fetch`.
+ */
 function OrgMembersContent() {
   const sp = useSearchParams();
   const orgId = sp.get("org");
+  const { session, isLoading: authLoading } = useAuth();
+  const accessToken = session?.accessToken;
+
+  const orgFetch = (path: string, init: RequestInit = {}) =>
+    fetchWithTimeout(
+      `${API}${path}`,
+      {
+        ...init,
+        headers: {
+          ...(init.headers ?? {}),
+          // Present only while a session still carries a JS-readable token
+          // (mobile-shaped and transitional sessions). A cookie-revived
+          // browser sends no Authorization header at all and the API's
+          // `darshya_session` fallback answers instead.
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+      },
+      DATA_FETCH_TIMEOUT_MS,
+    );
   const [members, setMembers] = useState<Member[]>([]);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"ADMIN" | "MEMBER">("MEMBER");
@@ -42,9 +66,7 @@ function OrgMembersContent() {
     if (!orgId) return;
     setLoading(true);
     try {
-      const r = await fetch(`${API}/api/v1/orgs/${orgId}/members`, {
-        headers: authHeader(),
-      });
+      const r = await orgFetch(`/api/v1/orgs/${orgId}/members`);
       const j = await r.json();
       setMembers(j.members ?? []);
     } finally {
@@ -52,17 +74,23 @@ function OrgMembersContent() {
     }
   }
 
+  // Wait for auth-context to settle before the first load. `authHeader()` read
+  // localStorage synchronously and so did not need to; `useAuth()` resolves
+  // asynchronously (it may have to revive from the cookie), and firing before
+  // it settles would send an anonymous request for a signed-in user.
   useEffect(() => {
+    if (authLoading) return;
     load();
-  }, [orgId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId, authLoading, accessToken]);
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
     if (!orgId) return;
     setMsg(null);
-    const r = await fetch(`${API}/api/v1/orgs/${orgId}/invite`, {
+    const r = await orgFetch(`/api/v1/orgs/${orgId}/invite`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, role }),
     });
     const j = await r.json();
@@ -76,9 +104,9 @@ function OrgMembersContent() {
 
   async function changeRole(userId: string, newRole: "OWNER" | "ADMIN" | "MEMBER") {
     if (!orgId) return;
-    await fetch(`${API}/api/v1/orgs/${orgId}/members/${userId}/role`, {
+    await orgFetch(`/api/v1/orgs/${orgId}/members/${userId}/role`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: newRole }),
     });
     load();
@@ -87,9 +115,8 @@ function OrgMembersContent() {
   async function remove(userId: string) {
     if (!orgId) return;
     if (!confirm("Remove this member?")) return;
-    await fetch(`${API}/api/v1/orgs/${orgId}/members/${userId}`, {
+    await orgFetch(`/api/v1/orgs/${orgId}/members/${userId}`, {
       method: "DELETE",
-      headers: authHeader(),
     });
     load();
   }

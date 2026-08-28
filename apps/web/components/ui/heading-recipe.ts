@@ -8,7 +8,11 @@
  *
  * The finding's own expected state is "one h1 recipe per page archetype
  * (marketing / catalogue / detail / portal), exactly one h1 per page, and the
- * display typeface used consistently for it". These are those four.
+ * display typeface used consistently for it". These are those four, plus
+ * `portalInverse` — portal chrome on a dark surface, which the finding's four
+ * names did not anticipate and which five h1s in the tail needed. It is
+ * `portal`'s size and weight with `portal`'s colour inverted, not a sixth
+ * treatment: see its own note below.
  *
  * No `'use client'` here on purpose — the catalogue and detail pages are
  * Server Components, and a client module hands them a client reference, not a
@@ -61,6 +65,27 @@ export const H1 = {
    * 18px h1 (smaller than a /pujas h3) was a finding in its own right.
    */
   portal: 'text-xl font-semibold tracking-tight text-surface-800',
+
+  /**
+   * The same portal chrome, inverted — app chrome that sits on a DARK surface.
+   *
+   * This is the fifth archetype the DU-05 backlog stalled on. Five h1s (the
+   * live-darshan player bar and its coming-soon panel, the two /demo device
+   * mockups, the /mobile darshan screen) are 16-24px bold light copy on a dark
+   * bar, and neither existing light-surface recipe could take them: `detail`
+   * is a 30/36px display-face hero painted over a photograph, and `portal` is
+   * `text-surface-800` — dark ink, invisible on a dark bar. So those five went
+   * on rendering four different hand-rolled recipes (text-base / text-xl /
+   * text-2xl / text-xl sm:text-2xl, all font-bold) for one role.
+   *
+   * Size and weight are `portal`'s, deliberately: it IS portal chrome, and a
+   * dashboard title should not change rank because the surface under it is
+   * dark. Only the colour differs, and it is DECLARED rather than inherited
+   * for the same reason every other archetype declares one — an archetype that
+   * takes its colour from an ancestor is one coloured section away from an
+   * eighth colour token, silently. No `heading-display`, again like `portal`.
+   */
+  portalInverse: 'text-xl font-semibold tracking-tight text-white',
 } as const;
 
 export type H1Archetype = keyof typeof H1;

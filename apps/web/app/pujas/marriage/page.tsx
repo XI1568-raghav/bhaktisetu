@@ -12,7 +12,6 @@ import {
  ChevronRight,
  Sparkles,
  ArrowRight,
- BadgeCheck,
  Flame,
  Languages,
  Award,
@@ -22,7 +21,6 @@ import {
  marriagePricingTiers,
  marriageCoreRites,
  marriageAddOns,
- marriageTestimonials,
 } from '../../../lib/home-pujas';
 import { getPublicPriests, type PriestSummary } from '../../../lib/pandit-api';
 import { remoteImage, IMG_W } from '../../../lib/images';
@@ -36,7 +34,7 @@ export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pujas/marriage' },
  title: 'Book a Pandit for Your Wedding',
  description:
- 'Sampoorna vivah sanskar by Vedic-certified pandits. Hindu Vivah, Arya Samaj, South Indian Kalyanam, Anand Karaj. Starting ₹11,000.',
+ 'Sampoorna vivah sanskar with all 7 pheras, kanyadaan and saptapadi. Hindu Vivah, Arya Samaj, South Indian Kalyanam, Anand Karaj. Starting ₹11,000.',
 };
 
 export default async function MarriagePage() {
@@ -73,7 +71,7 @@ export default async function MarriagePage() {
  Book a Pandit for <span className="text-saffron-600">Your Wedding</span>
  </h1>
  <p className="prose-lead mt-6 text-surface-600 max-w-xl leading-relaxed">
- Sampoorna vivah sanskar with all 7 pheras, kanyadaan, and saptapadi — by Vedic-certified pandits. From simple court-marriage blessings to grand traditional ceremonies.
+ Sampoorna vivah sanskar with all 7 pheras, kanyadaan, and saptapadi. From simple court-marriage blessings to grand traditional ceremonies.
  </p>
  <div className="mt-8 flex flex-wrap gap-3">
  <Link
@@ -93,7 +91,14 @@ export default async function MarriagePage() {
 
  <div className="mt-10 flex flex-wrap gap-5 text-sm text-surface-600">
  {[
- { icon: Shield, label: 'Vedic certified' },
+ // TC-08: this read 'Vedic certified' — three static words, identical for
+ // every visitor, over a page quoting ₹11,000+, naming a certification no
+ // step in the product awards or checks. `Priest.isVerified`,
+ // `.verificationStatus` and `.aadhaarVerified` have no writer outside
+ // apps/api/prisma/seed.ts, and `.aadhaarVerified` is read in exactly one
+ // place: payment.service.ts, as a PAYOUT gate. So the payout gate is what
+ // the badge now says, because it is the only part that runs.
+ { icon: Shield, label: 'Pandit paid only after Aadhaar KYC' },
  { icon: Star, label: 'Muhurat matched' },
  { icon: CheckCircle, label: 'Full samagri' },
  ].map((b) => {
@@ -266,8 +271,8 @@ export default async function MarriagePage() {
  </h2>
  <p className="mt-2 text-surface-500">
  {usingFallback
- ? 'Top verified pandits on Darshya. Reach out about your wedding ceremony.'
- : 'Vedic-certified officiants across India.'}
+ ? 'Pandits listed on Darshya. Reach out about your wedding ceremony.'
+ : 'Pandits listed on Darshya for wedding ceremonies.'}
  </p>
  </div>
  </div>
@@ -276,10 +281,10 @@ export default async function MarriagePage() {
  <div className="rounded-2xl border border-dashed border-surface-200 p-12 text-center bg-white">
  <Users className="w-12 h-12 text-saffron-300 mx-auto mb-3" />
  <h3 className="text-lg font-semibold text-surface-800 mb-2">
- Verified pandits coming soon
+ No wedding pandits listed yet
  </h3>
  <p className="prose-meta text-surface-500 max-w-md mx-auto">
- We are onboarding Vedic-certified wedding pandits. New profiles will appear here shortly.
+ We are onboarding wedding pandits. New profiles will appear here as they are published.
  </p>
  </div>
  ) : (
@@ -301,13 +306,17 @@ export default async function MarriagePage() {
  className="w-16 h-16 rounded-xl text-lg"
  />
  <div className="flex-1 min-w-0">
+ {/* TC-08: a BadgeCheck gated on `p.isVerified` used to sit here, and a
+     "Verified pandit" / "Profile under review" ternary below. Both were
+     constants dressed as per-pandit judgements: GET /priests filters
+     `isVerified: true AND status: 'active'`
+     (apps/api/src/routes/priests-public.ts), so every row this page can
+     receive has isVerified true and the false branch was unreachable — on
+     top of a column with no writer outside seed.ts. */}
  <div className="flex items-start gap-1.5">
  <div className="font-bold text-surface-800 group-hover:text-saffron-600 transition-colors truncate">
  {p.displayName}
  </div>
- {p.isVerified && (
- <BadgeCheck className="w-4 h-4 text-tulsi-green flex-shrink-0 mt-0.5" />
- )}
  </div>
  {p.specializations.length > 0 && (
  <div className="text-xs text-surface-500 truncate">
@@ -347,10 +356,7 @@ export default async function MarriagePage() {
  </div>
  </div>
 
- <div className="pt-4 border-t border-[var(--color-divider)] flex items-center justify-between">
- <span className="text-xs text-surface-500">
- {p.isVerified ? 'Verified pandit' : 'Profile under review'}
- </span>
+ <div className="pt-4 border-t border-[var(--color-divider)] flex items-center justify-end">
  <span className="text-xs font-semibold text-saffron-600 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
  View profile <ArrowRight className="w-3.5 h-3.5" />
  </span>
@@ -362,42 +368,16 @@ export default async function MarriagePage() {
  </div>
  </section>
 
- {/* ── Testimonials ──────────────────────────────────────── */}
- <section className="py-16 md:py-20 bg-white border-y border-[var(--color-border)]">
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
- <div className="text-center mb-12">
- <h2 className="text-3xl md:text-4xl font-bold text-surface-800 tracking-tight">
- Couples who said yes with Darshya
- </h2>
- <p className="mt-2 text-surface-500">Real stories from recent weddings.</p>
- </div>
-
- <div className="grid md:grid-cols-3 gap-6">
- {marriageTestimonials.map((t, i) => (
- <div
- key={i}
- className="bg-surface-100 border border-[var(--color-border)] rounded-xl p-6"
- >
- <div className="flex gap-1 mb-3">
- {Array.from({ length: t.rating }).map((_, j) => (
- <Star key={j} className="w-4 h-4 text-temple-gold fill-temple-gold" />
- ))}
- </div>
- <p className="text-surface-700 text-sm leading-relaxed mb-5">&ldquo;{t.text}&rdquo;</p>
- <div className="pt-4 border-t border-[var(--color-divider)]">
- <div className="font-semibold text-surface-800 text-sm">{t.couple}</div>
- <div className="text-xs text-surface-500 mt-0.5">
- {t.location} · {t.date}
- </div>
- <div className="text-xs text-saffron-600 mt-1">
- Officiated by {t.panditName}
- </div>
- </div>
- </div>
- ))}
- </div>
- </div>
- </section>
+ {/* TC-05 — TESTIMONIALS, deleted.
+     `marriageTestimonials` was three invented five-star couples with invented
+     officiating pandits, and the predecessor emptied the array. That left THIS
+     section standing over it: an <h2> reading "Couples who said yes with
+     Darshya" and the line "Real stories from recent weddings." above an empty
+     grid. Both sentences are claims on their own — there have been no
+     completed weddings — and a reader takes the empty grid for a loading
+     state rather than for the absence it is.
+     No wedding endpoint serves rated bookings, so there is nothing to render
+     conditionally either; the section returns when a real source exists. */}
 
  {/* ── FAQ ────────────────────────────────────────────── */}
  <section className="py-16 md:py-20">

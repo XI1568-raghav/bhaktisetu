@@ -975,10 +975,24 @@ async function main() {
   }
 
   // ── 3. Priests ──
+  // PF-04: the first two pandits carried
+  //   avatarUrl: 'https://images.darshya.online/priests/<name>.jpg'
+  // and `images.darshya.online` has NO DNS RECORD — the browser reported
+  // net::ERR_NAME_NOT_RESOLVED and the public pandit directory painted a
+  // broken-image icon next to "Vedic certified" and a five-figure price.
+  // These were the only two references to that host in the whole seed.
+  //
+  // Set to null rather than repointed: no origin in this project serves
+  // /priests/*.jpg, so a DNS record alone would resolve and then 404. null
+  // takes the initials-tile path that every avatar surface already has, and a
+  // real headshot can be uploaded to the Supabase Storage bucket that
+  // next.config.ts already allows in remotePatterns. Existing rows are NOT
+  // corrected by re-seeding (the `update:` branch does not touch avatarUrl) —
+  // see docs/audit/DEPLOY-PLAN.md for the owner SQL.
   console.log('🙏 Upserting priests (3 approved + verified)...');
   const priestSeeds = [
-    { email: 'pandit.shastri@example.com', phone: '+919999888877', fullName: 'Pandit Ramesh Shastri', locationCity: 'Varanasi', locationState: 'Uttar Pradesh', gotra: 'Vasishtha', displayName: 'Pandit Ramesh Shastri', specializations: ['Rudrabhishek', 'Maha Mrityunjay Jaap', 'Navgraha Shanti', 'Satyanarayan Katha'], languages: ['Hindi', 'Sanskrit', 'English'], experienceYears: 25, ratingAvg: 4.9, ratingCount: 347, bio: 'Vedic scholar from Varanasi with 25 years of experience in Shiva rituals.', avatarUrl: 'https://images.darshya.online/priests/pandit-ramesh-shastri.jpg' },
-    { email: 'pandit.trivedi@example.com', phone: '+919999777766', fullName: 'Pandit Suresh Trivedi', locationCity: 'Puri', locationState: 'Odisha', gotra: 'Bharadwaj', displayName: 'Pandit Suresh Trivedi', specializations: ['Satyanarayan Katha', 'Ram Charit Manas Path', 'Sunderkand Path', 'Ganesh Puja'], languages: ['Hindi', 'Odia', 'Sanskrit', 'English'], experienceYears: 18, ratingAvg: 4.8, ratingCount: 213, bio: 'Experienced priest from Puri, specializing in Vaishnava traditions.', avatarUrl: 'https://images.darshya.online/priests/pandit-suresh-trivedi.jpg' },
+    { email: 'pandit.shastri@example.com', phone: '+919999888877', fullName: 'Pandit Ramesh Shastri', locationCity: 'Varanasi', locationState: 'Uttar Pradesh', gotra: 'Vasishtha', displayName: 'Pandit Ramesh Shastri', specializations: ['Rudrabhishek', 'Maha Mrityunjay Jaap', 'Navgraha Shanti', 'Satyanarayan Katha'], languages: ['Hindi', 'Sanskrit', 'English'], experienceYears: 25, ratingAvg: 4.9, ratingCount: 347, bio: 'Vedic scholar from Varanasi with 25 years of experience in Shiva rituals.', avatarUrl: null },
+    { email: 'pandit.trivedi@example.com', phone: '+919999777766', fullName: 'Pandit Suresh Trivedi', locationCity: 'Puri', locationState: 'Odisha', gotra: 'Bharadwaj', displayName: 'Pandit Suresh Trivedi', specializations: ['Satyanarayan Katha', 'Ram Charit Manas Path', 'Sunderkand Path', 'Ganesh Puja'], languages: ['Hindi', 'Odia', 'Sanskrit', 'English'], experienceYears: 18, ratingAvg: 4.8, ratingCount: 213, bio: 'Experienced priest from Puri, specializing in Vaishnava traditions.', avatarUrl: null },
     { email: 'pandit@demo.com', phone: '+919000000002', fullName: 'Demo Pandit', locationCity: 'Varanasi', locationState: 'Uttar Pradesh', gotra: 'Kashyap', displayName: 'Demo Pandit', specializations: ['Ganesh Puja', 'Lakshmi Puja', 'Hanuman Chalisa Path'], languages: ['Hindi', 'English'], experienceYears: 8, ratingAvg: 4.6, ratingCount: 42, bio: 'Demo pandit for testing.', avatarUrl: null },
   ];
   const priests: Array<{ id: string; email: string }> = [];
@@ -988,10 +1002,27 @@ async function main() {
       update: { fullName: p.fullName },
       create: { phone: p.phone, email: p.email, fullName: p.fullName, preferredLanguage: 'hi', locationCity: p.locationCity, locationState: p.locationState, isNri: false, gotra: p.gotra, subscriptionTier: 'free' },
     });
+    // PM-03: this `create:` branch used to pass `commissionRate: 0.70` — the
+    // only literal commissionRate write at creation time in apps/api, and the
+    // last surviving writer of the pre-revamp 30% platform take.
+    //
+    // On an existing database it was invisible (the `update:` branch never
+    // touches the column). On a FRESH one it was permanent: migrate deploy runs
+    // before the seed, so 20260812000000_priest_commission_rate_80's backfill
+    // UPDATE matched zero rows on an empty table; the seed then inserted these
+    // pandits at 0.70, overriding the 0.80 column default; and the migration is
+    // recorded applied and never re-runs. resolvePriestShare accepts any stored
+    // value in (0,1], so DEFAULT_PRIEST_SHARE could never correct them.
+    //
+    // The field is now omitted entirely rather than set to 0.80: the schema
+    // default is the single source of truth for the uniform 20/80 split, and a
+    // second copy of the number here is exactly how the two drifted apart the
+    // first time. Guarded by
+    // src/services/booking.service.commission-doctrine.pj03.test.ts.
     const priest = await prisma.priest.upsert({
       where: { userId: u.id },
       update: { displayName: p.displayName, specializations: p.specializations, languages: p.languages, experienceYears: p.experienceYears, ratingAvg: p.ratingAvg, ratingCount: p.ratingCount, isVerified: true, verificationStatus: 'approved', bio: p.bio, avatarUrl: p.avatarUrl },
-      create: { userId: u.id, displayName: p.displayName, specializations: p.specializations, languages: p.languages, experienceYears: p.experienceYears, aadhaarVerified: true, ratingAvg: p.ratingAvg, ratingCount: p.ratingCount, isVerified: true, verificationStatus: 'approved', bio: p.bio, avatarUrl: p.avatarUrl, commissionRate: 0.70, status: 'active' },
+      create: { userId: u.id, displayName: p.displayName, specializations: p.specializations, languages: p.languages, experienceYears: p.experienceYears, aadhaarVerified: true, ratingAvg: p.ratingAvg, ratingCount: p.ratingCount, isVerified: true, verificationStatus: 'approved', bio: p.bio, avatarUrl: p.avatarUrl, status: 'active' },
     });
     priests.push({ id: priest.id, email: p.email });
   }

@@ -198,6 +198,13 @@ const WEB_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 /** Every provider- and devotee-facing screen in this lane. Not /admin. */
 const SWEPT = [
+  // RES-09 residual, closed 2026-08-28. The previous pass named this file as
+  // still open and out of its lane. Its three sites: line 54 threw
+  // `Failed to load subscription (${res.status})`, line 58 rendered
+  // `err.message` raw, and line 84 threw `Cancel failed (${res.status})`. A
+  // devotee whose token had expired was shown "Failed to load subscription
+  // (401)"; on a dropped connection, the browser's own "Load failed".
+  'app/account/subscriptions/page.tsx',
   'app/priest/page.tsx',
   'app/priest/bookings/page.tsx',
   'app/priest/bookings/view/page.tsx',

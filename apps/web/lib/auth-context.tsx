@@ -18,7 +18,7 @@ import {
  readJsonBody,
  authHttpErrorMessage,
 } from './api-config';
-import { hasStoredProfile, reviveSessionFromCookie } from './session-revive';
+import { hasStoredProfile, reviveSessionFromCookieResult } from './session-revive';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -404,13 +404,19 @@ const STORAGE_KEYS = {
  * exactly that (see the SEC-02 revive branch below), so a token-free browser
  * can already come back signed in.
  *
- * What still forces this function to write the token is NOT the API. It is
- * seven files that read `localStorage['poojly_session'].accessToken` by hand
- * and build their own Bearer header, all outside this module:
- *   app/auth/verify/page.tsx (writes it), app/org/page.tsx, app/org/accept,
- *   app/org/members, app/org/settings, components/AartiOptIn,
- *   components/NotificationPrompt.
- * Migrate those onto useAuth()/the cookie and this write can go.
+ * SEC-02 STEP 4 IS DONE — the token write below is gone. What used to force it
+ * was never the API; it was the files that read
+ * `localStorage['poojly_session'].accessToken` by hand and built their own
+ * Bearer header, all outside this module. Re-grepped 2026-08-28 after the last
+ * three were migrated (app/org/{accept,members,settings}, joining
+ * app/org/page.tsx, components/AartiOptIn and components/NotificationPrompt):
+ * NOTHING outside this file reads the key any more. app/auth/verify/page.tsx
+ * had already dropped off that list.
+ *
+ * The API side is done too: apps/api/src/middlewares/auth.ts treats an empty or
+ * whitespace-only `Authorization: Bearer` as ABSENT rather than as the
+ * empty-string token, so a page that interpolates a missing token falls through
+ * to the httpOnly `darshya_session` cookie instead of 401ing.
  */
 export function persistAuthStorage(sess: AuthSession | null, usr: AuthUser | null) {
   if (!sess || !usr) {
@@ -429,19 +435,49 @@ export function persistAuthStorage(sess: AuthSession | null, usr: AuthUser | nul
   // It carries profile fields only, never a token.
   setCookie(STORAGE_KEYS.USER, JSON.stringify(usr), 7);
 
-  let localStorageOk = true;
+  // SEC-02 step 4 (2026-08-28) — THE TOKEN IS NO LONGER WRITTEN ANYWHERE A
+  // SCRIPT CAN READ IT.
+  //
+  // The httpOnly `darshya_session` / `darshya_refresh` cookies are the durable
+  // store now, and loadSession revives from them (see the revive branch below).
+  // Every prerequisite is in place: the API accepts the cookie as a credential
+  // (#200), both session kinds can revive from cookies alone — Supabase via
+  // POST /auth/refresh, magic-link/email via POST /auth/session/revive — and no
+  // file outside this module reads `poojly_session` by hand any more. The last
+  // three that did (app/org/{accept,members,settings}) were migrated in the same
+  // pass; the write was the only thing keeping them alive, and they were the
+  // only thing keeping the write.
+  //
+  // The stale copy is actively REMOVED rather than left to expire: a browser
+  // that signed in before this shipped would otherwise carry the exposure for
+  // the entry's full lifetime, which is exactly what the finding is about.
+  //
+  // DEMO SESSIONS ARE THE ONE CARVE-OUT and it is compile-time dead in
+  // production — the NODE_ENV test is first so Terser folds the whole branch
+  // away, the same trick #198 used on DEMO_ACCOUNTS. A `demo-*` token is minted
+  // locally by this file, has no cookie behind it and so nothing to revive
+  // from, and is refused by the API in production. Without it the demo
+  // walkthrough would forget itself on every reload.
+  const isDemoSession =
+    process.env.NODE_ENV !== 'production' && sess.accessToken.startsWith('demo-');
+
   try {
-    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sess));
+    if (isDemoSession) localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sess));
+    else localStorage.removeItem(STORAGE_KEYS.SESSION);
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(usr));
   } catch {
-    localStorageOk = false;
+    // localStorage unavailable (Safari private mode). Nothing to fall back to
+    // and nothing lost: the profile marker was already written to the cookie
+    // above, and the httpOnly session pair is what this browser reloads from.
   }
 
-  if (localStorageOk) {
-    removeCookie(STORAGE_KEYS.SESSION);
-  } else {
-    setCookie(STORAGE_KEYS.SESSION, JSON.stringify(sess), 7);
-  }
+  // A-007 kept a `path=/` cookie copy of the session for the localStorage-
+  // unavailable case (Safari private mode). That is no longer a fallback worth
+  // having: the browser attaches a `path=/` cookie to every same-origin
+  // navigation, RSC payload and static asset, so it is strictly worse exposure
+  // than the localStorage entry just removed — and the httpOnly pair already
+  // covers that browser. Any copy an older build left behind is cleared.
+  removeCookie(STORAGE_KEYS.SESSION);
 }
 
 /**
@@ -568,27 +604,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // visitor never pays a cross-origin round-trip and the homepage never needs
  // the API to be up in order to render.
  //
- // NOTE the deliberate asymmetry below: the revived session is put in MEMORY
- // ONLY. It was reconstructed from a cookie, so writing a JS-readable copy of
- // it would re-create the exact exposure this exists to remove. That is also
- // why this cannot yet be the only path — seven files outside this module
- // (app/auth/verify, app/org/{page,accept,members,settings},
- // components/AartiOptIn, components/NotificationPrompt) still read
- // `localStorage['poojly_session'].accessToken` by hand, so the ordinary
- // sign-in doors keep writing it until those migrate.
+ // The revived session is put in MEMORY ONLY. It was reconstructed from a
+ // cookie, so writing a JS-readable copy of it would re-create the exact
+ // exposure this exists to remove.
+ //
+ // As of SEC-02 step 4 this IS the ordinary path, not a fallback: nothing
+ // outside this module reads `poojly_session` any more, so persistAuthStorage
+ // has stopped writing it and every signed-in browser arrives here on a cold
+ // load. Only a demo session (dev-only) still has a local token to find.
  if (!storedSession && hasStoredProfile()) {
- const revived = storedUser ? await reviveSessionFromCookie() : null;
- if (revived && storedUser) {
+ const outcome = storedUser
+ ? await reviveSessionFromCookieResult()
+ : { session: null, apiAnswered: true };
+ if (outcome.session && storedUser) {
  const revivedUser: AuthUser = { ...storedUser, role: fromApiRole(storedUser.role) };
- setSession(revived as AuthSession);
+ setSession(outcome.session as AuthSession);
  setUser(revivedUser);
  persistProfileOnly(revivedUser);
- } else {
+ } else if (outcome.apiAnswered) {
  // The marker outlived the cookie. Clear it: middleware.ts gates every
  // portal on its mere presence, so leaving it behind keeps handing a
  // signed-out visitor the portal shell instead of a clean 307 to login.
  persistSession(null, null);
  }
+ // SEC-02 step 4: and if the API never ANSWERED, keep the marker. `null` used
+ // to mean both "your cookies are dead" and "we never heard back", and this
+ // branch cleared on either — survivable while only a token-free browser
+ // reached it, but step 4 sends EVERY signed-in browser through here on every
+ // cold load. A waking Render dyno past the 20s budget would otherwise sign
+ // the whole user base out. This visitor renders as signed out for this load
+ // and revives on the next one, which is the honest answer to "we do not know".
  setIsLoading(false);
  return;
  }

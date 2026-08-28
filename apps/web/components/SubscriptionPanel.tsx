@@ -199,9 +199,15 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  <div className="space-y-6 max-w-5xl">
  <div>
  <h1 className={H1.portal}>{title ?? 'Subscription'}</h1>
+ {/* PM-01: this default used to read "…to unlock listings, lower commission,
+   and premium tooling." No plan changes any commission rate — the five
+   Commission writers in apps/api each apply a flat rate that never reads a
+   subscription — so the middle third of that sentence was a promise the
+   product cannot keep. The two claims that survive are the two the plan
+   cards below actually back. */}
  <p className="text-surface-500 mt-1 text-sm">
  {description ??
- 'Choose a marketplace plan to unlock listings, lower commission, and premium tooling.'}
+ 'Choose a marketplace plan to unlock more listings and premium tooling.'}
  </p>
  </div>
 
@@ -321,17 +327,16 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  <p className="text-xs text-surface-500 mb-3">{plan.description}</p>
  )}
  <ul className="space-y-1.5 mb-4 text-xs text-surface-700">
- {/* PM-02b: these two lines used to render unconditionally against fields
-   /subscriptions/plans does not send. `undefined` printed as "% commission",
-   and `maxListings === null` claimed "Unlimited listings" on every plan
-   including a 5-bookings/month Starter. Show them only when the server
-   actually said something. */}
- {typeof plan.commissionOverride === 'number' && (
- <li className="flex items-start gap-2">
- <Check className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
- {plan.commissionOverride}% commission
- </li>
- )}
+ {/* PM-02b: this line used to render unconditionally against a field
+   /subscriptions/plans does not send, so `maxListings === null` claimed
+   "Unlimited listings" on every plan including a 5-bookings/month Starter.
+   Show it only when the server actually said something.
+
+   PM-01: a sibling line rendered `{plan.commissionOverride}% commission`
+   against a field the API has never sent either. It printed nothing because
+   the value was always undefined — but the rate it WOULD print is one no
+   Commission writer applies, so it was a false claim waiting for a payload.
+   Both the render site and the field are gone. */}
  {plan.maxListings !== undefined && (
  <li className="flex items-start gap-2">
  <Check className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />

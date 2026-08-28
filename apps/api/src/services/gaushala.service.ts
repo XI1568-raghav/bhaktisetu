@@ -65,7 +65,47 @@ export interface Adoption {
   certificate: string | null;
 }
 
-// ─── Gaushala Data — Real organizations with verified details ────────────────────
+// ─── Gaushala Data — SAMPLE listings. Nothing here has been verified. ───────────
+//
+// TC-11. This block was headed "Real organizations with verified details", and
+// every row carried `isVerified: true`, an `affiliation` badge, a contactPhone
+// and a contactEmail. The organisations named are real; the details were not
+// sourced from them. Specifically:
+//
+//   - `isVerified` is now false on every row, because the product runs no
+//     gaushala verification of any kind. Every real approval path in the API
+//     sets `approved` — gaushala-portal.ts:152/:163, admin.service.ts:694/:748,
+//     onboarding.service.ts:302, auth.ts:1279, gaushala-cows.ts:35 — and not
+//     one of them writes `verified`.
+//
+//   - `affiliation` is now empty. "ISKCON-affiliated", "Government
+//     Registered", "Shri Saibaba Sansthan Trust affiliated", "Organic Products
+//     Certified" and "Nationally Recognized Model Gaushala" each assert an
+//     endorsement by a real third party that nobody here obtained.
+//
+//   - `contactPhone` / `contactEmail` are now empty. They were placeholder
+//     digits and addresses published under real charities' names, which is the
+//     one field in this file that could route a devotee to a stranger.
+//
+//   - The five cows marked adopted by "Rajesh Kumar", "Priya Sharma", "Amit
+//     Agarwal", "Sunita Devi", "Ganesh Patil" and "Dr. Rakesh Mishra" are now
+//     un-adopted with a null adopterName. Those were invented donors, rendered
+//     by the detail page as "This cow has been adopted by {name}" — and because
+//     getGaushalas() derives availableCows from `!isAdopted`, they also made
+//     sample supply look scarcer than it is.
+//
+// The fixtures themselves are KEPT deliberately, matching the call already made
+// on the web side: apps/web/app/gaushala/[id]/page.tsx sets LISTING_IS_SAMPLE
+// and renders a "This is a sample listing" disclosure over them. The fixture is
+// not the defect; asserting verified facts about real organisations was.
+//
+// STILL OPEN, and a content decision rather than a code one: each `description`
+// below carries specific factual claims about the named organisation ("Founded
+// in 1993 by Shri Magaram Chaudhary", "featured by NITI Aayog", cow counts,
+// facility lists) that were written here rather than sourced. They should be
+// replaced with generic sample copy or with text the organisation supplied.
+//
+// Guarded by gaushala.fabricated-claims.tc11.test.ts.
 
 const GAUSHALAS: Gaushala[] = [
   {
@@ -78,10 +118,10 @@ const GAUSHALAS: Gaushala[] = [
     totalCows: 500,
     availableCows: 3,
     image: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=800&q=80',
-    affiliation: 'ISKCON-affiliated',
-    isVerified: true,
-    contactPhone: '+91 9876543210',
-    contactEmail: 'info@krishnagaushala.org',
+    affiliation: '',
+    isVerified: false,
+    contactPhone: '',
+    contactEmail: '',
     facilities: ['Veterinary Hospital', 'Organic Farm', 'Visitor Center', 'Gau Puja Hall', 'Ayurvedic Product Unit', 'Calf Nursery', 'Fodder Storage'],
     visitingHours: '6:00 AM - 7:00 PM (All days)',
     coordinates: { lat: 27.5846, lng: 77.6947 },
@@ -96,10 +136,10 @@ const GAUSHALAS: Gaushala[] = [
     totalCows: 1200,
     availableCows: 5,
     image: 'https://images.unsplash.com/photo-1527153907836-a9a0438ff035?w=800&q=80',
-    affiliation: 'Government Registered',
-    isVerified: true,
-    contactPhone: '+91 9123456780',
-    contactEmail: 'seva@kamdhenugaushala.in',
+    affiliation: '',
+    isVerified: false,
+    contactPhone: '',
+    contactEmail: '',
     facilities: ['50-Acre Campus', 'Modern Veterinary ICU', 'Organic Dairy', 'Panchgavya Lab', 'Training Center', 'Solar-Powered', 'Biogas Plant', 'Organic Farm'],
     visitingHours: '7:00 AM - 6:00 PM (Mon-Sat)',
     coordinates: { lat: 26.9124, lng: 75.7873 },
@@ -114,10 +154,10 @@ const GAUSHALAS: Gaushala[] = [
     totalCows: 2800,
     availableCows: 8,
     image: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=800&q=80',
-    affiliation: 'Nationally Recognized Model Gaushala',
-    isVerified: true,
-    contactPhone: '+91 9414312456',
-    contactEmail: 'info@pathmedagaushala.org',
+    affiliation: '',
+    isVerified: false,
+    contactPhone: '',
+    contactEmail: '',
     facilities: ['Multi-Campus (200+ acres)', 'Panchgavya Product Factory', 'Organic Farming Demo', 'Breed Conservation Center', 'Farmer Training Institute', 'Research Lab', 'Gobar Gas Plant', 'Vermicompost Unit', 'Guest House'],
     visitingHours: '6:00 AM - 6:00 PM (All days)',
     coordinates: { lat: 24.7584, lng: 71.7714 },
@@ -132,10 +172,10 @@ const GAUSHALAS: Gaushala[] = [
     totalCows: 420,
     availableCows: 4,
     image: 'https://images.unsplash.com/photo-1551649001-10ff42f27a1b?w=800&q=80',
-    affiliation: 'Shri Saibaba Sansthan Trust affiliated',
-    isVerified: true,
-    contactPhone: '+91 9822345678',
-    contactEmail: 'gaushala@shirdisaitrust.org',
+    affiliation: '',
+    isVerified: false,
+    contactPhone: '',
+    contactEmail: '',
     facilities: ['Veterinary Hospital', 'X-ray & Ultrasound', 'A2 Milk Dairy', 'Mobile Ambulance', 'Gau Daan Center', 'Ayurvedic Treatment Unit', 'Visitor Gallery'],
     visitingHours: '6:30 AM - 6:30 PM (All days)',
     coordinates: { lat: 19.7660, lng: 74.4776 },
@@ -150,10 +190,10 @@ const GAUSHALAS: Gaushala[] = [
     totalCows: 350,
     availableCows: 4,
     image: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=800&q=80',
-    affiliation: 'Organic Products Certified',
-    isVerified: true,
-    contactPhone: '+91 9988776655',
-    contactEmail: 'contact@gokulgaushala.org',
+    affiliation: '',
+    isVerified: false,
+    contactPhone: '',
+    contactEmail: '',
     facilities: ['Heritage Site', 'Breed Conservation', 'A2 Milk Dairy', 'Goseva Training', 'Organic Certification', 'Museum', 'Research Library'],
     visitingHours: '5:30 AM - 8:00 PM (All days)',
     coordinates: { lat: 27.4924, lng: 77.6737 },
@@ -191,8 +231,8 @@ const COWS: Cow[] = [
     healthStatus: 'healthy',
     description:
       'Nandini is a 7-year-old Sahiwal breed cow, known for her heat tolerance and high milk yield. She was donated by a farmer who could no longer care for her. Nandini is a mother of two calves who also reside at the gaushala.',
-    isAdopted: true,
-    adopterName: 'Rajesh Kumar',
+    isAdopted: false,
+    adopterName: null,
     monthlyUpdates: [
       { date: '2026-03-15', photo: 'https://images.unsplash.com/photo-1527153907836-a9a0438ff035?w=400&q=80', description: 'Nandini and her calves are thriving. She has been eating well and milk production is steady at 10 liters/day.' },
     ],
@@ -279,8 +319,8 @@ const COWS: Cow[] = [
     healthStatus: 'healthy',
     description:
       'Savitri is a 5-year-old Sahiwal cow, one of the best milking breeds in India. She arrived at the gaushala as a donation from a retiring dairy farmer who wanted to ensure she would be cared for. Savitri has a calm and docile nature.',
-    isAdopted: true,
-    adopterName: 'Priya Sharma',
+    isAdopted: false,
+    adopterName: null,
     monthlyUpdates: [
       { date: '2026-03-15', photo: 'https://images.unsplash.com/photo-1551649001-10ff42f27a1b?w=400&q=80', description: 'Savitri is happy and healthy. She gave birth to a beautiful female calf last week! Both mother and baby are doing wonderfully.' },
     ],
@@ -313,8 +353,8 @@ const COWS: Cow[] = [
     healthStatus: 'healthy',
     description:
       'Parvati is an 8-year-old Red Sindhi cow with a deep reddish-brown coat. She has been at the gaushala for 5 years and is one of the most loved residents. Known for her gentle eyes and patient demeanor during milking.',
-    isAdopted: true,
-    adopterName: 'Amit Agarwal',
+    isAdopted: false,
+    adopterName: null,
     monthlyUpdates: [
       { date: '2026-03-15', photo: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400&q=80', description: 'Parvati is doing great! She enjoyed extra jaggery treats on Holi. Weight stable at 380kg. Regular deworming completed.' },
     ],
@@ -383,8 +423,8 @@ const COWS: Cow[] = [
     healthStatus: 'senior_care',
     description:
       'Gomata is the oldest cow at Pathmeda at 10 years. She is a Gir breed matriarch who has mothered 6 calves during her lifetime. Though retired from milking, she receives premium senior care with special diet, joint supplements, and daily massages. She is treated as the spiritual mother of the herd.',
-    isAdopted: true,
-    adopterName: 'Sunita Devi',
+    isAdopted: false,
+    adopterName: null,
     monthlyUpdates: [
       { date: '2026-03-15', photo: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400&q=80', description: 'Gomata is comfortable and content. Senior care diet includes warm jaggery water and special herbal supplements. She rests most of the day but enjoys visitors.' },
       { date: '2026-02-15', photo: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=400&q=80', description: 'Gomata had her quarterly senior health exam. Teeth are wearing down so diet adjusted to softer foods. Otherwise in good spirits.' },
@@ -419,8 +459,8 @@ const COWS: Cow[] = [
     healthStatus: 'healthy',
     description:
       'Dwarkamai is a 6-year-old Sahiwal cow named after Sai Baba\'s famous Dwarkamai mosque. She was donated by a devotee from Pune. Dwarkamai is a gentle mother of one calf and produces rich, creamy milk used in the gaushala\'s A2 ghee production for the Shirdi temple prasad.',
-    isAdopted: true,
-    adopterName: 'Ganesh Patil',
+    isAdopted: false,
+    adopterName: null,
     monthlyUpdates: [
       { date: '2026-03-15', photo: 'https://images.unsplash.com/photo-1527153907836-a9a0438ff035?w=400&q=80', description: 'Dwarkamai is healthy and happy. Her calf is growing well. She participated in the special Gau Puja during Sai Baba Punyatithi celebrations.' },
     ],
@@ -489,8 +529,8 @@ const COWS: Cow[] = [
     healthStatus: 'senior_care',
     description:
       'Shyama is the oldest cow at Gokul Gaushala at 11 years. She has been here since the early days and has mothered 5 calves, all of whom still reside at the gaushala. Though retired from milking, she receives premium senior care with special diet, supplements, and daily attention from caregivers who have known her for a decade.',
-    isAdopted: true,
-    adopterName: 'Dr. Rakesh Mishra',
+    isAdopted: false,
+    adopterName: null,
     monthlyUpdates: [
       { date: '2026-03-15', photo: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=400&q=80', description: 'Shyama is comfortable. Senior diet includes warm turmeric milk, jaggery water, and herbal supplements. She spends most of her time with her youngest daughter, Chanda.' },
     ],

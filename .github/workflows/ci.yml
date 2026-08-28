@@ -90,6 +90,22 @@ jobs:
       # affected — only the Windows checkout. If it reappears, re-run
       # `git add --renormalize .`.
       #
+      # Two more added 2026-08-28 (OPS-02/03/08/10/11):
+      #   scripts/test/ops-runbook-honesty.test.mjs — asserts the ops runbooks
+      #     still name the three backup secrets, still dispatch the guarded copy
+      #     of db-backup.yml, still document the offsite restore path, and that
+      #     the superseded multi-region/DR documents stay marked superseded.
+      #   scripts/test/secret-scan.test.mjs — the OPS-11 pre-commit credential
+      #     scanner, plus assertions that .githooks/pre-commit actually invokes
+      #     it before its early exit and that the root `prepare` installs hooks.
+      #
+      # KNOWN GAP, stated rather than papered over: this workflow carries
+      # `paths-ignore: docs/**, **/*.md`, so a DOCS-ONLY pull request skips it
+      # and the runbook assertions do not run. They run on any PR that also
+      # touches code, and the secret-scan half is code either way. Widening the
+      # filter would cost ~5 min of free-tier budget per docs commit
+      # (docs/free-tier-budgets.md), which is why it was not done here.
+      #
       # ~12s on an already-installed runner => ~16 min/mo at ~80 runs.
       - name: Ops guards (production monitoring + rollback lever + backups)
         run: >-
@@ -99,6 +115,8 @@ jobs:
           scripts/agents/deploy-rollback-lever.test.mjs
           scripts/backup/test/backup.test.mjs
           scripts/backup/test/backup-integrity.test.mjs
+          scripts/test/ops-runbook-honesty.test.mjs
+          scripts/test/secret-scan.test.mjs
 
       - name: Build
         run: pnpm turbo build --filter=!@poojly/remotion-pitch

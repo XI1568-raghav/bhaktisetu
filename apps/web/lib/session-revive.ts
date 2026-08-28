@@ -108,7 +108,7 @@ function looksLikeSession(value: unknown): value is RevivedSession {
  * Never throws — an unreachable API on a cold Render dyno must degrade to
  * "signed out", not to an unhandled rejection during mount.
  */
-async function reviveSupabaseSessionFromCookie(): Promise<RevivedSession | null> {
+async function reviveSupabaseSessionFromCookie(): Promise<ReviveResult> {
   try {
     const res = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
@@ -116,11 +116,13 @@ async function reviveSupabaseSessionFromCookie(): Promise<RevivedSession | null>
       credentials: 'include',
       body: '{}',
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { session: null, apiAnswered: true };
     const data = await res.json();
-    return looksLikeSession(data?.session) ? (data.session as RevivedSession) : null;
+    return looksLikeSession(data?.session)
+      ? { session: data.session as RevivedSession, apiAnswered: true }
+      : { session: null, apiAnswered: true };
   } catch {
-    return null;
+    return { session: null, apiAnswered: false };
   }
 }
 
@@ -145,6 +147,10 @@ async function reviveSupabaseSessionFromCookie(): Promise<RevivedSession | null>
  * payload (FST_ERR_CTP_EMPTY_JSON_BODY, a 400) before the handler runs.
  */
 export async function reviveEmailSessionFromCookie(): Promise<RevivedSession | null> {
+  return (await reviveEmailSessionResult()).session;
+}
+
+async function reviveEmailSessionResult(): Promise<ReviveResult> {
   try {
     const res = await fetchWithTimeout(`${API_BASE_URL}/auth/session/revive`, {
       method: 'POST',
@@ -152,11 +158,13 @@ export async function reviveEmailSessionFromCookie(): Promise<RevivedSession | n
       credentials: 'include',
       body: '{}',
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { session: null, apiAnswered: true };
     const data = await res.json();
-    return looksLikeSession(data?.session) ? (data.session as RevivedSession) : null;
+    return looksLikeSession(data?.session)
+      ? { session: data.session as RevivedSession, apiAnswered: true }
+      : { session: null, apiAnswered: true };
   } catch {
-    return null;
+    return { session: null, apiAnswered: false };
   }
 }
 
@@ -180,7 +188,36 @@ export async function reviveEmailSessionFromCookie(): Promise<RevivedSession | n
  * Never throws, for the same reason the helpers above do not.
  */
 export async function reviveSessionFromCookie(): Promise<RevivedSession | null> {
+  return (await reviveSessionFromCookieResult()).session;
+}
+
+/**
+ * SEC-02 STEP 4 — the same revive, plus the one bit the caller cannot infer.
+ *
+ * `null` has always meant two different things here: "the API told us these
+ * cookies are dead" and "we never heard back". AuthProvider treated both as
+ * signed out and CLEARED the `poojly_user` marker — which was survivable while
+ * only a token-free browser took that branch. Step 4 deletes the localStorage
+ * token, so from now on EVERY signed-in browser takes it on every cold load,
+ * and Render's free tier routinely leaves a waking dyno past the 20s fetch
+ * budget. Clearing the marker on a transport failure would sign the entire user
+ * base out for the sole reason that the server was cold.
+ *
+ * `apiAnswered` is true only when an HTTP response actually came back — from
+ * EITHER door, since a 400 from /auth/refresh is the normal, expected answer
+ * for a magic-link browser and settles nothing on its own. A verdict of
+ * "signed out" therefore requires both doors to have refused.
+ */
+export interface ReviveResult {
+  session: RevivedSession | null;
+  /** An HTTP response came back. False means transport failure — unknown. */
+  apiAnswered: boolean;
+}
+
+export async function reviveSessionFromCookieResult(): Promise<ReviveResult> {
   const supabase = await reviveSupabaseSessionFromCookie();
-  if (supabase) return supabase;
-  return reviveEmailSessionFromCookie();
+  if (supabase.session) return supabase;
+  const email = await reviveEmailSessionResult();
+  if (email.session) return email;
+  return { session: null, apiAnswered: supabase.apiAnswered && email.apiAnswered };
 }

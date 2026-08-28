@@ -18,6 +18,11 @@ import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
 import { hoursUntilSlot } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 import { platformRateOf } from '../lib/commission-math.js';
+// OPS-05: the durable money trail. `recordMoneyEvent` never throws, never
+// rejects and never joins the caller's transaction, so every call is safe to
+// `void` — a logging failure must not fail a real booking. Record AFTER the
+// write it describes, and after any `$transaction` has RESOLVED.
+import { MONEY_EVENTS, recordMoneyEvent, type MoneyEventInput } from '../lib/audit-money.js';
 import { localizedError, pickLang } from '../lib/error-i18n.js';
 import {
   deliveryAddressSchema,
@@ -723,6 +728,67 @@ function evaluatePriestSlot(input: {
   return { ok: true };
 }
 
+// ─── OPS-05 — BOOKING_CREATED ───────────────────────────────────────────────
+//
+// `MONEY_EVENTS.BOOKING_CREATED` was a declared constant with ZERO call sites,
+// so the durable trail began at PAYMENT_INITIATED: it could show that a gateway
+// order was opened, but not that a booking existed, what it was priced at, or
+// what its status was at birth. Those are the first three questions a disputed
+// booking asks.
+//
+// It matters most on the two ORDER paths, which create a booking and open a
+// Razorpay order in the same request: a failure between the two leaves a
+// `pending_payment` row that the trail could not tell apart from "the devotee
+// never tried".
+//
+// The DECISION lives here, as a pure builder, for the reason bookings.test.ts
+// records at its own line 43: there is no Fastify+Prisma integration
+// scaffolding for this route file anywhere in the suite, so anything expressed
+// only inline in a handler is untestable. The builder is exported through
+// `__testing` and asserted in bookings.money-trail.ops05.test.ts; the handlers
+// keep just the `void recordMoneyEvent(...)`.
+function bookingCreatedEvent(input: {
+  booking: {
+    id: string;
+    bookingNumber?: string | null;
+    priceAmount?: unknown;
+    currency?: string | null;
+    status?: string | null;
+  };
+  /** The devotee. A booking is always created by a human, never by cron. */
+  userId: string;
+  /** Which handler created it: '/book', 'create-order', 'from-offering'. */
+  rail: string;
+}): MoneyEventInput {
+  const { booking, userId, rail } = input;
+  // Prisma Decimal, string, number or null — pass it through as a string and
+  // let the writer normalise, but never coerce a missing price into 0 or NaN.
+  // A wrong figure in an audit trail is worse than an absent one.
+  const amount =
+    booking.priceAmount === null || booking.priceAmount === undefined
+      ? null
+      : String(booking.priceAmount);
+
+  return {
+    eventType: MONEY_EVENTS.BOOKING_CREATED,
+    // 'devotee', not 'system': a booking is always created by a human. The
+    // MoneyActorType vocabulary is devotee|provider|admin|system|gateway.
+    actorType: 'devotee',
+    actorId: userId,
+    subjectType: 'booking',
+    subjectId: booking.id,
+    bookingId: booking.id,
+    amount,
+    currency: booking.currency ?? 'INR',
+    statusAfter: booking.status ?? null,
+    // Bare natural key. `recordMoneyEvent` namespaces it by event type — a
+    // caller-side prefix would push the writer's own off the length clip and
+    // reinstate the cross-event collision that namespacing exists to prevent.
+    idempotencyKey: booking.id,
+    metadata: { rail, bookingNumber: booking.bookingNumber ?? null },
+  };
+}
+
 // ─── Order-creation bodies ──────────────────────────────────────────────────
 //
 // Both checkout entry points (`POST /create-order` for the temple wizard and
@@ -882,6 +948,9 @@ export async function bookingRoutes(server: FastifyInstance) {
           userId,
           ...body,
         });
+
+        // OPS-05: after the write, never inside it.
+        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: '/book' }));
 
         return reply.status(201).send({ booking });
       } catch (error: any) {
@@ -1953,6 +2022,13 @@ export async function bookingRoutes(server: FastifyInstance) {
           prasadDeliveryAddressId: prasadAddressId,
         });
 
+        // OPS-05: recorded BEFORE the gateway order is opened, deliberately.
+        // This handler creates a booking and opens a Razorpay order in one
+        // request; if the order call throws, the booking row still exists as
+        // `pending_payment`, and without this row the trail could not tell that
+        // from "the devotee never tried". recordMoneyEvent never throws.
+        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'create-order' }));
+
         // 4. Create the Razorpay order. In demo mode (no RAZORPAY_KEY_ID)
         // payment.service returns a synthetic order_demo_* id and the web
         // page falls back to its demo-payment button.
@@ -2335,6 +2411,14 @@ export async function bookingRoutes(server: FastifyInstance) {
           });
         });
 
+        // OPS-05: recorded after the $transaction has RESOLVED and before the
+        // gateway order, for the same reason as the temple path above — a
+        // throw from createRazorpayOrder must still leave the booking visible
+        // in the trail. recordMoneyEvent takes no `tx` on purpose: a failed
+        // audit INSERT inside that transaction would abort it in Postgres and
+        // roll the booking back.
+        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'from-offering' }));
+
         // 7. Create the payment order. Razorpay is the ONLY rail — Stripe was
         // removed 2026-08-10 (PayPal via Razorpay replaces it for international
         // devotees), so there is no second gateway and no currency branch to
@@ -2508,6 +2592,8 @@ export async function bookingRoutes(server: FastifyInstance) {
 // Fastify+Prisma integration scaffolding — so the guards are written as pure
 // functions and the DB steps they gate are exercised manually / in staging.
 export const __testing = {
+  // OPS-05 — the BOOKING_CREATED decision, unit-testable without a server.
+  bookingCreatedEvent,
   checkVideoProofGate,
   checkPriestReassignable,
   checkTransitionRole,

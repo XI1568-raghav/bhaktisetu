@@ -166,6 +166,72 @@ export function describeWebHandoff(
   };
 }
 
+/**
+ * The value for react-native-webview's `originWhitelist` prop — and the reason
+ * it is a function rather than a string template at the call site.
+ *
+ * THE BUG THIS REPLACES
+ * ---------------------
+ * app/(devotee)/web-view.tsx passed `[`${WEB.origin}/*`]`, i.e.
+ * `['https://darshya.online/*']`. That looks like every other allowlist in the
+ * codebase and it matches NOTHING. react-native-webview compares the pattern
+ * against the ORIGIN ONLY, never the full URL:
+ *
+ *   extractOrigin  = /^[A-Za-z][A-Za-z0-9+\-.]+:(\/\/)?[^/]*/
+ *   toRegex(entry) = `^${escapeStringRegexp(entry).replace(/\\\*/g, '.*')}`
+ *   passes         = compiled.some((re) => new RegExp(re).test(extractOrigin(url)))
+ *
+ * `extractOrigin('https://darshya.online/astrology')` stops at the first path
+ * slash and yields `https://darshya.online` — no trailing slash, ever. The
+ * entry compiles to `^https://darshya\.online/.*`, which requires a slash and
+ * something after it, so it can never match. The library's own default is
+ * `['http://*', 'https://*']` — scheme plus wildcard, no path — which is the
+ * shape this returns.
+ *
+ * Consequence had it shipped: every navigation inside the frame fails the
+ * whitelist and is handed to the OS, so each link tap ejects the devotee into
+ * Chrome or Safari. That is exactly the behaviour the screen exists to remove,
+ * reintroduced by a path suffix. It is dormant only because the module is
+ * absent — it would have arrived WITH the install, which is precisely the
+ * moment PAR-22 promises no further mobile edit is needed.
+ *
+ * An empty array when the origin is unparseable: allow nothing, rather than
+ * fall back to the library default of "any http(s) host on earth".
+ */
+export function webViewOriginWhitelist(origin: string): string[] {
+  const allowed = originOf(origin);
+  return allowed === null ? [] : [allowed];
+}
+
+/**
+ * The predicate for `onShouldStartLoadWithRequest`, which is the control that
+ * actually holds — `originWhitelist` cannot express this on its own.
+ *
+ * `originWhitelistToRegex` anchors at the START and nowhere else, so the
+ * correct-looking entry `https://darshya.online` compiles to
+ * `^https://darshya\.online` and happily matches the origin
+ * `https://darshya.online.evil.example`. A prefix match on a hostname is a
+ * registrable-domain bypass: anyone can register `darshya.online.evil.example`
+ * and be framed, without an address bar, inside an app the devotee has already
+ * trusted with a payment. There is no anchored form of the prop to reach for —
+ * the library's default `https://*` is prefix-only by design.
+ *
+ * So the whitelist stays as a coarse prefilter that at least MATCHES, and the
+ * exact decision is made here by `isRenderableInApp`, which compares scheme,
+ * host and port for equality and refuses userinfo and backslashes outright.
+ *
+ * `req.url` is optional because the prop is invoked with the platform's own
+ * request shape; a request with no URL is not something to guess about.
+ */
+export function makeNavigationGuard(
+  origin: string,
+): (req: { url?: string | null }) => boolean {
+  return (req) => {
+    const url = req?.url;
+    return typeof url === 'string' && isRenderableInApp(url, origin);
+  };
+}
+
 export interface WebHandoffIo {
   /** `router.push` — pathname plus params, the expo-router object form. */
   push: (route: { pathname: string; params: { url: string; title: string } }) => void;

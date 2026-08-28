@@ -64,10 +64,71 @@ describe('TC-03 — the NRI Premium pages promise no unbacked subscription refun
     expect(src).not.toMatch(/refund within 90 days/i);
   });
 
-  it('/nri says plainly that cancelling stops renewal rather than refunding', () => {
+  /**
+   * REWRITTEN 2026-08-28. The first assertion here used to be
+   *
+   *   expect(src).toMatch(/end of (the |your )?(paid |current )?(year|billing period|term)/i)
+   *
+   * and it could not tell the truth from the lie it existed to forbid. TC-03's
+   * FIRST remediation replaced an unbacked "14-day no-questions-asked refund"
+   * with an equally unbacked "your access runs to the end of the year you have
+   * already paid for", and this regex was written to require that sentence. The
+   * second pass established the sentence was false — `cancel()` performs one
+   * write, `status: 'CANCELLED'`, and every entitlement consumer filters on
+   * `status: 'ACTIVE'`, so access stops at the moment of cancellation — and
+   * corrected the page to say the opposite.
+   *
+   * The regex stayed green through both, because it matches "runs to the end of
+   * the year you paid for" AND "does not run to the end of the year you paid
+   * for". So the guard was satisfied by whichever claim happened to be on the
+   * page, which is the one thing it was meant to decide. The case below proves
+   * that with the old pattern rather than asserting it.
+   *
+   * The replacement pins the page to the shared constant instead of to prose:
+   * NRI_CANCELLATION_SENTENCE is the single place the truth is stated, the hero
+   * / FAQ / closing CTA all interpolate it, and it cannot drift into a promise
+   * without failing here.
+   */
+  it('the superseded regex could not distinguish the truth from the lie', () => {
+    const OLD = /end of (the |your )?(paid |current )?(year|billing period|term)/i;
+    const LIE = 'your access runs to the end of the year you have already paid for';
+    const TRUTH = 'it does not hold your access open to the end of the year you have already paid for';
+    expect(OLD.test(LIE)).toBe(true);
+    expect(OLD.test(TRUTH)).toBe(true);
+  });
+
+  it('/nri states the cancellation truth from the one shared constant', async () => {
     const src = code('app/nri/page.tsx');
-    expect(src).toMatch(/end of (the |your )?(paid |current )?(year|billing period|term)/i);
+    // The page must interpolate the constant, not re-word it. Three surfaces
+    // quote it (hero fine print, refund FAQ, closing CTA) and they drifted
+    // apart the last time each carried its own sentence.
+    expect(src).toMatch(/NRI_CANCELLATION_SENTENCE/);
     expect(src).toMatch(/no automatic refund|not refunded automatically|does not refund/i);
+
+    const { NRI_CANCELLATION_SENTENCE } = await import('../app/nri/plan-availability');
+    // The constant itself must say access stops NOW. Asserted as a positive
+    // claim, so restoring the period-end promise fails here even though it
+    // would still have matched the old pattern.
+    expect(NRI_CANCELLATION_SENTENCE).toMatch(/immediately/i);
+    expect(NRI_CANCELLATION_SENTENCE).toMatch(/stops the next renewal/i);
+    expect(NRI_CANCELLATION_SENTENCE).toMatch(
+      /does not hold your access open|does not run to the end/i,
+    );
+  });
+
+  it('no NRI surface promises access to the end of the paid period', () => {
+    // The affirmative form of the lie, on both pages. `(?!.*does not)` is not
+    // used — the negated sentence is matched and excluded explicitly below, so
+    // a rewording like "will not hold" cannot slip through a lookahead.
+    for (const rel of NRI_PAGES) {
+      for (const line of code(rel).split('\n')) {
+        if (!/end of (the |your )?(paid |current )?(year|billing period|term)/i.test(line)) continue;
+        expect(
+          /does not|doesn't|not hold|stops? at that moment|immediately/i.test(line),
+          `${rel} promises access to the end of the paid period: ${line.trim()}`,
+        ).toBe(true);
+      }
+    }
   });
 });
 

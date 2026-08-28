@@ -2,6 +2,7 @@
 
 import { getTempleHero } from '../../../lib/images';
 import { Play, Clock, Bell, MapPin } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // DF-10 (2026-08-24): the `viewers` key is gone from these rows. It held
 // 12450 / 28300 / 8760 / 9800 — the first of which is the exact figure the
@@ -40,7 +41,7 @@ export default function MobileDarshan() {
    removed. */}
  <span className="text-xs text-surface-500">{liveStreams.length} streams active</span>
  </div>
- <h1 className="text-xl font-bold text-white tracking-tight mt-1">Live Darshan</h1>
+ <h1 className={`${H1.portalInverse} mt-1`}>Live Darshan</h1>
  </div>
 
  {/* Live Streams */}

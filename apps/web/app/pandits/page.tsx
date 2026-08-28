@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { getPublicPriests, type PriestSummary } from '../../lib/pandit-api';
 import { remoteImage, IMG_W } from '../../lib/images';
+import { AvatarWithFallback } from '../../components/AvatarWithFallback';
 import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
@@ -33,24 +34,27 @@ function PriestCard({ priest }: { priest: PriestSummary }) {
    className="block bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5 hover:border-saffron-300 hover:shadow-md transition-all"
   >
    <div className="flex items-start gap-3 mb-3">
-    {priest.avatarUrl ? (
-     // eslint-disable-next-line @next/next/no-img-element
-     <img
-      src={remoteImage(priest.avatarUrl, IMG_W.THUMB)}
-      width={48}
-      height={48}
-      loading="lazy"
-      decoding="async"
-      alt={priest.displayName}
-      className="w-12 h-12 rounded-full object-cover shrink-0"
-     />
-    ) : (
-     <div className="w-12 h-12 bg-saffron-100 rounded-full flex items-center justify-center shrink-0">
-      <span className="text-sm font-bold text-saffron-700">
-       {initials(priest.displayName)}
-      </span>
-     </div>
-    )}
+    {/* PF-04: this was `{priest.avatarUrl ? <img/> : <initials/>}` — a
+        FALSY-only guard, which a present-but-dead URL walks straight past into
+        a broken-image icon. `priests.avatar_url` is the column that actually
+        holds the dead `images.darshya.online` host, and this is the public
+        pandit directory, so it is where the defect is most visible.
+        AvatarWithFallback renders the same tile on error and removes the
+        <img>, so there is no request loop. */}
+    <AvatarWithFallback
+     src={remoteImage(priest.avatarUrl ?? '', IMG_W.THUMB)}
+     width={48}
+     height={48}
+     alt={priest.displayName}
+     className="w-12 h-12 rounded-full object-cover shrink-0"
+     fallback={
+      <div className="w-12 h-12 bg-saffron-100 rounded-full flex items-center justify-center shrink-0">
+       <span className="text-sm font-bold text-saffron-700">
+        {initials(priest.displayName)}
+       </span>
+      </div>
+     }
+    />
     <div className="min-w-0 flex-1">
      <div className="flex items-center gap-1.5">
       <h3 className="font-semibold text-surface-800 truncate">

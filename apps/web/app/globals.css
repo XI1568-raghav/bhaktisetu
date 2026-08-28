@@ -338,11 +338,14 @@
      portals on the same content edge as the header and footer that already sit
      on .container-wide above them.
 
-     4xl is the obvious next step and is deliberately NOT taken: two of its 188
-     occurrences are genuine headline measures (app/about/page.tsx beside
-     text-[2.5rem], components/motion/StickyHeadlinePin.tsx beside
-     lg:text-6xl), so this move would silently widen two headlines by 16rem.
-     Those two have to become explicit max-w-[56rem] measures first. */
+     4xl was the obvious next step and used to be deliberately NOT taken: two of
+     its 188 occurrences were genuine headline measures (app/about/page.tsx
+     beside text-[2.5rem], components/motion/StickyHeadlinePin.tsx beside
+     lg:text-6xl), so the move would have silently widened two headlines by
+     16rem. Both were converted to explicit `max-w-[56rem]` measures on
+     2026-08-28 — they keep the 56rem they render at today, stated as a measure
+     rather than borrowed from a page-shell token — so the retarget is now safe
+     and is taken below. */
   --container-5xl: 72rem;
 
   /* The two steps that already MATCHED the declared widths, now owned rather
@@ -355,10 +358,11 @@
      the container scale, or a @theme edit that moves one declared width and
      not the other, would slide them off with nothing in CI to notice.
 
-     Same values, zero rendered diff — this is a lock, not a retarget. The two
-     steps that WERE retargeted are above; --container-4xl (182 centred shells
-     at 56rem, the one remaining third width) is still open, for the reason
-     given there. Locked by __tests__/design-tokens.test.ts. */
+     Same values, zero rendered diff — this is a lock, not a retarget. The
+     steps that WERE retargeted are above and below; --container-4xl (the last
+     third width, 182 centred shells at 56rem) is retargeted with them now that
+     its two headline measures are explicit. Locked by
+     __tests__/design-tokens.test.ts. */
   --container-6xl: 72rem;
   --container-3xl: 48rem;
 
@@ -377,21 +381,28 @@
      nothing. `min-w-*` and the `@container` size queries read the same keys
      and are unaffected for the same reason.
 
-     --container-4xl is declared here but deliberately NOT folded into the wide
-     width, which is the one open half of DU-14. Two of its 188 occurrences are
-     headline measures rather than page shells (app/about/page.tsx beside
-     text-[2.5rem], components/motion/StickyHeadlinePin.tsx beside
-     lg:text-6xl); a retarget would widen those two headlines by 16rem. The
-     guard in __tests__/design-tokens.test.ts closes itself — the moment no
-     max-w-4xl consumer sets its own type size, it stops permitting 56rem and
-     starts demanding 72rem. */
+     --container-4xl is NO LONGER one of them: it moved out of this lock group
+     and onto the wide width on 2026-08-28, closing the open half of DU-14. Its
+     two headline measures (app/about/page.tsx beside text-[2.5rem],
+     components/motion/StickyHeadlinePin.tsx beside lg:text-6xl) became
+     explicit `max-w-[56rem]` in the same change, so nothing that was a MEASURE
+     moved; the 182 centred page SHELLS widen 56rem -> 72rem and join
+     max-w-5xl/6xl/7xl on .container-wide. That is the DU-14 finding itself —
+     eleven container widths over 679 declarations — taking its last third
+     width off the board: the resolved-width census drops from 8 distinct
+     widths to 7. The self-closing guard in __tests__/design-tokens.test.ts
+     flipped the moment the last max-w-4xl consumer stopped setting its own
+     type size, and now demands exactly this value. */
   --container-xs: 20rem;
   --container-sm: 24rem;
   --container-md: 28rem;
   --container-lg: 32rem;
   --container-xl: 36rem;
   --container-2xl: 42rem;
-  --container-4xl: 56rem;
+
+  /* The retarget itself, kept beside the steps it now matches rather than in
+     the lock group above: 4xl, 5xl, 6xl and 7xl all resolve to .container-wide. */
+  --container-4xl: 72rem;
 
   /* ── Letter-spacing ───────────────────────────────────────────────────── */
   --tracking-tight: -0.02em;

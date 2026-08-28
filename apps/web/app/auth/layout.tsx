@@ -33,8 +33,34 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
  // VISIBLE area instead means the form is reachable on first paint, with no
  // scrolling and no dismissing the banner first. --consent-h is 0px whenever
  // the banner is closed, so this is a no-op for returning visitors.
+ //
+ // RESP-01 (third pass, 2026-08-28). The reservation above fixed 390x844 and
+ // left two common sizes still broken. Re-measured in Chromium against the
+ // repo's own compiled CSS with the REAL rendered markup of login/page.tsx and
+ // CookieBanner.tsx (see app/auth/__tests__/resp01-auth-layout-density.test.tsx
+ // for the full table and the rig's limits):
+ //
+ //   360x800  Sign In had 13 of its 44px on screen and a tap at its centre
+ //            landed on the BANNER. Now 29px and the tap lands on the button.
+ //   390x844  cleared the banner by 12px. Now 28px — the slack that matters,
+ //            because the notice's wrap point moves with the real webfont.
+ //   412x915  card top y=113 -> y=80.
+ //   768x1024, 1280x800  unchanged; sm: restores both old values exactly.
+ //
+ // py-8 was 32px of the shortfall, and reclaiming it below sm is what actually
+ // moved the button. items-start is NOT what fixed it — at 360x800 and 375x667
+ // the wrapper is already taller than `100dvh - --consent-h`, so it is sized by
+ // its content and align-items has no free space to distribute; flipping it
+ // alone produced byte-identical geometry at both sizes. It is kept below sm
+ // because it is free and it stops a future taller banner from raising the
+ // centring offset and pushing the card DOWN, toward the banner.
+ //
+ // 375x667 (iPhone SE) still has Sign In below the fold at first paint and no
+ // padding change here can alter that: 667 - 64 (fixed header) - 262 (banner)
+ // = 341px of usable band against a 574px card. The page scrolls, and the
+ // button hit-tests correctly once scrolled, at every size measured.
  <div
- className="relative flex items-center justify-center overflow-hidden py-8"
+ className="relative flex items-start justify-center overflow-hidden py-4 sm:items-center sm:py-8"
  style={{ minHeight: 'calc(100dvh - var(--consent-h, 0px))' }}
  >
  {/* Background gradient — warm saffron tones */}

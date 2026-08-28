@@ -4,6 +4,7 @@ import { User, LogOut, LayoutDashboard, Settings, BookOpen, ShieldCheck, Shoppin
 import { useState, useRef, useEffect } from 'react';
 import { useAuth, getRoleLabel, getRoleDashboardPath } from '../lib/auth-context';
 import { buttonClass } from './ui/button-recipe';
+import { AvatarWithFallback } from './AvatarWithFallback';
 
 export default function NavAuthButton() {
  // AUTH-09: no `signOut` here on purpose — the Sign Out item navigates to
@@ -66,16 +67,22 @@ export default function NavAuthButton() {
  onClick={() => setMenuOpen(!menuOpen)}
  className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-saffron-50 transition-colors"
  >
- {user?.avatarUrl ? (
- <img width={32} height={32}  src={user.avatarUrl}
+ {/* PF-04: was a FALSY-only guard, so a present-but-dead avatar URL
+     rendered as a broken-image icon in the site header — on every page,
+     for every signed-in user. Same initials tile, now also reached when
+     the image fails rather than only when it is absent. */}
+ <AvatarWithFallback
+ src={user?.avatarUrl}
+ width={32}
+ height={32}
  alt={displayName}
  className="w-8 h-8 rounded-full object-cover"
- />
- ) : (
+ fallback={
  <div className="w-8 h-8 bg-saffron-100 rounded-full flex items-center justify-center">
  <span className="text-xs font-bold text-saffron-700">{initials}</span>
  </div>
- )}
+ }
+ />
  <div className="hidden sm:flex flex-col items-start">
  <span className="text-sm font-medium text-surface-700 max-w-[100px] truncate leading-tight">
  {displayName}

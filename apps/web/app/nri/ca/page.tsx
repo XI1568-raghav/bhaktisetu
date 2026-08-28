@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { COMPANY } from '../../../lib/company';
+import { NRI_PREMIUM_IS_SELLABLE } from '../plan-availability';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -119,7 +120,13 @@ const benefits = [
   {
     icon: Sparkles,
     title: 'AI Pandit in your language',
-    body: 'Ask scripture, panchang, muhurat, gotra questions in English, Hindi, Punjabi, Tamil, Gujarati. Daily 5 free questions; unlimited on NRI Premium.',
+    // TC-04: this used to end "…; unlimited on NRI Premium." That tier is
+    // withdrawn from sale — both activation rails answer 400 — so the sentence
+    // upsold a plan that cannot be bought. Gated on the same constant /nri
+    // uses, so the upsell returns with the plan rather than being rewritten.
+    body: NRI_PREMIUM_IS_SELLABLE
+      ? 'Ask scripture, panchang, muhurat, gotra questions in English, Hindi, Punjabi, Tamil, Gujarati. Daily 5 free questions; unlimited on NRI Premium.'
+      : 'Ask scripture, panchang, muhurat, gotra questions in English, Hindi, Punjabi, Tamil, Gujarati. 5 free questions a month.',
   },
 ];
 
@@ -270,11 +277,16 @@ export default function CanadaNriLanding() {
           <p className="text-surface-700 mb-6 max-w-xl mx-auto">
             Join the Canada waitlist. We email Toronto, Vancouver, and Brampton subscribers first when CAD pricing goes live.
           </p>
+          {/* TC-04: this CTA read "See NRI Premium tier" and sent a Canadian
+              visitor to a plan that cannot be bought — both activation rails
+              answer 400 with the withdrawal message. While it is withdrawn the
+              button points at what the visitor can actually do today; the
+              upsell returns with the plan. */}
           <Link
-            href="/nri"
+            href={NRI_PREMIUM_IS_SELLABLE ? '/nri' : '/temples'}
             className={buttonClass('primary', 'md', 'shadow-md shadow-saffron-600/20')}
           >
-            See NRI Premium tier
+            {NRI_PREMIUM_IS_SELLABLE ? 'See NRI Premium tier' : 'Browse verified temples'}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

@@ -197,3 +197,60 @@ export function darshanaSlugs(): string[] {
 export function getDarshana(slug: string): Darshana | undefined {
   return DARSHANAS.find((d) => d.slug === slug);
 }
+
+/**
+ * CI-08 — the six orthodox darshanas are published under THREE route families,
+ * and every one of them declared itself the original:
+ *
+ *   /darshanas/<slug>           this file — 20 fields per school (number,
+ *                               iast, founding text in Sanskrit, approxDate,
+ *                               pair, centralThesis, summary, keyConcepts,
+ *                               pramanas, liberationPath, keyTexts,
+ *                               modernRelevance, bestKnownFor).
+ *   /hindu-philosophies/<slug>  lib/hindu-philosophies.ts — 13 fields of
+ *                               largely the same prose, plus four Vedanta
+ *                               sub-schools that exist nowhere else.
+ *   /sanatan/<slug>-darshana    content/sanatan/*.mdx — a prose article each.
+ *
+ * The ruling is the one CI-08 already made for the fourteen Upanishads
+ * (`canonicalUpanishadUrl`, lib/upanishads.ts) and the four Vedas
+ * (`canonicalVedaUrl`, app/ved/canonical.ts): the richest curated dataset
+ * survives and the others defer to it. Nothing is unpublished — all three
+ * families keep their pages; two of them simply stop competing for the same
+ * six queries.
+ *
+ * The four Vedanta sub-schools (advaita, vishishtadvaita, dvaita,
+ * achintya-bheda-abheda) have NO twin here, so this returns undefined for them
+ * and /hindu-philosophies stays canonical. Answering "no twin" correctly
+ * matters as much as answering "here is the twin".
+ *
+ * WHY A TABLE, when the Veda fix deliberately refused one: the three families
+ * genuinely disagree on the spelling of two schools — `samkhya` vs `sankhya`,
+ * `mimamsa` vs `purva-mimamsa` — and one MDX article is named
+ * `yoga-darshana-patanjali`, not `yoga-darshana`. Suffix-stripping alone
+ * resolves 4 of 6 and drops the other 2 in silence, which is worse than a
+ * table because the miss is invisible. So the mapping is DERIVED by default
+ * and tabulated only for the three real exceptions, and
+ * __tests__/darshana-route-family-canonical.ci08.test.ts asserts that no alias
+ * points at a school that does not exist.
+ */
+const DARSHANA_SLUG_ALIASES: Readonly<Record<string, string>> = {
+  // /hindu-philosophies and content/sanatan spell these differently
+  samkhya: 'sankhya',
+  mimamsa: 'purva-mimamsa',
+  // the one MDX article not named "<school>-darshana"
+  'yoga-darshana-patanjali': 'yoga',
+};
+
+/**
+ * The URL that should be canonical for a slug published by a competing
+ * darshana route family, or undefined when the subject has no /darshanas twin.
+ *
+ * Accepts the /hindu-philosophies form (`samkhya`) and the content/sanatan
+ * form (`sankhya-darshana`) alike.
+ */
+export function canonicalDarshanaUrl(slug: string): string | undefined {
+  const bare = slug.replace(/-darshana$/, '');
+  const target = DARSHANA_SLUG_ALIASES[slug] ?? DARSHANA_SLUG_ALIASES[bare] ?? bare;
+  return getDarshana(target) ? `/darshanas/${target}` : undefined;
+}

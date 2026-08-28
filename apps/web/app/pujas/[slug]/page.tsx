@@ -27,7 +27,7 @@ import {
  Undo2,
 } from 'lucide-react';
 import { getDeityImage, getPujaImage } from '../../../lib/images';
-import { formatTrustScoreOutOf } from '../../../lib/trust-score';
+import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-score';
 // CM-03 (prod sweep 2026-08-12): this page advertises the bare puja price in
 // three places while checkout charges it plus a ₹51 platform fee. The fee is
 // real (apps/api booking.service folds it into the amount Razorpay is asked
@@ -512,10 +512,21 @@ export default async function PujaDetailPage({
  {temple.templeCity}, {temple.templeState}
  </p>
  <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
+ {/* TC-07: this pill rendered a filled amber star beside "4.9/5" on every
+   temple in the offering list, which a devotee reads as a customer
+   rating. `Temple.trustScore` has no writer anywhere in the codebase —
+   every value is one of twenty literals typed into apps/api/prisma/seed.ts
+   before the platform took a booking. Gated, not deleted, so the honest
+   presentation comes back on the day the writer lands: flip
+   TRUST_SCORE_IS_COMPUTED in lib/trust-score.ts and this renders again,
+   on the one scale, through the one formatter. Guarded by
+   __tests__/puja-temples-copy-honesty.tc08.test.tsx. */}
+ {canPublishTrustScore(temple.trustScore) && (
  <span className="flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
  {formatTrustScoreOutOf(temple.trustScore)}
  </span>
+ )}
  <span className="rounded-full bg-surface-100 px-2 py-0.5">
  {temple.availableSlots.length} time slots
  </span>

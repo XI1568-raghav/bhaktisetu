@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { JYOTIRLINGAS } from '../lib/jyotirlingas';
 import { SHLOKAS } from '../lib/shlokas';
+import { yatras as YATRAS } from '../lib/yatra-data';
 import DiscoverPage from '../app/discover/page';
 
 // CI-12, the tail of it.
@@ -109,5 +110,46 @@ describe('CI-12 — the shloka catalogue does not re-publish it either', () => {
     expect(stotram).toBeDefined();
     expect(stotram!.meaning).toMatch(/lingams of light/i);
     expect(stotram!.meaning).toMatch(/Adi Shankaracharya/i);
+  });
+});
+
+/**
+ * A FOURTH copy, found after the three above were closed and named by no
+ * handoff: the `jyotirlinga-yatra` record in lib/yatra-data.ts carried
+ * `subtitle: 'The twelve self-manifested Shiva shrines'`. It is reader-facing
+ * on two routes — the yatra index card (app/yatra/page.tsx:220) and the yatra
+ * detail header (app/yatra/[slug]/page.tsx:141) — and contradicts the same
+ * three `swayambhu: false` flags.
+ *
+ * Its sibling `longDescription` is deliberately NOT covered by the qualifier
+ * check: "where he manifested as columns of light" is the Jyotirlinga legend
+ * itself and makes no swayambhu claim, so a guard that flagged it would be
+ * demanding the wrong fix.
+ */
+describe('CI-12 — the yatra catalogue does not re-publish it either', () => {
+  const jyotirlingaYatra = YATRAS.find((y) => y.slug === 'jyotirlinga-yatra');
+
+  it('there is a Jyotirlinga yatra record to check', () => {
+    expect(jyotirlingaYatra).toBeDefined();
+  });
+
+  it('no reader-facing yatra string calls all twelve self-manifest', () => {
+    for (const y of YATRAS) {
+      const prose = strings(y).join('  ');
+      expect(prose, `${y.slug} contradicts the swayambhu flags`).not.toMatch(
+        ALL_TWELVE_SELF_MANIFEST,
+      );
+      expect(prose, `${y.slug} contradicts the swayambhu flags`).not.toMatch(
+        SELF_MANIFEST_ALL_TWELVE,
+      );
+    }
+  });
+
+  it('keeps the record describing twelve Shiva shrines — a qualifier went, not the yatra', () => {
+    expect(jyotirlingaYatra!.subtitle).toMatch(/twelve/i);
+    expect(jyotirlingaYatra!.subtitle).toMatch(/shiva/i);
+    // The legend gloss is untouched: it is about columns of light, not about
+    // who installed the linga.
+    expect(jyotirlingaYatra!.longDescription).toMatch(/manifested as columns of light/i);
   });
 });

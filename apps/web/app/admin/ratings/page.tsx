@@ -5,6 +5,7 @@ import { Star, EyeOff, Loader2, RefreshCw, Filter } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 import { H1 } from '../../../components/ui/heading-recipe';
 
 interface AdminRating {
@@ -35,11 +36,16 @@ export default function AdminRatingsPage() {
   const [loading, setLoading] = useState(true);
   const [hiding, setHiding] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // AUTH-06: `friendlyApiError` has returned this flag since P1 #208 and this
+  // page — like the other five — read only `.message`, so a dead session was
+  // told to sign in again with nothing on screen that could.
+  const [reauth, setReauth] = useState(false);
   const [total, setTotal] = useState(0);
 
   const fetchRatings = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setReauth(false);
     try {
       const sp = new URLSearchParams();
       if (stars) sp.set('stars', stars);
@@ -54,7 +60,9 @@ export default function AdminRatingsPage() {
       setTotal(Number(json.total) || 0);
     } catch (e) {
       // P1 #208: map raw "API 401" style errors to friendly copy.
-      setError(friendlyApiError(e).message);
+      const { message, reauth: needsReauth } = friendlyApiError(e);
+      setError(message);
+      setReauth(needsReauth);
       setRows([]);
     } finally {
       setLoading(false);
@@ -130,7 +138,8 @@ export default function AdminRatingsPage() {
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
+          {/* AUTH-06: a dead session gets the one control that can fix it. */}
+          {reauth ? <ReauthPrompt message={error} /> : error}
         </div>
       )}
 

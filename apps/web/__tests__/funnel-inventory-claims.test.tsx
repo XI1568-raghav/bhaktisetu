@@ -40,6 +40,20 @@ function code(rel: string): string {
 /** "200+", "1,500+", "500 plus" — an unsourced inventory boast. */
 const INFLATED = /\b\d{1,3}(,\d{3})*\s*\+/;
 
+/**
+ * The six supply-acquisition landers. Same list as
+ * __tests__/supply-page-claims.test.ts, kept in step deliberately: a claim
+ * that is false on one of these is false on all of them.
+ */
+const SUPPLY_PAGES = [
+  'app/become-priest/page.tsx',
+  'app/become-astrologer/page.tsx',
+  'app/become-wellness/page.tsx',
+  'app/become-gurukul/page.tsx',
+  'app/list-temple/page.tsx',
+  'app/list-gaushala/page.tsx',
+].filter((p) => fs.existsSync(path.join(WEB, p)));
+
 afterEach(() => {
   vi.resetModules();
 });
@@ -107,10 +121,85 @@ describe('DF-06 — the homepage cow-adoption price matches the /gaushala ladder
     }
   });
 
-  it('no funnel surface invents a ₹500/month cow tier', () => {
-    for (const rel of ['components/home/WorshipStrip.tsx', 'components/home/IntentTrio.tsx']) {
-      expect(code(rel)).not.toMatch(/₹\s?500\s*(a|\/)\s*month/i);
+  /**
+   * TC-12 — this guard used to loop over WorshipStrip and IntentTrio only, so
+   * it could not see the SUPPLY side of the same funnel. app/list-gaushala
+   * was telling gaushala owners "Devotees can subscribe to ₹500/month 'feed a
+   * cow' plans" four months after DF-06 established that no such tier exists.
+   * The demand-side claim and the supply-side claim are the same false fact
+   * pointed at two different audiences, and the supply one is arguably worse:
+   * a gaushala signs up on the strength of a product feature that was never
+   * built.
+   */
+  it('no demand OR supply surface invents a ₹500/month cow tier', () => {
+    for (const rel of [
+      'components/home/WorshipStrip.tsx',
+      'components/home/IntentTrio.tsx',
+      ...SUPPLY_PAGES,
+    ]) {
+      expect(code(rel), `${rel} quotes a monthly cow tier the ladder does not offer`).not.toMatch(
+        /₹\s?500\s*(a|\/)\s*month/i,
+      );
     }
+  });
+
+  it('the /list-gaushala pitch quotes prices the ladder actually holds', async () => {
+    const { GAUSHALA_PLANS } = await import('../lib/gaushala-plans');
+    const src = code('app/list-gaushala/page.tsx');
+    const quoted = src.match(/₹\s?[\d,]+/g) ?? [];
+    const known = new Set(GAUSHALA_PLANS.map((p) => p.price.replace(/\s/g, '')));
+    for (const q of quoted) {
+      expect(known.has(q.replace(/\s/g, '')), `${q} is not a tier /gaushala offers`).toBe(true);
+    }
+  });
+});
+
+/**
+ * TC-12 — the supply-acquisition pages promised an audience size and a
+ * settlement date.
+ *
+ * app/list-temple carried "Live darshan to 10,000+ devotees", "Reach 10,000+
+ * devotees on Darshya" and "Settlements within 7 days". Those are already
+ * gone (every surviving match in that file is a comment recording the
+ * removal, and __tests__/trust-copy-lane.tc01-tc13.test.tsx pins it), but
+ * nothing stopped the same two claims reappearing on the other five supply
+ * pages.
+ *
+ * __tests__/supply-page-claims.test.ts, which does cover all six, cannot
+ * catch either: its headcount regex enumerates supply nouns (pandits,
+ * temples, astrologers…) and omits "devotees" entirely — and would not match
+ * "10,000+" across the comma even if it did — while its payout regex covers
+ * only /every Monday/ and /(earn|get paid|paid) weekly/, not a settlement
+ * window stated in days. These two close that gap.
+ *
+ * Both read comment-stripped source, so the explanatory block at the top of
+ * app/list-temple/page.tsx — which quotes the banned strings verbatim in
+ * order to record why they went — does not trip the guard that bans them.
+ */
+describe('TC-12 — no supply page promises an audience or a settlement date', () => {
+  /** "10,000+ devotees", "reach 5000 devotees". */
+  const DEVOTEE_AUDIENCE = /\b\d[\d,]*\s*\+?\s*(verified\s+)?devotees\b/i;
+
+  /** "Settlements within 7 days", "7-day settlement", "settled in 48 hours". */
+  const SETTLEMENT_WINDOW =
+    /(settle\w*\s+(with)?in\s+\d|\b\d+\s*-\s*(day|hour|week)\s+settlement|\bpayouts?\s+(with)?in\s+\d)/i;
+
+  it.each(SUPPLY_PAGES)('%s claims no devotee audience size', (rel) => {
+    expect(code(rel)).not.toMatch(DEVOTEE_AUDIENCE);
+  });
+
+  it.each(SUPPLY_PAGES)('%s promises no fixed settlement window', (rel) => {
+    expect(code(rel)).not.toMatch(SETTLEMENT_WINDOW);
+  });
+
+  it('the guards have teeth — they flag the strings that actually shipped', () => {
+    expect('Live darshan to 10,000+ devotees').toMatch(DEVOTEE_AUDIENCE);
+    expect('Reach 10,000+ devotees on Darshya').toMatch(DEVOTEE_AUDIENCE);
+    expect('Settlements within 7 days.').toMatch(SETTLEMENT_WINDOW);
+    expect('7-day settlement').toMatch(SETTLEMENT_WINDOW);
+    // ...and do not flag the honest copy that replaced them.
+    expect('Devotees book pujas with you directly').not.toMatch(DEVOTEE_AUDIENCE);
+    expect('Payouts are released once your Aadhaar is verified').not.toMatch(SETTLEMENT_WINDOW);
   });
 });
 

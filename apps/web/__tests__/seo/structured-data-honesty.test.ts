@@ -158,11 +158,49 @@ describe('[SEO-05] temple markup carries no invented rating', () => {
     expect(/ratingValue/.test(src)).toBe(false);
   });
 
-  it('still renders the trust score as what it is', () => {
-    // The metric itself is fine and useful — the defect was labelling it a
-    // rating in machine-readable markup. Removing the JSON-LD must not silently
-    // remove the honest on-page presentation too.
-    expect(src).toMatch(/trustScore/);
+  /**
+   * Rewritten 2026-08-28 (TC-07), deliberately, because it encoded a contract
+   * that has since been superseded.
+   *
+   * It was `expect(src).toMatch(/trustScore/)` under the comment "the metric
+   * itself is fine and useful — removing the JSON-LD must not silently remove
+   * the honest on-page presentation too". TC-07 established that the metric is
+   * NOT fine: `Temple.trustScore` has no writer anywhere in the codebase, and
+   * every value in the database is one of twenty literals typed into
+   * apps/api/prisma/seed.ts before the platform had taken a booking. There is
+   * no honest on-page presentation to protect while `TRUST_SCORE_IS_COMPUTED`
+   * is false, so an assertion demanding one was pulling the wrong way.
+   *
+   * (A handoff note claimed the old assertion passed only on this page's own
+   * TC-07 COMMENTS. That is wrong and is recorded here so it is not repeated:
+   * `read()` above already strips comments, and in the stripped source
+   * `trustScore` still occurs twice, at page.tsx:380 and :383. The real
+   * weakness was subtler — both occurrences are *inside the gate expression*
+   * `canPublishTrustScore(apiTemple?.trustScore)`, so the regex could not tell
+   * "renders the score" from "gates the score away", which is the single
+   * distinction it existed to make.)
+   *
+   * What survives from the original intent is the reason the score was GATED
+   * rather than deleted: the presentation must be able to come back the day a
+   * writer lands, by flipping one flag. That requires the wiring to still be
+   * present as code.
+   */
+  it('keeps the score wired behind the honesty gate, so it returns when a writer lands', () => {
+    expect(src).toMatch(/canPublishTrustScore\(/);
+    expect(src).toMatch(/formatTrustScoreOutOf\(/);
+    // Never the weaker gate: `hasMeaningfulTrustScore` asks only whether the
+    // number is thick enough to render, not whether anything computes it.
+    expect(src).not.toMatch(/hasMeaningfulTrustScore/);
+    // Every print is behind a gate — the assertion the old regex could not make.
+    const prints = (src.match(/formatTrustScoreOutOf\(/g) ?? []).length;
+    const gates = (src.match(/canPublishTrustScore\(/g) ?? []).length;
+    expect(gates).toBeGreaterThanOrEqual(prints);
+  });
+
+  it('the gate really is closed, so nothing renders today', async () => {
+    const mod = await import('../../lib/trust-score');
+    expect(mod.TRUST_SCORE_IS_COMPUTED).toBe(false);
+    expect(mod.canPublishTrustScore(5)).toBe(false);
   });
 });
 

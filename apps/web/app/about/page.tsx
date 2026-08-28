@@ -281,7 +281,7 @@ export default async function AboutPage() {
 
             <h1
               data-reveal="up"
-              className="mt-7 max-w-4xl font-display text-[2.5rem] font-semibold leading-[1.05] tracking-tight text-surface-900 sm:text-[4.5rem]"
+              className="mt-7 max-w-[56rem] font-display text-[2.5rem] font-semibold leading-[1.05] tracking-tight text-surface-900 sm:text-[4.5rem]"
             >
               Two founders.
               <br />

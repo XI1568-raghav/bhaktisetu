@@ -265,7 +265,15 @@ export const yatras: Yatra[] = [
  {
  slug: 'jyotirlinga-yatra',
  title: '12 Jyotirlingas Yatra',
- subtitle: 'The twelve self-manifested Shiva shrines',
+ // CI-12: was 'The twelve self-manifested Shiva shrines'. Only 9 of the 12
+ // records in lib/jyotirlingas.ts carry `swayambhu: true` — Somnath, Kashi
+ // Vishwanath and Rameshwar are all `false` — so the qualifier contradicted
+ // the product's own dataset on two reader-facing routes (app/yatra/page.tsx
+ // and app/yatra/[slug]/page.tsx). "Shrines of light" is the Jyotirlinga
+ // gloss itself and claims nothing about who installed the linga; the
+ // `longDescription` below already says it correctly. Guarded by
+ // __tests__/discover-shloka-swayambhu.ci12.test.tsx.
+ subtitle: 'The twelve Shiva shrines of light',
  description:
  'A comprehensive 16-day pilgrimage covering all 12 Jyotirlingas across 9 states — from Somnath in Gujarat to Rameswaram in Tamil Nadu.',
  longDescription:
