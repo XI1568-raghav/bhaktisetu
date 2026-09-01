@@ -145,7 +145,16 @@ jobs:
         run: |
           set -euo pipefail
           BASE="${{ steps.range.outputs.from }}"
-          git diff --unified=0 "$BASE"...HEAD -- '*.md' > /tmp/docs.diff ||             git diff --unified=0 "$BASE" HEAD -- '*.md' > /tmp/docs.diff
+          # `docs/audit/**` is EXCLUDED, and that is not a loophole — it is the
+          # one directory whose job is to quote defects verbatim. The audit
+          # ledger records findings in their own words; a row reading "it says
+          # push a revert, but both services are autoDeploy:false" is the
+          # DESCRIPTION of the problem, not a recurrence of it. Verified: without
+          # this exclusion the scan failed on exactly that row in
+          # delta-completion-2026-08-20.md, i.e. on the finding that motivated
+          # the scan. Rewording it to satisfy a grep would have falsified the
+          # audit record, which is worse than the drift the scan prevents.
+          git diff --unified=0 "$BASE"...HEAD -- '*.md' ':!docs/audit' > /tmp/docs.diff ||             git diff --unified=0 "$BASE" HEAD -- '*.md' ':!docs/audit' > /tmp/docs.diff
           # Added lines only (leading '+', not the +++ file header).
           # Added lines, EXCLUDING markdown blockquotes. A correction has to
           # quote the retired claim in order to refute it, and this repo writes
