@@ -72,64 +72,25 @@ jobs:
       #
       # Free tier: ~5s on an already-checked-out runner, ~20 PRs/mo => <2 min/mo.
       - name: Secret scan (added lines only)
+        # Calls scripts/secret-scan.mjs rather than carrying a copy of it.
+        #
+        # This step USED to inline its own ~60-line duplicate of the scanner's
+        # rule table and placeholder allowlist. The two then diverged, exactly
+        # the way DI-05 diverged: `scripts/secret-scan.mjs` grew an exact-path
+        # EXEMPT_FILES entry for itself and its own test file — whose fixtures
+        # are credential-SHAPED by necessity, since a scanner test must contain
+        # the patterns it detects — and the inline copy never got it. CI ran the
+        # unhardened duplicate and failed PR #249 on ten "secrets" that were all
+        # test vectors in scripts/test/secret-scan.test.mjs.
+        #
+        # One implementation, with tests. The standalone reads a diff on stdin,
+        # exits 1 on a hit, and prints file:line and the rule name but never the
+        # value. Its exemption is exact-path, not a prefix, and there is a test
+        # asserting that scripts/secret-scan.mjs.bak is still scanned.
         run: |
           set -euo pipefail
           BASE="${{ steps.range.outputs.from }}"
-          git diff --unified=0 "$BASE"...HEAD > /tmp/pr.diff || git diff --unified=0 "$BASE" HEAD > /tmp/pr.diff
-          node --input-type=module <<'NODE'
-          import { readFileSync } from 'node:fs';
-
-          const RULES = [
-            ['postgres-dsn-with-password', /postgres(?:ql)?:\/\/[^\s:@/]+:([^\s@/]+)@[^\s/]+/g],
-            ['jwt-like-key',               /\b(eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})\b/g],
-            ['razorpay-live-key',          /\b(rzp_live_[A-Za-z0-9]{10,})\b/g],
-            ['github-token',               /\b(ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})\b/g],
-            ['resend-api-key',             /\b(re_[A-Za-z0-9]{8}_[A-Za-z0-9]{20,})\b/g],
-            ['aws-access-key-id',          /\b(AKIA[0-9A-Z]{16})\b/g],
-            ['private-key-block',          /(-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----)/g],
-          ];
-
-          // A value that is obviously a placeholder is not a leak. Keep this
-          // list tight: every entry here is a way for a real secret to pass.
-          const PLACEHOLDER =
-            /^(?:pw|pass|password|passwd|secret|changeme|example|test|dummy|placeholder|redacted|xxx+|yyy+|\*+|\.\.\.|your[-_a-z]*|my[-_a-z]*|<[^>]*>|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|%[A-Z_]+%|\[[^\]]*\])$/i;
-          const looksPlaceholder = (v) =>
-            PLACEHOLDER.test(v) || v.includes('<') || v.includes('$') || v.includes('...') || v.length < 8;
-
-          const diff = readFileSync('/tmp/pr.diff', 'utf8');
-          let file = '(unknown)';
-          let hunkLine = 0;
-          const hits = [];
-
-          for (const raw of diff.split('\n')) {
-            if (raw.startsWith('+++ b/')) { file = raw.slice(6); hunkLine = 0; continue; }
-            const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)/.exec(raw);
-            if (hunk) { hunkLine = Number(hunk[1]); continue; }
-            if (!raw.startsWith('+') || raw.startsWith('+++')) continue;
-            const line = raw.slice(1);
-            const n = hunkLine++;
-            // The scanner's own rule table is not a leak.
-            if (file === '.github/workflows/commitlint.yml') continue;
-            for (const [name, re] of RULES) {
-              re.lastIndex = 0;
-              let m;
-              while ((m = re.exec(line)) !== null) {
-                const value = m[1] ?? m[0];
-                if (name !== 'private-key-block' && looksPlaceholder(value)) continue;
-                hits.push({ file, line: n, name });
-              }
-            }
-          }
-
-          if (hits.length > 0) {
-            for (const h of hits) {
-              console.log(`::error file=${h.file},line=${h.line}::Possible secret (${h.name}) on an added line. The value is not printed. Remove it, then ROTATE it — a commit is enough to require rotation. See docs/runbooks/secret-rotation.md.`);
-            }
-            console.log(`\n${hits.length} possible secret(s) in this PR. Nothing was printed.`);
-            process.exit(1);
-          }
-          console.log('Secret scan: no credential-shaped values on added lines.');
-          NODE
+          { git diff --unified=0 "$BASE"...HEAD || git diff --unified=0 "$BASE" HEAD; }             | node scripts/secret-scan.mjs
 
       - name: Rollback-honesty scan (added lines only)
         # OPS-06. There IS a guard for this prose — scripts/test/ops-runbook-honesty.test.mjs
