@@ -7,6 +7,7 @@ import { H1 } from '../../components/ui/heading-recipe';
 import { getDeityImage, remoteImage, remoteSrcSet, IMG_W } from "../../lib/images";
 import { getPujaTypes, type PujaType } from "../../lib/api";
 import { getPujaCompletionCounts } from "../../lib/social-proof";
+import { pujaCardBlurb } from '../../lib/puja-blurb';
 import { pujaCategoryLabel } from "../../lib/puja-labels";
 // PF-06: the fee has to come from the same module the wizard and the detail
 // hero read, or the catalogue starts advertising a number checkout will not
@@ -49,11 +50,14 @@ export const revalidate = 600;
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pujas' },
- title: "Book Online Pujas at Verified Indian Temples",
+ title: "Book Online Pujas at Indian Temples",
  description:
  // CM-06: this description used to advertise dual-currency NRI pricing.
  // There is no foreign-currency rail; Razorpay bills every card in INR.
- "Book authentic pujas at renowned temples across India. Verified pandits, live video streaming, worldwide prasad delivery to your doorstep, and international cards billed in INR. Choose from a curated catalogue of sacred Hindu rituals.",
+ // TC-08: "Verified pandits" and a "Verified Indian Temples" title named a
+ // vetting step nothing performs — the temple list is filtered on
+ // isActive, and Priest.isVerified has no writer outside prisma/seed.ts.
+ "Book authentic pujas at renowned temples across India. Video proof of every ceremony, live video streaming, worldwide prasad delivery to your doorstep, and international cards billed in INR. Choose from a curated catalogue of sacred Hindu rituals.",
 };
 
 // DB-04 / PF-02 (2026-08-12): these four lists used to be rendered into
@@ -170,7 +174,11 @@ function mapPujaTypeToCard(p: PujaType, idx: number): PujaCard {
  tagColor,
  hasLiveStream: true,
  hasPrasadDelivery: p.samagriIncluded,
- description: p.description || `${p.name} performed by verified pandits.`,
+ // TC-08: the fallback read "performed by verified pandits". Nothing in
+ // the product verifies a pandit — Priest.isVerified/.verificationStatus/
+ // .aadhaarVerified have no writer outside prisma/seed.ts, and
+ // aadhaarVerified is read once, in payment.service.ts, as a payout gate.
+ description: p.description || `${p.name}, performed at a temple you choose, with video proof of the ceremony.`,
  imageUrl: firstImage,
  };
 }
@@ -418,7 +426,7 @@ export default async function PujasPage({
  Pandits at your home
  </h2>
  <p className="text-sm text-surface-500 mt-1">
- Book verified pandits for home pujas and marriage ceremonies.
+ Book a pandit for home pujas and marriage ceremonies, with video proof of the ceremony.
  </p>
  </div>
  </div>
@@ -479,8 +487,16 @@ export default async function PujasPage({
  </p>
  <div className="mt-6 flex items-center gap-4 text-xs text-white/90">
  <span className="flex items-center gap-1.5">
+{/* TC-08 (P1, trust) — this read "Vedic certified": three static words,
+     identical for every visitor, on a card quoting a starting price, naming a
+     certification no step in the product awards or checks. `Priest.isVerified`,
+     `.verificationStatus` and `.aadhaarVerified` have no writer outside
+     apps/api/prisma/seed.ts, and `.aadhaarVerified` is read in exactly one
+     place — payment.service.ts, as a PAYOUT gate. The identical badge on
+     /pujas/marriage was corrected to the payout gate in an earlier pass and
+     this copy of it, one file away, was left standing. */}
  <Shield className="w-3.5 h-3.5" />
- Vedic certified
+ Pandit paid only after Aadhaar KYC
  </span>
  <span className="flex items-center gap-1.5">
  <Sparkles className="w-3.5 h-3.5" />
@@ -724,8 +740,14 @@ export default async function PujasPage({
  <h3 className="text-lg font-semibold text-surface-800 group-hover:text-saffron-600 transition-colors">
  {puja.name}
  </h3>
- <p className="text-sm text-surface-500 mt-1 line-clamp-2">
- {puja.description}
+ {/* CM-10: `line-clamp-2` hid the ~1,144-char scripture excerpt from a
+     sighted reader and shipped every character of it anyway — into the DOM,
+     into the accessibility tree and over the wire, on every card in the grid.
+     `pujaCardBlurb` returns whole leading sentences up to 140 chars, so the
+     card carries a real sentence instead of a truncated wall. Replace with a
+     hand-written `shortDescription` the day apps/api returns one. */}
+ <p className="text-sm text-surface-500 mt-1">
+ {pujaCardBlurb(puja.description)}
  </p>
 
  <div className="flex items-center gap-3 mt-3 text-sm">

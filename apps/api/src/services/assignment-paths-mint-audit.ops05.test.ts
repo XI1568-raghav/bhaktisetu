@@ -91,6 +91,12 @@ function armMintGuardsAndLookup() {
   prismaMock.payment.count.mockResolvedValue(1 as never);
   prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1' } as never);
   prismaMock.commission.create.mockResolvedValue({ id: 'cm-new' } as never);
+  // DI-06 (F367): the mint inserts through createMany({ skipDuplicates }) —
+  // ON CONFLICT DO NOTHING against the UNIQUE index on commissions.booking_id,
+  // so the loser of a two-rail race writes nothing instead of raising P2002 and
+  // aborting the assignment transaction. `count: 1` means "this call wrote it",
+  // which is what makes the mint report 'minted' and log the money event.
+  prismaMock.commission.createMany.mockResolvedValue({ count: 1 } as never);
 }
 
 function mintEvents(): Array<Record<string, unknown>> {
@@ -144,11 +150,11 @@ describe('OPS-05 — DispatchService.accept records the mint it performs', () =>
   it('records the mint AFTER the assignment transaction, never inside it', async () => {
     await service.accept('booking-1', 'priest-1');
 
-    // commission.create runs inside the tx; the audit write must come after it
+    // the commission insert runs inside the tx; the audit write must come after it
     // AND after the transaction resolves. Ordering is the only observable
     // difference between "logged safely" and "logged inside the tx", and the
     // latter can roll back a pandit's assignment when the audit table is bad.
-    const mintAt = prismaMock.commission.create.mock.invocationCallOrder[0]!;
+    const mintAt = prismaMock.commission.createMany.mock.invocationCallOrder[0]!;
     const auditAt = recordMoneyEventSpy.mock.invocationCallOrder[0]!;
     expect(mintAt).toBeLessThan(auditAt);
   });
@@ -162,11 +168,12 @@ describe('OPS-05 — DispatchService.accept records the mint it performs', () =>
     prismaMock.commission.findFirst.mockReset();
     prismaMock.commission.findFirst.mockResolvedValue({ id: 'cm-existing' } as never);
     prismaMock.commission.create.mockClear();
+    prismaMock.commission.createMany.mockClear();
     recordMoneyEventSpy.mockClear();
 
     await service.accept('booking-1', 'priest-1');
 
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
     // An earlier call minted and already logged it. A second row here would
     // double-count one earning in a log whose purpose is to be summable.
     expect(mintEvents()).toHaveLength(0);
@@ -204,7 +211,7 @@ describe('OPS-05 — PriestService.acceptBooking records the mint it performs', 
 
   it('records the mint AFTER the assignment transaction', async () => {
     await service.acceptBooking('priest-1', 'booking-1');
-    const mintAt = prismaMock.commission.create.mock.invocationCallOrder[0]!;
+    const mintAt = prismaMock.commission.createMany.mock.invocationCallOrder[0]!;
     const auditAt = recordMoneyEventSpy.mock.invocationCallOrder[0]!;
     expect(mintAt).toBeLessThan(auditAt);
   });

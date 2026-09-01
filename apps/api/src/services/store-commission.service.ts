@@ -57,13 +57,25 @@ export async function writeStoreOrderCommission(
   const storeShare = total.mul(new Prisma.Decimal(1).minus(platformRate));
   const percentage = total.gt(0) ? platformRate : new Prisma.Decimal(0);
 
-  await tx.commission.create({
-    data: {
-      storeOrderId: order.id,
-      providerId: storeProfile.userId,
-      amount: storeShare,
-      percentage,
-      status: 'PENDING',
-    },
+  // DI-06 (F367): `createMany({ skipDuplicates })`, not `create`. Migration
+  // 20260824000000 adds UNIQUE `commissions_store_order_id_key`, and this
+  // writer runs inside the caller's `$transaction` — a bare INSERT losing that
+  // race would raise 23505/P2002, and a statement error aborts the whole
+  // Postgres transaction (Prisma issues no savepoint), rolling back a real
+  // capture. `skipDuplicates` compiles to ON CONFLICT DO NOTHING, which is not
+  // an error, so the loser writes nothing and the transaction survives. Where
+  // the constraint is absent this is byte-for-byte the old behaviour. The full
+  // rationale lives at payment.service.writePujaCommissionOnConfirm.
+  await tx.commission.createMany({
+    data: [
+      {
+        storeOrderId: order.id,
+        providerId: storeProfile.userId,
+        amount: storeShare,
+        percentage,
+        status: 'PENDING',
+      },
+    ],
+    skipDuplicates: true,
   });
 }

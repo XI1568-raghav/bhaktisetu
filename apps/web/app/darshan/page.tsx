@@ -9,6 +9,8 @@ import {
 } from '../../lib/api';
 import DarshanBrowser from '../../components/DarshanBrowser';
 import DarshanScheduleRemindButton from '../../components/DarshanScheduleRemindButton';
+// NOTIF-15: the real, server-registered reminder. See the section below.
+import AartiOptIn from '../../components/AartiOptIn';
 import { darshanScheduleRows } from '../../lib/darshan-schedule';
 import { H1 } from '../../components/ui/heading-recipe';
 
@@ -342,6 +344,32 @@ export default async function DarshanPage() {
  <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-6">
  {t('scheduleSection')}
  </h2>
+
+ {/*
+   NOTIF-15 — the reminder that actually reaches a server.
+
+   The bell on each row below writes to localStorage and nothing else: no
+   fetch, no push subscription, no scheduled row, and there is no
+   DarshanReminder model for it to write to. An earlier pass made that
+   control HONEST — it is a bookmark icon now, it says "Saved on this
+   device", and it no longer claims a reminder was set — but honest is
+   not the same as delivered, and the page still offered no way to be
+   told about an aarti at all.
+
+   `AartiOptIn` is the other half, and it already existed: it requests
+   notification permission, subscribes through PushManager and POSTs the
+   endpoint to /notifications/register-token with `aartiOptIn: true`, so
+   the server knows and the aarti job has something to read. It was
+   imported by NOTHING in app/ — a working control nobody could reach.
+   Mounted here, at the top of the schedule the finding is about, the
+   page finally offers a reminder that leaves the browser.
+
+   The per-row bookmarks stay: they are a useful device-local shortlist
+   and they no longer lie about what they are.
+ */}
+ <div className="mb-6 max-w-xl">
+ <AartiOptIn />
+ </div>
 
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">
  <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-[var(--color-border)] text-sm font-semibold text-surface-400">

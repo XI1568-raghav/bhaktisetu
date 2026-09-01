@@ -11,6 +11,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import { getMyReviews, type StoreReview } from '../../../lib/store-admin-api';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -52,7 +53,7 @@ export default function StoreAdminReviewsPage() {
       const rows = await getMyReviews(token);
       setReviews(rows);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load reviews');
+      setError(userFacingMessage(err, 'We could not load your reviews. Please try again.'));
     } finally {
       setLoading(false);
     }

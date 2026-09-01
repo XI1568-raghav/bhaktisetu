@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { HAS_80G, RECEIPT_NOUN_PLURAL } from '../../../lib/eighty-g';
 
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'దర్శ్యా హైదరాబాద్ — పూజ, దర్శనం, పంచాంగం (తెలుగులో)',
   description:
-    'హైదరాబాద్ మెట్రోలో ధృవీకరించబడిన పండితులు + 5 యాంకర్ ఆలయాలు (బిర్లా మందిర్, చిల్కూర్ బాలాజీ, భాగ్యలక్ష్మి, జగన్నాథ్, యాదగిరిగుట్ట లింక్) — వీడియో ప్రూఫ్‌తో పూజ, ప్రత్యక్ష దర్శనం, 80G రసీదు.',
+    `హైదరాబాద్ మెట్రోలో ధృవీకరించబడిన పండితులు + 5 యాంకర్ ఆలయాలు (బిర్లా మందిర్, చిల్కూర్ బాలాజీ, భాగ్యలక్ష్మి, జగన్నాథ్, యాదగిరిగుట్ట లింక్) — వీడియో ప్రూఫ్‌తో పూజ, ప్రత్యక్ష దర్శనం, ${HAS_80G ? '80G రసీదు' : 'రసీదు'}.`,
   alternates: {
     canonical: 'https://darshya.online/te/hyderabad',
     languages: {
@@ -113,7 +114,7 @@ export default function TeluguHyderabadLanding() {
     '@type': 'LocalBusiness',
     name: 'దర్శ్యా హైదరాబాద్',
     description:
-      'Verified pandits + 5 anchor temples in Hyderabad metro. Telugu-language puja booking + live darshan + 80G receipts.',
+      `Verified pandits + 5 anchor temples in Hyderabad metro. Telugu-language puja booking + live darshan + ${RECEIPT_NOUN_PLURAL}.`,
     url: 'https://darshya.online/te/hyderabad',
     areaServed: { '@type': 'City', name: 'Hyderabad', sameAs: 'https://en.wikipedia.org/wiki/Hyderabad' },
     address: {
@@ -146,7 +147,7 @@ export default function TeluguHyderabadLanding() {
           దర్శ్యా హైదరాబాద్
         </h1>
         <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
-          బిర్లా మందిర్ నుండి చిల్కూర్ బాలాజీ వరకు — హైదరాబాద్ మెట్రోలోని 5 యాంకర్ ఆలయాల వద్ద ధృవీకరించబడిన పండితులతో పూజ, వీడియో ప్రూఫ్, ప్రత్యక్ష దర్శనం, 80G రసీదు.
+          బిర్లా మందిర్ నుండి చిల్కూర్ బాలాజీ వరకు — హైదరాబాద్ మెట్రోలోని 5 యాంకర్ ఆలయాల వద్ద ధృవీకరించబడిన పండితులతో పూజ, వీడియో ప్రూఫ్, ప్రత్యక్ష దర్శనం, {HAS_80G ? '80G రసీదు' : 'రసీదు'}.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link

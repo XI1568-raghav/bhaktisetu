@@ -62,7 +62,7 @@ function arrangeTemplePathAssignment(overrides: { commissionExists?: boolean } =
   prismaMock.commission.findFirst.mockResolvedValue(
     (overrides.commissionExists ? { id: 'c-existing' } : null) as never,
   );
-  prismaMock.commission.create.mockResolvedValue({ id: 'c-new' } as never);
+  prismaMock.commission.createMany.mockResolvedValue({ count: 1 } as never);
   prismaMock.priest.findUnique.mockResolvedValue({
     id: PRIEST_ROW_ID,
     userId: PANDIT_USER_ID,
@@ -83,8 +83,8 @@ describe('DI-05 — attaching the pandit mints the earning he is owed', () => {
 
     await service.updateBookingStatus('booking-1', 'priest_assigned' as any);
 
-    expect(prismaMock.commission.create).toHaveBeenCalledTimes(1);
-    const data = prismaMock.commission.create.mock.calls[0]![0].data;
+    expect(prismaMock.commission.createMany).toHaveBeenCalledTimes(1);
+    const data = (prismaMock.commission.createMany.mock.calls[0]![0] as { data: any[] }).data[0];
     expect(data.bookingId).toBe('booking-1');
     // The payout engine reads a User.id — writing the Priest row id here is
     // what orphaned every earlier row (RV-04).
@@ -102,7 +102,7 @@ describe('DI-05 — attaching the pandit mints the earning he is owed', () => {
 
     await service.updateBookingStatus('booking-1', 'priest_assigned' as any);
 
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 
   it('does not mint for an UNPAID booking', async () => {
@@ -111,7 +111,7 @@ describe('DI-05 — attaching the pandit mints the earning he is owed', () => {
 
     await service.updateBookingStatus('booking-1', 'priest_assigned' as any);
 
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 
   it('does not mint when the transition is a cancellation', async () => {
@@ -130,6 +130,6 @@ describe('DI-05 — attaching the pandit mints the earning he is owed', () => {
 
     await service.updateBookingStatus('booking-1', 'cancelled' as any);
 
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 import { OnboardScreen, ExtraTextField } from './_form';
+import { HAS_80G } from '../../lib/eighty-g';
 
 const BENEFITS = [
   {
@@ -10,8 +11,10 @@ const BENEFITS = [
     body: 'Devotees book pujas at your temple with full sankalp + video proof. Settlements within 7 days.',
   },
   {
-    title: '80G donation receipts',
-    body: 'If your trust is 80G-registered, devotees can donate online and receive instant tax receipts.',
+    title: HAS_80G ? '80G donation receipts' : 'Instant donation receipts',
+    body: HAS_80G
+      ? 'If your trust is 80G-registered, devotees can donate online and receive instant tax receipts.'
+      : 'Devotees donate online and receive a numbered receipt PDF by email. It is proof of payment, not a tax-exemption certificate — Darshya cannot issue 80G documents yet.',
   },
   {
     title: 'Analytics + devotee CRM',
@@ -25,7 +28,7 @@ export default function ListTempleScreen() {
       role="TEMPLE"
       eyebrow="For Temple Trusts"
       title="Reach 10,000+ devotees on Darshya"
-      subtitle="List your temple in minutes. Take live darshan, puja bookings and 80G donations online — with verified devotees and transparent payouts."
+      subtitle={`List your temple in minutes. Take live darshan, puja bookings and ${HAS_80G ? '80G donations' : 'donations'} online — with transparent payouts.`}
       benefits={BENEFITS}
       ctaLabel="Apply to list my temple"
       renderExtras={(extras, setExtra) => (

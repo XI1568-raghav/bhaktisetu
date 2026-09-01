@@ -20,9 +20,24 @@ const TARGETS = [
   { name: 'feed', url: `${WEB_BASE}/feed.xml` },
   { name: 'robots', url: `${WEB_BASE}/robots.txt` },
   // API — health + public surfaces
-  { name: 'api-health', url: `${API_BASE}/healthz` },
+  // `/health`, NOT `/healthz` -- the second permanently-red target in this list.
+  // server.ts registers healthChannelRoutes at `/health` and `/api/v1/health`
+  // only; nothing has ever answered `/healthz`. Verified against production:
+  // /healthz -> 404, /health -> 200 {"status":"ok"}.
+  { name: 'api-health', url: `${API_BASE}/health` },
   { name: 'api-temples', url: `${API_BASE}/api/v1/temples?limit=1` },
-  { name: 'api-pujas', url: `${API_BASE}/api/v1/puja-types?limit=1` },
+  // `/api/v1/pujas/types`, NOT `/api/v1/puja-types`. The latter has never been a
+  // route -- pujaRoutes is registered at the `/api/v1/pujas` prefix and declares
+  // `/types` inside it -- so this target returned 404 on every run since the
+  // pinger was written, and the daily report has always carried one permanent
+  // failure.
+  //
+  // That is worse than a missing check. A monitor with a target that is always
+  // red teaches its reader that red is the normal colour, which is the same
+  // failure mode that let the 2026-08-17 Render suspension serve 503s for three
+  // days before anyone noticed. Verified against production: /api/v1/puja-types
+  // -> 404, /api/v1/pujas/types -> 200.
+  { name: 'api-pujas', url: `${API_BASE}/api/v1/pujas/types?limit=1` },
 ];
 
 const SLOW_MS = 3000;

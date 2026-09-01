@@ -140,7 +140,12 @@ const SUBJECTS: Record<string, string> = {
   wellness_followup_3day: 'Re: Darshya wellness instructor partnership',
   wellness_followup_7day: 'Last reminder — Darshya wellness slot',
   wellness_followup_14day: 'Gentle nudge — आपकी wellness instructor पूछताछ खुली है',
-  gaushala_first_touch: 'Darshya — आपकी गौशाला के लिए 80G donation platform',
+  // TC-01: this subject line promised an 80G platform to gaushala trusts.
+  // Darshya holds no Section 80G registration and no route writes the donee
+  // columns (gaushala_profiles.regn_80g / .pan) that would let one issue an
+  // 80G receipt through us, so a trust reading this subject was being
+  // recruited on a capability the product does not have.
+  gaushala_first_touch: 'Darshya — आपकी गौशाला के लिए online donation platform',
   gaushala_followup_3day: 'Re: Darshya gaushala partnership',
   gaushala_followup_7day: 'Last reminder — Darshya gaushala slot',
   gaushala_followup_14day: 'Gentle nudge — आपकी गौशाला partnership पूछताछ खुली है',

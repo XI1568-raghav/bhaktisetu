@@ -793,9 +793,9 @@
   "workflow": "launch-readiness-delta",
   "line": 353,
   "title": "NRI Premium ₹5,000/year sells at least two benefits that do not exist",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": "Two reasons. (1) Lane: the feature list is server data in apps/api, explicitly DO-NOT-TOUCH for this cluster, and it is what /pricing renders verbatim"
+  "note": "Verified in the tree rather than accepting 'already correct'. apps/api/src/services/subscription-entitlements.ts:117-123 (enforcedBenefits/nriPremiumFeatures), :143-144 (advertisedFeaturesFor) and :166-167 (nriPremiumIsSellable = enforcedBenefits().length > 0) with all six benefits carrying enforcedBy: null (:52-... each with a concrete blockedBy). subscription.service.ts:343-345 isOfferable and :"
  },
  {
   "key": "F058",
@@ -863,9 +863,9 @@
   "workflow": "launch-readiness-delta",
   "line": 383,
   "title": "Senior astrologers are priced 2-4x below the market ceiling, capping the highest-margin repeat revenue line",
-  "state": "partial",
+  "state": "owner",
   "commit": "wave-45-2026-08-31",
-  "note": ""
+  "note": "THE HEADLINE IS NOT CLOSED AND CANNOT BE BY ME. \"Senior astrologers are priced 2-4x below the market ceiling\" is a pricing decision. MEASURED on live prod today: GET https://api.darshya.online/api/v1/astrology/astrologers/live -> 200, source \"live\", 3 astrologers — Acharya Vinod Sharma (22 yrs) ₹25/min, Dr. Mahesh Iyer (15 yrs) ₹20/min, Ritika Menon (9 yrs) ₹18/min. Nothing in code caps any of the"
  },
  {
   "key": "F063",
@@ -919,9 +919,9 @@
   "workflow": "prod-clickthrough",
   "line": 414,
   "title": "images.darshya.online does not resolve — pandit trust photos are broken on the wedding page",
-  "state": "partial",
+  "state": "fixed",
   "commit": "",
-  "note": "DISPUTED: The code is real and the test is not vacuous — PanditAvatar.tsx is new, both call sites genuinely dropped their `avatarUrl ? <img> : <div>initials</di"
+  "note": "The src clause is genuinely done, not just the onError reaction. apps/web/lib/dead-image-hosts.ts really exists: `DEAD_IMAGE_HOSTS = ['images.darshya.online']` (:52), `isDeadImageHost` parses with `new URL`, rejects non-http(s), lowercases the hostname and uses `DEAD_IMAGE_HOSTS.includes(host)` — exact match, so `cdn.images.darshya.online` and `images.darshya.online.evil.test` are not swallowed (:"
  },
  {
   "key": "F067",
@@ -1381,9 +1381,9 @@
   "workflow": "authenticated-deep",
   "line": 639,
   "title": "No UI anywhere can mark a booking delivered — the final fulfilment step is curl-only",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": "[independently verified] verified: apps/web/__tests__/priest-fulfilment-p1.test.tsx — 2 tests, 2 red before (no button matchi"
+  "note": "Real, end-to-end. apps/web/app/bookings/view/page.tsx:508-544 `confirmReceipt()` PATCHes `${API_BASE_URL}/bookings/${booking.id}` with body `{status:'delivered'}` and a Bearer, throws `UserFacingError(serverErrorText(...), res.status)` on !ok and classifies via `classifyUserFacing` (401 -> ReauthPrompt at :1183). Re-read, not optimistic patch: `setReceiptNonce(n=>n+1)` at :539 and the load effect "
  },
  {
   "key": "F100",
@@ -3117,9 +3117,9 @@
   "workflow": "authenticated-deep",
   "line": 1890,
   "title": "Site tells devotees cancellation inside 24h is 'not permitted' with 'no refund'; the code permits it and owes them 50% or 25%",
-  "state": "wontfix",
+  "state": "fixed",
   "commit": "wave-2026-08-15",
-  "note": "Same two owner decisions as LEG-01 -- whether the unreachable 50%/25% tiers are deleted or made reachable, and the priceAmount-vs-fee-exclusive refund base at a"
+  "note": "Independently verified, not taken on the claim's word. apps/api/src/services/cancellation.service.ts:74 declares DEVOTEE_CANCEL_CUTOFF_HOURS = 24 and :85-88 devoteeCancelAllowed(); booking.service.ts:1147-1149 now compares against that constant and interpolates the message from it (import at booking.service.ts:11). The quote gap the finding names is closed at apps/api/src/routes/bookings.ts:1881-1"
  },
  {
   "key": "F224",
@@ -3551,9 +3551,9 @@
   "workflow": "authenticated-deep",
   "line": 2208,
   "title": "Puja booking does not exist in the app — the Book button opens the production website, and the create-booking hook points at a 404",
-  "state": "partial",
+  "state": "owner",
   "commit": "",
-  "note": "The in-app booking flow itself is not built, and that is the whole remaining L. Both smaller halves were already shipped before this session and I explicitly do"
+  "note": "NO CODE CHANGE BY ME — the ledger note (\"The in-app booking flow itself is not built, and that is the whole remaining L\") is stale. It was built by a later wave, and I verified it rather than taking it on trust.\n\nWhat exists now:\n  * apps/mobile/app/(devotee)/puja-book.tsx — 946 lines: temple, date, slot and sankalp-name selection, POSTing to `${apiBase()}/api/v1/bookings/book` at :277.\n  * apps/m"
  },
  {
   "key": "F255",
@@ -3649,9 +3649,9 @@
   "workflow": "authenticated-deep",
   "line": 2276,
   "title": "Provider earnings and temple payouts/bookings screens exist on web but are missing from the app; the app has no search and almost no content library",
-  "state": "partial",
+  "state": "owner",
   "commit": "",
-  "note": "The v1 mobile scope decision, which is what the finding actually asks for ('Decide the v1 mobile scope explicitly'). I fixed the one item on the list that is a "
+  "note": "NO CODE CHANGE BY ME. The ledger note said the remaining item was \"the v1 mobile scope decision, which is what the finding actually asks for\". That document now exists — docs/mobile-v1-scope.md, 331 lines — and so does everything on the finding's \"at minimum\" list. I checked each clause rather than the note.\n\nThe finding's fix, clause by clause:\n  1. \"At minimum add the three earnings/payouts scre"
  },
  {
   "key": "F262",
@@ -3789,9 +3789,9 @@
   "workflow": "scale-mindset",
   "line": 2981,
   "title": "Card and hero copy is a 1,144-character scripture excerpt; raw enum values like \"special_occasion\" are shown to customers",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": "[independently verified] apps/api CONTRACT CHANGE, out of lane this wave: add a shortDescription/cardBlurb field (100-140 chars, benefit-first) to the puja type model, return it from GE"
+  "note": "apps/web/lib/puja-blurb.ts exists and is a real sentence-boundary implementation (CARD_BLURB_MAX 140, HERO_BLURB_MAX 220, whitespace collapse, sentence split, word-boundary fallback with a single ellipsis) — not a slice. All four call sites are wired and the clamps are actually gone: apps/web/app/pujas/page.tsx:749-750 renders {pujaCardBlurb(puja.description)} in a <p className='text-sm text-surfa"
  },
  {
   "key": "F272",
@@ -4447,9 +4447,9 @@
   "workflow": "scale-mindset",
   "line": 3269,
   "title": "Accept-Language is never negotiated — no i18n config, no middleware locale logic, no redirect",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": "OWNER DECISION, not code: whether a first-time visitor whose browser asks for Hindi should be switched, or only offered. Recommendation is to keep offering unti"
+  "note": "The code-fixable remainder is genuinely closed and the production measurements are real, not restated. All six footer links in apps/web/app/layout.tsx:825-830 now carry `prefetch={false}` (/?lang=en, /hi, /ta, /te, /bn, /mr) — the denominator is six, matching the claim, and I re-enumerated the rest of the locale-switching population: components/LangLanding.tsx:61/78/85/98/112 and app/hi/page.tsx:6"
  },
  {
   "key": "F319",
@@ -4853,9 +4853,9 @@
   "workflow": "scale-mindset",
   "line": 3447,
   "title": "\"Set reminder\" bell on the darshan schedule writes to localStorage and nothing else",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-triage26-final",
-  "note": "apps/web/components is outside this lane. Closing it also needs an API decision that is not free: either a DarshanReminder table (which means a Prisma migration"
+  "note": "The wiring is real and the path reaches the server end to end. apps/web/app/darshan/page.tsx:13 imports and :371 renders `<AartiOptIn />` above the schedule table (previously imported by nothing under app/ — grep for AartiOptIn now returns exactly darshan/page.tsx plus the component itself). The component genuinely leaves the browser: apps/web/components/AartiOptIn.tsx GETs /notifications/vapid-pu"
  },
  {
   "key": "F348",
@@ -5049,9 +5049,9 @@
   "workflow": "scale-mindset",
   "line": 3533,
   "title": "Offline fallback is inconsistent across routes, and nothing recovers when the connection returns",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": "apps/web/public/sw.js and the root layout are outside this lane. Two independent pieces: an 'online' listener that calls router.refresh()/location.reload() plus"
+  "note": "Read the shipped apps/web/public/sw.js in full — the change is real, not a comment. `RUNTIME_CACHE = 'darshya-runtime-v1'` (:46) with `CURRENT_CACHES` (:47) and `RUNTIME_MAX = 30` (:52); `putRuntime()` (:60-71) opens the runtime cache, `cache.put`s, then evicts `keys.slice(0, keys.length - RUNTIME_MAX)` — insertion order, oldest-first, every failure swallowed. The fetch handler writes only through"
  },
  {
   "key": "F362",
@@ -5161,9 +5161,9 @@
   "workflow": "scale-mindset",
   "line": 3583,
   "title": "/admin/revenue and /admin/commissions report figures 5.8x apart, both labelled commissions",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": "apps/web/app/admin/revenue/page.tsx and apps/web/app/admin/commissions/page.tsx still both label their figure 'commissions' with no unit. The API now hands them"
+  "note": "Verified end to end, including the halves attributed to an earlier wave. API: apps/api/src/routes/admin.ts:810-813 groups by percentage over the SAME `where` object built at :781-788 and used by findMany/count (not over the page), and :941-962 reduces it through commission-math into {providerEarningsInr, platformTakeInr, grossInr}, returned at :964. The web gap the claim identifies was real and is"
  },
  {
   "key": "F370",
@@ -5399,9 +5399,9 @@
   "workflow": "scale-mindset",
   "line": 3687,
   "title": "Which pages fail Core Web Vitals in production, and why — structurally",
-  "state": "wontfix",
+  "state": "partial",
   "commit": "wave-2026-08-15",
-  "note": "still partial after wave: Three things, none of which this lane can close. (1) LCP still fails all four measured pages; per the cluster brief TBT "
+  "note": "Was wontfix. Production is live again, so I measured instead of inferring. Everything below is my own measurement, 2026-09-01, mobile UA (Pixel 7 / Chrome 120), median of 3 for timings.\n\nA. ONE RESIDUAL CLOSED IN CODE. The triage's residual 3 was '/ and /gaushala emit zero srcset across 26 <img> tags'. The / half closed in the 2026-08-23 pass. I closed the /gaushala half: app/gaushala/page.tsx:423"
  },
  {
   "key": "F387",
@@ -5679,9 +5679,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Signing out on one device signs the user out of every device, with no indication anywhere that it will",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": ""
+  "note": "Both halves verified independently. MOBILE: apps/mobile/lib/signout-copy.ts exists and exports SIGN_OUT_TITLE / SIGN_OUT_GLOBAL_MESSAGE ('This signs you out on all your devices, not just this one. You will need to sign in again everywhere.'). I re-ran the discovery the test claims to do — `for f in $(grep -rl 'signOut(' apps/mobile/app --include=*.tsx); do grep -q 'Alert.alert' $f && echo $f; done"
  },
  {
   "key": "F407",
@@ -5833,9 +5833,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The new Render suspension guard lives only on a feature branch, so its schedule will never fire",
-  "state": "partial",
+  "state": "owner",
   "commit": "wave-45-final",
-  "note": ""
+  "note": "git ls-tree origin/main .github/workflows/ lists 20 files without render-hours-guard.yml, and gh workflow list --all returns the same 20 -- so no trigger is registered and it installs on merge. BUT reviewing the file surfaced a NEW defect, now fixed: it tested [ \"$susp\" != \"not_suspended\" ], so an expired RENDER_API_KEY (jq yields 'unknown') reported 'production is DOWN' for a healthy site, and th"
  },
  {
   "key": "F418",
@@ -6043,9 +6043,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "/jyotirlinga states every one of the twelve is swayambhu while its own badges mark nine, and /tirth says Mahakaleshwar is the only one",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": ""
+  "note": "Independently measured 9 swayambhu:true / 3 false / 12 total; both pages derive via JYOTIRLINGAS.filter at jyotirlinga/page.tsx:10-11,64-66 and discover/page.tsx:20-21,111. Guard has 2 genuinely fix-coupled assertions that fail against unfixed code, plus a stripper-non-vacuity check. The declined second half is data-backed, not merely arguable: dakshinmukhi true=1 / false=11, so 'the only south-fa"
  },
  {
   "key": "F433",
@@ -6141,9 +6141,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "NRI Premium publishes an unconditional 14-day 'no questions asked' refund and a 90-day pro-rata refund — subscriptionService.cancel() moves no money, and the product's only refund queue cannot see a subscription",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-2026-08-21",
-  "note": ""
+  "note": "Verified in source and by running the cited test. apps/api/src/services/subscription.service.ts:851-856 defines CANCELLATION_NOTICE ('Access ends now, not at the end of the billing period ... No refund is issued automatically...'), returned at line 873 by cancel(), whose only write is line 869-871 `data: { status: 'CANCELLED' }`; isPremium()/getActivePlan() require status ACTIVE (line 519, 860) an"
  },
  {
   "key": "F440",
@@ -6155,9 +6155,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Every one of NRI Premium's six advertised benefits is ungated — the entitlement hook has zero call sites, and the AI paywall does not recognise the plan code the subscription is created with",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": ""
+  "note": "apps/web/lib/use-premium.ts is genuinely absent (ls fails). apps/web/components/useIsPremium.ts:44-46 now returns useEntitlement('ads.suppressed').granted, and apps/web/components/AdSlot.tsx:4/:44 is the live call site, so lib/entitlement.ts has a real importer — tc04-entitlement-client.test.ts ('lib/entitlement.ts has at least one non-test importer') is 14/14 green. The rewritten useIsPremium.tes"
  },
  {
   "key": "F441",
@@ -6253,9 +6253,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "/gaushala asserts every listed gaushala is personally verified with complete financial transparency, over three hardcoded fixtures that award real third-party organisations affiliation badges typed into the source",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-2026-08-21",
-  "note": ""
+  "note": "Both halves check out. Web: apps/web/app/gaushala/page.tsx:50-52 shows the fabricated array and its 'Our Verified Gaushalas'/'personally verified by our team' copy exist only as a removal note, line 407 carries the 'These are sample listings' disclosure, and apps/web/app/gaushala/[id]/page.tsx:324 LISTING_IS_SAMPLE gates the contact block (:788-795), CTA (:711) and detail rows (:603,:632,:639,:723"
  },
  {
   "key": "F448",

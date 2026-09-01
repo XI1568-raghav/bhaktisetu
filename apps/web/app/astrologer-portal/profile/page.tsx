@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { serverErrorMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -143,7 +144,8 @@ function Content() {
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setError(j.error ?? `Failed (${r.status})`);
+        // RES-09: `Failed (500)` was the whole message on a server error.
+        setError(serverErrorMessage(j, 'We could not save your profile. Please try again.'));
         return;
       }
       setSaved(true);

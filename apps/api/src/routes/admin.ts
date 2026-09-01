@@ -827,12 +827,34 @@ export async function adminRoutes(server: FastifyInstance) {
     // Everything derived here goes through lib/commission-math.ts — the whole
     // point of that module is that no reader re-invents `gross = amount /
     // (1 - percentage)` inline and gets a different answer.
+    // DI-07 (F368): the three foreign keys on `commissions` are `text`, and the
+    // primary keys they point at are `uuid`.
+    //
+    //   commissions.booking_id            text  -> puja_bookings.id            uuid
+    //   commissions.store_order_id        text  -> store_orders.id             uuid
+    //   commissions.wellness_enrollment_id text -> wellness_enrollments.id     uuid
+    //
+    // (Measured against production 2026-09-01 via information_schema.columns.)
+    // There is no foreign key on any of them, so nothing at the database layer
+    // stops a non-uuid string landing in one — and the schema note on
+    // Commission.bookingId records that consultation ids WERE slug-shaped until
+    // 2026-08-12. Prisma does not tolerate that: filtering a `@db.Uuid` column
+    // with a malformed uuid raises P2023 ("Error creating UUID"), which this
+    // handler does not catch, so ONE legacy row would 500 the entire admin
+    // commission ledger — the same failure mode this repo already hit on
+    // findUnique (see the uuid guard in routes/bookings.ts GET /slots).
+    //
+    // Filtering the ids to uuid shape degrades that to exactly what a
+    // non-matching id already does: the row renders with a blank booking
+    // number. A missing label on one row is not worth the whole screen.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidsOf = (values: Array<string | null>): string[] =>
+      values.filter((v): v is string => !!v && UUID_RE.test(v));
+
     const providerIds = Array.from(new Set(rows.map((r) => r.providerId)));
-    const bookingIds = rows.map((r) => r.bookingId).filter((id): id is string => !!id);
-    const storeOrderIds = rows.map((r) => r.storeOrderId).filter((id): id is string => !!id);
-    const enrollmentIds = rows
-      .map((r) => r.wellnessEnrollmentId)
-      .filter((id): id is string => !!id);
+    const bookingIds = uuidsOf(rows.map((r) => r.bookingId));
+    const storeOrderIds = uuidsOf(rows.map((r) => r.storeOrderId));
+    const enrollmentIds = uuidsOf(rows.map((r) => r.wellnessEnrollmentId));
 
     // Each lookup is one batched IN over the current page — bounded by pageSize
     // (max 200), never a per-row query.

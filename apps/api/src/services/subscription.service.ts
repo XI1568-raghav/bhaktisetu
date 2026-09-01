@@ -728,10 +728,19 @@ export class SubscriptionService {
     }
 
     const local = await this.cancel(userId);
+    // TC-03: this branch used to answer "Auto-renewal cancelled. Access
+    // continues until end of current billing cycle." Razorpay is asked to stop
+    // at cycle end (cancelAtCycleEnd = 1 above), which is true of the BILLING.
+    // It is not true of ACCESS: `this.cancel(userId)` on the line above flips
+    // the local MarketplaceSubscription row to CANCELLED right now, and
+    // isPremium()/getActivePlan() both require ACTIVE. So the devotee loses the
+    // entitlement immediately even though the card is not charged again. Say
+    // both halves rather than the flattering one.
     return {
       cancelled: local.cancelled || !!rzpSubId,
       message: rzpSubId
-        ? 'Auto-renewal cancelled. Access continues until end of current billing cycle.'
+        ? 'Auto-renewal cancelled — your card will not be charged again. ' +
+          SubscriptionService.CANCELLATION_NOTICE
         : local.message,
     };
   }
@@ -815,6 +824,36 @@ export class SubscriptionService {
     }
   }
 
+  /**
+   * TC-03 (P0, trust) — what cancelling actually does, said in the response.
+   *
+   * `cancel()` used to answer "Subscription cancelled. Access continues until
+   * end of current billing period." Every word after the full stop was false,
+   * and provably so from this file: `cancel()` performs exactly one write,
+   * `marketplaceSubscription.update({ data: { status: 'CANCELLED' } })`, and
+   * `isPremium()` twenty lines above requires `status: 'ACTIVE'`, as does
+   * `getActivePlan()` in lib/ai-usage.ts. `MarketplaceSubscription` has no
+   * `cancelAtPeriodEnd` column, no grace field and no scheduled job that
+   * restores anything later (prisma/schema.prisma:1114 — id, userId, plan,
+   * role, startDate, endDate, amount, status, timestamps). Access therefore
+   * ends at the instant of cancellation.
+   *
+   * Nor is money moved: `refund.service.processRefund` starts from
+   * `prisma.pujaBooking.findUnique` and refunds the Payment attached to a
+   * booking, so a subscription has no row it can even find. The honest answer
+   * is to say both facts and route the devotee to the one path that exists —
+   * a human reading support mail — rather than to imply a period-end taper
+   * and an automatic refund that no code performs.
+   *
+   * If period-end access is ever wanted, it needs a real column plus a job,
+   * and this string may only change back in the same commit as that column.
+   */
+  static readonly CANCELLATION_NOTICE =
+    'Subscription cancelled. Access ends now, not at the end of the billing period — ' +
+    'cancelling revokes the entitlement immediately. No refund is issued automatically: ' +
+    'if you were charged for time you cannot use, email support@darshya.online and a ' +
+    'person will review it by hand.';
+
   async cancel(userId: string): Promise<{ message: string; cancelled: boolean }> {
     try {
       const subscription = await prisma.marketplaceSubscription.findFirst({
@@ -831,7 +870,7 @@ export class SubscriptionService {
         data: { status: 'CANCELLED' },
       });
 
-      return { message: 'Subscription cancelled. Access continues until end of current billing period.', cancelled: true };
+      return { message: SubscriptionService.CANCELLATION_NOTICE, cancelled: true };
     } catch {
       const existing = mockSubscriptions.get(userId);
       if (existing) {

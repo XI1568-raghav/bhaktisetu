@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { LangLanding } from '../../components/LangLanding';
+import { HAS_80G } from '../../lib/eighty-g';
 
 
 export const metadata: Metadata = {
@@ -39,7 +40,7 @@ export default function BengaliLanding() {
       ctaDarshanLabel="লাইভ দর্শন দেখুন"
       features={[
         { title: 'লাইভ দর্শন', body: 'কাশী, তিরুপতি, সিদ্ধিবিনায়ক, সোমনাথ — প্রধান মন্দির থেকে লাইভ দর্শন।', href: '/darshan' },
-        { title: 'পূজা বুকিং', body: 'যাচাইকৃত পণ্ডিত, ভিডিও প্রমাণ, 80G রসিদ। আপনার নামে সংকল্প।', href: '/pujas' },
+        { title: 'পূজা বুকিং', body: `যাচাইকৃত পণ্ডিত, ভিডিও প্রমাণ, ${HAS_80G ? '80G রসিদ' : 'রসিদ'}। আপনার নামে সংকল্প।`, href: '/pujas' },
         { title: 'দৈনিক পঞ্জিকা', body: 'তিথি, নক্ষত্র, রাহুকাল, চৌঘড়িয়া — আপনার শহর অনুযায়ী।', href: '/panchang' },
         { title: 'গোসেবা', body: 'গোদান, ঘাস সেবা — যাচাইকৃত গোশালায় সরাসরি দান।', href: '/gaushala' },
         { title: 'গুরুকুল', body: 'ঐতিহ্যবাহী গুরুকুল ভর্তি — সংস্কৃত, বেদ, দর্শন।', href: '/gurukuls' },

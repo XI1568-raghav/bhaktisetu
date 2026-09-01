@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Search, UserPlus, Phone, Mail, Calendar, HandHeart, CheckCircle2, Loader2, X, AlertCircle, Trash2 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { serverErrorMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
@@ -98,7 +99,8 @@ function VolunteersContent() {
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setError(j.error ?? `Failed (${r.status})`);
+        // RES-09: `Failed (500)` was the whole message on a server error.
+        setError(serverErrorMessage(j, 'We could not save that volunteer. Please try again.'));
         setSaving(false);
         return;
       }

@@ -6,6 +6,7 @@ import { Loader2, Sparkles, X } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 import { H1 } from '../../../components/ui/heading-recipe';
 import {
   GENERIC_ERROR_MESSAGE,
@@ -80,6 +81,25 @@ function AccountSubscriptionsInner() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * AUTH-06 (2026-09-01) — the seventh screen, and the one the first sweep
+   * missed because it does not name the flag anywhere.
+   *
+   * The six pages the finding lists all call `friendlyApiError` and drop
+   * `.reauth` on the floor; they were fixed by reading it. This page calls
+   * `userFacingMessage`, whose whole job is to return a STRING — the `reauth`
+   * decision is computed inside it, by the same `friendlyApiError`, and then
+   * discarded where no grep for `.reauth` can see it. The rendered result is
+   * identical to the six: a 401 during either the load or the cancel puts
+   * "Your session has expired. Please sign in again to continue." in a red
+   * banner with no way to sign in anywhere on the page.
+   *
+   * `AuthGuard` does not cover this. It gates on client state at mount, and
+   * the failure here is a token that the API rejects while the client still
+   * believes it holds a session — which is exactly what "expires mid-action"
+   * means, and cancelling auto-renewal is a mid-action.
+   */
+  const [reauth, setReauth] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<MySubscription | null>(null);
 
@@ -110,8 +130,14 @@ function AccountSubscriptionsInner() {
       const data = (await res.json()) as { subscription: MySubscription | null };
       setSubscription(data.subscription);
       setError(null);
+      setReauth(false);
     } catch (err) {
       setError(userFacingMessage(err, LOAD_FALLBACK));
+      // AUTH-06: the decision `userFacingMessage` throws away. Classifying the
+      // raw error rather than the rendered sentence is deliberate — but both
+      // give the same answer here, because `isAuthError` was made idempotent
+      // over its own output on 2026-09-01 for exactly this reason.
+      setReauth(friendlyApiError(err).reauth);
     } finally {
       setLoading(false);
     }
@@ -119,11 +145,27 @@ function AccountSubscriptionsInner() {
 
   async function handleCancelAutoRenew() {
     if (!session?.accessToken) return;
-    if (!confirm('Cancel auto-renewal? You will keep access until your current billing cycle ends.')) {
+    // TC-03 (P0, trust) — this prompt read "You will keep access until your
+    // current billing cycle ends." It is the same sentence the server used to
+    // return and it is false for the same reason: POST /subscriptions/
+    // cancel-auto-renew calls SubscriptionService.cancelRazorpaySubscription,
+    // which asks Razorpay to stop BILLING at cycle end and then immediately
+    // flips the local MarketplaceSubscription row to CANCELLED. isPremium()
+    // and lib/ai-usage.ts getActivePlan() both require status ACTIVE, and the
+    // row has no cancelAtPeriodEnd column, so ACCESS stops at once. Telling a
+    // devotee otherwise in the confirm dialog is worse than telling them in
+    // the response, because it is what they decide on.
+    if (
+      !confirm(
+        'Cancel auto-renewal?\n\nYour card will not be charged again. Access ends now rather ' +
+          'than at the end of the billing cycle, and no refund is issued automatically.',
+      )
+    ) {
       return;
     }
     setBusy(true);
     setError(null);
+    setReauth(false);
     setInfo(null);
     try {
       const res = await fetch(`${API_BASE_URL}/subscriptions/cancel-auto-renew`, {
@@ -140,6 +182,7 @@ function AccountSubscriptionsInner() {
       await fetchSubscription();
     } catch (err) {
       setError(userFacingMessage(err, CANCEL_FALLBACK));
+      setReauth(friendlyApiError(err).reauth);
     } finally {
       setBusy(false);
     }
@@ -157,7 +200,13 @@ function AccountSubscriptionsInner() {
         </div>
 
         {error && (
-          <div className="mb-4 px-4 py-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">{error}</div>
+          <div className="mb-4 px-4 py-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
+            {/* AUTH-06: the sentence names the remedy, so the remedy has to be
+                on screen. ReauthPrompt renders the copy AND the link back to
+                /auth/login with this page as the redirect target, so the
+                devotee returns to their billing page instead of a dashboard. */}
+            {reauth ? <ReauthPrompt message={error} /> : error}
+          </div>
         )}
         {info && (
           <div className="mb-4 px-4 py-3 rounded-lg border border-emerald-200 bg-emerald-50 text-sm text-emerald-700">{info}</div>

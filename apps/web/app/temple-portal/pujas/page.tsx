@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import {
   listTemplePujasWithLinkState,
   createTemplePuja,
@@ -108,7 +109,7 @@ function TemplePujasPageContent() {
       setPriests(priestList);
       setPujaTypes(typeList);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load pujas');
+      setError(userFacingMessage(err, 'We could not load your pujas. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -173,7 +174,7 @@ function TemplePujasPageContent() {
       }
       resetForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(userFacingMessage(err, 'We could not save that puja. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -191,7 +192,7 @@ function TemplePujasPageContent() {
       setPujas((cur) => cur.map((x) => (x.id === p.id ? updated : x)));
     } catch (err) {
       setPujas(prev);
-      setError(err instanceof Error ? err.message : 'Toggle failed');
+      setError(userFacingMessage(err, 'We could not change that puja. Please try again.'));
     } finally {
       setBusyId(null);
     }
@@ -207,7 +208,7 @@ function TemplePujasPageContent() {
       await deleteTemplePuja(token, id);
     } catch (err) {
       setPujas(prev);
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(userFacingMessage(err, 'We could not delete that puja. Please try again.'));
     } finally {
       setBusyId(null);
     }

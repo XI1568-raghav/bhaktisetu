@@ -211,7 +211,7 @@
   },
   "donations": {
     "pageTitle": "Donate to Temples & Gaushalas",
-    "pageSubtitle": "Support verified temples and gaushalas across India. 80G tax-deductible donations with instant PDF receipts. Razorpay-secured payments.",
+    "pageSubtitle": "Support verified temples and gaushalas across India. Every donation gets a numbered PDF receipt by email. Razorpay-secured payments.",
     "templeCauses": "Temple Causes",
     "gaushalaCauses": "Gaushala Causes",
     "donateNow": "Donate Now",
@@ -226,7 +226,7 @@
     "donorsCount": "donors",
     "trustHeading": "Why donate via Darshya",
     "trustVerified": "Every cause verified by our team",
-    "trustReceipt": "80G PDF receipt within minutes",
+    "trustReceipt": "Numbered PDF receipt within minutes",
     "trustSecure": "Razorpay-secured payments",
     "selectCause": "Select a cause",
     "donate": "Donate"

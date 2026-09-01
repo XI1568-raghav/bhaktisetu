@@ -50,8 +50,15 @@ import { PriestService } from './priest.service.js';
  * the finding's exact screen, still reachable after the first fix shipped.
  *
  * These assertions FAIL against the pre-fix code: neither file contained a
- * single `commission.create`/`findFirst` call (grep-verified), so
- * `commission.create` was never invoked on either path.
+ * single commission `findFirst`/insert call (grep-verified), so no commission
+ * was ever written on either path.
+ *
+ * DI-06 (F367): the mint's insert is now
+ * `createMany({ data: [...], skipDuplicates: true })` — Prisma's
+ * INSERT ... ON CONFLICT DO NOTHING — so the UNIQUE index on
+ * `commissions.booking_id` settles a two-rail race inside the statement rather
+ * than raising P2002, which inside the caller's `$transaction` would abort the
+ * pandit's assignment. The assertions below follow the write.
  */
 
 const scheduledDate = new Date('2026-09-15T00:00:00.000Z');
@@ -76,11 +83,20 @@ function armMintGuards() {
   prismaMock.payment.count.mockResolvedValue(1 as never);
   prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1' } as never);
   prismaMock.commission.create.mockResolvedValue({ id: 'cm-new' } as never);
+  prismaMock.commission.createMany.mockResolvedValue({ count: 1 } as never);
 }
 
 function expectMintedSeventySeventy() {
-  expect(prismaMock.commission.create).toHaveBeenCalledTimes(1);
-  const data = (prismaMock.commission.create.mock.calls[0]![0] as { data: any }).data;
+  expect(prismaMock.commission.createMany).toHaveBeenCalledTimes(1);
+  // DI-06: a bare `create` must not be reachable on this path any more — inside
+  // the assignment transaction its P2002 would roll the assignment back.
+  expect(prismaMock.commission.create).not.toHaveBeenCalled();
+  const args = prismaMock.commission.createMany.mock.calls[0]![0] as {
+    data: any[];
+    skipDuplicates?: boolean;
+  };
+  expect(args.skipDuplicates).toBe(true);
+  const data = args.data[0];
   expect(data.bookingId).toBe('booking-1');
   expect(data.providerId).toBe('user-pandit-1');
   expect(new Prisma.Decimal(data.amount).toString()).toBe('770');
@@ -130,26 +146,26 @@ describe('DI-05 — DispatchService.accept mints the pandit his earning', () => 
     // Minting off the pre-update snapshot reads priestId: null and silently
     // does nothing — the exact shape of the original bug.
     const updateAt = prismaMock.pujaBooking.update.mock.invocationCallOrder[0]!;
-    const mintAt = prismaMock.commission.create.mock.invocationCallOrder[0]!;
+    const mintAt = prismaMock.commission.createMany.mock.invocationCallOrder[0]!;
     expect(updateAt).toBeLessThan(mintAt);
   });
 
   it('does not mint a second payable when the unified rail already owns the booking', async () => {
     prismaMock.commission.findFirst.mockResolvedValue({ id: 'cm-existing' } as never);
     await service.accept('booking-1', 'priest-1');
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 
   it('does not mint when the LEGACY PriestPayout rail already owns the booking', async () => {
     prismaMock.priestPayout.findFirst.mockResolvedValue({ id: 'pp-existing' } as never);
     await service.accept('booking-1', 'priest-1');
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 
   it('never mints withdrawable balance on a booking with no captured payment', async () => {
     prismaMock.payment.count.mockResolvedValue(0 as never);
     await service.accept('booking-1', 'priest-1');
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 });
 
@@ -195,12 +211,12 @@ describe('DI-05 — PriestService.acceptBooking mints the pandit his earning', (
   it('does not mint when the LEGACY PriestPayout rail already owns the booking', async () => {
     prismaMock.priestPayout.findFirst.mockResolvedValue({ id: 'pp-existing' } as never);
     await service.acceptBooking('booking-1', 'priest-1');
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 
   it('never mints an orphan when the Priest has no linked User', async () => {
     prismaMock.priest.findUnique.mockResolvedValue({ userId: null } as never);
     await service.acceptBooking('booking-1', 'priest-1');
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 });

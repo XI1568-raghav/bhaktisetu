@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { HAS_80G, RECEIPT_NOUN } from '../../lib/eighty-g';
 
 const SLIDES = [
   '01-hook',
@@ -143,7 +144,7 @@ export default function PitchPage() {
           />
           <MediaCard
             src="/pitch/img/09-gaushala.png"
-            caption="Gaushala adoption + 80G receipt"
+            caption={`Gaushala adoption + ${RECEIPT_NOUN}`}
             href="https://darshya.online/gaushala"
           />
         </div>
@@ -167,8 +168,8 @@ export default function PitchPage() {
             Devotee, Priest, Astrologer, Wellness, Gaushala, Yatra, Temple Admin, Platform Admin —
             each with KYC, payouts, dashboards. Not a booking widget. A two-sided market.
           </Card>
-          <Card title="80G + INR/USD priced">
-            Auto-generated 80G receipts (DR-YYYYMMDD-XXXX). Native Razorpay. NRI pricing
+          <Card title={HAS_80G ? '80G + INR/USD priced' : 'Receipted + INR/USD priced'}>
+            Auto-generated numbered donation receipts (DR-YYYYMMDD-XXXX){HAS_80G ? ', 80G-valid' : ' — proof of payment, not yet an 80G certificate'}. Native Razorpay. NRI pricing
             9-10× domestic, configured per puja. Built for Indian + diaspora from day zero.
           </Card>
         </div>

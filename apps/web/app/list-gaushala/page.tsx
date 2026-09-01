@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import SelfOnboardPageShell from '../../components/SelfOnboardPageShell';
 import SelfOnboardForm, { ExtraInput, ExtraCheckbox } from '../../components/SelfOnboardForm';
 import { GAUSHALA_PLANS } from '../../lib/gaushala-plans';
+import { HAS_80G } from '../../lib/eighty-g';
 
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/list-gaushala' },
   title: 'List your gaushala',
   description:
-    'Receive 80G donations online for cow seva. Verified gaushalas only. Instant tax receipts to donors.',
+    'Receive donations online for cow seva. Instant numbered receipts emailed to donors.',
 };
 
 /**
@@ -33,7 +34,7 @@ const RECURRING_TIERS = GAUSHALA_PLANS.filter((p) => p.period !== 'one-time')
 const BENEFITS = [
   {
     title: 'Online donations, instant receipts',
-    body: 'Devotees donate via Razorpay. 80G PDF receipts auto-emailed within 60 seconds.',
+    body: `Devotees donate via Razorpay. ${HAS_80G ? '80G PDF receipts' : 'Numbered PDF receipts'} auto-emailed within 60 seconds.`,
   },
   {
     title: 'Verified-gaushala badge',
@@ -45,7 +46,7 @@ const BENEFITS = [
     // it. Same defect as the Rs 500 tier this page also carried, one
     // abstraction up: not a feature that does not exist, but a RESULT that was
     // never obtained. The badge is now described by what it is.
-    body: 'Submit registration + 80G certificate once. Donors see a verified badge on your listing.',
+    body: 'Submit your registration certificate once. Donors see the listing only after a Darshya reviewer approves it.',
   },
   {
     title: 'Cow-count + photo proof',
@@ -62,7 +63,7 @@ export default function ListGaushalaPage() {
     <SelfOnboardPageShell
       eyebrow="For Gaushalas"
       title="Receive cow-seva donations from devotees worldwide"
-      subtitle="List your gaushala on Darshya. 80G receipts, monthly subscriptions, and a transparent donor dashboard — built for trust."
+      subtitle={`List your gaushala on Darshya. ${HAS_80G ? '80G receipts' : 'Numbered donation receipts'}, monthly subscriptions, and a transparent donor dashboard — built for trust.`}
       benefits={BENEFITS}
       formCard={
         <SelfOnboardForm
@@ -83,10 +84,15 @@ export default function ListGaushalaPage() {
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <ExtraInput name="pan" label="Trust PAN (for 80G receipts)" placeholder="e.g. AAATR1234C" />
+                <ExtraInput name="pan" label="Trust PAN" placeholder="e.g. AAATR1234C" />
                 <ExtraInput name="regn80G" label="80G registration number" placeholder="e.g. AAATR1234C/12-AA/2024-25" />
               </div>
-              <p className="text-xs opacity-70">PAN + 80G number print on every donor's tax receipt. Leave blank if not yet registered — we'll mark you as pending verification.</p>
+              <p className="text-xs opacity-70">
+                We record your PAN and 80G number with your application so they are ready the day
+                Darshya can issue 80G documents. They do <strong>not</strong> print on donor
+                receipts today: the receipt PDF we send is proof of payment and not a
+                tax-exemption certificate. Leave both blank if you are not registered.
+              </p>
               <ExtraCheckbox name="has80G" label="Our trust is 80G-registered (we'll verify)" />
             </>
           }

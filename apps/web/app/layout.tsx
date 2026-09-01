@@ -794,13 +794,40 @@ export default function RootLayout({
      inside a <li>, so the globals `footer li > a` floor never reached them. */}
  <div className="mt-10 pt-8 border-t border-surface-800/60">
  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-surface-500">
+ {/* I-08 (2026-09-01) - prefetch={false} on all six, and it is not an
+     optimisation. MEASURED AGAINST PRODUCTION today, one curl per link:
+
+       curl -D- -H "RSC: 1" -H "Next-Router-Prefetch: 1"
+            "https://darshya.online/hi?_rsc=abc"
+       -> 200, Set-Cookie: poojly_language=hi; Max-Age=31536000
+
+     Same for /ta /te /bn /mr, and "/?lang=en&_rsc=abc" sent with
+     Cookie: poojly_language=hi answers Set-Cookie: poojly_language=en
+     - it ERASES a locale the reader chose.
+
+     middleware.ts has an isPrefetch() guard written to stop exactly this,
+     and three of its four branches do work in production (Sec-Purpose,
+     Purpose and X-Moz all return 200 with no Set-Cookie). The fourth,
+     next-router-prefetch, is the header next/link actually sends, and Next
+     strips it before middleware runs - so the one path the guard exists
+     for is the one it cannot see. Its own docblock says the remedy then
+     belongs "at the call site (drop the prefetch)". This is that call
+     site: these are the only <Link>s in the product that target a locale
+     route or ?lang=, they sit in the footer of EVERY page, and next/link
+     prefetches every in-viewport link. Scrolling to the bottom of an
+     English page was enough to be switched to whichever locale was
+     prefetched last, for a year.
+
+     A locale switch is a click. Nothing is lost by not speculating on it,
+     and the guard keeps working for the browser-level prefetches it can
+     still see. */}
  <span className="text-surface-600">Read in:</span>
- <Link href="/?lang=en" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
- <Link href="/hi" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="hi" lang="hi">हिन्दी</Link>
- <Link href="/ta" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="ta" lang="ta">தமிழ்</Link>
- <Link href="/te" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="te" lang="te">తెలుగు</Link>
- <Link href="/bn" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="bn" lang="bn">বাংলা</Link>
- <Link href="/mr" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="mr" lang="mr">मराठी</Link>
+ <Link prefetch={false} href="/?lang=en" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
+ <Link prefetch={false} href="/hi" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="hi" lang="hi">हिन्दी</Link>
+ <Link prefetch={false} href="/ta" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="ta" lang="ta">தமிழ்</Link>
+ <Link prefetch={false} href="/te" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="te" lang="te">తెలుగు</Link>
+ <Link prefetch={false} href="/bn" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="bn" lang="bn">বাংলা</Link>
+ <Link prefetch={false} href="/mr" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="mr" lang="mr">मराठी</Link>
  </div>
  {/* I18N-01: these six links advertise a localized product on every page.
  Until the copy exists, say so where the visitor actually is. */}

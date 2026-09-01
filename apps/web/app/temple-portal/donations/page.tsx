@@ -11,6 +11,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import { getMyDonations, type TempleDonation } from '../../../lib/temple-api';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -54,7 +55,7 @@ export default function TempleDonationsPage() {
       const rows = await getMyDonations(token);
       setDonations(rows);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load donations');
+      setError(userFacingMessage(err, 'We could not load your donations. Please try again.'));
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../lib/auth-context';
+import { serverErrorMessage } from '../../../lib/friendly-error';
 import AuthGuard from '../../../components/AuthGuard';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { Mail, Building2, CheckCircle2, Loader2, AlertCircle, Upload, FileText } from 'lucide-react';
@@ -97,7 +98,8 @@ function Content() {
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setError(j.error ?? `Failed (${r.status})`);
+        // RES-09: `Failed (500)` was the whole message on a server error.
+        setError(serverErrorMessage(j, 'We could not save your profile. Please try again.'));
         return;
       }
       setSaved(true);

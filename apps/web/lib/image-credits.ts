@@ -160,7 +160,18 @@ export const COMMONS_CREDITS: readonly CommonsCredit[] = [
   { subject: 'Navratri kalash puja', file: 'Navratri_Kalash_Puja.jpg', author: 'Ashish Suryavanshi858', license: 'CC0', licenseUrl: 'http://creativecommons.org/publicdomain/zero/1.0/deed.en', attributionRequired: false },
   { subject: 'Havan fire (havanam)', file: '(A)_puja_fire,_Havanam.jpg', author: 'Ravigopal Kesari', license: 'CC BY-SA 2.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0', attributionRequired: true },
   { subject: 'Bhagavad Gita, printed edition', file: 'Bhagavad_Gita_book_(small)_01.jpg', author: 'Gpkp', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
-  { subject: 'Hanuman Chalisa, printed edition', file: 'Hanuman_Chalisa_4x3.jpg', author: 'RahulKSaini', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  // CM-08 2026-09-01: the subject line used to read "Hanuman Chalisa, printed
+  // edition", which is not what the file shows. It is a poster graphic of the
+  // Chalisa text with a third-party design studio's watermark and phone number
+  // burnt into the frame, and this page's job is to describe the file
+  // accurately. The product-card side of that problem is recorded at the
+  // 'hanuman-chalisa-book' entry in lib/images.ts and needs a photograph.
+  { subject: 'Hanuman Chalisa text (poster graphic)', file: 'Hanuman_Chalisa_4x3.jpg', author: 'RahulKSaini', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
+  // Read from the Commons imageinfo/extmetadata API on 2026-09-01, like every
+  // other row here. Replaces the duplicated Hanuman Chalisa poster on the
+  // 'sunderkand-book' SKU: the Sunderkand is the Ramcharitmanas' fifth kanda,
+  // and this is a photograph of a printed Ramcharitmanas.
+  { subject: 'Ramcharitmanas, printed edition', file: 'Ramcharitmanas_book.jpg', author: 'Wikilover90', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
   { subject: 'Homemade pure ghee, Maharashtra', file: 'Pure_Ghee-Homemade-Maharashtra.jpg', author: 'Phadke09', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
 
   // ── Seeded via apps/api/prisma/seed.ts (DATABASE-sourced) ───

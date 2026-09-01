@@ -88,6 +88,14 @@ export interface MintTxClient {
   commission: {
     findFirst(args: unknown): Promise<{ id: string } | null>;
     create(args: unknown): Promise<unknown>;
+    /**
+     * DI-06 (F367): the mint writes through `createMany({ skipDuplicates })`
+     * so the UNIQUE index on `commissions.booking_id` resolves a race inside
+     * the INSERT instead of raising P2002 and aborting the caller's
+     * transaction. `count` is what tells the mint whether it or a racer wrote
+     * the row.
+     */
+    createMany(args: unknown): Promise<{ count: number }>;
   };
   priestPayout: {
     findFirst(args: unknown): Promise<{ id: string } | null>;
@@ -140,15 +148,31 @@ export async function mintProviderEarningForBooking(
   const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
   const providerEarning = new Prisma.Decimal((booking.priestPayout ?? 0) as Prisma.Decimal);
 
-  await tx.commission.create({
-    data: {
-      bookingId: booking.id,
-      providerId: priestUser.userId,
-      amount: providerEarning,
-      percentage: platformRateOf(price.sub(providerEarning), price),
-      status: 'PENDING',
-    },
-  });
+  // DI-06 (F367): ON CONFLICT DO NOTHING behind the four guards above, so the
+  // UNIQUE index `commissions_booking_id_key` (migration 20260824000000) closes
+  // the window between Guard 1 and this INSERT instead of aborting the caller's
+  // transaction with P2002. Rationale in full at
+  // payment.service.writePujaCommissionOnConfirm.
+  //
+  // The `count` is load-bearing here in a way it is not at the other call
+  // sites: this function REPORTS what it did, and callers act on the answer
+  // (booking.service records an OPS-05 `provider_earning_minted` money event on
+  // 'minted'). If the insert was skipped, someone else won the race and owns
+  // that row — reporting 'minted' would put a second audit entry on the money
+  // trail for one earning.
+  const inserted = (await tx.commission.createMany({
+    data: [
+      {
+        bookingId: booking.id,
+        providerId: priestUser.userId,
+        amount: providerEarning,
+        percentage: platformRateOf(price.sub(providerEarning), price),
+        status: 'PENDING',
+      },
+    ],
+    skipDuplicates: true,
+  })) as { count?: number } | undefined;
+  if (inserted && inserted.count === 0) return 'already-on-unified-rail';
 
   return 'minted';
 }

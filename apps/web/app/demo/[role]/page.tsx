@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { RoleDemoClient } from './role-demo-client';
+import { RECEIPT_NOUN_PLURAL } from '../../../lib/eighty-g';
 
 const VALID_ROLES = [
  'devotee',
@@ -65,7 +66,7 @@ const ROLE_COPY: Record<string, { title: string; description: string }> = {
  'gaushala-manager': {
  title: 'Gaushala Manager App Walkthrough — Six Screens',
  description:
- 'Listing cows for adoption, seva plans, donor records, 80G receipts and the gaushala payout, screen by screen.',
+ `Listing cows for adoption, seva plans, donor records, ${RECEIPT_NOUN_PLURAL} and the gaushala payout, screen by screen.`,
  },
 };
 

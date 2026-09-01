@@ -23,7 +23,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../lib/api-config';
-import { friendlyApiError } from '../../lib/friendly-error';
+import {
+ friendlyApiError,
+ serverErrorMessage,
+ userFacingMessage,
+} from '../../lib/friendly-error';
 import ReauthPrompt from '../../components/ReauthPrompt';
 // DB-09: whether a stored videoProofUrl is something a browser can open, and
 // what to render when the status promised a video that is not there.
@@ -228,11 +232,21 @@ function BookingsContent() {
     DATA_FETCH_TIMEOUT_MS,
    );
    if (!res.ok) {
+    // RES-09: `body?.error` is the SERVER's field, so a bare
+    // {"error":"Internal Server Error"} was alerted at the devotee verbatim,
+    // and a body with no `error` at all fell through to "Could not cancel
+    // (HTTP 502)". `serverErrorMessage` keeps a sentence worth reading (the
+    // cancellation engine sends real ones — "This booking is inside the
+    // cancellation window") and refuses the developer names.
     const body = await res.json().catch(() => ({}));
-    window.alert(body?.error ?? `Could not cancel (HTTP ${res.status}).`);
+    window.alert(
+     serverErrorMessage(body, 'We could not cancel this booking. Please try again.'),
+    );
    }
-  } catch {
-   window.alert('Network error while cancelling. Please try again.');
+  } catch (err) {
+   window.alert(
+    userFacingMessage(err, 'We could not cancel this booking. Please try again.'),
+   );
   } finally {
    setCancellingId(null);
    // Cancelling the only row on the last page of the Upcoming tab would

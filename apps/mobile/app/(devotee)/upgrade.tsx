@@ -24,14 +24,27 @@ import {
   extractCheckoutUrl,
 } from '../../lib/subscription-gate';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { NRI_PREMIUM_IS_SELLABLE, NRI_PREMIUM_WITHDRAWN_NOTICE } from '../../lib/nri-premium-availability';
 
+/**
+ * TC-04 (P1, trust) — six benefit rows, none of them enforced.
+ *
+ * Every line here mapped to an entitlement carrying `enforcedBy: null` in
+ * apps/api/src/services/subscription-entitlements.ts, and two were false on
+ * their own terms as well: "200+ temples" against a catalogue of 20, and "GST
+ * invoices for every booking and order" from a business with no GSTIN
+ * (`COMPANY.tax.HAS_GST_REGISTRATION_VERIFIED` is false and nothing anywhere
+ * adds a tax line). Rather than re-word six sentences for a plan that is
+ * withdrawn from sale, the list is gated with the shopfront: it renders only
+ * when NRI_PREMIUM_IS_SELLABLE, which flips in the same change that gives a
+ * benefit a real enforcement site.
+ */
 const BENEFITS = [
-  { icon: 'videocam', text: 'Unlimited HD live darshan from 200+ temples' },
-  { icon: 'flame', text: '20% off all puja bookings + free 80G receipts' },
+  { icon: 'videocam', text: 'Unlimited HD live darshan' },
+  { icon: 'flame', text: '20% off all puja bookings' },
   { icon: 'planet', text: 'Premium kundli + monthly horoscope reports' },
   { icon: 'gift', text: 'Free shipping on Darshya store orders' },
   { icon: 'people', text: 'Priority concierge for yatra & weddings' },
-  { icon: 'document-text', text: 'GST invoices for every booking and order' },
 ] as const;
 
 /**
@@ -148,23 +161,37 @@ export default function UpgradeScreen() {
           <Text style={styles.heroSub}>
             Annual plan for NRIs. Pay once, stay close to home.
           </Text>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceMain}>₹5,000</Text>
-            <Text style={styles.priceUnit}>/year</Text>
-          </View>
-          <Text style={styles.priceCompare}>Billed in INR • international cards accepted</Text>
+          {NRI_PREMIUM_IS_SELLABLE ? (
+            <>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceMain}>₹5,000</Text>
+                <Text style={styles.priceUnit}>/year</Text>
+              </View>
+              <Text style={styles.priceCompare}>Billed in INR • international cards accepted</Text>
+            </>
+          ) : (
+            <Text style={styles.priceCompare}>Not currently sold</Text>
+          )}
         </View>
 
-        <View style={styles.benefits}>
-          {BENEFITS.map((b, idx) => (
-            <View key={idx} style={styles.benefitRow}>
-              <View style={styles.benefitIcon}>
-                <Ionicons name={b.icon as never} size={18} color={colors.saffron[700]} />
+        {NRI_PREMIUM_IS_SELLABLE ? (
+          <View style={styles.benefits}>
+            {BENEFITS.map((b, idx) => (
+              <View key={idx} style={styles.benefitRow}>
+                <View style={styles.benefitIcon}>
+                  <Ionicons name={b.icon as never} size={18} color={colors.saffron[700]} />
+                </View>
+                <Text style={styles.benefitText}>{b.text}</Text>
               </View>
-              <Text style={styles.benefitText}>{b.text}</Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.blockedCard}>
+            <Ionicons name="lock-closed-outline" size={26} color={colors.stone[500]} />
+            <Text style={styles.blockedTitle}>NRI Premium is not on sale</Text>
+            <Text style={styles.blockedText}>{NRI_PREMIUM_WITHDRAWN_NOTICE}</Text>
+          </View>
+        )}
 
         {isPremium ? (
           <View style={styles.activeCard}>
@@ -174,7 +201,7 @@ export default function UpgradeScreen() {
               Manage your subscription on the web at darshya.online/account/subscriptions.
             </Text>
           </View>
-        ) : gate.canPurchase ? (
+        ) : NRI_PREMIUM_IS_SELLABLE && gate.canPurchase ? (
           <TouchableOpacity
             style={[styles.ctaBtn, createCheckout.isPending && { opacity: 0.6 }]}
             onPress={onUpgrade}
@@ -194,17 +221,23 @@ export default function UpgradeScreen() {
           <View style={styles.blockedCard}>
             <Ionicons name="lock-closed-outline" size={26} color={colors.stone[500]} />
             <Text style={styles.blockedTitle}>Upgrade unavailable</Text>
-            <Text style={styles.blockedText}>{gate.message}</Text>
-            <View style={[styles.ctaBtn, styles.ctaBtnDisabled]}>
-              <Text style={styles.ctaTextDisabled}>Upgrade — ₹5,000/yr</Text>
-            </View>
+            <Text style={styles.blockedText}>
+              {NRI_PREMIUM_IS_SELLABLE ? gate.message : NRI_PREMIUM_WITHDRAWN_NOTICE}
+            </Text>
+            {NRI_PREMIUM_IS_SELLABLE ? (
+              <View style={[styles.ctaBtn, styles.ctaBtnDisabled]}>
+                <Text style={styles.ctaTextDisabled}>Upgrade — ₹5,000/yr</Text>
+              </View>
+            ) : null}
           </View>
         )}
 
         <Text style={styles.fineprint}>
           Payments are handled by Razorpay and billed in INR. Premium is only
           active once a payment is confirmed by the gateway — the app never
-          activates it on its own. Cancel anytime from the web account page.
+          activates it on its own. Cancelling stops the next charge and ends
+          access immediately rather than at the end of the paid period; no
+          refund is issued automatically.
         </Text>
       </ScrollView>
     </SafeAreaView>

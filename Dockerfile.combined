@@ -1,0 +1,98 @@
+# Combined API + Web image — ONE Render free service instead of two.
+#
+# WHY: Render's 750 free instance-hours are per ACCOUNT, not per service. Two
+# always-on services is ~1,440 h in a 30-day month against a 750 h allowance,
+# which is how the account reached 750.2/750 on 2026-08-17 and Render suspended
+# BOTH services — darshya.online served 503 for three days. docs/free-tier-budgets.md
+# measured the cron traffic and ruled it out as the cause: ~23 h/month, 3% of a
+# 738-hour deficit. The overrun is structural, so the fix removes a service.
+#
+# One service is ~720 h/month and fits in 750 with ~30 h of headroom.
+#
+# This image builds BOTH apps and runs them behind the host-routing proxy in
+# scripts/render-combined-server.mjs, so darshya.online and api.darshya.online
+# keep working unchanged — point the api.* DNS record at this service.
+#
+# The two source Dockerfiles (apps/api/Dockerfile, apps/web/Dockerfile) remain in
+# the tree and still work. This is additive: if the single container proves too
+# tight on a 512 MB free instance, reverting is a Render setting, not a code
+# change.
+FROM node:20-alpine
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
+COPY apps/web ./apps/web
+COPY apps/api ./apps/api
+COPY packages ./packages
+COPY tooling ./tooling
+COPY scripts/render-combined-server.mjs ./scripts/render-combined-server.mjs
+
+RUN pnpm install --frozen-lockfile --prod=false
+
+# NEXT_PUBLIC_* are baked into the client bundle at build time and MUST be
+# present when `next build` runs. Render translates service env keys into build
+# args of the same name. Only publishable values are declared; real secrets stay
+# runtime-only and never enter an image layer.
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_ENV
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+    NEXT_PUBLIC_ENV=$NEXT_PUBLIC_ENV
+
+# --- API: prisma generate + tsc -> apps/api/dist ---------------------------
+WORKDIR /app/apps/api
+RUN pnpm exec prisma generate && pnpm run build && test -f dist/server.js
+
+# --- Web: search index + Next standalone -----------------------------------
+WORKDIR /app/apps/web
+RUN pnpm run prebuild && pnpm run build
+
+# Next standalone emits server.js at .next/standalone/apps/web but copies
+# NEITHER static assets NOR /public. Both must sit next to it or the server
+# 404s every JS/CSS/image.
+#
+# `cp -a SRC/. DEST/` (not `cp -r SRC DEST`) is load-bearing: standalone output
+# already contains a `public/` directory, so `cp -r public .next/.../public`
+# nests everything at public/public/* — proven live on prod, where /sw.js 404'd
+# while /public/sw.js returned 200, silently killing the service worker, the PWA
+# manifest and every OG image. The assertions below check sentinel files at
+# their FINAL served paths so a regression fails the BUILD instead of shipping.
+RUN set -eux; \
+    test -d .next/static; \
+    test -f public/manifest.json; \
+    mkdir -p .next/standalone/apps/web/.next/static .next/standalone/apps/web/public; \
+    cp -a .next/static/. .next/standalone/apps/web/.next/static/; \
+    cp -a public/. .next/standalone/apps/web/public/; \
+    test -f .next/standalone/apps/web/server.js; \
+    test -f .next/standalone/apps/web/public/manifest.json; \
+    test -f .next/standalone/apps/web/public/sw.js; \
+    test ! -e .next/standalone/apps/web/public/public
+
+# The proxy spawns children with cwd 'apps/api' and 'apps/web' relative to
+# /app, so put the standalone server where that resolves.
+WORKDIR /app
+RUN set -eux; \
+    mkdir -p /app/serve/apps; \
+    cp -a /app/apps/web/.next/standalone/apps/web /app/serve/apps/web; \
+    mkdir -p /app/serve/apps/api; \
+    cp -a /app/apps/api/dist /app/serve/apps/api/dist; \
+    cp -a /app/apps/api/prisma /app/serve/apps/api/prisma; \
+    cp -a /app/apps/api/package.json /app/serve/apps/api/package.json; \
+    cp -a /app/apps/api/node_modules /app/serve/apps/api/node_modules; \
+    cp -a /app/scripts /app/serve/scripts; \
+    test -f /app/serve/apps/web/server.js; \
+    test -f /app/serve/apps/api/dist/server.js
+
+ENV NODE_ENV=production
+# HOSTNAME is forced to 0.0.0.0 by the entrypoint for BOTH children. Render sets
+# HOSTNAME to the pod name, and Next standalone binds ONLY to it when set, which
+# produced "No open HTTP ports detected on 0.0.0.0" and a 502 despite the app
+# reporting Ready (diagnosed on darshya-web, 2026-07-08).
+ENV HOSTNAME=0.0.0.0
+EXPOSE 10000
+WORKDIR /app/serve
+CMD ["node", "scripts/render-combined-server.mjs"]

@@ -75,8 +75,21 @@ describe('DB-06 — the web promise mirrors the API ladder that actually runs', 
   });
 
   it('the 24h hard block still exists, so 50%/25% stay unreachable and unadvertised', () => {
-    expect(bookingSrc).toContain(
-      'Cancellation is not allowed within 24 hours of the scheduled puja time.',
+    // LEG-03/F223 (2026-09-01): the refusal used to be a hardcoded sentence
+    // ("Cancellation is not allowed within 24 hours of the scheduled puja
+    // time."), and matching that literal is what this assertion did. The `24`
+    // now comes from DEVOTEE_CANCEL_CUTOFF_HOURS in cancellation.service.ts, so
+    // the cut-off lives beside the ladder it truncates and the quote endpoint
+    // reads the same number. Assert the WIRING instead of the sentence — it is
+    // strictly stronger: a literal could drift from the ladder, a shared
+    // constant cannot.
+    expect(bookingSrc).toMatch(
+      /import \{[^}]*DEVOTEE_CANCEL_CUTOFF_HOURS[^}]*\} from '\.\/cancellation\.service\.js'/s,
+    );
+    expect(bookingSrc).toMatch(/hoursUntilPuja < DEVOTEE_CANCEL_CUTOFF_HOURS/);
+    // ...and the constant is the same 24 the web mirror publishes.
+    expect(cancelSrc).toMatch(
+      new RegExp(`DEVOTEE_CANCEL_CUTOFF_HOURS\\s*=\\s*${CANCELLATION_CUTOFF_HOURS}\\b`),
     );
     for (const copy of [
       CANCELLATION_BADGE_LABEL,

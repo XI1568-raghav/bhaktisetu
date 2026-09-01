@@ -135,7 +135,16 @@ describe('TC-03 — /nri advertises no cancellation window the booking engine re
 
   it('the booking engine really blocks every devotee at 24h', () => {
     const booking = apiSource('src/services/booking.service.ts');
-    expect(booking).toMatch(/Cancellation is not allowed within 24 hours of the scheduled puja time/);
+    // LEG-03/F223 (2026-09-01): the `24` moved out of this sentence and into
+    // DEVOTEE_CANCEL_CUTOFF_HOURS in cancellation.service.ts, so the refusal,
+    // the cancel-quote endpoint and the published copy all read one number.
+    // Assert the block and the number separately rather than a literal that no
+    // longer exists.
+    expect(booking).toMatch(/hoursUntilPuja < DEVOTEE_CANCEL_CUTOFF_HOURS/);
+    expect(booking).toMatch(/Cancellation is not allowed within \$\{DEVOTEE_CANCEL_CUTOFF_HOURS\}/);
+    expect(apiSource('src/services/cancellation.service.ts')).toMatch(
+      /DEVOTEE_CANCEL_CUTOFF_HOURS\s*=\s*24\b/,
+    );
     // No subscription tier is consulted anywhere in the cancellation path.
     const cancellation = apiSource('src/services/cancellation.service.ts');
     expect(cancellation).not.toMatch(/premium|nri_premium|isPremium/i);

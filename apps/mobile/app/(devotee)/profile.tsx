@@ -15,6 +15,10 @@ import { useBookings, useUserAddresses } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { selectAddresses, selectBookingTotal } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { HAS_80G } from '../../lib/eighty-g';
+// AUTH-09: the confirmation used to ask "Are you sure?" without saying what
+// it was sure about. POST /auth/logout defaults to scope 'global'.
+import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
 interface QuickLink {
   id: string;
@@ -114,7 +118,7 @@ const ONBOARD_OPTIONS: OnboardOption[] = [
   {
     id: 'temple',
     label: 'List your temple',
-    subtitle: 'Live darshan, puja bookings, 80G donations',
+    subtitle: `Live darshan, puja bookings, ${HAS_80G ? '80G donations' : 'donations'}`,
     icon: 'home',
     href: '/(onboard)/list-temple',
   },
@@ -142,7 +146,7 @@ const ONBOARD_OPTIONS: OnboardOption[] = [
   {
     id: 'gaushala',
     label: 'List your gaushala',
-    subtitle: '80G donations, monthly seva subs',
+    subtitle: `${HAS_80G ? '80G donations' : 'Donations'}, monthly seva subs`,
     icon: 'paw',
     href: '/(onboard)/list-gaushala',
   },
@@ -210,7 +214,7 @@ export default function ProfileScreen() {
   }
 
   function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+    Alert.alert(SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',

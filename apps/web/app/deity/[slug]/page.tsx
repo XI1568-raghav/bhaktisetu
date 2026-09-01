@@ -21,6 +21,7 @@ import { getPujaTypes } from '../../../lib/api';
 import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import { getMantrasForDeity } from '../../../lib/deity-mantras';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { withEightyG } from '../../../lib/eighty-g';
 
 export const revalidate = 3600;
 export const dynamicParams = false;
@@ -52,8 +53,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const d = getDeity(slug);
   if (!d) return { title: 'Deity' };
   return {
-    title: `${d.name} pujas online — verified pandits, video proof`,
-    description: `Book ${d.name} pujas online with verified pandits. ${d.popularPujas.join(', ')}. Mantra: ${d.mantra}. Video proof + 80G receipts.`,
+    // TC-08: "verified pandits" named a vetting step that does not run.
+    // Priest.isVerified / .verificationStatus / .aadhaarVerified have no
+    // writer outside prisma/seed.ts, and aadhaarVerified is read in one place
+    // (payment.service.ts) as a payout gate. Video proof is the part that is
+    // real, so it is the part the title sells.
+    title: `${d.name} pujas online — video proof on every booking`,
+    description: `Book ${d.name} pujas online at a temple you choose. ${d.popularPujas.join(', ')}. Mantra: ${d.mantra}. Video proof on every booking.${withEightyG(' 80G receipts.')}`,
     alternates: { canonical: `https://darshya.online/deity/${d.slug}` },
     openGraph: {
       title: `${d.name} — pujas, mantras, festivals`,
@@ -224,7 +230,7 @@ export default async function DeityPage({ params }: Params) {
 
       <footer className="border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-2">
-          <strong>Why Darshya?</strong> Every {d.name} puja booking includes mandatory video proof of the ceremony, 80G donation receipt where applicable, and a verified pandit gated on Aadhaar.
+          <strong>Why Darshya?</strong> Every {d.name} puja booking includes mandatory video proof of the ceremony{withEightyG(', an 80G donation receipt where the donee is registered,')} and a pandit whose payout is gated on Aadhaar-based KYC — a payout gate, not an independent credential check.
         </p>
         <Link href="/deity" className="text-saffron-700 hover:underline">
           ← All deities

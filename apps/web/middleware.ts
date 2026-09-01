@@ -125,6 +125,34 @@ function hasSession(req: NextRequest): boolean {
  *      the same header with the value '2', which is why this is a truthiness
  *      check and not `=== '1'`.
  *
+ *      ── CORRECTION, 2026-09-01. The paragraph above is WRONG about the
+ *      deployed runtime, and it was wrong in the direction that let the defect
+ *      survive three passes. next/link does send the header; this line never
+ *      sees it, because Next strips every FLIGHT_HEADER from the request
+ *      before middleware runs. MEASURED against production — Render
+ *      standalone, not a dev server — with `Cookie: poojly_language=hi`:
+ *
+ *        Sec-Purpose: prefetch           GET /              200          ✓
+ *        Purpose: prefetch               GET /              200          ✓
+ *        X-Moz: prefetch                 GET /              200          ✓
+ *        Next-Router-Prefetch: 1         GET /              307 -> /hi   ✗
+ *        RSC:1 + Next-Router-Prefetch:1  GET /hi?_rsc=abc   Set-Cookie:
+ *                                                           poojly_language=hi
+ *                                                           Max-Age=31536000 ✗
+ *
+ *      Three branches out of four do their job. The fourth cannot, so the ONE
+ *      path this app actually has — next/link prefetching the footer's six
+ *      locale links on every page — went unguarded, and a scroll to the footer
+ *      set a language for a year without a click.
+ *
+ *      The branch is kept: it costs one header read, and it is correct wherever
+ *      the header does survive (a proxy replaying it, a future Next that stops
+ *      stripping). What changed is that the guarantee is no longer claimed
+ *      here. Per the note below, the fix went to the CALL SITE —
+ *      app/layout.tsx now marks all six locale links `prefetch={false}`, and
+ *      __tests__/i18n-locale-links-are-not-prefetched.i08.test.ts keeps every
+ *      future locale link that way.
+ *
  *    • "detect the prefetch by the `_rsc` union query instead" — `_rsc` is a
  *      cache-buster appended to EVERY RSC fetch, navigations included
  *      (router-reducer/set-cache-busting-search-param.js:52-56). Using it here

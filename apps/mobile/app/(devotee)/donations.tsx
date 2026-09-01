@@ -19,6 +19,7 @@ import {
   DONATION_MIN_INR,
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { HAS_80G, RECEIPT_NOUN } from '../../lib/eighty-g';
 
 /**
  * PAR-06. This screen used to POST
@@ -219,7 +220,9 @@ export default function DonationsScreen() {
         />
         <Text style={styles.hint}>Minimum ₹{DONATION_MIN_INR}. Whole rupees only.</Text>
 
-        <Text style={styles.label}>PAN (required for an 80G receipt over ₹2,000)</Text>
+        <Text style={styles.label}>
+          {HAS_80G ? 'PAN (required for an 80G receipt over ₹2,000)' : 'PAN (optional)'}
+        </Text>
         <TextInput
           style={styles.input}
           value={donorPan}
@@ -259,8 +262,8 @@ export default function DonationsScreen() {
 
         {orderRef ? (
           <Text style={styles.hint}>
-            Reference {orderRef}. Your 80G receipt is emailed automatically once
-            the payment is confirmed by the gateway.
+            Reference {orderRef}. Your {RECEIPT_NOUN} is emailed automatically once
+            the payment is confirmed by the gateway.{HAS_80G ? '' : ' It is proof of payment, not a tax-exemption certificate.'}
           </Text>
         ) : null}
       </View>

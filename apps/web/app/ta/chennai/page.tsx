@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { HAS_80G } from '../../../lib/eighty-g';
 
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'தர்ஷ்யா சென்னை — பூஜை, தரிசனம், பஞ்சாங்கம் (தமிழில்)',
   description:
-    'சென்னை மெட்ரோவில் சரிபார்க்கப்பட்ட பண்டிதர்கள் + 5 அணைய கோயில்கள் (கபாலீஸ்வரர், பார்த்தசாரதி, வடபழனி முருகன், மருந்தீஸ்வரர், இஸ்கான்) — வீடியோ ஆதாரத்துடன் பூஜை, நேரலை தரிசனம், 80G ரசீது.',
+    `சென்னை மெட்ரோவில் சரிபார்க்கப்பட்ட பண்டிதர்கள் + 5 அணைய கோயில்கள் (கபாலீஸ்வரர், பார்த்தசாரதி, வடபழனி முருகன், மருந்தீஸ்வரர், இஸ்கான்) — வீடியோ ஆதாரத்துடன் பூஜை, நேரலை தரிசனம், ${HAS_80G ? '80G ரசீது' : 'ரசீது'}.`,
   alternates: {
     canonical: 'https://darshya.online/ta/chennai',
     languages: {
@@ -135,7 +136,7 @@ export default function TamilChennaiLanding() {
           தர்ஷ்யா சென்னை
         </h1>
         <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
-          மயிலாப்பூர் கபாலீஸ்வரர் முதல் ECR இஸ்கான் வரை — சென்னை மெட்ரோவின் 5 அணைய ஆலயங்களில் சரிபார்க்கப்பட்ட பண்டிதர்களுடன் பூஜை, வீடியோ ஆதாரம், நேரலை தரிசனம், 80G ரசீது.
+          மயிலாப்பூர் கபாலீஸ்வரர் முதல் ECR இஸ்கான் வரை — சென்னை மெட்ரோவின் 5 அணைய ஆலயங்களில் சரிபார்க்கப்பட்ட பண்டிதர்களுடன் பூஜை, வீடியோ ஆதாரம், நேரலை தரிசனம், {HAS_80G ? '80G ரசீது' : 'ரசீது'}.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link

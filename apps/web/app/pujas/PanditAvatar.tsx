@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usableImageSrc } from '../../lib/dead-image-hosts';
 
 /**
  * PF-04 (prod sweep 2026-08-12, P2) — pandit headshots rendered as broken-image
@@ -20,9 +21,19 @@ import { useState } from 'react';
  * The swap is one-way state, not a src reassignment: an onError that points at
  * another remote URL which itself fails is an infinite request loop.
  *
- * This does NOT fix the hostname. Either images.darshya.online gets a DNS
- * record and the assets behind it, or `priests.avatar_url` is repointed at
- * self-hosted /public paths — both are outside the web app.
+ * 2026-09-01 — the second half of the audit's fix. `onError` hid the broken
+ * icon but the browser still issued the request, still logged
+ * net::ERR_NAME_NOT_RESOLVED, and still flashed an empty box while DNS failed;
+ * and because onError never runs during SSR, the server-rendered HTML shipped
+ * the broken <img> every time. `usableImageSrc` drops a URL on a known-dead
+ * host BEFORE render, so nothing is requested at all and the initials tile is
+ * what the server sends. The `failed` state stays for every other way a live
+ * host can fail (404, 403, a truncated file).
+ *
+ * This still does not fix the hostname: either images.darshya.online gets a DNS
+ * record AND an origin serving /priests/*.jpg, or `priests.avatar_url` is
+ * repointed at self-hosted paths. Both are outside the web app — see
+ * lib/dead-image-hosts.ts.
  */
 export function PanditAvatar({
   src,
@@ -40,7 +51,10 @@ export function PanditAvatar({
   size?: number;
 }) {
   const [failed, setFailed] = useState(false);
-  const usable = typeof src === 'string' && src.trim().length > 0 && !failed;
+  // `usableImageSrc` returns null for empty AND for a known-dead host, so a URL
+  // nothing can answer never becomes a request.
+  const resolved = usableImageSrc(src);
+  const usable = resolved !== null && !failed;
 
   if (!usable) {
     return (
@@ -56,7 +70,7 @@ export function PanditAvatar({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src as string}
+      src={resolved}
       width={size}
       height={size}
       loading="lazy"

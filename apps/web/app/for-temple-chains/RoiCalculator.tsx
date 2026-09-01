@@ -84,7 +84,7 @@ export default function RoiCalculator() {
           </label>
           <label className="block text-sm">
             <span className="font-medium text-surface-800">
-              Admin hours/week spent on donor ops + 80G PDFs
+              Admin hours/week spent on donor ops + receipt PDFs
             </span>
             <input
               type="number"
@@ -113,7 +113,7 @@ export default function RoiCalculator() {
           <h3 className="font-display text-lg font-bold text-indigo-900">Estimated annual impact</h3>
           <Row label="Annual donation GMV processed" value={inr(result.annualGmv)} />
           <Row label="Admin time saved (₹400/hr)" value={inr(result.adminCostPerYear)} accent="emerald" />
-          <Row label="80G PDF automation (₹15/receipt)" value={inr(result.eightyGSavings)} accent="emerald" />
+          <Row label="Receipt PDF automation (₹15/receipt)" value={inr(result.eightyGSavings)} accent="emerald" />
           <Row label="Donor retention uplift (+8%)" value={inr(result.retentionUplift)} accent="emerald" />
           <div className="my-2 border-t border-surface-200" />
           <Row label="Total annual benefit" value={inr(result.totalBenefit)} bold />
@@ -142,7 +142,7 @@ export default function RoiCalculator() {
         </div>
       </div>
       <p className="mt-4 text-xs text-surface-600">
-        Estimates assume mid-market rates: ₹400/hr loaded admin time, ₹15 per manually-issued 80G PDF, 8%
+        Estimates assume mid-market rates: ₹400/hr loaded admin time, ₹15 per manually-issued donation receipt PDF, 8%
         recurring donor retention lift from native CRM. Your actual numbers will vary; founder will
         co-build a custom ROI deck during pilot onboarding.
       </p>

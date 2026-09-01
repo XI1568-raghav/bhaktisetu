@@ -5,6 +5,7 @@ import { CHAKRAS, getChakra } from '../../../lib/chakras';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { h1Class } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -122,7 +123,21 @@ export default async function ChakraDetail({
         <div className="flex items-center gap-2 mb-2 text-xs text-surface-700 font-mono">
           <span>Chakra #{c.number} of 7</span>
         </div>
-        <h1 className={`text-3xl sm:text-5xl font-bold ${style.text} mb-2 leading-tight`}>
+        {/* DU-05: this was the last per-instance-colour h1 in the tree —
+            `text-3xl sm:text-5xl font-bold` plus one of seven chakra hues, a
+            recipe no other page shares. It takes the `marketing` ramp (the
+            sweep's own rule: 5xl-and-up is marketing) with the hue passed as
+            the archetype's colour rather than layered on top of it; see
+            h1Class in components/ui/heading-recipe.ts for why layering is a
+            coin flip. Deltas, all deliberate: font-bold -> font-semibold and
+            + tracking-tight (the archetype's), + .heading-display (DU-06 —
+            what the finding asked for), - leading-tight (the scale already
+            pairs a leading with each step, and one unprefixed leading-*
+            overrides all of them at once), and sm:text-5xl becomes
+            sm:text-4xl lg:text-5xl so 48px arrives at the breakpoint the
+            scale puts it at instead of on a 640px phone. The hue is
+            unchanged. */}
+        <h1 className={`${h1Class('marketing', style.text)} mb-2`}>
           {c.english}
           <span className="text-surface-600 text-xl sm:text-2xl font-normal ml-3">
             {c.sanskrit} · {c.iast}

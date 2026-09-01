@@ -61,9 +61,18 @@ export function apiErrorCode(body: unknown): string | null {
  * AUTH-06 (2026-08-28): 403 and "forbidden" used to be in here, and that was
  * wrong in a way that only became load-bearing when AUTH-06 wired `reauth` up
  * to <ReauthPrompt> — which renders INSTEAD of Retry. See `isForbiddenError`.
+ *
+ * AUTH-06 (2026-09-01): `session expired` did not match the sentence this
+ * module's own `friendlyApiError` RETURNS — "Your session has expired." — nor
+ * the one app/bookings/view/page.tsx composes for its 401. So the classifier
+ * was not idempotent on its own output: any screen that stored the friendly
+ * message and later re-classified it (which is exactly what `userFacingMessage`
+ * does, and what a page does when it keeps `err.message` in state) got
+ * `reauth: false` on the second pass and lost the sign-in affordance. `has`
+ * and `have` are optional so all four phrasings land in the same branch.
  */
 export function isAuthError(message: string): boolean {
-  return /401|unauthorized|unauthenticated|demo tokens|invalid.*token|session expired/i.test(
+  return /401|unauthorized|unauthenticated|demo tokens|invalid.*token|sessions?\s+(?:has\s+|have\s+)?expired/i.test(
     message,
   );
 }
@@ -208,9 +217,27 @@ export const GENERIC_ERROR_MESSAGE = 'We could not load this right now. Please t
  * straight through and routes everything else through `friendlyApiError`.
  */
 export class UserFacingError extends Error {
-  constructor(message: string) {
+  /**
+   * AUTH-06 (2026-09-01) — the HTTP status this copy was built from, when the
+   * thrower knows it.
+   *
+   * Without it the `reauth` decision is unrecoverable on the screens that
+   * compose their own sentence, and that is not hypothetical. On
+   * app/priest/payouts a 401 whose body is the developer name "Unauthorized"
+   * goes: `serverErrorText` refuses the developer name -> falls back to the
+   * page's own "Could not load your payouts. Please try again." -> the status
+   * is gone -> `friendlyApiError` sees a sentence with no 401 in it and answers
+   * `reauth: false`. The pandit gets a Retry button, a sentence that does not
+   * even mention the session, and no way out. Carrying the number keeps the
+   * classification possible without putting the number on a screen — it is
+   * read by `classifyUserFacing` and never rendered.
+   */
+  readonly status?: number;
+
+  constructor(message: string, status?: number) {
     super(message);
     this.name = 'UserFacingError';
+    this.status = status;
     // Subclassing a built-in loses the prototype link when the class is
     // downlevelled. Without this the `instanceof` below silently returns false
     // and every deliberate message falls through to the generic bucket.
@@ -248,6 +275,47 @@ export function userFacingMessage(err: unknown, fallback?: string): string {
   const { message } = friendlyApiError(err);
   if (message === GENERIC_ERROR_MESSAGE && fallback && fallback.trim()) return fallback;
   return message;
+}
+
+/**
+ * AUTH-06 (2026-09-01) — `userFacingMessage`, plus the decision it throws away.
+ *
+ * The finding is usually stated as "six pages call `friendlyApiError` and read
+ * only `.message`". That is the visible half. The invisible half is every
+ * screen that calls `userFacingMessage`, whose signature can only ever return a
+ * string: it computes `reauth` internally, via the same `friendlyApiError`, and
+ * discards it somewhere no grep for `.reauth` will ever look. Those screens
+ * render the identical dead end — "Your session has expired. Please sign in
+ * again to continue." beside a Retry button that re-fires the request with the
+ * same dead credential.
+ *
+ * Two things this does that a bare `friendlyApiError(err).reauth` at the call
+ * site cannot:
+ *
+ *  1. It reads `UserFacingError.status` first. A page that composed its own
+ *     sentence has usually destroyed the status on the way — see the class
+ *     comment above — so classifying the composed sentence answers `false` for
+ *     a real 401.
+ *  2. It keeps the message and the flag derived from the SAME error, so the
+ *     two can never disagree about what happened.
+ *
+ * 403 stays `reauth: false`: signing in again does not lift a suspension, and
+ * offering it produces the loop documented on `isForbiddenError`.
+ */
+export function classifyUserFacing(
+  err: unknown,
+  fallback?: string,
+): { message: string; reauth: boolean } {
+  const message = userFacingMessage(err, fallback);
+  const status = err instanceof UserFacingError ? err.status : undefined;
+  // A known status is authoritative — it is the one fact the composed sentence
+  // may have dropped. Everything else falls back to classifying the text.
+  if (typeof status === 'number') {
+    if (status === 401) return { message, reauth: true };
+    if (status === 403) return { message, reauth: false };
+    return { message, reauth: false };
+  }
+  return { message, reauth: friendlyApiError(err).reauth };
 }
 
 /**

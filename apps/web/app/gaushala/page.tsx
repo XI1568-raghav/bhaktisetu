@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getGaushalaImage, IMG_W } from "../../lib/images";
+import { getGaushalaImage, remoteSrcSet, IMG_W } from "../../lib/images";
 import { ApprovedProvidersStrip } from "../../components/ApprovedProvidersStrip";
 import {
  Heart,
@@ -420,8 +420,34 @@ export default function GaushalaPage() {
  className="group min-w-[260px] sm:min-w-[280px] bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)] card-hover transition-all duration-300 snap-start shrink-0"
  >
  <div className="relative h-44 overflow-hidden">
+ {/* CWV-01 residual 3 — /gaushala was one of the two routes that emitted
+     ZERO srcset (the other, the homepage, was closed in the 2026-08-23
+     pass). Every one of these eight cards asked Commons for the 500px
+     thumb regardless of device, into a card that is `min-w-[260px]
+     sm:min-w-[280px]` — so a 1x phone downloaded a 500px image for a
+     260px slot.
+
+     Measured against Commons on 2026-09-01, per unique file:
+       Gir_cow.jpg                    500px 85,574 B  ->  330px 39,267 B
+       Tharparkar_01.JPG              500px 68,454 B  ->  330px 32,743 B
+       Sahiwala_01.JPG                500px 75,914 B  ->  330px 35,097 B
+       Red_Sindhi_Cow_at_Pakistan.jpg 500px 54,087 B  ->  330px 25,539 B
+       unique total                        284,029 B  ->      132,646 B
+     i.e. -151,383 B (-53.3%) for a 1x viewport. A 2x device still needs
+     520 CSS px of pixels for the 260px slot and still picks the 500px
+     candidate, so nothing gets softer — this only stops 1x devices
+     paying for pixels they cannot show.
+
+     `sizes` states the two real slot widths rather than a viewport
+     fraction: the strip is a horizontal snap-scroller, so the card width
+     is fixed by min-w-*, not by the viewport. 250 is in the ladder so a
+     narrow 1x device that renders the 260px card can still land one step
+     down; IMG_W.CARD is what `cow.photo` itself is, so the top candidate
+     and the src stay the same URL and no extra fetch is introduced. */}
  <img
  src={cow.photo}
+ srcSet={remoteSrcSet(cow.photo, [250, 330, IMG_W.CARD])}
+ sizes="(max-width: 639px) 260px, 280px"
  width={330}
  height={176}
  loading="lazy"

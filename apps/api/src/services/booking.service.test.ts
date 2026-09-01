@@ -9,7 +9,13 @@ import { prismaMock } from '../lib/__mocks__/prisma.js';
 // (and must NOT swallow), the models have to exist. Augmenting the shared
 // object here rather than editing it keeps this test file self-contained —
 // vitest gives every test file its own module registry, so this cannot leak.
-const templePayoutMock = { findFirst: vi.fn(), create: vi.fn() };
+// DI-06 (F367): writeTemplePayoutOnConfirm inserts through
+// `createMany({ skipDuplicates })` so the UNIQUE index on
+// temple_payouts.booking_id resolves a concurrent confirm inside the INSERT
+// instead of raising P2002, which inside the caller's payment transaction
+// would roll back a real capture. `create` is kept on the mock so a
+// regression back to it is visible rather than a TypeError.
+const templePayoutMock = { findFirst: vi.fn(), create: vi.fn(), createMany: vi.fn() };
 const priestPujaOfferingMock = { findUnique: vi.fn() };
 (prismaMock as any).templePayout = templePayoutMock;
 (prismaMock as any).priestPujaOffering = priestPujaOfferingMock;
@@ -515,7 +521,7 @@ describe('BookingService.updateBookingStatus', () => {
     });
     prismaMock.commission.findFirst.mockResolvedValue(null);
     templePayoutMock.findFirst.mockResolvedValue(null);
-    templePayoutMock.create.mockResolvedValue({ id: 'tp-1' });
+    templePayoutMock.createMany.mockResolvedValue({ count: 1 });
 
     const result = await service.updateBookingStatus('booking-1', 'confirmed' as any);
     expect(result.status).toBe('confirmed');
@@ -656,9 +662,9 @@ describe('BookingService.updateBookingStatus', () => {
     });
     prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1' });
     prismaMock.commission.findFirst.mockResolvedValue(null);
-    prismaMock.commission.create.mockResolvedValue({ id: 'c-1' });
+    prismaMock.commission.createMany.mockResolvedValue({ count: 1 });
     templePayoutMock.findFirst.mockResolvedValue(null);
-    templePayoutMock.create.mockResolvedValue({ id: 'tp-1' });
+    templePayoutMock.createMany.mockResolvedValue({ count: 1 });
   }
 
   it('refuses to confirm a booking with no captured payment', async () => {
@@ -680,8 +686,8 @@ describe('BookingService.updateBookingStatus', () => {
     ).rejects.toThrow();
 
     // The self-payout mint: Commission.amount IS what getPayoutBalance pays.
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
-    expect(templePayoutMock.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
+    expect(templePayoutMock.createMany).not.toHaveBeenCalled();
   });
 
   it('throws INSIDE the transaction so the unpaid booking never becomes confirmed', async () => {
@@ -813,9 +819,9 @@ describe('BookingService.updateBookingStatus', () => {
     // Priest.id; 'user-pandit-1' is what every payout read passes.
     prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1' });
     prismaMock.commission.findFirst.mockResolvedValue(null);
-    prismaMock.commission.create.mockResolvedValue({ id: 'c-1' });
+    prismaMock.commission.createMany.mockResolvedValue({ count: 1 });
     templePayoutMock.findFirst.mockResolvedValue(null);
-    templePayoutMock.create.mockResolvedValue({ id: 'tp-1' });
+    templePayoutMock.createMany.mockResolvedValue({ count: 1 });
   }
 
   it('runs the confirm flip + commission + temple payout in ONE transaction', async () => {
@@ -825,8 +831,8 @@ describe('BookingService.updateBookingStatus', () => {
 
     expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
     expect(prismaMock.pujaBooking.update).toHaveBeenCalledTimes(1);
-    expect(prismaMock.commission.create).toHaveBeenCalledTimes(1);
-    expect(templePayoutMock.create).toHaveBeenCalledTimes(1);
+    expect(prismaMock.commission.createMany).toHaveBeenCalledTimes(1);
+    expect(templePayoutMock.createMany).toHaveBeenCalledTimes(1);
   });
 
   it('computes the commission percentage as an exact Decimal, not a float', async () => {
@@ -834,7 +840,7 @@ describe('BookingService.updateBookingStatus', () => {
 
     await service.updateBookingStatus('booking-1', 'confirmed' as any);
 
-    const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
+    const data = (prismaMock.commission.createMany.mock.calls[0]![0] as any).data[0];
     expect(data.amount).toBeInstanceOf(Prisma.Decimal);
     expect(data.percentage).toBeInstanceOf(Prisma.Decimal);
     // `amount` is the provider's earning; `percentage` is the PLATFORM's take
@@ -856,7 +862,7 @@ describe('BookingService.updateBookingStatus', () => {
 
     await service.updateBookingStatus('booking-1', 'confirmed' as any);
 
-    const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
+    const data = (prismaMock.commission.createMany.mock.calls[0]![0] as any).data[0];
     expect(data.providerId).toBe('user-pandit-1');
     // The old value. A Priest.id here matches no payout read, which is exactly
     // why the historical rows are orphaned rather than mispaid.
@@ -868,7 +874,7 @@ describe('BookingService.updateBookingStatus', () => {
 
     await service.updateBookingStatus('booking-1', 'confirmed' as any);
 
-    const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
+    const data = (prismaMock.commission.createMany.mock.calls[0]![0] as any).data[0];
     expect(data.amount.toString()).toBe('880');
     // ₹880 owed vs ₹220 written = the 75% underpayment the paired fix avoids.
     expect(data.amount.toString()).not.toBe('220');
@@ -881,16 +887,16 @@ describe('BookingService.updateBookingStatus', () => {
     await service.updateBookingStatus('booking-1', 'confirmed' as any);
 
     // Writing it anyway is what produced the orphan rows in the first place.
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
     // The temple share is independent and must still run.
-    expect(templePayoutMock.create).toHaveBeenCalledTimes(1);
+    expect(templePayoutMock.createMany).toHaveBeenCalledTimes(1);
   });
 
   it('PROPAGATES a commission write failure instead of swallowing it', async () => {
     // Before RV-14 this was caught, console.warn'd and ignored, so a paid,
     // CONFIRMED booking could end up with no ledger row while the API said 200.
     confirmMocks();
-    prismaMock.commission.create.mockRejectedValue(new Error('deadlock detected'));
+    prismaMock.commission.createMany.mockRejectedValue(new Error('deadlock detected'));
 
     await expect(service.updateBookingStatus('booking-1', 'confirmed' as any)).rejects.toThrow(
       'deadlock detected',
@@ -903,9 +909,9 @@ describe('BookingService.updateBookingStatus', () => {
 
     await service.updateBookingStatus('booking-1', 'confirmed' as any);
 
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
     // The temple share is guarded independently and still runs.
-    expect(templePayoutMock.create).toHaveBeenCalledTimes(1);
+    expect(templePayoutMock.createMany).toHaveBeenCalledTimes(1);
   });
 
   // ── RV-03 (2026-08-10): the temple's 5% share ─────────────────────────────
@@ -915,7 +921,7 @@ describe('BookingService.updateBookingStatus', () => {
 
     await service.updateBookingStatus('booking-1', 'confirmed' as any);
 
-    const data = (templePayoutMock.create.mock.calls[0]![0] as any).data;
+    const data = (templePayoutMock.createMany.mock.calls[0]![0] as any).data[0];
     expect(data.templeId).toBe('t-1');
     expect(data.bookingId).toBe('booking-1');
     expect(data.status).toBe('pending');
@@ -932,7 +938,7 @@ describe('BookingService.updateBookingStatus', () => {
 
     await service.updateBookingStatus('booking-1', 'confirmed' as any);
 
-    expect(templePayoutMock.create).not.toHaveBeenCalled();
+    expect(templePayoutMock.createMany).not.toHaveBeenCalled();
   });
 
   it('does not write a TemplePayout on a non-confirm transition', async () => {
@@ -951,7 +957,7 @@ describe('BookingService.updateBookingStatus', () => {
 
     await service.updateBookingStatus('booking-1', 'completed' as any);
 
-    expect(templePayoutMock.create).not.toHaveBeenCalled();
+    expect(templePayoutMock.createMany).not.toHaveBeenCalled();
   });
 });
 
@@ -973,7 +979,9 @@ describe('writeTemplePayoutOnConfirm', () => {
       pujaBooking: { findUnique: vi.fn().mockResolvedValue(booking) },
       templePayout: {
         findFirst: vi.fn().mockResolvedValue(existing),
-        create: vi.fn().mockResolvedValue({ id: 'tp-1' }),
+        create: vi.fn(),
+        // DI-06 (F367): the writer inserts ON CONFLICT DO NOTHING.
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
   }
@@ -993,11 +1001,41 @@ describe('writeTemplePayoutOnConfirm', () => {
     // Every read AND the write go through the caller's tx — nothing leaks onto
     // the top-level client, so the row commits or rolls back with the confirm.
     expect(tx.pujaBooking.findUnique).toHaveBeenCalledTimes(1);
-    expect(tx.templePayout.create).toHaveBeenCalledTimes(1);
+    expect(tx.templePayout.createMany).toHaveBeenCalledTimes(1);
     expect(prismaMock.pujaBooking.findUnique).not.toHaveBeenCalled();
-    const data = (tx.templePayout.create.mock.calls[0]![0] as any).data;
+    const data = (tx.templePayout.createMany.mock.calls[0]![0] as any).data[0];
     // pujaPrice 3500 -> 5% = 175.00
     expect(data.amount.toFixed(2)).toBe('175.00');
+  });
+
+  /**
+   * DI-06 (F367) — the temple ledger's idempotency has to reach the database.
+   *
+   * This writer's guard was a `findFirst`-then-`create`, and its own comment
+   * conceded the point: "temple_payouts.booking_id has no UNIQUE index, so this
+   * findFirst remains a TOCTOU under truly concurrent confirms". Migration
+   * 20260824000000 supplies the index; the insert has to USE it.
+   *
+   * It must NOT do so by catching P2002. This function runs inside the caller's
+   * payment-capture `$transaction`, where a statement error aborts the whole
+   * Postgres transaction and Prisma issues no savepoint — catching it in
+   * JavaScript would not recover, and a duplicate temple share would roll back a
+   * real capture. `createMany({ skipDuplicates })` compiles to
+   * INSERT ... ON CONFLICT DO NOTHING, which never raises. Hence both halves of
+   * the assertion: the flag must be set, and `create` must be unreachable.
+   */
+  it('inserts ON CONFLICT DO NOTHING so a race cannot abort the payment transaction', async () => {
+    const tx = fakeTx(booking);
+
+    await writeTemplePayoutOnConfirm('booking-1', tx as any);
+
+    const args = tx.templePayout.createMany.mock.calls[0]![0] as {
+      data: unknown[];
+      skipDuplicates?: boolean;
+    };
+    expect(args.skipDuplicates).toBe(true);
+    expect(args.data).toHaveLength(1);
+    expect(tx.templePayout.create).not.toHaveBeenCalled();
   });
 
   it('honours a valid TEMPLE_SHARE_RATE override', async () => {
@@ -1006,7 +1044,7 @@ describe('writeTemplePayoutOnConfirm', () => {
 
     await writeTemplePayoutOnConfirm('booking-1', tx as any);
 
-    const data = (tx.templePayout.create.mock.calls[0]![0] as any).data;
+    const data = (tx.templePayout.createMany.mock.calls[0]![0] as any).data[0];
     // 3500 * 0.075 = 262.50
     expect(data.amount.toFixed(2)).toBe('262.50');
   });
@@ -1020,7 +1058,7 @@ describe('writeTemplePayoutOnConfirm', () => {
 
     await writeTemplePayoutOnConfirm('booking-1', tx as any);
 
-    const data = (tx.templePayout.create.mock.calls[0]![0] as any).data;
+    const data = (tx.templePayout.createMany.mock.calls[0]![0] as any).data[0];
     expect(data.amount.toFixed(2)).toBe('175.00');
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
@@ -1033,7 +1071,7 @@ describe('writeTemplePayoutOnConfirm', () => {
 
     await writeTemplePayoutOnConfirm('booking-1', tx as any);
 
-    expect((tx.templePayout.create.mock.calls[0]![0] as any).data.amount.toFixed(2)).toBe('175.00');
+    expect((tx.templePayout.createMany.mock.calls[0]![0] as any).data[0].amount.toFixed(2)).toBe('175.00');
     warn.mockRestore();
   });
 
@@ -1047,7 +1085,7 @@ describe('writeTemplePayoutOnConfirm', () => {
 
     await writeTemplePayoutOnConfirm('booking-1', tx as any);
 
-    expect((tx.templePayout.create.mock.calls[0]![0] as any).data.amount.toFixed(2)).toBe('104.95');
+    expect((tx.templePayout.createMany.mock.calls[0]![0] as any).data[0].amount.toFixed(2)).toBe('104.95');
   });
 
   it('is idempotent — no write when a payout already exists', async () => {
@@ -1055,7 +1093,7 @@ describe('writeTemplePayoutOnConfirm', () => {
 
     await writeTemplePayoutOnConfirm('booking-1', tx as any);
 
-    expect(tx.templePayout.create).not.toHaveBeenCalled();
+    expect(tx.templePayout.createMany).not.toHaveBeenCalled();
   });
 
   it('no-ops when the booking is gone', async () => {
@@ -1064,7 +1102,7 @@ describe('writeTemplePayoutOnConfirm', () => {
     await writeTemplePayoutOnConfirm('booking-1', tx as any);
 
     expect(tx.templePayout.findFirst).not.toHaveBeenCalled();
-    expect(tx.templePayout.create).not.toHaveBeenCalled();
+    expect(tx.templePayout.createMany).not.toHaveBeenCalled();
   });
 
   it('writes nothing rather than a zero row when the share rounds to 0', async () => {
@@ -1073,17 +1111,17 @@ describe('writeTemplePayoutOnConfirm', () => {
 
     await writeTemplePayoutOnConfirm('booking-1', tx as any);
 
-    expect(tx.templePayout.create).not.toHaveBeenCalled();
+    expect(tx.templePayout.createMany).not.toHaveBeenCalled();
   });
 
   it('defaults to the top-level prisma client when no tx is passed', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(booking);
     templePayoutMock.findFirst.mockResolvedValue(null);
-    templePayoutMock.create.mockResolvedValue({ id: 'tp-1' });
+    templePayoutMock.createMany.mockResolvedValue({ count: 1 });
 
     await writeTemplePayoutOnConfirm('booking-1');
 
-    expect(templePayoutMock.create).toHaveBeenCalledTimes(1);
+    expect(templePayoutMock.createMany).toHaveBeenCalledTimes(1);
   });
 });
 

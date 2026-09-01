@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { usableImageSrc } from '../lib/dead-image-hosts';
 
 /**
  * PF-04 — an avatar `<img>` that degrades to a fallback when the URL is dead.
@@ -55,14 +56,22 @@ export function AvatarWithFallback({
   fallback: ReactNode;
 }) {
   const [failed, setFailed] = useState(false);
-  const usable = typeof src === 'string' && src.trim().length > 0 && !failed;
+  // 2026-09-01 — a URL on a host with no DNS record is dropped BEFORE render
+  // rather than after the request fails. `onError` hid the broken icon but the
+  // request was still issued (net::ERR_NAME_NOT_RESOLVED in the console), the
+  // box still flashed empty while DNS timed out, and onError does not run
+  // during SSR at all — so the server-rendered HTML always shipped the broken
+  // <img>. See lib/dead-image-hosts.ts. `failed` remains for every other way a
+  // LIVE host fails: a 404, a 403, a truncated file.
+  const resolved = usableImageSrc(src);
+  const usable = resolved !== null && !failed;
 
   if (!usable) return <>{fallback}</>;
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src as string}
+      src={resolved}
       width={width}
       height={height}
       loading="lazy"

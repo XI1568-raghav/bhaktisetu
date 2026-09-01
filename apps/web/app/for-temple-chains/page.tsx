@@ -3,17 +3,18 @@ import Link from 'next/link';
 import RoiCalculator from './RoiCalculator';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_80G, RECEIPT_NOUN, RECEIPT_NOUN_PLURAL } from '../../lib/eighty-g';
 
 
 export const metadata: Metadata = {
   title: 'Darshya for Temple Chains, Ashrams & Mathas — B2B SaaS',
   description:
-    'White-label donor CRM, puja bookings, 80G automation and live darshan for temple chains, ashram networks and matha organizations. Pilot pricing ₹1,500/mo for 90 days.',
+    `White-label donor CRM, puja bookings, ${RECEIPT_NOUN} automation and live darshan for temple chains, ashram networks and matha organizations. Pilot pricing ₹1,500/mo for 90 days.`,
   alternates: { canonical: '/for-temple-chains' },
   openGraph: {
     images: ['/images/golden-temple-og.jpg'],
     title: 'Darshya for Temple Chains — B2B SaaS pilot ₹1,500/mo',
-    description: 'White-label donor CRM, 80G automation, puja bookings for chains operating 5-20 temples.',
+    description: `White-label donor CRM, ${RECEIPT_NOUN} automation, puja bookings for chains operating 5-20 temples.`,
     url: 'https://darshya.online/for-temple-chains',
   },
 };
@@ -28,7 +29,9 @@ const TIERS = [
     features: [
       'Online puja booking widget',
       'Donor capture form',
-      '80G receipt automation (if registered)',
+      HAS_80G
+        ? '80G receipt automation (if registered)'
+        : 'Numbered donation receipt automation (not an 80G document — see below)',
       'Live darshan stream embed',
       'Email + WA support',
     ],
@@ -60,7 +63,7 @@ const TIERS = [
       'Dedicated CSM + quarterly strategy review',
       'Custom API access for donor sync',
       'Advanced analytics + investor-grade reports',
-      'Compliance audit + 80G reconciliation',
+      `Compliance audit + ${RECEIPT_NOUN} reconciliation`,
       'White-glove migration from existing CRM',
     ],
   },
@@ -85,7 +88,7 @@ const CUSTOMER_TYPES = [
   {
     title: 'High-volume temples',
     examples: 'Vaishno Devi Shrine Board, Tirumala Tirupati, Sabarimala',
-    body: 'Full donor CRM + 80G auto + analytics scaled for daily transaction volumes in lakhs.',
+    body: `Full donor CRM + ${RECEIPT_NOUN} automation + analytics scaled for daily transaction volumes in lakhs.`,
   },
   {
     title: 'Diaspora temple federations',
@@ -96,7 +99,7 @@ const CUSTOMER_TYPES = [
 
 const ROI_COMPARISON = [
   { row: 'Donor CRM setup', razorpay: 'Manual spreadsheet', darshya: 'Built-in, day 1' },
-  { row: '80G receipt issuance', razorpay: 'Manual PDF per donor', darshya: 'Auto-emailed on payment' },
+  { row: `${RECEIPT_NOUN.charAt(0).toUpperCase()}${RECEIPT_NOUN.slice(1)} issuance`, razorpay: 'Manual PDF per donor', darshya: 'Auto-emailed on payment' },
   { row: 'Recurring donor retention', razorpay: 'Not native', darshya: 'Tracked + nudged via WA' },
   { row: 'Live darshan stream', razorpay: 'N/A', darshya: 'Embedded player included' },
   { row: 'Puja booking + sankalp + video proof', razorpay: 'N/A', darshya: 'Native flow' },
@@ -116,7 +119,7 @@ export default function ForTempleChainsPage() {
             One stack for your temple chain, ashram network or matha.
           </h1>
           <p className="prose-lead mt-4 max-w-2xl text-surface-700">
-            White-label donor CRM, 80G automation, puja bookings and live darshan — built on the same
+            White-label donor CRM, {RECEIPT_NOUN} automation, puja bookings and live darshan — built on the same
             infrastructure thousands of devotees already trust on darshya.online.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -144,7 +147,7 @@ export default function ForTempleChainsPage() {
           <h2 className="font-display text-2xl font-bold sm:text-3xl">Who this is built for</h2>
           <p className="mt-2 text-surface-700">
             If your organization operates 5+ devotional sites, manages a recurring donor base, or
-            issues 80G receipts at volume, you fit one of these archetypes.
+            issues {RECEIPT_NOUN_PLURAL} at volume, you fit one of these archetypes.
           </p>
           <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {CUSTOMER_TYPES.map((t) => (
@@ -163,7 +166,7 @@ export default function ForTempleChainsPage() {
           <h2 className="font-display text-2xl font-bold sm:text-3xl">Estimate your annual savings</h2>
           <p className="mt-2 text-surface-700">
             Most temple chains spend ₹2-6 lakh/year stitching Razorpay + Google Forms + Excel + a manual
-            80G PDF generator. Estimate what Darshya replaces.
+            {RECEIPT_NOUN} PDF generator. Estimate what Darshya replaces.
           </p>
           <div className="mt-6">
             <RoiCalculator />

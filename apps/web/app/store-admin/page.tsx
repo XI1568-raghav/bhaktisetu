@@ -5,6 +5,7 @@ import Link from 'next/link';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 import { API_BASE_URL } from '../../lib/api-config';
 import { useAuth } from '../../lib/auth-context';
+import { userFacingMessage } from '../../lib/friendly-error';
 import {
  IndianRupee,
  TrendingUp,
@@ -295,7 +296,7 @@ export default function StoreAdminDashboard() {
        });
      } catch (err) {
        if (cancelled) return;
-       setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+       setError(userFacingMessage(err, 'We could not load your dashboard. Please try again.'));
        setData(fallbackData);
      } finally {
        if (!cancelled) setLoading(false);

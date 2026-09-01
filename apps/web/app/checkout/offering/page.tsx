@@ -32,6 +32,10 @@ import {
 import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import {
+  CANCELLATION_BADGE_LABEL,
+  CANCELLATION_BADGE_DESC,
+} from '../../../lib/cancellation-policy';
 
 // ─── Razorpay loader ───────────────────────────────────────────
 // RES-04 (2026-08-12): the loader used to live inline here (and, verbatim, in
@@ -553,7 +557,18 @@ function OfferingCheckoutInner() {
           </div>
           <div className="flex items-start gap-2 text-xs text-surface-700">
             <Shield className="w-3.5 h-3.5 text-saffron-600 mt-0.5 shrink-0" />
-            <span>Free cancellation up to 24 hours before the scheduled time.</span>
+            {/* LEG-03 (F223). This read "Free cancellation up to 24 hours before
+                the scheduled time." directly above the Pay button, on a flow
+                that creates an ordinary PujaBooking (POST /bookings/from-offering)
+                and is therefore governed by DEFAULT_CANCEL_POLICY. That ladder
+                pays 100% only at 48h+ and 75% in the 24-48h band, so "free" at
+                the 24-hour mark over-promised by a whole tier: a devotee
+                cancelling 30 hours out was told the refund was free and paid
+                75%. The wording now comes from lib/cancellation-policy, the same
+                module /refunds, /terms, /faqs and the puja wizard render. */}
+            <span>
+              {CANCELLATION_BADGE_LABEL}. {CANCELLATION_BADGE_DESC}.
+            </span>
           </div>
         </div>
 

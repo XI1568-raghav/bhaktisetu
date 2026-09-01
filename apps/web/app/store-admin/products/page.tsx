@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import {
   listStoreProductsWithSetupState,
   saveStoreProfile,
@@ -104,7 +105,7 @@ function StoreAdminProductsPageContent() {
       setProducts(data.products);
       setStoreSetupRequired(data.storeProfileMissing);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load products');
+      setError(userFacingMessage(err, 'We could not load your products. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -171,7 +172,7 @@ function StoreAdminProductsPageContent() {
       }
       resetForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(userFacingMessage(err, 'We could not save that product. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -189,7 +190,7 @@ function StoreAdminProductsPageContent() {
       setProducts((cur) => cur.map((x) => (x.id === p.id ? updated : x)));
     } catch (err) {
       setProducts(prev);
-      setError(err instanceof Error ? err.message : 'Toggle failed');
+      setError(userFacingMessage(err, 'We could not change that product. Please try again.'));
     } finally {
       setBusyId(null);
     }
@@ -205,7 +206,7 @@ function StoreAdminProductsPageContent() {
       await deleteStoreProduct(token, id);
     } catch (err) {
       setProducts(prev);
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(userFacingMessage(err, 'We could not delete that product. Please try again.'));
     } finally {
       setBusyId(null);
     }
@@ -280,7 +281,7 @@ function StoreAdminProductsPageContent() {
               setStoreSetupRequired(false);
               await load();
             } catch (err) {
-              setError(err instanceof Error ? err.message : 'Could not save your store details');
+              setError(userFacingMessage(err, 'We could not save your store details. Please try again.'));
             } finally {
               setSavingSetup(false);
             }

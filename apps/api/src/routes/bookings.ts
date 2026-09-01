@@ -10,7 +10,11 @@ import {
   MY_BOOKINGS_VIEWS,
   type MyBookingsView,
 } from '../services/booking.service.js';
-import { cancellationService } from '../services/cancellation.service.js';
+import {
+  cancellationService,
+  DEVOTEE_CANCEL_CUTOFF_HOURS,
+  devoteeCancelAllowed as cancellationAllowed,
+} from '../services/cancellation.service.js';
 import { paymentService } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
@@ -1397,19 +1401,34 @@ export async function bookingRoutes(server: FastifyInstance) {
                   where: { bookingId: id, status: 'captured' },
                 });
                 if (capturedForEarning > 0) {
-                  await tx.commission.create({
-                    data: {
-                      bookingId: id,
-                      providerId: newPriestUser.userId,
-                      // amount = PROVIDER earning, percentage = PLATFORM rate.
-                      // lib/commission-math.ts — one column, one meaning.
-                      amount: split.priestPayout,
-                      percentage: platformRateOf(
-                        new Prisma.Decimal(money?.priceAmount ?? 0).sub(split.priestPayout),
-                        new Prisma.Decimal(money?.priceAmount ?? 0),
-                      ),
-                      status: 'PENDING',
-                    },
+                  // DI-06 (F367): ON CONFLICT DO NOTHING, not a bare INSERT.
+                  // `moved.count === 0` above is a TOCTOU exactly like the
+                  // findFirst guards in the other writers — a confirm rail can
+                  // mint between it and this statement. Migration
+                  // 20260824000000 makes `commissions.booking_id` UNIQUE, and a
+                  // P2002 raised here would abort THIS transaction, undoing the
+                  // reassignment that has not been written yet (the
+                  // pujaBooking.update follows). `skipDuplicates` compiles to
+                  // ON CONFLICT DO NOTHING, which is not an error: the loser
+                  // writes nothing, the reassignment still lands, and the
+                  // booking keeps the one earning it already had. Rationale in
+                  // full at payment.service.writePujaCommissionOnConfirm.
+                  await tx.commission.createMany({
+                    data: [
+                      {
+                        bookingId: id,
+                        providerId: newPriestUser.userId,
+                        // amount = PROVIDER earning, percentage = PLATFORM rate.
+                        // lib/commission-math.ts — one column, one meaning.
+                        amount: split.priestPayout,
+                        percentage: platformRateOf(
+                          new Prisma.Decimal(money?.priceAmount ?? 0).sub(split.priestPayout),
+                          new Prisma.Decimal(money?.priceAmount ?? 0),
+                        ),
+                        status: 'PENDING',
+                      },
+                    ],
+                    skipDuplicates: true,
                   });
                 }
               }
@@ -1586,9 +1605,15 @@ export async function bookingRoutes(server: FastifyInstance) {
         if (error.message?.includes('not authorized')) {
           return reply.status(403).send({ error: error.message });
         }
+        // LEG-03/F223: this matched the literal '24 hours', which was fine only
+        // for as long as the cutoff was hardcoded in the thrown sentence. It is
+        // now interpolated from DEVOTEE_CANCEL_CUTOFF_HOURS, so match the same
+        // constant — otherwise moving the cutoff silently downgrades this from
+        // 409 ("you cannot, here is why") to 400, and /bookings/view's fallback
+        // copy for a 409 is the sentence that names the cutoff.
         if (
           error.message?.includes('cannot be cancelled') ||
-          error.message?.includes('not allowed within 24 hours')
+          error.message?.includes(`not allowed within ${DEVOTEE_CANCEL_CUTOFF_HOURS} hours`)
         ) {
           return reply.status(409).send({ error: error.message });
         }
@@ -1834,12 +1859,36 @@ export async function bookingRoutes(server: FastifyInstance) {
           pujaPriceInr: Number(booking.priceAmount),
           totalPaidInr: Number(booking.priceAmount),
         });
+        // LEG-03 / F223 — the quote must answer "can I cancel", not only
+        // "what would the ladder pay".
+        //
+        // booking.service.cancelBooking REFUSES a devotee cancel inside
+        // DEVOTEE_CANCEL_CUTOFF_HOURS of the slot (pending_payment excepted),
+        // so the ladder's 50% (4-24h) and 25% (<4h) tiers are unreachable on
+        // this path. This endpoint did not know that: for a booking 10 hours
+        // out it returned refundFraction 0.5 with tierLabel "50% refund (4-24h
+        // before)", /bookings/view rendered "You get Rs 4,000 back (50%
+        // refund)" in the confirm dialog, and the POST that followed answered
+        // 409. The devotee was quoted half their money and paid nothing — the
+        // exact "the code owes them 50% or 25%" half of LEG-03, alive on the
+        // one surface a devotee actually reads.
+        //
+        // Both fields are ADDITIVE; refundAmountInr keeps its meaning for every
+        // existing consumer. When `cancellationAllowed` is false the refund
+        // figures are zeroed rather than left at the unreachable tier, because
+        // a client that ignores the new flag must not keep printing a number
+        // the product will not honour.
+        const allowed = cancellationAllowed(quote.hoursUntilSlot, booking.status);
         return {
           bookingId: id,
-          refundFraction: quote.refundFraction,
-          refundAmountInr: quote.refundAmountInr,
-          feeAmountInr: quote.feeAmountInr,
-          tierLabel: quote.tierLabel,
+          cancellationAllowed: allowed,
+          cancellationCutoffHours: DEVOTEE_CANCEL_CUTOFF_HOURS,
+          refundFraction: allowed ? quote.refundFraction : 0,
+          refundAmountInr: allowed ? quote.refundAmountInr : 0,
+          feeAmountInr: allowed ? quote.feeAmountInr : Number(booking.priceAmount),
+          tierLabel: allowed
+            ? quote.tierLabel
+            : `Cancellation is not possible within ${DEVOTEE_CANCEL_CUTOFF_HOURS} hours of the scheduled time`,
           hoursUntilSlot: quote.hoursUntilSlot,
           refundDaysLabel: policy.refundDaysLabel,
         };

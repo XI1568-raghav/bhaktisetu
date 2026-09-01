@@ -417,7 +417,39 @@ describe('OPS-05: "what happened to this payment" is answerable', () => {
       null,
       null,
       null,
+      // subject_id / subject_type — the polymorphic handle the donation,
+      // consultation and store-order rails are the ONLY way to reach, because
+      // none of them writes a Payment row and all four id columns above are
+      // NULL on their audit rows.
+      null,
+      null,
     ]);
+  });
+
+  it('reads a rail that writes no Payment row, via subject_id', async () => {
+    prismaMock.$queryRawUnsafe.mockResolvedValue([]);
+    const trail = await getMoneyTrail({
+      subjectId: 'don_1756000000000_abcd1234',
+      subjectType: 'donation',
+    });
+    expect(trail.available).toBe(true);
+    expect(prismaMock.$queryRawUnsafe.mock.calls[0]?.slice(1)).toEqual([
+      null,
+      null,
+      null,
+      null,
+      'don_1756000000000_abcd1234',
+      'donation',
+    ]);
+    expect(String(prismaMock.$queryRawUnsafe.mock.calls[0]?.[0])).toMatch(
+      /"subject_id" = \$5/,
+    );
+  });
+
+  it('refuses a subjectType with no id — that is an export of every donation', async () => {
+    const trail = await getMoneyTrail({ subjectType: 'donation' });
+    expect(trail).toMatchObject({ available: false, reason: 'no-filter' });
+    expect(prismaMock.$queryRawUnsafe).not.toHaveBeenCalled();
   });
 
   it('does not shift a timestamp by the host offset when the driver returns text', async () => {

@@ -9,8 +9,12 @@ import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout, readJsonBody } f
  *
  * Two premium hooks shipped before this file and neither could gate anything:
  *
- *   apps/web/lib/use-premium.ts        asks the server (GET /subscriptions/
- *                                     is-premium) and has ZERO call sites.
+ *   apps/web/lib/use-premium.ts        asked the server (GET /subscriptions/
+ *                                     is-premium) and had ZERO call sites.
+ *                                     DELETED in this change — described in
+ *                                     the past tense because the file is gone;
+ *                                     kept in this note because the reason it
+ *                                     existed is the reason this file does.
  *   apps/web/components/useIsPremium.ts has one call site (AdSlot.tsx) and
  *                                     never asks the server at all — it tests
  *                                     `user.subscriptionTier` against a
@@ -29,8 +33,8 @@ import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout, readJsonBody } f
  * The failure default is DENY. A network error, a timeout, a 5xx or a signed
  * out user all resolve to "no entitlement", never to "assume premium".
  *
- * NOTE the timeout. `lib/use-premium.ts:24` calls bare `fetch` with no
- * AbortController — the RES-01 / AUTH-01 class that leaves a component
+ * NOTE the timeout. The deleted `lib/use-premium.ts` called bare `fetch` with
+ * no AbortController — the RES-01 / AUTH-01 class that leaves a component
  * spinning forever on a half-open socket. Every request here goes through
  * `fetchWithTimeout`.
  */

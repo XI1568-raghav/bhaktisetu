@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Save, Plus, Trash2, ArrowLeft, Clock } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
@@ -102,10 +103,16 @@ export default function TempleScheduleEditor() {
         },
         body: JSON.stringify({ regularHours, closedOn: form.closedOn || null, specialDays: form.specialDays || null }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // RES-09: `Save failed: HTTP 500` was the toast a temple manager saw.
+      if (!res.ok) {
+        throw new UserFacingError(
+          serverErrorText(await res.text().catch(() => ''), 'We could not save your schedule.'),
+          res.status,
+        );
+      }
       setToast('Schedule saved');
     } catch (err) {
-      setToast(`Save failed: ${(err as Error).message}`);
+      setToast(userFacingMessage(err, 'We could not save your schedule. Please try again.'));
     } finally {
       setSaving(false);
       setTimeout(() => setToast(null), 4000);

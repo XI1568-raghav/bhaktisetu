@@ -151,8 +151,10 @@ export default function AstrologerDashboard() {
    } else {
     setOnlineError(
      next
-      ? `Could not go online (HTTP ${r.status}) — devotees still cannot see you. Try again.`
-      : `Could not go offline (HTTP ${r.status}) — you are still listed as available. Try again.`,
+      // RES-09: the consequence sentence is the useful half; the status
+      // code is developer text and is dropped.
+      ? 'Could not go online — devotees still cannot see you. Try again.'
+      : 'Could not go offline — you are still listed as available. Try again.',
     );
    }
   } catch {

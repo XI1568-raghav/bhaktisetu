@@ -26,13 +26,14 @@ import { PLATFORM_FEE_INR } from '../../lib/puja-pricing';
 import { rightsContactEmail } from "../../lib/company";
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_80G, RECEIPT_NOUN, RECEIPT_NOUN_PLURAL, NO_80G_DISCLOSURE } from '../../lib/eighty-g';
 
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'Darshya UK — Pujas, Darshan & 80G Receipts for the UK Hindu Diaspora',
+  title: 'Darshya UK — Pujas, Darshan & Donations for the UK Hindu Diaspora',
   description:
-    'Book pujas at Indian temples, watch live aarti, receive 80G receipts, with £ reference pricing. Built for London, Birmingham, Leicester, Manchester and the wider UK Hindu, Jain & Sikh diaspora.',
+    `Book pujas at Indian temples, watch live aarti, donate with a ${RECEIPT_NOUN} by email, with £ reference pricing. Built for London, Birmingham, Leicester, Manchester and the wider UK Hindu, Jain & Sikh diaspora.`,
   alternates: {
     canonical: 'https://darshya.online/uk',
     languages: {
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Darshya UK — Pujas & Darshan for the UK Diaspora',
     description:
-      'UK NRI puja booking, live darshan and 80G receipts. London / Birmingham / Leicester.',
+      `UK NRI puja booking, live darshan and ${RECEIPT_NOUN_PLURAL}. London / Birmingham / Leicester.`,
     url: 'https://darshya.online/uk',
     type: 'website',
     locale: 'en_GB',
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Darshya UK — Pujas for the UK Diaspora',
-    description: 'UK Hindu diaspora — book pujas, watch darshan, get 80G receipts.',
+    description: `UK Hindu diaspora — book pujas, watch darshan, get ${RECEIPT_NOUN_PLURAL}.`,
   },
 };
 
@@ -101,8 +102,10 @@ const BENEFITS = [
   },
   {
     icon: FileText,
-    title: '80G receipts (India tax) on donations',
-    body: 'For UK donors with Indian tax filing obligations, every donation comes with a valid 80G receipt from the donee temple.',
+    title: HAS_80G ? '80G receipts (India tax) on donations' : 'A numbered receipt on every donation',
+    body: HAS_80G
+      ? 'For UK donors with Indian tax filing obligations, every donation comes with a valid 80G receipt from the donee temple.'
+      : NO_80G_DISCLOSURE + ' UK Gift Aid is not supported either, so treat a donation here as a gift rather than a relievable payment.',
   },
   {
     icon: MessageCircle,
@@ -167,11 +170,11 @@ export default async function UkLaunchPage() {
             <MapPin className="h-3.5 w-3.5" /> UK launch · London / Birmingham / Leicester
           </div>
           <h1 className={H1.marketing}>
-            Pujas, darshan & 80G receipts for the UK diaspora.
+            Pujas, darshan & donations for the UK diaspora.
           </h1>
           <p className="prose-lead mt-6 max-w-3xl text-surface-700">
             Built for the UK Hindu, Jain & Sikh diaspora. Book pujas at any Indian temple, watch
-            live aarti darshan, get 80G receipts on donations — all from your UK bank card.
+            live aarti darshan, donate with a {RECEIPT_NOUN} emailed to you — all from your UK bank card.
             Prices below are shown in £ for reference; you are charged in INR, so your bank
             applies its own rate. No hidden surcharge, no "call our India office".
           </p>
@@ -363,8 +366,17 @@ export default async function UkLaunchPage() {
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
               <span>
-                <strong>80G receipts</strong> issued by donee Indian temple (where eligible). UK
-                Gift Aid is not currently supported — donations are India-tax-deductible only.
+                {HAS_80G ? (
+                  <>
+                    <strong>80G receipts</strong> issued by donee Indian temple (where eligible). UK
+                    Gift Aid is not currently supported — donations are India-tax-deductible only.
+                  </>
+                ) : (
+                  <>
+                    <strong>Donation receipts</strong> — {NO_80G_DISCLOSURE} UK Gift Aid is not
+                    supported either.
+                  </>
+                )}
               </span>
             </li>
             <li className="flex items-start gap-2">

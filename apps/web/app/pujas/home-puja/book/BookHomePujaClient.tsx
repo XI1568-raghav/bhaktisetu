@@ -26,6 +26,7 @@ import { WizardSteps } from '../../../../components/ui/WizardSteps';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { CANCELLATION_BADGE_LABEL } from '../../../../lib/cancellation-policy';
 type StepId = 1 | 2 | 3 | 4 | 5;
 
 /**
@@ -703,9 +704,13 @@ function BookHomePujaInner() {
  <CheckCircle className="w-3.5 h-3.5 text-tulsi-green flex-shrink-0 mt-0.5" />
  Pandit arrives with all samagri
  </li>
+ {/* LEG-03 (F223): read "Free cancellation 24 hours before" — a full-refund
+     promise at the exact hour DEFAULT_CANCEL_POLICY drops to 75%, printed
+     inside the checkout wizard's "What to expect" list. Sourced from
+     lib/cancellation-policy, like every other cancellation surface. */}
  <li className="flex gap-2">
  <CheckCircle className="w-3.5 h-3.5 text-tulsi-green flex-shrink-0 mt-0.5" />
- Free cancellation 24 hours before
+ {CANCELLATION_BADGE_LABEL}
  </li>
  <li className="flex gap-2">
  <CheckCircle className="w-3.5 h-3.5 text-tulsi-green flex-shrink-0 mt-0.5" />

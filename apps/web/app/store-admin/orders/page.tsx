@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, serverErrorMessage, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { filterOrders, statusTabCounts } from '../../../lib/store-admin-orders';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -213,7 +214,13 @@ export default function StoreAdminOrdersPage() {
      const res = await fetch(`${API_BASE_URL}/store/orders`, {
        headers: { Authorization: `Bearer ${session.accessToken}` },
      });
-     if (!res.ok) throw new Error(`Failed to fetch orders (${res.status})`);
+     // RES-09: `Failed to fetch orders (502)` was rendered to the seller.
+     if (!res.ok) {
+      throw new UserFacingError(
+       serverErrorText(await res.text().catch(() => ''), 'We could not load your orders.'),
+       res.status,
+      );
+     }
      const json = await res.json();
      // S-03 (2026-07-09): the store-orders API returns { data: [...] }, not
      // { orders: [...] }. The old parse read json.orders -> always empty.
@@ -226,7 +233,7 @@ export default function StoreAdminOrdersPage() {
            : [];
      setOrders(list.map(normalizeOrder));
    } catch (err) {
-     setError(err instanceof Error ? err.message : 'Failed to load orders');
+     setError(userFacingMessage(err, 'We could not load your orders. Please try again.'));
    } finally {
      setLoading(false);
    }
@@ -254,7 +261,10 @@ export default function StoreAdminOrdersPage() {
      });
      if (!res.ok) {
        const err = await res.json().catch(() => ({}));
-       throw new Error(err.message || `Update failed (${res.status})`);
+       throw new UserFacingError(
+        serverErrorMessage(err, 'We could not update that order.'),
+        res.status,
+       );
      }
      const updated = normalizeOrder(await res.json());
      setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
@@ -263,7 +273,7 @@ export default function StoreAdminOrdersPage() {
        `Order ${order.orderNumber}: ${getStatusConfig(order.status).label} → ${getStatusConfig(nextStatus).label}`,
      );
    } catch (err) {
-     pushToast('error', err instanceof Error ? err.message : 'Status update failed');
+     pushToast('error', userFacingMessage(err, 'We could not update that order. Please try again.'));
    } finally {
      setActionLoading(null);
    }

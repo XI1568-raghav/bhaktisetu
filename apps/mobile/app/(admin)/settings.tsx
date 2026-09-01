@@ -10,6 +10,9 @@ import { selectAdminDashboard } from '../../lib/api-contracts';
 import { describePlatformFlagSupport, describeGatewayStatus } from '../../lib/platform-flags';
 import type { PaymentConfig } from '../../lib/subscription-gate';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+// AUTH-09: the confirmation used to ask "Are you sure?" without saying what
+// it was sure about. POST /auth/logout defaults to scope 'global'.
+import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
 /**
  * PAR-19. The five "Feature Flags" switches were `useState` and nothing else:
@@ -56,7 +59,7 @@ export default function AdminSettings() {
   }
 
   function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure?', [
+    Alert.alert(SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',

@@ -22,7 +22,7 @@ import type { ReactNode } from 'react';
 export const metadata: Metadata = {
   title: 'Support FAQs — Bookings, Payments & Refunds',
   description:
-    'Searchable support answers on puja bookings, payments and refunds, video proof, pandit assignment, donations and 80G receipts, store orders and account privacy.',
+    'Searchable support answers on puja bookings, payments and refunds, video proof, pandit assignment, donations and donation receipts, store orders and account privacy.',
   alternates: { canonical: 'https://darshya.online/support/faq' },
 };
 

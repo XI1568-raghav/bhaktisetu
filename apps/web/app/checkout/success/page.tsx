@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { CheckCircle2, Video, Mail } from 'lucide-react';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { HAS_80G } from '../../../lib/eighty-g';
 
 
 export const metadata = {
@@ -43,7 +44,11 @@ export default async function CheckoutSuccessPage({
               <Mail className="mt-0.5 h-5 w-5 shrink-0 text-saffron-600" />
               <div className="text-sm">
                 <p className="font-semibold text-surface-800">Confirmation email</p>
-                <p className="text-surface-600">Receipt + 80G info sent to your registered email.</p>
+                <p className="text-surface-600">
+                  {HAS_80G
+                    ? 'Receipt + 80G info sent to your registered email.'
+                    : 'Your payment receipt has been sent to your registered email.'}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3 rounded-lg bg-surface-50 p-4">

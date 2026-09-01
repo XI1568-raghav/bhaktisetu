@@ -11,7 +11,29 @@ on:
     # 12 × 2 × 30 = 720, total ~1800, ~200 headroom. The orchestrator is in
     # dry-run soak anyway (0 queue files written per cycle until the
     # sub-agent silent-failure bug is diagnosed), so 2 cycles/day is ample.
-    - cron: '17 */12 * * *' # 2 cycles/day: 00:17, 12:17 UTC
+    #
+    # REDUCED TO WEEKLY 2026-09-01. Two cycles a day is 12 x 2 x 30 = 720 min/mo,
+    # which is 39% of the entire 2000-minute GitHub Actions allowance and by far
+    # the largest single line in docs/free-tier-budgets.md. The note above is the
+    # reason this is safe to cut rather than a reason to keep it: the orchestrator
+    # is still in dry-run and still writes 0 queue files per cycle because of the
+    # sub-agent silent-failure bug, so the 720 minutes buy nothing. 148 unread
+    # dry-run items have accumulated in docs/roadmap/_dryrun/queue/, and the
+    # engine's own tracker (docs/roadmap/_budget-snapshot.json) has been frozen at
+    # "month": "2026-06" with ghMinutes.used: 0 since June.
+    #
+    # This matters beyond tidiness. OPS-09: ALL production monitoring rides on
+    # this same quota, and it has been exhausted once already. A monitoring fleet
+    # that dies because a dry-run loop ate the budget is how the 2026-08-17
+    # outage went unnoticed for three days.
+    #
+    # Weekly costs ~48 min/mo, taking the fleet from ~1,853 to ~1,193 and turning
+    # 147 minutes of headroom into roughly 800.
+    #
+    # TO RESTORE once the silent-failure bug is fixed and the soak resumes,
+    # change this one line back to '17 */12 * * *' and re-check the total in
+    # docs/free-tier-budgets.md first.
+    - cron: '17 6 * * 1' # weekly, Monday 06:17 UTC
   workflow_dispatch:
     inputs:
       dry_run:

@@ -26,6 +26,7 @@ import { PanditAvatar } from '../../PanditAvatar';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { CANCELLATION_BADGE_LABEL } from '../../../../lib/cancellation-policy';
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -141,8 +142,11 @@ export default async function HomePujaDetail({ params }: Props) {
  >
  Book Now
  </Link>
+ {/* LEG-03 (F223): read "Free cancellation up to 24 hours before", which
+     promises a full refund at a point where DEFAULT_CANCEL_POLICY pays 75%.
+     Rendered from lib/cancellation-policy so it cannot drift again. */}
  <div className="mt-3 text-center text-xs text-surface-500">
- Free cancellation up to 24 hours before
+ {CANCELLATION_BADGE_LABEL}
  </div>
  </aside>
  </div>

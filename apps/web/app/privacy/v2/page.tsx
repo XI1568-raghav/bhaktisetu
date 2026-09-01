@@ -112,7 +112,7 @@ export default function PrivacyV2Page() {
  </li>
  <li>
  <strong>EU/EEA (GDPR Art 6):</strong> (a) consent for analytics + marketing,
- (b) contract for puja bookings, (c) legal obligation for tax/80G receipts, (d)
+ (b) contract for puja bookings, (c) legal obligation for tax and donation receipts, (d)
  legitimate interest for fraud prevention.
  </li>
  <li>

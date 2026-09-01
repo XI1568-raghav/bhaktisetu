@@ -131,6 +131,52 @@ jobs:
           console.log('Secret scan: no credential-shaped values on added lines.');
           NODE
 
+      - name: Rollback-honesty scan (added lines only)
+        # OPS-06. There IS a guard for this prose — scripts/test/ops-runbook-honesty.test.mjs
+        # — but it runs in ci.yml, which carries `paths-ignore: docs/**`. A
+        # docs-only PR reintroducing the retired claim therefore skips the only
+        # check that would catch it, which is precisely how three corrected
+        # runbooks drifted back and were found again on 2026-09-01.
+        #
+        # This workflow is the one gate never skipped (no paths filter), so the
+        # cheap version of the check lives here: a grep over ADDED lines only,
+        # no install, ~2s. It is a tripwire, not a replacement — the full
+        # structural test still runs in ci.yml for code PRs.
+        run: |
+          set -euo pipefail
+          BASE="${{ steps.range.outputs.from }}"
+          git diff --unified=0 "$BASE"...HEAD -- '*.md' > /tmp/docs.diff ||             git diff --unified=0 "$BASE" HEAD -- '*.md' > /tmp/docs.diff
+          # Added lines only (leading '+', not the +++ file header).
+          # Added lines, EXCLUDING markdown blockquotes. A correction has to
+          # quote the retired claim in order to refute it, and this repo writes
+          # those as `> ` callouts. Without the exclusion the scan fails the very
+          # commits that fix the problem — verified: it flagged two lines of the
+          # 2026-09-01 OPS-06 corrections, which is why the exclusion exists.
+          # A tripwire, so the trade is deliberate: prose hidden inside a
+          # blockquote is not scanned, and the full structural test in ci.yml
+          # remains the real check for code PRs.
+          added=$(grep -E '^\+[^+]' /tmp/docs.diff | grep -vE '^\+\s*>' || true)
+          if [ -z "$added" ]; then echo "No added markdown lines."; exit 0; fi
+
+          # A revert or a push presented as a way to change PRODUCTION.
+          # Both Render services are autoDeploy:false, so neither deploys.
+          bad=$(echo "$added" | grep -inE             '(git )?revert[^.]{0,80}(rollback|restore|roll back|production|prod)|(rollback|roll back)[^.]{0,80}(git )?revert|push[^.]{0,60}(auto-?deploys?|triggers? (a )?redeploy)'             || true)
+
+          if [ -n "$bad" ]; then
+            echo "::error::Rollback-honesty scan: an added line presents a revert or a push as a production rollback."
+            echo "Both Render services are autoDeploy:false (render.yaml:28, :60) — neither a revert nor a push deploys anything."
+            echo "The real procedure is docs/runbooks/prod-rollback.md:"
+            echo "  gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>"
+            echo ""
+            echo "Offending added lines:"
+            echo "$bad"
+            echo ""
+            echo "If this line is a CORRECTION that quotes the retired claim in order to"
+            echo "refute it, word it so the ban pattern does not match, or extend this rule."
+            exit 1
+          fi
+          echo "Rollback-honesty scan: clean."
+
       - name: Run commitlint
         # The previous `npx --yes -p @commitlint/cli -p @commitlint/config-conventional`
         # form fetched both packages into the npx cache, but commitlint's internal

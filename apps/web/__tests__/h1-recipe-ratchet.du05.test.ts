@@ -69,7 +69,15 @@ const FILES = [
  *     count as adopted.
  * Both are asserted below. Listed in the recipe's own declaration order.
  */
-const RECIPE = /H1\.(marketing|catalogue|detail|portal|portalInverse)\b/;
+const ARCHETYPES = 'marketing|catalogue|detail|portal|portalInverse';
+
+/*
+ * Two spellings, one recipe. `H1.<key>` is the direct read; `h1Class('<key>')`
+ * is the same archetype with its colour token REPLACED (not layered) for the
+ * one role that needs a per-instance hue — see h1Class's own comment in
+ * heading-recipe.ts. Both are adoption; anything else is hand-rolled.
+ */
+const RECIPE = new RegExp(`H1\\.(?:${ARCHETYPES})\\b|h1Class\\(\\s*'(?:${ARCHETYPES})'`);
 
 const openings: Array<{ file: string; attrs: string }> = [];
 for (const f of FILES) {
@@ -113,6 +121,61 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
       expect(r.test('{H1.portal}')).toBe(true);
       expect(r.test('{H1.portalish}')).toBe(false);
     }
+    /* The second spelling, and its own negative: h1Class of something the
+     * recipe never exported is not adoption either. */
+    for (const k of keys) {
+      expect(RECIPE.test(`{h1Class('${k}', x)}`), `RECIPE does not recognise h1Class('${k}')`).toBe(
+        true,
+      );
+    }
+    expect(RECIPE.test("{h1Class('hero', x)}")).toBe(false);
+  });
+
+  /*
+   * h1Class is the one door through which a caller can change what an
+   * archetype renders. If it ever accepted a SIZE, a WEIGHT or a FACE it would
+   * re-open the 45-recipe sprawl from inside the abstraction, so its contract
+   * is asserted here rather than trusted.
+   */
+  describe('h1Class replaces the colour and only the colour', () => {
+    it('returns the archetype byte-for-byte when no colour is passed', async () => {
+      const { H1: H, h1Class } = await import('../components/ui/heading-recipe');
+      for (const k of Object.keys(H) as Array<keyof typeof H>) {
+        expect(h1Class(k)).toBe(H[k]);
+      }
+    });
+
+    it('leaves exactly ONE colour utility in the result', async () => {
+      const { h1Class } = await import('../components/ui/heading-recipe');
+      /* The bug this forbids: `${H1.marketing} text-violet-900`, where two
+       * colour utilities of equal specificity race and the generated
+       * stylesheet — not the call site — decides which wins. */
+      for (const [arch, hue] of [
+        ['marketing', 'text-violet-900'],
+        ['catalogue', 'text-red-900'],
+        ['detail', 'text-sky-900'],
+        ['portal', 'text-emerald-900'],
+        ['portalInverse', 'text-yellow-900'],
+      ] as const) {
+        const out = h1Class(arch, hue);
+        const colours = out
+          .split(/\s+/)
+          .filter((c) => /^text-(?:surface|white|red|orange|yellow|emerald|sky|indigo|violet)/.test(c));
+        expect(colours, `h1Class('${arch}', '${hue}') = "${out}"`).toEqual([hue]);
+      }
+    });
+
+    it('keeps the size, weight, tracking and face of the archetype it was given', async () => {
+      const { H1: H, h1Class } = await import('../components/ui/heading-recipe');
+      for (const k of Object.keys(H) as Array<keyof typeof H>) {
+        const out = h1Class(k, 'text-violet-900').split(/\s+/);
+        const kept = H[k]
+          .split(/\s+/)
+          .filter((c) => !/^(?:[a-z0-9]+:)?text-(?:surface-800|white)$/.test(c));
+        expect(kept.length, `nothing but a colour to keep in H1.${k}`).toBeGreaterThan(2);
+        for (const c of kept) expect(out, `h1Class dropped ${c} from H1.${k}`).toContain(c);
+      }
+    });
   });
 
   it('no NEW hand-rolled h1 is added', () => {
@@ -154,17 +217,42 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
      *     ## -> h3, ### -> h4) with every rendered size unchanged, so they left
      *     the h1 census by being the right tag rather than by wearing a recipe.
      *
-     * The 6 that remain each need a person, and none of them is a codemod:
+     * 2026-09-01: 6 -> 3. Three of the six were closable; the other three are
+     * not code problems.
      *
-     *   app/about/page.tsx — a bespoke 40px/72px marketing hero with a
-     *     decorative underline sized to the type. `marketing` would render it
-     *     at 30/48px. That is a design decision, not a migration.
+     *   app/auth/login/page.tsx — CLOSED, and it was never really bespoke: the
+     *     inner wordmark span spelled out H1.portal's own four utilities
+     *     (`text-surface-800 text-xl font-semibold tracking-tight`) on a CHILD
+     *     of the h1, so the heading declared no size and the scan below could
+     *     not see an archetype. Archetype moved onto the h1, duplicate deleted
+     *     from the span; identical render (see the call site's comment).
+     *   app/chakras/[slug]/page.tsx — CLOSED via `h1Class`. The blocker named
+     *     here before ("a per-chakra colour that collides with the
+     *     archetype's") was real and neither existing escape hatch took it: the
+     *     extras slot layers a SECOND colour utility of equal specificity, so
+     *     which one wins is decided by the generated stylesheet and not by the
+     *     call site, and a sixth archetype would have had to be seven, one per
+     *     hue. h1Class makes the colour a parameter — the archetype's own
+     *     colour token is removed and the caller's put in its place, so exactly
+     *     one colour utility survives. Its contract is asserted above.
+     *   app/about/page.tsx — CLOSED. This was the 70.4px end of the finding's
+     *     own "18px to 70.4px" range: `text-[2.5rem] sm:text-[4.5rem]` with
+     *     `leading-[1.05]`, i.e. three arbitrary bracket values off the scale,
+     *     plus a seventh colour token. Now H1.marketing. It IS a visual change
+     *     (72px -> 48px at lg, surface-900 -> surface-800) and the call site
+     *     lists every delta so it can be argued with; the decorative underline
+     *     was rescaled to hold its ratio. Reverting is one line if the owner
+     *     wants the oversized hero back — but leaving it was leaving the exact
+     *     outlier the finding is named after.
+     *
+     * The 3 that remain each need a person, and none of them is a codemod:
+     *
      *   app/pitch/page.tsx x2 — `pitch-h1`, a bespoke class in app/pitch/
-     *     pitch.css. Whether the investor deck is part of the product design
-     *     system at all is a call nobody has made.
-     *   app/auth/login/page.tsx — a flex row of nodes, no size declared.
-     *   app/chakras/[slug]/page.tsx — builds its class from a template literal
-     *     with a per-chakra colour that collides with the archetype's.
+     *     pitch.css that sets a THIRD typeface ('Cabinet Grotesk') and
+     *     `clamp(48px, 8vw, 120px)`. Whether the investor deck is part of the
+     *     product design system at all is a call nobody has made — and note it
+     *     also ships TWO h1s on one document, which is a separate defect from
+     *     the recipe question and should not be papered over by a codemod.
      *   app/global-error.tsx — paints inline because no stylesheet is loaded
      *     under it; DU-13 documents it as the standing exception.
      *
@@ -173,7 +261,7 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
      * failing anything, which is exactly how 279 files diverged while CI
      * stayed green.
      */
-    const BASELINE = 6;
+    const BASELINE = 3;
     const byRecipe = new Map<string, string[]>();
     for (const o of HAND_ROLLED) {
       const cls =
@@ -193,6 +281,64 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
         'H1.detail / H1.portal from components/ui/heading-recipe; extras are ' +
         'layout-only.\nLargest remaining clusters:\n' + worst.join('\n'),
     ).toBeLessThanOrEqual(BASELINE);
+  });
+
+  it('the h1s OUTSIDE the TypeScript walk are enumerated, not hidden', () => {
+    /*
+     * DENOMINATOR (added 2026-09-01). `walk()` above collects .ts/.tsx under
+     * app/, components/ and lib/. That is the right scope for the ratchet — but
+     * it is not the whole tree, and a census that quietly excludes a live copy
+     * of the thing it counts is how a "closed" finding survives four waves and
+     * turns up in a fifth. `public/` ships hand-written JavaScript that builds
+     * HTML strings, and it holds exactly one <h1>:
+     *
+     *   public/sw.js — the service worker's last-resort 503 body, returned only
+     *     when both the network and the cache miss. It is a complete standalone
+     *     document built in the worker with an inline `style` on <body> and NO
+     *     stylesheet link, so no Tailwind class and no token can reach it. That
+     *     is structurally the same exception as app/global-error.tsx (DU-13),
+     *     and it is asserted here rather than left off the count.
+     *
+     * If a second one appears, this fails and it has to be classified.
+     */
+    const PUBLIC = path.join(WEB, 'public');
+    const jsFiles: string[] = [];
+    const walkPublic = (dir: string) => {
+      for (const e of readdirSync(dir)) {
+        const p = path.join(dir, e);
+        if (statSync(p).isDirectory()) walkPublic(p);
+        else if (/\.(js|mjs|html)$/.test(p)) jsFiles.push(p);
+      }
+    };
+    walkPublic(PUBLIC);
+    expect(jsFiles.length, 'nothing scanned in public/ — this would pass vacuously').toBeGreaterThan(
+      0,
+    );
+
+    const found: Array<{ file: string; line: number }> = [];
+    for (const f of jsFiles) {
+      const src = readFileSync(f, 'utf8');
+      src.split('\n').forEach((l, i) => {
+        if (/<h1[\s>]/.test(l)) found.push({ file: relOf(f), line: i + 1 });
+      });
+    }
+    expect(
+      found.map((f) => f.file),
+      'a hand-written <h1> outside the TypeScript tree. Either it belongs to a ' +
+        'document a stylesheet can reach — in which case give it an H1 archetype ' +
+        'and delete it from this list — or it is another no-stylesheet fallback, ' +
+        'in which case say so here.',
+    ).toEqual(['public/sw.js']);
+
+    /* And the reason it is exempt, asserted rather than asserted-by-comment:
+     * the document it lives in links no stylesheet. */
+    const sw = readFileSync(path.join(PUBLIC, 'sw.js'), 'utf8');
+    const doc = /'(<!doctype html>[^']*)'/i.exec(sw)?.[1];
+    expect(doc, 'could not isolate the offline document').toBeTruthy();
+    expect(doc!).toContain('<h1>');
+    expect(doc!, 'the offline document links a stylesheet, so it is NOT exempt').not.toMatch(
+      /<link[^>]+stylesheet/i,
+    );
   });
 
   it('no h1 overrides the type token with an inline font-family', () => {

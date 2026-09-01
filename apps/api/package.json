@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "tsx scripts/guard-db-target.ts",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "prisma migrate deploy && node dist/server.js",

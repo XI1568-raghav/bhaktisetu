@@ -267,7 +267,22 @@ Should be: `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` (mobile-first stack).
 4. Lighthouse mobile score baseline before/after
 
 ### Rollback
-Single `git revert` on batched commit restores prior IA. globals.css token edit isolated — own commit if risky.
+
+> **CORRECTED 2026-09-01 (OPS-06).** This section said a single `git revert`
+> "restores prior IA". It does not, and has not since the Render cutover on
+> 2026-07-08: both services are `autoDeploy: false` (`render.yaml:28`, `:60`),
+> so a revert changes the repository and leaves production serving the exact
+> same bytes. Reverting is still the right way to change the CODE; it is not a
+> deploy. To actually roll production back, dispatch the previous good commit:
+>
+> ```bash
+> gh workflow run render-diag.yml -f mode=deploys -f sid=<SID>          # find the SHA
+> gh workflow run render-diag.yml -f mode=deploy  -f sid=<SID> -f commit=<SHA>
+> ```
+>
+> Canonical procedure: `docs/runbooks/prod-rollback.md`.
+
+Undo the batched commit in git to take the prior IA out of the codebase; deploying that state is a separate step (see the note above). globals.css token edit isolated — own commit if risky.
 
 ---
 

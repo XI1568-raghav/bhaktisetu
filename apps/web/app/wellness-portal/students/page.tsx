@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import {
   getMyStudents,
   type WellnessStudent,
@@ -51,7 +52,7 @@ export default function WellnessStudentsPage() {
       const rows = await getMyStudents(token);
       setStudents(rows);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load students');
+      setError(userFacingMessage(err, 'We could not load your students. Please try again.'));
     } finally {
       setLoading(false);
     }

@@ -57,6 +57,33 @@ export const DEFAULT_CANCEL_POLICY: CancelPolicy = {
   refundDaysLabel: '5-7 business days',
 };
 
+/**
+ * LEG-03 / F223 — how close to the slot a DEVOTEE may still cancel.
+ *
+ * This number was a bare `< 24` literal inside booking.service.cancelBooking
+ * and nowhere else, which is what let the published policy and the engine
+ * drift apart for four waves. It belongs here, next to the ladder it truncates:
+ * because cancelBooking refuses inside this window, the ladder's 50% (4-24h)
+ * and 25% (<4h) tiers are UNREACHABLE on the devotee-cancel path, and any
+ * surface that quotes them is quoting a refund the product will not pay.
+ *
+ * The web mirror is `CANCELLATION_CUTOFF_HOURS` in
+ * apps/web/lib/cancellation-policy.ts.
+ */
+export const DEVOTEE_CANCEL_CUTOFF_HOURS = 24;
+
+/**
+ * Whether a devotee-initiated cancellation is permitted at all right now.
+ *
+ * `pending_payment` is exempt for the same reason cancelBooking exempts it:
+ * nothing has been collected, so there is no refund to ladder and no reason to
+ * strand the devotee with a booking they never paid for.
+ */
+export function devoteeCancelAllowed(hoursUntilSlot: number, status: string): boolean {
+  if (status === 'pending_payment') return true;
+  return hoursUntilSlot >= DEVOTEE_CANCEL_CUTOFF_HOURS;
+}
+
 export interface RefundComputation {
   policy: CancelPolicy;
   hoursUntilSlot: number;

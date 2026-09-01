@@ -9,6 +9,7 @@ import { API_BASE_URL } from '../../lib/api-config';
 import AuthGuard from '../../components/AuthGuard';
 import { NRI_PREMIUM_IS_SELLABLE } from '../nri/plan-availability';
 import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_80G } from '../../lib/eighty-g';
 
 interface PlanCard {
   id: string;
@@ -62,7 +63,7 @@ const NRI_PREMIUM_CARD: PlanCard = {
     'No NRI surcharge on bookings',
     'Priority booking 7 days early',
     'Weekly 1:1 priest call (Jitsi)',
-    'Free 80G receipt PDF',
+    HAS_80G ? 'Free 80G receipt PDF' : 'Free donation receipt PDF',
     'Unlimited AI astro chat',
   ],
   cta: 'Go Premium',

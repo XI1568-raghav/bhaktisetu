@@ -9,11 +9,19 @@
  *
  * Consequences, both real:
  *
- *   DI-06 — every idempotency guard in the product is application-level. Ten
- *   writers (payment.service.ts:266/497, store-commission.service.ts:27,
- *   wellness-sessions.ts:84, consultation.ts:178, provider-earning-mint.ts:112,
- *   booking.service.ts:874, temple-payout.service.ts:76, ...) all run
- *   findFirst-then-create with NOTHING behind them at the database layer. They
+ *   DI-06 — every idempotency guard in the product is application-level. Eight
+ *   writers (payment.service.ts, store-commission.service.ts,
+ *   wellness-sessions.ts, consultation.ts, provider-earning-mint.ts,
+ *   booking.service.ts, bookings.ts reassignment, temple-payout.service.ts) all
+ *   ran findFirst-then-create with NOTHING behind them at the database layer.
+ *
+ *   (2026-09-01, F367: all eight now insert through
+ *   `createMany({ skipDuplicates })` so the UNIQUE indexes this migration
+ *   creates are load-bearing rather than decorative — and, critically, so the
+ *   loser of a race gets ON CONFLICT DO NOTHING instead of a P2002 that would
+ *   abort the enclosing payment transaction. That enumeration is pinned by
+ *   `money-ledger-insert-conflict.di06.test.ts`; this file stays about the
+ *   SCHEMA half.) They
  *   hold under normal load because the enclosing transaction's first statement
  *   takes a row lock and racers serialise — a duplicate could not be forced in
  *   6 concurrent verify-payment calls, 3 replays and 6 race rounds. That makes

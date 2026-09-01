@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, Download, Loader2, AlertCircle } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
@@ -72,12 +73,16 @@ function DonationsPageContent() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+          // RES-09: `HTTP 500` reached the gaushala manager verbatim.
+          throw new UserFacingError(
+            serverErrorText(await res.text().catch(() => ''), 'We could not load your donations.'),
+            res.status,
+          );
         }
         const data = await res.json();
         if (!cancelled) setDonations(data.donations ?? []);
       } catch (err: any) {
-        if (!cancelled) setError(err?.message ?? 'Failed to load donations');
+        if (!cancelled) setError(userFacingMessage(err, 'We could not load your donations. Please try again.'));
       } finally {
         if (!cancelled) setLoading(false);
       }

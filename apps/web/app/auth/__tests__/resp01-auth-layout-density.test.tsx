@@ -92,18 +92,32 @@ describe('RESP-01 — the /auth layout wrapper below sm', () => {
     expect(mobileVerticalSpacePx(el)).toBe(0);
   });
 
-  it('spends at most 32px of mobile vertical padding above the card', () => {
-    // py-8 = 64px at HEAD. That 32px surplus is the whole difference between a
-    // tap landing on Sign In and a tap landing on the consent banner at
-    // 360x800, the most common Android viewport.
-    expect(mobileVerticalSpacePx(renderWrapper())).toBeLessThanOrEqual(32);
+  it('spends at most 16px of mobile vertical padding, none of it above the card', () => {
+    // py-8 = 64px at HEAD, py-4 = 32px after the third pass. The FOURTH pass
+    // (2026-09-01) took the top edge to 0: measured in Chromium, the card top
+    // moves y=80 -> y=64 and Sign In y 524-568 -> y 508-552, which is what
+    // flips 360x800 from "15 of 44px on screen, hit test returns the BANNER" to
+    // "44 of 44, hit test returns the button".
+    //
+    // Only the TOP padding moves the button, so assert that specifically as
+    // well as the total — a future `pt-2 pb-2` would keep the total at 16 while
+    // pushing Sign In back down by 8px.
+    const el = renderWrapper();
+    expect(mobileVerticalSpacePx(el)).toBeLessThanOrEqual(16);
+    const cls = String(el.className);
+    expect(cls).toMatch(/(^|\s)pt-0(\s|$)/);
+    expect(cls).not.toMatch(/(^|\s)(py|pt)-[1-9]/);
   });
 
   it('keeps the roomier desktop padding at sm and up', () => {
     // The fix must be a mobile-only reclaim, not a site-wide tightening: at
     // 768x1024 and 1280x800 the button already cleared the banner by a wide
-    // margin and nothing there needed changing.
-    expect(String(renderWrapper().className)).toMatch(/(^|\s)sm:py-8(\s|$)/);
+    // margin and nothing there needed changing. `sm:pt-8 sm:pb-8` is the old
+    // `sm:py-8` split in two, because the mobile side now needs an asymmetric
+    // `pt-0 pb-4` and a bare `py-4` can no longer carry it.
+    const cls = String(renderWrapper().className);
+    expect(cls).toMatch(/(^|\s)(sm:py-8|sm:pt-8)(\s|$)/);
+    expect(cls).toMatch(/(^|\s)(sm:py-8|sm:pb-8)(\s|$)/);
   });
 
   it('does not vertically centre the card at mobile widths', () => {

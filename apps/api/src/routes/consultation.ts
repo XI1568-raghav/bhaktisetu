@@ -223,14 +223,26 @@ export async function writeConsultationCommission(
     // weekly settlement cron. Found by adversarial review 2026-08-11.
     const platformCut = Math.round(total * ASTROLOGER_PLATFORM_RATE * 100) / 100;
     const astrologerEarning = Math.round((total - platformCut) * 100) / 100;
-    await prisma.commission.create({
-      data: {
-        bookingId: row.id,
-        providerId: profile.userId,
-        amount: astrologerEarning,
-        percentage: ASTROLOGER_PLATFORM_RATE,
-        status: 'PENDING',
-      },
+    // DI-06 (F367): ON CONFLICT DO NOTHING, not a bare INSERT. This writes the
+    // SAME unique key as the puja-booking mint — `commissions.booking_id`,
+    // which migration 20260824000000 makes UNIQUE — because the column is
+    // polymorphic across puja_bookings and astrologer_consultations (see the
+    // DI-07 note on Commission.bookingId in schema.prisma). Both confirmation
+    // rails (POST /consultation/verify-payment and the Razorpay webhook
+    // backstop) call this function for one consultation, so the race is real,
+    // not theoretical. Rationale in full at
+    // payment.service.writePujaCommissionOnConfirm.
+    await prisma.commission.createMany({
+      data: [
+        {
+          bookingId: row.id,
+          providerId: profile.userId,
+          amount: astrologerEarning,
+          percentage: ASTROLOGER_PLATFORM_RATE,
+          status: 'PENDING',
+        },
+      ],
+      skipDuplicates: true,
     });
 
     // AW-14 (2026-08-12, P2): AstrologerProfile.totalConsultations was a

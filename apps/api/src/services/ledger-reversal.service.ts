@@ -1,5 +1,15 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+// OPS-05. `lib/audit-money.js` is a LEAF library — it imports `node:crypto` and
+// `lib/prisma.js` and nothing else — so this stays a leaf service module with no
+// service imports, which is the property that lets all four refund rails call it
+// without a cycle. Do not replace this with a service import.
+import {
+  MONEY_EVENTS,
+  recordMoneyEvent,
+  type AmountLike,
+  type MoneyActorType,
+} from '../lib/audit-money.js';
 
 type TxClient = Prisma.TransactionClient | typeof prisma;
 
@@ -313,4 +323,173 @@ export async function reduceBookingLedgerForPartialRefund(
   result.clawedBackInr = clawedBack.toFixed(2);
 
   return result;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * OPS-05 — THE AUDIT HALF OF THE UNWIND
+ *
+ * The two functions above are the ONE implementation of the commission unwind,
+ * extracted precisely so it could not drift across rails again (DI-01). Four
+ * call sites use it:
+ *
+ *   services/refund.service.ts:434 / :442     auto-refund cron
+ *   services/payment.service.ts:2112 / :2140  admin refund rail
+ *   services/payment.service.ts:1839 / :1841  Razorpay `refund.*` webhook
+ *   routes/consultation.ts:817                astrology consultation cancel
+ *
+ * Exactly ONE of them — refund.service.ts:484 — records `COMMISSION_REVERSED`.
+ * The other three unwind the provider and temple ledger and leave no durable
+ * trace of having done so, which is the same one-copy-was-updated drift the
+ * extraction was meant to end, reappearing one layer up in the audit trail.
+ * So the emission lives HERE, beside the unwind it describes, and each rail
+ * calls it instead of hand-copying a fourth `recordMoneyEvent` block.
+ *
+ * WHY IT IS A SEPARATE FUNCTION AND NOT A LINE INSIDE `reverseBookingLedger`.
+ * Both functions above receive the caller's `tx` and run INSIDE the caller's
+ * transaction. `recordMoneyEvent` deliberately takes no `tx` and writes through
+ * the module-level client (lib/audit-money.ts, contract 2), so calling it from
+ * in there would write the row BEFORE the transaction commits — and if that
+ * transaction then rolled back, the trail would carry a refund that never
+ * happened. The event is "this happened", and it has not happened until the
+ * transaction commits. Call this AFTER the `$transaction` resolves.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+export interface LedgerReversalAuditInput {
+  bookingId: string;
+  /** Which call site unwound: 'auto-refund' | 'admin' | 'razorpay-webhook' | 'consultation-cancel'. */
+  rail: string;
+  /** The refund reason, verbatim. Lands in `note`. */
+  reason: string;
+  actorType?: MoneyActorType;
+  /** Acting User.id where a human authorised it; null for cron and webhooks. */
+  actorId?: string | null;
+  paymentId?: string | null;
+  /**
+   * Rupees handed back to the devotee. Omit on the partial path and the money
+   * actually removed from provider earnings (`clawedBackInr`) is used instead —
+   * on a partial those are different numbers and the second one is the one this
+   * event is about.
+   */
+  amount?: AmountLike | null;
+  currency?: string | null;
+  gatewayRefundId?: string | null;
+  /**
+   * The BARE natural key of the refund that caused the unwind — a Razorpay
+   * refund id. `recordMoneyEvent` namespaces it by event type, so the same id
+   * already used for REFUND_COMPLETED yields a second row here rather than a
+   * silently swallowed duplicate. Do NOT pre-prefix it.
+   */
+  idempotencyKey?: string | null;
+  /** Result of `reverseBookingLedger`. Mutually exclusive with `partial`. */
+  full?: LedgerReversalResult | null;
+  /** Result of `reduceBookingLedgerForPartialRefund`. Mutually exclusive with `full`. */
+  partial?: PartialLedgerResult | null;
+}
+
+/**
+ * Record `COMMISSION_REVERSED` for a booking whose ledger was just unwound.
+ *
+ * Call AFTER the transaction that unwound has resolved. NEVER THROWS — same
+ * contract as `recordMoneyEvent` itself, extended to cover the durability
+ * probe: the refund has already been made by the gateway, and nothing about
+ * logging it may surface as a failure.
+ */
+export async function recordLedgerReversal(input: LedgerReversalAuditInput): Promise<void> {
+  try {
+    if (!input?.bookingId) return;
+    const { full, partial } = input;
+
+    // Rows this unwind actually moved.
+    const reversedRows = full
+      ? full.reversedCommissions + full.reversedTemplePayouts
+      : partial
+        ? partial.scaledCommissions + partial.scaledTemplePayouts + partial.scaledPriestPayouts
+        : 0;
+
+    // Rows it could NOT reclaim because the money has left or is mid-transfer.
+    // This is the double-pay case — the platform refunded the devotee AND the
+    // provider keeps the earning — so it is the single most disputable outcome
+    // either function produces, and it must land in the trail even when nothing
+    // was reversed. Without this clause the worst case is the silent one.
+    const blockedRows = full?.alreadySettled ?? partial?.alreadySettled ?? 0;
+
+    // Nothing moved and nothing was blocked: there is nothing to attest. An
+    // evidence log that records an unwind of zero rows is worse than a gap —
+    // read back later it looks like proof the unwind ran, when all it proves is
+    // that it found nothing to do.
+    if (reversedRows <= 0 && blockedRows <= 0) return;
+
+    // DURABILITY PROBE — full path only.
+    //
+    // `reverseBookingLedger` wrote through the caller's `tx`; this function
+    // reads through the module-level client, which sees COMMITTED rows only. So
+    // if the caller's transaction rolled back after the reversal,
+    // `reversedCommissions` counts writes that no longer exist, and recording
+    // them would put a reversal in the trail that never happened. Skipping is
+    // the safe direction: a missing row is a gap, a false row is bad evidence.
+    //
+    // The partial path gets no equivalent probe on purpose — it scales amounts
+    // rather than flipping a status, and a scaled row is indistinguishable from
+    // an unscaled one without the pre-image. It is gated on row counts alone.
+    if (full && full.reversedCommissions > 0) {
+      const durable = await prisma.commission.count({
+        where: { bookingId: input.bookingId, status: 'REVERSED' },
+      });
+      if (durable <= 0) {
+        console.warn(
+          '[audit-money] skipping COMMISSION_REVERSED for booking',
+          input.bookingId,
+          '— the reversal did not survive the caller transaction',
+        );
+        return;
+      }
+    }
+
+    const statusAfter = reversedRows <= 0 ? 'blocked' : full ? 'reversed' : 'reduced';
+
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.COMMISSION_REVERSED,
+      actorType: input.actorType ?? 'system',
+      actorId: input.actorId ?? null,
+      subjectType: 'booking',
+      subjectId: input.bookingId,
+      bookingId: input.bookingId,
+      paymentId: input.paymentId ?? null,
+      // On a partial the refund figure and the claw-back figure differ; this
+      // event is about the provider earning, so the claw-back is the default.
+      amount: input.amount ?? partial?.clawedBackInr ?? null,
+      currency: input.currency ?? null,
+      gatewayRefundId: input.gatewayRefundId ?? null,
+      statusAfter,
+      idempotencyKey: input.idempotencyKey ?? null,
+      note: input.reason,
+      metadata: full
+        ? {
+            rail: input.rail,
+            fullyRefunded: true,
+            reversedCommissions: full.reversedCommissions,
+            reversedTemplePayouts: full.reversedTemplePayouts,
+            alreadySettled: full.alreadySettled,
+          }
+        : {
+            rail: input.rail,
+            fullyRefunded: false,
+            scaledCommissions: partial?.scaledCommissions ?? 0,
+            scaledTemplePayouts: partial?.scaledTemplePayouts ?? 0,
+            scaledPriestPayouts: partial?.scaledPriestPayouts ?? 0,
+            scaledBookingSplit: partial?.scaledBookingSplit ?? false,
+            clawedBackInr: partial?.clawedBackInr ?? '0.00',
+            alreadySettled: partial?.alreadySettled ?? 0,
+          },
+    });
+  } catch (err) {
+    // The durability probe can fail even though `recordMoneyEvent` cannot.
+    // Swallow it for the same reason that module swallows: the gateway has
+    // already moved the money, and logging must never be able to fail a refund.
+    console.warn(
+      '[audit-money] failed to record ledger reversal for booking',
+      input?.bookingId,
+      err instanceof Error ? err.message : String(err),
+    );
+  }
 }

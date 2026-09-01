@@ -25,7 +25,8 @@ import {
 } from '../../../lib/pandit-api';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
-import { userFacingMessage } from '../../../lib/friendly-error';
+import { classifyUserFacing, userFacingMessage } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -62,6 +63,9 @@ function PriestServicesPageContent() {
  const [offerings, setOfferings] = useState<Offering[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
+ // AUTH-06: the load path could report an expired session and then offer only
+ // Retry, which re-fires the same dead credential.
+ const [reauth, setReauth] = useState(false);
  const [showForm, setShowForm] = useState(false);
  const [editingId, setEditingId] = useState<string | null>(null);
  const [saving, setSaving] = useState(false);
@@ -82,7 +86,12 @@ function PriestServicesPageContent() {
    const data = await listMyOfferings(token);
    setOfferings(data);
   } catch (err) {
-   setError(userFacingMessage(err, 'Could not load your pujas. Please try again.'));
+   const { message, reauth: needsReauth } = classifyUserFacing(
+    err,
+    'Could not load your pujas. Please try again.',
+   );
+   setError(message);
+   setReauth(needsReauth);
   } finally {
    setLoading(false);
   }
@@ -210,12 +219,17 @@ function PriestServicesPageContent() {
     <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
      <div className="flex-1">{error}</div>
-     <button
-      onClick={() => void loadOfferings()}
-      className="ml-2 text-xs font-medium text-red-700 underline hover:no-underline"
-     >
-      Retry
-     </button>
+     {/* AUTH-06: sign-in replaces Retry when the session is what failed. */}
+     {reauth ? (
+      <ReauthPrompt message="" className="ml-2 shrink-0" />
+     ) : (
+      <button
+       onClick={() => void loadOfferings()}
+       className="ml-2 text-xs font-medium text-red-700 underline hover:no-underline"
+      >
+       Retry
+      </button>
+     )}
     </div>
    )}
 

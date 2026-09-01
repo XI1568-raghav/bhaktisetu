@@ -30,7 +30,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
-import { friendlyApiError, serverErrorMessage } from '../../../lib/friendly-error';
+import {
+ friendlyApiError,
+ serverErrorMessage,
+ serverErrorText,
+ classifyUserFacing,
+ UserFacingError,
+} from '../../../lib/friendly-error';
+// AUTH-06: the sixth and last of the screens that computed a `reauth` decision
+// and then had nowhere to send the devotee. See the two call sites below.
+import ReauthPrompt from '../../../components/ReauthPrompt';
 // DB-09: shared with /bookings so the list CTA and this player agree about
 // what counts as a playable recording.
 import { videoProofState } from '../video-proof';
@@ -38,6 +47,11 @@ import AuthGuard from '../../../components/AuthGuard';
 import BookingStatusTracker, { type BookingStatus } from '../../../components/BookingStatusTracker';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import {
+ CANCELLATION_CUTOFF_HOURS,
+ PARTIAL_REFUND_PERCENT,
+ FULL_REFUND_HOURS_BEFORE,
+} from '../../../lib/cancellation-policy';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -264,6 +278,17 @@ type CancelQuote = {
  refundFraction: number;
  tierLabel?: string | null;
  refundDaysLabel?: string | null;
+ /**
+  * LEG-03/F223. The engine refuses a devotee cancel inside
+  * DEVOTEE_CANCEL_CUTOFF_HOURS of the slot, so the ladder's 50% and 25% tiers
+  * are unreachable here. Before the quote carried this flag, a booking ten
+  * hours out was quoted "You get ₹4,000 back (50% refund (4–24h before))" and
+  * the POST that followed was refused — the devotee was shown half their money
+  * and paid nothing. Optional so a stale API (which cannot produce `false`)
+  * degrades to the old behaviour rather than hiding the control outright.
+  */
+ cancellationAllowed?: boolean;
+ cancellationCutoffHours?: number;
 };
 
 /** `825` → `"₹825"`. One formatter, so the two dialogs cannot disagree. */
@@ -283,6 +308,39 @@ function BookingDetailContent() {
  // S2C-03: why the fetch failed, so the page can say so instead of inventing
  // a booking. null + no error = "not found"; null + error = "could not load".
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: whether that failure was a 401. The load path already worded the
+ // 401 case as "Your session has expired. Please sign in again to view this
+ // booking." and then offered exactly two controls — "View All Bookings", which
+ // is the same API and the same dead token, and "Contact Support". The sentence
+ // gave an instruction the page had no button for.
+ const [loadReauth, setLoadReauth] = useState(false);
+
+ /**
+  * PF-04 / F099 — the devotee half of the only transition that closes a
+  * booking.
+  *
+  * `video_uploaded -> delivered` is the transition that recognises revenue and
+  * mints the payout, and until the pandit portal grew a "Mark delivered" button
+  * NO client anywhere could drive it — a curl PATCH was the only way. That fix
+  * covered the pandit. It did not cover this page, which is the surface the
+  * audit named first ("Either the devotee confirms receipt or the pandit closes
+  * the job"), and it left every booking whose pandit never opens the portal
+  * parked in `video_uploaded` for ever.
+  *
+  * The API has always authorised the booking OWNER for this exact status —
+  * apps/api/src/routes/bookings.ts `OWNER_ALLOWED_TRANSITIONS = ['cancelled',
+  * 'delivered']`, checked by `checkTransitionRole` — so this needs no new
+  * endpoint and no new permission.
+  *
+  * `receiptNonce` exists because `fetchBooking` is scoped inside the load
+  * effect; bumping it re-runs that effect so the status pill, the tracker and
+  * the review gate all re-read from the server rather than from an optimistic
+  * local edit.
+  */
+ const [receiptNonce, setReceiptNonce] = useState(0);
+ const [confirmingReceipt, setConfirmingReceipt] = useState(false);
+ const [receiptError, setReceiptError] = useState<string | null>(null);
+ const [receiptReauth, setReceiptReauth] = useState(false);
 
  // Review state
  const [reviewRating, setReviewRating] = useState(0);
@@ -313,6 +371,10 @@ function BookingDetailContent() {
  const [refundReason, setRefundReason] = useState('');
  const [refundRequested, setRefundRequested] = useState(false);
  const [refundError, setRefundError] = useState<string | null>(null);
+ // AUTH-06: same story one panel down — "Your session has expired. Please sign
+ // in again to continue." used to render as a red <p> under a "Confirm refund"
+ // button that re-fires the same 401.
+ const [refundReauth, setRefundReauth] = useState(false);
 
  // LEG-07 — what this cancellation is actually worth, in rupees.
  //
@@ -349,10 +411,17 @@ function BookingDetailContent() {
  if (!cancelled) {
  setBooking(null);
  setLoadError('No booking was specified.');
+ setLoadReauth(false);
  setLoading(false);
  }
  return;
  }
+ // AUTH-06: carried out of the `if (!res.ok)` branch because the status is
+ // the only reliable signal here. The 401 copy below deliberately does NOT
+ // contain the word "unauthorized" or the number 401 — it is written for a
+ // devotee — so re-classifying that sentence with `friendlyApiError` cannot
+ // recover the fact that it was a 401.
+ let unauthorized = false;
  try {
  const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}`, {
  headers: {
@@ -361,17 +430,25 @@ function BookingDetailContent() {
  });
  if (!res.ok) {
  const body = (await res.json().catch(() => ({}))) as { error?: string };
+ unauthorized = res.status === 401;
  // 401 takes precedence over the server's own wording ("Unauthorized"
  // tells a devotee nothing); for everything else prefer the API message.
  throw new Error(
  res.status === 401
  ? 'Your session has expired. Please sign in again to view this booking.'
- : (body?.error ??
- (res.status === 404
+ // RES-09: `body?.error` is the SERVER's field — a bare
+ // {"error":"Internal Server Error"} used to become the whole
+ // sentence. `serverErrorMessage` keeps a sentence worth reading and
+ // refuses the developer names. The final branch printed the raw
+ // status, which tells a devotee nothing they can act on.
+ : serverErrorMessage(
+ body,
+ res.status === 404
  ? 'We could not find this booking.'
  : res.status === 403
  ? 'This booking belongs to another account.'
- : `Could not load this booking (HTTP ${res.status}).`)),
+ : 'We could not load this booking. Please try again.',
+ ),
  );
  }
  const data = (await res.json()) as { booking?: ApiBookingDetail } & ApiBookingDetail;
@@ -382,6 +459,7 @@ function BookingDetailContent() {
  if (!cancelled) {
  setBooking(mapBookingDetail(raw));
  setLoadError(null);
+ setLoadReauth(false);
  }
  } catch (err) {
  if (!cancelled) {
@@ -391,6 +469,10 @@ function BookingDetailContent() {
  ? err.message
  : 'Could not reach the server. Please check your connection and try again.',
  );
+ // AUTH-06: the status wins where we have it; `friendlyApiError` still
+ // gets a look in because a 401 raised inside the shared fetch layer
+ // arrives here as a thrown message rather than as a response.
+ setLoadReauth(unauthorized || friendlyApiError(err).reauth);
  }
  } finally {
  if (!cancelled) setLoading(false);
@@ -401,7 +483,10 @@ function BookingDetailContent() {
  return () => {
  cancelled = true;
  };
- }, [bookingId, session]);
+ // PF-04: `receiptNonce` re-runs the load after a successful delivery
+ // confirmation, so the page shows the server's status rather than an
+ // optimistic guess.
+ }, [bookingId, session, receiptNonce]);
 
  // S2C-04 (2026-08-10): this awaited the POST, discarded the response, swallowed
  // network errors as "Demo mode - still show success", and then flipped
@@ -409,6 +494,56 @@ function BookingDetailContent() {
  // or an offline device all rendered the devotee's review back to them as if it
  // had been saved — it never reached the priest's rating. Mirrors the res.ok
  // handling handleCancelBooking already uses.
+ /**
+  * PF-04 / F099 — "I have received my recording", from the devotee.
+  *
+  * PATCHes the same route and the same body the pandit portal's "Mark
+  * delivered" uses (`PATCH /bookings/:id {"status":"delivered"}`), which was
+  * the curl-only step this finding is about. Errors go through
+  * `classifyUserFacing` so a 401 offers <ReauthPrompt> rather than a Retry
+  * that re-fires a dead token, and the server's own sentence survives when it
+  * sent a usable one (a 409 from the state machine says which transition it
+  * refused, and that is worth more than "please try again").
+  */
+ const confirmReceipt = async () => {
+  if (!booking || confirmingReceipt) return;
+  setConfirmingReceipt(true);
+  setReceiptError(null);
+  setReceiptReauth(false);
+  try {
+   const res = await fetch(`${API_BASE_URL}/bookings/${booking.id}`, {
+    method: 'PATCH',
+    headers: {
+     'Content-Type': 'application/json',
+     Authorization: `Bearer ${session?.accessToken ?? ''}`,
+    },
+    body: JSON.stringify({ status: 'delivered' }),
+   });
+   if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new UserFacingError(
+     serverErrorText(
+      body,
+      'We could not confirm this booking as received. Please try again.',
+     ),
+     res.status,
+    );
+   }
+   // Re-read rather than patch local state: delivery also opens the review
+   // gate and moves the tracker, and the server is the authority on both.
+   setReceiptNonce((n) => n + 1);
+  } catch (err) {
+   const { message, reauth } = classifyUserFacing(
+    err,
+    'We could not confirm this booking as received. Please try again.',
+   );
+   setReceiptError(message);
+   setReceiptReauth(reauth);
+  } finally {
+   setConfirmingReceipt(false);
+  }
+ };
+
  const handleSubmitReview = async () => {
  if (reviewRating === 0 || !booking) return;
  setSubmittingReview(true);
@@ -424,8 +559,9 @@ function BookingDetailContent() {
  });
  if (!res.ok) {
  const body = (await res.json().catch(() => ({}))) as { error?: string };
+ // RES-09: the status code, and an unfiltered `body.error`.
  setReviewError(
- body?.error ?? `Could not submit your review (HTTP ${res.status}). Please try again.`,
+ serverErrorMessage(body, 'We could not submit your review. Please try again.'),
  );
  setSubmittingReview(false);
  return; // leave the form up with the rating intact
@@ -481,6 +617,12 @@ function BookingDetailContent() {
  refundFraction: typeof body.refundFraction === 'number' ? body.refundFraction : 0,
  tierLabel: body.tierLabel ?? null,
  refundDaysLabel: body.refundDaysLabel ?? null,
+ // LEG-03/F223. `!== false` and not `?? true`: only an explicit `false`
+ // from an API that knows about the cutoff closes the control. An older
+ // deployment omits the field and keeps today's behaviour.
+ cancellationAllowed: body.cancellationAllowed !== false,
+ cancellationCutoffHours:
+ typeof body.cancellationCutoffHours === 'number' ? body.cancellationCutoffHours : 24,
  });
  } catch {
  setQuoteFailed(true);
@@ -512,11 +654,15 @@ function BookingDetailContent() {
  });
  if (!res.ok) {
  const body = await res.json().catch(() => ({}) as { error?: string });
+ // RES-09: same two problems — an unfiltered server field, and a
+ // raw status in the fallback.
  setCancelMsg(
- body?.error ||
- (res.status === 409
+ serverErrorMessage(
+ body,
+ res.status === 409
  ? 'This booking can no longer be cancelled (within 24 hours of the scheduled time).'
- : `Could not cancel this booking (${res.status}). Please contact support@darshya.online.`),
+ : 'We could not cancel this booking. Please contact support@darshya.online.',
+ ),
  );
  setCancelling(false);
  return; // leave status untouched — the booking is still live
@@ -565,6 +711,7 @@ function BookingDetailContent() {
  if (!booking) return;
  setRefunding(true);
  setRefundError(null);
+ setRefundReauth(false);
  try {
  const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/request-refund`, {
  method: 'POST',
@@ -584,6 +731,10 @@ function BookingDetailContent() {
  setRefundError(
  serverErrorMessage(body, friendlyApiError(`HTTP ${res.status}`).message),
  );
+ // AUTH-06: read off the STATUS, not off the sentence that ends up on
+ // screen — `serverErrorMessage` may well have replaced our copy with
+ // the API's own, and the API's 401 body is the useless "Unauthorized".
+ setRefundReauth(res.status === 401);
  return;
  }
  setRefundRequested(true);
@@ -591,13 +742,27 @@ function BookingDetailContent() {
  // here because the quote is cleared when the dialog closes below.
  setRefundedAmountInr(cancelQuote ? cancelQuote.refundAmountInr : null);
  setBooking({ ...booking, status: 'cancelled' });
+ // The confirm panel closes on SUCCESS only. It used to close in
+ // `finally`, which unmounted the panel on every path — and
+ // `refundError` is rendered inside that panel, so RES-09's fix for
+ // "a devotee asking for her money back was shown HTTP 500" has never
+ // actually reached a screen: the message was set and then immediately
+ // unmounted. Every failure now keeps the panel up with the reason in
+ // it, which is also the only way AUTH-06's sign-in prompt below can be
+ // seen.
+ setShowRefundConfirm(false);
  } catch (err) {
  // A network/timeout failure used to surface the browser's own
  // "Failed to fetch".
+ // Called twice rather than destructured once because RES-09's guard
+ // (__tests__/error-honesty-res07-res09.test.tsx) pins this exact
+ // expression as source text, and that guard belongs to another finding.
+ // `friendlyApiError` is a pure classifier over a string, so the second
+ // call is free.
  setRefundError(friendlyApiError(err).message);
+ setRefundReauth(friendlyApiError(err).reauth);
  } finally {
  setRefunding(false);
- setShowRefundConfirm(false);
  }
  };
 
@@ -626,12 +791,23 @@ function BookingDetailContent() {
  {loadError ?? 'We could not find this booking.'}
  </p>
  <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+ {/* AUTH-06: INSTEAD of "View All Bookings", not beside it. /bookings
+     reads the same API with the same expired token, so on a 401 it is
+     the second dead end in a row — and it is rendered as the primary
+     action, which makes it look like the way out. The sentence above
+     already says "sign in again"; this is the button for it. Every
+     other failure (404, 403, 5xx, offline) keeps the list link, which
+     is the right destination for those. */}
+ {loadReauth ? (
+ <ReauthPrompt message="" className="flex flex-col items-center gap-3" />
+ ) : (
  <Link
  href="/bookings"
  className={buttonClass('primary', 'md')}
  >
  View All Bookings
  </Link>
+ )}
  <a
  href="mailto:support@darshya.online"
  className="inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-6 py-3 font-medium text-surface-600 hover:bg-surface-50"
@@ -648,7 +824,7 @@ function BookingDetailContent() {
  const statusBadge = getStatusBadge(booking.status);
  // Allowlist mirroring the API's CANCELLABLE_STATUSES (pending_payment,
  // confirmed, priest_assigned) — a denylist let 'refunded' show a Cancel button.
- const isCancellable =
+ const statusIsCancellable =
  booking.status === 'pending_payment' ||
  booking.status === 'booked' ||
  booking.status === 'priest_assigned';
@@ -660,6 +836,24 @@ function BookingDetailContent() {
  d.setHours(parts[0] ?? 0, parts[1] ?? 0, 0, 0);
  return d.getTime();
  })();
+ /**
+  * LEG-03 / F223 — the cutoff, applied to the CANCEL control and not only to
+  * the refund control.
+  *
+  * `isRefundable` below has always carried the 24-hour test. `isCancellable`
+  * never did: it was a pure status allowlist, so a paid booking ten hours from
+  * its slot still rendered "Cancel Booking". Clicking it fetched a quote that
+  * priced the ladder's unreachable 50% tier, printed "You get ₹4,000 back",
+  * and then the POST answered 409 — the site quoting a refund the engine
+  * refuses to pay, which is precisely what LEG-03 filed. The cutoff mirrors
+  * `DEVOTEE_CANCEL_CUTOFF_HOURS` in apps/api/src/services/cancellation.service.ts
+  * and `CANCELLATION_CUTOFF_HOURS` in lib/cancellation-policy.ts, and the API
+  * remains the authority — this only stops offering an action it will refuse.
+  */
+ const insideCancellationCutoff =
+ booking.status !== 'pending_payment' &&
+ scheduledMs - Date.now() < CANCELLATION_CUTOFF_HOURS * 60 * 60 * 1000;
+ const isCancellable = statusIsCancellable && !insideCancellationCutoff;
  const isRefundable =
  !refundRequested &&
  (booking.status === 'booked' ||
@@ -947,6 +1141,49 @@ function BookingDetailContent() {
  Download Video
  </a>
  </div>
+
+ {/* PF-04 / F099 — the devotee's own close-out.
+     `video_uploaded -> delivered` is the last step in fulfilment and also
+     the step that recognises revenue, and no client anywhere could drive
+     it. The pandit portal later grew a "Mark delivered" button; this page —
+     the surface the audit named FIRST ("either the devotee confirms
+     receipt or the pandit closes the job") — did not, so a booking whose
+     pandit never opens the portal sat in `video_uploaded` for ever and the
+     payout it gates never minted.
+
+     Gated on a PLAYABLE recording on purpose: asking a devotee to confirm
+     receipt of a video this page itself cannot open would be the same lie
+     DB-09 removed. The `pending` branch above sends them to support
+     instead. */}
+ {booking.status === 'video_uploaded' && (
+ <div className="mt-4 border-t border-surface-100 pt-4">
+ <button
+ type="button"
+ onClick={confirmReceipt}
+ disabled={confirmingReceipt}
+ className="flex w-full items-center justify-center gap-2 rounded-xl bg-tulsi-green-dark py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+ >
+ {confirmingReceipt ? (
+ <Loader2 className="h-5 w-5 animate-spin" />
+ ) : (
+ <Video className="h-5 w-5" />
+ )}
+ I have received my recording
+ </button>
+ <p className="mt-2 text-center text-xs text-surface-400">
+ Confirms delivery and closes this booking. You can still watch and
+ download the recording afterwards.
+ </p>
+ {receiptError && (
+ <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
+ <p className="text-sm text-red-700">{receiptError}</p>
+ {receiptReauth && (
+ <ReauthPrompt message="" className="mt-2 flex flex-col items-start gap-2" />
+ )}
+ </div>
+ )}
+ </div>
+ )}
  </div>
  )}
 
@@ -1184,6 +1421,23 @@ function BookingDetailContent() {
  </div>
  )}
 
+ {/* LEG-03/F223: the button is gone inside the cutoff, so say why. A control
+     that silently disappears reads as a bug; a devotee who cannot cancel is
+     owed the reason and the reschedule route, which IS still open. */}
+ {statusIsCancellable && insideCancellationCutoff && (
+ <p className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs text-surface-600">
+ This booking is within {CANCELLATION_CUTOFF_HOURS} hours of its scheduled time,
+ so it can no longer be cancelled — the pandit is assigned and the samagri is
+ being prepared. Cancelling {FULL_REFUND_HOURS_BEFORE} hours or more before the
+ slot is refunded in full, and {CANCELLATION_CUTOFF_HOURS}–
+ {FULL_REFUND_HOURS_BEFORE} hours before at {PARTIAL_REFUND_PERCENT}%. See the{' '}
+ <Link href="/refunds" className="underline">
+ cancellation &amp; refund policy
+ </Link>
+ , or contact support@darshya.online.
+ </p>
+ )}
+
  {isCancellable && (
  <>
  {showCancelConfirm ? (
@@ -1197,6 +1451,12 @@ function BookingDetailContent() {
  ? 'Are you sure you want to cancel this booking?'
  : quoteLoading
  ? 'Working out what you get back…'
+ : /* LEG-03/F223: the server is the authority on the cutoff. If the
+      clock-based gate above let this dialog open but the quote says the
+      cancel would be refused, print the refusal — never a refund figure
+      the POST will not honour. */
+ cancelQuote && cancelQuote.cancellationAllowed === false
+ ? `This booking is within ${cancelQuote.cancellationCutoffHours ?? CANCELLATION_CUTOFF_HOURS} hours of its scheduled time, so it can no longer be cancelled and no refund is due. Contact support@darshya.online if your circumstances have changed.`
  : cancelQuote
  ? `Cancel this booking? You get ${inr(cancelQuote.refundAmountInr)} back${
  cancelQuote.feeAmountInr > 0
@@ -1217,7 +1477,13 @@ function BookingDetailContent() {
  <div className="flex gap-2">
  <button
  onClick={handleCancelBooking}
- disabled={cancelling || (booking.amountPaid > 0 && quoteLoading)}
+ disabled={
+ cancelling ||
+ (booking.amountPaid > 0 && quoteLoading) ||
+ // LEG-03/F223: never let the devotee fire a POST the server has
+ // already told us it will refuse with a 409.
+ cancelQuote?.cancellationAllowed === false
+ }
  className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
  >
  {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
@@ -1302,6 +1568,12 @@ function BookingDetailContent() {
      is agreeing to a figure, not to a dialog. A FAILED quote still
      allows confirm: the published policy is shown instead, and
      blocking the refund outright would be worse than an unquoted one. */}
+ {/* AUTH-06: INSTEAD of "Confirm refund", never beside it. On a 401
+     the button re-fires the same request with the same dead token,
+     so leaving it next to "Your session has expired. Please sign in
+     again to continue." puts the one control that cannot work where
+     the way out should be. */}
+ {!refundReauth && (
  <button
  onClick={handleRequestRefund}
  disabled={refunding || quoteLoading}
@@ -1309,6 +1581,7 @@ function BookingDetailContent() {
  >
  {refunding ? 'Submitting…' : 'Confirm refund'}
  </button>
+ )}
  <button
  onClick={() => setShowRefundConfirm(false)}
  className="flex-1 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-semibold text-surface-600 hover:bg-surface-50"
@@ -1316,9 +1589,15 @@ function BookingDetailContent() {
  Back
  </button>
  </div>
- {refundError && (
+ {refundError &&
+ (refundReauth ? (
+ <ReauthPrompt
+ message={refundError}
+ className="mt-2 flex flex-col items-start gap-2"
+ />
+ ) : (
  <p className="mt-2 text-xs text-red-600">{refundError}</p>
- )}
+ ))}
  </div>
  ) : (
  <button

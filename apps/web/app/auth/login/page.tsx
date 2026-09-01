@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { useTranslations } from '../../../lib/t';
 import {
@@ -320,11 +321,21 @@ export default function LoginPage() {
             title. The lockup is unchanged pixel-for-pixel; it is now the
             h1, and the purpose is appended for AT instead of being
             duplicated on screen. */}
-        <h1 className="mb-1.5 flex items-center justify-center gap-2 sm:mb-2">
+        {/* DU-05 (2026-09-01): the type lived on the inner wordmark span as
+            `text-surface-800 text-xl font-semibold tracking-tight` — which is
+            H1.portal's four utilities, spelled out by hand, on a child of the
+            h1 rather than on the h1. So the heading itself declared no size at
+            all and the ratchet counted it as a hand-rolled recipe. Moving the
+            archetype onto the h1 and deleting the duplicate from the span
+            renders identically: the wordmark inherits the same four values,
+            the icon chip is a fixed h-7 w-7 flex box with no text in it, gap-2
+            is rem-based, and tracking-tight is em-relative off the same
+            text-xl on either element. */}
+        <h1 className={`${H1.portal} mb-1.5 flex items-center justify-center gap-2 sm:mb-2`}>
           <span className="bg-saffron-600/15 flex h-7 w-7 items-center justify-center rounded-lg">
             <Flame className="text-saffron-600 h-4 w-4" aria-hidden="true" />
           </span>
-          <span className="text-surface-800 text-xl font-semibold tracking-tight">
+          <span>
             Darsh<span className="text-saffron-600">ya</span>
           </span>
           <span className="sr-only">{step === 'otp' ? '\u2014 verify code' : '\u2014 sign in'}</span>

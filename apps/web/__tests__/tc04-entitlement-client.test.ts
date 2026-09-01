@@ -158,3 +158,54 @@ describe('TC-04 — hasEntitlement', () => {
     expect(hasEntitlement(NO_ENTITLEMENTS, 'ads.suppressed')).toBe(false);
   });
 });
+
+/**
+ * ADDED 2026-09-01 — the clause the earlier passes left open.
+ *
+ * TC-04's headline is "the entitlement hook has zero call sites". Building
+ * lib/entitlement.ts did not close it: the new client ALSO had zero call
+ * sites, and lib/use-premium.ts was still sitting there with a comment
+ * claiming four ("Used by AQ ad-gate, NRI surcharge bypass, priority-booking
+ * gating, and the M3 AI astro paywall waiver") and no importers at all.
+ *
+ * These cases hold the wiring in place: the dead hook is gone, and the one
+ * premium gate in apps/web reaches the server client rather than a tier
+ * string. They fail against the tree as it stood on 2026-08-31.
+ */
+describe('TC-04 — the entitlement client is actually wired in', () => {
+  const fsMod = require('node:fs') as typeof import('node:fs');
+  const pathMod = require('node:path') as typeof import('node:path');
+  const WEB = pathMod.resolve(__dirname, '..');
+
+  it('the dead server-truth hook with the false call-site comment is deleted', () => {
+    expect(fsMod.existsSync(pathMod.join(WEB, 'lib/use-premium.ts'))).toBe(false);
+  });
+
+  it('components/useIsPremium asks lib/entitlement and no longer reads a tier string', () => {
+    const src = fsMod.readFileSync(pathMod.join(WEB, 'components/useIsPremium.ts'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code).toMatch(/useEntitlement\(\s*'ads\.suppressed'\s*\)/);
+    expect(code).not.toMatch(/subscriptionTier/);
+    expect(code).not.toMatch(/isNriPremium/);
+    expect(code).not.toMatch(/PREMIUM_TIERS/);
+  });
+
+  it('lib/entitlement.ts has at least one non-test importer', () => {
+    const importers: string[] = [];
+    (function walk(dir: string) {
+      for (const e of fsMod.readdirSync(dir, { withFileTypes: true })) {
+        if (e.isDirectory()) {
+          if (['node_modules', '.next', '__tests__', 'e2e', 'coverage'].includes(e.name)) continue;
+          walk(pathMod.join(dir, e.name));
+        } else if (/\.tsx?$/.test(e.name) && !e.name.includes('.test.')) {
+          const p = pathMod.join(dir, e.name);
+          if (p.endsWith(`lib${pathMod.sep}entitlement.ts`)) continue;
+          if (/from ['"][^'"]*lib\/entitlement['"]/.test(fsMod.readFileSync(p, 'utf8'))) {
+            importers.push(pathMod.relative(WEB, p).split(pathMod.sep).join('/'));
+          }
+        }
+      }
+    })(WEB);
+    expect(importers).toContain('components/useIsPremium.ts');
+  });
+});

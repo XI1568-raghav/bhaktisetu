@@ -8,8 +8,7 @@
  * that re-fires the request which just 401'd. The one control on screen was the
  * one control that could not work, and it looked like the way out.
  *
- * app/admin/leads was fixed with the component. This file covers the rest of
- * the list that is testable at the render level:
+ * app/admin/leads was fixed with the component. This file covers the other five:
  *
  *   app/admin/ratings   text-only error box
  *   app/store/orders    text-only error box
@@ -18,6 +17,10 @@
  *   app/store/checkout  the highest-intent moment in the funnel: a 401 on
  *                       "Place Order" left the buyer staring at one line of red
  *                       text with the cart intact and no route back in
+ *   app/bookings/view   TWO surfaces, added 2026-09-01 — see the block at the
+ *                       bottom. This one was named in the finding, described in
+ *                       ReauthPrompt's own docblock, and then left out of both
+ *                       the fix and this list, which is how it survived.
  *
  * What is asserted is the affordance, not the wording: a link to /auth/login
  * that carries the current path as `redirect`, so the user comes back where
@@ -45,11 +48,12 @@ vi.mock('../lib/auth-context', async () => {
 });
 
 let pathname = '/bookings';
+let search = '';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(search),
 }));
 
 const CART_PRODUCT = {
@@ -92,6 +96,7 @@ import AdminRatingsPage from '../app/admin/ratings/page';
 import StoreOrdersPage from '../app/store/orders/page';
 import BookingsPage from '../app/bookings/page';
 import StoreCheckoutPage from '../app/store/checkout/page';
+import BookingDetailPage from '../app/bookings/view/page';
 
 const realFetch = globalThis.fetch;
 
@@ -123,6 +128,7 @@ beforeEach(() => {
   authState.session = { accessToken: 'live-token' };
   authState.isAuthenticated = true;
   authState.isLoading = false;
+  search = '';
 });
 
 afterEach(() => {
@@ -289,6 +295,125 @@ describe('AUTH-06 — app/store/checkout', () => {
     await waitFor(() =>
       expect(screen.getByText(/something went wrong on our side/i)).toBeTruthy(),
     );
+    expect(reauthLink()).toBeNull();
+  });
+});
+
+/**
+ * AUTH-06 (2026-09-01) — the SIXTH page, and the one the list above quietly
+ * dropped. The header of this file names six pages and then covers four of
+ * them; app/admin/leads is covered by __tests__/auth06-load-error-reauth.ts,
+ * which left app/bookings/view untested and, as it turned out, unfixed. It has
+ * TWO 401 surfaces, not one:
+ *
+ *  - the LOAD. Its own copy is "Your session has expired. Please sign in again
+ *    to view this booking.", printed under two controls: "View All Bookings",
+ *    which is the same API and the same dead token, and "Contact Support".
+ *  - the REFUND. "Confirm refund" 401s, the panel prints the reason, and the
+ *    only control is the button that just failed.
+ */
+describe('AUTH-06 — app/bookings/view, both of its 401 surfaces', () => {
+  const IN_THREE_DAYS = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  beforeEach(() => {
+    pathname = '/bookings/view';
+    search = 'id=BS-20260901-ABCDE';
+  });
+
+  it('offers a way to sign in again when the booking load 401s', async () => {
+    globalThis.fetch = statusOnly(401) as unknown as typeof fetch;
+
+    render(<BookingDetailPage />);
+
+    await waitFor(() => expect(reauthLink()).not.toBeNull());
+    expect(reauthLink()!.getAttribute('href')).toBe(
+      '/auth/login?redirect=' + encodeURIComponent('/bookings/view'),
+    );
+    // and the dead-end primary is gone: /bookings reads the same API with the
+    // same expired token.
+    expect(screen.queryByRole('link', { name: /view all bookings/i })).toBeNull();
+  });
+
+  it('keeps "View All Bookings" when the booking is merely missing', async () => {
+    globalThis.fetch = statusOnly(404) as unknown as typeof fetch;
+
+    render(<BookingDetailPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /view all bookings/i })).toBeTruthy(),
+    );
+    expect(reauthLink()).toBeNull();
+  });
+
+  /** A loadable, refundable booking; POST request-refund answers `status`. */
+  function refundFetch(status: number) {
+    return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/request-refund')) {
+        return {
+          ok: status < 400,
+          status,
+          text: async () => '',
+          json: async () => ({}),
+        } as unknown as Response;
+      }
+      if (url.includes('/cancel-quote')) {
+        return { ok: false, status: 404, json: async () => ({}), text: async () => '' } as unknown as Response;
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          booking: {
+            id: 'b-1',
+            bookingNumber: 'BS-20260901-ABCDE',
+            status: 'confirmed',
+            scheduledDate: IN_THREE_DAYS,
+            temple: { name: 'Test Temple', slug: 't', city: 'Gurugram', state: 'Haryana' },
+            payments: [],
+          },
+        }),
+        text: async () => '',
+      } as unknown as Response;
+    });
+  }
+
+  async function requestRefund() {
+    render(<BookingDetailPage />);
+    const open = await screen.findByRole('button', { name: /request cancellation/i });
+    fireEvent.click(open);
+    const confirm = await screen.findByRole('button', { name: /confirm refund/i });
+    await waitFor(() => expect(confirm).not.toBeDisabled());
+    fireEvent.click(confirm);
+  }
+
+  it('offers a way to sign in again when the refund request 401s, and drops Confirm', async () => {
+    globalThis.fetch = refundFetch(401) as unknown as typeof fetch;
+
+    await requestRefund();
+
+    await waitFor(() => expect(reauthLink()).not.toBeNull());
+    expect(reauthLink()!.getAttribute('href')).toBe(
+      '/auth/login?redirect=' + encodeURIComponent('/bookings/view'),
+    );
+    expect(
+      screen.queryByRole('button', { name: /confirm refund/i }),
+      'Confirm refund re-fires the request that just 401d',
+    ).toBeNull();
+  });
+
+  it('shows an ordinary refund failure in the panel and keeps Confirm', async () => {
+    // Also the regression guard for the panel closing itself: `finally` used to
+    // run setShowRefundConfirm(false) on every path, so the message RES-09 added
+    // was set and then unmounted in the same tick and never reached a screen.
+    globalThis.fetch = refundFetch(500) as unknown as typeof fetch;
+
+    await requestRefund();
+
+    await waitFor(() =>
+      expect(screen.getByText(/something went wrong on our side/i)).toBeTruthy(),
+    );
+    expect(screen.getByRole('button', { name: /confirm refund/i })).toBeTruthy();
     expect(reauthLink()).toBeNull();
   });
 });

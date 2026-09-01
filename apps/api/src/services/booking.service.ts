@@ -5,6 +5,10 @@ import { mintProviderEarningForBooking } from './provider-earning-mint.js';
 // OPS-05 — the durable money trail. Post-commit only; never inside a tx.
 import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
 import { hoursUntilSlot } from '../lib/slot-time.js';
+// LEG-03/F223 — the cancellation cutoff lives with the refund ladder it
+// truncates, not as a literal here. cancellation.service.ts imports only
+// prisma, slot-time and booking-notify.service, so this is not a cycle.
+import { DEVOTEE_CANCEL_CUTOFF_HOURS } from './cancellation.service.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 // RV-03: imported for this module's OWN use — a bare `export … from` re-export
 // exposes the name to importers but does not bind it in local scope.
@@ -908,14 +912,24 @@ export class BookingService {
             const price = new Prisma.Decimal(row.priceAmount as Prisma.Decimal);
             const providerEarning = new Prisma.Decimal(row.priestPayout as Prisma.Decimal);
             const percentage = platformRateOf(price.sub(providerEarning), price);
-            await tx.commission.create({
-              data: {
-                bookingId: row.id,
-                providerId: priestUser.userId,
-                amount: providerEarning,
-                percentage,
-                status: 'PENDING',
-              },
+            // DI-06 (F367): ON CONFLICT DO NOTHING, not a bare INSERT. This
+            // runs inside the confirm `$transaction` and shares the unique key
+            // `commissions_booking_id_key` (migration 20260824000000) with
+            // payment.service's writer — a PATCH-confirm racing a
+            // verify-payment would otherwise raise P2002 and abort the whole
+            // transaction, rolling back the confirm. Rationale in full at
+            // payment.service.writePujaCommissionOnConfirm.
+            await tx.commission.createMany({
+              data: [
+                {
+                  bookingId: row.id,
+                  providerId: priestUser.userId,
+                  amount: providerEarning,
+                  percentage,
+                  status: 'PENDING',
+                },
+              ],
+              skipDuplicates: true,
             });
           }
         }
@@ -1119,11 +1133,21 @@ export class BookingService {
     // for an 06:00 puja, 18h for an 18:00 one). resolveSlotInstant falls back to
     // the raw date when a legacy slot string cannot be parsed, so unparseable
     // data keeps the old, stricter behaviour rather than widening the window.
+    //
+    // LEG-03/F223: the `24` is no longer a literal here. It is
+    // DEVOTEE_CANCEL_CUTOFF_HOURS in cancellation.service.ts, next to the
+    // ladder it truncates, so GET /bookings/:id/cancel-quote and this refusal
+    // cannot disagree about where the window closes. They previously did:
+    // the quote happily priced the ladder's 50%/25% tiers for a booking inside
+    // 24h and this line then refused the cancel, so a devotee was shown
+    // "You get Rs 4,000 back (50% refund)" and received nothing.
     if (booking.status !== 'pending_payment') {
       const hoursUntilPuja = hoursUntilSlot(booking.scheduledDate, booking.scheduledTimeSlot);
 
-      if (hoursUntilPuja < 24) {
-        throw new Error('Cancellation is not allowed within 24 hours of the scheduled puja time.');
+      if (hoursUntilPuja < DEVOTEE_CANCEL_CUTOFF_HOURS) {
+        throw new Error(
+          `Cancellation is not allowed within ${DEVOTEE_CANCEL_CUTOFF_HOURS} hours of the scheduled puja time.`,
+        );
       }
     }
 

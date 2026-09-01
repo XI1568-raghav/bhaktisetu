@@ -87,6 +87,25 @@ function stripComments(src: string): string {
  * on it. Those are exempted here and covered instead by the call-site
  * assertion below, so the exemption cannot become a way to hide a real one.
  */
+
+/**
+ * An intrinsic box can be declared two ways, and both prevent the shift:
+ *
+ *   width + height   the literal ratio of the painted box. The right answer
+ *                    whenever the dimensions are knowable.
+ *   aspect-ratio     a DECLARED ratio, for the case where they are not — a
+ *                    markdown `![alt](url)` carries no dimensions at all, so
+ *                    there is no honest literal to write. The box still exists
+ *                    before the first byte arrives, which is the whole point.
+ *
+ * Accepting only the first would have forced lib/markdown.ts to invent a
+ * width and a height it cannot know.
+ */
+function declaresBox(body: string): boolean {
+  if (/\bwidth[=\s]/.test(body) && /\bheight[=\s]/.test(body)) return true;
+  return /aspect-ratio\s*:/.test(body) || /\baspect-\[/.test(body);
+}
+
 function countImgs(src: string): { total: number; missing: number } {
   let total = 0;
   let missing = 0;
@@ -95,7 +114,7 @@ function countImgs(src: string): { total: number; missing: number } {
     if (!/src=/.test(body)) continue;
     if (/\{\s*\.\.\.\w/.test(body)) continue; // forwards the caller's props
     total += 1;
-    if (!/\bwidth[=\s]/.test(body) || !/\bheight[=\s]/.test(body)) missing += 1;
+    if (!declaresBox(body)) missing += 1;
   }
   return { total, missing };
 }
@@ -114,14 +133,41 @@ function countWrapperUses(src: string, tag: string): { total: number; missing: n
   return { total, missing };
 }
 
-function tsxFiles(dir: string, out: string[] = []): string[] {
+/**
+ * DENOMINATOR (widened 2026-09-01). This used to collect `.tsx` under `app/`
+ * and `components/` only, while the assertion below called itself "the
+ * app-wide backlog". Two structural blind spots came with that:
+ *
+ *   - `lib/` was never walked. It holds real render code — `lib/meta-pixel.ts`
+ *     builds the Meta `<noscript>` pixel, and `lib/markdown.ts` emits raw HTML
+ *     — so a dimensionless image there would have read as zero.
+ *   - `.ts` was excluded, so any of that code that is not JSX-shaped was out of
+ *     scope on file extension alone.
+ *
+ * Both are in now. Re-measured after widening: still 0 offenders, so this is a
+ * denominator fix and not a backlog change. The one `<img>` the widening adds
+ * is the Meta pixel, which is `createElement('img', { height: 1, width: 1,
+ * style: { display: 'none' } })` — dimensioned and un-painted, and asserted by
+ * name below because `countImgs` scans JSX text and cannot see a
+ * `createElement` call.
+ */
+function sourceFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry === '.next' || entry === '__tests__') continue;
     const full = path.join(dir, entry);
-    if (statSync(full).isDirectory()) tsxFiles(full, out);
-    else if (full.endsWith('.tsx')) out.push(full);
+    if (statSync(full).isDirectory()) sourceFiles(full, out);
+    else if (/\.tsx?$/.test(full) && !/\.(test|spec)\./.test(full)) out.push(full);
   }
   return out;
+}
+
+/** Every source file the two assertions below judge. */
+function scannedFiles(): string[] {
+  return [
+    ...sourceFiles(path.join(WEB_ROOT, 'app')),
+    ...sourceFiles(path.join(WEB_ROOT, 'components')),
+    ...sourceFiles(path.join(WEB_ROOT, 'lib')),
+  ];
 }
 
 describe('PERF-04 — intrinsic image dimensions', () => {
@@ -145,7 +191,10 @@ describe('PERF-04 — intrinsic image dimensions', () => {
      * does not have to re-derive the list.
      */
     const BASELINE_MISSING = 0;
-    const files = [...tsxFiles(path.join(WEB_ROOT, 'app')), ...tsxFiles(path.join(WEB_ROOT, 'components'))];
+    const files = scannedFiles();
+    expect(files.length, 'the file walk found nothing — the backlog would read 0').toBeGreaterThan(
+      300,
+    );
     const offenders: string[] = [];
     let missing = 0;
     for (const f of files) {
@@ -174,10 +223,7 @@ describe('PERF-04 — intrinsic image dimensions', () => {
      * routing an image through the wrapper would be a way out of the ratchet.
      */
     const WRAPPERS = ['RemoteImage'];
-    const files = [
-      ...tsxFiles(path.join(WEB_ROOT, 'app')),
-      ...tsxFiles(path.join(WEB_ROOT, 'components')),
-    ];
+    const files = scannedFiles();
     const offenders: string[] = [];
     let uses = 0;
     for (const f of files) {
@@ -202,11 +248,41 @@ describe('PERF-04 — intrinsic image dimensions', () => {
     expect(countImgs('<img src={x} className="a" />').missing).toBe(1);
     expect(countImgs('<img src={x} width={10} height={20} />').missing).toBe(0);
     expect(countImgs('<img src={x} width={10} />').missing).toBe(1);
+    // The second spelling, and the thing it must NOT accept: a declared ratio
+    // counts, the word "aspect" on its own does not.
+    expect(countImgs('<img src={x} style="aspect-ratio:16/9" />').missing).toBe(0);
+    expect(countImgs('<img src={x} className="aspect-[4/3]" />').missing).toBe(0);
+    expect(countImgs('<img src={x} className="aspect" alt="aspect ratio" />').missing).toBe(1);
     // A src-less <img> is not counted at all, and a comment quoting one cannot
     // create a phantom offender.
     expect(countImgs('<img alt="" />').total).toBe(0);
     expect(countImgs('{/* <img src={x} /> */}').total).toBe(0);
     expect(countImgs('/* <img src={x} /> */').total).toBe(0);
+  });
+
+  it('the one image built by createElement rather than JSX is dimensioned too', () => {
+    /*
+     * countImgs reads JSX text, so `createElement('img', {...})` is invisible
+     * to it. lib/meta-pixel.ts is the only place in the tree that does that —
+     * asserted here rather than assumed, because widening the walk to lib/ is
+     * what made this file part of the denominator at all. If a second one is
+     * ever added, this assertion's file list is the place it has to be
+     * declared.
+     */
+    const usesCreateElementImg = scannedFiles().filter((f) =>
+      /createElement\(\s*['"]img['"]/.test(stripComments(readFileSync(f, 'utf8'))),
+    );
+    expect(usesCreateElementImg.map((f) => path.relative(WEB_ROOT, f).split(path.sep).join('/'))).toEqual(
+      ['lib/meta-pixel.ts'],
+    );
+    const src = stripComments(readFileSync(path.join(WEB_ROOT, 'lib/meta-pixel.ts'), 'utf8'));
+    const call = /createElement\(\s*['"]img['"]\s*,\s*\{([\s\S]{0,400}?)\}\s*\)/.exec(src)?.[1];
+    expect(call, 'could not isolate the pixel <img> props').toBeTruthy();
+    expect(call!, 'the tracking pixel declares no height').toMatch(/height:\s*1\b/);
+    expect(call!, 'the tracking pixel declares no width').toMatch(/width:\s*1\b/);
+    expect(call!, 'the tracking pixel is painted, so its 1x1 box IS layout').toMatch(
+      /display:\s*'none'/,
+    );
   });
 });
 

@@ -277,6 +277,12 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
+    // DI-06: writeTemplePayoutOnConfirm inserts with `createMany({
+    // skipDuplicates })` for the same reason the commission writers do — the
+    // UNIQUE index on temple_payouts.booking_id must settle a concurrent
+    // confirm inside the INSERT rather than raising P2002 and aborting the
+    // caller's payment transaction. ADDED, never reassigned.
+    createMany: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
     count: vi.fn(),

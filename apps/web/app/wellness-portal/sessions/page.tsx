@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import {
  listMySessions,
  createWellnessSession,
@@ -128,7 +129,7 @@ function WellnessSessionsPageContent() {
    const data = await listMySessions(token);
    setSessions(data);
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Failed to load sessions');
+   setError(userFacingMessage(err, 'We could not load your sessions. Please try again.'));
   } finally {
    setLoading(false);
   }
@@ -202,7 +203,7 @@ function WellnessSessionsPageContent() {
    }
    resetForm();
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Save failed');
+   setError(userFacingMessage(err, 'We could not save that session. Please try again.'));
   } finally {
    setSaving(false);
   }
@@ -220,7 +221,7 @@ function WellnessSessionsPageContent() {
    await deleteWellnessSession(token, id);
   } catch (err) {
    setSessions(prev);
-   setError(err instanceof Error ? err.message : 'Delete failed');
+   setError(userFacingMessage(err, 'We could not delete that session. Please try again.'));
   } finally {
    setBusyId(null);
   }
@@ -239,7 +240,7 @@ function WellnessSessionsPageContent() {
    setSessions((arr) => arr.map((x) => (x.id === s.id ? updated : x)));
   } catch (err) {
    setSessions(prev);
-   setError(err instanceof Error ? err.message : 'Status update failed');
+   setError(userFacingMessage(err, 'We could not change that session. Please try again.'));
   } finally {
    setBusyId(null);
   }
@@ -259,7 +260,7 @@ function WellnessSessionsPageContent() {
    setRoomEditId(null);
    setRoomUrlInput('');
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Could not save room URL');
+   setError(userFacingMessage(err, 'We could not save the room link. Please try again.'));
   } finally {
    setRoomSaving(false);
   }

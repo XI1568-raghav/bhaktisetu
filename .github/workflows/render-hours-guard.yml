@@ -69,6 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Read service state and warn before the cap
+        id: check
         env:
           RK: ${{ secrets.RENDER_API_KEY }}
           API_SID: srv-d7mc2n8sfn5c73dfce0g
@@ -82,18 +83,48 @@ jobs:
           # each service — and fails loudly the moment either is suspended.
           # The hours number itself lives only in the dashboard; the summary
           # below links there so the human check is one click.
+          # ── "cannot tell" is NOT "suspended" ────────────────────────────
+          # The first version tested `[ "$susp" != "not_suspended" ]`, which is
+          # true for the string "unknown" that `jq -r '.suspended // "unknown"'`
+          # yields whenever the API call did not return a service object at all
+          # — an expired or rotated RENDER_API_KEY, a 401, a 404, a network
+          # blip. So a stale credential reported "production is DOWN" while
+          # production was healthy.
+          #
+          # That false positive was not merely noise. It filed an issue, and the
+          # filing step below skipped when an issue was already open, so after
+          # one bad credential the guard went PERMANENTLY silent: a real
+          # suspension would file nothing and comment nothing, leaving only
+          # another red run in a run of red runs. The workflow existed to end
+          # exactly that silence.
+          #
+          # Three explicit states now, and only the middle one means down.
           suspended_any=0
+          degraded_any=0
           for pair in "api:${API_SID}" "web:${WEB_SID}"; do
             label="${pair%%:*}"; sid="${pair##*:}"
-            body=$(curl -s -H "$A" "https://api.render.com/v1/services/${sid}")
+            code=$(curl -s -o /tmp/svc.json -w '%{http_code}' -H "$A" "https://api.render.com/v1/services/${sid}" || echo 000)
+            body=$(cat /tmp/svc.json 2>/dev/null || echo '{}')
             name=$(echo "$body" | jq -r '.name // "unknown"')
             susp=$(echo "$body" | jq -r '.suspended // "unknown"')
             plan=$(echo "$body" | jq -r '.serviceDetails.plan // "unknown"')
             who=$(echo "$body"  | jq -rc '.suspenders // []')
-            echo "${label}: name=${name} suspended=${susp} plan=${plan} suspenders=${who}"
-            if [ "$susp" != "not_suspended" ]; then
+            echo "${label}: http=${code} name=${name} suspended=${susp} plan=${plan} suspenders=${who}"
+
+            if [ "$code" != "200" ] || [ "$susp" = "unknown" ] || [ -z "$susp" ]; then
+              # Cannot establish state. Still a failure — a guard that cannot
+              # see is a guard that is not guarding — but a DIFFERENT one, so it
+              # never masquerades as an outage or consumes the outage issue.
+              degraded_any=1
+              echo "::error::GUARD DEGRADED for ${label} (${sid}): HTTP ${code}, suspended=${susp}. Cannot determine service state — check RENDER_API_KEY. This is NOT a confirmed outage."
+            elif [ "$susp" = "suspended" ]; then
               suspended_any=1
-              echo "::error::${name} is ${susp} (suspenders=${who}) — production is DOWN."
+              echo "::error::${name} is suspended (suspenders=${who}) — production is DOWN."
+            elif [ "$susp" != "not_suspended" ]; then
+              # A state Render added that we do not model yet. Treat as degraded
+              # rather than guessing in either direction.
+              degraded_any=1
+              echo "::error::GUARD DEGRADED for ${label}: unrecognised suspended=\"${susp}\". Not treating as an outage; update this workflow."
             fi
           done
 
@@ -110,20 +141,51 @@ jobs:
             echo "must stop being always-on before the cap suspends BOTH."
           } >> "$GITHUB_STEP_SUMMARY"
 
-          exit $suspended_any
+          # Publish BOTH signals. The issue step keys off `suspended` alone, so a
+          # degraded run never files "production is down" — but it still fails
+          # the run, because a guard that cannot see production is not guarding
+          # it, and a green run would be the same silence this workflow exists
+          # to end.
+          echo "suspended=${suspended_any}" >> "$GITHUB_OUTPUT"
+          echo "degraded=${degraded_any}"   >> "$GITHUB_OUTPUT"
+
+          if [ "$suspended_any" = "1" ] || [ "$degraded_any" = "1" ]; then
+            exit 1
+          fi
+          exit 0
 
       - name: Open an issue if a service is suspended
-        if: failure()
+        # NOT `failure()`. That would also fire when the guard merely could not
+        # reach the Render API, filing an outage issue for a healthy site — and
+        # then the open-issue dedupe would suppress the alert for the REAL
+        # suspension that followed.
+        if: always() && steps.check.outputs.suspended == '1'
         uses: actions/github-script@v7
         with:
           script: |
+            const NL = String.fromCharCode(10); // avoids a literal escape inside YAML
             const title = 'Render: a service is suspended — production is down';
             const { data: open } = await github.rest.issues.listForRepo({
               owner: context.repo.owner, repo: context.repo.repo,
               state: 'open', labels: 'render-suspended',
             });
             if (open.length) {
-              core.info(`Issue #${open[0].number} already open; not filing a duplicate.`);
+              // COMMENT, do not return silently. The previous version logged to
+              // the run and stopped, which meant the second and every later
+              // suspension produced no notification anywhere — the issue was
+              // already open, so nobody was told it had happened again. A
+              // comment is what actually reaches a subscriber's inbox, and the
+              // run URL is what makes the recurrence datable.
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: open[0].number,
+                body: [
+                  `Still suspended as of ${new Date().toISOString()}.`,
+                  '',
+                  `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                ].join(NL),
+              });
+              core.info(`Commented on existing issue #${open[0].number}.`);
               return;
             }
             await github.rest.issues.create({

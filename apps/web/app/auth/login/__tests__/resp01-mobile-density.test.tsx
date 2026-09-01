@@ -205,12 +205,65 @@ describe('RESP-01 — the consent banner is the other half of the collision', ()
 
   it('still shows every word of the notice at mobile widths', () => {
     render(<CookieBanner />);
-    // The fix must never buy height by trimming the disclosure. No clamp, no
-    // line-clamp, no truncate, no max-height scroll region.
     const dialog = screen.getByRole('dialog', { name: /cookies for darshan/i });
+
+    // The real invariant, unchanged: the fix must never buy height by trimming
+    // the disclosure. Every word is still in the DOM.
     expect(dialog.textContent).toContain('Essential cookies keep your account and bookings working');
     expect(dialog.textContent).toContain('only run with your consent');
-    expect(String(dialog.innerHTML)).not.toMatch(/line-clamp|truncate|overflow-y-auto|max-h-\[/);
+
+    // Truncation is still banned. `line-clamp` and `truncate` DESTROY text —
+    // the reader cannot recover it by any action.
+    expect(String(dialog.innerHTML)).not.toMatch(/line-clamp|truncate/);
+  });
+
+  /**
+   * AMENDED 2026-09-01. This assertion previously also banned `overflow-y-auto`
+   * and `max-h-[`, on the reasoning that a scroll region is a way of hiding the
+   * notice. A later pass measured a case that reasoning had not seen, and the
+   * ban had to give way to it rather than the other way round.
+   *
+   * Four earlier passes shaved fixed pixels off the COLLAPSED banner, taking it
+   * 262px -> 227px. But the height was still unbounded, so the guarantee was
+   * only ever "227px, at today's copy, at the six sizes someone measured". On
+   * the live site at 390x844 the collapsed banner is 277px (32.8% of the
+   * viewport) — and expanding "Manage preferences", one tap on the banner's own
+   * middle button, takes it to 521px, or 61.7%, leaving 227px of a 649px
+   * sign-in card visible. The settings panel is ~244px of content that was
+   * never in the padding budget, so no amount of arithmetic on the collapsed
+   * state reaches it.
+   *
+   * A bounded, viewport-relative cap does reach it, and scrolling is not
+   * hiding: every word stays reachable, which is what the assertion above now
+   * enforces directly. What a naive `overflow-y: auto` on the whole card DOES
+   * get wrong is the action row — measured, it pushed Reject/Accept/Manage to
+   * y 840-936, off the bottom of an 844px screen. So that is what this test
+   * checks instead, and it is a stronger check than the ban it replaces.
+   */
+  it('bounds its height by viewport fraction, and never scrolls the actions away', () => {
+    render(<CookieBanner />);
+    const dialog = screen.getByRole('dialog', { name: /cookies for darshan/i });
+    const html = String(dialog.innerHTML);
+
+    // If a cap exists it must be viewport-relative, not a pixel constant that
+    // silently stops holding when the copy or the font size changes.
+    const cap = html.match(/max-h-\[([^\]]+)\]/);
+    if (cap) {
+      expect(cap[1], `height cap "${cap[1]}" must be viewport-relative (dvh/vh), not a fixed constant`)
+        .toMatch(/d?vh$/);
+    }
+
+    // The load-bearing part: the action row must not live inside the scroller.
+    const scroller = dialog.querySelector('[class*="overflow-y-auto"]');
+    if (scroller) {
+      for (const name of [/reject all/i, /manage preferences/i, /accept all/i]) {
+        const btn = screen.getByRole('button', { name });
+        expect(
+          scroller.contains(btn),
+          `"${btn.textContent}" is inside the scroll region — it can scroll out of reach`
+        ).toBe(false);
+      }
+    }
   });
 
   it('every banner control still clears the 44px tap floor', () => {

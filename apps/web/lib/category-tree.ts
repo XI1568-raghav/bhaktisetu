@@ -1,3 +1,4 @@
+import { HAS_80G } from './eighty-g';
 export type CategoryItem = {
   label: string;
   href: string;
@@ -65,9 +66,11 @@ export const CATEGORY_TREE: Category[] = [
         description: 'Sponsor cow welfare at registered gaushalas.',
       },
       {
-        label: 'Donate (80G)',
+        label: HAS_80G ? 'Donate (80G)' : 'Donate',
         href: '/donations',
-        description: 'Tax-deductible giving with instant 80G receipt.',
+        description: HAS_80G
+          ? 'Tax-deductible giving with instant 80G receipt.'
+          : 'Give to a verified temple or gaushala, with a numbered receipt emailed instantly.',
       },
       {
         label: 'Panchang Today',

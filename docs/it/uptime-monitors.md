@@ -38,24 +38,43 @@ Founder phone: kept in UptimeRobot SMS contacts (not committed here). Verify SMS
 
 1. `curl -fsS https://api.darshya.online/health` from laptop. If 200 + `"ok"` → false positive, check UptimeRobot status page (their probe may be down).
 2. If 502/503/504 → Render free-tier cold start. Wait 60s, re-curl. If still down → escalate Render.
-3. If 5xx persistent → Render dashboard → API service → recent deploys → roll back to last green.
+3. If 5xx persistent → roll back to the last green commit. **The Render dashboard is not the
+   documented lever** (agents and CI have no dashboard access, and a push/revert deploys nothing —
+   `autoDeploy: false`):
+   ```bash
+   gh workflow run render-diag.yml -f mode=deploys -f sid=srv-d7mc2n8sfn5c73dfce0g   # list deploys
+   gh workflow run render-diag.yml -f mode=deploy  -f sid=srv-d7mc2n8sfn5c73dfce0g -f commit=<SHA>
+   ```
+   Full procedure: `docs/runbooks/prod-rollback.md`.
 4. If timeout → DNS check: `dig api.darshya.online`. Cloudflare DNS issue → CF dashboard.
 
 ### `www-root` fires
 
 1. `curl -fsSI https://darshya.online` from laptop. If 200 → CF edge regional issue, probably transient.
-2. If 522/523 → Cloudflare can't reach origin. Origin = CF Pages itself, so check CF Pages dashboard → last deploy log.
+2. If 522/523 → Cloudflare can't reach origin. **Origin is the Render service `darshya-web`
+   (`srv-d970l2ks728c738fc33g`, `https://darshya-web.onrender.com`), NOT Cloudflare Pages** —
+   corrected 2026-09-01 (`OPS-06`/`OPS-10`); this step used to send you to a CF Pages dashboard
+   that has had no build pipeline since 2026-07-08. Curl the Render URL directly to separate an
+   origin outage from a CF edge one:
+   `curl -fsSI https://darshya-web.onrender.com`. A 200 there with a 522 at the edge is a
+   Cloudflare problem; a failure at both is the Render service (cold start, crash, or the
+   free-tier suspension case in `docs/runbooks/prod-rollback.md` §5).
 3. If 525/526 → SSL handshake fail. CF dashboard → SSL → check cert status.
 
 ### `www-pujas` fires but `www-root` passes
 
-Page-specific failure (SSG broke or dynamic route 500). Recent deploys to `apps/web/app/pujas/**` → roll back.
+Page-specific failure (SSG broke or dynamic route 500). Find the recent deploys touching
+`apps/web/app/pujas/**` and roll the web service back to the last green commit:
+`gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f commit=<SHA>`.
 
 ### Multiple monitors fire simultaneously
 
 Likely platform-wide. Order of likelihood:
-1. Cloudflare (CF Pages + DNS both routed via CF) — check https://www.cloudflarestatus.com
-2. Render (API only) — check https://status.render.com
+1. Render (**both** the API `bhaktisetu` and the web `darshya-web` — since the 2026-07-08 cutover
+   Render is the origin for everything) — check https://status.render.com, and check the Render
+   account is not suspended (see `docs/runbooks/prod-rollback.md` §5; a billing suspension took
+   both services down for three days and looks exactly like a platform outage)
+2. Cloudflare (DNS + edge proxy only — no build pipeline since 2026-07-08) — check https://www.cloudflarestatus.com
 3. Supabase (auth + DB) — check https://status.supabase.com
 4. Internet (founder's ISP) — verify via mobile data
 

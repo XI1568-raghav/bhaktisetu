@@ -121,7 +121,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
  body: `## Steps
 
 1. **Browse pujas** at [darshya.online/pujas](/pujas).
-2. **Pick a temple** from the verified list — every temple shows trust score, location, and pandit credentials.
+2. **Pick a temple** from the list — every temple shows its trust score and location. We do not publish pandit credentials: no credential verification, reference check or probation runs today, and a pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check.
 3. **Choose date & time** that fits the auspicious window for your puja (we show muhurat suggestions).
 4. **Fill sankalp** — your full name, gotra (lineage), and the intent (e.g., health, prosperity, ancestral blessing).
 5. **Pay securely** via Razorpay. International cards are accepted; billing is in INR.

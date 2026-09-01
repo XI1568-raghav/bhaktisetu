@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../lib/api-config';
 import { useAuth } from '../lib/auth-context';
+import { UserFacingError, userFacingMessage } from '../lib/friendly-error';
 
 import { buttonClass } from '../components/ui/button-recipe';
 /**
@@ -81,9 +82,12 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
     setBusy(true);
     setError('');
     try {
-      if (!isAuthenticated) throw new Error('Sign in to enable aarti reminders');
+      // RES-09: these three are copy the PRODUCT wrote for a user, so they
+      // must reach the screen unchanged. A bare Error would be classified as
+      // unrecognised and replaced by the generic fallback below.
+      if (!isAuthenticated) throw new UserFacingError('Sign in to enable aarti reminders');
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        throw new Error('This browser does not support push notifications');
+        throw new UserFacingError('This browser does not support push notifications');
       }
 
       // Reuse the VAPID key endpoint as the application server key for web
@@ -92,7 +96,7 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
       const keyRes = await fetch(`${API_BASE_URL}/notifications/vapid-public-key`);
       const keyData = (await keyRes.json()) as { publicKey?: string; enabled?: boolean };
       if (!keyData.enabled || !keyData.publicKey) {
-        throw new Error('Notifications are not configured on the server yet');
+        throw new UserFacingError('Notifications are not configured on the server yet');
       }
 
       const reg = await navigator.serviceWorker.register('/sw.js');
@@ -100,7 +104,11 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
 
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        throw new Error(permission === 'denied' ? 'Permission denied' : 'Permission not granted');
+        throw new UserFacingError(
+          permission === 'denied'
+            ? 'Notifications are blocked for this site. Allow them in your browser settings to get aarti reminders.'
+            : 'We need notification permission to send aarti reminders.',
+        );
       }
 
       const sub = await reg.pushManager.subscribe({
@@ -129,12 +137,14 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
         },
         DATA_FETCH_TIMEOUT_MS,
       );
-      if (!resp.ok) throw new Error('Server rejected token');
+      if (!resp.ok) throw new UserFacingError('We could not register this device for reminders.', resp.status);
 
       localStorage.setItem(STORAGE_KEY, '1');
       setOptedIn(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not enable reminders');
+      // RES-09 class: `Server rejected token` and the browser's own
+      // "Failed to fetch" used to render straight into the control.
+      setError(userFacingMessage(err, 'We could not turn on aarti reminders. Please try again.'));
     } finally {
       setBusy(false);
     }
@@ -169,7 +179,7 @@ export default function AartiOptIn({ variant = 'card' }: AartiOptInProps) {
       localStorage.removeItem(STORAGE_KEY);
       setOptedIn(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not disable');
+      setError(userFacingMessage(err, 'We could not turn off aarti reminders. Please try again.'));
     } finally {
       setBusy(false);
     }

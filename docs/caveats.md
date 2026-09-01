@@ -138,7 +138,21 @@ Imports are hoisted but Sentry's instrumentation needs to run before route handl
 **Rollback procedure if any third-party SDK breaks**:
 1. Edit `apps/web/public/_headers`
 2. Change the `script-src` directive from `script-src 'self' 'unsafe-inline' https://checkout.razorpay.com …` back to `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com …`
-3. Commit + push (CF Pages auto-deploys the new headers file — no build needed, static file).
+3. Deploy it. **A commit and push deploys NOTHING** — this step used to say
+   "CF Pages auto-deploys the new headers file", and Cloudflare Pages
+   auto-deploy was killed on 2026-07-08 when the web front end moved to Render
+   (`cf-kill-zombie.yml`). Both Render services are `autoDeploy: false`
+   (`render.yaml:28` and `:60`), so nothing is listening for the push either.
+   Dispatch the deploy by hand:
+
+   ```bash
+   gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main
+   ```
+
+   `_headers` is also a Cloudflare Pages artefact and is no longer the file
+   that serves these headers on Render — check where the CSP is actually set
+   before editing, or the edit will change nothing.
+   Full procedure: `docs/runbooks/prod-rollback.md`.
 4. File a follow-up issue identifying which SDK regressed (look in browser console for `Refused to evaluate a string as JavaScript because 'unsafe-eval' is not an allowed source of script`).
 
 **Also added same batch**: `form-action` now permits `https://checkout.stripe.com` (was missing — Stripe checkout form posts were silently blocked).

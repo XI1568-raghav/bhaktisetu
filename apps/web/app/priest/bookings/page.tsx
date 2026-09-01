@@ -20,7 +20,8 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
-import { UserFacingError, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
+import { UserFacingError, classifyUserFacing, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -134,6 +135,8 @@ function PriestBookingsInner() {
  // hiccup told the pandit "You have no assigned bookings yet" — indistinguishable
  // from a genuinely empty day, and invisible to anyone watching.
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: Retry cannot fix an expired session — it re-sends the dead token.
+ const [loadReauth, setLoadReauth] = useState(false);
  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
  const [actionLoading, setActionLoading] = useState<string | null>(null);
  // A failed action used to be invisible: `if (res.ok)` had no else and the
@@ -170,8 +173,13 @@ function PriestBookingsInner() {
  const detail = await res.text().catch(() => '');
  // RES-09: the status code and 140 raw characters of the response body
  // were rendered straight to a pandit. Keep the server's sentence only.
+ // AUTH-06: carry the status. `serverErrorText` refuses "Unauthorized" as
+ // a developer name, so a 401 falls back to this page's own sentence and
+ // the only evidence that the SESSION died is destroyed before any
+ // classifier sees it.
  throw new UserFacingError(
   serverErrorText(detail, 'Could not load your bookings. Please try again.'),
+  res.status,
  );
  }
  const data = await res.json();
@@ -180,7 +188,12 @@ function PriestBookingsInner() {
  setTotal(typeof data.total === 'number' ? data.total : (data.bookings?.length ?? 0));
  setTotalPages(Math.max(1, data.totalPages ?? 1));
  } catch (err) {
- setLoadError(userFacingMessage(err, 'Could not load your bookings. Please try again.'));
+ const { message, reauth } = classifyUserFacing(
+  err,
+  'Could not load your bookings. Please try again.',
+ );
+ setLoadError(message);
+ setLoadReauth(reauth);
  setBookings([]);
  } finally {
  setLoading(false);
@@ -472,8 +485,14 @@ function PriestBookingsInner() {
  role="alert"
  className="flex flex-col items-center justify-center gap-3 rounded-xl border border-red-200 bg-red-50 py-12 px-4 text-center"
  >
- <h3 className="text-lg font-semibold text-red-800">Could not load your bookings</h3>
+ <h3 className="text-lg font-semibold text-red-800">
+ {loadReauth ? 'Your session has expired' : 'Could not load your bookings'}
+ </h3>
  <p className="prose-meta text-red-700 max-w-md">{loadError}</p>
+ {/* AUTH-06: the sign-in link REPLACES Retry. */}
+ {loadReauth ? (
+ <ReauthPrompt message="" className="flex flex-col items-center gap-3" />
+ ) : (
  <button
  type="button"
  onClick={() => void fetchBookings()}
@@ -481,6 +500,7 @@ function PriestBookingsInner() {
  >
  Retry
  </button>
+ )}
  </div>
  )}
 

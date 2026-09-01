@@ -7,6 +7,9 @@ import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+// AUTH-09: the confirmation used to ask "Are you sure?" without saying what
+// it was sure about. POST /auth/logout defaults to scope 'global'.
+import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
 const FALLBACK_SPECIALIZATIONS = ['Hatha', 'Ashtanga', 'Pranayama', 'Meditation', 'Restorative'];
 const FALLBACK_CERTS = ['RYT-500 Yoga Alliance', 'Vipassana Teacher Training (10-day)'];
@@ -29,7 +32,7 @@ export default function WellnessProfile() {
   }
 
   function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure?', [
+    Alert.alert(SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',

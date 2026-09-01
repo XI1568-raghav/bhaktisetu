@@ -132,12 +132,60 @@ describe('TC-03 — the NRI Premium pages promise no unbacked subscription refun
   });
 });
 
+describe('TC-03 — the cancel confirm dialog does not promise period-end access', () => {
+  /**
+   * ADDED 2026-09-01. /account/subscriptions is the only screen from which a
+   * devotee actually cancels, and its `confirm()` string read "You will keep
+   * access until your current billing cycle ends." — the same false sentence
+   * the API used to return, in the one place it changes a decision. The route
+   * it posts to (`/subscriptions/cancel-auto-renew`) calls
+   * cancelRazorpaySubscription, which stops the Razorpay billing at cycle end
+   * and flips the local row to CANCELLED immediately; isPremium() requires
+   * ACTIVE, so access stops now.
+   */
+  const CANCEL_SCREEN = 'app/account/subscriptions/page.tsx';
+
+  it('tells the devotee access ends now, and separates that from billing', () => {
+    const src = code(CANCEL_SCREEN);
+    const confirms = [...src.matchAll(/confirm\(\s*([\s\S]*?)\)\s*\)/g)].map((m) => m[1]);
+    expect(confirms.length).toBeGreaterThan(0);
+    const blob = confirms.join('\n');
+    expect(blob).not.toMatch(/keep access until/i);
+    expect(blob).not.toMatch(/until your current billing cycle ends/i);
+    expect(blob).toMatch(/Access ends now/i);
+    expect(blob).toMatch(/not be charged again/i);
+  });
+
+  it('makes no other period-end access claim anywhere on the screen', () => {
+    const src = code(CANCEL_SCREEN);
+    for (const line of src.split('\n')) {
+      if (!/keep access|access continues|access until/i.test(line)) continue;
+      expect(false, `${CANCEL_SCREEN} promises continued access: ${line.trim()}`).toBe(true);
+    }
+  });
+});
+
 describe('TC-03 — the server really cannot refund a subscription', () => {
   it('subscriptionService.cancel moves no money', () => {
     const svc = fs.readFileSync(path.join(API, 'src/services/subscription.service.ts'), 'utf8');
     const stripped = svc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    // Not one refund call site anywhere in the subscription service.
-    expect(stripped).not.toMatch(/refund/i);
+    // Not one refund CALL SITE anywhere in the subscription service.
+    expect(stripped).not.toMatch(
+      /refundService|processRefund|createRefund|issueRefund|\.refunds?\.create|payments\.refund/i,
+    );
+    // The word itself may appear only in the cancellation disclosure, which
+    // exists precisely to tell the devotee that no refund happens. Widened from
+    // a blanket `not.toMatch(/refund/i)` when that disclosure was added: the
+    // blanket form made the honest sentence indistinguishable from a refund
+    // rail, so every surviving mention is now checked line by line instead.
+    const mentions = stripped.split('\n').filter((l) => /refund/i.test(l));
+    expect(mentions.length).toBeGreaterThan(0);
+    for (const line of mentions) {
+      expect(
+        /No refund is issued automatically/.test(line),
+        `unexpected refund mention in subscription.service.ts: ${line.trim()}`,
+      ).toBe(true);
+    }
   });
 
   it('the only refund engine is scoped to a puja booking', () => {

@@ -178,6 +178,8 @@ export const COMMONS_INTRINSIC_WIDTH: Readonly<Record<string, number>> = {
  'Vaishno_Devi_Bhawan.jpg': 4608,
  'Sahiwala_01.JPG': 5184,
  'Tharparkar_01.JPG': 5184,
+ // Read from imageinfo on 2026-09-01, same as every other row here.
+ 'Ramcharitmanas_book.jpg': 5456,
  'Somanath_mandir_(cropped).jpg': 5712,
  'A_beautiful_gaze.jpg': 6000,
  'Pure_Ghee-Homemade-Maharashtra.jpg': 6000,
@@ -615,9 +617,34 @@ export const IMAGES = {
  'havan-samagri': wiki('https://upload.wikimedia.org/wikipedia/commons/c/c7/%28A%29_puja_fire%2C_Havanam.jpg'),
 
  // Books & Scriptures
+ //
+ // CM-08 (2026-09-01): 'sunderkand-book' and 'hanuman-chalisa-book' were the
+ // SAME Commons file. Two SKUs at two prices, one picture, and the picture was
+ // of the other book — a devotee buying the Sunderkand saw a Hanuman Chalisa.
+ // Guarded now by __tests__/cm08-store-image-distinctness.test.ts, which fails
+ // if any two store SKUs ever share an image again.
+ //
+ // The Sunderkand is the fifth kanda of the Ramcharitmanas, so a photograph of
+ // a printed Ramcharitmanas is the honest picture for it. Verified against the
+ // Commons imageinfo API on 2026-09-01: File:Ramcharitmanas book.jpg,
+ // 5456x3632, CC BY-SA 4.0, author Wikilover90, AttributionRequired true —
+ // credited in lib/image-credits.ts. Its 500px thumb is 33,340 B against the
+ // 102,278 B it replaces, measured the same day.
  'bhagavad-gita': wiki('https://upload.wikimedia.org/wikipedia/commons/3/34/Bhagavad_Gita_book_%28small%29_01.jpg'),
+ // KNOWN DEFECT, needs a photograph nobody has taken yet — do not "fix" this
+ // by pointing it at another book. Hanuman_Chalisa_4x3.jpg is not a photograph
+ // of a printed edition at all: it is a poster graphic of the text, and it
+ // carries a third-party design studio's watermark and phone number
+ // ("Impressions.Graphics", twice, plus a number) burnt into the top of the
+ // frame. So the store's paid product card advertises somebody else's
+ // business. Commons was searched on 2026-09-01 (intitle:"Hanuman Chalisa",
+ // Category:Hanuman Chalisa, and four keyword queries): every candidate is
+ // either the same watermarked poster re-uploaded (File:Hanuman Chalisa.jpg)
+ // or a crowd photograph of a recitation, and none is a book. This is the
+ // finding's "real photography of actual products" half and it needs the owner
+ // to shoot the SKU.
  'hanuman-chalisa-book': wiki('https://upload.wikimedia.org/wikipedia/commons/d/da/Hanuman_Chalisa_4x3.jpg'),
- 'sunderkand-book': wiki('https://upload.wikimedia.org/wikipedia/commons/d/da/Hanuman_Chalisa_4x3.jpg'),
+ 'sunderkand-book': wiki('https://upload.wikimedia.org/wikipedia/commons/c/ca/Ramcharitmanas_book.jpg'),
 
  // Spiritual Jewellery
  'rudraksha-bracelet': u('photo-1622993361118-b6365d859ab6', 600, 600),

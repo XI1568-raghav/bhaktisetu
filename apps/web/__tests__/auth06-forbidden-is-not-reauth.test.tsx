@@ -91,6 +91,41 @@ describe('AUTH-06 — a 403 is not a reason to sign in again', () => {
     expect(isForbiddenError('401 Unauthorized')).toBe(false);
   });
 
+  /**
+   * AUTH-06 (2026-09-01) — the classifier was not idempotent on its OWN output.
+   * `friendlyApiError` answers a 401 with "Your session has expired. …", and
+   * `isAuthError` matched only the phrase `session expired`, which that sentence
+   * does not contain. So the SECOND pass over the same error returned
+   * `reauth: false`, and the sign-in prompt disappeared.
+   *
+   * That second pass is not hypothetical: `userFacingMessage` calls
+   * `friendlyApiError`, every screen that keeps `err.message` in state and
+   * classifies on render does it again, and app/bookings/view composes its own
+   * "Your session has expired. Please sign in again to view this booking."
+   */
+  it('recognises the very sentence it emits, so a second pass agrees with the first', () => {
+    const first = friendlyApiError(new Error('API 401: Unauthorized'));
+    expect(first.reauth).toBe(true);
+
+    const second = friendlyApiError(new Error(first.message));
+    expect(second.reauth, 'friendlyApiError must be idempotent on its own copy').toBe(true);
+    expect(second.message).toBe(first.message);
+
+    // …and the variant app/bookings/view writes by hand.
+    expect(
+      friendlyApiError(
+        new Error('Your session has expired. Please sign in again to view this booking.'),
+      ).reauth,
+    ).toBe(true);
+
+    // The widening is confined to the session phrase. Nothing that merely
+    // mentions expiry becomes an auth error.
+    expect(isAuthError('This puja slot has expired.')).toBe(false);
+    expect(isAuthError('Your coupon expired last week.')).toBe(false);
+    // …and it must not have crossed into the forbidden branch.
+    expect(isForbiddenError('Your session has expired.')).toBe(false);
+  });
+
   it('loadErrorIsReauth answers for 401 only', () => {
     expect(loadErrorIsReauth({ status: 401 })).toBe(true);
     expect(loadErrorIsReauth({ status: 403 })).toBe(false);

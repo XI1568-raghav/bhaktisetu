@@ -89,3 +89,50 @@ export const H1 = {
 } as const;
 
 export type H1Archetype = keyof typeof H1;
+
+/**
+ * The colour token an archetype declares, so `h1Class` can REPLACE it instead
+ * of layering a second colour utility on top of it.
+ *
+ * Two Tailwind `color` utilities in one class attribute do not resolve by the
+ * order they are written in — they resolve by the order the generated
+ * stylesheet emits them, which the call site cannot see or control. So
+ * `${H1.marketing} text-violet-900` is a coin flip, not an override, and the
+ * "pass a colour in the extras slot" workaround that looks obvious here is the
+ * one thing that must not be done.
+ */
+const ARCHETYPE_COLOUR = /(^|\s)text-(?:surface-800|white)(?=\s|$)/;
+
+/**
+ * An archetype, optionally re-coloured.
+ *
+ * DU-05's fifth stall (after the five small white h1s that became
+ * `portalInverse`, and the two raw-HTML `# ` headings that became h2s) is the
+ * PER-INSTANCE COLOUR: a page whose title carries a colour that belongs to the
+ * page, not to the archetype. `app/chakras/[slug]` is the live case — seven
+ * static pages, each titled in its own chakra's hue (`text-red-900` …
+ * `text-violet-900`), which is the page's whole identifying signal and is not
+ * a divergence anyone wants removed.
+ *
+ * Neither existing escape hatch takes it. The extras slot cannot, for the
+ * specificity reason above. A sixth archetype cannot either — it would have to
+ * be seven archetypes, one per hue, which is the sprawl this file exists to
+ * end.
+ *
+ * So the colour is a PARAMETER of the archetype rather than a second class
+ * fighting it: the archetype's own colour token is removed and the caller's is
+ * put in its place, leaving exactly one colour utility in the attribute. Size,
+ * weight, tracking and face still come from one place and still change in one
+ * place. Passing nothing returns the archetype byte-for-byte.
+ *
+ * `colour` must be a single Tailwind text-colour utility. It is deliberately
+ * NOT typed as an arbitrary string union — the seven chakra hues come out of a
+ * data map — but it is asserted in __tests__/h1-recipe-ratchet.du05.test.ts to
+ * be a colour utility and not a size, weight or face, which is the failure
+ * mode that would quietly re-open the sprawl through this door.
+ */
+export function h1Class(archetype: H1Archetype, colour?: string): string {
+  const base = H1[archetype];
+  if (!colour) return base;
+  return `${base.replace(ARCHETYPE_COLOUR, '$1').replace(/\s+/g, ' ').trim()} ${colour}`;
+}

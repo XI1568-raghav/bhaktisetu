@@ -16,7 +16,8 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
-import { UserFacingError, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
+import { UserFacingError, classifyUserFacing, serverErrorText } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -97,6 +98,9 @@ export default function PriestPayoutsPage() {
  // has not been paid, and invisible to anyone watching. An unread ledger is an
  // error, never a balance.
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: whether the ledger refused because the SESSION is gone, in which
+ // case Retry re-fires the same dead credential forever.
+ const [loadReauth, setLoadReauth] = useState(false);
 
  // PF-18: the fetch used to carry no query string at all, so the API's 20-row
  // default silently capped the table while the summary cards above it
@@ -118,8 +122,13 @@ export default function PriestPayoutsPage() {
  const detail = await res.text().catch(() => '');
  // RES-09: the status code and a 140-char slice of the raw body were being
  // rendered to a pandit. The server's own sentence is kept when it wrote one.
+ // AUTH-06: carry the status. `serverErrorText` refuses a developer name
+ // for the status, so a 401 answering {"error":"Unauthorized"} falls back
+ // to this page's own sentence and the 401 disappears — after which no
+ // classifier can tell an expired session from a broken ledger query.
  throw new UserFacingError(
  serverErrorText(detail, 'Could not load your payouts. Please try again.'),
+ res.status,
  );
  }
  const data = await res.json();
@@ -132,7 +141,12 @@ export default function PriestPayoutsPage() {
  setSummary(null);
  setTotal(0);
  setTotalPages(1);
- setLoadError(userFacingMessage(err, 'Could not load your payouts. Please try again.'));
+ const { message, reauth } = classifyUserFacing(
+ err,
+ 'Could not load your payouts. Please try again.',
+ );
+ setLoadError(message);
+ setLoadReauth(reauth);
  } finally {
  setLoading(false);
  }
@@ -212,6 +226,11 @@ export default function PriestPayoutsPage() {
  role="alert"
  className="flex flex-wrap items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
  >
+ {/* AUTH-06: the sign-in link replaces Retry, never sits beside it. */}
+ {loadReauth ? (
+ <ReauthPrompt message={loadError} className="flex flex-1 flex-col items-start gap-3" />
+ ) : (
+ <>
  <span className="flex-1 min-w-[12rem]">{loadError}</span>
  <button
  type="button"
@@ -220,6 +239,8 @@ export default function PriestPayoutsPage() {
  >
  Retry
  </button>
+ </>
+ )}
  </div>
  )}
 

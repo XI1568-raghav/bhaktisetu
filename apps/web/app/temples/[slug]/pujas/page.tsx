@@ -12,6 +12,7 @@ import { resolveApiTemple } from '../../../../lib/temple-resolve';
 // rendered as 'SPECIAL_OCCASION'.
 import { pujaCategoryLabel } from '../../../../lib/puja-labels';
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { RECEIPT_NOUN, withEightyG } from '../../../../lib/eighty-g';
 
 export const revalidate = 3600;
 
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const count = t.pujaOfferings?.filter((o) => o.isActive).length || 0;
     return {
       title: `${name} pujas — book online${count > 0 ? ` (${count} options)` : ''}`,
-      description: `Book ${name}${city ? `, ${city}` : ''} pujas online with video proof of the ceremony. 80G receipt where the receiving trust is 80G-registered. NRI lane available.`,
+      description: `Book ${name}${city ? `, ${city}` : ''} pujas online with video proof of the ceremony. ${RECEIPT_NOUN.charAt(0).toUpperCase()}${RECEIPT_NOUN.slice(1)} emailed on donations. NRI lane available.`,
       alternates: { canonical: `https://darshya.online/temples/${slug}/pujas` },
       openGraph: {
         title: `${name} pujas — book online`,
@@ -111,7 +112,7 @@ export default async function TemplePujasPage({ params }: Params) {
                word. The unconditional "80G receipt" had the same problem: a
                receipt is only issuable where the donee holds an 80G
                registration and PAN. */
-            ? `${offerings.length} bookable puja${offerings.length === 1 ? '' : 's'} at ${temple.name}${temple.city ? `, ${temple.city}` : ''}. Every booking ships with video proof of the ceremony, and an 80G receipt where the receiving trust is 80G-registered.`
+            ? `${offerings.length} bookable puja${offerings.length === 1 ? '' : 's'} at ${temple.name}${temple.city ? `, ${temple.city}` : ''}. Every booking ships with video proof of the ceremony${withEightyG(', and an 80G receipt where the receiving trust is 80G-registered')}.`
             : `${temple.name} puja catalogue is being onboarded. Live darshan and donations are already available.`}
         </p>
       </header>
@@ -161,7 +162,7 @@ export default async function TemplePujasPage({ params }: Params) {
 
       <footer className="mt-10 border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-3">
-          <strong>Why Darshya?</strong> Every puja booking includes mandatory video proof of the ceremony, and an 80G donation receipt where applicable. A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check &mdash; we do not yet run independent credential verification or temple reference checks, and we do not publish a per-pandit trust score.
+          <strong>Why Darshya?</strong> Every puja booking includes mandatory video proof of the ceremony, and{withEightyG(' an 80G donation receipt where applicable, and')} a numbered receipt PDF on donations. A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check &mdash; we do not yet run independent credential verification or temple reference checks, and we do not publish a per-pandit trust score.
         </p>
         <Link href={`/temples/${slug}`} className="text-saffron-700 hover:underline">
           ← Back to {temple.name}

@@ -498,6 +498,8 @@ const TRAIL_SQL = `SELECT "id","event_type","occurred_at","actor_type","actor_id
    AND ($2::text IS NULL OR "payment_id" = $2)
    AND ($3::text IS NULL OR "commission_id" = $3)
    AND ($4::text IS NULL OR "payout_id" = $4)
+   AND ($5::text IS NULL OR "subject_id" = $5)
+   AND ($6::text IS NULL OR "subject_type" = $6)
  ORDER BY "occurred_at" ASC, "id" ASC
  LIMIT `;
 
@@ -506,6 +508,22 @@ export interface MoneyTrailQuery {
   paymentId?: string | null;
   commissionId?: string | null;
   payoutId?: string | null;
+  /**
+   * The polymorphic handle — `money_audit_events.subject_id`.
+   *
+   * The four id filters above are all FOREIGN-KEY-shaped columns that only the
+   * booking rail populates. Three money rails deliberately write NO `Payment`
+   * row at all — donations raw-INSERT into `donations`, astrologer
+   * consultations into `astrologer_consultations`, store orders carry their own
+   * id — so their audit rows have `booking_id`, `payment_id`, `commission_id`
+   * and `payout_id` all NULL, and were therefore UNREADABLE through this
+   * function no matter what was passed. Filtering on `subject_id` is the only
+   * way to reconstruct a disputed donation, which is also the only money flow
+   * that mints an 80G receipt.
+   */
+  subjectId?: string | null;
+  /** Optional narrowing, e.g. 'donation'. Never a filter on its own. */
+  subjectType?: MoneySubjectType | string | null;
   limit?: number;
 }
 
@@ -525,7 +543,12 @@ export async function getMoneyTrail(
   const paymentId = clip(query?.paymentId, MAX_ID);
   const commissionId = clip(query?.commissionId, MAX_ID);
   const payoutId = clip(query?.payoutId, MAX_ID);
-  if (!bookingId && !paymentId && !commissionId && !payoutId) {
+  const subjectId = clip(query?.subjectId, MAX_ID);
+  // `subjectType` alone selects EVERY donation in the system, which is the
+  // export this guard exists to refuse. It narrows an id; it never stands in
+  // for one.
+  const subjectType = subjectId ? clip(query?.subjectType, MAX_STATUS) : null;
+  if (!bookingId && !paymentId && !commissionId && !payoutId && !subjectId) {
     return { events: [], available: false, reason: 'no-filter' };
   }
   const limit = Math.min(Math.max(Math.trunc(Number(query?.limit) || 200), 1), 1000);
@@ -536,6 +559,8 @@ export async function getMoneyTrail(
       paymentId,
       commissionId,
       payoutId,
+      subjectId,
+      subjectType,
     );
     return {
       events: (rows ?? []).map((r) => ({

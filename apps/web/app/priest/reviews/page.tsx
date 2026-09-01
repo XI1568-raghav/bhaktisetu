@@ -13,7 +13,8 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { getMyReviews, type PriestReview } from '../../../lib/pandit-api';
 import { H1 } from '../../../components/ui/heading-recipe';
-import { userFacingMessage } from '../../../lib/friendly-error';
+import { classifyUserFacing } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -46,6 +47,10 @@ export default function PriestReviewsPage() {
   const [reviews, setReviews] = useState<PriestReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // AUTH-06: `userFacingMessage` computed this and dropped it. lib/pandit-api's
+  // describeFailure keeps `(401)` in the message, so the classification was
+  // always available here — it just had nowhere to go.
+  const [reauth, setReauth] = useState(false);
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>('all');
 
   const load = useCallback(async () => {
@@ -56,7 +61,12 @@ export default function PriestReviewsPage() {
       const rows = await getMyReviews(token);
       setReviews(rows);
     } catch (err) {
-      setError(userFacingMessage(err, 'Could not load your reviews. Please try again.'));
+      const { message, reauth: needsReauth } = classifyUserFacing(
+        err,
+        'Could not load your reviews. Please try again.',
+      );
+      setError(message);
+      setReauth(needsReauth);
     } finally {
       setLoading(false);
     }
@@ -113,12 +123,19 @@ export default function PriestReviewsPage() {
             <AlertTriangle className="w-4 h-4" />
             {error}
           </div>
-          <button
-            onClick={load}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
+          {/* AUTH-06: a dead session cannot be retried. Swap the control, do
+              not add a second one — two buttons where one cannot work is the
+              same dead end with extra steps. */}
+          {reauth ? (
+            <ReauthPrompt message="" className="shrink-0" />
+          ) : (
+            <button
+              onClick={load}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
 

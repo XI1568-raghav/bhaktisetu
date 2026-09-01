@@ -34,33 +34,60 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
  // scrolling and no dismissing the banner first. --consent-h is 0px whenever
  // the banner is closed, so this is a no-op for returning visitors.
  //
- // RESP-01 (third pass, 2026-08-28). The reservation above fixed 390x844 and
- // left two common sizes still broken. Re-measured in Chromium against the
- // repo's own compiled CSS with the REAL rendered markup of login/page.tsx and
- // CookieBanner.tsx (see app/auth/__tests__/resp01-auth-layout-density.test.tsx
- // for the full table and the rig's limits):
+ // RESP-01 (third pass, 2026-08-28). py-8 was 32px of the shortfall, and
+ // reclaiming it below sm is what actually moved the button. items-start is NOT
+ // what fixed it — at 360x800 and 375x667 the wrapper is already taller than
+ // `100dvh - --consent-h`, so it is sized by its content and align-items has no
+ // free space to distribute; flipping it alone produced byte-identical geometry
+ // at both sizes. It is kept below sm because it is free and it stops a future
+ // taller banner from raising the centring offset and pushing the card DOWN,
+ // toward the banner.
  //
- //   360x800  Sign In had 13 of its 44px on screen and a tap at its centre
- //            landed on the BANNER. Now 29px and the tap lands on the button.
- //   390x844  cleared the banner by 12px. Now 28px — the slack that matters,
- //            because the notice's wrap point moves with the real webfont.
- //   412x915  card top y=113 -> y=80.
- //   768x1024, 1280x800  unchanged; sm: restores both old values exactly.
+ // RESP-01 (fourth pass, 2026-09-01) — CORRECTION. The third pass's own table
+ // claimed 360x800 was fixed ("29 of 44px visible, tap lands on Sign In"). It
+ // is not, and neither is 375x812. Re-measured in headless Chromium against a
+ // FRESH `@tailwindcss/cli` build of app/globals.css (the .next bundle those
+ // numbers came from is from 2026-08-16 and predates `mb-1.5`, `gap-1.5`,
+ // `mt-2.5` and `py-2.5` — it silently dropped ~100px of real card height), with
+ // the markup dumped out of render() for this layout, login/page.tsx and
+ // CookieBanner.tsx, inside app/layout.tsx's body + the fixed h-16 header +
+ // SiteChrome's consumer `main.pt-16`. Card measures 597px, not the 489px the
+ // third pass recorded. Sign In sits at y 524-568 at every width below sm.
  //
- // py-8 was 32px of the shortfall, and reclaiming it below sm is what actually
- // moved the button. items-start is NOT what fixed it — at 360x800 and 375x667
- // the wrapper is already taller than `100dvh - --consent-h`, so it is sized by
- // its content and align-items has no free space to distribute; flipping it
- // alone produced byte-identical geometry at both sizes. It is kept below sm
- // because it is free and it stops a future taller banner from raising the
- // centring offset and pushing the card DOWN, toward the banner.
+ //   viewport   before this pass          after (pt-0 below sm + banner 262->227)
+ //   390x844    44/44, clears by 14px     44/44, clears by 65px
+ //   375x812    27/44, 17px clipped       44/44, clears by 33px
+ //   360x800    15/44, hit = the BANNER   44/44, clears by 21px
+ //   375x667    0/44,  hit = the BANNER   0/44 — see below, NOT fixable here
+ //   412x915    44/44, clears by 104px    44/44, clears by 152px
+ //   768x1024   44/44, clears by 110px    unchanged; sm: restores py-8 and
+ //              items-center exactly, so nothing at or above 640px moves.
  //
- // 375x667 (iPhone SE) still has Sign In below the fold at first paint and no
- // padding change here can alter that: 667 - 64 (fixed header) - 262 (banner)
- // = 341px of usable band against a 574px card. The page scrolls, and the
+ // 21px of slack at 360x800 is the number to watch: it is a little more than one
+ // wrapped line of the notice (16.5px at leading-snug), so a longer disclosure,
+ // a wider glyph set or a fifth wrapped line puts that size back under the
+ // banner. Re-measure this table before changing the notice copy.
+ //
+ // The prod measurement that makes this a P0 rather than a paper finding
+ // (darshya.online, 2026-09-01, first visit, consent cleared): at 390x844 the
+ // banner is 278px with its top edge at y=566, the card is 652px starting at
+ // y=96, Sign In is y 596-640 with **0 pixels visible**, and
+ // elementFromPoint(195, 618) returns the banner's <h2>. NONE of the three
+ // passes above are deployed — only the very first `--consent-h` reservation is.
+ //
+ // 375x667 (iPhone SE) cannot be fixed from here or from CookieBanner.tsx, and
+ // the arithmetic says why: 64 (fixed header) + 488 (card chrome above the
+ // button) + 44 (the button) = 596px must fit above the banner's top edge, and
+ // at 667px tall that leaves the notice 71px. The notice needs 148px for its
+ // own copy before a single button. It is an owner/compliance call — a layered
+ // notice on short viewports — not a layout one. The page does scroll and the
  // button hit-tests correctly once scrolled, at every size measured.
+ //
+ // pt-0 below sm is safe because the card is top-aligned directly under an
+ // opaque 64px fixed header, so the 16px gap it removes was dead space between
+ // two adjacent surfaces, not visual rhythm.
  <div
- className="relative flex items-start justify-center overflow-hidden py-4 sm:items-center sm:py-8"
+ className="relative flex items-start justify-center overflow-hidden pt-0 pb-4 sm:items-center sm:pt-8 sm:pb-8"
  style={{ minHeight: 'calc(100dvh - var(--consent-h, 0px))' }}
  >
  {/* Background gradient — warm saffron tones */}

@@ -79,16 +79,39 @@
 | `pr-checks.yml`                                                 | PR only (paths-filtered)                                                       | ~0.5               | ~20               | 10               |
 | `sentry-release.yml`                                            | tag only (manual cut)                                                          | ~15                | ~2                | 30               |
 | `deploy-web-render.yml`                                         | manual + push to `worktree-cf-opennext-migration` branch only (NOT main)       | ~25                | 0 on main flow    | 0                |
-| `roadmap-loop.yml`                                              | **every 12h = 2 cycles/day** (changed 2026-07-13 from 8h)                      | ~12 (doc: 12×2×30) | 60                | **720**          |
+| `roadmap-loop.yml`                                              | **weekly, Mon 06:17 UTC** (cut from every-12h 2026-09-01 — see note below)     | ~12                | 4                 | **48**           |
 | `onboarding-fleet-v2.yml`                                       | **daily 09:23 UTC**                                                            | ~3                 | 30                | 90               |
 | `db-backup.yml`                                                 | **daily 19:00 UTC**                                                            | ~5                 | 30                | 150              |
 | `cxo-advisory.yml`                                              | **Mon 08:07 UTC weekly**                                                       | ~3                 | 4                 | 12               |
 | `roadmap-finalize.yml`                                          | push to main, paths-filtered on `docs/roadmap/**` only                         | ~1                 | ~10               | ~10              |
 | `render-hours-guard.yml`                                        | **daily 06:00 UTC** (added 2026-08-20; see the OPS-08 note below — the cron does not fire until this reaches `main`) | ~1 | 30 | **30** |
 | `cf-kill-zombie.yml` / `render-diag.yml` / `render-cutover.yml` | manual only                                                                    | n/a                | 0                 | 0                |
-| **Total estimate**                                              |                                                                                |                    |                   | **~1853 min/mo** |
+| **Total estimate**                                              |                                                                                |                    |                   | **~1181 min/mo** |
 
-Cap = 2000 min/mo. **Headroom: +147 min/mo.** Fleet is under cap.
+Cap = 2000 min/mo. **Headroom: +819 min/mo.** Fleet is comfortably under cap.
+
+> ### `roadmap-loop.yml` cut to weekly — 2026-09-01
+>
+> This was **720 min/mo, 39% of the entire allowance** and by far the largest
+> single line in this table. It ran twice a day with `timeout-minutes: 50`.
+>
+> It was cut because the minutes buy nothing today, not merely to save quota.
+> The workflow's own header records why: the orchestrator is still in dry-run
+> and still writes **0 queue files per cycle** because of the sub-agent
+> silent-failure bug. Two corroborating facts, both checked today:
+> **148 unread dry-run items** have accumulated in `docs/roadmap/_dryrun/queue/`,
+> and the engine's own tracker `docs/roadmap/_budget-snapshot.json` has been
+> frozen at `"month": "2026-06"` with `ghMinutes.used: 0` since June — the thing
+> meant to watch this budget has not recorded a single minute.
+>
+> This is not tidiness. **`OPS-09`: all production monitoring rides on this same
+> quota, and it has been exhausted once already.** A monitoring fleet that dies
+> because a dry-run loop ate the budget is exactly how the 2026-08-17 Render
+> suspension served 503s for three days before anyone noticed.
+>
+> **To restore** once the silent-failure bug is fixed and the ARE Phase-6 soak
+> resumes: change the one `cron:` line back to `'17 */12 * * *'` and re-check
+> this total first. Headroom returns to ~147 min/mo, which is 7%.
 
 > **Arithmetic corrected 2026-08-28.** This line read `~1888` / `+112`, and the
 > rows above it do not sum to that. Adding the Min/mo column:
@@ -148,7 +171,7 @@ Cap = 2000 min/mo. **Headroom: +147 min/mo.** Fleet is under cap.
 > nothing executed. Running three named files on an already-installed runner is
 > ~10s, i.e. **~13 min/mo** at ~80 runs. Total 1830 -> 1843, headroom 170 -> 157.
 
-**Dominant consumer:** `roadmap-loop.yml` at ~720 min/mo (40% of cap) with
+**Dominant consumer (historical — cut to weekly 2026-09-01, now ~48 min/mo):** `roadmap-loop.yml` at ~720 min/mo (40% of cap) with
 2 cycles/day. The 8h→12h change 2026-07-13 cut ~360 min/mo. Six agents paused
 in `agents-daily.yml` 2026-07-17 (cold-temple-outreach, daily-devotional-broadcast, dormant-reactivation, referral-nudge + the pre-existing onboarding-nudge, support-intent-triage) cut another ~45 min/mo — all six were producing 0 artifacts because RESEND_API_KEY / WHATSAPP_ACCESS_TOKEN secrets are unset and the funnel has 0 eligible users.
 

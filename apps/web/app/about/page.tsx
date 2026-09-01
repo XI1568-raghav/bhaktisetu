@@ -19,6 +19,7 @@ import { fetchPublicStats, type PublicStats } from '../../lib/live-stats';
 import ScrollReveal from '../../components/ScrollReveal';
 import RoadmapRail, { type Milestone } from '../../components/RoadmapRail';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   title: 'About Darshya · The story, the founders, the road ahead',
@@ -279,9 +280,29 @@ export default async function AboutPage() {
               <span>Our story · founded January 2026</span>
             </div>
 
+            {/* DU-05: this was the 70.4px end of the finding's own "18px to
+                70.4px" range — `text-[2.5rem] sm:text-[4.5rem]` (40px / 72px),
+                two arbitrary bracket values off the scale entirely, plus
+                `leading-[1.05]` pinned across both, plus a seventh colour
+                token (`text-surface-900`) and the raw `font-display` utility
+                instead of the .heading-display class the token layer can
+                actually reach.
+
+                It is now the `marketing` archetype, unmodified. The visual
+                deltas are real and deliberate, and are listed here so they can
+                be argued with rather than discovered:
+                  size   40px / 72px          -> 30px / 36px (sm) / 48px (lg)
+                  colour text-surface-900     -> text-surface-800
+                  face   font-display         -> .heading-display (same family,
+                                                 overridable from the token layer)
+                  lead   leading-[1.05] fixed -> the --text-*--line-height
+                                                 pairing for each step
+                The underline bar drops h-3/h-4 -> h-2.5/h-3 to hold its ratio
+                to the smaller type (was 30%/22% of the font size, now 33%/25%).
+                `max-w-[56rem]` stays: it is a measure, not type. */}
             <h1
               data-reveal="up"
-              className="mt-7 max-w-[56rem] font-display text-[2.5rem] font-semibold leading-[1.05] tracking-tight text-surface-900 sm:text-[4.5rem]"
+              className={`${H1.marketing} mt-7 max-w-[56rem]`}
             >
               Two founders.
               <br />
@@ -291,7 +312,7 @@ export default async function AboutPage() {
                 <span className="relative z-10 text-saffron-700">video-verified bhakti.</span>
                 <span
                   aria-hidden
-                  className="absolute bottom-1 left-0 right-0 -z-0 h-3 bg-saffron-100/80 sm:h-4"
+                  className="absolute bottom-1 left-0 right-0 -z-0 h-2.5 bg-saffron-100/80 sm:h-3"
                 />
               </span>
             </h1>
