@@ -2,11 +2,13 @@
 
 > Quick-reference for founder + CS contractor + AI Pandit + investor conversations.
 
+> **Correction 2026-09-02 (`OPS-10`).** This page is read aloud in investor and partner conversations, so several answers were material misstatements. Corrected below: **Q2, Q13, Q28, Q59** all asserted a live Stripe / dual-currency capability — **the Stripe rail was deleted from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`; every surviving mention in `apps/api/src` is a removal note), **Razorpay is the only live rail and it settles INR only**, and **no replacement international/NRI processor has been chosen** — so no currency list, fee or FX rate may be quoted from this page. **Q83** billed "CF Pages free" and "AWS Backup ($5)": Cloudflare Pages has not served the web tier since the 2026-07-08 cutover (the web tier is the Render Docker service `darshya-web`, `render.yaml:52-60`, and Cloudflare is DNS + edge proxy only), and there is **no AWS/Glacier backup tier at all** — backups are a daily `pg_dump` into Supabase Storage with the offsite `BACKUP_S3_*` secrets unset (`.github/workflows/db-backup.yml`). **Q44 and Q82** were corrected in an earlier pass on the same date. Render's free 750 instance-hours are **per account, not per service**; two always-on services need ~1,488 h and the account was suspended for exactly this on **2026-08-17**. Unverifiable values are marked `[verify]` and must not be filled in from memory.
+
 ## Product (30 Qs)
 
 1. **What is Bhaktisetu?** Verified-pandit puja booking + AI Pandit + live darshan platform for India + NRI Hindu families.
 
-2. **What makes Bhaktisetu different from Sri Mandir?** 24hr video proof guarantee + NRI dual-currency + Aadhaar-verified pandits + Section 8 non-profit structure.
+2. **What makes Bhaktisetu different from Sri Mandir?** 24hr video proof guarantee + Aadhaar-verified pandits + Section 8 non-profit structure. *(Corrected 2026-09-02, `OPS-10`: "NRI dual-currency" was listed here as a live differentiator. It is not built — Stripe was removed 2026-08-11 and Razorpay settles INR only. `[verify — the NRI rail is undecided]`.)*
 
 3. **How does pandit verification work?** Aadhaar + PAN + 5+ years experience + 2 reference videos + Sanskrit certification.
 
@@ -28,7 +30,7 @@
 
 12. **What if I need to cancel?** >24hr before puja: 100% refund. 12-24hr: 50% refund. <12hr: founder discretion.
 
-13. **Refund timeline?** 5-7 business days via Razorpay/Stripe original payment method.
+13. **Refund timeline?** 5-7 business days, back to the original payment method via Razorpay. *(Corrected 2026-09-02, `OPS-10`: this read "via Razorpay/Stripe original payment method." Stripe was removed 2026-08-11, `apps/api/src/lib/env.ts:45-46`; Razorpay is the only rail that can issue a refund today and it settles INR only.)*
 
 14. **Multi-language support?** 6 languages: English + Hindi + Tamil + Telugu + Bengali + Marathi.
 
@@ -58,7 +60,7 @@
 
 27. **Are temples vetted?** Yes — verified-only gate. Registered temples + ownership confirmed + pandit liaison appointed.
 
-28. **What about safety/security on the platform?** Razorpay/Stripe PCI compliant + DPDP user rights + SOC 2 vendor selection.
+28. **What about safety/security on the platform?** Razorpay is PCI-DSS compliant + DPDP user rights + SOC 2 vendor selection. *(Corrected 2026-09-02, `OPS-10`: this read "Razorpay/Stripe PCI compliant". Stripe was removed from the codebase on 2026-08-11 — `apps/api/src/lib/env.ts:45-46` — so citing its compliance posture described a processor that handles none of our data. Any future international processor's compliance status is `[verify]`.)*
 
 29. **Press coverage?** Yes — Q3 pre-seed close announcement targeted 5+ pubs.
 
@@ -124,7 +126,7 @@
 
 58. **80G donation tax treatment?** Eligible for India donors, limited for NRI donors.
 
-59. **Currency handling?** Razorpay INR + Stripe multi-currency (USD/GBP/CAD/AUD).
+59. **Currency handling?** **Razorpay, INR only.** `[verify — Stripe was removed; the NRI rail is undecided]` *(Corrected 2026-09-02, `OPS-10`: this answer read "Razorpay INR + Stripe multi-currency (USD/GBP/CAD/AUD)." The Stripe rail was deleted from the codebase on 2026-08-11, `apps/api/src/lib/env.ts:45-46`, and no replacement international processor has been chosen — so **do not quote a currency list, a fee, or an FX rate to anyone.** The honest answer today is: we can accept INR; foreign-currency acceptance is not built.)*
 
 60. **Bank accounts?** HDFC Foundation account + Wise multi-currency for NRI.
 
@@ -174,7 +176,7 @@
 
 82. **Database operations?** **[CORRECTED 2026-09-02, `OPS-10` — the previous answer, "Supabase Mumbai primary + Singapore standby (R-Q3-IT-002)", described a two-region topology that has never existed.]** One Supabase Postgres project, region [verify] (not recorded in this repository). No primary/standby pair, no read replica. Backups are a daily `pg_dump` into Supabase Storage — the same project the database lives in — and the backup job's secrets have never been set (`OPS-02`), so there is no backup today. See `docs/runbooks/disaster-recovery.md`.
 
-83. **Hosting cost monthly?** Render ($25 Standard tier post-Q4) + CF Pages free + Supabase Pro ($25) + AWS Backup ($5) = ~$60-100/mo Q4.
+83. **Hosting cost monthly?** **[CORRECTED 2026-09-02, `OPS-10`. This answer read "Render ($25 Standard tier post-Q4) + CF Pages free + Supabase Pro ($25) + AWS Backup ($5) = ~$60-100/mo Q4." Two of those four line items are fictional.]** There is **no Cloudflare Pages line** — Pages stopped serving the web tier at the 2026-07-08 cutover; the web tier is the Render Docker service `darshya-web` (`render.yaml:52-60`) and Cloudflare is DNS + edge proxy only. There is **no AWS backup line** — backups are a daily `pg_dump` into Supabase Storage, the same project the database lives in; the offsite S3/R2 mirror is supported but unconfigured (`BACKUP_S3_*` secrets unset in `.github/workflows/db-backup.yml`), so **there is no offsite backup tier and no Glacier**, and nothing is being paid for one. What is real: **two** Render services (`bhaktisetu` API + `darshya-web`), and Render's free 750 instance-hours are **per account, not per service** — two always-on services need ~1,488 h, which suspended the account on 2026-08-17, so at least one paid Render tier is required, not optional. **The total is `[verify]`** — do not quote $60-100/mo until the Render and Supabase plans are actually priced.
 
 84. **Email volume?** ~5K/month transactional via Resend.
 
