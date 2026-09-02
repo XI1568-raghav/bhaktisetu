@@ -3,6 +3,8 @@
 > Written 2026-04-27. Grounded in actual code state, not the deck.
 > Source of truth: `apps/api/src/server.ts` (route prefixes), `apps/web/app/**/page.tsx` (surfaces), `docs/launch-state.md`, `docs/mobile-plan.md`.
 
+> **Correction 2026-09-02 (`OPS-10`).** Bet B (§3) was headed "NRI annual subscription, real Stripe (~20h)" and asserted **"We have Stripe in stack but no subscription product."** The Stripe rail was **deleted from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`; the remaining mentions in `apps/api/src` are removal notes). **Razorpay is the only live rail and it settles INR only, and no replacement international/NRI processor has been chosen** — so every USD/NRI item in this roadmap is now gated on a vendor decision that has not been made, and the hour estimates that assumed an existing rail are stale. Do not name a processor, fee or FX rate here until one is picked.
+
 ---
 
 ## 1. Feature inventory — what's actually shipped
@@ -68,10 +70,10 @@ These are forks, not items. Pick the fork before scoping.
 
 If yes: `docs/mobile-plan.md` Phase 1+2 only (auth + devotee tabs wired to real API). Skip portals. Risk: Apple/Play approval cycle eats 2 weeks of clock.
 
-### Bet B — NRI annual subscription, real Stripe (~20h, gated by founder)
+### Bet B — NRI annual subscription, international rail `[verify — Stripe was removed; the NRI rail is undecided]` (~20h estimate is stale, gated by founder)
 **Strategic fork**: Do we sell a $99/year NRI bundle now, or stay transactional?
 
-The steelman tripwire #3 (annual:per-puja revenue ratio) requires this to be live by week 12 or the prepay thesis is dead. We have Stripe in stack but no subscription product. Files: new `apps/api/src/routes/subscriptions.ts` (currently a stub), `apps/web/app/pricing/page.tsx`, `apps/web/app/settings/subscription/page.tsx` (currently mocked).
+The steelman tripwire #3 (annual:per-puja revenue ratio) requires this to be live by week 12 or the prepay thesis is dead. **[CORRECTED 2026-09-02, `OPS-10`. This sentence used to read "We have Stripe in stack but no subscription product." We do not have Stripe in stack** — the rail was deleted from the codebase on 2026-08-11 (`apps/api/src/lib/env.ts:45-46`), and **no replacement international/NRI processor has been chosen** `[verify]`. Razorpay is the only live gateway and it settles **INR only**, so a $99/year NRI bundle cannot be charged today at any price. The ~20h estimate in this heading assumed an existing rail and is now **wrong by an unknown amount** — re-estimate after a processor is picked.] Files: new `apps/api/src/routes/subscriptions.ts` (currently a stub), `apps/web/app/pricing/page.tsx`, `apps/web/app/settings/subscription/page.tsx` (currently mocked).
 
 ### Bet C — De-mock astrology OR delete it (~25h or ~2h)
 **Strategic fork**: Astrology is a `mockConsultations` page today. Either we wire Jitsi (already in stack), real astrologer onboarding, payment, and 1-on-1 booking — **or we delete the surface from the nav** until we have a real partner.
@@ -86,7 +88,7 @@ A hybrid astrology marketplace is a 200-hour build. We do not have 200 hours. Pi
 
 Not "delight devotees". Not "best UX". A measurable claim: *"Book a puja from California at 9pm; by 9pm tomorrow you have a 4K video file in your inbox and a tax-deductible 80G receipt."* Every other Indian temple-booking app is 7-10 day turnaround with no video and no 80G. This is a knife-edge differentiator that maps directly to the four NRI hooks.
 
-What this requires (concrete): priest video upload SLA gating in `bookings.ts` lifecycle, R2/Supabase Storage chunked upload (already built), automated 80G email on `video_uploaded` transition, NRI Stripe rail (Bet B above), and a hard "money back if not in 24h" promise in T&C. Engineering load: maybe 40h. Operational load (recruiting priests willing to commit to 24h SLA): real, founder-led.
+What this requires (concrete): priest video upload SLA gating in `bookings.ts` lifecycle, R2/Supabase Storage chunked upload (already built), automated 80G email on `video_uploaded` transition, an NRI/international payment rail `[verify — Stripe was removed 2026-08-11; the NRI rail is undecided]` (Bet B above — note this is now a build-from-zero item, not a wiring item), and a hard "money back if not in 24h" promise in T&C. Engineering load: maybe 40h **plus whatever standing up a new international processor costs — unestimated**. Operational load (recruiting priests willing to commit to 24h SLA): real, founder-led.
 
 This is defensible because AppsForBharat / Sri Mandir / VAMA cannot match it without restructuring their priest network. It's a process moat, not a tech moat.
 

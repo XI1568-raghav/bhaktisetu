@@ -208,7 +208,7 @@
         <tr><td>1</td><td class="lane">Puja w/ video proof</td><td>Devotion · proof</td><td>Per-puja commission</td><td>₹1,501 / $169</td><td>20–40%</td><td><span class="pill pill-e">Live</span></td></tr>
         <tr><td>2</td><td class="lane">Live darshan</td><td>Daily presence</td><td>Ads + temple sponsor</td><td>₹3 CPM · ₹50k sponsor</td><td>100%</td><td><span class="pill pill-e">Live</span></td></tr>
         <tr><td>3</td><td class="lane">Astrology · Kundli</td><td>Anxiety-relief</td><td>Per-minute + funnel</td><td>₹99/min · ₹499 report</td><td>40–60%</td><td><span class="pill pill-e">Live</span></td></tr>
-        <tr><td>4</td><td class="lane">NRI Gift Puja (USD)</td><td>Guilt · legacy</td><td>9–10× domestic pricing</td><td>$169–$299</td><td>30–50%</td><td><span class="pill pill-e">Live</span></td></tr>
+        <tr><td>4</td><td class="lane">NRI Gift Puja (USD)</td><td>Guilt · legacy</td><td>9–10× domestic pricing</td><td>$169–$299</td><td>30–50%</td><td><span class="pill pill-e">Rail down [verify]</span></td></tr>
         <tr><td>5</td><td class="lane">Yatra · pilgrimage</td><td>Bucket-list dharma</td><td>Package commission</td><td>₹35k–₹1.2L</td><td>10–15%</td><td><span class="pill pill-e">Live</span></td></tr>
         <tr><td>6</td><td class="lane">Wellness · Vipassana</td><td>Inner peace</td><td>Centre commission</td><td>₹8k–₹25k</td><td>12–18%</td><td><span class="pill pill-e">Live</span></td></tr>
         <tr><td>7</td><td class="lane">Gaushala · 80G</td><td>Compassion · karma-tax</td><td>Recurring donations</td><td>₹500/mo · $89/mo</td><td>5–10% ops fee</td><td><span class="pill pill-e">Live</span></td></tr>
@@ -217,7 +217,7 @@
         <tr><td>10</td><td class="lane">Temple Portal SaaS</td><td>B2B operator</td><td>Per-temple subscription</td><td>₹999–₹4,999/mo</td><td>100% recurring</td><td><span class="pill pill-e">Live</span></td></tr>
       </tbody>
     </table>
-    <p class="text-xs text-ink-500 mt-3">Status reflects production code on darshya.online · 537/537 API tests green · CF Pages + Render + Supabase + Razorpay + Stripe wired.</p>
+    <p class="text-xs text-ink-500 mt-3">Status reflects production code on darshya.online · 537/537 API tests green · Render (web + API, both region <code>oregon</code>) + Cloudflare DNS/edge proxy + Supabase + Razorpay (INR only) wired. <b>(Correction 2026-09-02, <code>OPS-10</code>: this line previously read “CF Pages + Render + Supabase + Razorpay + Stripe wired.” Cloudflare Pages stopped serving the web tier at the 2026-07-08 cutover — the web tier is the Render Docker service <code>darshya-web</code>, <code>render.yaml:52-60</code> — and the Stripe rail was deleted from the codebase on 2026-08-11, <code>apps/api/src/lib/env.ts:45-46</code>. Razorpay settles INR only; no replacement international processor has been chosen.)</b></p>
   </div>
   <div class="page-num">04 / 20</div>
 </section>
@@ -252,7 +252,7 @@
           <li><b class="accent">Video proof mandatory.</b> Priest payout gated on upload.</li>
           <li><b class="accent">80G receipt automatic.</b> PAN-stamped, IT-section compliant.</li>
           <li><b class="accent">Sankalp builder.</b> Gotra + nakshatra + city auto-resolved.</li>
-          <li><b class="accent">NRI dual-currency.</b> USD/EUR/GBP at checkout.</li>
+          <li><b class="accent">NRI dual-currency.</b> <b>[verify — Stripe was removed 2026-08-11; the NRI rail is undecided.]</b> Razorpay, the only live rail, settles INR only; USD/EUR/GBP checkout is not wired today.</li>
           <li><b class="accent">Cancel up to 24h.</b> Full refund — non-negotiable rule.</li>
         </ul>
         <div class="mt-4 pt-4 border-t border-saffron-100">
@@ -363,7 +363,7 @@
         </div>
         <div class="mt-5">
           <div class="label">Live now</div>
-          <p class="body mt-1" style="font-size:13px;">Stripe USD/EUR/GBP checkout · Geo-IP currency switch · WhatsApp delivery to recipient · 80G receipt to sender PAN · 5 i18n landings (en/hi/ta/te/bn/mr) for diaspora segmentation · `/gift` + `/nri` dedicated funnels.</p>
+          <p class="body mt-1" style="font-size:13px;">WhatsApp delivery to recipient · 80G receipt to sender PAN · 5 i18n landings (en/hi/ta/te/bn/mr) for diaspora segmentation · `/gift` + `/nri` dedicated funnels. <b>(Correction 2026-09-02, <code>OPS-10</code>: this list used to open with “Stripe USD/EUR/GBP checkout · Geo-IP currency switch” under the heading “Live now.” Neither is live — the Stripe rail was deleted on 2026-08-11, <code>apps/api/src/lib/env.ts:45-46</code>, and Razorpay settles INR only. [verify — Stripe was removed; the NRI rail is undecided]: do not quote a foreign-currency capability, fee or FX rate until a replacement processor is chosen.)</b></p>
         </div>
       </div>
       <div class="col-span-5 lane-card" style="background:#FFF4EB; border-color:#FFE2C7;">
@@ -675,7 +675,7 @@
           <li><b class="accent">Convenience monopoly.</b> Alternative is 4 phone calls + 2 weeks.</li>
           <li><b class="accent">Guilt-spend is inelastic.</b> Diaspora pays for ritual the way they pay for therapy.</li>
           <li><b class="accent">Legacy purchase.</b> "My son's first kundli" is not a price-sensitive transaction.</li>
-          <li><b class="accent">Stripe + dual-currency live.</b> US / UK / CA / AU geo-routed.</li>
+          <li><b class="accent">NRI rail — not live. [verify]</b> This bullet used to read “Stripe + dual-currency live. US / UK / CA / AU geo-routed.” The Stripe rail was removed from the codebase on 2026-08-11 (<code>apps/api/src/lib/env.ts:45-46</code>) and no replacement international processor has been chosen. Razorpay settles INR only, so the $13B figure below is an addressable-market number and not a currently-servable one.</li>
           <li><b class="accent">5 i18n landings.</b> Tamil diaspora, Telugu, Bengali, Marathi, Hindi targeted.</li>
         </ul>
         <div class="mt-4 pt-4 border-t border-saffron-100">
@@ -712,7 +712,7 @@
       <div class="lane-card">
         <div class="label">Free-tier discipline</div>
         <div class="kpi-l accent mt-2">$0</div>
-        <p class="body mt-3" style="font-size:13px;">Cloudflare Pages 500 builds/mo + GitHub Actions 2000 min/mo + Render 750 hr/mo + Supabase 500 MB + Resend 100 emails/day + WhatsApp Cloud 1000/mo. Every workflow paths-filtered. Cap-respecting agent fleet.</p>
+        <p class="body mt-3" style="font-size:13px;">GitHub Actions 2000 min/mo + Render free tier (<b>750 instance-hours per <i>account</i>, not per service</b>) + Supabase 500 MB + Resend 100 emails/day + WhatsApp Cloud 1000/mo. Every workflow paths-filtered. <b>(Correction 2026-09-02, <code>OPS-10</code>: this line previously claimed a live “Cloudflare Pages 500 builds/mo” ceiling and read Render’s allowance as “750 hr/mo” per service. Cloudflare Pages has not served the web tier since the 2026-07-08 cutover, so there is no Pages build quota at all; and because the 750 hours are account-wide, the two always-on free services need ~1,488 h — the account was suspended for exactly this on 2026-08-17. Free tier is therefore <i>not</i> sufficient for two always-on services.)</b></p>
       </div>
     </div>
     <div class="mt-8 grid grid-cols-2 gap-6">
@@ -748,11 +748,11 @@
     <div class="mt-8 grid grid-cols-2 gap-6">
       <div class="lane-card">
         <div class="label">Stack live in production</div>
-        <p class="body mt-2" style="font-size:13px;">Next.js 15 (CF Pages edge) · Fastify 5 (Render) · Prisma · Supabase Postgres · Razorpay (INR) · Stripe (USD/EUR/GBP) · MedusaJS commerce · IVS HLS live darshan · YouTube fallback · Expo 50 mobile · WhatsApp Cloud · Resend email · GitHub Actions cron · Groq LLM for Asha AI Pandit · 80G PDF generator · Aadhaar-gated priest payouts.</p>
+        <p class="body mt-2" style="font-size:13px;">Next.js 15 standalone on Node, Render Docker service <code>darshya-web</code>, region <code>oregon</code> (<code>render.yaml:52-60</code>) · Cloudflare = DNS + edge proxy only · Fastify 5 (Render, region <code>oregon</code>) · Prisma · Supabase Postgres (region [verify] — not recorded in this repository) · Razorpay (INR only) · [verify — Stripe was removed; the NRI rail is undecided] · MedusaJS commerce · IVS HLS live darshan · YouTube fallback · Expo 50 mobile · WhatsApp Cloud · Resend email · GitHub Actions cron · Groq LLM for Asha AI Pandit · 80G PDF generator · Aadhaar-gated priest payouts.</p>
       </div>
       <div class="lane-card">
         <div class="label">Live integrations</div>
-        <p class="body mt-2" style="font-size:13px;">Razorpay live keys (KYC submitted) · Stripe (NRI KYC submitted) · Aadhaar gate on priest payouts (business rule #4) · Video proof on every puja (business rule #1) · 24-hour cancellation refund (business rule #5) · 80G receipt per donation (business rule #7) · NRI 9–10× pricing locked (business rule #2) · Per-temple commission 20–40% (business rule #3).</p>
+        <p class="body mt-2" style="font-size:13px;">Razorpay live keys (KYC submitted) · [verify — Stripe was removed 2026-08-11; the NRI rail is undecided] · Aadhaar gate on priest payouts (business rule #4) · Video proof on every puja (business rule #1) · 24-hour cancellation refund (business rule #5) · 80G receipt per donation (business rule #7) · NRI 9–10× pricing locked (business rule #2) · Per-temple commission 20–40% (business rule #3).</p>
       </div>
     </div>
   </div>

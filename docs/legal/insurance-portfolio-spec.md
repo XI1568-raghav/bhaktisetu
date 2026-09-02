@@ -2,12 +2,23 @@
 
 > Pre-Series-A insurance coverage to protect Foundation + founder + customers from operational + data + liability risks.
 
+> **Correction 2026-09-02 (`OPS-10`).** Two lines below used to name **Stripe** as a
+> current vendor / sub-processor. **Stripe was removed from the codebase on
+> 2026-08-11** — every remaining mention in `apps/api/src` is a removal note
+> (`lib/env.ts:45-46`, `services/payment.service.ts:2506-2517`). Razorpay is the only
+> live payment processor and it settles INR only; no replacement international rail
+> has been chosen. Do not name Stripe to a broker or an underwriter: a sub-processor
+> list is a material disclosure on a cyber-liability proposal form, and naming a
+> processor that is not in the stack is a misrepresentation that an insurer can
+> decline a claim on. The vendor list here is marked `[verify]` until the owner
+> confirms the actual processor set.
+
 ## Why insurance now
 
 - Section 8 Foundation has same liability as for-profit company
 - Customer data breach = ₹50L-₹5Cr potential exposure
 - Pandit no-show or fraud = customer indemnification needed
-- Vendor failure (Razorpay/Stripe/etc.) = cascading exposure
+- Vendor failure (Razorpay; plus any other processors the owner confirms — `[verify]`) = cascading exposure
 - Founder personal liability needs D&O coverage for board governance
 - Insurance is non-negotiable Series A due-diligence requirement
 
@@ -21,7 +32,7 @@
 **Provider options**: HDFC ERGO, ICICI Lombard, Bajaj Allianz, Tata AIG (cyber-specific products)
 **Specific events covered**:
 - Customer data breach (PII exposure) — DPDP fines up to 4% of annual turnover
-- Vendor sub-processor breach (Razorpay/Stripe scope)
+- Vendor sub-processor breach (Razorpay scope; full sub-processor list `[verify]` before it goes on a proposal form)
 - Ransomware payment + recovery
 - Business interruption from outage
 - Customer notification expenses (legal mandate per DPDP)

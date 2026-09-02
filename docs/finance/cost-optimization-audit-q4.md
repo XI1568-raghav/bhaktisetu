@@ -2,6 +2,12 @@
 
 > **Roadmap item**: R-Q4-IT-002 (P0) · **Authored**: 2026-06-13 · **Target**: Q4 (Feb 2027) after first 12 months ops data
 
+> **Correction 2026-09-02 (`OPS-10`).** Two premises in this audit were false.
+>
+> 1. It costed a **"Stripe (NRI)"** line at "2.9% + $0.30 per transaction" and a Q4/Y2 fee burn, and set a founder action to "explore Stripe India for lower NRI rates". **Stripe was removed from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`, `apps/api/src/services/payment.service.ts:2438-2450`). Razorpay is the only live rail and it settles INR only; no replacement international processor has been chosen, so both the processor and its rate are unknown. The lane is kept below with its structure intact and the rate marked `[verify]` — re-run the model once the owner names the rail; do not carry the 2.9% + $0.30 figure over to a different processor.
+>
+> 2. It audited **"Cloudflare Pages"** as the web host against its "500 builds/mo, 100K req/day" free tier. Cloudflare Pages stopped serving the web tier at the 2026-07-08 cutover — the web tier is the Render Docker service `darshya-web` (`render.yaml:52-60`, region `oregon`) and Cloudflare is DNS + edge proxy only. The Pages build/request caps no longer describe anything we run.
+
 ## Goal
 
 Audit cost vs revenue per service. Optimize where over-spent. Validate free-tier still optimal OR scale to paid tiers strategically.
@@ -15,11 +21,12 @@ Audit cost vs revenue per service. Optimize where over-spent. Validate free-tier
 - Decision: stay free OR upgrade to Standard (₹6K/mo) if peak >70% sustained
 - Optimization: containerize for faster cold-start, reduce dependency tree
 
-### Cloudflare Pages
+### Cloudflare (DNS + edge proxy — **not** Pages)
 
-- Free tier: 500 builds/mo, 100K req/day
-- Audit: actual build count vs cap, actual req/day vs cap
-- Decision: stay free if both <80% of cap
+- _Corrected 2026-09-02: this section was headed "Cloudflare Pages" and its free tier given as "500 builds/mo, 100K req/day". Pages has not served the web tier since the 2026-07-08 cutover to the Render Docker service `darshya-web` (`render.yaml:52-60`); Cloudflare now does DNS + edge proxy only, so the Pages build cap is not a quantity we consume._
+- Free tier: `[verify]` — the applicable caps are the Cloudflare DNS/proxy plan limits, not the Pages ones
+- Audit: `[verify]` actual proxied req/day vs the plan cap (build count no longer applies)
+- Decision: stay free if usage <80% of cap
 - Optimization: `[skip ci]` discipline, CF Workers KV cache for hot reads
 
 ### Supabase Postgres
@@ -36,12 +43,13 @@ Audit cost vs revenue per service. Optimize where over-spent. Validate free-tier
 - Decision: negotiate with Razorpay for volume tier (>₹50L/yr = potential discount)
 - Optimization: Razorpay Route for split payouts (no extra fee)
 
-### Stripe (NRI)
+### NRI / international rail — processor undecided `[verify — Stripe was removed; the NRI rail is undecided]`
 
-- Pricing: 2.9% + $0.30 per transaction
-- Audit: NRI fee burn rate
-- Decision: explore Stripe India for lower NRI rates (some India-routed)
-- Optimization: minimum NRI transaction = ₹500 to avoid $0.30 fixed eating margin
+- _Corrected 2026-09-02: this section was headed "Stripe (NRI)". The model shape below is sound — a per-transaction percentage plus a fixed per-transaction component — only the processor and the numbers are unknown._
+- Pricing: `[verify]`% per transaction + `[verify]` fixed per transaction (the removed Stripe rail was modelled at 2.9% + $0.30; that figure belongs to Stripe and must not be reused for a different processor)
+- Audit: NRI fee burn rate — `[verify]`, nothing is billed on this lane today
+- Decision: `[verify]` — an international processor must be chosen before any rate comparison is possible
+- Optimization: a minimum NRI transaction size still applies as a structure, sized so the chosen rail's fixed component does not eat the margin (the Stripe-era version of this line was "minimum NRI transaction = ₹500 to avoid $0.30 fixed eating margin") `[verify]`
 
 ### Resend
 
@@ -69,10 +77,10 @@ Audit cost vs revenue per service. Optimize where over-spent. Validate free-tier
 | Service | Current | Q4 projected | Y2 ceiling |
 |---|---|---|---|
 | Render | ₹0 | ₹2.5K | ₹6K |
-| CF Pages | ₹0 | ₹0 | ₹1.7K |
+| Cloudflare (DNS + edge, **not** Pages) `[verify]` | ₹0 | ₹0 | ₹1.7K |
 | Supabase | ₹0 | ₹2K | ₹4K |
 | Razorpay (fees) | ₹0 | ₹15K (on ₹7.5L GMV) | ₹100K |
-| Stripe (NRI fees) | ₹0 | ₹3K | ₹20K |
+| NRI rail fees — processor undecided `[verify]` | ₹0 | ₹3K | ₹20K |
 | Resend | ₹0 | ₹1.7K | ₹4K |
 | AWS IVS | ₹0 | ₹5K | ₹30K |
 | Observability stack | ₹0 | ₹2K | ₹10K |
@@ -83,7 +91,7 @@ Q4 projection ₹31K/mo = ~6% of ₹5L MRR target. Healthy.
 ## Founder action
 
 - [ ] Quarterly cost review (Friday 4 PM IST per F-003 cadence)
-- [ ] Annual renewal negotiations (Razorpay volume tier, Stripe India)
+- [ ] Annual renewal negotiations (Razorpay volume tier) `[verify — Stripe was removed; the NRI rail is undecided]`
 - [ ] Sunset unused SaaS (audit subscriptions)
 
 ## Closes

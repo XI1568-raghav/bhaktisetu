@@ -181,6 +181,32 @@ apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
 
 ## Macro 8 — NRI USD billing question (FX rate transparency)
 
+> **Correction 2026-09-02 (`OPS-10`).** Step 3 of the reply below used to read
+> *"**Stripe processing fee**: 2.9% + $0.30 (NRI rails, charged to us, included in
+> your $${USD_price})"*. **Stripe was removed from the codebase on 2026-08-11** —
+> every remaining mention in `apps/api/src` is a removal note (`lib/env.ts:45-46`,
+> `services/payment.service.ts:2506-2517`, `routes/payments.ts:304`). Razorpay is the
+> only live rail and it settles INR only: `apps/api/src/routes/bookings.ts:2283` is an
+> unconditional `const currency = 'INR'`, and the `currency: z.enum(['INR', 'USD'])`
+> field at `:933` is an analytics hint that, in its own comment, "never changes the
+> amount and never changes the gateway currency". No replacement international
+> processor has been chosen, so the fee is marked `[verify]` rather than replaced with
+> a number nobody has confirmed. `2.9% + $0.30` was never our rate to quote — it was a
+> published card-rate for a processor we do not use, and a fee line in a billing
+> explanation is the single sentence a devotee will check against their statement.
+>
+> **DO NOT SEND THIS MACRO AS-IS.** Its whole premise — a USD-listed price, a live FX
+> spread, an NRI processing fee — describes a corridor that is not live. Items 1-3
+> below are each marked `[verify]` inline; item 4's "USD payouts to family receivers"
+> and "GST 18% on cross-border services" are unverified for the same reason. The
+> 9-10x NRI multiplier was also removed from the booking path on 2026-08-10 after it
+> billed a ₹1,100 puja as $9,900 — an 83.5x overcharge (`RV-01`,
+> `apps/api/src/routes/bookings.ts:2239-2251`) — and NRI Premium is withdrawn
+> (`NRI_PREMIUM_WITHDRAWN_NOTICE`, `apps/web/app/account/subscriptions/page.tsx:251`).
+> If a devotee genuinely reports a USD charge, escalate to the founder; do not explain
+> a fee table for a rail we do not run. Restore this macro by hand the day an
+> international rail is actually live, with that rail's real fee schedule.
+
 - **Trigger**: NRI user asks "why am I charged $X when puja shows ₹Y? rate is wrong."
 - **Tone note**: transparent math, not defensive. NRI pricing is 9-10x domestic (business rule, immutable per `PROJECT_CONTEXT.md`). Don't apologize for the markup — explain the spread.
 - **Reply text**:
@@ -189,9 +215,9 @@ apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
 >
 > USD vs INR ke beech ka antar samjhata hoon:
 >
-> 1. **Service price** (USD-listed): $${USD_price} — yeh aapne dekha tha.
-> 2. **Live FX rate** (sample today, 1 INR = $0.012): aapki puja India mein ₹{INR_equiv} ko equivalent hai.
-> 3. **Stripe processing fee**: 2.9% + $0.30 (NRI rails, charged to us, included in your $${USD_price}).
+> 1. **Service price** ([verify — nothing in the product lists or charges a price in USD]): $${USD_price} — yeh aapne dekha tha.
+> 2. **Live FX rate** ([verify — no FX conversion is applied anywhere; the gateway currency is an unconditional INR]): aapki puja India mein ₹{INR_equiv} ko equivalent hai.
+> 3. **Payment processing fee**: [verify — Stripe was removed; the NRI rail is undecided] (charged to us, included in your $${USD_price}).
 > 4. **NRI service tier**: Bhaktisetu NRI pricing 9-10x domestic — kyun? remote pujas need pandit travel + dedicated video crew + USD payouts to family receivers + GST 18% on cross-border services. Yeh humari business rule hai, har NRI booking par same.
 >
 > Agar aap ka concern aur kuch hai (charge double dikha, foreign-transaction bank fee, GST refund) → batayein, exact line-item dispatch karenge.

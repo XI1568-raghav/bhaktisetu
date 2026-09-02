@@ -108,6 +108,8 @@ Reference `docs/finance/mrr-tracking-cadence-v1.md` for tracking discipline.
 
 ### Slide 8 — Unit economics
 
+> **Correction 2026-09-02 (`OPS-10`).** The NRI block below read "Devotee pays: $50 (~₹4,200 — 9x INR rate per business rule)" and "Stripe processing: -₹125". **Stripe was removed from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`, `apps/api/src/services/payment.service.ts:2438-2450`) and the `basePrice * 9` USD/NRI charge path was deleted with it (`apps/api/src/routes/bookings.ts:2139-2154`). Razorpay is the only live rail and it settles INR only, so there is no USD checkout and no NRI processing fee to quote; no replacement international processor has been chosen. Business rule #2 (NRI pricing 9-10× domestic) does still exist as data — `PujaType.nriPrice` is populated in the schema (`apps/api/prisma/schema.prisma:446`) — but it is **not charged at checkout today**. The India block is unaffected. The NRI lane is left legible below so it can be re-run once the owner names the rail; do not present these NRI figures to an investor as current.
+
 ```
 Per puja booking (avg):
 - Devotee pays: ₹501
@@ -118,10 +120,10 @@ Per puja booking (avg):
 - NET CONTRIBUTION: ₹61
 
 Per NRI puja (avg):
-- Devotee pays: $50 (~₹4,200 — 9x INR rate per business rule)
+- Devotee pays: $50 (~₹4,200 — 9x INR rate per business rule #2)   [verify — no USD checkout exists]
 - Pandit keeps: ₹2,400
 - Platform: ₹1,800
-- Stripe processing: -₹125
+- Payment processing: -₹125   [verify — NRI processor undecided]
 - GST 18%: -₹770
 - NET CONTRIBUTION: ₹905
 

@@ -26,7 +26,18 @@ Free tier: 50 monitors / 5min interval. Above uses 5 → 45 monitors free for ex
 
 ## Public status page
 
-UptimeRobot public status page enabled: `https://stats.uptimerobot.com/bhaktisetu`
+**`[verify]` — not enabled.** Corrected 2026-09-02 (`OPS-10`). This line used to read
+*"UptimeRobot public status page enabled: `https://stats.uptimerobot.com/bhaktisetu`"*,
+stated as an accomplished fact. Nothing in this repository records a live status page:
+`docs/it/uptime-monitors.md` and `docs/operational-context.md` both still carry the
+literal placeholder `<PASTE_AFTER_SETUP>`, and `docs/runbooks/disaster-recovery.md`
+records the status page as aspirational copy. `status.bhaktisetu.com` does not exist
+either. The slug above was never confirmed to resolve — do not publish or link it.
+
+What *does* exist is the self-hosted route `apps/web/app/status/page.tsx`, served at
+`https://darshya.online/status`. It renders live data only when
+`NEXT_PUBLIC_UPTIME_STATUS_URL` is set, and degrades to a neutral fallback when it is
+not. Setup steps: `docs/it/uptime-setup.md` §4.
 
 ## Downtime SLA
 
@@ -37,7 +48,7 @@ UptimeRobot public status page enabled: `https://stats.uptimerobot.com/bhaktiset
 ## Engineering tickets
 
 - R-Q1-IT-001a: UptimeRobot account setup + 5 monitors
-- R-Q1-IT-001b: Public status page enabled
+- R-Q1-IT-001b: Public status page enabled — **still open `[verify]`** (see above; the spec asserted this as done)
 - R-Q1-IT-001c: Alert escalation matrix documented
 
 ## Closes

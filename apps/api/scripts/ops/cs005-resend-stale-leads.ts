@@ -187,8 +187,32 @@ export function renderTemplate(candidate: SendCandidate): RenderedTemplate {
   const subjects: Record<SendCandidate['templateKey'], string> = {
     pandit: `Bhaktisetu — ${city} pandit network update + ek aur ask`,
     temple: `Bhaktisetu — ${city} temple listing pilot, 60-80% commission, no upfront fee`,
+/*
+ * OPS-10 / TC-01 — corrected 2026-09-02. THIS FILE SENDS EMAIL.
+ *
+ * The three templates below are an INLINE COPY of docs/cs/templates/cs005-*.md.
+ * Those markdown files were corrected first, and correcting them changed
+ * nothing that a lead receives: this script is what Resend actually posts. The
+ * copies had diverged, which is the same shape as the secret scanner whose
+ * workflow carried its own stale duplicate of the tested rule table.
+ *
+ * Four claims were live here and are now gone:
+ *   :191  an "USD rails for NRI clients" subject line
+ *   :207  "NRI USD consultations going live with Stripe rails"
+ *   :229  "Devotees pay via Razorpay/Stripe"
+ *   :269  "Stripe USD rails live ... US/UK/CA/AU paying $80-$200 per session"
+ *
+ * All four are false. Stripe was removed entirely (apps/api/src/env.ts:45-46,
+ * services/payment.service.ts:2506-2517, routes/payments.ts:304) and the only
+ * live rail is Razorpay, INR only. There is no USD price anywhere in the
+ * product, so the $80-$200 figure was quoting a rate nobody can be charged.
+ *
+ * An email cannot be edited after it is delivered. That is why this file is
+ * worth more care than the markdown it duplicates — and why the right fix is
+ * eventually to read the templates from disk rather than restate them here.
+ */
     gaushala: `Bhaktisetu — gauseva recurring-donation platform, ${city} pilot`,
-    astrologer: `Bhaktisetu — astrologer consultation platform, USD rails for NRI clients`,
+    astrologer: `Bhaktisetu — astrologer consultation platform, {city} pilot`,
   };
 
   const bodies: Record<SendCandidate['templateKey'], string> = {
@@ -204,7 +228,7 @@ tha. Aaj theek hai.
 Update humari taraf se:
 - 30 ${verifiedNoun('pandit')} prospects shortlisted across BLR
 - First 5 pilot pandits onboarded
-- NRI USD consultations going live with Stripe rails
+- Consultations live on the domestic Razorpay rail (INR)
 - 70-80% commission to pandit, no upfront fee
 
 Agar aap interested hain ek 15-min call ke liye —
@@ -226,7 +250,7 @@ aaj.
 Updated context:
 - ${COMPLIANCE_LINE}
 - 30 ${city} temples in pipeline; 5 pilots will be live by Q2-end
-- Devotees pay via Razorpay/Stripe; temple ko 60-80% commission
+- Devotees pay via Razorpay; temple ko 60-80% commission
 - Video proof mandatory per puja; founder personally onboards first 5
 
 Agar aapke temple ko pilot karna chahein — 15-min exploratory call?
@@ -266,7 +290,7 @@ consultation platform ke baare mein. DNS issue tha humare side, theek hua
 aaj — re-sending.
 
 Quick update:
-- Stripe USD rails live for NRI clients (US/UK/CA/AU paying $80-$200 per session)
+- Consultations live on the domestic Razorpay rail (INR)
 - INR Razorpay rails active for domestic clients
 - Bhaktisetu commission 20-30%; astrologer keeps 70-80%
 - Verified Jyotish profile shown on darshya.online/astrology

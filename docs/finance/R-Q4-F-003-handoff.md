@@ -5,6 +5,8 @@
 > **Spec**: docs/roadmap/items/Q4/finance/003-profitability-m12-audit-confirm-m8-profitable-audi.md
 > **Related**: docs/finance/profitability-m12-audit-template.md (existing template), R-Q3-F-002 (depends_on)
 
+> **Correction 2026-09-02 (`OPS-10`).** **Stripe was removed from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`, `apps/api/src/services/payment.service.ts:2438-2450`). Razorpay is the only live rail and it settles INR only; no replacement international processor has been chosen. This handoff required "Stripe NRI settlement reports M8-M12 exported" in the pre-audit checklist, reconciled revenue "to Razorpay/Stripe/DB", and made "Stripe NRI KYC (U2) must be live by M8" an audit dependency. None of those are executable. The CA audit itself is unaffected — there is simply no second processor to reconcile against, and no NRI revenue to audit, until an international rail exists.
+
 ## Why this exists
 
 Imported placeholder (success criteria TBD). This handoff fills the gap so the founder/CA can execute the M12 audit confirmation without re-deriving scope from scratch. Confirms M8+ profitability — required signal for Series A close.
@@ -21,7 +23,7 @@ CA-signed financials for FY26-27 Q4 covering:
 ## Pre-audit checklist (founder, before CA engagement)
 
 - [ ] Razorpay settlement reports M8-M12 exported (CSV per month)
-- [ ] Stripe NRI settlement reports M8-M12 exported (CSV per month)
+- [ ] ~~Stripe NRI settlement reports M8-M12 exported (CSV per month)~~ — **not actionable**; no international processor exists to export from `[verify — Stripe was removed; the NRI rail is undecided]`
 - [ ] Bhaktisetu DB revenue reconciliation script run (per-lane × month)
 - [ ] Bank statements M8-M12 downloaded (Foundation account)
 - [ ] Vendor invoices M8-M12 organized by category (infra/marketing/legal/hiring)
@@ -40,7 +42,7 @@ CA-signed financials for FY26-27 Q4 covering:
 
 Use docs/finance/profitability-m12-audit-template.md as the working document. CA fills in actuals; founder cross-checks against:
 
-1. Revenue per lane (L1-L5) reconciled to Razorpay/Stripe/DB
+1. Revenue per lane (L1-L5) reconciled to Razorpay/DB
 2. Cost per category reconciled to bank debits + vendor invoices
 3. Net profitability per month M1-M12 — confirm M8+ in green
 4. Cash position at M12 (cash + receivables - payables)
@@ -78,7 +80,7 @@ Flip `status: in_progress` → `status: shipped` and add `shipped_at: <ISO times
 - R-Q3-F-002 (M9 unit-econ audit) must complete first — provides baseline trajectory
 - R-Q1-F-001 (CA shortlist) provides engagement candidate
 - Razorpay live KYC (U1) must be live by M8 for revenue to be auditable
-- Stripe NRI KYC (U2) must be live by M8 for NRI revenue to be auditable
+- ~~Stripe NRI KYC (U2) must be live by M8 for NRI revenue to be auditable~~ — **void**; U2 cannot clear. If an NRI rail is chosen, it must be live by M8 for NRI revenue to be auditable `[verify — Stripe was removed; the NRI rail is undecided]`
 
 ## Free-tier impact
 

@@ -13,7 +13,7 @@ Status legend: `[x]` met by current draft / `[ ]` open / `[L]` LAWYER-CONFIRM / 
 - [x] 5. Devotee cancels 24-72h before muhurat — covered §3 (>24h = 100%)
 - [x] 6. Devotee cancels >72h before muhurat — covered §3 (>24h = 100%; draft does not deduct processing fee)
 - [x] 7. Payment failed at gateway but bank debited — covered §8 (Razorpay T+10 reconciliation)
-- [x] 8. NRI Stripe chargeback — covered §6 + §9 (proof-of-delivery package)
+- [x] 8. NRI chargeback on the international rail — covered §6 + §9 (proof-of-delivery package). Processor `[verify]`: Stripe was removed 2026-08-11 and no replacement has been chosen (`OPS-10`, 2026-09-02)
 - [x] 9. Force majeure — covered §2 (14 business days, 100%)
 - [x] 10. Astrology consultation dissatisfaction — covered §5 (no-refund, opinion-based; pre-purchase disclaimer required)
 - [x] 11. Subscription cancellation mid-cycle — covered §4 NEW (pro-rata refund, >50% consumed = no refund)
