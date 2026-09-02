@@ -24,7 +24,7 @@
 
 9. **What's AI Pandit?** ₹199/mo subscription for Sanskrit-scripture-grounded Q&A. Free 3 questions/day for unpaid users.
 
-10. **Can NRI families use Bhaktisetu?** Yes — dedicated USD/GBP/CAD/AUD pricing + 24hr time-zone aware video proof.
+10. **Can NRI families use Bhaktisetu?** They can browse and book, but **payment in a foreign currency is not available** — Razorpay is the only live rail and it settles INR only. 24hr time-zone aware video proof is unaffected. *(Corrected 2026-09-02, `OPS-10`: this answer read "Yes — dedicated USD/GBP/CAD/AUD pricing". The Stripe rail was deleted from the codebase on 2026-08-11, `apps/api/src/lib/env.ts:45-46`, and no replacement international processor has been chosen — `[verify]`. Do not quote a currency list until one is.)*
 
 11. **Are 80G receipts issued?** Yes for India tax. NRI tax-deductibility varies by country.
 

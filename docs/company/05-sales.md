@@ -121,12 +121,12 @@ If any of these four is red, defer all demand-side spend.
 >
 > For {Temple name}, the immediate fit is festival-day live darshan and online sankalpa for NRI devotees. I'd like to propose a single-festival pilot — no MoU required.
 >
-> *(Corrected 2026-09-02, `OPS-10` — internal note, not part of the email. This sentence used to end "(we already process Stripe for US/UK cards)". **Do not send that.** The Stripe rail was deleted from the codebase on 2026-08-11 (`apps/api/src/lib/env.ts:45-46`); Razorpay is the only live rail and it settles **INR only**, so we cannot process a US or UK card today. Making that claim to a temple trust would be a false statement of capability in a commercial solicitation. Say nothing about foreign-card acceptance until a replacement processor exists — `[verify]`.)*
->
 > Could I send a 90-second walkthrough and call you on {date+3 days} between 11am-1pm?
 >
 > Pranam,
 > {Founder name} | darshya.online | {phone}
+
+**Correction 2026-09-02 (`OPS-10`) — internal note, NOT part of the email above.** The "For {Temple name}…" line used to end **"(we already process Stripe for US/UK cards)"**. **Do not send that.** The Stripe rail was deleted from the codebase on 2026-08-11 (`apps/api/src/lib/env.ts:45-46`); **Razorpay is the only live rail and it settles INR only**, so we cannot process a US or UK card today, and **no replacement international processor has been chosen** — `[verify]`. Claiming foreign-card acceptance to a temple trust would be a false statement of capability in a commercial solicitation. Say nothing about foreign-currency acceptance in any outbound message until a processor exists and is live.
 
 ### (b) Sri Mandir / AppsForBharat partnerships [verify name]
 

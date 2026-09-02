@@ -146,6 +146,21 @@ jobs:
           # docs/engineering/render-build-filter-setup.md).
           bad=$(echo "$added" | grep -inE             '(git )?revert[^.]{0,80}(rollback|restore|roll back|production|prod|and push|let ci deploy|ci (will )?deploys?)|(rollback|roll back)[^.]{0,80}(git )?revert|push[^.]{0,60}(auto-?deploys?|triggers? (a )?redeploy)|auto-?deploys?[^.]{0,60}on (every |each )?[^.]{0,20}push'             || true)
 
+          # DENIALS ARE NOT ASSERTIONS. The ban pattern matches "push ... auto-deploy"
+          # by proximity, so it fires just as hard on a line REFUTING the claim as on
+          # one making it. It has now blocked three correct sentences: "Not on push —
+          # autoDeploy: false", "Do not push a revert and wait", and "A push deploys
+          # nothing at all". A guard that fails the commits fixing the very defect it
+          # guards trains people to bypass it, which is worse than the drift.
+          #
+          # A line is a denial when it carries an explicit negation of deployment on
+          # the same line. These markers are deliberately specific — `false`, `nothing`,
+          # `never`, `no longer`, an explicit "do not" — so a bare "not" cannot be
+          # sprinkled in to smuggle a real claim through.
+          if [ -n "$bad" ]; then
+            bad=$(echo "$bad" | grep -viE 'autoDeploy: ?false|deploys? nothing|does not deploy|will not deploy|never deploys?|no longer (auto-?)?deploys?|do(es)? not (auto-?)?deploy|DOES NOTHING|not a rollback|deploys nothing at all' || true)
+          fi
+
           if [ -n "$bad" ]; then
             echo "::error::Rollback-honesty scan: an added line presents a revert or a push as a production rollback."
             echo "Both Render services are autoDeploy:false (render.yaml:28, :60) — neither a revert nor a push deploys anything."
