@@ -11,7 +11,7 @@
 | Standard (6 mo – 3 yr) | 75% | 25% | Default tier after first 25 completed pujas + 0 unresolved disputes |
 | Senior (3+ yr OR ≥500 completed pujas) | 80% | 20% | Honored vidwan tier; surfaces in temple "Featured Pandit" carousel |
 
-Splits computed on **devotee net payment** (after Razorpay/Stripe processor fees, before TDS deduction). Bhaktisetu retains its share, deducts TDS u/s 194J at 10% from pandit share if applicable, remits net to pandit bank account.
+Splits computed on **devotee net payment** (after Razorpay processor fees, before TDS deduction; Stripe removed 2026-08-11 — any foreign-currency processor is **[verify]**). Bhaktisetu retains its share, deducts TDS u/s 194J at 10% from pandit share if applicable, remits net to pandit bank account.
 
 ## Per-puja-type overrides
 

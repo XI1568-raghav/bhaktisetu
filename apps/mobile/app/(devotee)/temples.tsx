@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Linking,
   RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -29,22 +28,43 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  *
  * PAR-17 falls out of the same fix: the card deep-linked with `temple.id`, but
  * the web route is /temples/[slug], so every link 404'd. It uses `slug` now.
+ *
+ * THE CARD NO LONGER LEAVES THE APP
+ * ---------------------------------
+ * It used to branch: a streaming temple opened the darshan player, and every
+ * other temple called
+ *
+ *     Linking.openURL('https://darshya.online/temples/<slug>?utm_source=…')
+ *
+ * which EXITS to Chrome or Safari, drops the app's back stack, and lands the
+ * devotee on a site that cannot see the expo-secure-store session — on the
+ * catalogue that is the supply anchor of the entire product. The reason it did
+ * that was simply that the app had no temple screen. It has one now
+ * ((devotee)/temple-detail.tsx, reading the same GET /temples/:slug the website
+ * reads), so the card pushes to it and the bounce-out is deleted rather than
+ * merely relabelled.
+ *
+ * The LIVE card also goes to the detail screen rather than straight into the
+ * player: the detail carries the darshan stream row, and jumping past it meant
+ * the player was the only way a streaming temple could ever be read about. The
+ * detail's first action is "Live darshan", one tap further on.
  */
 
 const TempleCard = React.memo(function TempleCard({ temple }: { temple: TempleVM }) {
-  const detailUrl = `https://darshya.online/temples/${encodeURIComponent(temple.slug)}?utm_source=mobile-app&utm_medium=temple-card`;
   const openTemple = () => {
-    if (temple.liveDarshanEnabled) {
-      router.push({
-        pathname: '/(devotee)/darshan-player' as never,
-        params: { id: temple.slug, title: temple.name, deity: temple.deity ?? '' },
-      } as never);
-    } else {
-      Linking.openURL(detailUrl);
-    }
+    router.push({
+      pathname: '/(devotee)/temple-detail' as never,
+      params: { slug: temple.slug, name: temple.name },
+    } as never);
   };
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={openTemple}>
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${temple.name}, view temple`}
+      onPress={openTemple}
+    >
       {/* Image placeholder */}
       <View style={styles.cardImage}>
         <Ionicons name="business" size={36} color={colors.saffron[300]} />
@@ -87,8 +107,14 @@ const TempleCard = React.memo(function TempleCard({ temple }: { temple: TempleVM
           </Text>
         ) : null}
 
-        <TouchableOpacity style={styles.viewButton} activeOpacity={0.7} onPress={openTemple}>
-          <Text style={styles.viewButtonText}>{temple.liveDarshanEnabled ? 'Watch Live' : 'View Temple'}</Text>
+        <TouchableOpacity
+          style={styles.viewButton}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${temple.name}`}
+          onPress={openTemple}
+        >
+          <Text style={styles.viewButtonText}>View Temple</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.white} />
         </TouchableOpacity>
       </View>
@@ -379,7 +405,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.saffron[600],
-    paddingVertical: 10,
+    // >= 44pt: the minimum comfortable touch target on both platforms. The
+    // old `paddingVertical: 10` produced a ~37pt control.
+    minHeight: 44,
     borderRadius: borderRadius.md,
     gap: spacing.xs,
   },

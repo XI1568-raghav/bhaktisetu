@@ -167,7 +167,7 @@ Each agent runs on free GitHub Actions cron, writes report to `docs/agent-report
 
 | Layer | Tool | Free tier |
 |---|---|---|
-| Hosting (web) | Cloudflare Pages | Unlimited bandwidth |
+| Hosting (web) | Render (Docker, `oregon`) — *was Cloudflare Pages until the 2026-07-08 cutover; corrected 2026-09-02, `OPS-10`* | Free tier: 750 instance-hours per **account**, shared with the API |
 | Hosting (api) | Render free | 750h/month |
 | DB | Supabase | 500MB |
 | Auth | Custom JWT | $0 |

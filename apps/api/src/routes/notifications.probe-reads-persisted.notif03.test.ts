@@ -15,6 +15,11 @@ vi.mock('../lib/fcm.js', () => ({
   fcmConfig: { enabled: false, projectId: '' },
   sendFcm: vi.fn(async () => ({ ok: false, skipped: true })),
   isFcmRegistrationToken: (t: string) => !/^https?:/i.test(t) && t.length >= 60,
+  // NOTIF-17: the route now dispatches on token shape.
+  isExpoPushToken: (t: string) => /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{16,128}\]$/.test(t),
+  isPushToken: (t: string) =>
+    /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{16,128}\]$/.test(t) ||
+    (!/^https?:/i.test(t) && t.length >= 60),
 }));
 vi.mock('../lib/notification-log.js', () => ({
   recordNotification: vi.fn(async () => true),

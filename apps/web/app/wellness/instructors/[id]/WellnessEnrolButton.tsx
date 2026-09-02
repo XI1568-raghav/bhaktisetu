@@ -114,7 +114,7 @@ export default function WellnessEnrolButton({
           onClick={() => !busy && setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl p-6 sm:p-7"
+            className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 sm:p-7"
             style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
             onClick={(e) => e.stopPropagation()}
           >

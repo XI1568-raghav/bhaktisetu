@@ -113,7 +113,7 @@ export default function CartPage() {
  </div>
  <button
  onClick={() => removeItem(item.id)}
- className="p-1.5 text-surface-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-surface-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
  >
  <Trash2 className="w-4 h-4" />
  </button>
@@ -132,14 +132,16 @@ export default function CartPage() {
  </div>
 
  {/* Quantity & subtotal */}
- <div className="flex items-center justify-between mt-3">
- <div className="flex items-center gap-1">
+ <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+ <div className="flex items-center">
  <button
  onClick={() => updateQuantity(item.id, item.quantity - 1)}
  disabled={item.quantity <= 1}
- className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 transition-colors"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center disabled:opacity-40"
  >
+ <span className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 transition-colors">
  <Minus className="w-3 h-3" />
+ </span>
  </button>
  <span className="w-10 text-center text-sm font-semibold text-surface-800">
  {item.quantity}
@@ -147,9 +149,11 @@ export default function CartPage() {
  <button
  onClick={() => updateQuantity(item.id, item.quantity + 1)}
  disabled={item.quantity >= 10}
- className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 transition-colors"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center disabled:opacity-40"
  >
+ <span className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 transition-colors">
  <Plus className="w-3 h-3" />
+ </span>
  </button>
  </div>
 

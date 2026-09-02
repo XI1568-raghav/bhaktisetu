@@ -9,6 +9,8 @@ import {
   Alert,
   Linking,
 } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useCreateDonationOrder, useGaushalas, useTemples } from '@poojly/api-client';
 import { PortalScreen } from '../../lib/portal-screen';
 import {
@@ -18,6 +20,7 @@ import {
   selectTemples,
   DONATION_MIN_INR,
 } from '../../lib/api-contracts';
+import { hostOf, webOrigin } from '../../lib/web-origin';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { HAS_80G, RECEIPT_NOUN } from '../../lib/eighty-g';
 
@@ -41,13 +44,51 @@ import { HAS_80G, RECEIPT_NOUN } from '../../lib/eighty-g';
  * (apps/api/src/routes/donations.ts). A button that mints a tax receipt for
  * money nobody sent is the same defect class as PAR-01 and does not belong in
  * the client. Confirmation must come from the gateway.
+ *
+ * ── ARRIVING WITH A DONEE ALREADY CHOSEN ────────────────────────────────────
+ * (devotee)/gaushala-detail.tsx and (devotee)/temple-detail.tsx push here with
+ * `causeKind`, `causeId` and `causeName`. That mirrors the website, whose
+ * /donations page accepts the same three as query parameters, and it is why
+ * neither of those screens needs a bounce-out of its own: the id travels
+ * inside the app and the order is created against THIS build's API.
+ *
+ * A prefilled donee is PINNED to the top of the picker even when it is not in
+ * the list this screen loaded. It has to be: the gaushala directory reads
+ * `/providers/gaushala` (approved profiles, the ids the donation resolver
+ * accepts) while the picker below reads `/gaushala` (the legacy fixture
+ * directory), so an id that is perfectly valid for a donation is routinely
+ * absent from the list. Dropping the selection because a different endpoint
+ * has not heard of it would silently discard the devotee's choice. The name
+ * shown is the one the previous screen read from the API — never invented.
+ *
+ * ── WHICH SITE THE PAYMENT HAND-OFF OPENS ───────────────────────────────────
+ * `lib/web-origin.ts`, not a literal darshya.online. A non-production build
+ * creates a real donation row on ITS server and then has to be paid on the
+ * matching site; opening production would send the devotee to pay for a
+ * donation id that does not exist there. When the origin could only be
+ * guessed, `matchesEnvironment` is false and the confirmation says so rather
+ * than handing the devotee over silently.
  */
 
 const PRESET_AMOUNTS = [101, 501, 1100, 2100, 5100];
 
 type CauseKind = 'gaushala' | 'temple';
 
+/** Resolved once per render; reads env lazily and never throws. */
+const WEB = webOrigin();
+
 export default function DonationsScreen() {
+  const params = useLocalSearchParams<{
+    causeKind?: string;
+    causeId?: string;
+    causeName?: string;
+  }>();
+  const prefillKind: CauseKind | null =
+    params.causeKind === 'temple' ? 'temple' : params.causeKind === 'gaushala' ? 'gaushala' : null;
+  const prefillId = typeof params.causeId === 'string' && params.causeId ? params.causeId : null;
+  const prefillName =
+    typeof params.causeName === 'string' && params.causeName ? params.causeName : null;
+
   const createOrder = useCreateDonationOrder();
   const gaushalasQuery = useGaushalas();
   const templesQuery = useTemples();
@@ -58,16 +99,34 @@ export default function DonationsScreen() {
   );
   const temples = useMemo(() => selectTemples(templesQuery.data), [templesQuery.data]);
 
-  const [causeKind, setCauseKind] = useState<CauseKind>('gaushala');
-  const [gaushalaId, setGaushalaId] = useState<string | undefined>();
-  const [templeId, setTempleId] = useState<string | undefined>();
+  const [causeKind, setCauseKind] = useState<CauseKind>(prefillKind ?? 'gaushala');
+  const [gaushalaId, setGaushalaId] = useState<string | undefined>(
+    prefillKind === 'gaushala' ? (prefillId ?? undefined) : undefined,
+  );
+  const [templeId, setTempleId] = useState<string | undefined>(
+    prefillKind === 'temple' ? (prefillId ?? undefined) : undefined,
+  );
   const [amount, setAmount] = useState('501');
   const [donorPan, setDonorPan] = useState('');
   const [dedication, setDedication] = useState('');
   const [orderRef, setOrderRef] = useState<string | null>(null);
 
-  const donees = causeKind === 'gaushala' ? gaushalas : temples;
+  const loadedDonees = causeKind === 'gaushala' ? gaushalas : temples;
   const selectedId = causeKind === 'gaushala' ? gaushalaId : templeId;
+
+  // The donee chosen on the previous screen, pinned so it survives a picker
+  // that was loaded from a different endpoint. Only for the tab it arrived on.
+  const donees = useMemo(() => {
+    if (
+      !prefillId ||
+      !prefillName ||
+      prefillKind !== causeKind ||
+      loadedDonees.some((d) => d.id === prefillId)
+    ) {
+      return loadedDonees;
+    }
+    return [{ id: prefillId, name: prefillName, location: undefined }, ...loadedDonees];
+  }, [prefillId, prefillName, prefillKind, causeKind, loadedDonees]);
   const doneesLoading =
     causeKind === 'gaushala' ? gaushalasQuery.isLoading : templesQuery.isLoading;
   const doneesError =
@@ -116,15 +175,24 @@ export default function DonationsScreen() {
       // The app has no Razorpay SDK bundled, so checkout completes on the web
       // donation form — a real route that already loads Razorpay
       // (apps/web/app/donations/page.tsx accepts causeId/causeName/causeKind).
+      //
+      // The origin comes from lib/web-origin.ts rather than a literal
+      // darshya.online: the donation row above was just written to THIS
+      // build's API, and paying for it on a different deployment's site means
+      // paying for an id that does not exist there. When the origin could only
+      // be guessed, the devotee is told before the browser opens.
       const url =
-        'https://darshya.online/donations' +
+        `${WEB.origin}/donations` +
         `?causeId=${encodeURIComponent(input.gaushalaId ?? input.templeId ?? '')}` +
         `&causeName=${encodeURIComponent(donee?.name ?? '')}` +
         `&causeKind=${input.causeKind}` +
         '&utm_source=mobile-app&utm_medium=donate';
       Alert.alert(
         'Complete your donation',
-        'Payment opens in your browser — the app cannot take card or UPI payments yet.',
+        `Payment opens ${hostOf(WEB.origin)} in your browser — the app cannot take card or UPI payments yet.` +
+          (WEB.matchesEnvironment
+            ? ''
+            : ` This build did not state its website, so ${hostOf(WEB.origin)} is a fallback and may not be the site your donation was recorded on. Nothing has been charged yet.`),
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Continue', onPress: () => void Linking.openURL(url) },
@@ -156,6 +224,24 @@ export default function DonationsScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* The gau-seva directory. A name in a picker is not enough to decide
+            where money goes, so the shelters are readable before they are
+            chosen — (devotee)/gaushalas.tsx lists the APPROVED profiles, i.e.
+            exactly the donees POST /donations/create-order will accept. */}
+        {causeKind === 'gaushala' ? (
+          <TouchableOpacity
+            style={styles.browseRow}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Browse approved gaushalas"
+            onPress={() => router.push('/(devotee)/gaushalas' as never)}
+          >
+            <Ionicons name="leaf-outline" size={16} color={colors.green[700]} />
+            <Text style={styles.browseText}>Read about the approved gaushalas</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.green[700]} />
+          </TouchableOpacity>
+        ) : null}
 
         <Text style={styles.label}>
           {causeKind === 'gaushala' ? 'Choose a gaushala' : 'Choose a temple'}
@@ -321,6 +407,17 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.stone[100],
   },
   doneeRowActive: { backgroundColor: colors.saffron[50] },
+  browseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    marginTop: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.green[50],
+  },
+  browseText: { flex: 1, fontSize: fontSize.sm, fontWeight: '700', color: colors.green[700] },
   doneeName: { fontSize: fontSize.sm, fontWeight: '600', color: colors.stone[800] },
   doneeNameActive: { color: colors.saffron[700] },
   doneeMeta: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },

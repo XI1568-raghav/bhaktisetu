@@ -236,7 +236,16 @@ export function CategoryNav() {
   return (
     <div
       ref={containerRef}
-      className="hidden md:flex items-center gap-1 mx-auto relative"
+      // `mx-auto` REMOVED. Its parent in app/layout.tsx is `flex-1 min-w-0`, so
+      // this group is free to shrink below its content width — measured at
+      // 1280px it was allotted 275px for five buttons needing ~450px. An auto
+      // margin on an overflowing flex item centres the OVERFLOW, which pushed
+      // ~85px out of each side: "Worship" painted over the "Darshya" wordmark
+      // at x=104 (the brand occupies 88-177) and "Shop" painted under
+      // "Ask Pandit" at x=476. Centring is the parent's job — it already sets
+      // `justify-center` — and doing it here as well is what made an overflow
+      // spill symmetrically instead of clipping.
+      className="hidden md:flex items-center gap-1 relative min-w-0"
       onMouseLeave={scheduleClose}
       onBlur={onContainerBlur}
     >

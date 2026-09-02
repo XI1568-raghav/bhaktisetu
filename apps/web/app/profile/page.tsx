@@ -26,10 +26,14 @@ import {
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: true ONLY for 401 — a 403 is a suspended account, where signing in
+ // again succeeds and lands the user back on the same refusal.
+ loadErrorIsReauth,
 } from '../../lib/api-config';
 import { ACCOUNT_LANGUAGES, accountLanguageLabel } from '../../lib/i18n/locales';
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
+import ReauthPrompt from '../../components/ReauthPrompt';
 
 interface ProfileFormData {
  fullName: string;
@@ -134,6 +138,10 @@ function ProfileContent() {
  // Two guards, both required: refuse to save over a form we never loaded, and
  // only ever send fields the user actually edited.
  const [loadFailed, setLoadFailed] = useState<string | null>(null);
+ // AUTH-06: /profile disables Save while the load has failed, so an expired
+ // session left the user with a read-only form, a sentence telling them to
+ // sign in again, and a Retry that could only 401 again.
+ const [loadReauth, setLoadReauth] = useState(false);
  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
  /**
@@ -143,6 +151,7 @@ function ProfileContent() {
  if (!session?.accessToken) return;
 
  setLoadFailed(null);
+ setLoadReauth(false);
  try {
  // RES-01: bare fetch has no timeout — held open, /profile sat on
  // "Loading profile..." at T+10s and at T+30s with no error.
@@ -152,6 +161,7 @@ function ProfileContent() {
 
  if (!res.ok) {
  setLoadFailed(loadErrorMessage(res));
+ setLoadReauth(loadErrorIsReauth(res));
  } else {
  const data = await res.json();
  const u = data.user;
@@ -171,6 +181,7 @@ function ProfileContent() {
  }
  } catch (err) {
  setLoadFailed(loadErrorMessage(err));
+ setLoadReauth(loadErrorIsReauth(err));
  } finally {
  setIsLoading(false);
  }
@@ -313,6 +324,9 @@ function ProfileContent() {
  {loadFailed} Saving is disabled until your profile loads, so a blank form
  cannot overwrite your gotra, nakshatra or city.
  </span>
+ {loadReauth ? (
+ <ReauthPrompt message="" className="shrink-0" />
+ ) : (
  <button
  type="button"
  onClick={() => { setIsLoading(true); void loadProfile(); }}
@@ -320,6 +334,7 @@ function ProfileContent() {
  >
  Retry
  </button>
+ )}
  </div>
  )}
  {error && (

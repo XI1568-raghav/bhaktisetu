@@ -579,12 +579,71 @@ const STATEMENTS: string[] = [
     ON "dsar_requests" ("user_id", "created_at" DESC)`,
   `CREATE INDEX IF NOT EXISTS "dsar_requests_sla_idx"
     ON "dsar_requests" ("sla_deadline") WHERE "resolved_at" IS NULL`,
-  `DO $$ BEGIN
+  `DO $ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'dsar_requests_user_id_fkey') THEN
       ALTER TABLE "dsar_requests" ADD CONSTRAINT "dsar_requests_user_id_fkey"
         FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
     END IF;
-  END $$`,
+  END $`,
+
+  // ─────────────────────────────────────────────────────────────────
+  // LC-DEL — in-app account deletion (2026-09-03).
+  // Apple Guideline 5.1.1(v) + Google Play both require it. Mirror of
+  // migrations/20260903000000_account_deletion, replayed here for the same
+  // reason every other table above is: Render's start command has historically
+  // bypassed migrate deploy, and a missing table turns the deletion surface
+  // into a 500 on a legally mandated flow.
+  //
+  // columns are the tombstone state. See the service for why.
+  // ─────────────────────────────────────────────────────────────────
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deletion_requested_at" TIMESTAMPTZ`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deletion_purge_after" TIMESTAMPTZ`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deleted_at" TIMESTAMPTZ`,
+  `CREATE INDEX IF NOT EXISTS "users_deletion_purge_after_idx"
+    ON "users" ("deletion_purge_after")
+    WHERE "deleted_at" IS NULL AND "deletion_purge_after" IS NOT NULL`,
+  `CREATE INDEX IF NOT EXISTS "users_deleted_at_idx"
+    ON "users" ("deleted_at") WHERE "deleted_at" IS NOT NULL`,
+
+  // 80G(5)/Form 10BE require the donor's NAME beside the PAN. The receipt
+  // generator reads user.fullName live, so the name has to be frozen onto the
+  // donation before the user row becomes a tombstone.
+  `ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "donor_name_snapshot" TEXT`,
+
+  `CREATE TABLE IF NOT EXISTS "account_deletion_requests" (
+    "id"              UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id"         UUID NOT NULL,
+    "status"          TEXT NOT NULL DEFAULT 'pending_confirmation',
+    "code_hash"       TEXT,
+    "code_expires_at" TIMESTAMPTZ,
+    "code_attempts"   INTEGER NOT NULL DEFAULT 0,
+    "channel"         TEXT,
+    "reason"          TEXT,
+    "requested_at"    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "confirmed_at"    TIMESTAMPTZ,
+    "purge_after"     TIMESTAMPTZ,
+    "purged_at"       TIMESTAMPTZ,
+    "cancelled_at"    TIMESTAMPTZ,
+    "warnings"        JSONB,
+    "created_at"      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updated_at"      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT "account_deletion_requests_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "account_deletion_requests_user_idx"
+    ON "account_deletion_requests" ("user_id", "created_at" DESC)`,
+  `CREATE INDEX IF NOT EXISTS "account_deletion_requests_due_idx"
+    ON "account_deletion_requests" ("purge_after") WHERE "status" = 'scheduled'`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "account_deletion_requests_one_live_per_user"
+    ON "account_deletion_requests" ("user_id")
+    WHERE "status" IN ('pending_confirmation', 'scheduled')`,
+  `DO $ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'account_deletion_requests_user_id_fkey') THEN
+      ALTER TABLE "account_deletion_requests" ADD CONSTRAINT "account_deletion_requests_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END $`,
 ];
 
 /**

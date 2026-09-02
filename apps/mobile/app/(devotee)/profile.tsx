@@ -5,29 +5,83 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
+  Modal,
+  ActivityIndicator,
   Alert,
+  Linking,
+  Share,
   RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useBookings, useUserAddresses } from '@poojly/api-client';
+import { api, useBookings, useUserAddresses } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { selectAddresses, selectBookingTotal } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { HAS_80G } from '../../lib/eighty-g';
+import { HELP_CENTRE_LABEL, openHelpCentre } from '../../lib/help-centre';
+import { webOrigin, hostOf } from '../../lib/web-origin';
+import { openWebHandoff, type WebHandoff } from '../../lib/in-app-web';
+import { WEBVIEW_AVAILABLE } from '../../lib/webview-module';
+import { NRI_PREMIUM_IS_SELLABLE } from '../../lib/nri-premium-availability';
 // AUTH-09: the confirmation used to ask "Are you sure?" without saying what
 // it was sure about. POST /auth/logout defaults to scope 'global'.
 import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
+/**
+ * SIX DEAD CONTROLS — and why the fix is a type, not six handlers.
+ *
+ * This screen used to end `handleQuickLink` with an `Alert.alert` apologising
+ * that the feature was not built yet, and `LinkRow` defaulted an ABSENT
+ * `onPress` to the same apology. Between them, `subscription`,
+ * `settings`, `help`, `about`, `share` and the Edit Profile button all
+ * advertised a feature and delivered an apology. Google Play files
+ * advertised-but-inert UI under Broken Functionality / Minimum Functionality and
+ * Apple under Guideline 2.1, so this was a review risk on both stores as well as
+ * a lie to the devotee.
+ *
+ * Wiring the six is only half of it. The structural half is that BOTH escape
+ * hatches are gone: `LinkRow.onPress` is required, so a row cannot be rendered
+ * without a handler; and `handleQuickLink` takes the `QuickLinkId` union and
+ * ends in a `never` assignment, so adding an id to either list below without
+ * handling it fails `tsc` instead of shipping another apology.
+ */
+type QuickLinkId =
+  | 'bookings'
+  | 'messages'
+  | 'consultations'
+  | 'subscription'
+  | 'addresses'
+  | 'settings'
+  | 'list-business'
+  | 'support'
+  | 'help'
+  | 'about'
+  | 'share';
+
 interface QuickLink {
-  id: string;
+  id: QuickLinkId;
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
   subtitle: string;
   color: string;
   badge?: string;
 }
+
+/**
+ * The website this build belongs to. Never `https://darshya.online` written out
+ * — a development build must hand off to ITS OWN site. See lib/web-origin.ts.
+ */
+const WEB = webOrigin();
+
+const HANDOFF_OPTS = { webViewAvailable: WEBVIEW_AVAILABLE, origin: WEB.origin };
+
+const ABOUT_TARGET: WebHandoff = {
+  url: `${WEB.origin}/about`,
+  title: 'About Darshya',
+};
 
 const quickLinks: QuickLink[] = [
   {
@@ -56,7 +110,13 @@ const quickLinks: QuickLink[] = [
     id: 'subscription',
     icon: 'diamond',
     label: 'Subscription',
-    subtitle: 'Manage your Darshya Premium',
+    // The row is KEPT and routed to (devotee)/upgrade even though
+    // NRI_PREMIUM_IS_SELLABLE is false — see `handleQuickLink` for why. What
+    // changes with the gate is the promise: "manage your Premium" is not
+    // something this row can deliver while nothing is on sale.
+    subtitle: NRI_PREMIUM_IS_SELLABLE
+      ? 'Manage your Darshya Premium'
+      : 'Plan status — Premium is not on sale',
     color: colors.amber[500],
   },
   {
@@ -70,7 +130,10 @@ const quickLinks: QuickLink[] = [
     id: 'settings',
     icon: 'settings',
     label: 'Settings',
-    subtitle: 'Language, notifications, privacy',
+    // Was "Language, notifications, privacy". There is no i18n layer in this
+    // app, so the settings screen deliberately ships no language switcher and
+    // this subtitle no longer promises one. See app/(devotee)/settings.tsx.
+    subtitle: 'Notifications, privacy, and terms',
     color: colors.stone[600],
   },
 ];
@@ -84,17 +147,39 @@ const moreLinks: QuickLink[] = [
     color: colors.saffron[600],
   },
   {
+    /*
+     * Until this row existed, `app/(devotee)/support.tsx` was ORPHANED: a
+     * `grep -rn "devotee)/support" apps/mobile/app` matched only a COMMENT.
+     * The screen was built, declared `href: null` in _layout.tsx, and reachable
+     * from nowhere — so filing a support ticket was impossible from the phone,
+     * whatever the tab bar or the route table said. This is the only control in
+     * the app that opens it.
+     *
+     * It sits ABOVE Help Center deliberately: the two are different promises.
+     * Help Center is self-serve articles on the web; this is a human, and the
+     * subtitle says which.
+     */
+    id: 'support',
+    icon: 'chatbox-ellipses',
+    label: 'Contact Support',
+    subtitle: 'File a ticket and read replies from our team',
+    color: colors.amber[600],
+  },
+  {
     id: 'help',
     icon: 'help-circle',
-    label: 'Help & Support',
-    subtitle: 'FAQs and customer support',
+    // I18N-09 named the destination in the label so a control cannot advertise
+    // one place and open another; the same rule applies to the subtitle, which
+    // used to promise "customer support" this row does not reach.
+    label: HELP_CENTRE_LABEL,
+    subtitle: `Guides and FAQs on ${hostOf(WEB.origin)}`,
     color: colors.stone[500],
   },
   {
     id: 'about',
     icon: 'information-circle',
     label: 'About Darshya',
-    subtitle: 'Our mission and story',
+    subtitle: `Our mission and story on ${hostOf(WEB.origin)}`,
     color: colors.saffron[500],
   },
   {
@@ -166,9 +251,16 @@ const ONBOARD_OPTIONS: OnboardOption[] = [
   },
 ];
 
-function LinkRow({ link, onPress }: { link: QuickLink; onPress?: () => void }) {
+/**
+ * `onPress` is REQUIRED. It used to be optional, with an apologetic
+ * `Alert.alert(link.label, …)`
+ * as the default, which meant every future row shipped inert unless somebody
+ * remembered to wire it. Making the prop required moves that from a discipline
+ * problem to a compile error.
+ */
+function LinkRow({ link, onPress }: { link: QuickLink; onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.linkRow} activeOpacity={0.6} onPress={onPress ?? (() => Alert.alert(link.label, 'This feature is coming soon!'))}>
+    <TouchableOpacity style={styles.linkRow} activeOpacity={0.6} onPress={onPress}>
       <View style={[styles.linkIcon, { backgroundColor: `${link.color}14` }]}>
         <Ionicons name={link.icon} size={20} color={link.color} />
       </View>
@@ -193,11 +285,14 @@ function getInitials(name?: string | null): string {
 }
 
 export default function ProfileScreen() {
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, refreshUser } = useAuth();
   const bookingsQuery = useBookings();
   const addressesQuery = useUserAddresses();
   const [refreshing, setRefreshing] = useState(false);
   const [showOnboardOptions, setShowOnboardOptions] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ fullName: '', email: '' });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // PAR-02: the envelopes are {success,bookings,pagination} and
   // {success,addresses}. Reading `.data` made both counters permanently 0.
@@ -231,28 +326,166 @@ export default function ProfileScreen() {
     router.push('/(auth)/login' as any);
   }
 
-  function handleQuickLink(id: string) {
-    if (id === 'bookings') {
-      router.push('/(devotee)/bookings' as any);
+  /*
+   * EDIT PROFILE — wired, because the endpoint is real.
+   *
+   * `PATCH /api/v1/users/me` (apps/api/src/routes/users.ts:120) accepts
+   * fullName, email, gotra, nakshatra, rashi, preferredLanguage, locationCity,
+   * locationState, isNri and nriCountry, and returns the updated user. Only the
+   * two fields this card already displays are edited here; the astrological and
+   * NRI fields belong to a fuller form, and adding inputs for values this screen
+   * never shows would be its own kind of invention.
+   *
+   * NOT `useUpdateProfile` from @poojly/api-client. That hook is typed with
+   * `UpdateProfile` from @poojly/shared, whose field is `displayName` — the
+   * route's own Zod schema has no such key and `z.object` STRIPS unknown ones,
+   * so a rename sent through that hook is accepted with 200 and silently
+   * discarded. Raw `api.patch` with the field names the route actually parses
+   * is the same pattern app/(astrologer)/availability.tsx uses, and it cannot
+   * quietly no-op.
+   */
+  function openEditProfile() {
+    setEditForm({ fullName: user?.fullName ?? '', email: user?.email ?? '' });
+    setEditOpen(true);
+  }
+
+  async function handleSaveProfile() {
+    const fullName = editForm.fullName.trim();
+    const email = editForm.email.trim();
+
+    if (fullName.length < 1 || fullName.length > 100) {
+      Alert.alert('Name required', 'Enter a name of 1 to 100 characters.');
       return;
     }
-    if (id === 'messages') {
-      router.push('/(devotee)/messages' as any);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      Alert.alert('Check the email', 'Enter a valid email address, or clear the field.');
       return;
     }
-    if (id === 'consultations') {
-      router.push('/(devotee)/consultations' as any);
+
+    // Send only what changed. The route treats an explicit null as "clear this
+    // field", so an untouched value must not be transmitted at all.
+    const payload: { fullName?: string; email?: string | null } = {};
+    if (fullName !== (user?.fullName ?? '')) payload.fullName = fullName;
+    if (email !== (user?.email ?? '')) payload.email = email === '' ? null : email;
+
+    if (Object.keys(payload).length === 0) {
+      setEditOpen(false);
       return;
     }
-    if (id === 'addresses') {
-      Alert.alert('Addresses', `${addressCount} saved address${addressCount === 1 ? '' : 'es'}.`);
-      return;
+
+    setSavingProfile(true);
+    try {
+      await api.patch('/api/v1/users/me', payload);
+      // The card reads from the auth context, not from the response, so the
+      // stored copy has to be re-fetched or the screen shows the old name.
+      await refreshUser();
+      setEditOpen(false);
+    } catch (err) {
+      Alert.alert(
+        'Could not save',
+        err instanceof Error ? err.message : 'Please check your connection and try again.',
+      );
+    } finally {
+      setSavingProfile(false);
     }
-    if (id === 'list-business') {
-      setShowOnboardOptions((v) => !v);
-      return;
+  }
+
+  async function handleShare() {
+    // Android ignores `url` and shares `message` alone, so the link lives in
+    // the message text; iOS gets both and renders the URL as a rich preview.
+    const url = WEB.origin;
+    try {
+      await Share.share(
+        {
+          title: 'Darshya',
+          message: `Darshya — live darshan, puja bookings with video proof, and daily panchang from temples across India.\n\n${url}`,
+          url,
+        },
+        { dialogTitle: 'Share Darshya', subject: 'Darshya' },
+      );
+    } catch (err) {
+      // A dismissed sheet resolves, it does not reject — a rejection here is a
+      // real failure to open the sheet at all, and saying so beats silence.
+      Alert.alert(
+        'Could not open the share sheet',
+        err instanceof Error ? err.message : 'Please try again.',
+      );
     }
-    Alert.alert('Coming Soon', 'This feature is coming soon!');
+  }
+
+  function handleQuickLink(id: QuickLinkId) {
+    switch (id) {
+      case 'bookings':
+        router.push('/(devotee)/bookings' as any);
+        return;
+      case 'messages':
+        router.push('/(devotee)/messages' as any);
+        return;
+      case 'consultations':
+        router.push('/(devotee)/consultations' as any);
+        return;
+      case 'subscription':
+        /*
+         * ROUTED, NOT HIDDEN — and this is a decision, not a default.
+         *
+         * `lib/nri-premium-availability.ts` has NRI_PREMIUM_IS_SELLABLE false,
+         * so (devotee)/upgrade renders no purchase CTA. It is NOT a dead end:
+         * for a devotee who already holds a plan it renders "You are already
+         * Premium" plus where to manage it, and for everyone else it renders
+         * NRI_PREMIUM_WITHDRAWN_NOTICE verbatim — that the plan was withdrawn,
+         * that nothing was billed, and that existing subscriptions keep running
+         * to their end date.
+         *
+         * Hiding the row would therefore strand exactly the people the notice
+         * says still have a subscription, with no way to see its status from
+         * inside the app. The subtitle carries the honesty instead: it reads
+         * "Plan status — Premium is not on sale" while the gate is closed, and
+         * flips back to "Manage your Darshya Premium" in the same change that
+         * re-opens the sale.
+         */
+        router.push('/(devotee)/upgrade' as any);
+        return;
+      case 'addresses':
+        // Was `Alert.alert('Addresses', '<n> saved addresses')` — a real count
+        // read from the real endpoint, and nowhere to go with it. The devotee
+        // could not read, add, correct or remove a single one, while
+        // (devotee)/checkout.tsx refused to place a store order without a saved
+        // address and told them to "Add one under Profile".
+        router.push('/(devotee)/addresses' as any);
+        return;
+      case 'support':
+        router.push('/(devotee)/support' as any);
+        return;
+      case 'settings':
+        router.push('/(devotee)/settings' as any);
+        return;
+      case 'list-business':
+        setShowOnboardOptions((v) => !v);
+        return;
+      case 'help':
+        // The helper is the one place the destination is decided, and
+        // app/(devotee)/support.tsx already calls it exactly like this.
+        void openHelpCentre(Linking.openURL);
+        return;
+      case 'about':
+        // Same-origin, so this frames in-app the moment react-native-webview is
+        // installed and bounces to the browser until then. Either way it opens
+        // the real page rather than describing one.
+        openWebHandoff(ABOUT_TARGET, HANDOFF_OPTS, {
+          push: (r) => router.push(r as never),
+          openExternal: Linking.openURL,
+        });
+        return;
+      case 'share':
+        void handleShare();
+        return;
+      default: {
+        // Exhaustiveness. A new QuickLinkId with no case above fails tsc here
+        // rather than reaching a devotee as another apology.
+        const unhandled: never = id;
+        return unhandled;
+      }
+    }
   }
 
   const dynamicQuickLinks: QuickLink[] = quickLinks.map((l) => {
@@ -297,7 +530,14 @@ export default function ProfileScreen() {
                   </View>
                 ) : null}
               </View>
-              <TouchableOpacity style={styles.editButton} activeOpacity={0.7} onPress={() => Alert.alert('Edit Profile', 'Profile editing coming soon!')}>
+              <TouchableOpacity
+                style={styles.editButton}
+                activeOpacity={0.7}
+                onPress={openEditProfile}
+                accessibilityRole="button"
+                accessibilityLabel="Edit profile"
+                accessibilityHint="Change your name and email address"
+              >
                 <Ionicons name="create-outline" size={18} color={colors.saffron[600]} />
               </TouchableOpacity>
             </>
@@ -435,6 +675,70 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={editOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity
+                onPress={() => setEditOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <Ionicons name="close" size={22} color={colors.stone[500]} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.fieldLabel}>Full name</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.fullName}
+              onChangeText={(fullName) => setEditForm((f) => ({ ...f, fullName }))}
+              placeholder="Your name"
+              placeholderTextColor={colors.stone[300]}
+              autoCapitalize="words"
+              maxLength={100}
+              editable={!savingProfile}
+            />
+
+            <Text style={styles.fieldLabel}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.email}
+              onChangeText={(email) => setEditForm((f) => ({ ...f, email }))}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.stone[300]}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!savingProfile}
+            />
+            <Text style={styles.fieldHint}>
+              Your phone number is your sign-in identity and cannot be changed here.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, savingProfile && styles.saveBtnBusy]}
+              activeOpacity={0.8}
+              onPress={() => void handleSaveProfile()}
+              disabled={savingProfile}
+              accessibilityRole="button"
+              accessibilityLabel="Save profile"
+            >
+              {savingProfile ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.saveBtnText}>Save</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -708,5 +1012,66 @@ const styles = StyleSheet.create({
   footerCopyright: {
     fontSize: fontSize.xs,
     color: colors.stone[300],
+  },
+  // Edit Profile
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  modalTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: '800',
+    color: colors.stone[900],
+  },
+  fieldLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.stone[600],
+    marginBottom: spacing.xs,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.stone[200],
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    fontSize: fontSize.base,
+    color: colors.stone[900],
+    backgroundColor: colors.stone[50],
+    marginBottom: spacing.md,
+  },
+  fieldHint: {
+    fontSize: fontSize.xs,
+    color: colors.stone[400],
+    marginBottom: spacing.md,
+  },
+  saveBtn: {
+    backgroundColor: colors.saffron[600],
+    borderRadius: borderRadius.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnBusy: {
+    opacity: 0.6,
+  },
+  saveBtnText: {
+    color: colors.white,
+    fontSize: fontSize.lg,
+    fontWeight: '700',
   },
 });

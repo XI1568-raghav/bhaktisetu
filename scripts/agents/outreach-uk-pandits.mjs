@@ -17,6 +17,11 @@
 // channels with placeholder slots for founder to populate.
 
 import { writeReport, TODAY, isoNow, WEB_BASE } from './_lib.mjs';
+// TC-01 / TC-08 — these drafts are partnership requests to Hindu Council UK
+// and named mandirs whose entire value to us is credential vouching, so an
+// unbacked vetting claim is the most expensive kind here. Both flags are read
+// from source of truth; see ./_claims.mjs.
+import { verifiedNoun, withEightyG } from './_claims.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -114,10 +119,10 @@ function loadRecipients() {
 // that appears here in future must be read from a data source, not typed in.
 function tractionFraming() {
   return [
-    'We are pre-launch in the UK. Our verified-pandit network, video-proof workflow and payout rails are live in India,',
+    `We are pre-launch in the UK. Our ${verifiedNoun('pandit')} network, video-proof workflow and payout rails are live in India,`,
     'and we are now looking for founding UK pandits to open the corridor with.',
     'We would rather not quote you diaspora numbers we cannot evidence — happy to walk you through the live platform',
-    'and our India onboarding and vetting process on a call.',
+    'and exactly what our India onboarding does and does not check today, on a call.',
   ].join(' ');
 }
 
@@ -126,7 +131,7 @@ function buildOutreachDraft(recipient) {
 
   const body = `Namaste,
 
-I'm Raghav, founder of Darshya (darshya.online), an India-first devotional super-app live since 2025 with verified pandits and temples across India. We're now opening UK supply for UK-based NRI families who want puja seva with video proof, INR pricing with an NRI tier, and trusted credentials.
+I'm Raghav, founder of Darshya (darshya.online), an India-first devotional super-app live since 2025 with ${verifiedNoun('pandits')} and verified temples across India. We're now opening UK supply for UK-based NRI families who want puja seva with video proof, INR pricing with an NRI tier, and trusted credentials.
 
 I'm writing to ${recipient.org} because ${recipient.role === 'umbrella'
   ? 'Hindu Council UK is the natural first stop to identify pandits and acharyas with verified credentials and community standing'
@@ -135,7 +140,7 @@ I'm writing to ${recipient.org} because ${recipient.role === 'umbrella'
 What we offer UK-resident pandits:
   - INR payouts via Razorpay to an Indian bank account or UPI (India-domiciled platform; UK pandits need an NRE/NRO or Indian account)
   - Booking pipeline from UK-based NRI devotees as the corridor opens
-  - Video proof workflow, 80G receipts where applicable, NRI 9-10× pricing tier
+  - Video proof workflow,${withEightyG(' 80G receipts where applicable,', ' numbered donation receipts (not tax-exemption certificates),')} NRI 9-10× pricing tier
   - ${PLATFORM_TAKE_RATE_PCT}% platform commission, ${PROVIDER_SHARE_PCT}% to the pandit — no listing fee
   - Lifecycle automation — onboarding emails, slot management, dispute resolution
 
@@ -225,7 +230,7 @@ ${d.body}
 - [ ] Pick one institution to send today; queue rest 7 days apart
 - [ ] Log each send in CRM with date + institution name
 - [ ] Track responses; if no response in 14 days, do NOT auto-follow-up (recommend founder personal LinkedIn message instead)
-- [ ] Update \`docs/supply/R-Q3-S-006-uk-pandits-handoff.md\` KPI section weekly with verified pandit count
+- [ ] Update \`docs/supply/R-Q3-S-006-uk-pandits-handoff.md\` KPI section weekly with ${verifiedNoun('pandit')} count
 `;
 
   writeReport('uk-pandit-outreach', md);

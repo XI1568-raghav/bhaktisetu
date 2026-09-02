@@ -49,9 +49,20 @@ export function ListYourBusinessDropdown() {
          * across breakpoints for a screen-reader user.
          */
         aria-label="List your business"
+        title="List your business"
         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors whitespace-nowrap"
       >
         <Briefcase className="w-3.5 h-3.5" />
+        {/* Both label variants are REQUIRED, not decorative: HN-06 is the
+            finding that a laptop had no discoverable route to listing, and
+            __tests__/hn06-list-business-breakpoint.test.tsx pins the short form
+            below 2xl and the full form at 2xl.
+            An earlier pass here made this icon-only to reclaim ~105px for the
+            category row. That fixed the geometry by giving up the very thing
+            HN-06 asked for. The space is taken from GlobalSearch instead — its
+            240px field now appears at 2xl rather than xl — because a search
+            field collapsing to an icon loses nothing a devotee needs, while an
+            unlabelled briefcase does. */}
         <span className="inline 2xl:hidden">For partners</span>
         <span className="hidden 2xl:inline">List your business</span>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />

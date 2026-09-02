@@ -529,8 +529,22 @@ export default function RootLayout({
    className="fixed top-0 left-0 right-0 z-50 bg-[#faf9f6]/85 backdrop-blur-xl backdrop-saturate-150 border-b border-transparent transition-[border,background] duration-200"
    style={{ WebkitBackdropFilter: 'saturate(180%) blur(20px)' }}
  >
+ {/* `gap-2`, not `gap-3`: at 1024 the row was 6px short. Measured — nav 1009
+     wide, 2rem padding each side leaves 945, minus two 12px gaps leaves 921;
+     brand 89 + right cluster 393 are both shrink-0, so the category row got 439
+     against the 446 it needs and "Shop" clipped. Two 8px gaps instead of 12px
+     return exactly the 8px that closes it.
+
+     `.container-nav` — the header is CHROME, not content, and capping it
+     to the content column created an impossible budget at large viewports.
+     Measured: container-wide is max-width 1152 with 32px padding each side, so
+     1536 AND 1920 share an identical 1064px row. Meanwhile 2xl reveals the
+     wider search field and swaps "For partners" for the longer "List your
+     business" (HN-06 requires both variants), pushing the right cluster to 634
+     and leaving the five category buttons 341 of the 446 they need — "Shop"
+     clipped at the WIDEST screens, with 384px of unused viewport either side. */}
  <nav
- className="container-wide flex items-center h-16 gap-3"
+ className="container-wide container-nav flex items-center h-16 gap-2"
  aria-label="Main navigation"
  >
  {/* Logo — fixed left, shrink-0 */}
@@ -546,7 +560,11 @@ export default function RootLayout({
 
  {/* Desktop nav — center; flex-1 reserves space so right cluster never gets pushed off-screen.
      min-w-0 lets center shrink before it overflows. Hidden below lg (1024px) — drawer takes over. */}
- <div className="hidden lg:flex flex-1 items-center justify-center gap-1 min-w-0">
+ {/* `overflow-hidden` is a HARD guarantee, not styling. Measured at 1280px
+     this box was 275px against ~450px of category buttons, and the overflow
+     painted over the brand wordmark. Clipping is a visible bug someone fixes;
+     painting over the logo is a bug that ships. */}
+ <div className="hidden lg:flex flex-1 items-center justify-center gap-1 min-w-0 overflow-hidden">
  <CategoryNav />
  </div>
 
@@ -570,6 +588,10 @@ export default function RootLayout({
      the footer. It now appears at the standard lg breakpoint; the control
      itself shortens its visible label below 2xl so it fits at 1024px. Below
      lg the mobile drawer carries these links. */}
+ {/* Back at lg, which keeps HN-06 fixed — a 1280 laptop had no header route
+     to listing at all. The 141px it used to cost is reclaimed a better way:
+     the control is icon-only now, so it costs ~40px at EVERY width rather than
+     disappearing at the widths where supply-side entry matters most. */}
  <div className="hidden lg:block">
  <ListYourBusinessDropdown />
  </div>
@@ -582,7 +604,7 @@ export default function RootLayout({
  title="Today's panchang and aarti"
  >
  <Calendar className="w-4 h-4" />
- <span className="hidden xl:inline">Today</span>
+ <span className="sr-only">Today</span>
  </a>
 
  {/* Search — icon-only collapses to expand-on-click below xl */}
@@ -692,6 +714,22 @@ export default function RootLayout({
  label="Cookie settings"
  className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
  />
+ </li>
+ )}
+
+ {/* Google Play requires a publicly reachable, non-authenticated URL where a
+     user can request account deletion — /account/privacy does not qualify,
+     it sits behind AuthGuard. Plain English for the same reason as the
+     cookie link directly above: lib/i18n has no key for it, and a missing
+     key renders raw in the five non-English locales. */}
+ {section.titleKey === 'support' && (
+ <li key="support-data-deletion">
+ <a
+ href="/data-deletion"
+ className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
+ >
+ Delete My Account
+ </a>
  </li>
  )}
  </ul>

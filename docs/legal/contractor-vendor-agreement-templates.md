@@ -177,6 +177,14 @@ Date: ___________
 
 ## Doc 4 — Vendor Services Agreement (Razorpay/Resend/Render/Supabase)
 
+> **OPS-10 correction (2026-09-02).** The DPA block below carried *"Data
+> residency: India primary, Singapore standby"*. Neither half has ever been
+> true, and a residency line in a signed vendor agreement is a **warranty** —
+> the one clause a counterparty will quote back. It is replaced with an
+> explicit verify-before-signing gate rather than a different region, because
+> no verified region exists to substitute. Ground truth: `render.yaml:15`/`:56`
+> and `docs/runbooks/disaster-recovery.md`.
+
 ```
 VENDOR SERVICES AGREEMENT — STANDARD TERMS
 
@@ -192,7 +200,16 @@ SCOPE
 DATA PROCESSING ADDENDUM (DPA)
 - Per DPDP + GDPR/CCPA applicable
 - Vendor processes data only per Bhaktisetu instructions
-- Data residency: India primary, Singapore standby
+- Data residency — primary: [VERIFY BEFORE SIGNING — do not copy a region in
+  from memory. Application + API run on Render `oregon` (US West) per
+  render.yaml:15 and :56. The Supabase database region is not recorded in this
+  repository; read it from the Supabase dashboard and state it here.]
+- Data residency — standby: NONE. There is no standby region, read replica or
+  warm spare. Do not represent one. (The earlier "Singapore standby" line was
+  false — see docs/runbooks/disaster-recovery.md.)
+- Cross-border transfer: personal data IS processed outside India today,
+  because the application tier is US-hosted. Reconcile the "Indian compliance
+  jurisdiction acknowledged" line above with that fact before signing.
 - Sub-processors disclosed + approved
 
 SECURITY REQUIREMENTS

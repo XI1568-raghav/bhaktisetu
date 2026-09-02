@@ -215,6 +215,22 @@ const SWEPT = [
   'app/priest/services/page.tsx',
   'app/payouts/page.tsx',
   'app/weddings/inquiry/page.tsx',
+  // RES-09 residual, closed 2026-09-02. The pandit portal was swept file by
+  // file; the widget the portal EMBEDS was not. Both its catches rendered
+  // `e.message`, and the first one rethrows a Supabase `StorageError` — so a
+  // refused upload showed the storage layer's wording, "new row violates
+  // row-level security policy" among it. Video proof is mandatory for every
+  // puja booking, which makes this the screen between a finished puja and the
+  // pandit being paid for it.
+  //
+  // app/upgrade/page.tsx is deliberately NOT in this list even though it was
+  // fixed in the same pass: its throw now builds `HTTP ${res.status}` purely to
+  // hand the classifier a status it can read, and that string never reaches a
+  // render. The status sweep below cannot tell those two uses apart, so that
+  // page is covered behaviourally instead — see
+  // __tests__/res09-auth06-upgrade-and-video-proof.test.tsx, which asserts the
+  // rendered DOM contains no status code.
+  'components/provider/VideoProofUpload.tsx',
 ];
 
 describe('RES-09 — no raw developer text reaches a provider or a devotee', () => {

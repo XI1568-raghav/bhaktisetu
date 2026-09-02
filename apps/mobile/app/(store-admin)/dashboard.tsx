@@ -12,11 +12,17 @@ import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing } from '../../lib/theme';
 import { storeOrderStatusLabel } from '../../lib/enum-labels';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 function inr(v: number | undefined): string {
   return `₹${(v ?? 0).toLocaleString('en-IN')}`;
 }
 
 export default function StoreDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const productsQuery = useProducts();
   const dashboardQuery = useStoreAdminDashboard();
   const [refreshing, setRefreshing] = useState(false);

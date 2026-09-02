@@ -4,9 +4,23 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { platformRateOf } from '../lib/commission-math.js';
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
+// P0 #S-04 (2026-07-09): the store path never wrote commissions, so store
+// owners' earnings sat at ₹0. The writer that closed it was then copied into
+// BOTH this file and store-commission.service.ts — which calls itself "the
+// single shared writer" — so the same money arithmetic existed twice and the
+// same attribution bug had to be fixed twice (2026-09-02: a hard-deleted
+// product silently cancelled the owner's commission). One copy now.
+import { writeStoreOrderCommission } from './store-commission.service.js';
 import {
   reverseBookingLedger,
   reduceBookingLedgerForPartialRefund,
+  // OPS-05: the SHARED COMMISSION_REVERSED emitter. It lives beside the unwind
+  // it describes so the four rails that unwind cannot drift into three
+  // different audit stories — which is the same failure mode the unwind itself
+  // was extracted to end (DI-01).
+  recordLedgerReversal,
+  type LedgerReversalResult,
+  type PartialLedgerResult,
 } from './ledger-reversal.service.js';
 // PAY-03: ONE implementation of the "which Razorpay refund ids have already
 // been applied to this Payment" rule, shared by both refund rails and the
@@ -551,81 +565,6 @@ async function fireAndForgetPostConfirmSideEffects(
   })();
 }
 
-// P0 #S-04 (2026-07-09): write a Commission row for a confirmed store order.
-// The puja path has written commissions since launch, but the store path never
-// did — store owners' payouts were silently never recorded (earnings ₹0). This
-// resolves the store from the order's first line item's product (StoreOrder
-// has no direct storeProfileId FK until S-11 lands), reads the store's
-// platform commission rate, and writes a PENDING Commission row for the
-// store-owner's share (providerId = storeProfile.userId). Idempotent: a
-// duplicate confirm (webhook + client verify) does not double-write.
-async function writeStoreOrderCommissionOnConfirm(
-  storeOrderId: string,
-  tx: TxClient = prisma,
-): Promise<void> {
-  const existing = await tx.commission.findFirst({
-    where: { storeOrderId },
-    select: { id: true },
-  });
-  if (existing) return;
-
-  const order = await tx.storeOrder.findUnique({
-    where: { id: storeOrderId },
-    select: {
-      id: true,
-      totalAmountInr: true,
-      items: true,
-    },
-  });
-  if (!order) return;
-
-  // Resolve the owning store via the first line item's product. items is
-  // [{ productId, qty, priceAtPurchase }, ...]. Mixed-store carts are not
-  // supported (single store per order) — see S-11 for the proper FK.
-  const items = Array.isArray(order.items) ? (order.items as Array<{ productId?: string }>) : [];
-  const firstProductId = items.find((it) => it?.productId)?.productId;
-  if (!firstProductId) return;
-
-  const product = await tx.storeProduct.findUnique({
-    where: { id: firstProductId },
-    select: { storeProfileId: true },
-  });
-  if (!product?.storeProfileId) return;
-
-  const storeProfile = await tx.storeProfile.findUnique({
-    where: { id: product.storeProfileId },
-    select: { userId: true, commission: true },
-  });
-  if (!storeProfile) return;
-
-  // storeProfile.commission is the PLATFORM's cut (default 0.20). The store
-  // owner's earnings = total * (1 - commission). The Commission row records
-  // the provider's (store owner's) amount + the platform percentage for the
-  // ledger. Decimal arithmetic — never coerce money to JS Number.
-  const total = new Prisma.Decimal(order.totalAmountInr as Prisma.Decimal);
-  const platformRate = new Prisma.Decimal(storeProfile.commission as Prisma.Decimal);
-  const storeShare = total.mul(new Prisma.Decimal(1).minus(platformRate));
-  const percentage = total.gt(0) ? platformRate : new Prisma.Decimal(0);
-
-  // DI-06: same reasoning as writePujaCommissionOnConfirm above — the UNIQUE
-  // index `commissions_store_order_id_key` makes a lost race a P2002 that
-  // aborts the enclosing capture transaction, so the INSERT is conflict
-  // tolerant. Nothing downstream needs the row's id here, so there is no
-  // read-back: a skipped insert and a written one are indistinguishable to this
-  // caller, which is exactly the idempotency the findFirst guard promises.
-  await tx.commission.createMany({
-    data: [
-      {
-        storeOrderId: order.id,
-        providerId: storeProfile.userId,
-        amount: storeShare,
-        percentage,
-        status: 'PENDING',
-      },
-    ],
-    skipDuplicates: true,
-  });
-}
 
 // ─── Razorpay client ────────────────────────────────────────────────────────────
 
@@ -1277,7 +1216,7 @@ export class PaymentService {
         // owners' payouts were silently never recorded. A failure now rolls
         // back the whole capture+confirm (no captured payment without a ledger
         // row). Idempotent via the findFirst guard inside.
-        await writeStoreOrderCommissionOnConfirm(storeOrder.id, tx);
+        await writeStoreOrderCommission(storeOrder.id, tx);
       }
     });
     if (shouldConfirm) {
@@ -1634,7 +1573,7 @@ export class PaymentService {
                     ] as Prisma.InputJsonValue[],
                   },
                 });
-                await writeStoreOrderCommissionOnConfirm(storeOrder.id, tx);
+                await writeStoreOrderCommission(storeOrder.id, tx);
               }
             });
             // OPS-05 — same capture event, the store-order rail.
@@ -1811,6 +1750,11 @@ export class PaymentService {
           const newRefundTotal = alreadyRefunded.plus(applied);
           const isFullRefund = newRefundTotal.gte(paid);
 
+          // OPS-05: captured out of the transaction, recorded after it commits.
+          let webhookFullReversal: LedgerReversalResult | null = null;
+          let webhookPartialReversal: PartialLedgerResult | null = null;
+          let webhookUnwindReason = '';
+
           await prisma.$transaction(async (tx) => {
             await tx.payment.update({
               where: { id: payment.id },
@@ -1835,14 +1779,19 @@ export class PaymentService {
             // Same shared module both rails use; never a fourth copy.
             if (payment.bookingId && applied.gt(0)) {
               const reason = `Razorpay ${event} ${refundEntity.id ?? ''}`.trim();
+              webhookUnwindReason = reason;
               if (isFullRefund) {
-                await reverseBookingLedger(tx, payment.bookingId, reason);
+                webhookFullReversal = await reverseBookingLedger(tx, payment.bookingId, reason);
               } else {
-                await reduceBookingLedgerForPartialRefund(tx, payment.bookingId, {
-                  refundAmount: applied,
-                  refundableBefore,
-                  reason,
-                });
+                webhookPartialReversal = await reduceBookingLedgerForPartialRefund(
+                  tx,
+                  payment.bookingId,
+                  {
+                    refundAmount: applied,
+                    refundableBefore,
+                    reason,
+                  },
+                );
               }
             }
           });
@@ -1873,6 +1822,33 @@ export class PaymentService {
               refundableBefore: refundableBefore.toFixed(2),
             },
           });
+
+          // OPS-05 — the ledger unwind this branch performs, recorded through
+          // the SAME shared emitter the admin rail uses. This is the rail with
+          // the least surrounding context of all four: a refund raised straight
+          // in the Razorpay dashboard leaves no request, no admin id and no
+          // reason of ours, so if the claw-back is not recorded here the trail
+          // shows a gateway refund and a provider balance that changed for no
+          // reason anyone can point at. Awaited for the durability probe; never
+          // throws.
+          if (payment.bookingId) {
+            await recordLedgerReversal({
+              bookingId: payment.bookingId,
+              rail: 'razorpay-webhook',
+              reason: webhookUnwindReason || `razorpay webhook ${event}`,
+              // A dashboard refund is Razorpay acting, not our admin panel —
+              // 'gateway' is a different fact from 'admin' and folding the two
+              // together is what makes a refund trail useless in a dispute.
+              actorType: 'gateway',
+              actorId: null,
+              paymentId: payment.id,
+              currency: payment.currency,
+              gatewayRefundId: refundEntity.id ?? null,
+              idempotencyKey: refundEntity.id ?? null,
+              full: webhookFullReversal,
+              partial: webhookPartialReversal,
+            });
+          }
         }
 
         return { handled: true, event };
@@ -2063,6 +2039,13 @@ export class PaymentService {
     const newRefundTotal = alreadyRefunded.plus(refundAmount);
     const newPaymentStatus = isFullRefund ? 'refunded' : 'partially_refunded';
 
+    // OPS-05: the unwind's OWN result, captured out of the transaction so the
+    // COMMISSION_REVERSED row can be written after it commits. Declared here
+    // rather than returned from the `$transaction` callback because the two
+    // branches produce two different shapes and only one of them runs.
+    let fullReversal: LedgerReversalResult | null = null;
+    let partialReversal: PartialLedgerResult | null = null;
+
     // 4. Persist. Razorpay has already debited us; if the Payment write lands
     //    and the PujaBooking write does not, the devotee is refunded while the
     //    booking still looks live. Commit them together (refund.service does
@@ -2109,7 +2092,7 @@ export class PaymentService {
         // silently. refund.service has reversed correctly since RV-02; this
         // rail was simply never backported, so the two now share one
         // implementation instead of two copies that can drift again.
-        await reverseBookingLedger(tx, bookingId, reason);
+        fullReversal = await reverseBookingLedger(tx, bookingId, reason);
       } else {
         await tx.pujaBooking.update({
           where: { id: bookingId },
@@ -2137,7 +2120,7 @@ export class PaymentService {
         // `refundable` is what was still refundable BEFORE this call
         // (paid - alreadyRefunded), which is what makes successive partials
         // compose to the same ledger as one combined refund.
-        await reduceBookingLedgerForPartialRefund(tx, bookingId, {
+        partialReversal = await reduceBookingLedgerForPartialRefund(tx, bookingId, {
           refundAmount,
           refundableBefore: refundable,
           reason,
@@ -2174,6 +2157,35 @@ export class PaymentService {
         refundedTotal: newRefundTotal.toFixed(2),
         fullyRefunded: isFullRefund,
       },
+    });
+
+    // OPS-05 — and the SECOND half of the same story. REFUND_COMPLETED above
+    // says the devotee got money back; it says nothing about whether the
+    // pandit's 80% and the temple's share were clawed back with it. Those are
+    // separate facts and the second one is the disputable one: booking
+    // BS-20260812-J3M76 was refunded ₹1,151 on this rail and a ₹770 payout was
+    // still raised against it. `recordLedgerReversal` is the shared emitter in
+    // ledger-reversal.service.ts — it skips when nothing moved, and it records
+    // even when the unwind was BLOCKED by an already-settled row, which is the
+    // double-pay case and the one that must never be silent.
+    //
+    // Awaited, not `void`ed: the emitter's full path re-reads committed rows to
+    // prove the reversal survived, so it must not race the response. It never
+    // throws (same contract as `recordMoneyEvent`).
+    await recordLedgerReversal({
+      bookingId: booking.id,
+      rail: 'admin',
+      reason,
+      actorType: adminId ? 'admin' : 'system',
+      actorId: adminId ?? null,
+      paymentId: payment.id,
+      currency: payment.currency,
+      gatewayRefundId: refund.id,
+      // Bare natural key — the emitter namespaces it by event type, so sharing
+      // the refund id with REFUND_COMPLETED above yields two rows, not one.
+      idempotencyKey: refund.id,
+      full: fullReversal,
+      partial: partialReversal,
     });
 
     // NOTIF-04 (2026-08-12): TELL THE DEVOTEE. This rail was 100% silent.

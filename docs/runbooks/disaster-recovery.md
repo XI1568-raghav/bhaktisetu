@@ -108,6 +108,14 @@ account reached 750.2 / 750 and Render suspended **both** services with
 5. The API start command runs `prisma migrate deploy` before serving. A restored
    database whose `_prisma_migrations` table is empty will re-run every migration
    on the next boot — read `docs/runbooks/db-restore.md` before repointing.
+   **That re-run cannot succeed.** Measured 2026-09-02 against an empty
+   PostgreSQL 17.10 with pgvector: `migrate deploy` dies on migration 1 of 41,
+   `20260426_pgvector`, with `42P01 relation "content_items" does not exist` —
+   there is no `0_init`, so the migration history cannot build the schema. If
+   you are restoring onto an EMPTY database rather than from a dump, use
+   `apps/api/scripts/bootstrap-fresh-db.mjs`
+   (`docs/runbooks/fresh-database-bootstrap.md`), which applies the baseline and
+   records the history so the next boot has nothing pending.
 
 ## Scenario 3 — a bad deploy
 

@@ -92,7 +92,7 @@ export default function MobileContent() {
 
  {/* Mini Player */}
  {playing && (
- <div className="fixed bottom-[88px] left-1/2 -translate-x-1/2 w-[370px] bg-surface-900 rounded-2xl p-3 shadow-xl flex items-center gap-3 z-30">
+ <div className="fixed bottom-[88px] left-1/2 -translate-x-1/2 w-[min(370px,calc(100vw-2rem))] bg-surface-900 rounded-2xl p-3 shadow-xl flex items-center gap-3 z-30">
  <div className="w-10 h-10 rounded-lg bg-saffron-600 flex items-center justify-center shrink-0">
  <Play className="w-4 h-4 text-white fill-white ml-0.5" />
  </div>

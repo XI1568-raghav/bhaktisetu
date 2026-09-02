@@ -12,7 +12,9 @@ created_by: cmo-agent
 
 1/9 Stack we picked for Bhaktisetu and why. Built for solo-founder velocity + free-tier survival until ₹10L MRR. Thread for builders. <!-- 134/280 -->
 
-2/9 Frontend: Next 15 (App Router) on Cloudflare Pages. Free 500 builds/month, edge runtime, global CDN. Caveat: 3 MiB worker bundle cap forces discipline. We learned this the hard way at build #487. <!-- 209/280 -->
+2/9 Frontend: Next 15 (App Router) on Cloudflare Pages. Free 500 builds/month, edge runtime, global CDN. Caveat: 3 MiB worker bundle cap forces discipline.
+
+> **DO NOT POST AS WRITTEN — corrected 2026-09-02 (`OPS-10`).** The bundle cap in this very tweet is what killed the plan: the OpenNext bundle was 5.3 MiB gzip against a 3 MiB limit, and the web tier moved to a Render Docker service (`region: oregon`, `render.yaml:56`) on 2026-07-08. Cloudflare is DNS + edge proxy only. Publishing this would state a false stack publicly. We learned this the hard way at build #487. <!-- 209/280 -->
 
 3/9 Backend: Fastify 5 on Render free tier (750 hr/month, exactly one always-on instance). REST over /api/v1/*. No GraphQL — solo founder, no team to enforce schema discipline, REST is forgiving. <!-- 207/280 -->
 

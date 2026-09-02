@@ -90,8 +90,11 @@ Zod schemas + 2 enums. Pure schema, runs in <20ms.
 ## Free-tier impact
 
 - CF Pages builds: 0 (api-only diff, gets `[skip ci]`).
-- Render builds: 1 (auto on push to main; counted under Render free
-  hours, not build count).
+- Render builds: 0 unless someone dispatches one. `render.yaml` carries
+  `autoDeploy: false` for both services (`:28` API, `:60` web), so merging
+  this work ships nothing by itself; a deploy is an explicit
+  `render-diag.yml -f mode=deploy` dispatch and bills against Render free
+  instance-hours, not a build count.
 - Supabase: 2 new tables, ~negligible storage for the launch window.
 - Anthropic / GH Actions: 0.
 

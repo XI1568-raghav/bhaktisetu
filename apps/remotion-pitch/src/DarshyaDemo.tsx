@@ -20,6 +20,7 @@ import {
   useCurrentFrame,
   interpolate,
 } from 'remotion';
+import { RECEIPT_STAT } from './claims';
 import {
   VOID,
   WHITE,
@@ -402,7 +403,7 @@ const SpeedScene: React.FC = () => {
         {sub === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 60, alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: 80 }}>
-              {['Aadhaar', 'Video proof', '80G'].map((t, i) => (
+              {['Aadhaar', 'Video proof', RECEIPT_STAT].map((t, i) => (
                 <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                   <Toggle
                     on={subLocal > i * 20 + 10}

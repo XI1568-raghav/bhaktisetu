@@ -76,8 +76,10 @@ const stripComments = (s: string) => s.replace(/\/\/[^\n]*/g, ' ');
 const schema = readFileSync(schemaPath, 'utf8');
 const commissionBlock = modelBlock(schema, 'Commission');
 const templePayoutBlock = modelBlock(schema, 'TemplePayout');
+const paymentBlock = modelBlock(schema, 'Payment');
 const commission = stripComments(commissionBlock);
 const templePayout = stripComments(templePayoutBlock);
+const payment = stripComments(paymentBlock);
 
 describe('DI-06/DI-07 — schema.prisma money key declarations', () => {
   it('the comment stripper is actually doing something', () => {
@@ -99,6 +101,39 @@ describe('DI-06/DI-07 — schema.prisma money key declarations', () => {
 
   it('DI-07: TemplePayout indexes bookingId — Postgres does not index the referencing side of a FK', () => {
     expect(templePayout).toMatch(/@@index\(\[bookingId\]\)/);
+  });
+
+  /**
+   * DI-06/DI-07 (2026-09-02) — `payments`, which both earlier passes skipped
+   * as a whole table on the strength of one correct sentence about ONE of its
+   * guards (the state-scoped "at most one ACTIVE payment per booking", which
+   * genuinely does need a partial unique index Prisma cannot declare).
+   *
+   * Measured at HEAD before this change: model Payment declared exactly four
+   * @@index entries — gatewayPaymentId, userId, status, and
+   * [status, createdAt(sort: Desc)] — and zero @@unique. So:
+   *
+   *   gateway_order_id  no index at all, though verifyPayment
+   *                     (payment.service.ts:875) resolves the Payment row by it
+   *                     on every successful checkout, and three webhook
+   *                     branches plus jobs/reconcile-payments.ts do the same;
+   *   booking_id        no index at all, though the createOrder idempotency
+   *                     guard (payment.service.ts:770) filters on it INSIDE the
+   *                     payment path and the admin refund rail
+   *                     (routes/admin-bookings.ts:634) does too.
+   */
+  it('DI-07: Payment indexes gatewayOrderId — verifyPayment resolves by it on every checkout', () => {
+    expect(payment).toMatch(/@@index\(\[gatewayOrderId\]\)/);
+  });
+
+  it('DI-07: Payment indexes bookingId — the createOrder guard filters on it inside the payment path', () => {
+    expect(payment).toMatch(/@@index\(\[bookingId\]\)/);
+  });
+
+  it('the Payment block really is Payment, so the two assertions above are not reading another model', () => {
+    expect(payment).toMatch(/^model Payment \{/);
+    expect(payment).toMatch(/@map\("payments"\)/);
+    expect(payment).not.toMatch(/model (Commission|TemplePayout|PriestPayout)/);
   });
 });
 
@@ -246,6 +281,99 @@ describe('DI-06/DI-07 — the migration that ships the indexes', () => {
     expect(sql).not.toMatch(/\bALTER\s+COLUMN\b/i);
     expect(sql).not.toMatch(/\bDELETE\s+FROM\b/i);
     expect(sql).not.toMatch(/\bUPDATE\s+"?(commissions|temple_payouts)"?\b/i);
+    expect(sql).not.toMatch(/\bTRUNCATE\b/i);
+  });
+});
+
+/**
+ * DI-06/DI-07 (2026-09-02) — the migration that closes `payments`.
+ *
+ * Separate file, separate describe: `_prisma_migrations` stores a checksum per
+ * migration, and editing one that any environment has already applied is a
+ * checksum mismatch on that environment. Migrations auto-apply on API boot
+ * here, so that mismatch is an outage. Additive, never retroactive.
+ */
+describe('DI-06/DI-07 — the migration that closes the payments table', () => {
+  const dirs = readdirSync(migrationsDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name);
+
+  const dir = dirs.find((d) => /di0607_payment_gateway_key_indexes$/.test(d));
+
+  it('the migration exists', () => {
+    expect(
+      dir,
+      `no *_di0607_payment_gateway_key_indexes migration in ${migrationsDir}`,
+    ).toBeTruthy();
+  });
+
+  it('it sorts AFTER every migration that already existed when it was written', () => {
+    // `prisma migrate deploy` applies in lexicographic directory order. A new
+    // migration that sorts BEFORE an applied one is never executed on an
+    // environment that is already ahead of it.
+    const others = dirs.filter((d) => d !== dir);
+    expect(others.length).toBeGreaterThan(0);
+    expect(dir! > others.sort().at(-1)!).toBe(true);
+  });
+
+  const sqlRaw = dir ? readFileSync(`${migrationsDir}/${dir}/migration.sql`, 'utf8') : '';
+  const sql = sqlRaw.replace(/--[^\n]*/g, ' ');
+
+  it('the SQL comment stripper is actually doing something', () => {
+    expect(sqlRaw).toMatch(/--/);
+    expect(sql).not.toMatch(/--/);
+  });
+
+  it('DI-07: creates the two missing lookup indexes under Prisma default names', () => {
+    // The names are Prisma's own, so the @@index entries added to model Payment
+    // in the same change do not read as drift on the next `migrate dev`.
+    expect(sql).toMatch(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+"payments_gateway_order_id_idx"/i);
+    expect(sql).toMatch(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+"payments_booking_id_idx"/i);
+  });
+
+  it('DI-06: creates a UNIQUE index for both 1:1 gateway keys', () => {
+    for (const name of ['payments_gateway_order_id_key', 'payments_gateway_payment_id_key']) {
+      expect(sql, `missing UNIQUE index ${name}`).toMatch(
+        new RegExp(String.raw`CREATE\s+UNIQUE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+"${name}"`, 'i'),
+      );
+    }
+  });
+
+  it('DI-06: every UNIQUE index is duplicate-tolerant — a dirty table must not abort API boot', () => {
+    const uniqueStatements = sql.match(/CREATE\s+UNIQUE\s+INDEX[^;]*/gi) ?? [];
+    expect(uniqueStatements.length).toBe(2);
+    // Two independent guards per key: the pre-check can be raced by a writer
+    // that commits between the count and the index taking its lock, and a bare
+    // handler without the pre-check would swallow real errors on a table that
+    // is known-dirty.
+    expect((sql.match(/HAVING\s+count\(\*\)\s*>\s*1/gi) ?? []).length).toBe(2);
+    expect((sql.match(/EXCEPTION\s+WHEN\s+OTHERS\s+THEN/gi) ?? []).length).toBe(2);
+    // A skipped constraint is announced, never silent: one warning for the
+    // dirty-key branch and one for the raced-CREATE branch, per key.
+    expect((sql.match(/RAISE\s+WARNING/gi) ?? []).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('the UNIQUE keys exclude NULLs from the duplicate pre-check', () => {
+    // Both columns are nullable and a Payment row legitimately carries NULL
+    // gateway ids before the order is opened. Postgres treats NULLs as distinct
+    // in a unique index (NULLS DISTINCT), so counting them would skip a
+    // constraint that would in fact have been created without incident.
+    expect((sql.match(/IS\s+NOT\s+NULL/gi) ?? []).length).toBe(2);
+  });
+
+  it('never CONCURRENTLY — 25001 inside migrate deploy blocks every later migration', () => {
+    expect(sql).not.toMatch(/CONCURRENTLY/i);
+    // Including in the prose: the checker script prints a copy-pasteable
+    // CONCURRENTLY line for hand-running in psql, and pasting it into a
+    // migration is the exact route by which this repo lost two months.
+    expect(sqlRaw).not.toMatch(/CREATE\s+(UNIQUE\s+)?INDEX\s+CONCURRENTLY/i);
+  });
+
+  it('additive only — no destructive DDL and no data rewrite on the payments table', () => {
+    expect(sql).not.toMatch(/\bDROP\s+(TABLE|COLUMN|CONSTRAINT|INDEX)\b/i);
+    expect(sql).not.toMatch(/\bALTER\s+COLUMN\b/i);
+    expect(sql).not.toMatch(/\bDELETE\s+FROM\b/i);
+    expect(sql).not.toMatch(/\bUPDATE\s+"?payments"?\b/i);
     expect(sql).not.toMatch(/\bTRUNCATE\b/i);
   });
 });

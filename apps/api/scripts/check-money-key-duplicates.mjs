@@ -82,6 +82,45 @@ const KEYS = [
     rule: 'at most one TemplePayout per booking',
     writers: 'temple-payout.service.ts:76',
   },
+  // DI-06 (2026-09-02): the FIFTH key. This list said "four" and the summary
+  // below printed "All four UNIQUE constraints are present" — a denominator
+  // that structurally hid a guard of exactly the same shape. `priest_payouts`
+  // is rail B, the LEGACY pandit-only payout rail, and it is the rail that
+  // actually moves money on the temple booking path, so a duplicate row there
+  // is a duplicate real bank transfer. Created by migration
+  // 20260902000000_di06_priest_payout_booking_key.
+  {
+    table: 'priest_payouts',
+    column: 'booking_id',
+    index: 'priest_payouts_booking_id_key',
+    rule: 'at most one PriestPayout per booking',
+    writers: 'payment.service.ts createPriestPayout (findFirst on { bookingId }, then throw)',
+  },
+  // DI-06 / DI-07 (2026-09-02): keys SIX and SEVEN, on `payments` — the table
+  // every rupee enters through, and the one both earlier passes skipped
+  // wholesale. The note at the foot of this script explained why the
+  // per-booking guard is not expressible; that reasoning was correct and is
+  // still there, but it was allowed to stand in for the WHOLE TABLE. These two
+  // are not state-scoped: a Razorpay order id and a Razorpay payment id each
+  // identify exactly one Payment row, and every rail resolves by them with
+  // `findFirst` — which, given a duplicate, picks an arbitrary row. Created by
+  // migration 20260904000000_di0607_payment_gateway_key_indexes.
+  {
+    table: 'payments',
+    column: 'gateway_order_id',
+    index: 'payments_gateway_order_id_key',
+    rule: 'at most one Payment per Razorpay order',
+    writers:
+      'payment.service.ts:806 + :1157 create; resolved by findFirst at :875, :1239, :1411, :1731 and jobs/reconcile-payments.ts:159',
+  },
+  {
+    table: 'payments',
+    column: 'gateway_payment_id',
+    index: 'payments_gateway_payment_id_key',
+    rule: 'at most one Payment per Razorpay payment id',
+    writers:
+      'payment.service.ts:974/:1046/:1263 + the capture webhook branches; resolved by findFirst at :1789 (the refund rail that unwinds the provider ledger)',
+  },
 ];
 
 async function indexExists(name) {
@@ -165,9 +204,30 @@ for (const spec of KEYS) {
 await prisma.$disconnect();
 
 console.log('');
+// One money-table guard is deliberately NOT in KEYS, and saying so here is the
+// point: an unexplained omission is how the list came to say "four".
+//
+// SCOPE CORRECTION (2026-09-02): this note used to be the only mention of
+// `payments` anywhere in this script, and it was read — including by the agent
+// that wrote it — as excusing the whole table. It does not. It excuses ONE
+// guard. The two 1:1 gateway keys on the same table are now KEYS six and seven
+// above, and they had no index and no constraint at all until migration
+// 20260904000000_di0607_payment_gateway_key_indexes. What follows still holds,
+// for the per-booking guard alone:
+//
+//   payments — createOrder guards "at most one ACTIVE payment per booking"
+//   (findFirst on { bookingId, status: { in: ['initiated','authorized'] } },
+//   returning the existing Razorpay order rather than opening a second one).
+//   That is not "at most one row per key"; it is "at most one row per key IN A
+//   SUBSET OF STATES", and a captured payment legitimately coexists with a
+//   later one on the same booking. Expressing it needs a PARTIAL unique index,
+//   which Prisma cannot declare as `@@unique`, and getting the state list wrong
+//   would abort a real capture. Left as an application guard on purpose;
+//   revisit only with the state machine in front of you.
+console.log('');
 if (missing === 0) {
-  console.log('All four UNIQUE constraints are present. You can promote them to @@unique in');
-  console.log('schema.prisma — the index names above already follow Prisma\'s convention, so');
+  console.log(`All ${KEYS.length} UNIQUE constraints are present. You can promote them to @@unique`);
+  console.log('in schema.prisma — the index names above already follow Prisma\'s convention, so');
   console.log('that is a schema-only edit with no further SQL.');
   process.exit(0);
 }

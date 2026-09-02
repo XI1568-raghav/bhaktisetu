@@ -379,11 +379,22 @@ export default function PitchPage() {
 
       <Slide id="12-ask" num="12 / 12">
         <span className="pitch-eyebrow">Ask</span>
-        <h1 className="pitch-h1">
+        {/* DU-05: this was a SECOND <h1> on the same document. The deck is one
+            scrolling page — all twelve slides are in the DOM at once — so
+            /pitch shipped two level-1 headings, which is the same defect the
+            finding records on /priest and is separate from the open question
+            of whether the investor deck belongs to the product design system.
+            Slides 02-11 are all `<h2 className="pitch-h2">`; this is their
+            peer, not a second document title.
+
+            The LEVEL changes and the type does not: `pitch-h1` is kept on
+            purpose, so the closing slide keeps the emphasis it was designed
+            with and not one pixel moves. Renders identically, one h1. */}
+        <h2 className="pitch-h1">
           ₹2–5 Cr seed.
           <br />
           <span className="pitch-grad-text">18-month runway to PMF + Series A.</span>
-        </h1>
+        </h2>
         <div className="pitch-grid pitch-grid-3" style={{ marginTop: 32 }}>
           <Card title="50% — Distribution">
             Anchor-temple BD, performance marketing, NRI activation

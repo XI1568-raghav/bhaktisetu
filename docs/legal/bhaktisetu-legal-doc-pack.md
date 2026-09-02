@@ -27,7 +27,7 @@ Bhaktisetu Foundation, Section 8 non-profit registered in India (CIN: [CIN]), op
 - **Fraud prevention**: legitimate interest
 
 ### 4. Who we share with
-- **Razorpay/Stripe**: payment processing
+- **Razorpay**: payment processing. *Stripe removed 2026-08-11 (`apps/api/src/lib/env.ts:45-46`; `payment.service.ts:2506-2517`). Razorpay is the only payment processor this repository proves.*
 - **Resend**: email delivery
 - **WhatsApp Cloud API**: WA delivery
 - **Pandits**: assigned booking only (name + temple + time)
@@ -47,7 +47,27 @@ Bhaktisetu Foundation, Section 8 non-profit registered in India (CIN: [CIN]), op
 - Audit log: /me/privacy/log
 
 ### 7. Cross-border transfer
-- Servers: Mumbai (primary) + Singapore (standby)
+
+> **OPS-10 correction (2026-09-02).** This clause previously read *"Servers:
+> Mumbai (primary) + Singapore (standby)"*. Both halves were false and had
+> never been true. A residency statement in a published Privacy Policy is a
+> representation to every data principal who reads it, so it is restated below
+> as what the repository actually proves. Do not re-assert a region, a standby
+> or a "data stays in India" claim that is not on this list. Ground truth:
+> `render.yaml` and `docs/runbooks/disaster-recovery.md`.
+
+- Application + API servers: **Render `oregon` region (US West)** — verified in
+  `render.yaml:15` (API) and `render.yaml:56` (web). Personal data **is**
+  processed outside India today; this policy must say so, not the opposite.
+- Database: Supabase Postgres. **Region not recorded anywhere in this
+  repository — [verify] in the Supabase dashboard and fill it in here before
+  this policy is published.**
+- **Standby: NONE.** There is no standby region, read replica or warm spare in
+  any geography, and no disaster-recovery failover site.
+- Backups: daily `pg_dump` into Supabase Storage — the same Supabase project the
+  database lives in — so backup residency equals database residency. Note also
+  that the backup job's secrets have never been set (`OPS-02`), so there is no
+  backup today; do not represent a backup regime, an RPO or an RTO.
 - NRI access: standard data flows for service delivery
 - DPDP/GDPR aligned safeguards
 
@@ -108,7 +128,7 @@ By using Bhaktisetu, you accept these terms.
 
 ### 4. Pricing + Payment
 - Prices in INR (India) / USD/GBP/CAD/AUD (NRI)
-- Payment processed via Razorpay (India) / Stripe (NRI)
+- Payment processed via Razorpay. The NRI / foreign-currency rail is **[verify]** — Stripe was removed 2026-08-11 and no replacement processor is recorded in this repository. Do not name one here until the owner confirms it.
 - 80G receipts auto-issued for India tax (PAN required)
 - NRI tax-deductibility varies by country (consult tax advisor)
 

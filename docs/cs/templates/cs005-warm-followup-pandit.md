@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # CS-005 Warm-Followup Template — Pandit
 
 > **Role**: PANDIT · **Item**: R-Q1-CS-005 · **Use after**: IT-004 Resend DNS verify GREEN · **Tone**: respectful Hindi-English mix, founder-personal, soft re-ask
@@ -12,14 +23,14 @@
 Pranam {name} ji,
 
 Maine aapko {weeks_ago} weeks pehle Bhaktisetu Foundation (https://darshya.online)
-ke baare mein email bheja tha — verified-pandit platform jo NRI devotees ke
+ke baare mein email bheja tha — pandit platform jo NRI devotees ke
 saath India temples + pandit ji ko connect karta hai.
 
 Possible hai woh email aap tak nahi pahuncha — humare DNS setup ka ek issue
 tha. Aaj theek hai.
 
 Update humari taraf se (last {weeks_ago} weeks):
-- 30 verified pandit prospects shortlisted across Bengaluru
+- 30 pandit prospects shortlisted across Bengaluru
 - First 5 pilot pandits onboarded in BLR
 - NRI USD consultations going live with Stripe rails
 - 70-80% commission to pandit, no upfront fee

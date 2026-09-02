@@ -24,15 +24,41 @@ within scope of UK GDPR and the Data Protection Act 2018.
 
 ## 3. Data flows (high-level)
 
+> **OPS-10 correction (2026-09-02). The previous diagram was wrong in five of
+> its seven hops and must not be shown to a regulator or a data subject.** A
+> DPIA's data-flow map is the artefact an ICO reviewer reads first; every
+> transfer conclusion in §4 risk 6 and every SCC/IDTA argument rests on it.
+> What it asserted, and what the repository actually proves:
+>
+> | Removed hop | Reality |
+> |---|---|
+> | `Cloudflare Pages (edge)` serves the web tier | Pages has not been a hosting layer since 2026-07-08 (`cf-kill-zombie.yml`). Cloudflare is DNS + edge proxy only. |
+> | `Render API (Mumbai)` | Render `oregon` region, US West — `render.yaml:15` (API), `:56` (web). Not India. |
+> | `Supabase Postgres (Mumbai)` | Region is **not recorded anywhere in this repository**. Unknown, not Mumbai. |
+> | `Stripe (USA) for payment` | The Stripe rail was removed on 2026-08-11 (`apps/api/src/lib/env.ts:45-46`; `createStripeOrder` and `handleStripeWebhook` deleted, `payment.service.ts:2506-2517`). Razorpay is the only payment processor. Naming Stripe disclosed a processor that receives no personal data. |
+> | `Twilio (USA) for WhatsApp` | WhatsApp is **Meta's** WhatsApp Business Cloud API (`apps/api/src/lib/whatsapp.ts`). Twilio appears only as the SMS-OTP carrier Supabase would forward to, and that provider is not configured (phone OTP returns "Unsupported phone provider"). |
+>
+> The two hops that survived — Resend for email, PostHog for analytics — are
+> unchanged, except that PostHog is **Hungary + US**, not EU-only.
+
+The flow below is corrected. Do not restore a region, a host or a processor to
+this diagram that is not verifiable in `render.yaml` or in `apps/api/src`.
+
 ```
-User (UK) -> Cloudflare Pages (edge) -> Render API (Mumbai)
-                                              |
-                                              +-> Supabase Postgres (Mumbai)
-                                              +-> Stripe (USA) for payment
-                                              +-> Resend (USA) for email
-                                              +-> Twilio (USA) for WhatsApp
-                                              +-> PostHog (EU) for analytics (consented)
+User (UK) -> Cloudflare (DNS + edge proxy only) -> Render web + API, region `oregon` (US West)
+                                                          |
+                                                          +-> Supabase Postgres (region [verify] — not recorded in this repo)
+                                                          +-> Razorpay (India) for payment  [Stripe removed 2026-08-11]
+                                                          +-> Resend (USA) for email
+                                                          +-> WhatsApp Business Cloud API, Meta (USA) for WhatsApp
+                                                          +-> PostHog (Hungary + US) for analytics (consented)
 ```
+
+**Transfer consequence that §4 risk 6 must be read against**: the application
+tier is US-hosted, so UK personal data leaves the UK on the *first* hop, not
+only at the processor edges. Any "data stays in India" or "EU-only analytics"
+representation is false. The Supabase region must be read from the dashboard
+and recorded here before this DPIA is signed off or filed.
 
 ## 4. Identified risks
 

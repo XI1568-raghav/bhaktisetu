@@ -151,7 +151,7 @@ export function NotificationPrompt() {
   if (state === 'hidden') return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-xl border border-saffron-200 bg-white shadow-lg p-4">
+    <div className="fixed bottom-[calc(var(--consent-h,0px)+5rem+env(safe-area-inset-bottom))] md:bottom-4 right-4 z-50 max-w-sm rounded-xl border border-saffron-200 bg-white shadow-lg p-4">
       <button
         onClick={dismiss}
         aria-label="Dismiss"

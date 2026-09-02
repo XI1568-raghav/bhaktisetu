@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.darshya.app",
+      "sha256_cert_fingerprints": [
+        "PLACEHOLDER_REPLACE_ME__PLAY_CONSOLE__SETUP__APP_INTEGRITY__APP_SIGNING_KEY_CERTIFICATE__SHA256__NOT_THE_UPLOAD_KEY_CERTIFICATE"
+      ]
+    }
+  }
+]

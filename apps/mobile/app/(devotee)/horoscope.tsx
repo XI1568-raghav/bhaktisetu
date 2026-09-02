@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,55 +11,67 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useDailyHoroscope } from '@poojly/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '../../lib/api';
+import {
+  RASHI_SIGNS,
+  rashiById,
+  selectRashiHoroscope,
+  hasReading,
+} from '../../lib/astrology-directory';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-interface Sign {
-  id: string;
-  english: string;
-  hindi: string;
-  symbol: string;
-  range: string;
-}
-
-const SIGNS: Sign[] = [
-  { id: 'aries', english: 'Aries', hindi: 'Mesh', symbol: '♈', range: 'Mar 21 - Apr 19' },
-  { id: 'taurus', english: 'Taurus', hindi: 'Vrishabh', symbol: '♉', range: 'Apr 20 - May 20' },
-  { id: 'gemini', english: 'Gemini', hindi: 'Mithun', symbol: '♊', range: 'May 21 - Jun 20' },
-  { id: 'cancer', english: 'Cancer', hindi: 'Kark', symbol: '♋', range: 'Jun 21 - Jul 22' },
-  { id: 'leo', english: 'Leo', hindi: 'Simha', symbol: '♌', range: 'Jul 23 - Aug 22' },
-  { id: 'virgo', english: 'Virgo', hindi: 'Kanya', symbol: '♍', range: 'Aug 23 - Sep 22' },
-  { id: 'libra', english: 'Libra', hindi: 'Tula', symbol: '♎', range: 'Sep 23 - Oct 22' },
-  { id: 'scorpio', english: 'Scorpio', hindi: 'Vrishchik', symbol: '♏', range: 'Oct 23 - Nov 21' },
-  { id: 'sagittarius', english: 'Sagittarius', hindi: 'Dhanu', symbol: '♐', range: 'Nov 22 - Dec 21' },
-  { id: 'capricorn', english: 'Capricorn', hindi: 'Makar', symbol: '♑', range: 'Dec 22 - Jan 19' },
-  { id: 'aquarius', english: 'Aquarius', hindi: 'Kumbh', symbol: '♒', range: 'Jan 20 - Feb 18' },
-  { id: 'pisces', english: 'Pisces', hindi: 'Meen', symbol: '♓', range: 'Feb 19 - Mar 20' },
-];
-
-interface HoroscopeBody {
-  date?: string;
-  prediction?: string;
-  general?: string;
-  career?: string;
-  love?: string;
-  health?: string;
-  luckyColor?: string;
-  luckyNumber?: number | string;
-  rating?: number;
-}
+/**
+ * The horoscope index — pick a rashi, read a preview, open the full reading.
+ *
+ *   GET /api/v1/astrology/horoscope/:rashi -> { horoscope }
+ *
+ * THE BUG THIS SCREEN CARRIED
+ * ---------------------------
+ * It called `useDailyHoroscope(sign)` — `GET /horoscope/daily?sign=` — and then
+ * rendered `result.prediction ?? result.general`. Neither key exists on that
+ * payload: `DailyHoroscopePayload` (apps/api/src/lib/astrology.ts) carries the
+ * text under `reading`. So a healthy 200 produced a card with a heading, a date
+ * range and nothing else — no prediction, no career/love/health sections, no
+ * lucky number, no lucky colour — and the failure was invisible, because an
+ * empty card is also what a genuine miss looks like.
+ *
+ * `GET /horoscope/:rashi` is the route whose shape this screen renders, and it
+ * carries considerably more: prediction, career, love, health, lucky
+ * number/colour/direction, the mantra in both scripts, ruling planet, element
+ * and a 1-5 rating. The reader lives in lib/astrology-directory.ts so it can be
+ * unit-tested — apps/mobile's vitest runner is node-only and renders no React
+ * Native, so a shape assumption living inside a screen is one nothing can check.
+ *
+ * The query key is shared with app/(devotee)/horoscope-rashi.tsx, so opening
+ * the full reading for the sign already previewed here costs no second request.
+ */
 
 export default function HoroscopeScreen() {
-  const [selected, setSelected] = useState<string>('aries');
+  const [selected, setSelected] = useState<string>(RASHI_SIGNS[0]!.id);
   const [refreshing, setRefreshing] = useState(false);
-  const horoscope = useDailyHoroscope(selected);
+  const sign = rashiById(selected) ?? RASHI_SIGNS[0]!;
 
-  async function onRefresh() {
+  const query = useQuery<unknown>({
+    queryKey: ['astrology', 'horoscope', 'rashi', sign.id],
+    queryFn: () => apiFetch<unknown>(`/astrology/horoscope/${encodeURIComponent(sign.id)}`),
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const horoscope = useMemo(() => selectRashiHoroscope(query.data), [query.data]);
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await horoscope.refetch();
+    await query.refetch();
     setRefreshing(false);
-  }
-  const result = (horoscope.data?.horoscope ?? null) as HoroscopeBody | null;
+  }, [query]);
+
+  const errorText = query.isError
+    ? query.error instanceof Error
+      ? query.error.message
+      : 'Unknown error'
+    : null;
+
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long',
     year: 'numeric',
@@ -67,10 +79,21 @@ export default function HoroscopeScreen() {
     day: 'numeric',
   });
 
+  const openFull = (rashi: string) =>
+    router.push({
+      pathname: '/(devotee)/horoscope-rashi' as never,
+      params: { rashi },
+    } as never);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Ionicons name="chevron-back" size={22} color={colors.stone[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -82,17 +105,23 @@ export default function HoroscopeScreen() {
 
       <ScrollView
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.signsRow}>
-          {SIGNS.map((s) => {
+          {RASHI_SIGNS.map((s) => {
             const isActive = selected === s.id;
             return (
               <TouchableOpacity
                 key={s.id}
                 style={[styles.signChip, isActive && styles.signChipActive]}
                 onPress={() => setSelected(s.id)}
+                onLongPress={() => openFull(s.id)}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={`${s.english} (${s.hindi})`}
+                accessibilityHint="Shows a preview below; long press to open the full reading"
               >
                 <Text style={[styles.signSymbol, isActive && styles.signSymbolActive]}>
                   {s.symbol}
@@ -110,43 +139,65 @@ export default function HoroscopeScreen() {
 
         <View style={styles.predictionCard}>
           <Text style={styles.predictionHeading}>
-            {SIGNS.find((s) => s.id === selected)?.english} ({SIGNS.find((s) => s.id === selected)?.hindi})
+            {sign.english} ({sign.hindi})
           </Text>
-          <Text style={styles.predictionRange}>
-            {SIGNS.find((s) => s.id === selected)?.range}
-          </Text>
+          <Text style={styles.predictionRange}>{sign.range}</Text>
 
-          {horoscope.isLoading && !result ? (
+          {query.isLoading ? (
             <ActivityIndicator color={colors.saffron[600]} style={{ marginVertical: spacing.lg }} />
-          ) : result ? (
+          ) : errorText ? (
             <>
-              {result.prediction || result.general ? (
-                <Section title="Today's reading">
-                  <Text style={styles.bodyText}>{result.prediction ?? result.general}</Text>
-                </Section>
-              ) : null}
-              {result.career ? (
-                <Section title="Career"><Text style={styles.bodyText}>{result.career}</Text></Section>
-              ) : null}
-              {result.love ? (
-                <Section title="Love"><Text style={styles.bodyText}>{result.love}</Text></Section>
-              ) : null}
-              {result.health ? (
-                <Section title="Health"><Text style={styles.bodyText}>{result.health}</Text></Section>
+              <Text style={styles.errorText}>
+                Could not load the {sign.english} reading. {errorText}
+              </Text>
+              <TouchableOpacity
+                style={styles.retryBtn}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                onPress={() => void query.refetch()}
+              >
+                <Text style={styles.retryBtnText}>Try again</Text>
+              </TouchableOpacity>
+            </>
+          ) : hasReading(horoscope) ? (
+            <>
+              {horoscope!.prediction ? (
+                <Text style={styles.bodyText}>{horoscope!.prediction}</Text>
               ) : null}
 
               <View style={styles.metaRow}>
-                {result.luckyColor ? (
-                  <Chip icon="color-palette" label={`Lucky color: ${result.luckyColor}`} />
+                {horoscope!.rulingPlanet ? (
+                  <Chip icon="planet-outline" label={horoscope!.rulingPlanet} />
                 ) : null}
-                {result.luckyNumber !== undefined ? (
-                  <Chip icon="dice" label={`Lucky number: ${result.luckyNumber}`} />
+                {horoscope!.element ? (
+                  <Chip icon="flame-outline" label={horoscope!.element} />
+                ) : null}
+                {horoscope!.luckyColor ? (
+                  <Chip icon="color-palette-outline" label={`Lucky colour ${horoscope!.luckyColor}`} />
+                ) : null}
+                {horoscope!.luckyNumber !== null ? (
+                  <Chip icon="dice-outline" label={`Lucky number ${horoscope!.luckyNumber}`} />
                 ) : null}
               </View>
+
+              <TouchableOpacity
+                style={styles.fullBtn}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`Read the full ${sign.english} reading`}
+                accessibilityHint="Opens career, love, health and the rashi mantra in the app"
+                onPress={() => openFull(sign.id)}
+              >
+                <Text style={styles.fullBtnText}>
+                  Full {sign.english} reading — career, love, health, mantra
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.white} />
+              </TouchableOpacity>
             </>
           ) : (
             <Text style={styles.bodyText}>
-              No reading available right now. Try another sign or come back later.
+              No reading is published for {sign.english} right now. Nothing is shown rather than a
+              guess — pull down to check again.
             </Text>
           )}
         </View>
@@ -155,6 +206,9 @@ export default function HoroscopeScreen() {
           style={styles.kundliCta}
           onPress={() => router.push('/(devotee)/kundli' as never)}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Get your free Kundli"
+          accessibilityHint="Opens the kundli generator in the app"
         >
           <Ionicons name="planet" size={22} color={colors.saffron[700]} />
           <View style={{ flex: 1 }}>
@@ -163,24 +217,37 @@ export default function HoroscopeScreen() {
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.saffron[700]} />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.kundliCta}
+          onPress={() => router.push('/(devotee)/astrologers' as never)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Talk to a verified astrologer"
+          accessibilityHint="Opens the astrologer directory in the app"
+        >
+          <Ionicons name="chatbubbles" size={22} color={colors.saffron[700]} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.kundliTitle}>Talk to a verified astrologer</Text>
+            <Text style={styles.kundliSub}>A reading of your own chart, not the whole rashi</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.saffron[700]} />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={{ marginTop: spacing.md }}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function Chip({ icon, label }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string }) {
+function Chip({
+  icon,
+  label,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+}) {
   return (
     <View style={styles.chip}>
-      <Ionicons name={icon} size={14} color={colors.saffron[700]} />
+      <Ionicons name={icon} size={13} color={colors.saffron[700]} />
       <Text style={styles.chipText}>{label}</Text>
     </View>
   );
@@ -189,22 +256,41 @@ function Chip({ icon, label }: { icon: React.ComponentProps<typeof Ionicons>['na
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.stone[50] },
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.stone[100],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.stone[100],
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 18 },
+  backBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -spacing.sm,
+  },
   title: { fontSize: fontSize.xl, fontWeight: '800', color: colors.stone[900] },
   subtitle: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing['2xl'] },
-  signsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
+  signsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
   signChip: {
     width: '23%',
+    minHeight: 64,
     paddingVertical: spacing.sm,
     backgroundColor: colors.white,
     borderRadius: borderRadius.md,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.stone[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.stone[100],
   },
   signChipActive: { backgroundColor: colors.saffron[600], borderColor: colors.saffron[700] },
   signSymbol: { fontSize: 22, color: colors.stone[800] },
@@ -214,25 +300,59 @@ const styles = StyleSheet.create({
   signHindi: { fontSize: 9, color: colors.stone[500] },
   signHindiActive: { color: colors.saffron[100] },
   predictionCard: {
-    backgroundColor: colors.white, padding: spacing.md, borderRadius: borderRadius.lg,
-    borderWidth: 1, borderColor: colors.stone[100],
+    backgroundColor: colors.white,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+    gap: spacing.sm,
   },
   predictionHeading: { fontSize: fontSize.lg, fontWeight: '800', color: colors.stone[900] },
-  predictionRange: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
-  sectionTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.saffron[700], marginBottom: 4 },
-  bodyText: { fontSize: fontSize.sm, color: colors.stone[700], lineHeight: 20 },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.md },
+  predictionRange: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: -spacing.sm + 2 },
+  bodyText: { fontSize: fontSize.sm, color: colors.stone[700], lineHeight: 21 },
+  errorText: { fontSize: fontSize.sm, color: colors.red[600], lineHeight: 20 },
+  retryBtn: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.saffron[600],
+  },
+  retryBtnText: { fontSize: fontSize.base, fontWeight: '700', color: colors.white },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.saffron[50], paddingHorizontal: spacing.sm, paddingVertical: 4,
-    borderRadius: borderRadius.full, borderWidth: 1, borderColor: colors.saffron[100],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.saffron[50],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.saffron[100],
   },
   chipText: { fontSize: fontSize.xs, color: colors.saffron[700], fontWeight: '600' },
+  fullBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.saffron[600],
+  },
+  fullBtnText: { flex: 1, fontSize: fontSize.sm, fontWeight: '700', color: colors.white },
   kundliCta: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 64,
     backgroundColor: colors.saffron[50],
-    padding: spacing.md, borderRadius: borderRadius.md,
-    borderWidth: 1, borderColor: colors.saffron[200],
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
   },
   kundliTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
   kundliSub: { fontSize: fontSize.xs, color: colors.stone[600], marginTop: 2 },

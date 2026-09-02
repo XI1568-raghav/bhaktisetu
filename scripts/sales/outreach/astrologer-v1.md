@@ -1,3 +1,13 @@
+<!-- TC-01 / TC-08 (trust audit): the 80G deduction promise and the "verified
+pandit" adjective were removed from this template. Darshya holds no Section 80G
+registration (apps/web/lib/company.ts HAS_80G_VERIFIED is false, pan and
+eightyGNumber null) and apps/api/src/lib/pdf-receipt.ts is80GEligible() needs a
+donee 80G number AND PAN read from gaushala_profiles columns no route writes; and
+nothing promotes a Priest to verified outside apps/api/prisma/seed.ts. This file
+is plain markdown a human copies into a real message, so there is nothing to gate
+it on: restore the wording by hand the day apps/api/src/lib/eighty-g.ts HAS_80G
+and apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING are both true. -->
+
 # Astrologer outreach v1 — R-Q1-S-007
 
 > **Status**: DRAFT — REQUIRES FOUNDER APPROVAL before any send. · **Date**: 2026-06-12 · **Channels**: WhatsApp (primary) + Email (fallback).
@@ -26,7 +36,7 @@ Namaste {first_name} ji 🙏
 
 Main {sender_name}, Bhaktisetu (darshya.online) ka co-founder/sales lead. Aapka {public_artifact} dekha — {specialty} mein aapka kaam impressive hai.
 
-Hum NRI + India devotees ke liye verified astrologer marketplace bana rahe hain. Aapko fit dekhta hoon — agar interested ho, 5 min ki call kar sakte hain?
+Hum NRI + India devotees ke liye astrologer marketplace bana rahe hain, jismein har profile admin-approved hoti hai. Aapko fit dekhta hoon — agar interested ho, 5 min ki call kar sakte hain?
 
 Quick context:
 • Per-minute pricing aap decide karte ho (₹50–₹150 typical range)
@@ -54,14 +64,14 @@ Namaste {first_name} ji, follow-up — kya aapko Bhaktisetu astrologer panel ke 
 
 ## Email — English (fallback for prospects who prefer email)
 
-**Subject**: Bhaktisetu — verified astrologer panel ({specialty}) — 5 min chat?
+**Subject**: Bhaktisetu — admin-approved astrologer panel ({specialty}) — 5 min chat?
 
 ```
 Namaste {first_name} ji,
 
 I am {sender_name}, co-founder/sales lead at Bhaktisetu (darshya.online). I came across your {public_artifact} and was impressed by your work in {specialty} astrology.
 
-We are building a verified astrologer marketplace for NRI + India devotees, and your profile is a strong fit. Wanted to introduce the platform and check interest in joining our launch panel.
+We are building an astrologer marketplace for NRI + India devotees where every profile is admin-approved before it can take a consultation, and your profile is a strong fit. Wanted to introduce the platform and check interest in joining our launch panel.
 
 Quick highlights:
 

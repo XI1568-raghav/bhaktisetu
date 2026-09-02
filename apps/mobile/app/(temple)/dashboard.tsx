@@ -22,6 +22,7 @@ import {
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { bookingStatusLabel } from '../../lib/enum-labels';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
  * PAR-09. Two defects, one screen.
  *
@@ -38,6 +39,11 @@ import { bookingStatusLabel } from '../../lib/enum-labels';
  * totals now come from /temple-portal/dashboard's own stats block.
  */
 export default function TempleDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const dashboardQuery = useTemplePortalDashboard();
   const streamsQuery = useTemplePortalStreams();
   const [refreshing, setRefreshing] = useState(false);

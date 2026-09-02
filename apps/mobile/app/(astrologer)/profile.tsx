@@ -18,7 +18,10 @@ import {
 // it was sure about. POST /auth/logout defaults to scope 'global'.
 import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
-const FALLBACK_SPECIALIZATIONS = ['Vedic', 'Numerology', 'Tarot', 'Vastu'];
+// No fabricated fallback. This rendered 'Vedic, Numerology, Tarot, Vastu' to
+// EVERY astrologer whose profile had none set — asserting four skills the
+// person never claimed, on the screen they show clients. Same defect class as
+// the RYT-500 certifications removed from (wellness)/profile.tsx.
 
 export default function AstrologerProfile() {
   const { user, signOut } = useAuth();
@@ -29,7 +32,7 @@ export default function AstrologerProfile() {
     (a) => a.name === user?.fullName || (user?.email && (a as { email?: string }).email === user.email),
   );
 
-  const specializations = me?.specializations ?? FALLBACK_SPECIALIZATIONS;
+  const specializations = me?.specializations ?? [];
   const rates = astrologerRateRows(me?.pricePerMinute);
 
   async function onRefresh() {

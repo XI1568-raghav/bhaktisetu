@@ -278,10 +278,17 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     return reply.send({ ok: true });
   });
 
-  // StoreOrder.items is Json [{ productId, qty, priceAtPurchase }]. There's no
-  // direct FK from order → store, so dashboard/revenue iterate orders in JS and
-  // attribute lines whose productId belongs to this store. Fine for early scale;
-  // revisit when order volume justifies a denormalized store_order_lines table.
+  // Which ORDERS belong to this store is answered by the S-11 FK — the queries
+  // below filter on `storeProfileId` directly. This walk answers the narrower
+  // question the FK cannot: how much of an order's money is THIS store's, given
+  // StoreOrder.items is Json [{ productId, qty, priceAtPurchase }] with no
+  // per-line store column. Fine for early scale; revisit when order volume
+  // justifies a denormalized store_order_lines table.
+  //
+  // Caveat, deliberately not papered over: it matches lines against products
+  // that still EXIST, so a hard-deleted product's revenue silently leaves these
+  // totals. Commission no longer depends on that (see store-commission.service),
+  // but the dashboard figures still do.
 
   function attributeOrderToStore(
     items: unknown,

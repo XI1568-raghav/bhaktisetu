@@ -160,26 +160,28 @@ export default function MetricsPage() {
         <section>
           <h2 className="text-sm font-semibold text-surface-700 mb-3 uppercase tracking-wider">Revenue line breakdown</h2>
           <div className="bg-white rounded-lg border border-surface-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-50 text-xs uppercase text-surface-500">
-                <tr>
-                  <th className="text-left px-4 py-2">Line</th>
-                  <th className="text-right px-4 py-2">Count</th>
-                  <th className="text-right px-4 py-2">GMV</th>
-                  <th className="text-right px-4 py-2">Net platform</th>
-                </tr>
-              </thead>
-              <tbody>
-                {investor.lineBreakdown.map((l) => (
-                  <tr key={l.name} className="border-t border-surface-100">
-                    <td className="px-4 py-2 font-medium text-surface-900">{l.name}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{l.count}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{paiseToInr(l.gmvPaise)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-emerald-700 font-medium">{paiseToInr(l.netPaise)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-50 text-xs uppercase text-surface-500">
+                  <tr>
+                    <th className="text-left px-4 py-2">Line</th>
+                    <th className="text-right px-4 py-2">Count</th>
+                    <th className="text-right px-4 py-2">GMV</th>
+                    <th className="text-right px-4 py-2">Net platform</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {investor.lineBreakdown.map((l) => (
+                    <tr key={l.name} className="border-t border-surface-100">
+                      <td className="px-4 py-2 font-medium text-surface-900">{l.name}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{l.count}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{paiseToInr(l.gmvPaise)}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-emerald-700 font-medium">{paiseToInr(l.netPaise)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       ) : null}

@@ -12,6 +12,17 @@ import {
   FONT_DISPLAY,
   FONT_BODY,
 } from '../tokens';
+import {
+  RECEIPT_TITLE,
+  RECEIPT_ISSUER,
+  RECEIPT_STEP_LABEL,
+  RECEIPT_SEAL,
+  SEAL_SUBLINE,
+  PRIEST_CARD_STAMP,
+  PRIEST_CARD_TITLE,
+  PRIEST_STEP_LABEL,
+  PRIEST_KYC_SUBLINE,
+} from '../claims';
 
 type Props = {
   durationFrames: number;
@@ -71,9 +82,9 @@ export const PujaBookingFlow: React.FC<Props> = ({ durationFrames, step = 2 }) =
       >
         {[
           { n: 1, label: 'Select Puja' },
-          { n: 2, label: 'Verified Priest' },
+          { n: 2, label: PRIEST_STEP_LABEL },
           { n: 3, label: 'Video Proof' },
-          { n: 4, label: '80G Receipt' },
+          { n: 4, label: RECEIPT_STEP_LABEL },
         ].map((s, i) => {
           const active = s.n <= step;
           const current = s.n === step;
@@ -229,7 +240,7 @@ const AadhaarPriestCard: React.FC<{ frame: number; fps: number }> = ({ frame, fp
           textTransform: 'uppercase',
         }}
       >
-        Aadhaar-verified Priest
+        {PRIEST_CARD_TITLE}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 20 }}>
         <div
@@ -303,10 +314,10 @@ const AadhaarPriestCard: React.FC<{ frame: number; fps: number }> = ({ frame, fp
         </div>
         <div>
           <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, color: SAFFRON }}>
-            Aadhaar Verified
+            {PRIEST_CARD_STAMP}
           </div>
           <div style={{ fontFamily: FONT_BODY, fontSize: 14, color: INK_DIM }}>
-            Government ID · background-checked
+            {PRIEST_KYC_SUBLINE}
           </div>
         </div>
       </div>
@@ -465,10 +476,10 @@ const ReceiptCard: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) =
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 700, color: INK }}>
-            80G Donation Receipt
+            {RECEIPT_TITLE}
           </div>
           <div style={{ fontFamily: FONT_BODY, fontSize: 14, color: INK_DIM, marginTop: 4 }}>
-            Bhaktisetu Foundation · 80G Reg. AACTB····
+            {RECEIPT_ISSUER}
           </div>
         </div>
         {/* saffron seal */}
@@ -497,7 +508,7 @@ const ReceiptCard: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) =
               fontWeight="700"
               fill={SAFFRON_DEEP}
             >
-              80G
+              {RECEIPT_SEAL}
             </text>
             <text
               x="48"
@@ -507,7 +518,7 @@ const ReceiptCard: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) =
               fontSize="8"
               fill={SAFFRON_DEEP}
             >
-              VERIFIED
+              {SEAL_SUBLINE}
             </text>
             <path
               d="M48 8 L48 16 M48 80 L48 88 M8 48 L16 48 M80 48 L88 48"

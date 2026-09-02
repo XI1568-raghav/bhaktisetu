@@ -70,7 +70,7 @@ If the repo is private, also do this once:
 
 ### 4. Supabase account
 - Sign up free: https://supabase.com/dashboard/sign-up (also "Sign in with GitHub" works)
-- Create project named `darshya-prod`, region `Mumbai` or `Singapore` (closest to India)
+- Create project named `darshya-prod`. **Region: [verify] — the region of the existing production Supabase project is not recorded anywhere in this repository, so do not assume India.** If you are rebuilding to match production, read it out of the Supabase dashboard first. (Corrected 2026-09-02, `OPS-10`: this line used to say Mumbai or Singapore, which was never verified.)
 - After it provisions (~2 min), grab these from **Project Settings → Database → Connection string → URI**:
   - `DATABASE_URL` (looks like `postgresql://postgres.xxx:PASSWORD@aws-0-...supabase.com:5432/postgres`)
   - Save the password somewhere; you'll paste it into Render later
@@ -110,7 +110,7 @@ I'll do this step locally once you give me the `DATABASE_URL`.
 2. Connect your GitHub → pick `bhaktisetu` repo → branch `main` (or `rebrand/darshya` if not merged yet)
 3. Settings:
    - **Name**: `darshya-api`
-   - **Region**: Singapore
+   - **Region**: `Oregon` — production runs there, `render.yaml:15` (API) and `:56` (web). (Corrected 2026-09-02, `OPS-10`: this said Singapore, which no service has ever used.)
    - **Branch**: `main`
    - **Root Directory**: `apps/api`
    - **Runtime**: Node
@@ -140,8 +140,18 @@ I'll do this step locally once you give me the `DATABASE_URL`.
 ### Phase E — Web (Cloudflare Pages) (15 min) — ❌ OBSOLETE post-2026-07-08
 
 > **Do NOT follow this phase.** Web now ships from Render `darshya-web`.
-> To deploy web: push to `main` → Render auto-deploys `darshya-web`; OR re-fire `gh workflow run "Render prod cutover" --repo XI1568-raghav/bhaktisetu -f branch=main` (idempotent, reuses live service).
-> The CF Pages steps below are kept as historical reference + rollback target only.
+> **CORRECTED 2026-09-02 (OPS-06).** This banner used to say the web service
+> ships when you push to `main`. It does not. `render.yaml` sets
+> `autoDeploy: false` on both services (`:28` API, `:60` web) and no workflow
+> here deploys from `main`, so a merge changes the repo and leaves the same
+> bytes serving traffic. Deploying is an explicit dispatch
+> (`docs/runbooks/prod-rollback.md`):
+> `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g`
+> — add `-f commit=<SHA>` to go back to a specific commit.
+> The CF Pages steps below are historical reference ONLY. Pages is **not** a
+> hosting layer and **not** a rollback target: its auto-deploy was killed
+> 2026-07-08 (`cf-kill-zombie.yml`), its last build is frozen on that day, and
+> the project may since have been deleted.
 
 ### Phase E (historical) — Web on Cloudflare Pages
 
@@ -162,7 +172,15 @@ I'll do this step locally once you give me the `DATABASE_URL`.
 
 ### Phase F — Custom domain darshya.online (10 min) — ❌ OBSOLETE post-2026-07-08
 
-> **Do NOT follow this phase.** Domain wiring now done by `render-cutover.yml` Step B2 (CNAME apex + www → `darshya-web.onrender.com`, CF DNS) + Step B1 (Render custom domains). Already executed 2026-07-08 (PROD GREEN, all 9 B3 checks pass). Rollback = repoint those CNAMEs back to `darshya.pages.dev`.
+> **Do NOT follow this phase.** Domain wiring now done by `render-cutover.yml` Step B2 (CNAME apex + www → `darshya-web.onrender.com`, CF DNS) + Step B1 (Render custom domains). Already executed 2026-07-08 (PROD GREEN, all 9 B3 checks pass).
+>
+> **CORRECTED 2026-09-02 (OPS-06): rolling back is NOT a DNS repoint.** This
+> line used to name the `darshya.pages.dev` CNAME as the rollback. Sending the
+> CNAMEs there would serve the Cloudflare Pages build frozen on 2026-07-08 —
+> months of missing pages, no guarantee it matches the current API contract,
+> and the project may have been deleted in post-cutover cleanup. Roll back by
+> redeploying a known-good commit instead — `docs/runbooks/prod-rollback.md`,
+> `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>`.
 
 ### Phase F (historical) — CF Pages custom domain
 
@@ -181,8 +199,9 @@ I'll do this step locally once you give me the `DATABASE_URL`.
 - [ ] `https://api.darshya.online/api/v1/health` returns `{ "ok": true }`
 - [ ] Login at `https://darshya.online/auth/login` with `devotee@demo.com` / `demo123` works
 - [ ] Browse `/temples`, `/pujas`, `/darshan` — data renders
-- [ ] Render `darshya-web` auto-deploys on next `git push origin main` (web)
-- [ ] Render `bhaktisetu-api` auto-deploys on next push (API)
+- [ ] Web (`darshya-web`) was deployed by an explicit dispatch: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g`
+- [ ] API (`bhaktisetu-api`) was deployed the same way, with `-f sid=srv-d7mc2n8sfn5c73dfce0g`
+- [ ] Confirmed merging alone shipped nothing — `render.yaml` carries `autoDeploy: false` for both services (`:28` API, `:60` web)
 - [ ] **CF Pages does NOT build** on push (auto-deploy killed 2026-07-08 — verify no new `darshya` Pages deploy appears)
 
 ---

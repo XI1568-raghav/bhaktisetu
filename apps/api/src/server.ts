@@ -34,6 +34,8 @@ import { gaushalaPortalRoutes } from './routes/gaushala-portal.js';
 import { gaushalaCowsRoutes } from './routes/gaushala-cows.js';
 import { gaushalaVolunteersRoutes } from './routes/gaushala-volunteers.js';
 import { userRoutes } from './routes/users.js';
+// LC-DEL: in-app account deletion (Apple 5.1.1(v) + Google Play).
+import { accountRoutes } from './routes/account.js';
 import { readingProgressRoutes } from './routes/reading-progress.js';
 import { digestRoutes } from './routes/digest.js';
 import { recurringRoutes } from './routes/recurring.js';
@@ -402,6 +404,7 @@ async function bootstrap() {
   // API v1 routes
   await server.register(authRoutes, { prefix: '/api/v1/auth' });
   await server.register(userRoutes, { prefix: '/api/v1/users' });
+  await server.register(accountRoutes, { prefix: '/api/v1/account' });
   await server.register(readingProgressRoutes, { prefix: '/api/v1/me/reading-progress' });
   await server.register(digestRoutes, { prefix: '/api/v1/digest' });
   await server.register(recurringRoutes, { prefix: '/api/v1/recurring' });

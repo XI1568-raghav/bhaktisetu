@@ -323,6 +323,24 @@ const nextConfig: NextConfig = {
         headers: SECURITY_HEADERS,
       },
       {
+        // iOS Universal Links. Apple fetches this EXACT extensionless path and
+        // requires application/json; it does not follow redirects, and
+        // X-Content-Type-Options: nosniff (SEC-01 above) rules out sniffing.
+        // Next serves public/ through `send`, whose bundled mime@1.6.0 maps an
+        // unknown extension to application/octet-stream — measured, not assumed
+        // — so without this rule the association file is served with the wrong
+        // type and iOS silently refuses to verify the domain. `send` skips its
+        // own type() when Content-Type is already set, so this wins.
+        // public/_headers is dead code on Render (SEC-01), so this is the only
+        // mechanism available. The Android sibling (assetlinks.json) needs no
+        // rule: mime resolves .json correctly on its own.
+        source: '/.well-known/apple-app-site-association',
+        headers: [
+          { key: 'Content-Type', value: 'application/json' },
+          { key: 'Cache-Control', value: 'public, max-age=3600' },
+        ],
+      },
+      {
         // The second rule public/_headers declared and Render silently dropped:
         // keep the admin surface out of search indexes. Discoverability only —
         // AuthGuard + the API's requireRole are the actual authorization

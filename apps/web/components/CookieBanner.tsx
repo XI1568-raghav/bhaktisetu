@@ -229,10 +229,25 @@ export default function CookieBanner() {
           Measured with this structure injected into the live page at 390x844,
           preferences expanded: banner 521px -> 396px (46.9% incl. the outer
           px-3 pb-2 gutter), sign-in card visible 227px -> 352px, and all three
-          banner buttons on screen and hit-testable. The COLLAPSED banner is
-          unchanged at every viewport taller than ~616px (45dvh of 844 = 380px
-          > 277px), so none of the fourth pass's geometry moves. */}
-      <div className="mx-auto flex max-h-[45dvh] max-w-3xl flex-col rounded-xl border bg-white px-3 py-2 shadow-xl sm:max-h-[70dvh] sm:p-6"
+          banner buttons on screen and hit-testable.
+
+          THAT MEASUREMENT IS TRUE AND DOES NOT CLOSE THE FINDING, which is the
+          trap worth recording: it measures how much of the CARD is visible, and
+          the finding is about the BUTTON. 352px of a 649px card is the top 352px
+          — the heading, the Google button and the email field. Sign In is 444px
+          down. The sixth pass below re-measured the button itself and found
+          0 of 44px on screen at 390x844 with the panel expanded, at this cap. */}
+      {/* RESP-01 (sixth pass, 2026-09-02) — the flat `max-h-[45dvh]` this
+          replaces was measured NOT to close the finding: at 390x844 with
+          "Manage preferences" expanded the banner was 388px, Sign In was
+          508-552 with 0 of 44px visible, and elementFromPoint at the button's
+          centre still returned the notice. A 1280x800 laptop failed even
+          COLLAPSED (banner 213px @587 against Sign In 617-661). The cap is a
+          policy, not a constant, and it lives in app/globals.css next to the
+          --consent-h reservation it belongs with — see the derivation there.
+          The 45dvh fallback is the previous behaviour, so a browser without
+          :has() loses nothing. */}
+      <div className="mx-auto flex max-h-[var(--consent-max-h,45dvh)] max-w-3xl flex-col rounded-xl border bg-white px-3 py-2 shadow-xl sm:p-6"
         style={{ borderColor: "var(--color-border, #e6e2db)" }}
       >
         {/* The scroll region. `min-h-0` is load-bearing: a flex child's default

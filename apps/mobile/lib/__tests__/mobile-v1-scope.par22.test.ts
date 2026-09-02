@@ -70,7 +70,9 @@ describe('PAR-22 — the document still agrees with the app', () => {
     // was on this list and is now built, which is exactly the drift this
     // assertion is meant to catch.
     const claimedWebOnly = [
-      'checkout',
+      // 'checkout' was removed 2026-09-02 for the same reason 'search' is
+      // absent: (devotee)/checkout.tsx now exists, so claiming it web-only
+      // would be the very drift this assertion catches.
       'refer',
       'gift',
       'antim-sanskar',
@@ -135,11 +137,16 @@ describe('PAR-22 — the open defects are named rather than scoped away', () => 
     expect(screen).toMatch(/Linking\.openURL\(resumePaymentUrl/);
   });
 
-  it('still matches reality: react-native-webview is not a declared dependency', () => {
+  it('still matches reality: react-native-webview is now a declared dependency', () => {
+    // Inverted 2026-09-02. This previously asserted the module was ABSENT, and
+    // the scope doc named that as the specific blocker on in-app darshan. The
+    // install has since happened, so the assertion flips rather than being
+    // deleted: if the dependency is ever dropped again, darshan silently
+    // degrades to a browser bounce and this test is what catches it.
     const pkg = JSON.parse(readFileSync(path.join(APP_ROOT, 'package.json'), 'utf8')) as {
       dependencies?: Record<string, string>;
     };
-    expect(pkg.dependencies?.['react-native-webview']).toBeUndefined();
+    expect(pkg.dependencies?.['react-native-webview']).toBeDefined();
   });
 
   it('names the session-dropping call sites by file', () => {

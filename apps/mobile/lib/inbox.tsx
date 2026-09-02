@@ -180,7 +180,7 @@ export function Inbox({ role }: { role: 'devotee' | 'provider' }) {
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.empty}>
           <Ionicons name="chatbubble-ellipses-outline" size={48} color={colors.stone[300]} />
           <Text style={styles.emptyTitle}>Sign in to view messages</Text>
@@ -207,7 +207,7 @@ export function Inbox({ role }: { role: 'devotee' | 'provider' }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loading}>
           <ActivityIndicator color={colors.saffron[600]} />
           <Text style={styles.loadingText}>Loading messages…</Text>
@@ -217,7 +217,7 @@ export function Inbox({ role }: { role: 'devotee' | 'provider' }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Messages</Text>
         <Text style={styles.headerSubtitle}>
@@ -434,7 +434,7 @@ function Thread({ conversationId, counterpartyName, side, onBack, onMessagesChan
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.threadHeader}>
         <TouchableOpacity onPress={onBack} hitSlop={10}>
           <Ionicons name="chevron-back" size={26} color={colors.stone[700]} />

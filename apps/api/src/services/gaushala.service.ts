@@ -1,3 +1,5 @@
+import { HAS_80G } from '../lib/eighty-g.js';
+
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 export interface Gaushala {
@@ -585,7 +587,17 @@ const ADOPTION_PLANS: AdoptionPlan[] = [
       'Unlimited visits',
       'Framed certificate with cow photo',
       'Monthly health report',
-      '80G tax receipt',
+      // TC-01 (P0, trust). Measured live on 2026-09-01:
+      //   curl -s https://api.darshya.online/api/v1/gaushala/plans
+      // returned "80G tax receipt" twice, on a 200, while
+      // apps/web/app/gaushala/page.tsx had already gated its own copy of this
+      // same list — so the page said "Donation Receipt" and the API behind it
+      // sold a tax deduction. HAS_80G_VERIFIED is false, eightyGNumber and pan
+      // are null, and is80GEligible() (lib/pdf-receipt.ts) needs a donee 80G
+      // number AND PAN from gaushala_profiles columns no route writes, so the
+      // PDF this plan actually mints prints "Proof of donation — not a tax
+      // exemption certificate". Gated on lib/eighty-g.ts, not deleted.
+      HAS_80G ? '80G tax receipt' : 'Numbered donation receipt PDF (not a tax-exemption certificate)',
       'Festival special updates',
     ],
     popular: false,
@@ -604,7 +616,9 @@ const ADOPTION_PLANS: AdoptionPlan[] = [
       'Unlimited visits with family',
       'Premium framed certificate',
       'Monthly health report',
-      '80G tax receipt',
+      // TC-01 — same gate as plan_annual above. This is the ₹2,25,000 tier,
+      // where the overstated tax position is worth the most to the buyer.
+      HAS_80G ? '80G tax receipt' : 'Numbered donation receipt PDF (not a tax-exemption certificate)',
       'Name plaque at gaushala',
       'Annual Gau Puja invitation',
       'Priority for new cow adoption',

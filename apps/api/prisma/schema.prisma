@@ -187,6 +187,29 @@ model User {
   blocked           Boolean          @default(false)
   blockedReason     String?          @map("blocked_reason")
   blockedAt         DateTime?        @map("blocked_at")
+
+  // ─── LC-DEL (2026-09-03): in-app account deletion ─────────────────────────
+  //
+  // The account is ANONYMISED IN PLACE, never DELETEd. `DELETE FROM users` is
+  // impossible (puja_bookings / payments / subscriptions are required relations
+  // with Prisma's default RESTRICT) and destructive (donations, store_orders and
+  // wellness_enrollments are ON DELETE CASCADE, so a successful delete would
+  // destroy tax records Indian law requires be retained). See
+  // services/account-deletion.service.ts and
+  // migrations/20260903000000_account_deletion.
+  //
+  // Read and written through $executeRawUnsafe rather than this delegate —
+  // the same choice MagicLinkToken and lib/email-session.ts make — so the
+  // deletion service stays usable in tests that mock prisma without a
+  // regenerated client. Declared here so the columns are described objects
+  // rather than invisible drift.
+  //
+  // deletionRequestedAt: set when the user CONFIRMS (grace window opens).
+  // deletionPurgeAfter:  when the sweep may anonymise. NULL once purged.
+  // deletedAt:           the tombstone stamp. Non-null == already anonymised.
+  deletionRequestedAt DateTime? @map("deletion_requested_at") @db.Timestamptz(6)
+  deletionPurgeAfter  DateTime? @map("deletion_purge_after")  @db.Timestamptz(6)
+  deletedAt           DateTime? @map("deleted_at")            @db.Timestamptz(6)
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
 
@@ -633,6 +656,21 @@ model Payment {
   wellnessEnrollments WellnessEnrollment[] @relation("WellnessEnrollmentPayment")
 
   @@index([gatewayPaymentId])
+  // DI-07 (2026-09-02): `gateway_order_id` is the natural key of a Razorpay
+  // order and it carried NO index at all, while being the column verifyPayment
+  // (payment.service.ts:875), the store-order verify (:1239), the
+  // `payment.captured` (:1411) and `payment.failed` (:1731) webhook branches
+  // and jobs/reconcile-payments.ts all resolve a Payment by. Every successful
+  // checkout sequentially scanned the whole payments table.
+  @@index([gatewayOrderId])
+  // DI-07: Postgres does not index the referencing side of a foreign key — only
+  // the referenced side gets one, from its primary key — so `Payment.booking`
+  // bought this table nothing on the read path. The createOrder idempotency
+  // guard (payment.service.ts:770) and the admin refund rail's capture lookup
+  // (routes/admin-bookings.ts:634) both filter on it, the first inside the
+  // payment transaction. Same omission, same reason, as commissions,
+  // temple_payouts and priest_payouts.
+  @@index([bookingId])
   @@index([userId])
   @@index([status])
   // SCAL-03: payments are always filtered by status, then sorted by date.
@@ -661,6 +699,21 @@ model PriestPayout {
 
   @@index([priestId])
   @@index([status])
+  // DI-06 (2026-09-02): `createPriestPayout` guards "at most one PriestPayout
+  // per booking" with findFirst-then-create (payment.service.ts) and nothing
+  // backed it — the fifth money-key of this shape, missed when the August
+  // migration counted four. Postgres does NOT index the referencing side of a
+  // foreign key, so the `booking` relation above bought this table nothing on
+  // the read path and that guard scanned the whole payout ledger every time.
+  //
+  // The matching UNIQUE index (`priest_payouts_booking_id_key`) is created
+  // conditionally by migration 20260902000000_di06_priest_payout_booking_key
+  // and is therefore deliberately NOT declared `@@unique` here: schema.prisma
+  // must describe what is guaranteed on every database, not what is hoped for.
+  // Promote it once scripts/check-money-key-duplicates.mjs reports it present
+  // everywhere — the index name already follows Prisma's convention, so that
+  // promotion is a schema-only edit with no further SQL.
+  @@index([bookingId])
   @@map("priest_payouts")
 }
 
@@ -1475,6 +1528,15 @@ model Donation {
   // dropped before persistence, so the 80G receipt omitted the donor PAN.
   donorPan          String?        @map("donor_pan")
   dedication        String?        @map("dedication")
+  // LC-DEL (2026-09-03): routes/donations.ts builds the 80G receipt with
+  // `donorName: user.fullName`, read LIVE at generation time. Once the user row
+  // is an anonymised tombstone, every receipt reissued for a PAST donation would
+  // carry the wrong donor name — a defective tax document, not a redacted one.
+  // Section 80G(5)/Form 10BE require the donor's name alongside the PAN, so the
+  // account-deletion purge freezes the name here BEFORE scrubbing the user row,
+  // and only for donations that were actually paid and actually got a receipt
+  // number. NULL for every other donation.
+  donorNameSnapshot String?        @map("donor_name_snapshot")
   createdAt         DateTime       @default(now()) @map("created_at")
   paidAt            DateTime?      @map("paid_at")
 
@@ -2269,4 +2331,55 @@ model MagicLinkToken {
   @@index([expiresAt])
   @@index([userEmail])
   @@map("magic_link_tokens")
+}
+
+// ─── LC-DEL: ACCOUNT-DELETION REQUEST LEDGER ─────────────────────────────────
+//
+// Apple Guideline 5.1.1(v) and Google Play both require in-app account deletion
+// for any app offering account creation. One row per request: the confirmation
+// challenge, the grace-period deadline, and the terminal outcome.
+//
+// Written and read through $queryRawUnsafe rather than this delegate, for the
+// same reason MagicLinkToken is: the routes and the service stay usable in tests
+// that mock prisma without a regenerated client, and the table is created both
+// by migrations/20260903000000_account_deletion and by lib/ensure-schema.ts.
+// The model is declared here anyway so the table is a described object rather
+// than invisible drift, and so the index names in that migration match Prisma's
+// own convention.
+model AccountDeletionRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @map("user_id") @db.Uuid
+
+  /// pending_confirmation | scheduled | purged | cancelled | expired
+  status String @default("pending_confirmation")
+
+  /// sha256 hex of the 6-digit confirmation code — NEVER the code. A plaintext
+  /// column here would be a live credential for irreversible deletion, readable
+  /// by anyone holding SELECT on this table.
+  codeHash      String?   @map("code_hash")
+  codeExpiresAt DateTime? @map("code_expires_at") @db.Timestamptz(6)
+  codeAttempts  Int       @default(0) @map("code_attempts")
+
+  /// whatsapp | email | dev — which rail the code went out on.
+  channel String?
+  reason  String?
+
+  requestedAt DateTime  @default(now()) @map("requested_at") @db.Timestamptz(6)
+  confirmedAt DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  purgeAfter  DateTime? @map("purge_after") @db.Timestamptz(6)
+  purgedAt    DateTime? @map("purged_at") @db.Timestamptz(6)
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz(6)
+
+  /// Non-fatal problems hit during the purge (a legacy table absent on this
+  /// database, a Supabase admin call that failed). Kept so a retry has something
+  /// to act on rather than a log line nobody reads.
+  warnings Json?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([purgeAfter])
+  @@map("account_deletion_requests")
 }

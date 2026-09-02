@@ -13,6 +13,7 @@ import { useAuth } from '../../lib/auth-context';
 import { colors, spacing } from '../../lib/theme';
 import { wellnessSessionTypeLabel } from '../../lib/enum-labels';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
  * PAR-10. `sessionsQuery.data?.sessions` — GET /api/v1/wellness/sessions
  * returns {data:[…]}, so the instructor saw zero of their own classes.
@@ -24,6 +25,11 @@ import { wellnessSessionTypeLabel } from '../../lib/enum-labels';
  * computed from the sessions the API actually returns.
  */
 export default function WellnessDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const sessionsQuery = useWellnessSessions();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);

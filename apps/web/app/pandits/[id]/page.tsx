@@ -90,7 +90,7 @@ function OfferingCard({
     </div>
     <div className="shrink-0">
      <Link
-      href={`/checkout/offering/${offering.id}`}
+      href={`/checkout/offering?id=${offering.id}`}
       className={buttonClass('primary', 'md')}
      >
       Book This Puja

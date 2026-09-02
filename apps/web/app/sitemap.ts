@@ -196,6 +196,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/shipping', priority: 0.5 },
     { path: '/privacy', priority: 0.5 },
     { path: '/terms', priority: 0.5 },
+    { path: '/data-deletion', priority: 0.5 },
     { path: '/list-temple', priority: 0.5 },
     { path: '/for-temple-chains', priority: 0.75 },
     { path: '/become-priest', priority: 0.5 },

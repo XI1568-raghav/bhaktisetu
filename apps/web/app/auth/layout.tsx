@@ -54,39 +54,86 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
  // SiteChrome's consumer `main.pt-16`. Card measures 597px, not the 489px the
  // third pass recorded. Sign In sits at y 524-568 at every width below sm.
  //
- //   viewport   before this pass          after (pt-0 below sm + banner 262->227)
- //   390x844    44/44, clears by 14px     44/44, clears by 65px
- //   375x812    27/44, 17px clipped       44/44, clears by 33px
- //   360x800    15/44, hit = the BANNER   44/44, clears by 21px
- //   375x667    0/44,  hit = the BANNER   0/44 — see below, NOT fixable here
- //   412x915    44/44, clears by 104px    44/44, clears by 152px
- //   768x1024   44/44, clears by 110px    unchanged; sm: restores py-8 and
- //              items-center exactly, so nothing at or above 640px moves.
- //
- // 21px of slack at 360x800 is the number to watch: it is a little more than one
- // wrapped line of the notice (16.5px at leading-snug), so a longer disclosure,
- // a wider glyph set or a fifth wrapped line puts that size back under the
- // banner. Re-measure this table before changing the notice copy.
+ // Its per-viewport table has been folded into the sixth pass's below rather
+ // than left standing, because the two disagree: this pass recorded Sign In at
+ // y 524-568 and 488px of card chrome above it, and the sixth pass measures
+ // 508-552 and 444px on the same tree. Where they conflict, the sixth pass's
+ // numbers are the ones re-derived from a fresh build today; treat the figures
+ // in this paragraph as history, not as a baseline to compare against.
  //
  // The prod measurement that makes this a P0 rather than a paper finding
- // (darshya.online, 2026-09-01, first visit, consent cleared): at 390x844 the
- // banner is 278px with its top edge at y=566, the card is 652px starting at
- // y=96, Sign In is y 596-640 with **0 pixels visible**, and
- // elementFromPoint(195, 618) returns the banner's <h2>. NONE of the three
- // passes above are deployed — only the very first `--consent-h` reservation is.
- //
- // 375x667 (iPhone SE) cannot be fixed from here or from CookieBanner.tsx, and
- // the arithmetic says why: 64 (fixed header) + 488 (card chrome above the
- // button) + 44 (the button) = 596px must fit above the banner's top edge, and
- // at 667px tall that leaves the notice 71px. The notice needs 148px for its
- // own copy before a single button. It is an owner/compliance call — a layered
- // notice on short viewports — not a layout one. The page does scroll and the
- // button hit-tests correctly once scrolled, at every size measured.
+ // (darshya.online, re-confirmed 2026-09-02, first visit, consent cleared, real
+ // deployed build): at 390x844 the banner is 277px with its top edge at y=567,
+ // Sign In is y 593-637 with **0 pixels visible**, and elementFromPoint(195,
+ // 615) returns the banner's <h2>. NONE of the passes above are deployed — only
+ // the very first `--consent-h` reservation is, which is why prod still shows
+ // the original symptom verbatim.
  //
  // pt-0 below sm is safe because the card is top-aligned directly under an
  // opaque 64px fixed header, so the 16px gap it removes was dead space between
  // two adjacent surfaces, not visual rhythm.
+ // RESP-01 (sixth pass, 2026-09-02). `data-auth-shell` is the hook the consent
+ // banner's height policy keys off — app/globals.css tightens --consent-max-h to
+ // `clamp(164px, calc(100dvh - 576px), 45dvh)` while this element is in the
+ // document and leaves every other route on the 45dvh default. It is on this
+ // wrapper rather than on <body> because the auth segment is the thing whose
+ // card sets the constant, and because a server component cannot write to
+ // documentElement without shipping a client boundary to do it.
+ //
+ // THE FIFTH PASS'S `max-h-[45dvh]` DID NOT CLOSE THIS FINDING. Re-measured in
+ // headless Chromium (playwright 1.59.1) against a fresh Tailwind build of
+ // globals.css and the real rendered markup of this layout, login/page.tsx and
+ // CookieBanner.tsx, inside app/layout.tsx's body with SiteChrome's 64px fixed
+ // header and consumer `main.pt-16`. 11 viewports x {collapsed, preferences
+ // expanded} = 22 cases. "clears" is banner top edge minus the Sign In button's
+ // bottom edge; a case passes only when elementFromPoint at the button's own
+ // centre returns the button.
+ //
+ //              45dvh (fifth pass)          scoped cap (this pass)
+ //   viewport   collapsed    expanded       collapsed        expanded
+ //   390x844    +65  pass    -96  FAIL      +65  pass        +16  pass
+ //   375x812    +33  pass    -113 FAIL      +33  pass        +16  pass
+ //   360x800    +21  pass    -120 FAIL      +21  pass        +16  pass
+ //   412x915    +152 pass    -57  FAIL      +152 pass        +16  pass
+ //   640x960    +46  pass    -160 FAIL      +46  pass        +18  pass
+ //   768x1024   +110 pass    -54  FAIL      +110 pass        +15  pass
+ //   834x1112   +154 pass    +31  pass      +154 pass        +31  pass
+ //   1440x900   +25  pass    -146 FAIL      +25  pass        +14  pass
+ //   375x667    -112 FAIL    -193 FAIL      -57  FAIL        -57  FAIL
+ //   320x568    -209 FAIL    -247 FAIL      -155 FAIL        -155 FAIL
+ //   1280x800   -74  FAIL    -282 FAIL      -49  FAIL        -49  FAIL
+ //                 9 of 22 passing             16 of 22 passing
+ //
+ // Note 1280x800: a laptop failed even COLLAPSED under the flat cap, a size no
+ // earlier pass had measured at all. Note also that the clearance is now a
+ // near-CONSTANT ~15px rather than a number that drifts with the screen — that
+ // is the point of subtracting the card's height instead of taking a fraction
+ // of the viewport.
+ //
+ // WHAT IS STILL OPEN, AND WHY IT IS NOT A LAYOUT PROBLEM. 375x667 (iPhone SE),
+ // 320x568 and 1280x800 cannot be closed from here. 64 (fixed header) + 444
+ // (the card's chrome above the button) + 44 (the button) = 552px must sit above
+ // the banner's top edge below sm, and 661px at sm and above. The banner's own
+ // controls need 116px below sm before a word of the notice is shown (card py-2
+ // 16 + the row's mt-2 8 + 44 + 4 + 44, because "Manage preferences" is
+ // full-width on its own row), and roughly 48px more to leave the <h2> legible.
+ // So a 667px screen can spare 107px where 164px is the honest minimum, and an
+ // 800px laptop can spare 139px against the same floor. Shrinking past the floor
+ // does not shrink the notice, it deletes it: a 96px cap was measured pushing
+ // "Manage preferences" to y 628-672, off the bottom of a 667px display, with
+ // the notice's scroll window at 0px.
+ //
+ // Closing those three needs the layered notice the ledger already flags — a
+ // compact bar plus "more options" — which is a decision about what may be shown
+ // BEFORE consent under DPDP/UK-GDPR, i.e. owner/compliance, not layout. All
+ // three do scroll, and the button hit-tests correctly once scrolled.
+ //
+ // Two things hold this together and must not be loosened independently: the
+ // 552px constant is guarded by the card spacing budget in
+ // app/auth/login/__tests__/resp01-mobile-density.test.tsx (a taller card trips
+ // it), and the cap's own shape is guarded in the same file.
  <div
+ data-auth-shell
  className="relative flex items-start justify-center overflow-hidden pt-0 pb-4 sm:items-center sm:pt-8 sm:pb-8"
  style={{ minHeight: 'calc(100dvh - var(--consent-h, 0px))' }}
  >

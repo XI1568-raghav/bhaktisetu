@@ -130,7 +130,21 @@ jobs:
 
           # A revert or a push presented as a way to change PRODUCTION.
           # Both Render services are autoDeploy:false, so neither deploys.
-          bad=$(echo "$added" | grep -inE             '(git )?revert[^.]{0,80}(rollback|restore|roll back|production|prod)|(rollback|roll back)[^.]{0,80}(git )?revert|push[^.]{0,60}(auto-?deploys?|triggers? (a )?redeploy)'             || true)
+          #
+          # WIDENED 2026-09-02. As first written this pattern did NOT match the
+          # two sentences the whole finding is about — verified by running the
+          # extracted regex against them:
+          #   "revert the relevant commits and push."          (deploy-runbook)
+          #   "Revert the commit that broke things and let CI deploy the new HEAD."
+          #                                                     (sentry-releases)
+          # Both miss, because after "revert" the first alternation demands one
+          # of rollback/restore/roll back/production/prod within 80 chars and
+          # neither sentence contains any of them. A tripwire that cannot catch
+          # the exact prose it was installed for is decoration, so three shapes
+          # were added: "revert … and push", "revert … let CI deploy", and
+          # "auto-deploys … on push" (the sixth live copy, found the same day in
+          # docs/engineering/render-build-filter-setup.md).
+          bad=$(echo "$added" | grep -inE             '(git )?revert[^.]{0,80}(rollback|restore|roll back|production|prod|and push|let ci deploy|ci (will )?deploys?)|(rollback|roll back)[^.]{0,80}(git )?revert|push[^.]{0,60}(auto-?deploys?|triggers? (a )?redeploy)|auto-?deploys?[^.]{0,60}on (every |each )?[^.]{0,20}push'             || true)
 
           if [ -n "$bad" ]; then
             echo "::error::Rollback-honesty scan: an added line presents a revert or a push as a production rollback."

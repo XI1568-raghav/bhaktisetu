@@ -13,8 +13,15 @@ import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
 import {
   reverseBookingLedger,
+  // OPS-05: the shared COMMISSION_REVERSED emitter, beside the unwind it
+  // describes. This rail unwinds the astrologer's earning and, before this,
+  // wrote nothing durable about having done so.
+  recordLedgerReversal,
   type LedgerReversalResult,
 } from '../services/ledger-reversal.service.js';
+// OPS-05: the durable money trail. `recordMoneyEvent` never throws and never
+// joins the caller's transaction — record AFTER the `$transaction` resolves.
+import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 
 assertNotProductionDemo('routes/consultation');
 
@@ -806,6 +813,7 @@ export async function consultationRoutes(server: FastifyInstance) {
       reversedTemplePayouts: 0,
       alreadySettled: 0,
     };
+    const cancelReason = `consultation cancelled by devotee (${row.reference})`;
     await prisma.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(
         `UPDATE astrologer_consultations
@@ -814,13 +822,78 @@ export async function consultationRoutes(server: FastifyInstance) {
         id,
       );
       if (refundEligible) {
-        reversal = await reverseBookingLedger(
-          tx,
-          row.id,
-          `consultation cancelled by devotee (${row.reference})`,
-        );
+        reversal = await reverseBookingLedger(tx, row.id, cancelReason);
       }
     });
+
+    // OPS-05 — the third refund rail, which until now emitted NOTHING.
+    //
+    // This handler cancels a paid astrology consultation, promises the devotee
+    // a refund in the response body, and unwinds the astrologer's 80%. All
+    // three are money facts and none of them was durable anywhere but the
+    // Render log stream, which is days-retentive on the free plan and gone
+    // entirely once the service is suspended. `astrologer_consultations` is a
+    // raw-SQL table with no Prisma model and no status history, so the row
+    // itself only ever shows `status = 'cancelled'` — not who cancelled it,
+    // not when, not whether a refund was owed, and not whether the earning was
+    // clawed back.
+    //
+    // Recorded AFTER the transaction commits, per the module contract. Both
+    // calls are awaited so a cancellation cannot answer before the evidence is
+    // down; neither can throw.
+    //
+    // REFUND_INITIATED, not REFUND_COMPLETED: no gateway refund is raised on
+    // this path. The obligation is what starts here, and a later manual refund
+    // in the Razorpay dashboard has no other origin record to be matched to.
+    await recordMoneyEvent({
+      eventType: refundEligible ? MONEY_EVENTS.REFUND_INITIATED : MONEY_EVENTS.REFUND_FAILED,
+      // The devotee cancelled their own consultation — the ownership check
+      // above already refused anyone else.
+      actorType: 'devotee',
+      actorId: request.currentUser!.id,
+      subjectType: 'consultation',
+      subjectId: row.id,
+      amount: row.amount_inr,
+      currency: row.currency,
+      gateway: 'razorpay',
+      gatewayOrderId: row.razorpay_order_id,
+      gatewayPaymentId: row.razorpay_payment_id,
+      statusBefore: row.status,
+      statusAfter: 'cancelled',
+      // The consultation id is the natural key: one cancellation per row, and
+      // the early return above makes a second cancel a no-op anyway.
+      idempotencyKey: row.id,
+      note: refundEligible
+        ? cancelReason
+        : `${cancelReason} — outside the 24h window, no refund owed`,
+      metadata: {
+        rail: 'consultation-cancel',
+        reference: row.reference,
+        refundEligible,
+        astrologerId: row.astrologer_id,
+        scheduledAt: row.scheduled_at ? new Date(row.scheduled_at).toISOString() : null,
+        // Why it was or was not refundable, so the decision can be re-checked
+        // without re-deriving the window from a row that has since changed.
+        priorStatus: row.status,
+      },
+    });
+
+    // ...and the claw-back, through the same shared emitter the two puja refund
+    // rails use. Skips silently when nothing moved; still records when the
+    // unwind was BLOCKED by an already-settled row, which is the double-pay
+    // case flagged as `consultation_ledger_manual_review` just below.
+    if (refundEligible) {
+      await recordLedgerReversal({
+        bookingId: row.id,
+        rail: 'consultation-cancel',
+        reason: cancelReason,
+        actorType: 'devotee',
+        actorId: request.currentUser!.id,
+        currency: row.currency,
+        idempotencyKey: row.id,
+        full: reversal,
+      });
+    }
 
     if (reversal.alreadySettled > 0) {
       // Money has left or is mid-transfer — a refund handler must not claw it

@@ -90,9 +90,9 @@
 
 42. **Influencer ASCI compliance?** Mandatory #paidpartnership disclosure on every sponsored post.
 
-43. **Sub-processor disclosure?** Razorpay/Stripe/Resend/PostHog/Sentry/FCM — all disclosed in privacy policy.
+43. **Sub-processor disclosure?** Razorpay/Resend/PostHog/Sentry/FCM/WhatsApp-Cloud-API(Meta)/Cloudflare/Render/Supabase — disclosed in privacy policy. *(Stripe removed from this answer 2026-09-02, `OPS-10`: the Stripe rail was deleted on 2026-08-11 — `apps/api/src/lib/env.ts:45-46` — so naming it disclosed a processor that receives no data.)*
 
-44. **Data residency?** Primary: Mumbai (Render + Supabase India). Standby: Singapore. NRI data flows through standard service-delivery rationale.
+44. **Data residency?** **[CORRECTED 2026-09-02, `OPS-10`. This answer previously read "Primary: Mumbai (Render + Supabase India). Standby: Singapore." Every word of that was false and this page is a script for investor conversations, so it was a material misstatement waiting to be made out loud.]** Truth: application + API run on **Render `oregon`, US West** (`render.yaml:15`, `:56`) — no India-hosted server, no Mumbai region. The **Supabase database region is unknown**; it is not recorded anywhere in the repository — [verify] in the Supabase dashboard before answering this question to anyone. **There is no standby region, read replica or warm spare, in any geography.** Personal data *is* processed outside India today; do not claim otherwise.
 
 45. **Disputes resolution?** Bengaluru jurisdiction. Indian arbitration. 60-day good-faith mediation by founder first.
 
@@ -172,7 +172,7 @@
 
 81. **API response time?** p95 <400ms target.
 
-82. **Database operations?** Supabase Mumbai primary + Singapore standby (R-Q3-IT-002).
+82. **Database operations?** **[CORRECTED 2026-09-02, `OPS-10` — the previous answer, "Supabase Mumbai primary + Singapore standby (R-Q3-IT-002)", described a two-region topology that has never existed.]** One Supabase Postgres project, region [verify] (not recorded in this repository). No primary/standby pair, no read replica. Backups are a daily `pg_dump` into Supabase Storage — the same project the database lives in — and the backup job's secrets have never been set (`OPS-02`), so there is no backup today. See `docs/runbooks/disaster-recovery.md`.
 
 83. **Hosting cost monthly?** Render ($25 Standard tier post-Q4) + CF Pages free + Supabase Pro ($25) + AWS Backup ($5) = ~$60-100/mo Q4.
 

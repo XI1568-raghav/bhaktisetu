@@ -226,12 +226,52 @@ function ladderWidth(requested: number, encodedFile?: string): number {
  *   .../commons/a/bc/Foo.jpg          → .../commons/thumb/a/bc/Foo.jpg/<w>px-Foo.jpg
  *   .../commons/thumb/a/bc/Foo.jpg/1280px-Foo.jpg → ...rewritten width
  */
+/**
+ * CM-08 — PNG is the wrong container for a photograph, and Commons hands this
+ * catalogue three of them: a manuscript scan, a museum painting and a temple
+ * photo. Commons' own thumbnailer will re-encode a thumbnail into another
+ * format when the target extension is appended to the thumb file name
+ * (`…/500px-Foo.png` → `…/500px-Foo.png.jpg`), so this costs no infrastructure.
+ *
+ * Measured 2026-09-01 at the 500px card width, every Commons PNG this repo
+ * references (`grep -o "commons/[^\"]*\.png"` across apps/web + apps/api →
+ * exactly three files, plus two `.svg`):
+ *
+ *   Birla_Mandir,_Hyderabad.png                       221,440 B → 33,057 B
+ *   Rāmacaritamānasa_manuscript_(19th_century).png    505,253 B → 84,584 B
+ *   Krishna_Holds_Up_Mount_Govardhan_(MET_70694).png  663,567 B → 103,456 B
+ *   ───────────────────────────────────────────────────────────────────────
+ *   total                                           1,390,260 B → 221,097 B  (−84.1%)
+ *
+ * SAFE BECAUSE THE ALPHA WAS CHECKED, NOT ASSUMED. Each PNG was decoded to a
+ * canvas: min alpha 255 and 0 translucent pixels on all three, and the mean
+ * absolute channel difference against the JPEG is 2.3 / 4.1 / 3.2 of 255
+ * (ordinary JPEG quantisation). `.webp` was measured too and is the worse
+ * trade here (505,253 → 332,796 B, only −34%).
+ *
+ * SVG-DERIVED THUMBS ARE EXCLUDED, and that exclusion is load-bearing:
+ * `500px-1_Om.svg.png` is 65% translucent (168,177 of 258,000 px, min alpha 0)
+ * and flattening it to JPEG moves pixels by a mean of 162.9/255 — it would
+ * paint a white slab where the glyph should float over the card gradient.
+ */
+function transcodeThumbFile(thumbFile: string): string {
+ if (/\.svg\.png$/i.test(thumbFile)) return thumbFile;
+ if (/\.png$/i.test(thumbFile)) return `${thumbFile}.jpg`;
+ return thumbFile;
+}
+
 export function wikiThumb(url: string, width: number): string {
  if (!url.includes('upload.wikimedia.org/wikipedia/commons/')) return url;
  if (url.includes('/commons/thumb/')) {
    const thumbFile = /\/commons\/thumb\/[0-9a-f]\/[0-9a-f]{2}\/([^/?#]+)\//.exec(url)?.[1];
    const w = ladderWidth(width, thumbFile);
-   return url.replace(/\/(\d+)px-/, `/${w}px-`);
+   // Rewrite the width, then transcode the tail. Order matters: the tail of an
+   // already-transcoded URL ends `.png.jpg`, which must not pick up a second
+   // `.jpg`, so the guard tests the tail as it stands after the width swap.
+   const resized = url.replace(/\/(\d+)px-/, `/${w}px-`);
+   const tail = /\/(\d+px-[^/?#]+)$/.exec(resized)?.[1];
+   if (!tail) return resized;
+   return resized.replace(/\/(\d+px-[^/?#]+)$/, `/${transcodeThumbFile(tail)}`);
  }
  const match = url.match(/\/commons\/([0-9a-f])\/([0-9a-f]{2})\/([^/?#]+)$/);
  if (!match) return url;
@@ -239,7 +279,7 @@ export function wikiThumb(url: string, width: number): string {
  const w = ladderWidth(width, file);
  // .svg → .svg.png thumb (Commons rule). Other extensions pass through.
  const thumbFile = /\.svg$/i.test(file!) ? `${file}.png` : file;
- return `https://upload.wikimedia.org/wikipedia/commons/thumb/${a}/${bc}/${file}/${w}px-${thumbFile}`;
+ return `https://upload.wikimedia.org/wikipedia/commons/thumb/${a}/${bc}/${file}/${w}px-${transcodeThumbFile(thumbFile!)}`;
 }
 
 /**

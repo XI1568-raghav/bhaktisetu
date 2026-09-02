@@ -5,6 +5,16 @@ import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 import {
   reverseBookingLedger,
   reduceBookingLedgerForPartialRefund,
+  // OPS-05: the SHARED COMMISSION_REVERSED emitter. This rail used to hand-roll
+  // its own `recordMoneyEvent` block — the fourth copy of the same money rule,
+  // which is exactly the drift the unwind itself was extracted to end. Two of
+  // its consequences were live: the event carried no `rail` tag, so a trail read
+  // back could not tell the cron's unwind from the admin panel's, and it was
+  // gated on `reversed > 0`, so the already-settled BLOCK — devotee refunded,
+  // provider keeps the earning — was silent on the one rail that runs unattended.
+  recordLedgerReversal,
+  type LedgerReversalResult,
+  type PartialLedgerResult,
 } from './ledger-reversal.service.js';
 import { cancellationService } from './cancellation.service.js';
 // OPS-05: durable money trail. Never throws, never joins the caller's
@@ -363,6 +373,12 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   // Wrap both writes so they commit together.
   let reversedCommissions = 0;
   let reversedTemplePayouts = 0;
+  // OPS-05: the unwind's OWN result, kept whole rather than flattened to two
+  // counters, so the shared emitter can see `alreadySettled` and the partial
+  // path's claw-back figure. Captured out of the transaction and recorded after
+  // it commits.
+  let fullReversal: LedgerReversalResult | null = null;
+  let partialReversal: PartialLedgerResult | null = null;
   await prisma.$transaction(async (tx) => {
     await tx.payment.update({
       where: { id: captured.id },
@@ -432,6 +448,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
       // until 2026-08-13. Two copies of a money-reversal rule is precisely the
       // drift that module exists to prevent — do not re-inline it.
       const reversal = await reverseBookingLedger(tx, bookingId, reason);
+      fullReversal = reversal;
       reversedCommissions = reversal.reversedCommissions;
       reversedTemplePayouts = reversal.reversedTemplePayouts;
     } else {
@@ -444,6 +461,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
         refundableBefore: new Prisma.Decimal(refundableInr.toFixed(2)),
         reason,
       });
+      partialReversal = scaled;
       reversedCommissions = scaled.scaledCommissions;
       reversedTemplePayouts = scaled.scaledTemplePayouts;
     }
@@ -480,23 +498,30 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   // earning minted before or after the refund" is one of the questions this
   // module was written to answer, and the reversal itself leaves no other
   // durable evidence of how many rows it touched.
-  if (reversedCommissions > 0 || reversedTemplePayouts > 0) {
-    void recordMoneyEvent({
-      eventType: MONEY_EVENTS.COMMISSION_REVERSED,
-      actorType: initiatedBy === 'system' ? 'system' : 'admin',
-      subjectType: 'booking',
-      subjectId: bookingId,
-      bookingId,
-      paymentId: captured.id,
-      amount: refundInr,
-      currency: captured.currency,
-      gatewayRefundId: refund.id,
-      statusAfter: isFullyRefunded ? 'reversed' : 'reduced',
-      idempotencyKey: refund.id,
-      note: reason,
-      metadata: { reversedCommissions, reversedTemplePayouts, fullyRefunded: isFullyRefunded },
-    });
-  }
+  //
+  // Through the SHARED emitter now, not a hand-rolled block. The two things
+  // that copy got wrong were both real: no `rail` tag (so the trail could not
+  // distinguish the unattended cron from the admin panel), and a
+  // `reversed > 0` gate that made the already-settled BLOCK — money refunded,
+  // provider keeps the earning — invisible on the one rail nobody is watching.
+  // Awaited rather than `void`ed: the emitter re-reads committed rows to prove
+  // the reversal survived. It never throws.
+  await recordLedgerReversal({
+    bookingId,
+    rail: 'auto-refund',
+    reason,
+    actorType: initiatedBy === 'system' ? 'system' : 'admin',
+    paymentId: captured.id,
+    // Full path keeps the historical figure (rupees returned); the partial path
+    // falls through to the emitter's default, which is the claw-back — on a
+    // partial those differ and the claw-back is what this event is about.
+    amount: isFullyRefunded ? refundInr : undefined,
+    currency: captured.currency,
+    gatewayRefundId: refund.id,
+    idempotencyKey: refund.id,
+    full: fullReversal,
+    partial: partialReversal,
+  });
 
   // Best-effort success email — never block on send failure.
   let emailAlreadySent = false;

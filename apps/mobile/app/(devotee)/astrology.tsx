@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,184 +6,199 @@ import {
   StyleSheet,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAstrologers, useHoroscope } from '@poojly/api-client';
-import { astrologerSupplyLabel } from '../../lib/astrologer-supply-label';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '../../lib/api';
+import { astrologerSupplyLabel, type AstrologerSupply } from '../../lib/astrologer-supply-label';
+import {
+  selectAstrologers,
+  astrologerInitials,
+  ratePerMinuteLabel,
+  RASHI_SIGNS,
+  type LiveAstrologer,
+} from '../../lib/astrology-directory';
 import { openWebHandoff, describeWebHandoff } from '../../lib/in-app-web';
 import { WEBVIEW_AVAILABLE } from '../../lib/webview-module';
 import { webOrigin, hostOf } from '../../lib/web-origin';
+import { useCarouselCardWidth } from '../../lib/use-responsive';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 /**
- * PAR-22 — the two controls on this screen that leave the app.
+ * The astrology hub.
  *
- * They did two things wrong, and neither needed a WebView to fix.
+ * WHAT THIS SCREEN USED TO BE
+ * ---------------------------
+ * A rashi grid whose horoscope came from the wrong endpoint, and a list of four
+ * "services" — Kundli Generation ₹299, Kundli Matching ₹499, Personal
+ * Consultation ₹1,499, Annual Prediction ₹999 — with delivery times ("24
+ * hours", "45 min session") to match. NONE of those four products exists.
+ * Darshya sells exactly one astrology thing: a per-minute consultation with an
+ * approved astrologer, priced from `AstrologerProfile.pricePerMinute` and
+ * quoted by `POST /consultation/book`. There is no ₹299 kundli SKU, no ₹999
+ * annual report, and no 45-minute ₹1,499 session; the four prices were written
+ * in the view layer and every one of them was a number this platform will never
+ * charge. Tapping any of them opened the website's astrology page, which does
+ * not sell them either.
  *
- * 1. They were SILENT about leaving. A TouchableOpacity that calls
- *    Linking.openURL and reports itself to assistive tech as nothing reads as
- *    an in-app screen; "Ask AI Jyotish" on a button that opens the mobile
- *    browser is the same promise the audit removed from "Book Puja". Every
- *    other bounce-out in the app already announces itself — see
- *    app/(devotee)/search.tsx:78-85 and app/(devotee)/support.tsx:107-113.
+ * They are gone. What replaces them is the supply that does exist — the
+ * approved astrologer directory — and the tools that are genuinely free.
  *
- * 2. They hardcoded `https://darshya.online` while every API call goes through
- *    apiBase(), so a build pointed at a LAN or staging API sent the devotee to
- *    production. Same defect PAR-15 fixed in the payment hand-off; the origin
- *    is now resolved by lib/web-origin.ts.
+ * THE TWO HAND-OFFS THAT REMAIN, AND WHY THEY ARE THE RIGHT TWO
+ * ------------------------------------------------------------
+ * Kundli Milan and the Vedic calculator set (numerology, nakshatra finder,
+ * sade sati, manglik, rahu kalam, choghadiya, dasha, hora, shubh muhurat, kaal
+ * sarp, pitra dosh, lal kitab, baby name, vastu, pancha pakshi) are computed
+ * ENTIRELY in the browser from apps/web/lib — `kundli-milan.ts` and
+ * `vedic-astrology.ts` are web-app-local modules, not a shared package, and the
+ * API exposes no endpoint for any of them. `GET /astrology/compatibility` is
+ * not a substitute: it scores two rashi NAMES with arithmetic over their
+ * character codes (astrology.service.ts), which is not an Ashtakoot Gun Milan
+ * and must not be dressed up as one. So those two controls go to the site that
+ * actually runs the calculation, and they say so — `describeWebHandoff` derives
+ * the role, hint and glyph from the same call that decides the route, so a
+ * control cannot announce a browser hand-off and then stay in the app.
  *
- * 3. THE IN-APP VIEW — added later, and NOT gated on the dependency.
- *    An earlier pass recorded "an in-app WebView needs react-native-webview,
- *    which is an owner action" and stopped there. The dependency really is
- *    undeclared, but it was never a prerequisite for the CODE: darshan-player
- *    has require()d the same module behind a try/catch since PAR-05 and
- *    degrades cleanly when the require throws, which it always does here. So
- *    both controls now route through `openWebHandoff`, which pushes
- *    app/(devotee)/web-view.tsx when the module resolves and falls back to
- *    exactly the previous `Linking.openURL` behaviour when it does not — the
- *    branch every build from this tree takes today. Installing the package is
- *    all that remains, and it needs no further change on this screen.
- *
- *    Because the destination is now a RUNTIME fact, the role, hint and glyph
- *    cannot be literals any more: `describeWebHandoff` derives them from the
- *    same call that decides the route, so a control cannot announce a browser
- *    hand-off and then stay in the app, or the reverse. That is strictly
- *    stronger than the hardcoded `accessibilityRole="link"` it replaces.
- *
- *    What the in-app view buys is the BACK STACK and the app-exit — not the
- *    session. The website's session lives in localStorage['poojly_session'],
- *    the app's in expo-secure-store, and a WebView shares neither. See
- *    lib/in-app-web.ts.
+ * Everything else on this screen now has a real in-app destination:
+ * app/(devotee)/astrologers.tsx, astrologer-detail.tsx, astrologer-book.tsx,
+ * horoscope-rashi.tsx, kundli.tsx and astrology-chat.tsx.
  */
 const WEB = webOrigin();
 
-interface Rashi {
-  id: string;
-  name: string;
-  nameHindi: string;
-  symbol: string;
-  dateRange: string;
-  element: string;
-  ruling: string;
-  luckyColor: string;
-}
+// ─── astrologer strip ───────────────────────────────────────────────────────
 
-const rashiData: Rashi[] = [
-  { id: '1', name: 'Mesh', nameHindi: '\u092E\u0947\u0937', symbol: '\u2648', dateRange: 'Mar 21 - Apr 19', element: 'Fire', ruling: 'Mars', luckyColor: 'Red' },
-  { id: '2', name: 'Vrishabh', nameHindi: '\u0935\u0943\u0937\u092D', symbol: '\u2649', dateRange: 'Apr 20 - May 20', element: 'Earth', ruling: 'Venus', luckyColor: 'Green' },
-  { id: '3', name: 'Mithun', nameHindi: '\u092E\u093F\u0925\u0941\u0928', symbol: '\u264A', dateRange: 'May 21 - Jun 20', element: 'Air', ruling: 'Mercury', luckyColor: 'Yellow' },
-  { id: '4', name: 'Kark', nameHindi: '\u0915\u0930\u094D\u0915', symbol: '\u264B', dateRange: 'Jun 21 - Jul 22', element: 'Water', ruling: 'Moon', luckyColor: 'White' },
-  { id: '5', name: 'Simha', nameHindi: '\u0938\u093F\u0902\u0939', symbol: '\u264C', dateRange: 'Jul 23 - Aug 22', element: 'Fire', ruling: 'Sun', luckyColor: 'Gold' },
-  { id: '6', name: 'Kanya', nameHindi: '\u0915\u0928\u094D\u092F\u093E', symbol: '\u264D', dateRange: 'Aug 23 - Sep 22', element: 'Earth', ruling: 'Mercury', luckyColor: 'Green' },
-  { id: '7', name: 'Tula', nameHindi: '\u0924\u0941\u0932\u093E', symbol: '\u264E', dateRange: 'Sep 23 - Oct 22', element: 'Air', ruling: 'Venus', luckyColor: 'Blue' },
-  { id: '8', name: 'Vrishchik', nameHindi: '\u0935\u0943\u0936\u094D\u091A\u093F\u0915', symbol: '\u264F', dateRange: 'Oct 23 - Nov 21', element: 'Water', ruling: 'Mars', luckyColor: 'Maroon' },
-  { id: '9', name: 'Dhanu', nameHindi: '\u0927\u0928\u0941', symbol: '\u2650', dateRange: 'Nov 22 - Dec 21', element: 'Fire', ruling: 'Jupiter', luckyColor: 'Purple' },
-  { id: '10', name: 'Makar', nameHindi: '\u092E\u0915\u0930', symbol: '\u2651', dateRange: 'Dec 22 - Jan 19', element: 'Earth', ruling: 'Saturn', luckyColor: 'Black' },
-  { id: '11', name: 'Kumbh', nameHindi: '\u0915\u0941\u0902\u092D', symbol: '\u2652', dateRange: 'Jan 20 - Feb 18', element: 'Air', ruling: 'Saturn', luckyColor: 'Blue' },
-  { id: '12', name: 'Meen', nameHindi: '\u092E\u0940\u0928', symbol: '\u2653', dateRange: 'Feb 19 - Mar 20', element: 'Water', ruling: 'Jupiter', luckyColor: 'Sea Green' },
-];
+const STRIP_LIMIT = 6;
 
-interface AstrologyService {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  duration: string;
-}
-
-const services: AstrologyService[] = [
-  {
-    id: '1',
-    name: 'Kundli Generation',
-    description: 'Detailed birth chart with planetary positions and dasha periods.',
-    price: 299,
-    icon: 'planet',
-    duration: '24 hours',
-  },
-  {
-    id: '2',
-    name: 'Kundli Matching',
-    description: 'Gun Milan for marriage compatibility with Ashtakoot analysis.',
-    price: 499,
-    icon: 'heart',
-    duration: '24 hours',
-  },
-  {
-    id: '3',
-    name: 'Personal Consultation',
-    description: 'One-on-one video call with a certified Vedic astrologer.',
-    price: 1499,
-    icon: 'videocam',
-    duration: '45 min session',
-  },
-  {
-    id: '4',
-    name: 'Annual Prediction',
-    description: 'Detailed year-ahead forecast covering career, health, and relationships.',
-    price: 999,
-    icon: 'calendar',
-    duration: '48 hours',
-  },
-];
-
-function RashiCard({ rashi, isSelected, onPress }: { rashi: Rashi; isSelected: boolean; onPress: () => void }) {
+function AstrologerStripCard({ a, width }: { a: LiveAstrologer; width: number }) {
+  const rate = ratePerMinuteLabel(a.perMinuteRate);
   return (
     <TouchableOpacity
-      style={[styles.rashiCard, isSelected && styles.rashiCardSelected]}
-      activeOpacity={0.7}
-      onPress={onPress}
+      style={[styles.stripCard, { width }]}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={a.name}
+      accessibilityHint="Opens this astrologer's profile in the app"
+      onPress={() =>
+        router.push({
+          pathname: '/(devotee)/astrologer-detail' as never,
+          params: { id: a.id, name: a.name },
+        } as never)
+      }
     >
-      <Text style={styles.rashiSymbol}>{rashi.symbol}</Text>
-      <Text style={[styles.rashiName, isSelected && styles.rashiNameSelected]}>
-        {rashi.name}
-      </Text>
-      <Text style={styles.rashiHindi}>{rashi.nameHindi}</Text>
+      <View style={styles.stripHead}>
+        <View style={styles.stripAvatarWrap}>
+          <View style={styles.stripAvatar}>
+            <Text style={styles.stripAvatarText}>{astrologerInitials(a.name)}</Text>
+          </View>
+          <View
+            style={[styles.stripDot, a.isOnline ? styles.stripDotOn : styles.stripDotOff]}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.stripName} numberOfLines={1}>
+            {a.name}
+          </Text>
+          <Text style={styles.stripMeta} numberOfLines={1}>
+            {a.isOnline ? 'Online now' : 'Offline'}
+            {a.experienceYears !== null ? ` · ${a.experienceYears} yrs` : ''}
+          </Text>
+        </View>
+      </View>
+
+      {a.specializations.length > 0 ? (
+        <Text style={styles.stripSpec} numberOfLines={1}>
+          {a.specializations.slice(0, 2).join(' · ')}
+        </Text>
+      ) : null}
+
+      <View style={styles.stripFoot}>
+        {rate ? (
+          <Text style={styles.stripRate}>{rate}</Text>
+        ) : (
+          <Text style={styles.stripRateUnknown}>Rate not published</Text>
+        )}
+        {a.rating !== null ? (
+          <View style={styles.stripRating}>
+            <Ionicons name="star" size={11} color={colors.amber[500]} />
+            <Text style={styles.stripRatingText}>{a.rating.toFixed(1)}</Text>
+          </View>
+        ) : null}
+      </View>
     </TouchableOpacity>
   );
 }
 
+// ─── screen ─────────────────────────────────────────────────────────────────
+
 export default function AstrologyScreen() {
-  const [selectedRashi, setSelectedRashi] = useState<string | null>(null);
-  const selected = rashiData.find((r) => r.id === selectedRashi);
-  const astrologersQuery = useAstrologers();
-  const horoscopeQuery = useHoroscope(selected ? selected.name.toLowerCase() : '');
   const [refreshing, setRefreshing] = useState(false);
-
-  // AW-02: `data.total` is EVERY approved astrologer, not the online ones, and
-  // this screen printed it as "{n} astrologers online" — 3 of 3 real profiles
-  // read isOnline:false, so the app claimed supply that was not there. The
-  // label derivation is a pure module so it is actually testable (the mobile
-  // runner is node-environment and renders no React Native).
-  const astrologerSupply = astrologerSupplyLabel(astrologersQuery.data as never);
-  const horoscopeRaw = horoscopeQuery.data?.horoscope as { prediction?: string } | undefined;
-  const dailyHoroscope =
-    horoscopeRaw?.prediction ??
-    'Today brings positive energy. Focus on personal growth and spiritual practice. Evening is auspicious for new beginnings.';
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await Promise.all([astrologersQuery.refetch(), selected ? horoscopeQuery.refetch() : Promise.resolve()]);
-    setRefreshing(false);
-  }
+  const cardWidth = useCarouselCardWidth();
 
   /**
-   * PAR-22. Both hand-offs on this screen resolve through one options object,
-   * so the two controls can never disagree about whether this build can show
-   * the website in-app. `WEBVIEW_AVAILABLE` is false in every build produced
-   * from this tree today — the module is not declared — so both still open the
-   * browser, and both still SAY so, because the copy is derived rather than
-   * written.
+   * `/astrologers/live` rather than `/astrologers`: same rows (AW-02 bound both
+   * to `loadApprovedAstrologers`), but unpaginated and ordered online-first,
+   * which is what a strip whose first question is "who can talk to me now"
+   * needs.
+   */
+  const astrologersQuery = useQuery<unknown>({
+    queryKey: ['astrology', 'astrologers', 'live'],
+    queryFn: () => apiFetch<unknown>('/astrology/astrologers/live'),
+    staleTime: 60 * 1000,
+  });
+
+  const parsed = useMemo(
+    () => selectAstrologers(astrologersQuery.data),
+    [astrologersQuery.data],
+  );
+  const astrologers = parsed ?? [];
+
+  /**
+   * AW-02: `total` is every APPROVED astrologer, not the online ones, and this
+   * screen used to print it as "{n} astrologers online" — the three real
+   * profiles all read `isOnline: false`, so the app claimed supply that was not
+   * there. The derivation is a pure module so it is actually testable.
+   */
+  const astrologerSupply = astrologerSupplyLabel(
+    astrologersQuery.data as AstrologerSupply | null | undefined,
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await astrologersQuery.refetch();
+    setRefreshing(false);
+  }, [astrologersQuery]);
+
+  const supplyError = astrologersQuery.isError
+    ? astrologersQuery.error instanceof Error
+      ? astrologersQuery.error.message
+      : 'Unknown error'
+    : astrologersQuery.isSuccess && parsed === null
+      ? 'The directory answered in a shape this app does not recognise.'
+      : null;
+
+  /**
+   * PAR-22. Both hand-offs resolve through one options object, so the two
+   * controls can never disagree about whether this build can show the website
+   * in-app.
    */
   const handoffOpts = { webViewAvailable: WEBVIEW_AVAILABLE, origin: WEB.origin };
-  const AI_CHAT_TARGET = {
-    url: `${WEB.origin}/astrology/chat?utm_source=mobile-app&utm_medium=ai-cta`,
-    title: 'AI Jyotish Assistant',
+
+  const MILAN_TARGET = {
+    url: `${WEB.origin}/astrology/kundli-milan?utm_source=mobile-app&utm_medium=tool-card`,
+    title: 'Kundli Milan',
   };
-  const aiAffordance = describeWebHandoff(AI_CHAT_TARGET, handoffOpts, hostOf(WEB.origin));
+  const TOOLS_TARGET = {
+    url: `${WEB.origin}/astrology?utm_source=mobile-app&utm_medium=tool-card`,
+    title: 'Vedic calculators',
+  };
+  const milanAffordance = describeWebHandoff(MILAN_TARGET, handoffOpts, hostOf(WEB.origin));
+  const toolsAffordance = describeWebHandoff(TOOLS_TARGET, handoffOpts, hostOf(WEB.origin));
+
+  const io = { push: (r: unknown) => router.push(r as never), openExternal: Linking.openURL };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -196,152 +211,196 @@ export default function AstrologyScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Astrology</Text>
           <Text style={styles.headerSubtitle}>
-            Vedic astrology insights and kundli services
+            Verified astrologers, your kundli, and the daily rashifal
           </Text>
         </View>
 
-        {/* Rashi Grid */}
+        {/* ── Talk to an astrologer ─────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Rashi</Text>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>Talk to an astrologer{astrologerSupply}</Text>
+            {astrologers.length > 0 ? (
+              <TouchableOpacity
+                style={styles.seeAll}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="See all astrologers"
+                accessibilityHint="Opens the astrologer directory in the app"
+                onPress={() => router.push('/(devotee)/astrologers' as never)}
+              >
+                <Text style={styles.seeAllText}>See all</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.saffron[700]} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {astrologersQuery.isLoading ? (
+            <View style={styles.supplyBox}>
+              <ActivityIndicator color={colors.saffron[600]} />
+              <Text style={styles.supplyText}>Loading verified astrologers…</Text>
+            </View>
+          ) : supplyError ? (
+            <View style={styles.supplyBox}>
+              <Ionicons name="cloud-offline-outline" size={28} color={colors.stone[300]} />
+              <Text style={styles.supplyTitle}>Could not load the directory</Text>
+              <Text style={styles.supplyText}>
+                {supplyError} Nothing is shown rather than a guess — pull down to retry.
+              </Text>
+            </View>
+          ) : astrologers.length === 0 ? (
+            <View style={styles.supplyBox}>
+              <Ionicons name="planet-outline" size={28} color={colors.stone[300]} />
+              <Text style={styles.supplyTitle}>No astrologers are listed yet</Text>
+              <Text style={styles.supplyText}>
+                No approved astrologer has gone live on Darshya so far. The free tools below are
+                open to everyone in the meantime.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.strip}
+            >
+              {astrologers.slice(0, STRIP_LIMIT).map((a) => (
+                <AstrologerStripCard key={a.id} a={a} width={cardWidth} />
+              ))}
+              {astrologers.length > STRIP_LIMIT ? (
+                <TouchableOpacity
+                  style={[styles.stripMore, { width: cardWidth * 0.55 }]}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`See all ${astrologers.length} astrologers`}
+                  accessibilityHint="Opens the astrologer directory in the app"
+                  onPress={() => router.push('/(devotee)/astrologers' as never)}
+                >
+                  <Ionicons name="arrow-forward" size={20} color={colors.saffron[700]} />
+                  <Text style={styles.stripMoreText}>
+                    See all {astrologers.length}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* ── Your rashi ────────────────────────────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>Your rashi</Text>
+            <TouchableOpacity
+              style={styles.seeAll}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Open the daily horoscope"
+              accessibilityHint="Opens the horoscope screen in the app"
+              onPress={() => router.push('/(devotee)/horoscope' as never)}
+            >
+              <Text style={styles.seeAllText}>Daily horoscope</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.saffron[700]} />
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.rashiGrid}>
-            {rashiData.map((rashi) => (
-              <RashiCard
-                key={rashi.id}
-                rashi={rashi}
-                isSelected={selectedRashi === rashi.id}
-                onPress={() => setSelectedRashi(rashi.id)}
-              />
+            {RASHI_SIGNS.map((r) => (
+              <TouchableOpacity
+                key={r.id}
+                style={styles.rashiCard}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={`${r.english} (${r.hindi})`}
+                accessibilityHint="Opens this rashi's reading in the app"
+                onPress={() =>
+                  router.push({
+                    pathname: '/(devotee)/horoscope-rashi' as never,
+                    params: { rashi: r.id },
+                  } as never)
+                }
+              >
+                <Text style={styles.rashiSymbol}>{r.symbol}</Text>
+                <Text style={styles.rashiName}>{r.english}</Text>
+                <Text style={styles.rashiHindi}>{r.hindi}</Text>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Selected Rashi Detail */}
-        {selected && (
-          <View style={styles.section}>
-            <View style={styles.rashiDetailCard}>
-              <Text style={styles.rashiDetailSymbol}>{selected.symbol}</Text>
-              <Text style={styles.rashiDetailName}>
-                {selected.name} ({selected.nameHindi})
-              </Text>
-              <Text style={styles.rashiDetailDates}>{selected.dateRange}</Text>
-              <View style={styles.rashiDetailGrid}>
-                <View style={styles.rashiDetailItem}>
-                  <Text style={styles.rashiDetailLabel}>Element</Text>
-                  <Text style={styles.rashiDetailValue}>{selected.element}</Text>
-                </View>
-                <View style={styles.rashiDetailItem}>
-                  <Text style={styles.rashiDetailLabel}>Ruling Planet</Text>
-                  <Text style={styles.rashiDetailValue}>{selected.ruling}</Text>
-                </View>
-                <View style={styles.rashiDetailItem}>
-                  <Text style={styles.rashiDetailLabel}>Lucky Color</Text>
-                  <Text style={styles.rashiDetailValue}>{selected.luckyColor}</Text>
-                </View>
-              </View>
-              <View style={styles.horoscopePreview}>
-                <Ionicons name="sparkles" size={16} color={colors.saffron[500]} />
-                <Text style={styles.horoscopeText}>{dailyHoroscope}</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Astrology Services */}
+        {/* ── Free tools ────────────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Astrology Services{astrologerSupply}
-          </Text>
-          <View style={styles.servicesList}>
-            {services.map((service) => {
-              // Kundli has a real in-app screen; everything else is a web page.
-              // Whether that page stays in the app is now a RUNTIME fact, so
-              // the control cannot state it as a literal — `describeWebHandoff`
-              // returns the role, hint and glyph from the same call that
-              // decides the route.
-              const inApp = service.name.toLowerCase().includes('kundli');
-              const target = {
-                url: `${WEB.origin}/astrology?utm_source=mobile-app&utm_medium=service-card&service=${encodeURIComponent(service.name)}`,
-                title: service.name,
-              };
-              const affordance = describeWebHandoff(target, handoffOpts, hostOf(WEB.origin));
-              return (
-              <TouchableOpacity
-                key={service.id}
-                style={styles.serviceCard}
-                activeOpacity={0.7}
-                accessibilityRole={inApp ? 'button' : affordance.role}
-                accessibilityLabel={service.name}
-                accessibilityHint={
-                  inApp ? 'Opens the kundli generator in the app' : affordance.hint
-                }
-                onPress={() => {
-                  if (inApp) {
-                    router.push('/(devotee)/kundli' as any);
-                    return;
-                  }
-                  openWebHandoff(target, handoffOpts, {
-                    push: (r) => router.push(r as never),
-                    openExternal: Linking.openURL,
-                  });
-                }}
-              >
-                <View style={styles.serviceIconContainer}>
-                  <Ionicons name={service.icon} size={22} color={colors.saffron[600]} />
-                </View>
-                <View style={styles.serviceInfo}>
-                  <Text style={styles.serviceName}>{service.name}</Text>
-                  <Text style={styles.serviceDescription} numberOfLines={2}>
-                    {service.description}
-                  </Text>
-                  <View style={styles.serviceFooter}>
-                    <Text style={styles.servicePrice}>
-                      {'\u20B9'}{service.price.toLocaleString('en-IN')}
-                    </Text>
-                    <View style={styles.serviceDuration}>
-                      <Ionicons name="time-outline" size={10} color={colors.stone[400]} />
-                      <Text style={styles.serviceDurationText}>{service.duration}</Text>
-                    </View>
-                  </View>
-                </View>
-                <Ionicons
-                  name={inApp ? 'chevron-forward' : affordance.icon}
-                  size={18}
-                  color={colors.stone[300]}
-                />
-              </TouchableOpacity>
-              );
-            })}
+          <Text style={styles.sectionTitle}>Free Vedic tools</Text>
+          <View style={styles.toolList}>
+            <ToolRow
+              icon="planet"
+              title="Kundli"
+              body="Your birth chart: lagna, rashi, nakshatra, planetary positions and the current dasha."
+              badge="Free"
+              accessibilityHint="Opens the kundli generator in the app"
+              iconRight="chevron-forward"
+              onPress={() => router.push('/(devotee)/kundli' as never)}
+            />
+            <ToolRow
+              icon="sunny"
+              title="Daily rashifal"
+              body="Today's reading for your rashi — career, love, health, lucky number and mantra."
+              badge="Free"
+              accessibilityHint="Opens the horoscope screen in the app"
+              iconRight="chevron-forward"
+              onPress={() => router.push('/(devotee)/horoscope' as never)}
+            />
+            {/* Gun Milan is computed in the browser from apps/web/lib/kundli-milan.ts.
+                There is no API for it, and the one compatibility endpoint that
+                exists scores rashi NAMES arithmetically rather than running an
+                Ashtakoot — so this goes where the real calculation lives. */}
+            <ToolRow
+              icon="heart"
+              title="Kundli Milan"
+              body="Ashtakoot Gun Milan for marriage compatibility, with the Mangal dosha check."
+              badge={milanAffordance.leavesApp ? hostOf(WEB.origin) : 'In app'}
+              accessibilityRole={milanAffordance.role}
+              accessibilityHint={milanAffordance.hint}
+              iconRight={milanAffordance.icon}
+              onPress={() => openWebHandoff(MILAN_TARGET, handoffOpts, io)}
+            />
+            {/* Numerology, nakshatra finder, sade sati, manglik, rahu kalam,
+                choghadiya, dasha, hora, shubh muhurat, kaal sarp, pitra dosh,
+                lal kitab, baby name, vastu, pancha pakshi — all browser-side
+                calculators in apps/web/lib with no endpoint behind them. */}
+            <ToolRow
+              icon="calculator"
+              title="More Vedic calculators"
+              body="Numerology, nakshatra finder, sade sati, manglik, rahu kalam, choghadiya, dasha and more."
+              badge={toolsAffordance.leavesApp ? hostOf(WEB.origin) : 'In app'}
+              accessibilityRole={toolsAffordance.role}
+              accessibilityHint={toolsAffordance.hint}
+              iconRight={toolsAffordance.icon}
+              onPress={() => openWebHandoff(TOOLS_TARGET, handoffOpts, io)}
+            />
           </View>
         </View>
 
-        {/* AI Astrologer CTA */}
+        {/* ── AI Jyotish ────────────────────────────────────────────────── */}
         <View style={styles.section}>
           <View style={styles.aiCard}>
             <Ionicons name="sparkles" size={28} color={colors.saffron[600]} />
-            <Text style={styles.aiCardTitle}>AI Jyotish Assistant</Text>
+            <Text style={styles.aiCardTitle}>Jyotish assistant</Text>
             <Text style={styles.aiCardDescription}>
-              Get instant astrological insights powered by AI. Ask about your birth chart, compatibility, muhurat, and more.
+              Ask about your birth chart, compatibility, doshas, remedies or muhurat. Add your
+              birth details and the answer is worked out against a computed chart.
             </Text>
             <TouchableOpacity
               style={styles.aiButton}
-              activeOpacity={0.7}
-              accessibilityRole={aiAffordance.role}
-              accessibilityLabel={`Ask AI Jyotish on ${hostOf(WEB.origin)}`}
-              accessibilityHint={aiAffordance.hint}
-              onPress={() =>
-                openWebHandoff(AI_CHAT_TARGET, handoffOpts, {
-                  push: (r) => router.push(r as never),
-                  openExternal: Linking.openURL,
-                })
-              }
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Open the Jyotish assistant"
+              accessibilityHint="Opens the assistant chat in the app"
+              onPress={() => router.push('/(devotee)/astrology-chat' as never)}
             >
-              <Ionicons name={aiAffordance.icon} size={16} color={colors.white} />
-              {/* The label names the destination: the assistant runs on the
-                  website, and a bare "Ask AI Jyotish" reads as an in-app chat. */}
-              <Text style={styles.aiButtonText}>
-                Ask AI Jyotish on {hostOf(WEB.origin)}
-              </Text>
+              <Ionicons name="chatbubble-ellipses" size={16} color={colors.white} />
+              <Text style={styles.aiButtonText}>Ask the Jyotish assistant</Text>
             </TouchableOpacity>
+            <Text style={styles.aiCardNote}>
+              Guidance from an AI, not a consultation with an astrologer.
+            </Text>
           </View>
         </View>
 
@@ -351,14 +410,56 @@ export default function AstrologyScreen() {
   );
 }
 
+function ToolRow({
+  icon,
+  title,
+  body,
+  badge,
+  accessibilityRole,
+  accessibilityHint,
+  iconRight,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  title: string;
+  body: string;
+  badge: string;
+  accessibilityRole?: 'button' | 'link';
+  accessibilityHint: string;
+  iconRight: React.ComponentProps<typeof Ionicons>['name'];
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.toolCard}
+      activeOpacity={0.75}
+      accessibilityRole={accessibilityRole ?? 'button'}
+      accessibilityLabel={title}
+      accessibilityHint={accessibilityHint}
+      onPress={onPress}
+    >
+      <View style={styles.toolIcon}>
+        <Ionicons name={icon} size={22} color={colors.saffron[600]} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <View style={styles.toolTitleRow}>
+          <Text style={styles.toolTitle}>{title}</Text>
+          <View style={styles.toolBadge}>
+            <Text style={styles.toolBadgeText} numberOfLines={1}>
+              {badge}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.toolBody}>{body}</Text>
+      </View>
+      <Ionicons name={iconRight} size={18} color={colors.stone[300]} />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.stone[50],
-  },
-  scrollContent: {
-    paddingBottom: spacing.xl,
-  },
+  container: { flex: 1, backgroundColor: colors.stone[50] },
+  scrollContent: { paddingBottom: spacing.xl },
   header: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
@@ -367,138 +468,122 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.stone[100],
   },
-  headerTitle: {
-    fontSize: fontSize['3xl'],
-    fontWeight: '800',
-    color: colors.stone[900],
-  },
-  headerSubtitle: {
-    fontSize: fontSize.base,
-    color: colors.stone[500],
-    marginTop: 2,
-  },
-  section: {
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  sectionTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-    color: colors.stone[900],
-    marginBottom: spacing.sm,
-  },
-  // Rashi Grid
-  rashiGrid: {
+  headerTitle: { fontSize: fontSize['3xl'], fontWeight: '800', color: colors.stone[900] },
+  headerSubtitle: { fontSize: fontSize.base, color: colors.stone[500], marginTop: 2 },
+
+  section: { marginTop: spacing.md, paddingHorizontal: spacing.md, gap: spacing.sm },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  sectionTitle: { flex: 1, fontSize: fontSize.xl, fontWeight: '700', color: colors.stone[900] },
+  seeAll: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: 2,
+    minHeight: 44,
+    paddingLeft: spacing.sm,
   },
+  seeAllText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.saffron[700] },
+
+  supplyBox: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    padding: spacing.lg,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+  },
+  supplyTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[700] },
+  supplyText: {
+    fontSize: fontSize.sm,
+    color: colors.stone[500],
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  strip: { gap: spacing.sm, paddingRight: spacing.md },
+  stripCard: {
+    marginRight: spacing.sm,
+    padding: spacing.md,
+    gap: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+  },
+  stripHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  stripAvatarWrap: { width: 44, height: 44 },
+  stripAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.saffron[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stripAvatarText: { fontSize: fontSize.base, fontWeight: '800', color: colors.saffron[700] },
+  stripDot: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.white,
+  },
+  stripDotOn: { backgroundColor: colors.green[500] },
+  stripDotOff: { backgroundColor: colors.stone[300] },
+  stripName: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
+  stripMeta: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 1 },
+  stripSpec: { fontSize: fontSize.xs, color: colors.saffron[700], fontWeight: '600' },
+  stripFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  stripRate: { fontSize: fontSize.base, fontWeight: '800', color: colors.stone[900] },
+  stripRateUnknown: { fontSize: fontSize.xs, fontWeight: '600', color: colors.stone[400] },
+  stripRating: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  stripRatingText: { fontSize: fontSize.xs, fontWeight: '700', color: colors.stone[600] },
+  stripMore: {
+    minHeight: 120,
+    marginRight: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.saffron[50],
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
+  },
+  stripMoreText: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    color: colors.saffron[700],
+    textAlign: 'center',
+  },
+
+  rashiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   rashiCard: {
     width: '22.5%',
-    aspectRatio: 1,
+    minHeight: 72,
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.stone[100],
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
   },
-  rashiCardSelected: {
-    borderColor: colors.saffron[400],
-    backgroundColor: colors.saffron[50],
-  },
-  rashiSymbol: {
-    fontSize: 24,
-    marginBottom: 2,
-  },
-  rashiName: {
-    fontSize: fontSize.xs,
-    fontWeight: '600',
-    color: colors.stone[700],
-  },
-  rashiNameSelected: {
-    color: colors.saffron[700],
-  },
-  rashiHindi: {
-    fontSize: fontSize.xs,
-    color: colors.stone[400],
-  },
-  // Rashi Detail
-  rashiDetailCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.saffron[100],
-    shadowColor: colors.saffron[200],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  rashiDetailSymbol: {
-    fontSize: 48,
-    marginBottom: spacing.xs,
-  },
-  rashiDetailName: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-    color: colors.stone[900],
-    marginBottom: 4,
-  },
-  rashiDetailDates: {
-    fontSize: fontSize.sm,
-    color: colors.stone[500],
-    marginBottom: spacing.md,
-  },
-  rashiDetailGrid: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  rashiDetailItem: {
-    alignItems: 'center',
-  },
-  rashiDetailLabel: {
-    fontSize: fontSize.xs,
-    color: colors.stone[400],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  rashiDetailValue: {
-    fontSize: fontSize.base,
-    fontWeight: '600',
-    color: colors.stone[800],
-  },
-  horoscopePreview: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: colors.saffron[50],
-    padding: spacing.sm,
-    borderRadius: borderRadius.md,
-    width: '100%',
-  },
-  horoscopeText: {
-    flex: 1,
-    fontSize: fontSize.sm,
-    color: colors.stone[600],
-    lineHeight: 20,
-  },
-  // Services
-  servicesList: {
-    gap: spacing.sm,
-  },
-  serviceCard: {
+  rashiSymbol: { fontSize: 24, marginBottom: 2 },
+  rashiName: { fontSize: fontSize.xs, fontWeight: '600', color: colors.stone[700] },
+  rashiHindi: { fontSize: fontSize.xs, color: colors.stone[400] },
+
+  toolList: { gap: spacing.sm },
+  toolCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 72,
     backgroundColor: colors.white,
     padding: spacing.md,
     borderRadius: borderRadius.lg,
@@ -506,7 +591,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.stone[100],
   },
-  serviceIconContainer: {
+  toolIcon: {
     width: 48,
     height: 48,
     borderRadius: borderRadius.md,
@@ -514,41 +599,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  serviceInfo: {
-    flex: 1,
+  toolTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  toolTitle: { flexShrink: 1, fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
+  toolBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.stone[100],
+    maxWidth: 140,
   },
-  serviceName: {
-    fontSize: fontSize.base,
-    fontWeight: '700',
-    color: colors.stone[900],
-    marginBottom: 3,
-  },
-  serviceDescription: {
-    fontSize: fontSize.sm,
-    color: colors.stone[500],
-    lineHeight: 18,
-    marginBottom: spacing.xs,
-  },
-  serviceFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  servicePrice: {
-    fontSize: fontSize.base,
-    fontWeight: '700',
-    color: colors.saffron[700],
-  },
-  serviceDuration: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  serviceDurationText: {
-    fontSize: fontSize.xs,
-    color: colors.stone[400],
-  },
-  // AI Card
+  toolBadgeText: { fontSize: fontSize.xs, fontWeight: '600', color: colors.stone[500] },
+  toolBody: { fontSize: fontSize.sm, color: colors.stone[500], lineHeight: 18, marginTop: 3 },
+
   aiCard: {
     backgroundColor: colors.stone[900],
     borderRadius: borderRadius.lg,
@@ -572,15 +634,17 @@ const styles = StyleSheet.create({
   aiButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 48,
     backgroundColor: colors.saffron[600],
     paddingHorizontal: spacing.lg,
-    paddingVertical: 12,
     borderRadius: borderRadius.lg,
     gap: spacing.sm,
   },
-  aiButtonText: {
-    color: colors.white,
-    fontSize: fontSize.base,
-    fontWeight: '700',
+  aiButtonText: { color: colors.white, fontSize: fontSize.base, fontWeight: '700' },
+  aiCardNote: {
+    fontSize: fontSize.xs,
+    color: colors.stone[500],
+    marginTop: spacing.sm,
+    textAlign: 'center',
   },
 });

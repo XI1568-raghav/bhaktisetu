@@ -41,6 +41,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import CookieBanner from '../components/CookieBanner';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 function bannerCard(): HTMLElement {
   const dialog = screen.getByRole('dialog', { name: /cookies for darshan/i });
@@ -67,7 +69,31 @@ describe('RESP-01 — the consent notice is capped to a share of the viewport', 
     // moves. Require the unit to be dvh (dynamic viewport height — vh is wrong
     // on mobile Safari, where the URL bar makes vh larger than what is on
     // screen, which would let the banner exceed its own cap).
-    expect(cls).toMatch(/(^|\s)max-h-\[\d+dvh\](\s|$)/);
+    // AMENDED 2026-09-02. This required the literal `max-h-[NNdvh]`. A later
+    // pass moved the policy into CSS — the class is now
+    // `max-h-[var(--consent-max-h,45dvh)]` and globals.css gives the variable
+    // 45dvh, 70dvh at sm, and `clamp(164px, calc(100dvh - 576px), 45dvh)` on
+    // the auth shell so the sign-in card is guaranteed room. That is strictly
+    // better than a flat cap, and the literal-form check would have forced it
+    // back. The INVARIANT is what matters: the cap is expressed in dynamic
+    // viewport units and never as a bare pixel constant.
+    const literalDvh = /(^|\s)max-h-\[\d+dvh\](\s|$)/;
+    const varWithDvhFallback = /(^|\s)max-h-\[var\(--[a-z-]+,\s*\d+dvh\)\](\s|$)/;
+    expect(
+      literalDvh.test(cls) || varWithDvhFallback.test(cls),
+      `consent cap must be dvh-based, got: ${cls}`,
+    ).toBe(true);
+
+    // And the variable itself must never be handed a bare px cap. This is the
+    // half the class string cannot show, so it is checked at the source — a
+    // px floor inside clamp() is fine (it is a minimum, not the cap), but a
+    // declaration with no dvh at all is the 227px mistake returning.
+    const css = readFileSync(resolve(__dirname, '../app/globals.css'), 'utf8');
+    const decls = [...css.matchAll(/--consent-max-h:\s*([^;]+);/g)].map((m) => m[1]!.trim());
+    expect(decls.length, 'no --consent-max-h declarations found — check moved?').toBeGreaterThan(0);
+    for (const d of decls) {
+      expect(d, `--consent-max-h: ${d} is not viewport-relative`).toMatch(/dvh/);
+    }
     // ...and the card must be a flex column, or the scroll region below has no
     // free space to be shrunk out of and the cap clips instead of scrolling.
     expect(cls).toMatch(/(^|\s)flex(\s|$)/);

@@ -82,8 +82,11 @@ function isStoreOwner(req: any): boolean {
 }
 
 // P0 #S-02 (2026-07-09): resolve the caller's StoreProfile id (null if not a
-// store owner / no profile). StoreOrder has no storeProfileId FK, so order-to-
-// store attribution is via items[].productId → StoreProduct.storeProfileId.
+// store owner / no profile). S-11 has since given StoreOrder its own
+// storeProfileId FK, written at creation below — order-to-store attribution
+// reads that. The items[].productId → StoreProduct walk survives only where a
+// per-LINE answer is needed (which of this store's products an order contains),
+// and as the legacy path for orders predating the FK.
 async function resolveStoreProfileId(userId: string): Promise<string | null> {
   const profile = await prisma.storeProfile.findUnique({
     where: { userId },

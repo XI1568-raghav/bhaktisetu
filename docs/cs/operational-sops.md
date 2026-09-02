@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # Operational SOPs — Pandit / Video / Refund / Payout Issues
 
 > Tier-2 ops runbook. Founder + CS contractor reference.
@@ -16,7 +27,7 @@
 2. **Within 1 hour**
    - Apologetic call/WhatsApp to devotee from CS contractor
    - Script: "We're deeply sorry. [Pandit name] could not perform the puja today due to [reason]. We'd like to do one of:"
-     - Option A: Re-book with another verified pandit within 24 hours (no extra charge)
+     - Option A: Re-book with another pandit within 24 hours (no extra charge)
      - Option B: Full refund within 5 business days (₹200 added as goodwill)
      - Option C: Reschedule to next available date with original pandit (if applicable)
    - Get devotee's choice in writing/WA

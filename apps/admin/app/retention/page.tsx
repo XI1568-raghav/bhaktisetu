@@ -1,4 +1,5 @@
 import { fetchRetention, type RetentionCohort } from "../../lib/posthog-retention";
+import { H1 } from "../../components/ui/heading-recipe";
 
 export const revalidate = 300;
 
@@ -30,7 +31,7 @@ export default async function RetentionPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">
+        <h1 className={H1.portal}>
           Cohort retention
         </h1>
         <p className="mt-2 text-sm text-stone-600">

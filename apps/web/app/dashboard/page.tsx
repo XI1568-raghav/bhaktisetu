@@ -28,9 +28,13 @@ import {
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: true ONLY for 401. A 403 is a suspended account, and offering
+ // sign-in there loops back to the same refusal.
+ loadErrorIsReauth,
 } from '../../lib/api-config';
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
+import ReauthPrompt from '../../components/ReauthPrompt';
 
 interface Booking {
  id: string;
@@ -85,6 +89,10 @@ function DashboardContent() {
  // devotee who already had confirmed pujas, with no error anywhere. Telling
  // someone their bookings do not exist is worse than telling them we are down.
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: the decision `loadErrorMessage` makes internally and this page
+ // threw away. A devotee whose session expired mid-session was told to sign in
+ // again beside a Retry that could only 401 forever.
+ const [loadReauth, setLoadReauth] = useState(false);
 
  const fetchDashboardData = useCallback(async () => {
  if (!session?.accessToken) return;
@@ -106,6 +114,7 @@ function DashboardContent() {
  setBookingsCount(bookingsData.pagination?.total || 0);
  } else {
  setLoadError(loadErrorMessage(bookingsRes));
+ setLoadReauth(loadErrorIsReauth(bookingsRes));
  }
 
  if (subscriptionRes.ok) {
@@ -114,6 +123,7 @@ function DashboardContent() {
  }
  } catch (err) {
  setLoadError(loadErrorMessage(err));
+ setLoadReauth(loadErrorIsReauth(err));
  } finally {
  setIsLoadingData(false);
  }
@@ -267,6 +277,14 @@ function DashboardContent() {
     that reads as "your bookings were cancelled". */
  <div role="alert" className="bg-amber-50 rounded-xl p-6 border border-amber-200 text-center">
  <p className="text-sm text-amber-800">{loadError}</p>
+ {/*
+   AUTH-06: the sign-in link REPLACES Retry — it does not join it. Leaving
+   Retry beside it keeps the one control that cannot work (it re-fires with
+   the same expired token) as the bigger, more familiar target.
+ */}
+ {loadReauth ? (
+ <ReauthPrompt message="" className="mt-3 flex flex-col items-center gap-3" />
+ ) : (
  <button
  type="button"
  onClick={() => { setIsLoadingData(true); void fetchDashboardData(); }}
@@ -274,6 +292,7 @@ function DashboardContent() {
  >
  Retry
  </button>
+ )}
  </div>
  ) : bookings.length === 0 ? (
  <div className="bg-[var(--color-surface)] rounded-xl p-8 border border-[var(--color-border)] text-center">

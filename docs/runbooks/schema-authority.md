@@ -142,12 +142,33 @@ Consequences, both of which matter for disaster recovery:
 - The only in-repo description of those never-migrated tables is the
   `STATEMENTS` array in `ensure-schema.ts` — and it is partial.
 
-So a restore must come from a `pg_dump` (see `docs/runbooks/db-restore.md`), not
-from replaying migrations. Baselining the history
-(`prisma migrate diff --from-empty --to-schema-datamodel` into a `0_init`
-migration, then `prisma migrate resolve --applied 0_init` against prod) is the
-fix and is **not done**. It is the prerequisite for ever provisioning a second
-environment.
+**Closed 2026-09-02.** The baseline now exists as `prisma/baseline/0_init.sql`,
+applied by `scripts/bootstrap-fresh-db.mjs`:
+
+```bash
+cd apps/api
+node scripts/bootstrap-fresh-db.mjs --yes
+```
+
+Measured on an empty PostgreSQL 17.10 with pgvector: bootstrap exits 0, all five
+money-key UNIQUE indexes and the money-audit append-only trigger are present,
+and `prisma migrate deploy` afterwards reports *"No pending migrations to apply."*
+
+Two details worth knowing before you touch it:
+
+- The baseline deliberately does **not** live in `prisma/migrations/`. If it did,
+  `migrate deploy` would try to run it against production, where every object it
+  creates already exists.
+- It is a render of the datamodel, so it does not contain extensions, triggers,
+  partial indexes, opclass indexes, or the five money-key UNIQUE indexes (none of
+  which are `@@unique` in `schema.prisma`). The bootstrap replays the handful of
+  migrations that own those. `src/lib/fresh-db-bootstrap.test.ts` fails if a new
+  migration adds such an object and is not added to that replay list.
+
+A `pg_dump` restore (see `docs/runbooks/db-restore.md`) is still the right tool
+for recovering *data*. This path is for building an empty database's *schema*.
+
+Full detail: `docs/runbooks/fresh-database-bootstrap.md`.
 
 ## Rules for adding DDL
 
@@ -158,6 +179,13 @@ environment.
 3. **Never** `CREATE INDEX CONCURRENTLY` in a migration — Prisma wraps each
    migration in a transaction, so it raises `25001` and blocks every later
    migration. Plain `CREATE INDEX IF NOT EXISTS` only.
+   Measured 2026-09-02: it raises 25001 inside a transaction **even when the
+   index already exists**, because PostgreSQL's transaction-block check runs
+   before `IF NOT EXISTS` is considered. So a migration holding CONCURRENTLY
+   cannot be defused by pre-creating the index — it can only be not executed.
+   For a live database, run the statements out of band via
+   `$executeRawUnsafe` (autocommit); `scripts/apply-perf-indexes.mjs` is the
+   worked example.
 4. Do **not** add statements to `ensure-schema.ts` as a substitute for a
    migration. If you must add one, the migration that owns the same object must
    be idempotent, or `ensure-schema.ops07.test.ts` will fail — which is the

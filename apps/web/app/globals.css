@@ -682,6 +682,82 @@ body {
   padding-bottom: var(--consent-h, 0px);
 }
 
+/* ═══ RESP-01 (sixth pass, 2026-09-02) — HOW TALL THE CONSENT NOTICE MAY BE ═══
+
+   Every pass before this one tuned the banner's own height in isolation:
+   padding arithmetic (passes 1-4), then a flat `max-h-[45dvh]` cap (pass 5).
+   Measured in headless Chromium against a fresh Tailwind build of this file and
+   the real markup of app/auth/layout.tsx + app/auth/login/page.tsx +
+   components/CookieBanner.tsx, the flat cap does not close the finding:
+
+     390x844  preferences EXPANDED   banner 388px @456, Sign In 508-552,
+                                     0 of 44px visible, elementFromPoint at the
+                                     button's centre = the notice <p>
+     1280x800 preferences COLLAPSED  banner 213px @587, Sign In 617-661,
+                                     0 of 44px visible, hit = the banner
+
+   7 of 7 phone/tablet sizes failed expanded, and a 1280x800 laptop failed even
+   collapsed — a size no earlier pass had measured at all.
+
+   WHY A VIEWPORT FRACTION CANNOT WORK. What the page needs is not a fraction of
+   the viewport, it is a fixed number of pixels: the sign-in card's own height.
+   The Sign In button's bottom edge sits at y=552 at EVERY width below sm
+   (measured identical at 320, 360, 375 and 390 — the 64px fixed header plus the
+   card's chrome, neither of which is viewport-relative) and at y≈661 at sm and
+   above. A fraction therefore over-reserves on a tall phone and under-reserves
+   on a short one; 45dvh is 380px on a 844px screen where 284px is the limit.
+
+   Subtracting the constant instead makes the CLEARANCE the constant: the banner
+   gets whatever is left over after the form, so the button clears by ~15px on
+   every viewport height rather than by a number that drifts with the screen.
+   576 = 552 (button's bottom edge) + 8 (the banner shell's own pb-2 gutter)
+   + 16 (one wrapped line of the notice, as slack). 700 is the same sum at sm:
+   661 + 24 (sm:pb-6) + 15.
+
+   Bounds. The `clamp()` upper bound keeps the old fraction as a ceiling, so a
+   very tall viewport does not hand the notice 900px.
+
+   The 164px lower bound is the point at which shrinking stops being honest, and
+   it is measured, not chosen: the banner's own controls occupy 116px below sm
+   (card py-2 16 + the row's mt-2 8 + a 44px row, a 4px gap and a second 44px
+   row, because "Manage preferences" is full-width on its own row there), and
+   48px on top of that is roughly the three wrapped lines of the <h2>. A first
+   attempt used 96px and was measured pushing "Manage preferences" to y 628-672
+   on a 667px screen — off the bottom of the display — while the notice's scroll
+   window went to 0px, i.e. present in the DOM and impossible to read. A cap
+   below the floor does not shrink the notice, it deletes it and takes the
+   consent controls with it.
+
+   WHERE THE FLOOR BINDS, THE FINDING IS NOT CLOSED. Below ~740px of viewport
+   height (and below ~864px at sm) the form and the notice genuinely cannot both
+   sit above the fold, and the floor chooses the notice. Measured residue:
+   375x667 and 320x568 on phones, 1280x800 on a laptop. See the note in
+   app/auth/layout.tsx for the arithmetic and for why closing those needs an
+   owner/compliance decision rather than more layout.
+
+   SCOPED, not global. The constant is the sign-in card's, so the tightened cap
+   applies only where that card is on screen — `[data-auth-shell]` is set by
+   app/auth/layout.tsx. Every other route keeps the 45dvh/70dvh default. A
+   browser without :has() support also keeps the default, i.e. today's
+   behaviour, which is why the fallback is written that way round.
+
+   The banner reads this through `max-h-[var(--consent-max-h,45dvh)]`, so the
+   whole policy lives here and the component carries no magic number. */
+:root {
+  --consent-max-h: 45dvh;
+}
+body:has([data-auth-shell]) {
+  --consent-max-h: clamp(164px, calc(100dvh - 576px), 45dvh);
+}
+@media (min-width: 640px) {
+  :root {
+    --consent-max-h: 70dvh;
+  }
+  body:has([data-auth-shell]) {
+    --consent-max-h: clamp(164px, calc(100dvh - 700px), 70dvh);
+  }
+}
+
 /* Devanagari font stack when locale is Hindi. Cabinet Grotesk / Satoshi
    have no Devanagari glyphs, so the browser would fall back to a system
    serif and break the page rhythm. Swap the body + display vars at <html>
@@ -960,6 +1036,55 @@ select {
 
 .container-wide {
   max-width: 72rem;
+}
+
+/* The HEADER's container, and the only place that intentionally differs from
+   .container-wide.
+ *
+ * WHY IT EXISTS. The nav used .container-wide, which caps at 72rem (1152px)
+ * with 2rem of padding each side — so at 1536px AND at 1920px the bar shares an
+ * identical 1064px of usable row. Meanwhile the `2xl:` breakpoint REVEALS more
+ * chrome: the wider search field, and "For partners" swapped for the longer
+ * "List your business" (both variants are required by HN-06). Measured at 1536:
+ * brand 89 + right cluster 634, leaving the five category buttons 341 of the
+ * 446 they need — "Shop" clipped at the WIDEST screens, with 384px of unused
+ * viewport sitting either side of the bar.
+ *
+ * The header is chrome, not content. Constraining it to the content column is
+ * what made the budget impossible; 87.5rem at 2xl gives the category row 589px.
+ * Page content still uses .container-wide and is untouched.
+ *
+ * WHY NOT A TAILWIND ARBITRARY VALUE. `2xl:max-w-[1400px]` was tried on the nav
+ * and silently did nothing: the class landed in the HTML but the JIT never
+ * emitted a rule for it, so the computed max-width stayed 1152px and the bar
+ * still clipped. A class that does not exist fails quietly, which is the worst
+ * way for a layout fix to fail — so the value lives here, beside the container
+ * it modifies. */
+/* Header-only widening at 2xl. Used ALONGSIDE .container-wide, never instead of
+   it: DU-14 requires both chrome shells to sit on the container scale, and
+   __tests__/container-scale.test.ts checks app/layout.tsx for at least two
+   `.container-wide` occurrences.
+
+   COMPOUND SELECTOR, deliberately. A bare `.container-nav` has the same
+   specificity as `.container-wide` (0,1,0) and lost to source order — the
+   computed max-width stayed 1152px and the bar still clipped, so the "fix"
+   silently did nothing. `.container-wide.container-nav` is (0,2,0) and wins.
+
+   GUTTERS ARE NOT RE-DECLARED. An earlier version carried its own
+   padding-inline ramp (1rem / 1.5rem / 2rem) — the third gutter ramp DU-14
+   exists to delete. Padding stays with .container-wide; this changes one
+   property, at one breakpoint.
+
+   WHY AT ALL: .container-wide caps at 72rem, so 1536 and 1920 share an
+   identical 1064px row while `2xl:` reveals the wider search field and swaps
+   "For partners" for the longer "List your business" (HN-06 requires both).
+   Measured: the five category buttons got 341 of the 446 they need and "Shop"
+   clipped — at the widest screens, with 384px of unused viewport either side. */
+@media (min-width: 1536px) {
+  .container-wide.container-nav {
+    max-width: 87.5rem;
+  }
+}
 }
 
 .container-prose {

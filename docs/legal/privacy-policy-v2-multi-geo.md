@@ -19,6 +19,18 @@ Bhaktisetu serves devotees across IN + EU + US + UK + CA + AU. Each geo has dist
 
 ## Privacy Policy v2 structure
 
+> **OPS-10 correction (2026-09-02).** §5 of the draft below asserted *"India
+> servers (Mumbai)"* and named *Stripe* as a US processor. Both are false: the
+> application and API run on Render `oregon`, US West (`render.yaml:15`, `:56`)
+> — there is no India server and no Mumbai region — and the Stripe rail was
+> removed on 2026-08-11 (`apps/api/src/lib/env.ts:45-46`), so listing it
+> disclosed a processor that receives no personal data. This is a Privacy
+> Policy destined for publication under five regimes; a residency sentence in
+> it is a representation to every reader. §5 is restated below as what the
+> repository proves. Do not substitute a region that has not been verified —
+> the Supabase region is genuinely unknown and is marked `[verify]`.
+> Ground truth: `render.yaml`, `docs/runbooks/disaster-recovery.md`.
+
 ```
 # Bhaktisetu Privacy Policy v2.0
 > Effective: 2026-XX-XX. Last updated: 2026-XX-XX. Bhaktisetu Foundation (Section 8 India) is the Data Controller.
@@ -39,8 +51,15 @@ Auto-detect by user IP / browser locale → show right policy variant. Default =
 [CMP for EU users — Cookiebot or similar free tier]
 
 ## 5. Cross-border data transfer
-- India servers (Mumbai)
-- US-based processors (Stripe, Resend, Anthropic) — under SCC equivalent
+- Application + API servers: Render `oregon` region, US West (render.yaml:15, :56).
+  There is NO India-hosted server and NO Mumbai region. Personal data is
+  processed outside India today — say so; do not claim the opposite.
+- Database: Supabase Postgres, region [verify] — not recorded in the repository.
+  Read it from the Supabase dashboard before this policy is published.
+- Standby / replica: NONE in any geography.
+- US-based processors (Resend, Anthropic) — under SCC equivalent
+  [Stripe removed 2026-08-11 with the Stripe rail; Razorpay (India) is the only
+  payment processor. WhatsApp is Meta's Cloud API (US). PostHog is Hungary + US.]
 
 ## 6. Your rights (geo-specific)
 - DPDP (IN): info / correction / erasure / withdraw / grievance

@@ -89,7 +89,7 @@ NOW THEREFORE, the parties agree as follows:
      payment-processor and statutory deductions.
 
 2.3  Deductions from Pandit share before payout:
-     (a) Payment processor fees (Razorpay/Stripe — actuals)
+     (a) Payment processor fees (Razorpay — actuals)
      (b) TDS under Section 194C/194J of Income Tax Act 1961 as applicable
      (c) GST setoffs where applicable
      (d) Any refund issued under Section 7 (Cancellation) below
@@ -373,7 +373,10 @@ SCHEDULE A — PUJA-TYPE COMMISSION GRID (illustrative; founder updates)
   Shraadh / Pitra Paksh (full)       ₹3,500         ₹2,275 (65%)  ₹1,225 (35%)
   NRI premium tier (any puja)        9-10x domestic 60% of NRI    40% of NRI
 
-  Note: NRI 40% share covers higher Stripe processor fees, USD-INR FX
+  Note: NRI 40% share covers higher international processor fees
+  ([verify] — corrected 2026-09-02 under `OPS-10`; verified in `apps/api/src/lib/env.ts:45-46` and `payment.service.ts:2506-2517`;
+  the Stripe rail was removed 2026-08-11 and no replacement processor is
+  recorded, so this differential is unsubstantiated as written), USD-INR FX
   spread, dual-currency 80G receipt issuance, and overseas-grievance
   handling overhead.
 

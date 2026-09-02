@@ -9,7 +9,7 @@
 | Service                                      | Free cap                          | Resets               | What burns it                                            | Where to check                      |
 | -------------------------------------------- | --------------------------------- | -------------------- | -------------------------------------------------------- | ----------------------------------- |
 | **GitHub Actions** (private repo)            | 2000 min/mo                       | 1st of month         | Every workflow run. Linux runner = 1× multiplier.        | https://github.com/settings/billing |
-| **Cloudflare Pages** builds                  | 500/mo                            | 1st of month         | Every push to main (git integration).                    | CF dash → Pages → project → builds  |
+| **Cloudflare Pages** builds                  | 500/mo (n/a since 2026-07-08)     | 1st of month         | **Nothing.** Pages git integration was disabled 2026-07-08 (`cf-kill-zombie.yml`); web is a Render Docker service. Row kept so the zero is deliberate, not an omission. | CF dash → Pages → project → builds  |
 | **Cloudflare Pages** worker bundle           | 3 MiB compressed                  | per deploy           | Edge routes + their deps. Hard fail on overshoot.        | `docs/cf-worker-budget.md`          |
 | **Cloudflare Pages** requests                | 100k/day                          | daily                | Visitor traffic                                          | CF dash → Analytics                 |
 | **Resend** emails                            | 100/day, 3000/mo                  | rolling 24h, monthly | Welcome / receipt / reset / referral.                    | resend.com/dashboard                |
@@ -310,7 +310,7 @@ months later is a real state rather than a display bug.
 2. **Default new pages to Static / SSG.** Only add `runtime = 'edge'` if you NEED per-request server logic.
 3. **`'use client'` pages don't need edge** — they hydrate in browser.
 4. **Heavy SDKs (Stripe, Marked, Lucide-all, date-fns) banned from edge routes.**
-5. **CF builds 500/mo:** same rules as GH commit batching. Each push to main = 1 CF build, regardless of file types touched.
+5. **CF builds 500/mo — RETIRED 2026-09-02 (OPS-06).** This rule assumed the Cloudflare Pages git integration was live and that merging to `main` consumed a CF build. That integration was disabled on 2026-07-08 (`cf-kill-zombie.yml`) when the web front end moved to Render, so the CF build budget is no longer consumed by this repository at all. Render deploys are hand-dispatched (`autoDeploy: false`, `render.yaml:28`/`:60`) and bill against instance-hours, not builds — see the Render rows above.
 6. **Two pushes in same hour for same logical work = budget waste.** If you just pushed code, do NOT push docs follow-up — amend or wait until next code change. Incident 2026-05-30: `72a6da1` code + `a358f92` docs pushed 5 min apart, both blocked at 500/500.
 
 ### Resend rules

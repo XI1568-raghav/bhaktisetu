@@ -45,6 +45,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
 vi.mock('../../../../lib/auth-context', async () => {
   const actual = await vi.importActual<typeof import('../../../../lib/auth-context')>(
@@ -69,6 +71,7 @@ vi.mock('../../../../lib/supabase', () => ({
 }));
 
 import LoginPage from '../page';
+import AuthLayout from '../../layout';
 import CookieBanner from '../../../../components/CookieBanner';
 
 /**
@@ -245,13 +248,20 @@ describe('RESP-01 — the consent banner is the other half of the collision', ()
     const dialog = screen.getByRole('dialog', { name: /cookies for darshan/i });
     const html = String(dialog.innerHTML);
 
-    // If a cap exists it must be viewport-relative, not a pixel constant that
-    // silently stops holding when the copy or the font size changes.
+    // AMENDED AGAIN 2026-09-02 (sixth pass). The cap is no longer written at
+    // the call site — it is a policy in globals.css, read through a custom
+    // property, because the number the sign-in page needs is not a fraction of
+    // anything (see the block below). What survives here is the property that
+    // made the fifth pass's cap defensible in the first place: whatever the
+    // banner ends up bounded BY, the fallback must still be viewport-relative,
+    // so a browser that never resolves the variable is no worse off than before.
     const cap = html.match(/max-h-\[([^\]]+)\]/);
-    if (cap) {
-      expect(cap[1], `height cap "${cap[1]}" must be viewport-relative (dvh/vh), not a fixed constant`)
-        .toMatch(/d?vh$/);
-    }
+    expect(cap, 'the banner card must still declare a height cap').toBeTruthy();
+    const fallback = /^var\(--[a-z-]+,\s*([^)]+)\)$/.exec(cap![1]);
+    expect(
+      fallback ? fallback[1].trim() : cap![1],
+      `height cap "${cap![1]}" must resolve to a viewport-relative value, not a fixed constant`,
+    ).toMatch(/d?vh$/);
 
     // The load-bearing part: the action row must not live inside the scroller.
     const scroller = dialog.querySelector('[class*="overflow-y-auto"]');
@@ -272,5 +282,53 @@ describe('RESP-01 — the consent banner is the other half of the collision', ()
       const btn = screen.getByRole('button', { name });
       expect(String(btn.className)).toMatch(/(^|\s)h-11(\s|$)/);
     }
+  });
+
+  /**
+   * SIXTH PASS, 2026-09-02 — the two halves of the fix must stay wired to each
+   * other.
+   *
+   * The fifth pass's flat `max-h-[45dvh]` was measured NOT to close the finding:
+   * at 390x844 with "Manage preferences" expanded the banner is 388px, Sign In
+   * is at y 508-552 with 0 of 44px on screen, and elementFromPoint at the
+   * button's own centre returns the notice. A 1280x800 laptop failed even
+   * collapsed. A fraction cannot work, because what the page needs is a
+   * CONSTANT — the button's bottom edge is at y=552 at every width below sm, so
+   * the notice must be given `100dvh` minus that, not a share of it.
+   *
+   * That constant belongs to the sign-in card, so the tightened cap is scoped to
+   * the auth segment with `body:has([data-auth-shell])` in globals.css, and
+   * `data-auth-shell` is rendered by app/auth/layout.tsx. Two files, one
+   * coupling, no compiler or type between them: rename or drop either side and
+   * the banner silently reverts to 45dvh with nothing red. That is the exact
+   * regression this asserts — it reads the attribute out of the CSS selector and
+   * requires the rendered auth layout to match it, so it cannot pass by
+   * agreeing with itself.
+   */
+  it('the tightened auth cap in globals.css matches an attribute the auth layout renders', () => {
+    // __dirname resolves under vitest's transform; import.meta.url does not
+    // come back as a file: URL here.
+    const css = readFileSync(path.resolve(__dirname, '../../../globals.css'), 'utf8');
+
+    // 1. the default is still declared, so non-auth routes keep a cap at all
+    expect(css).toMatch(/--consent-max-h:\s*45dvh/);
+
+    // 2. the auth-scoped override exists and subtracts a constant from the
+    //    viewport rather than taking a fraction of it
+    const scoped = /body:has\((\[[a-z-]+\])\)\s*\{\s*--consent-max-h:\s*([^;]+);/.exec(css);
+    expect(scoped, 'globals.css must scope a tighter --consent-max-h to the auth shell').toBeTruthy();
+    expect(scoped![2]).toContain('calc(100dvh -');
+
+    // 3. and the element that selector needs is really in the auth layout's
+    //    output — this is the half that silently rots
+    const { container } = render(
+      <AuthLayout>
+        <div />
+      </AuthLayout>,
+    );
+    expect(
+      container.querySelector(scoped![1]),
+      `globals.css keys the auth consent cap off "${scoped![1]}", which app/auth/layout.tsx does not render`,
+    ).not.toBeNull();
   });
 });

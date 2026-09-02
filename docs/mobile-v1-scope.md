@@ -70,7 +70,7 @@ claim. `apps/web/app/search` is therefore **no longer** on the web-only list.
 | Surface | Web | Why it stays on the web for v1 |
 |---|---|---|
 | Card payment | `apps/web/app/bookings/pay` | The app carries no payment SDK. See §5 — this is the one exclusion that is a **known revenue defect**, not a comfortable choice. |
-| Checkout | `apps/web/app/checkout` (2 pages) | Needs a full address form + saved addresses. The app has no address picker at all, which is also why `buildCreateBookingBody` sends `prasadDeliveryRequested: false` unconditionally (`apps/mobile/lib/booking-flow.ts`). Building it is real work, not a wrapper. |
+| ~~Checkout~~ **BUILT 2026-09-02** | `apps/mobile/app/(devotee)/{cart,checkout,orders}.tsx` | No longer excluded. The store purchase path completes in-app via Cash on Delivery against a real `POST /store/orders`, reusing saved addresses from `GET /users/me/addresses` rather than adding an address book. Card/UPI stays disabled with a stated reason: no web page can pay an *existing* `StoreOrder` (`/store/checkout` only pays for an order it just created), so there is nothing to hand off to. `buildCreateBookingBody` still sends `prasadDeliveryRequested: false` — that is the separate PAR-15 gap in §5.2. |
 | Long-form devotional reading | `aarti`, `chalisa`, `gita`, `ramayana`, `upanishads`, `vedas`, `shlokas`, `puranas`, and ~30 more | ~37 of the 389 web pages are devotional reading matter. These are SEO surfaces first: they earn their keep on Google, not in a tab bar. Search (above) makes the same corpus reachable in-app by query, which is the phone-shaped version of the same need. |
 | Gift + refer | `apps/web/app/gift` (2), `apps/web/app/refer` (1) | Growth surfaces that end in a share sheet. The share sheet is the app; the composer is not worth a screen until referral actually drives installs. |
 | Antim Sanskar | `apps/web/app/antim-sanskar` (2) | Booked once, under grief, usually by a family member at a desk, and needs document handling. A phone form is the wrong instrument. |
@@ -186,8 +186,19 @@ The screen is at least **honest** about it today ("Not paid yet… Card payment
 happens on the website"), and the booking is saved first, so nothing is lost —
 but the core revenue action still exits the app.
 
+> **RESOLVED 2026-09-02.** `react-native-webview@13.12.5` is now a declared
+> dependency of `apps/mobile` and `pnpm-lock.yaml` has been regenerated, so the
+> `--frozen-lockfile` concern below is discharged — package.json and the lockfile
+> must be committed together. `WebViewComp` now resolves, which means
+> `darshan-player.tsx` renders in-app instead of always taking the `null` branch,
+> and `web-view.tsx` is no longer dead code. Still outstanding: nothing in
+> `app/` navigates to `web-view.tsx`, so the generic in-app frame needs call
+> sites before it changes any user's experience; and a fresh EAS build is
+> required because this is a native module. The original analysis is kept below
+> for provenance.
+
 **Blocked, with a specific cause.** Both viable fixes need a WebView or a
-payment SDK, and `react-native-webview` is **not installable in this tree
+payment SDK, and `react-native-webview` was **not installable in this tree
 without a lockfile change**:
 
 - It appears in `pnpm-lock.yaml` only as an **optional peer** of `expo@52.0.49`
@@ -217,10 +228,28 @@ root cause as the checkout exclusion in §1. Documented in the code.
 
 ### 5.3 Session-dropping hand-offs (PAR-22 C, open)
 
-**19 `Linking.openURL` occurrences** exist in `apps/mobile` outside the tests:
-**16 real invocations**, plus **3 places the function is passed as a value** to a
-helper that calls it (`astrology.tsx` x2, `support.tsx` x1), spread across 14
-files. They fall into three groups, and only the first is a defect.
+**29 `Linking.openURL` occurrences** exist in `apps/mobile` outside the tests:
+**21 real invocations**, plus **8 places the function is passed as a value** to a
+helper that calls it, spread across 21 files. They fall into three groups, and
+only the first is a defect.
+
+>
+> **Recounted again 2026-09-02, after the mobile-parity route files landed.**
+> 25 / 19 / 6 across 19 files became 29 / 21 / 8 across 21 files. The count is
+> measured by `lib/__tests__/handoff-census.par22.test.ts`, which fails when this
+> paragraph and the tree disagree — that is the point of the test, and it is why
+> this figure gets recounted rather than estimated.
+>
+> **Recounted 2026-09-02.** The previous figures (19 / 16 / 3, across 14 files)
+> predate the parity wave that added `(auth)/forgot-password`,
+> `(auth)/reset-password`, `(devotee)/settings`, `(devotee)/cart`,
+> `(devotee)/checkout`, `(devotee)/orders`, `(devotee)/pandits`,
+> `(devotee)/pandit-detail`, `(devotee)/puja-detail`, `(priest)/offers` and
+> `(priest)/booking-detail`. The growth is not new bounce-out debt: the added
+> invocations are help-centre, privacy/terms and about links, plus one
+> "view uploaded video" control on the priest booking detail. The numbers above
+> are whatever `handoff-census.par22.test.ts` parses today — if you change a
+> hand-off, re-run that test and restate them here rather than guessing.
 
 > **This count is parsed, not grepped, and that changed it.** The figure here
 > used to read 23. It was reached with a text search, which counted four

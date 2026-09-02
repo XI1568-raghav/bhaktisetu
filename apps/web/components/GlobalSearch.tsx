@@ -219,14 +219,27 @@ export function GlobalSearch() {
 
  return (
  <div ref={containerRef} className="relative">
- {/* Pill — only at xl+ (1280px+). Below xl uses icon-only to fit right cluster. */}
+ {/* 2xl, not xl — and the 300px step is gone. The expanded field is 240px,
+     and at xl (1280) that left the five category buttons 398px of the 446px
+     they need, clipping "Shop". `2xl:w-[300px]` made it worse exactly where it
+     looked safest: `container-wide` caps this row at 1152px, so a 1536px
+     viewport gives it no more room than a 1152px one — the widest breakpoint
+     was spending the most. Below 2xl the icon button below takes over.
+
+     WIDTH IS 180px, AND THE NUMBER IS MEASURED, NOT CHOSEN. At 1536 the nav is
+     1152 wide with 32px padding each side (1088 inner) and two 12px gaps, so
+     1064 is shared. The brand (89) and the right cluster (578) are both
+     shrink-0, leaving the category row 397 against the 446 it needs — a deficit
+     of 49px. A 240px field could not be afforded at ANY viewport, because the
+     container is capped: 1920 computes identically to 1536. 180px frees 60px
+     and leaves ~11px of slack. */}
  <button
  type="button"
  aria-label="Search"
  aria-haspopup="dialog"
  aria-expanded={open}
  onClick={(e) => openSearch(e.currentTarget)}
- className="hidden xl:flex items-center gap-2 w-[240px] 2xl:w-[300px] h-9 px-3 text-sm text-surface-500 bg-white border border-surface-200 hover:border-saffron-300 hover:text-surface-700 rounded-md transition-colors"
+ className="hidden 2xl:flex items-center gap-2 w-[180px] h-9 px-3 text-sm text-surface-500 bg-white border border-surface-200 hover:border-saffron-300 hover:text-surface-700 rounded-md transition-colors"
  >
  <Search className="w-4 h-4 shrink-0" />
  <span className="truncate text-left flex-1">
@@ -246,7 +259,7 @@ export function GlobalSearch() {
  onClick={(e) => openSearch(e.currentTarget)}
  // HN-12: h-9 w-9 is 36x36, under the 44px floor on the surface where it
  // matters most — this is the only search affordance a phone gets.
- className="xl:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
+ className="2xl:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
  >
  <Search className="w-4 h-4" />
  </button>

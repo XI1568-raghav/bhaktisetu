@@ -18,7 +18,7 @@ The autonomous cutover workflow `.github/workflows/render-cutover.yml` ran to **
 - Render service `darshya-web` (`srv-d970l2ks728c738fc33g`) — LIVE + serving 200 at `https://darshya-web.onrender.com`.
 - CF DNS: `darshya.online` + `www.darshya.online` → CNAME `darshya-web.onrender.com` (orange-cloud proxy; `server: cloudflare` + `x-render-origin-server: Render` in prod headers — CF edge in front, Render origin).
 - Prod `https://darshya.online` — **200**, `<title>Darshya, India's Devotional Super App</title>`, `/jyotirlinga/somnath` → 200 with `Somnath` body marker, `/kundli` → 308 `/astrology/kundli`, `www` → 301 apex. All 9 B3 checks PASS.
-- CF Pages project `darshya` auto-deploy still KILLED — no build pipeline, last frozen deploy preserved as rollback.
+- CF Pages project `darshya` auto-deploy still KILLED — no build pipeline. Its last build is frozen on 2026-07-08 and is **not** a rollback target (corrected 2026-09-02, OPS-06): see the Rollback note below and `docs/runbooks/prod-rollback.md` §7.
 
 **The blocker that was resolved — CF token DNS:Edit scope:**
 - The original `CLOUDFLARE_API_TOKEN` GH secret (token ID `f5fbb661c60a9767c8f45d9c2cef07fb`) had Pages + Zone:Read but NOT Zone·DNS·Edit → B2 failed HTTP 403 / CF error 10000 across three attempts.

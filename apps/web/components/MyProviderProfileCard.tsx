@@ -6,11 +6,15 @@ import Link from 'next/link';
 import { CheckCircle2, Clock, ExternalLink, Pencil, Loader2 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { cardBlurb } from '../lib/copy';
+import ReauthPrompt from './ReauthPrompt';
 import {
  API_BASE_URL,
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: true ONLY for 401. A 403 here is a suspended provider, and
+ // sending her to sign in again returns her to the same refusal.
+ loadErrorIsReauth,
 } from '../lib/api-config';
 
 interface Props {
@@ -68,6 +72,10 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  // Providers who onboarded months ago re-submit documents or conclude we lost
  // their verification. Track the unread case separately.
  const [loadFailed, setLoadFailed] = useState<string | null>(null);
+ // AUTH-06: this card sits at the top of EVERY provider portal, so it is the
+ // most-rendered surface that was answering an expired session with a Retry
+ // that could only 401 again.
+ const [loadReauth, setLoadReauth] = useState(false);
  const [reloadKey, setReloadKey] = useState(0);
 
  useEffect(() => {
@@ -83,13 +91,17 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  (async () => {
  try {
  setLoadFailed(null);
+ setLoadReauth(false);
  // RES-01: bare fetch has no timeout, so a stalled read left this card on
  // "Loading your profile…" forever at the top of every portal.
  const res = await fetchWithTimeout(`${API_BASE_URL}/onboarding/provider?role=${role}`, {
  headers: { Authorization: `Bearer ${token}` },
  }, DATA_FETCH_TIMEOUT_MS);
  if (!res.ok) {
- if (!cancelled) setLoadFailed(loadErrorMessage(res));
+ if (!cancelled) {
+ setLoadFailed(loadErrorMessage(res));
+ setLoadReauth(loadErrorIsReauth(res));
+ }
  return;
  }
  const data = await res.json();
@@ -99,6 +111,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  } catch (err) {
  if (!cancelled) {
  setLoadFailed(loadErrorMessage(err));
+ setLoadReauth(loadErrorIsReauth(err));
  setError(err instanceof Error ? err.message : 'Failed to load');
  }
  } finally {
@@ -128,6 +141,9 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  <span className="flex-1 min-w-[12rem]">
  {loadFailed} Your listing and approval status are unchanged.
  </span>
+ {loadReauth ? (
+ <ReauthPrompt message="" className="shrink-0" />
+ ) : (
  <button
  type="button"
  onClick={() => { setLoading(true); setReloadKey((k) => k + 1); }}
@@ -135,6 +151,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  >
  Retry
  </button>
+ )}
  </div>
  </div>
  );

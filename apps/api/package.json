@@ -11,6 +11,8 @@
     "lint": "echo \"lint: ok\"",
     "type-check": "tsc --noEmit",
     "db:generate": "prisma generate",
+    "bootstrap:fresh-db": "node scripts/bootstrap-fresh-db.mjs",
+    "ops:perf-indexes": "node scripts/apply-perf-indexes.mjs",
     "predb:migrate": "tsx scripts/guard-db-target.ts",
     "db:migrate": "prisma migrate dev",
     "predb:push": "tsx scripts/guard-db-target.ts",

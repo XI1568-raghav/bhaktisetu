@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # Support Macros — Darshya CS (English v1)
 
 > **Doctrine source**: `docs/company/07-cs.md` — verbatim: _"A devotee complaint is not a UX bug — it is a disrupted spiritual experience. We respond to the emotion first, the ticket second."_
@@ -20,7 +31,7 @@
 >
 > Aapke paas 3 vikalp hain:
 > 1. **Full refund** ₹{amountInr} — Razorpay rails par 5-7 banking days mein wapas, ya
-> 2. **Free re-do** same pandit ji ke saath OR doosre verified pandit ji ke saath, OR
+> 2. **Free re-do** same pandit ji ke saath OR doosre pandit ji ke saath, OR
 > 3. **Wallet credit** ₹{amountInr × 1.25} (25% bonus, valid 90 din)
 >
 > Reply karein 1/2/3. 24 ghante mein action lenge.
@@ -41,7 +52,7 @@
 >
 > Aapne intezaar kiya, aur pandit ji nahi aaye. Yeh aapke samay ka anadar tha — humari taraf se galti hai.
 >
-> Aaj hi (within 48h) aapko **doosre verified pandit ji** assign kar rahe hain — same date/time slot, no extra charge. Pandit ID + WhatsApp aapko 2 ghante mein milega.
+> Aaj hi (within 48h) aapko **doosre pandit ji** assign kar rahe hain — same date/time slot, no extra charge. Pandit ID + WhatsApp aapko 2 ghante mein milega.
 >
 > Agar reschedule sambhav nahi → **full refund** ₹{amountInr} 5-7 banking days mein.
 >
@@ -185,7 +196,12 @@
 >
 > Agar aap ka concern aur kuch hai (charge double dikha, foreign-transaction bank fee, GST refund) → batayein, exact line-item dispatch karenge.
 >
-> Receipt PDF (80G eligible if Foundation donation) aapko email kar diya: {invoice_url}
+> Receipt PDF aapko email kar diya: {invoice_url} — yeh proof of payment hai,
+> tax-exemption certificate nahi (Darshya ke paas abhi Section 80G registration
+> nahi hai). <!-- TC-01: this read "(80G eligible if Foundation donation)".
+> apps/web/lib/company.ts HAS_80G_VERIFIED is false with eightyGNumber and pan
+> null, and apps/api/src/lib/pdf-receipt.ts is80GEligible() needs donee columns
+> no route writes, so no receipt this macro links to is an 80G instrument. -->
 >
 > — Bhaktisetu CS
 
@@ -201,7 +217,7 @@
 
 > Pranam {name} ji,
 >
-> {festival_name} ke liye aapne jo puja chuni ({puja_name}, {requested_date}) — uss specific date par hamare verified pandit ji ka roster full ho gaya hai. Aap akele nahi hain — yeh festival hi sabse zyada demand-driven hota hai.
+> {festival_name} ke liye aapne jo puja chuni ({puja_name}, {requested_date}) — uss specific date par hamare pandit ji ka roster full ho gaya hai. Aap akele nahi hain — yeh festival hi sabse zyada demand-driven hota hai.
 >
 > **Aapke options**:
 >
@@ -285,7 +301,7 @@
 >
 > Two resolutions are available, and you choose:
 >
-> 1. **Reschedule within 7 days** — a verified pandit (different from the original assignee) will conduct the puja with mandatory video proof delivered to you within 24 hours of completion.
+> 1. **Reschedule within 7 days** — a pandit (different from the original assignee) will conduct the puja with mandatory video proof delivered to you within 24 hours of completion.
 > 2. **Full refund of ₹{{amountInr}}** — credited to your original payment method within 5-7 business days, plus a ₹100 inconvenience credit on your Bhaktisetu wallet.
 >
 > Please reply A or B. If I do not hear back within 48 hours, I will default to option B (full refund) to ensure you are not waiting any longer.

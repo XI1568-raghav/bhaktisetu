@@ -32,22 +32,39 @@ export async function writeStoreOrderCommission(
 
   const order = await tx.storeOrder.findUnique({
     where: { id: storeOrderId },
-    select: { id: true, totalAmountInr: true, items: true },
+    select: { id: true, totalAmountInr: true, items: true, storeProfileId: true },
   });
   if (!order) return;
 
-  const items = Array.isArray(order.items) ? (order.items as Array<{ productId?: string }>) : [];
-  const firstProductId = items.find((it) => it?.productId)?.productId;
-  if (!firstProductId) return;
+  // Attribution comes off the order itself. P0 #S-11 (migration
+  // 20260709020000) added `store_orders.store_profile_id` for exactly this, and
+  // routes/store-orders.ts has written it at order creation since 2026-07-09.
+  //
+  // The old route — first line item -> product -> store — is not merely
+  // indirect, it loses money: DELETE /store-admin/products/:id hard-deletes,
+  // so deleting a product that heads an unconfirmed order made this lookup
+  // return null and this function return early with NO Commission row. The
+  // owner was then never paid, while the order still appeared on their
+  // dashboard, which reads the FK. Keep the product path for legacy rows only.
+  let storeProfileId = order.storeProfileId;
+  if (!storeProfileId) {
+    // Orders predating S-11. The migration's own backfill never populated them:
+    // its UPDATE could not parse until 2026-09-02 (see the migration file), so
+    // these rows are resolvable only through their line items.
+    const items = Array.isArray(order.items) ? (order.items as Array<{ productId?: string }>) : [];
+    const firstProductId = items.find((it) => it?.productId)?.productId;
+    if (!firstProductId) return;
 
-  const product = await tx.storeProduct.findUnique({
-    where: { id: firstProductId },
-    select: { storeProfileId: true },
-  });
-  if (!product?.storeProfileId) return;
+    const product = await tx.storeProduct.findUnique({
+      where: { id: firstProductId },
+      select: { storeProfileId: true },
+    });
+    if (!product?.storeProfileId) return;
+    storeProfileId = product.storeProfileId;
+  }
 
   const storeProfile = await tx.storeProfile.findUnique({
-    where: { id: product.storeProfileId },
+    where: { id: storeProfileId },
     select: { userId: true, commission: true },
   });
   if (!storeProfile) return;

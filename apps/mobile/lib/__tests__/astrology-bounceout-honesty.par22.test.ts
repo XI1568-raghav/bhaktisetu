@@ -146,7 +146,12 @@ describe('PAR-22 — the WebView dependency the app already assumes is absent', 
     ...Object.keys(pkg.devDependencies ?? {}),
   ]);
 
-  const KNOWN_ABSENT = ['react-native-webview'];
+  // Emptied 2026-09-02: react-native-webview@13.12.5 is now declared in
+  // apps/mobile/package.json and the lockfile is regenerated. The registry
+  // stays (rather than being deleted) so the two tests below keep guarding
+  // against a NEW optional native module being require()d without being
+  // declared — the failure mode this file exists to catch.
+  const KNOWN_ABSENT: string[] = [];
 
   it('darshan-player really does require the module at runtime', () => {
     const player = stripComments(

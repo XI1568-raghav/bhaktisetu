@@ -13,16 +13,35 @@
       "resizeMode": "contain",
       "backgroundColor": "#EA580C"
     },
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#00000000",
+      "translucent": true
+    },
+    "androidNavigationBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#FFFFFF"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.darshya.app",
       "buildNumber": "1",
+      "associatedDomains": [
+        "applinks:darshya.online"
+      ],
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Darshya needs photo library access so devotees can attach photos to support tickets.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "localhost": {
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        }
       }
     },
     "android": {
@@ -32,9 +51,58 @@
       },
       "package": "com.darshya.app",
       "versionCode": 1,
-      "permissions": [
-        "POST_NOTIFICATIONS",
-        "VIBRATE"
+      "permissions": [],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "darshya.online",
+              "pathPrefix": "/puja"
+            },
+            {
+              "scheme": "https",
+              "host": "darshya.online",
+              "pathPrefix": "/darshan"
+            },
+            {
+              "scheme": "https",
+              "host": "darshya.online",
+              "pathPrefix": "/booking"
+            },
+            {
+              "scheme": "https",
+              "host": "darshya.online",
+              "pathPrefix": "/consultation"
+            },
+            {
+              "scheme": "https",
+              "host": "darshya.online",
+              "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "darshya.online",
+              "pathPrefix": "/inbox"
+            },
+            {
+              "scheme": "https",
+              "host": "darshya.online",
+              "pathPrefix": "/order"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {
@@ -43,7 +111,12 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -56,13 +129,15 @@
             "deploymentTarget": "15.1"
           }
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#EA580C"
+        }
       ]
     ],
-    "notification": {
-      "icon": "./assets/icon.png",
-      "color": "#EA580C",
-      "androidMode": "default"
-    },
     "experiments": {
       "typedRoutes": true
     },

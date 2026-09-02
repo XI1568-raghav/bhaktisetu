@@ -20,7 +20,7 @@ Rotate leaked Resend API key `re_46d7rTF7_7DygN1pnEpG3T5Cmi5cMnvB3` per security
 Render Dashboard → bhaktisetu-api → Environment:
 - Set `RESEND_API_KEY` = `re_NEW_KEY_VALUE`
 - DO NOT delete old key yet
-- Save → triggers redeploy
+- Save, then Render → **Manual Deploy** on the API (`autoDeploy` is `false`, `render.yaml:28`, so confirm a fresh deploy reaches `live` rather than assuming the save shipped it)
 
 ### Step 3: Verify redeploy + test send
 

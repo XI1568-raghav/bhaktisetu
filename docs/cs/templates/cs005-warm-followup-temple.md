@@ -16,7 +16,8 @@ thi. Possible hai spam folder mein chali gayi — humara DNS setup theek hua
 hai aaj.
 
 Updated context:
-- Bhaktisetu Foundation: active 80G + CSR-1 in India
+- Bhaktisetu Foundation abhi 80G ya CSR-1 registered nahi hai — donation
+  receipt proof of payment hai, tax-exemption certificate nahi
 - 30 {city} temples in pipeline; 5 pilots will be live by Q2-end
 - Devotees pay via Razorpay/Stripe; temple ko 60-80% commission
 - Video proof mandatory per puja (mandate per business rule #1)
@@ -34,7 +35,7 @@ Bhaktisetu Foundation Team
 ## Structure check
 
 1. ✅ Acknowledge prior outreach + explain DNS issue (transparency, builds trust w/ temple trustees)
-2. ✅ New update / Q1 milestones (80G/CSR-1 + pipeline + commission)
+2. ✅ New update / Q1 milestones (registration status stated honestly + pipeline + commission)
 3. ✅ Soft re-ask (calendar link, exploratory framing)
 4. ✅ Explicit unsubscribe ("remove" keyword)
 

@@ -278,7 +278,7 @@ function VolunteersContent() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(42, 37, 32, 0.55)' }}>
-          <div className="rounded-xl shadow-lg w-full max-w-md p-6 bg-[var(--color-surface)] border border-[var(--color-border)]">
+          <div className="rounded-xl shadow-lg w-full max-w-md max-h-[90dvh] overflow-y-auto p-6 bg-[var(--color-surface)] border border-[var(--color-border)]">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Add Volunteer</h2>
               <button onClick={() => setShowModal(false)} className="text-[var(--color-text-faint)] hover:text-[var(--color-text)]">

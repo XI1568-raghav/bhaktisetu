@@ -12,6 +12,7 @@ import { selectAdminDashboard, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { approvalStatusLabel, transactionStatusLabel, transactionTypeLabel, userRoleLabel } from '../../lib/enum-labels';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
  * PAR-04. Two defects lived here.
  *
@@ -26,6 +27,11 @@ import { approvalStatusLabel, transactionStatusLabel, transactionTypeLabel, user
  * 100000 and printed "₹0.3L", which hid four-figure revenue entirely.
  */
 export default function AdminDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const dashboardQuery = useAdminDashboard();
   const approvalsQuery = useAdminPendingApprovals();
   const [refreshing, setRefreshing] = useState(false);

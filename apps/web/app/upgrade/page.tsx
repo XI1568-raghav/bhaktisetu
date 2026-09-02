@@ -6,6 +6,16 @@ import { useTranslations } from '../../lib/t';
 import { Sparkles, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
+// RES-09 / AUTH-06: this page rendered `err.message` verbatim into the banner
+// below. See the note on `handleUpgrade`'s catch for what that put in front of
+// a devotee mid-purchase.
+import {
+  UserFacingError,
+  classifyUserFacing,
+  friendlyApiError,
+  serverErrorMessage,
+} from '../../lib/friendly-error';
+import ReauthPrompt from '../../components/ReauthPrompt';
 import AuthGuard from '../../components/AuthGuard';
 import { NRI_PREMIUM_IS_SELLABLE } from '../nri/plan-availability';
 import { H1 } from '../../components/ui/heading-recipe';
@@ -132,6 +142,10 @@ function UpgradeInner() {
   const { isAuthenticated, session } = useAuth();
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // AUTH-06: the flag `friendlyApiError` has returned since P1 #208 and that
+  // this page discarded. `reauth` means the credential is dead, so the only
+  // useful control is a link back to sign-in — never a Retry.
+  const [reauth, setReauth] = useState(false);
   const t = useTranslations('upgrade');
 
   async function handleUpgrade(planId: string) {
@@ -177,7 +191,30 @@ function UpgradeInner() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Subscription failed (${res.status})`);
+        // RES-09: `data.error` is the server's own sentence and is worth
+        // showing — it is how a devotee learns the NRI plan is withdrawn (see
+        // the TC-03/TC-04 note at the top of this file). What must NOT reach
+        // the banner is the fallback this line used to carry:
+        // `Subscription failed (500)`, a status code shown to someone who just
+        // tried to pay. `serverErrorMessage` refuses a body with nothing
+        // quotable in it and refuses a bare developer name for the status.
+        //
+        // Thrown as a `UserFacingError` carrying `res.status`, because the copy
+        // is already fit to render AND because composing a sentence destroys
+        // the status — which is exactly how a 401 here would otherwise be
+        // classified `reauth: false` and answered with a dead Retry.
+        //
+        // The empty fallback is deliberate: `UserFacingError` passes its
+        // message through `userFacingMessage` UNTOUCHED, so baking a generic
+        // sentence in here would OUTRANK the classifier and a 500 would read
+        // "We could not start that upgrade" instead of "Something went wrong on
+        // our side." The server's sentence wins when it sent one; otherwise the
+        // classifier gets the status and answers for it.
+        const serverSentence = serverErrorMessage(data, '');
+        throw new UserFacingError(
+          serverSentence || friendlyApiError(new Error(`HTTP ${res.status}`)).message,
+          res.status,
+        );
       }
 
       const data = (await res.json().catch(() => ({}))) as {
@@ -191,7 +228,25 @@ function UpgradeInner() {
 
       router.push('/ask-pandit?upgraded=1');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not complete upgrade');
+      // RES-09 (2026-09-02): this rendered `err.message` verbatim. On the
+      // !res.ok path that was the server's sentence — fine — but the `fetch`
+      // above has no catch of its own, so an offline devotee, a captive portal
+      // or a cold API dyno put the BROWSER's string in the banner instead:
+      // "Failed to fetch" (Chrome), "Load failed" (Safari), "NetworkError when
+      // attempting to fetch resource." (Firefox). That is developer text on a
+      // purchase screen, and it tells the one person who needs to know whether
+      // they were charged precisely nothing.
+      //
+      // AUTH-06: `classifyUserFacing`, not `userFacingMessage`, so the reauth
+      // decision survives. A session that expires between opening /upgrade and
+      // clicking a plan 401s here, and a Retry button would re-fire the same
+      // dead credential — see the ReauthPrompt branch in the banner below.
+      const { message, reauth } = classifyUserFacing(
+        err,
+        'We could not complete that upgrade. Please try again.',
+      );
+      setError(message);
+      setReauth(reauth);
       setBusyPlanId(null);
     }
   }
@@ -216,7 +271,10 @@ function UpgradeInner() {
 
         {error && (
           <div className="max-w-md mx-auto mb-6 px-4 py-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
-            {error}
+            {/* AUTH-06: the sign-in affordance INSTEAD of the bare sentence,
+                never beside it. ReauthPrompt renders the copy and the link back
+                to /auth/login with this page as the redirect. */}
+            {reauth ? <ReauthPrompt message={error} /> : error}
           </div>
         )}
 

@@ -17,11 +17,16 @@ import AuthGuard from '../../components/AuthGuard';
 import { useAuth, type UserRole } from '../../lib/auth-context';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import LoadErrorBanner from '../../components/LoadErrorBanner';
 import {
   API_BASE_URL,
   DATA_FETCH_TIMEOUT_MS,
   fetchWithTimeout,
   loadErrorMessage,
+  // AUTH-06: true ONLY for 401. A 403 on a payout screen is a suspended
+  // provider, and sending her to sign in again succeeds and returns her to the
+  // same refusal — see loadErrorIsForbidden in lib/api-config.ts.
+  loadErrorIsReauth,
 } from '../../lib/api-config';
 
 interface Balance {
@@ -75,6 +80,10 @@ function PayoutsContent() {
   // ₹0 processing, ₹0 ever paid and "No payouts yet" — with no error anywhere.
   // That is the single most churn-inducing screen we own, and it was a lie.
   const [loadError, setLoadError] = useState<string | null>(null);
+  // AUTH-06: the flag `loadErrorMessage` computes internally and this page used
+  // to discard. Without it an expired session renders "sign in again" beside a
+  // Retry that re-fires the request with the same dead credential.
+  const [loadReauth, setLoadReauth] = useState(false);
 
   const load = useCallback(async () => {
     if (!session?.accessToken) return;
@@ -90,15 +99,20 @@ function PayoutsContent() {
         fetchWithTimeout(`${API_BASE_URL}/payouts/my`, { headers }, DATA_FETCH_TIMEOUT_MS),
       ]);
       if (bRes.ok) setBalance(await bRes.json());
-      else setLoadError(loadErrorMessage(bRes));
+      else {
+        setLoadError(loadErrorMessage(bRes));
+        setLoadReauth(loadErrorIsReauth(bRes));
+      }
       if (pRes.ok) {
         const j = await pRes.json();
         setPayouts(j.payouts ?? []);
       } else if (bRes.ok) {
         setLoadError(loadErrorMessage(pRes));
+        setLoadReauth(loadErrorIsReauth(pRes));
       }
     } catch (err) {
       setLoadError(loadErrorMessage(err));
+      setLoadReauth(loadErrorIsReauth(err));
     }
     setLoading(false);
   }, [session?.accessToken]);
@@ -148,20 +162,11 @@ function PayoutsContent() {
         <p className="text-sm text-surface-500 mt-1">Withdraw your earnings to your bank / UPI.</p>
 
         {loadError && (
-          <div
-            role="alert"
-            className="mt-4 flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-          >
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span className="flex-1 min-w-[12rem]">{loadError}</span>
-            <button
-              type="button"
-              onClick={() => { void load(); }}
-              className="font-semibold underline underline-offset-2 hover:text-amber-900"
-            >
-              Retry
-            </button>
-          </div>
+          <LoadErrorBanner
+            message={loadError}
+            reauth={loadReauth}
+            onRetry={() => { void load(); }}
+          />
         )}
         {error && (
           <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

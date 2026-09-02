@@ -7,6 +7,10 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { writeReport, upsertLog, TODAY } from './_lib.mjs';
+// TC-01 / TC-08 — these drafts become published articles, so the 80G answer
+// and the "verified pandit" adjective are gated on the owner flags. See
+// ./_claims.mjs for why neither is backed today.
+import { NO_80G_DISCLOSURE, verifiedNoun, withEightyG } from './_claims.mjs';
 
 const DRAFTS_DIR = 'docs/agent-reports/blog-drafts';
 
@@ -45,7 +49,7 @@ function draft(keyword) {
   const kw = keyword.kw;
   const title = kw.replace(/\b\w/g, (c) => c.toUpperCase());
   const slug = slugify(kw);
-  const desc = `Complete guide to ${kw} — significance, vidhi (procedure), samagri (materials), timing and how to book online with verified pandits on Darshya.`;
+  const desc = `Complete guide to ${kw} — significance, vidhi (procedure), samagri (materials), timing and how to book online with ${verifiedNoun('pandits')} on Darshya.`;
 
   const body = `---
 title: ${title}
@@ -88,25 +92,25 @@ without leaving home.
 ## Best timing
 
 Refer to today's [panchang](https://darshya.online/panchang) for tithi, nakshatra
-and the auspicious muhurat window. ${keyword.intent === 'commercial' ? `[Book a verified pandit on Darshya](https://darshya.online/pujas) — fixed price, video proof included.` : 'Most devotees prefer to perform this during Brahma Muhurta (04:00–05:30 IST) or Abhijit Muhurta (midday window).'}
+and the auspicious muhurat window. ${keyword.intent === 'commercial' ? `[Book a ${verifiedNoun('pandit')} on Darshya](https://darshya.online/pujas) — fixed price, video proof included.` : 'Most devotees prefer to perform this during Brahma Muhurta (04:00–05:30 IST) or Abhijit Muhurta (midday window).'}
 
 ## Frequently Asked Questions
 
 **Q: Can ${kw.split(' ').slice(0, 4).join(' ')} be done at home?**
 A: Yes, with proper preparation and ideally guidance from a learned pandit.
 
-**Q: What is the typical cost when booked through a verified service?**
+**Q: What is the typical cost when booked through Darshya?**
 A: On Darshya, pricing ranges from ₹501 (basic) to ₹5,100 (premium with full samagri and video proof). [See current pricing](https://darshya.online/pujas).
 
 **Q: Do I get an 80G receipt for any donation portion?**
-A: Donations to listed gaushalas issue 80G receipts within 24h. Pure puja booking fees do not qualify.
+A: ${withEightyG('Donations to listed gaushalas issue 80G receipts within 24h. Pure puja booking fees do not qualify.', NO_80G_DISCLOSURE + ' Puja booking fees never qualified in any case.')}
 
 ## Related on Darshya
 
 - [Browse all pujas](https://darshya.online/pujas)
 - [Today's panchang](https://darshya.online/panchang)
 - [Shlokas with meaning](https://darshya.online/shlokas)
-- [Donate to gaushalas (80G)](https://darshya.online/donations)
+- [Donate to gaushalas${withEightyG(' (80G)')}](https://darshya.online/donations)
 
 ---
 

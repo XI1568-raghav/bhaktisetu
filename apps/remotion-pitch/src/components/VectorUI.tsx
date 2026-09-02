@@ -9,6 +9,7 @@ import {
   useVideoConfig,
   staticFile,
 } from 'remotion';
+import { RECEIPT_FEATURE, RECEIPT_STAT } from '../claims';
 import {
   VOID,
   VOID_2,
@@ -153,7 +154,7 @@ export const VectorHome: React.FC<{ width: number; height: number }> = ({ width,
       </div>
       {/* trust row */}
       <div style={{ display: 'flex', gap: width * 0.03 }}>
-        {['Aadhaar Priests', 'HD Live Streams', '80G Receipts'].map((t) => (
+        {['Aadhaar Priests', 'HD Live Streams', RECEIPT_FEATURE].map((t) => (
           <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div
               style={{
@@ -718,7 +719,7 @@ export const VectorDashboard: React.FC<{ width: number; height: number; startFra
       </div>
       {/* stat cards */}
       <div style={{ display: 'flex', gap: width * 0.015 }}>
-        {['1,635', '₹15/min', '80G'].map((s, i) => (
+        {['1,635', '₹15/min', RECEIPT_STAT].map((s, i) => (
           <div
             key={i}
             style={{

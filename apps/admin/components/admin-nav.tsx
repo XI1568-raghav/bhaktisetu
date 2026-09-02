@@ -13,7 +13,9 @@ const LINKS = [
   { href: "/gurukuls", label: "Gurukuls" },
   { href: "/broadcast", label: "Broadcast" },
   { href: "/content-queue", label: "Content queue" },
-  { href: "/donations-export", label: "80G export" },
+  // TC-01: this read "80G export". No donation on the platform is 80G-eligible
+  // — see the note on app/donations-export/page.tsx.
+  { href: "/donations-export", label: "Donations export" },
 ];
 
 export function AdminNav() {

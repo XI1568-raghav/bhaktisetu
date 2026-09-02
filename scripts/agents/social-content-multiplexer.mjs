@@ -11,6 +11,10 @@
 // Output: docs/agent-reports/YYYY-MM-DD-social-content-multiplexer.md
 
 import { writeReport, upsertLog, fetchText, WEB_BASE, TODAY } from './_lib.mjs';
+// TC-01 / TC-08 — see ./_claims.mjs. Everything this file emits is written to
+// be posted verbatim to X, LinkedIn and Instagram, so the two unbacked trust
+// claims are read off the owner flags instead of being typed into templates.
+import { PANDIT_TRUST_LINE, PANDIT_TRUST_SHORT, verifiedNoun, withEightyG } from './_claims.mjs';
 import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -67,7 +71,7 @@ const X_TEMPLATES = [
   ({ festival, dDays, urls }) =>
     `${dDays}d to ${festival.name}.\n\nDarshya now indexes ${urls}+ devotional pages — every major puja, every sacred city, every chalisa. Solo founder, $0 ads.\n\nIf you've been waiting for India's first transparent puja platform: darshya.online`,
   ({ festival }) =>
-    `Diaspora problem nobody solves:\n\nyour parents want a Satyanarayan puja for ${festival.name}. You don't trust the random WhatsApp pandit forwarded by relatives.\n\nFix: verified pandits, video proof, USD-fixed price. darshya.online`,
+    `Diaspora problem nobody solves:\n\nyour parents want a Satyanarayan puja for ${festival.name}. You don't trust the random WhatsApp pandit forwarded by relatives.\n\nFix: ${verifiedNoun('pandits')}, video proof of every puja, USD-fixed price. darshya.online`,
   () =>
     `Religion-tech hot take:\n\n- Sri Mandir + AppsForBharat raised $10M+\n- Still no live darshan QoS standard\n- Still no transparent temple commission\n- Still no diaspora UX\n\nWe ship all three at darshya.online. Solo + bootstrapped.`,
   ({ today }) =>
@@ -82,9 +86,9 @@ const LINKEDIN_TEMPLATES = [
 Update from darshya.online — India's first transparent puja platform built for the diaspora:
 
 • ${urls}+ devotional pages indexed (every major puja, sacred city, chalisa, aarti, festival)
-• Verified pandits with video proof of every booking
+• ${PANDIT_TRUST_LINE}
 • Fixed USD pricing for NRIs — no surprise commissions
-• 80G receipts on every donation through the platform
+• ${withEightyG('80G receipts on every donation through the platform', 'A numbered receipt PDF on every donation — proof of payment, not a tax-exemption certificate')}
 
 Solo founder, $0 ad budget, 90 days to seed pitch. Building in public.
 
@@ -101,7 +105,7 @@ The largest devotional apps in India raised $10M+ rounds and shipped:
 
 At darshya.online we made these the founding non-negotiables.
 
-For ${festival.name} this year, we'll be running verified-pandit puja bookings with full video proof — sender (any country) pays USD, recipient (in India) gets the call + video.
+For ${festival.name} this year, we'll be running ${verifiedNoun('pandit')} puja bookings with full video proof — sender (any country) pays USD, recipient (in India) gets the call + video.
 
 If you're building in religion-tech, devotional content, or NRI fintech — let's compare notes.
 
@@ -116,7 +120,7 @@ Existing players target volume domestic devotees. Nobody serves the family in Sa
 So I started building. ${TODAY} update:
 - Programmatic SEO across pujas × temples × deities × cities
 - 24 agents in the daily fleet (lighthouse, broken-link, schema, competitor watch, etc)
-- Verified pandit onboarding live
+- ${verifiedNoun('Pandit')} onboarding live
 - WhatsApp video-proof delivery scoped
 
 90 days to a seed pitch. Building in public at darshya.online.
@@ -127,14 +131,14 @@ So I started building. ${TODAY} update:
 const INSTA_TEMPLATES = [
   ({ festival, dDays }) => `🕉 ${dDays} days to ${festival.name}.
 
-Did you know? Booking a verified pandit for a remote puja used to mean:
+Did you know? Booking a ${verifiedNoun('pandit')} for a remote puja used to mean:
 ❌ Random WhatsApp forwards
 ❌ No video proof
 ❌ No fixed pricing for NRIs
 
 We built darshya.online to fix exactly this.
 
-✅ Verified pandits
+✅ ${PANDIT_TRUST_SHORT}
 ✅ Full video proof delivered to your phone
 ✅ Fixed USD pricing for diaspora families
 

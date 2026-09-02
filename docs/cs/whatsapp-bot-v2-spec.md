@@ -15,7 +15,7 @@ Q3 ship WhatsApp bot v2 auto-resolving top 10 customer intents. Reduces founder 
 | 3 | Pandit no-show | Auto-escalate to ops + WA temple liaison |
 | 4 | Reschedule booking | Generate reschedule link → user picks slot |
 | 5 | NRI USD pricing question | Auto-reply pricing table for user's geo |
-| 6 | 80G receipt clarification | Auto-reply email w/ tax doc + PAN form |
+| 6 | 80G receipt clarification | Auto-reply stating Darshya holds no Section 80G registration, so the numbered receipt PDF is proof of payment and not a tax-exemption certificate (copy: apps/api/src/lib/eighty-g.ts NO_80G_DISCLOSURE) |
 | 7 | Festival booking waitlist | Add to PujaInterest table |
 | 8 | Wallet credit balance | Fetch wallet → reply balance |
 | 9 | Referral code share | Generate user's code → reply |

@@ -17,8 +17,41 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDarshanStream } from '@poojly/api-client';
 import { selectStreamDetail } from '../../lib/api-contracts';
 import { resolveStreamPlayback } from '../../lib/stream-authority';
+import { describeWebHandoff, openWebHandoff } from '../../lib/in-app-web';
+import { WEBVIEW_AVAILABLE } from '../../lib/webview-module';
+import { hostOf, webOrigin } from '../../lib/web-origin';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { streamStatusLabel } from '../../lib/enum-labels';
+
+/**
+ * AARTI REPLAY — /darshan/<id>/replay, and why it ships behind a flag.
+ *
+ * There is NO API for replay segments. apps/web/app/darshan/[id]/replay reads
+ * `IVS_REPLAY_BUCKET_BASE` on the WEB server and fetches a per-temple
+ * `last24h.json` manifest directly; nothing in apps/api exposes any of it, so
+ * a native mobile screen would have nothing to read. That makes this the exact
+ * case lib/in-app-web.ts was written for: a same-origin surface with no API,
+ * framed inside the app so the back stack and the app itself survive, instead
+ * of `Linking.openURL` ejecting the devotee into Chrome.
+ *
+ * But the SAME env decides whether that page is worth opening. Unconfigured,
+ * it renders "Replay coming soon" over an internal tracker id and a founder
+ * action ("wire IVS_REPLAY_BUCKET_BASE env + per-temple last24h.json
+ * manifest") — a control that reliably lands there is a control that
+ * apologises, and this app does not ship those. The client cannot probe the
+ * web service's env, so the flag mirrors it, exactly as
+ * EXPO_PUBLIC_KNOWLEDGE_ENABLED mirrors the API image's KNOWLEDGE_CONTENT_DIR.
+ *
+ * Default OFF: `process.env.EXPO_PUBLIC_DARSHAN_REPLAY_ENABLED` is undefined
+ * in every build today, so no replay control renders and nothing regresses.
+ * Set it to "true" in the EAS profile on the day IVS_REPLAY_BUCKET_BASE is
+ * wired on the web service, and the in-app replay appears with no further
+ * change here.
+ */
+const REPLAY_ENABLED = process.env.EXPO_PUBLIC_DARSHAN_REPLAY_ENABLED === 'true';
+
+/** The site this build belongs to — never a literal darshya.online. */
+const WEB = webOrigin();
 
 // react-native-webview is optional — Expo Go ships it, bare RN may not.
 // We require() it lazily so a missing module gracefully degrades to "Open in YouTube".
@@ -136,6 +169,24 @@ export default function DarshanPlayerScreen() {
 
   function onSave() {
     setSaved((s) => !s);
+  }
+
+  // The replay hand-off, and the affordance it must advertise. Both come from
+  // the same decision, so a screen reader can never be told "opens in your
+  // browser" by a control that in fact frames the page in-app (or vice versa).
+  const replayTarget = {
+    url: `${WEB.origin}/darshan/${encodeURIComponent(id)}/replay`,
+    title: `${title} — aarti replay`,
+  };
+  const replayOpts = { webViewAvailable: WEBVIEW_AVAILABLE, origin: WEB.origin };
+  const replayAffordance = describeWebHandoff(replayTarget, replayOpts, hostOf(WEB.origin));
+  const showReplay = REPLAY_ENABLED && id.length > 0;
+
+  function openReplay() {
+    openWebHandoff(replayTarget, replayOpts, {
+      push: (route) => router.push(route as never),
+      openExternal: Linking.openURL,
+    });
   }
 
   async function onShare() {
@@ -261,6 +312,19 @@ export default function DarshanPlayerScreen() {
             <Ionicons name="gift-outline" size={20} color={colors.saffron[600]} />
             <Text style={styles.actionText}>Donate</Text>
           </TouchableOpacity>
+          {showReplay ? (
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={openReplay}
+              activeOpacity={0.8}
+              accessibilityRole={replayAffordance.role}
+              accessibilityLabel="Aarti replay from the last 24 hours"
+              accessibilityHint={replayAffordance.hint}
+            >
+              <Ionicons name={replayAffordance.icon === 'open-outline' ? 'open-outline' : 'play-back-outline'} size={20} color={colors.saffron[600]} />
+              <Text style={styles.actionText}>Replay</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         <View style={styles.aboutCard}>

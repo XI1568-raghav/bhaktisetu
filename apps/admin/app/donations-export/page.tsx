@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { H1 } from "../../components/ui/heading-recipe";
 
 const SAFFRON = "#E16318";
 
@@ -54,8 +55,15 @@ export default function DonationsExportPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl" style={{ color: SAFFRON }}>
-          80G donations export
+        <h1 className={H1.portal}>
+          {/* TC-01: this read "80G donations export". Darshya holds no Section
+              80G registration (apps/web/lib/company.ts HAS_80G_VERIFIED false,
+              eightyGNumber and pan null) and no route writes the donee columns
+              apps/api/src/lib/pdf-receipt.ts is80GEligible() requires, so not
+              one row in this CSV is an 80G instrument. An operator who filed
+              this export as 80G paperwork would be filing proof-of-payment
+              records under a section they do not qualify for. */}
+          Donations export
         </h1>
         <p className="mt-2 text-sm text-stone-600">
           Download a CSV of paid donations for your finance team. Columns:

@@ -77,7 +77,7 @@ export default function ConnectivityBar() {
       // below the 4.5:1 AA body threshold — and this bar is a status message,
       // which is exactly the copy a low-vision user must be able to read.
       // __tests__/accent-fill-contrast.test.ts enforces it repo-wide.
-      className={`fixed inset-x-0 bottom-0 z-[60] flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium ${
+      className={`fixed inset-x-0 bottom-[calc(var(--consent-h,0px)+3.5rem+env(safe-area-inset-bottom))] md:bottom-0 z-[60] flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium ${
         offline ? 'bg-surface-800 text-white' : 'bg-emerald-700 text-white'
       }`}
     >

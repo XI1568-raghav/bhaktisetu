@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePujas } from '@poojly/api-client';
 import { selectPujaTypes } from '../../lib/api-contracts';
 import { PLATFORM_FEE_INR } from '../../lib/booking-flow';
+import { verifiedNoun } from '../../lib/pandit-vetting';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 type PujaCategory = 'all' | 'shiva' | 'vishnu' | 'devi' | 'ganesh' | 'navagraha';
@@ -101,6 +102,27 @@ function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
  * The card is a button again, and truthfully so: it stays in the app. Only the
  * card-payment step still opens the website, and that hand-off is declared on
  * the booking screen itself rather than here.
+ *
+ * NAV-01, 2026-09-02 — THE CARD NOW OPENS THE DETAIL PAGE, NOT THE FORM.
+ *
+ * app/(devotee)/puja-detail.tsx has existed and had ZERO inbound navigation:
+ * `grep -rn "(devotee)/puja-detail" app lib` matched nothing but a stale
+ * comment in lib/deep-link.ts, so the only way to reach it was a deep link.
+ * Every fact a devotee might want before committing money — what the ritual
+ * is, what samagri is included, which temples can actually take the booking —
+ * lived on a screen the app never linked to, while the card jumped straight
+ * into the booking form.
+ *
+ * So the two controls now do two different things, which is what having two
+ * controls is for:
+ *
+ *   card body       -> (devotee)/puja-detail  { slug, name }   "tell me more"
+ *   "Book this puja"-> (devotee)/puja-book    { slug, name }   "I already know"
+ *
+ * The fast path is deliberately preserved: puja-detail hands off to puja-book
+ * with the SAME two params, so the button is a shortcut through the detail
+ * page and not a second, divergent booking route. Booking logic is not
+ * duplicated here or there — it lives only in puja-book.tsx.
  */
 const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
   // Slug comes from the API row (PAR-07 replaced the hardcoded catalogue this
@@ -110,14 +132,19 @@ const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
       pathname: '/(devotee)/puja-book' as never,
       params: { slug: puja.slug, name: puja.name },
     } as never);
+  const openDetail = () =>
+    router.push({
+      pathname: '/(devotee)/puja-detail' as never,
+      params: { slug: puja.slug, name: puja.name },
+    } as never);
   return (
     <TouchableOpacity
       style={styles.pujaCard}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={puja.name}
-      accessibilityHint={`Book ${puja.name}`}
-      onPress={openBooking}
+      accessibilityHint={`Opens details for ${puja.name}`}
+      onPress={openDetail}
     >
 
       {/* Image placeholder */}
@@ -191,6 +218,18 @@ const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
               </Text>
             )}
           </View>
+          {/* NAV-01: the card is tappable and now goes somewhere other than
+              the button beneath it, so it needs the affordance that says so.
+              Decorative only — the row it sits in already carries the label
+              and hint, and a second focusable node would make VoiceOver
+              announce the same destination twice. */}
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={colors.stone[400]}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          />
         </View>
 
         <TouchableOpacity
@@ -247,14 +286,38 @@ export default function PujasScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Book a Puja</Text>
-        <Text style={styles.headerSubtitle}>
-          {pujasQuery.isLoading
-            ? 'Loading catalogue…'
-            : errorText
-              ? 'Catalogue unavailable'
-              : `${sourceData.length} pujas · verified priests, video proof`}
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Book a Puja</Text>
+            <Text style={styles.headerSubtitle}>
+              {pujasQuery.isLoading
+                ? 'Loading catalogue…'
+                : errorText
+                  ? 'Catalogue unavailable'
+                  : /* TC-08: the adjective here used to be hardcoded. Nothing
+                       promotes a Priest to verified — see lib/pandit-vetting.ts.
+                       Video proof is the claim that IS backed, so it stays. */
+                    `${sourceData.length} pujas · ${verifiedNoun('priests')}, video proof`}
+            </Text>
+          </View>
+          {/* NAV-01. (devotee)/pandits.tsx — the directory of the people who
+              actually perform these rituals — had ZERO inbound navigation.
+              It is the supply side of the marketplace and it was reachable
+              only by deep link. The catalogue is where a devotee is already
+              thinking about who will perform the puja, so the entry belongs
+              here as well as on the home screen. */}
+          <TouchableOpacity
+            style={styles.panditsButton}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Pandits"
+            accessibilityHint="Opens the directory of pandits"
+            onPress={() => router.push('/(devotee)/pandits' as never)}
+          >
+            <Ionicons name="people-outline" size={16} color={colors.saffron[700]} />
+            <Text style={styles.panditsButtonText}>Pandits</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Category Filter */}
@@ -347,6 +410,32 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     color: colors.stone[500],
     marginTop: 2,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  headerText: { flex: 1 },
+  // NAV-01. 44pt minimum on both axes — the smallest reliable touch target,
+  // and the one this repo's other pill controls are built to.
+  panditsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    minWidth: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.saffron[100],
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
+  },
+  panditsButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.saffron[700],
   },
   // Filter
   filterContainer: {

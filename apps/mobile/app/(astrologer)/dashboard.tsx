@@ -12,6 +12,7 @@ import { selectAstrologerDashboard, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { consultationStatusLabel } from '../../lib/enum-labels';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
  * PAR-13, the app half.
  *
@@ -33,6 +34,11 @@ import { consultationStatusLabel } from '../../lib/enum-labels';
  * dashboard now reads as unreachable.
  */
 export default function AstrologerDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const dashboardQuery = useAstrologerDashboard();
   const [refreshing, setRefreshing] = useState(false);
 

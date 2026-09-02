@@ -245,14 +245,24 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
      *     wants the oversized hero back — but leaving it was leaving the exact
      *     outlier the finding is named after.
      *
-     * The 3 that remain each need a person, and none of them is a codemod:
+     * 2026-09-02: 3 -> 2. The previous pass separated two defects inside
+     * app/pitch and only one of them needed a person.
      *
-     *   app/pitch/page.tsx x2 — `pitch-h1`, a bespoke class in app/pitch/
+     *   app/pitch/page.tsx — the SECOND h1 is gone, and not by codemod. The
+     *     deck is one scrolling page, so all twelve slides are in the DOM at
+     *     once and slide 12's title was a second level-1 heading on the same
+     *     document — the same defect the finding records on /priest. Slides
+     *     02-11 are all `<h2 className="pitch-h2">`, so slide 12 is their peer.
+     *     It is an h2 now and KEEPS `pitch-h1`, so the closing slide keeps the
+     *     emphasis it was designed with and the render is byte-identical. The
+     *     recipe question was left exactly where it was.
+     *
+     * The 2 that remain each need a person, and neither is a codemod:
+     *
+     *   app/pitch/page.tsx x1 — `pitch-h1`, a bespoke class in app/pitch/
      *     pitch.css that sets a THIRD typeface ('Cabinet Grotesk') and
      *     `clamp(48px, 8vw, 120px)`. Whether the investor deck is part of the
-     *     product design system at all is a call nobody has made — and note it
-     *     also ships TWO h1s on one document, which is a separate defect from
-     *     the recipe question and should not be papered over by a codemod.
+     *     product design system at all is a call nobody has made.
      *   app/global-error.tsx — paints inline because no stylesheet is loaded
      *     under it; DU-13 documents it as the standing exception.
      *
@@ -261,7 +271,7 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
      * failing anything, which is exactly how 279 files diverged while CI
      * stayed green.
      */
-    const BASELINE = 3;
+    const BASELINE = 2;
     const byRecipe = new Map<string, string[]>();
     for (const o of HAND_ROLLED) {
       const cls =
@@ -281,6 +291,77 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
         'H1.detail / H1.portal from components/ui/heading-recipe; extras are ' +
         'layout-only.\nLargest remaining clusters:\n' + worst.join('\n'),
     ).toBeLessThanOrEqual(BASELINE);
+  });
+
+  it('the h1s in the OTHER packages are enumerated, not hidden', () => {
+    /*
+     * DENOMINATOR, third and last part (added 2026-09-02). The two tests
+     * around this one cover apps/web's TypeScript tree and apps/web/public.
+     * The test above them covers apps/admin. That leaves three packages that
+     * also emit <h1> and that no DU-05 census has ever named, and the point of
+     * writing them down is that "we swept it" has now been wrong twice for
+     * exactly this reason.
+     *
+     * None of these is a web page, and none of them CAN take a Tailwind class
+     * or a CSS variable:
+     *
+     *   apps/api x7 — six transactional EMAIL bodies (sign-in link, booking
+     *     confirmation, panchang cron, weekly digest, ops alert, lead and
+     *     waitlist welcomes) plus one bare `text/html` response, the invalid
+     *     unsubscribe-link page in outreach-webhook.ts. Mail clients strip
+     *     <style> and do not resolve custom properties, and that one response
+     *     links no stylesheet, so an inline style attribute is the only thing
+     *     that works in either. Same structural exemption as public/sw.js.
+     *   apps/remotion-pitch x2 — Remotion compositions. These render to video
+     *     FRAMES, not to a document a user navigates; there is no stylesheet
+     *     and no viewport.
+     *
+     * The count matters as much as the list: a first pass at this test asserted
+     * THREE api files because the grep behind it had been truncated by a
+     * `head -5`, and the honest number is seven. If a tenth appears — or if one
+     * of these ever becomes a real page — this fails and it has to be
+     * classified rather than absorbed.
+     */
+    const REPO = path.resolve(WEB, '../..');
+    const others = ['apps/api/src', 'apps/remotion-pitch/src', 'apps/mobile'];
+    const found: string[] = [];
+    let scanned = 0;
+    for (const rel of others) {
+      const dir = path.join(REPO, rel);
+      let files: string[];
+      try {
+        files = walk(dir);
+      } catch {
+        continue; // package not present in this checkout
+      }
+      scanned += files.length;
+      for (const f of files) {
+        if (/<h1[\s>]/.test(code(f))) {
+          found.push(path.relative(REPO, f).split(path.sep).join('/'));
+        }
+      }
+    }
+    expect(scanned, 'nothing scanned outside apps/web — this would pass vacuously').toBeGreaterThan(
+      50,
+    );
+    expect(
+      found.sort(),
+      'an <h1> in a package no DU-05 census names. If it renders in a browser, ' +
+        'give it an archetype; if it is another medium with no stylesheet (email, ' +
+        'video), say so in the comment above and add it here.',
+    ).toEqual(
+      [
+        'apps/api/src/jobs/daily-panchang-cron.ts',
+        'apps/api/src/jobs/weekly-digest.ts',
+        'apps/api/src/lib/alert.ts',
+        'apps/api/src/lib/email.ts',
+        'apps/api/src/routes/leads-self-onboard.ts',
+        'apps/api/src/routes/outreach-webhook.ts',
+        'apps/api/src/routes/waitlist.ts',
+        'apps/remotion-pitch/src/components/HookAct.tsx',
+        'apps/remotion-pitch/src/components/IntroCard.tsx',
+      ].sort(),
+    );
   });
 
   it('the h1s OUTSIDE the TypeScript walk are enumerated, not hidden', () => {
@@ -363,6 +444,85 @@ describe('[DU-05] one h1 recipe per archetype, everywhere', () => {
         `(ceiling ${INLINE_FONT_BASELINE}). Delete the style object — .heading-display ` +
         'already supplies the family.\n' + [...new Set(offenders)].slice(0, 20).join('\n'),
     ).toBeLessThanOrEqual(INLINE_FONT_BASELINE);
+  });
+
+  /*
+   * THE OTHER DENOMINATOR (added 2026-09-02). `walk()` at the top of this file
+   * is rooted at apps/web. apps/admin is a SECOND Next app in this repo with
+   * its own page titles, and until today every one of them was outside the
+   * census that declared DU-05 closed — the same failure mode the public/ test
+   * above was written for, one directory further out.
+   *
+   * Measured before the fix: 13 of 13 hand-rolled, in three treatments, six of
+   * which painted `#E16318` as an inline style over a class that said
+   * text-stone-900 (the inline hex wins, so the class was decorative). Two
+   * rendered colours for one role.
+   *
+   * apps/admin cannot import apps/web's recipe: its `@theme` block declares
+   * saffron and nothing else, so `text-surface-800` would resolve to no colour
+   * there. It has its own one-archetype recipe instead, and this test is what
+   * stops the two drifting into a fourth and fifth treatment — it asserts the
+   * console is fully adopted, that it declares exactly ONE archetype, and that
+   * the archetype is COMPLETE in the same sense the web ones are: a size, a
+   * weight, a tracking and a colour all stated, nothing left to inherit.
+   */
+  describe('apps/admin is inside the census too', () => {
+    const ADMIN = path.resolve(WEB, '../admin');
+    const adminRel = (f: string) => path.relative(ADMIN, f).split(path.sep).join('/');
+    const adminFiles = ['app', 'components', 'lib']
+      .map((r) => path.join(ADMIN, r))
+      .flatMap((d) => walk(d));
+    const adminOpenings: Array<{ file: string; attrs: string }> = [];
+    for (const f of adminFiles) {
+      for (const m of code(f).matchAll(/<h1(\s[^>]*?)?>/gs)) {
+        adminOpenings.push({ file: adminRel(f), attrs: m[1] ?? '' });
+      }
+    }
+
+    it('the admin scan is not vacuous', () => {
+      expect(adminFiles.length, 'nothing scanned under apps/admin').toBeGreaterThan(10);
+      expect(adminOpenings.length, 'no <h1> found in apps/admin').toBeGreaterThan(10);
+    });
+
+    it('declares exactly one archetype, and it is complete', () => {
+      const src = code(path.join(ADMIN, 'components/ui/heading-recipe.ts'));
+      /* Single-line entries: `  portal: '…',`. apps/web's recipe wraps its
+       * values onto their own line and this one does not, so key and value are
+       * parsed together rather than by position. */
+      const decl = [...src.matchAll(/^ {2}(\w+):\s*'([^']+)',$/gm)];
+      const entries = decl.map((m) => m[1]!);
+      const values = decl.map((m) => m[2]!);
+      expect(entries, 'the admin console has one page archetype').toEqual(['portal']);
+      expect(values.length).toBe(1);
+      const cls = values[0]!.split(/\s+/);
+      /* complete: every axis stated, none inherited */
+      expect(cls.filter((c) => /^text-(?:xs|sm|base|lg|xl|\dxl)$/.test(c)).length, 'a base size').toBe(1);
+      expect(cls.filter((c) => /^font-\w+$/.test(c)).length, 'a weight').toBe(1);
+      expect(cls.filter((c) => /^tracking-\w+$/.test(c)).length, 'a tracking').toBe(1);
+      expect(
+        cls.filter((c) => /^text-(?:stone|surface|saffron)-\d{3}$/.test(c)).length,
+        'a colour token, so it cannot inherit an eighth colour from an ancestor',
+      ).toBe(1);
+    });
+
+    it('every admin page title is on that archetype', () => {
+      const hand = adminOpenings.filter((o) => !/H1\.portal\b/.test(o.attrs));
+      expect(
+        hand.map((h) => `${h.file} :: ${h.attrs.replace(/\s+/g, ' ').slice(0, 80)}`),
+        'hand-rolled <h1> in apps/admin — use H1.portal from ' +
+          'apps/admin/components/ui/heading-recipe',
+      ).toEqual([]);
+    });
+
+    it('no admin h1 paints a raw colour past its token', () => {
+      const inline = adminOpenings
+        .filter((o) => /style=\{\{[^}]*(?:color|fontFamily|fontSize|fontWeight)/.test(o.attrs))
+        .map((o) => `${o.file} :: ${o.attrs.replace(/\s+/g, ' ').slice(0, 80)}`);
+      expect(
+        inline,
+        'an inline style beats every class, so these headings are un-tokenizable',
+      ).toEqual([]);
+    });
   });
 
   it('every recipe call site passes layout-only extras', () => {

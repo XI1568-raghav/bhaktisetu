@@ -19,8 +19,13 @@ import {
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: the 401/403 split. True ONLY for 401 — a 403 is a suspended
+ // account or a role refusal, and offering sign-in there loops the user back
+ // to the same wall (see loadErrorIsForbidden in lib/api-config.ts).
+ loadErrorIsReauth,
 } from '../../lib/api-config';
 import { H1 } from '../../components/ui/heading-recipe';
+import LoadErrorBanner from '../../components/LoadErrorBanner';
 
 // ─── Zero-state defaults ────────────────────────────────────────
 
@@ -115,6 +120,10 @@ export default function AstrologerDashboard() {
  // RES-02: `if (!r.ok) return;` rendered zeroes for every card on an HTTP 500
  // with no error at all.
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: the decision loadErrorMessage makes internally and this page
+ // used to discard, so an expired session offers a sign-in rather than a
+ // Retry that re-fires with the same dead token.
+ const [loadReauth, setLoadReauth] = useState(false);
 
  // Go-online presence toggle (astrologer revamp 2026-08-05). The portal had
  // NO online/offline switch — devotees couldn't see who's available. POSTs to
@@ -182,12 +191,14 @@ export default function AstrologerDashboard() {
    );
    if (!r.ok) {
     setLoadError(loadErrorMessage(r));
+    setLoadReauth(loadErrorIsReauth(r));
     return;
    }
    const j = (await r.json()) as ApiAstroDashboard;
    setApi(j);
   } catch (err) {
    setLoadError(loadErrorMessage(err));
+   setLoadReauth(loadErrorIsReauth(err));
   }
  }, [session?.accessToken]);
 
@@ -251,12 +262,12 @@ export default function AstrologerDashboard() {
  </div>
 
  {loadError && (
- <div role="alert" className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
- <span className="flex-1 min-w-[12rem]">{loadError}</span>
- <button type="button" onClick={() => { void loadDashboard(); }} className="font-semibold underline underline-offset-2 hover:text-amber-900">
- Retry
- </button>
- </div>
+ <LoadErrorBanner
+ message={loadError}
+ reauth={loadReauth}
+ onRetry={() => { void loadDashboard(); }}
+ className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+ />
  )}
 
  {/* Go-online presence toggle (revamp: devotees see who's online to consult) */}
