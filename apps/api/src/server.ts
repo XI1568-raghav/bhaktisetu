@@ -67,6 +67,7 @@ import { mediaRoutes } from './routes/media.js';
 import { whatsappOtpRoutes } from './routes/whatsapp-otp.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { healthChannelRoutes } from './routes/health-channels.js';
+import { reportChannelReadinessAtBoot } from './lib/notification-channels.js';
 import { healthRoutes } from './routes/health.js';
 import { semanticSearchRoutes } from './routes/semantic-search.js';
 import { cronRoutes } from './routes/cron.js';
@@ -513,6 +514,19 @@ async function bootstrap() {
     // stop the API from serving. See jobs/scheduler.ts for why this is
     // in-process rather than a GitHub Actions schedule.
     startOpsScheduler(server.log);
+    // NOTIF-03, third clause: say out loud, once per boot, which outbound
+    // channels are dark. An operator should not have to curl an endpoint to
+    // discover that email and web push are both off. A WARN line (plus a Sentry
+    // alert in prod when email AND web push are both unconfigured) rather than
+    // a boot failure: the channels actually dark in production are whatsapp and
+    // fcm, and refusing to boot over those would take bookings, payments and
+    // darshan offline for two channels the core flow does not depend on.
+    // (An earlier draft of this comment claimed all four were dark. Measured
+    // against live prod 2026-09-03: email and webPush are configured — email
+    // was configured and failing 48/48, which is why the status surface now
+    // reports a failure RATE rather than only a quota refusal.)
+    // Logs channel and env var NAMES only — never a value.
+    reportChannelReadinessAtBoot(server.log);
   } catch (err) {
     server.log.error(err);
     captureException(err);
