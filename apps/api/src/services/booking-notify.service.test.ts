@@ -37,7 +37,7 @@ import {
 // ── RV-18 / RV-19 regression locks ───────────────────────────────────────────
 //
 // RV-18: bookingConfirmationEmail had exactly one reference in the repo — its
-// own definition. The only email a paying devotee received was the tax invoice,
+// own definition. The only email a paying devotee received was the payment receipt,
 // whose puja_booking PDF variant renders createdAt as the INVOICE date and has
 // no scheduledDate/scheduledTimeSlot field at all, so the devotee was never
 // told in writing WHEN the puja would be performed.
@@ -75,7 +75,7 @@ beforeEach(() => {
 });
 
 describe('sendBookingConfirmationEmail — RV-18', () => {
-  it('sends the schedule the tax invoice never carried', async () => {
+  it('sends the schedule the payment receipt never carried', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(EMAILED_BOOKING as never);
 
     const res = await sendBookingConfirmationEmail('bk-1');

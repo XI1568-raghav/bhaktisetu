@@ -451,7 +451,7 @@ export async function notifyDevotee(
  * RV-18 (2026-08-10): send the human booking confirmation — date, time, temple,
  * pandit, booking number — to the devotee.
  *
- * This is NOT the tax invoice (payment.service.sendPujaBookingInvoice). The
+ * This is NOT the payment receipt (payment.service.sendPujaBookingInvoice). The
  * invoice PDF's `puja_booking` variant renders createdAt as the invoice date and
  * has no scheduled-date/slot field at all, so before this a paying devotee was
  * never told in writing WHEN their puja would be performed.
