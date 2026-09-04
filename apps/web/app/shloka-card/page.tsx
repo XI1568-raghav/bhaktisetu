@@ -228,7 +228,7 @@ export default function ShlokaCardGenerator() {
               rel="noopener noreferrer"
               download="shloka-card.png"
               onClick={() => track('shloka_card_downloaded')}
-              className="px-3 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold text-center hover:bg-saffron-700"
+              className={buttonClass('primary', 'md', 'w-full')}
             >
               Download
             </a>
@@ -237,7 +237,7 @@ export default function ShlokaCardGenerator() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('shloka_card_shared_whatsapp')}
-              className="px-3 py-2 bg-green-600 text-white rounded-md text-sm font-semibold text-center hover:bg-green-700"
+              className="inline-flex h-11 items-center justify-center px-3 bg-green-600 text-white rounded-md text-sm font-semibold hover:bg-green-700"
             >
               WhatsApp
             </a>
@@ -246,7 +246,7 @@ export default function ShlokaCardGenerator() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('shloka_card_shared_twitter')}
-              className="px-3 py-2 bg-surface-900 text-white rounded-md text-sm font-semibold text-center hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center px-3 bg-surface-900 text-white rounded-md text-sm font-semibold hover:opacity-90"
             >
               X / Twitter
             </a>
@@ -255,7 +255,7 @@ export default function ShlokaCardGenerator() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('shloka_card_shared_facebook')}
-              className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold text-center hover:bg-blue-700"
+              className="inline-flex h-11 items-center justify-center px-3 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700"
             >
               Facebook
             </a>
