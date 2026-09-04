@@ -11,19 +11,38 @@
 #   - a /_next/static asset (proves .next/static was copied into standalone)
 # so a broken standalone build is caught here, not on Render.
 #
-# Trigger: workflow_dispatch (manual) + on push to the migration branch while
-# the cutover is being verified. After prod is live on Render, this becomes the
-# web deploy gate (Render itself also builds, but CI smoke fails faster).
+# TRIGGER — repaired 2026-09-04. The line above used to promise that "after prod
+# is live on Render, this becomes the web deploy gate". Prod moved to Render on
+# 2026-07-08; the trigger was never changed. It stayed pinned to
+# `worktree-cf-opennext-migration`, a branch that stopped receiving pushes the
+# same week, so this workflow LAST RAN 2026-07-08 while CLAUDE.md went on
+# describing it as the pre-push web smoke.
+#
+# What that cost: the root `package.json` gained a `prepare` script in aac0cc4c.
+# `pnpm install` runs it, the Docker build never copied scripts/, and so every
+# image build has died on `Cannot find module install-git-hooks.mjs` ever since.
+# The last web deploy to reach `live` was 2026-08-16 — production served a
+# three-week-old build and nothing reported it, because `ci.yml` builds with
+# `next build` via turbo and never touches this Dockerfile.
+#
+# SCOPE, deliberately narrow. A docker build is ~8 min and the fleet has ~300
+# min/mo of headroom (docs/free-tier-budgets.md), so this does NOT run on every
+# apps/web change — the app source is already covered by ci.yml. It runs on the
+# files that can break the IMAGE specifically: the Dockerfile, the workspace
+# manifests whose lifecycle scripts execute during install, and this workflow.
+# Those change a handful of times a month, and `package.json` — the file that
+# actually caused this outage — is among them.
 name: Smoke Render web build
 on:
   workflow_dispatch:
-  push:
-    branches: [worktree-cf-opennext-migration]
+  pull_request:
+    branches: [main]
     paths:
-      - 'apps/web/**'
-      - 'packages/**'
+      - 'apps/web/Dockerfile'
+      - 'apps/web/next.config.*'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.github/workflows/deploy-web-render.yml'
 

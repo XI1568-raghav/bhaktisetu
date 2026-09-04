@@ -17,6 +17,23 @@ COPY apps/web ./apps/web
 COPY packages ./packages
 COPY tooling ./tooling
 
+# The root `prepare` script (package.json) runs on every `pnpm install`, this one
+# included, and it is `node scripts/install-git-hooks.mjs`. Without this COPY the
+# install dies with `Cannot find module '/app/scripts/install-git-hooks.mjs'` and
+# the image never builds.
+#
+# The script itself was written for exactly this context — its header says "THIS
+# SCRIPT MUST NEVER FAIL AN INSTALL... includes the Render Docker build, where
+# there is no .git directory at all. Every path exits 0." That is true and it is
+# not enough: every path INSIDE it exits 0, and the failing path never reaches it.
+# The safety was one layer too deep.
+#
+# Copying the single file rather than `scripts/` keeps the build context small —
+# scripts/ also holds the agent fleet and roadmap tooling, none of which the image
+# needs. With it present the script does what it was designed to do here: find no
+# .git, print a note, exit 0.
+COPY scripts/install-git-hooks.mjs ./scripts/install-git-hooks.mjs
+
 # Install all workspace deps (devDeps needed for the build toolchain).
 RUN pnpm install --frozen-lockfile --prod=false
 
