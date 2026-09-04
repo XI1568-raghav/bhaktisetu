@@ -14,7 +14,7 @@ vi.mock('../lib/email.js', () => ({ sendEmail }));
 
 /**
  * PAY-09 (2026-08-20, P3) — client verify and the webhook race to confirm the
- * same booking, and the devotee gets two tax invoices.
+ * same booking, and the devotee gets two payment receipts.
  *
  * Both rails computed `shouldConfirm` from a read taken BEFORE their
  * transaction (`payment.booking.status === 'pending_payment'`). Two overlapping
@@ -101,17 +101,19 @@ afterEach(() => {
 });
 
 describe('PAY-09 — only the transaction that actually captured sends the notices', () => {
-  it('the WINNER of the capture race sends the tax invoice', async () => {
+  it('the WINNER of the capture race sends the payment receipt', async () => {
     // The conditional capture updated this row: this racer won.
     prismaMock.$executeRawUnsafe.mockResolvedValue(1);
 
     await fireWebhook();
     await drain();
 
-    const invoiced = sendEmail.mock.calls.some((c: any[]) =>
-      /tax invoice/i.test(String(c[0]?.subject ?? '')),
+    const subjects = sendEmail.mock.calls.map((c: any[]) =>
+      String(c[0]?.subject ?? ''),
     );
-    expect(invoiced).toBe(true);
+    expect(subjects.some((s: string) => /payment receipt/i.test(s))).toBe(true);
+    // LEG-10 regression guard: no mail may call the attachment a tax invoice.
+    expect(subjects.some((s: string) => /tax invoice/i.test(s))).toBe(false);
   });
 
   it('the LOSER sends nothing — no second invoice, no second notification', async () => {
@@ -163,10 +165,12 @@ describe('PAY-09 — only the transaction that actually captured sends the notic
     await fireWebhook();
     await drain();
 
-    const invoiced = sendEmail.mock.calls.some((c: any[]) =>
-      /tax invoice/i.test(String(c[0]?.subject ?? '')),
+    const subjects = sendEmail.mock.calls.map((c: any[]) =>
+      String(c[0]?.subject ?? ''),
     );
-    expect(invoiced).toBe(true);
+    expect(subjects.some((s: string) => /payment receipt/i.test(s))).toBe(true);
+    // LEG-10 regression guard: no mail may call the attachment a tax invoice.
+    expect(subjects.some((s: string) => /tax invoice/i.test(s))).toBe(false);
   });
 
   it('the capture claim is conditional — it can never re-capture an already-captured row', async () => {

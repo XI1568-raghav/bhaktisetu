@@ -543,11 +543,11 @@ export async function storeOrderRoutes(server: FastifyInstance) {
           });
           await sendEmail({
             to: order.user.email,
-            subject: `Darshya tax invoice — ${order.orderNumber}`,
-            html: `<p>Namaste ${order.user.fullName},</p><p>Your tax invoice for order <strong>${order.orderNumber}</strong> is attached.</p>`,
-            text: `Tax invoice for order ${order.orderNumber} attached.`,
+            subject: `Darshya payment receipt — ${order.orderNumber}`,
+            html: `<p>Namaste ${order.user.fullName},</p><p>Your payment receipt for order <strong>${order.orderNumber}</strong> is attached.</p>`,
+            text: `Payment receipt for order ${order.orderNumber} attached.`,
             attachments: [
-              { filename: `invoice-${order.orderNumber}.pdf`, content: pdf },
+              { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
             ],
           });
         } catch (err) {

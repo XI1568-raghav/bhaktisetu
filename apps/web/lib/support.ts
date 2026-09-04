@@ -804,8 +804,14 @@ export const FAQ_ITEMS: FaqItem[] = [
  // (COMPANY.tax.HAS_GST_REGISTRATION_VERIFIED === false), no code path adds
  // a tax line to a booking or a store order, and a document itemising GST
  // without a registration number is not a valid tax invoice.
+ //
+ // It also sent people to a "Download Invoice" button on /bookings that has
+ // never existed: there is no such control anywhere in apps/web/app, and no
+ // API route serves the PDF. The only delivery path is the email attachment
+ // sent from payment.service.ts once the payment is confirmed, so the answer
+ // now describes that instead of a control the devotee cannot find.
  answer:
- 'Yes. After booking, go to /bookings → tap the booking → "Download Invoice". It is a payment receipt showing what you paid, and it is not a GST tax invoice: Darshya is not GST-registered yet, so no GST is charged and none is shown. The amount on the receipt is the whole amount taken from your card. If you need a GST invoice for a business claim, wait until we publish a GSTIN — we cannot issue one before then.',
+ 'Yes — we email it to you automatically. As soon as your payment is confirmed, Darshya sends a payment receipt PDF to your registered email address, so there is nothing to download. It shows what you paid, and it is not a GST tax invoice: Darshya is not GST-registered yet, so no GST is charged and none is shown. The amount on the receipt is the whole amount taken from your card. If you need a GST invoice for a business claim, wait until we publish a GSTIN — we cannot issue one before then.',
  },
 
  // Live Darshan (4)

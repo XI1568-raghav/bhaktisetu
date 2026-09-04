@@ -41,7 +41,7 @@ import { findDonationByOrderId, finalizeDonationReceipt } from '../routes/donati
 import { handleSubscriptionEvent } from './recurring.service.js';
 
 /**
- * Send a puja-booking tax invoice to the devotee. Best-effort: any failure
+ * Send a puja-booking payment receipt to the devotee. Best-effort: any failure
  * (PDF, email, or DB read) is swallowed and logged so it can never block
  * the payment-confirmation flow this is called from.
  */
@@ -71,11 +71,11 @@ async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
     });
     await sendEmail({
       to: booking.user.email,
-      subject: `Darshya tax invoice — ${booking.bookingNumber}`,
-      html: `<p>Namaste ${booking.user.fullName},</p><p>Your tax invoice for booking <strong>${booking.bookingNumber}</strong> is attached.</p>`,
-      text: `Tax invoice for booking ${booking.bookingNumber} attached.`,
+      subject: `Darshya payment receipt — ${booking.bookingNumber}`,
+      html: `<p>Namaste ${booking.user.fullName},</p><p>Your payment receipt for booking <strong>${booking.bookingNumber}</strong> is attached.</p>`,
+      text: `Payment receipt for booking ${booking.bookingNumber} attached.`,
       attachments: [
-        { filename: `invoice-${booking.bookingNumber}.pdf`, content: pdf },
+        { filename: `receipt-${booking.bookingNumber}.pdf`, content: pdf },
       ],
     });
   } catch (err) {
@@ -197,11 +197,11 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
     });
     await sendEmail({
       to: order.user.email,
-      subject: `Darshya tax invoice — ${order.orderNumber}`,
-      html: `<p>Namaste ${order.user.fullName},</p><p>Your tax invoice for order <strong>${order.orderNumber}</strong> is attached.</p>`,
-      text: `Tax invoice for order ${order.orderNumber} attached.`,
+      subject: `Darshya payment receipt — ${order.orderNumber}`,
+      html: `<p>Namaste ${order.user.fullName},</p><p>Your payment receipt for order <strong>${order.orderNumber}</strong> is attached.</p>`,
+      text: `Payment receipt for order ${order.orderNumber} attached.`,
       attachments: [
-        { filename: `invoice-${order.orderNumber}.pdf`, content: pdf },
+        { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
       ],
     });
   } catch (err) {
@@ -379,7 +379,7 @@ async function writePujaCommissionOnConfirm(
  * Both confirmation rails — POST /payments/verify and the Razorpay webhook —
  * computed `shouldConfirm` from a read taken BEFORE their transaction. Two
  * overlapping reads both see `pending_payment`, both transactions commit, and
- * both then fire the post-confirm side-effects: two tax invoices, two
+ * both then fire the post-confirm side-effects: two payment receipts, two
  * "confirmed" notifications, two referral-reward attempts for one booking.
  *
  * This conditional UPDATE is the single-winner gate. Exactly one transaction
@@ -895,7 +895,7 @@ export class PaymentService {
     let mintedCommission: MintedCommission | null = null;
     // PAY-09: single-winner claim — see claimCaptureTransition. Without it this
     // rail and the webhook, racing on the same booking, each sent the devotee a
-    // tax invoice and a confirmation.
+    // payment receipt and a confirmation.
     let capturedNow = false;
     await prisma.$transaction(async (tx) => {
       capturedNow = await claimCaptureTransition(tx, payment.id);
@@ -1525,7 +1525,7 @@ export class PaymentService {
             // PAY-09: gated on the capture transition, so only the transaction
             // that actually performed it announces it. Client verify and this
             // handler racing on the same booking used to send the devotee two
-            // tax invoices and two confirmations.
+            // payment receipts and two confirmations.
             //
             // `alreadyCaptured` keeps the RECOVERY path loud: a Payment that was
             // already `captured` while its booking sat `pending_payment` (what

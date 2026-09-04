@@ -395,8 +395,8 @@ function OfferingCheckoutInner() {
               Booking confirmed
             </h1>
             <p className="text-sm text-surface-600">
-              Your puja booking is confirmed. We have sent a tax invoice to your
-              registered email.
+              Your puja booking is confirmed. We have emailed a payment receipt
+              to your registered email.
             </p>
             <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-saffron-50 rounded-lg">
               <span className="text-xs text-surface-500">Booking number</span>
