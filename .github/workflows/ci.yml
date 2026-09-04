@@ -120,6 +120,19 @@ jobs:
       # affected — only the Windows checkout. If it reappears, re-run
       # `git add --renormalize .`.
       #
+      # Two more added 2026-09-04, and they were very nearly the bug this block
+      # already warns about. backup-verification.test.mjs (27 tests) and
+      # db-backup-workflow.test.mjs (11) shipped in 94811871 as the guards for
+      # OPS-02 -- and nothing ran them: not `turbo test` (scripts/ is not a
+      # workspace package), not the root `test:unit` (CI never invokes it), and
+      # not this step, which names its files explicitly. 712 lines of guard that
+      # could never fail, added by the very commit whose subject is a backup
+      # reporting success without doing anything. Caught by the pre-merge review,
+      # because CI had nothing to catch it with.
+      #
+      # The rule this encodes: a test file under scripts/ is invisible until it
+      # is named HERE. Adding one without editing this list ships a dead guard.
+      #
       # Two more added 2026-08-28 (OPS-02/03/08/10/11):
       #   scripts/test/ops-runbook-honesty.test.mjs — asserts the ops runbooks
       #     still name the three backup secrets, still dispatch the guarded copy
@@ -145,6 +158,8 @@ jobs:
           scripts/agents/deploy-rollback-lever.test.mjs
           scripts/backup/test/backup.test.mjs
           scripts/backup/test/backup-integrity.test.mjs
+          scripts/backup/test/backup-verification.test.mjs
+          scripts/backup/test/db-backup-workflow.test.mjs
           scripts/test/ops-runbook-honesty.test.mjs
           scripts/test/secret-scan.test.mjs
 
