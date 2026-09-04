@@ -11,6 +11,7 @@ import { getCatalogueSlugs } from '../../lib/puja-catalogue';
 import { BROWSE_PUJAS_HREF, pujaLinkLabel, resolveContentPujas } from '../../lib/puja-link';
 import { DEITY_MANTRAS } from '../../lib/deity-mantras';
 import { getDeity } from '../../lib/deities';
+import { blogHasPublishedPosts } from '../../lib/footer-blog-link';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
 
@@ -278,7 +279,10 @@ export default async function TodayPage() {
           <Link href="/aarti" className="text-saffron-700 hover:underline font-semibold">Aartis</Link>
           <Link href="/chalisa" className="text-saffron-700 hover:underline font-semibold">Chalisas</Link>
           <Link href="/shlokas" className="text-saffron-700 hover:underline font-semibold">Shlokas</Link>
-          <Link href="/blog" className="text-saffron-700 hover:underline font-semibold">Blog</Link>
+          {/* HN-11: "more to read" must not point at a section with nothing to read. */}
+          {blogHasPublishedPosts() && (
+            <Link href="/blog" className="text-saffron-700 hover:underline font-semibold">Blog</Link>
+          )}
         </div>
       </section>
 

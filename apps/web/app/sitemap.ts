@@ -186,7 +186,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/weddings/muhurat', priority: 0.8 },
     { path: '/weddings/packages', priority: 0.8 },
     { path: '/weddings/inquiry', priority: 0.6 },
-    { path: '/blog', priority: 0.7 },
+    // HN-11: `/blog` is NOT listed here unconditionally. It is appended below,
+    // next to the per-post entries, and only when a post exists — submitting an
+    // index of zero posts to Search Console is a thin-content signal for a page
+    // that cannot be improved by crawling it again.
     { path: '/about', priority: 0.5 },
     { path: '/contact', priority: 0.5 },
     { path: '/careers', priority: 0.4 },
@@ -438,6 +441,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       };
     });
+    // HN-11: the index earns its listing only once it has something to index.
+    if (blogEntries.length > 0) {
+      blogEntries.unshift({
+        url: `${BASE_URL}/blog`,
+        lastModified: now,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      });
+    }
   } catch {
     blogEntries = [];
   }

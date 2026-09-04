@@ -10,6 +10,7 @@ import {
 } from "next/font/google";
 import { t } from "../lib/t";
 import { footerDonateLink } from "../lib/footer-donate-link";
+import { blogFooterLinks } from "../lib/footer-blog-link";
 import {
  Flame,
  Heart,
@@ -344,7 +345,14 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  links: [
  { href: "/about", t: "footer", key: "about" },
  { href: "/careers", t: "footer", key: "careers" },
- { href: "/blog", t: "footer", key: "blog" },
+ /**
+  * HN-11 — the Blog entry that sat here is GATED, not deleted. It is
+  * rendered by the root layout, so it advertised a section with zero
+  * posts on every page of the site while `PUBLISHED_POSTS` (see
+  * content/blog/published.ts) is empty. Restoring it takes no edit
+  * here: append one post and blogFooterLinks() emits the link again.
+  */
+ ...blogFooterLinks(),
  { href: "/contact", t: "footer", key: "contact" },
  { href: "/pricing", t: "footer", key: "pricing" },
  ],
