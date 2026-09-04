@@ -67,7 +67,7 @@
 
 | Workflow                                                        | Trigger                                                                        | Min/run            | Runs/mo           | Min/mo           |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------ | ----------------- | ---------------- |
-| `ci.yml`                                                        | PR + push to main (paths-filtered, no docs). +~10s/run for the ops-guard step added 2026-08-20; +~2s more 2026-08-21 (two backup guard files added to the same step) | ~5.25              | ~80 push estimate | ~416             |
+| `ci.yml`                                                        | PR + push to main (paths-filtered, no docs). **MEASURED 2026-09-04 from the Actions API, not estimated:** August = 70 runs / 530 min / **7.6 min per run**, 61 of them green. The ~5.25 and ~80 below were an estimate and both were wrong — the rate was low and the run count high. Timeout raised 12→25 the same day (see note) | **7.6 measured, ~15-18 expected once web completes** | **70 measured** | **~530 actual Aug; ~1050 projected** |
 | `commitlint.yml`                                                | **every PR, no paths filter** (the one gate never skipped). +~5s/run 2026-08-21 for the OPS-11 secret scan | ~0.6               | ~20               | ~12              |
 | `ai-review.yml`                                                 | PR, paths-filtered (`apps/**`, `packages/**`, `.github/workflows/**`, `scripts/agents/**`) | ~2                 | ~15               | ~30              |
 | `e2e.yml`                                                       | **Sun weekly + manual only** (PR trigger removed 2026-07-10)                   | ~15                | 4                 | ~60              |
@@ -89,6 +89,38 @@
 | **Total estimate**                                              |                                                                                |                    |                   | **~1181 min/mo** |
 
 Cap = 2000 min/mo. **Headroom: +819 min/mo.** Fleet is comfortably under cap.
+
+> **RECONCILED 2026-09-04 — the CI line was wrong in both directions, and the
+> error was hiding a dead gate.**
+>
+> Pulled from `actions/workflows/ci.yml/runs` rather than estimated:
+>
+> | Period | Runs | Billed min | Avg | Outcomes |
+> |---|---|---|---|---|
+> | August 2026 | 70 | 530 | 7.6 | **61 success**, 4 cancelled, 5 failure |
+> | September 1-4 | 10 | 96 | 9.6 | **0 success**, 9 cancelled, 1 failure |
+>
+> The table said ~5.25 min/run × ~80 runs = ~416. Actual August was 7.6 × 70 =
+> 530 — so this row alone under-counted by ~114 min/mo, and it is the fleet's
+> largest single consumer.
+>
+> The more important finding is in the September column. Every run is being
+> killed at `timeout-minutes: 12` with `@poojly/web` still running; the packages
+> that do finish (shared, api-client, api at 287 files, mobile at 34) all pass.
+> The suites outgrew the ceiling. **A killed run bills the full 12 minutes and
+> returns no verdict**, so the repo was paying ~96 min in four days for zero
+> signal while `docs/merge-gatekeeping.md` still required a green CI to merge.
+>
+> Timeout raised to 25. This does NOT cost 25 min/run — Actions bills real
+> duration, so the expected cost is the ~15-18 a completing run actually needs.
+> Projected ci.yml ~1050 min/mo at 70 runs, taking the fleet to roughly
+> **~1700 min/mo, headroom ~300**. That fits, but CI is now decisively the
+> dominant line item, so the CLAUDE.md "batch commits before pushing" rule is
+> load-bearing for the budget and not merely tidiness.
+>
+> Watch for: a timed-out job reports `cancelled`, not `failure`. That reads as
+> "superseded by a newer push" and is exactly why nine consecutive dead runs went
+> unnoticed. Check duration against the timeout before believing a cancellation.
 
 > ### `roadmap-loop.yml` cut to weekly — 2026-09-01
 >

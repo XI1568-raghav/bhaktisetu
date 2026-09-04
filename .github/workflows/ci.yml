@@ -29,7 +29,37 @@ jobs:
   verify:
     name: Lint + Type + Test + Build
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # Raised 12 -> 25 on 2026-09-04. MEASURED, not guessed, from the Actions API:
+    #
+    #   August 2026    70 runs, 530 billed min, avg 7.6 min/run, 61 SUCCESS
+    #   September 1-4  10 runs,  96 billed min, avg 9.6 min/run,  0 success,
+    #                  9 cancelled, 1 failure
+    #
+    # Nothing structural broke. The suites simply outgrew the ceiling: every
+    # September run is killed at 12 minutes with `@poojly/web` still in flight.
+    # The completed packages all PASS -- shared, api-client, api (287 files) and
+    # mobile (34) -- so the run is thrown away after doing most of the work.
+    #
+    # A job killed at the cap costs the full 12 minutes and produces NO verdict,
+    # which is strictly worse than letting it finish: `timeout-minutes` bills
+    # actual duration, not the cap, so a higher ceiling costs nothing on runs
+    # that finish sooner. It only stops paying for nothing.
+    #
+    # Free-tier check (cap 2000 min/mo, docs/free-tier-budgets.md): at ~70
+    # runs/mo and an expected ~15-18 min once web completes, ci.yml lands near
+    # ~1050 min/mo against August's actual 530. That fits, but it is the largest
+    # single line item -- so batch pushes rather than pushing per commit, which
+    # is already the CLAUDE.md rule and matters more now than it did.
+    #
+    # 25 is deliberately above the expected 15-18: a ceiling that sits on top of
+    # the expected duration converts ordinary runner variance into another
+    # verdict-free run, which is the failure this comment exists to end.
+    #
+    # NOTE: a timed-out job reports as `cancelled`, NOT `failure` -- which reads
+    # like "superseded by a newer push" and is why nine consecutive dead runs
+    # went unnoticed. If CI says cancelled, check the job duration against this
+    # number before assuming a push cancelled it.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
