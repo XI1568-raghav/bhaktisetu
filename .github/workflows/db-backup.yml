@@ -23,6 +23,30 @@ name: db-backup
 #   - the ONLY destination is the same Supabase project as the database
 #     (OPS-03 — that is a second copy, not a backup).
 #
+# Extended 2026-09-04 — three ways to report a backup that did not exist had
+# survived the 2026-08-21 pass, all of them in the wiring rather than in the
+# checks it added:
+#   - the read-back skipped its size comparison when the store reported the
+#     object as 0 BYTES (`got > 0 && got !== expected` excluded the one value
+#     that most needed to fail), and did the same when the HEAD carried no
+#     content-length at all;
+#   - the S3 offsite copy — the copy OPS-03 exists to create — was never read
+#     back at all, yet reported a `verifiedBytes` field;
+#   - the missing-credentials skip still returned `{"ok":true}` and exit 0 from
+#     the script itself; only this workflow's grep caught it, so any other
+#     caller was told the backup succeeded.
+# The script now fails on all three, and distinguishes a MISSING pg_restore
+# (stage "verify-tooling") from an UNREADABLE dump — a missing checker is not a
+# corrupt artifact, and reporting it as one is how a real alarm gets ignored.
+#
+# Exit codes from supabase-backup.mjs, so a red run is diagnosable at a glance:
+#   2 pg_dump failed          3 hashing failed        4 upload/read-back failed
+#   5 destination refused     6 dump is not a restore point
+#   7 NOT CONFIGURED          8 pg_restore missing, dump unverifiable
+#   9 archive parses but is not a dump of THIS database (expected tables absent)
+# 7 is the only one that means "nobody has set this up yet" rather than
+# "something broke". Both mean there is no restore point for today.
+#
 # ---------------------------------------------------------------------------
 # OWNER SETUP — three required secrets, and one optional set for offsite.
 # ---------------------------------------------------------------------------
@@ -58,7 +82,8 @@ name: db-backup
 #   1. Actions -> db-backup -> "Run workflow" on the default branch.
 #   2. The run must be GREEN. Open the "Run daily backup" step and read the
 #      single JSON line. It must contain "ok":true, NO "skipped", a "sizeBytes"
-#      in the millions, a "tocEntries" in the hundreds, and "offsite":true.
+#      in the millions, a "tocEntries" in the hundreds, "verified":true (the
+#      store confirmed the byte count on read-back), and "offsite":true.
 #   3. The job summary prints the same numbers. "0 bytes" or "skipped" is a
 #      failure, and the run will be red.
 #   4. Supabase -> Storage -> bucket db-backups -> backups/YYYY/MM/DD/ — the
@@ -109,8 +134,13 @@ jobs:
       # We don't need the full workspace — backup scripts are pure node:* +
       # native fetch. Skip pnpm install entirely to save ~2 min per run.
 
-      - name: Verify pg_dump available
-        run: pg_dump --version
+      # pg_restore is not optional tooling here: the integrity gate reads the
+      # archive's table of contents with it. Without it the script fails at
+      # stage "verify-tooling", which is correct but wastes a dump — check now.
+      - name: Verify pg_dump and pg_restore available
+        run: |
+          pg_dump --version
+          pg_restore --version
 
       - name: Run daily backup
         id: backup
@@ -196,6 +226,25 @@ jobs:
             echo "::error::Backup reported success with ${size} bytes. That is not a restore point."
             exit 1
           fi
+          # Independent of the script's own MIN_TOC_ENTRIES gate. If a future
+          # edit weakens that check, this still refuses to call an archive
+          # nothing can enumerate a backup.
+          if [ "$toc" -le 0 ]; then
+            echo "::error::Backup reported success but pg_restore found 0 TOC entries. That file is not a readable archive."
+            exit 1
+          fi
+
+          # "verified" is true only when EVERY destination confirmed the stored
+          # byte count on read-back. False means the copies were written but a
+          # store would not say what it holds — worth seeing, not worth a red
+          # run, since a store that never returns content-length would make this
+          # job permanently red and train everyone to ignore it.
+          if grep -q '"verified":[[:space:]]*true' /tmp/backup-out.json; then
+            verified="yes (size confirmed by read-back)"
+          else
+            verified="**NO — written, but the store did not confirm its size**"
+            echo "::warning::At least one destination did not confirm the stored object size on read-back."
+          fi
 
           {
             echo "### Backup verified"
@@ -204,11 +253,15 @@ jobs:
             echo "|---|---|"
             echo "| bytes | ${size} |"
             echo "| pg_restore TOC entries | ${toc} |"
+            echo "| stored size confirmed | ${verified} |"
             if grep -q '"offsite":[[:space:]]*true' /tmp/backup-out.json; then
               echo "| offsite | yes |"
             else
               echo "| offsite | **NO — same account as the database** |"
             fi
+            echo ""
+            echo "These numbers prove the archive is READABLE and STORED. They do"
+            echo "not prove it RESTORES — only the restore drill does that."
           } >> "$GITHUB_STEP_SUMMARY"
 
           if ! grep -q '"offsite":[[:space:]]*true' /tmp/backup-out.json; then
@@ -266,6 +319,11 @@ jobs:
         with:
           node-version: '22'
 
+      # KNOWN LIMIT: fetch-latest-backup.mjs reads the SUPABASE Storage bucket
+      # only. If you follow the OPS-03 advice all the way and make R2 the ONLY
+      # destination (no SUPABASE_URL), this step fails loudly with
+      # "missing SUPABASE_URL" — it does not silently drill against nothing —
+      # but the drill will need an S3 reader before it works in that setup.
       - name: Download the newest dump from the backup bucket
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
