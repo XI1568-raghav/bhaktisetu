@@ -96,7 +96,7 @@ function templePathBooking() {
   // The temple path never minted one — this is the whole point.
   prismaMock.commission.findFirst.mockResolvedValue(null as never);
   prismaMock.commission.updateMany.mockResolvedValue({ count: 0 } as never);
-  prismaMock.commission.create.mockResolvedValue({ id: 'cm-new' } as never);
+  prismaMock.commission.createMany.mockResolvedValue({ count: 1 } as never);
   prismaMock.pujaBooking.findFirst.mockResolvedValue(null as never);
   prismaMock.pujaBooking.update.mockResolvedValue({
     id: BOOKING_ID,
@@ -146,13 +146,13 @@ describe('DI-05 — attaching a pandit mints his earning when none exists', () =
   it('creates the Commission the temple path never minted', async () => {
     const res = await attachPandit();
     expect(res.statusCode).toBe(200);
-    expect(prismaMock.commission.create).toHaveBeenCalledTimes(1);
+    expect(prismaMock.commission.createMany).toHaveBeenCalledTimes(1);
   });
 
   it('credits the PANDIT and stores the PLATFORM rate, per commission-math', async () => {
     await attachPandit();
 
-    const data = (prismaMock.commission.create.mock.calls[0]![0] as { data: any }).data;
+    const data = (prismaMock.commission.createMany.mock.calls[0]![0] as { data: any[] }).data[0];
     expect(data.bookingId).toBe(BOOKING_ID);
     // providerId is a User id — every payout read joins on User, not Priest.
     expect(data.providerId).toBe(NEW_PRIEST_USER);
@@ -173,7 +173,7 @@ describe('DI-05 — attaching a pandit mints his earning when none exists', () =
     expect(res.statusCode).toBe(200);
     // No captured payment means no withdrawable balance may appear. Minting
     // here would be the S3-08 hole moved onto the reassignment path.
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 
   it('still MOVES an existing earning rather than minting a second one', async () => {
@@ -184,6 +184,6 @@ describe('DI-05 — attaching a pandit mints his earning when none exists', () =
     expect(prismaMock.commission.updateMany).toHaveBeenCalledTimes(1);
     // Two rows on one booking is a double payable. The mint is the fallback for
     // "nothing moved", never an addition to it.
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });
 });

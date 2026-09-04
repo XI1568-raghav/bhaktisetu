@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { Search, Plus, X, Loader2, CheckCircle2, Beef, AlertCircle } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { serverErrorMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Cow = {
   id: string;
@@ -125,7 +127,8 @@ function CowsPageContent() {
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setRegisterError(j.error ?? `Failed (${r.status})`);
+        // RES-09: `Failed (500)` was the whole message on a server error.
+        setRegisterError(serverErrorMessage(j, 'We could not register that cow. Please try again.'));
         setRegistering(false);
         return;
       }
@@ -202,7 +205,7 @@ function CowsPageContent() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>Cow Registry</h1>
+          <h1 className={H1.portal}>Cow Registry</h1>
           <p className="text-[var(--color-text-muted)] text-sm mt-1">
             {cows.length} cows registered
             {needsAttention > 0 && (
@@ -212,7 +215,7 @@ function CowsPageContent() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] transition-colors"
+          className={buttonClass('primary', 'md')}
         >
           <Plus className="w-4 h-4" />
           Register Cow
@@ -424,7 +427,7 @@ function CowsPageContent() {
               <button
                 onClick={addHealthRecord}
                 disabled={savingRecord || !newRecord.notes.trim()}
-                className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
+                className={buttonClass('primary', 'md')}
               >
                 {savingRecord ? 'Saving…' : 'Add Record'}
               </button>

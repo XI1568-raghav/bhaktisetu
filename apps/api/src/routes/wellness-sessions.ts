@@ -104,14 +104,22 @@ async function writeWellnessCommissionOnPaid(enrollmentId: string): Promise<void
       : 0.20;
     const instructorShare = Math.round(price * (1 - platformRate) * 100) / 100;
 
-    await prisma.commission.create({
-      data: {
-        wellnessEnrollmentId: enrollment.id,
-        providerId: enrollment.session.instructorId,
-        amount: instructorShare,
-        percentage: platformRate,
-        status: 'PENDING',
-      },
+    // DI-06 (F367): ON CONFLICT DO NOTHING against UNIQUE
+    // `commissions_wellness_enrollment_id_key` (migration 20260824000000), so a
+    // replayed PAID flip cannot mint a second instructor earning in the window
+    // between the findFirst above and this INSERT. Rationale in full at
+    // payment.service.writePujaCommissionOnConfirm.
+    await prisma.commission.createMany({
+      data: [
+        {
+          wellnessEnrollmentId: enrollment.id,
+          providerId: enrollment.session.instructorId,
+          amount: instructorShare,
+          percentage: platformRate,
+          status: 'PENDING',
+        },
+      ],
+      skipDuplicates: true,
     });
   } catch (err) {
     console.warn('[wellness-sessions] writeWellnessCommissionOnPaid failed:', err);
@@ -587,7 +595,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       // P0 #wp-03: record the instructor's payout ledger entry (fire-and-forget).
       void writeWellnessCommissionOnPaid(updated.id);
 
-      // Best-effort tax invoice — failure here must NOT block the PAID flip.
+      // Best-effort payment receipt — failure here must NOT block the PAID flip.
       void (async () => {
         try {
           const detail = await prisma.wellnessEnrollment.findUnique({
@@ -617,11 +625,11 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
           });
           await sendEmail({
             to: detail.user.email,
-            subject: `Darshya tax invoice — ${detail.session.title}`,
-            html: `<p>Namaste ${detail.user.fullName},</p><p>Your tax invoice for <strong>${detail.session.title}</strong> is attached.</p>`,
-            text: `Tax invoice for ${detail.session.title} attached.`,
+            subject: `Darshya payment receipt — ${detail.session.title}`,
+            html: `<p>Namaste ${detail.user.fullName},</p><p>Your payment receipt for <strong>${detail.session.title}</strong> is attached.</p>`,
+            text: `Payment receipt for ${detail.session.title} attached.`,
             attachments: [
-              { filename: `invoice-wellness-${detail.session.id.slice(0, 8)}.pdf`, content: pdf },
+              { filename: `receipt-wellness-${detail.session.id.slice(0, 8)}.pdf`, content: pdf },
             ],
           });
         } catch (err) {

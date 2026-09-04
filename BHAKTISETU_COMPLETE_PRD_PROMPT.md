@@ -2,6 +2,20 @@
 
 > **Purpose**: This is a self-contained, end-to-end prompt to build Poojly from scratch. Give this entire document to Claude Code, Cursor, or any AI coding assistant. It contains market research, competitor analysis, revenue models, feature specifications, tech stack, database schema, API design, UI/UX specs, AI features, testing strategy, and deployment plan — everything needed to build and launch a production-ready devotional super-app.
 
+> **Status banner added 2026-09-02 (`OPS-10`).** This document is the **original
+> pre-build PRD prompt**, written before any code existed. It is a *proposal*, kept as
+> a historical input, and several of its choices were never adopted. Do not read its
+> stack table, deployment table or env sample as a description of production. In
+> particular: the web tier is **not** on Vercel and the API is **not** on Railway —
+> both run on Render, `region: oregon` (`render.yaml:15` API, `:56` web), with
+> Cloudflare providing DNS + edge proxy only. **Stripe was removed from the codebase on
+> 2026-08-11** (`apps/api/src/lib/env.ts:45-46`,
+> `services/payment.service.ts:2506-2517`); Razorpay is the only live rail and it
+> settles **INR only**, and no replacement international processor has been chosen —
+> so the "Stripe (international): USD for NRI users" line and the `STRIPE_*` env sample
+> describe a rail that does not exist. Live operational truth: `CLAUDE.md`,
+> `docs/operational-context.md`, `DARSHYA_DEPLOYMENT.md`.
+
 ---
 
 ## 1. EXECUTIVE SUMMARY

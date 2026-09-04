@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { UPANISHADS, upanishadSlugs, getUpanishad } from '../../../lib/upanishads';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -73,7 +77,7 @@ export default async function UpanishadPage({ params }: { params: Promise<{ slug
 
       <header className="mb-8 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-saffron-50 p-6">
         <p className="text-xs uppercase tracking-wider text-indigo-700">{u.veda} Veda · {u.vedaShakha}{u.mantraCount > 0 ? ` · ${u.mantraCount} mantras` : ''}</p>
-        <h1 className="mt-2 font-serif text-3xl text-gray-900 sm:text-4xl">{u.sanskrit}</h1>
+        <h1 className={`${H1.catalogue} mt-2`}>{u.sanskrit}</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900">{u.name}</p>
         <p className="mt-1 italic text-sm text-gray-600">{u.iast}</p>
         <p className="mt-3 text-sm text-gray-700"><span className="font-semibold">Central theme:</span> {u.centralTheme}</p>
@@ -138,13 +142,15 @@ export default async function UpanishadPage({ params }: { params: Promise<{ slug
         ) : (
           <Link href="/upanishads" className="rounded-xl border border-saffron-200 bg-saffron-50 p-4 text-right hover:bg-saffron-100">
             <div className="text-xs uppercase text-saffron-700">← Back to index</div>
-            <div className="mt-0.5 text-sm font-semibold text-saffron-900">All 10 Upanishads</div>
+            <div className="mt-0.5 text-sm font-semibold text-saffron-900">All {UPANISHADS.length} Upanishads</div>
           </Link>
         )}
       </nav>
 
       <section className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-base font-semibold text-gray-900">All 10 principal Upanishads</h2>
+        {/* CI-14: this list renders every record, so it cannot be labelled
+            "10 principal" — the ten are marked individually on the index. */}
+        <h2 className="text-base font-semibold text-gray-900">All {UPANISHADS.length} Upanishads</h2>
         <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
           {UPANISHADS.map((uu) => (
             <Link
@@ -161,6 +167,10 @@ export default async function UpanishadPage({ params }: { params: Promise<{ slug
           ))}
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'upanishads',
+        subject: u.name,
+      })}
     </main>
   );
 }

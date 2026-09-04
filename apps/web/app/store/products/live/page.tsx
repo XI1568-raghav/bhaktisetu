@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Store, PackageSearch } from 'lucide-react';
 import { getLiveProducts } from '../../../../lib/store-live';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 /**
  * PM-11 (prod sweep 2026-08-12) — this route did not exist.
@@ -51,10 +52,10 @@ export default async function LiveStoreProductsPage() {
     <div className="min-h-[100dvh] bg-surface-50">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <header className="mb-8">
-          <h1 className="text-2xl font-bold text-surface-800 sm:text-3xl">
+          <h1 className={H1.catalogue}>
             Live products from Darshya sellers
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-surface-500">
+          <p className="mt-2 max-w-2xl prose-body text-surface-500">
             Listed directly by approved sellers on Darshya, lowest price first. Each item
             is sold and shipped by the business named on the card.
           </p>
@@ -66,7 +67,7 @@ export default async function LiveStoreProductsPage() {
             <p className="text-sm font-medium text-surface-700">
               No seller has listed a product yet.
             </p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-surface-500">
+            <p className="mx-auto mt-2 max-w-md prose-meta text-surface-500">
               This directory shows only real inventory from approved Darshya sellers. As soon
               as the first seller publishes an item it appears here.
             </p>

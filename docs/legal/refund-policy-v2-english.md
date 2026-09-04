@@ -86,7 +86,7 @@ Free service; no refund mechanism applicable. Premium darshan features (if intro
 | UPI / Wallets (Razorpay) | 1–3 business days | — |
 | Debit/Credit cards (Razorpay) | 5–7 business days | — |
 | Net Banking | 5–10 business days | Bank-dependent |
-| International cards (Stripe) | 7–14 business days | **NEW** FX risk: USD refunds processed at exchange rate prevailing on refund-execution date, not original payment date. Devotee bears any rate fluctuation. |
+| International cards (processor **[verify]** — Stripe removed 2026-08-11) | 7–14 business days | **NEW** FX risk: USD refunds processed at exchange rate prevailing on refund-execution date, not original payment date. Devotee bears any rate fluctuation. |
 | Platform credits | Instant | Valid 12 months, non-transferable |
 
 GST + payment gateway fees on the original transaction are NOT refunded by Bhaktisetu; refund is on net-of-tax amount. Where Bhaktisetu has remitted GST to Government and a refund is later granted, Bhaktisetu will offset against future GST liability as permitted by GSTN rules; devotee bears any irrecoverable component.

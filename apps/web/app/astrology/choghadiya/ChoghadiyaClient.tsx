@@ -10,6 +10,7 @@ import {
  type ChoghadiyaQuality,
 } from '../../../lib/choghadiya';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const QUALITY_STYLE: Record<ChoghadiyaQuality, { border: string; bg: string; pill: string; label: string }> = {
  auspicious:   { border: 'border-emerald-300', bg: 'bg-emerald-50/60', pill: 'bg-emerald-200 text-emerald-900', label: 'Auspicious' },
@@ -122,7 +123,7 @@ export default function ChoghadiyaClient() {
        Want a pandit-picked muhurat for a wedding, griha pravesh, or business launch?
       </p>
       <div className="mt-3 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

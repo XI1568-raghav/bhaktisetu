@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { H1 } from "../../components/ui/heading-recipe";
 
 interface Draft {
   id: string;
@@ -188,7 +189,7 @@ export default function ContentQueuePage() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">Content queue</h1>
+          <h1 className={H1.portal}>Content queue</h1>
           <p className="mt-2 text-sm text-stone-600">
             Reddit and Quora draft posts generated daily. Review, edit, then approve and copy
             to clipboard. Manually paste into the target site, then mark POSTED with the URL.

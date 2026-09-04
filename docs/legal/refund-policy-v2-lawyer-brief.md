@@ -13,7 +13,7 @@ We've drafted v2 to close 12 stress-tested failure scenarios. We need you to gat
 1. **Review attached draft** (`refund-policy-v2-english.md`) — return tracked-changes / inline redlines
 2. **Confirm or revise**:
    - Arbitration clause (Clause 14): SAMA Fast Track in Bengaluru — is this enforceable for consumer disputes given Consumer Protection Act 2019 carve-out?
-   - Jurisdiction (Clause 15): Bengaluru exclusive — any issue with NRI users (Stripe USD)?
+   - Jurisdiction (Clause 15): Bengaluru exclusive — any issue with NRI users paying in foreign currency? (Processor `[verify]` — Stripe was removed 2026-08-11 and no replacement international rail has been chosen; `OPS-10`, 2026-09-02.)
    - Liability cap (Clause 5): ₹1L per claim on consumable defects — valid under CPA 2019?
    - Grievance Officer (Clause 13): we need to name a real Indian resident — do we need them to be a Foundation director, or just an employee?
    - Hindi translation (`refund-policy-v2-hindi.md`): notarization required per CPA 2019 regional-language rule, or self-attestation sufficient?

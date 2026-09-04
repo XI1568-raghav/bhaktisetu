@@ -136,15 +136,18 @@ Net: cycle wall-clock ~20min → ~8min. Restart window ~2.5× less likely to ove
 
 ### Mitigations founder can apply in Render dashboard
 
-**Disable Render auto-deploy on push** (recommended):
+**Disable Render's build-on-every-commit behaviour** — **ALREADY DONE, no founder action left**
+(corrected 2026-09-02, `OPS-06`; this section used to be written as a pending
+recommendation, which read as though pushes still redeployed).
 
-1. Render dashboard → API service → Settings → **Build & Deploy**
-2. Find **Auto-Deploy** → toggle **OFF** (Yes → No)
-3. Now Render only deploys when YOU click "Manual Deploy" in dashboard
+`render.yaml` sets `autoDeploy: false` on **both** services (`:28` API, `:60`
+web), so a commit reaching `main` already triggers no Render build and cannot
+kill an in-flight orchestrator cycle. There is nothing to toggle.
 
-This prevents every `[skip ci]` commit from triggering Render redeploy. Currently orchestrator-bot commits push to main 4-8 times/day, each one would have triggered Render redeploy — killing any in-flight cycle.
-
-**Trade-off**: code fixes to apps/api won't auto-deploy. You manually click "Deploy latest" in Render after any apps/api push.
+**Consequence, and it is the whole point of the setting**: a code fix to
+`apps/api` does not reach production by being merged. Deploys are dispatched by
+hand — `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f branch=main`
+(API sid `srv-d7mc2n8sfn5c73dfce0g`), procedure in `docs/runbooks/prod-rollback.md`.
 
 ### If cycles still fail after both mitigations
 

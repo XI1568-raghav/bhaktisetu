@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { Heart, MessageCircle, Video, Gift, Globe, ShieldCheck } from 'lucide-react';
 import { GiftPujaForm } from './GiftPujaForm';
 import { getPujaTypes } from '../../lib/api';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -91,10 +93,10 @@ export default async function GiftPujaPage() {
             <Gift className="h-3.5 w-3.5" />
             NRI gift puja
           </div>
-          <h1 className="text-3xl md:text-5xl font-bold text-surface-900 leading-tight">
+          <h1 className={H1.marketing}>
             Gift a puja to your family in India
           </h1>
-          <p className="mt-4 text-base md:text-lg text-surface-600 max-w-2xl mx-auto">
+          <p className="prose-lead mt-4 text-surface-600 max-w-2xl mx-auto">
             Your parents or relatives in India receive a WhatsApp confirmation and a full video of the ceremony — within 24 hours of completion.
           </p>
           <div className="mt-6 inline-flex items-center gap-2 text-sm text-surface-500">
@@ -197,7 +199,7 @@ export default async function GiftPujaPage() {
           <div className="mt-6">
             <Link
               href="/pujas"
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-saffron-600 hover:bg-saffron-700 px-4 text-sm font-semibold text-white"
+              className={buttonClass('primary', 'md')}
             >
               Browse the full catalogue
             </Link>

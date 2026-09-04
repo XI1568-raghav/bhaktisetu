@@ -6,6 +6,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { formatNumber, formatDateTime } from '../../../lib/format-locale';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type AgentSummary = {
   agent: string;
@@ -72,7 +73,7 @@ export default function AgentsPage() {
         <button
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Refresh

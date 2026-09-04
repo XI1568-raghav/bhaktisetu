@@ -41,11 +41,15 @@ export interface SubscriptionPlan {
    * already on and offered them "Subscribe" on the plan they were paying for.
    */
   tier?: string;
-  // PM-02b: the API's /subscriptions/plans rows carry NEITHER of these. They
-  // are optional so an absent value stays absent — defaulting them printed
-  // "0% commission" (the platform takes 20%) and "Unlimited listings" on a
-  // plan capped at 5 bookings/month.
-  commissionOverride?: number;
+  // PM-02b: the API's /subscriptions/plans rows do not carry this. It is
+  // optional so an absent value stays absent — defaulting it claimed
+  // "Unlimited listings" on a plan capped at 5 bookings/month.
+  //
+  // PM-01: a `commissionOverride?: number` sat beside it, mapped below from a
+  // field apps/api has never sent (grep `commissionOverride` across apps/api:
+  // no matches). Its one consumer rendered "N% commission" on a plan card. No
+  // plan changes any commission rate, so the field could only ever publish a
+  // falsehood; it is removed rather than left dormant.
   maxListings?: number | null;
   features: string[];
   popular?: boolean;
@@ -174,8 +178,6 @@ export function normalizePlan(raw: unknown): SubscriptionPlan | null {
     description: typeof r.description === 'string' ? r.description : null,
     priceMonthly: price,
     currency: typeof r.currency === 'string' ? r.currency : 'INR',
-    commissionOverride:
-      typeof r.commissionOverride === 'number' ? r.commissionOverride : undefined,
     maxListings:
       typeof r.maxListings === 'number' || r.maxListings === null
         ? (r.maxListings as number | null)

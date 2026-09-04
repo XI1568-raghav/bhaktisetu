@@ -92,6 +92,20 @@ async function getActivePlan(userId: string): Promise<ActivePlan | null> {
     if (sub.plan === 'PRO') {
       return { kind: 'monthly', subscriptionId: sub.id, endDate: sub.endDate };
     }
+    // TC-04: ENTERPRISE fell through to `return null` and therefore to the
+    // FREE_MONTHLY_LIMIT = 5 path. `nri_premium_yearly` maps to ENTERPRISE, and
+    // "unlimited AI Pandit" is one of the six benefits that ₹5,000/yr tier was
+    // sold on — so the holder of the most expensive plan in the product got one
+    // sixth of what a ₹499 PRO subscriber got, on the plan's headline benefit.
+    //
+    // The tier is withdrawn from sale (TC-03), which is exactly why this still
+    // matters: the withdrawal notice promises existing subscriptions "keep
+    // running to their end date", and existing holders are the only people who
+    // can reach this branch. Unmetered, matching PRO — never below the cheaper
+    // plan it sits above. Guarded by ai-usage.enterprise.tc04.test.ts.
+    if (sub.plan === 'ENTERPRISE') {
+      return { kind: 'monthly', subscriptionId: sub.id, endDate: sub.endDate };
+    }
     return null;
   } catch {
     return null;

@@ -2,6 +2,14 @@ import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
+import {
+  NRI_PREMIUM_PLAN_ID,
+  NRI_PREMIUM_WITHDRAWN_MESSAGE,
+  nriPremiumEntitlementKeys,
+  advertisedFeaturesFor,
+  nriPremiumIsSellable,
+  type EntitlementKey,
+} from './subscription-entitlements.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -37,6 +45,37 @@ interface SubscriptionResult {
 
 // ─── Plan Definitions ───────────────────────────────────────────────────────────
 
+/**
+ * PM-01 (2026-08-28) — the commission bullets are gone from this table.
+ *
+ * Six plans below used to advertise a commission benefit next to their price:
+ * plan-pandit-pro "15% lower commission" (Rs 2,999/mo), plan-astro-pro
+ * "10% lower commission" (Rs 1,999/mo), plan-store-basic "Lower commission"
+ * (Rs 1,499/mo), plan-store-pro "Lowest commission" (Rs 3,999/mo), and
+ * plan-store-free / plan-wellness-free "Standard commission" — which only
+ * means anything if some other plan is cheaper on commission.
+ *
+ * No plan changes any rate. `commissionOverride` / `commission_override`
+ * appear nowhere in apps/api, and the five services that write a Commission
+ * row (booking.service, payment.service, store-commission.service,
+ * routes/consultation, routes/wellness-sessions) each apply a flat rate that
+ * never reads a subscription. A store owner paying Rs 3,999/month for "Lowest
+ * commission" is charged the same 20% as the free tier.
+ *
+ * A previous wave stopped the claim at one renderer — a filter in
+ * apps/web/app/pricing/page.tsx — and recorded that no live surface still
+ * carried it. That missed apps/web/components/SubscriptionPanel.tsx, which
+ * prints `plan.features` from GET /subscriptions/plans verbatim on
+ * /priest/subscription, /astrologer-portal/subscription, /store/subscription
+ * and /wellness-portal/subscription, each next to a Subscribe button.
+ * Filtering at one consumer does not unpublish what the API still serves to
+ * every other one.
+ *
+ * If a tier-based commission discount is ever actually implemented (it would
+ * live in apps/api/src/lib/commission-math.ts), the bullets may come back —
+ * `subscription.service.pm01.test.ts` will fail and force that to be a
+ * deliberate decision rather than a drift.
+ */
 const PLANS: PlanDefinition[] = [
   // Pandit plans
   {
@@ -69,7 +108,7 @@ const PLANS: PlanDefinition[] = [
     price: 2999,
     currency: 'INR',
     interval: 'month',
-    features: ['Unlimited bookings', 'Top listing', 'Verified badge', 'Video consultation', 'Dedicated support', '15% lower commission'],
+    features: ['Unlimited bookings', 'Top listing', 'Verified badge', 'Video consultation', 'Dedicated support'],
     popular: false,
   },
   // Astrologer plans
@@ -103,7 +142,7 @@ const PLANS: PlanDefinition[] = [
     price: 1999,
     currency: 'INR',
     interval: 'month',
-    features: ['Unlimited everything', 'Video calls', 'Top listing', 'Verified badge', '10% lower commission'],
+    features: ['Unlimited everything', 'Video calls', 'Top listing', 'Verified badge'],
     popular: false,
   },
   // Store Owner plans
@@ -115,7 +154,7 @@ const PLANS: PlanDefinition[] = [
     price: 0,
     currency: 'INR',
     interval: 'forever',
-    features: ['10 product listings', 'Standard commission', 'Basic analytics'],
+    features: ['10 product listings', 'Basic analytics'],
     popular: false,
   },
   {
@@ -126,7 +165,7 @@ const PLANS: PlanDefinition[] = [
     price: 1499,
     currency: 'INR',
     interval: 'month',
-    features: ['100 product listings', 'Lower commission', 'Advanced analytics', 'Priority support'],
+    features: ['100 product listings', 'Advanced analytics', 'Priority support'],
     popular: true,
   },
   {
@@ -137,7 +176,7 @@ const PLANS: PlanDefinition[] = [
     price: 3999,
     currency: 'INR',
     interval: 'month',
-    features: ['Unlimited listings', 'Lowest commission', 'Featured placement', 'Dedicated account manager'],
+    features: ['Unlimited listings', 'Featured placement', 'Dedicated account manager'],
     popular: false,
   },
   // Wellness plans
@@ -149,7 +188,7 @@ const PLANS: PlanDefinition[] = [
     price: 0,
     currency: 'INR',
     interval: 'forever',
-    features: ['5 sessions/month', 'Basic profile', 'Standard commission'],
+    features: ['5 sessions/month', 'Basic profile'],
     popular: false,
   },
   {
@@ -220,6 +259,18 @@ const PLANS: PlanDefinition[] = [
   // Stripe checkout was removed 2026-08-11. Maps to
   // ENTERPRISE so isPremium() can branch off the marketplace plan code
   // without inventing a new enum value.
+  //
+  // TC-04: these six lines are the CLAIM, not the offer. Nothing consulted the
+  // plan before granting any of them — see subscription-entitlements.ts, which
+  // records for each benefit the file that would have to enforce it. Until at
+  // least one is enforced the plan is withheld from getPlans() and both
+  // activation rails refuse it, and whatever getPlans() does return carries
+  // only the enforced subset (advertisedFeaturesFor).
+  //
+  // The literal stays here rather than being replaced by a call because
+  // apps/web/__tests__/legal-content-p1.test.ts (LEG-08) scans this file for a
+  // literal `features: [` block and cross-checks it against the published FAQ
+  // answer. Projecting on the way out preserves that contract.
   {
     id: 'nri_premium_yearly',
     name: 'NRI Premium',
@@ -284,9 +335,48 @@ export class PaymentRequiredError extends Error {
 // ─── Service ────────────────────────────────────────────────────────────────────
 
 export class SubscriptionService {
+  /**
+   * TC-04: a plan that enforces none of its advertised benefits is not
+   * offered. Withdrawing it here is what actually stops the sale — /pricing
+   * and /upgrade render whatever this returns.
+   */
+  private isOfferable(plan: PlanDefinition): boolean {
+    if (plan.id === NRI_PREMIUM_PLAN_ID) return nriPremiumIsSellable();
+    return true;
+  }
+
   getPlans(role?: string): PlanDefinition[] {
-    if (!role) return PLANS;
-    return PLANS.filter((p) => p.roles.includes(role));
+    const offerable = PLANS.filter((p) => this.isOfferable(p)).map((p) => {
+      const advertised = advertisedFeaturesFor(p.id, p.features);
+      return advertised === p.features ? p : { ...p, features: advertised };
+    });
+    if (!role) return offerable;
+    return offerable.filter((p) => p.roles.includes(role));
+  }
+
+  /**
+   * The raw definition, including plans currently withheld from sale. Used by
+   * reconciliation and by tests; never by a buying surface.
+   */
+  getPlanDefinition(planId: string): PlanDefinition | undefined {
+    return PLANS.find((p) => p.id === planId);
+  }
+
+  /**
+   * Server truth for what an active subscriber may actually receive.
+   *
+   * TC-04: the web ad-gate asked a CLIENT hook
+   * (apps/web/components/useIsPremium.ts) whether a tier string was in a
+   * hardcoded set — a set the NRI Premium tier is never written into, so the
+   * gate could not fire for the plan that sold it. Entitlements belong on the
+   * server, keyed by capability rather than by tier name, and they list only
+   * what is enforced, so no consumer can conclude a benefit is live when it
+   * is not.
+   */
+  async getEntitlements(userId: string): Promise<{ tier: string | null; entitlements: EntitlementKey[] }> {
+    const premium = await this.isPremium(userId);
+    if (!premium) return { tier: null, entitlements: [] };
+    return { tier: 'ENTERPRISE', entitlements: nriPremiumEntitlementKeys() };
   }
 
   async subscribe(
@@ -297,6 +387,44 @@ export class SubscriptionService {
   ): Promise<SubscriptionResult> {
     const plan = PLANS.find((p) => p.id === planId);
     if (!plan) throw new Error(`Plan not found: ${planId}`);
+
+    // TC-04: refuse a withdrawn plan before any write — but only as a SALE.
+    //
+    // This guard originally covered every call and carried a comment claiming
+    // "an already-sold subscription is untouched". That was true of the READS
+    // (isPremium, getMySubscription) and false of the one write that matters.
+    // `handleSubscriptionEvent` routes both `subscription.activated` and
+    // `subscription.charged` — the annual RENEWAL event — straight into
+    // subscribe(), so for anyone who bought NRI Premium before the withdrawal
+    // the renewal became: Razorpay debits ₹5,000, this throws, no row is
+    // written, and their endDate never moves. The route catches the throw and
+    // answers HTTP 200 (routes/subscriptions.ts:174), and the event id is
+    // recorded in the idempotency store BEFORE the handler runs, so Razorpay
+    // neither retries nor can the event be replayed. The charge is simply lost.
+    //
+    // Refusing to sell and refusing to honour are different decisions. Once
+    // the gateway has taken the devotee's money the only lawful options are to
+    // provision or to refund; throwing does neither and is strictly the worst
+    // of the three. So a withdrawn plan is still refused for every new sale,
+    // and honoured when the caller carries gateway evidence that the money was
+    // already collected.
+    //
+    // `demo_mode` is deliberately NOT such evidence — it is minted by the demo
+    // branch of createRazorpaySubscription with no charge behind it, and that
+    // branch is unreachable for a withdrawn plan anyway. Only the verified
+    // webhook rail can honour one.
+    //
+    // This is not a bypass of the withdrawal. Reaching here requires BOTH a
+    // Razorpay HMAC that timingSafeEqual accepts (routes/subscriptions.ts:141)
+    // AND a local `razorpay_subscription_create` Transaction row naming this
+    // plan — and createRazorpaySubscription refuses to write one for a
+    // withdrawn plan. So the honouring branch can only ever fire for a mandate
+    // that was opened while the plan was still on sale. There is no input a
+    // caller controls that turns it into a new sale.
+    const gatewayAlreadyCollected = evidence?.source === 'razorpay_webhook';
+    if (!this.isOfferable(plan) && !gatewayAlreadyCollected) {
+      throw new Error(NRI_PREMIUM_WITHDRAWN_MESSAGE);
+    }
 
     if (!plan.roles.includes(role)) {
       throw new Error(`Plan ${planId} is not available for role ${role}`);
@@ -433,6 +561,12 @@ export class SubscriptionService {
     }
     if (plan.price <= 0) {
       throw new Error('Auto-renewal not supported for free plans');
+    }
+    // TC-04: never open a payment rail for a plan that delivers nothing. This
+    // is the gate that matters — refusing at activation instead would take
+    // the money first and then strand it.
+    if (!this.isOfferable(plan)) {
+      throw new Error(NRI_PREMIUM_WITHDRAWN_MESSAGE);
     }
 
     const rzpPlanId = mapToRazorpayPlanId(args.planId);
@@ -594,10 +728,19 @@ export class SubscriptionService {
     }
 
     const local = await this.cancel(userId);
+    // TC-03: this branch used to answer "Auto-renewal cancelled. Access
+    // continues until end of current billing cycle." Razorpay is asked to stop
+    // at cycle end (cancelAtCycleEnd = 1 above), which is true of the BILLING.
+    // It is not true of ACCESS: `this.cancel(userId)` on the line above flips
+    // the local MarketplaceSubscription row to CANCELLED right now, and
+    // isPremium()/getActivePlan() both require ACTIVE. So the devotee loses the
+    // entitlement immediately even though the card is not charged again. Say
+    // both halves rather than the flattering one.
     return {
       cancelled: local.cancelled || !!rzpSubId,
       message: rzpSubId
-        ? 'Auto-renewal cancelled. Access continues until end of current billing cycle.'
+        ? 'Auto-renewal cancelled — your card will not be charged again. ' +
+          SubscriptionService.CANCELLATION_NOTICE
         : local.message,
     };
   }
@@ -681,6 +824,36 @@ export class SubscriptionService {
     }
   }
 
+  /**
+   * TC-03 (P0, trust) — what cancelling actually does, said in the response.
+   *
+   * `cancel()` used to answer "Subscription cancelled. Access continues until
+   * end of current billing period." Every word after the full stop was false,
+   * and provably so from this file: `cancel()` performs exactly one write,
+   * `marketplaceSubscription.update({ data: { status: 'CANCELLED' } })`, and
+   * `isPremium()` twenty lines above requires `status: 'ACTIVE'`, as does
+   * `getActivePlan()` in lib/ai-usage.ts. `MarketplaceSubscription` has no
+   * `cancelAtPeriodEnd` column, no grace field and no scheduled job that
+   * restores anything later (prisma/schema.prisma:1114 — id, userId, plan,
+   * role, startDate, endDate, amount, status, timestamps). Access therefore
+   * ends at the instant of cancellation.
+   *
+   * Nor is money moved: `refund.service.processRefund` starts from
+   * `prisma.pujaBooking.findUnique` and refunds the Payment attached to a
+   * booking, so a subscription has no row it can even find. The honest answer
+   * is to say both facts and route the devotee to the one path that exists —
+   * a human reading support mail — rather than to imply a period-end taper
+   * and an automatic refund that no code performs.
+   *
+   * If period-end access is ever wanted, it needs a real column plus a job,
+   * and this string may only change back in the same commit as that column.
+   */
+  static readonly CANCELLATION_NOTICE =
+    'Subscription cancelled. Access ends now, not at the end of the billing period — ' +
+    'cancelling revokes the entitlement immediately. No refund is issued automatically: ' +
+    'if you were charged for time you cannot use, email support@darshya.online and a ' +
+    'person will review it by hand.';
+
   async cancel(userId: string): Promise<{ message: string; cancelled: boolean }> {
     try {
       const subscription = await prisma.marketplaceSubscription.findFirst({
@@ -697,7 +870,7 @@ export class SubscriptionService {
         data: { status: 'CANCELLED' },
       });
 
-      return { message: 'Subscription cancelled. Access continues until end of current billing period.', cancelled: true };
+      return { message: SubscriptionService.CANCELLATION_NOTICE, cancelled: true };
     } catch {
       const existing = mockSubscriptions.get(userId);
       if (existing) {

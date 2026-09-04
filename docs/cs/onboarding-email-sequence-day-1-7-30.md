@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # Devotee Onboarding Email Sequence — Day 1 / 7 / 30
 
 > 3-email onboarding flow for new Bhaktisetu signups. Drives Day-30 retention from 42% → 60% target.
@@ -11,12 +22,15 @@ Namaste {{first name}},
 
 Welcome to Bhaktisetu Foundation 🙏
 
-You've joined 5,000+ devotee families using verified pandit pujas + live darshan from India temples globally.
+You've joined 5,000+ devotee families booking pujas with mandatory video proof + live darshan from India temples globally.
 
 Three quick things to do in your first 24 hours:
 
-1. **Browse our verified pandits** — bhaktisetu.com/pandits
-   100+ Aadhaar-verified pandits across 7 Indian cities. Each with 5+ years experience and 2 reference video proofs.
+1. **Browse our pandits** — bhaktisetu.com/pandits
+   Every puja carries mandatory video proof, and a pandit is paid only once
+   Aadhaar-based KYC is on file — a payout gate rather than a public credential
+   check. We do not run credential verification, temple reference calls or a
+   probation review, so we do not claim to.
 
 2. **Watch live darshan** — bhaktisetu.com/today
    Multiple temples stream daily aartis live. NRI-friendly with IST timezone display.
@@ -60,7 +74,8 @@ You signed up yesterday. We want to make sure your first puja experience is exce
 1. Browse pujas → pick one
 2. Add code FIRSTPUJA at checkout
 3. We schedule pandit + send 24hr video proof
-4. 80G receipt auto-issued
+4. Numbered receipt PDF auto-issued — proof of payment, not a tax-exemption
+   certificate (no Section 80G registration is on file yet)
 
 Your spiritual journey shouldn't have to wait. Book your first puja today.
 

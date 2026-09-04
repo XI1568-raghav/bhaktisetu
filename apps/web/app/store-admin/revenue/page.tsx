@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, userFacingMessage } from '../../../lib/friendly-error';
 import { IndianRupee, TrendingUp, Package, Loader2 } from 'lucide-react';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -34,7 +35,8 @@ export default function StoreRevenuePage() {
           headers: { Authorization: `Bearer ${session.accessToken}` },
         });
         if (!r.ok) {
-          setError(`Failed to load revenue (HTTP ${r.status})`);
+          // RES-09: the seller was shown `Failed to load revenue (HTTP 500)`.
+          setError(userFacingMessage(new UserFacingError('', r.status), 'We could not load your revenue. Please try again.'));
           return;
         }
         setData((await r.json()) as RevenueData);

@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { buttonClass } from '../../../../../components/ui/button-recipe';
 import {
   VIPASSANA_CENTERS,
   centerSlugs,
@@ -110,7 +113,7 @@ export default async function VipassanaCenterDetailPage(
         <p className="text-xs uppercase tracking-wider text-emerald-600">
           {LINEAGE_LABEL[c.lineage]} · {REGION_LABEL[c.region]}
         </p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">{c.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{c.name}</h1>
         <p className="mt-2 text-base text-gray-700">
           {c.city}, {c.state}, {c.country}
         </p>
@@ -195,7 +198,7 @@ export default async function VipassanaCenterDetailPage(
             href={c.bookingUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Apply on official site →
           </a>

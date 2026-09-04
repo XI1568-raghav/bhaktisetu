@@ -309,7 +309,7 @@ function esc(value: string): string {
 /**
  * RV-18 (2026-08-10): this template was DEAD CODE — it had exactly one
  * reference in the repo, its own definition. The only email a paying devotee
- * received was the tax invoice (payment.service.sendPujaBookingInvoice), whose
+ * received was the payment receipt (payment.service.sendPujaBookingInvoice), whose
  * `puja_booking` PDF variant renders createdAt as the INVOICE date and carries
  * no scheduledDate / scheduledTimeSlot field at all. Net effect: a devotee who
  * had just paid was never told, in writing, WHEN their puja would happen.

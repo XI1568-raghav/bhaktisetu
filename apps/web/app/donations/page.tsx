@@ -15,6 +15,7 @@ import { getGaushalaImage, IMG_W } from '../../lib/images';
 import { getTemples, getApprovedProviders } from '../../lib/api';
 import DonationForm from '../../components/DonationForm';
 import { COMPANY } from '../../lib/company';
+import { H1 } from '../../components/ui/heading-recipe';
 
 /**
  * COM-02 (prod sweep 2026-08-12): the hero badge read "Tax-deductible (80G)"
@@ -144,10 +145,10 @@ export default async function DonationsLandingPage({
                 <Heart className="h-3.5 w-3.5" /> {t('tax80G')}
               </div>
             )}
-            <h1 className="mb-3 text-3xl font-bold text-surface-900 sm:text-4xl">
+            <h1 className={`${H1.catalogue} mb-3`}>
               {t('pageTitle')}
             </h1>
-            <p className="mb-6 text-base text-surface-600 sm:text-lg">
+            <p className="mb-6 prose-lead text-surface-600">
               {t('pageSubtitle')}
             </p>
 

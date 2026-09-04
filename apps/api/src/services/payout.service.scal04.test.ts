@@ -33,6 +33,12 @@ const { prismaMock } = vi.hoisted(() => ({
     },
     userRoleAssignment: { findMany: vi.fn() },
     user: { findMany: vi.fn() },
+    // DI-05: getPayoutBalance also reports the LEGACY pandit rail now, so it
+    // asks whether this provider is a pandit and, if so, reads the sidecar
+    // table. Defaulted to "not a pandit" below — every case in THIS file is
+    // about the unified rail's SQL aggregates and must stay that way.
+    priest: { findUnique: vi.fn() },
+    priestPayout: { findMany: vi.fn() },
     $queryRawUnsafe: vi.fn(),
     $transaction: vi.fn(),
   } as Record<string, any>,
@@ -79,6 +85,10 @@ function wireAggregate(ledger: Row[]) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Not a pandit: the DI-05 legacy-rail block is skipped entirely, so the
+  // assertions below still describe only the unified rail's SQL aggregates.
+  prismaMock.priest.findUnique.mockResolvedValue(null);
+  prismaMock.priestPayout.findMany.mockResolvedValue([]);
 });
 
 describe('SCAL-04 — payout balance is summed in SQL, not in Node', () => {
@@ -97,7 +107,14 @@ describe('SCAL-04 — payout balance is summed in SQL, not in Node', () => {
       expect(call[0]).toMatchObject({ _sum: { amount: true } });
       expect(call[0].where).toMatchObject({ providerId: 'prov-1' });
     }
-    expect(b).toEqual({ availableInr: 9000, pendingInr: 5000, paidOutInr: 4000 });
+    // DI-05 added an additive legacyPandit block; this provider is not a
+    // pandit, so it is all zeros and the unified figures are untouched.
+    expect(b).toEqual({
+      availableInr: 9000,
+      pendingInr: 5000,
+      paidOutInr: 4000,
+      legacyPandit: { hasLegacyRail: false, pendingInr: 0, paidOutInr: 0 },
+    });
   });
 
   it('keeps Decimal exactness through the SQL sum', async () => {
@@ -117,6 +134,11 @@ describe('SCAL-04 — payout balance is summed in SQL, not in Node', () => {
 
     const b = await getPayoutBalance('prov-none');
 
-    expect(b).toEqual({ availableInr: 0, pendingInr: 0, paidOutInr: 0 });
+    expect(b).toEqual({
+      availableInr: 0,
+      pendingInr: 0,
+      paidOutInr: 0,
+      legacyPandit: { hasLegacyRail: false, pendingInr: 0, paidOutInr: 0 },
+    });
   });
 });

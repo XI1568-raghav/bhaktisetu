@@ -1,4 +1,5 @@
 import { adminApiBase, adminApiHeaders } from "../../lib/api";
+import { H1 } from "../../components/ui/heading-recipe";
 
 export const revalidate = 60;
 
@@ -117,7 +118,7 @@ export default async function LeadsConversionPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: SAFFRON }}>
+        <h1 className={H1.portal}>
           Lead conversion funnel
         </h1>
         <p className="mt-2 text-sm text-stone-600">

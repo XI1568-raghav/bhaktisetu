@@ -268,8 +268,8 @@ If ALL pass → Razorpay sandbox integration is production-ready. Submit live KY
 
 ## Out of scope
 
-- Stripe NRI sandbox testing (separate runbook — file as R-Q1-F-006 if Q2 priority)
-- Multi-currency testing (Razorpay USD billing — only after U2 Stripe approved)
+- ~~Stripe NRI sandbox testing (separate runbook — file as R-Q1-F-006 if Q2 priority)~~ — Stripe was removed 2026-08-11; if an NRI rail is chosen later, its sandbox runbook is a new item `[verify — Stripe was removed; the NRI rail is undecided]`
+- ~~Multi-currency testing (Razorpay USD billing — only after U2 Stripe approved)~~ — U2 cannot clear; Razorpay settles INR only today, so multi-currency testing has no trigger `[verify — Stripe was removed; the NRI rail is undecided]`
 - Subscription billing testing (after R-Q4-P-002 adopt-temple ships)
 - Payment reconciliation cron testing (separate ops runbook)
 

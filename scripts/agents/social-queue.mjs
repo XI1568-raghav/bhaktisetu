@@ -3,6 +3,10 @@
 // No posting — drafts only. User pastes into Buffer free or schedule manually.
 // Output: docs/agent-reports/YYYY-MM-DD-social-queue.md
 import { writeReport, TODAY, isoNow, fetchJson, API_BASE } from './_lib.mjs';
+// TC-01 / TC-08 — the 80G deduction and the pandit vetting process are both
+// unbacked; see ./_claims.mjs. This queue is copy the founder pastes into a
+// public post, so it is gated at the template rather than typed.
+import { PANDIT_TRUST_SHORT, withEightyG } from './_claims.mjs';
 
 const SLOTS = ['9:00 IST', '13:00 IST', '19:00 IST'];
 
@@ -10,9 +14,9 @@ const HOOKS = [
   { type: 'shloka', template: '🕉️ Shloka of the day\n\n{sanskrit}\n\n{english}\n\n— {source}\n\n#sanatandharma #sanskrit #wisdom' },
   { type: 'practice', template: "5-minute morning practice for {weekday}day:\n\n1. Light a diya\n2. Chant {mantra} (108x)\n3. Offer fresh water\n4. 2 min of silence\n\nThat's it. Try for 7 days.\n\n#sanatandharma #dailypractice" },
   { type: 'temple', template: '🛕 Did you know?\n\n{templeFact}\n\nLive darshan available on Darshya: darshya.online/temples\n\n#templesofindia #livedarshan' },
-  { type: 'NRI', template: 'For NRIs missing home:\n\nBook a Ganga aarti puja in Varanasi from anywhere in the world. Verified pandit. Video proof. 80G receipt.\n\nStarting $49.\n\ndarshya.online/pujas\n\n#NRI #devotional #puja' },
+  { type: 'NRI', template: `For NRIs missing home:\n\nBook a Ganga aarti puja in Varanasi from anywhere in the world. ${PANDIT_TRUST_SHORT}. Fixed USD price, no surprise commission.\n\nStarting $49.\n\ndarshya.online/pujas\n\n#NRI #devotional #puja` },
   { type: 'gurukul', template: '📚 Free Sanskrit & Vedic learning\n\n10-lesson foundation course. No login required.\n\nStart: darshya.online/learn-sanskrit\n\n#sanskrit #vedic #learnonline' },
-  { type: 'gaushala', template: '🐄 Adopt a cow.\n\n₹2,000/month feeds 1 gau-mata. 80G certificate within 24 hours.\n\nVerified gaushalas only on Darshya.\n\ndarshya.online/gaushalas\n\n#gauseva #80G #donation' },
+  { type: 'gaushala', template: `🐄 Adopt a cow.\n\n₹2,000/month feeds 1 gau-mata. ${withEightyG('80G certificate within 24 hours.', 'Numbered receipt PDF by email \u2014 proof of payment, not a tax certificate.')}\n\nVerified gaushalas only on Darshya.\n\ndarshya.online/gaushalas\n\n#gauseva${withEightyG(' #80G')} #donation` },
   { type: 'founder', template: 'Building Darshya in public — week update:\n\n- {weeklyWin}\n- {weeklyLearning}\n- {weeklyAsk}\n\n#buildinpublic #indianstartup' },
 ];
 

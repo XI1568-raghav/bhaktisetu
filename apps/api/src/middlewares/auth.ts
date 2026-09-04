@@ -49,7 +49,23 @@ declare module 'fastify' {
 function extractBearerToken(request: FastifyRequest): string | null {
   const authHeader = request.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7);
+    // SEC-02 step 3 (2026-08-28): an EMPTY Bearer used to be returned here,
+    // ahead of the cookie lookup below, so `Authorization: Bearer ` resolved to
+    // '' and `authenticateUser` answered 401 without ever reading the perfectly
+    // good httpOnly `darshya_session` in the same request.
+    //
+    // That is what blocked the localStorage token from leaving apps/web. ~161
+    // hand-built `Authorization: Bearer ${...}` sites there interpolate a token
+    // unconditionally, so removing the localStorage copy turns them into empty
+    // Bearers — and every one of them 401'd a browser that is, by this file's
+    // own cookie rules, signed in. An empty credential is not a credential;
+    // treating it as absent is what the header already means.
+    //
+    // Whitespace is trimmed rather than preserved for the same reason: a token
+    // is never meaningfully padded, and `Bearer \t ` is the same "nothing was
+    // interpolated" case wearing different characters.
+    const bearer = authHeader.slice(7).trim();
+    if (bearer) return bearer;
   }
   // P0 #200 (2026-08-05): accept the httpOnly `darshya_session` cookie as a
   // fallback so the web can move the token out of localStorage. Bearer header

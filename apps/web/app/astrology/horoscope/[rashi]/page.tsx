@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { RASHIS, getRashi, pujasForRashi } from '../../../../lib/rashis';
 import { getDailyHoroscope, getPeriodHoroscope } from '../../../../lib/daily-horoscope';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 export const dynamicParams = false;
 export const revalidate = 3600;
@@ -108,7 +110,7 @@ export default async function RashiPage({ params }: Params) {
             <span className="ml-1 text-surface-500 text-xs">{liveRating}/5 today</span>
           </span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.marketing} mb-2`}>
           {r.rashiEnglish} Horoscope Today
         </h1>
         <p className="text-2xl font-serif text-saffron-700 mb-3">
@@ -116,11 +118,11 @@ export default async function RashiPage({ params }: Params) {
         </p>
         <Link
           href={`/astrology/horoscope/${r.rashi}/today`}
-          className="inline-flex items-center gap-1.5 mb-4 px-4 py-2 rounded-lg bg-saffron-600 text-white text-sm font-semibold hover:bg-saffron-700 transition"
+          className={buttonClass('primary', 'md', 'mb-4')}
         >
           Today&apos;s reading <ArrowRight className="w-4 h-4" />
         </Link>
-        <p className="text-lg text-surface-700 leading-relaxed">
+        <p className="prose-lead text-surface-700 leading-relaxed">
           {daily.prediction}
         </p>
         <p className="mt-3 text-xs text-surface-500">
@@ -247,7 +249,7 @@ export default async function RashiPage({ params }: Params) {
         </p>
         <Link
           href="/astrology"
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-saffron-600 text-white font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Talk to an astrologer <ChevronRight className="w-4 h-4" />
         </Link>

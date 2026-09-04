@@ -143,15 +143,26 @@ describe('SubscriptionService.getMySubscription', () => {
 });
 
 describe('SubscriptionService — NRI Premium (Layer AR)', () => {
-  it('exposes nri_premium_yearly plan with USD price', () => {
-    const plans = service.getPlans('DEVOTEE');
-    const nri = plans.find((p) => p.id === 'nri_premium_yearly');
+  // TC-04 (2026-08-20) changed this contract deliberately. The plan sold six
+  // benefits and enforced none of them, so it is withdrawn from the OFFER
+  // while `enforcedBenefits()` is empty — see subscription-entitlements.ts and
+  // subscription-entitlements.tc04.test.ts. Every price/tier assertion below
+  // is unchanged and now reads the surviving DEFINITION; the new assertion
+  // that it is not offered is added on top, so this test is strictly stronger
+  // than the version it replaces.
+  it('keeps the nri_premium_yearly definition, priced in INR with a USD display price', () => {
+    const nri = service.getPlanDefinition('nri_premium_yearly');
     expect(nri).toBeDefined();
     expect(nri!.price).toBe(5000);
     expect(nri!.priceUsd).toBe(60);
     expect(nri!.interval).toBe('year');
     expect(nri!.durationDays).toBe(365);
     expect(nri!.plan).toBe('ENTERPRISE');
+  });
+
+  it('does not OFFER nri_premium_yearly while none of its benefits is enforced', () => {
+    const plans = service.getPlans('DEVOTEE');
+    expect(plans.find((p) => p.id === 'nri_premium_yearly')).toBeUndefined();
   });
 
   // The three createStripeAnnualSubscription tests were removed 2026-08-11 with

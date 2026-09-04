@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createSupabaseClient } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
 
 // Tighter rate limit for unauthenticated credential/OTP endpoints — the
 // global 100/min is too generous for OTP-spam and credential-stuffing.
@@ -34,13 +35,73 @@ const verifyOtpSchema = z.object({
     .regex(/^\d{6}$/, 'OTP must contain only digits'),
 });
 
+/**
+ * SEC-02, STEP 1 — the credential may arrive in the BODY or in the httpOnly
+ * COOKIE.
+ *
+ * `refreshToken` was REQUIRED here, and the handler only ever read
+ * `request.body`. The httpOnly `darshya_refresh` cookie — issued at login
+ * below, scoped to /api/v1/auth — was never read at all. So a cookie-only
+ * client could sign in and authenticate, then silently lose its session at the
+ * one-hour access-token TTL because it could not refresh. THAT is why the
+ * JS-readable localStorage copy of the token could not be dropped, and why the
+ * whole of SEC-02 stalled behind this one schema.
+ *
+ * Optional, not removed: the body still wins when present, so mobile and every
+ * currently-deployed web build keep working unchanged. The 400 now fires only
+ * when BOTH sources are absent.
+ */
 const refreshSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().min(1, 'Refresh token is required').optional(),
 });
 
+/**
+ * AUTH-09 (2026-08-20): sign-out scope is now something the caller states.
+ *
+ * This endpoint was unconditionally GLOBAL — `supabase.auth.signOut()` defaults
+ * to global, and the handler then burned every `refresh_token_jtis` row the
+ * user had. Signing out on a shared laptop silently ended the session on their
+ * phone, and nothing in the product mentioned it.
+ *
+ * `global` REMAINS THE DEFAULT. Flipping it would be a quiet security
+ * regression for every currently-deployed client, and global is the right
+ * behaviour after a password change or on a device you no longer trust. What
+ * changes is that it is now a decision, the response says which one was
+ * applied, and the UI can tell the user before they make it.
+ */
 const logoutSchema = z.object({
-  accessToken: z.string().min(1, 'Access token is required'),
+  accessToken: z.string().min(1, 'Access token is required').optional(),
+  scope: z.enum(['local', 'global']).optional(),
 });
+
+/** Cookie bag off a Fastify request, tolerant of @fastify/cookie being absent. */
+type CookieBag = Record<string, string | undefined> | undefined;
+
+function firstNonEmpty(...candidates: Array<unknown>): string | null {
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) return c;
+  }
+  return null;
+}
+
+/**
+ * Body first (today's clients), then the httpOnly cookie (the secure path).
+ * Non-string body values are ignored rather than passed on — `request.body` is
+ * attacker-shaped and this value reaches createHash and Supabase.
+ */
+export function resolveRefreshToken(
+  body: { refreshToken?: string } | undefined,
+  cookies: CookieBag,
+): string | null {
+  return firstNonEmpty(body?.refreshToken, cookies?.[REFRESH_COOKIE]);
+}
+
+export function resolveAccessToken(
+  body: { accessToken?: string } | undefined,
+  cookies: CookieBag,
+): string | null {
+  return firstNonEmpty(body?.accessToken, cookies?.[SESSION_COOKIE]);
+}
 
 const googleSyncSchema = z.object({
   accessToken: z.string().min(1, 'Access token is required'),
@@ -259,10 +320,43 @@ function cookieSecurityOptions(): {
   };
 }
 
-function setAuthCookies(
+/**
+ * SEC-02, prerequisite — EXPORTED so the other session-minting routes can issue
+ * the same cookies with the same flags.
+ *
+ * `POST /auth/magic-link/verify` (routes/magic-link.ts) mints a Supabase
+ * session and returns it as JSON but never sets these cookies, so a magic-link
+ * user — which is every provider onboarded through the partnerships pipeline —
+ * has no `darshya_session` at all and is structurally stuck on the JS-readable
+ * localStorage token SEC-02 is about. That route could not call this function
+ * while it was module-private; its only alternatives were to duplicate the
+ * flags (which is how httpOnly/Secure/SameSite drift apart) or to leave
+ * magic-link users unmigratable, and the second is what kept SEC-02 open.
+ *
+ * Callers: pass the raw access + refresh tokens. Flags come from
+ * cookieSecurityOptions() — do not re-declare them at the call site.
+ * Contract pinned by auth.setauthcookies-export.sec02.test.ts.
+ *
+ * NOT EVERY SESSION IS A SUPABASE SESSION (SEC-02 step 1, 2026-08-23).
+ * The defaults here describe the /login shape: a 1-hour Supabase access token
+ * paired with a 7-day refresh token. `POST /auth/magic-link/verify` is a
+ * different animal — `createEmailSession` mints an `email_sessions` row that
+ * lives SEVEN DAYS and there is no refresh token at all behind it (that route
+ * literally answers `refreshToken: ''`). Handing those values here unmodified
+ * would write a 1-hour cookie over a 7-day session — signing the provider out
+ * six days early, with an empty `darshya_refresh` that /auth/refresh can only
+ * ever reject, since /refresh is a Supabase exchange. Hence the two knobs:
+ *   - pass `null`/`''` for `refreshToken` to skip the refresh cookie entirely;
+ *   - pass `sessionMaxAge` (seconds) when the session's real lifetime is not
+ *     SESSION_TTL_SECONDS.
+ * Both default to today's behaviour, so /login, /verify-otp, /signup, /refresh
+ * and Google sync are untouched.
+ */
+export function setAuthCookies(
   reply: import('fastify').FastifyReply,
   accessToken: string,
-  refreshToken: string,
+  refreshToken: string | null,
+  options?: { sessionMaxAge?: number },
 ): void {
   // setCookie is added by @fastify/cookie. If the plugin isn't registered
   // yet (current state of this app — see auth-model docs), the call throws.
@@ -271,17 +365,25 @@ function setAuthCookies(
   // wired in server bootstrap, cookies start flowing automatically.
   const r = reply as any;
   if (typeof r.setCookie !== 'function') return;
+  const sessionMaxAge =
+    typeof options?.sessionMaxAge === 'number' && options.sessionMaxAge > 0
+      ? Math.floor(options.sessionMaxAge)
+      : SESSION_TTL_SECONDS;
   try {
     r.setCookie(SESSION_COOKIE, accessToken, {
       ...cookieSecurityOptions(),
       path: '/',
-      maxAge: SESSION_TTL_SECONDS,
+      maxAge: sessionMaxAge,
     });
-    r.setCookie(REFRESH_COOKIE, refreshToken, {
-      ...cookieSecurityOptions(),
-      path: REFRESH_COOKIE_PATH,
-      maxAge: REFRESH_TTL_SECONDS,
-    });
+    // An empty refresh cookie is strictly worse than none: it is sent on every
+    // /api/v1/auth call and can only produce a failed exchange.
+    if (refreshToken) {
+      r.setCookie(REFRESH_COOKIE, refreshToken, {
+        ...cookieSecurityOptions(),
+        path: REFRESH_COOKIE_PATH,
+        maxAge: REFRESH_TTL_SECONDS,
+      });
+    }
   } catch {
     // best-effort; JSON Bearer response remains the contract of record
   }
@@ -411,7 +513,7 @@ export async function authRoutes(server: FastifyInstance) {
           phone,
           fullName: '',
           email: supabaseUser?.email || null,
-          preferredLanguage: 'hi',
+          preferredLanguage: SIGNUP_DEFAULT_LANGUAGE,
         },
       });
     } catch (dbError) {
@@ -467,7 +569,7 @@ export async function authRoutes(server: FastifyInstance) {
    * leaving the login-issued token outside the family-revoke net.
    */
   server.post('/refresh', async (request, reply) => {
-    const parseResult = refreshSchema.safeParse(request.body);
+    const parseResult = refreshSchema.safeParse(request.body ?? {});
     if (!parseResult.success) {
       return reply.code(400).send({
         error: 'Validation Error',
@@ -475,7 +577,18 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    const { refreshToken } = parseResult.data;
+    // SEC-02: body OR the httpOnly darshya_refresh cookie. 400 only when the
+    // request carries no refresh credential at all.
+    const refreshToken = resolveRefreshToken(
+      parseResult.data,
+      request.cookies as Record<string, string | undefined> | undefined,
+    );
+    if (!refreshToken) {
+      return reply.code(400).send({
+        error: 'Validation Error',
+        message: 'Refresh token is required',
+      });
+    }
 
     // Phase C P1 #4 (2026-06-08): JTI single-use replay detection.
     // Hash the opaque Supabase refresh token to use as JTI key (no plaintext in DB).
@@ -574,11 +687,121 @@ export async function authRoutes(server: FastifyInstance) {
   });
 
   /**
+   * POST /session/revive — SEC-02 step 2.
+   *
+   * THE GAP THIS FILLS. apps/web/lib/session-revive.ts rehydrates a browser
+   * that holds no JS-readable token by POSTing /auth/refresh. That route is a
+   * SUPABASE exchange, and a magic-link sign-in has no Supabase session behind
+   * it: routes/magic-link.ts mints an `email_sessions` row, answers
+   * `refreshToken: ''`, and deliberately issues no `darshya_refresh` cookie
+   * because an empty one could only ever fail. So every provider onboarded
+   * through the partnerships pipeline — the population whose ONLY credential is
+   * a magic link, since there is no password column on User — had no revive
+   * path at all. Harmless only while app/auth/verify still writes
+   * `poojly_session` to localStorage; the moment SEC-02 deletes that write,
+   * those users are signed out on their next reload. This route is the gate on
+   * that deletion.
+   *
+   * IT VALIDATES AND REPORTS; IT MINTS NOTHING. /auth/refresh rotates because a
+   * Supabase access token lives one hour. An email session lives seven days and
+   * its token IS the cookie, so minting a second row per page load would grow
+   * `email_sessions` without expiring the first. The cookie's lifetime is not
+   * extended either — a sliding 7-day session is a policy change, not a revive.
+   *
+   * TWO CHECKS THAT ARE NOT CEREMONY. `authenticateUser` PREFERS the
+   * Authorization header (middlewares/auth.ts extractBearerToken), so being
+   * authenticated does not by itself mean the cookie belongs to the caller:
+   *   - the cookie must be an `email-*` token, or a Supabase user could ask
+   *     this route to read their httpOnly access cookie back to them, turning
+   *     it into a general token-read oracle for the credential /auth/refresh is
+   *     careful to rotate;
+   *   - and it must be THIS user's, or a Bearer for account A plus a cookie for
+   *     account B would be answered with B's session token.
+   *
+   * THE RESIDUAL EXPOSURE, STATED. This hands script on the page the value of
+   * an httpOnly cookie. It is the same trade /auth/refresh already makes, and
+   * against today it is strictly better: that identical token currently sits in
+   * localStorage, readable by XSS with no network call and surviving the tab.
+   * Removing the trade entirely needs middlewares/auth.ts to treat an EMPTY
+   * `Authorization: Bearer ` as absent (extractBearerToken returns '' today,
+   * which suppresses the cookie fallback) before apps/web's hand-built Bearer
+   * call sites can drop the header — outside this route's lane.
+   *
+   * Not rate-limited on purpose: it is unreachable without a valid session
+   * cookie, and the sensitive-auth bucket (10/min per IP) would throttle
+   * ordinary page loads for everyone behind one office NAT. The global limiter
+   * still applies.
+   */
+  server.post('/session/revive', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const cookies = request.cookies as Record<string, string | undefined> | undefined;
+    const token = (cookies?.[SESSION_COOKIE] ?? '').trim();
+    const currentUser = request.currentUser!;
+
+    if (!token.startsWith('email-')) {
+      return reply.code(400).send({
+        error: 'Bad Request',
+        message: 'No email session cookie on this request.',
+      });
+    }
+    if (!token.startsWith(`email-${currentUser.id}-`)) {
+      return reply.code(401).send({
+        error: 'Unauthorized',
+        message: 'Session cookie does not match the authenticated account.',
+      });
+    }
+
+    // Re-read the row for its real expiry. The middleware validated the same
+    // row a moment ago but does not surface it, and the client needs the
+    // instant so it knows when to stop trusting what it just received.
+    let expiresAt: Date | null = null;
+    try {
+      const rows = await prisma.$queryRawUnsafe<Array<{ expires_at: Date }>>(
+        `SELECT expires_at FROM email_sessions WHERE id = $1 AND revoked_at IS NULL LIMIT 1`,
+        token,
+      );
+      const row = rows?.[0];
+      if (row) expiresAt = new Date(row.expires_at);
+    } catch (err) {
+      request.log.error({ err }, 'SEC-02 revive: email_sessions lookup failed');
+    }
+    // Fail closed, matching middlewares/auth.ts (A-005): a session we cannot
+    // read is not a session we hand back.
+    if (!expiresAt || expiresAt.getTime() <= Date.now()) {
+      return reply.code(401).send({
+        error: 'Unauthorized',
+        message: 'Invalid or expired email session.',
+      });
+    }
+
+    const role = await getPrimaryRoleForUser(currentUser.id, currentUser.email);
+
+    return reply.code(200).send({
+      success: true,
+      session: {
+        // SECONDS, like /auth/refresh and magic-link /verify. apps/web reads a
+        // value under 1e12 as seconds; milliseconds here would look like a 1970
+        // expiry and trigger a refresh on every mount.
+        accessToken: token,
+        refreshToken: '',
+        expiresIn: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
+        expiresAt: Math.floor(expiresAt.getTime() / 1000),
+      },
+      user: {
+        id: currentUser.id,
+        email: currentUser.email,
+        fullName: currentUser.fullName,
+        phone: currentUser.phone,
+        role,
+      },
+    });
+  });
+
+  /**
    * POST /logout
    * Signs the user out of Supabase, invalidating the session.
    */
   server.post('/logout', async (request, reply) => {
-    const parseResult = logoutSchema.safeParse(request.body);
+    const parseResult = logoutSchema.safeParse(request.body ?? {});
     if (!parseResult.success) {
       return reply.code(400).send({
         error: 'Validation Error',
@@ -586,33 +809,72 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    const { accessToken } = parseResult.data;
+    // SEC-02: body OR the httpOnly darshya_session cookie. A cookie-only client
+    // must be able to sign OUT, or the only way to end a session is to wait for
+    // it to expire.
+    const accessToken = resolveAccessToken(
+      parseResult.data,
+      request.cookies as Record<string, string | undefined> | undefined,
+    );
+    if (!accessToken) {
+      return reply.code(400).send({
+        error: 'Validation Error',
+        message: 'Access token is required',
+      });
+    }
+
+    // AUTH-09: default preserved. An older client that sends no `scope` gets
+    // exactly the behaviour it has always had.
+    const scope = parseResult.data.scope ?? 'global';
 
     // Phase C P1 #5 (2026-06-08): email-session revocation server-side.
     // If token matches the email-{userId}-{hex} format, mark revoked_at in email_sessions.
     if (typeof accessToken === 'string' && /^email-/.test(accessToken)) {
       try {
-        await prisma.$executeRawUnsafe(
-          `UPDATE email_sessions SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL`,
-          accessToken,
-        );
+        if (scope === 'global') {
+          // AUTH-11: reach the user's OTHER magic-link sessions too. Revoking
+          // only the presented row is why "You've been signed out everywhere"
+          // was false for providers, whose sessions are all magic-link ones.
+          // The user is resolved by subquery rather than by parsing the token,
+          // because the id embedded in it is a uuid and the token separator is
+          // also '-'.
+          await prisma.$executeRawUnsafe(
+            `UPDATE email_sessions SET revoked_at = now()
+             WHERE user_id = (SELECT user_id FROM email_sessions WHERE id = $1)
+               AND revoked_at IS NULL`,
+            accessToken,
+          );
+        } else {
+          await prisma.$executeRawUnsafe(
+            `UPDATE email_sessions SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL`,
+            accessToken,
+          );
+        }
       } catch (err) {
         request.log.warn({ err }, 'EmailSession revoke best-effort failed');
       }
     } else if (typeof accessToken === 'string') {
       // Supabase JWT path: call signOut + best-effort revoke any JTIs for the user.
       const supabase = createSupabaseClient(accessToken);
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        request.log.warn(error, 'Supabase signOut error (non-critical)');
+      if (scope === 'global') {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          request.log.warn(error, 'Supabase signOut error (non-critical)');
+        }
       }
       // Best-effort: revoke active JTIs for this user from extracted sub claim.
       try {
         const claims = await supabase.auth.getUser(accessToken);
         const userId = claims.data?.user?.id;
-        if (userId) {
+        if (userId && scope === 'global') {
           await prisma.$executeRawUnsafe(
             `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+            userId,
+          );
+          // AUTH-11: a password user may ALSO hold a magic-link session on
+          // another device. "Everywhere" has to include it.
+          await prisma.$executeRawUnsafe(
+            `UPDATE email_sessions SET revoked_at = now() WHERE user_id = $1::uuid AND revoked_at IS NULL`,
             userId,
           );
         }
@@ -624,7 +886,13 @@ export async function authRoutes(server: FastifyInstance) {
     clearAuthCookies(reply);
     return reply.code(200).send({
       success: true,
-      message: 'Logged out successfully',
+      // AUTH-09: the caller is told what actually happened, so the UI can stop
+      // describing a multi-device sign-out as a single-device one.
+      scope,
+      message:
+        scope === 'global'
+          ? 'Signed out on this and every other device.'
+          : 'Signed out on this device.',
     });
   });
 
@@ -635,35 +903,19 @@ export async function authRoutes(server: FastifyInstance) {
   server.get('/me', { preHandler: [authenticateUser] }, async (request, reply) => {
     const currentUser = request.currentUser!;
 
-    // Demo users have synthetic ids like "demo-pandit" that aren't UUIDs;
-    // return the in-memory profile directly without hitting Postgres.
-    if (currentUser.id.startsWith('demo-')) {
-      return reply.code(200).send({
-        success: true,
-        user: {
-          id: currentUser.id,
-          phone: currentUser.phone,
-          email: currentUser.email,
-          fullName: currentUser.fullName,
-          avatarUrl: null,
-          preferredLanguage: 'en',
-          locationCity: null,
-          locationState: null,
-          isNri: false,
-          nriCountry: null,
-          gotra: null,
-          nakshatra: null,
-          rashi: null,
-          subscriptionTier: currentUser.subscriptionTier,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          addresses: [],
-          activeSubscription: null,
-          roles: currentUser.roles,
-        },
-      });
-    }
-
+    /*
+     * REMOVED (I18N-07, 2026-08-19) - a synthetic-demo branch that answered
+     * GET /me out of the in-memory demo profile, including a hardcoded
+     * `preferredLanguage: 'en'`.
+     *
+     * It had been unreachable since AW-08: middlewares/auth.ts resolves every
+     * demo token to the real User row's UUID and 401s fail-closed when the row
+     * is missing, so `currentUser.id` is never a `demo-` string here. Dead code
+     * is not why it had to go - a hardcoded language sitting in the same file
+     * as the fix is how the defect returns, and it contradicted the row this
+     * route otherwise reads. Now there is exactly one source for the field:
+     * the database.
+     */
     const user = await prisma.user.findUnique({
       where: { id: currentUser.id },
       include: {
@@ -828,6 +1080,30 @@ export async function authRoutes(server: FastifyInstance) {
 
       if (authError || !authData.session) {
         return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email or password' });
+      }
+
+      // AUTH-08 (2026-08-20): THE SUSPENSION GATE WAS MISSING FROM THE DOOR.
+      //
+      // middlewares/auth.ts refuses every AUTHENTICATED request from a blocked
+      // user with 403 "Account suspended", and the demo branch of this same
+      // handler checks `demoRow.blocked` — but the real DB path did not. So a
+      // suspended account signed in successfully, the web app stored the
+      // session and routed into a portal, and then every call inside it 403'd.
+      // friendlyApiError maps 403 to "Your session has expired. Please sign in
+      // again", which sends them back to a login that works: an endless loop
+      // with nothing anywhere naming the suspension. Blocking is an
+      // authorization decision and belongs at the door.
+      //
+      // Placed AFTER password verification on purpose: answering 403 before the
+      // credential is checked would turn this endpoint into an oracle for which
+      // addresses are suspended. Only the account's real owner learns it.
+      if (user.blocked) {
+        return reply.code(403).send({
+          error: 'Forbidden',
+          message: user.blockedReason
+            ? `Account suspended: ${user.blockedReason}`
+            : 'This account has been suspended.',
+        });
       }
 
       const role = await getPrimaryRoleForUser(user.id, user.email);
@@ -1185,10 +1461,24 @@ export async function authRoutes(server: FastifyInstance) {
           fullName,
           avatarUrl,
           phone: null,
-          preferredLanguage: 'hi',
+          preferredLanguage: SIGNUP_DEFAULT_LANGUAGE,
         },
         include: { subscription: { where: { status: 'active' }, take: 1 } },
       });
+
+      // AUTH-08: same gate as POST /login. Google sign-in is a second door into
+      // the same account, and it had no suspension check at all — so blocking a
+      // user in the admin surface stopped nothing as long as they used the
+      // Google button. Checked after the Supabase token has been validated, so
+      // this cannot be used to enumerate suspended addresses.
+      if (dbUser.blocked) {
+        return reply.code(403).send({
+          error: 'Forbidden',
+          message: dbUser.blockedReason
+            ? `Account suspended: ${dbUser.blockedReason}`
+            : 'This account has been suspended.',
+        });
+      }
 
       const role = await getPrimaryRoleForUser(dbUser.id, dbUser.email);
 
@@ -1227,4 +1517,13 @@ export async function authRoutes(server: FastifyInstance) {
 }
 
 /** Internals reachable from tests only. */
-export const __testing = { cookieSecurityOptions };
+export const __testing = {
+  cookieSecurityOptions,
+  // SEC-02 STEP 1: the schemas and resolvers are unit-tested directly — the
+  // refresh handler itself reaches Supabase and the JTI ledger, and this
+  // contract (body OR cookie) is exactly what was blocking the migration.
+  refreshSchema,
+  logoutSchema,
+  resolveRefreshToken,
+  resolveAccessToken,
+};

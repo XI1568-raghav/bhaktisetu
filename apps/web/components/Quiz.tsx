@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { buttonClass } from '../components/ui/button-recipe';
 
 export interface QuizQuestion {
   q: string;
@@ -35,7 +36,7 @@ export default function Quiz({ questions, onComplete }: Props) {
         </ul>
         <button
           onClick={() => { setIdx(0); setSelected(null); setAnswers([]); setDone(false); }}
-          className="mt-4 px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700"
+          className={buttonClass('primary', 'md', 'mt-4')}
         >
           Retake
         </button>

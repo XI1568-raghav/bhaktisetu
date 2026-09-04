@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { useStoreOrders, useUpdateStoreOrderStatus } from '@poojly/api-client';
 import { PortalScreen, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { storeOrderStatusLabel } from '../../lib/enum-labels';
 
 interface Order {
   id: string;
@@ -135,7 +136,7 @@ export default function StoreOrders() {
                     { backgroundColor: `${statusColor(o.status)}1A`, borderColor: statusColor(o.status) },
                   ]}
                 >
-                  <Text style={[styles.pillText, { color: statusColor(o.status) }]}>{o.status}</Text>
+                  <Text style={[styles.pillText, { color: statusColor(o.status) }]}>{storeOrderStatusLabel(o.status)}</Text>
                 </View>
               </View>
 

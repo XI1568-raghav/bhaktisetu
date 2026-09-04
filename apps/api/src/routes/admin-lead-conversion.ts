@@ -66,91 +66,92 @@ export async function adminLeadConversionRoutes(server: FastifyInstance) {
     }> = [];
 
     try {
-      // Pull all leads grouped by role + status. Faster + simpler than role*status counts.
-      const leads = await prisma.lead.findMany({
-        select: { id: true, role: true, status: true, convertedUserId: true },
-      });
+      // SCAL-04 (2026-08-16): the whole funnel is now computed in Postgres.
+      //
+      // This block used to read the ENTIRE `leads` table and the ENTIRE
+      // `outreach_logs` table — no where, no take, no cursor — and reduce both
+      // to 35 integers with JavaScript Sets. `outreach_logs` gains a row per
+      // message per lead, so it is a MULTIPLE of the lead table and the fastest-
+      // growing table in the app; one operator opening this dashboard dragged
+      // both into a 512 MB Render container, and neither read had any ceiling.
+      //
+      // Five grouped reads replace them, each returning at most one row per
+      // role (the lead funnel: one per role×status). `Lead.outreachLogs` is a
+      // declared relation in prisma/schema.prisma, so a `some` filter pushes the
+      // lead↔log join into SQL — which is exactly what the JS Sets were doing by
+      // hand. Zero lead rows and zero log rows cross the wire.
+      //
+      // `converted` is deliberately two reads. The old rule was
+      // `status === 'CONVERTED' || convertedUserId`, and a single group over
+      // status silently drops every lead that was linked to a real account but
+      // never re-stamped — under-reporting the one number the funnel exists to
+      // show. The second read asks for exactly that residue, with
+      // `status: { not: 'CONVERTED' }` so nothing is counted twice.
+      const [statusGroups, convertedByLink, emailedGroups, openedGroups, clickedGroups] =
+        await Promise.all([
+          prisma.lead.groupBy({ by: ['role', 'status'], _count: { _all: true } }),
+          prisma.lead.groupBy({
+            by: ['role'],
+            where: { convertedUserId: { not: null }, status: { not: 'CONVERTED' } },
+            _count: { _all: true },
+          }),
+          prisma.lead.groupBy({
+            by: ['role'],
+            where: { outreachLogs: { some: {} } },
+            _count: { _all: true },
+          }),
+          prisma.lead.groupBy({
+            by: ['role'],
+            where: {
+              outreachLogs: { some: { OR: [{ openedAt: { not: null } }, { openCount: { gt: 0 } }] } },
+            },
+            _count: { _all: true },
+          }),
+          prisma.lead.groupBy({
+            by: ['role'],
+            where: {
+              outreachLogs: { some: { OR: [{ clickedAt: { not: null } }, { clickCount: { gt: 0 } }] } },
+            },
+            _count: { _all: true },
+          }),
+        ]);
 
-      const leadIdsByRole: Record<Role, Set<string>> = {
-        TEMPLE: new Set(),
-        PRIEST: new Set(),
-        ASTROLOGER: new Set(),
-        WELLNESS_INSTRUCTOR: new Set(),
-        GAUSHALA: new Set(),
-      };
+      type RoleCountRow = { role: string; _count: { _all: number } };
 
-      for (const l of leads) {
-        const r = l.role as Role;
+      for (const row of statusGroups as unknown as Array<RoleCountRow & { status: string }>) {
+        const r = row.role as Role;
         if (!byRole[r]) continue;
-        byRole[r].total += 1;
-        totals.total += 1;
-        leadIdsByRole[r].add(l.id);
-        if (l.status === 'REPLIED' || l.status === 'CONVERTED') {
-          byRole[r].replied += 1;
-          totals.replied += 1;
+        const n = row._count._all;
+        byRole[r].total += n;
+        totals.total += n;
+        if (row.status === 'REPLIED' || row.status === 'CONVERTED') {
+          byRole[r].replied += n;
+          totals.replied += n;
         }
-        if (l.status === 'CONVERTED' || l.convertedUserId) {
-          byRole[r].converted += 1;
-          totals.converted += 1;
+        if (row.status === 'CONVERTED') {
+          byRole[r].converted += n;
+          totals.converted += n;
         }
       }
 
-      // Outreach aggregates: emailed/opened/clicked per role via lead join.
-      const logs = await prisma.outreachLog.findMany({
-        select: {
-          leadId: true,
-          openedAt: true,
-          clickedAt: true,
-          openCount: true,
-          clickCount: true,
-          status: true,
-        },
-      });
-
-      const emailedLeadIds: Record<Role, Set<string>> = {
-        TEMPLE: new Set(),
-        PRIEST: new Set(),
-        ASTROLOGER: new Set(),
-        WELLNESS_INSTRUCTOR: new Set(),
-        GAUSHALA: new Set(),
-      };
-      const openedLeadIds: Record<Role, Set<string>> = {
-        TEMPLE: new Set(),
-        PRIEST: new Set(),
-        ASTROLOGER: new Set(),
-        WELLNESS_INSTRUCTOR: new Set(),
-        GAUSHALA: new Set(),
-      };
-      const clickedLeadIds: Record<Role, Set<string>> = {
-        TEMPLE: new Set(),
-        PRIEST: new Set(),
-        ASTROLOGER: new Set(),
-        WELLNESS_INSTRUCTOR: new Set(),
-        GAUSHALA: new Set(),
-      };
-
-      // Reverse-lookup: lead → role
-      const roleByLeadId = new Map<string, Role>();
-      for (const r of ROLES) {
-        for (const id of leadIdsByRole[r]) roleByLeadId.set(id, r);
+      for (const row of convertedByLink as unknown as RoleCountRow[]) {
+        const r = row.role as Role;
+        if (!byRole[r]) continue;
+        byRole[r].converted += row._count._all;
+        totals.converted += row._count._all;
       }
 
-      for (const log of logs) {
-        const role = roleByLeadId.get(log.leadId);
-        if (!role) continue;
-        emailedLeadIds[role].add(log.leadId);
-        if (log.openedAt || log.openCount > 0) openedLeadIds[role].add(log.leadId);
-        if (log.clickedAt || log.clickCount > 0) clickedLeadIds[role].add(log.leadId);
-      }
-
-      for (const r of ROLES) {
-        byRole[r].emailed = emailedLeadIds[r].size;
-        byRole[r].opened = openedLeadIds[r].size;
-        byRole[r].clicked = clickedLeadIds[r].size;
-        totals.emailed += byRole[r].emailed;
-        totals.opened += byRole[r].opened;
-        totals.clicked += byRole[r].clicked;
-      }
+      const applyRoleCounts = (rows: RoleCountRow[], key: 'emailed' | 'opened' | 'clicked') => {
+        for (const row of rows) {
+          const r = row.role as Role;
+          if (!byRole[r]) continue;
+          byRole[r][key] = row._count._all;
+          totals[key] += row._count._all;
+        }
+      };
+      applyRoleCounts(emailedGroups as unknown as RoleCountRow[], 'emailed');
+      applyRoleCounts(openedGroups as unknown as RoleCountRow[], 'opened');
+      applyRoleCounts(clickedGroups as unknown as RoleCountRow[], 'clicked');
 
       // INTERESTED replies — count + recent feed.
       const replies = await prisma.outreachLog.findMany({
@@ -213,41 +214,101 @@ export async function adminLeadConversionRoutes(server: FastifyInstance) {
       buckets.set(key, { date: key, sent: 0, opened: 0, clicked: 0, replied: 0 });
     }
 
+    // ── SCAL-04: Postgres buckets the days; Node only reads the buckets ──────
+    //
+    // This was `outreachLog.findMany({ where: { sentAt: { gte: since } } })` —
+    // no take, no cursor — over a window the CALLER sizes (?days, up to 120),
+    // five columns wide, reduced to at most 120 tuples of four integers by the
+    // JS loop that used to live here. `outreach_logs` is the fastest-growing
+    // table the product has: one row per MESSAGE per lead, several per lead per
+    // campaign, and a lead row is never deleted — so its row count is a
+    // multiple of the lead table's, and this was the single largest read left
+    // in the admin surface.
+    //
+    // WHY RAW SQL, AND WHY IT WAS REFUSED TWICE BEFORE. Prisma cannot express
+    // `date_trunc`, and the ratchet's own notes (lib/unbounded-findmany.scal04
+    // .test.ts) refused this rewrite because a raw statement that Postgres
+    // rejects would fall into the catch below and answer an all-zero timeline —
+    // converting a slow dashboard into a silently empty one, which is exactly
+    // what the `referredByEmail` groupBy did to /admin/waitlist/stats. Three
+    // things changed that calculus:
+    //
+    //   1. The identifiers are no longer assumed. `OutreachLog` maps every
+    //      column (`@map("sent_at")` …) and migration 20260503_perf_indexes
+    //      creates an index ON "outreach_logs" ("lead_id", "channel",
+    //      "sent_at" DESC) — so the snake_case names are established by DDL in
+    //      this repo, not inferred. `admin-lead-conversion.timeline-sql.scal04
+    //      .test.ts` re-checks every quoted identifier here against
+    //      prisma/schema.prisma on every run, which is the one oracle a mock
+    //      cannot agree with.
+    //   2. The shape is copied from a statement already running in production:
+    //      admin-metrics.ts `loadFunnelDaily` ships the identical
+    //      `to_char(date_trunc('day', …), 'YYYY-MM-DD')` + `count(*)::int`
+    //      per-day group, including the `count(*) FILTER (WHERE …)` form.
+    //   3. A failure is no longer silent. `degraded` is on the response, so an
+    //      empty timeline and a broken query stop being the same JSON.
+    //
+    // No DateTime in this schema carries `@db.Timestamptz`, so `sent_at` is a
+    // plain `timestamp(3)` holding UTC and `date_trunc('day', …)` reproduces
+    // the `toISOString().slice(0, 10)` key the JS loop produced, exactly.
+    //
+    // The `buckets.get(k)` guard is kept rather than trusting the window: it is
+    // what confined the old loop to the seeded days, so keeping it makes the
+    // response byte-identical instead of merely equivalent.
+    type DayRow = { day: string | null; n: number | bigint | null };
+    type SentRow = DayRow & { replied: number | bigint | null };
+    const toCount = (n: number | bigint | null | undefined): number =>
+      n == null ? 0 : typeof n === 'bigint' ? Number(n) : n;
+
+    let degraded = false;
     try {
-      const logs = await prisma.outreachLog.findMany({
-        where: { sentAt: { gte: since } },
-        select: {
-          status: true,
-          sentAt: true,
-          openedAt: true,
-          clickedAt: true,
-          templateKey: true,
-        },
-      });
-      for (const log of logs) {
-        const sentKey = log.sentAt.toISOString().slice(0, 10);
-        const sentBucket = buckets.get(sentKey);
-        if (sentBucket) {
-          sentBucket.sent += 1;
-          if (log.status === 'REPLIED' || log.templateKey === 'inbound_reply') {
-            sentBucket.replied += 1;
-          }
-        }
-        if (log.openedAt) {
-          const k = log.openedAt.toISOString().slice(0, 10);
-          const b = buckets.get(k);
-          if (b) b.opened += 1;
-        }
-        if (log.clickedAt) {
-          const k = log.clickedAt.toISOString().slice(0, 10);
-          const b = buckets.get(k);
-          if (b) b.clicked += 1;
-        }
+      const [sentRows, openedRows, clickedRows] = await Promise.all([
+        prisma.$queryRaw<SentRow[]>`
+          SELECT to_char(date_trunc('day', "sent_at"), 'YYYY-MM-DD') AS day,
+                 count(*)::int AS n,
+                 count(*) FILTER (
+                   WHERE "status"::text = 'REPLIED' OR "template_key" = 'inbound_reply'
+                 )::int AS replied
+          FROM "outreach_logs"
+          WHERE "sent_at" >= ${since}
+          GROUP BY 1
+        `,
+        prisma.$queryRaw<DayRow[]>`
+          SELECT to_char(date_trunc('day', "opened_at"), 'YYYY-MM-DD') AS day, count(*)::int AS n
+          FROM "outreach_logs"
+          WHERE "sent_at" >= ${since} AND "opened_at" IS NOT NULL
+          GROUP BY 1
+        `,
+        prisma.$queryRaw<DayRow[]>`
+          SELECT to_char(date_trunc('day', "clicked_at"), 'YYYY-MM-DD') AS day, count(*)::int AS n
+          FROM "outreach_logs"
+          WHERE "sent_at" >= ${since} AND "clicked_at" IS NOT NULL
+          GROUP BY 1
+        `,
+      ]);
+
+      for (const r of sentRows ?? []) {
+        const b = r.day ? buckets.get(r.day) : undefined;
+        if (!b) continue;
+        b.sent += toCount(r.n);
+        b.replied += toCount(r.replied);
+      }
+      for (const r of openedRows ?? []) {
+        const b = r.day ? buckets.get(r.day) : undefined;
+        if (b) b.opened += toCount(r.n);
+      }
+      for (const r of clickedRows ?? []) {
+        const b = r.day ? buckets.get(r.day) : undefined;
+        if (b) b.clicked += toCount(r.n);
       }
     } catch (err) {
+      degraded = true;
       request.log.warn({ err }, 'admin lead conversion timeline failed');
     }
 
-    return { days, timeline: Array.from(buckets.values()) };
+    // `degraded` is additive and load-bearing: without it a query the database
+    // rejected and a genuinely quiet month return the same body, which is how
+    // the /admin/waitlist/stats outage survived for six days.
+    return { days, timeline: Array.from(buckets.values()), degraded };
   });
 }

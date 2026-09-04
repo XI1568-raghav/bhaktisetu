@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { PURANAS, TOTAL_VERSES, ALIGNMENT_LABELS, type PuranaAlignment } from '../../lib/puranas';
 import { formatNumber } from '../../lib/format-locale';
@@ -64,7 +66,7 @@ export default function PuranasIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-indigo-600">18 mahapuranas · ~{(TOTAL_VERSES / 1000).toFixed(0)}k verses · Smriti encyclopedia</p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">अष्टादश महापुराण</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>अष्टादश महापुराण</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The 18 Mahapuranas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
           The Mahapuranas are the 18 major books of smriti, the encyclopedia of Hindu

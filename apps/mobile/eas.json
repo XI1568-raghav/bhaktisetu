@@ -24,7 +24,9 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.darshya.online"
+        "EXPO_PUBLIC_API_URL": "https://api.darshya.online",
+        "EXPO_PUBLIC_WEB_URL": "https://darshya.online",
+        "EXPO_PUBLIC_KNOWLEDGE_ENABLED": "true"
       }
     },
     "production": {
@@ -36,7 +38,9 @@
       },
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.darshya.online"
+        "EXPO_PUBLIC_API_URL": "https://api.darshya.online",
+        "EXPO_PUBLIC_WEB_URL": "https://darshya.online",
+        "EXPO_PUBLIC_KNOWLEDGE_ENABLED": "true"
       }
     },
     "testflight": {
@@ -47,7 +51,9 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.darshya.online",
-        "EXPO_PUBLIC_ENVIRONMENT": "testflight"
+        "EXPO_PUBLIC_WEB_URL": "https://darshya.online",
+        "EXPO_PUBLIC_ENVIRONMENT": "testflight",
+        "EXPO_PUBLIC_KNOWLEDGE_ENABLED": "true"
       }
     }
   },

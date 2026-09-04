@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CITIES, type CityInfo } from '../../../lib/cities';
@@ -333,11 +335,11 @@ export default async function PanchangCityPage({ params }: { params: Promise<{ c
 
     <header className="mt-4">
      <p className="text-xs uppercase tracking-wider text-saffron-600">{VAARA[wkday]} · {niceDate}</p>
-     <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">
+     <h1 className={`${H1.catalogue} mt-1`}>
       Panchang {city!.name}
      </h1>
      <p className="mt-1 text-lg text-saffron-700">{city!.hindi} · {city!.state}</p>
-     <p className="mt-2 max-w-3xl text-sm text-gray-700">
+     <p className="mt-2 max-w-3xl prose-body text-gray-700">
       Today&apos;s tithi, nakshatra, sunrise, sunset and muhurat timings calculated for {city!.name} ({coords!.lat.toFixed(2)}°N, {coords!.lon.toFixed(2)}°E). All times in IST.
      </p>
     </header>

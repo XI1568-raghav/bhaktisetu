@@ -163,8 +163,8 @@
   "workflow": "launch-readiness-delta",
   "line": 77,
   "title": "Real astrologers with 0 consultations are shown a hardcoded 12,450-review wall and \"Top Rated / 10K+ Consults\" badges next to a paid CTA",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "LANE GATE, not a business gate: app/astrology/** is on my explicit do-not-touch list this wave. Whoever owns it needs to (a) delete the hardcoded revi"
  },
  {
@@ -289,9 +289,9 @@
   "workflow": "launch-readiness-delta",
   "line": 131,
   "title": "An invalid astrologer id spins on \"Loading…\" forever with no error and no 404",
-  "state": "partial",
-  "commit": "",
-  "note": "LANE. Both remaining halves live in apps/web/app/astrology/** which this cluster must not edit. The fixes are small and independent: add an app/astrology/astrol"
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
+  "note": "[independently verified] LANE. Both remaining halves live in apps/web/app/astrology/** which this cluster must not edit. The fixes are small and independent: add an app/astrology/astrol"
  },
  {
   "key": "F022",
@@ -457,8 +457,8 @@
   "workflow": "launch-readiness-delta",
   "line": 205,
   "title": "Store-owner products are invisible on the storefront — the supply side of the marketplace has no shelf",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "Same owner decision as COM-01 — one catalogue, one keyspace, and a handle column on StoreProduct so the seller PDP can live under /store/[handle] inst"
  },
  {
@@ -555,8 +555,8 @@
   "workflow": "launch-readiness-delta",
   "line": 247,
   "title": "Store product images are full-resolution Wikimedia hotlinks — 5.7 MB downloaded for a 600px card",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "OWNER: the self-host step. It requires downloading 24 third-party binary images from Wikimedia into apps/web/public and committing them — a licensing/attributio"
  },
  {
@@ -737,8 +737,8 @@
   "workflow": "launch-readiness-delta",
   "line": 329,
   "title": "Paid plans sell a commission discount that is implemented nowhere — ₹4,999/mo buys nothing",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "Owner decides: implement the tier→commission override in apps/api/src/lib/commission-math.ts and have all five Commission writers resolve through it ("
  },
  {
@@ -766,7 +766,7 @@
   "line": 341,
   "title": "Advertised commission rate differs from the charged rate for most roles — including one role over-charged",
   "state": "fixed",
-  "commit": "",
+  "commit": "wave-45-2026-08-31",
   "note": "already_fixed · Does not reproduce as published. The four-column tier ladder is gone from the rendered table; l"
  },
  {
@@ -793,9 +793,9 @@
   "workflow": "launch-readiness-delta",
   "line": 353,
   "title": "NRI Premium ₹5,000/year sells at least two benefits that do not exist",
-  "state": "owner",
-  "commit": "",
-  "note": "Two reasons. (1) Lane: the feature list is server data in apps/api, explicitly DO-NOT-TOUCH for this cluster, and it is what /pricing renders verbatim"
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "Verified in the tree rather than accepting 'already correct'. apps/api/src/services/subscription-entitlements.ts:117-123 (enforcedBenefits/nriPremiumFeatures), :143-144 (advertisedFeaturesFor) and :166-167 (nriPremiumIsSellable = enforcedBenefits().length > 0) with all six benefits carrying enforcedBy: null (:52-... each with a concrete blockedBy). subscription.service.ts:343-345 isOfferable and :"
  },
  {
   "key": "F058",
@@ -864,8 +864,8 @@
   "line": 383,
   "title": "Senior astrologers are priced 2-4x below the market ceiling, capping the highest-margin repeat revenue line",
   "state": "owner",
-  "commit": "wave-2026-08-15",
-  "note": ""
+  "commit": "wave-45-2026-08-31",
+  "note": "THE HEADLINE IS NOT CLOSED AND CANNOT BE BY ME. \"Senior astrologers are priced 2-4x below the market ceiling\" is a pricing decision. MEASURED on live prod today: GET https://api.darshya.online/api/v1/astrology/astrologers/live -> 200, source \"live\", 3 astrologers — Acharya Vinod Sharma (22 yrs) ₹25/min, Dr. Mahesh Iyer (15 yrs) ₹20/min, Ritika Menon (9 yrs) ₹18/min. Nothing in code caps any of the"
  },
  {
   "key": "F063",
@@ -919,9 +919,9 @@
   "workflow": "prod-clickthrough",
   "line": 414,
   "title": "images.darshya.online does not resolve — pandit trust photos are broken on the wedding page",
-  "state": "partial",
+  "state": "fixed",
   "commit": "",
-  "note": "DISPUTED: The code is real and the test is not vacuous — PanditAvatar.tsx is new, both call sites genuinely dropped their `avatarUrl ? <img> : <div>initials</di"
+  "note": "The src clause is genuinely done, not just the onError reaction. apps/web/lib/dead-image-hosts.ts really exists: `DEAD_IMAGE_HOSTS = ['images.darshya.online']` (:52), `isDeadImageHost` parses with `new URL`, rejects non-http(s), lowercases the hostname and uses `DEAD_IMAGE_HOSTS.includes(host)` — exact match, so `cdn.images.darshya.online` and `images.darshya.online.evil.test` are not swallowed (:"
  },
  {
   "key": "F067",
@@ -1382,8 +1382,8 @@
   "line": 639,
   "title": "No UI anywhere can mark a booking delivered — the final fulfilment step is curl-only",
   "state": "fixed",
-  "commit": "",
-  "note": "verified: apps/web/__tests__/priest-fulfilment-p1.test.tsx — 2 tests, 2 red before (no button matchi"
+  "commit": "wave-45-final",
+  "note": "Real, end-to-end. apps/web/app/bookings/view/page.tsx:508-544 `confirmReceipt()` PATCHes `${API_BASE_URL}/bookings/${booking.id}` with body `{status:'delivered'}` and a Bearer, throws `UserFacingError(serverErrorText(...), res.status)` on !ok and classifies via `classifyUserFacing` (401 -> ReauthPrompt at :1183). Re-read, not optimistic patch: `setReceiptNonce(n=>n+1)` at :539 and the load effect "
  },
  {
   "key": "F100",
@@ -1591,8 +1591,8 @@
   "workflow": "authenticated-deep",
   "line": 786,
   "title": "The unified provider payouts page is unreachable from the pandit portal",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
   "note": "Which payout rail is canonical for pandits. The two rails are deliberately mutually exclusive and picking one moves real money, so per instruction I did not gue"
  },
  {
@@ -2011,8 +2011,8 @@
   "workflow": "authenticated-deep",
   "line": 1098,
   "title": "The main consumer astrology funnel sells consultations with 15 fictional astrologers — money is captured, no Commission row is written, nobody can deliver",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
   "note": "TWO remainders, deliberately not over-claimed. (1) OWNER, unchanged from last wave: real astrologer supply. GET /astrology/astrologers/live serves 3 approved pr"
  },
  {
@@ -2571,8 +2571,8 @@
   "workflow": "authenticated-deep",
   "line": 1489,
   "title": "API GET /admin/users silently ignores the status filter, and applies the role filter after pagination",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-final",
   "note": "apps/api/** is on this cluster's explicit DO-NOT-TOUCH list (another agent owns it this wave). No API edit made. Note the fix is a pure service-layer "
  },
  {
@@ -2697,8 +2697,8 @@
   "workflow": "authenticated-deep",
   "line": 1584,
   "title": "No shared Button primitive: the primary CTA ships in 11 pixel heights, 11 paddings, 4 radii and 5 type styles across the 10 measured screens",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
   "note": "~280 hand-rolled bg-saffron-600 controls and the lint rule remain. A repo-wide Button migration is a separate piece of work."
  },
  {
@@ -2795,8 +2795,8 @@
   "workflow": "authenticated-deep",
   "line": 1656,
   "title": "Reading size for body copy varies from 12px to 18px across the product — five different paragraph styles, and 12px/13.4px is below comfortable reading size",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "The other half — one prose size for all body copy — is unclosed. The five per-page paragraph styles the sweep measured (12px on /priest through 18px on /pujas) "
  },
  {
@@ -2823,9 +2823,9 @@
   "workflow": "authenticated-deep",
   "line": 1675,
   "title": "Cool-gray leak: 2,128 gray/slate/zinc/neutral/stone utilities on a product whose neutral ramp is warm cream",
-  "state": "partial",
-  "commit": "",
-  "note": "Two halves remain and both are larger than a token fix: (1) the literal utility names are still cool-family across 122 files, so the next author copies gray-500"
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
+  "note": "DU-12 has two halves and they resolve differently. (1) The mass colour codemod is REFUSED as pixel-neutral: globals.css redefines --color-gray-50..950 to warm hexes inside @theme and aliases slate/zinc/neutral/stone onto gray, so text-gray-900 and text-surface-900 compile to the same #1a1510. Renaming 2,260 utilities across 123 files is source hygiene only; a lint rule banning NEW cool-family names is the cheap substitute if anyone wants it. (2) The elevation half was REAL and is now FIXED: --shadow-sm/md/lg/float were declared in :root, and Tailwind v4 emits shadow utilities only from @theme, so all four were dead — .shadow-sm/md/lg compiled to stock #0000001a cool black across 332 call sites and .shadow-float was never emitted at all. Moved into @theme beside --shadow-xl/2xl; ramp is now 3/16/40/64/88px, monotonic. page-chrome-uniformity.test.ts gained a position assertion (a declaration outside @theme now fails) and the warm-hue check was extended from xl/2xl to all six. State is partial because the codemod half is open by decision, not by oversight."
  },
  {
   "key": "F203",
@@ -2851,8 +2851,8 @@
   "workflow": "authenticated-deep",
   "line": 1695,
   "title": "Page container width changes route to route — 11 distinct max-w values across 679 container declarations",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "~700 declarations remain on /pricing, the detail routes, the seven provider portals and the content library. Not migrated; the guard states this explicitly."
  },
  {
@@ -2879,8 +2879,8 @@
   "workflow": "authenticated-deep",
   "line": 1715,
   "title": "Cookie consent card buries the entire /auth/login form at 390x844 — Sign In is invisible and un-tappable on first visit",
-  "state": "owner",
-  "commit": "376153d5",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "OWNER/COMPLIANCE: the consent card cannot shrink further without deciding what may be dropped from the notice, or moving to a compact bar with a 'more options' "
  },
  {
@@ -3033,8 +3033,8 @@
   "workflow": "authenticated-deep",
   "line": 1834,
   "title": "Web security headers (CSP/HSTS/X-Frame-Options/nosniff) are defined only in public/_headers — a Cloudflare Pages convention the current Render Next-standalone host does not honor; next.config.ts headers() sets Cache-Control only, so no CSP/anti-clickjacking header is applied",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "close19-2026-08-20",
   "note": "apps/web/next.config.ts and apps/web/middleware.ts are outside this lane (apps/web except lib/api-config.ts). This is the highest-severity item I could not touc"
  },
  {
@@ -3117,9 +3117,9 @@
   "workflow": "authenticated-deep",
   "line": 1890,
   "title": "Site tells devotees cancellation inside 24h is 'not permitted' with 'no refund'; the code permits it and owes them 50% or 25%",
-  "state": "wontfix",
+  "state": "fixed",
   "commit": "wave-2026-08-15",
-  "note": "Same two owner decisions as LEG-01 -- whether the unreachable 50%/25% tiers are deleted or made reachable, and the priceAmount-vs-fee-exclusive refund base at a"
+  "note": "Independently verified, not taken on the claim's word. apps/api/src/services/cancellation.service.ts:74 declares DEVOTEE_CANCEL_CUTOFF_HOURS = 24 and :85-88 devoteeCancelAllowed(); booking.service.ts:1147-1149 now compares against that constant and interpolates the message from it (import at booking.service.ts:11). The quote gap the finding names is closed at apps/api/src/routes/bookings.ts:1881-1"
  },
  {
   "key": "F224",
@@ -3173,8 +3173,8 @@
   "workflow": "authenticated-deep",
   "line": 1931,
   "title": "Cancellation and refund confirmations never state the amount, and the refund dialog promises the full payment back",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "Two blockers. (1) Lane: apps/web/app/bookings/view/page.tsx is not a legal or policy page and is not in my edit list; the devotee-booking ar"
  },
  {
@@ -3313,8 +3313,8 @@
   "workflow": "authenticated-deep",
   "line": 2035,
   "title": "Store runs a permanently-live 'Akshaya Tritiya Sale — offer valid till April 30' with struck-through MRPs, four months after that date",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
   "note": "Two blocks. (1) LANE: the render sites are apps/web/app/store/** and the data is apps/web/lib/products.ts, feeding lib/store-pricing.ts — app/store/**"
  },
  {
@@ -3537,8 +3537,8 @@
   "workflow": "authenticated-deep",
   "line": 2199,
   "title": "Website muhurat finder sends no Authorization header — it 401s for every visitor, while the mobile version works",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-45-final",
   "note": "Both files are in DO-NOT-TOUCH lanes (apps/web and apps/api) with other agents editing them. The fix is one of two one-liners and needs an o"
  },
  {
@@ -3551,9 +3551,9 @@
   "workflow": "authenticated-deep",
   "line": 2208,
   "title": "Puja booking does not exist in the app — the Book button opens the production website, and the create-booking hook points at a 404",
-  "state": "partial",
+  "state": "owner",
   "commit": "",
-  "note": "The in-app booking flow itself is not built, and that is the whole remaining L. Both smaller halves were already shipped before this session and I explicitly do"
+  "note": "NO CODE CHANGE BY ME — the ledger note (\"The in-app booking flow itself is not built, and that is the whole remaining L\") is stale. It was built by a later wave, and I verified it rather than taking it on trust.\n\nWhat exists now:\n  * apps/mobile/app/(devotee)/puja-book.tsx — 946 lines: temple, date, slot and sankalp-name selection, POSTing to `${apiBase()}/api/v1/bookings/book` at :277.\n  * apps/m"
  },
  {
   "key": "F255",
@@ -3649,9 +3649,9 @@
   "workflow": "authenticated-deep",
   "line": 2276,
   "title": "Provider earnings and temple payouts/bookings screens exist on web but are missing from the app; the app has no search and almost no content library",
-  "state": "partial",
+  "state": "owner",
   "commit": "",
-  "note": "The v1 mobile scope decision, which is what the finding actually asks for ('Decide the v1 mobile scope explicitly'). I fixed the one item on the list that is a "
+  "note": "NO CODE CHANGE BY ME. The ledger note said the remaining item was \"the v1 mobile scope decision, which is what the finding actually asks for\". That document now exists — docs/mobile-v1-scope.md, 331 lines — and so does everything on the finding's \"at minimum\" list. I checked each clause rather than the note.\n\nThe finding's fix, clause by clause:\n  1. \"At minimum add the three earnings/payouts scre"
  },
  {
   "key": "F262",
@@ -3789,9 +3789,9 @@
   "workflow": "scale-mindset",
   "line": 2981,
   "title": "Card and hero copy is a 1,144-character scripture excerpt; raw enum values like \"special_occasion\" are shown to customers",
-  "state": "partial",
-  "commit": "",
-  "note": "apps/api CONTRACT CHANGE, out of lane this wave: add a shortDescription/cardBlurb field (100-140 chars, benefit-first) to the puja type model, return it from GE"
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "apps/web/lib/puja-blurb.ts exists and is a real sentence-boundary implementation (CARD_BLURB_MAX 140, HERO_BLURB_MAX 220, whitespace collapse, sentence split, word-boundary fallback with a single ellipsis) — not a slice. All four call sites are wired and the clamps are actually gone: apps/web/app/pujas/page.tsx:749-750 renders {pujaCardBlurb(puja.description)} in a <p className='text-sm text-surfa"
  },
  {
   "key": "F272",
@@ -3817,8 +3817,8 @@
   "workflow": "scale-mindset",
   "line": 2993,
   "title": "Site search only searches encyclopedia articles — a devotee searching \"rudrabhishek\" cannot find the puja they can buy",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
   "note": "apps/api/src/routes/search.ts, out of lane. Adding store products to the result set, cross-corpus relevance ranking, and 'nearest match' suggestions on zero res"
  },
  {
@@ -3859,8 +3859,8 @@
   "workflow": "scale-mindset",
   "line": 3011,
   "title": "/temples and /astrology render an empty full-viewport div as their loading state",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
   "note": "LANE. One line once app/astrology/** frees: extract the existing TemplesSkeleton card grid into a shared component and use it in both places, which is what the "
  },
  {
@@ -3985,9 +3985,9 @@
   "workflow": "scale-mindset",
   "line": 3067,
   "title": "111 of 205 findMany calls have no take or cursor; the worst ship 15-33 MB per request",
-  "state": "open",
-  "commit": "wave-2026-08-15",
-  "note": "94 unbounded findMany calls remain. Top files: admin.service 10, store-admin 6, payout.service 6, admin-bookings 5, admin.ts 5, store-orders 5. Most are bounded"
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "[unverified — wave stopped early] 94 unbounded findMany calls remain. Top files: admin.service 10, store-admin 6, payout.service 6, admin-bookings 5, admin.ts 5, store-orders 5. Most are bounded"
  },
  {
   "key": "F286",
@@ -4055,8 +4055,8 @@
   "workflow": "scale-mindset",
   "line": 3097,
   "title": "Admin user list filters by role in JavaScript after pagination, and searches with an unindexed ILIKE",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-final",
   "note": "The ILIKE half needs a Prisma migration: CREATE EXTENSION pg_trgm plus GIN trigram indexes on users(full_name) and users(email). apps/api/prisma/** is off-limit"
  },
  {
@@ -4377,8 +4377,8 @@
   "workflow": "scale-mindset",
   "line": 3239,
   "title": "The one working language switcher translates 3 strings out of 264; 15 of 18 authored Hindi labels are never read",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
   "note": "apps/web/components/ContentPageHeader.tsx and apps/web/components/LanguageSwitcher.tsx (out of lane). Mechanical: point ContentPageHeader at `t('content', langu"
  },
  {
@@ -4391,8 +4391,8 @@
   "workflow": "scale-mindset",
   "line": 3245,
   "title": "API error localization: 150 authored strings, 5 languages, 2 call sites, 3 reachable codes — 0 of 40 probed responses localized",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-final30-partial",
   "note": "apps/api/src/server.ts:153 (out of lane). One-line choke point: accept `req`, compute `pickLang(req.headers['accept-language'], (req.query as any)?.lang)` once,"
  },
  {
@@ -4419,9 +4419,9 @@
   "workflow": "scale-mindset",
   "line": 3257,
   "title": "11 of 20 temple names are in scripts the app loads no webfont for; glyph coverage is delegated entirely to the user's OS",
-  "state": "partial",
-  "commit": "",
-  "note": "apps/web/app/layout.tsx (next/font declarations) and apps/web/app/globals.css:353 (out of lane). Mechanical: add the six Noto faces with `display:'swap'` and ap"
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
+  "note": "[independently verified] apps/web/app/layout.tsx (next/font declarations) and apps/web/app/globals.css:353 (out of lane). Mechanical: add the six Noto faces with `display:'swap'` and ap"
  },
  {
   "key": "F317",
@@ -4447,9 +4447,9 @@
   "workflow": "scale-mindset",
   "line": 3269,
   "title": "Accept-Language is never negotiated — no i18n config, no middleware locale logic, no redirect",
-  "state": "owner",
-  "commit": "",
-  "note": "OWNER DECISION, not code: whether a first-time visitor whose browser asks for Hindi should be switched, or only offered. Recommendation is to keep offering unti"
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "The code-fixable remainder is genuinely closed and the production measurements are real, not restated. All six footer links in apps/web/app/layout.tsx:825-830 now carry `prefetch={false}` (/?lang=en, /hi, /ta, /te, /bn, /mr) — the denominator is six, matching the claim, and I re-enumerated the rest of the locale-switching population: components/LangLanding.tsx:61/78/85/98/112 and app/hi/page.tsx:6"
  },
  {
   "key": "F319",
@@ -4461,9 +4461,9 @@
   "workflow": "scale-mindset",
   "line": 3275,
   "title": "Multilingual help center ships 6 articles against its own stated target of 300, is unlinked from /help, and 5 of 6 are unreviewed machine translations shown without disclosure",
-  "state": "open",
-  "commit": "wave-2026-08-15",
-  "note": "apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/help/articles/[lang]/[slug]/page.tsx, apps/web/app/sitemap.ts, apps/web/lib/support.ts ("
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
+  "note": "[independently verified] apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/help/articles/[lang]/[slug]/page.tsx, apps/web/app/sitemap.ts, apps/web/lib/support.ts ("
  },
  {
   "key": "F320",
@@ -4489,9 +4489,9 @@
   "workflow": "scale-mindset",
   "line": 3287,
   "title": "Four different, mutually inconsistent lists of supported languages; preferredLanguage is validated and stored but read by nothing",
-  "state": "partial",
-  "commit": "",
-  "note": "apps/web/app/layout.tsx, apps/web/components/LanguageSwitcher.tsx, apps/web/lib/support.ts and apps/api/src/routes/users.ts + lib/error-i18n.ts + routes/auth.ts"
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
+  "note": "[independently verified] apps/web/app/layout.tsx, apps/web/components/LanguageSwitcher.tsx, apps/web/lib/support.ts and apps/api/src/routes/users.ts + lib/error-i18n.ts + routes/auth.ts"
  },
  {
   "key": "F322",
@@ -4531,8 +4531,8 @@
   "workflow": "scale-mindset",
   "line": 3307,
   "title": "756 of 758 API error responses are English-only, despite a complete, working 5-language error catalog sitting unused",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-final30-partial",
   "note": "apps/api/src/server.ts:153 (out of lane). Identical remaining change to I-04 — these two findings are one defect seen twice. Keep the two bookings.ts call sites"
  },
  {
@@ -4545,8 +4545,8 @@
   "workflow": "scale-mindset",
   "line": 3313,
   "title": "Five layers disagree about which languages exist; bn and mr are offered in the UI but silently fall back to English, while kn is supported but offered nowhere",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-triage26-2026-08-24",
   "note": "OWNER DECISION FIRST, with a concrete copy estimate: either author bn + mr error catalogs in apps/api/src/lib/error-i18n.ts (30 codes each = 60 strings, and the"
  },
  {
@@ -4559,8 +4559,8 @@
   "workflow": "scale-mindset",
   "line": 3319,
   "title": "The only in-app language control translates 3 strings on 1 page; 15 of its 18 Hindi labels are dead code",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
   "note": "apps/web/components/LanguageSwitcher.tsx and apps/web/components/ContentPageHeader.tsx (out of lane). Delete CONTENT_LABELS, read `t('content', locale)`, and re"
  },
  {
@@ -4573,9 +4573,9 @@
   "workflow": "scale-mindset",
   "line": 3325,
   "title": "No webfont covers any Indic script — Devanagari, Tamil, Telugu and Bengali all render from OS fallback, and the Noto Sans Devanagari that IS loaded is never referenced by the headings",
-  "state": "partial",
-  "commit": "",
-  "note": "apps/web/app/layout.tsx and apps/web/app/globals.css:148,353,418-425 (out of lane). Add the Tamil/Telugu/Bengali faces and put them into the stacks headings act"
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
+  "note": "[independently verified] apps/web/app/layout.tsx and apps/web/app/globals.css:148,353,418-425 (out of lane). Add the Tamil/Telugu/Bengali faces and put them into the stacks headings act"
  },
  {
   "key": "F328",
@@ -4587,8 +4587,8 @@
   "workflow": "scale-mindset",
   "line": 3331,
   "title": "preferredLanguage is a write-only field — set at signup, editable in the profile UI, returned by the API, and read by nothing that renders; the demo path also reports it wrongly",
-  "state": "partial",
-  "commit": "",
+  "state": "fixed",
+  "commit": "close19-2026-08-20",
   "note": "apps/api/src/routes/auth.ts:625,731, apps/web/app/profile/page.tsx and apps/web/lib/auth-context.tsx (all out of lane). NOTE FOR WHOEVER TAKES IT: the web now h"
  },
  {
@@ -4615,9 +4615,9 @@
   "workflow": "scale-mindset",
   "line": 3343,
   "title": "The multilingual help centre is one article, not the 300 its own spec claims — and it is unreachable from the UI",
-  "state": "open",
-  "commit": "wave-2026-08-15",
-  "note": "apps/web/lib/help-articles.ts, apps/web/app/help/page.tsx, apps/web/app/sitemap.ts (out of lane). Near-term code: link the language-filtered list from /help and"
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": "[unverified] help centre linked; the 300-article COUNT claim was disputed separately and is not a code defect"
  },
  {
   "key": "F331",
@@ -4853,9 +4853,9 @@
   "workflow": "scale-mindset",
   "line": 3447,
   "title": "\"Set reminder\" bell on the darshan schedule writes to localStorage and nothing else",
-  "state": "owner",
-  "commit": "",
-  "note": "apps/web/components is outside this lane. Closing it also needs an API decision that is not free: either a DarshanReminder table (which means a Prisma migration"
+  "state": "fixed",
+  "commit": "wave-triage26-final",
+  "note": "The wiring is real and the path reaches the server end to end. apps/web/app/darshan/page.tsx:13 imports and :371 renders `<AartiOptIn />` above the schedule table (previously imported by nothing under app/ — grep for AartiOptIn now returns exactly darshan/page.tsx plus the component itself). The component genuinely leaves the browser: apps/web/components/AartiOptIn.tsx GETs /notifications/vapid-pu"
  },
  {
   "key": "F348",
@@ -4993,8 +4993,8 @@
   "workflow": "scale-mindset",
   "line": 3509,
   "title": "Raw developer error text is rendered to users; the friendly-error helper exists but is wired into only 2 surfaces",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-45-final",
   "note": "apps/web/app is outside this lane. lib/friendly-error.ts already exists and is tested; this is a call-site change on that page plus suppressing the empty-state "
  },
  {
@@ -5049,9 +5049,9 @@
   "workflow": "scale-mindset",
   "line": 3533,
   "title": "Offline fallback is inconsistent across routes, and nothing recovers when the connection returns",
-  "state": "owner",
-  "commit": "",
-  "note": "apps/web/public/sw.js and the root layout are outside this lane. Two independent pieces: an 'online' listener that calls router.refresh()/location.reload() plus"
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "Read the shipped apps/web/public/sw.js in full — the change is real, not a comment. `RUNTIME_CACHE = 'darshya-runtime-v1'` (:46) with `CURRENT_CACHES` (:47) and `RUNTIME_MAX = 30` (:52); `putRuntime()` (:60-71) opens the runtime cache, `cache.put`s, then evicts `keys.slice(0, keys.length - RUNTIME_MAX)` — insertion order, oldest-first, every failure swallowed. The fetch handler writes only through"
  },
  {
   "key": "F362",
@@ -5119,9 +5119,9 @@
   "workflow": "scale-mindset",
   "line": 3565,
   "title": "A pandit paid through the temple booking path sees ₹0 in their own payout portal while being genuinely owed money",
-  "state": "partial",
-  "commit": "",
-  "note": "The finding's second half is untouched: four surfaces still report four different numbers for one pandit (/payouts/balance, /payouts/pandit/mine, the booking co"
+  "state": "owner",
+  "commit": "wave-hard-2026-08-21",
+  "note": "[independently verified] The finding's second half is untouched: four surfaces still report four different numbers for one pandit (/payouts/balance, /payouts/pandit/mine, the booking co"
  },
  {
   "key": "F367",
@@ -5133,8 +5133,8 @@
   "workflow": "scale-mindset",
   "line": 3571,
   "title": "Zero UNIQUE constraints on any money table — every idempotency guard is an application-level TOCTOU",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "Needs a Prisma migration. apps/api/prisma/schema.prisma and prisma/migrations/** are serialised to another agent this session, so I stopped as instruc"
  },
  {
@@ -5147,8 +5147,8 @@
   "workflow": "scale-mindset",
   "line": 3577,
   "title": "commissions.booking_id is text pointing at a uuid primary key, with no index, no foreign key, and 2 existing orphans",
-  "state": "owner",
-  "commit": "",
+  "state": "partial",
+  "commit": "wave-triage26-2026-08-24",
   "note": "Needs a Prisma migration (schema.prisma + prisma/migrations/** are owned by another agent this session). TWO PARTS, and the first one is safe while th"
  },
  {
@@ -5161,9 +5161,9 @@
   "workflow": "scale-mindset",
   "line": 3583,
   "title": "/admin/revenue and /admin/commissions report figures 5.8x apart, both labelled commissions",
-  "state": "owner",
-  "commit": "",
-  "note": "apps/web/app/admin/revenue/page.tsx and apps/web/app/admin/commissions/page.tsx still both label their figure 'commissions' with no unit. The API now hands them"
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "Verified end to end, including the halves attributed to an earlier wave. API: apps/api/src/routes/admin.ts:810-813 groups by percentage over the SAME `where` object built at :781-788 and used by findMany/count (not over the page), and :941-962 reduces it through commission-math into {providerEarningsInr, platformTakeInr, grossInr}, returned at :964. The web gap the claim identifies was real and is"
  },
  {
   "key": "F370",
@@ -5259,8 +5259,8 @@
   "workflow": "scale-mindset",
   "line": 3627,
   "title": "Brand webfonts have been dead for some time: Fontshare API returns 'temporarily restricted', 5,545 of 5,604 measured glyphs paint in Arial while 201.9 KB of unused Google woff2 still downloads",
-  "state": "owner",
-  "commit": "",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
   "note": "TWO gates, both outside what code can decide here. (1) OWNER: downloading and licensing the Satoshi + Cabinet Grotesk woff2 files into apps/web/public"
  },
  {
@@ -5385,9 +5385,9 @@
   "workflow": "scale-mindset",
   "line": 3681,
   "title": "128 production pages share one title and 129 share one description — the root defaults",
-  "state": "open",
-  "commit": "",
-  "note": ""
+  "state": "fixed",
+  "commit": "verify-wave-2026-08-19",
+  "note": "[unverified — wave stopped early] "
  },
  {
   "key": "F386",
@@ -5399,9 +5399,9 @@
   "workflow": "scale-mindset",
   "line": 3687,
   "title": "Which pages fail Core Web Vitals in production, and why — structurally",
-  "state": "wontfix",
+  "state": "partial",
   "commit": "wave-2026-08-15",
-  "note": "still partial after wave: Three things, none of which this lane can close. (1) LCP still fails all four measured pages; per the cluster brief TBT "
+  "note": "Was wontfix. Production is live again, so I measured instead of inferring. Everything below is my own measurement, 2026-09-01, mobile UA (Pixel 7 / Chrome 120), median of 3 for timings.\n\nA. ONE RESIDUAL CLOSED IN CODE. The triage's residual 3 was '/ and /gaushala emit zero srcset across 26 <img> tags'. The / half closed in the 2026-08-23 pass. I closed the /gaushala half: app/gaushala/page.tsx:423"
  },
  {
   "key": "F387",
@@ -5430,5 +5430,859 @@
   "state": "fixed",
   "commit": "",
   "note": "triage-verified: dead by cascade — its own fix says \"no change needed once SEO-02 is fixed\", and SEO-02 is fixed (robots.ts no longer disallows /_next/)"
+ },
+ {
+  "key": "F389",
+  "id": "PAY-01",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "A paid astrology consultation is auto-cancelled 30 minutes later — money captured, row marked cancelled, no refund, no notice",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F390",
+  "id": "PAY-02",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The webhook backstop structurally cannot confirm a store order — a paid order stays PENDING forever with no fulfilment, no commission and no invoice",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F391",
+  "id": "PAY-03",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The two refund rails disagree on whether Payment.refundAmount is cumulative — the second partial refund under-reverses the provider ledger and overstates what is still refundable",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F392",
+  "id": "PAY-04",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Recurring UPI Autopay mandates never activate: the only writer of recurring_subscriptions.status hangs off a webhook endpoint that is never subscribed to subscription events",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F393",
+  "id": "PAY-05",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The refund webhook handles an event the runbook never subscribes to — and even when it fires it neither reverses the ledger nor accumulates the refund total",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F394",
+  "id": "PAY-06",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "No reconciliation job exists anywhere — nothing ever looks for a Payment stuck at 'initiated' or asks Razorpay what actually settled",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F395",
+  "id": "PAY-07",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Both webhook endpoints write the idempotency record BEFORE verifying the signature — the exact reason the Stripe webhook was deleted, left in place on the Razorpay one",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F396",
+  "id": "PAY-08",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "A late webhook confirms a booking whose slot was already resold — capture is never re-checked against capacity",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F397",
+  "id": "PAY-09",
+  "sev": "P3",
+  "kind": "delta",
+  "size": "M",
+  "area": "payments-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Client verify and the webhook racing to confirm the same booking send the devotee two tax invoices",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F398",
+  "id": "AUTH-01",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The shipped fix for the spinning-loader P0 does not close it — fetchWithTimeout disarms its own abort timer before the response body is read, so every `await res.json()` in the app is untimed",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F399",
+  "id": "AUTH-02",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Sign-in parses the response body before checking res.ok, so a non-JSON error page tells a user with the correct password that their password is wrong",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F400",
+  "id": "AUTH-03",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Magic-link sign-in returns no role, so every provider provisioned through the partnerships pipeline is stored as a devotee and permanently bounced out of their own portal",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
+  "note": ""
+ },
+ {
+  "key": "F401",
+  "id": "AUTH-04",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Nothing in the product can request a sign-in link, so a provider whose 72-hour onboarding link lapses is locked out permanently — and forgot-password tells them a reset email is coming that can never arrive",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F402",
+  "id": "AUTH-05",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Magic-link tokens are stateless with no single-use ledger — the 72-hour provider onboarding link can be replayed without limit and cannot be revoked",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
+  "note": ""
+ },
+ {
+  "key": "F403",
+  "id": "AUTH-06",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Every 401 handler computes a `reauth` flag that no code in the product reads — a session that expires mid-action shows \"sign in again\" beside a Retry button and no way to sign in",
+  "state": "partial",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F404",
+  "id": "AUTH-07",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "A failed proactive token refresh is both silent and terminal — the effect cannot re-arm, so one transient failure ends refreshing for the whole tab with no message",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F405",
+  "id": "AUTH-08",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Neither POST /login nor POST /auth/google/sync checks User.blocked — a suspended account signs in successfully, then loops forever between \"session expired\" and a working login",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F406",
+  "id": "AUTH-09",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Signing out on one device signs the user out of every device, with no indication anywhere that it will",
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "Both halves verified independently. MOBILE: apps/mobile/lib/signout-copy.ts exists and exports SIGN_OUT_TITLE / SIGN_OUT_GLOBAL_MESSAGE ('This signs you out on all your devices, not just this one. You will need to sign in again everywhere.'). I re-ran the discovery the test claims to do — `for f in $(grep -rl 'signOut(' apps/mobile/app --include=*.tsx); do grep -q 'Alert.alert' $f && echo $f; done"
+ },
+ {
+  "key": "F407",
+  "id": "AUTH-10",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "All seven /auth/* routes are fully static with no Cache-Control override, so Next's default one-year shared-cache header lands on sign-in HTML",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F408",
+  "id": "AUTH-11",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Password reset tells the user \"You've been signed out everywhere\" while never calling the API's logout, so the API session cookies survive the reset",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F409",
+  "id": "AUTH-13",
+  "sev": "P3",
+  "kind": "delta",
+  "size": "M",
+  "area": "auth-session-lifecycle",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The Google callback never reads the OAuth error parameters, so a user who declines consent waits three seconds and is then told the wrong thing",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F410",
+  "id": "OPS-01",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Every production check in CI is configured never to fail — prod was 100% down for three days and the monitor logged it as green",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F411",
+  "id": "OPS-02",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The daily backup is engineered to exit 0 while producing zero bytes, and no restore has ever been recorded as tested",
+  "state": "owner",
+  "commit": "wave-45-2026-08-31",
+  "note": ""
+ },
+ {
+  "key": "F412",
+  "id": "OPS-03",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Backups are uploaded into the same Supabase project they are supposed to insure — one account suspension takes the database and every backup together",
+  "state": "owner",
+  "commit": "wave-45-2026-08-31",
+  "note": ""
+ },
+ {
+  "key": "F413",
+  "id": "OPS-04",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Render's health check and every uptime monitor point at a stub that returns 200 with the database unreachable, while the DB-aware /ready probe goes unused",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
+  "note": ""
+ },
+ {
+  "key": "F414",
+  "id": "OPS-05",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "No durable audit trail for money events — a disputed booking or refund cannot be reconstructed after the fact",
+  "state": "partial",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F415",
+  "id": "OPS-06",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The written rollback procedure cannot work — it says push a revert, but both services are autoDeploy:false and no workflow deploys from main",
+  "state": "partial",
+  "commit": "wave-45-final",
+  "note": ""
+ },
+ {
+  "key": "F416",
+  "id": "OPS-07",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Two schema-application mechanisms contradict each other, and the boot-time one logs DDL failures and starts serving anyway",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F417",
+  "id": "OPS-08",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The new Render suspension guard lives only on a feature branch, so its schedule will never fire",
+  "state": "owner",
+  "commit": "wave-45-final",
+  "note": "git ls-tree origin/main .github/workflows/ lists 20 files without render-hours-guard.yml, and gh workflow list --all returns the same 20 -- so no trigger is registered and it installs on merge. BUT reviewing the file surfaced a NEW defect, now fixed: it tested [ \"$susp\" != \"not_suspended\" ], so an expired RENDER_API_KEY (jq yields 'unknown') reported 'production is DOWN' for a healthy site, and th"
+ },
+ {
+  "key": "F418",
+  "id": "OPS-09",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "All production monitoring depends on the same GitHub Actions quota that has already been exhausted once",
+  "state": "owner",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F419",
+  "id": "OPS-10",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The disaster-recovery runbook describes infrastructure that does not exist — following it at 2am wastes the whole recovery window",
+  "state": "partial",
+  "commit": "wave-45-final",
+  "note": ""
+ },
+ {
+  "key": "F420",
+  "id": "OPS-11",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Production database passwords remain in git history in three commits; untracking the file did not remove them and only rotation will",
+  "state": "owner",
+  "commit": "wave-45-2026-08-31",
+  "note": ""
+ },
+ {
+  "key": "F421",
+  "id": "CI-01",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "502 of 517 \"book this puja\" links on /aarti and /chalisa pages 404 — DF-02's fix was wired into /festival only",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F422",
+  "id": "CI-02",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "48 duplicate slugs across 10 encyclopedia datasets — the second record is unreachable, and index pages render twin cards to one URL with contradictory facts",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
+  "note": ""
+ },
+ {
+  "key": "F423",
+  "id": "CI-03",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The site publishes Hartalika Teej on two different 2026 dates at two live URLs, and Narasimha Jayanti twice in May with an 11-day gap",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F424",
+  "id": "CI-04",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/content/<any-slug> returns 200 forever with \"Content is loading\" under Hanuman Chalisa's deity and 12.5M view count — 14 of 27 prerendered slugs have no row behind them",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F425",
+  "id": "CI-05",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "37 of 64 detail routes — at least 455 encyclopedia pages including all 84 pilgrimage-site pages — offer no path to anything bookable",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
+  "note": ""
+ },
+ {
+  "key": "F426",
+  "id": "CI-06",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "29 encyclopedia links into /deity/<slug> hard-404 because 20 of the referenced deities have no page",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F427",
+  "id": "CI-07",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/tirth ships 13 near-duplicate pages for the same temple under different slugs, each declaring itself canonical — SEO-06's normaliser covers /temples only",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F428",
+  "id": "CI-08",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The same subjects are published across two or three competing route families — 14 Upanishads, all 6 darshanas, the 4 Vedas — every URL self-canonical",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
+  "note": ""
+ },
+ {
+  "key": "F429",
+  "id": "CI-09",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Internal roadmap ticket IDs and the retired brand name \"Bhaktisetu\" render in published encyclopedia prose",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
+  "note": ""
+ },
+ {
+  "key": "F430",
+  "id": "CI-10",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/pilgrimage announces \"the 8 canonical circuits\" above a grid of 19, two of which are the same URL at two different prices and two different scriptural attributions",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F431",
+  "id": "CI-11",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Maha Kumbh Mela is dated 2027-01-14 but renders inside \"Hindu Festivals in January 2026\" as an upcoming 14 January event",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
+  "note": ""
+ },
+ {
+  "key": "F432",
+  "id": "CI-12",
+  "sev": "P3",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/jyotirlinga states every one of the twelve is swayambhu while its own badges mark nine, and /tirth says Mahakaleshwar is the only one",
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "Independently measured 9 swayambhu:true / 3 false / 12 total; both pages derive via JYOTIRLINGAS.filter at jyotirlinga/page.tsx:10-11,64-66 and discover/page.tsx:20-21,111. Guard has 2 genuinely fix-coupled assertions that fail against unfixed code, plus a stripper-non-vacuity check. The declined second half is data-backed, not merely arguable: dakshinmukhi true=1 / false=11, so 'the only south-fa"
+ },
+ {
+  "key": "F433",
+  "id": "CI-13",
+  "sev": "P3",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/tirth prints its \"Nearby tirthas\" list as raw hyphenated slugs and does not link them, on all 84 pilgrimage pages",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F434",
+  "id": "CI-14",
+  "sev": "P3",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/upanishads is titled and described as a guide to 10 Upanishads while listing 48",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
+  "note": ""
+ },
+ {
+  "key": "F435",
+  "id": "CI-15",
+  "sev": "P3",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "45 published articles list Wikipedia as a source with no CC BY-SA licence notice anywhere; /credits covers images only",
+  "state": "fixed",
+  "commit": "wave-36-2026-08-28",
+  "note": ""
+ },
+ {
+  "key": "F436",
+  "id": "CI-16",
+  "sev": "P3",
+  "kind": "delta",
+  "size": "M",
+  "area": "content-integrity",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "5 of the 16 temple links on pilgrimage-circuit pages point at slugs with no curated temple entry",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F437",
+  "id": "TC-01",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The 80G tax-deduction promise survives on ~25 surfaces after the honesty gate was wired into only two pages — and no donee can ever qualify, because the columns that would make a receipt 80G-valid have no writer",
+  "state": "partial",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F438",
+  "id": "TC-02",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/become-astrologer promises daily bank payouts and an Aadhaar-verified badge — the identical claim was found and fixed on /become-priest and left standing one file away, and the astrologer profile has no verification field at all",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F439",
+  "id": "TC-03",
+  "sev": "P0",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "NRI Premium publishes an unconditional 14-day 'no questions asked' refund and a 90-day pro-rata refund — subscriptionService.cancel() moves no money, and the product's only refund queue cannot see a subscription",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": "Verified in source and by running the cited test. apps/api/src/services/subscription.service.ts:851-856 defines CANCELLATION_NOTICE ('Access ends now, not at the end of the billing period ... No refund is issued automatically...'), returned at line 873 by cancel(), whose only write is line 869-871 `data: { status: 'CANCELLED' }`; isPremium()/getActivePlan() require status ACTIVE (line 519, 860) an"
+ },
+ {
+  "key": "F440",
+  "id": "TC-04",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Every one of NRI Premium's six advertised benefits is ungated — the entitlement hook has zero call sites, and the AI paywall does not recognise the plan code the subscription is created with",
+  "state": "fixed",
+  "commit": "wave-45-final",
+  "note": "apps/web/lib/use-premium.ts is genuinely absent (ls fails). apps/web/components/useIsPremium.ts:44-46 now returns useEntitlement('ads.suppressed').granted, and apps/web/components/AdSlot.tsx:4/:44 is the live call site, so lib/entitlement.ts has a real importer — tc04-entitlement-client.test.ts ('lib/entitlement.ts has at least one non-test importer') is 14/14 green. The rewritten useIsPremium.tes"
+ },
+ {
+  "key": "F441",
+  "id": "TC-05",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Fabricated five-star customer reviews are rendered as real on 17 temple pages and on the wedding page, several of them claiming to have booked through Darshya, against zero reviews and zero completed weddings in the database",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
+  "note": ""
+ },
+ {
+  "key": "F442",
+  "id": "TC-06",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/yatra/companion sells twelve named elderly-care escorts who do not exist, with hardcoded Aadhaar, police-verification and medical-certification flags and invented testimonials",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F443",
+  "id": "TC-07",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The temple 'Trust score' is a hand-typed seed literal, and the comparison page publishes a four-factor methodology for how it is computed — while also using it to rank which temple the devotee sees first",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
+  "note": ""
+ },
+ {
+  "key": "F444",
+  "id": "TC-08",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The published pandit vetting process — credential verification, two temple references, a 30-day probation and a per-pandit trust score — has no implementation, and a static 'Vedic certified' badge is printed with nothing behind it",
+  "state": "partial",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F445",
+  "id": "TC-09",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "PATCH /providers/:type/:id accepts an unvalidated body and strips only four fields — a provider can self-award the verified badge, their own star rating, their review count and the Aadhaar flag that unlocks payout",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F446",
+  "id": "TC-10",
+  "sev": "P1",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "The Privacy Policy's Data Security section claims Supabase row-level security as a safeguard — RLS is enabled on 2 of 66 tables, both auxiliary, and none of the user, payment or KYC tables has a policy",
+  "state": "fixed",
+  "commit": "wave-hard-2026-08-21",
+  "note": ""
+ },
+ {
+  "key": "F447",
+  "id": "TC-11",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/gaushala asserts every listed gaushala is personally verified with complete financial transparency, over three hardcoded fixtures that award real third-party organisations affiliation badges typed into the source",
+  "state": "fixed",
+  "commit": "wave-2026-08-21",
+  "note": "Both halves check out. Web: apps/web/app/gaushala/page.tsx:50-52 shows the fabricated array and its 'Our Verified Gaushalas'/'personally verified by our team' copy exist only as a removal note, line 407 carries the 'These are sample listings' disclosure, and apps/web/app/gaushala/[id]/page.tsx:324 LISTING_IS_SAMPLE gates the contact block (:788-795), CTA (:711) and detail rows (:603,:632,:639,:723"
+ },
+ {
+  "key": "F448",
+  "id": "TC-12",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "Supply-acquisition pages promise a 10,000-devotee audience, 7-day settlements, and a Rs 500/month cow-seva tier that does not exist — and a guard test forbidding that exact tier checks only two homepage components",
+  "state": "fixed",
+  "commit": "wave-45-2026-08-31",
+  "note": ""
+ },
+ {
+  "key": "F449",
+  "id": "TC-13",
+  "sev": "P2",
+  "kind": "delta",
+  "size": "M",
+  "area": "trust-and-claims",
+  "workflow": "delta-completion-2026-08-20",
+  "line": 0,
+  "title": "/faqs sells a Rs 199/month Premium plan with an aarti download library and multi-camera angles — no such plan, no such features — and claims live darshan from 30+ temples against a 20-temple catalogue",
+  "state": "fixed",
+  "commit": "wave-2026-08-23",
+  "note": ""
  }
 ]

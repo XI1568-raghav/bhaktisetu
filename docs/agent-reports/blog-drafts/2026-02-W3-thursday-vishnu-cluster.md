@@ -33,7 +33,7 @@ A typical household Vishnu puja on Thursday follows this sequence:
 8. **Aarti** — Conclude with the deity's aarti, circling the lamp clockwise.
 9. **Visarjan** — Respectfully request the deity to return, and distribute prasad.
 
-For a complete, pandit-verified Vishnu puja with video proof, book through [our Vishnu puja service](/pujas/satyanarayan-puja). Verified pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
+For a complete Vishnu puja with video proof, book through [our Vishnu puja service](/pujas/satyanarayan-puja). Pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
 
 ## Mantras and Aarti
 

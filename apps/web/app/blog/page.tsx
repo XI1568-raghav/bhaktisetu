@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ArrowRight, Mail, Sparkles } from 'lucide-react';
 import { listBlogPosts } from '../../lib/blog-posts';
 
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 export const revalidate = 3600; // GH unauth: 60/hr — 1h cache safe.
 
 export const metadata: Metadata = {
@@ -42,17 +44,12 @@ export default async function BlogPage() {
             Blog
           </p>
           <h1
-            className="text-2xl sm:text-3xl font-bold mb-3"
-            style={{
-              fontFamily: 'var(--font-display)',
-              color: 'var(--color-text)',
-              lineHeight: 'var(--leading-tight)',
-            }}
+            className={`${H1.catalogue} mb-3`}
           >
             Stories, Insights & Updates
           </h1>
           <p
-            className="text-sm max-w-xl leading-relaxed"
+            className="prose-body max-w-xl leading-relaxed"
             style={{ color: 'var(--color-text-muted)' }}
           >
             Exploring the intersection of technology and tradition. Updated as
@@ -119,7 +116,7 @@ export default async function BlogPage() {
                   First essays loading…
                 </h2>
                 <p
-                  className="text-sm leading-relaxed mb-6 max-w-md mx-auto"
+                  className="prose-meta leading-relaxed mb-6 max-w-md mx-auto"
                   style={{ color: 'var(--color-text-muted)' }}
                 >
                   Our editors are reviewing the latest drafts. Join the
@@ -128,11 +125,7 @@ export default async function BlogPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Link
                     href="/waitlist"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
-                    style={{
-                      background: 'var(--color-primary)',
-                      color: 'var(--color-text-inverse)',
-                    }}
+                    className={buttonClass('primary', 'md', 'btn-press')}
                   >
                     Join the waitlist <ArrowRight className="w-3.5 h-3.5" />
                   </Link>

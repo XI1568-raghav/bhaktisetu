@@ -2,6 +2,14 @@
 
 > Per DPDP Act 2023 Section 4(b) + Section 13. Foundation for compliance + customer trust + Series A regulatory due diligence.
 
+> **Correction 2026-09-02 (`OPS-10`).** The Tier 3 vendor line below used to read
+> *"Vendor (Razorpay/Stripe/Resend) data concerns"*. **Stripe was removed from the
+> codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`,
+> `services/payment.service.ts:2506-2517`) and no replacement international processor
+> has been chosen. Razorpay is the only live payment processor. The authoritative
+> processor list for DPDP purposes is `docs/legal/records-of-processing-activities.md`,
+> not this page.
+
 ## Why this matters
 
 - DPDP Act 2023 requires designated Grievance Officer + 30-day resolution
@@ -37,7 +45,7 @@
 
 ### Tier 3 — Operational Concerns (medium priority)
 - Pandit network handling of customer data
-- Vendor (Razorpay/Stripe/Resend) data concerns
+- Vendor data concerns (Razorpay, Resend; authoritative list in `docs/legal/records-of-processing-activities.md`. Stripe was removed 2026-08-11 — do not name it)
 - Customer support handling of personal info
 
 ### Tier 4 — Security Incidents (highest priority)

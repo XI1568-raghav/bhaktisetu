@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { API_BASE_URL } from '../../../../lib/api-config';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
 // Honest-fallback enrol CTA — captures intent + email via /api/v1/waitlist
 // with a deterministic source tag (`wellness-enrol-{instructorId}-{plan}`).
 // Real Razorpay enrol flow lives in wellness-sessions.ts but requires a
@@ -113,7 +114,7 @@ export default function WellnessEnrolButton({
           onClick={() => !busy && setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl p-6 sm:p-7"
+            className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 sm:p-7"
             style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -189,8 +190,7 @@ export default function WellnessEnrolButton({
                     <button
                       type="submit"
                       disabled={busy}
-                      className="flex-1 py-2 text-sm font-medium rounded-lg text-white"
-                      style={{ background: 'var(--color-primary)' }}
+                      className={buttonClass('primary', 'md', 'flex-1')}
                     >
                       {busy ? 'Saving…' : 'Reserve'}
                     </button>

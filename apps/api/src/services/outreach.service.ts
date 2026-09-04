@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Resend } from 'resend';
 import { prisma } from '../lib/prisma.js';
+import { HAS_80G } from '../lib/eighty-g.js';
+import { HAS_PANDIT_VETTING } from '../lib/pandit-vetting.js';
 import type { Lead, OutreachChannel, OutreachStatus } from '@prisma/client';
 
 /**
@@ -112,13 +114,81 @@ function interpolate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? '');
 }
 
-function renderEmailTemplate(filename: string, vars: Record<string, string>): string {
+/**
+ * TC-01 (P0, trust) — the 80G honesty gate for outbound prospect copy.
+ *
+ * A previous wave corrected the gaushala first-touch email SUBJECT here, and
+ * the WhatsApp warm-intro text in lib/wa-warm-intro-helpers.ts. It did not
+ * touch the email BODIES, which are HTML files on disk that this service reads
+ * and sends — so `templates/outreach/gaushala_first_touch.{en,hi}.html`,
+ * `gaushala_first_touch.txt` (the WhatsApp copy) and
+ * `gaushala_followup_3day.html` went on offering gaushala trusts "automatic
+ * 80G receipts" in the body under a subject that no longer said it.
+ *
+ * Darshya holds no Section 80G registration (apps/web/lib/company.ts
+ * `HAS_80G_VERIFIED` false, `eightyGNumber` and `pan` null), and
+ * `lib/pdf-receipt.ts` `is80GEligible()` needs a donee 80G number AND PAN from
+ * `gaushala_profiles.regn_80g` / `.pan`, which no route in this repository
+ * writes. Every receipt the platform mints therefore prints "Proof of donation
+ * — not a tax exemption certificate".
+ *
+ * These substitutions are appended AFTER the caller's `variables`, so no call
+ * site can override the gate. Flip `lib/eighty-g.ts` on the day the
+ * certificate is on file and every template returns to the 80G wording
+ * unchanged.
+ */
+const EIGHTY_G_VARS: Record<string, string> = {
+  receiptFeatureEn: HAS_80G
+    ? 'automatic 80G receipt generation'
+    : 'automatic numbered donation receipts',
+  receiptFeatureHi: HAS_80G
+    ? 'automatic 80G receipt generation'
+    : 'automatic numbered donation receipts',
+  receiptLineEn: HAS_80G
+    ? 'Every donation generates an 80G tax receipt PDF automatically, emailed to the donor.'
+    : 'Every donation generates a numbered receipt PDF automatically, emailed to the donor. ' +
+      'It is proof of payment, not a tax-exemption certificate: Darshya holds no Section 80G ' +
+      'registration yet, so a donation made today cannot be claimed as an 80G deduction.',
+  receiptLineHi: HAS_80G
+    ? 'Har donation par 80G tax receipt PDF automatically donor ko email ho jaati hai.'
+    : 'Har donation par ek numbered receipt PDF automatically donor ko email ho jaati hai. ' +
+      'Wo proof of payment hai, tax-exemption certificate nahi — Darshya ke paas abhi Section 80G ' +
+      'registration nahi hai, is liye aaj kiye gaye donation par 80G deduction claim nahi kiya ja sakta.',
+  // WhatsApp is capped at 1000 characters below, so it gets the short form.
+  receiptShortHi: HAS_80G
+    ? 'har donation par 80G receipt'
+    : 'har donation par numbered receipt PDF (proof of payment — Darshya ke paas abhi 80G registration nahi hai)',
+  /**
+   * TC-08 (P1, trust). `priest_first_touch.en.html` recruited pandits onto "a
+   * devotional platform where verified pandits perform online pujas", and the
+   * Hindi copy said the same. Nothing promotes a `Priest` to verified —
+   * `routes/priest.ts` writes `verificationStatus: 'pending'` and no route
+   * writes `'approved'`, so `routes/priests-public.ts`, which filters on
+   * `isVerified`, can only ever list seeded rows. Bound to
+   * `lib/pandit-vetting.ts`.
+   *
+   * Scoped to pandits deliberately. `AstrologerProfile.approved` and
+   * `Temple.isVerified` DO have production writers
+   * (`services/onboarding.service.ts`, `services/admin.service.ts`,
+   * `routes/admin.ts`), so the astrologer and temple templates are not part of
+   * this finding and are left alone.
+   */
+  panditsPhraseEn: HAS_PANDIT_VETTING ? 'verified pandits' : 'pandits',
+  panditsPhraseHi: HAS_PANDIT_VETTING ? 'verified पंडित जी' : 'पंडित जी',
+};
+
+/**
+ * Exported so `lib/outbound-80g-honesty.tc01.test.ts` can assert on the exact
+ * bytes `sendEmail` hands to Resend, rather than on a re-implementation of the
+ * substitution. `sendEmail` calls this; the test calls the same function.
+ */
+export function renderEmailTemplate(filename: string, vars: Record<string, string>): string {
   const tpl = loadTemplate(filename);
   const unsubUrl = `https://darshya.online/unsubscribe?lead=${encodeURIComponent(vars.leadId ?? '')}`;
   const replaced = tpl
     .replace(/\{\{layoutStart\}\}/g, layoutStart)
     .replace(/\{\{layoutEnd\}\}/g, layoutEnd(unsubUrl));
-  return interpolate(replaced, vars);
+  return interpolate(replaced, { ...vars, ...EIGHTY_G_VARS });
 }
 
 // ─── Subject lines per template ─────────────────────────────────────────
@@ -140,7 +210,12 @@ const SUBJECTS: Record<string, string> = {
   wellness_followup_3day: 'Re: Darshya wellness instructor partnership',
   wellness_followup_7day: 'Last reminder — Darshya wellness slot',
   wellness_followup_14day: 'Gentle nudge — आपकी wellness instructor पूछताछ खुली है',
-  gaushala_first_touch: 'Darshya — आपकी गौशाला के लिए 80G donation platform',
+  // TC-01: this subject line promised an 80G platform to gaushala trusts.
+  // Darshya holds no Section 80G registration and no route writes the donee
+  // columns (gaushala_profiles.regn_80g / .pan) that would let one issue an
+  // 80G receipt through us, so a trust reading this subject was being
+  // recruited on a capability the product does not have.
+  gaushala_first_touch: 'Darshya — आपकी गौशाला के लिए online donation platform',
   gaushala_followup_3day: 'Re: Darshya gaushala partnership',
   gaushala_followup_7day: 'Last reminder — Darshya gaushala slot',
   gaushala_followup_14day: 'Gentle nudge — आपकी गौशाला partnership पूछताछ खुली है',
@@ -204,6 +279,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
     name: lead.name || 'ji',
     city: lead.city || 'India',
     ...variables,
+    // TC-01: renderEmailTemplate appends EIGHTY_G_VARS after these, so no
+    // caller can override the honesty gate.
   });
   const html = logId ? injectTracking(rendered, logId) : rendered;
   const subject = SUBJECTS[templateKey] ?? 'A note from Darshya';
@@ -241,6 +318,24 @@ function loadWhatsappTemplate(templateKey: string): string | null {
   return fs.readFileSync(file, 'utf-8').trim();
 }
 
+/**
+ * The exact text `sendWhatsApp` posts to the Graph API, minus the network.
+ * Returns null when the template file does not exist.
+ *
+ * Exported for the same reason as `renderEmailTemplate`: a WhatsApp message is
+ * unrecallable once sent, so TC-01's regression test asserts on the real
+ * rendered string rather than on a copy of the substitution logic. The 80G
+ * gate vars are applied AFTER the caller's, so no call site can override them.
+ */
+export function renderWhatsappMessage(
+  templateKey: string,
+  vars: Record<string, string>,
+): string | null {
+  const tpl = loadWhatsappTemplate(templateKey);
+  if (!tpl) return null;
+  return interpolate(tpl, { ...vars, ...EIGHTY_G_VARS }).slice(0, 1000);
+}
+
 export interface SendWhatsAppParams {
   lead: LeadLike;
   templateKey: string;
@@ -253,14 +348,13 @@ export async function sendWhatsApp(params: SendWhatsAppParams): Promise<SendResu
   const target = lead.whatsappNumber ?? lead.phone;
   if (!target) return { ok: false, error: 'lead has no whatsapp/phone' };
 
-  const tpl = loadWhatsappTemplate(templateKey);
-  if (!tpl) return { ok: false, error: `whatsapp template missing: ${templateKey}` };
-  const text = interpolate(tpl, {
+  const text = renderWhatsappMessage(templateKey, {
     leadId: lead.id,
     name: lead.name || 'ji',
     city: lead.city || 'India',
     ...variables,
-  }).slice(0, 1000);
+  });
+  if (text === null) return { ok: false, error: `whatsapp template missing: ${templateKey}` };
 
   try {
     const res = await fetch(

@@ -4,10 +4,34 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { platformRateOf } from '../lib/commission-math.js';
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
+// P0 #S-04 (2026-07-09): the store path never wrote commissions, so store
+// owners' earnings sat at ₹0. The writer that closed it was then copied into
+// BOTH this file and store-commission.service.ts — which calls itself "the
+// single shared writer" — so the same money arithmetic existed twice and the
+// same attribution bug had to be fixed twice (2026-09-02: a hard-deleted
+// product silently cancelled the owner's commission). One copy now.
+import { writeStoreOrderCommission } from './store-commission.service.js';
 import {
   reverseBookingLedger,
   reduceBookingLedgerForPartialRefund,
+  // OPS-05: the SHARED COMMISSION_REVERSED emitter. It lives beside the unwind
+  // it describes so the four rails that unwind cannot drift into three
+  // different audit stories — which is the same failure mode the unwind itself
+  // was extracted to end (DI-01).
+  recordLedgerReversal,
+  type LedgerReversalResult,
+  type PartialLedgerResult,
 } from './ledger-reversal.service.js';
+// PAY-03: ONE implementation of the "which Razorpay refund ids have already
+// been applied to this Payment" rule, shared by both refund rails and the
+// refund webhook. Two copies of a money rule is exactly how this finding
+// happened — do not inline it.
+import { appendRefundId } from './refund.service.js';
+// OPS-05: the durable money trail. `recordMoneyEvent` never throws, never
+// rejects and never joins the caller's transaction, so every call below is
+// safe to `void` — a logging failure must not roll back a real capture. Record
+// AFTER the write it describes, and after a `$transaction` has RESOLVED.
+import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
@@ -17,7 +41,7 @@ import { findDonationByOrderId, finalizeDonationReceipt } from '../routes/donati
 import { handleSubscriptionEvent } from './recurring.service.js';
 
 /**
- * Send a puja-booking tax invoice to the devotee. Best-effort: any failure
+ * Send a puja-booking payment receipt to the devotee. Best-effort: any failure
  * (PDF, email, or DB read) is swallowed and logged so it can never block
  * the payment-confirmation flow this is called from.
  */
@@ -47,11 +71,11 @@ async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
     });
     await sendEmail({
       to: booking.user.email,
-      subject: `Darshya tax invoice — ${booking.bookingNumber}`,
-      html: `<p>Namaste ${booking.user.fullName},</p><p>Your tax invoice for booking <strong>${booking.bookingNumber}</strong> is attached.</p>`,
-      text: `Tax invoice for booking ${booking.bookingNumber} attached.`,
+      subject: `Darshya payment receipt — ${booking.bookingNumber}`,
+      html: `<p>Namaste ${booking.user.fullName},</p><p>Your payment receipt for booking <strong>${booking.bookingNumber}</strong> is attached.</p>`,
+      text: `Payment receipt for booking ${booking.bookingNumber} attached.`,
       attachments: [
-        { filename: `invoice-${booking.bookingNumber}.pdf`, content: pdf },
+        { filename: `receipt-${booking.bookingNumber}.pdf`, content: pdf },
       ],
     });
   } catch (err) {
@@ -173,11 +197,11 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
     });
     await sendEmail({
       to: order.user.email,
-      subject: `Darshya tax invoice — ${order.orderNumber}`,
-      html: `<p>Namaste ${order.user.fullName},</p><p>Your tax invoice for order <strong>${order.orderNumber}</strong> is attached.</p>`,
-      text: `Tax invoice for order ${order.orderNumber} attached.`,
+      subject: `Darshya payment receipt — ${order.orderNumber}`,
+      html: `<p>Namaste ${order.user.fullName},</p><p>Your payment receipt for order <strong>${order.orderNumber}</strong> is attached.</p>`,
+      text: `Payment receipt for order ${order.orderNumber} attached.`,
       attachments: [
-        { filename: `invoice-${order.orderNumber}.pdf`, content: pdf },
+        { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
       ],
     });
   } catch (err) {
@@ -233,10 +257,29 @@ type TxClient = Prisma.TransactionClient | typeof prisma;
  * backfill, so this creates no retroactive payable. They stay unmatched and
  * inert exactly as before.
  */
+/**
+ * What a mint produced, handed back so the CALLER can put it on the money
+ * trail after its transaction commits (OPS-05).
+ *
+ * The row is created inside the caller's `$transaction`, but the audit write
+ * must not be: `recordMoneyEvent` deliberately accepts no `tx`, because a
+ * failed audit INSERT inside the caller's transaction aborts it in Postgres
+ * and would roll back a real capture. So the mint is returned rather than
+ * logged here, and every caller records it after its `$transaction` resolves.
+ * `null` means no row was written — an existing commission, no pandit, or a
+ * pandit with no linked User — and callers must NOT log a mint for it.
+ */
+interface MintedCommission {
+  commissionId: string;
+  providerId: string;
+  /** The PROVIDER's earning in rupees — `Commission.amount`, per commission-math. */
+  amount: Prisma.Decimal;
+}
+
 async function writePujaCommissionOnConfirm(
   bookingId: string,
   tx: TxClient = prisma,
-): Promise<void> {
+): Promise<MintedCommission | null> {
   const booking = await tx.pujaBooking.findUnique({
     where: { id: bookingId },
     select: {
@@ -247,17 +290,17 @@ async function writePujaCommissionOnConfirm(
       priest: { select: { userId: true } },
     },
   });
-  if (!booking || !booking.priestId) return;
+  if (!booking || !booking.priestId) return null;
   // No linked User → no payable provider. Writing the row anyway is what
   // produced the orphans this fix exists to stop creating.
   const providerUserId = booking.priest?.userId;
-  if (!providerUserId) return;
+  if (!providerUserId) return null;
 
   const existing = await tx.commission.findFirst({
     where: { bookingId: booking.id },
     select: { id: true },
   });
-  if (existing) return;
+  if (existing) return null;
   // Decimal.js arithmetic — never coerce money to JS Number for the
   // ledger. percentage column is Decimal(5,4); it gets rounded by the
   // DB driver but the *input* must already be exact rational division.
@@ -269,15 +312,204 @@ async function writePujaCommissionOnConfirm(
   const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
   const providerEarning = new Prisma.Decimal(booking.priestPayout as Prisma.Decimal);
   const percentage = platformRateOf(price.sub(providerEarning), price);
-  await tx.commission.create({
-    data: {
-      bookingId: booking.id,
-      providerId: providerUserId,
-      amount: providerEarning,
-      percentage,
-      status: 'PENDING',
-    },
-  });
+  // DI-06: `createMany({ skipDuplicates })`, not `create`, and the difference
+  // is the whole point of the fix.
+  //
+  // migrations/20260824000000_di0607_money_key_indexes added the UNIQUE index
+  // `commissions_booking_id_key`, which is the right constraint — the findFirst
+  // above was an application-level TOCTOU with nothing behind it. But a
+  // constraint changes what the LOSER of that race experiences. Both
+  // confirmation rails (POST /payments/verify and the Razorpay webhook) can be
+  // in flight for one booking at once — that is why `claimCaptureTransition`
+  // exists, and its comment records the decision to leave the ledger writes
+  // ungated because they "carry their own findFirst idempotency guards". Under
+  // a bare `create`, the second INSERT now raises 23505 → P2002, and because
+  // P1-12 moved this writer INSIDE the caller's `$transaction`, that aborts the
+  // whole Postgres transaction: catching the error in JavaScript does not
+  // recover it (Prisma issues no per-query savepoint), so the capture, the
+  // booking confirm and the temple share roll back with it, and the caller
+  // answers 500 for money Razorpay has already taken.
+  //
+  // `skipDuplicates` compiles to `INSERT ... ON CONFLICT DO NOTHING`, which is
+  // not an error and therefore cannot poison the transaction. The loser writes
+  // nothing — precisely what the findFirst guard was reaching for.
+  //
+  // It is equally correct where the constraint does NOT exist: that migration
+  // creates each UNIQUE index only after proving the key is clean and announces
+  // a skip with RAISE WARNING, so on a dirty table there may be no constraint
+  // at all. With none, ON CONFLICT never fires and the guard above does all the
+  // work, exactly as before.
+  const inserted = (await tx.commission.createMany({
+    data: [
+      {
+        bookingId: booking.id,
+        providerId: providerUserId,
+        amount: providerEarning,
+        percentage,
+        status: 'PENDING',
+      },
+    ],
+    skipDuplicates: true,
+  })) as { count?: number } | undefined;
+
+  // `count: 0` means the conflict fired: the other rail owns this booking's
+  // commission. That is idempotent success, not failure — but this transaction
+  // minted nothing, so it must not hand the caller a mint to log. Reporting one
+  // would put a second COMMISSION_MINTED on the money trail for one earning.
+  if (inserted?.count !== 1) return null;
+
+  // `createMany` returns only a count on PostgreSQL, so the id comes from a
+  // read-back on the key we just inserted — a single index lookup, on the
+  // index DI-07 added (`commissions_booking_id_idx`).
+  const created = (await tx.commission.findFirst({
+    where: { bookingId: booking.id },
+    select: { id: true },
+  })) as { id: string } | null | undefined;
+
+  // OPS-05: hand the mint back rather than logging it here — see
+  // MintedCommission. A driver that returns nothing (a mock) must not be
+  // reported as a mint the caller can key an audit row on.
+  if (!created?.id) return null;
+  return { commissionId: created.id, providerId: providerUserId, amount: providerEarning };
+}
+
+/**
+ * PAY-09 (2026-08-20, P3): claim the initiated → captured transition.
+ *
+ * Both confirmation rails — POST /payments/verify and the Razorpay webhook —
+ * computed `shouldConfirm` from a read taken BEFORE their transaction. Two
+ * overlapping reads both see `pending_payment`, both transactions commit, and
+ * both then fire the post-confirm side-effects: two payment receipts, two
+ * "confirmed" notifications, two referral-reward attempts for one booking.
+ *
+ * This conditional UPDATE is the single-winner gate. Exactly one transaction
+ * moves the row off `captured`, whichever one gets there first, and it reports
+ * 1; the loser reports 0. Run INSIDE the caller's transaction so the claim and
+ * the confirm commit or roll back together.
+ *
+ * Deliberately gates ONLY the notices. The ledger writes stay ungated — they
+ * carry their own findFirst idempotency guards, and skipping them on a lost
+ * race would risk a booking with no commission row, which is far worse than a
+ * duplicate email.
+ *
+ * A non-numeric result (no such row) counts as NOT won: silence is the safe
+ * failure for a duplicate-suppression gate.
+ */
+async function claimCaptureTransition(tx: TxClient, paymentId: string): Promise<boolean> {
+  try {
+    const claimed = await tx.$executeRawUnsafe(
+      `UPDATE payments SET status = 'captured' WHERE id = $1::uuid AND status <> 'captured';`,
+      paymentId,
+    );
+    return Number(claimed) === 1;
+  } catch {
+    return false;
+  }
+}
+
+/** PAY-02: the StoreOrder shape both the client-verify and webhook rails confirm. */
+interface StoreOrderConfirmRow {
+  id: string;
+  orderNumber: string;
+  status: string;
+  statusHistory: unknown;
+  userId: string;
+}
+
+/**
+ * PAY-08 (2026-08-20, P2): re-check slot capacity at CAPTURE time.
+ *
+ * `activeSlotHoldWhere` stops counting an unpaid `pending_payment` booking
+ * against its slot once the row is older than `UNPAID_HOLD_MINUTES` — that is
+ * deliberate (an abandoned checkout must not burn a pandit's calendar), but it
+ * means the slot can legitimately be resold to someone else while a Razorpay
+ * capture is still in flight. Razorpay retries a webhook for up to 24 hours, so
+ * a capture landing after the hold lapsed used to confirm the stale booking
+ * into a slot that was already full, in complete silence.
+ *
+ * Returns a human-readable note when confirming would oversell, or null.
+ *
+ * Deliberately advisory: the caller still confirms. A devotee who has paid must
+ * not be stranded, and an oversold slot is something an operator can move; what
+ * was missing was any detection at all. Fails OPEN (returns null) on any error —
+ * a diagnostic must never be able to block a capture.
+ *
+ * BOTH capture→confirm anchors are covered (extended 2026-08-21). A PujaBooking
+ * is anchored either on `templePujaOfferingId` (temple catalog) or on
+ * `priestPujaOfferingId` (pandit-direct) — two different columns on the same
+ * row, each with its own `maxBookingsPerSlot`. The first pass handled only the
+ * temple column and returned null for a pandit booking, which left the
+ * STRICTEST capacity in the product (PriestPujaOffering.maxBookingsPerSlot
+ * defaults to 1 — one devotee per pandit per slot) as the one case with no
+ * detection at all. The predicate below mirrors booking.service's own
+ * `capacityWhere` (booking.service.ts:1326) rather than inventing a second
+ * definition of "the same slot".
+ */
+async function slotOversoldNote(booking: {
+  id: string;
+  createdAt: Date;
+  templePujaOfferingId: string | null;
+  priestPujaOfferingId?: string | null;
+  scheduledDate: Date | null;
+  scheduledTimeSlot: string | null;
+}): Promise<string | null> {
+  try {
+    // Temple anchor wins when both are somehow set: it is the column
+    // booking.service's create path checks capacity against.
+    const anchor: { column: 'templePujaOfferingId' | 'priestPujaOfferingId'; id: string } | null =
+      booking.templePujaOfferingId
+        ? { column: 'templePujaOfferingId', id: booking.templePujaOfferingId }
+        : booking.priestPujaOfferingId
+          ? { column: 'priestPujaOfferingId', id: booking.priestPujaOfferingId }
+          : null;
+
+    if (
+      !anchor ||
+      !booking.scheduledDate ||
+      !booking.scheduledTimeSlot ||
+      !booking.createdAt
+    ) {
+      return null;
+    }
+    // Importing booking.service statically would close a cycle (booking.service
+    // imports this module). The import only happens on the rare late-capture
+    // path, never on the common one.
+    const { activeSlotHoldWhere, UNPAID_HOLD_MINUTES } = await import(
+      './booking.service.js'
+    );
+    const heldForMs = Date.now() - new Date(booking.createdAt).getTime();
+    if (heldForMs < UNPAID_HOLD_MINUTES * 60_000) return null;
+
+    const offering =
+      anchor.column === 'templePujaOfferingId'
+        ? await prisma.templePujaOffering.findUnique({
+            where: { id: anchor.id },
+            select: { maxBookingsPerSlot: true },
+          })
+        : await prisma.priestPujaOffering.findUnique({
+            where: { id: anchor.id },
+            select: { maxBookingsPerSlot: true },
+          });
+    const max = Number(offering?.maxBookingsPerSlot ?? 1);
+    const others = Number(
+      (await prisma.pujaBooking.count({
+        where: {
+          [anchor.column]: anchor.id,
+          scheduledDate: booking.scheduledDate,
+          scheduledTimeSlot: booking.scheduledTimeSlot,
+          id: { not: booking.id },
+          ...activeSlotHoldWhere(),
+        },
+      })) ?? 0,
+    );
+    if (!Number.isFinite(others) || others < max) return null;
+    const anchorLabel = anchor.column === 'priestPujaOfferingId' ? 'pandit' : 'temple';
+    return `${anchorLabel} slot already holds ${others} of ${max} bookings (capture landed ${Math.round(
+      heldForMs / 60_000,
+    )} min after the booking was created)`;
+  } catch {
+    return null;
+  }
 }
 
 // P0 #PBO-12 (2026-07-09): single post-confirm side-effect block. The client
@@ -333,72 +565,6 @@ async function fireAndForgetPostConfirmSideEffects(
   })();
 }
 
-// P0 #S-04 (2026-07-09): write a Commission row for a confirmed store order.
-// The puja path has written commissions since launch, but the store path never
-// did — store owners' payouts were silently never recorded (earnings ₹0). This
-// resolves the store from the order's first line item's product (StoreOrder
-// has no direct storeProfileId FK until S-11 lands), reads the store's
-// platform commission rate, and writes a PENDING Commission row for the
-// store-owner's share (providerId = storeProfile.userId). Idempotent: a
-// duplicate confirm (webhook + client verify) does not double-write.
-async function writeStoreOrderCommissionOnConfirm(
-  storeOrderId: string,
-  tx: TxClient = prisma,
-): Promise<void> {
-  const existing = await tx.commission.findFirst({
-    where: { storeOrderId },
-    select: { id: true },
-  });
-  if (existing) return;
-
-  const order = await tx.storeOrder.findUnique({
-    where: { id: storeOrderId },
-    select: {
-      id: true,
-      totalAmountInr: true,
-      items: true,
-    },
-  });
-  if (!order) return;
-
-  // Resolve the owning store via the first line item's product. items is
-  // [{ productId, qty, priceAtPurchase }, ...]. Mixed-store carts are not
-  // supported (single store per order) — see S-11 for the proper FK.
-  const items = Array.isArray(order.items) ? (order.items as Array<{ productId?: string }>) : [];
-  const firstProductId = items.find((it) => it?.productId)?.productId;
-  if (!firstProductId) return;
-
-  const product = await tx.storeProduct.findUnique({
-    where: { id: firstProductId },
-    select: { storeProfileId: true },
-  });
-  if (!product?.storeProfileId) return;
-
-  const storeProfile = await tx.storeProfile.findUnique({
-    where: { id: product.storeProfileId },
-    select: { userId: true, commission: true },
-  });
-  if (!storeProfile) return;
-
-  // storeProfile.commission is the PLATFORM's cut (default 0.20). The store
-  // owner's earnings = total * (1 - commission). The Commission row records
-  // the provider's (store owner's) amount + the platform percentage for the
-  // ledger. Decimal arithmetic — never coerce money to JS Number.
-  const total = new Prisma.Decimal(order.totalAmountInr as Prisma.Decimal);
-  const platformRate = new Prisma.Decimal(storeProfile.commission as Prisma.Decimal);
-  const storeShare = total.mul(new Prisma.Decimal(1).minus(platformRate));
-  const percentage = total.gt(0) ? platformRate : new Prisma.Decimal(0);
-
-  await tx.commission.create({
-    data: {
-      storeOrderId: order.id,
-      providerId: storeProfile.userId,
-      amount: storeShare,
-      percentage,
-      status: 'PENDING',
-    },
-  });
-}
 
 // ─── Razorpay client ────────────────────────────────────────────────────────────
 
@@ -460,6 +626,8 @@ interface VerifyPaymentResult {
 interface WebhookResult {
   handled: boolean;
   event?: string;
+  /** PAY-03: set when a refund event carried an id already applied to the Payment. */
+  duplicate?: boolean;
 }
 
 interface RefundResult {
@@ -584,6 +752,24 @@ export class PaymentService {
       select: { id: true },
     });
 
+    // OPS-05 — rupees, never the paise figure sent to the gateway.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_INITIATED,
+      actorType: 'devotee',
+      actorId: userId,
+      subjectType: 'payment',
+      subjectId: payment.id,
+      bookingId: booking.id,
+      paymentId: payment.id,
+      amount: booking.priceAmount,
+      currency: booking.currency,
+      gateway: 'razorpay',
+      gatewayOrderId: razorpayOrder.id,
+      statusAfter: 'initiated',
+      idempotencyKey: razorpayOrder.id,
+      note: `Razorpay order opened for ${booking.bookingNumber}`,
+    });
+
     return {
       orderId: razorpayOrder.id,
       amount: amountInPaise,
@@ -621,7 +807,22 @@ export class PaymentService {
       where: { gatewayOrderId: razorpayOrderId },
       include: {
         booking: {
-          select: { id: true, bookingNumber: true, status: true, userId: true },
+          // PAY-08: the slot coordinates ride along so this rail can run the
+          // same capacity re-check the webhook rail runs. `createdAt` is what
+          // tells us the unpaid hold has lapsed; both offering columns are
+          // needed because a booking is anchored on the temple catalog OR on a
+          // pandit's own catalog.
+          select: {
+            id: true,
+            bookingNumber: true,
+            status: true,
+            userId: true,
+            createdAt: true,
+            templePujaOfferingId: true,
+            priestPujaOfferingId: true,
+            scheduledDate: true,
+            scheduledTimeSlot: true,
+          },
         },
       },
     });
@@ -681,12 +882,38 @@ export class PaymentService {
     // between the two updates previously left a captured Payment with a
     // pending_payment Booking until the webhook retried.
     const shouldConfirm = payment.booking.status === 'pending_payment';
+    // PAY-08: the client-verify rail confirms too, and it is NOT immune to the
+    // late-capture race the webhook rail guards. This is the browser callback
+    // from the Razorpay modal; the unpaid hold is only UNPAID_HOLD_MINUTES (30)
+    // long, so a devotee who is interrupted mid-checkout and finishes paying an
+    // hour later arrives HERE, into a slot that may already have been resold.
+    // Read before the transaction so it never runs inside one.
+    const oversold = shouldConfirm ? await slotOversoldNote(payment.booking) : null;
+    // OPS-05: carried OUT of the transaction so the mint can be recorded after
+    // it commits. Nothing may be logged from inside — a failed audit INSERT in
+    // the caller's tx aborts it in Postgres and rolls back the capture.
+    let mintedCommission: MintedCommission | null = null;
+    // PAY-09: single-winner claim — see claimCaptureTransition. Without it this
+    // rail and the webhook, racing on the same booking, each sent the devotee a
+    // payment receipt and a confirmation.
+    let capturedNow = false;
     await prisma.$transaction(async (tx) => {
+      capturedNow = await claimCaptureTransition(tx, payment.id);
       await tx.payment.update({
         where: { id: payment.id },
         data: {
           status: 'captured',
           gatewayPaymentId: razorpayPaymentId,
+          ...(oversold
+            ? {
+                metadata: {
+                  ...((payment.metadata as Record<string, unknown>) ?? {}),
+                  slotOversoldAt: new Date().toISOString(),
+                  slotOversoldNote: oversold,
+                  needsAdminReview: 'slot-capacity',
+                },
+              }
+            : {}),
         },
       });
       if (shouldConfirm) {
@@ -697,7 +924,7 @@ export class PaymentService {
         // P1-12: write the commission ledger row INSIDE the same transaction.
         // A failure here rolls back the capture+confirm (better than a silent
         // missing payout row). Idempotent via the findFirst guard inside.
-        await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+        mintedCommission = await writePujaCommissionOnConfirm(payment.booking!.id, tx);
         // RV-03: the temple's 5% share, in the SAME transaction as the
         // commission that earned it. Without this call temples receive Rs 0.00
         // on every paid booking — the writer exists but nothing reaches it.
@@ -705,10 +932,89 @@ export class PaymentService {
       }
     });
 
+    if (oversold) {
+      // Same marker string the webhook rail emits, so one grep
+      // (`slot_oversold_capture`) and one reconciliation query cover all
+      // confirm rails instead of the queue silently missing a third of them.
+      console.error(
+        '[payment.service][PAY-08] slot_oversold_capture',
+        JSON.stringify({
+          event: 'slot_oversold_capture',
+          rail: 'client-verify',
+          bookingId: payment.booking!.id,
+          paymentId: payment.id,
+          gatewayOrderId: razorpayOrderId,
+          note: oversold,
+        }),
+      );
+    }
+
+    // OPS-05 — the provider's earning, recorded AFTER the transaction commits.
+    // COMMISSION_REVERSED was already on the trail and COMMISSION_MINTED was
+    // not, so a reconstructed dispute showed an earning being VOIDED that never
+    // appeared to have been CREATED. `mintedCommission` is null whenever no row
+    // was written (already minted, no pandit, pandit with no linked User), and
+    // a null must never be logged as a mint.
+    if (mintedCommission) {
+      const minted: MintedCommission = mintedCommission;
+      void recordMoneyEvent({
+        eventType: MONEY_EVENTS.COMMISSION_MINTED,
+        actorType: 'system',
+        subjectType: 'commission',
+        subjectId: minted.commissionId,
+        bookingId: payment.booking!.id,
+        paymentId: payment.id,
+        commissionId: minted.commissionId,
+        // Commission.amount is the PROVIDER's earning (lib/commission-math.ts),
+        // in rupees. Not the booking price, not the platform's cut.
+        amount: minted.amount,
+        currency: payment.currency,
+        statusAfter: 'PENDING',
+        idempotencyKey: minted.commissionId,
+        note: 'provider earning minted on the client-verify confirm rail',
+        metadata: {
+          rail: 'client-verify',
+          providerId: minted.providerId,
+          gatewayPaymentId: razorpayPaymentId,
+        },
+      });
+    }
+
+    // OPS-05 — the client-verify rail, recorded AFTER the transaction commits.
+    // `payment.status` is the pre-image read before the update; it is the one
+    // fact the mutable status column can never answer afterwards, and the
+    // reason a dispute can tell "verified then captured" from "captured twice".
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_VERIFIED,
+      actorType: userId ? 'devotee' : 'system',
+      actorId: userId ?? null,
+      subjectType: 'payment',
+      subjectId: payment.id,
+      bookingId: payment.booking!.id,
+      paymentId: payment.id,
+      amount: payment.amount,
+      currency: payment.currency,
+      gateway: 'razorpay',
+      gatewayOrderId: razorpayOrderId,
+      gatewayPaymentId: razorpayPaymentId,
+      statusBefore: payment.status,
+      statusAfter: 'captured',
+      idempotencyKey: razorpayPaymentId,
+      note: 'client-verify rail (POST /payments/verify)',
+      metadata: {
+        rail: 'client-verify',
+        confirmedBooking: shouldConfirm,
+        capturedNow,
+        ...(oversold ? { slotOversoldNote: oversold } : {}),
+      },
+    });
+
     // Post-commit side-effects (invoice email + referral reward) are network
     // calls that must NOT roll back a captured payment — fire-and-forget.
     const booking = payment.booking!;
-    if (shouldConfirm) {
+    // PAY-09 — see the webhook rail for why `payment.status === 'captured'` is
+    // an escape hatch rather than a hole.
+    if (shouldConfirm && (capturedNow || payment.status === 'captured')) {
       await fireAndForgetPostConfirmSideEffects(booking.id, booking.userId);
     }
 
@@ -910,7 +1216,7 @@ export class PaymentService {
         // owners' payouts were silently never recorded. A failure now rolls
         // back the whole capture+confirm (no captured payment without a ledger
         // row). Idempotent via the findFirst guard inside.
-        await writeStoreOrderCommissionOnConfirm(storeOrder.id, tx);
+        await writeStoreOrderCommission(storeOrder.id, tx);
       }
     });
     if (shouldConfirm) {
@@ -933,6 +1239,28 @@ export class PaymentService {
     signature: string
   ): Promise<WebhookResult> {
     // 1. Verify webhook signature
+    this.assertWebhookSignature(JSON.stringify(payload), signature);
+    return this.processWebhookEvent(payload);
+  }
+
+  /**
+   * PAY-07 (2026-08-20, P2): the signature check on its own.
+   *
+   * The route has to be able to verify BEFORE it writes the webhook-idempotency
+   * record. Recording first means an unsigned request can claim a real event's
+   * id — the record lands, the request is rejected, and Razorpay's genuine
+   * delivery is then dismissed as a duplicate and dropped in silence. That is
+   * the exact reason the Stripe webhook route was deleted on 2026-08-11, and
+   * the same ordering was left standing here.
+   *
+   * `signedPayload` is whatever Razorpay signed: the raw request bytes on the
+   * (default) raw path, the re-serialised JSON on the legacy path. Both
+   * handlers below route through this so the two can never drift apart.
+   *
+   * Throws the "signature verification failed" message the route maps to 400 —
+   * including when the secret is UNSET, which must reject, never "process".
+   */
+  assertWebhookSignature(signedPayload: string, signature: string): void {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!webhookSecret) {
       // Fail CLOSED with the signature message so the route returns 400 (never
@@ -941,16 +1269,17 @@ export class PaymentService {
     }
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(JSON.stringify(payload))
+      .update(signedPayload)
       .digest('hex');
 
+    // Timing-safe compare to defeat any timing-oracle attack on the HMAC
+    // equality check. Both sides are hex strings of the same length; if not,
+    // force a mismatch.
     const expBuf = Buffer.from(expectedSignature, 'utf8');
-    const sigBuf = Buffer.from(signature, 'utf8');
+    const sigBuf = Buffer.from(signature ?? '', 'utf8');
     if (expBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expBuf, sigBuf)) {
       throw new Error('Webhook signature verification failed.');
     }
-
-    return this.processWebhookEvent(payload);
   }
 
   /**
@@ -964,27 +1293,7 @@ export class PaymentService {
     payload: Record<string, any>,
     signature: string
   ): Promise<WebhookResult> {
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      // Fail CLOSED: no configured secret → reject with the signature message
-      // so the route returns 400, never a 200 "Internal processing error".
-      throw new Error('Webhook signature verification failed.');
-    }
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(rawBody)
-      .digest('hex');
-
-    // Use timing-safe compare to defeat any timing-oracle attacks on the
-    // HMAC equality check. Both sides are hex strings of the same length;
-    // if not, force a mismatch.
-    const a = Buffer.from(expectedSignature, 'utf8');
-    const b = Buffer.from(signature, 'utf8');
-    const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
-    if (!ok) {
-      throw new Error('Webhook signature verification failed.');
-    }
-
+    this.assertWebhookSignature(rawBody, signature);
     return this.processWebhookEvent(payload);
   }
 
@@ -992,6 +1301,33 @@ export class PaymentService {
    * Private: dispatch the verified webhook payload to the right
    * downstream Prisma updates. Both verification paths converge here.
    */
+  /**
+   * PAY-06 (2026-08-20, P1): apply a capture we DISCOVERED by polling Razorpay
+   * rather than one Razorpay pushed to us.
+   *
+   * The whole confirmation design assumed the browser survives long enough to
+   * call /verify, with the webhook as the only backstop — and nothing anywhere
+   * ever went looking for a Payment stuck at `initiated` with a real capture
+   * behind it. jobs/reconcile-payments.ts now does, and routes what it finds
+   * through THIS method so the recovery path and the webhook path are the same
+   * code. A second copy of "what confirming a capture means" is precisely the
+   * drift that produced PAY-02.
+   */
+  async applyCapturedPayment(
+    gatewayOrderId: string,
+    gatewayPaymentId: string,
+    method?: string | null,
+  ): Promise<WebhookResult> {
+    return this.processWebhookEvent({
+      event: 'payment.captured',
+      payload: {
+        payment: {
+          entity: { id: gatewayPaymentId, order_id: gatewayOrderId, method: method ?? null },
+        },
+      },
+    });
+  }
+
   private async processWebhookEvent(
     payload: Record<string, any>
   ): Promise<WebhookResult> {
@@ -1008,20 +1344,263 @@ export class PaymentService {
           include: {
             // PBO-12: include userId so applyPostConfirmSideEffects can credit
             // the referral reward on the webhook path.
-            booking: { select: { id: true, status: true, userId: true } },
+            // PAY-08: the slot coordinates + createdAt let the confirm re-check
+            // capacity — see slotOversoldNote. BOTH offering columns are
+            // selected: a booking is anchored on the temple catalog OR on a
+            // pandit's own catalog, and omitting the pandit column made the
+            // re-check silently return null for every pandit-direct booking.
+            booking: {
+              select: {
+                id: true,
+                status: true,
+                userId: true,
+                createdAt: true,
+                templePujaOfferingId: true,
+                priestPujaOfferingId: true,
+                scheduledDate: true,
+                scheduledTimeSlot: true,
+              },
+            },
+            // PAY-02 (2026-08-20, P0): a store order's Payment carries
+            // `bookingId === null` BY DESIGN — Payment.bookingId is nullable
+            // precisely so non-puja payments can use the same table. Every
+            // downstream effect in this handler was gated on `!!payment.booking`,
+            // so for a store order the webhook marked the Payment `captured` and
+            // then did nothing at all: StoreOrder stayed PENDING forever, the
+            // store owner's Commission was never written, no invoice was sent,
+            // and nothing was ever shipped. Resolving the linked order here lets
+            // the webhook run the SAME transaction verifyStoreOrderPayment runs.
+            storeOrders: {
+              select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                statusHistory: true,
+                userId: true,
+              },
+            },
           },
         });
 
         if (payment) {
-          const shouldConfirm =
-            !!payment.booking && payment.booking.status === 'pending_payment';
-          // P1-12: capture + confirm + commission ledger write in ONE
-          // transaction. The old webhook path ran payment.update + booking.update
-          // as two separate queries (a crash between them left a captured Payment
-          // with a pending booking) and wrote the commission AFTER with a
-          // swallowed catch. Now any failure rolls back the whole block.
-          await prisma.$transaction(async (tx) => {
-            await tx.payment.update({
+          const storeOrder =
+            (payment as { storeOrders?: StoreOrderConfirmRow[] }).storeOrders?.[0] ?? null;
+
+          if (payment.booking) {
+            const shouldConfirm = payment.booking.status === 'pending_payment';
+            // PAY-08: a capture can land long after the unpaid hold lapsed, and
+            // an lapsed hold stops counting against capacity — so the slot may
+            // already have been resold. Checked before the transaction so the
+            // read never runs inside it.
+            const oversold = shouldConfirm
+              ? await slotOversoldNote(payment.booking)
+              : null;
+            // P1-12: capture + confirm + commission ledger write in ONE
+            // transaction. The old webhook path ran payment.update + booking.update
+            // as two separate queries (a crash between them left a captured Payment
+            // with a pending booking) and wrote the commission AFTER with a
+            // swallowed catch. Now any failure rolls back the whole block.
+            let capturedNow = false;
+            // OPS-05: carried OUT of the transaction, same contract as the
+            // client-verify rail — the mint is recorded only after commit.
+            let mintedCommission: MintedCommission | null = null;
+            await prisma.$transaction(async (tx) => {
+              capturedNow = await claimCaptureTransition(tx, payment.id);
+              await tx.payment.update({
+                where: { id: payment.id },
+                data: {
+                  status: 'captured',
+                  gatewayPaymentId: paymentEntity.id,
+                  method: paymentEntity.method ?? null,
+                  ...(oversold
+                    ? {
+                        metadata: {
+                          ...((payment.metadata as Record<string, unknown>) ?? {}),
+                          slotOversoldAt: new Date().toISOString(),
+                          slotOversoldNote: oversold,
+                          needsAdminReview: 'slot-capacity',
+                        },
+                      }
+                    : {}),
+                },
+              });
+              if (shouldConfirm) {
+                await tx.pujaBooking.update({
+                  where: { id: payment.booking!.id },
+                  data: { status: 'confirmed' },
+                });
+                // P1-12: commission ledger row inside the tx.
+                mintedCommission = await writePujaCommissionOnConfirm(payment.booking!.id, tx);
+                // RV-03: the temple's 5% share, in the SAME transaction as the
+                // commission that earned it. Without this call temples receive
+                // Rs 0.00 on every paid booking — the writer exists but nothing
+                // reaches it.
+                await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
+              }
+            });
+
+            // OPS-05 — the provider's earning, minted on the gateway rail.
+            // Same contract as the client-verify rail: after commit, never on
+            // a null. Only ONE of the two rails ever mints for a booking — the
+            // loser's writePujaCommissionOnConfirm hits its findFirst guard and
+            // returns null — so the trail names which rail actually did it.
+            if (mintedCommission) {
+              const minted: MintedCommission = mintedCommission;
+              void recordMoneyEvent({
+                eventType: MONEY_EVENTS.COMMISSION_MINTED,
+                actorType: 'gateway',
+                subjectType: 'commission',
+                subjectId: minted.commissionId,
+                bookingId: payment.booking.id,
+                paymentId: payment.id,
+                commissionId: minted.commissionId,
+                amount: minted.amount,
+                currency: payment.currency,
+                statusAfter: 'PENDING',
+                idempotencyKey: minted.commissionId,
+                note: 'provider earning minted on the Razorpay webhook confirm rail',
+                metadata: {
+                  rail: 'webhook',
+                  providerId: minted.providerId,
+                  gatewayPaymentId: paymentEntity.id,
+                },
+              });
+            }
+
+            // OPS-05 — the gateway rail. `actorType:'gateway'` is the whole
+            // point of that enum: "Razorpay told us" is a different fact from
+            // "the devotee's browser told us", and folding the two together is
+            // what makes "which rail got there first" unanswerable in a
+            // dispute. Keyed on the gateway payment id, which the writer
+            // namespaces by event type — so this row coexists with the
+            // PAYMENT_VERIFIED row carrying the same id instead of erasing it.
+            void recordMoneyEvent({
+              eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
+              actorType: 'gateway',
+              subjectType: 'payment',
+              subjectId: payment.id,
+              bookingId: payment.booking.id,
+              paymentId: payment.id,
+              amount: payment.amount,
+              currency: payment.currency,
+              gateway: 'razorpay',
+              gatewayOrderId: paymentEntity.order_id,
+              gatewayPaymentId: paymentEntity.id,
+              statusBefore: payment.status,
+              statusAfter: 'captured',
+              idempotencyKey: paymentEntity.id,
+              note: `razorpay webhook ${event}`,
+              metadata: {
+                rail: 'webhook',
+                method: paymentEntity.method ?? null,
+                confirmedBooking: shouldConfirm,
+                capturedNow,
+                ...(oversold ? { slotOversoldNote: oversold } : {}),
+              },
+            });
+
+            if (oversold) {
+              // Deliberately NOT a refusal to confirm: the devotee has already
+              // paid, and stranding a paid booking is a worse failure than an
+              // oversold slot an operator can move. What was missing was the
+              // CHECK — the capture used to be applied to a resold slot in total
+              // silence. Greppable by `slot_oversold_capture`, and surfaced in
+              // the daily reconciliation sweep (jobs/reconcile-payments.ts).
+              console.error(
+                '[payment.service][PAY-08] slot_oversold_capture',
+                JSON.stringify({
+                  event: 'slot_oversold_capture',
+                  bookingId: payment.booking.id,
+                  paymentId: payment.id,
+                  gatewayOrderId: paymentEntity.order_id,
+                  note: oversold,
+                }),
+              );
+            }
+
+            // PBO-12: post-commit fire-and-forget side-effects (invoice email +
+            // referral reward). Prod confirms via webhook, so the referee credit
+            // MUST run here. Network calls — never inside the tx.
+            //
+            // PAY-09: gated on the capture transition, so only the transaction
+            // that actually performed it announces it. Client verify and this
+            // handler racing on the same booking used to send the devotee two
+            // payment receipts and two confirmations.
+            //
+            // `alreadyCaptured` keeps the RECOVERY path loud: a Payment that was
+            // already `captured` while its booking sat `pending_payment` (what
+            // jobs/reconcile-payments.ts exists to find) has no competing racer,
+            // so its claim returns 0 and the devotee would otherwise be
+            // confirmed in silence.
+            if (shouldConfirm && (capturedNow || payment.status === 'captured')) {
+              await fireAndForgetPostConfirmSideEffects(
+                payment.booking!.id,
+                payment.booking!.userId,
+              );
+            }
+          } else if (storeOrder) {
+            // PAY-02: the store-order rail, byte-for-byte the same work
+            // verifyStoreOrderPayment does — capture, PENDING → CONFIRMED with a
+            // statusHistory entry, and the store-owner Commission INSIDE the
+            // transaction (a failure must roll back the capture, never leave a
+            // captured payment with no ledger row).
+            const shouldConfirm = storeOrder.status === 'PENDING';
+            await prisma.$transaction(async (tx) => {
+              await tx.payment.update({
+                where: { id: payment.id },
+                data: {
+                  status: 'captured',
+                  gatewayPaymentId: paymentEntity.id,
+                  method: paymentEntity.method ?? null,
+                },
+              });
+              if (shouldConfirm) {
+                const existingHistory = Array.isArray(storeOrder.statusHistory)
+                  ? storeOrder.statusHistory
+                  : [];
+                await tx.storeOrder.update({
+                  where: { id: storeOrder.id },
+                  data: {
+                    status: 'CONFIRMED',
+                    statusHistory: [
+                      ...existingHistory,
+                      {
+                        status: 'CONFIRMED',
+                        changedAt: new Date().toISOString(),
+                        changedBy: 'razorpay-webhook',
+                        note: 'Razorpay webhook payment.captured',
+                      },
+                    ] as Prisma.InputJsonValue[],
+                  },
+                });
+                await writeStoreOrderCommission(storeOrder.id, tx);
+              }
+            });
+            // OPS-05 — same capture event, the store-order rail.
+            void recordMoneyEvent({
+              eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
+              actorType: 'gateway',
+              subjectType: 'store_order',
+              subjectId: storeOrder.id,
+              paymentId: payment.id,
+              amount: payment.amount,
+              currency: payment.currency,
+              gateway: 'razorpay',
+              gatewayOrderId: paymentEntity.order_id,
+              gatewayPaymentId: paymentEntity.id,
+              statusBefore: payment.status,
+              statusAfter: 'captured',
+              idempotencyKey: paymentEntity.id,
+              note: `razorpay webhook ${event} (store order ${storeOrder.orderNumber})`,
+              metadata: { rail: 'webhook-store-order', confirmedOrder: shouldConfirm },
+            });
+            if (shouldConfirm) {
+              void sendStoreOrderInvoice(storeOrder.id);
+            }
+          } else {
+            // A Payment row with neither a booking nor a store order behind it
+            // (legacy/orphan). Record the capture; there is nothing to confirm.
+            await prisma.payment.update({
               where: { id: payment.id },
               data: {
                 status: 'captured',
@@ -1029,28 +1608,6 @@ export class PaymentService {
                 method: paymentEntity.method ?? null,
               },
             });
-            if (shouldConfirm) {
-              await tx.pujaBooking.update({
-                where: { id: payment.booking!.id },
-                data: { status: 'confirmed' },
-              });
-              // P1-12: commission ledger row inside the tx.
-              await writePujaCommissionOnConfirm(payment.booking!.id, tx);
-        // RV-03: the temple's 5% share, in the SAME transaction as the
-        // commission that earned it. Without this call temples receive Rs 0.00
-        // on every paid booking — the writer exists but nothing reaches it.
-        await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
-            }
-          });
-
-          // PBO-12: post-commit fire-and-forget side-effects (invoice email +
-          // referral reward). Prod confirms via webhook, so the referee credit
-          // MUST run here. Network calls — never inside the tx.
-          if (shouldConfirm) {
-            await fireAndForgetPostConfirmSideEffects(
-              payment.booking!.id,
-              payment.booking!.userId,
-            );
           }
         } else {
           // PBO-11 (2026-07-09): donation webhook backstop. Donations create no
@@ -1062,6 +1619,38 @@ export class PaymentService {
           const donation = await findDonationByOrderId(paymentEntity.order_id);
           if (donation && donation.status !== 'paid') {
             await finalizeDonationReceipt(donation, paymentEntity.id, undefined);
+          } else if (!donation) {
+            // PAY-01 (2026-08-20, P0): the SAME structural gap, one rail over.
+            // Astrologer consultations also write no prisma.payment row — the
+            // route raw-INSERTs into astrologer_consultations carrying only
+            // razorpay_order_id — so this handler could resolve donations and
+            // donations only. A devotee who paid and closed the tab was never
+            // confirmed, and jobs/consultation-expire.ts then flipped the row to
+            // 'cancelled' 30 minutes later: money captured, record says the
+            // consultation was never ordered, no refund, no notice.
+            //
+            // The backstop claims pending_payment / payment_review / cancelled
+            // rows, so it also RECOVERS one the expiry cron already destroyed.
+            // Dynamic import for the same reason findDonationByOrderId is a
+            // route export: it keeps fastify + the astrologer notifier out of
+            // this module's static load graph.
+            try {
+              const consult = await import('../routes/consultation.js');
+              const row = await consult.findConsultationByOrderId(
+                paymentEntity.order_id,
+              );
+              if (row) {
+                await consult.finalizeConsultationPaymentFromWebhook(
+                  row,
+                  paymentEntity.id,
+                );
+              }
+            } catch (err) {
+              console.error(
+                '[payment.service][PAY-01] consultation webhook backstop failed:',
+                err,
+              );
+            }
           }
         }
 
@@ -1089,12 +1678,43 @@ export class PaymentService {
               },
             },
           });
+
+          // OPS-05 — a failure is a money event too: it is the row that
+          // explains why a booking the devotee insists they paid for never
+          // confirmed.
+          void recordMoneyEvent({
+            eventType: MONEY_EVENTS.PAYMENT_FAILED,
+            actorType: 'gateway',
+            subjectType: 'payment',
+            subjectId: payment.id,
+            bookingId: payment.bookingId,
+            paymentId: payment.id,
+            amount: payment.amount,
+            currency: payment.currency,
+            gateway: 'razorpay',
+            gatewayOrderId: paymentEntity.order_id,
+            gatewayPaymentId: paymentEntity.id,
+            statusBefore: payment.status,
+            statusAfter: 'failed',
+            idempotencyKey: paymentEntity.id,
+            note: paymentEntity.error_description ?? `razorpay webhook ${event}`,
+            metadata: {
+              failureCode: paymentEntity.error_code ?? null,
+              method: paymentEntity.method ?? null,
+            },
+          });
         }
 
         return { handled: true, event };
       }
 
-      case 'refund.created': {
+      // PAY-05 (2026-08-20): `refund.processed` is handled alongside
+      // `refund.created`. Razorpay accounts differ in which of the two they
+      // emit, and subscribing the wrong one silently disables this whole rail —
+      // see docs/razorpay-live-activation.md for the events the owner must
+      // subscribe. Handling both makes the code indifferent to that choice.
+      case 'refund.created':
+      case 'refund.processed': {
         const refundEntity = payload.payload?.refund?.entity;
         if (!refundEntity) break;
 
@@ -1103,19 +1723,132 @@ export class PaymentService {
         });
 
         if (payment) {
-          // refund amount from Razorpay is in paise
-          const refundAmountDecimal = refundEntity.amount / 100;
+          // PAY-03: `Payment.refundAmount` is CUMULATIVE. This branch used to
+          // OVERWRITE it with the last refund, so after a second partial the
+          // admin rail — which computes what is still refundable as
+          // `paid - alreadyRefunded` — believed far more was refundable than
+          // actually was, and the proportional ledger unwind under-reversed.
+          //
+          // Dedupe on the Razorpay refund id: both refund rails append the id
+          // they created to `metadata.refundIds`, so an event for a refund we
+          // raised ourselves is recognised and NOT counted twice. An id we have
+          // never seen is a refund raised directly in the Razorpay dashboard —
+          // exactly the case this handler exists for.
+          const seen = appendRefundId(payment.metadata, null);
+          if (refundEntity.id && seen.includes(refundEntity.id)) {
+            return { handled: true, event, duplicate: true };
+          }
 
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              refundAmount: refundAmountDecimal,
-              status:
-                refundAmountDecimal >= Number(payment.amount)
-                  ? 'refunded'
-                  : 'partially_refunded',
+          const paid = new Prisma.Decimal(payment.amount);
+          const alreadyRefunded = payment.refundAmount
+            ? new Prisma.Decimal(payment.refundAmount)
+            : new Prisma.Decimal(0);
+          // refund amount from Razorpay is in paise
+          const thisRefund = new Prisma.Decimal(refundEntity.amount ?? 0).div(100);
+          const refundableBefore = paid.minus(alreadyRefunded);
+          const applied = thisRefund.gt(refundableBefore) ? refundableBefore : thisRefund;
+          const newRefundTotal = alreadyRefunded.plus(applied);
+          const isFullRefund = newRefundTotal.gte(paid);
+
+          // OPS-05: captured out of the transaction, recorded after it commits.
+          let webhookFullReversal: LedgerReversalResult | null = null;
+          let webhookPartialReversal: PartialLedgerResult | null = null;
+          let webhookUnwindReason = '';
+
+          await prisma.$transaction(async (tx) => {
+            await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                refundAmount: newRefundTotal,
+                status: isFullRefund ? 'refunded' : 'partially_refunded',
+                metadata: {
+                  ...((payment.metadata as Record<string, unknown>) ?? {}),
+                  refundIds: appendRefundId(payment.metadata, refundEntity.id),
+                  refundId: refundEntity.id ?? null,
+                  refundedAt: new Date().toISOString(),
+                  refundSource: `razorpay-webhook:${event}`,
+                },
+              },
+            });
+
+            // PAY-05: UNWIND THE PROVIDER LEDGER. This branch called neither
+            // reverseBookingLedger nor reduceBookingLedgerForPartialRefund, so a
+            // refund raised in the Razorpay dashboard left the pandit's earning
+            // and the temple's share fully withdrawable on money already handed
+            // back — the DI-01/DI-02 defect, reachable through a third door.
+            // Same shared module both rails use; never a fourth copy.
+            if (payment.bookingId && applied.gt(0)) {
+              const reason = `Razorpay ${event} ${refundEntity.id ?? ''}`.trim();
+              webhookUnwindReason = reason;
+              if (isFullRefund) {
+                webhookFullReversal = await reverseBookingLedger(tx, payment.bookingId, reason);
+              } else {
+                webhookPartialReversal = await reduceBookingLedgerForPartialRefund(
+                  tx,
+                  payment.bookingId,
+                  {
+                    refundAmount: applied,
+                    refundableBefore,
+                    reason,
+                  },
+                );
+              }
+            }
+          });
+
+          // OPS-05 — recorded AFTER the transaction commits. This is the branch
+          // for a refund raised directly in the Razorpay dashboard, where the
+          // platform has no other record of who authorised it; without this row
+          // the trail shows a capture followed by an unexplained balance change.
+          void recordMoneyEvent({
+            eventType: MONEY_EVENTS.REFUND_COMPLETED,
+            actorType: 'gateway',
+            subjectType: 'payment',
+            subjectId: payment.id,
+            bookingId: payment.bookingId,
+            paymentId: payment.id,
+            amount: applied,
+            currency: payment.currency,
+            gateway: 'razorpay',
+            gatewayPaymentId: refundEntity.payment_id ?? payment.gatewayPaymentId,
+            gatewayRefundId: refundEntity.id ?? null,
+            statusBefore: payment.status,
+            statusAfter: isFullRefund ? 'refunded' : 'partially_refunded',
+            idempotencyKey: refundEntity.id ?? null,
+            note: `razorpay webhook ${event}`,
+            metadata: {
+              rail: 'razorpay-webhook',
+              refundedTotal: newRefundTotal.toFixed(2),
+              refundableBefore: refundableBefore.toFixed(2),
             },
           });
+
+          // OPS-05 — the ledger unwind this branch performs, recorded through
+          // the SAME shared emitter the admin rail uses. This is the rail with
+          // the least surrounding context of all four: a refund raised straight
+          // in the Razorpay dashboard leaves no request, no admin id and no
+          // reason of ours, so if the claw-back is not recorded here the trail
+          // shows a gateway refund and a provider balance that changed for no
+          // reason anyone can point at. Awaited for the durability probe; never
+          // throws.
+          if (payment.bookingId) {
+            await recordLedgerReversal({
+              bookingId: payment.bookingId,
+              rail: 'razorpay-webhook',
+              reason: webhookUnwindReason || `razorpay webhook ${event}`,
+              // A dashboard refund is Razorpay acting, not our admin panel —
+              // 'gateway' is a different fact from 'admin' and folding the two
+              // together is what makes a refund trail useless in a dispute.
+              actorType: 'gateway',
+              actorId: null,
+              paymentId: payment.id,
+              currency: payment.currency,
+              gatewayRefundId: refundEntity.id ?? null,
+              idempotencyKey: refundEntity.id ?? null,
+              full: webhookFullReversal,
+              partial: webhookPartialReversal,
+            });
+          }
         }
 
         return { handled: true, event };
@@ -1124,10 +1857,34 @@ export class PaymentService {
       default: {
         // Recurring devotional subscriptions (UPI Autopay mandate lifecycle).
         // subscription.* events carry the subscription entity, not a payment.
+        //
+        // PAY-04 (2026-08-21): the MIRROR of the fan-out in
+        // routes/subscriptions.ts. This branch used to drive the recurring
+        // mandate store ONLY, so an owner who subscribed `subscription.*` to
+        // the payments url instead — the runbook's table has two rows and
+        // nothing stops a mistake — silently stopped provisioning every paid
+        // marketplace role plan. Both endpoints now drive both stores; the
+        // shared `razorpay` dedupe namespace makes subscribing both urls safe.
         if (event.startsWith('subscription.')) {
           const subEntity = payload.payload?.subscription?.entity;
-          await handleSubscriptionEvent(event, subEntity);
-          return { handled: true, event };
+          const mandate = await handleSubscriptionEvent(event, subEntity);
+
+          // Dynamic import: keeps subscription.service out of this module's
+          // static graph (payment.service is imported by half the domain) and
+          // is only paid on the rare subscription event, never on a capture.
+          let marketplaceHandled = false;
+          try {
+            const { subscriptionService } = await import('./subscription.service.js');
+            const r = await subscriptionService.handleSubscriptionEvent(event, payload);
+            marketplaceHandled = r.handled;
+          } catch (err) {
+            console.error(
+              '[payment.service][PAY-04] marketplace subscription rail failed',
+              JSON.stringify({ event, subscriptionId: subEntity?.id ?? null }),
+              err,
+            );
+          }
+          return { handled: mandate.handled || marketplaceHandled, event };
         }
         // Unhandled event type — acknowledge but don't process
         return { handled: false, event };
@@ -1282,6 +2039,13 @@ export class PaymentService {
     const newRefundTotal = alreadyRefunded.plus(refundAmount);
     const newPaymentStatus = isFullRefund ? 'refunded' : 'partially_refunded';
 
+    // OPS-05: the unwind's OWN result, captured out of the transaction so the
+    // COMMISSION_REVERSED row can be written after it commits. Declared here
+    // rather than returned from the `$transaction` callback because the two
+    // branches produce two different shapes and only one of them runs.
+    let fullReversal: LedgerReversalResult | null = null;
+    let partialReversal: PartialLedgerResult | null = null;
+
     // 4. Persist. Razorpay has already debited us; if the Payment write lands
     //    and the PujaBooking write does not, the devotee is refunded while the
     //    booking still looks live. Commit them together (refund.service does
@@ -1295,6 +2059,10 @@ export class PaymentService {
           metadata: {
             ...((payment.metadata as Record<string, unknown>) ?? {}),
             refundId: refund.id,
+            // PAY-03: every Razorpay refund id applied to this capture, so the
+            // refund webhook recognises the one this rail just created and does
+            // not accumulate it a second time.
+            refundIds: appendRefundId(payment.metadata, refund.id),
             refundedBy: adminId ?? 'system',
             refundedAt: new Date().toISOString(),
             refundAmountInr: refundAmount.toFixed(2),
@@ -1324,7 +2092,7 @@ export class PaymentService {
         // silently. refund.service has reversed correctly since RV-02; this
         // rail was simply never backported, so the two now share one
         // implementation instead of two copies that can drift again.
-        await reverseBookingLedger(tx, bookingId, reason);
+        fullReversal = await reverseBookingLedger(tx, bookingId, reason);
       } else {
         await tx.pujaBooking.update({
           where: { id: bookingId },
@@ -1352,12 +2120,72 @@ export class PaymentService {
         // `refundable` is what was still refundable BEFORE this call
         // (paid - alreadyRefunded), which is what makes successive partials
         // compose to the same ledger as one combined refund.
-        await reduceBookingLedgerForPartialRefund(tx, bookingId, {
+        partialReversal = await reduceBookingLedgerForPartialRefund(tx, bookingId, {
           refundAmount,
           refundableBefore: refundable,
           reason,
         });
       }
+    });
+
+    // OPS-05 — the admin refund rail, recorded AFTER the transaction commits.
+    // This is THE row the finding was written for: "who initiated the refund,
+    // and when, and on whose authority" was previously only `metadata.refundedBy`,
+    // which the next refund on the same capture overwrites. `statusBefore` is
+    // the pre-image read at the top of this method.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.REFUND_COMPLETED,
+      actorType: adminId ? 'admin' : 'system',
+      actorId: adminId ?? null,
+      subjectType: 'payment',
+      subjectId: payment.id,
+      bookingId: booking.id,
+      paymentId: payment.id,
+      amount: refundAmount,
+      currency: payment.currency,
+      gateway: 'razorpay',
+      gatewayPaymentId: payment.gatewayPaymentId,
+      gatewayRefundId: refund.id,
+      statusBefore: payment.status,
+      statusAfter: newPaymentStatus,
+      idempotencyKey: refund.id,
+      note: reason,
+      metadata: {
+        rail: 'admin',
+        tierLabel: tierLabel ?? null,
+        refundFraction: refundFraction ?? null,
+        refundedTotal: newRefundTotal.toFixed(2),
+        fullyRefunded: isFullRefund,
+      },
+    });
+
+    // OPS-05 — and the SECOND half of the same story. REFUND_COMPLETED above
+    // says the devotee got money back; it says nothing about whether the
+    // pandit's 80% and the temple's share were clawed back with it. Those are
+    // separate facts and the second one is the disputable one: booking
+    // BS-20260812-J3M76 was refunded ₹1,151 on this rail and a ₹770 payout was
+    // still raised against it. `recordLedgerReversal` is the shared emitter in
+    // ledger-reversal.service.ts — it skips when nothing moved, and it records
+    // even when the unwind was BLOCKED by an already-settled row, which is the
+    // double-pay case and the one that must never be silent.
+    //
+    // Awaited, not `void`ed: the emitter's full path re-reads committed rows to
+    // prove the reversal survived, so it must not race the response. It never
+    // throws (same contract as `recordMoneyEvent`).
+    await recordLedgerReversal({
+      bookingId: booking.id,
+      rail: 'admin',
+      reason,
+      actorType: adminId ? 'admin' : 'system',
+      actorId: adminId ?? null,
+      paymentId: payment.id,
+      currency: payment.currency,
+      gatewayRefundId: refund.id,
+      // Bare natural key — the emitter namespaces it by event type, so sharing
+      // the refund id with REFUND_COMPLETED above yields two rows, not one.
+      idempotencyKey: refund.id,
+      full: fullReversal,
+      partial: partialReversal,
     });
 
     // NOTIF-04 (2026-08-12): TELL THE DEVOTEE. This rail was 100% silent.
@@ -1471,11 +2299,25 @@ export class PaymentService {
     // revenue.
     //
     // The unified rail wins where it exists — it is the documented direction
-    // and the only one that pays every role. Rail B stays for the bookings
-    // rail A structurally cannot reach: a Commission is only minted when a
-    // priest is already on the booking at `confirmed`, so temple-path and
-    // dispatch-assigned (T1-T3) bookings never get one and would otherwise be
-    // paid by nothing at all.
+    // and the only one that pays every role.
+    //
+    // UPDATED 2026-08-19 (DI-05). The paragraph that used to sit here said rail
+    // B stays "for the bookings rail A structurally cannot reach: a Commission
+    // is only minted when a priest is already on the booking at `confirmed`, so
+    // temple-path and dispatch-assigned (T1-T3) bookings never get one." That is
+    // NO LONGER TRUE and had become the most misleading comment in the payout
+    // code: booking.service re-mints on EARNING_ATTACH_STATUSES, and
+    // services/provider-earning-mint.ts now also mints on the two assignment
+    // paths that bypass it (dispatch.service.accept and
+    // priest.service.acceptBooking). Temple-path and dispatch-assigned bookings
+    // DO get a Commission now — which is exactly why this guard fires for them.
+    //
+    // Rail B is therefore a LEGACY rail carrying rows written before those
+    // mints existed, not a structural complement to rail A. And the exclusion is
+    // SYMMETRIC now: this guard refuses to write a sidecar row when a live
+    // Commission exists, and the mint refuses to write a Commission when a
+    // PriestPayout exists. It used to be one-way, so a booking already on rail B
+    // minted onto rail A at its next status move and was payable twice.
     const unifiedLedgerRow = await prisma.commission.findFirst({
       // A REVERSED row is a void earning that no provider owns any more — it
       // exists only as an audit record (a reschedule detaches the pandit and
@@ -1487,6 +2329,31 @@ export class PaymentService {
       select: { id: true },
     });
     if (unifiedLedgerRow) {
+      // OPS-05 — record the SKIP, not just the write. This branch is the guard
+      // WORKING, and it is the fact a "why was this pandit never paid on rail
+      // B" question turns on. Without a row here the trail is silent, and
+      // silence is indistinguishable from the call never having been made.
+      void recordMoneyEvent({
+        eventType: MONEY_EVENTS.PAYOUT_REJECTED,
+        actorType: 'system',
+        subjectType: 'booking',
+        subjectId: bookingId,
+        bookingId,
+        commissionId: unifiedLedgerRow.id,
+        amount: booking.priestPayout,
+        currency: booking.currency,
+        statusAfter: 'skipped',
+        // No payout row exists to key on, and the decision is once-per-booking.
+        idempotencyKey: bookingId,
+        note: 'legacy PriestPayout rail refused — the unified rail (Commission) owns this booking',
+        metadata: {
+          rail: 'legacy-priest-payout',
+          outcome: 'commission-ledger-owns-this-booking',
+          bookingStatus: booking.status,
+          priestId: booking.priestId,
+        },
+      });
+
       return {
         skipped: true as const,
         reason: 'commission-ledger-owns-this-booking' as const,
@@ -1509,6 +2376,36 @@ export class PaymentService {
         booking: {
           select: { bookingNumber: true },
         },
+      },
+    });
+
+    // OPS-05 — rail B had no audit trail at all. `PRIEST_PAYOUT_CREATED` was a
+    // declared event with no call site anywhere in the repo, so the moment a
+    // booking landed on the LEGACY rail went unrecorded while the unified
+    // rail's reversal was logged. Recorded AFTER the row lands, and `void`ed:
+    // this is the last statement before the return and no money outcome may
+    // depend on the log. Rupees, not paise — `priestPayout` is DECIMAL(10,2).
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PRIEST_PAYOUT_CREATED,
+      actorType: 'system',
+      subjectType: 'payout',
+      subjectId: payout.id,
+      bookingId,
+      payoutId: payout.id,
+      amount: booking.priestPayout,
+      currency: booking.currency,
+      // There is no prior payout — the guard above throws when one exists — so
+      // the pre-image is the absence of a row, not a status.
+      statusBefore: null,
+      statusAfter: 'pending',
+      idempotencyKey: payout.id,
+      note: 'legacy PriestPayout rail (rail B) minted',
+      metadata: {
+        rail: 'legacy-priest-payout',
+        payoutMethod: 'bank_transfer',
+        bookingStatus: booking.status,
+        bookingNumber: booking.bookingNumber,
+        priestId: booking.priestId,
       },
     });
 

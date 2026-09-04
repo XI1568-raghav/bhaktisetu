@@ -59,7 +59,7 @@ A: Currently ₹50K/mo solo founder, no team. Post pre-seed scaling to ₹2L/mo 
 ## Category 4 — Tech (20 Qs)
 
 **Q56: What's the stack?**
-A: Next.js 15 + Fastify 5 + Prisma + Postgres on Supabase. Hosted on Cloudflare Pages (web) and Render (API). Expo 50 mobile.
+A: Next.js 15 + Fastify 5 + Prisma + Postgres on Supabase. Both web and API are hosted on Render (`render.yaml`), with Cloudflare providing DNS + edge proxy only. Expo 50 mobile. *(Corrected 2026-09-02, `OPS-10` — this answer used to say the web tier was hosted on Cloudflare Pages. It has not been since 2026-07-08, and this is a public-facing answer.)*
 
 **Q57: Why so many agents?**
 A: 28 daily AI agents handle SEO scraping + content drafting + competitor monitoring + uptime checks + lighthouse reports + investor digest. Solo founder × agent fleet = 10x leverage on $0 budget.

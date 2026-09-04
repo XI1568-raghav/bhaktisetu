@@ -34,6 +34,8 @@ import { gaushalaPortalRoutes } from './routes/gaushala-portal.js';
 import { gaushalaCowsRoutes } from './routes/gaushala-cows.js';
 import { gaushalaVolunteersRoutes } from './routes/gaushala-volunteers.js';
 import { userRoutes } from './routes/users.js';
+// LC-DEL: in-app account deletion (Apple 5.1.1(v) + Google Play).
+import { accountRoutes } from './routes/account.js';
 import { readingProgressRoutes } from './routes/reading-progress.js';
 import { digestRoutes } from './routes/digest.js';
 import { recurringRoutes } from './routes/recurring.js';
@@ -65,6 +67,8 @@ import { mediaRoutes } from './routes/media.js';
 import { whatsappOtpRoutes } from './routes/whatsapp-otp.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { healthChannelRoutes } from './routes/health-channels.js';
+import { reportChannelReadinessAtBoot } from './lib/notification-channels.js';
+import { healthRoutes } from './routes/health.js';
 import { semanticSearchRoutes } from './routes/semantic-search.js';
 import { cronRoutes } from './routes/cron.js';
 import { adminCronRoutes } from './routes/admin-cron.js';
@@ -115,7 +119,7 @@ import { prisma } from './lib/prisma.js';
 import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-prisma.js';
 import { isJobQueueAvailable } from './services/job-queue.service.js';
 import { isJobQueueConfigured } from './lib/env.js';
-import { redactError } from './lib/error-redaction.js';
+import { errorLocalizationPlugin } from './plugins/error-localization.js';
 
 const server = Fastify({
   logger: {
@@ -150,13 +154,32 @@ async function bootstrap() {
   // Both halves are locked by src/lib/error-redaction.test.ts.
   //
   // Do not move this below the registers again.
+  //
+  // I-04 / I18N-03 (2026-08-16). The handler that used to be written inline
+  // here now lives in plugins/error-localization.ts, which does the same
+  // redaction (lib/error-redaction.ts is unchanged and still decides what a
+  // client may see) and then writes the message in the caller's language.
+  //
+  // The inline version was the reason localization was dead in production. A
+  // previous pass authored a 30-code × 5-language catalogue, a resolver and a
+  // green suite, but nothing reached a real route: probing api.darshya.online
+  // with `Accept-Language: hi` still returned
+  //   GET  /api/v1/temples/__no_such__  -> {"error":"Temple not found"}
+  //   POST /api/v1/auth/login  body {}  -> {"error":"ValidationError","message":"Required"}
+  // Localizing at each call site cannot work — routes `return reply.send(...)`
+  // rather than throw, in ~90 files, 719 hand-built error bodies. The plugin's
+  // onSend hook is what covers those; both probes are pinned by
+  // plugins/error-localization.probes.test.ts against the real route files.
+  //
+  // Two constraints, both load-bearing:
+  //  - It stays ABOVE every `server.register(routes, { prefix })`, for the same
+  //    AW-08 reason the inline handler did.
+  //  - It is CALLED, not `server.register`-ed: registering would encapsulate
+  //    the handler and the hook in a child no sibling route can see.
   const isProdEnv = process.env.NODE_ENV === 'production';
-  server.setErrorHandler((err, _req, reply) => {
-    server.log.error(err);
-    captureException(err);
-    if (reply.sent) return;
-    const body = redactError(err as unknown as Record<string, unknown>, { isProd: isProdEnv });
-    void reply.code(body.statusCode).send({ error: body.error, message: body.message });
+  await errorLocalizationPlugin(server, {
+    isProd: isProdEnv,
+    onError: captureException,
   });
 
   // Security plugins
@@ -261,16 +284,21 @@ async function bootstrap() {
 
   // Health + readiness probes (excluded from rate-limit allowList above).
   //
-  // /health = LIVENESS — intentionally cheap + static. Load balancers (Render
-  // healthCheckPath) hit this on every tick, so it must never false-negative
-  // under DB/Redis pressure. Returns 200 as long as the process is alive.
+  // OPS-04 — /health used to be a static `{status:'ok'}` literal: a 200 for as
+  // long as the Node process had a heartbeat, with the database unreachable.
+  // `render.yaml` sets `healthCheckPath: /health` and every uptime monitor
+  // points at the same URL, so the one probe that decides whether this service
+  // is alive could never go red. It now performs a real `SELECT 1` — cached per
+  // 5s window, bounded by a 2s timeout, and only `degraded` (503) after three
+  // consecutive failures so a two-second blip cannot trigger a Render restart
+  // loop (the start command re-runs `prisma migrate deploy`). See routes/health.ts.
   //
   // NOTE on the "second /health": cron.ts:92 also declares `server.get('/health')`,
   // but that route is registered under the `/api/v1/cron` prefix (see
   // server.register(cronRoutes, { prefix: '/api/v1/cron' }) below), so it
   // resolves to /api/v1/cron/health — NOT a root-level duplicate of this /health.
   // Only ONE root /health exists. No removal needed.
-  server.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+  await server.register(healthRoutes);
 
   // NOTIF-01: the scheduler was dead for the entire life of the product and
   // nothing surfaced that. Age of the last completed tick is the signal — a
@@ -377,6 +405,7 @@ async function bootstrap() {
   // API v1 routes
   await server.register(authRoutes, { prefix: '/api/v1/auth' });
   await server.register(userRoutes, { prefix: '/api/v1/users' });
+  await server.register(accountRoutes, { prefix: '/api/v1/account' });
   await server.register(readingProgressRoutes, { prefix: '/api/v1/me/reading-progress' });
   await server.register(digestRoutes, { prefix: '/api/v1/digest' });
   await server.register(recurringRoutes, { prefix: '/api/v1/recurring' });
@@ -485,6 +514,19 @@ async function bootstrap() {
     // stop the API from serving. See jobs/scheduler.ts for why this is
     // in-process rather than a GitHub Actions schedule.
     startOpsScheduler(server.log);
+    // NOTIF-03, third clause: say out loud, once per boot, which outbound
+    // channels are dark. An operator should not have to curl an endpoint to
+    // discover that email and web push are both off. A WARN line (plus a Sentry
+    // alert in prod when email AND web push are both unconfigured) rather than
+    // a boot failure: the channels actually dark in production are whatsapp and
+    // fcm, and refusing to boot over those would take bookings, payments and
+    // darshan offline for two channels the core flow does not depend on.
+    // (An earlier draft of this comment claimed all four were dark. Measured
+    // against live prod 2026-09-03: email and webPush are configured — email
+    // was configured and failing 48/48, which is why the status surface now
+    // reports a failure RATE rather than only a quota refusal.)
+    // Logs channel and env var NAMES only — never a value.
+    reportChannelReadinessAtBoot(server.log);
   } catch (err) {
     server.log.error(err);
     captureException(err);

@@ -14,6 +14,8 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 import { FLAGSHIP_CENTERS, VIPASSANA_CENTERS } from '../../../lib/vipassana-centers';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/vipassana' },
  title: 'Vipassana — 10-Day Silent Meditation Retreats',
@@ -97,22 +99,20 @@ export default function VipassanaPage() {
 
  <h1
  data-reveal="up-far"
- className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]"
- style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+ className={H1.catalogue}
  >
  Vipassana:{' '}
  <span style={{ color: 'var(--color-primary)' }}>The Art of Living</span>
  </h1>
 
- <p data-reveal="up" data-delay="1" className="mt-5 text-sm leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="mt-5 prose-body leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
  A 2,500-year-old technique of self-observation that leads to the total purification of the mind. Rediscover the deepest levels of your consciousness through 10 days of noble silence.
  </p>
 
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <Link
  href="/wellness/vipassana/centers"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Find a Center <Globe2 className="w-4 h-4" />
  </Link>
@@ -174,7 +174,7 @@ export default function VipassanaPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Where to sit your first course
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
  Six of the most established centers in the Goenka tradition. Course applications go directly to each center via dhamma.org — Darshya is a discovery resource, not a booking middleman. {VIPASSANA_CENTERS.length} centers in the full directory.
  </p>
 
@@ -217,8 +217,7 @@ export default function VipassanaPage() {
  href={c.bookingUrl}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Apply on dhamma.org <ArrowRight className="w-3 h-3" />
  </a>
@@ -324,14 +323,13 @@ export default function VipassanaPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Ready to take the 10-day journey?
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
  Pick a center from our directory and apply directly with them. Or read the complete preparation guide before deciding.
  </p>
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
  <Link
  href="/wellness/vipassana/centers"
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Find a Center <ArrowRight className="w-4 h-4" />
  </Link>

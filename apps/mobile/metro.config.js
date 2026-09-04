@@ -32,6 +32,14 @@ config.resolver.nodeModulesPaths = [
 // 3. Don't crawl into other apps/* directories — Metro otherwise tries
 //    to bundle apps/web's React 19 alongside apps/mobile's React 18 and
 //    spits out duplicate-module errors.
+// 3b. Honour the `exports` field in package.json. Metro on SDK 52 ships with
+//     this OFF, so an exports-only package resolves via `main` — and for
+//     `uuid@14` (a transitive dep of expo-notifications) `main` is undefined,
+//     which failed the Android bundle at 1672 modules with
+//     "specifies a `main` module field that could not be resolved".
+//     Expo SDK 53 turns this on by default, so this is forward-compatible.
+config.resolver.unstable_enablePackageExports = true;
+
 config.resolver.blockList = [
   /apps\/web\/.*/,
   /apps\/api\/.*/,

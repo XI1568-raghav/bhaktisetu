@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { CANCELLATION_POLICY_SENTENCE } from "../../lib/cancellation-policy";
 import { COMPANY, operatedByLine, postalContactLine, legalContactEmail } from "../../lib/company";
+import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_80G } from '../../lib/eighty-g';
 
 export const metadata: Metadata = {
  title: "Terms of Service",
@@ -33,12 +35,7 @@ export default function TermsPage() {
  Legal
  </p>
  <h1
- className="text-2xl sm:text-3xl font-bold mb-3"
- style={{
- fontFamily: "var(--font-display)",
- color: "var(--color-text)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.catalogue} mb-3`}
  >
  Terms of Service
  </h1>
@@ -205,9 +202,11 @@ export default function TermsPage() {
  provider&apos;s 80%.
  </li>
  <li>
- Donations carry <strong>0% commission</strong>. Where the donee is
- eligible, the 80G receipt is issued free of charge &mdash; there is
- no per-receipt fee.
+ Donations carry <strong>0% commission</strong>. Every donation
+ receipt is issued free of charge &mdash; there is no per-receipt
+ fee.{' '}
+ {!HAS_80G &&
+  'That receipt is proof of payment and not a Section 80G tax-exemption certificate: Darshya holds no 80G registration, so no donation made today is claimable as an 80G deduction.'}
  </li>
  <li>
  Priest, astrologer, and provider payouts are processed

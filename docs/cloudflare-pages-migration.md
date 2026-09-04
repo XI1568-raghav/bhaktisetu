@@ -91,6 +91,19 @@ Required secrets (already configured, unchanged):
 
 ## Rollback plan
 
+> **SUPERSEDED 2026-07-08, marked 2026-09-01 (OPS-06). DO NOT FOLLOW.**
+> Every option below rolls back a **Cloudflare Pages** deployment. Cloudflare
+> Pages is no longer the web host: `darshya.online` moved to Render on
+> 2026-07-08 and the Pages project's auto-deploy was killed
+> (`cf-kill-zombie.yml`). Cloudflare is now DNS and edge proxy only. "Push any
+> commit to trigger redeploy" therefore deploys nothing at all — and both
+> Render services are additionally `autoDeploy: false` (`render.yaml:28`, `:60`).
+>
+> The live rollback procedure is `docs/runbooks/prod-rollback.md`:
+> `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>`.
+>
+> Kept below as a record of the 2026-05 migration, not as an instruction.
+
 If the new `darshya` project has a critical regression within 7 days of cutover:
 
 **Option A — Re-point GitHub Actions back to legacy (fastest, ~2 min):**

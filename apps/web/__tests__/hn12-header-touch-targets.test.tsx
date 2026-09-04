@@ -72,8 +72,13 @@ describe('HN-12 — mobile header controls reach a 44px hit area', () => {
 
   it('the collapsed search trigger', () => {
     const src = codeOf('components/GlobalSearch.tsx');
-    // The xl:hidden icon-only trigger — the one a phone actually gets.
-    const collapsed = src.match(/className="xl:hidden[^"]*"/);
+    // The icon-only trigger — the one a phone actually gets. Matched
+    // breakpoint-agnostically ON PURPOSE: this test is about the 44px floor,
+    // not about which breakpoint collapses the field. Pinning the literal
+    // `xl:hidden` made it fail when the collapse moved to 2xl, which is a
+    // locator breaking rather than the guarantee breaking. The assertions
+    // below are untouched.
+    const collapsed = src.match(/className="(?:2?xl):hidden[^"]*"/);
     expect(collapsed, 'collapsed search trigger not found').toBeTruthy();
     expect(collapsed![0]).toMatch(MIN_TOUCH);
     expect(collapsed![0]).toMatch(MIN_TOUCH_W);

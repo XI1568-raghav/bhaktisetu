@@ -160,9 +160,15 @@ function AdminUsersPageContent() {
    };
  }, [token, reloadKey]);
 
- // Filtering runs over the COMPLETE directory, never over one API page, and
- // never through `?role=` — admin.service applies that filter after paginating,
- // so the server would answer "the pandits that happen to be on page 1".
+ // Filtering runs over the COMPLETE directory (users-api walks every page and
+ // reports `complete: false` if it had to stop), never over one API page.
+ //
+ // It is NOT delegated to `?role=` / `?status=`, and the reason changed on
+ // 2026-08-24: both server filters are correct now (SCAL-09/SCAL-04 for role,
+ // LC-11 for status). What keeps this local is `pending` — a status the server
+ // has no column for, since it means "a provider profile is unapproved" and
+ // comes from /admin/pending-approvals. Delegating status would silently drop
+ // that option from the dropdown below. See users-api.ts's module header.
  const filtered = useMemo(() => {
  return users.filter((u) => {
  const matchSearch = search === '' || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());

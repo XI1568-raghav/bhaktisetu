@@ -183,32 +183,97 @@ export async function createRecurringSubscription(opts: {
 }
 
 /**
- * Razorpay subscription webhook lifecycle. Called from the payment webhook
- * dispatcher. Idempotent — each transition only fires on a status change.
+ * Razorpay subscription webhook lifecycle — the ONLY writer of
+ * `recurring_subscriptions.status`.
+ *
+ * PAY-04 (2026-08-21, P0/money): this function is reached from BOTH webhook
+ * endpoints now. It used to hang exclusively off the DEFAULT branch of the
+ * PAYMENTS webhook dispatcher while the runbook subscribes `subscription.*` to
+ * `/api/v1/subscriptions/webhook`, so in the shipped configuration nothing ever
+ * called it: every UPI Autopay mandate a devotee authorised stayed `pending`
+ * for its entire life while Razorpay debited them every cycle. See the fan-out
+ * in routes/subscriptions.ts and the default branch of
+ * payment.service.processWebhookEvent.
+ *
+ * Three properties this rail must have, because it now runs on a path shared
+ * with the marketplace subscription rail:
+ *
+ *   1. It CREATES ITS OWN TABLE. `recurring_subscriptions` is a lazily-migrated
+ *      store — only `createRecurringSubscription` / `listMyRecurring` ever
+ *      guaranteed it existed. A mandate event arriving before any recurring
+ *      subscription had been created on that database hit a missing relation.
+ *   2. It NEVER THROWS. A raw-SQL failure here used to propagate out of the
+ *      payment dispatcher and abandon the rest of the event — including the
+ *      marketplace subscription that shares the delivery.
+ *   3. It reports what it did, so the route can log a mandate that matched no
+ *      local row (a mandate opened outside our own create flow).
+ *
+ * Idempotent: re-delivering the same event rewrites the same status.
  */
+export interface RecurringEventResult {
+  /** true when the event is one we map AND the write was attempted. */
+  handled: boolean;
+  /** The status we wrote, when we wrote one. */
+  status?: string;
+  /** Rows matched by razorpay_subscription_id. 0 = not one of ours. */
+  updated?: number;
+  reason?: string;
+}
+
+/**
+ * Razorpay subscription event → the status we record for the mandate.
+ *
+ * EXPORTED because docs/razorpay-live-activation.md must tell the owner to
+ * subscribe every one of these in the Razorpay dashboard, and an event that is
+ * handled here but missing from that table is indistinguishable from a broken
+ * feature (PAY-04/PAY-05 were both exactly that). The runbook guard test
+ * asserts the table names every key here, so adding a case below fails CI until
+ * the runbook is updated too.
+ */
+export const RECURRING_SUBSCRIPTION_EVENT_STATUS: Readonly<Record<string, string>> = {
+  'subscription.authenticated': 'active', // devotee finished authorising the mandate
+  'subscription.activated': 'active',
+  'subscription.charged': 'active',
+  'subscription.resumed': 'active',
+  'subscription.pending': 'pending', // RBI ≥24h pre-debit notification window
+  'subscription.halted': 'halted',   // dunning — payment failed, retry window
+  'subscription.paused': 'paused',
+  'subscription.cancelled': 'cancelled',
+  'subscription.completed': 'completed', // total_count exhausted, ended cleanly
+  'subscription.expired': 'expired',
+};
+
 export async function handleSubscriptionEvent(
   event: string,
   entity: { id?: string; notes?: Record<string, string> } | undefined,
-): Promise<void> {
+): Promise<RecurringEventResult> {
   const subId = entity?.id;
-  if (!subId) return;
-  const map: Record<string, string> = {
-    'subscription.authenticated': 'active',
-    'subscription.activated': 'active',
-    'subscription.charged': 'active',
-    'subscription.pending': 'pending', // RBI ≥24h pre-debit notification window
-    'subscription.halted': 'halted',   // dunning — payment failed, retry window
-    'subscription.paused': 'paused',
-    'subscription.cancelled': 'cancelled',
-    'subscription.expired': 'expired',
-  };
-  const status = map[event];
-  if (!status) return;
-  await prisma.$executeRawUnsafe(
-    `UPDATE recurring_subscriptions SET status = $1, updated_at = NOW() WHERE razorpay_subscription_id = $2`,
-    status,
-    subId,
-  );
+  if (!subId) return { handled: false, reason: 'no subscription id in payload' };
+  const status = RECURRING_SUBSCRIPTION_EVENT_STATUS[event];
+  if (!status) return { handled: false, reason: `unmapped event ${event}` };
+  try {
+    await ensureRecurringTable();
+    const updated = Number(
+      await prisma.$executeRawUnsafe(
+        `UPDATE recurring_subscriptions SET status = $1, updated_at = NOW() WHERE razorpay_subscription_id = $2`,
+        status,
+        subId,
+      ),
+    );
+    return {
+      handled: true,
+      status,
+      updated: Number.isFinite(updated) ? updated : 0,
+    };
+  } catch (err) {
+    // Fail soft: the marketplace rail shares this delivery and must still run.
+    console.error(
+      '[recurring.service][PAY-04] recurring mandate status write failed',
+      JSON.stringify({ event, subId, status }),
+      err,
+    );
+    return { handled: false, status, reason: 'recurring store write failed' };
+  }
 }
 
 /** List a user's recurring subscriptions. */

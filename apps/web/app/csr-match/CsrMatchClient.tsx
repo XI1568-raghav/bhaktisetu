@@ -14,6 +14,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { csrCredentialLine, COMPANY } from '../../lib/company';
+import { H1 } from '../../components/ui/heading-recipe';
 
 function formatINR(n: number): string {
   return new Intl.NumberFormat('en-IN').format(Math.max(0, Math.round(n)));
@@ -71,15 +72,15 @@ export default function CsrMatchClient() {
       {/* Hero */}
       <section className="px-6 py-16 max-w-5xl mx-auto text-center">
         <p className="text-xs uppercase tracking-wider text-saffron-700 mb-4">CSR Schedule VII · Item III</p>
-        <h1 className="text-4xl md:text-5xl font-bold mb-6">
+        <h1 className={`${H1.marketing} mb-6`}>
           Your employees pledge. We <span className="text-saffron-700">2x Match</span> via corporate CSR.
         </h1>
-        <p className="text-lg text-surface-700 max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 max-w-2xl mx-auto">
           Adopt-a-temple subscriptions. Every ₹1 your employees contribute, {COMPANY.brand} matches ₹2 from your CSR budget.
           Live transparency dashboard. Diwali-aligned launch.
         </p>
         <p
-          className="mt-6 max-w-2xl mx-auto text-sm text-surface-700 bg-white border border-saffron-200 rounded-lg px-4 py-3 text-left"
+          className="mt-6 max-w-2xl mx-auto prose-meta text-surface-700 bg-white border border-saffron-200 rounded-lg px-4 py-3 text-left"
           data-testid="csr-credential-line"
         >
           {csrCredentialLine()}

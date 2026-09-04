@@ -1,8 +1,28 @@
 name: Agent fleet - health smoke (12h)
 
-# Hits prod twice daily with full role smoke. Writes timestamped report.
-# Free tier: ~3 min/run × 2/day × 30 = 180 min/month (was 360 at 6h).
-# See docs/free-tier-budgets.md.
+# Hits prod twice daily with the full role smoke, commits a timestamped digest,
+# and GOES RED when production is not answering.
+#
+# OPS-01 — until 2026-08-20 this workflow could not fail. `health-smoke.mjs`
+# ended with an unconditional `process.exit(0)`, so when Render suspended both
+# free services on 2026-08-17 (account-wide 750 instance-hour cap) and
+# darshya.online + api.darshya.online served 503 for three days, every one of
+# these runs reported a green tick. The digest artifact was the stated reason
+# for swallowing the exit code; the artifact is kept — the digest is written
+# before the exit code is applied and the commit step below is `if: always()` —
+# and the run now fails. Same correction shape as `db-backup.yml` (2026-08-20).
+#
+# OPS-09 — every production monitor in this repo runs on GitHub Actions, so one
+# quota exhaustion blinds all of them at once, and nothing outside GitHub would
+# notice. The heartbeat step below is the dead-man's switch: an external
+# healthchecks.io check that alarms on the ABSENCE of a ping is the only monitor
+# that survives the monitors themselves going away. It is owner-gated on the
+# `HEALTH_HEARTBEAT_URL` secret, and when that secret is unset the job summary
+# says so on every run rather than staying quietly unarmed.
+#
+# Free tier: ~3 min/run × 2/day × 30 = 180 min/month (was 360 at 6h). The steps
+# added on 2026-08-20 (heartbeat ping, issue filing) are seconds and do not move
+# that number. See docs/free-tier-budgets.md.
 
 on:
   schedule:
@@ -15,6 +35,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -22,13 +43,20 @@ jobs:
         with:
           node-version: '20'
 
+      # Fails the job when the smoke found production down. The digest is
+      # written inside the script BEFORE the exit code is applied, so the
+      # artifact exists no matter how this step ends.
       - name: Run health smoke
+        id: smoke
         env:
           API_BASE: ${{ secrets.API_BASE_URL || 'https://api.darshya.online' }}
           WEB_BASE: ${{ secrets.WEB_BASE_URL || 'https://darshya.online' }}
         run: node scripts/agents/health-smoke.mjs
 
+      # always() — the history was the whole point of the old swallow, so a red
+      # run must still commit its digest.
       - name: Commit report
+        if: always()
         run: |
           git config user.name "darshya-agent-bot"
           git config user.email "agents@darshya.online"
@@ -40,3 +68,79 @@ jobs:
             git commit -m "chore(agents): health smoke $(date -u +%Y-%m-%dT%H)"
             git push
           fi
+
+      # OPS-09 dead-man's switch. healthchecks.io free tier: a check that expects
+      # a ping every 12h and emails when one does not arrive. That is the only
+      # signal that survives GitHub Actions itself being unavailable — quota
+      # exhaustion, a billing block, or an Actions outage all look identical from
+      # inside a workflow that never runs.
+      - name: External heartbeat (dead-man's switch)
+        if: always()
+        env:
+          HEARTBEAT_URL: ${{ secrets.HEALTH_HEARTBEAT_URL }}
+          OUTCOME: ${{ steps.smoke.outcome }}
+        run: |
+          set -uo pipefail
+          if [ -z "${HEARTBEAT_URL:-}" ]; then
+            {
+              echo "### ⚠ No external dead-man's switch is armed"
+              echo ""
+              echo "\`HEALTH_HEARTBEAT_URL\` is unset, so **every** production monitor in this"
+              echo "repository depends on GitHub Actions running at all. A quota exhaustion or"
+              echo "billing block silences all of them simultaneously and nothing outside"
+              echo "GitHub would report it (OPS-09)."
+              echo ""
+              echo "Owner action: create a free healthchecks.io check with a 12-hour period"
+              echo "and a 1-hour grace, then set its ping URL as the \`HEALTH_HEARTBEAT_URL\`"
+              echo "Actions secret."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "No HEALTH_HEARTBEAT_URL configured; skipping heartbeat."
+            exit 0
+          fi
+          if [ "${OUTCOME}" = "success" ]; then
+            curl -fsS -m 15 -o /dev/null "${HEARTBEAT_URL}" || echo "heartbeat ping failed (non-fatal)"
+          else
+            curl -fsS -m 15 -o /dev/null "${HEARTBEAT_URL}/fail" || echo "heartbeat fail-ping failed (non-fatal)"
+          fi
+
+      # A red tick that nobody is subscribed to is the same silence in a
+      # different colour. One deduped issue per outage, matching the shape used
+      # by render-hours-guard.yml.
+      - name: Open an issue when production is down
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Health smoke is failing — production is not answering';
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'health-smoke-red',
+            });
+            if (open.length) {
+              core.info(`Issue #${open[0].number} already open; not filing a duplicate.`);
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title,
+              labels: ['health-smoke-red'],
+              body: [
+                'The twice-daily role smoke ended non-zero, which means one or more',
+                'production endpoints did not answer as expected.',
+                '',
+                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                '',
+                'The digest for this run was still committed to `docs/agent-reports/`',
+                '(the commit step is `if: always()`); it lists the failing endpoints.',
+                '',
+                '## First things to check',
+                '1. Is either Render service suspended? `render-hours-guard.yml` answers this,',
+                '   and the free tier gives **750 instance-hours per account per month** — two',
+                '   always-on services need ~1,488 and exhaust it every month.',
+                '2. Is the database reachable? `GET /health` performs a real `SELECT 1` and',
+                '   `GET /ready` reports the DB, Redis and queue individually.',
+                '3. Is the scheduler alive? `GET /ops/scheduler` answers 503 when stale.',
+                '',
+                'Rollback and redeploy procedure: `docs/runbooks/prod-rollback.md`.',
+              ].join('\n'),
+            });

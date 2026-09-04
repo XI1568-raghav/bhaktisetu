@@ -12,7 +12,7 @@ DPDP Act 2023 (Digital Personal Data Protection Act, India, in force 2024) compl
 4. DSAR (Data Subject Access Request) flow + 30-day SLA
 5. Grievance officer + redressal mechanism
 6. Children's consent (Section 9) `[LAWYER-CONFIRM]` — verifiable parental consent for users <18 (Darshya enforces 18+ signup gate but birth-chart kundli inputs may surface child DOBs; counsel must confirm interaction between 18+ product gate and DPDP child<18 definition, esp. for gift-puja flows naming minor recipients)
-7. Cross-border data transfer notice (Render/Supabase/CF Pages all outside India)
+7. Cross-border data transfer notice — Render (region `oregon`, US West, `render.yaml:15` API / `:56` web) and Supabase (region **not recorded anywhere in this repository** — `[verify]` in the dashboard; do not assume Mumbai) are both outside India. *Corrected 2026-09-02 (`OPS-10`): this line used to read "(Render/Supabase/CF Pages all outside India)". Cloudflare Pages has not served the web tier since the 2026-07-08 cutover and is not a hosting processor for it; Cloudflare is DNS + edge proxy only. The authoritative processor and transfer inventory is `docs/legal/records-of-processing-activities.md`.*
 8. Breach notification 72hr SLA (Section 8(6), operationalized by Rule 7 of DPDP Rules 2025)
 9. Data retention + purpose limitation per category
 

@@ -1,0 +1,219 @@
+name: Render hours guard
+
+# Render's free tier grants 750 INSTANCE-HOURS PER ACCOUNT per month — not per
+# service. Two always-on web services need ~1,488 hours in a 31-day month, so
+# they cannot both stay up. On 2026-08-17 the account hit 750.2/750 and Render
+# suspended BOTH services ("suspenders": ["billing"]); darshya.online and
+# api.darshya.online served 503 for three days before anyone noticed.
+#
+# Nothing was watching. That is the actual defect this workflow fixes — not the
+# overrun itself, which is arithmetic, but the silence around it.
+#
+# Cost: one ~1-minute run per day = ~30 min/month against the 2000-minute cap,
+# which had 200 minutes of headroom (docs/free-tier-budgets.md). Deliberately
+# daily rather than hourly: a monthly budget cannot be rescued by finding out
+# sooner than a day, and hourly would eat 720 min/month for no extra safety.
+#
+# ============================================================================
+# OPS-08 - THIS GUARD IS NOT YET RUNNING ON A SCHEDULE. READ BEFORE RELYING ON IT.
+# ============================================================================
+# GitHub only honours a `schedule:` trigger from the repository's DEFAULT
+# BRANCH. This file arrived in commit 853b4cbc on `feat/recurring-razorpay-planid`
+# and, for as long as it lives only there, the cron below will never fire even
+# once. It is not "installed"; it is written.
+#
+# So between now and the merge, the suspension detection this repository has is
+# exactly what it had during the 2026-08-17 outage: nothing automatic.
+#
+# CORRECTED 2026-08-21. An earlier version of this block said the workflow could
+# still be run by hand with
+#     gh workflow run render-hours-guard.yml --ref feat/recurring-razorpay-planid
+# and asserted that "`workflow_dispatch` DOES run from a non-default branch".
+# That is wrong, and it is wrong in the direction that matters: GitHub only
+# REGISTERS a `workflow_dispatch` trigger for a workflow file that exists on the
+# DEFAULT BRANCH. `--ref` chooses which branch's copy of an already-registered
+# workflow to execute; it cannot conjure a trigger for a file main has never
+# seen. Verified 2026-08-21: `git cat-file -e main:.github/workflows/render-hours-guard.yml`
+# fails, so this file is not on main and the command above returns
+# "Could not find any workflows named render-hours-guard.yml".
+#
+# There is therefore NO way to run this guard at all before the merge — not on a
+# schedule, not by hand. Merging to main is not a nice-to-have that "installs the
+# cron"; it is the only action that makes this file do anything.
+#
+# After the merge, confirm the schedule is actually registered rather than
+# assuming it:
+#     gh workflow list --all | grep render-hours-guard
+#     gh run list --workflow=render-hours-guard.yml --limit 5
+# A scheduled run should appear within ~24h of the merge. GitHub also disables
+# scheduled workflows in a repository with no activity for 60 days, and it
+# re-enables them only on a manual dispatch - so an empty run list months later
+# is a real state, not a display bug.
+#
+# The same caveat applies to every other workflow edited on this branch
+# (agents-health.yml, e2e.yml, db-backup.yml): their corrected behaviour starts
+# at the merge, not at the commit.
+
+on:
+  schedule:
+    # 06:00 UTC = 11:30 IST, early enough that a warning is read the same day.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read service state and warn before the cap
+        id: check
+        env:
+          RK: ${{ secrets.RENDER_API_KEY }}
+          API_SID: srv-d7mc2n8sfn5c73dfce0g
+          WEB_SID: srv-d970l2ks728c738fc33g
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer ${RK}"
+
+          # Render's public API exposes no instance-hours counter, so this
+          # guard reports what IS observable — the suspension state and plan of
+          # each service — and fails loudly the moment either is suspended.
+          # The hours number itself lives only in the dashboard; the summary
+          # below links there so the human check is one click.
+          # ── "cannot tell" is NOT "suspended" ────────────────────────────
+          # The first version tested `[ "$susp" != "not_suspended" ]`, which is
+          # true for the string "unknown" that `jq -r '.suspended // "unknown"'`
+          # yields whenever the API call did not return a service object at all
+          # — an expired or rotated RENDER_API_KEY, a 401, a 404, a network
+          # blip. So a stale credential reported "production is DOWN" while
+          # production was healthy.
+          #
+          # That false positive was not merely noise. It filed an issue, and the
+          # filing step below skipped when an issue was already open, so after
+          # one bad credential the guard went PERMANENTLY silent: a real
+          # suspension would file nothing and comment nothing, leaving only
+          # another red run in a run of red runs. The workflow existed to end
+          # exactly that silence.
+          #
+          # Three explicit states now, and only the middle one means down.
+          suspended_any=0
+          degraded_any=0
+          for pair in "api:${API_SID}" "web:${WEB_SID}"; do
+            label="${pair%%:*}"; sid="${pair##*:}"
+            code=$(curl -s -o /tmp/svc.json -w '%{http_code}' -H "$A" "https://api.render.com/v1/services/${sid}" || echo 000)
+            body=$(cat /tmp/svc.json 2>/dev/null || echo '{}')
+            name=$(echo "$body" | jq -r '.name // "unknown"')
+            susp=$(echo "$body" | jq -r '.suspended // "unknown"')
+            plan=$(echo "$body" | jq -r '.serviceDetails.plan // "unknown"')
+            who=$(echo "$body"  | jq -rc '.suspenders // []')
+            echo "${label}: http=${code} name=${name} suspended=${susp} plan=${plan} suspenders=${who}"
+
+            if [ "$code" != "200" ] || [ "$susp" = "unknown" ] || [ -z "$susp" ]; then
+              # Cannot establish state. Still a failure — a guard that cannot
+              # see is a guard that is not guarding — but a DIFFERENT one, so it
+              # never masquerades as an outage or consumes the outage issue.
+              degraded_any=1
+              echo "::error::GUARD DEGRADED for ${label} (${sid}): HTTP ${code}, suspended=${susp}. Cannot determine service state — check RENDER_API_KEY. This is NOT a confirmed outage."
+            elif [ "$susp" = "suspended" ]; then
+              suspended_any=1
+              echo "::error::${name} is suspended (suspenders=${who}) — production is DOWN."
+            elif [ "$susp" != "not_suspended" ]; then
+              # A state Render added that we do not model yet. Treat as degraded
+              # rather than guessing in either direction.
+              degraded_any=1
+              echo "::error::GUARD DEGRADED for ${label}: unrecognised suspended=\"${susp}\". Not treating as an outage; update this workflow."
+            fi
+          done
+
+          {
+            echo "### Render service state"
+            echo ""
+            echo "Free tier = **750 instance-hours per ACCOUNT per month**."
+            echo "One always-on service uses ~744/month. Two use ~1,488 — which does not fit."
+            echo ""
+            echo "Instance-hours are not exposed by the API. Check the number here:"
+            echo "https://dashboard.render.com/billing"
+            echo ""
+            echo "If usage is tracking past ~70% before the 21st of the month, one service"
+            echo "must stop being always-on before the cap suspends BOTH."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Publish BOTH signals. The issue step keys off `suspended` alone, so a
+          # degraded run never files "production is down" — but it still fails
+          # the run, because a guard that cannot see production is not guarding
+          # it, and a green run would be the same silence this workflow exists
+          # to end.
+          echo "suspended=${suspended_any}" >> "$GITHUB_OUTPUT"
+          echo "degraded=${degraded_any}"   >> "$GITHUB_OUTPUT"
+
+          if [ "$suspended_any" = "1" ] || [ "$degraded_any" = "1" ]; then
+            exit 1
+          fi
+          exit 0
+
+      - name: Open an issue if a service is suspended
+        # NOT `failure()`. That would also fire when the guard merely could not
+        # reach the Render API, filing an outage issue for a healthy site — and
+        # then the open-issue dedupe would suppress the alert for the REAL
+        # suspension that followed.
+        if: always() && steps.check.outputs.suspended == '1'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const NL = String.fromCharCode(10); // avoids a literal escape inside YAML
+            const title = 'Render: a service is suspended — production is down';
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'render-suspended',
+            });
+            if (open.length) {
+              // COMMENT, do not return silently. The previous version logged to
+              // the run and stopped, which meant the second and every later
+              // suspension produced no notification anywhere — the issue was
+              // already open, so nobody was told it had happened again. A
+              // comment is what actually reaches a subscriber's inbox, and the
+              // run URL is what makes the recurrence datable.
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: open[0].number,
+                body: [
+                  `Still suspended as of ${new Date().toISOString()}.`,
+                  '',
+                  `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                ].join(NL),
+              });
+              core.info(`Commented on existing issue #${open[0].number}.`);
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title,
+              labels: ['render-suspended'],
+              body: [
+                'The daily Render guard found a suspended service, so the site is serving 503.',
+                '',
+                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                '',
+                '## Why this happens',
+                'Render free tier gives **750 instance-hours per account per month**. One',
+                'always-on service uses ~744. Two use ~1,488, so two always-on free services',
+                'always exhaust the cap and Render suspends *both*.',
+                '',
+                '## What to do',
+                '1. Open https://dashboard.render.com/billing and read the instance-hours figure.',
+                '2. Decide which single service stays always-on. The API is the better choice —',
+                '   the web is mostly static (0 pages force-dynamic, 157 on ISR, only 7 calling',
+                '   the API during SSR), so it tolerates spin-down far better than the API does.',
+                '3. Either move the other service off Render, or let it spin down on idle.',
+                '',
+                '## One caveat before choosing spin-down',
+                'The API runs an **in-process scheduler** (`apps/api/src/jobs/scheduler.ts`,',
+                '30-minute interval). It only runs while the container is up, so an API that',
+                'sleeps silently stops sending notifications and panchang pushes.',
+                '`GET /ops/scheduler` reports `stale: true` when this happens. If the API is',
+                'allowed to sleep, that scheduler must move to a GitHub Actions cron.',
+              ].join('\n'),
+            });

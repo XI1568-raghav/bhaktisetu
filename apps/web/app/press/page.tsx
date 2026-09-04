@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
+import { withEightyG } from '../../lib/eighty-g';
 
 
 export const metadata: Metadata = {
@@ -27,7 +30,7 @@ const FACTS = [
   { label: 'Surfaces', value: 'Web, API, Admin, Android (EAS), iOS (pending)' },
   { label: 'Verticals', value: 'Darshan, Pujas, Donations, Store, Astrology, Wellness, Yatra, Weddings, Gurukul, Gaushala' },
   { label: 'Pricing', value: 'Domestic per-puja commission 20-40% · NRI premium ₹5000/yr ($60)' },
-  { label: 'Compliance', value: '80G receipts, Aadhaar-gated priest payouts, mandatory video proof, GDPR-friendly EU PostHog region' },
+  { label: 'Compliance', value: `${withEightyG('80G receipts, ')}Aadhaar-gated priest payouts, mandatory video proof, GDPR-friendly EU PostHog region` },
   { label: 'Team', value: 'Solo founder + autonomous agent fleet (15 cron-scheduled scripts)' },
   { label: 'Stage', value: 'Pre-launch, build-in-public' },
 ];
@@ -59,7 +62,7 @@ export default function PressKitPage() {
         <span className="inline-block px-2.5 py-0.5 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           📰 Press kit
         </span>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-3">
+        <h1 className={`${H1.catalogue} mb-3`}>
           Press kit
         </h1>
         <p className="text-surface-700 text-base leading-relaxed">

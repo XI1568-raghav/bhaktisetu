@@ -1,17 +1,55 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initApiClient } from '@poojly/api-client';
-import { AuthProvider, getStoredAccessToken, onUnauthorisedMobile } from '../lib/auth-context';
+import {
+  AuthProvider,
+  getStoredAccessToken,
+  onUnauthorisedMobile,
+  useAuth,
+} from '../lib/auth-context';
 import { initSentryMobile } from '../lib/sentry';
 import { usePushNotifications } from '../lib/push-notifications';
+import { useDeepLinkRouter } from '../lib/deep-link';
 import { apiBase } from '../lib/api';
 
 function PushRegister() {
   usePushNotifications();
   return null;
+}
+
+function DeepLinkRegister() {
+  useDeepLinkRouter();
+  return null;
+}
+
+/**
+ * Mounts the one translator from darshya:// and https://darshya.online URLs to
+ * expo-router paths (lib/deep-link.ts). Unmounted, those URLs fall through to
+ * expo-router's default linking, which has no `puja/[slug]` route, so every
+ * marketing link, share link and push tap resolves to not-found.
+ *
+ * Gated on auth state because useDeepLinkRouter reads Linking.getInitialURL()
+ * exactly once, from a mount effect. On a cold start that read would fire while
+ * the session is still being restored from expo-secure-store, and app/index.tsx
+ * would immediately router.replace() the deep-link destination away to
+ * /(auth)/login. isLoading starts true and only ever flips to false, so gating
+ * on it defers that single read to a later render — by which point the root
+ * <Stack> is mounted and the auth guard will honour the destination.
+ */
+function DeepLinkGate() {
+  const { isLoading } = useAuth();
+  // One-way latch. Remounting DeepLinkRegister would reset the hook's
+  // already-handled URL set and replay the cold-start link.
+  const [armed, setArmed] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) setArmed(true);
+  }, [isLoading]);
+
+  return armed ? <DeepLinkRegister /> : null;
 }
 
 // Initialise Sentry once at module load, before any user code runs.
@@ -52,6 +90,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <PushRegister />
+          <DeepLinkGate />
           <StatusBar style="dark" backgroundColor="#FFFFFF" />
           <Stack
             screenOptions={{

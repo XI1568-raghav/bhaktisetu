@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { buttonClass } from '../components/ui/button-recipe';
 import {
   Menu,
   X,
@@ -132,7 +133,7 @@ export function MobileNav() {
           <Link
             href="/ask-pandit"
             onClick={() => setOpen(false)}
-            className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-white bg-saffron-600 hover:bg-saffron-700 rounded-lg transition-colors btn-press"
+            className={buttonClass('primary', 'md', 'w-full btn-press')}
           >
             <MessageCircleQuestion className="w-4 h-4" />
             Ask Pandit

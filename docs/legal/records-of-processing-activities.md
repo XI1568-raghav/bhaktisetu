@@ -2,6 +2,16 @@
 
 > **Roadmap item**: R-Q3-L-002 · **Authored**: 2026-06-14 · **Owner**: legal
 > **Review cadence**: quarterly · **Last review**: 2026-06-14
+>
+> **OPS-10 correction (2026-09-02).** RPA-02 and RPA-03 recorded *Stripe (USA)*
+> as a recipient and as the basis of an outside-UK/EEA transfer under SCCs. The
+> Stripe rail was removed on 2026-08-11, so this Article 30 record disclosed a
+> processor that receives no personal data, while omitting the transfer that
+> does occur — the application and API run in Render `oregon` (US West),
+> `render.yaml:15` and `:56`. Both rows are restated below. No executed SCCs
+> are recorded anywhere in this repository; every transfer mechanism is marked
+> **[verify]** and the owner must confirm it before this record is filed or
+> relied on.
 
 ## Controller details
 
@@ -33,8 +43,8 @@
 | Lawful basis | Contract (Art 6(1)(b)) |
 | Data categories | Booking number, puja type, scheduled date, devotee details, video proof URL |
 | Data subjects | Devotees, NRI gift senders, gift recipients |
-| Recipients | Pandits (assigned booking only); temples; Razorpay / Stripe; Resend |
-| Transfers outside UK/EEA | USA (Stripe, Resend) — SCCs |
+| Recipients | Pandits (assigned booking only); temples; Razorpay; Resend |
+| Transfers outside UK/EEA | USA — application + API servers run in Render `oregon`, US West (`render.yaml:15`, `:56`), and Resend is a US processor. Transfer mechanism **[verify]** before filing: no executed SCCs are recorded in this repository. Stripe was removed 2026-08-11 and must not be listed. |
 | Retention | 7 years (Indian tax law) for invoices; video proof 90 days then archived |
 | Security | TLS, signed URLs for video, access-control on pandit portal |
 
@@ -46,8 +56,8 @@
 | Lawful basis | Contract (Art 6(1)(b)); legal obligation for invoicing (Art 6(1)(c)) |
 | Data categories | Amount, currency, last4 of card, billing address, refund history |
 | Data subjects | All paying customers |
-| Recipients | Razorpay (India), Stripe (USA), our finance team, tax authorities |
-| Transfers outside UK/EEA | USA (Stripe) — SCCs |
+| Recipients | Razorpay (India), our finance team, tax authorities |
+| Transfers outside UK/EEA | USA — payment metadata is processed on the API in Render `oregon`, US West (`render.yaml:15`). Transfer mechanism **[verify]**. Stripe was removed 2026-08-11; it receives no personal data and must not be recorded as a recipient or a transfer destination. |
 | Retention | 7 years (Indian Income Tax Act) |
 | Security | PCI-DSS via processor; no full card data stored on our infra |
 

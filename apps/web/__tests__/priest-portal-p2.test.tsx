@@ -52,6 +52,19 @@ vi.mock('../lib/api-config', () => ({
     typeof c === 'object' && c !== null && 'status' in c
       ? `Couldn't load live data (HTTP ${(c as { status: number }).status}).`
       : "Couldn't load live data.",
+  // app/priest/page.tsx:227 calls this in its catch, so omitting it made the
+  // component throw on the very path the 'dashboard fetch fails' test drives.
+  // The test still passed — the throw escaped as an unhandled rejection, which
+  // vitest reports separately and exits non-zero for, so the whole web suite
+  // failed CI while every one of its 4071 tests passed.
+  //
+  // 401 ONLY, matching lib/api-config.ts:288. A 403 must NOT be reauth: every
+  // 403 in the API is an authorization outcome, and answering it with 'sign in
+  // again' is the exact regression AUTH-06's second pass removed.
+  loadErrorIsReauth: (c: unknown) =>
+    typeof c === 'object' && c !== null && 'status' in c
+      ? (c as { status: number }).status === 401
+      : false,
 }));
 
 vi.mock('../components/MyProviderProfileCard', () => ({ default: () => null }));

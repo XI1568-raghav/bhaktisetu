@@ -17,7 +17,7 @@ Bhaktisetu Foundation launching UK NRI service Q3 2026 (per R-Q3-G-001). Process
 Bhaktisetu collects + processes UK NRI Hindu customer data for:
 - Account creation (email, name, phone)
 - Puja booking (puja preference, temple, scheduled date)
-- Payment processing via Stripe GBP (PAN/card details tokenised)
+- Payment processing via Razorpay (PAN/card details tokenised). The GBP / foreign-currency rail is **[verify]** — Stripe was removed 2026-08-11 and no replacement is recorded in this repository.
 - Communication (WhatsApp, email transactional)
 - Optional cultural-content engagement (newsletter, daily aarti notifications)
 
@@ -52,7 +52,7 @@ Bhaktisetu collects + processes UK NRI Hindu customer data for:
 
 - Customer name + email: minimum for account
 - Phone: required for WhatsApp + critical comms
-- PAN/payment: tokenised via Stripe — never stored
+- PAN/payment: tokenised via the payment processor (Razorpay) — never stored. **[verify]** the processor for any non-INR rail before this DPIA is relied on. Corrected 2026-09-02 under `OPS-10`; verified in `apps/api/src/lib/env.ts:45-46` and `payment.service.ts:2506-2517`: the Stripe rail was removed 2026-08-11, so naming it here disclosed to a regulator a processor that receives no personal data.
 - Religious preference (deity, festival, tradition): minimum for relevant puja matching
 - Geographic: minimum for time-zone + temple-region matching
 
@@ -105,7 +105,7 @@ Bhaktisetu collects + processes UK NRI Hindu customer data for:
 
 ### Medium risks
 
-4. **Vendor data breach (Razorpay/Stripe/Resend/PostHog)**
+4. **Vendor data breach (Razorpay/Resend/PostHog)**
    - Mitigation: DPA with each vendor + breach notification SLA
 5. **Pandit access to customer info**
    - Mitigation: Pandits only see booking-relevant fields (name + temple + time)

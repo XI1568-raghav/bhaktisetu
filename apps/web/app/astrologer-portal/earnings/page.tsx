@@ -12,6 +12,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, IndianRupee, Clock, CheckCircle2, TrendingUp, Inbox } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -50,7 +51,8 @@ export default function AstrologerEarningsPage() {
       headers: { Authorization: `Bearer ${session.accessToken}` },
     })
       .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        // RES-09: `HTTP 500` was rendered to the astrologer as the error.
+        if (!r.ok) throw new UserFacingError('We could not load your earnings.', r.status);
         return r.json();
       })
       .then((j) => {
@@ -58,7 +60,7 @@ export default function AstrologerEarningsPage() {
         setRows(j.data ?? []);
         setSummary(j.summary ?? null);
       })
-      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load'); })
+      .catch((e) => { if (!cancelled) setError(userFacingMessage(e, 'We could not load your earnings. Please try again.')); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [session?.accessToken]);

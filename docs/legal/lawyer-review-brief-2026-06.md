@@ -20,7 +20,7 @@
 ## 5 specific questions for counsel
 
 1. Is auto-refund-on-video-proof-missing legally enforceable as a pre-committed remedy under Consumer Protection (E-Commerce) Rules 2020 Rule 6(5)?
-2. For NRI Stripe chargebacks, does our proof-of-delivery package (video URL + devotee acknowledgement + pandit photo + GPS-timestamped puja location) satisfy "compelling evidence" under Visa/Mastercard rules AND Indian law simultaneously?
+2. For NRI chargebacks on the international card rail (processor `[verify]` — Stripe was removed 2026-08-11 and no replacement has been chosen; `OPS-10`, 2026-09-02), does our proof-of-delivery package (video URL + devotee acknowledgement + pandit photo + GPS-timestamped puja location) satisfy "compelling evidence" under Visa/Mastercard rules AND Indian law simultaneously?
 3. Can we lawfully refuse refunds for astrology consultations citing "opinion-based service" exemption, and what disclaimer language do you require pre-purchase?
 4. For 80G donation refunds post-receipt, what is the IT department's revised-10BD filing window and our liability if devotee misuses original Form 10BE?
 5. Is Bengaluru exclusive-jurisdiction clause enforceable against NRI consumers, or must we offer arbitration under Indian Arbitration & Conciliation Act 1996?

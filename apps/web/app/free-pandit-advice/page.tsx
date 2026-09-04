@@ -1,8 +1,11 @@
 // Hub for free pandit kundli astrology advice — 13 long-tail SEO topic pages.
 // Targets primary query: "free pandit kundli astrology advice" + variants.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { FREE_PANDIT_TOPICS } from '../../lib/free-pandit-topics';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -65,14 +68,14 @@ export default function FreePanditAdviceHub() {
 
    <header className="mb-10 max-w-3xl">
     <p className="text-xs uppercase tracking-wider text-saffron-600">{TOTAL} topics · 100% free · verified pandits</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Free Pandit Kundli Astrology Advice</h1>
+    <h1 className={`${H1.catalogue} mt-1`}>Free Pandit Kundli Astrology Advice</h1>
     <p className="mt-3 text-base text-gray-700">
      Authentic Vedic guidance from verified pandits — no credit card, no signup wall.
      Each topic below answers the most common questions Indians ask before paying for a
      consultation. Read first; book a live session only if you need a tailored remedy.
     </p>
     <div className="mt-5 flex flex-wrap gap-3">
-     <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
       Ask a Pandit Live →
      </Link>
      <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

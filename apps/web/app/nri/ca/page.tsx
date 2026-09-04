@@ -11,13 +11,27 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { COMPANY } from '../../../lib/company';
+import { NRI_PREMIUM_IS_SELLABLE } from '../plan-availability';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
+
+/**
+ * TC-01 (P0, trust). Same gate as /gaushala, /donations and /nri. The flag is
+ * false, `eightyGNumber` and `pan` are null, and apps/api/src/lib/pdf-receipt
+ * .ts stamps every receipt "Proof of donation — not a tax exemption
+ * certificate" because `is80GEligible()` needs a donee registration number AND
+ * PAN, and neither column is ever written. Promising an Indian deduction to a
+ * Canadian filer is the same misrepresentation with an extra jurisdiction on
+ * top, so the claim is a branch on the flag rather than a sentence.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
   title: 'Canada NRI — Live Puja Booking & Darshan from India',
   description:
-    'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at verified temples in India. Live darshan, 80G receipts, weekly 1:1 priest call. CAD checkout, transparent pricing.',
+    'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at verified temples in India. Live darshan, donation receipts, weekly 1:1 priest call. CAD checkout, transparent pricing.',
   alternates: {
     canonical: 'https://darshya.online/nri/ca',
     languages: {
@@ -88,8 +102,10 @@ const benefits = [
   },
   {
     icon: FileText,
-    title: '80G receipts (India tax-deductible)',
-    body: 'Donations to registered Indian temples auto-generate 80G receipts. Useful for India-tax filers; documentation for CRA charitable contribution claims.',
+    title: HAS_80G ? '80G receipts (India tax-deductible)' : 'Donation receipts, emailed instantly',
+    body: HAS_80G
+      ? 'Donations to registered Indian temples auto-generate 80G receipts. Useful for India-tax filers; documentation for CRA charitable contribution claims.'
+      : 'Every donation auto-generates a receipt PDF with its own receipt number. It is proof of payment, not a tax-exemption certificate: Darshya holds no Section 80G registration yet, so a donation made today is not deductible in India, and it is not deductible in Canada either.',
   },
   {
     icon: Calendar,
@@ -104,7 +120,13 @@ const benefits = [
   {
     icon: Sparkles,
     title: 'AI Pandit in your language',
-    body: 'Ask scripture, panchang, muhurat, gotra questions in English, Hindi, Punjabi, Tamil, Gujarati. Daily 5 free questions; unlimited on NRI Premium.',
+    // TC-04: this used to end "…; unlimited on NRI Premium." That tier is
+    // withdrawn from sale — both activation rails answer 400 — so the sentence
+    // upsold a plan that cannot be bought. Gated on the same constant /nri
+    // uses, so the upsell returns with the plan rather than being rewritten.
+    body: NRI_PREMIUM_IS_SELLABLE
+      ? 'Ask scripture, panchang, muhurat, gotra questions in English, Hindi, Punjabi, Tamil, Gujarati. Daily 5 free questions; unlimited on NRI Premium.'
+      : 'Ask scripture, panchang, muhurat, gotra questions in English, Hindi, Punjabi, Tamil, Gujarati. 5 free questions a month.',
   },
 ];
 
@@ -123,7 +145,9 @@ const founderFaqs = [
   },
   {
     q: 'What about Canadian tax?',
-    a: 'Donations to Indian temples are NOT CRA-registered charities, so they do not generate Canadian charitable receipts. 80G is India-tax-deductible only. The NRI Premium subscription is a service (not a donation) and is billed in INR; no Canadian GST/HST is collected by us.',
+    a: HAS_80G
+      ? 'Donations to Indian temples are NOT CRA-registered charities, so they do not generate Canadian charitable receipts. 80G is India-tax-deductible only. The NRI Premium subscription is a service (not a donation) and is billed in INR; no Canadian GST/HST is collected by us.'
+      : 'Donations to Indian temples are NOT CRA-registered charities, so they do not generate Canadian charitable receipts. Nor are they deductible in India today: Darshya does not hold a Section 80G registration, so the receipt we issue is proof of payment and nothing more. The NRI Premium subscription is a service (not a donation) and is billed in INR; no Canadian GST/HST is collected by us.',
   },
   {
     q: 'What languages?',
@@ -145,18 +169,18 @@ export default function CanadaNriLanding() {
               <MapPin className="w-3.5 h-3.5" />
               For Indo-Canadians in Toronto, Vancouver, Brampton, Mississauga
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-surface-900 mb-6 leading-tight">
+            <h1 className={`${H1.marketing} mb-6`}>
               India temples, from
               <br />
               <span className="text-saffron-700">your Canada home.</span>
             </h1>
-            <p className="text-lg md:text-xl text-surface-600 mb-8 leading-relaxed">
+            <p className="prose-lead text-surface-600 mb-8 leading-relaxed">
               Book pujas at verified India temples. Watch live aarti. Get video proof of every booking. Built for the Canadian Hindu, Punjabi, Tamil, and Gujarati diaspora — from morning Kashi sandhya to evening Tirupati suprabhatam, on your timezone.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
               <Link
                 href="/pujas"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
+                className={buttonClass('primary', 'md', 'shadow-md shadow-saffron-600/20')}
               >
                 Browse pujas
                 <ArrowRight className="w-4 h-4" />
@@ -253,11 +277,16 @@ export default function CanadaNriLanding() {
           <p className="text-surface-700 mb-6 max-w-xl mx-auto">
             Join the Canada waitlist. We email Toronto, Vancouver, and Brampton subscribers first when CAD pricing goes live.
           </p>
+          {/* TC-04: this CTA read "See NRI Premium tier" and sent a Canadian
+              visitor to a plan that cannot be bought — both activation rails
+              answer 400 with the withdrawal message. While it is withdrawn the
+              button points at what the visitor can actually do today; the
+              upsell returns with the plan. */}
           <Link
-            href="/nri"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 hover:bg-saffron-700 text-white font-semibold rounded-lg shadow-md shadow-saffron-600/20 transition-all"
+            href={NRI_PREMIUM_IS_SELLABLE ? '/nri' : '/temples'}
+            className={buttonClass('primary', 'md', 'shadow-md shadow-saffron-600/20')}
           >
-            See NRI Premium tier
+            {NRI_PREMIUM_IS_SELLABLE ? 'See NRI Premium tier' : 'Browse verified temples'}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

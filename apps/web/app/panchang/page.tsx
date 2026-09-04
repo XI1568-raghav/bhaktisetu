@@ -27,6 +27,9 @@ import {
  formatUpcomingFestivals,
 } from '../../lib/panchang-calendar';
 import { FESTIVALS } from '../../lib/festivals';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
+import PanchangCommerce from '../../components/panchang/PanchangCommerce';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/panchang' },
@@ -211,7 +214,7 @@ async function PanchangDetailsSection({
  </a>
  <a
  href="/panchang"
- className="px-3 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg"
+ className={buttonClass('primary', 'md')}
  >
  Today
  </a>
@@ -385,6 +388,36 @@ async function PanchangDetailsSection({
  </div>
  </div>
  )}
+
+ {/* The page's only commerce. It sits BELOW the five limbs, the muhurat
+     windows and the observance, because it is a consequence of them — the
+     tithi and the var it recommends against are the ones printed above, so a
+     reader can check the recommendation against the table rather than take it
+     on trust. Sri Mandir places their three paid puja cards in the same
+     position, and carries none at all on their evergreen aarti/chalisa
+     articles; the dated surface is the one that earns a CTA.
+
+     Its own Suspense boundary: PanchangCommerce awaits the puja catalogue
+     (10-minute revalidate, but a cold miss is a network round trip) and the
+     panchang itself must not wait behind it. */}
+ <Suspense
+ fallback={
+ <div className="bg-white rounded-xl p-6 border border-surface-100 animate-pulse">
+ <div className="h-5 bg-surface-200 rounded w-56 mb-4" />
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ {Array.from({ length: 2 }).map((_, i) => (
+ <div key={i} className="h-40 bg-surface-100 rounded-xl" />
+ ))}
+ </div>
+ </div>
+ }
+ >
+ <PanchangCommerce
+ tithi={panchang.tithi}
+ date={displayDate}
+ rahuKaal={panchang.rahuKaal}
+ />
+ </Suspense>
  </>
  );
 }
@@ -449,10 +482,10 @@ export default async function PanchangPage({
  {/* Hero */}
  <section className="bg-gradient-to-r from-saffron-600 via-saffron-500 to-temple-gold py-12 md:py-16">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
- <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+ <h1 className={`${H1.detail} mb-3`}>
  Daily Panchang
  </h1>
- <p className="text-saffron-100 text-lg max-w-2xl">
+ <p className="prose-lead text-saffron-100 max-w-2xl">
  Complete Hindu calendar with tithi, nakshatra, yoga, karana, muhurat,
  and festival information for spiritual guidance.
  </p>

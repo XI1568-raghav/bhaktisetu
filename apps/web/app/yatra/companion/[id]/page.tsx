@@ -9,7 +9,6 @@ import {
  Languages,
  Shield,
  Stethoscope,
- BadgeCheck,
  Heart,
  ArrowRight,
  Phone,
@@ -17,15 +16,24 @@ import {
  CheckCircle2,
 } from 'lucide-react';
 import ScrollReveal from '../../../../components/ScrollReveal';
-import { companions, getCompanionById, formatINR } from '../../../../lib/yatra-data';
+import { formatINR } from '../../../../lib/yatra-data';
+// TC-06: this route used to pre-render a bookable profile — availability
+// calendar, day rate, "Book This Companion" — for each of the eight invented
+// people in lib/yatra-data.ts. It now reads the published roster, so a URL
+// resolves only for a companion Darshya has actually recruited and vetted, and
+// every other id 404s instead of offering a stranger to escort someone's
+// elderly parent across the country.
+import { publishedCompanions, getPublishedCompanionById } from '../../../../lib/companion-roster';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 export function generateStaticParams() {
- return companions.map((c) => ({ id: c.id }));
+ return publishedCompanions.map((c) => ({ id: c.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
  const { id } = await params;
- const c = getCompanionById(id);
+ const c = getPublishedCompanionById(id);
  if (!c) return { title: 'Companion not found' };
  return {
  title: `${c.name} — Travel Companion`,
@@ -36,27 +44,17 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function CompanionDetailPage({ params }: { params: Promise<{ id: string }> }) {
  const { id } = await params;
- const c = getCompanionById(id);
+ const c = getPublishedCompanionById(id);
  if (!c) return notFound();
 
- // Generate a simple 30-day availability calendar
- const today = new Date();
- const days = Array.from({ length: 30 }).map((_, i) => {
- const d = new Date(today);
- d.setDate(today.getDate() + i);
- const dayOfWeek = d.getDay();
- // Availability pattern based on profile status
- let available = true;
- if (c.availability === 'busy') available = i % 7 > 4;
- else if (c.availability === 'limited') available = i % 3 !== 0;
- return { date: d, available, isWeekend: dayOfWeek === 0 || dayOfWeek === 6 };
- });
-
- const tiers = [
- { label: 'Short yatra (1-5 days)', multiplier: 1, discount: 0 },
- { label: 'Medium yatra (6-10 days)', multiplier: 1, discount: 5 },
- { label: 'Long yatra (11+ days)', multiplier: 1, discount: 10 },
- ];
+ // TC-06: a "30-day availability" grid was generated here — thirty squares
+ // coloured green or pink straight from the loop index (i % 7 > 4,
+ // i % 3 !== 0) — and a three-tier ladder invented a 5% / 10% discount and
+ // printed the discounted day rate as a price. Both are deleted. Yatra has no
+ // Prisma model, so there is no booking row that could say a date is free and
+ // no pricing source that agreed to a discount; drawing either out of
+ // arithmetic is the same fabrication as the roster this page used to carry.
+ // The aside now states how dates and the final quote are actually settled.
 
  return (
  <ScrollReveal>
@@ -83,18 +81,22 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
 
  <div className="flex-1">
  <div className="flex flex-wrap items-center gap-2 mb-1.5">
- <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ {/* TC-06: an unconditional green "Verified" pill sat beside the name on
+  every profile that resolved. It read nothing — not c.verified, not any
+  other field — it was typed into the JSX, so it stayed green whatever
+  the data said. The three pills further down name the individual checks
+  that were actually recorded, which is the only form of this claim that
+  something computed, so the unqualified badge is removed, not reworded. */}
+ <h1 className={H1.portal}>
  {c.name}
  </h1>
- <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, #16a34a 12%, transparent)', color: '#16a34a' }}>
- <BadgeCheck className="w-2.5 h-2.5" /> Verified
- </span>
  </div>
  <p className="text-sm mb-3" style={{ color: 'var(--color-text-muted)' }}>
  {c.age} years · {c.gender === 'male' ? 'Male' : 'Female'} · {c.city}
  </p>
 
  <div className="flex flex-wrap items-center gap-4 text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
+ {c.reviewCount > 0 && (
  <span className="flex items-center gap-1.5">
  <div className="flex items-center gap-0.5">
  {Array.from({ length: 5 }).map((_, s) => (
@@ -104,6 +106,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <span className="font-semibold" style={{ color: 'var(--color-text)' }}>{c.rating.toFixed(1)}</span>
  <span>({c.reviewCount} reviews)</span>
  </span>
+ )}
  <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {c.yatrasCompleted} yatras</span>
  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {c.experience}</span>
  </div>
@@ -124,8 +127,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>per day · all inclusive</p>
  <Link
  href="/yatra"
- className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'w-full btn-press')}
  >
  Book This Companion <ArrowRight className="w-3 h-3" />
  </Link>
@@ -174,48 +176,24 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  </div>
  </div>
 
- {/* Availability Calendar */}
+ {/* Dates + cost. TC-06: was a generated 30-day availability grid. */}
  <aside>
- <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>30-day availability</h3>
- <div className="rounded-xl p-3" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <div className="grid grid-cols-7 gap-1">
- {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
- <div key={i} className="text-center text-xs font-semibold py-1" style={{ color: 'var(--color-text-faint)' }}>{d}</div>
- ))}
- {days.map((d, i) => (
- <div
- key={i}
- className="aspect-square rounded text-center flex flex-col items-center justify-center text-xs"
- style={{
- background: d.available ? 'color-mix(in oklch, #16a34a 12%, transparent)' : 'color-mix(in oklch, #a12c7b 10%, transparent)',
- color: d.available ? '#16a34a' : '#a12c7b',
- opacity: d.isWeekend ? 1 : 0.9,
- }}
- >
- <span className="font-semibold">{d.date.getDate()}</span>
- </div>
- ))}
- </div>
- <div className="flex items-center justify-between mt-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
- <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ background: 'color-mix(in oklch, #16a34a 50%, transparent)' }} /> Available</span>
- <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ background: 'color-mix(in oklch, #a12c7b 50%, transparent)' }} /> Booked</span>
- </div>
- </div>
-
- <h3 className="text-sm font-semibold mt-5 mb-3" style={{ color: 'var(--color-text)' }}>Pricing</h3>
- <div className="space-y-2">
- {tiers.map((t) => {
- const price = Math.round(c.pricePerDay * t.multiplier * (1 - t.discount / 100));
- return (
- <div key={t.label} className="rounded-lg p-3 flex items-center justify-between text-xs" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>Dates and cost</h3>
+ <div className="rounded-xl p-4 space-y-3" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <div>
- <p className="font-medium" style={{ color: 'var(--color-text)' }}>{t.label}</p>
- {t.discount > 0 && <p className="text-xs" style={{ color: 'var(--color-status-success)' }}>{t.discount}% off</p>}
+ <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--color-text-faint)' }}>Day rate</p>
+ <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(c.pricePerDay)}<span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}> / day</span></p>
  </div>
- <p className="font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(price)}<span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>/day</span></p>
+ <div className="pt-3" style={{ borderTop: '1px solid var(--color-divider)' }}>
+ <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+ We do not publish a live availability calendar. Tell us your dates and an
+ advisor confirms with {c.name.split(' ')[0]} directly, then sends you the
+ final quote for the length of your yatra before anything is committed.
+ </p>
  </div>
- );
- })}
+ <Link href="tel:+919255109400" className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
+ <Phone className="w-3 h-3" /> Check dates with an advisor
+ </Link>
  </div>
  </aside>
  </div>
@@ -228,6 +206,11 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <h2 className="text-xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  What past yatris say
  </h2>
+ {c.reviews.length === 0 && (
+ <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+ No reviews yet. Reviews appear here once a yatri who travelled with {c.name.split(' ')[0]} has rated the journey.
+ </p>
+ )}
  <div className="grid md:grid-cols-2 gap-4">
  {c.reviews.map((r, i) => (
  <div key={i} className="rounded-xl p-4" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
@@ -255,7 +238,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  <p className="text-sm mb-5" style={{ color: 'var(--color-text-muted)' }}>
  Select your yatra first — we&apos;ll attach {c.name.split(' ')[0]} to your booking and confirm within 2 hours.
  </p>
- <Link href="/yatra" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/yatra" className={buttonClass('primary', 'md', 'btn-press')}>
  Choose Your Yatra <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../../components/ScrollReveal';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/meditation' },
  title: 'Meditation — Guided Sessions & Daily Practice',
@@ -96,22 +98,20 @@ export default function MeditationPage() {
 
  <h1
  data-reveal="up-far"
- className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]"
- style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+ className={H1.catalogue}
  >
  Find stillness with{' '}
  <span style={{ color: 'var(--color-primary)' }}>Guided Meditation</span>
  </h1>
 
- <p data-reveal="up" data-delay="1" className="mt-5 text-sm leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="mt-5 prose-body leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
  From breath awareness for beginners to advanced Transcendental practices, find the meditation style that quiets your mind and opens your heart.
  </p>
 
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <a
  href="#player"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Try Free Session <Play className="w-4 h-4" />
  </a>
@@ -312,8 +312,7 @@ export default function MeditationPage() {
 
  <div data-reveal="up" data-delay="5">
  <button
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Join Free Challenge <ArrowRight className="w-4 h-4" />
  </button>
@@ -394,7 +393,7 @@ export default function MeditationPage() {
  <span className="text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
  {session.price === 0 ? 'Free' : `\u20B9${session.price}`}
  </span>
- <button className="text-xs font-medium px-3 py-1.5 rounded-lg text-white" style={{ background: 'var(--color-primary)' }}>
+ <button className={buttonClass('primary', 'md')}>
  Book
  </button>
  </div>
@@ -411,7 +410,7 @@ export default function MeditationPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  The journey inward begins with a single breath
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
  Start your meditation practice today. No experience needed — our guided sessions meet you exactly where you are.
  </p>
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
@@ -424,8 +423,7 @@ export default function MeditationPage() {
  </Link>
  <Link
  href="/wellness/vipassana"
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Vipassana Retreats <ArrowRight className="w-4 h-4" />
  </Link>

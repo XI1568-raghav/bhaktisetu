@@ -9,6 +9,8 @@ import {
  Crimson_Pro,
 } from "next/font/google";
 import { t } from "../lib/t";
+import { footerDonateLink } from "../lib/footer-donate-link";
+import { blogFooterLinks } from "../lib/footer-blog-link";
 import {
  Flame,
  Heart,
@@ -56,6 +58,7 @@ import { Logo } from "../components/Logo";
 import { DeferredClientWidgets } from "../components/DeferredClientWidgets";
 import { SentryProvider } from "../components/SentryProvider";
 import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
+import ConnectivityBar from "../components/ConnectivityBar";
 import { TranslationCoverageNotice } from "../components/TranslationCoverageNotice";
 import AdSenseScript from "../components/AdSenseScript";
 import { GA4Script } from "../lib/ga4";
@@ -286,6 +289,22 @@ const moreLinks = [
 const highlightLink = { href: "/ask-pandit", labelKey: "askPandit" as const, icon: MessageCircleQuestion };
 
 type FooterLink = { href: string; t: 'footer' | 'terms' | 'nav'; key: string };
+
+/**
+ * TC-01 — the donate link's label is decided in lib/footer-donate-link.ts,
+ * gated on `COMPANY.donationLegal.HAS_80G_VERIFIED`.
+ *
+ * It was hardcoded to `{ t: "footer", key: "donate80G" }` here, which
+ * lib/i18n/en.json resolves to "Donate (80G)". This footer is rendered by the
+ * root layout, so that promised an income-tax deduction on EVERY page of the
+ * site while the flag is false and both `eightyGNumber` and `pan` are null.
+ *
+ * The rule lives in its own module because this file cannot be rendered under
+ * vitest, so an inline ternary could only be checked by scanning source — and
+ * a regex cannot tell which branch of a ternary actually runs. See
+ * __tests__/tc01-footer-80g-every-page.test.ts, which exercises both states.
+ */
+const donateFooterLink: FooterLink = footerDonateLink();
 const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  {
  titleKey: "explore",
@@ -293,7 +312,7 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  { href: "/temples", t: "nav", key: "temples" },
  { href: "/darshan", t: "footer", key: "liveDarshan" },
  { href: "/pujas", t: "footer", key: "bookPuja" },
- { href: "/donations", t: "footer", key: "donate80G" },
+ donateFooterLink,
  { href: "/yatra", t: "footer", key: "dharmicYatra" },
  { href: "/panchang", t: "nav", key: "panchang" },
  ],
@@ -326,7 +345,14 @@ const footerSections: { titleKey: string; links: FooterLink[] }[] = [
  links: [
  { href: "/about", t: "footer", key: "about" },
  { href: "/careers", t: "footer", key: "careers" },
- { href: "/blog", t: "footer", key: "blog" },
+ /**
+  * HN-11 — the Blog entry that sat here is GATED, not deleted. It is
+  * rendered by the root layout, so it advertised a section with zero
+  * posts on every page of the site while `PUBLISHED_POSTS` (see
+  * content/blog/published.ts) is empty. Restoring it takes no edit
+  * here: append one post and blogFooterLinks() emits the link again.
+  */
+ ...blogFooterLinks(),
  { href: "/contact", t: "footer", key: "contact" },
  { href: "/pricing", t: "footer", key: "pricing" },
  ],
@@ -377,6 +403,29 @@ export default function RootLayout({
  className={`${notoSans.variable} ${notoSansDevanagari.variable} ${notoSansTamil.variable} ${notoSansTelugu.variable} ${notoSansBengali.variable} ${crimsonPro.variable}`}
  >
  <head>
+ {/*
+ PERF-03 (closed 2026-08-28) — the two brand cuts that paint the FIRST
+ VIEWPORT of every route, self-hosted from public/fonts and declared in
+ app/globals.css.
+
+ Only two of the five vendored cuts are preloaded, and the choice is not
+ aesthetic: `body` renders at weight 400 on --font-body, which is Satoshi
+ Regular; and all four H1 archetypes in components/ui/heading-recipe.ts are
+ `font-semibold` on the display face, which — Cabinet Grotesk having no 600
+ cut — resolves to Cabinet Grotesk Bold. Satoshi Medium, Satoshi Bold and
+ Cabinet Grotesk Regular load on demand, because a preload in a ROOT LAYOUT
+ fires on all ~1,785 routes whether the route paints that weight or not. That
+ is the same mistake PERF-02 removed one tag above, in a different costume.
+
+ crossOrigin is REQUIRED even though these are same-origin. Font fetches are
+ always CORS-mode, so a preload without it is not matched to the real request
+ and the browser downloads the file twice.
+
+ Guarded by __tests__/brand-webfonts.perf03.test.ts.
+ */}
+ <link rel="preload" as="font" type="font/woff2" href="/fonts/Satoshi-Regular.woff2" crossOrigin="anonymous" />
+ <link rel="preload" as="font" type="font/woff2" href="/fonts/CabinetGrotesk-Bold.woff2" crossOrigin="anonymous" />
+
  {/* Resource hints — warm up connections to third-party origins we hit on nearly every page.
      NOT api/cdn.fontshare.com: that stylesheet was removed (PERF-03) and a
      preconnect to an origin nothing requests costs a DNS+TLS handshake for
@@ -395,9 +444,12 @@ export default function RootLayout({
  live homepage with CDP CSS.getPlatformFontsForNode: 5,545 of 5,604 glyphs
  painted in Arial, 0 in any webfont — while every page paid a
  render-blocking cross-origin round trip in <head> for that one comment.
- The brand faces are now self-hostable via next/font/local; until Satoshi and
- Cabinet Grotesk woff2 are licensed and dropped into public/fonts, the
- already-downloaded Noto Sans backs --font-body/--font-display (globals.css).
+ CLOSED 2026-08-28: Satoshi and Cabinet Grotesk are now self-hosted from
+ public/fonts and declared with @font-face in globals.css, from the five woff2
+ this repo has carried at apps/remotion-pitch/public/fonts since 2026-07-15.
+ Nothing is fetched from fontshare, or from any other origin, ever again.
+ Noto Sans still backs both stacks and still PRELOADS, because Satoshi's cmap
+ has no U+20B9 and it is what draws the ₹ in every price.
 
  PERF-02 — the global `<link rel="preload" as="image" fetchPriority="high">`
  that used to sit here has been removed and must not come back. A ROOT LAYOUT
@@ -460,6 +512,14 @@ export default function RootLayout({
  >
  Skip to main content
  </a>
+ {/* RES-13: the global connectivity bar. Mounted here, above the providers,
+     because a user whose connection drops on an already-rendered route saw
+     nothing at all — every subsequent fetch failed and each surface rendered
+     its own error, so the product read as broken rather than disconnected.
+     It renders nothing until an 'online'/'offline' EVENT arrives (it never
+     reads navigator.onLine, which lies behind a captive portal) and recovers
+     with router.refresh() rather than a reload. */}
+ <ConnectivityBar />
  <SentryErrorBoundary>
  <QueryProvider>
  <AuthProvider>
@@ -477,8 +537,22 @@ export default function RootLayout({
    className="fixed top-0 left-0 right-0 z-50 bg-[#faf9f6]/85 backdrop-blur-xl backdrop-saturate-150 border-b border-transparent transition-[border,background] duration-200"
    style={{ WebkitBackdropFilter: 'saturate(180%) blur(20px)' }}
  >
+ {/* `gap-2`, not `gap-3`: at 1024 the row was 6px short. Measured — nav 1009
+     wide, 2rem padding each side leaves 945, minus two 12px gaps leaves 921;
+     brand 89 + right cluster 393 are both shrink-0, so the category row got 439
+     against the 446 it needs and "Shop" clipped. Two 8px gaps instead of 12px
+     return exactly the 8px that closes it.
+
+     `.container-nav` — the header is CHROME, not content, and capping it
+     to the content column created an impossible budget at large viewports.
+     Measured: container-wide is max-width 1152 with 32px padding each side, so
+     1536 AND 1920 share an identical 1064px row. Meanwhile 2xl reveals the
+     wider search field and swaps "For partners" for the longer "List your
+     business" (HN-06 requires both variants), pushing the right cluster to 634
+     and leaving the five category buttons 341 of the 446 they need — "Shop"
+     clipped at the WIDEST screens, with 384px of unused viewport either side. */}
  <nav
- className="mx-auto max-w-7xl flex items-center h-16 px-4 sm:px-6 lg:px-8 gap-3"
+ className="container-wide container-nav flex items-center h-16 gap-2"
  aria-label="Main navigation"
  >
  {/* Logo — fixed left, shrink-0 */}
@@ -494,7 +568,11 @@ export default function RootLayout({
 
  {/* Desktop nav — center; flex-1 reserves space so right cluster never gets pushed off-screen.
      min-w-0 lets center shrink before it overflows. Hidden below lg (1024px) — drawer takes over. */}
- <div className="hidden lg:flex flex-1 items-center justify-center gap-1 min-w-0">
+ {/* `overflow-hidden` is a HARD guarantee, not styling. Measured at 1280px
+     this box was 275px against ~450px of category buttons, and the overflow
+     painted over the brand wordmark. Clipping is a visible bug someone fixes;
+     painting over the logo is a bug that ships. */}
+ <div className="hidden lg:flex flex-1 items-center justify-center gap-1 min-w-0 overflow-hidden">
  <CategoryNav />
  </div>
 
@@ -518,6 +596,10 @@ export default function RootLayout({
      the footer. It now appears at the standard lg breakpoint; the control
      itself shortens its visible label below 2xl so it fits at 1024px. Below
      lg the mobile drawer carries these links. */}
+ {/* Back at lg, which keeps HN-06 fixed — a 1280 laptop had no header route
+     to listing at all. The 141px it used to cost is reclaimed a better way:
+     the control is icon-only now, so it costs ~40px at EVERY width rather than
+     disappearing at the widths where supply-side entry matters most. */}
  <div className="hidden lg:block">
  <ListYourBusinessDropdown />
  </div>
@@ -530,7 +612,7 @@ export default function RootLayout({
  title="Today's panchang and aarti"
  >
  <Calendar className="w-4 h-4" />
- <span className="hidden xl:inline">Today</span>
+ <span className="sr-only">Today</span>
  </a>
 
  {/* Search — icon-only collapses to expand-on-click below xl */}
@@ -563,7 +645,7 @@ export default function RootLayout({
  {/* Decorative top border */}
  <div className="h-px bg-gradient-to-r from-transparent via-saffron-600/40 to-transparent" />
 
- <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-20">
+ <div className="container-wide py-16 lg:py-20">
  <div className="grid grid-cols-2 md:grid-cols-7 gap-10">
  {/* Brand column */}
  <div className="col-span-2">
@@ -573,7 +655,7 @@ export default function RootLayout({
  Darsh<span className="text-saffron-400">ya</span>
  </span>
  </div>
- <p className="text-sm text-surface-500 mb-6 max-w-xs leading-relaxed">
+ <p className="prose-meta text-surface-500 mb-6 max-w-xs leading-relaxed">
  {tFooter('tagline')}
  </p>
  <div className="flex items-center gap-2">
@@ -640,6 +722,22 @@ export default function RootLayout({
  label="Cookie settings"
  className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
  />
+ </li>
+ )}
+
+ {/* Google Play requires a publicly reachable, non-authenticated URL where a
+     user can request account deletion — /account/privacy does not qualify,
+     it sits behind AuthGuard. Plain English for the same reason as the
+     cookie link directly above: lib/i18n has no key for it, and a missing
+     key renders raw in the five non-English locales. */}
+ {section.titleKey === 'support' && (
+ <li key="support-data-deletion">
+ <a
+ href="/data-deletion"
+ className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
+ >
+ Delete My Account
+ </a>
  </li>
  )}
  </ul>
@@ -742,13 +840,40 @@ export default function RootLayout({
      inside a <li>, so the globals `footer li > a` floor never reached them. */}
  <div className="mt-10 pt-8 border-t border-surface-800/60">
  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-surface-500">
+ {/* I-08 (2026-09-01) - prefetch={false} on all six, and it is not an
+     optimisation. MEASURED AGAINST PRODUCTION today, one curl per link:
+
+       curl -D- -H "RSC: 1" -H "Next-Router-Prefetch: 1"
+            "https://darshya.online/hi?_rsc=abc"
+       -> 200, Set-Cookie: poojly_language=hi; Max-Age=31536000
+
+     Same for /ta /te /bn /mr, and "/?lang=en&_rsc=abc" sent with
+     Cookie: poojly_language=hi answers Set-Cookie: poojly_language=en
+     - it ERASES a locale the reader chose.
+
+     middleware.ts has an isPrefetch() guard written to stop exactly this,
+     and three of its four branches do work in production (Sec-Purpose,
+     Purpose and X-Moz all return 200 with no Set-Cookie). The fourth,
+     next-router-prefetch, is the header next/link actually sends, and Next
+     strips it before middleware runs - so the one path the guard exists
+     for is the one it cannot see. Its own docblock says the remedy then
+     belongs "at the call site (drop the prefetch)". This is that call
+     site: these are the only <Link>s in the product that target a locale
+     route or ?lang=, they sit in the footer of EVERY page, and next/link
+     prefetches every in-viewport link. Scrolling to the bottom of an
+     English page was enough to be switched to whichever locale was
+     prefetched last, for a year.
+
+     A locale switch is a click. Nothing is lost by not speculating on it,
+     and the guard keeps working for the browser-level prefetches it can
+     still see. */}
  <span className="text-surface-600">Read in:</span>
- <Link href="/?lang=en" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
- <Link href="/hi" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="hi" lang="hi">हिन्दी</Link>
- <Link href="/ta" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="ta" lang="ta">தமிழ்</Link>
- <Link href="/te" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="te" lang="te">తెలుగు</Link>
- <Link href="/bn" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="bn" lang="bn">বাংলা</Link>
- <Link href="/mr" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="mr" lang="mr">मराठी</Link>
+ <Link prefetch={false} href="/?lang=en" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
+ <Link prefetch={false} href="/hi" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="hi" lang="hi">हिन्दी</Link>
+ <Link prefetch={false} href="/ta" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="ta" lang="ta">தமிழ்</Link>
+ <Link prefetch={false} href="/te" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="te" lang="te">తెలుగు</Link>
+ <Link prefetch={false} href="/bn" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="bn" lang="bn">বাংলা</Link>
+ <Link prefetch={false} href="/mr" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="mr" lang="mr">मराठी</Link>
  </div>
  {/* I18N-01: these six links advertise a localized product on every page.
  Until the copy exists, say so where the visitor actually is. */}

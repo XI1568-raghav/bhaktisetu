@@ -33,7 +33,7 @@ A typical household Surya puja on Sunday follows this sequence:
 8. **Aarti** — Conclude with the deity's aarti, circling the lamp clockwise.
 9. **Visarjan** — Respectfully request the deity to return, and distribute prasad.
 
-For a complete, pandit-verified Surya puja with video proof, book through [our Surya puja service](/pujas/surya-namaskar). Verified pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
+For a complete Surya puja with video proof, book through [our Surya puja service](/pujas/surya-namaskar). Pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
 
 ## Mantras and Aarti
 

@@ -16,16 +16,37 @@ describe('products', () => {
     expect(new Set(handles).size).toBe(handles.length);
   });
 
-  it('compareAtPrice >= price for every product', () => {
-    for (const p of PRODUCTS) {
-      expect(p.compareAtPrice).toBeGreaterThanOrEqual(p.price);
-    }
+  /**
+   * LEG-17 — these two cases replace, deliberately, a pair that encoded the
+   * OPPOSITE contract:
+   *
+   *   it('compareAtPrice >= price for every product', ...)
+   *   it('discount stays in 0-100 range', ...)
+   *
+   * They were internally consistent and passed for months, and that is the
+   * point: they policed the SHAPE of a fabricated discount instead of asking
+   * whether it should exist. Every one of the 24 rows carried a `compareAtPrice`
+   * above its price and a `discount` derived from it, and no row had ever been
+   * sold at that price, because this catalogue has never taken an order. Under
+   * the Consumer Protection Act 2019 and the CCPA misleading-advertisement
+   * guidelines that is a fabricated discount. `discount` is gone from the type
+   * and `compareAtPrice` is now nullable and null on every row, so the old
+   * assertions could not be satisfied honestly — the contract they described
+   * is the defect. What replaces them is the invariant that actually matters.
+   */
+  it('no product carries a reference price it was never sold at', () => {
+    const offenders = PRODUCTS.filter((p) => p.compareAtPrice !== null).map((p) => p.id);
+    expect(offenders).toEqual([]);
   });
 
-  it('discount stays in 0–100 range', () => {
+  it('no product claims a review or a star average', () => {
+    expect(PRODUCTS.filter((p) => p.reviewCount !== 0).map((p) => p.id)).toEqual([]);
+    expect(PRODUCTS.filter((p) => p.rating !== null).map((p) => p.id)).toEqual([]);
+  });
+
+  it('every product still has a real price', () => {
     for (const p of PRODUCTS) {
-      expect(p.discount).toBeGreaterThanOrEqual(0);
-      expect(p.discount).toBeLessThanOrEqual(100);
+      expect(p.price).toBeGreaterThan(0);
     }
   });
 

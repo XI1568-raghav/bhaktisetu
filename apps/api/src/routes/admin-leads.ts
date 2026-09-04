@@ -208,17 +208,56 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
     const outreach = outreachModel();
     const days = lastNDays(30);
     if (!outreach) {
+      // No delegate means the table was never migrated. Zeros are the only
+      // honest answer, but they are a degraded answer, not a measured one.
       return {
         daily: days.map((d) => ({ date: d.toISOString().slice(0, 10), sent: 0, replied: 0, bounced: 0 })),
         totals: { sent: 0, replied: 0, bounced: 0 },
+        degraded: true,
       };
     }
     try {
       const since = days[0]!;
-      const logs = await outreach.findMany({
-        where: { sentAt: { gte: since } },
-        select: { status: true, sentAt: true },
-      });
+      // ── SCAL-04: the day buckets are grouped by Postgres ──────────────────
+      //
+      // This read had no take and no cursor: every outreach row of the last 30
+      // days, two columns wide, walked in JS to produce 30 tuples of three
+      // integers. `outreach_logs` gains a row per MESSAGE per lead and never
+      // loses one, so it grows faster than any other table here and the scan
+      // grows with campaign volume rather than with anything on the screen.
+      //
+      // Identical technique and identical justification to the sibling fix in
+      // routes/admin-lead-conversion.ts `/conversion/timeline` — see the long
+      // note there for why the raw statement is safe to write without a
+      // database to run it against: the column names come from
+      // `@map(...)` in prisma/schema.prisma AND from the DDL of migration
+      // 20260503_perf_indexes, the query shape is copied from admin-metrics
+      // `loadFunnelDaily` which is already in production, and
+      // `admin-lead-conversion.timeline-sql.scal04.test.ts` checks every
+      // quoted identifier in BOTH files against the schema on every run.
+      //
+      // The `outreachModel()` guard above is kept: when the delegate is not
+      // generated at all there is no table to query, and answering zeros
+      // without a round trip is the behaviour this endpoint already had.
+      type DayRow = {
+        day: string | null;
+        sent: number | bigint | null;
+        replied: number | bigint | null;
+        bounced: number | bigint | null;
+      };
+      const toCount = (n: number | bigint | null | undefined): number =>
+        n == null ? 0 : typeof n === 'bigint' ? Number(n) : n;
+
+      const rows = await prisma.$queryRaw<DayRow[]>`
+        SELECT to_char(date_trunc('day', "sent_at"), 'YYYY-MM-DD') AS day,
+               count(*) FILTER (WHERE "status"::text IN ('SENT', 'DELIVERED', 'OPENED'))::int AS sent,
+               count(*) FILTER (WHERE "status"::text = 'REPLIED')::int AS replied,
+               count(*) FILTER (WHERE "status"::text IN ('BOUNCED', 'FAILED'))::int AS bounced
+        FROM "outreach_logs"
+        WHERE "sent_at" >= ${since}
+        GROUP BY 1
+      `;
+
       const buckets: Record<string, { sent: number; replied: number; bounced: number }> = {};
       for (const d of days) {
         buckets[d.toISOString().slice(0, 10)] = { sent: 0, replied: 0, bounced: 0 };
@@ -226,30 +265,36 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
       let totalSent = 0;
       let totalReplied = 0;
       let totalBounced = 0;
-      for (const l of logs as Array<{ status: string; sentAt: Date }>) {
-        const k = startOfDayUtc(new Date(l.sentAt)).toISOString().slice(0, 10);
-        const b = buckets[k];
+      for (const r of rows ?? []) {
+        // Same containment rule the JS loop had: a row outside the seeded days
+        // counted toward neither its bucket nor the totals, so the totals stay
+        // the sum of what is rendered rather than a second, larger number.
+        const b = r.day ? buckets[r.day] : undefined;
         if (!b) continue;
-        if (l.status === 'SENT' || l.status === 'DELIVERED' || l.status === 'OPENED') {
-          b.sent++;
-          totalSent++;
-        } else if (l.status === 'REPLIED') {
-          b.replied++;
-          totalReplied++;
-        } else if (l.status === 'BOUNCED' || l.status === 'FAILED') {
-          b.bounced++;
-          totalBounced++;
-        }
+        b.sent += toCount(r.sent);
+        b.replied += toCount(r.replied);
+        b.bounced += toCount(r.bounced);
+        totalSent += toCount(r.sent);
+        totalReplied += toCount(r.replied);
+        totalBounced += toCount(r.bounced);
       }
       const daily = days.map((d) => {
         const k = d.toISOString().slice(0, 10);
         return { date: k, ...buckets[k]! };
       });
-      return { daily, totals: { sent: totalSent, replied: totalReplied, bounced: totalBounced } };
+      return {
+        daily,
+        totals: { sent: totalSent, replied: totalReplied, bounced: totalBounced },
+        degraded: false,
+      };
     } catch {
+      // Additive `degraded`: a rejected query and a quiet month used to return
+      // byte-identical JSON, which is precisely how the /admin/waitlist/stats
+      // outage recorded below stayed invisible.
       return {
         daily: days.map((d) => ({ date: d.toISOString().slice(0, 10), sent: 0, replied: 0, bounced: 0 })),
         totals: { sent: 0, replied: 0, bounced: 0 },
+        degraded: true,
       };
     }
   });
@@ -282,13 +327,32 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
       // container, to answer a question Postgres can answer with two grouped
       // reads. `groupBy` returns one row per status and a `take: 20` slice of
       // referrers instead.
+      //
+      // 2026-08-20: THE LEADERBOARD GROUP NAMED A COLUMN THAT DOES NOT EXIST,
+      // and it took the whole endpoint down with it. It grouped by a
+      // referrer-EMAIL field; `model Waitlist` has no such field. A referral is
+      // stored as the referrer's CODE (routes/waitlist.ts writes
+      // `referredByCode = referrer.referralCode`). Prisma rejects an unknown
+      // `by` entry, that rejection propagated out of this `Promise.all`, and
+      // the handler's catch answered the all-zero object below — so total,
+      // confirmed, invited, converted, the 30-day series and the leaderboard
+      // were ALL zero, not just the part with the wrong name. An operator
+      // reading that screen concluded the waitlist was empty.
+      //
+      // Nothing could see it: `waitlistModel()` is hand-typed as
+      // `(args: unknown) => Promise<any[]>` so tsc never checked the name, the
+      // route's own test mocked `groupBy` and branched on the same wrong field,
+      // and a dead endpoint and an empty waitlist return identical JSON.
+      // `admin-leads.waitlist-schema.scal04.test.ts` now checks every field
+      // name in these calls against prisma/schema.prisma, which is the only
+      // oracle available with no database to query.
       const [statusGroups, referrerGroups, recent] = await Promise.all([
         waitlist.groupBy({ by: ['status'], _count: { _all: true } }),
         waitlist.groupBy({
-          by: ['referredByEmail'],
-          where: { referredByEmail: { not: null } },
+          by: ['referredByCode'],
+          where: { referredByCode: { not: null } },
           _count: { _all: true },
-          orderBy: { _count: { referredByEmail: 'desc' } },
+          orderBy: { _count: { referredByCode: 'desc' } },
           take: 20,
         }),
         waitlist.findMany({
@@ -309,15 +373,35 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
         else if (g.status === 'INVITED') invited += n;
         else if (g.status === 'CONVERTED') converted += n;
       }
-      const topReferrers = (
-        referrerGroups as Array<{ referredByEmail: string | null; _count: { _all: number } }>
-      )
-        .filter((g) => !!g.referredByEmail)
-        .map((g, i) => ({
-          rank: i + 1,
-          email: g.referredByEmail as string,
-          referralCount: g._count?._all ?? 0,
-        }));
+      // The group above is keyed by referral CODE; the screen shows the person.
+      // `Waitlist.referralCode` is @unique and the group is capped at 20, so
+      // this resolves at most 20 rows — bounded by the leaderboard, never by
+      // the table. Doing it as a second read rather than a relation join is
+      // deliberate: a waitlist row referencing another waitlist row is a
+      // self-relation the schema does not declare, and inventing one here would
+      // be the same schema change SCAL-04 is still blocked on elsewhere.
+      const referrerCounts = (
+        referrerGroups as Array<{ referredByCode: string | null; _count: { _all: number } }>
+      ).filter((g) => !!g.referredByCode);
+      let emailByCode = new Map<string, string>();
+      if (referrerCounts.length > 0) {
+        const codes = referrerCounts.map((g) => g.referredByCode as string);
+        const referrers = (await waitlist.findMany({
+          where: { referralCode: { in: codes } },
+          select: { referralCode: true, email: true },
+          take: 20,
+        })) as Array<{ referralCode: string; email: string }>;
+        emailByCode = new Map(referrers.map((r) => [r.referralCode, r.email] as const));
+      }
+      const topReferrers = referrerCounts.map((g, i) => ({
+        rank: i + 1,
+        // A code whose owner row has since been deleted still referred real
+        // people. Showing the code keeps that count on the screen; dropping the
+        // row would silently shrink the leaderboard, which is the same
+        // under-reporting this endpoint has just been repaired from.
+        email: emailByCode.get(g.referredByCode as string) ?? (g.referredByCode as string),
+        referralCount: g._count?._all ?? 0,
+      }));
 
       const buckets: Record<string, number> = {};
       for (const d of days) buckets[d.toISOString().slice(0, 10)] = 0;

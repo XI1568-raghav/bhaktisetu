@@ -42,13 +42,19 @@ The SMS quota resets monthly. Two real outages in a month and SMS goes silent �
 3. Custom slug = `darshya` → final URL becomes `https://stats.uptimerobot.com/darshya`.
 4. Monitor selection = all 4 monitors from §2.
 5. Save. UptimeRobot exposes a public JSON feed at `https://stats.uptimerobot.com/api/getMonitorList/<slug-hash>` — copy that URL from the **Public Status Page → Embed** tab (it is shown alongside the iframe snippet).
-6. Set the env var in Cloudflare Pages (Project → Settings → Environment Variables, both **Production** and **Preview**):
+6. Set the env var on the **Render** service `darshya-web` (`srv-d970l2ks728c738fc33g`) → Environment. *(Corrected 2026-09-02, `OPS-10`: this step used to say "Set the env var in Cloudflare Pages (Project → Settings → Environment Variables, both Production and Preview)". Cloudflare Pages has not served the web tier since the 2026-07-08 cutover — there is no Pages project to set a variable on. Cloudflare is DNS + edge proxy only.)* Note the var is `NEXT_PUBLIC_*`, so it is baked at **build** time and needs a rebuild, not just a restart:
 
    ```
    NEXT_PUBLIC_UPTIME_STATUS_URL=https://stats.uptimerobot.com/api/getMonitorList/<slug-hash>
    ```
 
-7. Trigger one Cloudflare Pages redeploy (uses 1 of the 500/mo build slots — see `docs/free-tier-budgets.md`). After deploy, `https://darshya.online/status` will render the live monitor table.
+7. Deploy `darshya-web` explicitly. *(Corrected 2026-09-02, `OPS-10`: this step used to say "Trigger one Cloudflare Pages redeploy (uses 1 of the 500/mo build slots)". There is no Pages build pipeline and no 500/mo build quota.)* `autoDeploy: false` (`render.yaml:60`), so a push deploys nothing — dispatch the deploy by hand per `docs/runbooks/prod-rollback.md`:
+
+   ```bash
+   gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main
+   ```
+
+   After the deploy reports live, `https://darshya.online/status` will render the live monitor table.
 
 If the env var is absent, the page degrades to a neutral fallback (no crash, just a "Status temporarily unavailable" banner + the 4 monitor names in grey).
 

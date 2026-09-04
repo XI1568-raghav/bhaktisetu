@@ -10,6 +10,7 @@ import {
 import { useTemplePortalBookings } from '../../lib/portal-queries';
 import { selectTempleBookings, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { bookingStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-22. GET /api/v1/temple-portal/bookings shipped with the web temple-manager
@@ -142,7 +143,7 @@ export default function TempleBookings() {
                     .join(' · ')}
                   trailing={b.priceInr === null ? '—' : formatInr(b.priceInr)}
                   trailingHint={b.bookingNumber ?? undefined}
-                  status={{ label: b.status, color: statusColor(b.status) }}
+                  status={{ label: bookingStatusLabel(b.status), color: statusColor(b.status) }}
                 />
               ))
             )}

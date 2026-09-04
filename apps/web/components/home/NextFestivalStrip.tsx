@@ -6,6 +6,8 @@ import { buttonClass } from '../ui/button-recipe';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { nextFestival, resolveBookablePujas } from '../../lib/festivals';
 import { getCatalogueSlugs } from '../../lib/puja-catalogue';
+import { pujaSlugLabel } from '../../lib/enum-labels';
+import { deityLine } from '../../lib/copy';
 
 function daysUntil(iso: string): number {
   const today = new Date(new Date().toISOString().slice(0, 10));
@@ -72,7 +74,12 @@ export default async function NextFestivalStrip({ catalogueSlugs }: Props = {}) 
                   <span className="text-base font-serif text-surface-500 ml-1">{f.sanskrit}</span>
                 </h2>
                 <p className="text-sm text-surface-700 truncate">
-                  {dateStr} · {f.deity}
+                  {/* CM-10: this printed `f.deity` verbatim, and the calendar
+                      stores a sentinel where a festival has no presiding deity
+                      — the homepage read "Wednesday, 19 August · None (sibling
+                      bond)". deityLine() keeps the parenthetical meaning and
+                      drops the segment when there is nothing to name. */}
+                  {[dateStr, deityLine(f.deity)].filter(Boolean).join(' · ')}
                 </p>
               </div>
             </Link>
@@ -82,7 +89,10 @@ export default async function NextFestivalStrip({ catalogueSlugs }: Props = {}) 
                   href={`/pujas/${firstPuja}`}
                   className={buttonClass('primary', 'md')}
                 >
-                  Book {firstPuja.replace(/-/g, ' ')} <ArrowRight className="w-3.5 h-3.5" />
+                  {/* CM-10: was `firstPuja.replace(/-/g, ' ')`, which printed
+                      the raw catalogue slug — "Book satyanarayan katha" on the
+                      homepage's only time-sensitive CTA. */}
+                  Book {pujaSlugLabel(firstPuja)} <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               ) : (
                 <Link

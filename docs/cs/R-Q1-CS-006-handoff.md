@@ -1,3 +1,11 @@
+<!-- TC-01 (P0, trust audit): the 80G deduction promise was removed from the
+blast copy below. Darshya holds no Section 80G registration -
+apps/web/lib/company.ts HAS_80G_VERIFIED is false with pan and eightyGNumber
+null, and apps/api/src/lib/pdf-receipt.ts is80GEligible() requires a donee 80G
+number AND PAN read from gaushala_profiles columns no route in the repository
+writes, so is80GEligible() is false for every donation ever made. Restore by
+hand the day apps/api/src/lib/eighty-g.ts HAS_80G is true. -->
+
 # R-Q1-CS-006 — WA blast 21 founder-network contacts asking 5 referrals each
 
 > **Status**: founder-action-required. Spec was placeholder-only on bulk import; this handoff documents the executable plan for the founder to run the blast manually.
@@ -43,7 +51,8 @@ Namaste {name} 🙏
 Hope you and family are well. I've been quietly building something for the
 last few months — Darshya (https://darshya.online) — a devotional super-app
 where Indians and NRIs can book live darshan, pujas (with video proof),
-astrology consults, and 80G donations to verified temples.
+astrology consults, and donations to verified temples with a numbered
+receipt PDF by email (proof of payment, not a tax-exemption certificate).
 
 We're going live this week and I'm asking 5 close friends to share with
 5 people they think would genuinely benefit (parents who book pujas, NRI
@@ -63,7 +72,7 @@ Hi {name},
 Hope you're doing well. Quick founder-mode ask:
 
 I've been building Darshya (https://darshya.online) — a devotional super-app
-for Indian/NRI Hindus. Live darshan, video-proof pujas, astrology, 80G
+for Indian/NRI Hindus. Live darshan, video-proof pujas, astrology, receipted
 temple donations. Going live this week.
 
 Would really appreciate if you could share with 5 people in your network

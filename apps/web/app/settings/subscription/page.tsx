@@ -31,6 +31,8 @@ import { SubscriptionPanel } from "../../../components/SubscriptionPanel";
 import { useAuth } from "../../../lib/auth-context";
 import type { ProviderRole } from "../../../lib/subscription-api";
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 /** Web roles that the API actually sells marketplace plans to. */
 const PROVIDER_ROLES: ProviderRole[] = [
   "priest",
@@ -89,8 +91,7 @@ function SubscriptionInner() {
                 />
                 <div>
                   <h1
-                    className="text-lg font-semibold mb-1"
-                    style={{ color: "var(--color-text)" }}
+                    className={`${H1.portal} mb-1`}
                   >
                     Subscription
                   </h1>
@@ -104,11 +105,7 @@ function SubscriptionInner() {
                   </p>
                   <Link
                     href="/pricing"
-                    className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-lg text-sm font-medium btn-press"
-                    style={{
-                      background: "var(--color-primary)",
-                      color: "var(--color-text-inverse)",
-                    }}
+                    className={buttonClass('primary', 'md', 'mt-4 btn-press')}
                   >
                     See plans and prices
                   </Link>

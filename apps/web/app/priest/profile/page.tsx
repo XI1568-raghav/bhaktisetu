@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+// DU-03: the one primary-CTA recipe. Layout-only extras in the third slot —
+// never h-*, px-*, py-* or rounded-*, which is the invariant every call site holds.
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { AvatarWithFallback } from '../../../components/AvatarWithFallback';
 import {
  UserCircle,
  Star,
@@ -23,6 +27,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { UserFacingError, userFacingMessage } from '../../../lib/friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -117,7 +122,8 @@ function PriestProfilePageContent() {
  return;
  }
  if (!res.ok) {
- throw new Error(`Could not load your profile (HTTP ${res.status}).`);
+ // RES-09: an HTTP status is not something a pandit can act on.
+ throw new UserFacingError('Could not load your profile. Please try again.');
  }
  const data = await res.json();
  setProfile(data);
@@ -180,12 +186,12 @@ function PriestProfilePageContent() {
  setTimeout(() => setSaved(false), 3000);
  } else {
  // P0 #pp-06: show the server message, not a silent fail.
- let msg = `Save failed (HTTP ${res.status})`;
+ let msg = 'Could not save your profile. Please try again.';
  try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
  setSaveError(msg);
  }
  } catch (err) {
- setSaveError(err instanceof Error ? err.message : 'Network error — please retry.');
+ setSaveError(userFacingMessage(err, 'Network error — please retry.'));
  } finally {
  setSaving(false);
  }
@@ -226,7 +232,7 @@ function PriestProfilePageContent() {
  </p>
  <a
  href={LOGIN_HREF}
- className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md', 'mt-6')}
  >
  Sign in again
  </a>
@@ -244,7 +250,7 @@ function PriestProfilePageContent() {
  </p>
  <button
  onClick={() => void fetchProfile()}
- className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md', 'mt-6')}
  >
  <RefreshCw className="w-4 h-4" />
  Try again
@@ -276,7 +282,7 @@ function PriestProfilePageContent() {
  <button
  onClick={handleSave}
  disabled={saving}
- className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+ className={buttonClass('primary', 'md')}
  >
  {saving ? (
  <Loader2 className="w-4 h-4 animate-spin" />
@@ -299,16 +305,21 @@ function PriestProfilePageContent() {
  <div className="flex flex-col sm:flex-row items-center gap-6">
  {/* Avatar */}
  <div className="relative">
+ {/* PF-04: was a FALSY-only guard, so a present-but-dead avatar URL —
+     `priests.avatar_url` is the column holding the dead
+     `images.darshya.online` host — rendered as a broken-image icon on the
+     pandit's own profile. The UserCircle fallback is kept exactly as it
+     was; AvatarWithFallback takes it as a prop precisely so surfaces that
+     do not fall back to initials keep their own presentation. */}
  <div className="w-24 h-24 bg-saffron-100 rounded-full flex items-center justify-center">
- {profile.avatarUrl ? (
- <img
+ <AvatarWithFallback
  src={profile.avatarUrl}
+ width={96}
+ height={96}
  alt={profile.displayName}
  className="w-24 h-24 rounded-full object-cover"
+ fallback={<UserCircle className="w-14 h-14 text-saffron-400" />}
  />
- ) : (
- <UserCircle className="w-14 h-14 text-saffron-400" />
- )}
  </div>
  <button className="absolute bottom-0 right-0 w-8 h-8 bg-saffron-600 text-white rounded-full flex items-center justify-center text-xs shadow-lg hover:bg-saffron-700 transition-colors">
  +

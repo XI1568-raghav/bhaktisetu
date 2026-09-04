@@ -1,6 +1,17 @@
 # Handoff Log — Darshya
 
 > Append-only. Newest first. Lazy-loaded (not in CLAUDE.md @-imports).
+>
+> **Historical record — check the date before following anything here
+> (OPS-06, 2026-09-02).** Entries written before 2026-07-08 describe a world in
+> which Cloudflare Pages hosted the web app and Render rebuilt each service
+> whenever a commit reached `main`. Neither is true now: the web front end
+> moved to a Render Docker service on 2026-07-08, CF Pages auto-deploy was
+> killed the same day (`cf-kill-zombie.yml`), and `render.yaml` sets
+> `autoDeploy: false` on both services (`:28` API, `:60` web). Nothing in this
+> repository ships when you merge. The entries below are preserved verbatim as
+> a log and are **not** operational instructions — for those use
+> `docs/runbooks/prod-rollback.md` and `docs/operational-context.md`.
 
 ## 2026-05-26 — Mobile gurukul owner parity
 

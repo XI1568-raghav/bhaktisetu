@@ -25,6 +25,7 @@ import {
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
+import { wellnessSessionStatusLabel, wellnessSessionTypeLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-10, both directions.
@@ -163,7 +164,7 @@ export default function WellnessSessionsScreen() {
               <Text style={styles.cardPrimary}>{s.title}</Text>
               <Text style={styles.cardSecondary}>
                 {[
-                  s.type,
+                  wellnessSessionTypeLabel(s.type),
                   s.durationMinutes !== null ? `${s.durationMinutes} min` : null,
                   s.capacity !== null ? `${s.capacity} seats` : null,
                   s.priceInr === null
@@ -185,7 +186,7 @@ export default function WellnessSessionsScreen() {
                   })}
                 </Text>
               ) : null}
-              {s.status ? <Text style={styles.cardSecondary}>Status: {s.status}</Text> : null}
+              {s.status ? <Text style={styles.cardSecondary}>Status: {wellnessSessionStatusLabel(s.status)}</Text> : null}
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.actionPrimary]}

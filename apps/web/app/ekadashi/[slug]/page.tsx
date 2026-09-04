@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getEkadashi, EKADASHIS } from '../../../lib/ekadashis';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -66,7 +68,7 @@ export default async function EkadashiDetailPage({ params }: { params: Promise<{
 
      <header className="mt-4 rounded-2xl border-2 border-saffron-200 bg-white p-6">
       <p className="text-xs uppercase tracking-wider text-saffron-600">Ekadashi {e.order} of 24</p>
-      <h1 className="mt-1 font-serif text-4xl font-bold text-gray-900">{e.name}</h1>
+      <h1 className={`${H1.catalogue} mt-1`}>{e.name}</h1>
       <p className="mt-1 text-base text-saffron-700">{e.sanskrit}</p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -175,7 +177,7 @@ export default async function EkadashiDetailPage({ params }: { params: Promise<{
        sankalp ensure your vrata bears full merit.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/pujas" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

@@ -13,6 +13,7 @@ import {
  Truck,
 } from 'lucide-react';
 import { useCart } from './CartContext';
+import { buttonClass } from '../components/ui/button-recipe';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -95,7 +96,7 @@ export default function CartDrawer() {
  <Link
  href="/store"
  onClick={closeCart}
- className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-semibold rounded-xl hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  Browse Store
  <ArrowRight className="w-4 h-4" />
@@ -120,26 +121,28 @@ export default function CartDrawer() {
  {item.product.title}
  </h3>
 
+ {/* LEG-17: no struck-through `compareAtPrice`. Carts persist in
+     localStorage under poojly_cart (never renamed), so a cart saved
+     before this change still carries the fabricated reference price;
+     not rendering it here is what makes the fix retroactive. Same
+     treatment as the /store/cart line item. */}
  <div className="flex items-baseline gap-2 mt-1">
  <span className="text-sm font-bold text-surface-900">
  {formatPrice(item.product.price)}
  </span>
- {item.product.compareAtPrice && (
- <span className="text-xs text-surface-400 line-through">
- {formatPrice(item.product.compareAtPrice)}
- </span>
- )}
  </div>
 
  {/* Quantity controls */}
- <div className="flex items-center justify-between mt-2">
- <div className="flex items-center gap-1">
+ <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+ <div className="flex items-center">
  <button
  onClick={() => updateQuantity(item.id, item.quantity - 1)}
  disabled={item.quantity <= 1}
- className="w-7 h-7 flex items-center justify-center rounded-md border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
  >
+ <span className="w-7 h-7 flex items-center justify-center rounded-md border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 transition-colors">
  <Minus className="w-3 h-3" />
+ </span>
  </button>
  <span className="w-8 text-center text-sm font-semibold text-surface-900">
  {item.quantity}
@@ -147,9 +150,11 @@ export default function CartDrawer() {
  <button
  onClick={() => updateQuantity(item.id, item.quantity + 1)}
  disabled={item.quantity >= 10}
- className="w-7 h-7 flex items-center justify-center rounded-md border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
  >
+ <span className="w-7 h-7 flex items-center justify-center rounded-md border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 transition-colors">
  <Plus className="w-3 h-3" />
+ </span>
  </button>
  </div>
 
@@ -159,7 +164,7 @@ export default function CartDrawer() {
  </span>
  <button
  onClick={() => removeItem(item.id)}
- className="p-1 text-surface-400 hover:text-red-500 transition-colors"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-surface-400 hover:text-red-500 transition-colors"
  >
  <Trash2 className="w-4 h-4" />
  </button>

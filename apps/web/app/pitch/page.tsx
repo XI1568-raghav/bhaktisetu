@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { HAS_80G, RECEIPT_NOUN } from '../../lib/eighty-g';
 
 const SLIDES = [
   '01-hook',
@@ -45,8 +46,7 @@ export default function PitchPage() {
           </a>
         </div>
         <div id="demo-reel" style={{ marginTop: 48 }}>
-          <img
-            className="pitch-media"
+          <img width={1920} height={1080}             className="pitch-media"
             src="/pitch/img/01-home-hero.png"
             alt="Darshya home — live darshan, daily panchang, temple finder"
             loading="lazy"
@@ -144,7 +144,7 @@ export default function PitchPage() {
           />
           <MediaCard
             src="/pitch/img/09-gaushala.png"
-            caption="Gaushala adoption + 80G receipt"
+            caption={`Gaushala adoption + ${RECEIPT_NOUN}`}
             href="https://darshya.online/gaushala"
           />
         </div>
@@ -168,8 +168,8 @@ export default function PitchPage() {
             Devotee, Priest, Astrologer, Wellness, Gaushala, Yatra, Temple Admin, Platform Admin —
             each with KYC, payouts, dashboards. Not a booking widget. A two-sided market.
           </Card>
-          <Card title="80G + INR/USD priced">
-            Auto-generated 80G receipts (DR-YYYYMMDD-XXXX). Native Razorpay. NRI pricing
+          <Card title={HAS_80G ? '80G + INR/USD priced' : 'Receipted + INR/USD priced'}>
+            Auto-generated numbered donation receipts (DR-YYYYMMDD-XXXX){HAS_80G ? ', 80G-valid' : ' — proof of payment, not yet an 80G certificate'}. Native Razorpay. NRI pricing
             9-10× domestic, configured per puja. Built for Indian + diaspora from day zero.
           </Card>
         </div>
@@ -178,8 +178,7 @@ export default function PitchPage() {
       <Slide id="06-portals" num="06 / 12">
         <span className="pitch-eyebrow">Surface area</span>
         <h2 className="pitch-h2">One product, eight separate user journeys.</h2>
-        <img
-          className="pitch-media"
+        <img width={1920} height={1080}           className="pitch-media"
           src="/pitch/img/04-pujas-grid.png"
           alt="Puja booking with sankalp + video proof"
           loading="lazy"
@@ -380,11 +379,22 @@ export default function PitchPage() {
 
       <Slide id="12-ask" num="12 / 12">
         <span className="pitch-eyebrow">Ask</span>
-        <h1 className="pitch-h1">
+        {/* DU-05: this was a SECOND <h1> on the same document. The deck is one
+            scrolling page — all twelve slides are in the DOM at once — so
+            /pitch shipped two level-1 headings, which is the same defect the
+            finding records on /priest and is separate from the open question
+            of whether the investor deck belongs to the product design system.
+            Slides 02-11 are all `<h2 className="pitch-h2">`; this is their
+            peer, not a second document title.
+
+            The LEVEL changes and the type does not: `pitch-h1` is kept on
+            purpose, so the closing slide keeps the emphasis it was designed
+            with and not one pixel moves. Renders identically, one h1. */}
+        <h2 className="pitch-h1">
           ₹2–5 Cr seed.
           <br />
           <span className="pitch-grad-text">18-month runway to PMF + Series A.</span>
-        </h1>
+        </h2>
         <div className="pitch-grid pitch-grid-3" style={{ marginTop: 32 }}>
           <Card title="50% — Distribution">
             Anchor-temple BD, performance marketing, NRI activation

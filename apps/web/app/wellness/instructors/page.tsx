@@ -23,6 +23,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CalendarDays, Leaf } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
   fetchWellnessClasses,
   formatClassPrice,
@@ -99,12 +100,11 @@ export default function WellnessInstructorsIndexPage() {
             Wellness
           </p>
           <h1
-            className="text-3xl font-semibold tracking-tight mb-3"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+            className={`${H1.catalogue} mb-3`}
           >
             Instructors teaching on Darshya
           </h1>
-          <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="prose-body mb-10 max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
             Everyone here has at least one live class scheduled. Prices are what those
             classes actually cost.
           </p>

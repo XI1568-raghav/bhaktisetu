@@ -5,6 +5,8 @@
 **Template**: `docs/finance/foundation-books-FY26-27-template.csv`
 **Depends on**: R-Q1-F-001 (incorp decision — founder must pick entity before opening account)
 
+> **Correction 2026-09-02 (`OPS-10`).** This handoff listed "Switch Razorpay/Stripe settlement bank in those dashboards" as blocked founder work, recommended ICICI for its "proven Razorpay+Stripe flow", and gave founder step 6 as "Update Stripe dashboard settlement bank (~5-7 day Stripe-side processing)". **Stripe was removed from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`, `apps/api/src/services/payment.service.ts:2438-2450`). Razorpay is the only live rail and it settles INR only; no replacement international processor has been chosen, so there is no second dashboard and no second settlement bank to switch. The bank-account work itself is unaffected — only the second rail has been struck.
+
 ## Why this is open
 
 KPI `business_bank_open` requires a real ICICI/HDFC/Axis Foundation current account. Agent cannot:
@@ -12,7 +14,7 @@ KPI `business_bank_open` requires a real ICICI/HDFC/Axis Foundation current acco
 - Visit a bank branch
 - Submit Foundation CIN + 80G + MoA/AoA + board resolution
 - Sign account-opening forms
-- Switch Razorpay/Stripe settlement bank in those dashboards
+- Switch the Razorpay settlement bank in that dashboard
 
 Agent has shipped everything that can be shipped without founder presence:
 
@@ -23,13 +25,13 @@ Agent has shipped everything that can be shipped without founder presence:
 ## Founder action (sequential)
 
 1. **Close R-Q1-F-001 first** — bank account is opened in the chosen entity name. If Section 8 Foundation: open Foundation current account. If Pvt Ltd subsidiary scoped: open both Foundation + Pvt Ltd current accounts (separate books, separate reconciliation).
-2. **Pick bank**: ICICI vs HDFC vs Axis. Recommendation: ICICI (proven Razorpay+Stripe flow, lowest minimum balance for Section 8, online net-banking strongest).
+2. **Pick bank**: ICICI vs HDFC vs Axis. Recommendation: ICICI (proven Razorpay flow, lowest minimum balance for Section 8, online net-banking strongest).
 3. **Gather docs** per runbook §"Required documents". MoA/AoA + board resolution likely already on file from incorp.
 4. **Schedule branch visit** — 1 day founder time, expect 7-10 day total processing.
 5. **Open Google Sheets** from `docs/finance/foundation-books-FY26-27-template.csv` (import as Google Sheet, save to private drive `finance/foundation-books-FY26-27.gsheet`).
 6. **After account active**:
    - Update Razorpay dashboard settlement bank (~3 day Razorpay-side processing)
-   - Update Stripe dashboard settlement bank (~5-7 day Stripe-side processing)
+   - _Removed 2026-09-02: this sub-step read "Update Stripe dashboard settlement bank (~5-7 day Stripe-side processing)". No second processor account exists._ `[verify — Stripe was removed; the NRI rail is undecided]`
    - First test settlement: ₹100 puja booking → verify settles into Foundation account, not founder personal
 7. **Schedule monthly reconciliation** — recurring last Friday calendar invite, founder + CA, 90 min.
 

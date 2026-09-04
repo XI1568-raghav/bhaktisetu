@@ -19,6 +19,8 @@ import {
  Star,
 } from 'lucide-react';
 import ScrollReveal from '../../components/ScrollReveal';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
  yatras,
  formatINR,
@@ -69,8 +71,7 @@ export default function YatraHubPage() {
 
  <h1
  data-reveal="cinematic"
- className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.05]"
- style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+ className={H1.marketing}
  >
  Plan Your{' '}
  <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>Sacred Journey</span>
@@ -79,7 +80,7 @@ export default function YatraHubPage() {
  <p
  data-reveal="up"
  data-delay="2"
- className="mt-4 text-sm leading-relaxed max-w-lg"
+ className="mt-4 prose-body leading-relaxed max-w-lg"
  style={{ color: 'var(--color-text-muted)' }}
  >
  Char Dham, 12 Jyotirlingas, Amarnath, Vaishno Devi — fully curated yatras with verified guides, comfortable stays, helicopter options and trained companions for elderly devotees.
@@ -88,8 +89,7 @@ export default function YatraHubPage() {
  <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-3 flex-wrap">
  <Link
  href="/yatra/plan"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white transition-all btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Plan Custom Trip <ArrowRight className="w-3.5 h-3.5" />
  </Link>
@@ -208,7 +208,7 @@ export default function YatraHubPage() {
  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
  >
  <div className="aspect-[16/10] relative overflow-hidden">
- <img src={y.heroImage} alt={y.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+ <img width={640} height={400} src={y.heroImage} alt={y.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
  {y.helicopterAvailable && (
  <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-white/90 backdrop-blur text-xs font-medium px-2 py-0.5 rounded-full" style={{ color: 'var(--color-primary)' }}>
@@ -264,26 +264,29 @@ export default function YatraHubPage() {
  <div>
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>For Elderly Devotees</p>
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Verified travel companions who care like family
+ A travel companion for elderly devotees
  </h2>
+ {/* TC-06: this block used to describe eight invented companions as if they
+  were on the books. It now describes the service and the bar a person must
+  clear before we list them. The roster itself lives in
+  lib/companion-roster.ts and is empty until someone real has been signed. */}
  <p data-reveal="up" data-delay="1" className="text-sm leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- Our trained companions handle logistics, mobility, medication reminders, photos and family updates — so your elderly parents can focus entirely on darshan. Aadhaar verified, background checked, first-aid certified.
+ A companion handles logistics, mobility, medication reminders, photos and family updates — so your elderly parents can focus entirely on darshan. Nobody is listed until we have met them and checked their ID, references and first-aid training.
  </p>
  <Link
  href="/yatra/companion"
  data-reveal="spring" data-delay="2"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
- <Heart className="w-3.5 h-3.5" /> Meet our companions <ArrowRight className="w-3.5 h-3.5" />
+ <Heart className="w-3.5 h-3.5" /> How companions work <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
  <div data-reveal="glow" data-delay="1" className="grid grid-cols-2 gap-3">
  {[
- { icon: Shield, t: 'Background verified', s: 'Aadhaar + police check' },
- { icon: Heart, t: 'First-aid certified', s: 'Medicine + BP monitoring' },
- { icon: MapPin, t: 'GPS tracking', s: 'Real-time family updates' },
- { icon: Star, t: 'Hand-screened', s: 'Every companion is interviewed' },
+ { icon: Shield, t: 'Background check', s: 'Required before we list anyone' },
+ { icon: Heart, t: 'First-aid training', s: 'Required before we list anyone' },
+ { icon: MapPin, t: 'Location sharing', s: 'Shared with family during the yatra' },
+ { icon: Star, t: 'Interviewed in person', s: 'Required before we list anyone' },
  ].map((f) => (
  <div key={f.t} className="p-4 rounded-xl" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <f.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-primary)' }} />
@@ -303,14 +306,13 @@ export default function YatraHubPage() {
  <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Can&apos;t find your perfect yatra?
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
  Pick your destinations, dates and preferences — our team will craft a personalized itinerary within 24 hours.
  </p>
  <Link
  href="/yatra/plan"
  data-reveal="spring" data-delay="2"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Plan Custom Yatra <ArrowRight className="w-3.5 h-3.5" />
  </Link>
@@ -329,7 +331,7 @@ function HeroBento() {
  return (
  <div data-reveal="zoom-rotate" data-delay="1" className="hidden md:grid grid-cols-3 gap-2.5">
  <div className="col-span-2 row-span-2 rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
- <img src={flagship.heroImage} alt="Char Dham" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
+ <img width={800} height={600} src={flagship.heroImage} alt="Char Dham" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-saffron-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
  <Sparkles className="w-2.5 h-2.5" /> FLAGSHIP
@@ -340,7 +342,7 @@ function HeroBento() {
  </div>
  </div>
  <div className="rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
- <img src={amarnath.heroImage} alt="Amarnath" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={400} height={300} src={amarnath.heroImage} alt="Amarnath" className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
  <div className="absolute bottom-2 left-2 right-2">
  <p className="text-xs font-semibold text-white">Amarnath</p>
@@ -348,7 +350,7 @@ function HeroBento() {
  </div>
  </div>
  <div className="rounded-xl overflow-hidden relative" style={{ border: '1px solid var(--color-border)' }}>
- <img src={tirupati.heroImage} alt="Tirupati" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={400} height={300} src={tirupati.heroImage} alt="Tirupati" className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
  <div className="absolute bottom-2 left-2 right-2">
  <p className="text-xs font-semibold text-white">Tirupati</p>

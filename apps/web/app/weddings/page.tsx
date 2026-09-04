@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/weddings' },
@@ -53,10 +54,10 @@ export default function WeddingsPage() {
           <p className="uppercase tracking-widest text-amber-700 text-sm">
             Vedic Hindu Wedding Planning
           </p>
-          <h1 className="mt-3 text-4xl sm:text-6xl font-serif text-amber-900">
+          <h1 className={`${H1.marketing} mt-3`}>
             One muhurat. One pandit. One unforgettable wedding.
           </h1>
-          <p className="mt-5 text-lg text-stone-700 max-w-2xl mx-auto">
+          <p className="prose-lead mt-5 text-stone-700 max-w-2xl mx-auto">
             From kundli matching to samagri to the seven pheras, Darshya assembles every part of
             your Vedic wedding around an auspicious muhurat picked from your nakshatras.
           </p>

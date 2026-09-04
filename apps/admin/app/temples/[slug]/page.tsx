@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { H1 } from "../../../components/ui/heading-recipe";
 
 interface Temple {
   id: string;
@@ -175,7 +176,7 @@ export default function TempleEditPage() {
       ) : temple ? (
         <>
           <header className="mb-6">
-            <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">{temple.name}</h1>
+            <h1 className={H1.portal}>{temple.name}</h1>
             <p className="mt-1 text-sm text-stone-600">
               <span className="font-mono">{temple.slug}</span>
               {temple.city ? ` · ${[temple.city, temple.state].filter(Boolean).join(", ")}` : null}

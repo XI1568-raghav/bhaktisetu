@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PANCHA_BHOOTA, getPanchaBhootaBySlug } from '../../../lib/pancha-bhoota';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -89,7 +93,7 @@ export default async function PanchaBhootaDetailPage({ params }: { params: Promi
         <div className={`inline-block text-sm font-semibold px-3 py-1 rounded-full border ${theme.border} ${theme.bg} ${theme.text} mb-3`}>
           {t.element} <span className="font-normal opacity-80">({t.elementSanskrit})</span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">{t.templeName}</h1>
+        <h1 className={`${H1.marketing} mb-2`}>{t.templeName}</h1>
         <div className="text-2xl text-gray-700 mb-2">{t.templeSanskrit}</div>
         <div className="text-base text-gray-600 mb-6">{t.city}, {t.state}</div>
 
@@ -176,10 +180,10 @@ export default async function PanchaBhootaDetailPage({ params }: { params: Promi
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/jyotirlinga" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+          <Link href="/jyotirlinga" className={buttonClass('primary', 'md')}>
             12 Jyotirlingas
           </Link>
-          <Link href="/tirth" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
+          <Link href="/tirth" className={buttonClass('primary', 'md')}>
             Tirth destinations
           </Link>
           <Link href="/pilgrimage" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
@@ -187,6 +191,10 @@ export default async function PanchaBhootaDetailPage({ params }: { params: Promi
           </Link>
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'pancha-bhoota',
+        subject: t.templeName,
+      })}
     </main>
   );
 }

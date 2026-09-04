@@ -26,15 +26,21 @@ export interface MedusaProduct {
   freeDelivery: boolean;
   weight: string;
   source: 'medusa' | 'seed';
-  // Display extras kept for parity with the static seed UI. When products
-  // come back from Medusa we synthesise sane defaults so the grid never
-  // breaks even if the catalogue is bare-bones.
+  // Display extras kept for parity with the static seed UI.
+  //
+  // LEG-17: these used to be "synthesise[d] sane defaults so the grid never
+  // breaks even if the catalogue is bare-bones" — which in practice meant a
+  // REAL seller's product was handed `compareAtPrice: priceInr` (so the card
+  // printed "₹499 ₹499", the second one struck through) and
+  // `rating: 4.5, reviewCount: 0` (a 4.5-star average explicitly derived from
+  // zero reviews). A bare-bones catalogue is a fact about the shop, not a
+  // rendering bug to paper over; the honest default is "unknown", and the
+  // render sites already omit the row when it is null.
   imageKey: string;
   tag: string | null;
-  discount: number;
-  rating: number;
+  rating: number | null;
   reviewCount: number;
-  compareAtPrice: number;
+  compareAtPrice: number | null;
   price: number;
   features: string[];
   sku: string;
@@ -87,7 +93,6 @@ function seedToMedusa(p: SeedProduct): MedusaProduct {
     source: 'seed',
     imageKey: p.imageKey,
     tag: p.tag,
-    discount: p.discount,
     rating: p.rating,
     reviewCount: p.reviewCount,
     compareAtPrice: p.compareAtPrice,
@@ -117,10 +122,9 @@ function medusaToNormal(raw: MedusaListResponse['products'][number]): MedusaProd
     source: 'medusa',
     imageKey: raw.handle,
     tag: null,
-    discount: 0,
-    rating: 4.5,
+    rating: null,
     reviewCount: 0,
-    compareAtPrice: priceInr,
+    compareAtPrice: null,
     price: priceInr,
     features: [],
     sku: raw.handle.toUpperCase(),

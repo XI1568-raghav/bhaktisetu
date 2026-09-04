@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import crypto from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -41,6 +41,31 @@ afterEach(() => {
 // initialised at module load, but the demo proxy is selected when
 // RAZORPAY_KEY_ID is empty or "rzp_test_demo" — so we always run
 // against the proxy here.
+/**
+ * Every case calls this, and `vi.resetModules()` means each one pays a COLD
+ * re-import of payment.service and its whole graph. That graph has grown a lot
+ * this year — 2,470 lines and 13 top-level imports, plus the audit-money module
+ * and a dynamic consultation import added for PAY-01 — and the cost grew with
+ * it: the first case in this file took ~14.5s in mid-August and 31.4s by the
+ * end of the month, which finally crossed the 30s testTimeout and failed in
+ * ISOLATION rather than only under parallel load.
+ *
+ * That mattered because this exact test had been dismissed as a contention
+ * flake FOUR times, correctly each time. The fifth was real. It was not a
+ * product defect — verifyPayment is an HMAC compare and is fast — but "we have
+ * seen this one go red before" is precisely how a genuine failure gets waved
+ * through, so the isolated re-run is not optional.
+ *
+ * The fix is to pay the cold-import cost ONCE, in a hook, instead of inside the
+ * first timed assertion. resetModules still runs per case, so the isolation the
+ * suite relies on is unchanged; only the first import is no longer billed to a
+ * test that is measuring something else.
+ */
+beforeAll(async () => {
+  vi.resetModules();
+  await import('./payment.service.js');
+}, 120_000);
+
 async function loadService() {
   vi.resetModules();
   const mod = await import('./payment.service.js');
@@ -141,8 +166,17 @@ describe('PaymentService.verifyPayment', () => {
         priestId: 'pr-1',
         priest: { userId: 'user-pandit-1' },
       });
-      prismaMock.commission.findFirst.mockResolvedValue(null);
-      prismaMock.commission.create.mockResolvedValue({ id: 'c-1' });
+      // DI-06 (2026-08-28): the writer inserts with
+      // `createMany({ skipDuplicates })` so a lost two-rail race is ON CONFLICT
+      // DO NOTHING rather than a P2002 that aborts the capture transaction. The
+      // guard read must therefore answer "nothing yet" first and "here it is"
+      // on the read-back, which is what the database itself does.
+      let commissionRow: { id: string } | null = null;
+      prismaMock.commission.findFirst.mockImplementation(async () => commissionRow as never);
+      prismaMock.commission.createMany.mockImplementation(async () => {
+        commissionRow = { id: 'c-1' };
+        return { count: 1 } as never;
+      });
     }
 
     it("keys on the pandit's User.id and carries the pandit's 80%", async () => {
@@ -152,7 +186,7 @@ describe('PaymentService.verifyPayment', () => {
 
       await service.verifyPayment('order_x', 'pay_x', sig);
 
-      const data = (prismaMock.commission.create.mock.calls[0]![0] as any).data;
+      const data = (prismaMock.commission.createMany.mock.calls[0]![0] as any).data[0];
       // Was `booking.priestId` — a Priest.id, which matches no payout read.
       expect(data.providerId).toBe('user-pandit-1');
       expect(data.providerId).not.toBe('pr-1');
@@ -184,7 +218,9 @@ describe('PaymentService.verifyPayment', () => {
 
       await service.verifyPayment('order_x', 'pay_x', sig);
 
+      // Neither insert form: no orphaned row under either.
       expect(prismaMock.commission.create).not.toHaveBeenCalled();
+      expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
 
       await settleSideEffects();
     });
@@ -416,7 +452,18 @@ describe('PaymentService — no cross-rail Commission writer (markPayoutPaid sta
     expect(code).not.toMatch(/commission\s*\.\s*(update|updateMany|upsert|delete|deleteMany)\b/);
     // Commission lifecycle after minting belongs to payout.service (PAID) and
     // refund.service (REVERSED). This service creates and reads, nothing else.
-    expect(code).toMatch(/commission\s*\.\s*create\b/);
+    //
+    // DI-06 (2026-08-28): the insert is `createMany({ skipDuplicates })`, not a
+    // bare `create`. Both confirm rails can reach this writer for one booking,
+    // and the UNIQUE index added by 20260824000000_di0607_money_key_indexes
+    // turns the loser's bare INSERT into a P2002 — which, inside the caller's
+    // `$transaction`, aborts the capture and the confirm along with it.
+    // ON CONFLICT DO NOTHING is not an error and cannot do that. So the bare
+    // form is now forbidden here as well as the mutating ones, and the
+    // assertion is on `createMany` specifically rather than on `create(Many)?`,
+    // which would pass with the hazard reintroduced.
+    expect(code).toMatch(/commission\s*\.\s*createMany\b/);
+    expect(code).not.toMatch(/commission\s*\.\s*create\s*\(/);
   });
 });
 

@@ -15,6 +15,7 @@ import {
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
  * PAR-03. This screen used to render
  *   `₹${data.earningsToday.toLocaleString('en-IN')}`
@@ -26,6 +27,11 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * The FALLBACK is gone. A failed fetch now says so; it does not show money.
  */
 export default function PriestDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const dashboardQuery = usePriestDashboard();
   const [refreshing, setRefreshing] = useState(false);
 

@@ -8,6 +8,10 @@ import {
   CATEGORY_DESCRIPTIONS,
   type YajnaModernStatus,
 } from '../../../lib/vedic-yajnas';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -52,6 +56,10 @@ export default async function VedicYajnaDetailPage({ params }: Props) {
   const y = getVedicYajna(slug);
   if (!y) notFound();
 
+  // Only catalogue-confirmed slugs become links; an unreachable API yields
+  // an empty set and the CTA degrades to the browse exit (DF-02 rule).
+  const catalogue = await getCatalogueSlugs();
+
   const idx = VEDIC_YAJNAS.findIndex((x) => x.slug === y.slug);
   const prev = idx > 0 ? VEDIC_YAJNAS[idx - 1] : null;
   const next = idx < VEDIC_YAJNAS.length - 1 ? VEDIC_YAJNAS[idx + 1] : null;
@@ -91,9 +99,9 @@ export default async function VedicYajnaDetailPage({ params }: Props) {
             {CATEGORY_LABELS[y.category]}
           </span>
         </div>
-        <h1 className="text-3xl font-bold text-saffron-900 sm:text-4xl">{y.name}</h1>
+        <h1 className={H1.catalogue}>{y.name}</h1>
         <p className="mt-1 text-2xl text-amber-900" lang="sa">{y.sanskrit}</p>
-        <p className="mt-3 max-w-3xl text-sm text-gray-700">{CATEGORY_DESCRIPTIONS[y.category]}</p>
+        <p className="mt-3 max-w-3xl prose-body text-gray-700">{CATEGORY_DESCRIPTIONS[y.category]}</p>
       </header>
 
       <section className="mb-8 grid gap-4 sm:grid-cols-3">
@@ -183,6 +191,12 @@ export default async function VedicYajnaDetailPage({ params }: Props) {
           ))}
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'vedic-yajnas',
+        subject: y.name,
+        relatedPujas: [y.name],
+        catalogue,
+      })}
     </main>
   );
 }

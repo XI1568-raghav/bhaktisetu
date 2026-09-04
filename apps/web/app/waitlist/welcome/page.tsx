@@ -2,7 +2,10 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import RouteFallback from '../../../components/ui/RouteFallback';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 
 interface Stats {
@@ -11,9 +14,10 @@ interface Stats {
   referralCount: number;
 }
 
+// CM-15: the Suspense fallback below was an empty viewport-tall div.
 export default function WaitlistWelcomePage() {
   return (
-    <Suspense fallback={<div className="min-h-[calc(100vh-3.5rem)]" style={{ background: 'var(--color-bg, #f5f3ef)' }} />}>
+    <Suspense fallback={<RouteFallback label="Loading your waitlist spot…" className="min-h-[calc(100vh-3.5rem)]" />}>
       <WelcomeContent />
     </Suspense>
   );
@@ -97,8 +101,8 @@ function WelcomeContent() {
             You're in
           </p>
           <h1
-            className="text-2xl sm:text-3xl font-semibold tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text, #1f1b18)' }}
+            className={H1.catalogue}
+            style={{ color: 'var(--color-text, #1f1b18)' }}
           >
             Welcome to Darshya early access
           </h1>
@@ -173,8 +177,7 @@ function WelcomeContent() {
               type="button"
               onClick={copyLink}
               disabled={!shareUrl}
-              className="text-xs px-2.5 py-1 rounded-md font-medium disabled:opacity-50"
-              style={{ background: 'var(--color-primary, #ea580c)', color: '#fff' }}
+              className={buttonClass('primary', 'md')}
             >
               {copied ? 'Copied' : 'Copy'}
             </button>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { BookOpen, Clock } from 'lucide-react';
 import { getAllArticles, type KnowledgeCategory } from '../lib/content';
 import DailyVerse from './DailyVerse';
+import { H1 } from '../components/ui/heading-recipe';
 
 interface Props {
   category: KnowledgeCategory;
@@ -23,7 +24,7 @@ export default function CategoryIndex({ category, title, description, heroEmoji 
     <main className="max-w-5xl mx-auto px-4 py-8">
       <header className="mb-8">
         <div className="text-5xl mb-3">{heroEmoji}</div>
-        <h1 className="text-4xl font-bold text-surface-900">{title}</h1>
+        <h1 className={H1.catalogue}>{title}</h1>
         <p className="text-surface-600 mt-2 max-w-2xl">{description}</p>
         <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-saffron-50 text-saffron-700 text-xs rounded-full">
           <BookOpen className="w-3.5 h-3.5" /> {articles.length} articles

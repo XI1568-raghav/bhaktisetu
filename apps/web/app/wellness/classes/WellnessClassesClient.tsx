@@ -20,6 +20,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, Clock, Users, Loader2, AlertCircle, Leaf } from 'lucide-react';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export interface WellnessClass {
   id: string;
@@ -98,12 +99,11 @@ export default function WellnessClassesClient() {
           Live classes
         </div>
         <h1
-          className="text-2xl sm:text-3xl font-semibold tracking-tight"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+          className={H1.catalogue}
         >
           Upcoming yoga, meditation &amp; pranayama classes
         </h1>
-        <p className="mt-3 text-sm max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+        <p className="mt-3 prose-body max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
           Every class below is scheduled by a verified instructor on Darshya. Enrol to reserve your
           seat; the live room link appears here once your payment is confirmed.
         </p>

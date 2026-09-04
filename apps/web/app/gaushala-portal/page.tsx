@@ -9,11 +9,17 @@ import {
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: the 401/403 split. True ONLY for 401 — a 403 is a suspended
+ // account or a role refusal, and offering sign-in there loops the user back
+ // to the same wall (see loadErrorIsForbidden in lib/api-config.ts).
+ loadErrorIsReauth,
 } from '../../lib/api-config';
 import Link from 'next/link';
 import { Beef, Heart, IndianRupee, HandHeart, Plus, Settings, Users } from 'lucide-react';
 import { H1 } from '../../components/ui/heading-recipe';
+import LoadErrorBanner from '../../components/LoadErrorBanner';
 
+import { buttonClass } from '../../components/ui/button-recipe';
 type DashboardStats = {
  totalCows: number;
  totalDonors: number;
@@ -77,6 +83,8 @@ export default function GaushalaDashboard() {
  // Rs 0 Monthly Donations / No donations yet" on an HTTP 500 with no error at
  // all — a gaushala manager mid-incident was shown a dead gaushala.
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: see the note on the import — the flag this page used to drop.
+ const [loadReauth, setLoadReauth] = useState(false);
 
  const load = useCallback(async () => {
  // P0 #AP-07 (2026-07-10): fetch for demo sessions too (see KYC block below).
@@ -89,6 +97,7 @@ export default function GaushalaDashboard() {
  }, DATA_FETCH_TIMEOUT_MS);
  if (!r.ok) {
  setLoadError(loadErrorMessage(r));
+ setLoadReauth(loadErrorIsReauth(r));
  return;
  }
  const j = await r.json();
@@ -98,6 +107,7 @@ export default function GaushalaDashboard() {
  setProfileMissing(j.profile === null || j.profile === undefined);
  } catch (err) {
  setLoadError(loadErrorMessage(err));
+ setLoadReauth(loadErrorIsReauth(err));
  }
  }, [session?.accessToken]);
 
@@ -144,7 +154,7 @@ export default function GaushalaDashboard() {
  <div className="p-6 lg:p-8 space-y-8">
  {/* Header */}
  <div>
- <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Jai Gau Mata</h1>
+ <h1 className={H1.portal}>Jai Gau Mata</h1>
  <div className="mt-1 flex items-center gap-3 flex-wrap">
  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
  Welcome back, {user?.fullName}. Here&apos;s your gaushala overview.
@@ -154,12 +164,12 @@ export default function GaushalaDashboard() {
  </div>
 
  {loadError && (
- <div role="alert" className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
- <span className="flex-1 min-w-[12rem]">{loadError}</span>
- <button type="button" onClick={() => { void load(); }} className="font-semibold underline underline-offset-2 hover:text-amber-900">
- Retry
- </button>
- </div>
+ <LoadErrorBanner
+ message={loadError}
+ reauth={loadReauth}
+ onRetry={() => { void load(); }}
+ className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+ />
  )}
 
  <MyProviderProfileCard role="GAUSHALA_MANAGER" onboardingSlug="gaushala_manager" publicListingType="gaushala" />
@@ -179,8 +189,7 @@ export default function GaushalaDashboard() {
  </p>
  <Link
  href="/gaushala-portal/profile"
- className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'mt-4')}
  >
  <Settings className="w-4 h-4" />
  Set up my gaushala

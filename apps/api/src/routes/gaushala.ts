@@ -42,7 +42,20 @@ export async function gaushalaRoutes(server: FastifyInstance) {
         description: profile.description ?? '',
         address: profile.address ?? '',
         totalCows: profile.totalCows,
-        verified: profile.verified,
+        // TC-11: `verified` used to be echoed here. `GaushalaProfile.verified`
+        // is written by NOTHING — every approval path in the API sets
+        // `approved` (gaushala-portal.ts:152/:163, admin.service.ts:694/:748,
+        // onboarding.service.ts:302, auth.ts:1279, gaushala-cows.ts:35) — so
+        // the field could only ever be false, and a client reading it was
+        // reading a verification signal the product cannot produce.
+        //
+        // Reporting `verified: false` on a gaushala an admin HAS approved is
+        // worse than silence: it reads as "we checked and it failed". So the
+        // field is dropped and the flag that is really written is published in
+        // its place. The column itself is left on the model rather than
+        // dropped — a destructive migration auto-applies on API boot here, and
+        // an unused nullable-by-default boolean costs nothing to keep.
+        approved: profile.approved,
         // No fixture cows are grafted onto a real gaushala — an empty roster
         // means this gaushala has not listed cows yet, and the page must say so.
         cows: [],

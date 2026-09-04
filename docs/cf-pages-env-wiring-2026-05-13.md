@@ -1,5 +1,28 @@
 # Cloudflare Pages env wiring — Sentry + PostHog
 
+> **SUPERSEDED 2026-09-02 (`OPS-06`). DO NOT FOLLOW.** Every step on this page
+> writes environment variables into **Cloudflare Pages** and then reaches
+> production by triggering a Pages build. Cloudflare Pages has not served
+> `darshya.online` since 2026-07-08: the web front end is a Render Docker
+> service and the Pages project's auto-deploy was killed (`cf-kill-zombie.yml`).
+> Cloudflare is DNS and edge proxy only. Pasting keys into the Pages dashboard
+> changes nothing that is serving traffic, and the "push an empty commit"
+> step in Step 3 deploys nothing at all — both Render services are
+> `autoDeploy: false` (`render.yaml:28`, `:60`).
+>
+> Where these variables actually belong today: `NEXT_PUBLIC_*` are baked at
+> **build** time from the `envVars:` block in `render.yaml:77-85` (or the
+> Render dashboard's build env), and server-side secrets are Render dashboard
+> env. After changing either, the new value only reaches production on the next
+> hand-dispatched deploy:
+>
+> ```bash
+> gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main
+> ```
+>
+> Canonical deploy/rollback procedure: `docs/runbooks/prod-rollback.md`.
+> Kept below as a record of the 2026-05 Pages-era wiring, not as an instruction.
+
 > 5-min user task. Copy/paste keys from Sentry + PostHog dashboards into Cloudflare Pages env, redeploy. Code is already env-or-noop, so missing keys = silent skip; once pasted, observability flips on at next deploy.
 
 ## Why now

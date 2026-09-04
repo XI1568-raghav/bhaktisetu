@@ -54,7 +54,20 @@ beforeEach(() => {
   );
 
   waitlist = {
-    findMany: vi.fn(async () => []),
+    findMany: vi.fn(async (args: unknown) => {
+      const where = ((args as { where?: Record<string, unknown> }).where ?? {}) as Record<
+        string,
+        unknown
+      >;
+      // The leaderboard hydration: referral CODES back to the referrer's row.
+      if ('referralCode' in where) {
+        return [
+          { referralCode: 'RAVI01', email: 'ravi@example.com' },
+          { referralCode: 'SITA02', email: 'sita@example.com' },
+        ];
+      }
+      return [];
+    }),
     count: vi.fn(async () => 0),
     groupBy: vi.fn(async (args: unknown) => {
       const by = (args as { by: string[] }).by;
@@ -66,10 +79,16 @@ beforeEach(() => {
           { status: 'CONVERTED', _count: { _all: 1 } },
         ];
       }
-      if (by.includes('referredByEmail')) {
+      // `referredByCode` is the real column. This mock used to answer to a
+      // referrer-EMAIL field that model Waitlist has never had, so it agreed
+      // with the route's typo and the pair went green while the live endpoint
+      // returned zeros for everything. Schema conformance is pinned separately
+      // in admin-leads.waitlist-schema.scal04.test.ts — a mock cannot catch a
+      // name the database is the only judge of.
+      if (by.includes('referredByCode')) {
         return [
-          { referredByEmail: 'ravi@example.com', _count: { _all: 5 } },
-          { referredByEmail: 'sita@example.com', _count: { _all: 2 } },
+          { referredByCode: 'RAVI01', _count: { _all: 5 } },
+          { referredByCode: 'SITA02', _count: { _all: 2 } },
         ];
       }
       return [];
@@ -130,15 +149,57 @@ describe('SCAL-04 — /admin/waitlist/stats stops reading the whole table', () =
       topReferrers: Array<{ rank: number; email: string; referralCount: number }>;
     };
 
+    // Identical to what this endpoint promised before the column name was
+    // corrected — the emails are now resolved from the referral codes the group
+    // actually returns, so the same contract is met through a query Postgres
+    // will accept.
     expect(body.topReferrers).toEqual([
       { rank: 1, email: 'ravi@example.com', referralCount: 5 },
       { rank: 2, email: 'sita@example.com', referralCount: 2 },
     ]);
 
     const referrerCall = waitlist.groupBy.mock.calls.find((c) =>
-      ((c[0] as { by: string[] }).by ?? []).includes('referredByEmail'),
+      ((c[0] as { by: string[] }).by ?? []).includes('referredByCode'),
     );
     expect(referrerCall, 'the leaderboard is not grouped in SQL').toBeDefined();
     expect((referrerCall![0] as { take?: number }).take).toBe(20);
+
+    // The code→email hydration is bounded to the leaderboard, not the table.
+    const hydration = waitlist.findMany.mock.calls.find((c) =>
+      'referralCode' in (((c[0] as { where?: object }).where ?? {}) as object),
+    );
+    expect(hydration, 'referral codes were never resolved to people').toBeDefined();
+    expect((hydration![0] as { take?: number }).take).toBe(20);
+  });
+
+  it('keeps a referral count on screen when the referrer row is gone', async () => {
+    // An orphan code must not silently vanish from the leaderboard: the people
+    // it referred are real and the count is the number the screen exists to
+    // show. Dropping the row is the under-reporting this endpoint was just
+    // repaired from, wearing a different hat.
+    waitlist.findMany.mockImplementation(async (args: unknown) => {
+      const where = ((args as { where?: Record<string, unknown> }).where ?? {}) as Record<
+        string,
+        unknown
+      >;
+      // SITA02's waitlist row has been deleted; only RAVI01 resolves.
+      if ('referralCode' in where) return [{ referralCode: 'RAVI01', email: 'ravi@example.com' }];
+      return [];
+    });
+
+    const app = makeApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/waitlist/stats',
+      headers: { authorization: 'Bearer demo-admin' },
+    });
+    const body = res.json() as {
+      topReferrers: Array<{ rank: number; email: string; referralCount: number }>;
+    };
+
+    expect(body.topReferrers).toHaveLength(2);
+    expect(body.topReferrers[0]).toEqual({ rank: 1, email: 'ravi@example.com', referralCount: 5 });
+    // The count survives; the code stands in for the name.
+    expect(body.topReferrers[1]).toEqual({ rank: 2, email: 'SITA02', referralCount: 2 });
   });
 });

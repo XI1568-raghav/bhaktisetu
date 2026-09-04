@@ -11,11 +11,12 @@ import {
  ArrowLeft,
  Truck,
  Shield,
- Tag,
  LogIn,
 } from 'lucide-react';
 import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -50,14 +51,14 @@ export default function CartPage() {
  <div className="w-24 h-24 bg-saffron-50 rounded-full flex items-center justify-center mx-auto mb-6">
  <ShoppingCart className="w-12 h-12 text-saffron-300" />
  </div>
- <h1 className="text-2xl font-bold text-surface-800 mb-2">Your Cart is Empty</h1>
+ <h1 className={`${H1.portal} mb-2`}>Your Cart is Empty</h1>
  <p className="text-surface-500 mb-8 max-w-md mx-auto">
  Explore our collection of authentic puja essentials, handcrafted idols,
  and sacred items sourced from trusted artisans.
  </p>
  <Link
  href="/store"
- className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  <ShoppingBag className="w-5 h-5" />
  Continue Shopping
@@ -74,7 +75,7 @@ export default function CartPage() {
  {/* Header */}
  <div className="flex items-center justify-between mb-8">
  <div>
- <h1 className="text-2xl font-semibold tracking-tight text-surface-800">Shopping Cart</h1>
+ <h1 className={H1.portal}>Shopping Cart</h1>
  <p className="text-surface-500 mt-1">{itemCount} item{itemCount !== 1 ? 's' : ''} in your cart</p>
  </div>
  <button
@@ -112,33 +113,35 @@ export default function CartPage() {
  </div>
  <button
  onClick={() => removeItem(item.id)}
- className="p-1.5 text-surface-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-surface-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
  >
  <Trash2 className="w-4 h-4" />
  </button>
  </div>
 
- {/* Price */}
+ {/* Price — LEG-17: no struck-through `compareAtPrice`.
+     Carts persist in localStorage under poojly_cart (never
+     renamed), so a cart saved before this change still carries
+     the fabricated reference price. Not rendering it here is
+     what makes the fix retroactive; removing it at the source
+     alone would leave existing carts showing it. */}
  <div className="flex items-baseline gap-2 mt-2">
  <span className="text-lg font-bold text-surface-800">
  {formatPrice(item.product.price)}
  </span>
- {item.product.compareAtPrice && (
- <span className="text-sm text-surface-400 line-through">
- {formatPrice(item.product.compareAtPrice)}
- </span>
- )}
  </div>
 
  {/* Quantity & subtotal */}
- <div className="flex items-center justify-between mt-3">
- <div className="flex items-center gap-1">
+ <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+ <div className="flex items-center">
  <button
  onClick={() => updateQuantity(item.id, item.quantity - 1)}
  disabled={item.quantity <= 1}
- className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 transition-colors"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center disabled:opacity-40"
  >
+ <span className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 transition-colors">
  <Minus className="w-3 h-3" />
+ </span>
  </button>
  <span className="w-10 text-center text-sm font-semibold text-surface-800">
  {item.quantity}
@@ -146,9 +149,11 @@ export default function CartPage() {
  <button
  onClick={() => updateQuantity(item.id, item.quantity + 1)}
  disabled={item.quantity >= 10}
- className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 disabled:opacity-40 transition-colors"
+ className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center disabled:opacity-40"
  >
+ <span className="w-8 h-8 flex items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-600 hover:bg-surface-50 transition-colors">
  <Plus className="w-3 h-3" />
+ </span>
  </button>
  </div>
 
@@ -216,21 +221,11 @@ export default function CartPage() {
  <span className="font-bold text-surface-800 text-xl">{formatPrice(total)}</span>
  </div>
 
- {/* Savings */}
- {items.some((i) => i.product.compareAtPrice) && (
- <div className="flex items-center gap-2 bg-tulsi-green-light/20 text-tulsi-green text-xs font-semibold px-3 py-2 rounded-lg">
- <Tag className="w-4 h-4" />
- You are saving{' '}
- {formatPrice(
- items.reduce(
- (sum, i) =>
- sum + ((i.product.compareAtPrice ?? i.product.price) - i.product.price) * i.quantity,
- 0
- )
- )}{' '}
- on this order!
- </div>
- )}
+ {/* LEG-17: a "You are saving ₹X on this order!" banner used to sum
+     `compareAtPrice - price` across the cart. Every rupee of that
+     figure came from a fabricated reference price, so the banner
+     quantified a saving that no buyer ever received. Restore it only
+     when a dated prior-price record backs the comparison. */}
  </div>
 
  {/* Actions */}

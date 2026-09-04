@@ -49,3 +49,61 @@ export function formatTrustScoreOutOf(score: number | null | undefined): string 
 export function hasMeaningfulTrustScore(score: number | null | undefined): boolean {
   return typeof score === 'number' && Number.isFinite(score) && score >= TRUST_SCORE_MIN_DISPLAY;
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// TC-07 — is there anything behind the number?
+//
+// CM-02 fixed the SCALE. It did not ask where the value comes from, and the
+// answer is: nowhere. `Temple.trustScore` (schema.prisma:294,
+// `Float @default(0)`) has no writer anywhere in the codebase. Every non-zero
+// value in the database is one of twenty literals typed by hand into
+// apps/api/prisma/seed.ts (4.6–5.0), assigned before the platform had taken a
+// single booking. No job recomputes it, no review updates it, no verification
+// step touches it.
+//
+// That matters because of how it is described to devotees. The temple
+// comparison page (apps/web/app/pujas/[slug]/temples/page.tsx) prints
+// "Trust score combines temple verification, devotee reviews, on-time delivery
+// and video-proof completion. Higher = safer." — a four-factor methodology for
+// a number computed from none of them, next to a ranking that orders which
+// temple a devotee should send money to. That is not a display bug; it is a
+// published claim about a measurement nobody takes.
+//
+// Until a real computation exists, the number may be used INTERNALLY (the API
+// still orders by it) but must not be PUBLISHED to a devotee as a trust
+// metric. Flip TRUST_SCORE_IS_COMPUTED to true in the same change that adds
+// the writer, and not before.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** Whether any code actually computes `Temple.trustScore`. It does not. */
+export const TRUST_SCORE_IS_COMPUTED = false;
+
+/**
+ * The four inputs the comparison page advertises. Every one of them must be a
+ * real input to a real computation before the methodology may be printed.
+ */
+export const TRUST_SCORE_CLAIMED_FACTORS = [
+  'temple verification',
+  'devotee reviews',
+  'on-time delivery',
+  'video-proof completion',
+] as const;
+
+/**
+ * Whether this score may be shown to a devotee as a trust signal.
+ *
+ * Stricter than `hasMeaningfulTrustScore`, which only asks whether the number
+ * is thick enough to render. This also asks whether the number means anything.
+ */
+export function canPublishTrustScore(score: number | null | undefined): boolean {
+  return TRUST_SCORE_IS_COMPUTED && hasMeaningfulTrustScore(score);
+}
+
+/**
+ * Whether the "combines verification, reviews, on-time delivery and video
+ * proof" methodology copy may be printed. It describes work the platform does
+ * not do, so it may not.
+ */
+export function canPublishTrustScoreMethodology(): boolean {
+  return TRUST_SCORE_IS_COMPUTED;
+}

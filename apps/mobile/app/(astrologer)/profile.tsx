@@ -7,14 +7,21 @@ import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+// PM-10/F062: the rate card is derived in lib/astrologer-rate-card.ts, which
+// documents why there is exactly one rate and is covered by the node-only
+// mobile test runner. This screen used to invent chat/voice/video tiers.
+import {
+  astrologerRateRows,
+  RATE_MODE_NOTE,
+} from '../../lib/astrologer-rate-card';
+// AUTH-09: the confirmation used to ask "Are you sure?" without saying what
+// it was sure about. POST /auth/logout defaults to scope 'global'.
+import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
-const FALLBACK_RATES = [
-  { label: 'Chat', value: '₹40 / min' },
-  { label: 'Voice Call', value: '₹60 / min' },
-  { label: 'Video Call', value: '₹100 / min' },
-];
-
-const FALLBACK_SPECIALIZATIONS = ['Vedic', 'Numerology', 'Tarot', 'Vastu'];
+// No fabricated fallback. This rendered 'Vedic, Numerology, Tarot, Vastu' to
+// EVERY astrologer whose profile had none set — asserting four skills the
+// person never claimed, on the screen they show clients. Same defect class as
+// the RYT-500 certifications removed from (wellness)/profile.tsx.
 
 export default function AstrologerProfile() {
   const { user, signOut } = useAuth();
@@ -25,14 +32,8 @@ export default function AstrologerProfile() {
     (a) => a.name === user?.fullName || (user?.email && (a as { email?: string }).email === user.email),
   );
 
-  const specializations = me?.specializations ?? FALLBACK_SPECIALIZATIONS;
-  const rates = me?.pricePerMinute
-    ? [
-        { label: 'Chat', value: `₹${Math.round(me.pricePerMinute * 0.8)} / min` },
-        { label: 'Voice Call', value: `₹${me.pricePerMinute} / min` },
-        { label: 'Video Call', value: `₹${Math.round(me.pricePerMinute * 1.6)} / min` },
-      ]
-    : FALLBACK_RATES;
+  const specializations = me?.specializations ?? [];
+  const rates = astrologerRateRows(me?.pricePerMinute);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -41,7 +42,7 @@ export default function AstrologerProfile() {
   }
 
   function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure?', [
+    Alert.alert(SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
@@ -91,13 +92,17 @@ export default function AstrologerProfile() {
         </Section>
       ) : null}
 
-      <Section title="Rates">
+      <Section title="Your rate">
         {rates.map((r) => (
           <View key={r.label} style={styles.rateRow}>
             <Text style={styles.rateLabel}>{r.label}</Text>
             <Text style={styles.rateValue}>{r.value}</Text>
           </View>
         ))}
+        {/* PM-10/F062: the same per-minute rate is billed for chat, voice and
+            video — POST /consultation/book carries no mode at all. Saying so
+            here is what stops the three-tier card from being reinvented. */}
+        <EmptyHint text={RATE_MODE_NOTE} />
       </Section>
 
       <Section title="Specializations">

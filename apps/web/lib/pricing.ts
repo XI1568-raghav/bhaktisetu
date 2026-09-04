@@ -54,7 +54,6 @@ export interface Plan {
  popular: boolean;
  features: PlanFeature[];
  maxListings: number | null; // null = unlimited
- commissionOverride: number; // percentage — overrides base commission
 }
 
 /**
@@ -66,6 +65,27 @@ export interface Plan {
  * 10 vs 15, gaushala 5 vs 10). The page rendered `rates`, so `baseRate` was
  * dead — and wrong — inside the file whose header calls itself the single
  * source of truth. It is gone.
+ *
+ * PM-01 (2026-08-28) — and so is `rates` itself, the four-column tier-discount
+ * ladder (pandit 30/20/15/10, store 25/15/12/8, astrologer 35/25/18/12, …),
+ * along with `Plan.commissionOverride`, the "N% platform commission" bullets on
+ * each tier, `getCommissionRate()` and components/CommissionBanner.tsx.
+ *
+ * Nothing server-side reduces commission by subscription tier: `commissionOverride`
+ * appears nowhere in apps/api and the five Commission writers each apply a flat
+ * rate that never reads a subscription. The previous note kept the ladder on the
+ * grounds that it was "NOT PUBLISHED, and deliberately not deleted" pending an
+ * owner decision on whether to build the discount. That reasoning does not
+ * survive contact with how the claim actually escaped: its only renderer,
+ * CommissionBanner, carried a DO-NOT-MOUNT header and zero importers, and the
+ * same claim still reached providers from a different direction entirely — the
+ * API's own plan bullets, rendered raw by components/SubscriptionPanel.tsx on
+ * five portal pages. An unpublished falsehood one import away from a dashboard
+ * is the same risk on a delay.
+ *
+ * If a tier-based discount is ever built, it belongs in
+ * apps/api/src/lib/commission-math.ts and this column comes back sourced from
+ * there — not from a number typed here in advance of the feature.
  */
 export interface CommissionRate {
  role: ProviderRole;
@@ -82,20 +102,6 @@ export interface CommissionRate {
  chargedRateSource: string;
  /** Plain English for the rows where `chargedRate` is null. */
  note?: string;
- /**
-  * PM-01 — the tier-discount ladder. NOT PUBLISHED, and deliberately not
-  * deleted.
-  *
-  * Nothing server-side reads a subscription tier when computing commission:
-  * grep for `commissionOverride` across apps/api returns no matches, and the
-  * five Commission writers each use a fixed rate. So these numbers describe a
-  * discount a provider paying ₹2,999/mo does not receive. Whether Darshya sells
-  * a tier-based discount at all is the owner's call — implement it in
-  * apps/api/src/lib/commission-math.ts and the columns come back unchanged; drop
-  * it and this field goes with them. Until then the page publishes `chargedRate`
-  * only.
-  */
- rates: Record<PlanId, number>;
 }
 
 export const PLANS: Plan[] = [
@@ -105,12 +111,10 @@ export const PLANS: Plan[] = [
  description: "Get started with a basic listing. No upfront cost.",
  popular: false,
  maxListings: 5,
- commissionOverride: 30,
  features: [
  { text: "Up to 5 listings", included: true },
  { text: "Basic provider profile", included: true },
  { text: "Standard search placement", included: true },
- { text: "30% platform commission", included: true },
  { text: "Analytics dashboard", included: false },
  { text: "Priority listing", included: false },
  { text: "Verified badge", included: false },
@@ -124,12 +128,10 @@ export const PLANS: Plan[] = [
  description: "Grow your reach with more listings and insights.",
  popular: false,
  maxListings: 20,
- commissionOverride: 20,
  features: [
  { text: "Up to 20 listings", included: true },
  { text: "Enhanced provider profile", included: true },
  { text: "Standard search placement", included: true },
- { text: "20% platform commission", included: true },
  { text: "Analytics dashboard", included: true },
  { text: "Priority listing", included: false },
  { text: "Verified badge", included: false },
@@ -143,12 +145,10 @@ export const PLANS: Plan[] = [
  description: "Stand out with priority placement and a verified badge.",
  popular: true,
  maxListings: null,
- commissionOverride: 15,
  features: [
  { text: "Unlimited listings", included: true },
  { text: "Premium provider profile", included: true },
  { text: "Priority search placement", included: true },
- { text: "15% platform commission", included: true },
  { text: "Analytics dashboard", included: true },
  { text: "Priority listing", included: true },
  { text: "Verified badge", included: true },
@@ -162,12 +162,10 @@ export const PLANS: Plan[] = [
  description: "Everything included plus dedicated account management.",
  popular: false,
  maxListings: null,
- commissionOverride: 10,
  features: [
  { text: "Unlimited listings", included: true },
  { text: "Premium provider profile", included: true },
  { text: "Priority search placement", included: true },
- { text: "10% platform commission", included: true },
  { text: "Analytics dashboard", included: true },
  { text: "Priority listing", included: true },
  { text: "Verified badge", included: true },
@@ -184,7 +182,6 @@ export const COMMISSION_RATES: CommissionRate[] = [
  chargedRate: 20,
  chargedRateSource:
  "apps/api/prisma/schema.prisma — Priest.commissionRate @default(0.80): the pandit keeps 80%",
- rates: { free: 30, basic: 20, pro: 15, enterprise: 10 },
  },
  {
  role: "store_owner",
@@ -192,7 +189,6 @@ export const COMMISSION_RATES: CommissionRate[] = [
  chargedRate: 20,
  chargedRateSource:
  "apps/api/prisma/schema.prisma — StoreProfile.commission @default(0.20)",
- rates: { free: 25, basic: 15, pro: 12, enterprise: 8 },
  },
  {
  role: "astrologer",
@@ -200,7 +196,6 @@ export const COMMISSION_RATES: CommissionRate[] = [
  chargedRate: 20,
  chargedRateSource:
  "apps/api/src/services/astrologer.service.ts — ASTROLOGER_PLATFORM_RATE",
- rates: { free: 35, basic: 25, pro: 18, enterprise: 12 },
  },
  {
  role: "wellness",
@@ -208,7 +203,6 @@ export const COMMISSION_RATES: CommissionRate[] = [
  chargedRate: 20,
  chargedRateSource:
  "apps/api/src/routes/wellness-sessions.ts — WELLNESS_PLATFORM_COMMISSION",
- rates: { free: 30, basic: 20, pro: 15, enterprise: 10 },
  },
  {
  // Not an oversight: no Commission writer credits a temple manager, so no
@@ -221,7 +215,6 @@ export const COMMISSION_RATES: CommissionRate[] = [
  chargedRateSource:
  "apps/api/src/services/temple-payout.service.ts — DEFAULT_TEMPLE_SHARE_RATE (paid TO the temple)",
  note: "No platform commission. Temples receive a 5% share of every puja confirmed at the temple.",
- rates: { free: 15, basic: 10, pro: 8, enterprise: 5 },
  },
  {
  // Same: gau seva donations mint no Commission row at all.
@@ -231,7 +224,6 @@ export const COMMISSION_RATES: CommissionRate[] = [
  chargedRateSource:
  "apps/api/src — no Commission writer is keyed to a gaushala; donations mint no commission row",
  note: "No platform commission. Gau seva donations reach the gaushala in full.",
- rates: { free: 10, basic: 5, pro: 4, enterprise: 3 },
  },
 ];
 
@@ -245,19 +237,6 @@ export function getPlanById(planId: PlanId): Plan {
 /** Get list of features for a plan */
 export function getPlanFeatures(planId: PlanId): PlanFeature[] {
  return getPlanById(planId).features;
-}
-
-/**
- * Tier-ladder rate for a role + plan.
- *
- * ⚠ PM-01 — this is NOT what the provider is charged. No server code reduces
- * commission by subscription tier. Do not render this on any customer-facing
- * surface; use `chargedCommissionRate` instead.
- */
-export function getCommissionRate(role: ProviderRole, planId: PlanId): number {
- const entry = COMMISSION_RATES.find((c) => c.role === role);
- if (!entry) throw new Error(`Unknown provider role: ${role}`);
- return entry.rates[planId];
 }
 
 /** The platform's take TODAY. `null` = this role is not charged a commission. */

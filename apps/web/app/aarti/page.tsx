@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Music, Clock, ArrowRight } from 'lucide-react';
 import { AARTIS } from '../../lib/aartis';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -35,10 +37,10 @@ export default function AartiIndex() {
       />
 
       <header className="mb-10 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-3">
+        <h1 className={`${H1.marketing} mb-3`}>
           Hindu Aarti Lyrics
         </h1>
-        <p className="text-lg text-surface-700 max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 max-w-2xl mx-auto">
           Sacred devotional songs sung at the conclusion of every puja. Full lyrics in Devanagari + transliteration + meaning in English.
         </p>
       </header>
@@ -82,7 +84,7 @@ export default function AartiIndex() {
         </p>
         <Link
           href="/pujas"
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-saffron-600 text-white font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Browse all pujas <ArrowRight className="w-4 h-4" />
         </Link>

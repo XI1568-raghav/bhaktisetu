@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DWADASHA_ADITYAS, DWADASHA_ADITYA_SLUGS, getDwadashaAdityaBySlug } from '../../../lib/dwadasha-aditya';
@@ -76,7 +78,7 @@ export default async function AdityaPage({ params }: Props) {
         <p className="text-xs uppercase tracking-wider text-amber-700">
           Aditya {a.number} of 12 · Presides over {a.presidingMonth}
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">{a.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{a.name}</h1>
         <p className="mt-1 font-serif text-xl text-gray-700">{a.sanskrit}</p>
         <p className="mt-3 text-base text-gray-700">{a.domain}</p>
       </header>

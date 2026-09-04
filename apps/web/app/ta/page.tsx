@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { LangLanding } from '../../components/LangLanding';
+import { HAS_80G } from '../../lib/eighty-g';
 
 
 export const metadata: Metadata = {
@@ -39,7 +40,7 @@ export default function TamilLanding() {
       ctaDarshanLabel="நேரலை தரிசனம் காண்க"
       features={[
         { title: 'நேரலை தரிசனம்', body: 'காசி, திருப்பதி, ஸித்திவிநாயகர், சோமநாதர் — முக்கிய கோயில்களில் இருந்து நேரலை தரிசனம்.', href: '/darshan' },
-        { title: 'பூஜை முன்பதிவு', body: 'சரிபார்க்கப்பட்ட பண்டிதர், வீடியோ ஆதாரம், 80G ரசீது. உங்கள் பெயரில் சங்கல்பம்.', href: '/pujas' },
+        { title: 'பூஜை முன்பதிவு', body: `சரிபார்க்கப்பட்ட பண்டிதர், வீடியோ ஆதாரம், ${HAS_80G ? '80G ரசீது' : 'ரசீது'}. உங்கள் பெயரில் சங்கல்பம்.`, href: '/pujas' },
         { title: 'தினசரி பஞ்சாங்கம்', body: 'திதி, நக்ஷத்திரம், ராகு காலம், சௌகடியா — உங்கள் நகரத்திற்கு ஏற்ப.', href: '/panchang' },
         { title: 'கோ சேவை', body: 'கோதானம், புல் சேவை — சரிபார்க்கப்பட்ட கோசாலைகளுக்கு நேரடி நன்கொடை.', href: '/gaushala' },
         { title: 'குருகுலம்', body: 'பாரம்பரிய குருகுல சேர்க்கை — சம்ஸ்கிருதம், வேதம், தத்துவம்.', href: '/gurukuls' },

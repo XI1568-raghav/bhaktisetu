@@ -138,8 +138,8 @@ Built solo. Rupees zero budget. India 18+.
 | Failure | Mitigation |
 |---|---|
 | Anchor hunter no-shows at 1:30pm | Founder submits from his own account (still legal, lower visibility). Have a backup anchor confirmed by T-1 evening. |
-| Site goes down at launch | Pre-staged status page at status.darshya.online (if exists) or pinned tweet. Apologise on PH first comment thread. Race to fix. |
-| Razorpay or Stripe payments fail | Pre-staged email founder@darshya.online for manual order intake. Disclose in PH thread. |
+| Site goes down at launch | **There is no status page.** `status.darshya.online` / `status.bhaktisetu.com` do not serve anything (corrected 2026-09-02, `OPS-10`; ground truth `docs/runbooks/disaster-recovery.md`, which records the status page as aspirational copy) — do not link one at launch. Use a pinned tweet. Apologise on PH first comment thread. Race to fix. |
+| Razorpay payments fail (Stripe removed 2026-08-11 — do not name it) | Pre-staged email founder@darshya.online for manual order intake. Disclose in PH thread. |
 | PH first comment gets buried | Pin it via Maker self-pin (PH allows). |
 | Negative comment gains traction | Respond with empathy, ship a fix within 24h if valid, link to roadmap if not. Never argue. |
 | Rank drops below 10 mid-day | Triple DM cadence, do a Twitter/X plea (sparingly), tag 2-3 friendly larger accounts. |

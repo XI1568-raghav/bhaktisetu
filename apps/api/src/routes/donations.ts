@@ -7,6 +7,17 @@ import { sendEmail, donationReceiptEmail } from '../lib/email.js';
 import { generate80GReceipt, is80GEligible } from '../lib/pdf-receipt.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
 import { resolveGaushalaDonee } from '../lib/gaushala-donee.js';
+// OPS-05: the durable money trail. `recordMoneyEvent` never throws and never
+// joins a caller's transaction, so every call here is `void`-safe.
+//
+// Donations were the last money rail with NO audit coverage at all.
+// `MONEY_EVENTS.DONATION_RECEIVED` was a declared constant with zero writers
+// anywhere outside `lib/audit-money.ts` and its own unit test — so the one
+// money flow that also mints an 80G tax receipt (a document handed to the
+// Income Tax department) was the one flow whose history existed only in the
+// Render log stream. Donations do not write a `prisma.payment` row either
+// (raw INSERT, no Payment), so NOTHING in the payment-side wiring reached them.
+import { MONEY_EVENTS, recordMoneyEvent, type MoneyActorType } from '../lib/audit-money.js';
 import Razorpay from 'razorpay';
 
 assertNotProductionDemo('routes/donations');
@@ -92,10 +103,30 @@ function nextReceiptNumber(): string {
 //    closed browser (client-verify never fires) still flips the donation paid
 //    + sends the receipt when Razorpay posts payment.captured.
 // `log` is optional (the webhook has no Fastify server in scope here).
+//
+// OPS-05: `audit` is optional and DEFAULTS TO THE WEBHOOK SHAPE
+// (`actorType: 'gateway'`, no actor id). That default is deliberate: the
+// webhook backstop in `payment.service.processWebhookEvent` calls this helper
+// positionally and passes nothing beyond `log`, so making the default anything
+// other than "Razorpay acted" would mislabel every browser-died-mid-checkout
+// donation as a devotee action. `/verify` — where a signed-in donor's browser
+// really did return the result — overrides it explicitly. Distinguishing the
+// two rails is the whole point of recording actor type at all: "which rail got
+// there first" is unanswerable if both write `system`.
+export interface DonationAuditContext {
+  actorType?: MoneyActorType;
+  actorId?: string | null;
+  /** Which code path finalized, e.g. 'donations/verify'. Lands in metadata. */
+  rail?: string;
+  requestId?: string | null;
+  ip?: string | null;
+}
+
 export async function finalizeDonationReceipt(
   donation: DonationRow,
   paymentId: string | null,
   log?: { warn: (obj: unknown, msg: string) => void; error: (obj: unknown, msg: string) => void } | undefined,
+  audit?: DonationAuditContext,
 ): Promise<{ receiptNumber: string | null; alreadyPaid: boolean }> {
   const noop = () => {};
   const logger = log ?? { warn: noop, error: noop };
@@ -152,6 +183,47 @@ export async function finalizeDonationReceipt(
     paymentId,
     receiptNumber,
   );
+
+  // OPS-05: the donation is now durably 'paid' and a receipt number has been
+  // minted. Log it HERE — after the UPDATE resolved, before the PDF and the
+  // email, both of which are best-effort and swallow their own errors. A
+  // receipt that failed to render is still a donation that was received, and
+  // logging after the email would lose exactly the rows a donor disputes.
+  //
+  // Keyed on `donation.id`: one receive per donation, forever. The two rails
+  // (`/verify` and the webhook backstop) can both reach this line for the same
+  // donation in a race — the early-return above closes the common case, but not
+  // a true concurrent one — and the namespaced unique key collapses that to a
+  // single row instead of double-counting the money.
+  void recordMoneyEvent({
+    eventType: MONEY_EVENTS.DONATION_RECEIVED,
+    actorType: audit?.actorType ?? 'gateway',
+    actorId: audit?.actorId ?? null,
+    subjectType: 'donation',
+    subjectId: donation.id,
+    // Rupees, straight off the stored DECIMAL(10,2) — not `amountInr`, which is
+    // a float round-trip. The trail figure must be the ledger figure.
+    amount: donation.amount_inr,
+    currency: 'INR',
+    gateway: 'razorpay',
+    gatewayOrderId: donation.razorpay_order_id,
+    gatewayPaymentId: paymentId,
+    statusBefore: donation.status,
+    statusAfter: 'paid',
+    idempotencyKey: donation.id,
+    requestId: audit?.requestId ?? null,
+    ip: audit?.ip ?? null,
+    note: `donation received via ${audit?.rail ?? 'razorpay-webhook-backstop'}`,
+    metadata: {
+      rail: audit?.rail ?? 'razorpay-webhook-backstop',
+      receiptNumber,
+      doneeKind: isTempleDonation ? 'temple' : 'gaushala',
+      doneeId: isTempleDonation ? donation.temple_id : donation.gaushala_id,
+      doneeName,
+      // Deliberately NOT donor_pan. The trail is a support tool, not a second
+      // store of tax identifiers.
+    },
+  });
 
   let pdfBuffer: Buffer | null = null;
   try {
@@ -354,6 +426,36 @@ export async function donationRoutes(server: FastifyInstance) {
       );
     }
 
+    // OPS-05: the order is open and the donation row exists owing money. This
+    // is the donation rail's equivalent of `PAYMENT_INITIATED` in
+    // `payment.service.createOrder` — without it the trail's first entry for a
+    // donation is the receive, so a donation that was opened and never
+    // completed leaves no record that the donor ever tried, and the gap
+    // between intent and capture (the window a chargeback lands in) is
+    // invisible.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_INITIATED,
+      actorType: 'devotee',
+      actorId: userId,
+      subjectType: 'donation',
+      subjectId: donationId,
+      amount,
+      currency: 'INR',
+      gateway: razorpay ? 'razorpay' : 'demo',
+      gatewayOrderId: razorpayOrderId,
+      statusAfter: 'created',
+      idempotencyKey: razorpayOrderId,
+      requestId: request.id ? String(request.id) : null,
+      ip: request.ip ?? null,
+      note: `donation order opened for ${kind}`,
+      metadata: {
+        rail: 'donations/create-order',
+        doneeKind: kind,
+        doneeId: kind === 'temple' ? templeId : doneeGaushalaId,
+        planId: planId ?? null,
+      },
+    });
+
     return reply.send({
       donationId,
       razorpayOrderId,
@@ -429,6 +531,34 @@ export async function donationRoutes(server: FastifyInstance) {
           `UPDATE donations SET status = 'failed' WHERE id = $1`,
           donation.id,
         );
+        // OPS-05: this write destroys the only evidence of the attempt — the
+        // row goes to 'failed' and the reason lives nowhere. A donor whose
+        // bank statement shows a debit against a donation the product calls
+        // 'failed' is the single hardest dispute to answer, and until now the
+        // answer was "check the Render logs", which on the free plan are gone.
+        // Keyed per gateway payment id so a second attempt logs a second row.
+        void recordMoneyEvent({
+          eventType: MONEY_EVENTS.PAYMENT_FAILED,
+          actorType: 'devotee',
+          actorId: request.currentUser?.id ?? null,
+          subjectType: 'donation',
+          subjectId: donation.id,
+          amount: donation.amount_inr,
+          currency: 'INR',
+          gateway: 'razorpay',
+          gatewayOrderId: donation.razorpay_order_id,
+          gatewayPaymentId: body.razorpay_payment_id ?? null,
+          statusBefore: donation.status,
+          statusAfter: 'failed',
+          idempotencyKey: `${donation.id}:${body.razorpay_payment_id ?? 'no-payment-id'}`,
+          requestId: request.id ? String(request.id) : null,
+          ip: request.ip ?? null,
+          note: 'donation signature verification failed',
+          // No signature, no order/payment pair beyond the ids already columned
+          // — `redactMetadata` would blank a `razorpay_signature` key anyway,
+          // and storing the bytes we just refused to trust helps nobody.
+          metadata: { rail: 'donations/verify', reason: 'signature-mismatch' },
+        });
         return reply.code(400).send({ error: 'Invalid payment signature' });
       }
     }
@@ -443,6 +573,16 @@ export async function donationRoutes(server: FastifyInstance) {
       donation,
       body.razorpay_payment_id ?? null,
       server.log,
+      // OPS-05: override the gateway default — a signed-in donor's browser
+      // returned this result, which is a different fact from the webhook
+      // backstop firing because that browser died.
+      {
+        actorType: 'devotee',
+        actorId: request.currentUser?.id ?? null,
+        rail: 'donations/verify',
+        requestId: request.id ? String(request.id) : null,
+        ip: request.ip ?? null,
+      },
     );
 
     return reply.send({

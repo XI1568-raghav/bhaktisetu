@@ -2,6 +2,19 @@
 
 > Comprehensive caching architecture across Cloudflare + Render + Supabase + Redis. Foundation for sub-200ms responses at scale.
 
+> **Correction 2026-09-02 (`OPS-10`).** This spec is a design proposal and most of it
+> is unbuilt, but two passages asserted a hosting arrangement that is not true and are
+> corrected in place below. **Cloudflare Pages has not served the web tier since the
+> 2026-07-08 cutover** (`cf-kill-zombie.yml`, `docs/render-web-cutover-runbook.md`):
+> the web tier is a Render Docker service running Next standalone on Node
+> (`darshya-web`, `region: oregon`, `render.yaml:52-60`), and Cloudflare is DNS + edge
+> proxy in front of it. So `_headers` / `cf-pages-headers.json` is not the mechanism
+> that sets cache headers here, and no Pages deploy purges anything. Whether the
+> Cloudflare edge is actually caching HTML for this origin at all is **`[verify]`** —
+> nothing in this repository records the zone's cache configuration. The "CF" column
+> in the per-route table below should be read as "Cloudflare edge, unverified", not as
+> a configured, measured cache layer.
+
 ## Why caching matters
 
 - 500+ pillar pages = high traffic candidates
@@ -94,7 +107,10 @@ export async function generateStaticParams() {
 
 ### Cloudflare CDN
 ```javascript
-// cf-pages-headers.json (or wrangler.toml)
+// Proposed only. NOT the live mechanism: `apps/web/public/_headers` is a Cloudflare
+// Pages convention and Pages no longer serves this site (corrected 2026-09-02,
+// `OPS-10`). On Render + Next standalone, headers come from `next.config.ts`
+// headers() or from Cloudflare zone rules — which of those is configured is `[verify]`.
 {
   "/_next/static/*": "public, max-age=31536000, immutable",
   "/pujas/*": "public, s-maxage=3600, stale-while-revalidate=86400",
@@ -160,7 +176,7 @@ const aiPanditResponse = await getCached(
 ## Cache busting + invalidation
 
 ### Code deploy
-- CF Pages purges /_next/static/* automatically on deploy
+- ~~CF Pages purges /_next/static/* automatically on deploy~~ — **false since 2026-07-08** (corrected 2026-09-02, `OPS-10`). There is no Pages deploy. A Render deploy produces new hashed `/_next/static` paths, which sidesteps the question for immutable assets; whether any Cloudflare edge purge happens for HTML is `[verify]`
 - API memory cache cleared on Render restart
 - Redis cache persisted; manual purge for specific keys
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { DateInput } from '../../../components/ui/DateInput';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // Layer AT — booking flow. Single-page form, no multi-step wizard.
 // Defaults preferredDate to today since most rites are needed same-day.
@@ -111,11 +112,7 @@ export default function AntimSanskarBookPage() {
       >
         <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
           <h1
-            className="text-2xl md:text-3xl font-semibold mb-4"
-            style={{
-              fontFamily: 'var(--font-display)',
-              color: 'var(--color-text)',
-            }}
+            className={`${H1.catalogue} mb-4`}
           >
             We have received your request.
           </h1>
@@ -182,11 +179,7 @@ export default function AntimSanskarBookPage() {
           Antim Sanskar — Talk to Coordinator
         </p>
         <h1
-          className="text-2xl md:text-3xl font-semibold mb-3 leading-tight"
-          style={{
-            fontFamily: 'var(--font-display)',
-            color: 'var(--color-text)',
-          }}
+          className={`${H1.catalogue} mb-3`}
         >
           Share a few details. We will call you back within 30 minutes.
         </h1>

@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Calendar, Users, Check, X, MapPin, Clock, ArrowRight } from 'lucide-react';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 interface YatraPackage {
   id: string;
   slug: string;
@@ -78,15 +80,15 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
 
       <section className="relative">
         <div className="aspect-[16/7] relative overflow-hidden">
-          <img src={pkg.hero_image ?? ''} alt={pkg.name} className="w-full h-full object-cover" />
+          <img width={1600} height={700} src={pkg.hero_image ?? ''} alt={pkg.name} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         </div>
         <div className="absolute inset-x-0 bottom-0 p-6 md:p-10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white" style={{ fontFamily: 'var(--font-display)' }}>
+            <h1 className={H1.detail}>
               {pkg.name}
             </h1>
-            <p className="mt-2 text-sm md:text-base text-white/85 max-w-2xl">{pkg.short_description}</p>
+            <p className="mt-2 prose-body text-white/85 max-w-2xl">{pkg.short_description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-4 text-xs md:text-sm text-white/80">
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {pkg.duration_days} days</span>
               <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {seatsLeft} of {pkg.max_group_size} seats left</span>
@@ -167,8 +169,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
 
               <Link
                 href={`/yatra-packages/${pkg.slug}/book`}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white"
-                style={{ background: 'var(--color-primary)' }}
+                className={buttonClass('primary', 'md', 'mt-5 w-full')}
               >
                 Reserve seat <ArrowRight className="w-4 h-4" />
               </Link>

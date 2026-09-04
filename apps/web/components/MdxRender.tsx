@@ -1,6 +1,7 @@
 import React from 'react';
 import GlossaryTooltip from './GlossaryTooltip';
 import { lookupTerm } from '../lib/glossary';
+import { H1 } from '../components/ui/heading-recipe';
 
 interface Props {
   body: string;
@@ -91,7 +92,7 @@ export default function MdxRender({ body, glossaryTerms = [] }: Props) {
       i++; continue;
     }
     if (line.startsWith('# ')) {
-      blocks.push(<h1 key={`h-${blockIdx++}`} className="text-3xl font-bold text-surface-900 mt-8 mb-4">{renderInline(line.slice(2), glossarySet, `h${blockIdx}`)}</h1>);
+      blocks.push(<h1 key={`h-${blockIdx++}`} className={`${H1.catalogue} mt-8 mb-4`}>{renderInline(line.slice(2), glossarySet, `h${blockIdx}`)}</h1>);
       i++; continue;
     }
     if (line.startsWith('> ')) {

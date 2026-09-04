@@ -1,7 +1,7 @@
 ---
 title: Best Time For Housewarming Ceremony 2026
 slug: best-time-for-housewarming-ceremony-2026
-description: Complete guide to best time for housewarming ceremony 2026 — significance, vidhi (procedure), samagri (materials), timing and how to book online with verified pandits on Darshya.
+description: Complete guide to best time for housewarming ceremony 2026 — significance, vidhi (procedure), samagri (materials), timing and how to book online with pandits on Darshya.
 date: 2026-05-26
 intent: informational
 status: draft
@@ -46,18 +46,18 @@ and the auspicious muhurat window. Most devotees prefer to perform this during B
 **Q: Can best time for housewarming be done at home?**
 A: Yes, with proper preparation and ideally guidance from a learned pandit.
 
-**Q: What is the typical cost when booked through a verified service?**
+**Q: What is the typical cost when booked through Darshya?**
 A: On Darshya, pricing ranges from ₹501 (basic) to ₹5,100 (premium with full samagri and video proof). [See current pricing](https://darshya.online/pujas).
 
 **Q: Do I get an 80G receipt for any donation portion?**
-A: Donations to listed gaushalas issue 80G receipts within 24h. Pure puja booking fees do not qualify.
+A: Every donation gets a numbered receipt PDF by email. It is proof of payment, not a tax-exemption certificate: Darshya holds no Section 80G registration yet, so nothing donated today can be claimed as an 80G deduction. Puja booking fees never qualified in any case.
 
 ## Related on Darshya
 
 - [Browse all pujas](https://darshya.online/pujas)
 - [Today's panchang](https://darshya.online/panchang)
 - [Shlokas with meaning](https://darshya.online/shlokas)
-- [Donate to gaushalas (80G)](https://darshya.online/donations)
+- [Donate to gaushalas](https://darshya.online/donations)
 
 ---
 

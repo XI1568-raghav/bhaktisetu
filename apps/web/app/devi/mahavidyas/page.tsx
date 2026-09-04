@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MAHAVIDYAS, MAHAVIDYA_GROUPS, getMahavidya } from '../../../lib/mahavidyas';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -112,7 +114,7 @@ export default function MahavidyasPage() {
 
      <header className="mt-4 rounded-2xl border-2 border-saffron-200 bg-gradient-to-br from-saffron-50 via-white to-amber-50 p-6">
       <p className="text-xs uppercase tracking-wider text-saffron-600">Tantric Shakta tradition · Gupt Navratri</p>
-      <h1 className="mt-1 font-serif text-4xl font-bold text-gray-900">Dasa Mahavidya — 10 Wisdom Goddesses</h1>
+      <h1 className={`${H1.catalogue} mt-1`}>Dasa Mahavidya — 10 Wisdom Goddesses</h1>
       <p className="mt-3 text-base leading-relaxed text-gray-700">
        The 10 cosmic forms of Adi-Shakti revealed in Tantra — from Kali (time-destroyer) to Kamala (abundance-giver).
        Each Mahavidya teaches one face of cosmic wisdom. Split into Ugra (fierce, 5) and Saumya (auspicious, 5) lines.
@@ -200,7 +202,7 @@ export default function MahavidyasPage() {
        Initiation is required for the fierce-line forms; safe entry points exist for every devotee.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/devi/navadurga" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

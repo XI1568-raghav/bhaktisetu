@@ -1,5 +1,24 @@
 // Home Puja + Marriage Ceremony — data module
-// Verified pandit directory, ceremony categories, sample bookings for demo.
+//
+// Ceremony categories, pricing tiers and marriage metadata. The header used to
+// read "Verified pandit directory, ceremony categories, sample bookings for
+// demo" — every clause of which was a problem:
+//
+//   - "Verified" is a vetting claim (TC-08) that nothing performs. The
+//     `homePandits` / `weddingPandits` arrays carried
+//     `verified: { aadhaar, background, vedicCert }` flags, star ratings and
+//     weddingsPerformed counts for thirteen people who do not exist. They are
+//     now DELETED, and the two booking steps that rendered them —
+//     app/pujas/marriage/book/page.tsx (step 3) and
+//     app/pujas/home-puja/book/BookHomePujaClient.tsx (step 2) — read the real
+//     directory instead, `getPublicPriests()` in lib/pandit-api.ts, which is
+//     what both LANDING pages already used.
+//   - "sample bookings for demo" described `sampleBookings`, three fabricated
+//     CONFIRMED bookings, deleted below.
+//
+// What is left is ceremony metadata: categories, rites, add-ons and price
+// tiers. Nothing in this file is a claim about a person, and nothing in it
+// should be read as a verification record.
 
 export type PricingTier = {
  basic: number;
@@ -27,40 +46,14 @@ export type HomePujaCategory = {
  standard: string[];
  premium: string[];
  };
- recommendedPanditIds: string[];
  faq: { q: string; a: string }[];
 };
 
-export type Pandit = {
- id: string;
- name: string;
- title: string;
- initials: string;
- avatarBg: string;
- specialty: string[];
- experience: number;
- pujasPerformed: number;
- languages: string[];
- city: string;
- serviceArea: string[];
- verified: {
- aadhaar: boolean;
- background: boolean;
- vedicCert: boolean;
- };
- rating: number;
- reviewCount: number;
- pricing: {
- homePuja: PricingTier;
- marriage?: PricingTier;
- grihaPravesh?: PricingTier;
- };
- bio: string;
- credentials: string[];
- weddingsPerformed?: number;
- availability: { date: string; slots: string[] }[];
- reviews: { author: string; city: string; rating: number; text: string; date: string }[];
-};
+// TC-05 / TC-08 — the `Pandit` type went with the roster it described. Its
+// fields were the fabrication: `verified: { aadhaar, background, vedicCert }`,
+// `rating`, `reviewCount`, `weddingsPerformed`, `credentials`. The real shape
+// is `PriestSummary` in lib/pandit-api.ts, which carries only what
+// `GET /priests` can source.
 
 // ──────────────────────────────────────────────────────────────────────────
 // CATEGORIES
@@ -121,7 +114,6 @@ export const homePujaCategories: HomePujaCategory[] = [
  'Silver kalash included',
  ],
  },
- recommendedPanditIds: ['p1', 'p3', 'p5', 'p8'],
  faq: [
  {
  q: 'How far in advance should I book Griha Pravesh?',
@@ -188,7 +180,6 @@ export const homePujaCategories: HomePujaCategory[] = [
  'Recorded audio of full katha',
  ],
  },
- recommendedPanditIds: ['p2', 'p4', 'p6', 'p7'],
  faq: [
  {
  q: 'Can the katha be done in English?',
@@ -254,7 +245,6 @@ export const homePujaCategories: HomePujaCategory[] = [
  'Prasadam for 30',
  ],
  },
- recommendedPanditIds: ['p2', 'p5', 'p6', 'p8'],
  faq: [
  {
  q: 'Do I need to host the pandit for all nine days?',
@@ -315,7 +305,6 @@ export const homePujaCategories: HomePujaCategory[] = [
  'Prasadam for 25',
  ],
  },
- recommendedPanditIds: ['p1', 'p3', 'p4', 'p7'],
  faq: [
  {
  q: 'Can the pandit arrange the idol?',
@@ -376,7 +365,6 @@ export const homePujaCategories: HomePujaCategory[] = [
  'Prasadam for 30',
  ],
  },
- recommendedPanditIds: ['p2', 'p4', 'p6', 'p8'],
  faq: [
  {
  q: 'What time should I book the puja?',
@@ -440,7 +428,6 @@ export const homePujaCategories: HomePujaCategory[] = [
  'Prasadam for 25',
  ],
  },
- recommendedPanditIds: ['p1', 'p5', 'p6', 'p7'],
  faq: [
  {
  q: 'Is Rudrabhishek suitable for health issues?',
@@ -501,7 +488,6 @@ export const homePujaCategories: HomePujaCategory[] = [
  'Prasadam for 20',
  ],
  },
- recommendedPanditIds: ['p3', 'p4', 'p7', 'p8'],
  faq: [
  {
  q: 'When should I schedule — English birthday or nakshatra birthday?',
@@ -563,7 +549,6 @@ export const homePujaCategories: HomePujaCategory[] = [
  'Full pitru dosha nivaran puja',
  ],
  },
- recommendedPanditIds: ['p1', 'p2', 'p5', 'p6'],
  faq: [
  {
  q: 'Is this appropriate if I don\u2019t know my ancestors\u2019 gotra?',
@@ -577,564 +562,50 @@ export const homePujaCategories: HomePujaCategory[] = [
  },
 ];
 
-// ──────────────────────────────────────────────────────────────────────────
-// PANDITS — Home Puja specialists
-// ──────────────────────────────────────────────────────────────────────────
+// TC-05 / TC-08 — THE PANDIT DIRECTORY, deleted.
+//
+// `homePandits` (8 rows) and `weddingPandits` (5) were thirteen hand-typed
+// people who do not exist. Each carried a name, a title, a city, a service
+// area, a bio, university credentials, a star rating to one decimal, a review
+// count in the hundreds, a weddings-performed tally up to 620, a seven-day
+// availability calendar, a per-tier price and a
+// `verified: { aadhaar, background, vedicCert }` block — the vetting result
+// TC-08 is about, asserted as a literal.
+//
+// Unlike the `reviews` and `sampleBookings` fixtures deleted above, these were
+// RENDERED: the selectable roster in step 3 of the wedding checkout and step 2
+// of the home-puja checkout, under "13 Vedic-certified officiants" and
+// "N verified specialists". A couple chose a named officiant, with a rating,
+// at a price, and the person was not real.
+//
+// Emptying the arrays was not an option — an empty roster leaves a required
+// wizard step with nothing selectable. The real directory already exists and
+// both LANDING pages already used it: `getPublicPriests()` in lib/pandit-api.ts
+// over `GET /priests`, which serves only rows the platform has. Both wizards
+// now read that, with an explicit no-preference option so the step still
+// completes when the directory is empty.
+//
+// Traced before deleting, per the astrology-fixture precedent: nothing merges a
+// live overlay onto these arrays. The only readers were the two wizards, both
+// rewritten. `recommendedPanditIds` went with them — it mapped each category to
+// four ids from p1..p8 and pointed at nothing once the rows were gone.
 
-export const homePandits: Pandit[] = [
- {
- id: 'p1',
- name: 'Acharya Shashank Tripathi',
- title: 'Acharya in Yajurveda',
- initials: 'ST',
- avatarBg: 'var(--color-saffron-500)',
- specialty: ['Home Pujas', 'Griha Pravesh', 'Rudrabhishek', 'Shraadh'],
- experience: 22,
- pujasPerformed: 3200,
- languages: ['Hindi', 'Sanskrit', 'English', 'Bhojpuri'],
- city: 'Varanasi',
- serviceArea: ['Varanasi', 'Prayagraj', 'Lucknow', 'Kanpur'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.9,
- reviewCount: 412,
- pricing: {
- homePuja: { basic: 2100, standard: 4500, premium: 9100 },
- grihaPravesh: { basic: 5100, standard: 11000, premium: 21000 },
- },
- bio: 'Acharya Tripathi learnt Vedic traditions at Sampurnanand Sanskrit University, Varanasi. He has conducted over 3,200 pujas across North India and specializes in Rudrabhishek and Griha Pravesh. He speaks conversational English and explains rituals to NRI families.',
- credentials: ['Acharya, Sampurnanand Sanskrit University', 'Veda-Ratna from Kashi Vidvat Parishad'],
- availability: [
- { date: '2026-04-22', slots: ['Morning', 'Afternoon'] },
- { date: '2026-04-23', slots: ['Morning'] },
- { date: '2026-04-24', slots: ['Morning', 'Evening'] },
- { date: '2026-04-25', slots: ['Afternoon', 'Evening'] },
- { date: '2026-04-26', slots: ['Morning', 'Afternoon', 'Evening'] },
- { date: '2026-04-27', slots: ['Evening'] },
- { date: '2026-04-28', slots: ['Morning', 'Afternoon'] },
- ],
- reviews: [
- { author: 'Rajesh Agarwal', city: 'Lucknow', rating: 5, text: 'Acharya Tripathi ji conducted our Griha Pravesh flawlessly. He explained every step and was punctual. Highly recommended.', date: '2026-03-15' },
- { author: 'Priyanka Singh', city: 'Prayagraj', rating: 5, text: 'The Rudrabhishek was deeply moving. His Sanskrit pronunciation is impeccable and he answered all our questions patiently.', date: '2026-02-28' },
- { author: 'Sunil Verma', city: 'Varanasi', rating: 4.5, text: 'Excellent pandit. Brought all samagri and the ceremony felt authentic. Slight delay arriving but made up for it.', date: '2026-02-10' },
- { author: 'Meera Joshi', city: 'Kanpur', rating: 5, text: 'Did Shraadh for my father during Pitra Paksh. Very emotional and well-conducted. Our family felt truly at peace.', date: '2025-10-05' },
- { author: 'Amit Shukla', city: 'Varanasi', rating: 5, text: 'We called him from the US for my uncle\u2019s Tripindi Shraadh. Conducted via video but very authentic. Will book again.', date: '2025-09-22' },
- ],
- },
- {
- id: 'p2',
- name: 'Pandit Yogesh Sharma',
- title: 'Vedic Scholar, Pitra Karma Specialist',
- initials: 'YS',
- avatarBg: 'var(--color-vermillion-500)',
- specialty: ['Satyanarayan Katha', 'Navratri', 'Shraadh', 'Lakshmi Puja'],
- experience: 18,
- pujasPerformed: 2600,
- languages: ['Hindi', 'Sanskrit', 'English', 'Marwari'],
- city: 'Jaipur',
- serviceArea: ['Jaipur', 'Ajmer', 'Jodhpur', 'Udaipur'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.8,
- reviewCount: 318,
- pricing: {
- homePuja: { basic: 1800, standard: 3500, premium: 7500 },
- },
- bio: 'Pandit Yogesh Sharma is a Vedic scholar from Jagadguru Ramanandacharya Sanskrit University, Jaipur. He is widely sought after for Satyanarayan Katha and Shraadh karma. His storytelling style makes rituals engaging for children and the elderly alike.',
- credentials: ['Shastri, Jagadguru Ramanandacharya Sanskrit University'],
- availability: [
- { date: '2026-04-22', slots: ['Morning'] },
- { date: '2026-04-23', slots: ['Afternoon', 'Evening'] },
- { date: '2026-04-24', slots: ['Morning', 'Afternoon'] },
- { date: '2026-04-25', slots: ['Morning'] },
- { date: '2026-04-26', slots: ['Evening'] },
- { date: '2026-04-27', slots: ['Morning', 'Afternoon', 'Evening'] },
- { date: '2026-04-28', slots: ['Morning'] },
- ],
- reviews: [
- { author: 'Sunita Chaudhary', city: 'Jaipur', rating: 5, text: 'Satyanarayan Katha felt like family gathering. His narration is beautiful.', date: '2026-04-02' },
- { author: 'Mohan Lal', city: 'Ajmer', rating: 5, text: 'Booked for Navratri Ashtami. Kanya pujan was conducted with care.', date: '2026-03-29' },
- { author: 'Kavita Mehta', city: 'Udaipur', rating: 4.5, text: 'Very learned pandit. Came prepared with all items.', date: '2026-03-12' },
- { author: 'Ravi Bhati', city: 'Jodhpur', rating: 5, text: 'Shraadh was conducted with full traditions. He guided us at every step.', date: '2026-02-20' },
- { author: 'Anuradha Goyal', city: 'Jaipur', rating: 4.5, text: 'Diwali Lakshmi puja was divine. Traditional chopda pujan for our shop was appreciated.', date: '2025-11-05' },
- ],
- },
- {
- id: 'p3',
- name: 'Acharya Ramesh Iyer',
- title: 'Krishna Yajurveda Acharya',
- initials: 'RI',
- avatarBg: 'var(--color-tulsi-green)',
- specialty: ['Home Pujas', 'Griha Pravesh', 'Ganesh Puja', 'Ayushya Homam'],
- experience: 15,
- pujasPerformed: 1900,
- languages: ['Tamil', 'Sanskrit', 'English', 'Hindi', 'Kannada'],
- city: 'Chennai',
- serviceArea: ['Chennai', 'Coimbatore', 'Bangalore', 'Pondicherry'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.9,
- reviewCount: 267,
- pricing: {
- homePuja: { basic: 2500, standard: 5100, premium: 10100 },
- grihaPravesh: { basic: 6100, standard: 12100, premium: 22100 },
- },
- bio: 'Acharya Iyer belongs to a traditional Vadama family with seven generations of Vedic pandits. Trained at Sringeri Sharada Peetham, he performs all pujas in strict Krishna Yajurveda tradition with South Indian flavor.',
- credentials: ['Veda Abhyasa, Sringeri Sharada Peetham', 'Agama Shastra certification'],
- availability: [
- { date: '2026-04-22', slots: ['Morning', 'Evening'] },
- { date: '2026-04-23', slots: ['Morning'] },
- { date: '2026-04-24', slots: ['Afternoon', 'Evening'] },
- { date: '2026-04-25', slots: ['Morning', 'Afternoon'] },
- { date: '2026-04-26', slots: ['Morning'] },
- { date: '2026-04-27', slots: ['Afternoon'] },
- { date: '2026-04-28', slots: ['Morning', 'Evening'] },
- ],
- reviews: [
- { author: 'Krishnan Swaminathan', city: 'Chennai', rating: 5, text: 'Perfect Tamil-style Griha Pravesh. All traditions were followed.', date: '2026-03-18' },
- { author: 'Lakshmi Iyer', city: 'Coimbatore', rating: 5, text: 'Ayushya homam for my son was conducted with great devotion.', date: '2026-03-01' },
- { author: 'Ramesh Pillai', city: 'Bangalore', rating: 4.5, text: 'Traveled to Bangalore for our flat puja. Very punctual and thorough.', date: '2026-02-15' },
- { author: 'Nithya Menon', city: 'Pondicherry', rating: 5, text: 'Ganesh Chaturthi puja was divine. His Atharvashirsha recitation is powerful.', date: '2025-08-28' },
- { author: 'Vinod Rao', city: 'Chennai', rating: 5, text: 'Family is very happy. Will book again for next year.', date: '2025-07-10' },
- ],
- },
- {
- id: 'p4',
- name: 'Pandit Mukesh Shukla',
- title: 'Rigveda Scholar',
- initials: 'MS',
- avatarBg: 'var(--color-ganga-blue)',
- specialty: ['Satyanarayan', 'Lakshmi Puja', 'Birthday Puja', 'Ganesh Puja'],
- experience: 12,
- pujasPerformed: 1450,
- languages: ['Hindi', 'Sanskrit', 'English', 'Marathi'],
- city: 'Mumbai',
- serviceArea: ['Mumbai', 'Thane', 'Navi Mumbai', 'Pune'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.7,
- reviewCount: 198,
- pricing: {
- homePuja: { basic: 2500, standard: 4500, premium: 9500 },
- },
- bio: 'Pandit Mukesh Shukla is Mumbai\u2019s go-to pandit for corporate puja bookings, Ganpati festival rituals, and family Satyanarayan katha. Fluent in English with a modern, approachable style.',
- credentials: ['Shastri, Rashtriya Sanskrit Sansthan'],
- availability: [
- { date: '2026-04-22', slots: ['Afternoon', 'Evening'] },
- { date: '2026-04-23', slots: ['Morning', 'Evening'] },
- { date: '2026-04-24', slots: ['Morning'] },
- { date: '2026-04-25', slots: ['Afternoon'] },
- { date: '2026-04-26', slots: ['Morning', 'Afternoon', 'Evening'] },
- { date: '2026-04-27', slots: ['Evening'] },
- { date: '2026-04-28', slots: ['Morning', 'Afternoon'] },
- ],
- reviews: [
- { author: 'Deepika Kulkarni', city: 'Mumbai', rating: 5, text: 'Our Ganpati aagman was beautiful. Pandit ji was patient with our elderly grandmother.', date: '2026-04-05' },
- { author: 'Arjun Mehta', city: 'Thane', rating: 4.5, text: 'Good knowledge, on-time, fair pricing. Will recommend.', date: '2026-03-22' },
- { author: 'Shruti Deshmukh', city: 'Navi Mumbai', rating: 5, text: 'Satyanarayan katha with English translation for our kids was wonderful.', date: '2026-03-08' },
- { author: 'Rohit Joshi', city: 'Pune', rating: 4.5, text: 'Drove to Pune from Mumbai for our home warming. Very dedicated.', date: '2026-02-25' },
- { author: 'Neha Sharma', city: 'Mumbai', rating: 4.5, text: 'Diwali Lakshmi puja at our office was well-organized.', date: '2025-11-12' },
- ],
- },
- {
- id: 'p5',
- name: 'Acharya Hardik Mehta',
- title: 'Atharvaveda Acharya',
- initials: 'HM',
- avatarBg: 'var(--color-temple-gold)',
- specialty: ['Griha Pravesh', 'Vastu Shanti', 'Rudrabhishek', 'Navratri'],
- experience: 20,
- pujasPerformed: 2800,
- languages: ['Gujarati', 'Hindi', 'Sanskrit', 'English'],
- city: 'Ahmedabad',
- serviceArea: ['Ahmedabad', 'Surat', 'Vadodara', 'Gandhinagar', 'Rajkot'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.9,
- reviewCount: 356,
- pricing: {
- homePuja: { basic: 2100, standard: 4100, premium: 8500 },
- grihaPravesh: { basic: 5500, standard: 11500, premium: 21500 },
- },
- bio: 'Acharya Hardik Mehta specializes in Vastu Shanti and Griha Pravesh ceremonies across Gujarat. A Vastu consultant for 15+ years, he combines ritual precision with practical home energy analysis.',
- credentials: ['Acharya, Somnath Sanskrit University', 'Certified Vastu Shastri'],
- availability: [
- { date: '2026-04-22', slots: ['Morning'] },
- { date: '2026-04-23', slots: ['Afternoon'] },
- { date: '2026-04-24', slots: ['Morning', 'Evening'] },
- { date: '2026-04-25', slots: ['Morning', 'Afternoon', 'Evening'] },
- { date: '2026-04-26', slots: ['Morning'] },
- { date: '2026-04-27', slots: ['Morning', 'Evening'] },
- { date: '2026-04-28', slots: ['Afternoon'] },
- ],
- reviews: [
- { author: 'Jignesh Patel', city: 'Ahmedabad', rating: 5, text: 'Best Griha Pravesh we could have asked for. His Vastu analysis was spot on.', date: '2026-04-10' },
- { author: 'Dhwani Shah', city: 'Surat', rating: 5, text: 'Navratri puja across 9 days was stunning. Daily routine was well-planned.', date: '2025-10-20' },
- { author: 'Hemant Joshi', city: 'Vadodara', rating: 4.5, text: 'Very professional and deeply knowledgeable. Recommended.', date: '2026-02-14' },
- { author: 'Falguni Mehta', city: 'Gandhinagar', rating: 5, text: 'Rudrabhishek was performed with great devotion on Shivratri.', date: '2026-02-26' },
- { author: 'Parth Desai', city: 'Rajkot', rating: 5, text: 'He drove to Rajkot without complaint. Ceremony was flawless.', date: '2026-01-18' },
- ],
- },
- {
- id: 'p6',
- name: 'Pandit Debashish Chatterjee',
- title: 'Bengali Vedic Pandit',
- initials: 'DC',
- avatarBg: 'var(--color-lotus-pink)',
- specialty: ['Durga Puja', 'Satyanarayan', 'Rudrabhishek', 'Shraadh'],
- experience: 16,
- pujasPerformed: 2100,
- languages: ['Bengali', 'Hindi', 'Sanskrit', 'English'],
- city: 'Kolkata',
- serviceArea: ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.8,
- reviewCount: 243,
- pricing: {
- homePuja: { basic: 1900, standard: 3800, premium: 7800 },
- },
- bio: 'Pandit Chatterjee is known for authentic Bengali-style Durga Puja and Satyanarayan Katha. A graduate of Sanskrit College, Kolkata, he brings traditional Bongaon rituals to your home.',
- credentials: ['MA Sanskrit, Sanskrit College Kolkata'],
- availability: [
- { date: '2026-04-22', slots: ['Evening'] },
- { date: '2026-04-23', slots: ['Morning', 'Afternoon'] },
- { date: '2026-04-24', slots: ['Morning'] },
- { date: '2026-04-25', slots: ['Afternoon', 'Evening'] },
- { date: '2026-04-26', slots: ['Morning', 'Afternoon'] },
- { date: '2026-04-27', slots: ['Morning'] },
- { date: '2026-04-28', slots: ['Evening'] },
- ],
- reviews: [
- { author: 'Soumya Banerjee', city: 'Kolkata', rating: 5, text: 'Our Durga puja at home felt like pandal experience. Dhunuchi naach and all.', date: '2025-10-15' },
- { author: 'Arundhati Sen', city: 'Howrah', rating: 5, text: 'Satyanarayan katha in Bengali tradition was what our grandmother wanted.', date: '2026-03-20' },
- { author: 'Partha Das', city: 'Siliguri', rating: 4.5, text: 'Travels to Siliguri happily. Very accommodating pandit.', date: '2026-02-12' },
- { author: 'Ipsita Roy', city: 'Durgapur', rating: 5, text: 'Shraadh for my father-in-law was deeply respectful and thorough.', date: '2025-12-05' },
- { author: 'Anirban Ghosh', city: 'Kolkata', rating: 4.5, text: 'Rudrabhishek on Shivratri was powerful. Will book again.', date: '2026-03-07' },
- ],
- },
- {
- id: 'p7',
- name: 'Pandit Kailash Trivedi',
- title: 'Karma Kanda Pandit',
- initials: 'KT',
- avatarBg: 'var(--color-saffron-600)',
- specialty: ['Rudrabhishek', 'Ganesh Puja', 'Birthday Puja', 'Satyanarayan'],
- experience: 14,
- pujasPerformed: 1700,
- languages: ['Hindi', 'Sanskrit', 'English', 'Punjabi'],
- city: 'Delhi',
- serviceArea: ['Delhi', 'Gurugram', 'Noida', 'Ghaziabad', 'Faridabad'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.7,
- reviewCount: 212,
- pricing: {
- homePuja: { basic: 2300, standard: 4300, premium: 8800 },
- },
- bio: 'Pandit Kailash Trivedi serves Delhi NCR families with a focus on urban-friendly scheduling and bilingual rituals. Known for his clarity in explaining ritual significance to first-time puja hosts.',
- credentials: ['Shastri, Lal Bahadur Shastri Sanskrit Vidyapeeth'],
- availability: [
- { date: '2026-04-22', slots: ['Afternoon', 'Evening'] },
- { date: '2026-04-23', slots: ['Morning'] },
- { date: '2026-04-24', slots: ['Afternoon'] },
- { date: '2026-04-25', slots: ['Morning', 'Evening'] },
- { date: '2026-04-26', slots: ['Afternoon', 'Evening'] },
- { date: '2026-04-27', slots: ['Morning', 'Afternoon'] },
- { date: '2026-04-28', slots: ['Morning', 'Evening'] },
- ],
- reviews: [
- { author: 'Varun Khanna', city: 'Gurugram', rating: 5, text: 'Rudrabhishek at home was very peaceful. Pandit ji was patient with our kids.', date: '2026-04-01' },
- { author: 'Pooja Bansal', city: 'Noida', rating: 4.5, text: 'Birthday puja for my husband. He enjoyed the Ayushya Homam.', date: '2026-03-10' },
- { author: 'Rohit Chopra', city: 'Delhi', rating: 5, text: 'Best Ganesh Chaturthi puja our family has done. English explanation helped relatives from abroad.', date: '2025-09-02' },
- { author: 'Neetu Arora', city: 'Ghaziabad', rating: 4.5, text: 'Satyanarayan katha went well. Good quality prasad too.', date: '2026-02-22' },
- { author: 'Sanjay Puri', city: 'Faridabad', rating: 4.5, text: 'Prompt, courteous, knowledgeable. Recommended.', date: '2026-01-30' },
- ],
- },
- {
- id: 'p8',
- name: 'Acharya Bhaskar Reddy',
- title: 'Agama Shastra Acharya',
- initials: 'BR',
- avatarBg: 'var(--color-rudraksha-brown)',
- specialty: ['Griha Pravesh', 'Ayushya Homam', 'Lakshmi Puja', 'Navratri'],
- experience: 17,
- pujasPerformed: 2200,
- languages: ['Telugu', 'Sanskrit', 'English', 'Hindi', 'Tamil'],
- city: 'Hyderabad',
- serviceArea: ['Hyderabad', 'Secunderabad', 'Vijayawada', 'Visakhapatnam'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.8,
- reviewCount: 289,
- pricing: {
- homePuja: { basic: 2400, standard: 4800, premium: 9800 },
- grihaPravesh: { basic: 5800, standard: 11800, premium: 22000 },
- },
- bio: 'Acharya Bhaskar Reddy performs pujas in Telugu Smartha and Vaikhanasa Agama traditions. Serves Hyderabad and coastal Andhra Pradesh for Griha Pravesh and Lakshmi Puja specifically.',
- credentials: ['Agama Shastra Acharya, Tirumala Tirupati Devasthanams'],
- availability: [
- { date: '2026-04-22', slots: ['Morning', 'Evening'] },
- { date: '2026-04-23', slots: ['Afternoon'] },
- { date: '2026-04-24', slots: ['Morning'] },
- { date: '2026-04-25', slots: ['Afternoon', 'Evening'] },
- { date: '2026-04-26', slots: ['Evening'] },
- { date: '2026-04-27', slots: ['Morning', 'Afternoon'] },
- { date: '2026-04-28', slots: ['Morning', 'Afternoon', 'Evening'] },
- ],
- reviews: [
- { author: 'Srinivas Rao', city: 'Hyderabad', rating: 5, text: 'Telugu-style Griha Pravesh at our new flat. Parents were delighted.', date: '2026-04-14' },
- { author: 'Madhuri Reddy', city: 'Secunderabad', rating: 5, text: 'Ayushya homam for our newborn was very thorough.', date: '2026-03-25' },
- { author: 'Kiran Kumar', city: 'Vijayawada', rating: 4.5, text: 'Great pandit, clear instructions over WhatsApp beforehand.', date: '2026-02-18' },
- { author: 'Divya Menon', city: 'Visakhapatnam', rating: 5, text: 'Diwali Lakshmi puja with Kubera yagna was elaborate. Loved it.', date: '2025-11-01' },
- { author: 'Ramesh Chowdary', city: 'Hyderabad', rating: 4.5, text: 'Very disciplined and punctual. Family recommends him.', date: '2026-01-08' },
- ],
- },
-];
-
-// ──────────────────────────────────────────────────────────────────────────
-// PANDITS — Marriage / Wedding specialists
-// ──────────────────────────────────────────────────────────────────────────
-
-export const weddingPandits: Pandit[] = [
- {
- id: 'w1',
- name: 'Acharya Vidyadhar Bhatt',
- title: 'Vivaha Sanskara Specialist, Kashi',
- initials: 'VB',
- avatarBg: 'var(--color-saffron-500)',
- specialty: ['Hindu Vivah', 'Vedic Weddings', 'Arya Samaj', 'Kanyadaan'],
- experience: 28,
- pujasPerformed: 4200,
- weddingsPerformed: 620,
- languages: ['Hindi', 'Sanskrit', 'English', 'Gujarati', 'Marwari'],
- city: 'Varanasi',
- serviceArea: ['Varanasi', 'Delhi', 'Mumbai', 'Jaipur', 'Lucknow'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 5.0,
- reviewCount: 584,
- pricing: {
- homePuja: { basic: 5100, standard: 11000, premium: 21000 },
- marriage: { basic: 25000, standard: 51000, premium: 101000 },
- },
- bio: 'Acharya Vidyadhar Bhatt is among India\u2019s most sought-after wedding pandits, having officiated 620+ weddings including several celebrity ceremonies. His Sanskrit chanting is pristine and he narrates each rite in English for guests.',
- credentials: ['Acharya, Sampurnanand Sanskrit University', 'Veda-Ratna, Kashi Vidvat Parishad', 'Sanskrit Sahitya Acharya'],
- availability: [
- { date: '2026-04-22', slots: ['Consultation'] },
- { date: '2026-04-23', slots: ['Consultation'] },
- { date: '2026-04-24', slots: ['Booked'] },
- { date: '2026-04-25', slots: ['Booked'] },
- { date: '2026-04-26', slots: ['Consultation', 'Muhurat check'] },
- { date: '2026-04-27', slots: ['Consultation'] },
- { date: '2026-04-28', slots: ['Consultation', 'Muhurat check'] },
- ],
- reviews: [
- { author: 'Aanya & Kabir Malhotra', city: 'Delhi', rating: 5, text: 'Our 7 pheras were the most beautiful moment of our lives. Acharya ji explained each rite in English for my American in-laws.', date: '2026-02-14' },
- { author: 'Sakshi & Aryan Shah', city: 'Mumbai', rating: 5, text: 'He flew to Mumbai for our destination wedding. Worth every rupee.', date: '2025-12-28' },
- { author: 'Meera & Vikram Singhania', city: 'Jaipur', rating: 5, text: 'Traditional Marwari wedding with full Vedic rituals. Perfection.', date: '2025-11-10' },
- { author: 'Riya & Arjun Kapoor', city: 'Varanasi', rating: 5, text: 'Ganga ghat wedding was magical. His voice fills the air.', date: '2025-09-18' },
- { author: 'Priya & Rohan Mehta', city: 'Lucknow', rating: 5, text: 'Pre-wedding muhurat consultation was detailed and reassuring.', date: '2025-08-05' },
- ],
- },
- {
- id: 'w2',
- name: 'Pandit Girish Joshi',
- title: 'Maharashtrian Vivaha Pandit',
- initials: 'GJ',
- avatarBg: 'var(--color-vermillion-500)',
- specialty: ['Marathi Lagna', 'Hindu Vivah', 'Court Marriage + Vedic', 'Simantonnayan'],
- experience: 22,
- pujasPerformed: 3100,
- weddingsPerformed: 410,
- languages: ['Marathi', 'Hindi', 'Sanskrit', 'English'],
- city: 'Pune',
- serviceArea: ['Pune', 'Mumbai', 'Nashik', 'Kolhapur', 'Nagpur'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.9,
- reviewCount: 362,
- pricing: {
- homePuja: { basic: 3500, standard: 7500, premium: 15500 },
- marriage: { basic: 18000, standard: 38000, premium: 75000 },
- },
- bio: 'Pandit Girish Joshi specializes in Maharashtrian weddings with their distinct rituals — Seemantpoojan, Mangalashtake, Saptapadi, and Lakshmi Pujan. He blends traditional Brahmin wedding etiquette with modern accessibility.',
- credentials: ['Veda-Shastra-Sampanna, Tilak Maharashtra Vidyapeeth'],
- availability: [
- { date: '2026-04-22', slots: ['Consultation'] },
- { date: '2026-04-23', slots: ['Booked'] },
- { date: '2026-04-24', slots: ['Consultation'] },
- { date: '2026-04-25', slots: ['Consultation', 'Muhurat check'] },
- { date: '2026-04-26', slots: ['Booked'] },
- { date: '2026-04-27', slots: ['Consultation'] },
- { date: '2026-04-28', slots: ['Consultation'] },
- ],
- reviews: [
- { author: 'Shreya & Rohit Deshpande', city: 'Pune', rating: 5, text: 'Full Marathi wedding tradition. Mangalashtake brought tears to everyone\u2019s eyes.', date: '2026-01-20' },
- { author: 'Madhura & Sameer Kulkarni', city: 'Mumbai', rating: 5, text: 'Cobbled together court marriage + Vedic at our farmhouse. Well-organized.', date: '2025-12-10' },
- { author: 'Aparna & Tushar Patil', city: 'Nashik', rating: 4.5, text: 'Grandfather was very happy. Traditions fully followed.', date: '2025-11-22' },
- { author: 'Radha & Omkar Jadhav', city: 'Kolhapur', rating: 5, text: 'Pandit ji even taught us the proper mantra pronunciations beforehand.', date: '2025-10-08' },
- { author: 'Devyani & Mihir Kale', city: 'Nagpur', rating: 5, text: 'Traveled to Nagpur for our wedding. Very professional.', date: '2025-08-30' },
- ],
- },
- {
- id: 'w3',
- name: 'Acharya Sundaresan Shastri',
- title: 'Kalyanam Specialist, Thirumana Pandit',
- initials: 'SS',
- avatarBg: 'var(--color-tulsi-green)',
- specialty: ['South Indian Wedding', 'Kalyanam', 'Tamil Iyer Wedding', 'Telugu Pelli'],
- experience: 30,
- pujasPerformed: 4500,
- weddingsPerformed: 530,
- languages: ['Tamil', 'Telugu', 'Sanskrit', 'English', 'Malayalam', 'Kannada'],
- city: 'Chennai',
- serviceArea: ['Chennai', 'Bangalore', 'Hyderabad', 'Coimbatore', 'Madurai'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 5.0,
- reviewCount: 497,
- pricing: {
- homePuja: { basic: 4100, standard: 8100, premium: 16100 },
- marriage: { basic: 21000, standard: 45000, premium: 85000 },
- },
- bio: 'Acharya Sundaresan Shastri is a fourth-generation Vadhyar (priest) from a family that has served South Indian weddings for 120+ years. Known for his mastery of both Tamil Iyer and Telugu Smartha wedding traditions.',
- credentials: ['Ghanapathi, Veda Patashala Kanchipuram', 'Agama-Shastra-Ratna'],
- availability: [
- { date: '2026-04-22', slots: ['Consultation'] },
- { date: '2026-04-23', slots: ['Consultation'] },
- { date: '2026-04-24', slots: ['Consultation', 'Muhurat check'] },
- { date: '2026-04-25', slots: ['Booked'] },
- { date: '2026-04-26', slots: ['Booked'] },
- { date: '2026-04-27', slots: ['Consultation'] },
- { date: '2026-04-28', slots: ['Consultation'] },
- ],
- reviews: [
- { author: 'Divya & Karthik Iyer', city: 'Chennai', rating: 5, text: 'Three-day Tamil Iyer wedding conducted flawlessly. Mama elders approved.', date: '2026-02-05' },
- { author: 'Sneha & Kiran Raju', city: 'Hyderabad', rating: 5, text: 'Telugu Pelli with Jeelakarra-Bellam and Kalyanam. Beautiful.', date: '2025-12-15' },
- { author: 'Anushka & Gautam Menon', city: 'Bangalore', rating: 5, text: 'His ghana paath of the mangal sutras gave us goosebumps.', date: '2025-11-28' },
- { author: 'Lavanya & Prakash Pillai', city: 'Coimbatore', rating: 5, text: 'Four priests coordinated under him for our grand wedding.', date: '2025-10-12' },
- { author: 'Bharathi & Raghavan', city: 'Madurai', rating: 5, text: 'At 30+ years of experience, nobody can match him.', date: '2025-09-02' },
- ],
- },
- {
- id: 'w4',
- name: 'Giani Harpreet Singh Ji',
- title: 'Anand Karaj Granthi',
- initials: 'HS',
- avatarBg: 'var(--color-ganga-blue)',
- specialty: ['Anand Karaj', 'Punjabi Wedding', 'Sikh Ceremonies', 'Blended Ceremonies'],
- experience: 20,
- pujasPerformed: 2600,
- weddingsPerformed: 340,
- languages: ['Punjabi', 'Gurmukhi', 'Hindi', 'English'],
- city: 'Amritsar',
- serviceArea: ['Amritsar', 'Delhi', 'Chandigarh', 'Ludhiana', 'Jalandhar'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.9,
- reviewCount: 298,
- pricing: {
- homePuja: { basic: 3500, standard: 7000, premium: 14000 },
- marriage: { basic: 21000, standard: 41000, premium: 78000 },
- },
- bio: 'Giani Harpreet Singh Ji is a Granthi from the Golden Temple community, officiating Anand Karaj ceremonies and blended Sikh-Hindu weddings. Respectful of both traditions when families request combined rites.',
- credentials: ['Granthi Certification, SGPC', 'Gurmat Sangeet Diploma'],
- availability: [
- { date: '2026-04-22', slots: ['Consultation'] },
- { date: '2026-04-23', slots: ['Consultation'] },
- { date: '2026-04-24', slots: ['Booked'] },
- { date: '2026-04-25', slots: ['Consultation'] },
- { date: '2026-04-26', slots: ['Consultation'] },
- { date: '2026-04-27', slots: ['Booked'] },
- { date: '2026-04-28', slots: ['Consultation'] },
- ],
- reviews: [
- { author: 'Simran & Jaspreet Singh', city: 'Amritsar', rating: 5, text: 'Four laavaan were sung with such devotion. Our families cried.', date: '2026-03-18' },
- { author: 'Harleen & Arvind', city: 'Delhi', rating: 5, text: 'Blended Sikh-Hindu wedding. Both families felt honored.', date: '2026-02-22' },
- { author: 'Gurpreet & Manveer', city: 'Chandigarh', rating: 5, text: 'Granthi ji explained each laavaan meaning. Magical.', date: '2025-12-28' },
- { author: 'Navneet & Kuljeet', city: 'Ludhiana', rating: 4.5, text: 'Very respectful, punctual. All rites followed.', date: '2025-11-15' },
- { author: 'Preet & Rajveer', city: 'Jalandhar', rating: 5, text: 'Our Anand Karaj was everything we dreamed.', date: '2025-09-20' },
- ],
- },
- {
- id: 'w5',
- name: 'Pandit Ashok Pandey',
- title: 'Arya Samaj Wedding Officiant',
- initials: 'AP',
- avatarBg: 'var(--color-temple-gold)',
- specialty: ['Arya Samaj Wedding', 'Court Marriage + Vedic', 'Inter-caste Weddings', 'Havan'],
- experience: 18,
- pujasPerformed: 2400,
- weddingsPerformed: 380,
- languages: ['Hindi', 'Sanskrit', 'English', 'Punjabi'],
- city: 'Delhi',
- serviceArea: ['Delhi', 'Gurugram', 'Noida', 'Ghaziabad', 'Faridabad', 'Jaipur'],
- verified: { aadhaar: true, background: true, vedicCert: true },
- rating: 4.8,
- reviewCount: 321,
- pricing: {
- homePuja: { basic: 2800, standard: 5800, premium: 11500 },
- marriage: { basic: 11000, standard: 25000, premium: 51000 },
- },
- bio: 'Pandit Ashok Pandey officiates Arya Samaj weddings which are legally recognized, affordable, and Vedic. He handles inter-caste and inter-faith weddings with sensitivity and all mandatory paperwork.',
- credentials: ['Arya Samaj Pratinidhi Sabha Certification', 'Vedic Sanskar Acharya'],
- availability: [
- { date: '2026-04-22', slots: ['Consultation', 'Booked'] },
- { date: '2026-04-23', slots: ['Consultation'] },
- { date: '2026-04-24', slots: ['Consultation'] },
- { date: '2026-04-25', slots: ['Booked'] },
- { date: '2026-04-26', slots: ['Consultation'] },
- { date: '2026-04-27', slots: ['Consultation'] },
- { date: '2026-04-28', slots: ['Consultation', 'Booked'] },
- ],
- reviews: [
- { author: 'Ananya & Rohit Sharma', city: 'Delhi', rating: 5, text: 'Clean, legal Arya Samaj wedding in 2 hours. Registration certificate same day.', date: '2026-04-02' },
- { author: 'Kritika & Danish', city: 'Gurugram', rating: 5, text: 'Inter-faith ceremony handled with grace. Both families happy.', date: '2026-03-12' },
- { author: 'Shilpa & Naveen', city: 'Noida', rating: 4.5, text: 'Fair pricing, all paperwork handled.', date: '2026-02-25' },
- { author: 'Ritika & Puneet', city: 'Ghaziabad', rating: 5, text: 'Court marriage + small Vedic ceremony. Perfect for our situation.', date: '2025-12-08' },
- { author: 'Priya & Arjun', city: 'Jaipur', rating: 4.5, text: 'Traveled for our destination Arya Samaj wedding. Very cooperative.', date: '2025-10-18' },
- ],
- },
-];
-
-// ──────────────────────────────────────────────────────────────────────────
-// SAMPLE BOOKINGS
-// ──────────────────────────────────────────────────────────────────────────
-
-export const sampleBookings = [
- {
- id: 'BS-20260418-00142',
- category: 'griha-pravesh',
- categoryName: 'Griha Pravesh',
- panditId: 'p5',
- panditName: 'Acharya Hardik Mehta',
- date: '2026-04-24',
- slot: 'Morning',
- tier: 'standard',
- amount: 11500,
- customerName: 'Jignesh Patel',
- city: 'Ahmedabad',
- status: 'confirmed',
- },
- {
- id: 'BS-20260419-00158',
- category: 'marriage',
- categoryName: 'Hindu Vivah (Traditional)',
- panditId: 'w1',
- panditName: 'Acharya Vidyadhar Bhatt',
- date: '2026-05-12',
- slot: 'Evening',
- tier: 'premium',
- amount: 101000,
- customerName: 'Aanya & Kabir',
- city: 'Delhi',
- status: 'confirmed',
- },
- {
- id: 'BS-20260420-00189',
- category: 'satyanarayan-katha',
- categoryName: 'Satyanarayan Katha',
- panditId: 'p4',
- panditName: 'Pandit Mukesh Shukla',
- date: '2026-04-23',
- slot: 'Evening',
- tier: 'basic',
- amount: 2100,
- customerName: 'Deepika Kulkarni',
- city: 'Mumbai',
- status: 'confirmed',
- },
-];
-
+// TC-05 / precedent — SAMPLE BOOKINGS, deleted.
+//
+// `sampleBookings` was three hand-typed CONFIRMED bookings carrying
+// real-format booking numbers (the `BS-YYYYMMDD-XXXXX` shape the API actually
+// mints), amounts up to Rs 1,01,000, pandit ids, cities and customer names —
+// one of them "Aanya & Kabir", the same invented couple that appeared in the
+// deleted marriageTestimonials rows.
+//
+// Nothing in apps/web read it: the export had zero importers. It is deleted on
+// the same precedent as the dead `trustScore: 90` fallback on /temples/[slug]
+// and the per-pandit `reviews` arrays that lived on the deleted roster — a
+// ready-made block of fabricated
+// completed transactions sitting one `.map()` away from a render has no honest
+// value to keep. Real booking rows come from the API; there is no fixture
+// shape a page should ever fall back to for them.
+//
 // ──────────────────────────────────────────────────────────────────────────
 // MARRIAGE CEREMONY META
 // ──────────────────────────────────────────────────────────────────────────
@@ -1253,29 +724,40 @@ export const marriageAddOns = [
  'Destination wedding travel',
 ];
 
-export const marriageTestimonials = [
- {
- couple: 'Aanya & Kabir Malhotra',
- location: 'Delhi',
- date: 'Feb 2026',
- rating: 5,
- panditName: 'Acharya Vidyadhar Bhatt',
- text: 'Our 7 pheras were the most beautiful moment of our lives. Acharya ji explained every rite in English for my American in-laws, and switched to flawless Sanskrit for the sacred parts. Every guest said the wedding felt truly spiritual, not performative.',
- },
- {
- couple: 'Divya & Karthik Iyer',
- location: 'Chennai',
- date: 'Feb 2026',
- rating: 5,
- panditName: 'Acharya Sundaresan Shastri',
- text: 'Three-day Tamil Iyer wedding. Every last detail — the Mangal Snanam, Kashi Yatra, Oonjal — was conducted flawlessly. Even our most traditional relatives could not find a single fault.',
- },
- {
- couple: 'Simran & Jaspreet Singh',
- location: 'Amritsar',
- date: 'Mar 2026',
- rating: 5,
- panditName: 'Giani Harpreet Singh Ji',
- text: 'The four laavaan were sung with such devotion that our whole family had tears. Giani ji also accommodated the Hindu Ganesh Puja on my mother\u2019s side. Truly a blended ceremony done right.',
- },
-];
+// TC-05 (P1, trust) -- THE THREE INVENTED WEDDING TESTIMONIALS ARE GONE.
+//
+// This array used to hold three entries, every one `rating: 5`, each naming a
+// couple, a city, a month in early 2026 and an officiating pandit -- and every
+// one of them was written by a developer. There have been no completed
+// weddings: nothing in the product has ever recorded a rated wedding booking.
+// app/pujas/marriage/page.tsx rendered them under "Couples who said yes with
+// Darshya" / "Real stories from recent weddings", which made them the strongest
+// social proof on a page that takes bookings from Rs 11,000 up. The pandit names
+// were the worst part -- a real trade credential (Acharya, Giani) attached to a
+// person who does not exist, credited with officiating a wedding that did not
+// happen.
+//
+// The temple half of TC-05 had the identical defect and was closed by publishing
+// the REAL reviews instead: GET /temples/:slug/reviews reads PujaBooking rows
+// with a non-null rating, i.e. a devotee who actually paid for and received the
+// puja (lib/reviews.ts). There is no wedding equivalent -- no endpoint serves
+// rated wedding bookings -- so the honest replacement here is nothing, not
+// different data.
+//
+// Kept as an EMPTY shape record with no reader. The predecessor emptied it while
+// app/pujas/marriage/page.tsx still mapped over it; that <section> is now gone
+// too, because a heading reading "Couples who said yes with Darshya" over an
+// empty grid is still a claim. What survives is the type, the empty array, and
+// the regression guard in __tests__/marriage-testimonials.tc05.test.tsx that
+// throws if a row is ever added. Put rows back only from a rated booking that a
+// devotee actually left, never by hand.
+export type MarriageTestimonial = {
+ couple: string;
+ location: string;
+ date: string;
+ rating: number;
+ panditName: string;
+ text: string;
+};
+
+export const marriageTestimonials: MarriageTestimonial[] = [];

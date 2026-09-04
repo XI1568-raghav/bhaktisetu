@@ -20,6 +20,9 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { UserFacingError, classifyUserFacing, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -132,6 +135,8 @@ function PriestBookingsInner() {
  // hiccup told the pandit "You have no assigned bookings yet" — indistinguishable
  // from a genuinely empty day, and invisible to anyone watching.
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: Retry cannot fix an expired session — it re-sends the dead token.
+ const [loadReauth, setLoadReauth] = useState(false);
  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
  const [actionLoading, setActionLoading] = useState<string | null>(null);
  // A failed action used to be invisible: `if (res.ok)` had no else and the
@@ -166,7 +171,16 @@ function PriestBookingsInner() {
  );
  if (!res.ok) {
  const detail = await res.text().catch(() => '');
- throw new Error(`Could not load your bookings (${res.status}). ${detail.slice(0, 140)}`.trim());
+ // RES-09: the status code and 140 raw characters of the response body
+ // were rendered straight to a pandit. Keep the server's sentence only.
+ // AUTH-06: carry the status. `serverErrorText` refuses "Unauthorized" as
+ // a developer name, so a 401 falls back to this page's own sentence and
+ // the only evidence that the SESSION died is destroyed before any
+ // classifier sees it.
+ throw new UserFacingError(
+  serverErrorText(detail, 'Could not load your bookings. Please try again.'),
+  res.status,
+ );
  }
  const data = await res.json();
  setBookings(data.bookings || []);
@@ -174,9 +188,12 @@ function PriestBookingsInner() {
  setTotal(typeof data.total === 'number' ? data.total : (data.bookings?.length ?? 0));
  setTotalPages(Math.max(1, data.totalPages ?? 1));
  } catch (err) {
- setLoadError(
- err instanceof Error ? err.message : 'Could not load your bookings. Please try again.',
+ const { message, reauth } = classifyUserFacing(
+  err,
+  'Could not load your bookings. Please try again.',
  );
+ setLoadError(message);
+ setLoadReauth(reauth);
  setBookings([]);
  } finally {
  setLoading(false);
@@ -233,7 +250,7 @@ function PriestBookingsInner() {
  if (!res.ok) {
  const detail = await res.text().catch(() => '');
  setActionError(
- `Could not ${action} this booking (${res.status}). ${detail.slice(0, 140)}`.trim(),
+ serverErrorText(detail, `Could not ${action} this booking. Please try again.`),
  );
  } else {
  setActionError(null);
@@ -242,9 +259,55 @@ function PriestBookingsInner() {
  await fetchBookings();
  }
  } catch (err) {
+ setActionError(userFacingMessage(err, 'Network error — please try again.'));
+ } finally {
+ setActionLoading(null);
+ }
+ }
+
+ // PF-04, the reachability half. A delivery control was added to the detail
+ // page, and that closed the literal finding — but `getActionButton` below had
+ // no `video_uploaded` branch, so it fell through to `default: null` and this
+ // screen rendered a booking that is one tap from paying the pandit with no
+ // call to action at all. That matters because the Completed tab is precisely
+ // where those rows live (PRIEST_BOOKING_VIEWS.completed = completed +
+ // video_uploaded + delivered) and precisely where the dashboard's "Upload
+ // Video" quick action lands him — so the one screen built to show unfinished
+ // fulfilment work showed the stuck rows as inert. Any pandit who filed proof
+ // and then closed the tab had to guess that the card itself was a link.
+ //
+ // This does NOT go through handleAction: delivery is not one of the four
+ // bodyless /priest/bookings/:id/* transitions. It is the same call the detail
+ // page makes — PATCH /bookings/:id {"status":"delivered"} — which the API
+ // gates on the assigned pandit AND on a stored videoProofUrl
+ // (ASSIGNED_PRIEST_ALLOWED_TRANSITIONS + checkVideoProofGate in
+ // routes/bookings.ts), so nothing here can attest delivery of a puja with no
+ // recording on file.
+ async function handleDeliver(bookingId: string) {
+ setActionLoading(`${bookingId}-deliver`);
+ try {
+ const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}`, {
+ method: 'PATCH',
+ headers: {
+ Authorization: `Bearer ${session?.accessToken}`,
+ 'Content-Type': 'application/json',
+ },
+ body: JSON.stringify({ status: 'delivered' }),
+ });
+
+ if (!res.ok) {
+ const detail = await res.text().catch(() => '');
  setActionError(
- err instanceof Error ? err.message : 'Network error — please try again.',
+ serverErrorText(detail, 'Could not mark this booking delivered. Please try again.'),
  );
+ } else {
+ setActionError(null);
+ // Same reason as handleAction: the row changes status, so the tab counts
+ // and the page contents both have to come from the server again.
+ await fetchBookings();
+ }
+ } catch (err) {
+ setActionError(userFacingMessage(err, 'Network error — please try again.'));
  } finally {
  setActionLoading(null);
  }
@@ -263,7 +326,7 @@ function PriestBookingsInner() {
  <button
  onClick={(e) => { e.preventDefault(); handleAction(booking.id, 'accept'); }}
  disabled={!!actionLoading}
- className="inline-flex items-center gap-1.5 px-4 py-2 bg-saffron-600 text-white text-xs font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+ className={buttonClass('primary', 'md')}
  >
  {isLoading('accept') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
  Accept
@@ -320,6 +383,37 @@ function PriestBookingsInner() {
  <Video className="w-3.5 h-3.5" />
  Upload Video
  </Link>
+ );
+ case 'video_uploaded':
+ // The proof link is not decoration: without it this button would be a
+ // blind attestation that the devotee received a recording the pandit
+ // cannot see from here. It is a sibling of the card's stretched overlay
+ // anchor, not a descendant of it, so PF-17's nested-<a> hydration bug
+ // does not come back — same position the Upload Video link already
+ // occupies.
+ return (
+ <div className="flex flex-col items-end gap-1.5">
+ {booking.videoProofUrl && (
+ <a
+ href={booking.videoProofUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="inline-flex items-center gap-1 text-xs font-medium text-saffron-600 hover:text-saffron-700"
+ >
+ <Video className="w-3.5 h-3.5" />
+ Check proof
+ </a>
+ )}
+ <button
+ onClick={(e) => { e.preventDefault(); handleDeliver(booking.id); }}
+ disabled={!!actionLoading}
+ title="Confirms the devotee has received the recording and closes the booking"
+ className="inline-flex items-center gap-1.5 px-4 py-2 bg-tulsi-green-dark text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
+ >
+ {isLoading('deliver') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+ Mark Delivered
+ </button>
+ </div>
  );
  default:
  return null;
@@ -391,8 +485,14 @@ function PriestBookingsInner() {
  role="alert"
  className="flex flex-col items-center justify-center gap-3 rounded-xl border border-red-200 bg-red-50 py-12 px-4 text-center"
  >
- <h3 className="text-lg font-semibold text-red-800">Could not load your bookings</h3>
- <p className="text-sm text-red-700 max-w-md">{loadError}</p>
+ <h3 className="text-lg font-semibold text-red-800">
+ {loadReauth ? 'Your session has expired' : 'Could not load your bookings'}
+ </h3>
+ <p className="prose-meta text-red-700 max-w-md">{loadError}</p>
+ {/* AUTH-06: the sign-in link REPLACES Retry. */}
+ {loadReauth ? (
+ <ReauthPrompt message="" className="flex flex-col items-center gap-3" />
+ ) : (
  <button
  type="button"
  onClick={() => void fetchBookings()}
@@ -400,6 +500,7 @@ function PriestBookingsInner() {
  >
  Retry
  </button>
+ )}
  </div>
  )}
 

@@ -3,14 +3,25 @@
 > Author: CTO. Date: 2026-04-27. Honest engineering snapshot for the founder.
 > No fabrication. Every claim cites file:line; gaps are marked `[UNKNOWN]`.
 
+> **Correction 2026-09-02 (`OPS-10`).** §1, headed "System architecture (verified)", stated that the web front end **"is deployed to Cloudflare Pages and serves `darshya.online`"**, and §4 cited a missing **"CF Pages perf snapshot"**. Cloudflare Pages has not served the web tier since the **2026-07-08 cutover**: the web tier is the Render Docker service **`darshya-web`, region `oregon`**, running Next standalone on Node (`render.yaml:52-60`), and Cloudflare is **DNS + edge proxy only** — no Pages project, no `next-on-pages`, no edge-runtime constraint. Both Render services are `region: oregon` and `autoDeploy: false`. Note also that the Stripe rail referenced elsewhere in this repo was **deleted from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`); Razorpay is the only live gateway and settles **INR only**, with no replacement international processor chosen.
+
 ---
 
 ## 1. System architecture (verified)
 
 Single Turborepo monorepo (`pnpm-workspace.yaml`, `turbo.json`). The web
-front end (`apps/web`, Next.js 15 / React 19) is deployed to Cloudflare
-Pages and serves `darshya.online`. The API (`apps/api`, Fastify 5) is
-deployed to Render free tier at `api.darshya.online`; it boots through `apps/api/src/server.ts:55`,
+front end (`apps/web`, Next.js 15 / React 19) runs as the **Render Docker
+service `darshya-web`, region `oregon`, Next standalone on Node**
+(`render.yaml:52-60`) and serves `darshya.online`; **Cloudflare is DNS +
+edge proxy only** — there is no Pages project, no `next-on-pages` build and
+no edge-runtime constraint. *(Corrected 2026-09-02, `OPS-10`: this paragraph
+used to read "is deployed to Cloudflare Pages and serves `darshya.online`".
+Pages stopped serving the web tier at the 2026-07-08 cutover —
+`docs/render-web-cutover-runbook.md`, `.github/workflows/cf-kill-zombie.yml`.)*
+The API (`apps/api`, Fastify 5) is
+deployed to Render free tier at `api.darshya.online`, also region `oregon`
+(`render.yaml:15`); both services carry `autoDeploy: false` (`render.yaml:28`,
+`:60`), so a git push deploys nothing. It boots through `apps/api/src/server.ts:55`,
 registering 31 route groups under `/api/v1/*`, with helmet (CSP off,
 `server.ts:57-60`), CORS allowlist from `CORS_ORIGIN` (`server.ts:61-70`),
 global rate-limit 100/min (`server.ts:71-74`), and per-route `rawBody`
@@ -56,7 +67,7 @@ literally echoes `"build: ok (empty shell)"`
 |---|---|---|
 | API cold start | ~30 s on Render free | known Render free-tier behavior |
 | API p50 / p95 latency | `[UNKNOWN]` | No APM dashboard wired; Sentry tracks errors only |
-| Web TTFB | `[UNKNOWN]` | No CF Pages perf snapshot recorded |
+| Web TTFB | `[UNKNOWN]` | No perf snapshot recorded for the Render web service `darshya-web` *(corrected 2026-09-02, `OPS-10`: this cell said "No CF Pages perf snapshot recorded"; Cloudflare Pages has not served the web tier since the 2026-07-08 cutover, so a Pages snapshot would measure nothing — `render.yaml:52-60`)* |
 | DB p95 query time | `[UNKNOWN]` | Supabase observability not in `docs/` |
 | Embeddings hit-rate vs LIKE-fallback | `[UNKNOWN]` | `routes/semantic-search.ts` logs mode but no aggregate |
 

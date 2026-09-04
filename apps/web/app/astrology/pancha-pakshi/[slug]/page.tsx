@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ELEMENT_COLOR, getBird, PANCHA_PAKSHI_BIRDS } from '../../../../lib/pancha-pakshi';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -62,7 +64,7 @@ export default async function PanchaPakshiBirdPage({ params }: { params: Promise
 
      <header className={`mt-4 rounded-2xl border-2 p-6 ${ELEMENT_COLOR[bird.element]}`}>
       <p className="text-xs uppercase tracking-wider">Pancha Pakshi #{idx + 1} of 5</p>
-      <h1 className="mt-1 font-serif text-4xl font-bold">{bird.name}</h1>
+      <h1 className={`${H1.catalogue} mt-1`}>{bird.name}</h1>
       <p className="mt-1 text-base">{bird.sanskrit} · {bird.tamil}</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
        <div className="rounded-xl bg-white/70 p-3">
@@ -177,7 +179,7 @@ export default async function PanchaPakshiBirdPage({ params }: { params: Promise
        so {bird.name} energy is at peak when you act.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/astrology" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

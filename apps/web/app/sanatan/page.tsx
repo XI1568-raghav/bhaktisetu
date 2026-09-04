@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import VedicTimeline from '../../components/VedicTimeline';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   title: 'Sanatana Dharma — A Complete Evergreen Guide to the Eternal Way',
@@ -68,10 +69,10 @@ export default function SanatanPillarPage() {
       <article className="max-w-3xl mx-auto px-4 py-12 prose-base">
         <header className="mb-10 border-b border-saffron-200 pb-8">
           <p className="text-sm font-medium text-saffron-700 uppercase tracking-wider">Pillar guide · Evergreen reference</p>
-          <h1 className="mt-3 text-4xl md:text-5xl font-bold leading-tight text-surface-900">
+          <h1 className={`${H1.marketing} mt-3`}>
             Sanatana Dharma — A Complete Guide to the Eternal Way
           </h1>
-          <p className="mt-4 text-lg text-surface-700 leading-relaxed">
+          <p className="mt-4 prose-lead text-surface-700 leading-relaxed">
             Sanatana Dharma — सनातन धर्म, literally "the eternal order" — is the indigenous spiritual tradition of
             the Indian subcontinent. It is what most of the modern world calls "Hinduism," though the name itself is
             a colonial-era simplification of a far older, far more pluralistic family of paths. This guide walks

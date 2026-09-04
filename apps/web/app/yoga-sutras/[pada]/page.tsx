@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { YOGA_SUTRAS, padaSlugs, getPada } from '../../../lib/yoga-sutras';
@@ -73,7 +75,7 @@ export default async function YogaSutraPadaPage({ params }: { params: Promise<{ 
 
       <header className="mb-8 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-saffron-50 p-6">
         <p className="text-xs uppercase tracking-wider text-indigo-700">Pada {p.number} · {p.sutraCount} sutras</p>
-        <h1 className="mt-2 font-serif text-3xl text-gray-900 sm:text-4xl">{p.sanskrit}</h1>
+        <h1 className={`${H1.catalogue} mt-2`}>{p.sanskrit}</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900">{p.english}</p>
         <p className="mt-1 italic text-sm text-gray-600">{p.iast}</p>
         <p className="mt-3 text-sm text-gray-700"><span className="font-semibold">Central focus:</span> {p.centralFocus}</p>

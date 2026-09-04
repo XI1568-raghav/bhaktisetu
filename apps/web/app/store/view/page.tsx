@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import ProductDetail from '../../../components/store/ProductDetail';
 import { getProductByHandle } from '../../../lib/products';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * LEGACY ALIAS. The canonical product page is /store/<handle> (a server
@@ -29,11 +31,11 @@ function ProductDetailInner() {
       <div className="min-h-[100dvh] bg-saffron-50 flex items-center justify-center">
         <div className="text-center">
           <ShoppingBag className="w-16 h-16 text-surface-300 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-surface-700 mb-2">Product Not Found</h1>
+          <h1 className={`${H1.portal} mb-2`}>Product Not Found</h1>
           <p className="text-surface-500 mb-4">The product you are looking for does not exist.</p>
           <Link
             href="/store"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Store

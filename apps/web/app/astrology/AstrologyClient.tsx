@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../lib/api-config';
+import { astrologyFetch } from '../../lib/astrologer-fetch';
 import {
  ASTROLOGY_SORT_VALUES,
  ASTROLOGY_SPECIALIZATIONS,
@@ -39,6 +40,7 @@ import {
  Compass,
 } from 'lucide-react';
 import { DateInput } from '../../components/ui/DateInput';
+import { H1 } from '../../components/ui/heading-recipe';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -150,11 +152,25 @@ export default function AstrologyPage() {
  // There is deliberately no fallback. Empty means empty and a failure says it
  // failed — rendering fixtures on error is the defect this whole finding is.
  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+
+ // AW-02: the "From Rs. X/min" figure on the Live Consultation card was static
+ // copy claiming Rs 10/min. It is now the real minimum across the loaded
+ // directory, and null when nothing has loaded — so the card can say
+ // "See astrologers" rather than quote a price nobody offers.
+ const lowestRate = useMemo(() => {
+   const rates = astrologers
+     .map((a) => a.perMinuteRate)
+     .filter((r): r is number => typeof r === 'number' && Number.isFinite(r) && r > 0);
+   return rates.length ? Math.min(...rates) : null;
+ }, [astrologers]);
  useEffect(() => {
   let cancelled = false;
   (async () => {
    try {
-    const r = await fetch(`${API_BASE_URL}/astrology/astrologers/live`);
+    // DF-12: bounded, because a bare `fetch` never rejects on a stalled socket
+    // and `loadState` would sit on 'loading' — "Loading verified astrologers..."
+    // forever, with the error branch below unreachable.
+    const r = await astrologyFetch(`${API_BASE_URL}/astrology/astrologers/live`);
     if (!r.ok) { if (!cancelled) setLoadState('error'); return; }
     const j = await r.json();
     const list = Array.isArray(j?.astrologers) ? (j.astrologers as Astrologer[]) : [];
@@ -277,19 +293,33 @@ export default function AstrologyPage() {
  <section className="bg-[#ede9e3]">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-16 lg:py-24">
  <div className="text-center">
- {/* Promo badge */}
+ {/* Promo badge.
+     AW-02 (P0), last half: this read "First 5 Minutes FREE". Nothing on the
+     call path that takes the money implements a free minute —
+     /astrology/<id>/book offers a 5-minute preset and POST /consultation/book
+     charges round(pricePerMinute x minutes) with nothing deducted, so the
+     cheapest possible purchase on this funnel costs 5 x the rate. The promise
+     also advertised a capability that was deliberately DELETED: P0
+     #AP-01/AP-02 removed free-trial rooms, which is why
+     app/consultation/[id]/page.tsx tells a visitor free-trial rooms are no
+     longer resolvable. Same rule this finding already applied to the
+     fabricated "From Rs. 10/min" floor and the fabricated online count: state
+     only what the platform can honour. The free tools below genuinely are
+     free and need no signup; the live consult genuinely is billed per minute. */}
  <div className="inline-flex items-center gap-2 bg-saffron-100 border border-saffron-200 rounded-full px-5 py-2 mb-6">
  <Sparkles className="w-4 h-4 text-saffron-600" />
- <span className="text-sm font-semibold text-saffron-700">First 5 Minutes FREE</span>
+ <span className="text-sm font-semibold text-saffron-700">
+ Free Vedic tools &middot; live consults billed by the minute
+ </span>
  </div>
 
- <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-surface-800 mb-5 leading-tight">
+ <h1 className={`${H1.marketing} mb-5`}>
  Connect with India&apos;s<br />
  <span className="text-[var(--color-primary)]">
  Top Astrologers
  </span>
  </h1>
- <p className="text-lg text-surface-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+ <p className="prose-lead text-surface-500 max-w-2xl mx-auto mb-10 leading-relaxed">
  Get accurate predictions, personalized remedies, and spiritual guidance from
  verified astrologers. Available 24/7 via chat, call, or video.
  </p>
@@ -313,8 +343,17 @@ export default function AstrologyPage() {
  </div>
  </Link>
 
- {/* Live Consultation Card */}
- <div className="group relative bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-left hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 cursor-pointer">
+ {/* Live Consultation Card
+     AW-02: was a bare <div className="... cursor-pointer"> with no href and no
+     onClick — it looked clickable and did nothing. Its price line also read
+     "From Rs. 10/min" as static copy while the cheapest REAL astrologer is
+     Rs 18/min, so the one number on the card was both invented and low.
+     Now a real Link, and the price is derived from the loaded directory (or
+     omitted entirely when no rate is known — never a made-up floor). */}
+ <Link
+ href="#online-astrologers"
+ className="group relative block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-left hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
+ >
  <div className="w-12 h-12 bg-saffron-600 rounded-xl flex items-center justify-center mb-4">
  <MessageCircle className="w-6 h-6 text-white" />
  </div>
@@ -323,16 +362,22 @@ export default function AstrologyPage() {
  Chat with verified astrologers for personalized guidance
  </p>
  <div className="inline-flex items-center gap-1 text-sm font-semibold text-saffron-600">
- From Rs. 10/min <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+ {lowestRate !== null ? `From Rs. ${lowestRate}/min` : 'See astrologers'}{' '}
+ <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
  </div>
- </div>
+ </Link>
  </div>
  </div>
  </div>
  </section>
 
  {/* ── Online Astrologers Section ──────────────────────────────────────── */}
- <section className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-12 lg:py-16">
+ {/* AW-02: id is the Live Consultation card's link target — the card used to
+     be a dead <div>, so there was nothing for it to point at. */}
+ <section
+ id="online-astrologers"
+ className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-12 lg:py-16"
+ >
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
  <div>
  <h2 className="text-2xl lg:text-3xl font-semibold tracking-tight text-surface-800">
@@ -772,7 +817,10 @@ export default function AstrologyPage() {
  step: 2,
  icon: MessageCircle,
  title: 'Start Chat',
- desc: 'Connect instantly via chat, call, or video. First 5 minutes are free for new users.',
+ // AW-02: was "First 5 minutes are free for new users." — see the hero
+ // badge note above. No free minute exists on the paid path; the devotee
+ // picks a duration and pays for all of it before the room is minted.
+ desc: 'Connect via chat, call, or video. You pick the duration and pay for those minutes upfront.',
  },
  {
  step: 3,

@@ -5,6 +5,7 @@ import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
 import { selectTemplePortalStreams } from '../../lib/api-contracts';
 import { useTemplePortalStreams } from '../../lib/portal-queries';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { streamStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-09. This screen read `.data` off the PUBLIC /darshan/live envelope
@@ -75,7 +76,7 @@ export default function TempleStreams() {
             trailing={s.isLive ? (s.viewerCount ?? 0).toLocaleString('en-IN') : undefined}
             trailingHint={s.isLive ? 'watching' : undefined}
             status={{
-              label: s.isLive ? 'LIVE' : s.status.toUpperCase(),
+              label: s.isLive ? 'Live now' : streamStatusLabel(s.status),
               color: s.isLive ? colors.red[600] : colors.stone[500],
             }}
           />

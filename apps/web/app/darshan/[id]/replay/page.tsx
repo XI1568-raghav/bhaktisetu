@@ -20,6 +20,8 @@ export function generateStaticParams() {
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Video, Clock, ArrowLeft, Calendar } from 'lucide-react';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 type ReplaySegment = {
   id: string;
@@ -93,7 +95,7 @@ export default async function DarshanReplayPage({
           <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
             <Clock className="h-3.5 w-3.5" /> Last 24h replay
           </div>
-          <h1 className="mt-3 font-display text-3xl text-surface-900 sm:text-4xl">
+          <h1 className={`${H1.catalogue} mt-3`}>
             {pretty} — Aarti Replay
           </h1>
           <p className="mt-2 text-surface-700">
@@ -153,7 +155,7 @@ export default async function DarshanReplayPage({
                   {seg.hlsUrl ? (
                     <a
                       href={seg.hlsUrl}
-                      className="rounded-lg bg-saffron-600 px-4 py-2 text-sm font-medium text-white hover:bg-saffron-700"
+                      className={buttonClass('primary', 'md')}
                     >
                       Watch
                     </a>

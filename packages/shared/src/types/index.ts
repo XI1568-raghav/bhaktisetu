@@ -15,14 +15,25 @@ export enum BookingStatus {
   FAILED = "FAILED",
 }
 
+/**
+ * Mirrors the Prisma `ContentType` enum EXACTLY — lowercase, same membership.
+ *
+ * It previously declared UPPERCASE values plus invented `VIDEO`/`AUDIO`, and
+ * omitted `bhajan`, `shloka` and `video_reel`. Since the API filters straight on
+ * the Prisma enum, anything typed against this and sent to
+ * `GET /content?type=` produced a 500 — verified live: `?type=aarti` returns
+ * 200 with rows, `?type=AARTI` returns 500. Keep this in lockstep with
+ * `apps/api/prisma/schema.prisma`.
+ */
 export enum ContentType {
-  ARTICLE = "ARTICLE",
-  VIDEO = "VIDEO",
-  AUDIO = "AUDIO",
-  MANTRA = "MANTRA",
-  AARTI = "AARTI",
-  CHALISA = "CHALISA",
-  STORY = "STORY",
+  AARTI = "aarti",
+  CHALISA = "chalisa",
+  MANTRA = "mantra",
+  BHAJAN = "bhajan",
+  STORY = "story",
+  ARTICLE = "article",
+  SHLOKA = "shloka",
+  VIDEO_REEL = "video_reel",
 }
 
 export enum PaymentStatus {

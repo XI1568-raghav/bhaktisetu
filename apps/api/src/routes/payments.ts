@@ -227,6 +227,32 @@ export async function paymentRoutes(server: FastifyInstance) {
 
         const payload = request.body as Record<string, any>;
 
+        if (useRaw && !rawBody) {
+          server.log.error('RAZORPAY_VERIFY_RAW (default true) requires fastify-raw-body — rawBody missing for this route');
+          return reply.status(500).send({ error: 'Webhook configuration error' });
+        }
+
+        // PAY-07 (2026-08-20): VERIFY FIRST, RECORD SECOND.
+        //
+        // The idempotency INSERT used to run here, before any signature check.
+        // The endpoint is unauthenticated by design — the signature IS the
+        // authentication — so anyone who could reach it could POST an unsigned
+        // body carrying a real event's `x-razorpay-event-id`. The dedupe row
+        // landed, the request was then rejected as unsigned, and Razorpay's
+        // genuine delivery of that event was dismissed as a duplicate and
+        // dropped in silence: a capture never confirmed, nothing logged.
+        //
+        // This is precisely why the Stripe webhook route was deleted on
+        // 2026-08-11 (see the comment below where it used to live) — the same
+        // ordering was left standing on the Razorpay handler.
+        //
+        // The throw is caught by the outer handler and mapped to 400, exactly
+        // as a failed verify inside handleWebhook* always was.
+        paymentService.assertWebhookSignature(
+          useRaw ? rawBody! : JSON.stringify(payload),
+          signature,
+        );
+
         // Idempotency (TD16): Razorpay retries 2-3x on slow ack. Header
         // `x-razorpay-event-id` is the canonical id when present; for older
         // payloads we fall back to a SHA-256 over the rawBody (or stringified
@@ -248,12 +274,10 @@ export async function paymentRoutes(server: FastifyInstance) {
           server.log.warn({ err: idemErr }, 'Razorpay idempotency check failed — falling through');
         }
 
+        // Signature re-checked inside handleWebhook* — one cheap HMAC, and it
+        // keeps those two entry points safe for any other caller.
         if (useRaw) {
-          if (!rawBody) {
-            server.log.error('RAZORPAY_VERIFY_RAW (default true) requires fastify-raw-body — rawBody missing for this route');
-            return reply.status(500).send({ error: 'Webhook configuration error' });
-          }
-          const result = await paymentService.handleWebhookRaw(rawBody, payload, signature);
+          const result = await paymentService.handleWebhookRaw(rawBody!, payload, signature);
           return reply.status(200).send(result);
         }
 

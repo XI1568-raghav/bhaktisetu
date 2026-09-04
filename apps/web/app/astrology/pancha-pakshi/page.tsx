@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import PanchaPakshiClient from './PanchaPakshiClient';
 import { ACTIVITIES, ACTIVITY_COLOR, PANCHA_PAKSHI_BIRDS } from '../../../lib/pancha-pakshi';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -114,9 +117,9 @@ export default function PanchaPakshiPage() {
 
      <header className="mt-4 text-center">
       <p className="text-xs uppercase tracking-wider text-saffron-600">Free Tamil Siddhar 5-bird astrology</p>
-      <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Pancha Pakshi Shastra</h1>
+      <h1 className={`${H1.catalogue} mt-1`}>Pancha Pakshi Shastra</h1>
       <p className="mt-2 text-sm text-saffron-700">பஞ்ச பட்சி சாஸ்திரம் · पञ्च पक्षी शास्त्र</p>
-      <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+      <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
        Ancient Tamil Siddhar system classifying humans under 5 birds —
        Vulture, Owl, Crow, Cock, Peacock — by birth nakshatra. Each bird has
        lucky days, direction, color, deity, mantra, and a daily activity
@@ -198,7 +201,7 @@ export default function PanchaPakshiPage() {
        so you know when to sign, marry, launch, or travel.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/astrology" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

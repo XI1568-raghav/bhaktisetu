@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # Support Macros — Darshya CS (Telugu v1)
 
 > **Doctrine source**: `docs/company/07-cs.md` — verbatim: _"A devotee complaint is not a UX bug — it is a disrupted spiritual experience. We respond to the emotion first, the ticket second."_
@@ -30,7 +41,7 @@
 > 1. **పూర్తి refund** ₹{amountInr} — Razorpay rails ద్వారా 5-7 banking days లో తిరిగి వస్తుంది, లేదా
 >    (Poorthi refund ₹{amountInr} — Razorpay rails dwaaraa 5-7 banking days lo thirigi vasthundi, lēdā)
 > 2. **ఉచిత పునః-పూజ** అదే పండిత గారితో లేదా వేరే verified పండిత గారితో, లేదా
->    (Uchitha punah-puja adē panditha gaaritho lēdā vērē verified panditha gaaritho, lēdā)
+>    (Uchitha punah-puja adē panditha gaaritho lēdā vērē panditha gaaritho, lēdā)
 > 3. **Wallet credit** ₹{amountInr × 1.25} (25% bonus, 90 రోజులు చెల్లుబాటు)
 >    (Wallet credit ₹{amountInr × 1.25} — 25% bonus, 90 rōzulu chellubaatu)
 >
@@ -61,7 +72,7 @@
 >
 > ఈరోజే (48 గంటల లోపు) మీకు **వేరే verified పండిత గారిని** assign చేస్తున్నాము — అదే date/time slot, అదనపు fee లేదు. పండిత ID + WhatsApp 2 గంటల్లో పంపుతాము.
 >
-> (Eerojē 48 gantala lōpu meeku vērē verified panditha gaarini assign chēstunnaamu — adē date/time slot, adanapu fee lēdu. Panditha ID + WhatsApp 2 gantallo pampuṭaamu.)
+> (Eerojē 48 gantala lōpu meeku vērē panditha gaarini assign chēstunnaamu — adē date/time slot, adanapu fee lēdu. Panditha ID + WhatsApp 2 gantallo pampuṭaamu.)
 >
 > Reschedule సాధ్యం కాకపోతే → **పూర్తి refund** ₹{amountInr} 5-7 banking days లో.
 >

@@ -82,7 +82,7 @@ Use enriched deck (per F-001 + F-002 deck Q1-actuals addendum). Add new slides:
 
 ## Founder action
 
-- [ ] Q4-end: pull all M1-M12 actuals from Razorpay + Stripe + PostHog + Supabase
+- [ ] Q4-end: pull all M1-M12 actuals from Razorpay + PostHog + Supabase _(this line named Stripe as a fourth source; Stripe was removed 2026-08-11 and no replacement international processor has been chosen, so there is nothing to pull from it)_ `[verify — Stripe was removed; the NRI rail is undecided]`
 - [ ] Build 5-sheet Google Sheet financial model
 - [ ] CA + advisor review pre-investor send
 - [ ] Pre-warm 5 Series A investors via mutual intros

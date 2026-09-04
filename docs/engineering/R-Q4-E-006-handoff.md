@@ -6,7 +6,7 @@
 ## Goal
 
 Drive `edge_p75_ttfb_ms` from current 0 (unmeasured) to ≤ 150 ms p75 globally, with cold-start
-under 100 ms. Baseline candidate: Cloudflare Pages free-tier worker serving `darshya.online`.
+under 100 ms. (**Corrected 2026-09-02, `OPS-10`:** this named a *Cloudflare Pages free-tier worker serving `darshya.online`* as the baseline. Pages has not been a hosting layer since 2026-07-08 — `cf-kill-zombie.yml` — and `darshya.online` is served by the Render Docker service `darshya-web` in region `oregon`, `render.yaml:56`, behind Cloudflare DNS + edge proxy. Any baseline must be measured against that origin.)
 
 ## KPI definition
 

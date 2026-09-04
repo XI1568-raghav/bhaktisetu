@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { LangLanding } from '../../components/LangLanding';
+import { HAS_80G } from '../../lib/eighty-g';
 
 
 export const metadata: Metadata = {
@@ -39,7 +40,7 @@ export default function TeluguLanding() {
       ctaDarshanLabel="లైవ్ దర్శనం చూడండి"
       features={[
         { title: 'లైవ్ దర్శనం', body: 'కాశీ, తిరుపతి, సిద్ధివినాయక, సోమనాథ్ — ప్రముఖ ఆలయాల నుండి లైవ్ దర్శనం.', href: '/darshan' },
-        { title: 'పూజ బుకింగ్', body: 'ధృవీకరించబడిన పండిత్, వీడియో రుజువు, 80G రసీదు. మీ పేరు మీద సంకల్పం.', href: '/pujas' },
+        { title: 'పూజ బుకింగ్', body: `ధృవీకరించబడిన పండిత్, వీడియో రుజువు, ${HAS_80G ? '80G రసీదు' : 'రసీదు'}. మీ పేరు మీద సంకల్పం.`, href: '/pujas' },
         { title: 'రోజువారీ పంచాంగం', body: 'తిథి, నక్షత్రం, రాహుకాలం, చౌఘడియా — మీ నగరానికి అనుగుణంగా.', href: '/panchang' },
         { title: 'గోసేవ', body: 'గోదానం, మేత సేవ — ధృవీకరించబడిన గోశాలలకు నేరుగా విరాళం.', href: '/gaushala' },
         { title: 'గురుకులం', body: 'సాంప్రదాయ గురుకుల ప్రవేశం — సంస్కృతం, వేదం, తత్వశాస్త్రం.', href: '/gurukuls' },

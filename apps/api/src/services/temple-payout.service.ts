@@ -70,9 +70,8 @@ export async function writeTemplePayoutOnConfirm(
   });
   if (!booking) return;
 
-  // Idempotency guard. NOTE: temple_payouts.booking_id has no UNIQUE index, so
-  // this findFirst remains a TOCTOU under truly concurrent confirms — the index
-  // is a schema change and is filed with the owner in AUDIT.md.
+  // Idempotency guard, fast path. The race is closed at the database by the
+  // INSERT below — see the DI-06 note there.
   const existing = await tx.templePayout.findFirst({
     where: { bookingId: booking.id },
     select: { id: true },
@@ -87,12 +86,35 @@ export async function writeTemplePayoutOnConfirm(
     .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
   if (amount.lte(0)) return;
 
-  await tx.templePayout.create({
-    data: {
-      templeId: booking.templeId,
-      bookingId: booking.id,
-      amount,
-      status: 'pending',
-    },
+  // DI-06 (F367) — the write that makes the UNIQUE index load-bearing.
+  //
+  // The finding's own prescription was "let the create fail on conflict instead
+  // of pre-checking". Taken literally that is WRONG here, and dangerously so:
+  // this function runs inside the CALLER'S interactive transaction (the payment
+  // capture). In Postgres a statement error aborts the whole transaction, and
+  // Prisma exposes no SAVEPOINT, so catching P2002 in JS would not recover —
+  // every statement after it fails with "current transaction is aborted" and a
+  // real capture rolls back because a duplicate temple payout was attempted.
+  //
+  // `createMany({ skipDuplicates: true })` is the primitive that does what the
+  // finding wanted safely: Prisma emits INSERT ... ON CONFLICT DO NOTHING, which
+  // is resolved by the index inside the same statement and never raises, so the
+  // enclosing transaction survives. The findFirst above stays as the fast path;
+  // this closes the window between it and the insert.
+  //
+  // Where the UNIQUE index is absent (migration 20260824000000 creates it only
+  // on a database whose keys are already clean) this behaves exactly as the
+  // previous `create` did — no regression, and it upgrades itself the moment
+  // the constraint lands.
+  await tx.templePayout.createMany({
+    data: [
+      {
+        templeId: booking.templeId,
+        bookingId: booking.id,
+        amount,
+        status: 'pending',
+      },
+    ],
+    skipDuplicates: true,
   });
 }

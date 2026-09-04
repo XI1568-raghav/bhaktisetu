@@ -9,14 +9,17 @@ import {
  IndianRupee,
  Clock,
  ArrowUpRight,
+ Percent,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import { H1 } from '../components/ui/heading-recipe';
 import {
  listMyCommissions,
  listCommissions,
  COMMISSION_PAGE_SIZE,
  type Commission,
  type CommissionStatus,
+ type CommissionTotals,
 } from '../lib/commission-api';
 
 type StatusFilter = 'all' | CommissionStatus;
@@ -93,6 +96,18 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  const { session } = useAuth();
  const [items, setItems] = useState<Commission[]>([]);
  const [total, setTotal] = useState(0);
+ /**
+  * DI-08 (F369) — ledger-wide totals from the API, when it sends them.
+  *
+  * The three cards below used to sum only the rows on screen. /admin/revenue's
+  * "Platform take (our revenue)" tile sums the WHOLE table. So the two admin
+  * screens still disagreed after the labels were fixed — same words, different
+  * denominators — which is the original 5.8x complaint wearing a better label.
+  * `GET /admin/commissions` already computes the ledger-wide split over the
+  * same filter as `total`; this state is that value, and the page-scoped sums
+  * are the fallback for the provider route, which sends none.
+  */
+ const [ledgerTotals, setLedgerTotals] = useState<CommissionTotals | null>(null);
  const [page, setPage] = useState(1);
  const [pageSize, setPageSize] = useState(COMMISSION_PAGE_SIZE);
  const [loading, setLoading] = useState(true);
@@ -113,6 +128,7 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
      setItems(res.items);
      setTotal(res.total);
      setPageSize(res.pageSize);
+     setLedgerTotals(res.totals ?? null);
     }
    } catch (err) {
     if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load commissions');
@@ -145,10 +161,47 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
   const pending = items
    .filter((c) => c.status === 'PENDING')
    .reduce((sum, c) => sum + value(c), 0);
+  // DI-08. The three halves of the same rows, so nobody has to infer which one
+  // the single figure above was. Summed from the per-row `grossAmount` /
+  // `platformCut` the API already derives through lib/commission-math.ts —
+  // never re-derived here, so a page total can never disagree with the column
+  // above it.
+  //
+  // `amount` is authoritative on every row (it is what the payout engine pays),
+  // so provider earnings always totals. The DERIVED pair does not:
+  // GET /payouts/commissions sends `grossAmount` and `platformCut` as NULL for
+  // rows written before COMMISSION_CONVENTION_CUTOVER, because those rows carry
+  // the platform's cut in `amount` and deriving from them would state a
+  // confidently wrong figure (payout-requests.ts explains it at the source).
+  // Coercing those nulls to 0 would publish "Gross ₹1,000" beside "Provider
+  // earnings ₹4,800" — an impossible ledger, and the very defect this finding
+  // is about. So when any loaded row is non-derivable the pair abstains and
+  // says how many rows it could read.
+  const providerEarnings = items.reduce((sum, c) => sum + value(c), 0);
+  const derivable = items.filter(
+   (c) => toNumber(c.platformCut) !== null && toNumber(c.grossAmount) !== null,
+  );
+  const splitIsComplete = items.length > 0 && derivable.length === items.length;
+  const derivableCount = derivable.length;
+  const platformTake = splitIsComplete
+   ? derivable.reduce((sum, c) => sum + (toNumber(c.platformCut) ?? 0), 0)
+   : null;
+  const gross = splitIsComplete
+   ? derivable.reduce((sum, c) => sum + (toNumber(c.grossAmount) ?? 0), 0)
+   : null;
   const lastPaid = items
    .filter((c) => c.status === 'PAID')
    .sort((a, b) => (b.processedAt ?? '').localeCompare(a.processedAt ?? ''))[0];
-  return { totalEarned, pending, lastPaid };
+  return {
+   totalEarned,
+   pending,
+   lastPaid,
+   providerEarnings,
+   platformTake,
+   gross,
+   splitIsComplete,
+   derivableCount,
+  };
  }, [items]);
 
  const rangeStart = items.length === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -157,11 +210,15 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  // The summary and the status chips only see the rows actually loaded. Say so
  // rather than presenting one page as the whole ledger.
  const partial = total > items.length;
+ // DI-08/F369: the cards must name their own denominator. "this page" and
+ // "whole ledger" are different numbers and an admin reconciling against
+ // /admin/revenue has to know which one is on screen.
+ const totalsScopeLabel = ledgerTotals ? 'whole ledger' : 'this page';
 
  return (
  <div className="space-y-6 max-w-5xl">
  <div>
- <h1 className="text-lg font-semibold text-surface-800">
+ <h1 className={H1.portal}>
  {title ?? (mode === 'admin' ? 'All commissions' : 'My commissions')}
  </h1>
  <p className="text-surface-500 mt-1 text-sm">
@@ -179,11 +236,16 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  </div>
  )}
 
- {mode === 'me' && !loading && !error && (
+ {!loading && !error && (
  <div className="space-y-2">
+ {mode === 'me' && (
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+ {/* DI-08: was "Total earned (paid)". `amount` is the PROVIDER's earning
+     and this card sums only the rows on the current page — two facts the
+     old label carried neither of, while /admin/revenue put the PLATFORM's
+     take under the near-identical words "Commissions Earned". */}
  <SummaryCard
- label="Total earned (paid)"
+ label="Provider earnings (paid, this page)"
  value={formatINR(summary.totalEarned)}
  icon={IndianRupee}
  color="text-green-700"
@@ -205,10 +267,95 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  bg="bg-saffron-50"
  />
  </div>
- {partial && (
+ )}
+
+ {/* DI-08 (F369). The admin ledger carried NO total at all, so the only way to
+     get a figure off this screen was to add the "Provider earning" column up by
+     eye — and then read it beside the platform-take card on /admin/revenue as
+     though the two were the same quantity. All three halves of the split are
+     stated here, and they reconcile: provider + platform = gross.
+
+     SCOPE, which was the half left open. The first fix summed the rows ON
+     SCREEN while /admin/revenue's tile sums the whole table, so the two
+     screens still printed different numbers under the same word — the original
+     complaint with better labels on it. `GET /admin/commissions` already
+     returns `totals` over the entire filtered ledger (routes/admin.ts,
+     grouped by rate and reduced through lib/commission-math.ts); the client
+     was discarding it. When it is present these cards are ledger-wide and the
+     platform-take figure is directly comparable with /admin/revenue. The
+     page-scoped sums remain the fallback for GET /payouts/commissions, which
+     computes no totals, and the label always says which one is on screen.
+
+     Hidden entirely with no rows: three cards reading "— / — / ₹0" above the
+     "No commission records yet" panel is noise, and the ₹0 is the one figure
+     on the strip a reader could mistake for a measurement. */}
+ {items.length > 0 && (
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+ <SummaryCard
+ label={`Gross booking value (${totalsScopeLabel})`}
+ value={
+ ledgerTotals
+ ? formatINR(ledgerTotals.grossInr)
+ : summary.splitIsComplete
+ ? formatINR(summary.gross)
+ : '—'
+ }
+ icon={IndianRupee}
+ color="text-surface-700"
+ bg="bg-surface-100"
+ />
+ <SummaryCard
+ label={`Platform take (${totalsScopeLabel})`}
+ value={
+ ledgerTotals
+ ? formatINR(ledgerTotals.platformTakeInr)
+ : summary.splitIsComplete
+ ? formatINR(summary.platformTake)
+ : '—'
+ }
+ icon={Percent}
+ color="text-saffron-700"
+ bg="bg-saffron-50"
+ />
+ <SummaryCard
+ label={`Provider earnings (${totalsScopeLabel})`}
+ value={formatINR(
+ ledgerTotals ? ledgerTotals.providerEarningsInr : summary.providerEarnings,
+ )}
+ icon={IndianRupee}
+ color="text-emerald-700"
+ bg="bg-emerald-50"
+ />
+ </div>
+ )}
+
+ {items.length > 0 && !ledgerTotals && !summary.splitIsComplete && (
  <p className="text-xs text-surface-400">
- Totals cover the {items.length} records on this page of {total}.
+ Gross and platform take are unavailable: the API could derive the split for
+ only {summary.derivableCount} of {items.length} rows on this page. Rows
+ written before the commission convention landed carry no derivable split, and
+ a partial sum presented as a total would be wrong rather than merely missing.
  </p>
+ )}
+
+ {ledgerTotals ? (
+ partial && (
+ <p className="text-xs text-surface-400">
+ The three totals above cover all {total} records, not just the{' '}
+ {items.length} listed on this page, so the platform-take figure is the same
+ quantity and the same scope as the &ldquo;Platform take&rdquo; tile on
+ /admin/revenue. The status chips and the rows below still filter only what is
+ loaded.
+ </p>
+ )
+ ) : (
+ partial && (
+ <p className="text-xs text-surface-400">
+ Totals cover the {items.length} records on this page of {total}. The
+ platform-take card on /admin/revenue covers the whole ledger, so the two
+ figures only meet when one page holds every row.
+ </p>
+ )
  )}
  </div>
  )}

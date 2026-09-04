@@ -29,8 +29,16 @@ const STATIC_ITEMS: TrustItem[] = [
   // claim was false. The wizard now discloses them on its first screen, which
   // makes "shown upfront" true — "zero fees" still would not be.
   { Icon: BadgeCheck, text: 'All fees shown upfront' },
-  { Icon: FileCheck, text: '80G receipt available' },
-  { Icon: Video, text: 'Live video proof' },
+  // HAS_80G_VERIFIED is false in lib/company.ts with pan and eightyGNumber
+  // both null, so no 80G certificate can be issued. A numbered receipt IS
+  // generated for every donation (lib/pdf-receipt.ts) — that is the claim
+  // that is true, and it is the wording lib/help-articles.ts already uses.
+  { Icon: FileCheck, text: 'Numbered donation receipt' },
+  // Proof is a recording the assigned pandit uploads after the booking
+  // reaches 'completed' — booking.service.ts refuses it from any other
+  // status. Nothing streams a booked puja; live streaming is temple aarti,
+  // a different product on a different model.
+  { Icon: Video, text: 'Recorded video proof' },
 ];
 
 export default function TrustStrip({ verifiedTemples = null }: Props) {

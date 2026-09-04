@@ -2,6 +2,8 @@
 
 > **Roadmap item**: R-Q4-P-007 · **Status**: UX spec authored, engineering pending (depends on R-Q4-E-011 infra) · **Revenue target**: ₹15L MRR via 60-day advance booking window for major festivals (Navratri Sep 22, Karwa Chauth Oct 30, Diwali Nov 8, Janmashtami Aug 26) · **Authored**: 2026-06-12
 
+> **Correction 2026-09-02 (`OPS-10`).** This spec named **Stripe** as a checkout provider in the booking flow (§ flow step (c), previously "pre-pay (Razorpay/Stripe)") and in the API contract (`POST …/book`, previously "Returns booking + Razorpay/Stripe checkout URL"). **The Stripe rail was deleted from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`; every surviving mention in `apps/api/src` is a removal note), so anyone implementing this spec as written would build against an integration that no longer exists. **Razorpay is the only live rail and it settles INR only, and no replacement international/NRI processor has been chosen** — marked `[verify]` below. The **NRI Sneha persona (§ personas) is deliberately left as written**: it describes a future NRI flow this spec is meant to enable, not a capability that exists — but the USD leg of that flow is blocked on the same undecided vendor, and **no fee or FX rate may be written into this spec until one is picked**.
+
 ## Mission
 
 Devotees book festival pujas in advance — not the night-of — so we can match supply to demand and avoid Diwali-night chaos. UX must capture the urgency of festival timing WITHOUT manufacturing artificial scarcity. Pure information transparency: real slot count, real countdown, real waitlist position.
@@ -28,7 +30,7 @@ The product wedge is **predictability**: every other temple says "show up at 5 P
 (b) Festival page — slot picker (puja × temple × time), real-time availability
    │
    ▼
-(c) Booking confirm — pre-pay (Razorpay/Stripe), get booking number, T-2h reminder scheduled
+(c) Booking confirm — pre-pay (Razorpay, INR only `[verify — Stripe was removed 2026-08-11; the NRI rail is undecided]`), get booking number, T-2h reminder scheduled
    │
    ▼
 (d) Waitlist (if sold out) — show position, opt-in WA notification on cancellation
@@ -293,7 +295,7 @@ CREATE INDEX idx_fts_status ON festival_temple_slot(status);
 - `GET /api/v1/festivals` — list upcoming festivals (next 6 months). Returns calendar grid data.
 - `GET /api/v1/festivals/:slug` — festival detail w/ all temple+slot inventory.
 - `GET /api/v1/festivals/:slug/slots/:slotId` — single slot detail (capacity + price).
-- `POST /api/v1/festivals/:slug/slots/:slotId/book` — book slot. Body: `{ devoteeNames, specialInstructions?, prasadDelivery? }`. Returns booking + Razorpay/Stripe checkout URL.
+- `POST /api/v1/festivals/:slug/slots/:slotId/book` — book slot. Body: `{ devoteeNames, specialInstructions?, prasadDelivery? }`. Returns booking + Razorpay checkout URL. *(Corrected 2026-09-02, `OPS-10`: read "Razorpay/Stripe checkout URL". Stripe was removed from the codebase on 2026-08-11 — `apps/api/src/lib/env.ts:45-46` — so an implementer would have built against a deleted integration. A second checkout provider for foreign currency is `[verify]`, undecided.)*
 - `POST /api/v1/festivals/:slug/slots/:slotId/waitlist` — join waitlist. Body: `{ contactChannel: 'wa'|'email' }`.
 - `DELETE /api/v1/me/festival-bookings/:id` — cancel pre-festival booking (cutoff: T-48h). Triggers refund per existing policy.
 - `GET /api/v1/admin/festivals/:slug/dashboard` — admin only. Capacity + revenue + growth-rate data.

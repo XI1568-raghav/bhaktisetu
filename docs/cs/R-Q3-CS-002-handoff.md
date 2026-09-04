@@ -5,6 +5,34 @@
 **Target**: 50 articles × 6 languages (en / hi / ta / te / bn / mr) = **300 articles**.
 **Est hours**: 40 (engineering scaffold shipped in <20 min; remaining ≈ 35h content authoring).
 
+> **Correction 2026-09-02 (`OPS-10`).** Two claims below were wrong.
+>
+> **1 — Payments topics.** The "Payments & Refunds" row of the topic table used to read
+> *"Razorpay vs Stripe · UPI / cards / NRI methods · Refund timelines · Failed
+> transactions · Dual currency · GST invoice · Foreign exchange · Disputes"*. **Stripe
+> was removed from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`,
+> `services/payment.service.ts:2506-2517`). Razorpay is the only live rail and it
+> settles INR only — `apps/api/src/routes/bookings.ts:2283` is an unconditional
+> `const currency = 'INR'`, and the `'USD'` enum member at `:933` is, per its own
+> comment, an analytics hint that "never changes the amount and never changes the
+> gateway currency". No replacement international processor has been chosen. So
+> "Razorpay vs Stripe" is now "Razorpay payment methods", and "Dual currency" and
+> "Foreign exchange" are marked `[verify]`: there is no second currency to compare and
+> no FX spread to explain. These are not internal notes — this table is the
+> commissioning brief for **public, SEO-indexed help articles in six languages**, and
+> an article titled "Razorpay vs Stripe" would tell a devotee, in writing and on our
+> own domain, that they can pay by a rail we deleted. The slot count stays at 8 so the
+> `12 + 8 + 8 + 8 + 8 + 6 = 50` arithmetic and the 300-article total still hold.
+>
+> **2 — Edge runtime.** Item 3 of "What shipped" used to claim the article reader runs
+> on *"Edge runtime, revalidate 86400"*. It does not, and did not: the shipped file
+> `apps/web/app/help/articles/[lang]/[slug]/page.tsx:15-21` carries an explicit
+> *"no `runtime = 'edge'` here"* comment and notes that edge runtime is "removed
+> app-wide". `revalidate = 86400` is real; the edge half is struck. The web tier has
+> been the Render Docker service `darshya-web` since the 2026-07-08 cutover, with
+> Cloudflare as DNS and edge proxy only, so the edge-runtime constraint this line came
+> from no longer applies to anything.
+
 ## What shipped in this PR
 
 1. **`apps/web/lib/help-articles.ts`** — typed registry of help articles.
@@ -14,7 +42,7 @@
  - Selectors: `getHelpArticle`, `getHelpArticlesByLang`, `getHelpArticlesByCategory`, `getHelpArticleCount`.
 2. **6 seed articles** — "How do I book a puja?" translated into all 6 languages. Validates the schema across Latin, Devanagari, Tamil, Telugu, Bengali, and Marathi scripts.
 3. **`apps/web/app/help/articles/[lang]/[slug]/page.tsx`** — dynamic article reader.
- - Edge runtime, revalidate 86400.
+ - Node runtime (default), revalidate 86400.
  - `generateStaticParams` fans out all `(lang, slug)` pairs.
  - Per-article Article + BreadcrumbList JSON-LD.
  - `alternates.languages` populated when translations exist — proper hreflang for SEO.
@@ -33,7 +61,7 @@ The 50-article corpus per language should cover the highest-volume support ticke
 | Puja Bookings | 12 | How to book a puja · Rescheduling · Cancellation policy · Video proof · Sankalp form · Prasad delivery · Gift puja for NRIs · Booking ID format · 80G receipt · Pandit selection · Multiple intents · Bulk bookings |
 | Live Darshan | 8 | How to watch · Temple timings · Stream buffering · Recording access · Mobile playback · Multi-camera angles · Audio language · Time-zone conversion |
 | Store & Orders | 8 | Order tracking · Delivery times · Authenticity guarantee · Returns · Damaged items · International shipping · COD availability · Cancellation |
-| Payments & Refunds | 8 | Razorpay vs Stripe · UPI / cards / NRI methods · Refund timelines · Failed transactions · Dual currency · GST invoice · Foreign exchange · Disputes |
+| Payments & Refunds | 8 | Razorpay payment methods · UPI / cards / NRI methods · Refund timelines · Failed transactions · Dual currency [verify — Stripe was removed; the NRI rail is undecided] · GST invoice · Foreign exchange [verify — no FX conversion is applied; the gateway currency is an unconditional INR] · Disputes |
 | Account & Profile | 8 | Sign-up · Login issues · Password reset · Email change · Delete account · Devotee vs pandit accounts · Aadhaar verification · Profile privacy |
 | General | 6 | About Darshya · Contact · Mobile app · Languages · Accessibility · Press kit |
 

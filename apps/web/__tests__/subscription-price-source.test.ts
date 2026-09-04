@@ -165,12 +165,29 @@ describe('subscription-api — the checkout panel shows the charged number', () 
     expect(normalizePlan({ id: 'x', name: 'X', roles: ['PANDIT'], price: 'nine' })).toBeNull();
   });
 
-  it('leaves commission and listing caps UNDEFINED when the API omits them', () => {
-    // The API sends neither. Defaulting printed "0% commission" against a real
-    // 20% platform take, and "Unlimited listings" on a 5-bookings/month plan.
+  it('leaves the listing cap UNDEFINED when the API omits it', () => {
+    // The API does not send it. Defaulting claimed "Unlimited listings" on a
+    // 5-bookings/month plan.
     const plan = normalizePlan(LIVE_PLANS[0]);
-    expect(plan?.commissionOverride).toBeUndefined();
     expect(plan?.maxListings).toBeUndefined();
+  });
+
+  /**
+   * PM-01 (2026-08-28) — REWRITTEN DELIBERATELY.
+   *
+   * This used to assert `plan?.commissionOverride` was `undefined`, which is
+   * what the field always was: apps/api has never sent it. Pinning it as
+   * undefined kept a mapping alive for a rate no Commission writer applies, one
+   * payload away from rendering "N% commission" on a plan card. The field is
+   * gone from SubscriptionPlan and from normalizePlan, so the assertion is now
+   * that it cannot come back by accident: a server that starts sending it is
+   * ignored rather than rendered.
+   */
+  it('drops a commissionOverride even when the API sends one — no plan changes a rate', () => {
+    const plan = normalizePlan({ ...LIVE_PLANS[1], commissionOverride: 8 });
+    expect(plan).not.toBeNull();
+    expect(Object.keys(plan!)).not.toContain('commissionOverride');
+    expect(JSON.stringify(plan)).not.toMatch(/commission/i);
   });
 
   it('listPlans translates the web role name to the API enum (role=priest returned 0 plans live)', async () => {

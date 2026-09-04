@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Send, Loader2, Sparkles } from 'lucide-react';
 import AiChatMessage, { type Citation } from './AiChatMessage';
 import { API_BASE_URL } from '../lib/api-config';
+import { buttonClass } from '../components/ui/button-recipe';
 import {
  getConversation,
  createConversation,
@@ -662,8 +663,7 @@ export default function AiChat({
  {showUpgradeNudge && (
  <Link
  href="/upgrade"
- className="px-2.5 py-1 rounded-md text-white text-xs font-medium shrink-0 transition-all"
- style={{ background: 'var(--color-primary, #c2410c)' }}
+ className={buttonClass('primary', 'md', 'shrink-0')}
  >
  Upgrade
  </Link>

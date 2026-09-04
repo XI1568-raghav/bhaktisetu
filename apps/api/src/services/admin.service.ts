@@ -19,6 +19,69 @@ const USER_ROLES = new Set<string>([
 ]);
 
 /**
+ * LC-11 — the admin list's status filter, mapped onto the column that backs it.
+ *
+ * `User.blocked` is the only moderation state the users table carries
+ * (`20260511_user_blocked`: `blocked BOOLEAN NOT NULL DEFAULT false`, plus the
+ * partial index `users_blocked_idx … WHERE blocked = true`, which serves the
+ * `blocked` half of this filter directly).
+ *
+ * `pending` is deliberately absent. The admin UI shows a third status by that
+ * name, but it is NOT a user column — it means "some provider profile on this
+ * account is still unapproved", and it reaches the page from
+ * `GET /admin/pending-approvals`. This endpoint cannot compute it, so it says
+ * so (see `resolveBlockedFilter`) instead of answering an empty page.
+ */
+const USER_STATUS_BLOCKED: ReadonlyMap<string, boolean> = new Map([
+  ['active', false],
+  ['blocked', true],
+]);
+
+/**
+ * LC-11 — the caller asked to filter by a status this endpoint cannot express.
+ *
+ * Refused rather than answered empty, and the asymmetry with an unknown ROLE
+ * (which IS answered with an empty page, above) is deliberate: a role that is
+ * not in the enum genuinely has no holders, so "0 users" is true. A status this
+ * service cannot compute describes accounts that really exist — answering "0"
+ * for `?status=pending` would tell an operator nobody is awaiting approval
+ * while providers sit in the queue. That is the same lying number the finding
+ * is about, just with a different filter on it.
+ *
+ * `routes/admin.ts` turns this into a 400 so the caller is told which values
+ * the endpoint understands.
+ */
+export class UnsupportedUserStatusError extends Error {
+  readonly supported: readonly string[];
+
+  constructor(status: string, supported: readonly string[]) {
+    super(
+      `Unsupported status filter "${status}". ` +
+        `GET /admin/users can filter status by: ${supported.join(', ')}.`,
+    );
+    this.name = 'UnsupportedUserStatusError';
+    this.supported = supported;
+  }
+}
+
+/**
+ * `true` / `false` to constrain `User.blocked`, or `null` for "no status
+ * filter". Throws `UnsupportedUserStatusError` for anything else.
+ *
+ * The `=== undefined` check is load-bearing: `USER_STATUS_BLOCKED.get('active')`
+ * is `false`, and a truthiness test here would reject the `active` filter as
+ * unknown.
+ */
+function resolveBlockedFilter(status: string | undefined): boolean | null {
+  if (status === undefined || status === '') return null;
+  const blocked = USER_STATUS_BLOCKED.get(status);
+  if (blocked === undefined) {
+    throw new UnsupportedUserStatusError(status, [...USER_STATUS_BLOCKED.keys()]);
+  }
+  return blocked;
+}
+
+/**
  * AO-15: the booking population every figure on /admin/reports is drawn from.
  *
  * A booking that was cancelled or refunded is not a booking the platform did;
@@ -44,9 +107,21 @@ export const __reportsTesting = { COUNTED_BOOKING_STATUSES };
 
 interface UserFilters {
   role?: string;
-  // `status` was historically accepted but User has no status column —
-  // applying it would 500 every /admin/users call. The router still
-  // forwards it for backward compat; we ignore it here.
+  /**
+   * LC-11: `'active' | 'blocked'`, applied to `User.blocked` by the query.
+   *
+   * The comment that stood here until 2026-08-24 said "User has no status
+   * column — applying it would 500 every /admin/users call… we ignore it
+   * here", and it was wrong twice over. `User.blocked` has existed since
+   * `20260511_user_blocked` and THIS FILE already reads it (the `blocked` /
+   * `blockedAt` / `blockedReason` fields on every enriched row). And ignoring
+   * a filter the route accepts is worse than not accepting it: an operator who
+   * asks for blocked accounts gets EVERY account back next to a total that
+   * counts everyone, and has no way to tell that the filter did nothing.
+   *
+   * A status this service cannot express is refused, not ignored — see
+   * `resolveBlockedFilter`.
+   */
   status?: string;
   search?: string;
   page?: number;
@@ -161,10 +236,36 @@ interface ReportsResponse {
   geographicDistribution: Array<{ state: string; users: number; pct: number }>;
 }
 
+/**
+ * The row shape `getUsers` enriches. Structural rather than Prisma's `User` so
+ * the mapper is checked against the columns it actually reads, not against
+ * whatever the model happens to declare. There is now ONE producer — SCAL-04
+ * collapsed the role-filtered path into the same paged read — but the type
+ * stays: it is what stops a column being dropped from the query while the
+ * mapper still reads it.
+ */
+interface AdminUserRow {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  subscriptionTier: unknown;
+  blocked: boolean;
+  blockedAt: Date | null;
+  blockedReason: string | null;
+  createdAt: Date;
+}
+
 // ─── Service ────────────────────────────────────────────────────────────────────
 
 export class AdminService {
   async getUsers(filters: UserFilters) {
+    // LC-11: resolved BEFORE the try. An unsupported status is a bad request,
+    // not a database failure, and the catch below logs everything it sees as
+    // "[admin.service.listUsers] DB failure" — routing this through it would
+    // put a lie in the operator's logs on the way to the right HTTP status.
+    const blockedFilter = resolveBlockedFilter(filters.status);
+
     try {
       // SCAL-09: `filters.limit` arrived unbounded from routes/admin.ts, and a
       // negative page produced a negative OFFSET. Public list routes already
@@ -183,6 +284,12 @@ export class AdminService {
         ];
       }
 
+      // LC-11: the status filter used to be dropped on the floor here, so
+      // `?status=blocked` returned every user next to a total counting every
+      // user — a filter the API accepted, acknowledged with 200, and did not
+      // apply. It constrains the query, which means it constrains `total` too.
+      if (blockedFilter !== null) where.blocked = blockedFilter;
+
       // SCAL-09: the role filter used to run as a JS `.filter()` on the 20 rows
       // page 1 had already fetched, while `total` came from an UNFILTERED
       // count. Filtering by ADMIN therefore returned "however many of the first
@@ -190,14 +297,35 @@ export class AdminService {
       // reads that as "there are no pandits" when there are thousands. The
       // predicate has to constrain the query so the page AND the count agree.
       //
-      // The natural shape is `where.roleAssignments = { some: { role } }`, but
-      // UserRoleAssignment.userId is a bare @db.Uuid column with NO `@relation`
-      // to User (prisma/schema.prisma), so Prisma rejects that argument
-      // outright — verified live: `Unknown argument 'roleAssignments'` → HTTP
-      // 500 "Failed to list users". Adding the relation is a schema change.
-      // Until then, resolve the role to its user ids first and constrain on
-      // `id`: one narrow indexed column, bounded by how many people hold that
-      // role, and it gives the page and the count the same answer.
+      // SCAL-04 (2026-08-28): this is now ONE predicate on ONE query, and that
+      // is the whole fix. The endpoint previously had two workarounds stacked
+      // on each other, both of them present only because the natural shape
+      // below was not expressible:
+      //
+      //   · until 2026-08-21 it resolved the role to EVERY holder id and passed
+      //     that list back as an `IN (...)` — in the page query AND in the
+      //     count. The one read in this service that scaled with the whole USER
+      //     BASE, and it scaled outbound as well as inbound: at 200k holders
+      //     the uuid list alone is ~7 MB per statement, twice per request.
+      //   · from 2026-08-21 it was a hand-written `$queryRaw` JOIN with that
+      //     scan retained behind a logged catch, because production is
+      //     suspended and no statement in this repo could be executed against a
+      //     database to prove its identifiers were right.
+      //
+      // `roleAssignments: { some: { role } }` is what both were imitating.
+      // Prisma used to reject it outright ("Unknown argument 'roleAssignments'"
+      // → HTTP 500 "Failed to list users") because `UserRoleAssignment` had no
+      // `@relation` to `User`; that relation is now declared, carried by
+      // migrations/20260828100000_scal04_user_role_assignment_fk, which adds the
+      // foreign key NOT VALID inside a guarded DO block so it can neither read
+      // an existing row nor abort the boot migration. See the schema comment.
+      //
+      // Cost: the page reads `limit` rows, the count reads none, and the
+      // predicate goes to Postgres as the role string. Nothing here grows with
+      // the number of people holding the role. Crucially there is also no
+      // hand-written identifier left to be wrong about, so the fallback the
+      // JOIN needed — which WAS the whole-user-base scan — is deleted, not
+      // merely bypassed.
       if (filters.role) {
         if (!USER_ROLES.has(filters.role)) {
           // An unknown role matches nobody. Say so honestly (empty page, total
@@ -205,15 +333,13 @@ export class AdminService {
           // answering 500 to what is really a bad query parameter.
           return { users: [], total: 0, page, limit };
         }
-        const holders = await prisma.userRoleAssignment.findMany({
-          where: { role: filters.role as UserRole },
-          select: { userId: true },
-          distinct: ['userId'],
-        });
-        where.id = { in: holders.map((h) => h.userId) };
+        // Set on the SAME `where` the count below uses. Building a second
+        // object for the count is how SCAL-09's lying number happened: a page
+        // filtered one way beside a total counted another.
+        where.roleAssignments = { some: { role: filters.role as UserRole } };
       }
 
-      const [users, total] = await Promise.all([
+      const [users, total] = (await Promise.all([
         prisma.user.findMany({
           where,
           skip,
@@ -221,12 +347,21 @@ export class AdminService {
           orderBy: { createdAt: 'desc' },
         }),
         prisma.user.count({ where }),
-      ]);
+      ])) as [AdminUserRow[], number];
 
-      // Fetch role assignments for users
+      // Fetch role assignments for users.
+      //
+      // Bounded by the page (clampLimit caps `limit` at 100), so this is not a
+      // SCAL-04 ratchet entry and no `take` belongs here — truncating it would
+      // blank the Roles column for whoever fell off the end. The COLUMNS were
+      // the waste: the map below reads `userId` and `role`, and the query was
+      // returning whole rows. A user can hold all eight roles, so that is up to
+      // 800 rows of id + isPrimary + createdAt discarded per page view of the
+      // first screen an operator opens.
       const userIds = users.map((u) => u.id);
       const roleAssignments = await prisma.userRoleAssignment.findMany({
         where: { userId: { in: userIds } },
+        select: { userId: true, role: true },
       });
 
       const roleMap = new Map<string, string[]>();

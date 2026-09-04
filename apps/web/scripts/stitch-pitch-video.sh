@@ -29,6 +29,27 @@ CREAM="0xf5f3ef"
 
 echo ">>> work dir: $WORK"
 
+# --- TC-01: the Section 80G honesty gate -----------------------------------
+# Two make_clip captions below are burned into the pixels of
+# apps/web/public/pitch/video/darshya-demo-reel.mp4 and cannot be edited once
+# the reel ships. They promised an 80G receipt. Darshya holds no Section 80G
+# registration: apps/web/lib/company.ts HAS_80G_VERIFIED is false with pan and
+# eightyGNumber both null, and apps/api/src/lib/pdf-receipt.ts is80GEligible()
+# needs a donee 80G number AND PAN read from gaushala_profiles columns that no
+# route writes. Read the flag rather than mirroring it, so this cannot drift.
+COMPANY_TS="apps/web/lib/company.ts"
+if grep -qE 'HAS_80G_VERIFIED:[[:space:]]*true' "$COMPANY_TS"; then
+  CAP_BOOKING="Sankalp - Video proof - 80G receipt"
+  CAP_GAUSHALA="Gaushala adoption with 80G."
+elif grep -qE 'HAS_80G_VERIFIED:[[:space:]]*false' "$COMPANY_TS"; then
+  CAP_BOOKING="Sankalp - Video proof - numbered receipt"
+  CAP_GAUSHALA="Gaushala adoption. Receipted giving."
+else
+  echo "!!! HAS_80G_VERIFIED not found in $COMPANY_TS - refusing to burn a tax claim into video" >&2
+  exit 1
+fi
+
+
 # --- 0. Voice-over ----------------------------------------------------------
 VO="apps/web/scripts/build/vo.mp3"
 if [ ! -f "$VO" ]; then
@@ -57,7 +78,7 @@ make_clip "$SRC/02-temples-list.webm"       0   4 "20 verified temples. Real pri
 
 # Solution discovery (9-32s)
 make_clip "$SRC/04-pujas-list.webm"         0   4 "Book any puja. Any deity."             "$WORK/03.mp4"
-make_clip "$SRC/05-puja-booking-start.webm" 0   6 "Sankalp - Video proof - 80G receipt"   "$WORK/04.mp4"
+make_clip "$SRC/05-puja-booking-start.webm" 0   6 "$CAP_BOOKING"                          "$WORK/04.mp4"
 make_clip "$SRC/06-darshan-live.webm"       0   6 "Live darshan. Sub-second latency."      "$WORK/05.mp4"
 
 # Panchang ken-burns
@@ -70,7 +91,7 @@ make_clip "$SRC/08-astrology.webm"          0   4 "AI panditji. 1500 tokens/sec.
 make_clip "$SRC/12-ai-chat.webm"            2   5 "Llama 3 panditji on Groq."              "$WORK/08.mp4"
 
 # Surface area (32-50s)
-make_clip "$SRC/09-gaushala.webm"           0   4 "Gaushala adoption with 80G."           "$WORK/09.mp4"
+make_clip "$SRC/09-gaushala.webm"           0   4 "$CAP_GAUSHALA"                         "$WORK/09.mp4"
 make_clip "$SRC/11-yatra.webm"              0   4 "Pilgrimage planning. End-to-end."       "$WORK/10.mp4"
 make_clip "$SRC/10-store.webm"              0   4 "Devotional commerce. Built-in."         "$WORK/11.mp4"
 make_clip "$SRC/03-temple-slug-jsonld.webm" 8   4 "Structured data. Google ranks us."     "$WORK/12.mp4"

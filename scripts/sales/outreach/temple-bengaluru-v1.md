@@ -1,3 +1,13 @@
+<!-- TC-01 / TC-08 (trust audit): the 80G deduction promise and the "verified
+pandit" adjective were removed from this template. Darshya holds no Section 80G
+registration (apps/web/lib/company.ts HAS_80G_VERIFIED is false, pan and
+eightyGNumber null) and apps/api/src/lib/pdf-receipt.ts is80GEligible() needs a
+donee 80G number AND PAN read from gaushala_profiles columns no route writes; and
+nothing promotes a Priest to verified outside apps/api/prisma/seed.ts. This file
+is plain markdown a human copies into a real message, so there is nothing to gate
+it on: restore the wording by hand the day apps/api/src/lib/eighty-g.ts HAS_80G
+and apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING are both true. -->
+
 # Bengaluru Temple Partnership — Outreach v1
 
 Two variants for the cold-temple-outreach agent. Per-row placeholder fill:
@@ -24,7 +34,7 @@ Opt-out: every message ends with "If you do not wish to receive further messages
 >
 > 1. Live {{DEITY}} darshan streaming (we install camera + handle tech, zero cost to you)
 > 2. Online puja booking — temple keeps 85%, we handle the platform
-> 3. Verified 80G donation receipts for foreign devotees
+> 3. Numbered donation receipts for foreign devotees, emailed automatically
 >
 > No upfront fee. No subscription. You only earn when a booking lands.
 >
@@ -54,7 +64,7 @@ Word count: ~115.
 >
 > **2. Online puja sankalpa booking.** Devotees worldwide book sankalpa for archana, abhishekam, homas, special-occasion pujas. Temple receives the booking + sankalpa details (name, gotra, nakshatra) before the puja. Revenue split: temple 85%, Bhaktisetu 15% platform fee.
 >
-> **3. Verified 80G receipts for foreign devotees.** Bhaktisetu handles donee 80G registration + PAN compliance + automated receipt issuance.
+> **3. Numbered donation receipts for foreign devotees.** Bhaktisetu issues a numbered receipt PDF by email for every donation. It is proof of payment, not a tax-exemption certificate: we hold no Section 80G registration and do not handle a temple's own 80G or PAN compliance.
 >
 > Zero upfront cost. Zero monthly fee. We only earn when a booking lands. 200+ temples already onboarded across India.
 >

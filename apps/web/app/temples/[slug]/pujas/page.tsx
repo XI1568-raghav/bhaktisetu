@@ -3,9 +3,16 @@
 // queries (e.g. "kashi vishwanath rudrabhishek booking online"). One file
 // fans out to N temples via [slug] segment.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { resolveApiTemple } from '../../../../lib/temple-resolve';
+// CM-10: same `uppercase tracking-wider` chip as the deity page — the raw enum
+// rendered as 'SPECIAL_OCCASION'.
+import { pujaCategoryLabel } from '../../../../lib/puja-labels';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { RECEIPT_NOUN, withEightyG } from '../../../../lib/eighty-g';
 
 export const revalidate = 3600;
 
@@ -34,11 +41,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const count = t.pujaOfferings?.filter((o) => o.isActive).length || 0;
     return {
       title: `${name} pujas — book online${count > 0 ? ` (${count} options)` : ''}`,
-      description: `Book ${name}${city ? `, ${city}` : ''} pujas online with verified pandits, video proof and 80G receipts. NRI lane available.`,
+      description: `Book ${name}${city ? `, ${city}` : ''} pujas online with video proof of the ceremony. ${RECEIPT_NOUN.charAt(0).toUpperCase()}${RECEIPT_NOUN.slice(1)} emailed on donations. NRI lane available.`,
       alternates: { canonical: `https://darshya.online/temples/${slug}/pujas` },
       openGraph: {
         title: `${name} pujas — book online`,
-        description: `${count} active puja options. Verified, video-proof, 80G.`,
+        description: `${count} active puja options. Video proof of every ceremony.`,
         url: `https://darshya.online/temples/${slug}/pujas`,
         type: 'website',
         images: [`/og/temple/${slug}`],
@@ -92,12 +99,20 @@ export default async function TemplePujasPage({ params }: Params) {
       </nav>
 
       <header className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.catalogue} mb-2`}>
           Book {temple.name} pujas online
         </h1>
         <p className="text-surface-700 text-base leading-relaxed max-w-3xl">
           {offerings.length > 0
-            ? `${offerings.length} verified puja${offerings.length === 1 ? '' : 's'} available at ${temple.name}${temple.city ? `, ${temple.city}` : ''}. Every booking ships with video proof, certified pandit and 80G receipt.`
+            /* TC-08: "certified pandit" named a certification that does not
+               exist. Nothing in the codebase writes Priest.isVerified,
+               Priest.verificationStatus or Priest.aadhaarVerified outside
+               prisma/seed.ts — there is no credential check, no reference
+               call, no probation and no per-pandit trust score behind the
+               word. The unconditional "80G receipt" had the same problem: a
+               receipt is only issuable where the donee holds an 80G
+               registration and PAN. */
+            ? `${offerings.length} bookable puja${offerings.length === 1 ? '' : 's'} at ${temple.name}${temple.city ? `, ${temple.city}` : ''}. Every booking ships with video proof of the ceremony${withEightyG(', and an 80G receipt where the receiving trust is 80G-registered')}.`
             : `${temple.name} puja catalogue is being onboarded. Live darshan and donations are already available.`}
         </p>
       </header>
@@ -105,7 +120,7 @@ export default async function TemplePujasPage({ params }: Params) {
       {offerings.length === 0 ? (
         <div className="rounded-lg border border-surface-200 bg-surface-50 p-6 text-center">
           <p className="text-surface-700 mb-4">No active puja offerings yet for this temple.</p>
-          <Link href={`/temples/${slug}`} className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700">
+          <Link href={`/temples/${slug}`} className={buttonClass('primary', 'md')}>
             View temple page →
           </Link>
         </div>
@@ -117,9 +132,11 @@ export default async function TemplePujasPage({ params }: Params) {
               className="rounded-xl border border-surface-200 bg-white p-5 hover:shadow-sm transition-shadow"
             >
               <div className="flex items-center justify-between mb-2 gap-3">
-                <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
-                  {o.pujaType.category}
-                </span>
+                {pujaCategoryLabel(o.pujaType.category) && (
+                  <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
+                    {pujaCategoryLabel(o.pujaType.category)}
+                  </span>
+                )}
                 <span className="text-xs text-surface-500">{o.pujaType.durationMinutes} min</span>
               </div>
               <h2 className="text-lg font-semibold text-surface-900 mb-1">{o.pujaType.name}</h2>
@@ -145,7 +162,7 @@ export default async function TemplePujasPage({ params }: Params) {
 
       <footer className="mt-10 border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-3">
-          <strong>Why Darshya?</strong> Every puja booking includes mandatory video proof of the ceremony, an 80G donation receipt where applicable, and a verified pandit gated on Aadhaar.
+          <strong>Why Darshya?</strong> Every puja booking includes mandatory video proof of the ceremony, and{withEightyG(' an 80G donation receipt where applicable, and')} a numbered receipt PDF on donations. A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check &mdash; we do not yet run independent credential verification or temple reference checks, and we do not publish a per-pandit trust score.
         </p>
         <Link href={`/temples/${slug}`} className="text-saffron-700 hover:underline">
           ← Back to {temple.name}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { getContentImage, getDeityImage } from '../../../lib/images';
 import { Play, Pause, Clock, Heart, SkipForward, SkipBack } from 'lucide-react';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 const tabs = ['Aarti', 'Chalisa', 'Mantra', 'Bhajan'];
 
@@ -25,7 +26,7 @@ export default function MobileContent() {
  <div className="bg-surface-50 min-h-full flex flex-col">
  {/* Header */}
  <div className="px-5 pt-4 pb-2">
- <h1 className="text-xl font-bold text-surface-900 tracking-tight">Content</h1>
+ <h1 className={H1.portal}>Content</h1>
  <p className="text-xs text-surface-400 mt-0.5">Aartis, mantras, chalisas & more</p>
  </div>
 
@@ -58,7 +59,7 @@ export default function MobileContent() {
  }`}
  >
  <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0">
- <img src={item.img} alt={item.deity} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={48} height={48} src={item.img} alt={item.deity} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <button
  onClick={() => setPlaying(playing === item.title ? null : item.title)}
  className="absolute inset-0 flex items-center justify-center bg-black/30"
@@ -91,7 +92,7 @@ export default function MobileContent() {
 
  {/* Mini Player */}
  {playing && (
- <div className="fixed bottom-[88px] left-1/2 -translate-x-1/2 w-[370px] bg-surface-900 rounded-2xl p-3 shadow-xl flex items-center gap-3 z-30">
+ <div className="fixed bottom-[88px] left-1/2 -translate-x-1/2 w-[min(370px,calc(100vw-2rem))] bg-surface-900 rounded-2xl p-3 shadow-xl flex items-center gap-3 z-30">
  <div className="w-10 h-10 rounded-lg bg-saffron-600 flex items-center justify-center shrink-0">
  <Play className="w-4 h-4 text-white fill-white ml-0.5" />
  </div>

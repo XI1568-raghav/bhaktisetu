@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SAPTA_RISHIS } from '../../lib/sapta-rishis';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -54,7 +55,7 @@ export default function SaptaRishisIndexPage() {
       </nav>
 
       <header className="mb-8 rounded-xl bg-gradient-to-br from-indigo-50 via-saffron-50 to-amber-50 p-6 ring-1 ring-indigo-200">
-        <h1 className="text-3xl font-bold text-indigo-900 sm:text-4xl">Sapta Rishis — सप्त ऋषयः</h1>
+        <h1 className={H1.catalogue}>Sapta Rishis — सप्त ऋषयः</h1>
         <p className="mt-2 text-lg text-saffron-900">The seven great sages of Sanatana Dharma</p>
         <p className="mt-3 max-w-3xl text-gray-800">
           The seven rishis who composed the bulk of the Rigveda and from whom every brahmana traces gotra descent. By tradition they sit forever in the northern sky as Ursa Major — the Saptarshi-mandala — circling the pole star Dhruva. Each gives a mandala to the Veda, a gotra to the lineage, a teaching to dharma, and a star to the night.

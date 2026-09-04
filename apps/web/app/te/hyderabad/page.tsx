@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { HAS_80G, RECEIPT_NOUN_PLURAL } from '../../../lib/eighty-g';
 
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'దర్శ్యా హైదరాబాద్ — పూజ, దర్శనం, పంచాంగం (తెలుగులో)',
   description:
-    'హైదరాబాద్ మెట్రోలో ధృవీకరించబడిన పండితులు + 5 యాంకర్ ఆలయాలు (బిర్లా మందిర్, చిల్కూర్ బాలాజీ, భాగ్యలక్ష్మి, జగన్నాథ్, యాదగిరిగుట్ట లింక్) — వీడియో ప్రూఫ్‌తో పూజ, ప్రత్యక్ష దర్శనం, 80G రసీదు.',
+    `హైదరాబాద్ మెట్రోలో ధృవీకరించబడిన పండితులు + 5 యాంకర్ ఆలయాలు (బిర్లా మందిర్, చిల్కూర్ బాలాజీ, భాగ్యలక్ష్మి, జగన్నాథ్, యాదగిరిగుట్ట లింక్) — వీడియో ప్రూఫ్‌తో పూజ, ప్రత్యక్ష దర్శనం, ${HAS_80G ? '80G రసీదు' : 'రసీదు'}.`,
   alternates: {
     canonical: 'https://darshya.online/te/hyderabad',
     languages: {
@@ -111,7 +114,7 @@ export default function TeluguHyderabadLanding() {
     '@type': 'LocalBusiness',
     name: 'దర్శ్యా హైదరాబాద్',
     description:
-      'Verified pandits + 5 anchor temples in Hyderabad metro. Telugu-language puja booking + live darshan + 80G receipts.',
+      `Verified pandits + 5 anchor temples in Hyderabad metro. Telugu-language puja booking + live darshan + ${RECEIPT_NOUN_PLURAL}.`,
     url: 'https://darshya.online/te/hyderabad',
     areaServed: { '@type': 'City', name: 'Hyderabad', sameAs: 'https://en.wikipedia.org/wiki/Hyderabad' },
     address: {
@@ -140,16 +143,16 @@ export default function TeluguHyderabadLanding() {
         <div className="inline-block px-3 py-1 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           🕉️ హైదరాబాద్ · తెలంగాణ · సనాతన ధర్మం
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-4 leading-tight">
+        <h1 className={`${H1.marketing} mb-4`}>
           దర్శ్యా హైదరాబాద్
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
-          బిర్లా మందిర్ నుండి చిల్కూర్ బాలాజీ వరకు — హైదరాబాద్ మెట్రోలోని 5 యాంకర్ ఆలయాల వద్ద ధృవీకరించబడిన పండితులతో పూజ, వీడియో ప్రూఫ్, ప్రత్యక్ష దర్శనం, 80G రసీదు.
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
+          బిర్లా మందిర్ నుండి చిల్కూర్ బాలాజీ వరకు — హైదరాబాద్ మెట్రోలోని 5 యాంకర్ ఆలయాల వద్ద ధృవీకరించబడిన పండితులతో పూజ, వీడియో ప్రూఫ్, ప్రత్యక్ష దర్శనం, {HAS_80G ? '80G రసీదు' : 'రసీదు'}.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link
             href="/pujas?city=hyderabad"
-            className="px-6 py-3 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             హైదరాబాద్‌లో పూజ బుక్ చేయండి
           </Link>
@@ -242,12 +245,12 @@ export default function TeluguHyderabadLanding() {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-2">విదేశాల్లోని తెలుగువారికి (NRI Telugus)</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">
           USA (న్యూజెర్సీ, బే ఏరియా, టెక్సాస్), UK, ఆస్ట్రేలియా, సింగపూర్ — మీ తల్లిదండ్రులు/కుటుంబం పేరిట హైదరాబాద్ ఆలయంలో పూజ. వీడియో ప్రూఫ్ మీ WhatsApp‌లో. వార్షిక సభ్యత్వం ₹5000 / $60.
         </p>
         <Link
           href="/nri"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           NRI ప్యాకేజీ చూడండి →
         </Link>

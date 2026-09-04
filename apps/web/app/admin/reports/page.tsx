@@ -25,6 +25,7 @@ import {
 // `limit` is not a fix (the API clamps it to 100, silently).
 import { fetchAllUsersForExport } from './export-users';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type ExportType = 'users' | 'revenue' | 'all';
 
@@ -243,7 +244,7 @@ export default function AdminReportsPage() {
  <button
  onClick={() => handleExport('all')}
  disabled={exportLoading !== null}
- className="inline-flex items-center gap-1.5 px-3 py-2 bg-saffron-600 text-white text-xs font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-60"
+ className={buttonClass('primary', 'md')}
  >
  {exportLoading === 'all' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Export All
  </button>
