@@ -50,6 +50,41 @@ jobs:
           echo "from=$BASE" >> "$GITHUB_OUTPUT"
           echo "Linting commits from $BASE to HEAD"
 
+          # A PR must be linted on ITS OWN commits, and only those.
+          #
+          # actions/checkout on a `pull_request` event checks out
+          # refs/pull/N/merge -- the PR head already merged into the base, so
+          # HEAD contains the BASE BRANCH's commits too and `BASE..HEAD` sweeps
+          # in whatever landed on main after base.sha was stamped. On
+          # 2026-09-04 that failed PR #249 on four commits it never authored:
+          # `roadmap: orchestrator cycle C-3383...` and three siblings, written
+          # by the roadmap-loop cron, whose `roadmap:` type config-conventional
+          # does not allow. The PR's own six commits all passed.
+          #
+          # Linting head.sha from its merge-base covers exactly the commits the
+          # PR introduces -- nothing skipped, and no author blamed for a commit
+          # on another branch. The `from` output above is deliberately left
+          # alone: the secret scan and rollback tripwire use it in three-dot
+          # `git diff` form, where merge-base semantics are already what three
+          # dots mean.
+          #
+          # The bot commits are a real convention violation and are NOT excused
+          # by this -- scripts/agents/roadmap should emit `chore(roadmap): ...`.
+          # That is a separate fix and cannot retro-fix the 16 such commits
+          # already on main, which is the other reason this gate must not lint
+          # them.
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          if [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "null" ]; then
+            CL_FROM=$(git merge-base "$BASE" "$HEAD_SHA")
+            CL_TO="$HEAD_SHA"
+          else
+            CL_FROM="$BASE"
+            CL_TO="HEAD"
+          fi
+          echo "cl_from=$CL_FROM" >> "$GITHUB_OUTPUT"
+          echo "cl_to=$CL_TO" >> "$GITHUB_OUTPUT"
+          echo "Linting PR-authored commits from $CL_FROM to $CL_TO"
+
       # ── OPS-11 — secret scan on the PR's added lines ──────────────────────
       #
       # This repository has already lost credentials to git history once.
@@ -194,6 +229,6 @@ jobs:
           npm install --prefix "$CL_DIR" --no-save --no-package-lock \
             @commitlint/cli@19 @commitlint/config-conventional@19
           NODE_PATH="$CL_DIR/node_modules" node "$CL_DIR/node_modules/@commitlint/cli/lib/cli.js" \
-            --from "${{ steps.range.outputs.from }}" \
-            --to HEAD \
+            --from "${{ steps.range.outputs.cl_from }}" \
+            --to "${{ steps.range.outputs.cl_to }}" \
             --verbose
