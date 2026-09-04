@@ -162,54 +162,91 @@ PF-04, NOTIF-03, DF-03, CM-13, HN-11, LC-14, TD-09.
 
 ---
 
-### 4. Turn on email, or nobody can even sign in (NOTIF-03)
+### 4. Your email is not off. It is on, and failing every single send. (NOTIF-03)
 
-Right now `RESEND_API_KEY` is unset in production. That means: no booking confirmations, no
-refund notices, and — critically — **magic-link sign-in cannot work at all**, so new users
-literally cannot get into the product. The route already answers "Email skipped".
+**This section said the opposite until 2026-09-04, and the opposite was wrong.** It told you
+`RESEND_API_KEY` was unset in production. It is set. Email is enabled and has been failing 100% of
+sends. Measured against live production:
 
-The good news: the code side is finished. There is a status endpoint at
-`https://api.darshya.online/health/channels` that will tell you exactly which channels are dark.
+```
+GET https://api.darshya.online/health/channels
+"email":{"day":"2026-09-03","attempted":48,"sent":0,"failed":48,"rateLimited":0,"cap":100,"enabled":true}
+```
 
-**Step 1 — Email (free, 20 min).** Sign up at `resend.com`. Click **API Keys → Create API Key**,
-name it `darshya-prod`. Copy it — shown once. Then **Domains → Add Domain →** `darshya.online`.
-Resend shows you 3 DNS records; add each in Cloudflare (dash.cloudflare.com → darshya.online →
-DNS → Add record), copying Type, Name and Value exactly. Come back and click **Verify**.
+48 attempted, 0 sent, 48 failed. `rateLimited: 0` rules out the free-tier quota — Resend is
+rejecting the sends outright. These counters reset when the API restarts, so 48 is a floor, not a
+day's total. Nobody has received a password reset, a magic link, a booking confirmation or a
+receipt. If you have been told sign-in "spins forever", this is very likely the cause: the mail was
+never going to arrive.
 
-**Step 2 — Put it in Render (2 min).** dashboard.render.com → bhaktisetu → Environment →
-Add Environment Variable → Key: `RESEND_API_KEY`, Value: the key. Save.
+**The likely reason — one wrong environment variable, not a missing account.** The code sends from
+the apex domain:
 
-**Step 3 — Browser notifications (free, no account anywhere, 5 min).** On your own computer run:
-`npx web-push generate-vapid-keys`. It prints a Public and a Private key. Add three variables in
-Render: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` with the value
-`mailto:support@darshya.online`. **This needs no vendor and no money and should never have been
-grouped with the paid providers.**
+```
+FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? 'Darshya <no-reply@darshya.online>'
+```
 
-**Step 4 — Check your work.** Open `https://api.darshya.online/health/channels`. The
-`unconfigured` list should now contain only `whatsapp` and `fcm`. If email or webPush is still
-there, a variable name has a typo — they are case-sensitive.
+But public DNS says the apex is not your Resend sender:
 
-**Step 5, optional — phone push (free, 15 min).** `console.firebase.google.com` → Add Project →
-gear icon → Project Settings → Service Accounts → **Generate New Private Key**. Open the
-downloaded `.json` in Notepad and copy three values into Render: `project_id` → `FCM_PROJECT_ID`,
-`client_email` → `FCM_CLIENT_EMAIL`, `private_key` → `FCM_PRIVATE_KEY`.
+| Record | Value | What it means |
+|---|---|---|
+| `darshya.online` SPF | `include:_spf.mail.hostinger.com` | Hostinger mailbox hosting. No `amazonses`. |
+| `send.darshya.online` SPF | `include:amazonses.com` | Resend's verified subdomain (Resend runs on SES) |
+| `send.darshya.online` MX | `feedback-smtp.*.amazonses.com` | SES bounce handling — the real sending identity |
 
-**Step 6 — WhatsApp: do not do this yet.** It needs a Business Solution Provider account, which
+So the verified sender looks like `send.darshya.online`, while the app sends as
+`no-reply@darshya.online`. Resend rejects an unverified from-domain outright, which produces
+exactly this signature: everything failed, nothing rate-limited.
+
+**Step 1 — Confirm (2 minutes).** resend.com → **Domains**. Note which of `darshya.online` and
+`send.darshya.online` shows **Verified**. Then → **Logs**, open any of today's failures and read
+the reason. That tells you definitively; the table above is inference from DNS, not proof.
+
+**Step 2 — Fix (2 minutes, ₹0).** If `send.darshya.online` is the verified one, in
+dashboard.render.com → the API service → Environment, add:
+
+`RESEND_FROM_EMAIL` = `Darshya <no-reply@send.darshya.online>`
+
+Save, then redeploy the API. If instead the apex is the verified domain, the problem is elsewhere
+and the Resend log from Step 1 will name it.
+
+**Step 3 — Verify you actually fixed it.** Trigger one password reset, then re-read the counters.
+`sent` must increase. **The status endpoint now requires authentication** (it used to be public,
+which told any anonymous visitor which of your integrations were dark and how much of the daily
+mail allowance was left):
+
+```bash
+curl -H "x-ops-token: $CRON_AUTH_TOKEN" https://api.darshya.online/health/channels
+```
+
+`CRON_AUTH_TOKEN` is already set on Render. Signing in as an admin and calling it also works.
+
+**Already done — browser push.** `webPush` reports configured in production. The VAPID keys are set.
+Nothing to do.
+
+**Still off — WhatsApp and phone push.** Both report unconfigured, and neither is urgent.
+
+**Step 4, optional — phone push (free, 15 min).** `console.firebase.google.com` → Add Project →
+gear icon → Project Settings → Service Accounts → **Generate New Private Key**. Open the downloaded
+`.json` and copy three values into Render: `project_id` → `FCM_PROJECT_ID`, `client_email` →
+`FCM_CLIENT_EMAIL`, `private_key` → `FCM_PRIVATE_KEY`.
+
+**Step 5 — WhatsApp: do not do this yet.** It needs a Business Solution Provider account, which
 needs a registered legal entity, and every message template needs individual Meta approval.
 ₹2,000–6,000/month minimum plus weeks of approvals. It chains to your legal work in item 7.
 **Meanwhile, delete any copy on the site promising WhatsApp delivery** — shipping "we'll WhatsApp
 you" while the channel is off is the same class of defect as the 80G receipt.
 
-*Note: I cannot do Steps 1 or 5 for you. Creating accounts and handling API keys is off-limits to
-me by rule, not by ability.*
+*Note: I cannot read your Resend dashboard or handle API keys — that is off-limits to me by rule,
+not by ability. Steps 1 and 2 are yours.*
 
-**Time:** 45 minutes for the free steps. **Cost:** ₹0 (Resend free = 100/day, 3,000/month, no card).
-**What unblocks:** magic-link sign-in, every booking and refund notification, and NOTIF-15's
-aarti reminders.
+**Time:** 5 minutes if the diagnosis above is right. **Cost:** ₹0 (Resend free = 100/day, 3,000/month).
+**What unblocks:** password reset, magic-link sign-in, every booking and refund notification, the
+80G receipts, and NOTIF-15's aarti reminders. This is the highest-value 5 minutes on this list.
 
 ---
 
-### 5. Paste one Supabase secret into Render (SCAL-05) — 5 minutes, best value on this list
+### 5. Paste one Supabase secret into Render (SCAL-05) — 5 minutes, ₹0
 
 The code for offline JWT verification is written, tested, and **already deployed**. It is doing
 nothing because one environment variable is missing. Setting it removes a round trip to Tokyo from
@@ -547,12 +584,14 @@ Want 80G receipts? ─┤     └─→ engineer stores it → receipts are vali
                           └─→ requires Section 8, which forbids taking a 20% cut  ← CONFLICTS with your business
 ```
 
-**Chain D — email.**
+**Chain D — email.** The key is already in Render and VAPID is already set; neither is the
+blocker. Every send is being REJECTED (48/48 on 2026-09-03), almost certainly because the app
+sends from `no-reply@darshya.online` while the verified Resend domain looks like
+`send.darshya.online`. See item 4.
 ```
-Resend key in Render  →  magic-link sign-in works  →  users can actually log in
-                      →  booking + refund receipts send
-                      →  Supabase Custom SMTP (SCAL-11) becomes worth setting
-VAPID keys (free)     →  NOTIF-15 aarti reminders can actually deliver
+RESEND_FROM_EMAIL in Render  →  sends stop being rejected  →  password reset + magic link work
+                             →  booking + refund receipts send
+                             →  Supabase Custom SMTP (SCAL-11) becomes worth setting
 ```
 
 **Chain E — pricing.**
