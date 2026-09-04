@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { NAVA_GRAHAS } from '../../lib/nava-grahas';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -62,10 +65,10 @@ export default function NavaGrahaIndex() {
         <div className="inline-block px-3 py-1 mb-3 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           Vedic Astrology · Jyotish
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-3 leading-tight">
+        <h1 className={`${H1.marketing} mb-3`}>
           The Nava-Graha
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-3xl mx-auto">
           Nine planets of Jyotish — seven visible bodies (Surya, Chandra, Mangal, Budh,
           Brihaspati, Shukra, Shani) plus two shadow nodes (Rahu, Ketu). Each rules a day,
           a deity, a gemstone, a body part. The strongest determines your career; the
@@ -137,7 +140,7 @@ export default function NavaGrahaIndex() {
       <section className="mt-8 rounded-xl border border-surface-200 bg-white p-6 text-center">
         <h2 className="text-lg font-bold text-surface-900 mb-2">Related Vedic tools</h2>
         <div className="flex flex-wrap gap-3 justify-center">
-          <Link href="/rashi" className="px-4 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700">12 Rashis</Link>
+          <Link href="/rashi" className={buttonClass('primary', 'md')}>12 Rashis</Link>
           <Link href="/nakshatra" className="px-4 py-2 border border-saffron-600 text-saffron-700 rounded-md text-sm font-semibold hover:bg-saffron-50">27 Nakshatras</Link>
           <Link href="/muhurat" className="px-4 py-2 border border-surface-300 text-surface-700 rounded-md text-sm font-semibold hover:bg-surface-50">Muhurats</Link>
           <Link href="/astrology" className="px-4 py-2 border border-surface-300 text-surface-700 rounded-md text-sm font-semibold hover:bg-surface-50">Free birth chart</Link>

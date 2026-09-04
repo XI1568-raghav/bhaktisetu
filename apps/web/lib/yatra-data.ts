@@ -1,6 +1,9 @@
 /**
  * Dharmic Yatra — Pilgrimage data for Darshya
- * Hardcoded, realistic data for 9 yatras, 8 companions, and 30+ sacred sites.
+ * Hardcoded data for 9 yatra packages and 30+ sacred sites.
+ *
+ * No travel-companion roster ships from here — see the TC-06 note further down
+ * and lib/companion-roster.ts.
  */
 
 import { getTempleHero, getDeityImage } from './images';
@@ -66,6 +69,37 @@ export interface Yatra {
  gallery: string[];
  helicopterAvailable: boolean;
  tags: string[];
+ /**
+  * Testimonials from devotees who actually travelled this yatra.
+  *
+  * EMPTY ON EVERY PACKAGE, and that is the finished state, not a stub. Each of
+  * the nine records used to carry three hand-typed reviews — a full name, a
+  * home city, a star rating, a calendar month and a first-person narrative
+  * ("Did it with my 75-year-old mother", "Third time doing it with Darshya",
+  * "Completed Char Dham at 68") — twenty-seven in all, rendered three to a
+  * package on /yatra/<slug> beneath "Pilgrim reviews / Stories from past
+  * devotees".
+  *
+  * None of them could be true. The yatra desk takes no money: /yatra/<slug>/book
+  * posts a lead to POST /api/v1/yatra-inquiry, there is no Yatra model in
+  * Prisma, and lib/faqs.ts states the model outright ("Inquiry-only model").
+  * Nobody has travelled a Darshya yatra, so nobody has reviewed one — and
+  * "third time doing it with Darshya" asserts a repeat customer the platform
+  * has never had.
+  *
+  * This is the same defect TC-06 removed from the other half of this file. That
+  * sweep deleted the eight invented travel companions and their sixteen
+  * invented reviewers, and named the instruments in its own test header — the
+  * fake-review pattern the CCPA framework and BIS IS 19000:2022 address. The
+  * package reviews were simply never in its scope.
+  *
+  * The TYPE stays, exactly as TC-06 kept `TravelCompanion`: it is the shape a
+  * real review will take once a yatri who paid for a journey rates it. Populate
+  * this from a counted source, never by typing a row — see lib/social-proof.ts
+  * for the doctrine and lib/companion-roster.ts for the same ruling applied to
+  * companions ("`rating`/`reviewCount` at 0 until real yatris have rated
+  * them"). Pinned by __tests__/yatra-package-reviews-fabricated.test.tsx.
+  */
  reviews: YatraReview[];
  faqs: YatraFaq[];
  startingPrice: number;
@@ -193,11 +227,7 @@ export const yatras: Yatra[] = [
  ],
  helicopterAvailable: true,
  tags: ['Himalayas', 'Shiva', 'Vishnu', '11 days', 'Helicopter'],
- reviews: [
- { name: 'Ramesh Iyer', location: 'Chennai', rating: 5, comment: 'Completed Char Dham at 68 — the team made it possible. Helicopter to Kedarnath was a blessing for my knees.', yatra: 'Char Dham', date: 'Jun 2025' },
- { name: 'Meena Sharma', location: 'Delhi', rating: 5, comment: 'Every meal was sattvic, every stay comfortable. Our guide Raghav handled everything including my mother\'s medication reminders.', yatra: 'Char Dham', date: 'Sep 2025' },
- { name: 'Kapil Malhotra', location: 'Mumbai', rating: 4, comment: 'Organized beautifully. Weather delayed Yamunotri by a day but team re-planned the entire schedule seamlessly.', yatra: 'Char Dham', date: 'May 2025' },
- ],
+ reviews: [],
  faqs: [
  { q: 'What is the best time for Char Dham?', a: 'May-June (spring) and September-October (post-monsoon). The yatra closes by Diwali and reopens on Akshaya Tritiya.' },
  { q: 'Is Char Dham suitable for elderly?', a: 'Yes, with the premium package including helicopter to Kedarnath. We recommend pre-yatra fitness check and carrying prescribed medicines.' },
@@ -245,11 +275,7 @@ export const yatras: Yatra[] = [
  gallery: [getTempleHero('kedarnath'), getTempleHero('badrinath'), getDeityImage('lord-shiva'), getDeityImage('lord-vishnu')],
  helicopterAvailable: true,
  tags: ['Shiva', 'Vishnu', '7 days', 'Himalayas', 'Helicopter'],
- reviews: [
- { name: 'Sanjay Gupta', location: 'Kanpur', rating: 5, comment: 'Perfect for limited leave. Helicopter to Kedarnath saved the trip for my 72-year-old father.', yatra: 'Do Dham', date: 'Jun 2025' },
- { name: 'Lakshmi Narayan', location: 'Hyderabad', rating: 5, comment: 'Brahma Kapal tarpan was deeply emotional. Well-organized throughout.', yatra: 'Do Dham', date: 'Sep 2025' },
- { name: 'Asha Devi', location: 'Jaipur', rating: 4, comment: 'Good yatra. A bit rushed on Day 2 but everything else was excellent.', yatra: 'Do Dham', date: 'May 2025' },
- ],
+ reviews: [],
  faqs: [
  { q: 'Can I do only Kedarnath?', a: 'Yes, we offer a 4-day Kedarnath-only package. Contact us for customization.' },
  { q: 'Is helicopter included?', a: 'Helicopter is included in the Premium tier only. Optional add-on for other tiers at ₹8,000/pp one-way.' },
@@ -262,7 +288,15 @@ export const yatras: Yatra[] = [
  {
  slug: 'jyotirlinga-yatra',
  title: '12 Jyotirlingas Yatra',
- subtitle: 'The twelve self-manifested Shiva shrines',
+ // CI-12: was 'The twelve self-manifested Shiva shrines'. Only 9 of the 12
+ // records in lib/jyotirlingas.ts carry `swayambhu: true` — Somnath, Kashi
+ // Vishwanath and Rameshwar are all `false` — so the qualifier contradicted
+ // the product's own dataset on two reader-facing routes (app/yatra/page.tsx
+ // and app/yatra/[slug]/page.tsx). "Shrines of light" is the Jyotirlinga
+ // gloss itself and claims nothing about who installed the linga; the
+ // `longDescription` below already says it correctly. Guarded by
+ // __tests__/discover-shloka-swayambhu.ci12.test.tsx.
+ subtitle: 'The twelve Shiva shrines of light',
  description:
  'A comprehensive 16-day pilgrimage covering all 12 Jyotirlingas across 9 states — from Somnath in Gujarat to Rameswaram in Tamil Nadu.',
  longDescription:
@@ -325,11 +359,7 @@ export const yatras: Yatra[] = [
  ],
  helicopterAvailable: false,
  tags: ['Shiva', '12 Jyotirlingas', '16 days', 'Pan-India'],
- reviews: [
- { name: 'Om Prakash', location: 'Lucknow', rating: 5, comment: 'A lifetime dream fulfilled. Every Jyotirlinga darshan was unhurried. Bhasma Aarti at Mahakaleshwar — cannot describe the feeling.', yatra: '12 Jyotirlingas', date: 'Nov 2024' },
- { name: 'Sushma & Vinod Desai', location: 'Pune', rating: 5, comment: 'We did it at ages 66 and 69. The team arranged wheelchair access at Kashi Vishwanath which made all the difference.', yatra: '12 Jyotirlingas', date: 'Feb 2025' },
- { name: 'Harish Agarwal', location: 'Indore', rating: 5, comment: 'Flights between sectors kept the pace manageable. Highly recommend for serious devotees.', yatra: '12 Jyotirlingas', date: 'Jan 2025' },
- ],
+ reviews: [],
  faqs: [
  { q: 'Is the 12th (Kedarnath) included?', a: 'Kedarnath is offered as a separate 4-day add-on since it\'s seasonal (May-Oct only). Full 12-Jyotirlinga combo available May-June & Sep-Oct.' },
  { q: 'Can I split the yatra into two parts?', a: 'Yes — many devotees do North India 6 Jyotirlingas + South India 5 Jyotirlingas in two separate yatras.' },
@@ -383,11 +413,7 @@ export const yatras: Yatra[] = [
  gallery: [getTempleHero('dwarkadhish'), getTempleHero('jagannath-puri'), getTempleHero('badrinath'), getTempleHero('meenakshi-temple'), getDeityImage('lord-vishnu'), getDeityImage('lord-krishna')],
  helicopterAvailable: false,
  tags: ['Vishnu', '14 days', 'Pan-India', '4 Dhams'],
- reviews: [
- { name: 'Anand Bhatt', location: 'Ahmedabad', rating: 5, comment: 'The spiritual arc of going from Badrinath to Rameswaram is indescribable. Excellent organization.', yatra: '4 Dhams India', date: 'Nov 2024' },
- { name: 'Vasudha Nair', location: 'Kochi', rating: 5, comment: 'Mahaprasad at Jagannath Puri was the spiritual highlight. Team pre-booked the anand bazaar for us.', yatra: '4 Dhams India', date: 'Jan 2025' },
- { name: 'Madhav Rao', location: 'Bangalore', rating: 4, comment: 'Day 4 was tiring but unavoidable. Rest of the yatra was smooth.', yatra: '4 Dhams India', date: 'Feb 2025' },
- ],
+ reviews: [],
  faqs: [
  { q: 'Can I do this during Jagannath Rath Yatra?', a: 'Yes, we run a special June-July batch aligned with Rath Yatra in Puri. Book 6 months in advance.' },
  { q: 'Is the 4 Dhams same as Char Dham?', a: 'No. Char Dham Yatra refers to the 4 shrines in Uttarakhand. 4 Dhams of India refers to the 4 corners of India established by Adi Shankaracharya.' },
@@ -431,11 +457,7 @@ export const yatras: Yatra[] = [
  gallery: [getTempleHero('kedarnath'), getDeityImage('lord-shiva'), getTempleHero('somnath')],
  helicopterAvailable: true,
  tags: ['Shiva', 'Kashmir', '6 days', 'Helicopter', 'Seasonal'],
- reviews: [
- { name: 'Vikram Singh', location: 'Chandigarh', rating: 5, comment: 'Did it at 62 with helicopter. Cave darshan is absolutely divine. Team handled everything including medical.', yatra: 'Amarnath', date: 'Jul 2025' },
- { name: 'Priya Saxena', location: 'Lucknow', rating: 5, comment: 'Helicopter from Neelgrath cut the trek by 80%. Excellent for those who cannot trek.', yatra: 'Amarnath', date: 'Aug 2025' },
- { name: 'Rohit Verma', location: 'Delhi', rating: 4, comment: 'Weather sensitive — our day was delayed but they rebooked helicopter next day.', yatra: 'Amarnath', date: 'Jul 2025' },
- ],
+ reviews: [],
  faqs: [
  { q: 'When does the yatra open?', a: 'Amarnath yatra runs for ~45 days from early July to mid-August (Shravan Purnima). Dates announced by Shri Amarnathji Shrine Board each year.' },
  { q: 'Is medical certificate mandatory?', a: 'Yes. Compulsory Health Certificate (CHC) from authorized doctor. We assist with documentation.' },
@@ -478,11 +500,7 @@ export const yatras: Yatra[] = [
  gallery: [getTempleHero('meenakshi-temple'), getDeityImage('goddess-durga'), getTempleHero('kedarnath')],
  helicopterAvailable: true,
  tags: ['Durga', 'Jammu', '3 days', 'Helicopter', 'Easy'],
- reviews: [
- { name: 'Sunita Agarwal', location: 'Delhi', rating: 5, comment: 'Did it with my 75-year-old mother. Helicopter made it possible. Jai Mata Di!', yatra: 'Vaishno Devi', date: 'Dec 2024' },
- { name: 'Rajesh Khanna', location: 'Jalandhar', rating: 5, comment: 'Third time doing it with Darshya. They handle everything — we just walk and pray.', yatra: 'Vaishno Devi', date: 'Feb 2025' },
- { name: 'Geeta Patel', location: 'Ahmedabad', rating: 4, comment: 'VIP darshan pass saved us 4 hours of queue. Worth the upgrade.', yatra: 'Vaishno Devi', date: 'Jan 2025' },
- ],
+ reviews: [],
  faqs: [
  { q: 'Is Yatra Parchi (slip) mandatory?', a: 'Yes. We pre-book your RFID-enabled Yatra slip. No entry without it.' },
  { q: 'Helicopter vs trek?', a: 'Helicopter: Katra-Sanjichhat-Katra covers 80% of the climb. 2.5km walk from Sanjichhat remains. Total time: 3-4 hours vs 10-12 hours trek.' },
@@ -525,11 +543,7 @@ export const yatras: Yatra[] = [
  gallery: [getTempleHero('siddhivinayak'), getDeityImage('lord-shiva'), getDeityImage('lord-ganesha'), getTempleHero('somnath')],
  helicopterAvailable: false,
  tags: ['Sai Baba', 'Shani', 'Maharashtra', '4 days', 'Easy'],
- reviews: [
- { name: 'Ashwini Deshmukh', location: 'Mumbai', rating: 5, comment: 'Sabka Malik Ek! Kakad Aarti was divine. Very well organized.', yatra: 'Shirdi Sai', date: 'Jan 2025' },
- { name: 'Suresh Iyengar', location: 'Bangalore', rating: 5, comment: 'Oil abhishek at Shani Shingnapur was a powerful experience. Highly recommend.', yatra: 'Shirdi Sai', date: 'Dec 2024' },
- { name: 'Kavita Joshi', location: 'Nagpur', rating: 4, comment: 'Day 3 was packed — consider extending by a day for slower pace.', yatra: 'Shirdi Sai', date: 'Feb 2025' },
- ],
+ reviews: [],
  faqs: [
  { q: 'Can women enter Shani Shingnapur sanctum?', a: 'Yes, since 2016 women are permitted to enter the chauthara. Our guide will accompany.' },
  { q: 'Is Kakad Aarti (4:30am) mandatory?', a: 'Optional but highly recommended. We arrange VIP passes.' },
@@ -576,11 +590,7 @@ export const yatras: Yatra[] = [
  gallery: [getTempleHero('tirupati'), getTempleHero('meenakshi-temple'), getDeityImage('lord-vishnu'), getDeityImage('goddess-lakshmi')],
  helicopterAvailable: false,
  tags: ['Balaji', 'Meenakshi', 'South India', '9 days'],
- reviews: [
- { name: 'Lakshmipathi Rao', location: 'Hyderabad', rating: 5, comment: 'Tirupati Seeghra darshan was pre-arranged perfectly. No 8-hour wait like before. Worth every rupee.', yatra: 'Tirupati South India', date: 'Jan 2025' },
- { name: 'Radha Menon', location: 'Kochi', rating: 5, comment: 'Covering 6 major temples in 9 days with comfort — only Darshya managed this.', yatra: 'Tirupati South India', date: 'Feb 2025' },
- { name: 'Vasant Shetty', location: 'Mangalore', rating: 4, comment: 'Udupi + Mookambika combo is a nice touch. Would prefer extra day at Rameswaram.', yatra: 'Tirupati South India', date: 'Dec 2024' },
- ],
+ reviews: [],
  faqs: [
  { q: 'Is Tirupati darshan guaranteed?', a: 'Yes, we pre-book TTD Seeghra Darshan quota (₹300 slot) included in Standard/Premium. Economy gets regular darshan.' },
  { q: 'Dress code at Padmanabhaswamy?', a: 'Strict: Men — dhoti (veshti), no shirt. Women — saree/mundu. Our team provides dhotis at entry.' },
@@ -625,11 +635,7 @@ export const yatras: Yatra[] = [
  gallery: [getTempleHero('kashi-vishwanath'), getDeityImage('lord-rama'), getDeityImage('lord-shiva'), getDeityImage('lord-hanuman'), getTempleHero('akshardham')],
  helicopterAvailable: false,
  tags: ['Ram', 'Shiva', '6 days', 'Ayodhya', 'Kashi'],
- reviews: [
- { name: 'Dinesh Mishra', location: 'Patna', rating: 5, comment: 'Ram Lalla darshan — tears rolled down. Darshya handled the pre-booking. No chaotic queues.', yatra: 'Ayodhya Kashi', date: 'Feb 2025' },
- { name: 'Kamala Devi', location: 'Gwalior', rating: 5, comment: 'Rudrabhishek at Kashi with my son\'s sankalpa was the spiritual peak of my life. Premium package is worth it.', yatra: 'Ayodhya Kashi', date: 'Jan 2025' },
- { name: 'Ravi Shankar', location: 'Kolkata', rating: 5, comment: 'Triveni Sangam tarpan for ancestors was conducted by the tour priest beautifully. Highly recommend.', yatra: 'Ayodhya Kashi', date: 'Dec 2024' },
- ],
+ reviews: [],
  faqs: [
  { q: 'How long is the queue at Ram Mandir?', a: 'Standard queue: 2-4 hours. Our pre-booked suvidha passes reduce it to 30 minutes.' },
  { q: 'Can Rudrabhishek be arranged at Kashi Vishwanath?', a: 'Yes — included in Premium. For Standard, ₹2,100 add-on.' },
@@ -640,203 +646,31 @@ export const yatras: Yatra[] = [
 ];
 
 // ────────────────────────────────────────────────────────────
-// TRAVEL COMPANIONS — 8 verified profiles
+// TRAVEL COMPANIONS — no roster ships from this file
 // ────────────────────────────────────────────────────────────
-
-export const companions: TravelCompanion[] = [
- {
- id: 'rajesh-kumar',
- name: 'Rajesh Kumar',
- initials: 'RK',
- age: 42,
- gender: 'male',
- city: 'Haridwar',
- languages: ['Hindi', 'English', 'Garhwali'],
- yatrasCompleted: 187,
- rating: 4.9,
- reviewCount: 124,
- specializations: ['Char Dham specialist', 'Elderly care', 'Medical first-aid'],
- bio: 'Born and raised in Haridwar, Rajesh has been guiding Char Dham yatris for 16 years. Certified in Wilderness First Aid and fluent in 3 languages. Rajesh personally carries a medical kit with BP monitor, oximeter and emergency medicines.',
- experience: '16 years',
- pricePerDay: 3500,
- verified: { aadhaar: true, background: true, medical: true },
- avatarColor: '#b87333',
- availability: 'available',
- pastYatras: ['Char Dham (85)', 'Do Dham (62)', 'Amarnath (24)', 'Vaishno Devi (16)'],
- reviews: [
- { author: 'Seema Gupta, Delhi', rating: 5, comment: 'My father (74) could not have completed Char Dham without Rajesh ji. He remembered every medication timing.', yatra: 'Char Dham' },
- { author: 'Anil Desai, Mumbai', rating: 5, comment: 'Rajesh coordinated with family back home every evening. 100% recommend.', yatra: 'Do Dham' },
- ],
- },
- {
- id: 'priya-sharma',
- name: 'Priya Sharma',
- initials: 'PS',
- age: 35,
- gender: 'female',
- city: 'Varanasi',
- languages: ['Hindi', 'English', 'Sanskrit', 'Bhojpuri'],
- yatrasCompleted: 142,
- rating: 5.0,
- reviewCount: 98,
- specializations: ['Women-only groups', 'Kashi corridor expert', 'Senior ladies', 'Widow tirth yatra'],
- bio: 'Priya holds a degree in Sanskrit from BHU and has been leading yatras since 2015. She specializes in women-only groups and is the preferred companion for elderly ladies undertaking widow tirth yatras. Trained in basic nursing.',
- experience: '10 years',
- pricePerDay: 3200,
- verified: { aadhaar: true, background: true, medical: true },
- avatarColor: '#ec4899',
- availability: 'available',
- pastYatras: ['Ayodhya-Kashi-Prayagraj (64)', 'Vindhyachal (18)', 'Vrindavan (32)', '12 Jyotirlingas (8)'],
- reviews: [
- { author: 'Kamla Devi, Kanpur', rating: 5, comment: 'Priya beti was like my own daughter. Made my first yatra without my husband bearable.', yatra: 'Kashi' },
- { author: 'Veena Iyer, Chennai', rating: 5, comment: 'Her Sanskrit mantra knowledge enhanced every temple darshan.', yatra: 'Ayodhya Kashi' },
- ],
- },
- {
- id: 'mohammed-aslam',
- name: 'Mohammed Aslam',
- initials: 'MA',
- age: 48,
- gender: 'male',
- city: 'Srinagar',
- languages: ['Hindi', 'English', 'Urdu', 'Kashmiri', 'Dogri'],
- yatrasCompleted: 156,
- rating: 4.8,
- reviewCount: 103,
- specializations: ['Amarnath specialist', 'Vaishno Devi', 'High-altitude medicine', 'Weather judgment'],
- bio: 'Born in Srinagar, Aslam has led 156 Amarnath yatras and is the most trusted companion for Kashmir-region pilgrimages. His weather judgment has avoided multiple helicopter cancellations. AMRI-certified in High Altitude Medicine.',
- experience: '22 years',
- pricePerDay: 4500,
- verified: { aadhaar: true, background: true, medical: true },
- avatarColor: '#0ea5e9',
- availability: 'limited',
- pastYatras: ['Amarnath (76)', 'Vaishno Devi (54)', 'Kailash Mansarovar (14)', 'Ladakh spiritual (12)'],
- reviews: [
- { author: 'Gaurav Mehta, Delhi', rating: 5, comment: 'Aslam bhai insisted we wait 1 day at Pahalgam — next day helicopter flew perfectly. Others got stuck for 3 days.', yatra: 'Amarnath' },
- { author: 'Pankaj Sharma, Jammu', rating: 5, comment: 'Medical knowledge saved my father from altitude sickness. Carried oxygen throughout.', yatra: 'Amarnath' },
- ],
- },
- {
- id: 'lakshmi-iyer',
- name: 'Lakshmi Iyer',
- initials: 'LI',
- age: 38,
- gender: 'female',
- city: 'Madurai',
- languages: ['Tamil', 'English', 'Hindi', 'Malayalam', 'Sanskrit'],
- yatrasCompleted: 112,
- rating: 4.9,
- reviewCount: 87,
- specializations: ['South India routes', 'Tamil Nadu temples', 'Agama shastra knowledge', 'Elderly care'],
- bio: 'Lakshmi is a Sanskrit scholar and Agama shastra expert. She specializes in South Indian temple yatras and is the go-to companion for North Indian devotees doing Tirupati + Meenakshi + Rameswaram circuits. Vegetarian cook by training.',
- experience: '12 years',
- pricePerDay: 3000,
- verified: { aadhaar: true, background: true, medical: true },
- avatarColor: '#16a34a',
- availability: 'available',
- pastYatras: ['Tirupati + South (58)', '4 Dhams India (22)', 'Navagraha (18)', 'Murugan Arupadai Veedu (14)'],
- reviews: [
- { author: 'Nirmal Saxena, Lucknow', rating: 5, comment: 'Lakshmi madam explained each temple history and ritual. North Indian family — she handled our food preferences perfectly.', yatra: 'Tirupati South India' },
- { author: 'Shanti Bhatia, Delhi', rating: 5, comment: 'Our dietary restrictions (Jain) were handled without a single error. Thank you Lakshmi!', yatra: '4 Dhams' },
- ],
- },
- {
- id: 'vikram-nayar',
- name: 'Vikram Nayar',
- initials: 'VN',
- age: 45,
- gender: 'male',
- city: 'Pune',
- languages: ['Marathi', 'Hindi', 'English', 'Konkani'],
- yatrasCompleted: 201,
- rating: 4.9,
- reviewCount: 156,
- specializations: ['Ashtavinayak expert', 'Shirdi Sai', 'Maharashtra temple circuit', '12 Jyotirlingas'],
- bio: 'Vikram has been a temple circuit specialist for 18 years. Completed 58 full 12-Jyotirlinga yatras. Ex-Army medic with advanced first-aid training. Preferred by high-profile devotees for discretion and efficiency.',
- experience: '18 years',
- pricePerDay: 4000,
- verified: { aadhaar: true, background: true, medical: true },
- avatarColor: '#943B19',
- availability: 'busy',
- pastYatras: ['12 Jyotirlingas (58)', 'Shirdi Sai (72)', 'Ashtavinayak (46)', '4 Dhams (25)'],
- reviews: [
- { author: 'Neeta Agarwal, Delhi', rating: 5, comment: 'Vikram ji\'s military precision showed at every temple — VIP darshan arranged in minutes, not hours.', yatra: '12 Jyotirlingas' },
- { author: 'Hari Chand, Hyderabad', rating: 5, comment: 'He arranged a last-minute helicopter for my wife when she got altitude sickness at Bhimashankar. Life-saver.', yatra: '12 Jyotirlingas' },
- ],
- },
- {
- id: 'anita-deshmukh',
- name: 'Anita Deshmukh',
- initials: 'AD',
- age: 33,
- gender: 'female',
- city: 'Nashik',
- languages: ['Marathi', 'Hindi', 'English'],
- yatrasCompleted: 78,
- rating: 4.7,
- reviewCount: 62,
- specializations: ['Hindi-only comfort', 'Shirdi Sai routes', 'Dietary assistance (Jain/Vaishnav)', 'Elderly with mobility issues'],
- bio: 'Anita is a certified elder-care specialist with 8 years of experience. She is the preferred companion for elderly Hindi-speaking devotees who are not comfortable in English. Holds a diploma in gerontology.',
- experience: '8 years',
- pricePerDay: 2800,
- verified: { aadhaar: true, background: true, medical: true },
- avatarColor: '#D4A438',
- availability: 'available',
- pastYatras: ['Shirdi Sai (42)', 'Trimbakeshwar (28)', 'Do Dham (8)'],
- reviews: [
- { author: 'Prema Kulkarni, Bhopal', rating: 5, comment: 'Anita ji helped my 82-year-old mother with wheelchair at every temple. Incredibly patient.', yatra: 'Shirdi Sai' },
- { author: 'Ram Lal, Jodhpur', rating: 4, comment: 'Good Hindi-only communication. Our group felt very comfortable.', yatra: 'Shirdi Sai' },
- ],
- },
- {
- id: 'suresh-nair',
- name: 'Suresh Nair',
- initials: 'SN',
- age: 40,
- gender: 'male',
- city: 'Thiruvananthapuram',
- languages: ['Malayalam', 'Tamil', 'English', 'Hindi'],
- yatrasCompleted: 94,
- rating: 4.8,
- reviewCount: 71,
- specializations: ['Kerala temples', 'Sabarimala specialist', 'Padmanabhaswamy protocol', 'Nair gotra pujas'],
- bio: 'Suresh is an expert in Kerala temple protocols. Has completed 18 Sabarimala seasons as a guide and knows the strict dress codes and rituals of Kerala\'s ancient shrines. Fluent in temple-Sanskrit.',
- experience: '14 years',
- pricePerDay: 3500,
- verified: { aadhaar: true, background: true, medical: true },
- avatarColor: '#0369a1',
- availability: 'available',
- pastYatras: ['Sabarimala (18 seasons)', 'Padmanabhaswamy (24)', 'Guruvayur (32)', 'Tirupati + Kerala (20)'],
- reviews: [
- { author: 'Murali Krishnan, Chennai', rating: 5, comment: 'Suresh ji arranged our Padmanabhaswamy darshan including dhoti assistance. Flawless.', yatra: 'Tirupati South' },
- { author: 'Rani Pillai, Mumbai', rating: 5, comment: 'Sabarimala yatra during Mandalam — Suresh managed 41-day vratham guidance before travel.', yatra: 'Sabarimala' },
- ],
- },
- {
- id: 'meena-agarwal',
- name: 'Meena Agarwal',
- initials: 'MA',
- age: 36,
- gender: 'female',
- city: 'Ayodhya',
- languages: ['Hindi', 'English', 'Awadhi', 'Sanskrit'],
- yatrasCompleted: 89,
- rating: 5.0,
- reviewCount: 68,
- specializations: ['Ayodhya Ram Mandir expert', 'Kashi Vishwanath corridor', 'Saryu tarpan', 'Women-only groups'],
- bio: 'Meena has been deeply involved in Ayodhya\'s rise as a pilgrimage center post-Ram Mandir inauguration. She coordinates directly with Shri Ram Janmabhoomi Teerth Kshetra Trust for suvidha pass bookings.',
- experience: '9 years',
- pricePerDay: 3000,
- verified: { aadhaar: true, background: true, medical: true },
- avatarColor: '#b87333',
- availability: 'limited',
- pastYatras: ['Ayodhya Kashi Prayagraj (64)', 'Vindhyachal (12)', 'Naimisharanya (13)'],
- reviews: [
- { author: 'Vijay Singh, Bhopal', rating: 5, comment: 'Meena ji got us Ram Lalla darshan without any wait. Her connections with Trust are genuine.', yatra: 'Ayodhya Kashi' },
- { author: 'Sushma Jain, Indore', rating: 5, comment: 'Saryu tarpan for my late father was conducted with proper Awadhi rituals. Emotional.', yatra: 'Ayodhya Kashi' },
- ],
- },
-];
+//
+// TC-06: this file used to export `companions` — eight named elderly-care
+// escorts, each with a hand-typed age, home city, day rate, star rating, review
+// count, a "yatras completed" figure in the hundreds and
+// `verified: { aadhaar, background, medical }` set true — plus sixteen invented
+// people who reviewed them. Nothing counted any of it. Yatra has no Prisma
+// model, so there is no companion table, no booking row and no review to
+// average; /yatra/book posts to a lead form (POST /api/v1/yatra-inquiry) with
+// no payment gateway behind it. Every verification badge rendered on
+// /yatra/companion was a literal typed into this file.
+//
+// Deleted outright rather than left unrendered. An unpublished fixture is still
+// fabricated people carrying police-verification and medical-certification
+// claims, sitting in shipped source one import away from a page — and it is the
+// artifact itself, not only its display, that the CCPA fake-review framework and
+// BIS IS 19000:2022 address. See lib/platform-stats.ts:5-24 for the rule this
+// follows: a number reaches a page only if something counted it.
+//
+// The roster now lives in lib/companion-roster.ts and is empty. To publish a
+// real companion add the row THERE, with `verified` flags reflecting checks
+// Darshya genuinely performed and `rating`/`reviewCount` left at 0 until a
+// yatri has actually rated them. The `TravelCompanion` interface above stays:
+// it is the shape that row must take, not a claim that anyone exists.
 
 // ────────────────────────────────────────────────────────────
 // SACRED SITES — 30+ for custom planner
@@ -895,10 +729,6 @@ export const sacredSites: SacredSite[] = [
 
 export function getYatraBySlug(slug: string): Yatra | undefined {
  return yatras.find((y) => y.slug === slug);
-}
-
-export function getCompanionById(id: string): TravelCompanion | undefined {
- return companions.find((c) => c.id === id);
 }
 
 export function formatINR(amount: number): string {

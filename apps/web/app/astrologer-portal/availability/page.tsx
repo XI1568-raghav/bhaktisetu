@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import {
  getAvailability,
  updateAvailability,
@@ -87,7 +88,7 @@ function AstrologerAvailabilityPageContent() {
    const raw = await getAvailability(token);
    setAvailability(normalize(raw));
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Failed to load availability');
+   setError(userFacingMessage(err, 'We could not load your availability. Please try again.'));
   } finally {
    setLoading(false);
   }
@@ -129,7 +130,7 @@ function AstrologerAvailabilityPageContent() {
    setSaved(true);
    setTimeout(() => setSaved(false), 3000);
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Save failed');
+   setError(userFacingMessage(err, 'We could not save your availability. Please try again.'));
   } finally {
    setSaving(false);
   }

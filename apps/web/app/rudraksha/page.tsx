@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { RUDRAKSHAS, type RudrakshaCategory } from '../../lib/rudrakshas';
 
@@ -76,14 +78,14 @@ export default function RudrakshaIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-amber-700">Sacred beads of Lord Shiva</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Rudraksha — Complete Mukhi Guide</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Rudraksha — Complete Mukhi Guide</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Rudraksha (रुद्राक्ष = &ldquo;Rudra&rsquo;s tears&rdquo;) are sacred beads from the Elaeocarpus ganitrus tree, born when
           Lord Shiva opened his eyes after thousand years of meditation. Each natural face (mukhi) on the bead maps to
           a presiding deity and planetary energy. This guide covers all 14 mukhi varieties plus 4 special naturally-conjoined
           beads, each with its beej mantra, wearing day, hand, energising ritual and traditional benefits per Shiva Purana.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           See also{' '}
           <Link href="/jyotirlinga" className="text-amber-700 underline">12 Jyotirlinga</Link>,{' '}
           <Link href="/chants" className="text-amber-700 underline">Sanskrit mantras</Link>, and{' '}

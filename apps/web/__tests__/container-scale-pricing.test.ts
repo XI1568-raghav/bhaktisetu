@@ -84,10 +84,17 @@ describe('DU-14 — /pricing has one content width per section, not four', () =>
 
     expect(lines.length, 'the paragraph measures were converted; that is the wrong fix').toBe(6);
     for (const l of lines) {
+      // A measure sets its type EITHER with a Tailwind size utility OR with one
+      // of this project's named prose roles. `.prose-meta`, `.prose-body` and
+      // `.prose-lead` each declare a font-size in globals.css — they ARE the
+      // DU-10 abstraction that exists so authors stop picking an arbitrary step,
+      // so an assertion accepting only `text-*` marks the correct pattern as the
+      // violation. Corrected 2026-08-23 after it flagged `prose-meta max-w-2xl`
+      // on /pricing, which is exactly what DU-10 asks an author to write.
       expect(
         l.trim(),
         'this centres a width but sets no type — that is a shell, not a measure',
-      ).toMatch(/text-(xs|sm|base|lg|xl)\b/);
+      ).toMatch(/text-(xs|sm|base|lg|xl)\b|\bprose-(meta|body|lead)\b/);
     }
   });
 
@@ -128,12 +135,17 @@ describe('DU-14 — the unmigrated remainder is real, and cannot grow', () => {
   }
 
   /**
-   * Measured after the /pricing migration: 728, down from 734. This is a
+   * Measured after the /pricing migration: 728, down from 734; 724 after the
+   * DU-14 second pass put the global header + footer in app/layout.tsx on
+   * .container-wide (which removed 2) and the CM-15 fallbacks removed 2 more.
+   * LOWER THIS after every wave — a baseline left above the true count is slack
+   * a new ad-hoc container can be authored into without failing anything. This
+   * is a
    * RATCHET, not a target — it may fall as more routes migrate, and it must
    * never rise. If a new route needs a centred shell it should use
    * .container-wide / .container-prose, which this pattern does not match.
    */
-  const BASELINE = 728;
+  const BASELINE = 724;
 
   it('DU-14 is genuinely still open for the rest of the app', () => {
     expect(

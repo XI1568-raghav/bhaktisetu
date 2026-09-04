@@ -17,21 +17,26 @@ import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
 import {
   selectPujaBookingDetail,
-  selectBookableSlots,
-  selectCreatedBooking,
+  resolveSlotAvailability,
+  createBookingOutcome,
   buildCreateBookingBody,
   bookingErrorMessage,
   resumePaymentUrl,
   offeringPriceInr,
+  bookingPriceBreakdown,
+  bookingRequestHeaders,
+  partitionOfferings,
   isSlotBookable,
   upcomingDateKeys,
   BookingInputError,
   type PujaBookingDetail,
   type TempleOfferingOption,
   type BookableSlot,
+  type SlotAvailability,
   type DevoteeEntry,
   type CreatedBooking,
 } from '../../lib/booking-flow';
+import { webOrigin, hostOf } from '../../lib/web-origin';
 import { formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -65,6 +70,23 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * `error` as a STRING — so every recoverable failure, including a lost slot
  * race, would reach the devotee as "Request failed with status 409".
  */
+/**
+ * Nothing has been asked for yet (no temple, or no day). Deliberately NOT
+ * `none` — `none` is a statement that the temple published nothing, and the
+ * screen has not asked the server anything at this point.
+ */
+const IDLE_SLOTS: SlotAvailability = { kind: 'unreadable', slots: [] };
+
+/**
+ * The website this build pays on. Resolved from EXPO_PUBLIC_WEB_URL, else from
+ * the API host, else production with `matchesEnvironment: false`. It used to be
+ * the literal darshya.online, which sent a devotee on a LAN or staging build to
+ * production to pay for a booking that only exists on the server they booked
+ * against. Module scope: env is baked at build time and cannot change while the
+ * app runs.
+ */
+const WEB = webOrigin();
+
 export default function PujaBookScreen() {
   const params = useLocalSearchParams<{ slug?: string; name?: string }>();
   const slug = typeof params.slug === 'string' ? params.slug : '';
@@ -78,9 +100,28 @@ export default function PujaBookScreen() {
 
   const [offering, setOffering] = useState<TempleOfferingOption | null>(null);
   const [date, setDate] = useState<string | null>(null);
-  const [slots, setSlots] = useState<BookableSlot[]>([]);
+  /**
+   * The availability READ, not just its result.
+   *
+   * This was a bare `BookableSlot[]`, so a fetch that threw and a temple that
+   * publishes nothing arrived at the renderer as the same empty array — and the
+   * renderer printed the second meaning: "This temple has published no slots
+   * for that day. Try another day." A dropped connection is not a fact about
+   * the temple, and "try another day" is advice that cannot work. The four
+   * outcomes are kept apart in booking-flow.ts and only `none` is allowed to
+   * make a claim about the temple.
+   */
+  const [slotView, setSlotView] = useState<SlotAvailability>(IDLE_SLOTS);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slot, setSlot] = useState<string | null>(null);
+  /**
+   * Bumped whenever the server tells us the availability we are showing is
+   * stale — today only the 409 slot race. It exists because the obvious
+   * "refresh" (re-setting `date` to the value it already holds) is a no-op:
+   * React compares with Object.is, bails out, and the effect below never
+   * re-runs because its dependencies are referentially unchanged.
+   */
+  const [availabilityNonce, setAvailabilityNonce] = useState(0);
   const [devotees, setDevotees] = useState<DevoteeEntry[]>([
     { name: user?.fullName ?? '', gotra: '' },
   ]);
@@ -117,8 +158,13 @@ export default function PujaBookScreen() {
           );
         } else {
           setDetail(parsed);
-          // One temple offers it — pre-select rather than make it a chore.
-          const only = parsed.offerings.length === 1 ? parsed.offerings[0] : undefined;
+          // One BOOKABLE temple offers it — pre-select rather than make it a
+          // chore. PAR-15 (4): this used to read `parsed.offerings.length === 1`
+          // and would happily pre-select an UNVERIFIED sole offering, loading
+          // the form with a booking the server refuses with a 409 that the
+          // devotee could not avoid — there was no other row to pick.
+          const { bookable } = partitionOfferings(parsed.offerings);
+          const only = bookable.length === 1 ? bookable[0] : undefined;
           if (only) setOffering(only);
         }
       } catch {
@@ -137,11 +183,12 @@ export default function PujaBookScreen() {
     let cancelled = false;
     setSlot(null);
     if (!offering || !date) {
-      setSlots([]);
+      setSlotView(IDLE_SLOTS);
       return;
     }
     setSlotsLoading(true);
     (async () => {
+      let reply: { ok: boolean; body: unknown } | null = null;
       try {
         // The `templeId` query name is a legacy misnomer — the handler resolves
         // an OFFERING id first (bookings.ts:1807), which is what we send.
@@ -150,29 +197,51 @@ export default function PujaBookScreen() {
             offering.offeringId,
           )}&date=${encodeURIComponent(date)}`,
         );
-        const body: unknown = await res.json().catch(() => null);
-        if (cancelled) return;
-        const live = selectBookableSlots(body);
-        // The offering's own published slots are the fallback shape when the
-        // availability endpoint answers nothing — but with an unknown
-        // remaining, which isSlotBookable treats as unbookable rather than free.
-        setSlots(
-          live.length > 0
-            ? live
-            : offering.slots.map((s) => ({ ...s, remaining: null, total: null })),
-        );
+        reply = { ok: res.ok, body: await res.json().catch(() => null) };
       } catch {
-        if (!cancelled) setSlots([]);
-      } finally {
-        if (!cancelled) setSlotsLoading(false);
+        // `reply` stays null, which resolveSlotAvailability reads as the
+        // transport failure it is. It must NOT become an empty slot list.
+        reply = null;
       }
+      if (cancelled) return;
+      setSlotView(resolveSlotAvailability(reply, offering.slots));
+      setSlotsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [offering, date]);
+  }, [offering, date, availabilityNonce]);
 
-  const priceInr = detail && offering ? offeringPriceInr(detail, offering) : null;
+  const slots = slotView.slots;
+  /**
+   * The CHARGED amount, not the puja price.
+   *
+   * This was `offeringPriceInr(detail, offering)` printed under the word
+   * "Total". createBooking charges `pujaPrice + PLATFORM_FEE_INR` and the
+   * Razorpay order is minted from that sum, so the very next screen — the web
+   * `/bookings/pay` page this one hands off to — asked for ₹1,151 against a
+   * "Total" of ₹1,100. That gap is CM-03, which the web wizard was fixed for;
+   * moving checkout into the app re-created it here.
+   *
+   * `prasadDeliveryRequested` is false because buildCreateBookingBody sends
+   * false — the app has no address picker, and the route rejects the flag
+   * without an address. When that changes, pass it here and the prasad row
+   * below appears on its own.
+   */
+  const price = bookingPriceBreakdown(detail, offering, {
+    prasadDeliveryRequested: false,
+  });
+
+  /**
+   * PAR-15 (4). Which temples the server will actually accept, kept apart from
+   * the ones it refuses. Memoised on the detail object rather than recomputed
+   * per render because the picker is rendered on every keystroke in the
+   * sankalp field.
+   */
+  const { bookable: bookableOfferings, unverified: unverifiedOfferings } = useMemo(
+    () => partitionOfferings(detail?.offerings ?? []),
+    [detail],
+  );
 
   async function onSubmit() {
     setSubmitError(null);
@@ -207,22 +276,39 @@ export default function PujaBookScreen() {
     try {
       const res = await fetch(`${apiBase()}/api/v1/bookings/book`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        // PAR-15 (3). The recoverable failures on this screen — SLOT_UNAVAILABLE
+        // and TEMPLE_NOT_VERIFIED — are the two the API translates, and the
+        // route resolves the language from `accept-language` ONLY (pickLang,
+        // not pickLangFor: it never reads the stored preference server-side).
+        // Sending no header meant a Hindi devotee lost a slot race and was told
+        // so in English, on the one screen where the message is the only thing
+        // they can act on.
+        headers: bookingRequestHeaders({
+          token,
+          preferredLanguage: user?.preferredLanguage,
+        }),
         body: JSON.stringify(body),
       });
       const replyBody: unknown = await res.json().catch(() => null);
-      const booking = selectCreatedBooking(replyBody);
-      if (!res.ok || !booking) {
-        setSubmitError(bookingErrorMessage(replyBody, res.status));
-        // A lost slot race is recoverable in-page: re-ask for capacity so the
-        // devotee can pick another slot instead of retrying a taken one.
-        if (res.status === 409 && offering && date) setDate(date);
+      // Three outcomes, not two. A 2xx whose body does not parse into a booking
+      // means a `pending_payment` row EXISTS and is holding a seat, so the
+      // devotee must be sent to look rather than to retry — retrying is what
+      // mints the second hold. See createBookingOutcome.
+      const outcome = createBookingOutcome({ ok: res.ok, status: res.status, body: replyBody });
+      if (outcome.kind === 'created') {
+        setCreated(outcome.booking);
         return;
       }
-      setCreated(booking);
+      setSubmitError(outcome.message);
+      if (outcome.kind === 'failed' && res.status === 409 && offering && date) {
+        // A lost slot race is recoverable in-page: re-ask for capacity so the
+        // devotee picks a slot that still exists instead of retrying the taken
+        // one. It has to go through the nonce — `setDate(date)` re-assigns the
+        // value the state already holds, React bails out on Object.is, and the
+        // availability effect never re-runs. The grid would keep showing the
+        // slot as free underneath an error saying it was taken.
+        setAvailabilityNonce((n) => n + 1);
+      }
     } catch {
       setSubmitError('Could not reach the server. Your booking was not created.');
     } finally {
@@ -245,10 +331,12 @@ export default function PujaBookScreen() {
               {detail?.name ?? 'Your puja'} at {offering?.templeName ?? 'the temple'} on{' '}
               {formatDateLabel(date)} · {slotLabelFor(slots, slot)}.
             </Text>
-            {/* The one thing this screen must not blur. */}
+            {/* The one thing this screen must not blur — and the amount, because
+                the page it hands off to will ask for exactly this figure. */}
             <Text style={styles.successWarn}>
-              Not paid yet. The seat is held for a short while — complete payment
-              to confirm it.
+              Not paid yet
+              {price.totalInr === null ? '' : ` — ${formatInr(price.totalInr)} due`}. The
+              seat is held for a short while; complete payment to confirm it.
             </Text>
           </View>
 
@@ -256,17 +344,34 @@ export default function PujaBookScreen() {
             style={styles.primaryBtn}
             activeOpacity={0.85}
             accessibilityRole="link"
-            accessibilityLabel="Pay on darshya.online"
-            accessibilityHint="Opens darshya.online in your browser to complete payment for this booking"
-            onPress={() => Linking.openURL(resumePaymentUrl(created.id))}
+            accessibilityLabel={`Pay on ${hostOf(WEB.origin)}`}
+            accessibilityHint={`Opens ${hostOf(
+              WEB.origin,
+            )} in your browser, where you sign in and then complete payment for this booking`}
+            onPress={() => Linking.openURL(resumePaymentUrl(created.id, WEB.origin))}
           >
             <Ionicons name="open-outline" size={18} color={colors.white} />
-            <Text style={styles.primaryBtnText}>Pay on darshya.online</Text>
+            <Text style={styles.primaryBtnText}>Pay on {hostOf(WEB.origin)}</Text>
           </TouchableOpacity>
+          {/* The origin could not be established from this build's API host, so
+              it fell back to production. Saying nothing would send the devotee
+              to a site that has never heard of the booking they just made. */}
+          {WEB.matchesEnvironment ? null : (
+            <Text style={styles.submitError}>
+              This build talks to a different server than {hostOf(WEB.origin)}, so
+              that site will not know about this booking. Set EXPO_PUBLIC_WEB_URL
+              to the website that pairs with this build&apos;s API.
+            </Text>
+          )}
+          {/* The sign-in step is real and must not be a surprise: the app's
+              session lives in secure storage and the browser does not share
+              it, so the website will ask who you are before it will take a
+              card. The link goes to the login page carrying the booking id,
+              because the payment page's own guard drops it. */}
           <Text style={styles.note}>
             Card payment happens on the website — the app does not carry a card
-            form yet. Your booking is already saved, so you can also pay later
-            from My Bookings.
+            form yet, and the site will ask you to sign in first. Your booking
+            is already saved, so you can also pay later from My Bookings.
           </Text>
 
           <TouchableOpacity
@@ -306,31 +411,68 @@ export default function PujaBookScreen() {
               yet.
             </Text>
           ) : (
-            detail.offerings.map((o) => {
-              const active = offering?.offeringId === o.offeringId;
-              const p = offeringPriceInr(detail, o);
-              return (
-                <TouchableOpacity
+            <>
+              {/* PAR-15 (4). Only the verified offerings are selectable — the
+                  server rejects the rest with a 409 before it looks at
+                  anything else on this form (booking.service.ts:466). The
+                  " · Verified" suffix that used to distinguish them read as a
+                  badge rather than as a gate. */}
+              {bookableOfferings.length === 0 ? (
+                <Text style={styles.emptyNote}>
+                  Every temple offering this puja is still awaiting
+                  verification, so it cannot be booked yet. They are listed
+                  below.
+                </Text>
+              ) : null}
+              {bookableOfferings.map((o) => {
+                const active = offering?.offeringId === o.offeringId;
+                const p = offeringPriceInr(detail, o);
+                return (
+                  <TouchableOpacity
+                    key={o.offeringId}
+                    style={[styles.option, active && styles.optionActive]}
+                    activeOpacity={0.8}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    onPress={() => setOffering(o)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.optionTitle}>{o.templeName}</Text>
+                      <Text style={styles.optionSub}>
+                        {[o.city, o.state].filter(Boolean).join(', ') || 'Location not listed'}
+                      </Text>
+                    </View>
+                    <Text style={styles.optionPrice}>
+                      {p === null ? 'Price on request' : formatInr(p)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {/* Shown, not hidden. A temple a devotee can find on the website
+                  disappearing from the app with no explanation is its own
+                  defect; the row states the reason and refuses the tap. */}
+              {unverifiedOfferings.map((o) => (
+                <View
                   key={o.offeringId}
-                  style={[styles.option, active && styles.optionActive]}
-                  activeOpacity={0.8}
+                  style={[styles.option, styles.optionDisabled]}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                  onPress={() => setOffering(o)}
+                  accessibilityState={{ selected: false, disabled: true }}
+                  accessibilityLabel={`${o.templeName} — not accepting bookings yet, awaiting verification`}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.optionTitle}>{o.templeName}</Text>
+                    <Text style={[styles.optionTitle, styles.optionTitleDisabled]}>
+                      {o.templeName}
+                    </Text>
                     <Text style={styles.optionSub}>
                       {[o.city, o.state].filter(Boolean).join(', ') || 'Location not listed'}
-                      {o.isVerified ? ' · Verified' : ''}
+                    </Text>
+                    <Text style={styles.optionUnverified}>
+                      Awaiting verification — cannot take bookings yet
                     </Text>
                   </View>
-                  <Text style={styles.optionPrice}>
-                    {p === null ? 'Price on request' : formatInr(p)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })
+                </View>
+              ))}
+            </>
           )}
 
           {/* 2 — date */}
@@ -364,7 +506,19 @@ export default function PujaBookScreen() {
             <Text style={styles.emptyNote}>Choose a temple and a day first.</Text>
           ) : slotsLoading ? (
             <Text style={styles.emptyNote}>Checking availability…</Text>
-          ) : slots.length === 0 ? (
+          ) : slotView.kind === 'unreadable' ? (
+            /* The read failed. Say that, and say nothing about the temple —
+               the old code rendered the empty-answer copy here, which told the
+               devotee the temple publishes no slots and advised them to try
+               another day, where the same failure repeats. */
+            <Text style={styles.submitError}>
+              Slot availability could not be loaded, so no times are shown. This
+              is a network or server problem, not a report that the temple is
+              closed that day.
+            </Text>
+          ) : slotView.kind === 'none' ? (
+            /* The only branch entitled to make a claim about the temple: the
+               server answered, and the answer was that nothing is published. */
             <Text style={styles.emptyNote}>
               This temple has published no slots for that day. Try another day.
             </Text>
@@ -416,6 +570,37 @@ export default function PujaBookScreen() {
               })}
             </View>
           )}
+
+          {/* The catalogue's own slots, shown because the server resolved no
+              capacity for them. They are deliberately unselectable — an unknown
+              seat count is not an available seat — so the reason has to be on
+              screen next to them or the grid just looks broken. */}
+          {offering && date && !slotsLoading && slotView.kind === 'published' ? (
+            <Text style={styles.emptyNote}>
+              These are the times this temple publishes, but live availability
+              could not be confirmed for this day, so none can be selected yet.
+            </Text>
+          ) : null}
+
+          {/* One retry, for both failure shapes. A disabled grid or an error
+              with no way to ask again is a dead end — the whole screen ends
+              there. It bumps the nonce because that is the only dependency of
+              the availability effect a tap can actually change: re-assigning
+              `date` to itself is a no-op React bails out of. */}
+          {offering && date && !slotsLoading &&
+          (slotView.kind === 'unreadable' || slotView.kind === 'published') ? (
+            <TouchableOpacity
+              style={styles.retryBtn}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Retry availability"
+              accessibilityHint="Checks slot availability for this temple and day again"
+              onPress={() => setAvailabilityNonce((n) => n + 1)}
+            >
+              <Ionicons name="refresh" size={16} color={colors.saffron[600]} />
+              <Text style={styles.retryBtnText}>Check availability again</Text>
+            </TouchableOpacity>
+          ) : null}
 
           {/* 4 — sankalp names */}
           <Text style={styles.step}>4. In whose name?</Text>
@@ -483,11 +668,36 @@ export default function PujaBookScreen() {
             multiline
           />
 
-          {/* summary + submit */}
+          {/* summary + submit.
+              Itemised, because the total is not the puja price: the server
+              adds a flat platform fee to every booking and mints the Razorpay
+              order from the sum. Printing the puja price alone under "Total"
+              is what made the pay page quote a bigger number than this screen
+              had promised. */}
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Puja</Text>
+            <Text style={styles.feeValue}>
+              {price.pujaPriceInr === null
+                ? 'Price on request'
+                : formatInr(price.pujaPriceInr)}
+            </Text>
+          </View>
+          {price.pujaPriceInr === null ? null : (
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Platform fee</Text>
+              <Text style={styles.feeValue}>{formatInr(price.platformFeeInr)}</Text>
+            </View>
+          )}
+          {price.pujaPriceInr !== null && price.prasadFeeInr > 0 ? (
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Prasad delivery</Text>
+              <Text style={styles.feeValue}>{formatInr(price.prasadFeeInr)}</Text>
+            </View>
+          ) : null}
           <View style={styles.summary}>
             <Text style={styles.summaryLabel}>Total</Text>
             <Text style={styles.summaryValue}>
-              {priceInr === null ? 'Price on request' : formatInr(priceInr)}
+              {price.totalInr === null ? 'Price on request' : formatInr(price.totalInr)}
             </Text>
           </View>
 
@@ -507,8 +717,8 @@ export default function PujaBookScreen() {
             </Text>
           </TouchableOpacity>
           <Text style={styles.note}>
-            This reserves your slot. Payment is the next step and happens on
-            darshya.online.
+            This reserves your slot. Payment is the next step and happens on{' '}
+            {hostOf(WEB.origin)}.
           </Text>
 
           <View style={{ height: spacing.xl }} />
@@ -595,6 +805,11 @@ const styles = StyleSheet.create({
   optionTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.stone[900] },
   optionSub: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
   optionPrice: { fontSize: fontSize.base, fontWeight: '800', color: colors.saffron[700] },
+  // PAR-15 (4). An unverified temple is listed but not selectable. No price is
+  // shown on these rows: a price on an unbookable row is an offer.
+  optionDisabled: { backgroundColor: colors.stone[50], borderColor: colors.stone[200] },
+  optionTitleDisabled: { color: colors.stone[500] },
+  optionUnverified: { fontSize: fontSize.xs, color: colors.stone[400], marginTop: 4 },
   chipScroll: { marginBottom: spacing.xs },
   dateChip: {
     width: 56,
@@ -639,6 +854,28 @@ const styles = StyleSheet.create({
   removeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: spacing.xs },
   addBtnText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.saffron[600] },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.saffron[600],
+  },
+  retryBtnText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.saffron[600] },
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  feeLabel: { fontSize: fontSize.sm, color: colors.stone[600] },
+  feeValue: { fontSize: fontSize.sm, color: colors.stone[700], fontWeight: '600' },
   summary: {
     flexDirection: 'row',
     justifyContent: 'space-between',

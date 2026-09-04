@@ -4,6 +4,7 @@
   "private": true,
   "description": "Poojly — India's devotional super-app platform",
   "scripts": {
+    "prepare": "node scripts/install-git-hooks.mjs",
     "dev": "turbo dev",
     "build": "turbo build --filter=!@poojly/remotion-pitch",
     "lint": "turbo lint",

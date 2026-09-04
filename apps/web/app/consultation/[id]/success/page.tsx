@@ -8,6 +8,8 @@ import { CheckCircle2, Loader2, Phone, Calendar, Clock, IndianRupee, AlertCircle
 import AuthGuard from '../../../../components/AuthGuard';
 import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 type Consultation = {
   id: string;
@@ -102,7 +104,7 @@ function SuccessContent() {
           <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
           <h2 className="text-xl font-bold text-surface-700 mb-2">Could not load booking</h2>
           <p className="text-surface-500 mb-6">{error ?? 'Booking not found.'}</p>
-          <Link href="/astrology" className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700">
+          <Link href="/astrology" className={buttonClass('primary', 'md')}>
             Browse Astrologers
           </Link>
         </div>
@@ -123,7 +125,7 @@ function SuccessContent() {
             ) : (
               <AlertCircle className="w-16 h-16 text-amber-500 mb-3" />
             )}
-            <h1 className="text-2xl font-bold text-surface-800 mb-1">
+            <h1 className={`${H1.portal} mb-1`}>
               {confirmed ? 'Consultation Booked!' : 'Payment Pending'}
             </h1>
             <p className="text-sm text-surface-500">
@@ -173,7 +175,7 @@ function SuccessContent() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="w-full px-6 py-3.5 bg-saffron-600 text-white font-bold rounded-xl hover:bg-saffron-700"
+              className={buttonClass('primary', 'md', 'w-full')}
             >
               Refresh Status
             </button>

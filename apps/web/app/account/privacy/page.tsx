@@ -19,6 +19,7 @@ import {
   rightsContactEmail,
 } from '../../../lib/company';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 /**
  * LEG-16 (prod sweep 2026-08-12) — DPDP rights were email-only.
@@ -234,7 +235,7 @@ function AccountPrivacyInner() {
             <button
               type="submit"
               disabled={submitting || !token}
-              className="inline-flex h-11 items-center justify-center rounded-lg bg-saffron-600 px-5 text-sm font-medium text-white disabled:opacity-60"
+              className={buttonClass('primary', 'md')}
             >
               {submitting ? (
                 <>

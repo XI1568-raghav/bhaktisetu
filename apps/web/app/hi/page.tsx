@@ -15,6 +15,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { localeHref } from '../../lib/i18n/locales';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_80G } from '../../lib/eighty-g';
 
 const href = (to: string) => localeHref(to, 'hi');
 
@@ -46,7 +49,7 @@ export const metadata: Metadata = {
 
 const FEATURES = [
   { title: 'लाइव दर्शन', body: 'भारत के प्रमुख मंदिरों से लाइव दर्शन — काशी, तिरुपति, सिद्धिविनायक, सोमनाथ।', href: '/darshan' },
-  { title: 'पूजा बुकिंग', body: 'सत्यापित पंडित, वीडियो प्रमाण, 80G रसीद। आपके नाम से संकल्प।', href: '/pujas' },
+  { title: 'पूजा बुकिंग', body: `सत्यापित पंडित, वीडियो प्रमाण, ${HAS_80G ? '80G रसीद' : 'रसीद'}। आपके नाम से संकल्प।`, href: '/pujas' },
   { title: 'दैनिक पंचांग', body: 'तिथि, नक्षत्र, राहु काल, चौघड़िया — आपके शहर के अनुसार।', href: '/panchang' },
   { title: 'गौ सेवा', body: 'गोदान, चारा सेवा — सत्यापित गौशालाओं को सीधा दान।', href: '/gaushala' },
   { title: 'गुरुकुल', body: 'पारंपरिक गुरुकुल प्रवेश — संस्कृत, वेद, दर्शन।', href: '/gurukuls' },
@@ -64,16 +67,16 @@ export default function HindiLanding() {
         <div className="inline-block px-3 py-1 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           🕉️ सनातन धर्म · दैनिक साथी
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-4 leading-tight">
+        <h1 className={`${H1.marketing} mb-4`}>
           भारत का आध्यात्मिक सुपर-ऐप
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
           लाइव दर्शन, पूजा बुकिंग (वीडियो प्रमाण के साथ), पंचांग, संस्कृत, गुरुकुल और गौशाला सेवा — एक ही ऐप पर।
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link
             href={href('/pujas')}
-            className="px-6 py-3 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
             prefetch={false}
           >
             पूजा बुक करें
@@ -104,12 +107,12 @@ export default function HindiLanding() {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-2">विदेश में रहते हैं?</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">
           NRI के लिए विशेष लेन — अपने नाम से भारत के मंदिर में पूजा, वीडियो प्रमाण आपके WhatsApp पर। साल भर सदस्यता ₹5000 / $60।
         </p>
         <Link
           href={href('/nri')}
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
           prefetch={false}
         >
           NRI पैकेज देखें →

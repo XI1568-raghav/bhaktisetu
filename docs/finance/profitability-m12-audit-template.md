@@ -21,7 +21,7 @@ CA verifies:
 
 - Founder stipend documented + board-approved
 - Hiring costs (CS team Q3-Q4 hires per H-001-Q3)
-- Infra costs (Render + Supabase + CF Pages — should still be in free-tier or first paid tier)
+- Infra costs (Render + Supabase + Cloudflare DNS/edge — should still be in free-tier or first paid tier). _Corrected 2026-09-02: this read "CF Pages". Cloudflare Pages stopped serving the web tier at the 2026-07-08 cutover — the web tier is the Render Docker service `darshya-web` (`render.yaml:52-60`); Cloudflare is DNS + edge proxy only._
 - Marketing costs (per F-003 lane-tracking)
 - Foundation operational costs (CA + audit + legal counsel)
 

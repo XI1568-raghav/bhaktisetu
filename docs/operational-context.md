@@ -4,6 +4,10 @@
 > Goal: post-`/clear` "continue" works without re-asking. Last updated 2026-05-21.
 >
 > Authoritative sources still:
+> - **`docs/runbooks/prod-rollback.md` — how production is deployed AND rolled back. Read it
+>   before you touch a deploy.** Corrected 2026-09-01 (`OPS-06`): several lines in this file
+>   used to say the Render services auto-build on push and that the rollback is a Cloudflare
+>   DNS repoint. Neither is true and both have been rewritten below.
 > - `docs/env-vars.md` — every env var + behavior when absent
 > - `docs/deploy-runbook-2026-04-28.md` — Render dashboard steps
 > - `docs/cf-pages-env-wiring-2026-05-13.md` — Sentry+PostHog CF Pages wiring
@@ -22,10 +26,31 @@
 | Remote | `https://github.com/XI1568-raghav/bhaktisetu.git` |
 | Branches | `main` (prod) + `rebrand/darshya` (force-synced mirror) |
 | Render watches (web + API) | `main` |
-| CF Pages auto-deploys | **KILLED 2026-07-08** (zombie disabled via `cf-kill-zombie.yml`; last deploy frozen as rollback) |
+| CF Pages auto-deploys | **KILLED 2026-07-08** (zombie disabled via `cf-kill-zombie.yml`; last deploy frozen — **not** a usable rollback, see §3) |
 | HEAD (verified 2026-05-21) | `a5e9542` |
 
-**Push policy**: agents don't push. Main thread commits + pushes. New commits → Render web (`darshya-web`) + Render API (`bhaktisetu`) auto-build. CF Pages no longer builds on push (auto-deploy disabled).
+**Push policy**: agents don't push. Main thread commits + pushes.
+
+**Pushing to `main` deploys NOTHING** (corrected 2026-09-01, `OPS-06` — this line previously
+said both Render services auto-build on push). `render.yaml` sets `autoDeploy: false` on the
+API (`:28`) and the web (`:60`), and there is no deploy-on-main workflow: `deploy-web-render.yml`
+is a Docker smoke build that never touches a Render service, and `render-cutover.yml` is a
+one-shot July migration. The only thing that changes what production runs is a
+`workflow_dispatch` on `.github/workflows/render-diag.yml`:
+
+```bash
+gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f branch=main   # deploy HEAD
+gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>  # ROLL BACK
+```
+
+`branch` is accepted but **Render ignores it** (its create-deploy API takes `commitId`, not a
+branch), so the first form redeploys whatever the service's tracked branch already points at —
+which is what you want for "ship what just merged" and is useless for a rollback. `-f commit=<SHA>`
+is the rollback lever. Full procedure, including the API-vs-web decision table and the
+suspension case that is *not* a code fault: **`docs/runbooks/prod-rollback.md`**.
+
+Consequence worth internalising: `git revert && git push` leaves the exact same bytes serving
+traffic. Reverting is still correct for the repo's history — it is simply not a deploy.
 
 ---
 
@@ -37,7 +62,11 @@
 - **Build**: `pnpm install && pnpm --filter @poojly/api build`
 - **Start**: `pnpm --filter @poojly/api start`
 - **Env vars set via**: Render Dashboard → service → Environment tab → Save → service auto-redeploys
-- **Manual deploy**: Dashboard → Manual Deploy → Deploy latest commit
+- **Deploy / roll back**: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g -f branch=main`
+  (add `-f commit=<SHA>` to roll back to a specific commit). A push to `main` deploys nothing —
+  `autoDeploy: false` at `render.yaml:28`. Procedure: `docs/runbooks/prod-rollback.md`.
+- **Manual deploy (dashboard alternative)**: Dashboard → Manual Deploy → Deploy latest commit.
+  Equivalent to the `branch=main` form above; needs dashboard access, which CI and agents do not have.
 - **Smoke endpoints**: `/health`, `/api/v1/providers/pandit`
 - **Free-tier cron disabled** — use external pingers (§9)
 
@@ -48,18 +77,26 @@
 - **Service**: `darshya-web` (`srv-d970l2ks728c738fc33g`) — docker, free, oregon
 - **URL**: `https://darshya-web.onrender.com` → custom domains `darshya.online` + `www.darshya.online` (CNAME, CF DNS proxied)
 - **Origin**: Next standalone `apps/web/Dockerfile` (`ENV HOSTNAME=0.0.0.0` — Render port scan needs 0.0.0.0, not pod hostname, else 502)
-- **Deploy**: Render auto-deploys on main push (does NOT honor `[skip ci]`); manual via `render-diag.yml` `deploy` mode or dashboard
+- **Deploy**: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main`.
+  **Not** on push — `autoDeploy: false` at `render.yaml:60`. (This line previously said Render
+  auto-deploys on main push; corrected 2026-09-01, `OPS-06`.)
 - **Env vars baked at build**: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_ENV`, `API_URL` (set in `render-cutover.yml` Step A1 + `render.yaml`)
 - **Apply env changes**: Render dashboard → darshya-web → Environment → Save (triggers rebuild); or re-fire `render-cutover.yml` (idempotent — reuses service)
 - **Cold start**: free tier sleeps after 15 min idle, ~30–50s first hit — B3 smoke + `render-diag` warm-retry handle this
 - **CI smoke**: `.github/workflows/deploy-web-render.yml` (9 checks incl. 2 `[slug]` prerendered body-marker)
 - **Operational telescope**: `.github/workflows/render-diag.yml` — modes `deploy` | `logs2` | `cftoken`
 - **Runbook**: `docs/render-web-cutover-runbook.md`
-- **Rollback**: CF DNS → repoint apex + www CNAMEs back to `darshya.pages.dev` (last frozen deploy preserved)
+- **Rollback**: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f commit=<SHA>`
+  — see `docs/runbooks/prod-rollback.md`. **Do NOT repoint DNS to `darshya.pages.dev`.** That was
+  this line's instruction until 2026-09-01 (`OPS-06`) and it was only ever valid during the July
+  cutover window: the Cloudflare Pages build behind it has been frozen since 2026-07-08, so it is
+  months of missing pages against the current API contract, and the project may already have been
+  deleted in post-cutover cleanup. `docs/render-web-cutover-runbook.md:30` retracted the same
+  instruction on 2026-08-20; this file was the copy that survived.
 
 ### 3b. Cloudflare — DNS + edge proxy only (NOT a build host)
 - **Role post-cutover**: DNS for `darshya.online` zone + orange-cloud edge proxy on apex/www (`server: cloudflare` + `x-render-origin-server: Render` in prod headers). CF provisions the edge cert.
-- **CF Pages project `darshya`**: auto-deploy DISABLED 2026-07-08 (`cf-kill-zombie.yml`). Last deploy frozen, kept as rollback. **No build pipeline, no 500/mo quota, no `next-on-pages`, no edge-runtime constraints.**
+- **CF Pages project `darshya`**: auto-deploy DISABLED 2026-07-08 (`cf-kill-zombie.yml`). Last deploy frozen. **It is not a rollback target** — see §3. **No build pipeline, no 500/mo quota, no `next-on-pages`, no edge-runtime constraints.**
 - **CF API token in GH secret `CLOUDFLARE_API_TOKEN`**: must have **Account·Pages·Edit** + **Zone·Zone·Read** + **Zone·DNS·Edit** on `darshya.online`. Verify via `render-diag.yml` `cftoken` mode (prints token ID + DNS GET 200 vs 403). Current token ID: `a890cf5fe88921d35a270fe46e05be09`. Old token `f5fbb661c60a9767c8f45d9c2cef07fb` unused → revoke in dashboard.
 - **WebFetch returns 403 on `darshya.online`** (CF edge blocks bot UAs) — use `curl` from CI/`render-diag`, not WebFetch.
 

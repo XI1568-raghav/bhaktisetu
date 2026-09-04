@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAdminUsers } from '@poojly/api-client';
 import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { approvalStatusLabel, userRoleLabel } from '../../lib/enum-labels';
 
 const ROLE_FILTERS = [
   { key: 'all', label: 'All' },
@@ -74,12 +75,12 @@ export default function AdminUsers() {
           >
             <ListRow
               primary={u.fullName}
-              secondary={`${u.role} • ${u.email ?? u.phone}`}
+              secondary={`${userRoleLabel(u.role)} • ${u.email ?? u.phone}`}
               trailingHint={new Date(u.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
               status={
                 u.status
                   ? {
-                      label: u.status,
+                      label: approvalStatusLabel(u.status),
                       color: u.status.toLowerCase() === 'active' ? colors.green[600] : colors.amber[600],
                     }
                   : undefined

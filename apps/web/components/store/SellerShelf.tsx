@@ -26,7 +26,13 @@ function toCartProduct(p: LiveProduct): CartProduct {
     handle: p.handle,
     title: p.title,
     price: p.price,
-    compareAtPrice: p.compareAtPrice ?? p.price,
+    // LEG-17: this was `p.compareAtPrice ?? p.price`. lib/store-live already
+    // nulls a reference price that is not strictly above the price, so the
+    // fallback fired precisely when a real seller had NOT set one — and
+    // manufactured one equal to the price on the way into the cart, where the
+    // drawer then struck the item's own price through. A missing prior price
+    // stays missing.
+    compareAtPrice: p.compareAtPrice ?? null,
     image: p.imageUrl ?? '',
     category: p.category,
     inStock: p.stock > 0,

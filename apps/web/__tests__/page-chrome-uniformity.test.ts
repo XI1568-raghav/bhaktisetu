@@ -34,6 +34,17 @@ const WEB = path.resolve(__dirname, '..');
 const read = (rel: string) => readFileSync(path.join(WEB, rel), 'utf8');
 const css = read('app/globals.css');
 
+/**
+ * Comment-stripped source. This file quotes class strings in its own prose, and
+ * so do the pages it scans; matching raw source lets a comment satisfy or trip
+ * an assertion.
+ */
+const readCode = (rel: string) =>
+  read(rel)
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
 /* ── every source file under app/ and components/ ────────────────────────── */
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -108,19 +119,83 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
   const ADOPTERS: Array<[string, string]> = [
     ['components/HomeHeroCta.tsx', 'the single hero conversion control'],
     ['components/NavAuthButton.tsx', 'header Sign In, present on all ten screens'],
-    ['app/page.tsx', 'homepage section CTAs'],
+    // 2026-08-23 revamp: app/page.tsx is deliberately NOT on this list any
+    // more. It used to carry six hand-placed section CTAs (AI Pandit, store,
+    // final CTA, …); all six sections were deleted and the only conversion
+    // control the page still owns is <HomeHeroCta />, which is on this list in
+    // its own right. Asserting `buttonClass(` appears in page.tsx would now be
+    // asserting that a CTA exists there, which is the opposite of the intent.
+    // The bespoke-CTA sweep below still runs against it — see HOME_NO_CTA.
     ['app/pujas/page.tsx', 'catalogue Apply / Load more / empty-state CTA'],
     ['app/pricing/page.tsx', 'Get Started Free / Start Free / Subscribe'],
     ['app/auth/login/page.tsx', 'the three submit buttons'],
+    ['components/home/ThisWeek.tsx', 'the dated booking CTA and its browse fallback'],
     ['components/home/NextFestivalStrip.tsx', 'the seasonal booking CTA'],
     ['components/home/ShopStrip.tsx', 'Visit store'],
   ];
 
+  /**
+   * A className painted with the SOLID brand fill and carrying its own padding
+   * on an interactive element — the sweep's own definition of a bespoke CTA,
+   * minus the conditional fills that are segmented-filter state rather than a
+   * resting style.
+   */
+  function bespokeCtaClasses(file: string): string[] {
+    const src = readCode(file);
+    const out: string[] = [];
+    for (const m of src.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+      const cls = m[1] ?? m[2] ?? '';
+      if (!/\bbg-saffron-600(?![\w\-/])/.test(cls)) continue;
+      if (!/\bpx-\d/.test(cls)) continue;
+      if (/\b(active|selected|current)\w*\s*===?/i.test(cls)) continue;
+      const at = cls.search(/\bbg-saffron-600(?![\w\-/])/);
+      let conditional = false;
+      for (const i of cls.matchAll(/\$\{[\s\S]*?\}/g)) {
+        if (at > i.index! && at < i.index! + i[0].length) conditional = true;
+      }
+      if (conditional) continue;
+      const before = src.slice(Math.max(0, m.index! - 220), m.index!);
+      if (![...before.matchAll(/<(button|a|Link)\b/g)].pop()) continue;
+      out.push(cls.replace(/\s+/g, ' ').slice(0, 90));
+    }
+    return out;
+  }
+
   for (const [file, why] of ADOPTERS) {
     it(`${file} calls buttonClass (${why})`, () => {
-      expect(read(file)).toMatch(/buttonClass\(/);
+      expect(readCode(file)).toMatch(/buttonClass\(/);
+    });
+
+    /*
+     * The assertion above is a whole-file substring match, which one recipe
+     * call satisfies no matter how many hand-rolled CTAs sit beside it —
+     * app/pujas/page.tsx passed it while carrying 8. "Adopted" has to mean
+     * nothing bespoke is left, or the guard reports adoption that is not there.
+     */
+    it(`${file} has no bespoke CTA left beside the recipe`, () => {
+      const left = bespokeCtaClasses(file);
+      expect(
+        left,
+        `${file} is asserted "adopted" but still hand-rolls ${left.length} primary CTA(s):\n` +
+          left.join('\n'),
+      ).toEqual([]);
     });
   }
+
+  /*
+   * app/page.tsx keeps the bespoke-CTA half of the guard without the
+   * "must call buttonClass" half. The homepage composes components; if a
+   * hand-rolled saffron button is ever authored back into the page itself,
+   * this fails even though the page legitimately calls no recipe.
+   */
+  it('app/page.tsx hand-rolls no CTA of its own (HOME_NO_CTA)', () => {
+    const left = bespokeCtaClasses('app/page.tsx');
+    expect(
+      left,
+      'app/page.tsx hand-rolls a primary CTA. The homepage owns exactly one ' +
+        'conversion control, <HomeHeroCta />, and it uses the recipe:\n' + left.join('\n'),
+    ).toEqual([]);
+  });
 
   it('the recipe is importable from a module a Server Component can call', () => {
     const recipe = read('components/ui/button-recipe.ts');
@@ -154,22 +229,47 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
 /* ══ DU-05 / DU-06 ═══════════════════════════════════════════════════════ */
 
 describe('DU-05 / DU-06 — one h1 recipe per archetype, on the display face', () => {
-  const recipe = read('components/ui/heading-recipe.ts');
+  /*
+   * COMMENT-FREE, as everything else in this file that scans source text is.
+   * This block used the raw `read`, and heading-recipe.ts documents each
+   * archetype in prose that names the other archetypes — so a key scan and a
+   * `heading-display` lookup were both satisfiable by documentation. Nothing
+   * was wrong at HEAD, but the fifth archetype added below arrives with a long
+   * note, and this is the file's own stated rule.
+   */
+  const recipe = readCode('components/ui/heading-recipe.ts');
 
-  it('defines exactly the four archetypes the finding asked for', () => {
+  it('defines exactly the five archetypes the app ships', () => {
+    /*
+     * Four were what DU-05 asked for. `portalInverse` is the fifth, added
+     * 2026-08-28: portal chrome on a DARK surface, which the finding's four
+     * names did not cover and which five h1s needed (app/darshan/[id] x2,
+     * app/demo/[role] x2, app/mobile/darshan — small light copy on a dark bar,
+     * where `detail` is a 30/36px display-face hero and `portal` is dark ink).
+     */
     const keys = [...recipe.matchAll(/^\s{2}(\w+):/gm)].map((m) => m[1]);
-    expect(keys.sort()).toEqual(['catalogue', 'detail', 'marketing', 'portal']);
+    expect(keys.sort()).toEqual([
+      'catalogue',
+      'detail',
+      'marketing',
+      'portal',
+      'portalInverse',
+    ]);
   });
 
-  it('marketing, catalogue and detail carry the display face; portal does not', () => {
+  it('marketing, catalogue and detail carry the display face; the portal pair does not', () => {
     const entry = (k: string) =>
-      new RegExp(`${k}:\\s*\\n?\\s*'([^']+)'`).exec(recipe)?.[1] ?? '';
+      new RegExp(`\\b${k}:\\s*\\n?\\s*'([^']+)'`).exec(recipe)?.[1] ?? '';
     for (const k of ['marketing', 'catalogue', 'detail']) {
       expect(entry(k), k).toContain('heading-display');
     }
-    expect(entry('portal'), 'a provider lives in the dashboard all day').not.toContain(
-      'heading-display',
-    );
+    for (const k of ['portal', 'portalInverse']) {
+      expect(entry(k), 'a provider lives in the dashboard all day').not.toContain(
+        'heading-display',
+      );
+    }
+    expect(entry('portal'), 'the portal entry stopped parsing').toMatch(/text-\w+/);
+    expect(entry('portalInverse'), 'the portalInverse entry stopped parsing').toMatch(/text-\w+/);
   });
 
   it('.heading-display resolves to the display token, not a literal family', () => {
@@ -307,14 +407,29 @@ describe('DU-09 — the two undeclared Tailwind oranges are gone', () => {
     expect(offenders.map(rel)).toEqual([]);
   });
 
-  it('what replaced them is on the declared saffron ramp', () => {
+  it('every hex the homepage still paints is declared in globals.css', () => {
+    /*
+     * This used to anchor on the category colour strip's `label: 'Worship'`
+     * row and check only that row's hexes. The strip was deleted in the
+     * 2026-08-23 revamp — the header already carries the same five mega-menus —
+     * which left the assertion with nothing to find and no way to fail.
+     *
+     * Replaced with the general form the narrow check was standing in for,
+     * which is strictly stronger: no literal hex may appear on the homepage
+     * unless globals.css declares it. That survives any section being added or
+     * removed, which is exactly what went wrong here.
+     */
     const home = read('app/page.tsx');
-    const worship = /label: 'Worship'[^\n]*/.exec(home)?.[0] ?? '';
-    expect(worship).toBeTruthy();
-    for (const hex of worship.match(/#[0-9a-fA-F]{6}/g) ?? []) {
-      const declared = new RegExp(`:\\s*${hex}\\s*;`, 'i').test(css);
-      expect(declared, `${hex} is not declared in globals.css`).toBe(true);
-    }
+    const undeclared = [...new Set(home.match(/#[0-9a-fA-F]{6}/g) ?? [])].filter(
+      (hex) => !new RegExp(`:\\s*${hex}\\s*;`, 'i').test(css),
+    );
+    expect(
+      undeclared,
+      'app/page.tsx paints a colour globals.css does not declare. Add it to the ' +
+        '@theme block or use an existing token — 16 undeclared warm hexes across ' +
+        '10 screens is how the "stitched together by different people" signal ' +
+        'got onto the conversion path in the first place.',
+    ).toEqual([]);
   });
 
   it('the app manifest theme colour is the brand primary, not stock orange', () => {
@@ -357,7 +472,20 @@ describe('DU-10 / RESP-05 — nothing under the 12px legibility floor', () => {
 describe('RESP-09 / RESP-11 — the targets the CSS floor cannot reach', () => {
   it('the homepage section CTAs opt into tap-safe', () => {
     const home = read('app/page.tsx');
-    expect((home.match(/className="tap-safe /g) ?? []).length).toBeGreaterThanOrEqual(5);
+    /*
+     * Floor lowered 5 -> 3 by the 2026-08-23 revamp. The bare inline anchors
+     * that needed the opt-in went out with the sections that held them — the
+     * library teaser's "Browse all", the yatra teaser's "See circuits", the
+     * store showcase's "Shop essentials". The three that remain are the
+     * "see all" links on Live Darshan, Puja and Astrology.
+     *
+     * Deliberately still a floor and not an exact count: the failure this
+     * guards is a bare <a> shipped WITHOUT the opt-in, because the global
+     * 44px floor in globals.css reaches button/[role=button]/nav li>a and
+     * footer li>a — not a naked inline anchor. Adding a legitimate link
+     * should not be a red test.
+     */
+    expect((home.match(/className="tap-safe /g) ?? []).length).toBeGreaterThanOrEqual(3);
   });
 
   it('the footer language switcher does too (six 18px links on one row)', () => {
@@ -437,7 +565,44 @@ describe('DU-12 - the elevation ramp is one temperature', () => {
 
   const decl = (u: string) => new RegExp(`--${u}:\s*([^;]+);`).exec(css)?.[1];
 
-  for (const util of ['shadow-xl', 'shadow-2xl']) {
+  // Tailwind v4 generates shadow utilities ONLY from @theme. A --shadow-*
+  // declaration that sits in :root compiles to nothing and the utility silently
+  // falls back to Tailwind's stock cool black. `decl()` above regex-scans the
+  // SOURCE TEXT and cannot tell an effective @theme declaration from a dead
+  // :root one, so every value assertion below is meaningless without this
+  // position check. Index of the brace that closes the single @theme block.
+  const themeStart = css.indexOf('@theme');
+  const themeEnd = (() => {
+    let depth = 0;
+    for (let i = themeStart; i < css.length; i++) {
+      if (css[i] === '{') depth++;
+      else if (css[i] === '}') {
+        depth--;
+        if (depth === 0) return i;
+      }
+    }
+    return -1;
+  })();
+
+  it('the @theme block is found (the position check below is measuring something)', () => {
+    expect(themeStart).toBeGreaterThanOrEqual(0);
+    expect(themeEnd).toBeGreaterThan(themeStart);
+  });
+
+  for (const util of ['shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-float', 'shadow-xl', 'shadow-2xl']) {
+    it(`--${util} is declared INSIDE @theme, so the utility is actually generated`, () => {
+      const at = css.indexOf(`--${util}:`);
+      expect(at, `--${util} is not declared anywhere`).toBeGreaterThanOrEqual(0);
+      expect(
+        at > themeStart && at < themeEnd,
+        `--${util} is declared outside @theme (index ${at}, @theme ends ${themeEnd}) — ` +
+          'Tailwind v4 emits shadow utilities only from @theme, so this token is dead ' +
+          "and .{util} inlines Tailwind's stock cool #0000001a",
+      ).toBe(true);
+    });
+  }
+
+  for (const util of ['shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-float', 'shadow-xl', 'shadow-2xl']) {
     it(`--${util} is declared, so it stops resolving to the cool stock value`, () => {
       const v = decl(util);
       expect(v, `--${util} missing from @theme`).toBeTruthy();
@@ -448,11 +613,13 @@ describe('DU-12 - the elevation ramp is one temperature', () => {
     });
   }
 
-  it('the ramp still grows outward from lg to 2xl', () => {
-    // Take the largest blur radius in the value: shadow-lg is a single layer,
+  it('the ramp still grows outward, sm -> md -> lg -> xl -> 2xl', () => {
+    // Take the largest blur radius in the value: sm/md/lg are single layers,
     // shadow-xl/2xl are two (a tight contact shadow plus a wide ambient one).
     const maxBlur = (u: string) =>
       Math.max(...[...decl(u)!.matchAll(/(\d+)px\s+oklch/g)].map((m) => Number(m[1])));
+    expect(maxBlur('shadow-md')).toBeGreaterThan(maxBlur('shadow-sm'));
+    expect(maxBlur('shadow-lg')).toBeGreaterThan(maxBlur('shadow-md'));
     expect(maxBlur('shadow-xl')).toBeGreaterThan(maxBlur('shadow-lg'));
     expect(maxBlur('shadow-2xl')).toBeGreaterThan(maxBlur('shadow-xl'));
   });

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { VEDAS, TOTAL_MANTRAS } from '../../lib/vedas';
 import { formatNumber } from '../../lib/format-locale';
@@ -52,7 +54,7 @@ export default function VedasIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-indigo-600">4 Vedas · ~{(TOTAL_MANTRAS / 1000).toFixed(0)}k mantras · Shruti, the heard, revealed scripture</p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">चत्वारो वेदाः</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>चत्वारो वेदाः</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The 4 Vedas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
           The Vedas are the oldest sacred literature continuously preserved by any human

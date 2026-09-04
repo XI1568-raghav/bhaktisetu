@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -138,16 +140,16 @@ export default function MarathiPuneLanding() {
         <div className="inline-block px-3 py-1 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           🕉️ पुणे · महाराष्ट्र · सनातन धर्म
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-4 leading-tight">
+        <h1 className={`${H1.marketing} mb-4`}>
           दर्श्या पुणे
         </h1>
-        <p className="text-surface-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+        <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
           दगडूशेठ हलवाई गणपतीपासून चिंचवड मोरया गोसावींपर्यंत — पुणे महानगरातील ६ मानाच्या मंदिरांत पडताळलेल्या पंडितांकडून पूजा, व्हिडिओ पुरावा, थेट दर्शन, ८०G पावती.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link
             href="/pujas?city=pune"
-            className="px-6 py-3 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             पुण्यात पूजा बुक करा
           </Link>
@@ -240,12 +242,12 @@ export default function MarathiPuneLanding() {
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-2">परदेशातील मराठी मंडळींसाठी (NRI Marathi)</h2>
-        <p className="text-surface-700 text-sm mb-4 max-w-xl mx-auto">
+        <p className="text-surface-700 prose-body mb-4 max-w-xl mx-auto">
           अमेरिका, ब्रिटन, ऑस्ट्रेलिया, सिंगापूर — आई-वडिलांच्या / कुटुंबाच्या नावाने पुण्यातील मंदिरात पूजा. व्हिडिओ पुरावा तुमच्या WhatsApp वर. वार्षिक सदस्यता ₹5000 / $60.
         </p>
         <Link
           href="/nri"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           NRI पॅकेज पाहा →
         </Link>

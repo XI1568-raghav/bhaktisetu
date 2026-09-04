@@ -2,9 +2,19 @@
 
 A 15-minute walkthrough that shows the strongest features and avoids known rough edges. Read this end-to-end once before the demo.
 
+> **Correction 2026-09-02 (`OPS-10`).** This script was written before the 2026-07-08
+> Render cutover and still sent you to a Cloudflare Pages URL. **Do not demo from
+> `darshya.pages.dev`.** Cloudflare Pages stopped serving this product on 2026-07-08
+> (`cf-kill-zombie.yml`); the Pages project was left in place only as a frozen
+> rollback artefact, so anything still answering on `*.pages.dev` is a stale build,
+> not the product. The live site is **`https://darshya.online`**, served by the Render
+> Docker service `darshya-web` (`srv-d970l2ks728c738fc33g`, `region: oregon`,
+> `render.yaml:52-60`). Cloudflare is DNS + edge proxy only. URLs and the Q&A answer
+> below are corrected accordingly.
+
 ## URLs
 
-- **Web (live)**: https://darshya.pages.dev (will be https://darshya.online once apex domain is added in Pages)
+- **Web (live)**: https://darshya.online — *corrected 2026-09-02 (`OPS-10`); this used to read "https://darshya.pages.dev (will be https://darshya.online once apex domain is added in Pages)". The apex is live and Pages is not the host.*
 - **API**: https://api.darshya.online (used by the web; you don't show this)
 
 ## Demo accounts (all password: `demo123`)
@@ -30,7 +40,7 @@ A 15-minute walkthrough that shows the strongest features and avoids known rough
 
 ### 1. (2 min) Devotee experience — the homepage flow
 
-Open https://darshya.pages.dev in a fresh browser tab.
+Open https://darshya.online in a fresh browser tab.
 
 1. Show the homepage — saffron Darshya branding, shikhara logo
 2. Click **Temples** in the nav → live data: 5 famous temples (Tirumala, Jagannath, Kashi Vishwanath, Somnath, Siddhivinayak)
@@ -110,7 +120,7 @@ Don't hide these — surface them as "next sprint" items:
 - **Don't click "Watch live darshan"** on a stream — shows "Live streaming requires AWS IVS — view on web for now".
 - **Don't try the SMS OTP signup tab** — goes through the motions but no real SMS lands.
 - **First API call after 15 min idle** takes ~30s while Render free-tier wakes up. Refresh the homepage 30 seconds before the demo to warm it up.
-- **Cloudflare Pages deploy takes ~3 min** if you push code right before the demo. Don't.
+- **A push deploys nothing at all** — both Render services are `autoDeploy: false` (`render.yaml:28` API, `:60` web), so pushing before a demo neither helps nor breaks anything; a deploy has to be dispatched by hand (`docs/runbooks/prod-rollback.md`). Still don't deploy right before a demo. *(Corrected 2026-09-02, `OPS-10`: this line used to say "Cloudflare Pages deploy takes ~3 min if you push code right before the demo.")*
 
 ---
 
@@ -125,8 +135,8 @@ curl https://api.darshya.online/health
 ```
 
 Open these tabs in advance:
-1. https://darshya.pages.dev (homepage)
-2. https://darshya.pages.dev/auth/login (login page, ready to type)
+1. https://darshya.online (homepage)
+2. https://darshya.online/auth/login (login page, ready to type)
 3. Notepad / sticky note with all 8 demo emails
 
 Have your phone unlocked with Expo Go installed if mobile comes up.
@@ -136,7 +146,7 @@ Have your phone unlocked with Expo Go installed if mobile comes up.
 ## Q&A cheat sheet
 
 **Q: How does this scale?**
-A: Postgres on Supabase, Fastify on Render (autoscales on Pro), Cloudflare Pages CDN globally. Hits 100k MAU on the free tier; scaling to 1M is ~$200/mo.
+A: Postgres on Supabase, Fastify on Render, Next.js on Render (Docker, Next standalone), with Cloudflare in front for DNS + edge proxy. *(Corrected 2026-09-02, `OPS-10`: this answer used to say "Cloudflare Pages CDN globally", "autoscales on Pro", and "scaling to 1M is ~$200/mo". Pages has not hosted the web tier since 2026-07-08; both services are on the Render **free** plan, so nothing autoscales today; and the free tier's 750 instance-hours are **per account**, not per service — two always-on free services need ~1,488h, which is what suspended the account on 2026-08-17. The scaling headroom and the cost-to-1M-MAU figure are `[verify]`: neither is established anywhere in this repository. Do not quote them to a client.)*
 
 **Q: Data source for temples?**
 A: Curated by us today (5 seeded). Each new temple takes ~1 hour of editorial work. We have a partnership pipeline for the top 100 temples by footfall.

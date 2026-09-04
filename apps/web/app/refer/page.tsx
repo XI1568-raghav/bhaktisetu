@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { API_BASE_URL } from '../../lib/api-config';
 import { useAuth } from '../../lib/auth-context';
 import EmailCapture from '../../components/EmailCapture';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 
 interface ReferralMeResponse {
@@ -76,13 +79,13 @@ export default function ReferPage() {
   if (!isAuthenticated) {
     return (
       <main className="max-w-3xl mx-auto px-6 py-16">
-        <h1 className="text-3xl font-bold text-surface-900 mb-4">Refer & Earn</h1>
+        <h1 className={`${H1.catalogue} mb-4`}>Refer & Earn</h1>
         <p className="text-surface-700 mb-6">
           Sign in to get your personal referral link. Earn ₹100 credit when a friend completes their first puja booking — and they get ₹100 off too.
         </p>
         <Link
           href="/auth/login?next=/refer"
-          className="inline-block px-5 py-3 bg-saffron-600 text-white rounded-md font-medium hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Sign in to continue
         </Link>
@@ -101,7 +104,7 @@ export default function ReferPage() {
   if (error) {
     return (
       <main className="max-w-3xl mx-auto px-6 py-16">
-        <h1 className="text-3xl font-bold text-surface-900 mb-4">Refer & Earn</h1>
+        <h1 className={`${H1.catalogue} mb-4`}>Refer & Earn</h1>
         <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-4">
           {error}
         </p>
@@ -129,7 +132,7 @@ export default function ReferPage() {
         <span className="text-surface-900">Refer & Earn</span>
       </nav>
 
-      <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-3">
+      <h1 className={`${H1.catalogue} mb-3`}>
         Refer & Earn {reward}
       </h1>
       <p className="text-surface-700 mb-8">

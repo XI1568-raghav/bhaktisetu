@@ -3,7 +3,7 @@ import { bookingConfirmationEmail } from './email.js';
 
 // ── RV-18 regression lock ────────────────────────────────────────────────────
 // bookingConfirmationEmail was dead code: the only email a paying devotee ever
-// received was the tax invoice, whose puja_booking PDF variant renders createdAt
+// received was the payment receipt, whose puja_booking PDF variant renders createdAt
 // as the INVOICE date and carries no scheduled-date/slot field at all. So the
 // devotee was never told in writing WHEN their puja would be performed.
 //
@@ -23,7 +23,7 @@ const BASE = {
 };
 
 describe('bookingConfirmationEmail — RV-18', () => {
-  it('carries the schedule the tax invoice never had', () => {
+  it('carries the schedule the payment receipt never had', () => {
     const { html, text, subject } = bookingConfirmationEmail(BASE);
     for (const body of [html, text]) {
       expect(body).toContain('Saturday, 15 August 2026');

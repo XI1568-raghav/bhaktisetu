@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
@@ -17,8 +16,12 @@ import { selectLiveStreams, selectPujaTypes, selectPanchang } from '../../lib/ap
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.72;
+import { useExitConfirm } from '../../lib/use-exit-confirm';
+import {
+  gridWidthPercent,
+  useCarouselCardWidth,
+  useResponsiveGrid,
+} from '../../lib/use-responsive';
 
 // PAR-07: FALLBACK_DARSHAN and FALLBACK_PUJAS lived here. Both accessors
 // (`darshan.data?.data`, `pujas.data?.data`) read a key the API does not send,
@@ -29,7 +32,27 @@ const CARD_WIDTH = SCREEN_WIDTH * 0.72;
 // a fallback that is indistinguishable from real inventory is worse than an
 // empty shelf.
 
+// NAV-01: read at module scope, exactly as app/(devotee)/knowledge.tsx reads
+// it, so the home entry and the hub can never disagree about whether the
+// Knowledge Hub is in this build. `process.env.EXPO_PUBLIC_*` is inlined by
+// the Expo bundler at build time — this is a constant, not a runtime lookup,
+// so it must be compared the same way in both files.
+const KNOWLEDGE_ENABLED = process.env.EXPO_PUBLIC_KNOWLEDGE_ENABLED === 'true';
+
 export default function HomeScreen() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
+  // Live geometry. Both of these re-render on rotation, iPad Split View /
+  // Slide Over and Android foldable unfold; the module-scope
+  // `Dimensions.get('window')` they replace was read once at import and never
+  // updated again.
+  const darshanCardWidth = useCarouselCardWidth();
+  const { columns } = useResponsiveGrid();
+  const pujaCardWidth = gridWidthPercent(columns);
+
   const { user } = useAuth();
   const darshan = useDarshan();
   const pujas = usePujas({ pageSize: 4 });
@@ -82,32 +105,53 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.dateText}>{todayDate}</Text>
           </View>
+          {/* NAV-01. This was a NOTIFICATIONS BELL wired to the profile
+              screen. There is no notifications screen in app/(devotee) — the
+              inbox is `messages`, and the bell never went there either — so
+              the glyph promised an unread-alerts surface that does not exist
+              and delivered account settings instead. The destination is real
+              and useful, so the honest fix is to correct the icon and label
+              rather than delete the control. It also had no accessible name
+              at all, and a 40pt box below the 44pt minimum. */}
           <TouchableOpacity
             style={styles.bellButton}
+            accessibilityRole="button"
+            accessibilityLabel="Profile"
+            accessibilityHint="Opens your profile"
             onPress={() => router.push('/(devotee)/profile' as any)}
           >
-            <Ionicons name="notifications-outline" size={22} color={colors.stone[700]} />
+            <Ionicons name="person-circle-outline" size={24} color={colors.stone[700]} />
           </TouchableOpacity>
         </View>
 
-        {/* PAR-22. This was a search affordance that does not search: a
-            magnifying glass over a placeholder naming three things it would
-            search across, whose onPress is a plain tab push. There is no
-            in-app search endpoint to wire it to (apps/web/app/search is
-            web-only), so the control describes what it actually does —
-            the same treatment PAR-15 gave the Book button. Building real
-            search is separate work; shipping a disguised tab link is a
-            credibility tax paid on every session. */}
+        {/* PAR-22. This control has now been wrong twice, in opposite
+            directions.
+
+            First it was a search affordance that did not search: a magnifying
+            glass over "Search pujas, temples, content…" whose onPress was a
+            plain tab push. The remediation relabelled it "Browse all pujas"
+            and justified that by asserting the app had nothing to query —
+            that only apps/web/app/search existed. The assertion was false;
+            two public, unauthenticated routes were already live:
+
+              GET /api/v1/temples/search   apps/api/src/routes/temples.ts:127
+              GET /api/v1/content/search   apps/api/src/routes/content.ts:47
+
+            So the honest control is the search box, and it now opens a screen
+            that actually queries both. The placeholder names only what is
+            really searched: temples and devotional content. Pujas have no
+            /search route, so they stay named as the tab they are, and
+            docs/mobile-v1-scope.md records that exclusion. */}
         <TouchableOpacity
           style={styles.searchBar}
           activeOpacity={0.7}
-          accessibilityRole="link"
-          accessibilityLabel="Browse all pujas"
-          accessibilityHint="Opens the Pujas tab"
-          onPress={() => router.push('/(devotee)/pujas' as any)}
+          accessibilityRole="search"
+          accessibilityLabel="Search temples and devotional content"
+          accessibilityHint="Opens search"
+          onPress={() => router.push('/(devotee)/search' as any)}
         >
-          <Ionicons name="flame-outline" size={18} color={colors.stone[500]} />
-          <Text style={styles.searchPlaceholder}>Browse all pujas</Text>
+          <Ionicons name="search-outline" size={18} color={colors.stone[500]} />
+          <Text style={styles.searchPlaceholder}>Search temples and aartis</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.stone[400]} />
         </TouchableOpacity>
 
@@ -134,11 +178,34 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-                <View style={styles.quickActionsRow}>
+        {/* NAV-01. `Find a pandit` is new here, and it is the entry that was
+            missing: (devotee)/pandits.tsx — the directory of the priests who
+            perform every ritual in the catalogue — had ZERO inbound
+            navigation anywhere in app/ or lib/. It is the supply half of a
+            two-sided marketplace and it was reachable only by deep link.
+
+            `quickActionsRow` already sets flexWrap, and each action is
+            minWidth 64 over a 44pt icon, so a sixth (and, when the flag is
+            on, a seventh) entry wraps to a second line instead of crushing
+            the row on a small phone.
+
+            Every destination below is verified to exist on disk and to be
+            declared in (devotee)/_layout.tsx. Nothing is linked speculatively:
+            a push to a missing route lands on the not-found screen. */}
+        <View style={styles.quickActionsRow}>
+          <QuickAction icon="people" label="Pandits" hint="Opens the directory of pandits" onPress={() => router.push('/(devotee)/pandits' as any)} />
           <QuickAction icon="planet" label="Kundli" onPress={() => router.push('/(devotee)/kundli' as any)} />
           <QuickAction icon="star" label="Horoscope" onPress={() => router.push('/(devotee)/horoscope' as any)} />
           <QuickAction icon="map" label="Yatra" onPress={() => router.push('/(devotee)/yatra' as any)} />
           <QuickAction icon="heart" label="Weddings" onPress={() => router.push('/(devotee)/weddings' as any)} />
+          {/* Gated on the SAME build-time flag the hub itself reads. With the
+              flag off, knowledge.tsx renders "launching soon" — so an entry
+              would be a control that leads to an apology, which this surface
+              does not ship. eas.json turns it on for preview, production and
+              testflight; .env.example leaves it off for local dev. */}
+          {KNOWLEDGE_ENABLED ? (
+            <QuickAction icon="book" label="Knowledge" hint="Sanskrit, Vedas and Sanatan Dharma" onPress={() => router.push('/(devotee)/knowledge' as any)} />
+          ) : null}
           <QuickAction icon="diamond" label="Premium" onPress={() => router.push('/(devotee)/upgrade' as any)} />
         </View>
 
@@ -208,7 +275,7 @@ export default function HomeScreen() {
               {darshanList.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={styles.darshanCard}
+                  style={[styles.darshanCard, { width: darshanCardWidth }]}
                   activeOpacity={0.85}
                   onPress={() =>
                     router.push({
@@ -266,23 +333,45 @@ export default function HomeScreen() {
                 : 'No pujas are listed right now.'}
             </Text>
           ) : (
+            /* NAV-01. Every one of these four cards used to `router.push`
+               the pujas TAB — the same destination, regardless of which puja
+               was tapped. The devotee tapped "Satyanarayan Katha ₹1,501" and
+               landed on an unfiltered catalogue with the tap discarded, which
+               is a control that leads nowhere in the only sense that matters:
+               it does not lead where it says it does.
+
+               The row already carries `slug` (selectPujaTypes reads it off
+               the API), and (devotee)/puja-detail.tsx takes exactly
+               `{ slug, name }` — so the card now opens the puja it shows.
+               "See All" above still goes to the tab, which is what that
+               control is for. */
             <View style={styles.pujaGrid}>
               {pujaList.map((puja) => (
                 <TouchableOpacity
                   key={puja.id}
-                  style={styles.pujaCard}
+                  style={[styles.pujaCard, { width: pujaCardWidth }]}
                   activeOpacity={0.85}
-                  onPress={() => router.push('/(devotee)/pujas' as any)}
+                  accessibilityRole="button"
+                  accessibilityLabel={puja.name}
+                  accessibilityHint={`Opens details for ${puja.name}`}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(devotee)/puja-detail' as never,
+                      params: { slug: puja.slug, name: puja.name },
+                    } as never)
+                  }
                 >
                   <View style={styles.pujaIcon}>
                     <Ionicons name="flame" size={26} color={colors.saffron[600]} />
                   </View>
                   <Text style={styles.pujaName} numberOfLines={1}>{puja.name}</Text>
-                  <Text style={styles.pujaDeity} numberOfLines={1}>{puja.deity ?? ''}</Text>
+                  {puja.deity ? (
+                    <Text style={styles.pujaDeity} numberOfLines={1}>{puja.deity}</Text>
+                  ) : null}
                   <View style={styles.pujaFooter}>
                     <Text style={styles.pujaPrice}>
                       {puja.priceInr === null
-                        ? '—'
+                        ? 'Price on request'
                         : `₹${puja.priceInr.toLocaleString('en-IN')}`}
                     </Text>
                   </View>
@@ -298,9 +387,16 @@ export default function HomeScreen() {
   );
 }
 
-function QuickAction({ icon, label, onPress }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; }) {
+function QuickAction({ icon, label, hint, onPress }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; hint?: string; onPress: () => void; }) {
   return (
-    <TouchableOpacity style={styles.quickAction} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={styles.quickAction}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      {...(hint ? { accessibilityHint: hint } : {})}
+    >
       <View style={styles.quickActionIcon}>
         <Ionicons name={icon} size={20} color={colors.saffron[700]} />
       </View>
@@ -333,7 +429,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: fontSize['2xl'], fontWeight: '800', color: colors.stone[900] },
   dateText: { fontSize: fontSize.sm, color: colors.stone[500], marginTop: 2 },
   bellButton: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.stone[200],
   },
@@ -413,7 +509,7 @@ const styles = StyleSheet.create({
   seeAll: { fontSize: fontSize.sm, color: colors.saffron[700], fontWeight: '700' },
   hScroll: { paddingHorizontal: spacing.lg, gap: spacing.md },
   darshanCard: {
-    width: CARD_WIDTH, backgroundColor: colors.white,
+    backgroundColor: colors.white,
     borderRadius: borderRadius.lg, marginRight: spacing.md, overflow: 'hidden',
     borderWidth: 1, borderColor: colors.stone[200],
   },
@@ -438,8 +534,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', flexWrap: 'wrap',
     paddingHorizontal: spacing.lg, gap: spacing.sm,
   },
+  // Width comes from gridWidthPercent(columns): '48%' at two columns, so
+  // phones are byte-for-byte what they were, and 32%/24% on a tablet instead
+  // of two tiles half a metre wide.
   pujaCard: {
-    width: '48%', backgroundColor: colors.white,
+    backgroundColor: colors.white,
     padding: spacing.md, borderRadius: borderRadius.md,
     borderWidth: 1, borderColor: colors.stone[200],
   },

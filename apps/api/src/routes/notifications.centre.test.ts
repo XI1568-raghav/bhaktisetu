@@ -27,6 +27,12 @@ vi.mock('../lib/fcm.js', () => ({
   sendFcm: vi.fn(),
   fcmConfig: { enabled: false, projectId: '' },
   isFcmRegistrationToken: (t: string) => !/^https?:/i.test(t) && t.length >= 60,
+  // NOTIF-17: the route now dispatches on token shape, so the mock has to
+  // expose the same two predicates the real module does.
+  isExpoPushToken: (t: string) => /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{16,128}\]$/.test(t),
+  isPushToken: (t: string) =>
+    /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{16,128}\]$/.test(t) ||
+    (!/^https?:/i.test(t) && t.length >= 60),
 }));
 
 import Fastify from 'fastify';

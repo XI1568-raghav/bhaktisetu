@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { HINDU_PHILOSOPHIES, TOTAL_HINDU_PHILOSOPHIES } from '../../lib/hindu-philosophies';
 
@@ -61,7 +63,7 @@ export default function HinduPhilosophiesIndexPage() {
         <p className="text-xs uppercase tracking-wider text-saffron-600">
           {TOTAL_HINDU_PHILOSOPHIES} schools · 6 orthodox darshanas + 4 Vedanta sub-schools
         </p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">हिन्दू दर्शन</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>हिन्दू दर्शन</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">
           Hindu Philosophies — Shad Darshana &amp; Vedanta Sub-Schools
         </p>
@@ -103,7 +105,7 @@ export default function HinduPhilosophiesIndexPage() {
           <h2 className="text-xl font-semibold text-gray-900">Major Vedanta Sub-Schools</h2>
           <span className="text-xs text-gray-500">{vedantaSchools.length} traditions</span>
         </div>
-        <p className="mb-4 max-w-3xl text-sm text-gray-600">
+        <p className="mb-4 max-w-3xl prose-body text-gray-600">
           Vedanta is a family of traditions that share the Upanishads, Brahma Sutras, and Bhagavad
           Gita (the prasthana-trayi) as authoritative, while differing rigorously on the nature of
           Brahman, the self, the world, and liberation. Each sub-school below is presented on its

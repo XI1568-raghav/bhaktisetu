@@ -10,6 +10,7 @@ import {
  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -99,13 +100,19 @@ export default function AstrologerConsultationsPage() {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
-        throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
+        // RES-09: this is the finding's own example — the astrologer was
+        // shown `API 500: {"error":"Internal Server Error"}`, and on a
+        // gateway failure 120 characters of raw HTML.
+        throw new UserFacingError(
+          serverErrorText(body, 'Could not load consultations. Please try again.'),
+          res.status,
+        );
       }
       const data = await res.json();
       const raw: Consultation[] = Array.isArray(data.consultations) ? data.consultations : [];
       setConsultations(raw);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Network error');
+      setError(userFacingMessage(e, 'Could not load consultations. Please try again.'));
       setConsultations([]);
     } finally {
       setLoading(false);
@@ -141,11 +148,14 @@ export default function AstrologerConsultationsPage() {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
-        throw new Error(`Update ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
+        throw new UserFacingError(
+          serverErrorText(body, 'We could not update that consultation.'),
+          res.status,
+        );
       }
       await fetchConsultations();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Could not update');
+      setActionError(userFacingMessage(e, 'We could not update that consultation. Please try again.'));
     } finally {
       setActionId(null);
     }
@@ -168,8 +178,16 @@ export default function AstrologerConsultationsPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          Could not load consultations: {error}
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex items-center justify-between gap-3">
+          <span>{error}</span>
+          {/* RES-09: the error state offered no way out. */}
+          <button
+            type="button"
+            onClick={() => void fetchConsultations()}
+            className="shrink-0 text-xs font-medium text-red-700 underline hover:no-underline"
+          >
+            Retry
+          </button>
         </div>
       )}
       {actionError && (

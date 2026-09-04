@@ -49,7 +49,7 @@ const CARDS: WisdomCard[] = [
 export default function WisdomStrip() {
   return (
     <section
-      className="py-6 md:py-8"
+      className="defer-paint py-6 md:py-8"
       style={{ background: 'var(--color-surface)' }}
       aria-labelledby="wisdom-strip-heading"
     >

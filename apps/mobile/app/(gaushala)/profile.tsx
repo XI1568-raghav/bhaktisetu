@@ -7,6 +7,10 @@ import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section } from '../../lib/portal-screen';
 import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { HAS_80G } from '../../lib/eighty-g';
+// AUTH-09: the confirmation used to ask "Are you sure?" without saying what
+// it was sure about. POST /auth/logout defaults to scope 'global'.
+import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
 export default function GaushalaProfile() {
   const { user, signOut } = useAuth();
@@ -24,7 +28,7 @@ export default function GaushalaProfile() {
   }
 
   function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure?', [
+    Alert.alert(SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
@@ -70,14 +74,24 @@ export default function GaushalaProfile() {
         </Section>
       ) : null}
 
+      {/* TC-11 / TC-01 — this Section printed two green shield-checkmark rows,
+          "80G Tax Exemption Certified" and "Animal Welfare Board Reg.", on
+          EVERY gaushala's own profile. Neither was read from anything: no
+          column, no endpoint, no props — two literals in this file, awarding a
+          statutory tax registration and a Government of India board
+          registration to whoever happened to be signed in. GaushalaProfile has
+          no writer for `verified`, `gaushala_profiles.regn_80g` / `.pan` are
+          SELECTed in one place and written nowhere, and no AWBI number is
+          stored anywhere in the schema. The honest version states what the
+          product actually knows — that a reviewer approved the listing — and
+          says plainly that no registration has been checked. */}
       <Section title="Registration">
         <View style={styles.row}>
-          <Ionicons name="shield-checkmark" size={18} color={colors.green[600]} />
-          <Text style={styles.rowText}>80G Tax Exemption Certified</Text>
-        </View>
-        <View style={styles.row}>
-          <Ionicons name="shield-checkmark" size={18} color={colors.green[600]} />
-          <Text style={styles.rowText}>Animal Welfare Board Reg.</Text>
+          <Ionicons name="information-circle-outline" size={18} color={colors.stone[500]} />
+          <Text style={styles.rowText}>
+            Darshya has not verified any statutory registration for this gaushala.
+            {HAS_80G ? '' : ' Donation receipts issued through Darshya are proof of payment and not 80G tax-exemption certificates.'}
+          </Text>
         </View>
       </Section>
 

@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Globe } from "lucide-react";
+import { ChevronLeft, Globe, AlertTriangle } from "lucide-react";
+import { H1 } from '../../../../../components/ui/heading-recipe';
 import {
  getHelpArticle,
+ isUnreviewedTranslation,
  HELP_ARTICLES,
  HELP_LANGS,
+ HELP_SOURCE_LANG,
  type HelpLang,
 } from "../../../../../lib/help-articles";
 
@@ -29,12 +32,31 @@ export async function generateMetadata({
  if (!article) return { title: "Help Article Not Found" };
 
  const langInfo = HELP_LANGS.find((l) => l.code === article.lang);
+ /**
+  * I18N-09 residual — hreflang may not advertise what robots withholds.
+  *
+  * `isUnreviewedTranslation` already governs two of the three places a
+  * translation is offered to a crawler: this function serves
+  * `robots: { index: false }` for one (just below), and app/sitemap.ts keeps it
+  * out of the sitemap. This loop was the third and it did not apply the
+  * predicate, so the ONE indexable article in the set — the English original —
+  * still shipped `hreflang="hi|ta|te|bn|mr"` pointing at five noindex pages.
+  * That is the same claim the robots block says was withdrawn: offering an
+  * unattested machine translation about payments and ritual to Google as THE
+  * Hindi/Tamil/Telugu/Bengali/Marathi answer. An hreflang cluster whose members
+  * are noindex is also a conflicting signal Search Console reports.
+  *
+  * Filtering on the shared predicate rather than a language list means
+  * attesting a translation (`reviewed_by`) restores its hreflang, its sitemap
+  * row and its indexability in one edit. Guarded by
+  * __tests__/help-hreflang-attestation.i18n09.test.ts.
+  */
  const alternates: Record<string, string> = {};
  for (const l of HELP_LANGS) {
  const translated = HELP_ARTICLES.find(
  (a) => a.slug === slug && a.lang === l.code,
  );
- if (translated) {
+ if (translated && !isUnreviewedTranslation(translated)) {
  alternates[l.code] = `/help/articles/${l.code}/${slug}`;
  }
  }
@@ -42,6 +64,21 @@ export async function generateMetadata({
  return {
  title: `${article.title} — Help`,
  description: article.summary,
+ /**
+  * I-09 — an unattested translation must not become the indexed answer.
+  *
+  * Five of the six seed articles carry `reviewed_by: null`, which the schema
+  * itself defines as "pending review". They are machine translations of
+  * instructions about payments, cancellation and ritual, and they were served
+  * with hreflang alternates and a content-language header asserting them as
+  * proper localizations — i.e. actively offered to Google as THE Hindi/Tamil/
+  * Telugu/Bengali/Marathi answer. `follow` stays on so the links out of the
+  * page still carry weight; only the unreviewed copy itself is withheld.
+  * Attest the translation (set `reviewed_by`) and it indexes immediately.
+  */
+ ...(isUnreviewedTranslation(article)
+ ? { robots: { index: false, follow: true } }
+ : {}),
  openGraph: {
  images: ['/images/golden-temple-og.jpg'],
  title: article.title,
@@ -86,17 +123,33 @@ function renderMarkdown(md: string): string {
  closeList();
  continue;
  }
+ /*
+  * DU-05 — a body heading is not a page title.
+  *
+  * These two used to emit h2/h1, so a `# ` anywhere in an article body produced
+  * a SECOND level-1 heading on a page that already renders the article title as
+  * an H1.catalogue below. That is the DU-05 clause "exactly one h1 per page"
+  * broken from inside a template string, which is why no className codemod
+  * could reach it — the h1 here is raw HTML with `class=`, not `className=`.
+  *
+  * The ladder shifts down one level and each rendered size stays exactly where
+  * it was, so this is a zero-pixel change: only the tag moves, and body
+  * headings now sit under the article title instead of beside it. The same
+  * shift was applied to the shared renderer in lib/markdown.ts, whose `# `
+  * reached the blog and content pages the same way. Guarded in
+  * __tests__/design-tokens.test.ts.
+  */
  if (line.startsWith("## ")) {
  closeList();
  out.push(
- `<h2 class="text-xl font-semibold text-surface-900 mt-8 mb-3">${escapeHtml(line.slice(3))}</h2>`,
+ `<h3 class="text-xl font-semibold text-surface-900 mt-8 mb-3">${escapeHtml(line.slice(3))}</h3>`,
  );
  continue;
  }
  if (line.startsWith("# ")) {
  closeList();
  out.push(
- `<h1 class="text-2xl font-bold text-surface-900 mt-8 mb-4">${escapeHtml(line.slice(2))}</h1>`,
+ `<h2 class="text-2xl font-bold text-surface-900 mt-8 mb-4">${escapeHtml(line.slice(2))}</h2>`,
  );
  continue;
  }
@@ -219,12 +272,39 @@ export default async function HelpArticlePage({ params }: { params: Params }) {
  <span>{article.category.replace("-", " ")}</span>
  </div>
 
- <h1 className="text-3xl font-bold text-surface-900 mb-4" lang={article.lang}>
+ <h1 className={`${H1.catalogue} mb-4`} lang={article.lang}>
  {article.title}
  </h1>
 
+ {/* I-09: the review state was carried in the data and rendered nowhere, so
+     an unchecked machine translation about refunds read with exactly the
+     authority of copy a person had signed off. Say it, above the answer,
+     and point at the English original which is the reviewed one. */}
+ {isUnreviewedTranslation(article) && (
+ <div
+ className="flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 p-3 mb-6"
+ role="note"
+ >
+ <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+ <p className="text-xs text-amber-900 leading-relaxed">
+ <strong className="font-semibold">
+ Machine translated — pending review.
+ </strong>{" "}
+ No native speaker has checked this translation yet. For anything
+ involving money or timing, the{" "}
+ <Link
+ href={`/help/articles/${HELP_SOURCE_LANG}/${article.slug}`}
+ className="underline"
+ >
+ English original
+ </Link>{" "}
+ is the version we stand behind.
+ </p>
+ </div>
+ )}
+
  <p
- className="text-lg text-surface-700 leading-relaxed mb-6 pb-6 border-b border-surface-200"
+ className="prose-lead text-surface-700 leading-relaxed mb-6 pb-6 border-b border-surface-200"
  lang={article.lang}
  >
  {article.summary}

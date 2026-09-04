@@ -4,8 +4,11 @@
 // birth-data required — pure date + city. Targets "choghadiya today",
 // "shubh muhurat now", "amrit kaal time", "choghadiya muhurat calculator".
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import ChoghadiyaClient from './ChoghadiyaClient';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -97,7 +100,7 @@ export default function ChoghadiyaPage() {
 
    <header className="mb-8">
     <p className="text-xs uppercase tracking-wider text-indigo-600">Free Vedic tool · no birth-data needed</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Choghadiya Today — Free Muhurat Calculator</h1>
+    <h1 className={`${H1.catalogue} mt-1`}>Choghadiya Today — Free Muhurat Calculator</h1>
     <p className="mt-2 text-indigo-700">चौघड़िया मुहूर्त · Choghadiya / Chaughadia</p>
     <p className="mt-4 text-base text-gray-700">
      Pick your date + city to see 8 day-periods (sunrise → sunset) and 8 night-periods (sunset →
@@ -159,7 +162,7 @@ export default function ChoghadiyaPage() {
      panchang + nakshatra + a pandit reading of your kundli.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/panchang" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/panchang" className={buttonClass('primary', 'md')}>
       Today's Panchang
      </Link>
      <Link href="/muhurat" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">

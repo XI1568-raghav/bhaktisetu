@@ -52,18 +52,39 @@ captured error with it. See:
 
 ## Reverting a bad release
 
-A "release" in Sentry is metadata, not a deploy mechanism — to roll back the
-running code, revert the commit that broke things and let CI deploy the new
-HEAD (which then becomes its own Sentry release):
+A "release" in Sentry is metadata, not a deploy mechanism.
+
+> **OPS-06 correction (2026-08-28).** This section used to say *revert the
+> commit and let CI deploy the new HEAD*:
+>
+> ```bash
+> git revert <bad-sha>
+> git push origin main     # ← THIS DEPLOYS NOTHING
+> ```
+>
+> **There is no CI that deploys from `main`.** `render.yaml` sets
+> `autoDeploy: false` on both services (`:28` API, `:60` web), and no workflow
+> in this repository deploys on push — `deploy-web-render.yml` is a Docker
+> smoke build that never touches the Render service. Pushing a revert changes
+> the git history and leaves the bad bytes serving traffic, while Sentry
+> unhelpfully shows a new release as if something shipped.
+
+**Authoritative procedure: [`docs/runbooks/prod-rollback.md`](runbooks/prod-rollback.md).**
+Rolling back means explicitly deploying an older commit:
 
 ```bash
-git revert <bad-sha>
-git push origin main
+gh workflow run render-diag.yml -f mode=deploys -f sid=<SID>   # find last good SHA
+gh workflow run render-diag.yml -f mode=deploy  -f sid=<SID> -f commit=<SHA>
+gh run watch
 ```
 
-This produces a new release `darshya@<new-sha>` whose linked commits include
-the revert. The bad release stays in Sentry's history for forensics; you can
-mark it as "Resolved in next release" once the revert deploys.
+API `srv-d7mc2n8sfn5c73dfce0g` · web `srv-d970l2ks728c738fc33g`.
+
+Whichever commit you deploy becomes the running release. If you also push a
+revert commit for history's sake, remember that the push is bookkeeping — the
+deploy above is what actually rolls back. The bad release stays in Sentry's
+history for forensics; you can mark it "Resolved in next release" once the
+replacement is deployed and live.
 
 If you only want to suppress alerts for the bad release without reverting, use
 the Sentry UI: open the release, set its status to `archived`, and any new

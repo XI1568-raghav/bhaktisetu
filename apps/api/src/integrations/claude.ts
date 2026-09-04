@@ -1,4 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
+// TC-08 (P1, trust): the seven canned AI-Pandit answers below told devotees to
+// book with "verified priests". Nothing promotes a Priest to verified —
+// routes/priest.ts writes verificationStatus 'pending' and no route ever
+// writes 'approved'; isVerified/aadhaarVerified are set only in prisma/seed.ts
+// and scripts/seed-demo-users.ts. The adjective is now bound to the same
+// owner-controlled flag as every other vetting surface.
+import { verifiedNoun } from '../lib/pandit-vetting.js';
 
 // Provider selection: prefer Groq (OpenAI-compatible, free tier) when its key
 // is present, else fall back to Anthropic. DEMO_MODE only when neither is set.
@@ -61,7 +68,7 @@ const DEMO_TOPICS: DemoTopic[] = [
 
 Love and companionship, when aligned with dharma, are among life's greatest blessings.
 
- **On Darshya:** Book a **Vivah Puja** or **Gauri Shankar Puja** with verified priests at renowned temples. Check your **rashi compatibility** in our Astrology section for astrological guidance.`,
+ **On Darshya:** Book a **Vivah Puja** or **Gauri Shankar Puja** with ${verifiedNoun('priests')} at renowned temples. Check your **rashi compatibility** in our Astrology section for astrological guidance.`,
  },
 
  // ─── Health & Healing ─────────────────────────────────────────────────
@@ -120,7 +127,7 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 - **Saraswati Puja** — for wisdom and academic success
 - **Aksharabhyasam** — the traditional learning initiation ceremony
 
- **On Darshya:** Book **Santana Gopala Puja** or **Naamkaran Sanskar** for newborns with verified priests across India.`,
+ **On Darshya:** Book **Santana Gopala Puja** or **Naamkaran Sanskar** for newborns with ${verifiedNoun('priests')} across India.`,
  },
 
  // ─── Education & Career ───────────────────────────────────────────────
@@ -149,7 +156,7 @@ Love and companionship, when aligned with dharma, are among life's greatest bles
 - Light a diya at your workspace or study table
 - Place a Saraswati idol or image in the northeast corner of your room
 
- **On Darshya:** Book **Ganesh Puja**, **Saraswati Puja**, or **Navagraha Puja** with verified priests. Explore our **Content** section for mantras and study guidance.`,
+ **On Darshya:** Book **Ganesh Puja**, **Saraswati Puja**, or **Navagraha Puja** with ${verifiedNoun('priests')}. Explore our **Content** section for mantras and study guidance.`,
  },
 
  // ─── Grief & Loss ─────────────────────────────────────────────────────
@@ -466,7 +473,7 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 *"सुहृन्मित्रार्युदासीनमध्यस्थद्वेष्यबन्धुषु"*
 *"The wise see all with equanimity — friends, foes, and family alike."*
 
- **On Darshya:** Book a **Satyanarayan Katha** or **Griha Shanti Puja** for your family. Our verified priests perform pujas with full Vedic rites at your home or temple.`,
+ **On Darshya:** Book a **Satyanarayan Katha** or **Griha Shanti Puja** for your family. Our ${verifiedNoun('priests')} perform pujas with full Vedic rites at your home or temple.`,
  },
 
  // ─── Wealth & Prosperity ──────────────────────────────────────────────
@@ -499,7 +506,7 @@ Chant 108 times on Fridays for prosperity.
 5. Donate 10% of income (Dashaamsha) — giving opens channels of receiving
 6. Never keep broken mirrors, clocks, or chipped items at home
 
- **On Darshya:** Book **Lakshmi Puja**, **Kubera Puja**, or **Sri Suktam Homa** with verified priests. Visit our **Store** for authentic Shri Yantras and Lakshmi idols.`,
+ **On Darshya:** Book **Lakshmi Puja**, **Kubera Puja**, or **Sri Suktam Homa** with ${verifiedNoun('priests')}. Visit our **Store** for authentic Shri Yantras and Lakshmi idols.`,
  },
 
  // ─── Duty / Karma ─────────────────────────────────────────────────────
@@ -519,7 +526,7 @@ This verse teaches us that we should focus on doing our best work without being 
 
 The Gita teaches that every person has a unique role (svadharma) and fulfilling it with dedication and detachment is the path to spiritual growth.
 
- **On Darshya:** Explore our **Content** section for the complete Bhagavad Gita with translations. Book a **Gita Path** ceremony with verified priests.`,
+ **On Darshya:** Explore our **Content** section for the complete Bhagavad Gita with translations. Book a **Gita Path** ceremony with ${verifiedNoun('priests')}.`,
  },
 
  // ─── Peace / Mantras ──────────────────────────────────────────────────
@@ -602,7 +609,7 @@ This reminds us that divine guidance is always available to those who seek it si
 
 *"श्रद्धावान् लभते ज्ञानम्"* — "One who has faith attains wisdom." (Gita 4.39)
 
- **On Darshya:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a verified priest for specific spiritual needs. Watch **Live Darshan** from 50+ temples for daily peace.`;
+ **On Darshya:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a ${verifiedNoun('priest')} for specific spiritual needs. Watch **Live Darshan** from 50+ temples for daily peace.`;
 }
 
 // ─── Helper: stream-shape adapter ─────────────────────────────────────────

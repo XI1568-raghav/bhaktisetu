@@ -67,6 +67,22 @@ interface PublicAstrologer {
  * `take: 100` matches the pagination clamp above; the directory is far smaller
  * than that today and a bound keeps this public, unauthenticated route cheap.
  */
+/**
+ * AW-02: presentation-only icon hints for specialization names. A name absent
+ * here still renders (falls back to 'star') — this map must never decide which
+ * specializations EXIST; only approved profiles do that.
+ */
+const SPECIALIZATION_ICONS: Record<string, string> = {
+  'Vedic Astrology': 'star',
+  'Tarot Reading': 'cards',
+  Numerology: 'hash',
+  Palmistry: 'hand',
+  Vastu: 'home',
+  'KP Astrology': 'compass',
+  'Prashna Kundli': 'help-circle',
+  'Nadi Astrology': 'scroll',
+};
+
 async function loadApprovedAstrologers(): Promise<PublicAstrologer[]> {
   const profiles = await prisma.astrologerProfile.findMany({
     where: { approved: true },
@@ -127,9 +143,9 @@ export async function astrologyRoutes(server: FastifyInstance) {
   // themselves. Being read is the reason to fix it, not the reason to leave it.
   //
   // It now reads the same approved `AstrologerProfile` rows `/astrologers/live`
-  // serves. The fixture array is NOT deleted — it still backs
-  // GET /specializations, astrologyService.getReviews and
-  // getAstrologerByIdOrSlug. Only this door is rebound to real supply.
+  // serves. With this door rebound the fixture had no readers left, and it has
+  // since been deleted outright — see the deletion note in
+  // services/astrology.service.ts.
   server.get('/astrologers', async (request, reply) => {
     const parsed = astrologerListQuerySchema.safeParse(request.query);
     if (!parsed.success) {
@@ -219,9 +235,8 @@ export async function astrologyRoutes(server: FastifyInstance) {
     // Sharma" as a profile and /astrology/astro_001/book drew a live pay
     // button over him. POST /consultation/book already refuses any id that is
     // not an approved AstrologerProfile — an id the platform will not sell is
-    // an id it must not describe either. The in-memory directory still backs
-    // GET /astrologers (packages/api-client's useAstrologers reads that list),
-    // so it is not deleted here; it is simply no longer reachable as a person.
+    // an id it must not describe either. The in-memory directory has since been
+    // deleted; a slug now resolves to nothing anywhere in the service.
     return reply.code(404).send({ error: 'Astrologer not found.' });
   });
 
@@ -243,8 +258,9 @@ export async function astrologyRoutes(server: FastifyInstance) {
     if (!UUID_RE.test(id)) {
       return reply.code(404).send({ error: 'Astrologer not found.' });
     }
-    // Real astrologers have no review store yet (REVIEWS is keyed by fixture
-    // slug). An empty page is the truthful answer — never borrow a fixture's.
+    // Real astrologers have no review store yet — there is no astrologer review
+    // table, and the generated fixture testimonials that used to fill this page
+    // are deleted. An empty page is the truthful answer.
     return { reviews: [], total: 0, page: page ?? 1, limit: limit ?? 5, totalPages: 0 };
   });
 
@@ -252,7 +268,31 @@ export async function astrologyRoutes(server: FastifyInstance) {
   // List all specializations with counts
 
   server.get('/specializations', async (request, reply) => {
-    const specializations = astrologyService.getSpecializations();
+    // AW-02: this used to return counts hardcoded from the 15-row fixture —
+    // Vedic Astrology 11, Tarot 4, Numerology 5, Palmistry 3, Vastu 5, KP 4,
+    // Prashna 4, Nadi 4. Forty specialization slots across fifteen people who do
+    // not exist, on a public unauthenticated endpoint, while real supply was
+    // three profiles. It sold nothing (no client renders it), but a public
+    // endpoint STATING fictional supply is one integration away from a UI, and
+    // it was the last reader keeping the fixture array alive — rebinding it is
+    // what made the fixture deletable.
+    //
+    // Same reader as /astrologers and /astrologers/live, so the directory and
+    // its facet counts cannot disagree about who exists.
+    const astrologers = await loadApprovedAstrologers();
+    const counts = new Map<string, number>();
+    for (const a of astrologers) {
+      for (const raw of a.specializations ?? []) {
+        const name = typeof raw === 'string' ? raw.trim() : '';
+        if (!name) continue;
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+    }
+    const specializations = Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count, icon: SPECIALIZATION_ICONS[name] ?? 'star' }))
+      // Densest real supply first; name as a stable tiebreak so the order does
+      // not wobble between requests.
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
     return { specializations };
   });
 
@@ -326,7 +366,40 @@ export async function astrologyRoutes(server: FastifyInstance) {
         });
       }
 
-      const result = astrologyService.startConsultation(userId, astrologerId, mode);
+      // AW-02 (P0), the other half of the same door. Closing it against the
+      // invented 15 left it closed against the real 3 as well:
+      // `startConsultation` resolved ids ONLY against the in-memory fixture
+      // (`astro_001`..`astro_015`), and the gate above admits nothing but an
+      // approved AstrologerProfile UUID — which that fixture can never contain.
+      // Every genuinely onboarded astrologer came back 400 'Astrologer not
+      // found.'. Refusing to sell someone who does not exist is only half the
+      // fix; the people who DO exist have to be sellable.
+      //
+      // The real profile is merged in AHEAD of the fixture (the fixture stays
+      // as the fallback branch and is not deleted — it still backs
+      // GET /specializations and getReviews).
+      const presence = getAstrologerPresence(approved.userId);
+      if (!presence.online) {
+        // Distinct from ASTROLOGER_NOT_BOOKABLE on purpose: this astrologer is
+        // real and approved, they are simply not at their desk. Saying "not
+        // found" about a person who exists sends the devotee away for good.
+        return reply.code(409).send({
+          code: 'ASTROLOGER_OFFLINE',
+          error: `${approved.displayName} is not online right now. Book a slot instead, or see who is online at /astrology/astrologers/live.`,
+        });
+      }
+
+      const result = astrologyService.startConsultation(userId, astrologerId, mode, {
+        id: approved.id,
+        userId: approved.userId,
+        name: approved.displayName,
+        specializations: approved.specialties ?? [],
+        perMinuteRate: Number(approved.pricePerMinute),
+        isOnline: presence.online,
+        // AstrologerProfile carries no busy signal; presence is the only
+        // availability fact we have, and it is not invented here.
+        isBusy: false,
+      });
 
       if ('error' in result) {
         return reply.code(400).send({ error: result.error });

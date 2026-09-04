@@ -66,9 +66,9 @@ None of those are agent-shippable — they are AWS console / founder credential 
    - Origin: S3 bucket. Custom domain: `recordings.darshya.online`.
    - HLS segments must allow CORS for the web origin.
 
-5. **Set CF Pages env**
+5. **Set the web env var** *(corrected 2026-09-02, `OPS-10` — this step used to say "Set CF Pages env" and to spend "one CF Pages build". Cloudflare Pages has not served the web tier since the 2026-07-08 cutover; there is no Pages project to set a variable on and no Pages build to spend.)*
    - `IVS_REPLAY_BUCKET_BASE = https://recordings.darshya.online/manifest`
-   - Redeploy `apps/web` (one CF Pages build).
+   - Set it on the Render service `darshya-web` (`srv-d970l2ks728c738fc33g`), then deploy it explicitly: `autoDeploy: false` (`render.yaml:60`) means a push deploys nothing. Dispatch command in `docs/runbooks/prod-rollback.md`.
 
 6. **Flip KPI**
    - Visit `/darshan/kashi-vishwanath-varanasi/replay` after first aarti completes — at least one segment card should render with a working HLS Watch link.

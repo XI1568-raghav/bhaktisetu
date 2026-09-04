@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { nakshatraNameReport, type NakshatraNameReport, type Gender } from '../../../lib/baby-names';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Opt = { slug: string; label: string };
 
@@ -82,7 +83,7 @@ export default function BabyNameClient({ options }: { options: Opt[] }) {
     <div className="mt-5 flex flex-wrap items-center gap-3">
      <button
       type="submit"
-      className="rounded-full bg-saffron-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-saffron-700 focus:outline-none focus:ring-2 focus:ring-saffron-300"
+      className={buttonClass('primary', 'md', 'shadow-sm focus:outline-none focus:ring-2 focus:ring-saffron-300')}
      >
       Show Name Suggestions
      </button>
@@ -129,7 +130,7 @@ export default function BabyNameClient({ options }: { options: Opt[] }) {
        graha balance + family deity tradition before finalizing the namakaran.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask Pandit Live
        </Link>
        <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

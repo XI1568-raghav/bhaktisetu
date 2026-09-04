@@ -11,7 +11,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, ChevronDown, Truck, Star, X } from 'lucide-react';
+import { Search, ChevronDown, Truck, X } from 'lucide-react';
 import {
   buildStoreQuery,
   PRICE_BAND_LABEL,
@@ -65,8 +65,7 @@ export default function StoreFilterBar({
     filters.category !== 'all' ||
     filters.price !== 'any' ||
     filters.sort !== 'popular' ||
-    filters.freeDelivery ||
-    filters.topRated;
+    filters.freeDelivery;
 
   return (
     <>
@@ -171,19 +170,15 @@ export default function StoreFilterBar({
           Free Delivery
         </button>
 
-        <button
-          type="button"
-          aria-pressed={filters.topRated}
-          onClick={() => go({ topRated: !filters.topRated })}
-          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border ${
-            filters.topRated
-              ? 'bg-saffron-600 text-white border-saffron-600'
-              : 'bg-white text-surface-600 border-surface-200 hover:border-saffron-300'
-          }`}
-        >
-          <Star className={`w-4 h-4 ${filters.topRated ? '' : 'text-temple-gold'}`} />
-          4+ Rating
-        </button>
+        {/* LEG-17: a "4+ Rating" toggle stood here, and the sort <select>
+            above still lists every SORT_LABEL key — which is why the
+            "Rating: High to Low" option disappeared from it the moment that
+            key left lib/store-filters. Both controls filtered and ordered the
+            grid on a star average that was hardcoded on all 24 seed rows and
+            synthesised as 4.5-from-zero-reviews for every real product. A
+            control that acts on an invented number is not a smaller problem
+            than printing it; it is the same number, steering the shelf out of
+            sight. */}
 
         {isFiltered && (
           <button

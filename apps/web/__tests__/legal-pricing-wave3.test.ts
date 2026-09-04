@@ -215,8 +215,19 @@ describe('LEG-01/LEG-03 straggler surfaces — no page out-promises the engine',
       path.resolve(__dirname, '../../api/src/services/booking.service.ts'),
       'utf8',
     );
-    expect(svc).toMatch(
-      new RegExp(`hoursUntilPuja\\s*<\\s*${CANCELLATION_CUTOFF_HOURS}`),
+    const cancellationSvc = readFileSync(
+      path.resolve(__dirname, '../../api/src/services/cancellation.service.ts'),
+      'utf8',
+    );
+    // LEG-03/F223 (2026-09-01): the literal `< 24` became
+    // `< DEVOTEE_CANCEL_CUTOFF_HOURS`, declared next to the refund ladder it
+    // truncates so the refusal, GET /bookings/:id/cancel-quote and this web
+    // mirror all read one number. The two-step assertion below is what that
+    // indirection costs, and it buys the guarantee the literal never gave:
+    // there is now exactly one place the cutoff can be changed.
+    expect(svc).toMatch(/hoursUntilPuja\s*<\s*DEVOTEE_CANCEL_CUTOFF_HOURS/);
+    expect(cancellationSvc).toMatch(
+      new RegExp(`DEVOTEE_CANCEL_CUTOFF_HOURS\\s*=\\s*${CANCELLATION_CUTOFF_HOURS}\\b`),
     );
   });
 

@@ -20,6 +20,12 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { COMPANY } from '../lib/company';
 import { FAQ_GROUPS } from '../lib/faqs';
+import {
+  NRI_PREMIUM_BENEFITS,
+  nriPremiumFeatures,
+  nriPremiumIsSellable,
+  type EntitlementKey,
+} from '../../api/src/services/subscription-entitlements';
 
 const read = (rel: string) => readFileSync(path.resolve(__dirname, '..', rel), 'utf8');
 const readRepo = (rel: string) => readFileSync(path.resolve(__dirname, '../../..', rel), 'utf8');
@@ -126,6 +132,40 @@ describe('LEG-06 — the video-proof guarantee describes the process that exists
   });
 });
 
+/**
+ * The phrase that would betray each NRI Premium benefit if the FAQ advertised
+ * it. Keyed by `EntitlementKey` so adding a benefit to the registry without
+ * adding a needle here is a TYPE error, not a silent hole.
+ */
+const BENEFIT_NEEDLE: Record<EntitlementKey, RegExp> = {
+  'ads.suppressed': /\bno ads\b/i,
+  'booking.nri_surcharge_waived': /surcharge/i,
+  'booking.priority_window': /priority booking/i,
+  'consultation.weekly_priest_call': /weekly 1:1|priest (video )?call/i,
+  'donation.receipt_pdf_free': /80G receipt/i,
+  'ai_astro.unlimited': /unlimited AI/i,
+};
+
+/**
+ * LEG-08, re-cut for TC-13. The old guard read the DECLARED literal and
+ * hard-required the fiction.
+ *
+ * It scraped the `features: [` block out of
+ * apps/api/src/services/subscription.service.ts and then demanded that the
+ * published FAQ answer repeat four of those strings — 'NRI surcharge', 'ads',
+ * 'Priority booking' and '80G receipt'. Every one of the six benefits carries
+ * `enforcedBy: null` in apps/api/src/services/subscription-entitlements.ts, so
+ * the list a BUYER is shown (`nriPremiumFeatures()`, applied on the way out of
+ * `getPlans()` by `advertisedFeaturesFor()`) is EMPTY, and
+ * `nriPremiumIsSellable()` is false: the plan is withdrawn and both activation
+ * rails answer 400. The guard was pinning /faqs to a feature list no buyer is
+ * shown, for a plan nobody can buy — and it was the single thing blocking
+ * lib/faqs.ts from telling the truth (TC-03 / TC-04 / TC-13).
+ *
+ * It reads the DERIVED list now. The contract is two-sided, so it keeps
+ * working the day a benefit is wired and the plan is re-opened: every ENFORCED
+ * benefit must appear in the answer, and no UNENFORCED benefit may.
+ */
 describe('LEG-08 — one NRI Premium feature list, matching the SKU that is sold', () => {
   const nriFaq = FAQ_GROUPS.flatMap((g) => g.faqs).find((f) =>
     /annual NRI membership/i.test(f.q),
@@ -143,19 +183,33 @@ describe('LEG-08 — one NRI Premium feature list, matching the SKU that is sold
     expect(nriFaq!.a).not.toMatch(/NRI-exclusive aarti recordings/i);
   });
 
-  it('quotes benefits that are actually in nri_premium_yearly.features', () => {
-    // Both sides of the contract: every distinguishing noun in the API plan's
-    // feature list has to appear in the answer we publish for that plan.
-    const svc = readRepo('apps/api/src/services/subscription.service.ts');
-    const block = svc.slice(svc.indexOf("id: 'nri_premium_yearly'"));
-    const features = block.slice(block.indexOf('features: ['), block.indexOf(']', block.indexOf('features: [')));
-    expect(features).toContain('No NRI surcharge on bookings');
+  it('the advertised list is derived from the enforcement registry, not typed', () => {
+    expect(nriPremiumFeatures()).toEqual(
+      NRI_PREMIUM_BENEFITS.filter((b) => b.enforcedBy !== null).map((b) => b.label),
+    );
+    expect(nriPremiumIsSellable()).toBe(nriPremiumFeatures().length > 0);
+  });
 
-    for (const needle of ['NRI surcharge', 'ads', 'Priority booking', '80G receipt']) {
-      expect(nriFaq!.a, `FAQ omits plan feature "${needle}"`).toMatch(
-        new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
-      );
+  it('quotes every benefit the server actually enforces', () => {
+    for (const label of nriPremiumFeatures()) {
+      expect(nriFaq!.a, `FAQ omits enforced benefit "${label}"`).toContain(label);
     }
+  });
+
+  it('advertises no benefit the server does not enforce', () => {
+    for (const benefit of NRI_PREMIUM_BENEFITS) {
+      if (benefit.enforcedBy !== null) continue;
+      expect(
+        nriFaq!.a,
+        `FAQ advertises unenforced benefit "${benefit.label}" (${benefit.key})`,
+      ).not.toMatch(BENEFIT_NEEDLE[benefit.key]);
+    }
+  });
+
+  it('says the plan is withdrawn for as long as the server refuses to sell it', () => {
+    // The two cases above own the re-opened case; this one owns today's.
+    if (nriPremiumIsSellable()) return;
+    expect(nriFaq!.a).toMatch(/not currently sold/i);
   });
 });
 

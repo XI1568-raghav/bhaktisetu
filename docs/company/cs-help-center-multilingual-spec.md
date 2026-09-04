@@ -20,7 +20,7 @@ Self-serve help center cuts CS load by 40-60%. Devotee can search "how do I resc
 8. Reschedule under 48 hours — process
 9. Cancel + refund timing (UPI 1-3 days, Card 5-7 days)
 10. Refund didn't arrive — what to do
-11. UPI payment vs Razorpay vs Stripe (which to choose)
+11. UPI vs card vs netbanking within Razorpay (which to choose) *(corrected 2026-09-02, `OPS-10`: this article was titled "UPI payment vs Razorpay vs Stripe (which to choose)". Stripe was removed from the codebase on 2026-08-11 — `apps/api/src/lib/env.ts:45-46` — and Razorpay is the only live rail, settling **INR only**. Do not write an article telling a devotee to choose a processor we do not have. Any international/NRI payment article is blocked on `[verify]` — no replacement processor has been chosen.)*
 12. Why is NRI pricing 9-10x domestic?
 13. 80G receipt — when + how
 14. Bulk booking (5+ pujas same day)
@@ -135,7 +135,7 @@ Help articles ALSO act as long-tail SEO content. Each article = potential rankin
 - [ ] Cycle 1 (next): write 10 English articles (top-traffic: refund / video / cancel / reschedule / book / 80G / etc.)
 - [ ] Cycle 2: translate to Hindi (use macros-v1-hi.md pattern) — founder + Hindi reviewer
 - [ ] Cycle 3: translate to Tamil + Telugu (use macros-v1-ta.md / -te.md patterns)
-- [ ] Cycle 4: build /help/[slug] page on Next.js (engineering ticket post-edge-runtime sweep)
+- [ ] Cycle 4: build /help/[slug] page on Next.js *(corrected 2026-09-02, `OPS-10`: this item was gated "post-edge-runtime sweep". There is no edge-runtime constraint — the web tier is the Render Docker service `darshya-web` running Next standalone on Node, `render.yaml:52-60`; Cloudflare Pages stopped serving it at the 2026-07-08 cutover, so the sweep this ticket waited on does not exist and the gate is removed.)*
 - [ ] Cycle 5: launch publicly + measure deflection (CS ticket volume drop %)
 - [ ] Per-cycle: 10 more articles until 50 reached
 ```

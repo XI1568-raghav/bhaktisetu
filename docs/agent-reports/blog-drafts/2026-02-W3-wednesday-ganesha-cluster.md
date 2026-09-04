@@ -33,7 +33,7 @@ A typical household Ganesha puja on Wednesday follows this sequence:
 8. **Aarti** — Conclude with the deity's aarti, circling the lamp clockwise.
 9. **Visarjan** — Respectfully request the deity to return, and distribute prasad.
 
-For a complete, pandit-verified Ganesha puja with video proof, book through [our Ganesha puja service](/pujas/ganesh-puja). Verified pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
+For a complete Ganesha puja with video proof, book through [our Ganesha puja service](/pujas/ganesh-puja). Pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
 
 ## Mantras and Aarti
 

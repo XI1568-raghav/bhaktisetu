@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TITHIS } from '../../lib/tithis';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -58,8 +60,8 @@ export default function TithiIndexPage() {
         <nav className="text-sm text-gray-600 mb-4">
           <Link href="/" className="hover:text-saffron-600">Home</Link> / <span className="text-gray-900">Tithis</span>
         </nav>
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">30 Tithis — Lunar Days</h1>
-        <p className="text-lg text-gray-700 max-w-3xl">
+        <h1 className={`${H1.marketing} mb-3`}>30 Tithis — Lunar Days</h1>
+        <p className="prose-lead text-gray-700 max-w-3xl">
           The Hindu lunar month has 30 tithis — 15 in the waxing fortnight (shukla paksha) and 15 in the waning fortnight (krishna paksha).
           Each tithi has a presiding deity, ritual character, and recommended activities. Vrata (fasts), muhurat (auspicious timings),
           and most festivals are scheduled by tithi rather than the solar date.
@@ -113,7 +115,7 @@ export default function TithiIndexPage() {
             <Link href="/vrat" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
               Browse vrata traditions
             </Link>
-            <Link href="/calendar" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
+            <Link href="/calendar" className={buttonClass('primary', 'md')}>
               Hindu festival calendar
             </Link>
             <Link href="/chants" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">

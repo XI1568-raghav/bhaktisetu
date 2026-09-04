@@ -20,8 +20,24 @@ import {
  CheckCircle2,
 } from 'lucide-react';
 import { getYatraBySlug, formatINR } from '../../../lib/yatra-data';
+import { hasPublishedCompanions } from '../../../lib/companion-roster';
+
+/**
+ * The companion day rate, in one place.
+ *
+ * It was previously written twice — once in the quote arithmetic and once in
+ * the add-on label — and both copies were inherited from `pricePerDay` on the
+ * `rajesh-kumar` fixture that TC-06 deleted. A duplicated rate is how the first
+ * one survived a deletion that should have taken it: whoever removed the people
+ * had no single place to look for the price attached to them.
+ *
+ * This rate is only ever charged while `hasPublishedCompanions()` is true.
+ */
+const COMPANION_RATE_PER_DAY_INR = 3500;
 import { DateInput } from '../../../components/ui/DateInput';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 type Traveler = {
  name: string;
  age: string;
@@ -127,8 +143,12 @@ function BookYatraInner() {
  if (data.addOns.specialPuja) {
  lines.push({ label: 'Special puja at temple', amount: 2100 });
  }
- if (data.addOns.companion) {
- const comp = 3500 * data.companionDays;
+ // Gated on the published roster, not just the toggle. TC-06 deleted the eight
+ // invented companions; ₹3,500 was `pricePerDay` on the `rajesh-kumar` row and
+ // outlived it. With an empty roster this line quoted a devotee — and flowed
+ // into subtotal, GST and total — for a person nobody can supply.
+ if (data.addOns.companion && hasPublishedCompanions()) {
+ const comp = COMPANION_RATE_PER_DAY_INR * data.companionDays;
  lines.push({ label: `Travel companion × ${data.companionDays} days`, amount: comp });
  }
  if (data.addOns.insurance) {
@@ -236,7 +256,7 @@ function BookYatraInner() {
  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--color-primary-highlight)' }}>
  <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
  </div>
- <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Inquiry received</h1>
+ <h1 className={`${H1.portal} mb-2`}>Inquiry received</h1>
  <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
  Our yatra desk will confirm hotel + transport availability for {yatra.title} and email your final invoice within 24 hours.
  </p>
@@ -247,7 +267,7 @@ function BookYatraInner() {
  <p className="text-xl font-semibold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</p>
  </div>
  <div className="flex items-center justify-center gap-3">
- <Link href="/profile/yatra-bookings" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/profile/yatra-bookings" className={buttonClass('primary', 'md')}>
  View my inquiries
  </Link>
  <Link href="/yatra" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
@@ -267,7 +287,7 @@ function BookYatraInner() {
  <Link href={`/yatra/${yatra.slug}`} className="inline-flex items-center gap-1.5 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
  <ChevronLeft className="w-3.5 h-3.5" /> Back to yatra
  </Link>
- <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className={H1.portal}>
  Book {yatra.title}
  </h1>
 
@@ -421,11 +441,15 @@ function BookYatraInner() {
  onToggle={() => setData({ ...data, addOns: { ...data.addOns, specialPuja: !data.addOns.specialPuja } })}
  />
 
- <AddOnRow
+ {/* The whole add-on is hidden while no companion is published. Offering a
+     toggle for something that cannot be delivered is the same defect as
+     quoting for it — see lib/companion-roster.ts. */}
+{hasPublishedCompanions() && (<>
+<AddOnRow
  icon={Heart}
  title="Travel companion"
- desc="Verified person assists elderly with mobility, medicine, logistics."
- price={`+${formatINR(3500)} / day`}
+ desc="On request. A companion assists elderly travellers with mobility, medicine and logistics — our advisor confirms availability before your booking is held."
+ price={`+${formatINR(COMPANION_RATE_PER_DAY_INR)} / day`}
  active={data.addOns.companion}
  onToggle={() => setData({ ...data, addOns: { ...data.addOns, companion: !data.addOns.companion } })}
  />
@@ -440,6 +464,7 @@ function BookYatraInner() {
  </div>
  </div>
  )}
+</>)}
 
  <AddOnRow
  icon={Shield}
@@ -611,8 +636,7 @@ function BookYatraInner() {
  <button
  onClick={handlePay}
  disabled={submitting || !canSubmitInquiry}
- className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg text-white btn-press disabled:opacity-60"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'w-full btn-press')}
  >
  {submitting ? (
  <><Loader2 className="w-4 h-4 animate-spin" /> Sending inquiry...</>
@@ -643,8 +667,7 @@ function BookYatraInner() {
  <button
  onClick={() => setStep(step + 1)}
  disabled={!canContinue}
- className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white disabled:opacity-40 btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Continue <ChevronRight className="w-3.5 h-3.5" />
  </button>
@@ -656,7 +679,7 @@ function BookYatraInner() {
  <aside className="md:col-span-1 h-fit sticky top-20">
  <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/10] overflow-hidden">
- <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={640} height={400} src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </div>
  <div className="p-4">
  <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{yatra.title}</h3>

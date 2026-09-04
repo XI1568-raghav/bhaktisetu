@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { H1 } from '../components/ui/heading-recipe';
 
 interface SelfOnboardPageShellProps {
   eyebrow: string;
@@ -22,13 +23,13 @@ export default function SelfOnboardPageShell(props: SelfOnboardPageShellProps) {
           {props.eyebrow}
         </p>
         <h1
-          className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.15] max-w-3xl mx-auto"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text, #1f1b18)' }}
+          className={`${H1.catalogue} max-w-3xl mx-auto`}
+          style={{ color: 'var(--color-text, #1f1b18)' }}
         >
           {props.title}
         </h1>
         <p
-          className="mt-4 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto"
+          className="mt-4 prose-body leading-relaxed max-w-2xl mx-auto"
           style={{ color: 'var(--color-text-muted, #6b6258)' }}
         >
           {props.subtitle}

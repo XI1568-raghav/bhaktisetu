@@ -37,7 +37,7 @@ const BENEFIT = {
   title1: 'Bring your home temple online,',
   title2: 'pandit-verified, video-proofed',
   subtitle:
-    'Skip the hour-long temple commute. Book a verified pandit, receive same-day puja video, and keep 80G receipts in one place — for your family in India and abroad.',
+    'Skip the hour-long temple commute. Book a pandit, and receive a recording of your ceremony with your name and gotra spoken in it — for your family in India and abroad.',
 };
 
 export default function HeroCopyVariant({
@@ -62,7 +62,6 @@ export default function HeroCopyVariant({
       <h1
         data-reveal="cinematic"
         className={H1.marketing}
-        style={{ color: 'var(--color-text)' }}
       >
         {copy.title1}{' '}
         <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>

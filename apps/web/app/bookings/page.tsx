@@ -23,12 +23,18 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../lib/api-config';
-import { friendlyApiError } from '../../lib/friendly-error';
+import {
+ friendlyApiError,
+ serverErrorMessage,
+ userFacingMessage,
+} from '../../lib/friendly-error';
+import ReauthPrompt from '../../components/ReauthPrompt';
 // DB-09: whether a stored videoProofUrl is something a browser can open, and
 // what to render when the status promised a video that is not there.
 import { videoProofState } from './video-proof';
 import AuthGuard from '../../components/AuthGuard';
 import { H1 } from '../../components/ui/heading-recipe';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -226,11 +232,21 @@ function BookingsContent() {
     DATA_FETCH_TIMEOUT_MS,
    );
    if (!res.ok) {
+    // RES-09: `body?.error` is the SERVER's field, so a bare
+    // {"error":"Internal Server Error"} was alerted at the devotee verbatim,
+    // and a body with no `error` at all fell through to "Could not cancel
+    // (HTTP 502)". `serverErrorMessage` keeps a sentence worth reading (the
+    // cancellation engine sends real ones — "This booking is inside the
+    // cancellation window") and refuses the developer names.
     const body = await res.json().catch(() => ({}));
-    window.alert(body?.error ?? `Could not cancel (HTTP ${res.status}).`);
+    window.alert(
+     serverErrorMessage(body, 'We could not cancel this booking. Please try again.'),
+    );
    }
-  } catch {
-   window.alert('Network error while cancelling. Please try again.');
+  } catch (err) {
+   window.alert(
+    userFacingMessage(err, 'We could not cancel this booking. Please try again.'),
+   );
   } finally {
    setCancellingId(null);
    // Cancelling the only row on the last page of the Upcoming tab would
@@ -337,7 +353,7 @@ function BookingsContent() {
  </div>
  <Link
  href="/pujas"
- className="hidden items-center gap-2 rounded-lg bg-saffron-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-saffron-700 sm:inline-flex"
+ className={buttonClass('primary', 'md', 'hidden sm:inline-flex')}
  >
  <Flame className="h-4 w-4" />
  Book a Puja
@@ -353,6 +369,18 @@ function BookingsContent() {
  className="mb-4 flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
  >
  <span>Could not load your bookings. {loadError.message}</span>
+ {/* AUTH-06: INSTEAD of Retry, never beside it. `reauth` means the
+ request 401'd, and Retry re-fires it with the same dead credential —
+ so leaving it there puts the one control that cannot work next to a
+ sentence telling the devotee to sign in again, and makes the useless
+ one look like the way out. Every other failure keeps Retry, which is
+ the right control for a 5xx or a dropped connection. */}
+ {loadError.reauth ? (
+ <ReauthPrompt
+ message=""
+ className="flex shrink-0 flex-col items-start gap-2 self-start sm:self-auto"
+ />
+ ) : (
  <button
  type="button"
  onClick={() => void refetch()}
@@ -362,6 +390,7 @@ function BookingsContent() {
  <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
  Retry
  </button>
+ )}
  </div>
  )}
  {/* Tabs */}
@@ -419,14 +448,14 @@ function BookingsContent() {
  <Inbox className="h-8 w-8 text-saffron-400" />
  </div>
  <h3 className="mb-2 text-lg font-semibold text-surface-700">No bookings yet</h3>
- <p className="mb-6 max-w-sm text-center text-sm text-surface-500">
+ <p className="mb-6 max-w-sm text-center prose-meta text-surface-500">
  {activeTab === 'all'
  ? 'Explore our pujas to book your first sacred ritual.'
  : `You have no ${activeTab} bookings at the moment.`}
  </p>
  <Link
  href="/pujas"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-6 py-3 font-medium text-white hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  <Flame className="h-4 w-4" />
  Explore Pujas

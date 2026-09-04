@@ -17,6 +17,7 @@ import {
   type CategoryKey,
 } from '../lib/category-tree';
 import { useAuth } from '../lib/auth-context';
+import { buttonClass } from '../components/ui/button-recipe';
 
 const ACCOUNT_LINKS_AUTHED = [
   { href: '/dashboard', label: 'My Dashboard' },
@@ -166,14 +167,14 @@ export function MobileNavV2() {
       <div ref={portalRootRef}>
         {open && (
           <div
-            className="md:hidden fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
+            className="lg:hidden fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
             onClick={close}
             aria-hidden="true"
           />
         )}
         <aside
           ref={asideRef}
-          className={`md:hidden fixed inset-0 z-[101] bg-[#faf9f6] flex flex-col transition-transform duration-200 ease-out ${
+          className={`lg:hidden fixed inset-0 z-[101] bg-[#faf9f6] flex flex-col transition-transform duration-200 ease-out ${
             open ? 'translate-x-0' : 'translate-x-full pointer-events-none'
           }`}
           role="dialog"
@@ -342,7 +343,7 @@ export function MobileNavV2() {
             <Link
               href="/ask-pandit"
               onClick={close}
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-white bg-saffron-600 hover:bg-saffron-700 rounded-lg transition-colors btn-press"
+              className={buttonClass('primary', 'md', 'w-full btn-press')}
             >
               <MessageCircleQuestion className="w-4 h-4" />
               Ask Pandit
@@ -362,7 +363,7 @@ export function MobileNavV2() {
         onClick={() => setOpen((v) => !v)}
         // HN-12: measured 36x36 at 390px wide. The hamburger is the entry to
         // the whole taxonomy on a phone and was the smallest target in the bar.
-        className="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-2 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
+        className="lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-2 text-surface-500 hover:text-surface-800 hover:bg-surface-100 rounded-md transition-colors"
       >
         {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>

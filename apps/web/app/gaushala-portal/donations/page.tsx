@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, Download, Loader2, AlertCircle } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Donation = {
   id: string;
@@ -71,12 +73,16 @@ function DonationsPageContent() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+          // RES-09: `HTTP 500` reached the gaushala manager verbatim.
+          throw new UserFacingError(
+            serverErrorText(await res.text().catch(() => ''), 'We could not load your donations.'),
+            res.status,
+          );
         }
         const data = await res.json();
         if (!cancelled) setDonations(data.donations ?? []);
       } catch (err: any) {
-        if (!cancelled) setError(err?.message ?? 'Failed to load donations');
+        if (!cancelled) setError(userFacingMessage(err, 'We could not load your donations. Please try again.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -142,7 +148,7 @@ function DonationsPageContent() {
     <div className="p-6 lg:p-8 space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>Donations</h1>
+          <h1 className={H1.portal}>Donations</h1>
           <p className="text-[var(--color-text-muted)] text-sm mt-1">
             Total received: ₹{totalReceived.toLocaleString('en-IN')} · This month: ₹
             {monthReceived.toLocaleString('en-IN')}
@@ -151,7 +157,7 @@ function DonationsPageContent() {
         <button
           onClick={exportCsv}
           disabled={filtered.length === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50"
+          className={buttonClass('primary', 'md')}
         >
           <Download className="w-4 h-4" />
           Export CSV

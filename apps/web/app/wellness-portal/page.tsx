@@ -19,8 +19,13 @@ import {
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: the 401/403 split. True ONLY for 401 — a 403 is a suspended
+ // account or a role refusal, and offering sign-in there loops the user back
+ // to the same wall (see loadErrorIsForbidden in lib/api-config.ts).
+ loadErrorIsReauth,
 } from '../../lib/api-config';
 import { H1 } from '../../components/ui/heading-recipe';
+import LoadErrorBanner from '../../components/LoadErrorBanner';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -132,6 +137,10 @@ export default function WellnessDashboard() {
  // RES-02: the query already produced an `error` object; nothing rendered it,
  // so an HTTP 500 showed "0 Upcoming Sessions / 0 Total Students" as fact.
  const loadError = dashError ? loadErrorMessage(dashError) : null;
+ // AUTH-06: derived, not stored — this page holds the raw error object from
+ // the query rather than a message string, so the flag comes off the same
+ // value as the sentence and the two can never disagree.
+ const loadReauth = dashError ? loadErrorIsReauth(dashError) : false;
  const unread = !!loadError && !liveStats;
  const statCards = [
   { label: 'Upcoming Sessions', value: unread ? '—' : liveStats?.upcomingSessions ?? 0, icon: CalendarDays, color: 'text-emerald-600', bg: 'bg-emerald-50' },
@@ -152,12 +161,12 @@ export default function WellnessDashboard() {
  </div>
 
  {loadError && (
- <div role="alert" className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
- <span className="flex-1 min-w-[12rem]">{loadError}</span>
- <button type="button" onClick={() => { void refetchDashboard(); }} className="font-semibold underline underline-offset-2 hover:text-amber-900">
- Retry
- </button>
- </div>
+ <LoadErrorBanner
+ message={loadError}
+ reauth={loadReauth}
+ onRetry={() => { void refetchDashboard(); }}
+ className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+ />
  )}
 
  <MyProviderProfileCard role="WELLNESS_INSTRUCTOR" onboardingSlug="wellness_instructor" publicListingType="wellness" />

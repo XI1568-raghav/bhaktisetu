@@ -197,11 +197,39 @@ describe('A11Y-10 — /pujas category badges', () => {
 describe('A11Y-10 — /store accent text', () => {
   const src = read('app/store/page.tsx');
 
-  it('the discount badge uses the dark green, not the 3.3:1 one', () => {
-    const badge = /-\{product\.discount\}%/.exec(src);
-    expect(badge).not.toBeNull();
-    const around = src.slice(Math.max(0, badge!.index - 250), badge!.index);
-    expect(around).toMatch(/bg-tulsi-green-dark/);
+  /**
+   * SUPERSEDED CONTRACT — rewritten deliberately for LEG-17.
+   *
+   * This case used to assert the discount badge EXISTS and is painted with the
+   * dark green:
+   *
+   *     const badge = /-\{product\.discount\}%/.exec(src);
+   *     expect(badge).not.toBeNull();
+   *
+   * The badge has since been removed outright. It rendered `product.discount`,
+   * a hardcoded seed field in lib/products.ts computed against a
+   * `compareAtPrice` that no product was ever sold at — a fabricated discount
+   * under the Consumer Protection Act 2019, and one carrying no end date, so it
+   * could never expire on its own. A contrast guard must not require the
+   * presence of a control that a consumer-protection fix deleted, so the
+   * existence assertion is inverted. The A11Y-10 contrast rule itself is not
+   * weakened: it is restated in the failure message, and the sibling case below
+   * still forbids the bare 3.30:1 `text-tulsi-green` anywhere on this page.
+   *
+   * Block comments are stripped before scanning: the removal site in
+   * app/store/page.tsx carries an explanatory note that names the badge, and a
+   * comment-blind source scan would read that prose as live markup.
+   */
+  it('renders no fabricated discount badge (LEG-17 removed it)', () => {
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(
+      /-\{product\.discount\}%/.test(code),
+      'the fabricated "-NN%" discount badge is back on /store. It measured a ' +
+        'hardcoded seed discount against a reference price no product was ever ' +
+        'sold at. If a real, dated discount is ever reintroduced, paint it ' +
+        'bg-tulsi-green-dark — bare tulsi-green is #16a34a, 3.30:1 with white ' +
+        'text, below the 4.5:1 floor.',
+    ).toBe(false);
   });
 
   it('small green copy (rating, free delivery) uses the dark green', () => {

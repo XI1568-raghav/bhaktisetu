@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, BellOff, X } from 'lucide-react';
-import { API_BASE_URL } from '../lib/api-config';
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../lib/api-config';
+import { useAuth } from '../lib/auth-context';
 
+import { buttonClass } from '../components/ui/button-recipe';
 /**
  * Web push subscription prompt. Three states:
  *   - hidden: feature unsupported, user dismissed today, or already subscribed
  *   - prompt: show "Enable notifications" CTA
  *   - error:  permission denied or subscription failed
  *
- * The CTA only appears for signed-in users (we read `poojly_session`
- * from localStorage). Anonymous visitors don't see it — push without an
- * account is just spam.
+ * The CTA only appears for signed-in users (`useAuth().isAuthenticated`).
+ * Anonymous visitors don't see it — push without an account is just spam.
  *
  * Dismissals are stored in localStorage (`darshya_push_dismissed_at`)
  * and respected for 7 days. After that we show the prompt again.
@@ -30,15 +31,24 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return out;
 }
 
-function getAccessToken(): string | null {
-  try {
-    const raw = localStorage.getItem('poojly_session');
-    if (!raw) return null;
-    return JSON.parse(raw)?.accessToken ?? null;
-  } catch {
-    return null;
-  }
-}
+/**
+ * SEC-02 step 3 — this file used to hand-build its own Bearer from
+ * `localStorage['poojly_session'].accessToken`, and used the presence of that
+ * value as its "is anyone signed in" test.
+ *
+ * Both were wrong for the same reason. Six files read that key by hand, and
+ * between them they are what keeps the access token in localStorage:
+ * lib/auth-context cannot stop WRITING it while surfaces outside that module
+ * read it directly. And a browser revived from the httpOnly `darshya_session`
+ * cookie — which lib/auth-context does today, keeping the revived session in
+ * MEMORY ONLY — has no such key, so it failed the probe and was never
+ * prompted, even though the app knows exactly who it is.
+ *
+ * `useAuth()` answers both questions from one owner. `credentials: 'include'`
+ * (the default inside `fetchWithTimeout`) is the other half: the API is a
+ * different ORIGIN, `fetch` defaults to 'same-origin', and without it the
+ * cookie that authenticates a token-free browser is never sent.
+ */
 
 function isDismissed(): boolean {
   try {
@@ -52,6 +62,8 @@ function isDismissed(): boolean {
 }
 
 export function NotificationPrompt() {
+  const { session, isAuthenticated } = useAuth();
+  const token = session?.accessToken;
   const [state, setState] = useState<'hidden' | 'prompt' | 'busy' | 'error'>('hidden');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -60,18 +72,20 @@ export function NotificationPrompt() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (Notification.permission === 'granted') return;
     if (Notification.permission === 'denied') return;
-    if (!getAccessToken()) return;
+    if (!isAuthenticated) return;
     if (isDismissed()) return;
     // Brief delay so we don't slam the user on first paint
     const t = window.setTimeout(() => setState('prompt'), 4000);
     return () => window.clearTimeout(t);
-  }, []);
+    // Re-run when the session settles: auth-context resolves asynchronously
+    // (it may have to revive from the cookie first), so on a signed-in browser
+    // the first pass through this effect legitimately sees `false`.
+  }, [isAuthenticated]);
 
   const enable = async () => {
     setState('busy');
     try {
-      const token = getAccessToken();
-      if (!token) throw new Error('Sign in to enable notifications');
+      if (!isAuthenticated) throw new Error('Sign in to enable notifications');
 
       const keyRes = await fetch(`${API_BASE_URL}/notifications/vapid-public-key`);
       const keyData = (await keyRes.json()) as { publicKey?: string; enabled?: boolean };
@@ -96,14 +110,18 @@ export function NotificationPrompt() {
         applicationServerKey: urlBase64ToUint8Array(keyData.publicKey) as BufferSource,
       });
 
-      const subRes = await fetch(`${API_BASE_URL}/notifications/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const subRes = await fetchWithTimeout(
+        `${API_BASE_URL}/notifications/subscribe`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ subscription: sub.toJSON() }),
         },
-        body: JSON.stringify({ subscription: sub.toJSON() }),
-      });
+        DATA_FETCH_TIMEOUT_MS,
+      );
       if (!subRes.ok) throw new Error('Server rejected subscription');
 
       setState('hidden');
@@ -133,7 +151,7 @@ export function NotificationPrompt() {
   if (state === 'hidden') return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-xl border border-saffron-200 bg-white shadow-lg p-4">
+    <div className="fixed bottom-[calc(var(--consent-h,0px)+5rem+env(safe-area-inset-bottom))] md:bottom-4 right-4 z-50 max-w-sm rounded-xl border border-saffron-200 bg-white shadow-lg p-4">
       <button
         onClick={dismiss}
         aria-label="Dismiss"
@@ -161,8 +179,7 @@ export function NotificationPrompt() {
               <button
                 onClick={enable}
                 disabled={state === 'busy'}
-                className="text-xs font-medium px-3 py-1.5 rounded-md text-white disabled:opacity-50"
-                style={{ background: 'var(--color-primary)' }}
+                className={buttonClass('primary', 'md')}
               >
                 {state === 'busy' ? 'Enabling…' : 'Enable'}
               </button>

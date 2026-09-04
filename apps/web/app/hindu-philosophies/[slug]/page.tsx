@@ -2,6 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getHinduPhilosophy, HINDU_PHILOSOPHIES } from '../../../lib/hindu-philosophies';
+// CI-08: the six orthodox darshanas are also published at /darshanas/<slug>
+// from a strictly richer dataset. Those six defer; the four Vedanta
+// sub-schools have no twin and stay canonical here.
+import { canonicalDarshanaUrl } from '../../../lib/darshanas';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -26,10 +33,13 @@ export async function generateMetadata({
   const description = p.centralThesis.length > 160
     ? `${p.centralThesis.slice(0, 157)}…`
     : p.centralThesis;
+  const twin = canonicalDarshanaUrl(p.slug);
   return {
     title,
     description,
-    alternates: { canonical: `${BASE_URL}/hindu-philosophies/${p.slug}` },
+    alternates: {
+      canonical: twin ? `${BASE_URL}${twin}` : `${BASE_URL}/hindu-philosophies/${p.slug}`,
+    },
     openGraph: {
       images: ['/images/golden-temple-og.jpg'],
       title: `${p.name} (${p.sanskrit})`,
@@ -94,7 +104,7 @@ export default async function HinduPhilosophyDetailPage({
       <header className="mb-8">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{CATEGORY_LABEL[p.category]}</p>
         <p className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">{p.sanskrit}</p>
-        <h1 className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">{p.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{p.name}</h1>
       </header>
 
       <section className="mb-8 grid gap-3 rounded-2xl border border-gray-200 bg-white p-5 sm:grid-cols-3">
@@ -181,6 +191,10 @@ export default async function HinduPhilosophyDetailPage({
           <span />
         )}
       </nav>
+      {detailCta({
+        routePrefix: 'hindu-philosophies',
+        subject: p.name,
+      })}
     </main>
   );
 }

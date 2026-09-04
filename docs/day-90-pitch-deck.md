@@ -2,6 +2,8 @@
 
 > Working draft for seed conversations. 12 slides. Last updated 2026-05-28 (Sprint 3 close).
 
+> **Correction 2026-09-02 (`OPS-10`).** This deck is investor-facing and asserted a stack that does not exist. It claimed an "NRI-priced dual lane — INR for domestic, USD via Stripe" (slide 3), "100% free-tier (Render + CF Pages + Supabase + …)" (slide 7), and "Stripe domestic + Razorpay both live test mode" (slide 11). Verified reality: **the Stripe rail was deleted from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`; every surviving mention in `apps/api/src` is a removal note) and **no replacement international/NRI processor has been chosen** — Razorpay is the only live rail and it settles **INR only**, so no foreign-currency capability, fee or FX rate may be quoted from this deck. **Cloudflare Pages has not served the web tier since the 2026-07-08 cutover** (`docs/render-web-cutover-runbook.md`, `cf-kill-zombie.yml`); the web tier is the Render Docker service `darshya-web`, region `oregon` (`render.yaml:52-60`), and Cloudflare is DNS + edge proxy only. Render's free allowance is **750 instance-hours per account, not per service** — two always-on free services need ~1,488 h, and the account was suspended for exactly this on 2026-08-17, so "zero infra cost" is not sustainable as stated. Items that cannot be verified from this repository are marked `[verify]` below.
+
 ## Slide 1 — Title
 
 - **Darshya** — Devotional super-app for India + 32M NRI diaspora.
@@ -18,7 +20,7 @@
 
 - **Video-proof puja booking** — every booking ships verified MP4 to devotee.
 - **Live darshan** — 6 temples streaming today, IVS + YouTube fallback.
-- **NRI-priced dual lane** — INR for domestic, USD via Stripe for diaspora at 9-10× margins.
+- **NRI-priced dual lane** — INR for domestic today; the diaspora lane is **not wired** `[verify — Stripe was removed; the NRI rail is undecided]`. *(Corrected 2026-09-02, `OPS-10`; this bullet read "USD via Stripe for diaspora at 9-10× margins." Razorpay settles INR only.)* The 9-10× price point is a target, not a rail that can currently accept a foreign card.
 - **80G donation rail** — gaushala + temple seva with PAN-backed receipts.
 - **Astrology + wellness + yatra + store** — full devotional surface in one app.
 
@@ -65,7 +67,7 @@ Take-rate weighted to NRI = 10.4× domestic gross per txn.
 - Cumulative Year 1 GMV ≈ ₹8.6L.
 - Founder ₹50k salary break-even at **M6**.
 - 3-person team ₹150k break-even at **M11**.
-- **Zero infra cost.** 100% free-tier (Render + CF Pages + Supabase + GH Actions + Resend + WA Cloud).
+- **Infra cost $0 today, but not structurally free.** Render + Supabase + GH Actions + Resend + WA Cloud. *(Corrected 2026-09-02, `OPS-10`; this line read "100% free-tier (Render + CF Pages + Supabase + …)". CF Pages is not in the stack — the web tier is a Render Docker service, `render.yaml:52-60`. Render's 750 instance-hours are **per account, not per service**: two always-on free services need ~1,488 h and the account was suspended on 2026-08-17 for exceeding this. Treat a paid Render tier as a required line item, not an optional one.)*
 
 ## Slide 8 — Why now
 
@@ -86,7 +88,7 @@ Take-rate weighted to NRI = 10.4× domestic gross per txn.
 - Founder solo. Stack: full-stack TS, Next 15, Fastify 5, Prisma, Supabase, React Native (Expo).
 - Built 70+ commits, 416/416 API tests green, 0 paid infra.
 - **Ask**: ₹2-3 Cr seed at ₹15-20 Cr valuation. 24-month runway. Hire 1 BD (NRI partnerships), 1 mobile engineer, 1 ops.
-- Use of funds: U1 Razorpay live KYC docs, U2 Stripe NRI live, Apple Dev $99, paid acquisition test ₹5L, founder ₹50k × 24.
+- Use of funds: U1 Razorpay live KYC docs, U2 stand up an NRI/international rail `[verify — Stripe was removed 2026-08-11; the replacement processor is undecided, so this line item is unpriced]`, Apple Dev $99, paid acquisition test ₹5L, founder ₹50k × 24.
 
 ## Slide 11 — Risk register
 
@@ -94,7 +96,7 @@ Take-rate weighted to NRI = 10.4× domestic gross per txn.
 |---|---|
 | Sri Mandir launches USD tier | Tripwire fold to NRI-only SKU (in ROADMAP.md) |
 | Temple churn (no verifications) | Verified-only listing rule + booking-quality-monitor agent |
-| Payment KYC delay | Stripe domestic + Razorpay both live test mode; demo flow gated U15 |
+| Payment KYC delay | Razorpay live test mode; demo flow gated U15. *(Corrected 2026-09-02, `OPS-10`: this cell read "Stripe domestic + Razorpay both live test mode." Stripe was removed 2026-08-11 and no replacement rail exists — `[verify]`, so the NRI half of this mitigation is currently unmitigated.)* |
 | NRI mix < 15% by week 12 | Tripwire fold to NRI-only SKU |
 | WA / Resend free tier breach | WA-primary for daily-devotional, soft-cap MAX_EMAIL_RECIPIENTS |
 

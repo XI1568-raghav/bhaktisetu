@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,21 +6,117 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useContent } from '@poojly/api-client';
+import type { ContentFilterParams } from '@poojly/shared';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { contentTypeLabel } from '../../lib/enum-labels';
+
+/**
+ * NAV-01, 2026-09-02 — THE FABRICATED CATALOGUE IS GONE.
+ *
+ * WHAT WAS HERE
+ * -------------
+ * A ten-row literal array named `contentData` — "Om Jai Jagdish Hare · Lord
+ * Vishnu · 5:42", "Gayatri Mantra (108 times) · Goddess Gayatri · 32:00", and
+ * eight more — invented deity attributions and invented running times for
+ * devotional works, presented as this product's library. It reached the screen
+ * two ways, and the second was worse than the first:
+ *
+ *   1. `: contentData` — the whole array rendered verbatim whenever the API
+ *      returned nothing, so an empty library and a broken request both looked
+ *      like ten pieces of real inventory.
+ *
+ *   2. `const fb = contentData[i % contentData.length]!` — for REAL rows, the
+ *      mock was indexed by position modulo ten and painted over the response:
+ *
+ *          deity:    (c as any).deity    ?? fb.deity
+ *          duration: (c as any).duration ?? fb.duration
+ *
+ *      `duration` is not a field this API has ever sent (the column is
+ *      `durationSeconds`), so that `??` fell through on EVERY row, every time:
+ *      each real aarti was stamped with whatever running time happened to sit
+ *      at its index in the mock. A devotee reading "9:30" under a real title
+ *      was reading a number attached to a different work entirely.
+ *
+ * `inferContentType(category, title)` went the same way. It guessed the type
+ * from a `category` field that does not exist and from substrings of the
+ * title, and `return 'aarti'` was its default — which is the mechanical cause
+ * of the "12+ invented aartis" the audit counted. The server sends `type`, a
+ * ContentType enum, on every row.
+ *
+ * WHAT THE SERVER ACTUALLY SENDS
+ * ------------------------------
+ * apps/api/src/services/content.service.ts `findAll` selects exactly:
+ *
+ *   id, type, title, titleLocal, slug, body, deity, language, durationSeconds,
+ *   tags, isPremium, viewCount, likeCount, imageUrl, audioUrl, videoUrl,
+ *   status, publishedAt
+ *
+ * inside `{ data: [...], pagination: {...} }` (routes/content.ts:6 returns the
+ * service result unchanged). Note what is NOT in that list: `duration`,
+ * `mediaUrl`, `thumbnailUrl`, `description`, `isFeatured` — all four are
+ * declared on `ContentItem` in packages/shared/src/types/index.ts:333 and none
+ * of them is ever populated. The declared type is the same envelope fiction
+ * PAR-07 documents for pujas, so this screen does not trust it: the payload
+ * goes through a selector pinned field-for-field to the service's `select:`
+ * block, and an unrecognised shape yields an EMPTY list rather than invented
+ * rows.
+ *
+ * THE RULE, RESTATED
+ * ------------------
+ * An absent field removes its row. `deity` is nullable in the schema, so the
+ * deity line is rendered only when the server sends one. `durationSeconds` is
+ * nullable, so the duration is rendered only when there is one to render, and
+ * it is FORMATTED from the server's seconds — never typed out as a plausible
+ * "5:42".
+ *
+ * THE TABS NOW FILTER SERVER-SIDE
+ * -------------------------------
+ * `useContent({ type })`. GET /api/v1/content accepts `type` and the handler
+ * passes it to a Prisma `where`. The old code fetched one unfiltered page of
+ * 20 and partitioned it in JS across four tabs — so with eight ContentType
+ * values in the enum a tab could be empty purely because page 1 happened not
+ * to contain that type, and "No bhajan content yet" was then a claim about
+ * pagination dressed up as a claim about the library.
+ *
+ * THERE IS NO AUDIO PLAYER, SO THERE IS NO PLAY BUTTON
+ * ----------------------------------------------------
+ * The screen shipped a play glyph on every row and a bottom mini-player with a
+ * progress bar. None of it could play anything: apps/mobile/package.json has
+ * no audio dependency at all — not expo-av, not react-native-track-player;
+ * `expo-video` is the darshan player's, and it is video. `onPress` set a
+ * `playingId` in React state, the glyph flipped to a pause icon, and a
+ * fixed-width bar was drawn under a track that had never started. That is a
+ * fabricated PLAYBACK STATE, which is the same defect class as the fabricated
+ * rows and is removed with them rather than left to apologise.
+ *
+ * What replaces it is the thing the API already sends and the screen never
+ * showed: `body`, the actual text of the aarti, chalisa, mantra or bhajan.
+ * Tapping a row opens it inline. A row whose `body` the server did not send is
+ * not tappable and says so — it is not a disabled button, it is simply not a
+ * button.
+ */
 
 type ContentType = 'aarti' | 'chalisa' | 'mantra' | 'bhajan';
 
-interface ContentItem {
+interface ContentRow {
   id: string;
+  slug: string;
   title: string;
+  /** Devanagari/regional title. Rendered only when the server sends one. */
+  titleLocal: string | null;
   type: ContentType;
-  deity: string;
-  duration: string;
-  isAudio: boolean;
+  /** Nullable in the schema. No deity line when absent — never a guess. */
+  deity: string | null;
+  /** Formatted from `durationSeconds`. Null when the server sent no duration. */
+  durationLabel: string | null;
+  isPremium: boolean;
+  /** The work itself. Null when the row carries no text to open. */
+  body: string | null;
 }
 
 const tabs: { key: ContentType; label: string }[] = [
@@ -30,88 +126,79 @@ const tabs: { key: ContentType; label: string }[] = [
   { key: 'bhajan', label: 'Bhajan' },
 ];
 
-const contentData: ContentItem[] = [
-  {
-    id: '1',
-    title: 'Om Jai Jagdish Hare',
-    type: 'aarti',
-    deity: 'Lord Vishnu',
-    duration: '5:42',
-    isAudio: true,
-  },
-  {
-    id: '2',
-    title: 'Ganga Aarti',
-    type: 'aarti',
-    deity: 'Maa Ganga',
-    duration: '8:15',
-    isAudio: true,
-  },
-  {
-    id: '3',
-    title: 'Hanuman Chalisa',
-    type: 'chalisa',
-    deity: 'Lord Hanuman',
-    duration: '9:30',
-    isAudio: true,
-  },
-  {
-    id: '4',
-    title: 'Shiv Chalisa',
-    type: 'chalisa',
-    deity: 'Lord Shiva',
-    duration: '11:20',
-    isAudio: true,
-  },
-  {
-    id: '5',
-    title: 'Gayatri Mantra (108 times)',
-    type: 'mantra',
-    deity: 'Goddess Gayatri',
-    duration: '32:00',
-    isAudio: true,
-  },
-  {
-    id: '6',
-    title: 'Mahamrityunjaya Mantra',
-    type: 'mantra',
-    deity: 'Lord Shiva',
-    duration: '28:45',
-    isAudio: true,
-  },
-  {
-    id: '7',
-    title: 'Om Namah Shivaya (chant)',
-    type: 'mantra',
-    deity: 'Lord Shiva',
-    duration: '15:00',
-    isAudio: true,
-  },
-  {
-    id: '8',
-    title: 'Achyutam Keshavam',
-    type: 'bhajan',
-    deity: 'Lord Krishna',
-    duration: '6:12',
-    isAudio: true,
-  },
-  {
-    id: '9',
-    title: 'Shri Ram Chandra Kripalu',
-    type: 'bhajan',
-    deity: 'Lord Rama',
-    duration: '7:45',
-    isAudio: true,
-  },
-  {
-    id: '10',
-    title: 'Jai Ambe Gauri',
-    type: 'aarti',
-    deity: 'Goddess Durga',
-    duration: '4:30',
-    isAudio: true,
-  },
-];
+const TAB_KEYS: ReadonlySet<string> = new Set(tabs.map((t) => t.key));
+
+// ─── selectors ──────────────────────────────────────────────────────────────
+//
+// Local rather than in lib/api-contracts.ts for the same reason
+// puja-detail.tsx keeps `selectPujaProse` local: only this screen reads the
+// descriptive columns, and the booking-critical selectors in that module are
+// shared by screens that must not disagree. Pure functions, no react-native
+// import, so they parse under the plain-node vitest config.
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+function str(v: unknown): string | null {
+  return typeof v === 'string' && v.trim().length > 0 ? v : null;
+}
+
+/** Rows off `{ data: [...] }`. Anything else is an empty page, not a default. */
+function dataRows(payload: unknown): Record<string, unknown>[] {
+  if (!isRecord(payload)) return [];
+  const rows = payload.data;
+  return Array.isArray(rows) ? rows.filter(isRecord) : [];
+}
+
+/**
+ * `durationSeconds` -> "5:42" / "1:02:15".
+ *
+ * Returns null for anything that is not a positive finite number, so a missing
+ * or zero duration removes the line instead of printing "0:00" — which reads
+ * as a real, and wrong, running time.
+ */
+function formatDuration(v: unknown): string | null {
+  if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return null;
+  const total = Math.round(v);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
+}
+
+/**
+ * The response -> rows this screen can honestly render.
+ *
+ * A row without an id, a slug or a title has nothing to key, address or label,
+ * so it is dropped rather than filled in. A `type` outside the four tabs is
+ * also dropped: the enum has eight values (story, article, shloka, video_reel
+ * are the others) and coercing one of those into "Aarti" is exactly the
+ * mislabelling this rewrite exists to end.
+ */
+function selectContentRows(payload: unknown): ContentRow[] {
+  return dataRows(payload)
+    .map((c): ContentRow | null => {
+      const id = str(c.id);
+      const slug = str(c.slug);
+      const title = str(c.title);
+      const type = str(c.type);
+      if (!id || !slug || !title || !type || !TAB_KEYS.has(type)) return null;
+      return {
+        id,
+        slug,
+        title,
+        titleLocal: str(c.titleLocal),
+        type: type as ContentType,
+        deity: str(c.deity),
+        durationLabel: formatDuration(c.durationSeconds),
+        isPremium: c.isPremium === true,
+        body: str(c.body),
+      };
+    })
+    .filter((r): r is ContentRow => r !== null);
+}
 
 const typeColors: Record<ContentType, string> = {
   aarti: colors.saffron[600],
@@ -129,127 +216,146 @@ const typeIcons: Record<ContentType, React.ComponentProps<typeof Ionicons>['name
 
 const ContentItemRow = React.memo(function ContentItemRow({
   item,
-  isPlaying,
-  onPress,
+  isOpen,
+  onToggle,
 }: {
-  item: ContentItem;
-  isPlaying: boolean;
-  onPress: (id: string) => void;
+  item: ContentRow;
+  isOpen: boolean;
+  onToggle: (id: string) => void;
 }) {
+  // A row with no text to open is not a button. Rendering it as a disabled
+  // TouchableOpacity would still announce "button, dimmed" to VoiceOver and
+  // still invite the tap; a View announces what it is.
+  const Row: React.ComponentType<any> = item.body ? TouchableOpacity : View;
+  const interactive = item.body
+    ? {
+        activeOpacity: 0.7,
+        onPress: () => onToggle(item.id),
+        accessibilityRole: 'button' as const,
+        accessibilityState: { expanded: isOpen },
+        accessibilityLabel: item.title,
+        accessibilityHint: isOpen ? 'Collapses the text' : 'Shows the full text',
+      }
+    : {};
+
   return (
-    <TouchableOpacity
-      style={[styles.contentRow, isPlaying && styles.contentRowActive]}
-      activeOpacity={0.7}
-      onPress={() => onPress(item.id)}
-    >
-      {/* Icon */}
-      <View
-        style={[
-          styles.contentIcon,
-          { backgroundColor: isPlaying ? colors.saffron[600] : colors.stone[100] },
-        ]}
-      >
-        {isPlaying ? (
-          <Ionicons name="pause" size={18} color={colors.white} />
-        ) : (
-          <Ionicons
-            name={typeIcons[item.type]}
-            size={18}
-            color={typeColors[item.type]}
-          />
-        )}
-      </View>
-
-      {/* Info */}
-      <View style={styles.contentInfo}>
-        <Text
-          style={[
-            styles.contentTitle,
-            isPlaying && styles.contentTitleActive,
-          ]}
-          numberOfLines={1}
-        >
-          {item.title}
-        </Text>
-        <View style={styles.contentMeta}>
-          <View
-            style={[
-              styles.typeBadge,
-              { backgroundColor: `${typeColors[item.type]}18` },
-            ]}
-          >
-            <Text
-              style={[styles.typeBadgeText, { color: typeColors[item.type] }]}
-            >
-              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-            </Text>
-          </View>
-          <Text style={styles.contentDeity}>{item.deity}</Text>
+    <View style={[styles.contentCard, isOpen && styles.contentCardActive]}>
+      <Row style={styles.contentRow} {...interactive}>
+        <View style={styles.contentIcon}>
+          <Ionicons name={typeIcons[item.type]} size={18} color={typeColors[item.type]} />
         </View>
-      </View>
 
-      {/* Duration & Play */}
-      <View style={styles.contentRight}>
-        <Text style={styles.contentDuration}>{item.duration}</Text>
-        {item.isAudio && (
-          <TouchableOpacity
-            style={[
-              styles.playSmall,
-              isPlaying && styles.playSmallActive,
-            ]}
-            onPress={() => onPress(item.id)}
-          >
-            <Ionicons
-              name={isPlaying ? 'pause' : 'play'}
-              size={14}
-              color={isPlaying ? colors.white : colors.saffron[600]}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-    </TouchableOpacity>
+        <View style={styles.contentInfo}>
+          <Text style={styles.contentTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+          {/* Rendered only when the server sent one. */}
+          {item.titleLocal ? (
+            <Text style={styles.contentTitleLocal} numberOfLines={1}>
+              {item.titleLocal}
+            </Text>
+          ) : null}
+          <View style={styles.contentMeta}>
+            <View
+              style={[styles.typeBadge, { backgroundColor: `${typeColors[item.type]}18` }]}
+            >
+              <Text style={[styles.typeBadgeText, { color: typeColors[item.type] }]}>
+                {contentTypeLabel(item.type)}
+              </Text>
+            </View>
+            {item.deity ? <Text style={styles.contentDeity}>{item.deity}</Text> : null}
+            {item.durationLabel ? (
+              <Text style={styles.contentDuration}>{item.durationLabel}</Text>
+            ) : null}
+            {item.isPremium ? (
+              <View style={styles.premiumBadge}>
+                <Ionicons name="diamond-outline" size={10} color={colors.saffron[700]} />
+                <Text style={styles.premiumBadgeText}>Premium</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        {item.body ? (
+          <Ionicons
+            name={isOpen ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={colors.stone[400]}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          />
+        ) : null}
+      </Row>
+
+      {isOpen && item.body ? (
+        <View style={styles.bodyBlock}>
+          <Text style={styles.bodyText} selectable>
+            {item.body}
+          </Text>
+        </View>
+      ) : null}
+    </View>
   );
 });
 
-function inferContentType(category?: string | null, title?: string | null): ContentType {
-  const c = `${category ?? ''} ${title ?? ''}`.toLowerCase();
-  if (c.includes('chalisa')) return 'chalisa';
-  if (c.includes('mantra') || c.includes('chant')) return 'mantra';
-  if (c.includes('bhajan')) return 'bhajan';
-  return 'aarti';
-}
-
 export default function ContentScreen() {
   const [activeTab, setActiveTab] = useState<ContentType>('aarti');
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const contentQuery = useContent();
-
-  // Stable toggle so renderItem stays referentially equal across re-renders
-  // (paired with React.memo on ContentItemRow → only the row whose isPlaying
-  // changed re-renders).
-  const handleTogglePlay = useCallback((id: string) => {
-    setPlayingId((prev) => (prev === id ? null : id));
-  }, []);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const apiContent = contentQuery.data?.data ?? [];
-  const sourceContent: ContentItem[] = apiContent.length > 0
-    ? apiContent.map((c, i) => {
-        const fb = contentData[i % contentData.length]!;
-        const t = inferContentType((c as any).category, c.title);
-        return {
-          id: c.id,
-          title: c.title ?? fb.title,
-          type: t,
-          deity: (c as any).deity ?? fb.deity,
-          duration: (c as any).duration ?? fb.duration,
-          isAudio: true,
-        };
-      })
-    : contentData;
+  /**
+   * Server-side filter. The tab IS the query, so an empty tab means the
+   * library has none of that type — not that page 1 happened to miss it.
+   *
+   * THE CAST, AND WHY IT IS NOT LAZINESS
+   * ------------------------------------
+   * `ContentFilterParams.type` is declared as the SHARED `ContentType`
+   * (packages/shared/src/types/index.ts:18) — an UPPERCASE enum, ARTICLE |
+   * VIDEO | AUDIO | MANTRA | AARTI | CHALISA | STORY, with no `bhajan` in it
+   * at all. The wire does not agree with that declaration. The handler casts
+   * the raw query string straight to the PRISMA enum
+   * (content.service.ts:34), whose values are lowercase and are
+   * aarti | chalisa | mantra | bhajan | story | article | shloka |
+   * video_reel.
+   *
+   * This is not a style difference, it is a live 500. Verified against
+   * production on 2026-09-02:
+   *
+   *   GET /api/v1/content?type=aarti  -> 200, 5 rows
+   *   GET /api/v1/content?type=AARTI  -> 500
+   *
+   * So the lowercase literal is the correct value and the declared type is
+   * the thing that is wrong — the same class of divergence PAR-07 documents
+   * for pujas. Correcting packages/shared touches every consumer of that
+   * enum and is not this screen's change to make; the cast is the narrowest
+   * possible way to say "the server's spelling wins", confined to one line
+   * with the evidence written beside it.
+   */
+  const contentQuery = useContent({
+    type: activeTab as unknown as ContentFilterParams['type'],
+  });
 
-  const filteredContent = sourceContent.filter((item) => item.type === activeTab);
-  const playingItem = sourceContent.find((item) => item.id === playingId);
+  // Stable toggle so renderItem stays referentially equal across re-renders
+  // (paired with React.memo on ContentItemRow → only the row whose isOpen
+  // changed re-renders).
+  const handleToggle = useCallback((id: string) => {
+    setOpenId((prev) => (prev === id ? null : id));
+  }, []);
+
+  const items = useMemo(() => selectContentRows(contentQuery.data), [contentQuery.data]);
+
+  const errorText = contentQuery.isError
+    ? contentQuery.error instanceof Error
+      ? contentQuery.error.message
+      : 'Unknown error'
+    : null;
+
+  const selectTab = useCallback((key: ContentType) => {
+    setActiveTab(key);
+    // The open row belongs to the tab that is leaving; carrying its id across
+    // would silently re-expand an unrelated row if the ids ever collided.
+    setOpenId(null);
+  }, []);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -279,8 +385,11 @@ export default function ContentScreen() {
                   styles.segmentTab,
                   isActive && styles.segmentTabActive,
                 ]}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => selectTab(tab.key)}
                 activeOpacity={0.7}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={tab.label}
               >
                 <Ionicons
                   name={typeIcons[tab.key]}
@@ -303,73 +412,44 @@ export default function ContentScreen() {
 
       {/* Content List */}
       <FlatList
-        data={filteredContent}
+        data={items}
         keyExtractor={(item) => item.id}
         renderItem={useCallback(
-          ({ item }: { item: ContentItem }) => (
-            <ContentItemRow
-              item={item}
-              isPlaying={playingId === item.id}
-              onPress={handleTogglePlay}
-            />
+          ({ item }: { item: ContentRow }) => (
+            <ContentItemRow item={item} isOpen={openId === item.id} onToggle={handleToggle} />
           ),
-          [playingId, handleTogglePlay]
+          [openId, handleToggle]
         )}
-        contentContainerStyle={[
-          styles.listContent,
-          playingItem ? { paddingBottom: 100 } : undefined,
-        ]}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons
-              name={typeIcons[activeTab]}
-              size={48}
-              color={colors.stone[300]}
-            />
-            <Text style={styles.emptyText}>
-              No {activeTab} content yet
-            </Text>
-          </View>
+          /* Three distinct states, because they are three distinct facts and
+             the devotee can act on only one of them. The old screen had no
+             loading state and no error state at all — it substituted the mock
+             array for both. */
+          contentQuery.isLoading ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator color={colors.saffron[600]} />
+              <Text style={styles.emptyText}>Loading…</Text>
+            </View>
+          ) : errorText ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="cloud-offline-outline" size={48} color={colors.stone[300]} />
+              <Text style={styles.emptyText}>Could not load this library</Text>
+              <Text style={styles.emptySubtext}>{errorText} — pull down to retry.</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name={typeIcons[activeTab]} size={48} color={colors.stone[300]} />
+              <Text style={styles.emptyText}>
+                No {contentTypeLabel(activeTab).toLowerCase()} published yet
+              </Text>
+              <Text style={styles.emptySubtext}>Pull down to check again.</Text>
+            </View>
+          )
         }
       />
-
-      {/* Mini Player */}
-      {playingItem && (
-        <View style={styles.miniPlayer}>
-          <View style={styles.miniPlayerProgress} />
-          <View style={styles.miniPlayerContent}>
-            <View style={styles.miniPlayerIcon}>
-              <Ionicons
-                name={typeIcons[playingItem.type]}
-                size={18}
-                color={colors.white}
-              />
-            </View>
-            <View style={styles.miniPlayerInfo}>
-              <Text style={styles.miniPlayerTitle} numberOfLines={1}>
-                {playingItem.title}
-              </Text>
-              <Text style={styles.miniPlayerDeity}>
-                {playingItem.deity}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.miniPlayerButton}
-              onPress={() => setPlayingId(null)}
-            >
-              <Ionicons name="pause" size={22} color={colors.white} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.miniPlayerClose}
-              onPress={() => setPlayingId(null)}
-            >
-              <Ionicons name="close" size={18} color={colors.stone[400]} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
   );
 }
@@ -440,19 +520,23 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   // Content Row
+  contentCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.stone[100],
+    overflow: 'hidden',
+  },
+  contentCardActive: {
+    borderColor: colors.saffron[200],
+    backgroundColor: colors.saffron[50],
+  },
   contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
+    // 44 icon + 2x8 padding clears the 44pt minimum on the tappable row.
     padding: spacing.sm,
-    borderRadius: borderRadius.lg,
     gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.stone[100],
-  },
-  contentRowActive: {
-    borderColor: colors.saffron[200],
-    backgroundColor: colors.saffron[50],
   },
   contentIcon: {
     width: 44,
@@ -460,6 +544,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.stone[100],
   },
   contentInfo: {
     flex: 1,
@@ -468,15 +553,18 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     fontWeight: '600',
     color: colors.stone[900],
-    marginBottom: 4,
   },
-  contentTitleActive: {
-    color: colors.saffron[700],
+  contentTitleLocal: {
+    fontSize: fontSize.sm,
+    color: colors.stone[500],
+    marginTop: 1,
   },
   contentMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: spacing.sm,
+    marginTop: 4,
   },
   typeBadge: {
     paddingHorizontal: 6,
@@ -491,30 +579,39 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.stone[500],
   },
-  contentRight: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
   contentDuration: {
     fontSize: fontSize.xs,
     color: colors.stone[400],
     fontWeight: '500',
   },
-  playSmall: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 1.5,
-    borderColor: colors.saffron[600],
-    justifyContent: 'center',
+  premiumBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 1,
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.saffron[100],
   },
-  playSmallActive: {
-    backgroundColor: colors.saffron[600],
-    borderColor: colors.saffron[600],
+  premiumBadgeText: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    color: colors.saffron[700],
   },
-  // Empty state
+  // The work itself, opened in place.
+  bodyBlock: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.stone[100],
+  },
+  bodyText: {
+    fontSize: fontSize.base,
+    lineHeight: 26,
+    color: colors.stone[800],
+  },
+  // Empty / loading / error state
   emptyState: {
     alignItems: 'center',
     paddingTop: 60,
@@ -522,62 +619,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: fontSize.lg,
-    color: colors.stone[400],
-    fontWeight: '500',
-  },
-  // Mini Player
-  miniPlayer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.stone[900],
-    borderTopLeftRadius: borderRadius.lg,
-    borderTopRightRadius: borderRadius.lg,
-    overflow: 'hidden',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  miniPlayerProgress: {
-    height: 3,
-    width: '45%',
-    backgroundColor: colors.saffron[500],
-  },
-  miniPlayerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.sm,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  miniPlayerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.saffron[600],
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  miniPlayerInfo: {
-    flex: 1,
-  },
-  miniPlayerTitle: {
-    fontSize: fontSize.base,
+    color: colors.stone[500],
     fontWeight: '600',
-    color: colors.white,
+    textAlign: 'center',
   },
-  miniPlayerDeity: {
-    fontSize: fontSize.xs,
+  emptySubtext: {
+    fontSize: fontSize.sm,
     color: colors.stone[400],
-    marginTop: 1,
-  },
-  miniPlayerButton: {
-    padding: spacing.xs,
-  },
-  miniPlayerClose: {
-    padding: spacing.xs,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
   },
 });

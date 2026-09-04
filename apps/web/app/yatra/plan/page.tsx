@@ -24,6 +24,8 @@ import ScrollReveal from '../../../components/ScrollReveal';
 import { sacredSites, formatINR } from '../../../lib/yatra-data';
 import { DateInput } from '../../../components/ui/DateInput';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 type PlanData = {
  destinations: string[]; // site ids
  startDate: string;
@@ -148,7 +150,7 @@ export default function CustomPlanPage() {
  <Compass className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>Custom Trip Planner</p>
  </div>
- <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className={H1.portal}>
  Design your own sacred journey
  </h1>
  <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
@@ -372,8 +374,7 @@ export default function CustomPlanPage() {
  <button
  onClick={handleGenerate}
  disabled={generating}
- className="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg text-white btn-press disabled:opacity-60"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  {generating ? (
  <><Loader2 className="w-4 h-4 animate-spin" /> Generating itinerary...</>
@@ -433,7 +434,7 @@ export default function CustomPlanPage() {
  <p style={{ color: 'var(--color-text-muted)' }}>This is a preliminary estimate. Our advisor will share a detailed quote with stays, transport and inclusions within 24 hours.</p>
  </div>
 
- <button className="mt-4 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+ <button className={buttonClass('primary', 'md', 'mt-4 w-full btn-press')}>
  Request Advisor Quote <ArrowRight className="w-3.5 h-3.5" />
  </button>
  <Link href="/yatra" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
@@ -464,8 +465,7 @@ export default function CustomPlanPage() {
  <button
  onClick={() => setStep(step + 1)}
  disabled={!canContinue}
- className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white disabled:opacity-40 btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Continue <ChevronRight className="w-3.5 h-3.5" />
  </button>

@@ -1,0 +1,49 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "REPLACE_WITH_APPLE_TEAM_ID__APPLE_DEVELOPER__MEMBERSHIP_DETAILS__TEAM_ID.com.darshya.app"
+        ],
+        "components": [
+          {
+            "/": "/puja/*",
+            "comment": "Puja detail. apps/mobile/lib/deep-link.ts -> (devotee)/puja-book?slug="
+          },
+          {
+            "/": "/darshan/*",
+            "comment": "Live darshan stream -> (devotee)/darshan-player?id="
+          },
+          {
+            "/": "/booking/*",
+            "comment": "Booking by booking number -> (devotee)/bookings?bn="
+          },
+          {
+            "/": "/consultation/*",
+            "comment": "Astrology consultation -> (devotee)/consultations?id="
+          },
+          {
+            "/": "/chat",
+            "comment": "Message inbox, no thread -> (devotee)/messages"
+          },
+          {
+            "/": "/chat/*",
+            "comment": "Message thread -> (devotee)/messages?thread="
+          },
+          {
+            "/": "/inbox",
+            "comment": "Alias of /chat -> (devotee)/messages"
+          },
+          {
+            "/": "/inbox/*",
+            "comment": "Alias of /chat/* -> (devotee)/messages?thread="
+          },
+          {
+            "/": "/order/*",
+            "comment": "Store order -> (devotee)/store?id="
+          }
+        ]
+      }
+    ]
+  }
+}

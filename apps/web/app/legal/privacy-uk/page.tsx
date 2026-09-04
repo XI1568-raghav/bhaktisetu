@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { rightsContactEmail } from "../../../lib/company";
+import { H1 } from '../../../components/ui/heading-recipe';
 
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default function PrivacyUkPage() {
  <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-saffron-700">
  Legal · United Kingdom
  </p>
- <h1 className="text-3xl font-semibold text-surface-900 sm:text-4xl">
+ <h1 className={H1.catalogue}>
  UK Privacy Notice
  </h1>
  <p className="mt-3 text-base text-surface-700">

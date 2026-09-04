@@ -464,3 +464,71 @@ export function localeHref(href: string, locale: Locale): string {
 
   return `${path}?${params.toString()}${hash}`;
 }
+
+// ─── Account language (a different question from SUPPORTED_LOCALES) ──────────
+
+/**
+ * The languages an ACCOUNT can be set to — `User.preferredLanguage`, the Prisma
+ * `Language` enum, ten members. This is not `SUPPORTED_LOCALES` above, which
+ * answers "which locales have a landing page on this site" (six). Two lists
+ * because they are two questions; audit I18N-04 was four lists answering one.
+ *
+ * WHY IT IS DUPLICATED HERE. The canonical list is `SUPPORTED_LANGUAGES` in
+ * @poojly/shared, and apps/web must NOT import that package at runtime: its
+ * barrels use NodeNext `./foo.js` specifiers on .ts sources, turbopack cannot
+ * resolve them, and every page that reaches one 500s — a failure neither tsc
+ * nor vitest reproduces. So the copy is deliberate and
+ * __tests__/i18n/profile-language-honesty.i18n07.test.ts asserts it stays
+ * identical, order included; a test file can import the package because vitest
+ * is not turbopack.
+ */
+export const ACCOUNT_LANGUAGES: readonly { value: string; label: string }[] = Object.freeze([
+  { value: 'en', label: 'English' },
+  { value: 'hi', label: 'Hindi' },
+  { value: 'ta', label: 'Tamil' },
+  { value: 'te', label: 'Telugu' },
+  { value: 'bn', label: 'Bengali' },
+  { value: 'mr', label: 'Marathi' },
+  { value: 'gu', label: 'Gujarati' },
+  { value: 'kn', label: 'Kannada' },
+  { value: 'ml', label: 'Malayalam' },
+  { value: 'pa', label: 'Punjabi' },
+]);
+
+/**
+ * The subset of ACCOUNT_LANGUAGES the API actually has a message catalogue for
+ * (@poojly/shared `TRANSLATED_LANGUAGES`). Choosing one of the other five saves
+ * successfully and changes nothing: apps/api's `errorLanguage()` silently
+ * downgrades them to English.
+ *
+ * I18N-07 measured that as five of the ten options being inert with no UI
+ * indication. Same duplication rule and same guard test as ACCOUNT_LANGUAGES.
+ */
+export const API_TRANSLATED_LANGUAGES: readonly string[] = Object.freeze([
+  'en',
+  'hi',
+  'ta',
+  'te',
+  'kn',
+]);
+
+/** What the phrase says, in one place, so the copy and the test cannot drift. */
+export const UNTRANSLATED_LANGUAGE_SUFFIX = '(English for now)';
+
+/**
+ * The label to show for an account language, disclosing the ones that will not
+ * change a single message.
+ *
+ * The wording is "English for now" and not "coming soon" on purpose: nobody has
+ * committed to translating Gujarati, and a promise nobody made is a worse
+ * disclosure than none. This is the honest half of the choice — the other half
+ * would be to stop offering them, which would silently rewrite the stored
+ * language of every account already set to one.
+ */
+export function accountLanguageLabel(code: string): string {
+  const entry = ACCOUNT_LANGUAGES.find((l) => l.value === code);
+  if (!entry) return code;
+  return API_TRANSLATED_LANGUAGES.includes(code)
+    ? entry.label
+    : `${entry.label} ${UNTRANSLATED_LANGUAGE_SUFFIX}`;
+}

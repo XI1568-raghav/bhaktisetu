@@ -4,6 +4,8 @@
 > Date: 2026-04-27
 > Budget context: $0. Founder is solo. Every tactic must be free or near-free.
 
+> **Correction 2026-09-02 (`OPS-10`).** Two outbound-facing claims in this playbook were false and must not be sent to a prospect. The temple cold-email template (§ below) said **"we already process Stripe for US/UK cards"** — we do not: the Stripe rail was deleted from the codebase on **2026-08-11** (`apps/api/src/lib/env.ts:45-46`), **Razorpay is the only live rail and it settles INR only**, and no replacement international processor has been chosen. The partner/acquirer draft said the platform is **"built fully on free-tier infra (Cloudflare, Render, Supabase, Groq)"** — Cloudflare is DNS + edge proxy only (the web tier is the Render Docker service `darshya-web`, `render.yaml:52-60`), and Render's 750 free instance-hours are **per account, not per service**, so the two always-on services need ~1,488 h and **the account was suspended for exactly this on 2026-08-17**. Both lines are corrected in place below. Do not restore either claim without a `[verify]`-cleared fact.
+
 > **Research note**: WebSearch and most external WebFetch endpoints were unreachable during the drafting session (API 400 / 403 / 404). Numbers below labeled "ASSUMPTION (training data, ~2024)" need a 5-minute verification pass against Inc42, Entrackr, YourStory, Crunchbase before any of this leaves the founder's machine.
 
 ---
@@ -55,7 +57,7 @@ Leaving demand acquisition to the CMO. Sales-side preconditions that **must** sh
 1. **At least 8 priests live with calendar availability** — empty grids kill conversion.
 2. **One marquee temple with daily live darshan working at 5am-9am IST and 6pm-9pm IST** — these are the two prime windows; if streaming fails during them, refund-rate spikes and the whole funnel inverts.
 3. **Video-proof flow tested end-to-end** — this is the differentiator vs Sri Mandir; it must not be the first place users see a bug.
-4. **NRI Stripe path tested with one US-card transaction** — NRI segment has 9-10× domestic ARPU per CLAUDE.md business rules; CMO will spend disproportionate budget there.
+4. **NRI/international card path tested with one US-card transaction** `[verify — Stripe was removed 2026-08-11; the NRI rail is undecided]` — NRI segment has 9-10× domestic ARPU per CLAUDE.md business rules; CMO will spend disproportionate budget there. **This gate cannot currently be passed at all**: Razorpay is the only live rail and settles INR only, so a processor must be chosen and built before this item is even testable. Treat it as red.
 
 If any of these four is red, defer all demand-side spend.
 
@@ -77,7 +79,7 @@ If any of these four is red, defer all demand-side spend.
 - Video-proof attestation — solves the #1 NRI trust gap (was the puja actually performed?)
 - Real Jitsi consultation rail — most "astrology apps" still use phone calls
 - Multi-role permissioning + commission engine — non-trivial to replicate in <6 months
-- Built fully on free-tier infra (Cloudflare, Render, Supabase, Groq) — gross margin profile is rare
+- Built on free-tier infra (Render, Supabase, Cloudflare DNS/edge, Groq) — gross margin profile is rare. *(Corrected 2026-09-02, `OPS-10`: this line read "Built fully on free-tier infra (Cloudflare, Render, Supabase, Groq)". Cloudflare is DNS + edge proxy only, not the host — the web tier is the Render Docker service `darshya-web`, `render.yaml:52-60`. More importantly, Render's free allowance is **750 instance-hours per account, not per service**: two always-on services need ~1,488 h and the account was **suspended for this on 2026-08-17**. Do not tell an acquirer or partner the infra is "fully free-tier" — it is not sustainable at two always-on services, and a paid tier is a required line item.)*
 
 **Traction.** [ASSUMPTION — placeholder, no real numbers yet. Do not send this draft until real metrics exist. Even one number — "X priests live, Y bookings completed, Z% video-proof completion rate" — beats the placeholder.]
 
@@ -117,12 +119,14 @@ If any of these four is red, defer all demand-side spend.
 >
 > Darshya runs a devotee-facing platform with live darshan, online puja sankalpa, and automated 80G receipt generation. We work commission-only — the trust keeps 60-80% of every booking and incurs zero setup or hosting cost.
 >
-> For {Temple name}, the immediate fit is festival-day live darshan and online sankalpa for NRI devotees (we already process Stripe for US/UK cards). I'd like to propose a single-festival pilot — no MoU required.
+> For {Temple name}, the immediate fit is festival-day live darshan and online sankalpa for NRI devotees. I'd like to propose a single-festival pilot — no MoU required.
 >
 > Could I send a 90-second walkthrough and call you on {date+3 days} between 11am-1pm?
 >
 > Pranam,
 > {Founder name} | darshya.online | {phone}
+
+**Correction 2026-09-02 (`OPS-10`) — internal note, NOT part of the email above.** The "For {Temple name}…" line used to end **"(we already process Stripe for US/UK cards)"**. **Do not send that.** The Stripe rail was deleted from the codebase on 2026-08-11 (`apps/api/src/lib/env.ts:45-46`); **Razorpay is the only live rail and it settles INR only**, so we cannot process a US or UK card today, and **no replacement international processor has been chosen** — `[verify]`. Claiming foreign-card acceptance to a temple trust would be a false statement of capability in a commercial solicitation. Say nothing about foreign-currency acceptance in any outbound message until a processor exists and is live.
 
 ### (b) Sri Mandir / AppsForBharat partnerships [verify name]
 

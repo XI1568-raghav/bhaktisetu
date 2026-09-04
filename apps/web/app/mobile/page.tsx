@@ -1,10 +1,10 @@
 'use client';
 
 import { getTempleHero, getDeityImage } from '../../lib/images';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
  Flame,
  Play,
- Users,
  Star,
  Clock,
  Sparkles,
@@ -14,10 +14,16 @@ import {
  Search,
 } from 'lucide-react';
 
+// DF-10 (2026-08-24): the `viewers` key is gone from these rows. It held
+// 12450 / 28300 / 8760 — the same invented figures the 2026-05-02 content audit
+// deleted from the homepage (docs/content-audit-2026-05-02.md:31), rendered
+// here as "12.5K" beside a Users icon, which reads as telemetry. Nothing in
+// this app counts an audience, so per lib/platform-stats.ts:5-24 the claim
+// keeps its meaning and loses its digits: the LIVE pill on each card stays.
 const liveStreams = [
- { name: 'Kashi Vishwanath', city: 'Varanasi', deity: 'Lord Shiva', viewers: 12450, img: getTempleHero('kashi-vishwanath') },
- { name: 'Tirupati Balaji', city: 'Tirumala', deity: 'Lord Venkateswara', viewers: 28300, img: getTempleHero('tirumala-tirupati') },
- { name: 'Siddhivinayak', city: 'Mumbai', deity: 'Lord Ganesha', viewers: 8760, img: getTempleHero('siddhivinayak') },
+ { name: 'Kashi Vishwanath', city: 'Varanasi', deity: 'Lord Shiva', img: getTempleHero('kashi-vishwanath') },
+ { name: 'Tirupati Balaji', city: 'Tirumala', deity: 'Lord Venkateswara', img: getTempleHero('tirumala-tirupati') },
+ { name: 'Siddhivinayak', city: 'Mumbai', deity: 'Lord Ganesha', img: getTempleHero('siddhivinayak') },
 ];
 
 const popularPujas = [
@@ -35,7 +41,7 @@ export default function MobileHome() {
  <div className="flex items-center justify-between">
  <div>
  <p className="text-xs text-surface-400 font-medium">Namaste</p>
- <h1 className="text-xl font-bold text-surface-900 tracking-tight">Arjun Sharma</h1>
+ <h1 className={H1.portal}>Arjun Sharma</h1>
  </div>
  <div className="flex items-center gap-2">
  <button className="w-9 h-9 bg-surface-100 rounded-xl flex items-center justify-center">
@@ -70,15 +76,11 @@ export default function MobileHome() {
  {liveStreams.map((s) => (
  <div key={s.name} className="shrink-0 w-[240px] rounded-2xl overflow-hidden bg-white border border-surface-200/60 shadow-sm">
  <div className="relative aspect-[16/10]">
- <img src={s.img} alt={s.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ <img width={480} height={300} src={s.img} alt={s.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
  <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
  LIVE
- </div>
- <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-md backdrop-blur-sm">
- <Users className="w-2.5 h-2.5" />
- {(s.viewers / 1000).toFixed(1)}K
  </div>
  <div className="absolute bottom-2.5 left-2.5">
  <p className="text-white text-xs font-semibold drop-shadow-lg">{s.name}</p>
@@ -133,7 +135,7 @@ export default function MobileHome() {
  <div className="space-y-2.5">
  {popularPujas.map((p) => (
  <div key={p.name} className="flex items-center gap-3 bg-white rounded-2xl p-3 border border-surface-200/60 shadow-sm">
- <img src={p.img} alt={p.deity} className="w-14 h-14 rounded-xl object-cover" loading="lazy" decoding="async" />
+ <img width={56} height={56} src={p.img} alt={p.deity} className="w-14 h-14 rounded-xl object-cover" loading="lazy" decoding="async" />
  <div className="flex-1 min-w-0">
  <h3 className="text-sm font-semibold text-surface-900">{p.name}</h3>
  <p className="text-xs text-surface-400">{p.deity}</p>

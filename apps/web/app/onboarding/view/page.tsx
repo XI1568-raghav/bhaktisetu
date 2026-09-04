@@ -25,6 +25,7 @@ import {
 import { type UserRole, getRoleDashboardPath, getRoleLabel, useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // Maps the URL role slug to the backend MarketplaceRole enum.
 const BACKEND_ROLE: Record<string, string> = {
@@ -582,7 +583,7 @@ function OnboardingInner() {
  return (
  <div className="min-h-[100dvh] bg-[var(--color-bg)] flex items-center justify-center p-4">
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-8 max-w-md text-center">
- <h1 className="text-lg font-semibold text-surface-800 mb-2">Invalid Role</h1>
+ <h1 className={`${H1.portal} mb-2`}>Invalid Role</h1>
  <p className="text-sm text-surface-500 mb-4">
  The onboarding page for &quot;{roleParam}&quot; does not exist.
  </p>
@@ -1100,7 +1101,7 @@ function OnboardingInner() {
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-warm overflow-hidden">
  {/* Step header */}
  <div className="bg-[#ede9e3] px-6 py-5 border-b border-[var(--color-border)]">
- <h1 className="text-base font-semibold text-surface-800 mb-1">
+ <h1 className={`${H1.portal} mb-1`}>
  {steps[currentStep]?.title}
  </h1>
  <p className="text-sm text-surface-500">{steps[currentStep]?.description}</p>

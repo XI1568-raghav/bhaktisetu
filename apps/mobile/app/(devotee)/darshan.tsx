@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Alert,
   RefreshControl,
 } from 'react-native';
@@ -19,11 +18,7 @@ import {
   type LiveStreamVM,
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_GAP = spacing.sm;
-const GRID_PADDING = spacing.md;
-const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
+import { GRID_GAP, GRID_PADDING, useResponsiveGrid } from '../../lib/use-responsive';
 
 /**
  * PAR-07 / PAR-05. This tab read `darshanQuery.data?.data`, which does not
@@ -38,12 +33,12 @@ const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
  *
  * `upcoming` is a list of aarti SLOTS, not streams, and is rendered as such.
  */
-function StreamCard({ stream }: { stream: LiveStreamVM }) {
+function StreamCard({ stream, width }: { stream: LiveStreamVM; width: number }) {
   const isLive = stream.isLive;
 
   return (
     <TouchableOpacity
-      style={[styles.streamCard, { width: CARD_WIDTH }]}
+      style={[styles.streamCard, { width }]}
       activeOpacity={0.7}
       onPress={() => {
         router.push({
@@ -130,6 +125,9 @@ function StreamCard({ stream }: { stream: LiveStreamVM }) {
 }
 
 export default function DarshanScreen() {
+  // Live geometry: re-derived on rotation, iPad Split View / Slide Over and
+  // Android foldable unfold, none of which the old module-scope capture saw.
+  const { cardWidth } = useResponsiveGrid();
   const darshanQuery = useDarshan();
   const [refreshing, setRefreshing] = useState(false);
   const liveData = selectLiveStreams(darshanQuery.data).filter((s) => s.isLive);
@@ -188,7 +186,7 @@ export default function DarshanScreen() {
           ) : (
             <View style={styles.grid}>
               {liveData.map((stream) => (
-                <StreamCard key={stream.id} stream={stream} />
+                <StreamCard key={stream.id} stream={stream} width={cardWidth} />
               ))}
             </View>
           )}

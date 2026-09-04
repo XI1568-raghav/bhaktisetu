@@ -3,7 +3,22 @@
 // search traffic for "char dham yatra package", "jyotirlinga tour" — high
 // commercial-intent queries that route to yatra inquiry form.
 //
-// 8 canonical circuits cover the highest-search-volume Hindu pilgrimages.
+// CI-10 (delta audit 2026-08-21): this file used to hold nineteen records for
+// sixteen circuits. `sapta-puri` appeared TWICE — the second record (₹35,000,
+// seven stops) was unreachable, because `getCircuit` is a `.find()`, yet it
+// still occupied a card on the index grid next to the live ₹48,000 one. Two
+// further pairs were one subject at two URLs: `ashta-vinayak` /
+// `ashta-vinayak-maharashtra` (the identical eight Maharashtra Ganesha
+// temples, priced ₹8,500 and ₹12,000) and `dwadasha-aditya` /
+// `dwadasha-aditya-circuit` (the same twelve Adityas; the survivor's longDesc
+// already describes both the compact Kashi walk and the pan-India tour). The
+// three extra records are gone; their URLs are kept alive as permanent
+// redirects via CIRCUIT_ALIASES below, so no indexed URL 404s.
+//
+// `shakti-peeth` (51 peethas, 30-45 days) and `shakti-peeth-major` (the four
+// Adi Peeths, 7-10 days) are deliberately NOT merged: different itinerary,
+// different length, different stop list, different name. They are two
+// products, not one subject at two URLs.
 
 export interface CircuitStop {
   name: string;       // Display name
@@ -438,7 +453,7 @@ export const CIRCUITS: PilgrimageCircuit[] = [
     name: 'Maha Kumbh Mela Circuit',
     sanskritName: 'महाकुम्भ मेला यात्रा',
     shortDesc: 'Four-city rotating Kumbh — Prayagraj, Haridwar, Ujjain, Nashik. World largest religious gathering, held every 12 years per city.',
-    longDesc: `The Kumbh Mela is the largest peaceful gathering of humans on Earth — 100M+ pilgrims attend the Prayagraj Maha Kumbh held every 12 years. The four sites rotate: Prayagraj (Allahabad, Triveni Sangam), Haridwar (Har-ki-Pauri, Ganga), Ujjain (Shipra river, Mahakaleshwar), Nashik (Godavari, Trimbakeshwar). Each city hosts Kumbh once every 12 years; collectively a Kumbh happens every 3 years somewhere in India. The 2025 Maha Kumbh at Prayagraj saw 660M+ pilgrim-visits over 45 days — largest gathering in human history. The Ardha Kumbh (every 6 years) and the Maha Kumbh (every 12 years) at Prayagraj are particularly significant. Origin story: per Bhagavata Purana, when gods + asuras churned the Ocean of Milk, drops of Amrita (nectar) fell at these 4 sites — bathing here on auspicious days grants moksha. The Shahi Snan (royal bath) by sadhus on auspicious dates is the spiritual climax. Bhaktisetu coordinates verified pandit-led puja + tirth bookings during Kumbh seasons + live-streaming of major snans for diaspora families who cannot attend physically.`,
+    longDesc: `The Kumbh Mela is the largest peaceful gathering of humans on Earth — 100M+ pilgrims attend the Prayagraj Maha Kumbh held every 12 years. The four sites rotate: Prayagraj (Allahabad, Triveni Sangam), Haridwar (Har-ki-Pauri, Ganga), Ujjain (Shipra river, Mahakaleshwar), Nashik (Godavari, Trimbakeshwar). Each city hosts Kumbh once every 12 years; collectively a Kumbh happens every 3 years somewhere in India. The 2025 Maha Kumbh at Prayagraj saw 660M+ pilgrim-visits over 45 days — largest gathering in human history. The Ardha Kumbh (every 6 years) and the Maha Kumbh (every 12 years) at Prayagraj are particularly significant. Origin story: per Bhagavata Purana, when gods + asuras churned the Ocean of Milk, drops of Amrita (nectar) fell at these 4 sites — bathing here on auspicious days grants moksha. The Shahi Snan (royal bath) by sadhus on auspicious dates is the spiritual climax. Darshya coordinates verified pandit-led puja + tirth bookings during Kumbh seasons + live-streaming of major snans for diaspora families who cannot attend physically.`,
     region: 'pan-india',
     totalDays: { min: 3, max: 15 },
     bestSeason: 'Per Kumbh schedule — Prayagraj Jan-Mar; Haridwar Apr-May; Ujjain Apr; Nashik Aug-Sep',
@@ -455,68 +470,9 @@ export const CIRCUITS: PilgrimageCircuit[] = [
       'Kumbh Mela 2027 Nashik (Simhastha) is the next major event — book accommodations 12+ months ahead',
       'Stay in registered yatra camps; avoid unverified accommodations during peak Kumbh days',
       'Shahi Snan dates: Mauni Amavasya, Basant Panchami, Maha Shivaratri are most auspicious',
-      'NRI families: 24hr live-stream available via Bhaktisetu for major snan windows',
+      'NRI families: 24hr live-stream available via Darshya for major snan windows',
       'Carry minimal essentials: ID, bottled water, snacks, basic medicines',
       'For Maha Kumbh: government registers all pilgrims; pre-registration mandatory'
-    ],
-  },
-  {
-    slug: 'sapta-puri',
-    name: 'Sapta Puri',
-    sanskritName: 'सप्त पुरी',
-    shortDesc: 'Seven sacred cities granting moksha — Ayodhya, Mathura, Haridwar, Varanasi, Kanchipuram, Ujjain, Dwarka.',
-    longDesc: `The Sapta Puri (seven sacred cities) are the seven moksha-granting cities per ancient Hindu tradition. Each city is dedicated to a specific deity + carries unique karmic dissolution power. Ayodhya (Lord Rama birthplace), Mathura (Lord Krishna birthplace), Haridwar (Lord Vishnu nail-print at Bhairon Ghat), Varanasi/Kashi (Lord Shiva eternal dwelling), Kanchipuram (Shiva Kanchi + Vishnu Kanchi), Ujjain (Mahakaleshwar Shiva), Dwarka (Lord Krishna western capital). Visiting all seven within a lifetime is believed to grant moksha + freedom from rebirth. Sanskrit shloka: "Ayodhya Mathura Maya, Kasi Kanchi Avantika, Puri Dwaravati Chaiva, Saptaite Mokshadayikah" — these seven indeed grant liberation. Bhaktisetu coordinates Sapta Puri yatra packages (15-21 days) + per-city pandit-led darshan + 80G receipts for entire pilgrimage. Particularly meaningful for senior citizens + NRI elders fulfilling lifetime spiritual aspirations.`,
-    region: 'pan-india',
-    totalDays: { min: 15, max: 21 },
-    bestSeason: 'October-March (avoid summer + monsoon)',
-    startingFromInr: 35000,
-    difficulty: 'moderate',
-    stops: [
-      { name: 'Ayodhya', deity: 'Lord Rama', state: 'Uttar Pradesh', bestMonths: 'Oct-Mar' },
-      { name: 'Mathura-Vrindavan', deity: 'Lord Krishna', state: 'Uttar Pradesh', bestMonths: 'Oct-Mar' },
-      { name: 'Haridwar', deity: 'Lord Vishnu (nail-print)', state: 'Uttarakhand', bestMonths: 'Oct-Mar' },
-      { name: 'Varanasi (Kashi)', deity: 'Lord Shiva (Vishwanath)', state: 'Uttar Pradesh', templeSlug: 'kashi-vishwanath', bestMonths: 'Oct-Mar' },
-      { name: 'Kanchipuram', deity: 'Shiva-Kanchi + Vishnu-Kanchi', state: 'Tamil Nadu', bestMonths: 'Nov-Feb' },
-      { name: 'Ujjain', deity: 'Lord Shiva (Mahakal)', state: 'Madhya Pradesh', templeSlug: 'mahakaleshwar-ujjain', bestMonths: 'Oct-Mar' },
-      { name: 'Dwarka', deity: 'Lord Krishna (Dwarkadhish)', state: 'Gujarat', templeSlug: 'dwarka-jagat-mandir', bestMonths: 'Oct-Mar' },
-    ],
-    spiritualSignificance: 'Per Skanda Purana — completing Sapta Puri yatra in a single lifetime grants moksha at the time of death. Particularly potent when concluded at Kashi or Dwarka. Each city has specific puja and ritual programs that compound karmic dissolution.',
-    practicalTips: [
-      'Senior citizens: take 21+ days w/ rest days between cities; book Bhaktisetu wheelchair-accessible packages',
-      'NRI families: 80G receipts + live-stream coordination + booking from abroad',
-      'Photography permitted in outer areas of all 7 temples; restricted in inner sanctums',
-      'Each city has specific puja calendars — coordinate w/ Bhaktisetu pandit-network for optimum scheduling',
-      'Combine with Char Dham OR Dwadasha Jyotirlinga circuits for extended pilgrimage',
-      'Pack: traditional attire (saree for women, dhoti-kurta preferred for men), comfortable walking shoes',
-    ],
-  },
-  {
-    slug: 'dwadasha-aditya-circuit',
-    name: 'Dwadasha Aditya Circuit',
-    sanskritName: 'द्वादश आदित्य परिक्रमा',
-    shortDesc: 'Twelve sun-temple circuit covering all 12 Aditya forms — solar pilgrimage with health + prosperity merit.',
-    longDesc: `The Dwadasha Aditya (twelve Adityas) are the twelve forms of Surya across different months of the Vedic year. Each Aditya rules a specific zodiac sign + carries unique cosmic energy. The Dwadasha Aditya circuit covers the twelve principal sun temples across India — most famous being Konark (Odisha), Modhera (Gujarat), Suryanar Koil (Tamil Nadu), Surya Mandir Brahmapur, Martand (Kashmir, ruins), Suryangarh (Rajasthan), and others. The circuit is particularly recommended for those with weak or afflicted Sun in their horoscope (eye problems, low self-esteem, father-relationship issues, government job seekers). Visit during sunrise + perform Surya Arghya at each temple. The Ratha Saptami (Magh Shukla Saptami) is the most auspicious day to undertake Aditya pilgrimage — believed to grant 12-year+ longevity boost when observed at any of the twelve Aditya temples. Bhaktisetu coordinates Surya-specific yatras + Aditya Hridayam recitation + per-temple pandit-led arghya ceremonies.`,
-    region: 'pan-india',
-    totalDays: { min: 18, max: 25 },
-    bestSeason: 'October-March (cool weather makes sunrise visits comfortable)',
-    startingFromInr: 25000,
-    difficulty: 'moderate',
-    stops: [
-      { name: 'Konark Sun Temple', deity: 'Surya (Vishvakarma form)', state: 'Odisha', bestMonths: 'Oct-Feb' },
-      { name: 'Modhera Sun Temple', deity: 'Surya (Mauliprahar form)', state: 'Gujarat', bestMonths: 'Nov-Feb' },
-      { name: 'Suryanar Koil', deity: 'Surya (planetary lord form)', state: 'Tamil Nadu', bestMonths: 'Nov-Feb' },
-      { name: 'Surya Mandir Galta Ji', deity: 'Surya (Hanuman temple complex)', state: 'Rajasthan', bestMonths: 'Oct-Mar' },
-      { name: 'Adityesha Suryapur', deity: 'Surya (Sansari form)', state: 'Andhra Pradesh', bestMonths: 'Nov-Feb' },
-      { name: 'Martand Sun Temple', deity: 'Surya (ruins, ancient)', state: 'Jammu & Kashmir', bestMonths: 'May-Sep only' },
-    ],
-    spiritualSignificance: 'Per Aditya Hridayam (from Valmiki Ramayana) — twelve forms of Sun rule the twelve months and carry specific blessings. Visiting twelve Aditya temples within a year grants longevity boost + strengthens horoscope Sun position. Particularly potent for weak Sun horoscopes + government-seeking professionals.',
-    practicalTips: [
-      'Schedule visits to sunrise (6:00-7:00 IST per location); arrive 30 min early',
-      'Carry copper kalash for Surya Arghya at each temple',
-      'Wear white or yellow garments (Surya colors)',
-      'Recite Aditya Hridayam at each temple sunrise + sunset',
-      'Konark + Modhera: photography permitted; Martand ruins limited access in winter',
-      'Combine with Bhaktisetu Surya-arghya online sponsorship for India temples NRI families cannot physically visit'
     ],
   },
   {
@@ -524,7 +480,7 @@ export const CIRCUITS: PilgrimageCircuit[] = [
     name: 'Panch Vinayak Mumbai Circuit',
     sanskritName: 'पंच विनायक मुम्बई परिक्रमा',
     shortDesc: 'Five Ganesha temple circuit within Mumbai — completed in single day during Ganesh Chaturthi or Sankashti.',
-    longDesc: `The Panch Vinayak circuit consists of five major Ganesha temples within Mumbai, traditionally completed in a single day during Ganesh Chaturthi or any Sankashti Chaturthi tithi. The circuit is particularly favored by Mumbai residents + Maharashtrian families for removal of major obstacles in life + business. Starting from Siddhivinayak Prabhadevi (most famous), proceed clockwise to Mumbadevi (Bhuleshwar), Walkeshwar Banganga (Malabar Hill), Khwajabaag Ganpati (Worli), and conclude at Ganesh Mandir Chembur. Total circuit takes 4-6 hours including travel + brief darshan at each. Particularly auspicious during Ganesh Chaturthi 10-day festival (per R-Q3-SA-005 Ganesh Chaturthi 2026 campaign), when all five temples extend hours + offer special pujas. Bhaktisetu coordinates Panch Vinayak day-tour packages w/ verified pandit + transport + meal arrangements for Mumbai residents + NRI Maharashtrian visitors.`,
+    longDesc: `The Panch Vinayak circuit consists of five major Ganesha temples within Mumbai, traditionally completed in a single day during Ganesh Chaturthi or any Sankashti Chaturthi tithi. The circuit is particularly favored by Mumbai residents + Maharashtrian families for removal of major obstacles in life + business. Starting from Siddhivinayak Prabhadevi (most famous), proceed clockwise to Mumbadevi (Bhuleshwar), Walkeshwar Banganga (Malabar Hill), Khwajabaag Ganpati (Worli), and conclude at Ganesh Mandir Chembur. Total circuit takes 4-6 hours including travel + brief darshan at each. Particularly auspicious during Ganesh Chaturthi 10-day festival, when all five temples extend hours + offer special pujas. Darshya coordinates Panch Vinayak day-tour packages w/ verified pandit + transport + meal arrangements for Mumbai residents + NRI Maharashtrian visitors.`,
     region: 'west',
     totalDays: { min: 1, max: 1 },
     bestSeason: 'Year-round; peak during Ganesh Chaturthi (Aug-Sep)',
@@ -544,44 +500,40 @@ export const CIRCUITS: PilgrimageCircuit[] = [
       'Offer modaks at each temple (Ganesh favorite)',
       'Photography prohibited inside Siddhivinayak + Mumbadevi sanctums',
       'On Sankashti Chaturthi days + Ganesh Chaturthi window: bookings 2-4 hour queues',
-      'Bhaktisetu day-tour package includes pandit + transport + 4 modak meals at temples',
-    ],
-  },
-  {
-    slug: 'ashta-vinayak-maharashtra',
-    name: 'Ashta Vinayak Maharashtra',
-    sanskritName: 'अष्ट विनायक यात्रा',
-    shortDesc: 'Eight Ganesha temple pilgrimage in Maharashtra — clockwise circuit visiting all 8 swayambhu Ganesh temples.',
-    longDesc: `The Ashta Vinayak (eight Ganeshas) are the eight swayambhu (self-manifest) Ganesha murtis in Maharashtra. The pilgrimage involves visiting all eight in a specific traditional sequence: Moreshwar Morgaon (Pune district), Siddhatek (Ahmednagar), Ballaleshwar Pali (Raigad), Varadvinayak Mahad (Raigad), Chintamani Theur (Pune), Girijatmaj Lenyadri (Pune), Vighneshwar Ozar (Pune), and concluding at Mahaganpati Ranjangaon (Pune). The circuit is foundational for Maharashtrian families + Pune-Mumbai diaspora globally. Each temple has unique iconography + legend. The Mauni Amavasya (no-moon day in Magha) is the most auspicious day to commence Ashta Vinayak. The circuit takes 5-7 days by road, allowing time for darshan + prasad at each temple. NRI Maharashtrian families particularly value this pilgrimage for completing the family's spiritual obligation across generations. Bhaktisetu coordinates Ashta Vinayak yatra packages including transport + verified pandit-led puja at each temple + 80G receipts + live-streaming for diaspora family back home.`,
-    region: 'west',
-    totalDays: { min: 5, max: 7 },
-    bestSeason: 'November-February (cool weather for road travel)',
-    startingFromInr: 12000,
-    difficulty: 'easy',
-    stops: [
-      { name: 'Moreshwar Morgaon', deity: 'Ganesh (Adi Ganesh)', state: 'Maharashtra', bestMonths: 'Nov-Feb' },
-      { name: 'Siddhatek', deity: 'Siddhivinayak Ganesh', state: 'Maharashtra', bestMonths: 'Nov-Feb' },
-      { name: 'Ballaleshwar Pali', deity: 'Ballaleshwar Ganesh', state: 'Maharashtra', bestMonths: 'Nov-Feb' },
-      { name: 'Varadvinayak Mahad', deity: 'Varadvinayak Ganesh', state: 'Maharashtra', bestMonths: 'Nov-Feb' },
-      { name: 'Chintamani Theur', deity: 'Chintamani Ganesh', state: 'Maharashtra', bestMonths: 'Nov-Feb' },
-      { name: 'Girijatmaj Lenyadri', deity: 'Girijatmaj Ganesh', state: 'Maharashtra', bestMonths: 'Nov-Feb' },
-      { name: 'Vighneshwar Ozar', deity: 'Vighneshwar Ganesh', state: 'Maharashtra', bestMonths: 'Nov-Feb' },
-      { name: 'Mahaganpati Ranjangaon', deity: 'Mahaganpati', state: 'Maharashtra', bestMonths: 'Nov-Feb' },
-    ],
-    spiritualSignificance: 'Per Ganesha Mahapurana — Ashta Vinayak yatra dissolves the karmic burden of past lives + grants Ganesh personal grace for the pilgrim and family. Particularly recommended for: families seeking children, business owners launching new ventures, and those facing inexplicable persistent obstacles. Maharashtrian tradition holds that all major life decisions must be preceded by Ashta Vinayak completion.',
-    practicalTips: [
-      'Travel by hired car; bus connections limited',
-      'Carry modak prasad to offer at each temple',
-      'Stay in Pune as base camp (each temple within 100-150 km radius)',
-      'Photography permitted in outer areas; restricted inside garbhagrihas',
-      'For NRI families: Bhaktisetu coordinates daily live-stream + 80G receipts',
-      'Combine with Pune + Mumbai temple visits before/after for extended pilgrimage'
+      'Darshya day-tour package includes pandit + transport + 4 modak meals at temples',
     ],
   },
 ];
 
+/**
+ * CI-10 — retired circuit slug -> surviving slug. Mirrors TIRTHA_ALIASES in
+ * lib/tirtha-slug.ts. These were live, indexed URLs before the merge, so
+ * app/pilgrimage/[slug]/page.tsx serves them as 308s onto the survivor rather
+ * than 404ing them.
+ *
+ *   ashta-vinayak-maharashtra  "Ashta Vinayak Maharashtra"  -> ashta-vinayak
+ *     Both list the same eight temples in the same canonical order:
+ *     Morgaon, Siddhatek, Pali, Mahad, Theur, Lenyadri, Ozar, Ranjangaon.
+ *   dwadasha-aditya-circuit    "Dwadasha Aditya Circuit"    -> dwadasha-aditya
+ *     Both are the twelve Adityas; the survivor's longDesc already covers the
+ *     compact Kashi walking set AND the pan-India sun-temple tour.
+ *
+ * `circuitSlugs()` deliberately returns only canonical slugs, because
+ * app/sitemap.ts builds the /pilgrimage section from it and a sitemap must not
+ * advertise a redirect. The aliases are added back in generateStaticParams.
+ */
+export const CIRCUIT_ALIASES: Readonly<Record<string, string>> = {
+  'ashta-vinayak-maharashtra': 'ashta-vinayak',
+  'dwadasha-aditya-circuit': 'dwadasha-aditya',
+};
+
 export function circuitSlugs(): string[] {
   return CIRCUITS.map((c) => c.slug);
+}
+
+/** Resolve a possibly-retired circuit slug onto the URL that actually renders. */
+export function canonicalCircuitSlug(slug: string): string {
+  return CIRCUIT_ALIASES[slug] ?? slug;
 }
 
 export function getCircuit(slug: string): PilgrimageCircuit | undefined {

@@ -13,6 +13,8 @@ import {
 import { useAuth, type UserRole } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // Provider roles allowed to access KYC. Devotees redirected to their
 // dashboard — they do not collect payouts and have no business submitting
@@ -154,11 +156,11 @@ function ProviderKycContent() {
  <div className="max-w-2xl mx-auto px-4 py-12">
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-8 text-center">
  <Lock className="w-10 h-10 text-surface-300 mx-auto mb-3" />
- <h1 className="text-lg font-semibold text-surface-800 mb-2">Sign in required</h1>
+ <h1 className={`${H1.portal} mb-2`}>Sign in required</h1>
  <p className="text-sm text-surface-500 mb-4">You need to sign in to submit KYC details.</p>
  <Link
  href="/auth/login"
- className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Go to Sign In
  </Link>
@@ -170,7 +172,7 @@ function ProviderKycContent() {
  return (
  <div className="max-w-2xl mx-auto px-4 py-10">
  <div className="mb-6">
- <h1 className="text-2xl font-semibold text-surface-800 mb-2 inline-flex items-center gap-2">
+ <h1 className={`${H1.portal} mb-2 inline-flex items-center gap-2`}>
  <ShieldCheck className="w-6 h-6 text-saffron-600" />
  Provider KYC
  </h1>
@@ -327,13 +329,13 @@ function ProviderKycContent() {
  </fieldset>
 
  <div className="border-t border-surface-100 pt-4 flex items-center justify-between">
- <p className="text-xs text-surface-500 max-w-sm">
+ <p className="prose-meta text-surface-500 max-w-sm">
  By submitting you confirm these details are yours and authorise Darshya to use them for compliance and payouts.
  </p>
  <button
  type="submit"
  disabled={submitting}
- className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 disabled:opacity-60"
+ className={buttonClass('primary', 'md')}
  >
  {submitting ? (
  <>

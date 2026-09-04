@@ -10,6 +10,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createHash } from 'node:crypto';
+import { verifiedNoun } from '../lib/pandit-vetting.js';
 import { z } from 'zod';
 
 // ---------- Schemas ----------
@@ -239,7 +240,10 @@ export async function b2bRoutes(server: FastifyInstance) {
       '/ping': { get: { summary: 'Auth probe' } },
       '/temples': { get: { summary: 'List verified temples', parameters: [{ name: 'limit', in: 'query' }, { name: 'cursor', in: 'query' }] } },
       '/bookings': { get: { summary: 'List bookings (PII masked)', parameters: [{ name: 'since', in: 'query' }] } },
-      '/pandits': { get: { summary: 'List verified pandits w/ availability' } },
+      // TC-08: this published "List verified pandits" in the B2B OpenAPI
+      // document a partner integrates against. The list is filtered on
+      // Priest.isVerified, a column no route writes — see lib/pandit-vetting.ts.
+      '/pandits': { get: { summary: `List ${verifiedNoun('pandits')} w/ availability` } },
       '/donations': { get: { summary: 'List aggregated donations' } },
       '/darshan-schedule': { get: { summary: 'List live darshan windows' } },
     },

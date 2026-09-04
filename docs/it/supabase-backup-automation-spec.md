@@ -2,6 +2,29 @@
 
 > **Roadmap item**: R-Q2-IT-003 (P2) · **Authored**: 2026-06-13
 
+> **Status note — 2026-09-02 (`OPS-10` / `OPS-03`).** Everything below is a **proposal**
+> and is left intact as one; it has never been built as written. What actually exists,
+> read out of this repository on 2026-09-02, is different in three ways that matter:
+>
+> 1. **The workflow is `.github/workflows/db-backup.yml`, not `supabase-backup.yml`,**
+>    and it runs at 19:00 UTC, not 03:00.
+> 2. **The destination is Supabase Storage — the same Supabase project the database
+>    lives in.** That is a second copy, not a backup: one account suspension takes
+>    both. `db-backup.yml` now *fails* a run whose only destination is the same
+>    project (`OPS-03`). An **optional** offsite mirror is supported via the
+>    `BACKUP_S3_*` secrets (S3-compatible, e.g. Cloudflare R2) and those secrets are
+>    **currently unset**. A separate weekly `pg_dump` → Cloudflare R2 exists at
+>    `apps/api/scripts/backup.mjs`, also env-gated and currently a no-op.
+> 3. **There is no Glacier tier and no AWS S3 bucket.** `s3://bhaktisetu-backups` does
+>    not exist. Glacier appears nowhere in this system outside this proposal — the
+>    "Standard 7 days / Glacier 8-30 / delete day 31" lifecycle below has never been
+>    configured anywhere. Do not cite it as a retention control.
+>
+> Before this spec is worth reviving, note `OPS-02`: every scheduled run of the real
+> backup workflow produced zero bytes and reported green for months, because the
+> secrets were never set. A backup nobody has restored is a hypothesis. The restore
+> drill is documented in `db-backup.yml` and `docs/backup-restore-runbook.md`.
+
 ## Goal
 
 Q2 daily pg_dump from Supabase → S3 archive. 30d rolling retention. DR + audit insurance.
@@ -37,11 +60,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_BACKUP_SECRET }}
 ```
 
-## S3 lifecycle
+## S3 lifecycle (proposed; never configured)
 
 - Standard tier first 7 days
 - Glacier 8-30 days
 - Auto-delete day 31
+
+*None of the above exists. There is no AWS S3 bucket and no Glacier tier in this
+system — see the status note at the top. Retained as the original proposal.*
 
 ## Verify
 

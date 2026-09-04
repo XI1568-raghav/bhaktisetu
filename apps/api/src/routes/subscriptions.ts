@@ -3,9 +3,28 @@ import { z } from 'zod';
 import crypto from 'node:crypto';
 import { authenticateUser } from '../middlewares/auth.js';
 import { subscriptionService, PaymentRequiredError } from '../services/subscription.service.js';
+import {
+  NRI_PREMIUM_WITHDRAWN_DETAIL,
+  NRI_PREMIUM_WITHDRAWN_MESSAGE,
+} from '../services/subscription-entitlements.js';
 import { checkAndRecord } from '../lib/webhook-idempotency.js';
+import { handleSubscriptionEvent as handleRecurringMandateEvent } from '../services/recurring.service.js';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
+
+// ─── Withdrawn-plan refusal (TC-04) ─────────────────────────────────────────
+//
+// Both activation rails throw NRI_PREMIUM_WITHDRAWN_MESSAGE for a plan whose
+// benefits are unenforced, and both routes echo the thrown message to the
+// caller — which on /upgrade is rendered straight into the page. So the
+// message is buyer copy. The engineering explanation, which names the
+// registry file, goes to the log instead of to the devotee; before this split
+// the devotee received the file path.
+function logIfWithdrawnPlan(server: FastifyInstance, message: string): void {
+  if (message === NRI_PREMIUM_WITHDRAWN_MESSAGE) {
+    server.log.warn(NRI_PREMIUM_WITHDRAWN_DETAIL);
+  }
+}
 
 const subscribeSchema = z.object({
   planId: z.string().min(1, 'planId is required'),
@@ -62,6 +81,7 @@ export async function subscriptionRoutes(server: FastifyInstance) {
       if (err instanceof PaymentRequiredError) {
         return reply.code(402).send({ error: message, code: err.code, payWith: '/api/v1/subscriptions/create' });
       }
+      logIfWithdrawnPlan(server, message);
       return reply.code(400).send({ error: message });
     }
   });
@@ -95,8 +115,28 @@ export async function subscriptionRoutes(server: FastifyInstance) {
   // ─── POST /webhook — Subscription webhook from Razorpay ─────────────────────
   // Mirrors apps/api/src/routes/payments.ts: HMAC over the literal request
   // bytes (rawBody), timing-safe compare, fail closed if secret missing.
-  // Downstream subscription-event handling is still a stub — what this route
-  // guarantees today is that no unsigned/forged event is ever acknowledged.
+  //
+  // PAY-04 (2026-08-21, P0/money): this endpoint drives BOTH subscription
+  // stores. There are two, written by two different functions that share a
+  // name — `subscription.service.handleSubscriptionEvent` (marketplace role
+  // plans: MarketplaceSubscription + Transaction) and
+  // `recurring.service.handleSubscriptionEvent` (the ONLY writer of
+  // `recurring_subscriptions.status`, i.e. the gau-seva / wellness /
+  // temple-seva UPI Autopay mandates). Only the marketplace one was called
+  // here, while the recurring one hung off the DEFAULT branch of the PAYMENTS
+  // webhook dispatcher — and docs/razorpay-live-activation.md subscribes
+  // `subscription.*` to THIS url, not that one. Net effect in the shipped
+  // configuration: no code path ever moved a mandate off `pending`. Razorpay
+  // debited the devotee every cycle and our own store never knew the mandate
+  // was live, so nothing renewed, nothing dunned, and cancelling in the
+  // Razorpay dashboard left us showing a pending mandate forever.
+  //
+  // Both rails now run on both endpoints, so the platform is indifferent to
+  // which url the owner points `subscription.*` at — the same reason
+  // payment.service handles `refund.created` AND `refund.processed`. Razorpay
+  // stamps one `x-razorpay-event-id` per event and both endpoints share the
+  // `razorpay` dedupe namespace, so subscribing both urls cannot
+  // double-process.
 
   server.post(
     '/webhook',
@@ -107,9 +147,20 @@ export async function subscriptionRoutes(server: FastifyInstance) {
         return reply.code(400).send({ error: 'Missing x-razorpay-signature header.' });
       }
 
-      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      // PAY-04: docs/razorpay-live-activation.md §7 has always told the owner
+      // that a SEPARATE secret on this endpoint "will need a second var
+      // (RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET)". Nothing ever read that var, so
+      // following the runbook produced a 400 on every single subscription
+      // event — the exact signature of "recurring is broken", with the cause
+      // sitting in a doc that described a feature the code did not have. The
+      // override now exists; `RAZORPAY_WEBHOOK_SECRET` remains the fallback,
+      // and an unset pair still fails CLOSED.
+      const webhookSecret =
+        process.env.RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET || process.env.RAZORPAY_WEBHOOK_SECRET;
       if (!webhookSecret) {
-        server.log.error('RAZORPAY_WEBHOOK_SECRET not configured — refusing to accept webhook');
+        server.log.error(
+          'Neither RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET nor RAZORPAY_WEBHOOK_SECRET is configured — refusing to accept webhook',
+        );
         return reply.code(500).send({ error: 'Webhook configuration error' });
       }
 
@@ -150,12 +201,39 @@ export async function subscriptionRoutes(server: FastifyInstance) {
       server.log.info({ event }, 'Subscription webhook verified');
 
       if (event.startsWith('subscription.')) {
+        // PAY-04 rail 1 of 2 — recurring UPI Autopay mandates. Never throws
+        // (see recurring.service), so it can safely run first and can never
+        // stop the marketplace rail below from seeing the same event.
+        const mandateEntity = (
+          payload as { payload?: { subscription?: { entity?: { id?: string } } } }
+        ).payload?.subscription?.entity;
+        const mandate = await handleRecurringMandateEvent(event, mandateEntity);
+        if (mandate.handled && mandate.updated === 0) {
+          server.log.info(
+            { event, razorpaySubscriptionId: mandateEntity?.id },
+            'Subscription event matched no recurring mandate — marketplace rail only',
+          );
+        }
+
+        // PAY-04 rail 2 of 2 — marketplace role plans.
         try {
           const r = await subscriptionService.handleSubscriptionEvent(event, payload);
-          return { received: true, event, handled: r.handled, reason: r.reason };
+          return {
+            received: true,
+            event,
+            handled: r.handled || mandate.handled,
+            reason: r.reason,
+            recurring: mandate,
+          };
         } catch (err) {
           server.log.error({ err, event }, 'Subscription event handler threw');
-          return { received: true, event, handled: false, reason: 'handler error' };
+          return {
+            received: true,
+            event,
+            handled: mandate.handled,
+            reason: 'handler error',
+            recurring: mandate,
+          };
         }
       }
 
@@ -188,6 +266,7 @@ export async function subscriptionRoutes(server: FastifyInstance) {
       return { subscription: result };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create subscription';
+      logIfWithdrawnPlan(server, message);
       return reply.code(400).send({ error: message });
     }
   });
@@ -204,6 +283,22 @@ export async function subscriptionRoutes(server: FastifyInstance) {
     const userId = request.currentUser!.id;
     const isPremium = await subscriptionService.isPremium(userId);
     return { isPremium };
+  });
+
+  // ─── GET /entitlements — server truth for what the holder may receive ──────
+  //
+  // TC-04. `/is-premium` answers a boolean, which every consumer then has to
+  // reinterpret into "so does that mean no ads, or no surcharge, or both?" —
+  // and the one web consumer that shipped
+  // (apps/web/components/useIsPremium.ts) skipped the server entirely and
+  // tested a client-side tier string against a hardcoded set the NRI Premium
+  // tier is never written into. This endpoint answers by CAPABILITY, and it
+  // lists only capabilities that something actually enforces, so a consumer
+  // can never conclude that an unenforced benefit is live.
+
+  server.get('/entitlements', { preHandler: [authenticateUser] }, async (request) => {
+    const userId = request.currentUser!.id;
+    return subscriptionService.getEntitlements(userId);
   });
 
   // ─── POST /cancel-auto-renew — Cancel future renewals ──────────────────────

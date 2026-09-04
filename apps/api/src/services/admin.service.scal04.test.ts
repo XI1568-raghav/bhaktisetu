@@ -68,3 +68,52 @@ describe('SCAL-04 — admin dashboard role tally', () => {
     expect(out.usersByRole).toEqual({});
   });
 });
+
+/**
+ * SCAL-04 — the role hydration on the admin user list.
+ *
+ * `getUsers` pages the user table properly (clampLimit caps it at 100), then
+ * hydrates each row's roles with a second read keyed `userId: { in: page }`.
+ * That read is bounded by the page and so is not a ratchet entry — but it asked
+ * for whole `UserRoleAssignment` rows to build a map out of exactly two of
+ * their columns. A user can hold every one of the eight roles, so the discarded
+ * remainder is up to 800 rows of id + isPrimary + createdAt per page view, on
+ * the first screen an operator opens. Bounded is not the same as free.
+ */
+describe('SCAL-04 — getUsers role hydration', () => {
+  const PAGE_USER = {
+    id: 'u1',
+    fullName: 'Asha',
+    email: 'asha@example.com',
+    phone: null,
+    subscriptionTier: 'free',
+    blocked: false,
+    blockedAt: null,
+    blockedReason: null,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  };
+
+  it('asks for only the two columns the role map reads', async () => {
+    prismaMock.user.findMany.mockResolvedValue([PAGE_USER] as never);
+    prismaMock.user.count.mockResolvedValue(1);
+    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
+      { userId: 'u1', role: 'PANDIT' },
+      { userId: 'u1', role: 'DEVOTEE' },
+    ] as never);
+
+    const out = await service.getUsers({ page: 1, limit: 20 });
+
+    // The answer is unchanged — a narrower query is not a narrower result.
+    expect(out.total).toBe(1);
+    expect(out.users[0]!.roles).toEqual(['PANDIT', 'DEVOTEE']);
+
+    const call = prismaMock.userRoleAssignment.findMany.mock.calls[0]![0] as {
+      select?: Record<string, unknown>;
+    };
+    expect(
+      call.select,
+      'the hydration fetches every column of every assignment row on the page',
+    ).toBeDefined();
+    expect(Object.keys(call.select!).sort()).toEqual(['role', 'userId']);
+  });
+});

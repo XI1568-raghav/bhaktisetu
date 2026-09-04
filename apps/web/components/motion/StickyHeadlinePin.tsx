@@ -95,7 +95,7 @@ export default function StickyHeadlinePin({ headline, children, className }: Pro
     <div ref={outerRef} className={`relative h-[180vh] ${className ?? ''}`}>
       <div className="sticky top-0 h-screen flex flex-col items-center justify-center px-6">
         <h2
-          className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-center max-w-4xl"
+          className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-center max-w-[56rem]"
           style={{
             fontFamily: 'var(--font-display)',
             color: 'var(--color-text)',

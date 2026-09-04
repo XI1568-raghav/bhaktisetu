@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { GITA_CHAPTERS, TOTAL_VERSES } from '../../lib/gita-chapters';
 
@@ -58,7 +60,7 @@ export default function GitaIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-indigo-600">18 chapters · {TOTAL_VERSES} verses · Krishna&apos;s teaching to Arjuna</p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">श्रीमद्भगवद्गीता</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>श्रीमद्भगवद्गीता</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Bhagavad Gita, All 18 Chapters</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
           Spoken on the battlefield of Kurukshetra by Lord Krishna to the warrior Arjuna,

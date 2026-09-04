@@ -13,18 +13,27 @@ import {
  CheckCircle2,
  Camera,
  ArrowLeft,
+ Shield,
+ LogOut,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import AuthGuard from '../../components/AuthGuard';
+import { AvatarWithFallback } from '../../components/AvatarWithFallback';
 import AddressManager from '../../components/profile/AddressManager';
-import { useAuth } from '../../lib/auth-context';
+import { useAuth, type SignOutScope } from '../../lib/auth-context';
 import {
  API_BASE_URL,
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: true ONLY for 401 — a 403 is a suspended account, where signing in
+ // again succeeds and lands the user back on the same refusal.
+ loadErrorIsReauth,
 } from '../../lib/api-config';
+import { ACCOUNT_LANGUAGES, accountLanguageLabel } from '../../lib/i18n/locales';
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
+import ReauthPrompt from '../../components/ReauthPrompt';
 
 interface ProfileFormData {
  fullName: string;
@@ -39,18 +48,14 @@ interface ProfileFormData {
  nriCountry: string;
 }
 
-const languages = [
- { value: 'hi', label: 'Hindi' },
- { value: 'en', label: 'English' },
- { value: 'ta', label: 'Tamil' },
- { value: 'te', label: 'Telugu' },
- { value: 'bn', label: 'Bengali' },
- { value: 'mr', label: 'Marathi' },
- { value: 'gu', label: 'Gujarati' },
- { value: 'kn', label: 'Kannada' },
- { value: 'ml', label: 'Malayalam' },
- { value: 'pa', label: 'Punjabi' },
-];
+/*
+ * I18N-07: this was a hand-retyped copy of the Prisma `Language` enum — a
+ * fourth list of languages in a product that already had three — and it offered
+ * all ten as if all ten did something. apps/api has message catalogues for five
+ * (en, hi, ta, te, kn); the other five save fine and change nothing. The list
+ * and the disclosure both live in lib/i18n/locales.ts now, checked against
+ * @poojly/shared by __tests__/i18n/profile-language-honesty.i18n07.test.tsx.
+ */
 
 const nakshatras = [
  'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
@@ -73,7 +78,35 @@ const countries = [
 ];
 
 function ProfileContent() {
- const { user, session, refreshUser } = useAuth();
+ const { user, session, refreshUser, signOut } = useAuth();
+ const router = useRouter();
+
+ // AUTH-09: which scope is in flight, so both buttons disable together and the
+ // pressed one names what it is doing. `null` = idle.
+ const [signingOutScope, setSigningOutScope] = useState<SignOutScope | null>(null);
+
+ /**
+  * Sign out at the scope the user explicitly chose.
+  *
+  * `scope` is passed EXPLICITLY here, including 'global'. Everywhere else in
+  * the product the global scope is reached by omitting the field, which is
+  * what keeps a bare `signOut()` safe; on this screen the user has picked one,
+  * and the request should say which.
+  */
+ const handleSignOut = useCallback(
+  async (scope: SignOutScope) => {
+   setSigningOutScope(scope);
+   try {
+    await signOut({ scope });
+   } finally {
+    // Navigate whether or not the network call succeeded: auth-context clears
+    // the local session in its `finally` either way, so staying on an
+    // authenticated screen would render a signed-out user's profile.
+    router.replace('/');
+   }
+  },
+  [signOut, router],
+ );
 
  const [form, setForm] = useState<ProfileFormData>({
  fullName: '',
@@ -105,6 +138,10 @@ function ProfileContent() {
  // Two guards, both required: refuse to save over a form we never loaded, and
  // only ever send fields the user actually edited.
  const [loadFailed, setLoadFailed] = useState<string | null>(null);
+ // AUTH-06: /profile disables Save while the load has failed, so an expired
+ // session left the user with a read-only form, a sentence telling them to
+ // sign in again, and a Retry that could only 401 again.
+ const [loadReauth, setLoadReauth] = useState(false);
  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
  /**
@@ -114,6 +151,7 @@ function ProfileContent() {
  if (!session?.accessToken) return;
 
  setLoadFailed(null);
+ setLoadReauth(false);
  try {
  // RES-01: bare fetch has no timeout — held open, /profile sat on
  // "Loading profile..." at T+10s and at T+30s with no error.
@@ -123,6 +161,7 @@ function ProfileContent() {
 
  if (!res.ok) {
  setLoadFailed(loadErrorMessage(res));
+ setLoadReauth(loadErrorIsReauth(res));
  } else {
  const data = await res.json();
  const u = data.user;
@@ -142,6 +181,7 @@ function ProfileContent() {
  }
  } catch (err) {
  setLoadFailed(loadErrorMessage(err));
+ setLoadReauth(loadErrorIsReauth(err));
  } finally {
  setIsLoading(false);
  }
@@ -284,6 +324,9 @@ function ProfileContent() {
  {loadFailed} Saving is disabled until your profile loads, so a blank form
  cannot overwrite your gotra, nakshatra or city.
  </span>
+ {loadReauth ? (
+ <ReauthPrompt message="" className="shrink-0" />
+ ) : (
  <button
  type="button"
  onClick={() => { setIsLoading(true); void loadProfile(); }}
@@ -291,6 +334,7 @@ function ProfileContent() {
  >
  Retry
  </button>
+ )}
  </div>
  )}
  {error && (
@@ -310,11 +354,19 @@ function ProfileContent() {
  <div className="flex items-center gap-5">
  <div className="relative">
  <div className="w-20 h-20 bg-saffron-100 rounded-full flex items-center justify-center overflow-hidden">
- {user?.avatarUrl ? (
- <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" loading="lazy" decoding="async" />
- ) : (
- <User className="w-10 h-10 text-saffron-400" />
- )}
+ {/* PF-04: was a FALSY-only guard. No seeded User row carries the dead
+     `images.darshya.online` host today, but any dead avatar URL — an
+     expired Supabase Storage object, a deleted OAuth provider photo —
+     produces the identical broken-image icon, and this is the devotee's
+     own profile page. Same wrapper, same `User` icon fallback. */}
+ <AvatarWithFallback
+ src={user?.avatarUrl}
+ width={80}
+ height={80}
+ alt="Avatar"
+ className="w-full h-full object-cover"
+ fallback={<User className="w-10 h-10 text-saffron-400" />}
+ />
  </div>
  <button
  className="absolute -bottom-1 -right-1 w-7 h-7 bg-saffron-600 rounded-full flex items-center justify-center text-white hover:bg-saffron-700 transition-colors shadow-sm"
@@ -394,12 +446,16 @@ function ProfileContent() {
  onChange={(e) => updateField('preferredLanguage', e.target.value)}
  className="w-full px-4 py-2.5 bg-white border border-[var(--color-border)] rounded-lg text-surface-800 focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-400 transition-colors"
  >
- {languages.map((lang) => (
+ {ACCOUNT_LANGUAGES.map((lang) => (
  <option key={lang.value} value={lang.value}>
- {lang.label}
+ {accountLanguageLabel(lang.value)}
  </option>
  ))}
  </select>
+ <p className="mt-1.5 text-xs text-surface-500">
+ This sets the language of the messages we send you. Five of these have a
+ full catalogue; the rest are marked, and stay English until they do.
+ </p>
  </div>
 
  {/* Location */}
@@ -537,6 +593,71 @@ function ProfileContent() {
 
  {/* Delivery Addresses (devotee revamp 2026-08-05: backend existed, no UI) */}
  <AddressManager />
+
+ {/* AUTH-09 — Security: the one screen where the sign-out SCOPE is a choice.
+
+     Signing out anywhere else in the product is global: POST /auth/logout
+     defaults to supabase's global scope and burns every refresh_token_jtis
+     row the account holds, so pressing "Sign Out" on a library computer also
+     ends the session on the user's phone. That is the right default for a
+     lost or shared device and it stays the default — auth-context.tsx sends
+     no `scope` at all rather than sending 'global', because defaulting to
+     'local' would silently stop revoking other sessions.
+
+     But a default is not a choice, and until now there was nowhere to make
+     one: `signOut({ scope })`, the API enum and the scope-naming response all
+     existed with zero callers. The choice belongs HERE, on the account screen
+     a user opens deliberately — not on /auth/logout, which signs out on mount
+     and which every "Sign Out" affordance routes to, so a chooser there would
+     turn a one-click sign-out into two and would be offered after the global
+     sign-out had already run.
+
+     Guarded by __tests__/auth09-profile-security-scopes.test.tsx. */}
+ <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
+ <h2 className="text-lg font-bold text-surface-800 mb-5 flex items-center gap-2">
+ <Shield className="w-5 h-5 text-tulsi-green" />
+ Security
+ </h2>
+
+ <div className="space-y-3">
+ <div className="flex flex-wrap items-center justify-between gap-3">
+ <div className="min-w-0">
+ <p className="font-medium text-surface-700">Sign out on this device</p>
+ <p className="text-sm text-surface-500">
+ You stay signed in on your other devices.
+ </p>
+ </div>
+ <button
+ type="button"
+ onClick={() => handleSignOut('local')}
+ disabled={signingOutScope !== null}
+ className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 text-sm font-semibold text-surface-700 transition-colors hover:bg-surface-50 disabled:opacity-50"
+ >
+ <LogOut className="w-4 h-4" />
+ {signingOutScope === 'local' ? 'Signing out…' : 'Sign out on this device'}
+ </button>
+ </div>
+
+ <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-border)] pt-3">
+ <div className="min-w-0">
+ <p className="font-medium text-surface-700">Sign out everywhere</p>
+ <p className="text-sm text-surface-500">
+ Ends the session on all your devices, including your phone. Use this if a
+ device was lost or shared.
+ </p>
+ </div>
+ <button
+ type="button"
+ onClick={() => handleSignOut('global')}
+ disabled={signingOutScope !== null}
+ className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-red-200 px-4 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+ >
+ <LogOut className="w-4 h-4" />
+ {signingOutScope === 'global' ? 'Signing out…' : 'Sign out on all devices'}
+ </button>
+ </div>
+ </div>
+ </div>
 
  {/* Save button */}
  <div className="flex items-center justify-end gap-4">

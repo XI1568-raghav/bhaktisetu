@@ -1,5 +1,10 @@
 import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from 'remotion';
 import { INK, INK_DIM, SAFFRON, saffronGlow, FONT_DISPLAY, FONT_BODY } from '../tokens';
+// TC-01 — the WhatsApp thread in this act asked for an 80G receipt. The reel's
+// arc is problem-then-Darshya-solves-it, and the solution panel's receipt copy
+// is already gated in ../claims, so leaving the request ungated implies an
+// answer the platform cannot give. Gated on the same owner flag.
+import { HAS_80G } from '../claims';
 
 type Props = { durationFrames: number };
 
@@ -83,7 +88,7 @@ export const NriSplitScreen: React.FC<Props> = ({ durationFrames }) => {
               { t: 'haan kar dunga ₹5000 bhej do', me: false, w: '78%' },
               { t: 'video milega?', me: true, w: '40%' },
               { t: 'beta phone pe baat karte hain', me: false, w: '72%' },
-              { t: 'receipt chahiye 80G ki', me: true, w: '55%' },
+              { t: HAS_80G ? 'receipt chahiye 80G ki' : 'receipt milega kya', me: true, w: '55%' },
               { t: '...', me: false, w: '12%' },
             ].map((m, i) => (
               <div

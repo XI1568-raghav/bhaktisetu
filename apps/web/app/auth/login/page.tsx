@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { useTranslations } from '../../../lib/t';
 import {
@@ -303,18 +304,38 @@ export default function LoginPage() {
   return (
     <div className="shadow-warm overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
       {/* Header */}
-      <div className="border-b border-[var(--color-border)] bg-[#ede9e3] px-6 py-8 text-center">
+      {/* RESP-01: every vertical step from here down to the Sign In button is
+          tightened BELOW sm (640px) and restored at sm:. Measured at 390x844
+          with the compiled Tailwind bundle and a real layout engine: the card
+          was 569px tall starting at y=96 (main's pt-16 plus the auth wrapper's
+          py-8), which put Sign In at y 596-640 while the cookie banner's top
+          edge sat at y=566 — elementFromPoint on the button's own centre
+          returned the banner's <h2>. Nothing here removes copy or drops a tap
+          target below 44px; the "Continue with Google" button keeps py-3 for
+          exactly that reason. After: card 489px, Sign In 539-583, banner top
+          582, elementFromPoint returns the Sign In button. */}
+      <div className="border-b border-[var(--color-border)] bg-[#ede9e3] px-6 py-4 text-center sm:py-8">
         {/* A11Y-15 / DU-05: /auth/login shipped with h1Count=0 - no heading
             of any level anywhere on the page - so the heading rotor had no
             entry for "this is the sign-in page" and search engines saw no
             title. The lockup is unchanged pixel-for-pixel; it is now the
             h1, and the purpose is appended for AT instead of being
             duplicated on screen. */}
-        <h1 className="mb-2 flex items-center justify-center gap-2">
+        {/* DU-05 (2026-09-01): the type lived on the inner wordmark span as
+            `text-surface-800 text-xl font-semibold tracking-tight` — which is
+            H1.portal's four utilities, spelled out by hand, on a child of the
+            h1 rather than on the h1. So the heading itself declared no size at
+            all and the ratchet counted it as a hand-rolled recipe. Moving the
+            archetype onto the h1 and deleting the duplicate from the span
+            renders identically: the wordmark inherits the same four values,
+            the icon chip is a fixed h-7 w-7 flex box with no text in it, gap-2
+            is rem-based, and tracking-tight is em-relative off the same
+            text-xl on either element. */}
+        <h1 className={`${H1.portal} mb-1.5 flex items-center justify-center gap-2 sm:mb-2`}>
           <span className="bg-saffron-600/15 flex h-7 w-7 items-center justify-center rounded-lg">
             <Flame className="text-saffron-600 h-4 w-4" aria-hidden="true" />
           </span>
-          <span className="text-surface-800 text-xl font-semibold tracking-tight">
+          <span>
             Darsh<span className="text-saffron-600">ya</span>
           </span>
           <span className="sr-only">{step === 'otp' ? '\u2014 verify code' : '\u2014 sign in'}</span>
@@ -325,7 +346,7 @@ export default function LoginPage() {
       </div>
 
       {/* Form body */}
-      <div className="px-6 py-6">
+      <div className="px-6 py-4 sm:py-6">
         {/* Error message */}
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -456,7 +477,7 @@ export default function LoginPage() {
             </button>
 
             {/* Divider */}
-            <div className="relative my-5">
+            <div className="relative my-3 sm:my-5">
               <div className="absolute inset-0 flex items-center">
                 <div className="border-surface-200 w-full border-t" />
               </div>
@@ -466,7 +487,7 @@ export default function LoginPage() {
             </div>
 
             {/* Tab switcher */}
-            <div className="bg-surface-100 mb-5 flex rounded-lg p-1">
+            <div className="bg-surface-100 mb-4 flex rounded-lg p-1 sm:mb-5">
               <button
                 onClick={() => {
                   setActiveTab('email');
@@ -500,7 +521,7 @@ export default function LoginPage() {
             {/* ─── Email + Password Form ─── */}
             {activeTab === 'email' && (
               <div>
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <label
                     htmlFor="email"
                     className="text-surface-700 mb-1.5 block text-sm font-medium"
@@ -526,7 +547,7 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <div className="mb-5">
+                <div className="mb-4 sm:mb-5">
                   <div className="mb-1.5 flex items-baseline justify-between">
                     <label
                       htmlFor="password"

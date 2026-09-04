@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../../components/ScrollReveal';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness/yoga' },
  title: 'Yoga — Live Classes & Expert Instructors',
@@ -106,22 +108,20 @@ export default function YogaPage() {
 
  <h1
  data-reveal="up-far"
- className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]"
- style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+ className={H1.catalogue}
  >
  Live Yoga Classes with{' '}
  <span style={{ color: 'var(--color-primary)' }}>Expert Instructors</span>
  </h1>
 
- <p data-reveal="up" data-delay="1" className="mt-5 text-sm leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="mt-5 prose-body leading-relaxed max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
  From gentle Hatha to powerful Ashtanga, find the style that resonates with you. Morning and evening sessions, private bookings, and a growing video library.
  </p>
 
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <a
  href="#schedule"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  View Schedule <Calendar className="w-4 h-4" />
  </a>
@@ -271,7 +271,7 @@ export default function YogaPage() {
  <span className="text-xs" style={{ color: s.spots <= 5 ? '#b91c1c' : 'var(--color-text-faint)' }}>
  {s.spots} spots left
  </span>
- <button className="text-xs font-medium px-2.5 py-1 rounded-md text-white" style={{ background: 'var(--color-primary)' }}>
+ <button className={buttonClass('primary', 'md')}>
  Book
  </button>
  </div>
@@ -308,7 +308,7 @@ export default function YogaPage() {
  <span className="text-xs" style={{ color: s.spots <= 5 ? '#b91c1c' : 'var(--color-text-faint)' }}>
  {s.spots} spots left
  </span>
- <button className="text-xs font-medium px-2.5 py-1 rounded-md text-white" style={{ background: 'var(--color-primary)' }}>
+ <button className={buttonClass('primary', 'md')}>
  Book
  </button>
  </div>
@@ -368,14 +368,13 @@ export default function YogaPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Ready to step on the mat?
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
  Book a private session or join a group class. First-time students get 50% off their first session.
  </p>
  <div data-reveal="blur" data-delay="2">
  <Link
  href="/wellness"
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Book a Session <ArrowRight className="w-4 h-4" />
  </Link>

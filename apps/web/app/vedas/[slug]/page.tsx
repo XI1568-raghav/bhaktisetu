@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { VEDAS, vedaSlugs, getVeda } from '../../../lib/vedas';
 import { formatNumber } from '../../../lib/format-locale';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -74,7 +78,7 @@ export default async function VedaPage({ params }: { params: Promise<{ slug: str
 
       <header className="mb-8 rounded-2xl border border-saffron-200 bg-gradient-to-br from-saffron-50 to-amber-50 p-6">
         <p className="text-xs uppercase tracking-wider text-saffron-700">Veda #{v.number} of 4 · {v.approxDate}</p>
-        <h1 className="mt-2 font-serif text-3xl text-gray-900 sm:text-4xl">{v.sanskrit}</h1>
+        <h1 className={`${H1.catalogue} mt-2`}>{v.sanskrit}</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900">{v.name}</p>
         <p className="mt-1 italic text-sm text-gray-600">{v.iast} — {v.meaning}</p>
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-gray-700 sm:grid-cols-4">
@@ -187,6 +191,10 @@ export default async function VedaPage({ params }: { params: Promise<{ slug: str
           ))}
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'vedas',
+        subject: v.name,
+      })}
     </main>
   );
 }

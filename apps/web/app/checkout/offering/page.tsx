@@ -30,6 +30,12 @@ import {
   pujaTotalInr,
 } from '../../../lib/puja-pricing';
 import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
+import {
+  CANCELLATION_BADGE_LABEL,
+  CANCELLATION_BADGE_DESC,
+} from '../../../lib/cancellation-policy';
 
 // ─── Razorpay loader ───────────────────────────────────────────
 // RES-04 (2026-08-12): the loader used to live inline here (and, verbatim, in
@@ -363,7 +369,7 @@ function OfferingCheckoutInner() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
               <div>
-                <h1 className="text-lg font-semibold text-surface-800">
+                <h1 className={H1.portal}>
                   Could not load this puja
                 </h1>
                 <p className="text-sm text-surface-600 mt-1">
@@ -385,12 +391,12 @@ function OfferingCheckoutInner() {
             <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-7 h-7 text-green-600" />
             </div>
-            <h1 className="text-2xl font-semibold text-surface-800 mb-2">
+            <h1 className={`${H1.portal} mb-2`}>
               Booking confirmed
             </h1>
             <p className="text-sm text-surface-600">
-              Your puja booking is confirmed. We have sent a tax invoice to your
-              registered email.
+              Your puja booking is confirmed. We have emailed a payment receipt
+              to your registered email.
             </p>
             <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-saffron-50 rounded-lg">
               <span className="text-xs text-surface-500">Booking number</span>
@@ -401,7 +407,7 @@ function OfferingCheckoutInner() {
             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 href={`/dashboard/bookings`}
-                className="inline-flex items-center justify-center px-5 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700"
+                className={buttonClass('primary', 'md')}
               >
                 View my bookings
               </Link>
@@ -437,7 +443,7 @@ function OfferingCheckoutInner() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="text-lg font-semibold text-surface-800">
+                <h1 className={H1.portal}>
                   {offering.name}
                 </h1>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-saffron-50 text-saffron-700">
@@ -551,7 +557,18 @@ function OfferingCheckoutInner() {
           </div>
           <div className="flex items-start gap-2 text-xs text-surface-700">
             <Shield className="w-3.5 h-3.5 text-saffron-600 mt-0.5 shrink-0" />
-            <span>Free cancellation up to 24 hours before the scheduled time.</span>
+            {/* LEG-03 (F223). This read "Free cancellation up to 24 hours before
+                the scheduled time." directly above the Pay button, on a flow
+                that creates an ordinary PujaBooking (POST /bookings/from-offering)
+                and is therefore governed by DEFAULT_CANCEL_POLICY. That ladder
+                pays 100% only at 48h+ and 75% in the 24-48h band, so "free" at
+                the 24-hour mark over-promised by a whole tier: a devotee
+                cancelling 30 hours out was told the refund was free and paid
+                75%. The wording now comes from lib/cancellation-policy, the same
+                module /refunds, /terms, /faqs and the puja wizard render. */}
+            <span>
+              {CANCELLATION_BADGE_LABEL}. {CANCELLATION_BADGE_DESC}.
+            </span>
           </div>
         </div>
 
@@ -609,7 +626,7 @@ function OfferingCheckoutInner() {
           type="button"
           disabled={!canPay}
           onClick={handlePayment}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 disabled:bg-surface-300 disabled:cursor-not-allowed transition-colors"
+          className={buttonClass('primary', 'md', 'w-full disabled:bg-surface-300 disabled:cursor-not-allowed')}
         >
           {paymentLoading ? (
             <>

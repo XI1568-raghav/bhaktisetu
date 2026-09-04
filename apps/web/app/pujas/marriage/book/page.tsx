@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
  CheckCircle,
@@ -12,7 +12,6 @@ import {
  Package,
  CreditCard,
  Star,
- BadgeCheck,
  Home,
  Shield,
  Sparkles,
@@ -20,15 +19,36 @@ import {
  Phone,
 } from 'lucide-react';
 import {
- weddingPandits,
  marriagePricingTiers,
  marriageAddOns,
  marriageTypes,
 } from '../../../../lib/home-pujas';
+import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api';
+import { remoteImage, IMG_W } from '../../../../lib/images';
+import { PanditAvatar } from '../../PanditAvatar';
 import { DateInput } from '../../../../components/ui/DateInput';
 import { WizardSteps } from '../../../../components/ui/WizardSteps';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 type StepId = 1 | 2 | 3 | 4 | 5;
+
+/**
+ * TC-05 / TC-08. Step 3 used to list `weddingPandits` — five hand-typed people
+ * with invented names, ratings, weddings-performed tallies, per-tier prices and
+ * a `vedicCert: true` flag, under the heading "5 Vedic-certified officiants".
+ * A couple selected one of them by name for a ₹11,000+ ceremony.
+ *
+ * It now lists the real directory, `GET /priests`, which serves only rows the
+ * platform actually has. That list can legitimately be empty, and a required
+ * step over an empty list is an unfinishable checkout — so "no preference" is a
+ * first-class selectable value rather than an absence of one, and the request
+ * that reaches the coordinator says so.
+ */
+const NO_PREFERENCE = 'no-preference';
+
+/** Same tags the /pujas/marriage landing page filters the directory on. */
+const MARRIAGE_KEYWORDS = ['marriage', 'wedding', 'vivah', 'kalyanam', 'anand karaj'];
 
 const steps = [
  { id: 1 as StepId, label: 'Couple & date', icon: Heart },
@@ -57,8 +77,30 @@ export default function BookMarriage() {
  const [tier, setTier] = useState('traditional');
  const [addOns, setAddOns] = useState<string[]>([]);
 
- // Step 3 — pandit
+ // Step 3 — pandit, from the real directory
  const [panditId, setPanditId] = useState('');
+ const [priests, setPriests] = useState<PriestSummary[] | null>(null);
+
+ useEffect(() => {
+  let cancelled = false;
+  // getPublicPriests swallows its own failures and answers [], so an API that
+  // is down produces the same honest "no preference only" step as an API with
+  // no wedding pandits on it — never a fabricated roster.
+  void getPublicPriests().then((list) => {
+   if (!cancelled) setPriests(list);
+  });
+  return () => {
+   cancelled = true;
+  };
+ }, []);
+
+ const weddingPriests = (priests ?? []).filter((p) => {
+  const haystack = [...p.specializations, p.bio ?? ''].join(' ').toLowerCase();
+  return MARRIAGE_KEYWORDS.some((k) => haystack.includes(k));
+ });
+ // Same fallback the /pujas/marriage landing page uses: when nobody is tagged
+ // for weddings, show the whole directory rather than an empty step.
+ const offeredPriests = weddingPriests.length > 0 ? weddingPriests : (priests ?? []);
 
  // Step 4 — venue
  const [venueType, setVenueType] = useState<'home' | 'banquet' | 'farmhouse'>('banquet');
@@ -72,7 +114,14 @@ export default function BookMarriage() {
  const [paying, setPaying] = useState(false);
  const [paid, setPaid] = useState(false);
 
- const selectedPandit = weddingPandits.find((p) => p.id === panditId);
+ const selectedPandit = offeredPriests.find((p) => p.id === panditId);
+ // One derivation for the review row, the sticky sidebar and the coordinator
+ // email, so the three can never describe different choices.
+ const panditLabel = selectedPandit
+  ? selectedPandit.displayName
+  : panditId === NO_PREFERENCE
+   ? 'No preference — coordinator to match'
+   : '';
  const selectedTier = marriagePricingTiers.find((t) => t.slug === tier);
  const tierAmount = selectedTier?.price ?? 0;
  const addOnAmount = addOns.length * 2500;
@@ -117,7 +166,7 @@ export default function BookMarriage() {
  const couple = [brideName, groomName].filter(Boolean).join(' & ');
  const callbackSubject = encodeURIComponent(`Wedding ceremony request${couple ? ` — ${couple}` : ''}`);
  const callbackBody = encodeURIComponent(
- `I'd like to plan a wedding ceremony.\n\nCouple: ${couple || 'TBD'}\nCeremony: ${ceremonyType}\nPreferred pandit: ${selectedPandit?.name ?? 'No preference'}\nDate: ${weddingDate || 'Flexible'}\nVenue: ${venueType}\n\nPlease call me to confirm.`,
+ `I'd like to plan a wedding ceremony.\n\nCouple: ${couple || 'TBD'}\nCeremony: ${ceremonyType}\nPreferred pandit: ${panditLabel}\nDate: ${weddingDate || 'Flexible'}\nVenue: ${venueType}\n\nPlease call me to confirm.`,
  );
  const opsPhone = '+919255109400';
  return (
@@ -139,8 +188,7 @@ export default function BookMarriage() {
  <div className="mt-6 flex flex-col gap-2">
  <a
  href={`tel:${opsPhone}`}
- className="block py-3 rounded-lg font-semibold text-white"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md')}
  >
  Call the coordinator
  </a>
@@ -177,7 +225,7 @@ export default function BookMarriage() {
 
  {/* Header */}
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
- <h1 className="text-2xl md:text-3xl font-bold text-surface-800 tracking-tight">
+ <h1 className={H1.catalogue}>
  Book your wedding pandit
  </h1>
  <p className="text-surface-500 mt-1 text-sm">Sampoorna vivah sanskar in 5 steps.</p>
@@ -346,11 +394,17 @@ export default function BookMarriage() {
 
  {step === 3 && (
  <div>
- <h2 className="text-xl font-bold text-surface-800 mb-1">Select your wedding pandit</h2>
- <p className="text-sm text-surface-500 mb-6">{weddingPandits.length} Vedic-certified officiants.</p>
+ <h2 className="text-xl font-bold text-surface-800 mb-1">Choose your officiant</h2>
+ <p className="text-sm text-surface-500 mb-6">
+ {priests === null
+ ? 'Loading pandits\u2026'
+ : offeredPriests.length > 0
+ ? `${offeredPriests.length} pandit${offeredPriests.length === 1 ? '' : 's'} listed on Darshya. Pick one, or let the wedding coordinator match you.`
+ : 'No pandit profiles are published yet. The wedding coordinator will match you with an officiant when they call.'}
+ </p>
 
  <div className="space-y-3">
- {weddingPandits.map((p) => (
+ {offeredPriests.map((p) => (
  <label
  key={p.id}
  className={`flex gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
@@ -361,44 +415,78 @@ export default function BookMarriage() {
  >
  <input
  type="radio"
+ name="wedding-pandit"
  checked={panditId === p.id}
  onChange={() => setPanditId(p.id)}
  className="sr-only"
  />
- <div
- className="w-14 h-14 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0"
- style={{ background: p.avatarBg }}
- >
- {p.initials}
- </div>
+ <PanditAvatar
+ src={p.avatarUrl ? remoteImage(p.avatarUrl, IMG_W.THUMB) : null}
+ name={p.displayName}
+ className="w-14 h-14 rounded-lg text-lg"
+ />
  <div className="flex-1 min-w-0">
- <div className="flex items-start gap-1.5">
- <div className="font-semibold text-surface-800">{p.name}</div>
- <BadgeCheck className="w-4 h-4 text-tulsi-green flex-shrink-0 mt-0.5" />
+ <div className="font-semibold text-surface-800">{p.displayName}</div>
+ {p.specializations.length > 0 && (
+ <div className="text-xs text-surface-500 mt-0.5 truncate">
+ {p.specializations.slice(0, 3).join(' \u00b7 ')}
  </div>
- <div className="text-xs text-surface-500 mt-0.5">{p.title}</div>
+ )}
  <div className="flex items-center gap-2 mt-1.5 text-xs flex-wrap">
+ {/* TC-05: a rating is shown only when a devotee has actually left
+     one. The deleted fixture printed 4.7-5.0 for every row. */}
+ {p.ratingCount > 0 ? (
  <span className="flex items-center gap-1">
  <Star className="w-3 h-3 text-temple-gold fill-temple-gold" />
- <span className="font-semibold">{p.rating}</span>
+ <span className="font-semibold">{p.ratingAvg.toFixed(1)}</span>
+ <span className="text-surface-400">({p.ratingCount})</span>
  </span>
- <span className="text-surface-300">·</span>
- <span className="text-surface-500">{p.weddingsPerformed}+ weddings</span>
- <span className="text-surface-300">·</span>
- <span className="text-surface-500">{p.city}</span>
+ ) : (
+ <span className="text-surface-400">No reviews yet</span>
+ )}
+ {p.experienceYears > 0 && (
+ <>
+ <span className="text-surface-300">&middot;</span>
+ <span className="text-surface-500">{p.experienceYears}+ yrs experience</span>
+ </>
+ )}
  </div>
+ {p.languages.length > 0 && (
  <div className="text-xs text-surface-500 mt-1">
  Languages: {p.languages.slice(0, 4).join(', ')}
  </div>
- </div>
- <div className="text-right flex-shrink-0">
- <div className="text-xs text-surface-400">from</div>
- <div className="font-bold text-surface-800 text-sm">
- ₹{(p.pricing.marriage?.basic ?? 0).toLocaleString('en-IN')}
- </div>
+ )}
  </div>
  </label>
  ))}
+
+ {/* The directory can be empty, and a required step over an empty list is
+     an unfinishable checkout. "No preference" is a real selection, and it
+     travels through to the coordinator request. */}
+ <label
+ className={`flex gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+ panditId === NO_PREFERENCE
+ ? 'border-saffron-500 bg-saffron-50'
+ : 'border-[var(--color-border)] bg-white hover:border-saffron-300'
+ }`}
+ >
+ <input
+ type="radio"
+ name="wedding-pandit"
+ checked={panditId === NO_PREFERENCE}
+ onChange={() => setPanditId(NO_PREFERENCE)}
+ className="sr-only"
+ />
+ <div className="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center flex-shrink-0">
+ <Users className="w-6 h-6 text-surface-400" />
+ </div>
+ <div className="flex-1 min-w-0">
+ <div className="font-semibold text-surface-800">No preference</div>
+ <div className="text-xs text-surface-500 mt-0.5">
+ The wedding coordinator matches an officiant to your ceremony, date and language.
+ </div>
+ </div>
+ </label>
  </div>
  </div>
  )}
@@ -533,7 +621,7 @@ export default function BookMarriage() {
  {muhuratTime && <Row label="Muhurat" value={muhuratTime} />}
  <Row label="Tradition" value={marriageTypes.find((t) => t.slug === ceremonyType)?.name ?? ''} />
  <Row label="Tier" value={selectedTier?.name ?? ''} />
- <Row label="Pandit" value={selectedPandit?.name ?? ''} />
+ <Row label="Pandit" value={panditLabel} />
  <Row label="Venue" value={`${venueType.charAt(0).toUpperCase() + venueType.slice(1)} — ${venueAddress}, ${city}`} />
  {guestCount && <Row label="Guests" value={guestCount} />}
  <Row label="Narration" value={language} />
@@ -574,8 +662,7 @@ export default function BookMarriage() {
  <button
  onClick={handlePay}
  disabled={paying}
- className="w-full mt-5 py-4 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'w-full mt-5')}
  >
  {paying ? (
  <>
@@ -609,8 +696,7 @@ export default function BookMarriage() {
  <button
  onClick={goNext}
  disabled={!canProceed()}
- className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-lg font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'disabled:cursor-not-allowed')}
  >
  Continue
  <ChevronRight className="w-4 h-4" />
@@ -651,10 +737,10 @@ export default function BookMarriage() {
  <span className="text-surface-500">Duration</span>
  <span className="font-medium text-surface-800">{selectedTier?.duration}</span>
  </div>
- {selectedPandit && (
+ {panditId && (
  <div className="flex justify-between">
  <span className="text-surface-500">Pandit</span>
- <span className="font-medium text-surface-800 text-right">{selectedPandit.name}</span>
+ <span className="font-medium text-surface-800 text-right">{panditLabel}</span>
  </div>
  )}
  {addOns.length > 0 && (

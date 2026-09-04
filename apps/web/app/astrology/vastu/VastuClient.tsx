@@ -2,6 +2,7 @@
 
 import { useState, useMemo, FormEvent } from 'react';
 import Link from 'next/link';
+import { buttonClass } from '../../../components/ui/button-recipe';
 import {
  DISHAS,
  ROOMS,
@@ -181,7 +182,7 @@ export default function VastuClient() {
     <div className="rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-5 text-center">
      <p className="text-sm text-gray-800">Want a Vastu pandit to inspect your floor plan + prescribe remedies?</p>
      <div className="mt-3 flex flex-wrap justify-center gap-3">
-      <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+      <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
        Ask a Pandit Live
       </Link>
       <Link href="/astrology/shubh-muhurat" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

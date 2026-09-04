@@ -2,6 +2,9 @@
 // Investor Agent — curated angel/VC targets + personalized intro draft per persona.
 // Output: docs/agent-reports/YYYY-MM-DD-investor-pipeline.md
 import { writeReport, TODAY, isoNow } from './_lib.mjs';
+// TC-01 - a deck that claims 80G to an investor is a diligence liability as
+// well as a false statement; see ./_claims.mjs.
+import { withEightyG } from './_claims.mjs';
 
 // Hand-curated set. Public info only. Stage + thesis fit reviewed.
 const ANGELS = [
@@ -26,7 +29,7 @@ const SEED_VCS = [
 ];
 
 const STRATEGIC = [
-  { name: 'Rainmatter (Zerodha)', stage: 'seed', why: 'Social impact + finance angle (donations + 80G)' },
+  { name: 'Rainmatter (Zerodha)', stage: 'seed', why: `Social impact + finance angle (donations${withEightyG(' + 80G')})` },
   { name: 'PeakXV (ex-Sequoia India)', stage: 'A+', why: 'Once at ~$3M ARR — Surge program' },
   { name: 'Z47 (ex-Matrix)', stage: 'A+', why: 'Once consumer flywheel proven — Cure.fit comparable' },
 ];
@@ -36,7 +39,7 @@ const PERSONA_PITCH = {
 
 **3 numbers**: [bookings last 30d], [GMV ₹], [NRI %].
 
-**Why now**: Sri Mandir at ₹350Cr ARR proves the wedge; we're #2 with vertical depth (gurukuls + Sanskrit + 80G) Sri Mandir won't build.
+**Why now**: Sri Mandir at ₹350Cr ARR proves the wedge; we're #2 with vertical depth (gurukuls + Sanskrit + donation rails${withEightyG(' + 80G')}) Sri Mandir won't build.
 
 **Ask**: $250K SAFE at $4M cap.`,
 
@@ -104,7 +107,7 @@ ${PERSONA_PITCH.strategic}
 ## Pre-raise checklist
 
 - [ ] **Deck v1** (12 slides max) — problem, why-now, solution, demo, market, business, traction, team, ask
-- [ ] **Demo loop** — 90-sec screen recording: book puja → video proof → 80G receipt
+- [ ] **Demo loop** — 90-sec screen recording: book puja → video proof → ${withEightyG('80G receipt', 'numbered receipt PDF')}
 - [ ] **Data room** — Notion site: financial model 3yr, cap table, KPIs weekly, prior commits
 - [ ] **Reference checks** — 3 power users + 2 onboarded temples willing to talk
 - [ ] **Press hits** — at least 1 YourStory or Inc42 mention (apply for emerging-startup features)

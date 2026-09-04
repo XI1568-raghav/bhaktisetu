@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
- ArrowLeft,
  Star,
  Calendar,
  Clock,
@@ -12,6 +11,13 @@ import {
 } from 'lucide-react';
 import ScrollReveal from '../../../../components/ScrollReveal';
 import WellnessEnrolButton from './WellnessEnrolButton';
+// CI-05: this profile's only exits were /wellness and the category listing;
+// the section's bookable unit is /wellness/classes/<id> and nothing here
+// reached it. InstructorClasses resolves this instructor's real upcoming
+// classes from the live feed and falls back to the catalogue, never to a
+// bare /wellness.
+import InstructorClasses from './InstructorClasses';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 // ─── Static instructor data (mirrors API) ──────────────────────────────────
 
@@ -173,7 +179,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  return (
  <div className="min-h-[60vh] flex items-center justify-center">
  <div className="text-center">
- <h1 className="text-2xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Instructor not found</h1>
+ <h1 className={`${H1.portal} mb-2`}>Instructor not found</h1>
  <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>The instructor you are looking for does not exist.</p>
  <Link href="/wellness" className="text-sm font-medium" style={{ color: 'var(--color-primary)' }}>Back to Wellness</Link>
  </div>
@@ -182,6 +188,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  }
 
  const categoryLink = inst.category === 'vipassana' ? '/wellness/vipassana' : inst.category === 'meditation' ? '/wellness/meditation' : '/wellness/yoga';
+ const categoryLabel = inst.category === 'vipassana' ? 'Vipassana' : inst.category === 'meditation' ? 'meditation' : 'yoga';
 
  return (
  <ScrollReveal>
@@ -208,7 +215,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
 
  <div className="flex-1">
- <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 className={H1.portal}>
  {inst.name}
  </h1>
  <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
@@ -416,18 +423,12 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
  </section>
 
- {/* ═══ BACK LINK ═════════════════════════════════════════════════════ */}
- <section className="py-8">
- <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
- <Link
- href="/wellness"
- className="inline-flex items-center gap-1.5 text-sm font-medium link-underline"
- style={{ color: 'var(--color-primary)' }}
- >
- <ArrowLeft className="w-4 h-4" /> Back to Wellness
- </Link>
- </div>
- </section>
+ {/* ═══ BOOKING EXIT ═══════════════════════════════════════════════════ */}
+ <InstructorClasses
+   instructorName={inst.name}
+   categoryHref={categoryLink}
+   categoryLabel={categoryLabel}
+ />
 
  </div>
  </ScrollReveal>

@@ -25,6 +25,8 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 import { getYatraBySlug, yatras, formatINR } from '../../../lib/yatra-data';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export function generateStaticParams() {
  return yatras.map((y) => ({ slug: y.slug }));
 }
@@ -113,7 +115,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  {/* ═══ HERO ═════════════════════════════════════════════ */}
  <section className="relative">
  <div className="absolute inset-0">
- <img src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
+ <img width={1600} height={900} src={yatra.heroImage} alt={yatra.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
  </div>
 
@@ -132,10 +134,10 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  {yatra.region === 'himalayas' ? 'Himalayan Pilgrimage' : `${yatra.region} India pilgrimage`}
  </div>
 
- <h1 data-reveal="cinematic" className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight max-w-2xl" style={{ fontFamily: 'var(--font-display)' }}>
+ <h1 data-reveal="cinematic" className={`${H1.detail} max-w-2xl`}>
  {yatra.title}
  </h1>
- <p data-reveal="up" data-delay="1" className="mt-3 text-sm text-white/80 max-w-2xl leading-relaxed">
+ <p data-reveal="up" data-delay="1" className="mt-3 prose-body text-white/80 max-w-2xl leading-relaxed">
  {yatra.subtitle}
  </p>
 
@@ -153,8 +155,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div data-reveal="spring" data-delay="3" className="mt-8 flex flex-wrap items-center gap-3">
  <Link
  href={`/yatra/${yatra.slug}/book`}
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Book This Yatra <ArrowRight className="w-3.5 h-3.5" />
  </Link>
@@ -273,7 +274,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div data-reveal="up" className="grid grid-cols-2 md:grid-cols-3 gap-3">
  {yatra.gallery.slice(0, 6).map((src, i) => (
  <div key={i} className="aspect-square rounded-xl overflow-hidden card-hover">
- <img src={src} alt={`${yatra.title} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+ <img width={400} height={400} src={src} alt={`${yatra.title} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
  </div>
  ))}
  </div>
@@ -433,6 +434,18 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Stories from past devotees
  </h2>
+ {/* Every package used to ship three hand-typed testimonials with a name,
+     a city, a star rating and a date, and this grid rendered them. They
+     are gone (lib/yatra-data.ts `reviews`), so the section now says what
+     is true instead of standing empty over its own heading — the same
+     empty state /yatra/companion/[id] already renders for the roster
+     TC-06 emptied. Pinned by
+     __tests__/yatra-package-reviews-fabricated.test.tsx. */}
+ {yatra.reviews.length === 0 && (
+ <p data-reveal="up" className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+ No reviews yet. Stories appear here once a devotee who travelled this yatra with us has rated the journey.
+ </p>
+ )}
  <div data-reveal="up" className="grid md:grid-cols-3 gap-4">
  {yatra.reviews.map((r, i) => (
  <div key={i} className="rounded-xl p-4" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
@@ -478,14 +491,13 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <h2 data-reveal="cinematic" className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Ready for {yatra.title}?
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-lg mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-lg mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
  Secure your dates with a ₹5,000 booking advance. Balance payable 30 days before departure.
  </p>
  <div data-reveal="spring" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
  <Link
  href={`/yatra/${yatra.slug}/book`}
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Book This Yatra <ArrowRight className="w-3.5 h-3.5" />
  </Link>

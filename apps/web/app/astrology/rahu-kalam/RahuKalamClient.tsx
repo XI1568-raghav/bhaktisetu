@@ -9,6 +9,7 @@ import {
  type DoshaWindow,
 } from '../../../lib/rahu-kalam';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const DOSHA_STYLE: Record<DoshaWindow['kind'], { border: string; bg: string; pill: string; accent: string }> = {
  rahu:      { border: 'border-rose-400',   bg: 'bg-rose-50/70',   pill: 'bg-rose-200 text-rose-900',     accent: 'text-rose-700' },
@@ -112,7 +113,7 @@ export default function RahuKalamClient() {
        Need a pandit to pick an exact muhurat for your wedding, vehicle puja, or business launch?
       </p>
       <div className="mt-3 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/astrology/choghadiya" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

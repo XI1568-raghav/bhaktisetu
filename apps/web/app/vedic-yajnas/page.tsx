@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
   VEDIC_YAJNAS,
   CATEGORY_LABELS,
@@ -85,7 +86,7 @@ export default function VedicYajnasIndexPage() {
       </nav>
 
       <header className="mb-8 rounded-xl bg-gradient-to-br from-saffron-50 via-amber-50 to-rose-50 p-6 ring-1 ring-saffron-200">
-        <h1 className="text-3xl font-bold text-saffron-900 sm:text-4xl">Vedic Yajnas — वैदिक यज्ञ</h1>
+        <h1 className={H1.catalogue}>Vedic Yajnas — वैदिक यज्ञ</h1>
         <p className="mt-2 text-lg text-amber-900">The ten classical fire rituals of the Shrauta tradition</p>
         <p className="mt-3 max-w-3xl text-gray-800">
           The yajna — the offering into the consecrated fire with prescribed mantra — is the central act of Vedic religion. From the daily Agnihotra performed at every householder hearth to the imperial Ashvamedha that consecrated paramount sovereigns, the Shrauta corpus organises ten classical performances of vastly different scale and scope. Some continue, in attenuated form, in living agnihotri lineages; many belong to a closed scriptural and historical past.

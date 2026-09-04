@@ -1,3 +1,4 @@
+import { HAS_80G } from './eighty-g';
 export type CategoryItem = {
   label: string;
   href: string;
@@ -65,9 +66,11 @@ export const CATEGORY_TREE: Category[] = [
         description: 'Sponsor cow welfare at registered gaushalas.',
       },
       {
-        label: 'Donate (80G)',
+        label: HAS_80G ? 'Donate (80G)' : 'Donate',
         href: '/donations',
-        description: 'Tax-deductible giving with instant 80G receipt.',
+        description: HAS_80G
+          ? 'Tax-deductible giving with instant 80G receipt.'
+          : 'Give to a verified temple or gaushala, with a numbered receipt emailed instantly.',
       },
       {
         label: 'Panchang Today',
@@ -86,7 +89,7 @@ export const CATEGORY_TREE: Category[] = [
       { label: 'Discover All Guides', href: '/discover', description: 'Index of every Hindu wisdom guide on Darshya.' },
       { label: 'Bhakti Saints', href: '/bhakti-saint', description: '12 medieval devotional masters.' },
       { label: 'Deities', href: '/deity', description: 'Form, iconography, mantras for each deity.' },
-      { label: 'Festivals', href: '/festival', description: '30 Hindu festivals with rituals and dates.' },
+      { label: 'Festivals', href: '/festival', description: '56 Hindu festivals with rituals and dates.' },
       { label: 'Aarti / Chalisa / Mantra', href: '/content', description: 'Devotional texts with translations.' },
       { label: 'Vedas + Upanishads', href: '/vedas', description: 'Sruti scriptures explained.' },
       { label: 'Bhagavad Gita', href: '/gita', description: '18 chapters with commentary.' },
@@ -99,7 +102,12 @@ export const CATEGORY_TREE: Category[] = [
         hubLabel: 'Browse all scriptures',
         items: [
           { label: 'Vedas', href: '/vedas', description: 'Rigveda, Yajurveda, Samaveda, Atharvaveda.' },
-          { label: 'Upanishads', href: '/upanishads', description: '108 Upanishads · Vedanta core texts.' },
+          // Counts are literals, not imports: this module is pulled into four
+          // 'use client' nav components, so importing UPANISHADS/JYOTIRLINGAS
+          // to derive them would ship 130 KB of encyclopedia prose to every
+          // route. __tests__/category-tree-counts.ci12-ci14.test.ts pins each
+          // number to the runtime dataset instead.
+          { label: 'Upanishads', href: '/upanishads', description: '48 Upanishads · 10 principal · Vedanta core texts.' },
           { label: 'Puranas', href: '/puranas', description: '18 Mahapuranas · itihasa-purana corpus.' },
           { label: 'Bhagavad Gita', href: '/gita', description: '18 chapters of the Gita.' },
           { label: 'Ramayana', href: '/ramayana', description: '7 Kandas of Valmiki Ramayana.' },
@@ -137,7 +145,7 @@ export const CATEGORY_TREE: Category[] = [
           { label: 'Dashavatar (10)', href: '/dashavatar', description: '10 avatars of Vishnu.' },
           { label: 'Sapta Rishis (7)', href: '/sapta-rishis', description: '7 Vedic sages.' },
           { label: 'Dwadasha Aditya (12)', href: '/aditya', description: '12 forms of Surya.' },
-          { label: 'Jyotirlinga (12)', href: '/jyotirlinga', description: '12 self-manifested Shiva lingas.' },
+          { label: 'Jyotirlinga (12)', href: '/jyotirlinga', description: '12 Shiva light-abodes · 9 self-manifested.' },
           { label: 'Shakti Peeth (51)', href: '/shakti-peeth', description: '51 seats of Sati across the subcontinent.' },
           { label: 'Pancha Bhoota (5)', href: '/pancha-bhoota', description: '5 element-temples of Shiva.' },
           { label: 'Ashta Lakshmi (8)', href: '/ashta-lakshmi', description: '8 forms of Lakshmi.' },
@@ -149,13 +157,13 @@ export const CATEGORY_TREE: Category[] = [
         hubHref: '/discover#cosmology',
         hubLabel: 'Browse calendar & cosmology',
         items: [
-          { label: 'Festivals (30)', href: '/festival', description: 'Major Hindu festivals.' },
+          { label: 'Festivals (56)', href: '/festival', description: 'Major Hindu festivals.' },
           { label: 'Calendar 2026', href: '/calendar', description: 'Month-by-month festival + vrat dates.' },
           { label: 'Tithi (30)', href: '/tithi', description: '30 lunar days w/ rituals.' },
           { label: 'Masa (12)', href: '/masa', description: '12 lunar months of the Hindu calendar.' },
           { label: 'Nakshatra (27)', href: '/nakshatra', description: '27 lunar mansions.' },
           { label: 'Ekadashi (24)', href: '/ekadashi', description: '24 Ekadashis with story + vrat.' },
-          { label: 'Vrat (10)', href: '/vrat', description: 'Fasting traditions.' },
+          { label: 'Vrat (72)', href: '/vrat', description: 'Fasting traditions.' },
           { label: 'Muhurat', href: '/muhurat', description: 'Auspicious + inauspicious time windows.' },
           { label: 'Sacred Rivers', href: '/sacred-rivers', description: 'Ganga, Yamuna, Sarasvati + 7 more.' },
           { label: 'Sacred Trees', href: '/sacred-trees', description: 'Peepal, Banyan, Tulsi + 9 more.' },
@@ -196,7 +204,7 @@ export const CATEGORY_TREE: Category[] = [
       { label: 'Packages', href: '/yatra', description: 'Curated multi-day pilgrimage itineraries.' },
       { label: 'Destinations', href: '/yatra/destinations', description: '35 sacred destinations across India.' },
       { label: 'Pilgrimage Circuits', href: '/pilgrimage', description: 'Char Dham, Jyotirlinga, Shakti Peeth…' },
-      { label: 'Tirth Guides', href: '/tirth', description: '62 single-destination pilgrim guides.' },
+      { label: 'Tirth Guides', href: '/tirth', description: '72 single-destination pilgrim guides.' },
       { label: 'Vipassana Centers', href: '/wellness/vipassana', description: '26 Goenka-tradition retreat centers.' },
       { label: 'Wellness (Yoga + Ayurveda)', href: '/wellness', description: 'Yoga, meditation, Ayurveda guidance.' },
       { label: 'Plan a Trip', href: '/yatra/plan', description: 'Custom yatra trip builder.' },

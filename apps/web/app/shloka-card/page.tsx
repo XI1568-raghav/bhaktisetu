@@ -1,7 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 
 // Viral feature: shareable shloka card generator (Day 31-60 plan).
@@ -132,7 +135,7 @@ export default function ShlokaCardGenerator() {
       </nav>
 
       <header className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.catalogue} mb-2`}>
           Make a shareable shloka card
         </h1>
         <p className="text-surface-700 max-w-2xl">
@@ -210,7 +213,7 @@ export default function ShlokaCardGenerator() {
         <section>
           <div className="aspect-[1200/630] rounded-lg overflow-hidden border border-surface-200 bg-surface-50">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <img width={1200} height={630} 
               src={ogUrl}
               alt="Shloka card preview"
               className="w-full h-full object-contain"
@@ -225,7 +228,7 @@ export default function ShlokaCardGenerator() {
               rel="noopener noreferrer"
               download="shloka-card.png"
               onClick={() => track('shloka_card_downloaded')}
-              className="px-3 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold text-center hover:bg-saffron-700"
+              className={buttonClass('primary', 'md', 'w-full')}
             >
               Download
             </a>
@@ -234,7 +237,7 @@ export default function ShlokaCardGenerator() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('shloka_card_shared_whatsapp')}
-              className="px-3 py-2 bg-green-600 text-white rounded-md text-sm font-semibold text-center hover:bg-green-700"
+              className="inline-flex h-11 items-center justify-center px-3 bg-green-600 text-white rounded-md text-sm font-semibold hover:bg-green-700"
             >
               WhatsApp
             </a>
@@ -243,7 +246,7 @@ export default function ShlokaCardGenerator() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('shloka_card_shared_twitter')}
-              className="px-3 py-2 bg-surface-900 text-white rounded-md text-sm font-semibold text-center hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center px-3 bg-surface-900 text-white rounded-md text-sm font-semibold hover:opacity-90"
             >
               X / Twitter
             </a>
@@ -252,7 +255,7 @@ export default function ShlokaCardGenerator() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('shloka_card_shared_facebook')}
-              className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold text-center hover:bg-blue-700"
+              className="inline-flex h-11 items-center justify-center px-3 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700"
             >
               Facebook
             </a>
@@ -278,7 +281,7 @@ export default function ShlokaCardGenerator() {
         </p>
         <Link
           href="/shlokas"
-          className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           Browse our shloka library
         </Link>

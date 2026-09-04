@@ -1,7 +1,14 @@
 import { Prisma, BookingStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { platformRateOf } from '../lib/commission-math.js';
+import { mintProviderEarningForBooking } from './provider-earning-mint.js';
+// OPS-05 — the durable money trail. Post-commit only; never inside a tx.
+import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
 import { hoursUntilSlot } from '../lib/slot-time.js';
+// LEG-03/F223 — the cancellation cutoff lives with the refund ladder it
+// truncates, not as a literal here. cancellation.service.ts imports only
+// prisma, slot-time and booking-notify.service, so this is not a cycle.
+import { DEVOTEE_CANCEL_CUTOFF_HOURS } from './cancellation.service.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 // RV-03: imported for this module's OWN use — a bare `export … from` re-export
 // exposes the name to importers but does not bind it in local scope.
@@ -827,6 +834,9 @@ export class BookingService {
     // TOCTOU against the payment-path writer with no unique constraint behind
     // it; running inside a transaction narrows that window (the DB-level fix is
     // a UNIQUE index on commissions.booking_id — owner-gated schema change).
+    // OPS-05: carried out of the transaction — the mint is recorded only after
+    // it commits, because recordMoneyEvent must never join the caller's tx.
+    let mintOutcome = 'no-provider-on-booking';
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.pujaBooking.update({
         where: { id: bookingId },
@@ -902,14 +912,24 @@ export class BookingService {
             const price = new Prisma.Decimal(row.priceAmount as Prisma.Decimal);
             const providerEarning = new Prisma.Decimal(row.priestPayout as Prisma.Decimal);
             const percentage = platformRateOf(price.sub(providerEarning), price);
-            await tx.commission.create({
-              data: {
-                bookingId: row.id,
-                providerId: priestUser.userId,
-                amount: providerEarning,
-                percentage,
-                status: 'PENDING',
-              },
+            // DI-06 (F367): ON CONFLICT DO NOTHING, not a bare INSERT. This
+            // runs inside the confirm `$transaction` and shares the unique key
+            // `commissions_booking_id_key` (migration 20260824000000) with
+            // payment.service's writer — a PATCH-confirm racing a
+            // verify-payment would otherwise raise P2002 and abort the whole
+            // transaction, rolling back the confirm. Rationale in full at
+            // payment.service.writePujaCommissionOnConfirm.
+            await tx.commission.createMany({
+              data: [
+                {
+                  bookingId: row.id,
+                  providerId: priestUser.userId,
+                  amount: providerEarning,
+                  percentage,
+                  status: 'PENDING',
+                },
+              ],
+              skipDuplicates: true,
             });
           }
         }
@@ -937,43 +957,40 @@ export class BookingService {
       // findFirst guard both minting writers use — and gated on a CAPTURED
       // payment, so it can never mint withdrawable balance for an unpaid
       // booking (the S3-08 hole, on the transition instead of the confirm).
-      if (EARNING_ATTACH_STATUSES.has(newStatus) && row.priestId) {
-        const alreadyOwned = await tx.commission.findFirst({
-          where: { bookingId: row.id },
-          select: { id: true },
+      //
+      // The guard triple used to be hand-copied here. It now lives in
+      // provider-earning-mint.ts, shared with the two assignment paths that
+      // bypass this function entirely (dispatch.service.accept and
+      // priest.service.acceptBooking) — hand-copied guards are precisely what
+      // let those two drift out of sync and keep the finding's Rs 0 screen
+      // reachable. Moving it there also CLOSED THE DOUBLE-PAYABLE: the copy
+      // checked commission + captured payment but never PriestPayout, so the
+      // rail exclusion was one-way. payment.service.createPriestPayout already
+      // refuses to write the sidecar row when a live Commission exists; the
+      // mint did not refuse the reverse, and `video_uploaded -> delivered` (both
+      // in EARNING_ATTACH_STATUSES) is a legal transition that minted a second
+      // payable onto a booking already carrying a legacy one.
+      if (EARNING_ATTACH_STATUSES.has(newStatus)) {
+        mintOutcome = await mintProviderEarningForBooking(tx, {
+          id: row.id,
+          priestId: row.priestId ?? null,
+          priceAmount: row.priceAmount ?? 0,
+          priestPayout: row.priestPayout ?? 0,
         });
-        if (!alreadyOwned) {
-          const capturedForEarning = await tx.payment.count({
-            where: { bookingId: row.id, status: 'captured' },
-          });
-          if (capturedForEarning > 0) {
-            const priestUser = await tx.priest.findUnique({
-              where: { id: row.priestId },
-              select: { userId: true },
-            });
-            // No linked User means no payable provider — writing the row anyway
-            // is what produced the orphans RV-04 exists to stop creating.
-            if (priestUser?.userId) {
-              // amount = the PROVIDER's earning, percentage = the PLATFORM's
-              // take rate, against the same fee-inclusive base every other
-              // writer uses. lib/commission-math.ts — one column, one meaning.
-              const price = new Prisma.Decimal(row.priceAmount as Prisma.Decimal);
-              const providerEarning = new Prisma.Decimal(row.priestPayout as Prisma.Decimal);
-              await tx.commission.create({
-                data: {
-                  bookingId: row.id,
-                  providerId: priestUser.userId,
-                  amount: providerEarning,
-                  percentage: platformRateOf(price.sub(providerEarning), price),
-                  status: 'PENDING',
-                },
-              });
-            }
-          }
-        }
       }
 
       return row;
+    });
+
+    // OPS-05: the temple-path re-mint — a pandit attached to an already-paid
+    // booking after the fact. Recorded here, post-commit, and a no-op unless a
+    // row was actually minted (the four guards in provider-earning-mint.ts
+    // decline far more often than they mint).
+    await recordProviderEarningMinted({
+      bookingId,
+      outcome: mintOutcome,
+      rail: `booking-status-${newStatus}`,
+      actorType: 'system',
     });
 
     // P0 #pp-02 (2026-07-09): when a booking reaches video_uploaded/delivered,
@@ -1116,11 +1133,21 @@ export class BookingService {
     // for an 06:00 puja, 18h for an 18:00 one). resolveSlotInstant falls back to
     // the raw date when a legacy slot string cannot be parsed, so unparseable
     // data keeps the old, stricter behaviour rather than widening the window.
+    //
+    // LEG-03/F223: the `24` is no longer a literal here. It is
+    // DEVOTEE_CANCEL_CUTOFF_HOURS in cancellation.service.ts, next to the
+    // ladder it truncates, so GET /bookings/:id/cancel-quote and this refusal
+    // cannot disagree about where the window closes. They previously did:
+    // the quote happily priced the ladder's 50%/25% tiers for a booking inside
+    // 24h and this line then refused the cancel, so a devotee was shown
+    // "You get Rs 4,000 back (50% refund)" and received nothing.
     if (booking.status !== 'pending_payment') {
       const hoursUntilPuja = hoursUntilSlot(booking.scheduledDate, booking.scheduledTimeSlot);
 
-      if (hoursUntilPuja < 24) {
-        throw new Error('Cancellation is not allowed within 24 hours of the scheduled puja time.');
+      if (hoursUntilPuja < DEVOTEE_CANCEL_CUTOFF_HOURS) {
+        throw new Error(
+          `Cancellation is not allowed within ${DEVOTEE_CANCEL_CUTOFF_HOURS} hours of the scheduled puja time.`,
+        );
       }
     }
 

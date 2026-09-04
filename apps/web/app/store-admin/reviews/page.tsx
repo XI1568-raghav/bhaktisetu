@@ -11,6 +11,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import { getMyReviews, type StoreReview } from '../../../lib/store-admin-api';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -52,7 +53,7 @@ export default function StoreAdminReviewsPage() {
       const rows = await getMyReviews(token);
       setReviews(rows);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load reviews');
+      setError(userFacingMessage(err, 'We could not load your reviews. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -222,7 +223,7 @@ export default function StoreAdminReviewsPage() {
           <h3 className="text-lg font-semibold text-surface-700">
             No reviews yet
           </h3>
-          <p className="text-sm text-surface-500 mt-1 max-w-md text-center">
+          <p className="prose-meta text-surface-500 mt-1 max-w-md text-center">
             {ratingFilter === 'all'
               ? 'Customers can leave reviews after their orders are delivered. Per-product reviews will appear here once that flow ships.'
               : 'No reviews match the selected filter.'}

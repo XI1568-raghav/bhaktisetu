@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { DateInput } from '../../../components/ui/DateInput';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { useAuth } from '../../../lib/auth-context';
+import { fetchWithTimeout } from '../../../lib/api-config';
 
 const NAKSHATRAS = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
@@ -37,7 +40,17 @@ function apiBase(): string {
   return raw.endsWith('/api/v1') ? raw : `${raw.replace(/\/$/, '')}/api/v1`;
 }
 
+/** Deliberately generous — see the note at the call site. */
+const MUHURAT_TIMEOUT_MS = 45_000;
+
+/**
+ * Only reachable now when the API rejects a session we DID send (401/403).
+ * A signed-out visitor never sees it: the endpoint is public. See `submit`.
+ */
+const LOGIN_HREF = `/auth/login?redirect=${encodeURIComponent('/weddings/muhurat')}`;
+
 export default function MuhuratPage() {
+  const { session } = useAuth();
   const [form, setForm] = useState({
     brideDob: '',
     brideTob: '06:30',
@@ -52,29 +65,101 @@ export default function MuhuratPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MuhuratResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // PAR-14: an error that can only be cleared by signing in needs a door, not
+  // just a sentence. Tracked separately so the alert can render the link.
+  const [needsSignIn, setNeedsSignIn] = useState(false);
 
   function update<K extends keyof typeof form>(k: K, v: string) {
     setForm((s) => ({ ...s, [k]: v }));
   }
 
+  /*
+   * PAR-14, in two parts, both now landed.
+   *
+   * Part one (earlier): this handler used to POST with
+   * `headers: {'content-type': ...}` and nothing else, against a route
+   * registered behind `preHandler: [authenticateUser]`. Every web visitor got
+   * 401 — signed in or not — and the catch below rendered the literal string
+   * "Request failed: 401". The mobile client always sent the token, which is
+   * why the same feature worked there.
+   *
+   * Part two (this change): the API-side half. POST /weddings/muhurat is now
+   * PUBLIC and rate-limited per IP instead of authenticated
+   * (apps/api/src/routes/weddings.ts) — the compute concern that motivated the
+   * gate is a request-rate concern, and the gate was blocking the journey the
+   * route exists for: /weddings/inquiry emails this page's URL to a brand-new
+   * prospect who is by definition signed out. So the pre-flight sign-out gate
+   * that used to live here is GONE. A visitor with no session submits the form
+   * and gets dates.
+   *
+   * The bearer is still attached WHEN WE HAVE ONE, and the 401/403 branch
+   * below is kept: both are the cheap side of the asymmetry. If an older API
+   * is still deployed, or a future variant re-scopes this per-user, a signed-in
+   * visitor keeps working and a rejected one still gets a door rather than a
+   * status code. What is not kept is refusing to ask.
+   */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNeedsSignIn(false);
+
+    const token = session?.accessToken;
+
     setLoading(true);
     try {
       const body: Record<string, unknown> = { ...form };
       if (!body.brideNakshatra) delete body.brideNakshatra;
       if (!body.groomNakshatra) delete body.groomNakshatra;
-      const res = await fetch(`${apiBase()}/weddings/muhurat`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      const res = await fetchWithTimeout(
+        `${apiBase()}/weddings/muhurat`,
+        {
+          method: 'POST',
+          // No `Authorization: Bearer undefined` for a signed-out visitor: an
+          // empty/garbage bearer is worse than none, because middlewares/auth.ts
+          // treats a present-but-unparseable Authorization header as an attempt
+          // to authenticate rather than as anonymous traffic.
+          headers: token
+            ? { 'content-type': 'application/json', Authorization: `Bearer ${token}` }
+            : { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+          // fetchWithTimeout defaults to credentials:'include'. This call is
+          // cross-origin (api.darshya.online) and the bare fetch it replaces
+          // used the default 'same-origin', which sends nothing cross-origin.
+          // Keeping that explicit: switching to 'include' would need the API
+          // to answer Access-Control-Allow-Credentials or the browser blocks
+          // the response outright.
+          credentials: 'omit',
+        },
+        // The last bare fetch on an auth surface. Every other one got a budget
+        // when the "infinite spinner, no error" P0 was traced to a promise that
+        // never settles; this one was left alone because nobody had measured
+        // how long the mhah-panchang Ayanamsa/dasha scan takes over a wide date
+        // window, and a blind 15s cap could turn a slow success into a failure.
+        // 45s does not need that measurement: it is three times the app's data
+        // budget and still finite, so a half-open socket ends in a sentence the
+        // user can act on instead of a spinner that never stops.
+        MUHURAT_TIMEOUT_MS,
+      );
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          setNeedsSignIn(true);
+          setError('Your session has expired. Sign in again to compute your muhurat dates.');
+          return;
+        }
+        const detail = await res.json().catch(() => ({} as Record<string, unknown>));
+        const message =
+          typeof (detail as { message?: unknown }).message === 'string'
+            ? (detail as { message: string }).message
+            : typeof (detail as { error?: unknown }).error === 'string'
+              ? (detail as { error: string }).error
+              : 'We could not compute your muhurat dates just now. Please try again.';
+        setError(message);
+        return;
+      }
       const data: MuhuratResponse = await res.json();
       setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } catch {
+      setError('We could not reach the muhurat service. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -83,7 +168,7 @@ export default function MuhuratPage() {
   return (
     <main className="min-h-[100dvh] bg-amber-50/40 py-10 px-4 sm:px-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="font-serif text-3xl sm:text-4xl text-amber-900">Find your muhurat</h1>
+        <h1 className={H1.catalogue}>Find your muhurat</h1>
         <p className="text-stone-700 mt-2">
           We compute the most auspicious wedding dates from your nakshatras using classical Vedic
           rules (Brihat Samhita, Muhurta Chintamani).
@@ -208,8 +293,19 @@ export default function MuhuratPage() {
         </form>
 
         {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+          <div
+            role="alert"
+            className="mt-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg"
+          >
             {error}
+            {needsSignIn && (
+              <>
+                {' '}
+                <Link href={LOGIN_HREF} className="font-semibold underline underline-offset-2">
+                  Sign in
+                </Link>
+              </>
+            )}
           </div>
         )}
 

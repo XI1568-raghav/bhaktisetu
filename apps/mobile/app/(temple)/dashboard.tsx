@@ -20,7 +20,9 @@ import {
   useTemplePortalStreams,
 } from '../../lib/portal-queries';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { bookingStatusLabel } from '../../lib/enum-labels';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
  * PAR-09. Two defects, one screen.
  *
@@ -37,6 +39,11 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * totals now come from /temple-portal/dashboard's own stats block.
  */
 export default function TempleDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const dashboardQuery = useTemplePortalDashboard();
   const streamsQuery = useTemplePortalStreams();
   const [refreshing, setRefreshing] = useState(false);
@@ -152,7 +159,7 @@ export default function TempleDashboard() {
               primary={b.pujaName ?? b.bookingNumber ?? 'Booking'}
               secondary={[b.devotee, b.scheduledDate?.slice(0, 10)].filter(Boolean).join(' • ')}
               trailing={b.priceInr === null ? undefined : formatInr(b.priceInr)}
-              status={b.status ? { label: b.status, color: colors.stone[500] } : undefined}
+              status={b.status ? { label: bookingStatusLabel(b.status), color: colors.stone[500] } : undefined}
             />
           ))
         )}

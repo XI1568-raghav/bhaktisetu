@@ -12,6 +12,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePujas } from '@poojly/api-client';
 import { selectPujaTypes } from '../../lib/api-contracts';
+import { PLATFORM_FEE_INR } from '../../lib/booking-flow';
+import { verifiedNoun } from '../../lib/pandit-vetting';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 type PujaCategory = 'all' | 'shiva' | 'vishnu' | 'devi' | 'ganesh' | 'navagraha';
@@ -30,11 +32,31 @@ type PujaCategory = 'all' | 'shiva' | 'vishnu' | 'devi' | 'ganesh' | 'navagraha'
  *   Ganesh Atharvashirsha    app ₹751     does not exist (the puja is Ganesh Puja)
  *
  * A devotee tapped a price in the app and was charged a different one on the
- * web checkout. Price now comes from `basePrice` / `nriPrice` and nothing else.
+ * web checkout. Price now comes from `basePrice` and nothing else.
  *
  * Also deleted: `rating`, `reviews`, `temple`, `city`. The puja-types endpoint
  * returns none of them, and inventing a 4.9 (1,240 reviews) badge on a ritual
  * is a fabricated social proof claim.
+ *
+ * PAR-15 (2), 2026-08-28 — NRI PRICE REMOVED, and the platform fee added.
+ *
+ * The card rendered `NRI: ₹{nriPriceInr}` on every row. No booking path
+ * charges it: booking.service.ts:540 is `const pujaPrice = basePrice;`, and the
+ * S3-09 comment above it states that NRI pricing only returns as a
+ * server-QUOTED unit price rendered from the same value the gateway is asked
+ * for. With this repo's own fixtures the card advertised ₹5,100 for a puja
+ * that bills ₹1,151 — a 4.4x displayed-vs-charged gap aimed at the
+ * highest-ARPU cohort in the catalogue.
+ *
+ * This was NOT an open product call, which is how it was last written up. The
+ * web made the call on 2026-08-12 and deleted its own NRI line for exactly
+ * this reason (apps/web/app/pujas/[slug]/page.tsx:353-363 — "advertises a
+ * premium that is never collected"). Mobile was the surface nobody went back
+ * to. Both lines return together when a server-quoted NRI amount exists.
+ *
+ * The same edit adds what the web card has and this one lacked: the ₹51
+ * platform fee, so the number does not grow between the card and the Pay
+ * button (CM-03).
  */
 interface Puja {
   id: string;
@@ -43,7 +65,6 @@ interface Puja {
   deity?: string;
   category: Exclude<PujaCategory, 'all'>;
   priceInr: number | null;
-  nriPriceInr: number | null;
   durationMinutes: number | null;
   description: string;
   samagriIncluded: boolean;
@@ -81,6 +102,27 @@ function inferCategory(deity: string): Exclude<PujaCategory, 'all'> {
  * The card is a button again, and truthfully so: it stays in the app. Only the
  * card-payment step still opens the website, and that hand-off is declared on
  * the booking screen itself rather than here.
+ *
+ * NAV-01, 2026-09-02 — THE CARD NOW OPENS THE DETAIL PAGE, NOT THE FORM.
+ *
+ * app/(devotee)/puja-detail.tsx has existed and had ZERO inbound navigation:
+ * `grep -rn "(devotee)/puja-detail" app lib` matched nothing but a stale
+ * comment in lib/deep-link.ts, so the only way to reach it was a deep link.
+ * Every fact a devotee might want before committing money — what the ritual
+ * is, what samagri is included, which temples can actually take the booking —
+ * lived on a screen the app never linked to, while the card jumped straight
+ * into the booking form.
+ *
+ * So the two controls now do two different things, which is what having two
+ * controls is for:
+ *
+ *   card body       -> (devotee)/puja-detail  { slug, name }   "tell me more"
+ *   "Book this puja"-> (devotee)/puja-book    { slug, name }   "I already know"
+ *
+ * The fast path is deliberately preserved: puja-detail hands off to puja-book
+ * with the SAME two params, so the button is a shortcut through the detail
+ * page and not a second, divergent booking route. Booking logic is not
+ * duplicated here or there — it lives only in puja-book.tsx.
  */
 const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
   // Slug comes from the API row (PAR-07 replaced the hardcoded catalogue this
@@ -90,14 +132,19 @@ const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
       pathname: '/(devotee)/puja-book' as never,
       params: { slug: puja.slug, name: puja.name },
     } as never);
+  const openDetail = () =>
+    router.push({
+      pathname: '/(devotee)/puja-detail' as never,
+      params: { slug: puja.slug, name: puja.name },
+    } as never);
   return (
     <TouchableOpacity
       style={styles.pujaCard}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={puja.name}
-      accessibilityHint={`Book ${puja.name}`}
-      onPress={openBooking}
+      accessibilityHint={`Opens details for ${puja.name}`}
+      onPress={openDetail}
     >
 
       {/* Image placeholder */}
@@ -151,13 +198,38 @@ const PujaCard = React.memo(function PujaCard({ puja }: { puja: Puja }) {
                 ? 'Price on request'
                 : `\u20B9${puja.priceInr.toLocaleString('en-IN')}`}
             </Text>
-            {puja.nriPriceInr !== null ? (
-              <Text style={styles.pujaNriPrice}>
-                NRI: {'\u20B9'}
-                {puja.nriPriceInr.toLocaleString('en-IN')}
+            {/* CM-03 on the catalogue. The fee travels with the price, so the
+                number does not change between this card and the Pay button \u2014
+                the API adds PLATFORM_FEE_INR to every booking
+                (booking.service.ts), and the web card already discloses it
+                (apps/web/app/pujas/[slug]/page.tsx:346-352).
+
+                "from" is deliberate and not hedging: a temple may set a
+                priceOverride, which is resolved on the booking screen once a
+                temple is chosen, so this card can only state the floor. It
+                understates and never overstates, which is the safe direction
+                for a quote. */}
+            {puja.priceInr === null ? null : (
+              <Text style={styles.pujaFeeNote}>
+                {'+ \u20B9'}
+                {PLATFORM_FEE_INR.toLocaleString('en-IN')} platform fee \u00B7 from{' '}
+                {'\u20B9'}
+                {(puja.priceInr + PLATFORM_FEE_INR).toLocaleString('en-IN')} total
               </Text>
-            ) : null}
+            )}
           </View>
+          {/* NAV-01: the card is tappable and now goes somewhere other than
+              the button beneath it, so it needs the affordance that says so.
+              Decorative only — the row it sits in already carries the label
+              and hint, and a second focusable node would make VoiceOver
+              announce the same destination twice. */}
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={colors.stone[400]}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          />
         </View>
 
         <TouchableOpacity
@@ -188,7 +260,6 @@ export default function PujasScreen() {
     deity: p.deity,
     category: inferCategory(p.deity ?? ''),
     priceInr: p.priceInr,
-    nriPriceInr: p.nriPriceInr,
     durationMinutes: p.durationMinutes,
     description: p.description ?? '',
     samagriIncluded: p.samagriIncluded,
@@ -215,14 +286,38 @@ export default function PujasScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Book a Puja</Text>
-        <Text style={styles.headerSubtitle}>
-          {pujasQuery.isLoading
-            ? 'Loading catalogue…'
-            : errorText
-              ? 'Catalogue unavailable'
-              : `${sourceData.length} pujas · verified priests, video proof`}
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Book a Puja</Text>
+            <Text style={styles.headerSubtitle}>
+              {pujasQuery.isLoading
+                ? 'Loading catalogue…'
+                : errorText
+                  ? 'Catalogue unavailable'
+                  : /* TC-08: the adjective here used to be hardcoded. Nothing
+                       promotes a Priest to verified — see lib/pandit-vetting.ts.
+                       Video proof is the claim that IS backed, so it stays. */
+                    `${sourceData.length} pujas · ${verifiedNoun('priests')}, video proof`}
+            </Text>
+          </View>
+          {/* NAV-01. (devotee)/pandits.tsx — the directory of the people who
+              actually perform these rituals — had ZERO inbound navigation.
+              It is the supply side of the marketplace and it was reachable
+              only by deep link. The catalogue is where a devotee is already
+              thinking about who will perform the puja, so the entry belongs
+              here as well as on the home screen. */}
+          <TouchableOpacity
+            style={styles.panditsButton}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Pandits"
+            accessibilityHint="Opens the directory of pandits"
+            onPress={() => router.push('/(devotee)/pandits' as never)}
+          >
+            <Ionicons name="people-outline" size={16} color={colors.saffron[700]} />
+            <Text style={styles.panditsButtonText}>Pandits</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Category Filter */}
@@ -315,6 +410,32 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     color: colors.stone[500],
     marginTop: 2,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  headerText: { flex: 1 },
+  // NAV-01. 44pt minimum on both axes — the smallest reliable touch target,
+  // and the one this repo's other pill controls are built to.
+  panditsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    minWidth: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.saffron[100],
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
+  },
+  panditsButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.saffron[700],
   },
   // Filter
   filterContainer: {
@@ -452,7 +573,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.saffron[700],
   },
-  pujaNriPrice: {
+  pujaFeeNote: {
     fontSize: fontSize.xs,
     color: colors.stone[400],
     marginTop: 1,

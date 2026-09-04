@@ -2,9 +2,15 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 
 /**
- * Global search across temples, pujas, content (aartis/chalisas/mantras),
- * and yatras. Returns a single ranked list grouped by entity type so the
- * frontend can render section headers.
+ * Global search across temples, pujas, content (aartis/chalisas/mantras) and
+ * store products. Returns results grouped by entity type so the frontend can
+ * render section headers.
+ *
+ * CM-12: this used to say "and yatras". There is no yatra query here and no
+ * Yatra model in the schema, so that was a promise the endpoint could not keep
+ * — while the STORE half the finding explicitly asked for was genuinely
+ * missing, leaving saleable products unreachable from the only search box on
+ * the site. Guarded by src/routes/__tests__/search.test.ts.
  */
 export async function searchRoutes(server: FastifyInstance) {
   server.get('/', async (request, reply) => {
@@ -13,14 +19,14 @@ export async function searchRoutes(server: FastifyInstance) {
     if (!trimmed || trimmed.length < 2) {
       return reply.send({
         query: trimmed,
-        results: { temples: [], pujas: [], content: [], total: 0 },
+        results: { temples: [], pujas: [], content: [], products: [], total: 0 },
       });
     }
     const cap = Math.min(parseInt(limit ?? '6', 10) || 6, 20);
 
     // Use case-insensitive contains across the most relevant fields per entity.
     // Results capped per category to keep responses small.
-    const [temples, pujaTypes, contentItems] = await Promise.all([
+    const [temples, pujaTypes, contentItems, products] = await Promise.all([
       prisma.temple.findMany({
         where: {
           OR: [
@@ -82,9 +88,30 @@ export async function searchRoutes(server: FastifyInstance) {
           deity: true,
         },
       }),
+      // CM-12: the store bucket. Only active rows — a delisted product that
+      // still answers a search is a dead end with a price on it.
+      prisma.storeProduct.findMany({
+        where: {
+          OR: [
+            { name: { contains: trimmed, mode: 'insensitive' } },
+            { description: { contains: trimmed, mode: 'insensitive' } },
+            { category: { contains: trimmed, mode: 'insensitive' } },
+          ],
+          isActive: true,
+        },
+        take: cap,
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          price: true,
+          imageUrl: true,
+        },
+      }),
     ]);
 
-    const total = temples.length + pujaTypes.length + contentItems.length;
+    const total =
+      temples.length + pujaTypes.length + contentItems.length + products.length;
 
     return reply.send({
       query: trimmed,
@@ -110,6 +137,19 @@ export async function searchRoutes(server: FastifyInstance) {
           name: c.title,
           subtitle: `${c.type}${c.deity ? ` · ${c.deity}` : ''}`,
           href: `/content/${c.slug}`,
+        })),
+        // StoreProduct has no slug. /store/<handle> is the STATIC catalogue in
+        // apps/web/lib/products.ts and has no route for a DB row;
+        // /store/seller/<id> is the page that renders one, so that is the only
+        // href that resolves.
+        products: products.map((p) => ({
+          id: p.id,
+          slug: p.id,
+          name: p.name,
+          subtitle: p.category ?? '',
+          price: p.price != null ? Number(p.price) : null,
+          imageUrl: p.imageUrl ?? null,
+          href: `/store/seller/${p.id}`,
         })),
         total,
       },

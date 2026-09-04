@@ -52,6 +52,50 @@ const roleIcons: Record<string, React.ElementType> = {
  gaushala: Heart,
 };
 
+/**
+ * PM-01 — /pricing must not publish a commission claim on a plan card.
+ *
+ * `plan.features` is rendered verbatim from GET /api/v1/subscriptions/plans.
+ * Four of the plans the API serves today bullet a commission DISCOUNT next to
+ * a price, and a fifth bullets "Standard commission", which only means
+ * anything if some other plan is cheaper on commission:
+ *
+ *   plan-pandit-pro   Rs 2,999/mo  "15% lower commission"
+ *   plan-astro-pro    Rs 1,999/mo  "10% lower commission"
+ *   plan-store-basic  Rs 1,499/mo  "Lower commission"
+ *   plan-store-pro    Rs 3,999/mo  "Lowest commission"
+ *   plan-store-free   Rs 0         "Standard commission"
+ *   plan-wellness-free Rs 0        "Standard commission"
+ *
+ * No plan changes any rate. `commissionOverride` and `commission_override`
+ * appear nowhere in apps/api, and the five services that write a Commission
+ * row (consultation.ts, wellness-sessions.ts, booking.service.ts,
+ * payment.service.ts, store-commission.service.ts) take a flat rate that
+ * never reads a subscription. A store owner paying Rs 3,999/month for
+ * "Lowest commission" is charged the same 20% as the free tier.
+ *
+ * The strings live in PLANS in apps/api/src/services/subscription.service.ts,
+ * which is outside this lane, so the claim is stopped where this page
+ * publishes it. That is also the right layer for a display rule: the
+ * commission rate has exactly one home on /pricing — the table below, sourced
+ * from the server constants named in `chargedRateSource`. A plan card is not
+ * allowed to state a second, different one.
+ *
+ * This filter becomes a no-op the moment the API stops sending the bullets;
+ * it is not load-bearing for anything except the falsehood. If a tier-based
+ * discount is ever actually implemented, delete this and let the real bullet
+ * through.
+ */
+const COMMISSION_CLAIM = /commission/i;
+
+// Not exported: Next.js App Router reserves the named exports of a page
+// module (metadata, revalidate, dynamic, …). The guard for this lives in
+// __tests__/pm01-pricing-commission-discount.test.tsx and asserts on the
+// rendered page, which is the contract that matters anyway.
+function dropCommissionDiscountClaims(features: string[]): string[] {
+ return features.filter((f) => !COMMISSION_CLAIM.test(f));
+}
+
 export const revalidate = 300;
 
 export default async function PricingPage() {
@@ -89,13 +133,18 @@ export default async function PricingPage() {
  >
  Simple, Transparent Pricing
  </h1>
+ {/* PM-01: this sentence used to end "— or subscribe to reduce it and
+   unlock premium tools". No plan reduces any commission. See
+   dropCommissionDiscountClaims() below for the measurement. The rate a
+   provider pays is the one in the table further down, on every plan
+   including the free one, so the page now says exactly that. */}
  <p
- className="text-sm sm:text-base max-w-2xl mx-auto leading-relaxed"
+ className="prose-body max-w-2xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-faint)" }}
+ data-testid="pricing-commission-intro"
  >
- Free for devotees, always. Service providers pay a small commission
- on each transaction — or subscribe to reduce it and unlock premium
- tools.
+ Free for devotees, always. Service providers pay a small commission on
+ each transaction — the same rate on every plan, free or paid.
  </p>
  {/* PM-09 (prod sweep 2026-08-12): every price on this page was published
    with nothing said about tax — a provider could not tell whether GST
@@ -105,7 +154,7 @@ export default async function PricingPage() {
    company.ts so the day a GSTIN is issued this sentence becomes the
    tax-inclusive one instead of staying wrong. */}
  <p
- className="text-xs sm:text-sm max-w-2xl mx-auto mt-5 leading-relaxed"
+ className="prose-meta max-w-2xl mx-auto mt-5"
  style={{ color: "var(--color-text-faint)" }}
  data-testid="pricing-tax-treatment"
  >
@@ -139,7 +188,7 @@ export default async function PricingPage() {
  Always Free for Devotees
  </h2>
  <p
- className="text-sm max-w-xl mx-auto leading-relaxed"
+ className="prose-body max-w-xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-muted)" }}
  >
  Browse temples, watch live darshan, read spiritual content, and
@@ -190,9 +239,15 @@ export default async function PricingPage() {
  </div>
  {/* PM-02b: the page used to say "Premium features coming soon". They
    are not coming — the API sells them today (astro_session ₹99,
-   astro_monthly ₹499, NRI Premium ₹5,000/yr) and astro_monthly is what
-   grants AI Pandit quota. Listing them at the price the gateway
-   charges, or saying nothing at all if the API is unreachable. */}
+   astro_monthly ₹499) and astro_monthly is what grants AI Pandit
+   quota. Listing them at the price the gateway charges, or saying
+   nothing at all if the API is unreachable.
+   PM-05/TC-04: this list used to name NRI Premium ₹5,000/yr as a third
+   add-on. That plan is withdrawn — every one of its six benefits has
+   `enforcedBy: null` in apps/api/src/services/subscription-entitlements.ts,
+   so nriPremiumIsSellable() is false and getPlans() filters it out of
+   the payload this section renders. Nothing to do here; the comment
+   was the only place the price survived. */}
  {devoteePlans.length > 0 ? (
  <div className="mt-6 pt-6 border-t" style={{ borderColor: "var(--color-border)" }}>
  <p className="text-xs mb-3" style={{ color: "var(--color-text-muted)" }}>
@@ -246,12 +301,17 @@ export default async function PricingPage() {
  >
  Grow Your Devotional Business
  </h2>
+ {/* PM-01: was "Higher plans unlock lower commissions, more listings,
+   and premium placement." Listings and placement are real plan
+   features (they appear as bullets on the cards below, and the free
+   tiers really are capped). The commission half was not. */}
  <p
- className="text-sm max-w-xl mx-auto leading-relaxed"
+ className="prose-body max-w-xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-muted)" }}
+ data-testid="pricing-provider-plans-intro"
  >
- Choose a plan that fits your scale. Higher plans unlock lower
- commissions, more listings, and premium placement.
+ Choose a plan that fits your scale. Higher plans unlock more listings
+ and premium placement.
  </p>
  </div>
 
@@ -271,7 +331,7 @@ export default async function PricingPage() {
  Plan prices are temporarily unavailable.
  </p>
  <p
- className="text-xs mt-2 max-w-md mx-auto leading-relaxed"
+ className="prose-meta mt-2 max-w-md mx-auto"
  style={{ color: "var(--color-text-muted)" }}
  >
  We could not reach our billing system, so we are showing no price
@@ -345,7 +405,7 @@ export default async function PricingPage() {
  </div>
 
  <ul className="space-y-2 mb-6 flex-1">
- {plan.features.map((feature) => (
+ {dropCommissionDiscountClaims(plan.features).map((feature) => (
  <li key={feature} className="flex items-start gap-2">
  <Check
  className="w-3.5 h-3.5 mt-0.5 shrink-0"
@@ -407,7 +467,7 @@ export default async function PricingPage() {
  What Darshya Takes
  </h2>
  <p
- className="text-sm max-w-xl mx-auto leading-relaxed"
+ className="prose-body max-w-xl mx-auto leading-relaxed"
  style={{ color: "var(--color-text-muted)" }}
  >
  The platform&apos;s share of each transaction, by provider type.

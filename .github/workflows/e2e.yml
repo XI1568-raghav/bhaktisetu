@@ -4,10 +4,19 @@ name: E2E (Playwright)
 # removed (2026-07-10): it ran ~15 min of non-gating E2E against PROD on
 # every PR, burning ~75+ min/mo to test already-deployed code rather than
 # the PR's own code (no PR-preview infra exists — see P2-36 in fix-spec.md).
-# E2E is INFORMATIONAL: continue-on-error stays true and the base URL is
-# prod, so it must NOT gate PRs. It now catches prod regression on the
-# weekly Sun 04:00 UTC schedule + manual runs only.
-# See docs/free-tier-budgets.md.
+# It now catches prod regression on the weekly Sun 04:00 UTC schedule +
+# manual runs only. See docs/free-tier-budgets.md.
+#
+# OPS-01 — `continue-on-error: true` was set here twice, at job level and
+# again on the test step, so this workflow could not report a failure. The
+# stated reason was "must NOT gate PRs", but the `pull_request` trigger had
+# already been removed on 2026-07-10: with no PR trigger there is nothing to
+# gate, and the flags only suppressed the one thing the workflow exists to
+# say. On 2026-08-17 Render suspended both services, prod served 503 for
+# three days, and this run — like the health smoke — stayed green.
+# Both flags are removed. A red weekly E2E now means prod is broken; that is
+# the point. If a specific spec is genuinely flaky against prod, quarantine
+# THAT spec (test.fixme / a skip annotation), never the whole workflow.
 
 on:
   schedule:
@@ -29,7 +38,6 @@ jobs:
     name: Playwright against ${{ inputs.base_url || 'https://darshya.online' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    continue-on-error: true
     env:
       PLAYWRIGHT_BASE_URL: ${{ inputs.base_url || 'https://darshya.online' }}
       CI: 'true'
@@ -53,7 +61,6 @@ jobs:
 
       - name: Run Playwright (TD2 specs)
         run: pnpm exec playwright test tests/e2e --reporter=html,list
-        continue-on-error: true
 
       - name: Upload HTML report
         if: always()

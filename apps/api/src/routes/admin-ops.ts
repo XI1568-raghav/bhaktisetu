@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { notifyBookingEvent } from '../services/booking-notify.service.js';
+import { getMoneyTrail } from '../lib/audit-money.js';
 
 /**
  * Token-gated read-only ops feeds for the Sprint-2 Wave-1 agents.
@@ -55,9 +56,80 @@ const resolveSchema = z.object({
   note: z.string().min(1).max(500),
 });
 
-export const __testing = { resolveSchema };
+// ─── OPS-05 money-trail read ───────────────────────────────────────────────
+// `lib/audit-money.getMoneyTrail` shipped with the writer and had ZERO
+// production callers — grepping `apps/api` for it returned the declaration and
+// its own unit test and nothing else. So every money event was being recorded
+// and none of it could be READ by anyone without a psql session against the
+// production database. For a solo operator answering a chargeback that is the
+// same as having no trail: the finding is "a disputed booking or refund cannot
+// be reconstructed", and reconstruction that requires DIRECT_URL is not
+// reconstruction the product supports.
+//
+// This is the read surface. Deliberately narrow:
+//   - exactly one handle per call, so it can never become a bulk export;
+//   - the same admin gate as the destructive SLA-resolve route below, NOT the
+//     ?token= cron gate — a money trail carries actor ids, IPs and amounts, and
+//     the cron token is pasted into agent scripts;
+//   - `available:false` is passed through verbatim rather than rendered as an
+//     empty list, because "the log could not be read" and "nothing happened"
+//     must never look identical to an operator.
+const moneyTrailSchema = z
+  .object({
+    bookingId: z.string().min(1).max(200).optional(),
+    paymentId: z.string().min(1).max(200).optional(),
+    commissionId: z.string().min(1).max(200).optional(),
+    payoutId: z.string().min(1).max(200).optional(),
+    // The polymorphic handle. Donations, consultations and store orders write
+    // no Payment row, so none of the four ids above can ever reach them.
+    subjectId: z.string().min(1).max(200).optional(),
+    subjectType: z.string().min(1).max(64).optional(),
+    limit: z.coerce.number().int().min(1).max(1000).optional(),
+  })
+  .refine(
+    (q) => !!(q.bookingId || q.paymentId || q.commissionId || q.payoutId || q.subjectId),
+    { message: 'Provide one of bookingId, paymentId, commissionId, payoutId or subjectId.' },
+  );
+
+export const __testing = { resolveSchema, moneyTrailSchema };
 
 export async function adminOpsRoutes(server: FastifyInstance) {
+  // GET /api/v1/admin/ops/money-trail?bookingId=…  (or paymentId / commissionId
+  // / payoutId / subjectId[&subjectType]). Oldest first — the read a dispute is
+  // answered from.
+  server.get(
+    '/money-trail',
+    { preHandler: [authenticateUser, requireRole('admin')] },
+    async (request, reply) => {
+      const parsed = moneyTrailSchema.safeParse(request.query ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({
+          error: 'Invalid query',
+          details: parsed.error.flatten(),
+        });
+      }
+      const trail = await getMoneyTrail(parsed.data);
+      if (!trail.available) {
+        // 503, not 200-with-[]: the caller is an operator deciding whether to
+        // refund. Telling her "no events" when the table was unreachable is the
+        // failure mode this whole finding is about.
+        return reply.code(503).send({
+          ok: false,
+          available: false,
+          reason: trail.reason ?? 'unavailable',
+          message:
+            'The money audit trail could not be read. This is NOT the same as "no events" — do not treat it as an empty history.',
+        });
+      }
+      return reply.send({
+        ok: true,
+        available: true,
+        count: trail.events.length,
+        events: trail.events,
+      });
+    },
+  );
+
   // KYC-abandoned leads — provider self-onboard rows still NEW after N hours.
   // onboarding-nudge agent fires 24h/72h/7d windows; we return all three
   // buckets in one call so the agent can de-dup per channel.

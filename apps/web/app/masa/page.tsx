@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { VEDIC_MONTHS } from '../../lib/vedic-months';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -54,8 +56,8 @@ export default function MasaIndexPage() {
         <nav className="text-sm text-gray-600 mb-4">
           <Link href="/" className="hover:text-saffron-600">Home</Link> / <span className="text-gray-900">Vedic Months</span>
         </nav>
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">12 Vedic Months — Masa</h1>
-        <p className="text-lg text-gray-700 max-w-3xl">
+        <h1 className={`${H1.marketing} mb-3`}>12 Vedic Months — Masa</h1>
+        <p className="prose-lead text-gray-700 max-w-3xl">
           The Hindu lunar year has 12 masa (months) from Chaitra (March–April) through Phalguna (February–March). Each is
           presided by one of the 12 Adityas, belongs to a ritu (season), and carries its own festival cycle, vrata calendar,
           and ritual character. The masa system anchors every Hindu festival, fast, and muhurat.
@@ -105,7 +107,7 @@ export default function MasaIndexPage() {
             <Link href="/aditya" className="px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 text-sm">
               12 Adityas
             </Link>
-            <Link href="/calendar" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
+            <Link href="/calendar" className={buttonClass('primary', 'md')}>
               Festival calendar
             </Link>
           </div>

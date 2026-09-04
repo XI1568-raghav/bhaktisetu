@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # Crisis Communications Playbook
 
 > Founder + CS contractor reference for handling crisis events. Pre-defined scripts + escalation paths.
@@ -26,7 +37,7 @@
 
 ### Tier 3 — Internal but visible
 - Founder Twitter mistake/controversy
-- Vendor outage (Razorpay/Stripe/Resend)
+- Vendor outage (Razorpay/Resend)
 - Influencer partnership backfire
 - Customer accidentally exposed sensitive data
 
@@ -41,6 +52,29 @@
 ## Tier 0 scripts
 
 ### Site fully down >2 hours
+
+> **OPS-10 correction (2026-09-02).** The sign-off of this template used to
+> point the public at `status.bhaktisetu.com`. **That host does not serve
+> anything.** Measured 2026-09-02: DNS resolves to two parked AWS addresses
+> (`76.223.54.146`, `13.248.169.48` — the same pair `bhaktisetu.com` returns),
+> and both `http://` and `https://` **time out after 20s** (`curl` exit 28,
+> HTTP code `000`). Broadcasting it during a Tier-0 outage sends every worried
+> devotee to a hanging tab and turns "we are on it" into a second visible
+> failure — in the one message where credibility is the whole product.
+>
+> `https://darshya.online/status` **does** exist and returned **200** in the
+> same measurement, but it is not yet a status page you can point a crowd at:
+> `NEXT_PUBLIC_UPTIME_STATUS_URL` is unset (it is not in `render.yaml`'s
+> `envVars:` block), so the route renders its fallback — the banner *"Status
+> temporarily unavailable. Live data will appear once the UptimeRobot public
+> status page is configured"* and all four monitors reading **Unknown / —**.
+> A page that says "Unknown" for every service during an outage is worse than
+> no link.
+>
+> So the template below cites **no status URL at all** and directs people to
+> the channel the update is actually being posted on. Restore a status link
+> only after `/status` is verified showing live monitor rows; do not
+> re-introduce `status.bhaktisetu.com`.
 
 ```
 [Twitter + LinkedIn + Email]
@@ -60,7 +94,8 @@ We will post hourly updates here until resolved.
 🙏
 Sunil Kumar, Founder
 +91-XXXXX-XXXXX (founder direct)
-status.bhaktisetu.com
+Updates on this thread — we are not linking a status page because we do not
+have a working one. Reply here and we will answer.
 ```
 
 ### Data breach affecting >100 users
@@ -91,7 +126,7 @@ What you should do:
 3. Contact us at security@bhaktisetu.com if you notice anomalies
 
 What was NOT exposed:
-- Payment card details (Razorpay/Stripe tokenized)
+- Payment card details (tokenized by Razorpay, the only payment processor; Stripe removed 2026-08-11 — do not name it in a public notice)
 - Sanskrit + Hindi text content
 - Other user data not in [specific scope]
 
@@ -167,7 +202,7 @@ We discovered that Pandit [X] [specific issue — e.g., did not actually perform
 
 For you specifically:
 1. Full refund: ₹[amount] returning to your card within 5 business days
-2. Re-booking at no cost with another verified pandit
+2. Re-booking at no cost with another pandit
 3. Founder personal apology call within 24 hours
 
 We are publishing a public statement Monday about this incident + the corrective measures we're implementing. You will not be identified by name in any public communications.
@@ -275,7 +310,22 @@ After every Tier 0/1 crisis:
 
 ## Pre-positioned assets
 
-- Status page (status.bhaktisetu.com) — live system status
+> **OPS-10 correction (2026-09-02).** "Pre-positioned" is a promise that the
+> asset is ready before the crisis starts. The status-page entry was not: see
+> the measurement in the Tier-0 section above. It is restated below as an
+> outstanding item so nobody plans a Tier-0 response around it.
+
+- **Status page — NOT AVAILABLE.** `status.bhaktisetu.com` does not serve
+  anything (parked DNS, both schemes time out — measured 2026-09-02).
+  `https://darshya.online/status` returns 200 but renders "Status temporarily
+  unavailable" with every monitor `Unknown`, because
+  `NEXT_PUBLIC_UPTIME_STATUS_URL` is unset. **To make this a real asset:** create
+  the UptimeRobot public status page, then add `NEXT_PUBLIC_UPTIME_STATUS_URL`
+  to the `envVars:` block of the `darshya-web` service in `render.yaml` — it is
+  a `NEXT_PUBLIC_*` variable, so it is baked at **build** time and a runtime-only
+  dashboard entry will not reach the client — and redeploy. Until a responder
+  has loaded `/status` and seen live monitor rows, do not link it in any
+  customer-facing crisis message.
 - Press release templates for top 5 crisis scenarios
 - Direct WhatsApp + email + phone for founder always-on
 - CS contractor trained on Tier 1-3 response (Tier 0 escalates to founder)

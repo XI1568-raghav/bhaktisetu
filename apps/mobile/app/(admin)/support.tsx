@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useAdminPendingApprovals, useSupportTickets } from '@poojly/api-client';
 import { PortalScreen, Section, ListRow, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { supportTicketStatusLabel } from '../../lib/enum-labels';
 
 // Server's SupportTicketStatus enum is UPPER_SNAKE (OPEN/IN_PROGRESS/RESOLVED/CLOSED).
 // We translate to the lower-snake variant the UI uses so existing
@@ -130,7 +131,7 @@ export default function AdminSupport() {
               key={t.id}
               primary={`${t.id} • ${t.subject}`}
               secondary={`${t.user} • ${t.createdAt}`}
-              status={{ label: t.status.replace('_', ' '), color: STATUS_COLOR[t.status] }}
+              status={{ label: supportTicketStatusLabel(t.status), color: STATUS_COLOR[t.status] }}
             />
           ))
         )}

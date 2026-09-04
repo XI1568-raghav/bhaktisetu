@@ -122,7 +122,7 @@ export default async function StorePage({
  <h1 className={`${H1.catalogue} mb-3`}>
  {t('pageTitle')}
  </h1>
- <p className="text-surface-500 text-lg max-w-2xl">
+ <p className="prose-body text-surface-500 max-w-2xl">
  {t('pageSubtitle')}
  </p>
 
@@ -196,19 +196,23 @@ export default async function StorePage({
 
  {product.tag && (
  <div className="absolute top-3 left-3">
- <span className="bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+ <span data-product-tag className="bg-saffron-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
  {product.tag}
  </span>
  </div>
  )}
 
- {product.discount > 0 && (
- <div className="absolute top-3 right-3">
- <span className="bg-tulsi-green-dark text-white text-xs font-bold px-2 py-1 rounded-full">
- -{product.discount}%
- </span>
- </div>
- )}
+ {/* LEG-17: a "-32%" badge used to render here from `product.discount`,
+     a hardcoded seed field in lib/products.ts. It was computed against
+     `compareAtPrice`, a reference price no product was ever sold at —
+     this catalogue has never taken an order. A discount claim measured
+     against a price that was never charged is a fabricated discount
+     under the Consumer Protection Act 2019, and unlike the expired
+     festival-sale banner COM-13 removed from this page it carried no
+     end date, so it could never expire on its own. Re-introduce a
+     badge only from a dated prior-price record the component can hide
+     once it lapses. Guarded by
+     __tests__/leg17-store-fabricated-reference-price.test.tsx. */}
 
  </div>
 
@@ -225,24 +229,36 @@ export default async function StorePage({
  </a>
  </h3>
 
- <div className="flex items-center gap-1 mt-2">
- <div className="flex items-center gap-0.5 bg-tulsi-green-dark/10 px-1.5 py-0.5 rounded">
- <Star className="w-3 h-3 text-tulsi-green-dark fill-tulsi-green-dark" />
- <span className="text-xs font-bold text-tulsi-green-dark">
- {product.rating}
- </span>
- </div>
- <span className="text-xs text-surface-400">
- ({product.reviewCount.toLocaleString("en-IN")})
- </span>
- </div>
+ {/* LEG-17: a star rating and a review tally used to render here —
+     `{product.rating}` in a badge and `({product.reviewCount})` beside
+     it. Both were fabricated on BOTH data paths, so there was no input
+     that made them true:
 
+       - Seed path (the live one, `isMedusaEnabled()` is false):
+         lib/products.ts hardcodes `rating: 4.7, reviewCount: 342` on
+         prod_001, and all 24 seed rows carry one: ratings 4.4-4.9 and
+         review counts 145-2,100, totalling 12,366 reviews that do not
+         exist. This catalogue has never taken an order — the same
+         premise the removed discount badge below rests on — so it has
+         never collected a review either.
+       - Medusa path: lib/medusa.ts maps every real product with
+         `rating: 4.5, reviewCount: 0`, printing a 4.5-star average
+         explicitly derived from zero reviews.
+
+     A `Review` model and a GET /store/reviews route both exist
+     (apps/api), so this is a real number's placeholder, not a missing
+     feature: restore the badge when the grid is joined to that table
+     and only for products that actually have reviews. A fabricated star
+     average is the strongest purchase signal on a product grid, which
+     makes it the same consumer-protection defect as the fabricated
+     reference price, not a lesser one.
+     Guarded by __tests__/leg17-store-fabricated-review-counts.test.tsx. */}
+
+ {/* LEG-17: the struck-through `compareAtPrice` that sat beside this
+     price is gone — see the note on the removed discount badge above. */}
  <div className="mt-2 flex items-baseline gap-2">
  <span className="text-lg font-bold text-surface-800">
  ₹{product.price.toLocaleString("en-IN")}
- </span>
- <span className="text-sm text-surface-400 line-through">
- ₹{product.compareAtPrice.toLocaleString("en-IN")}
  </span>
  </div>
 
@@ -260,7 +276,11 @@ export default async function StorePage({
  handle: product.handle,
  title: product.title,
  price: product.price,
- compareAtPrice: product.compareAtPrice,
+ // LEG-17: never carry the fabricated seed reference price into the
+ // cart. CartProduct.compareAtPrice is `number | null`, and the cart
+ // persists to localStorage under poojly_cart, so passing it here
+ // would outlive this page.
+ compareAtPrice: null,
  image: getProductImage(product.imageKey, IMG_W.CARD),
  category: product.category,
  inStock: product.inStock,

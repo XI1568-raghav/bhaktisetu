@@ -188,7 +188,7 @@ export function LiveChatWidget() {
  <button
  onClick={() => setOpen(true)}
  aria-label="Open live chat"
- className="fixed bottom-5 right-5 z-[60] group"
+ className="fixed bottom-[calc(var(--consent-h,0px)+5rem+env(safe-area-inset-bottom))] md:bottom-5 right-5 z-[60] group"
  >
  <span className="relative flex items-center justify-center w-14 h-14 rounded-full bg-saffron-600 hover:bg-saffron-700 text-white shadow-lg shadow-saffron-600/30 transition-all hover:-translate-y-0.5">
  <MessageSquare className="w-6 h-6" />

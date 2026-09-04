@@ -3,6 +3,8 @@
 // long-tail. Revalidates intra-day so the IST date and panchang stay current
 // without forcing a full rebuild.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -151,7 +153,7 @@ export default async function RashiTodayPage({ params }: Params) {
             <span className="ml-1 text-surface-500 text-xs">{daily.rating}/5 today</span>
           </span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.catalogue} mb-2`}>
           {r.rashiEnglish} ({r.rashiHindi}) — Today, {dayName}, {prettyDate}
         </h1>
         <p className="text-base text-surface-600">

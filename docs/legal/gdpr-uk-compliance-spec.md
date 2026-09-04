@@ -12,7 +12,7 @@ Q3 ship GDPR + UK DPA compliance for UK NRI launch. Cookie banner + DPIA + DSR e
 |---|---|---|
 | Cookie banner | apps/web/components/CookieBanner.tsx | EU/UK consent CMP |
 | DPIA | docs/legal/dpia-uk-launch.md | Data Protection Impact Assessment |
-| DPA | docs/legal/data-processing-agreement.md | Vendor agreements (Resend, Razorpay, Stripe) |
+| DPA | docs/legal/data-processing-agreement.md | Vendor agreements (Resend, Razorpay). Stripe removed 2026-08-11 — do not counter-sign a DPA with a processor that receives no data |
 | ROPA | docs/legal/records-of-processing-activities.md | Per GDPR Art 30 |
 | Privacy policy UK | apps/web/app/legal/privacy-uk/page.tsx | UK-specific addendum |
 | DSR endpoints | per R-Q2-L-003 DSAR spec | export/delete/correct |

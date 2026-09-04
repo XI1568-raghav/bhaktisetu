@@ -1,6 +1,8 @@
 # R-Q3-F-002 — Unit Economics M9 Audit + Investor Board Memo (handoff)
 
-> Status: PARTIAL — framework + data-pull plan + memo template shipped. Founder action required to populate live numbers from Supabase + PostHog + Razorpay/Stripe dashboards. depends_on R-Q3-F-001 (Q3 forecast model) must be shipped before live numbers are credible.
+> Status: PARTIAL — framework + data-pull plan + memo template shipped. Founder action required to populate live numbers from Supabase + PostHog + Razorpay dashboards. depends_on R-Q3-F-001 (Q3 forecast model) must be shipped before live numbers are credible.
+
+> **Correction 2026-09-02 (`OPS-10`).** **Stripe was removed from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`, `apps/api/src/services/payment.service.ts:2438-2450`). Razorpay is the only live rail and it settles INR only; no replacement international processor has been chosen. This handoff routed four data pulls through a Stripe dashboard ("Stripe dashboard → Customers → first-payment timestamp", "Stripe: export Customers for same window. Filter NRI-only", a Razorpay/Stripe raw-data export link, and "Stripe dashboard access confirmed" as Block 2). None of those exist. Every Razorpay/Supabase/PostHog pull in this document is unaffected; the NRI cohort simply has no source data until an international rail exists, so its CAC/LTV cells stay `[verify]` rather than being filled from a substitute.
 
 ## Why this item exists
 
@@ -23,14 +25,14 @@ Month 9 is the first investor-credibility checkpoint where unit economics (CAC, 
 |---|---|---|---|---|
 | Organic (SEO + referrals) | ₹0 attributed spend, opportunity cost only | TBD | ₹0 nominal | SEO surface ~500 URLs as of 2026-06-14 |
 | WhatsApp drip (supply-onboarding-v2 fleet) | Resend + WA Cloud free-tier | TBD | TBD | 7 daily drip agents |
-| NRI paid (Meta + Google) | TBD if any | TBD | TBD | Blocked until U2 Stripe NRI KYC |
+| NRI paid (Meta + Google) | TBD if any | TBD | TBD | Blocked until an NRI rail exists `[verify — Stripe was removed; the NRI rail is undecided]` |
 | Referral program | Referral payout cost ÷ converted referees | TBD | TBD | `apps/api/src/routes/referrals.ts` |
 | Founder direct outreach | Time × ₹/hr | TBD | TBD | Pandit + temple direct calls |
 
 Data sources:
 - `apps/web/lib/posthog.ts` events — `signup`, `payment_success` with `$current_url` + `utm_source`
 - Razorpay dashboard → Settlements → Customer-level export
-- Stripe dashboard → Customers → first-payment timestamp
+- _Removed 2026-09-02: this source read "Stripe dashboard → Customers → first-payment timestamp". No such dashboard exists._ `[verify — Stripe was removed; the NRI rail is undecided]`
 - `referral_claims` table — Supabase (Prisma model in `apps/api/prisma/schema.prisma`)
 
 ### 2. Monetization (ARPU + LTV)
@@ -109,7 +111,7 @@ The memo should not just report numbers — it should tell investors what the fo
 [3-5 bullets]
 
 ## Appendix
-- Raw data export: <link to Supabase query + PostHog dashboard + Razorpay/Stripe export>
+- Raw data export: <link to Supabase query + PostHog dashboard + Razorpay export>
 - Methodology notes: <how LTV was calculated, what assumptions>
 - Tripwire status: <which of the 4 ROADMAP.md tripwires breached>
 ```
@@ -120,7 +122,7 @@ The memo should not just report numbers — it should tell investors what the fo
 2. Supabase: run queries in `apps/api/scripts/check-prod-tables.mjs` first to confirm `users`, `bookings`, `consultations`, `orders`, `referral_claims` are all populated for M7-M9 window.
 3. PostHog: create cohorts for M7, M8, M9 signup months. Export retention CSV.
 4. Razorpay: export Settlements for M7 D1 - M9 D30. Filter Indian-only.
-5. Stripe: export Customers for same window. Filter NRI-only.
+5. _Removed 2026-09-02: this step read "Stripe: export Customers for same window. Filter NRI-only." There is no NRI rail and no processor to export from._ `[verify — Stripe was removed; the NRI rail is undecided]`
 6. Compute the six framework sections.
 7. Draft memo using template above.
 8. Have board observer / lead investor (or trusted CFO advisor) review before publishing.
@@ -130,7 +132,7 @@ The memo should not just report numbers — it should tell investors what the fo
 ## Founder-action items remaining (env / secret / decision)
 
 - **Block 1:** R-Q3-F-001 must ship before this item produces credible numbers. Confirm forecast model is locked.
-- **Block 2:** Supabase + PostHog + Razorpay + Stripe dashboard access confirmed. (If any are not set up — e.g. PostHog key not pasted per U8 gate — that channel's data will be missing.)
+- **Block 2:** Supabase + PostHog + Razorpay dashboard access confirmed (the Stripe dashboard this line used to require does not exist `[verify — Stripe was removed; the NRI rail is undecided]`). (If any are not set up — e.g. PostHog key not pasted per U8 gate — that channel's data will be missing.)
 - **Decision 1:** Approve cohort-window definition (signup month vs first-paid month). Affects retention numbers materially.
 - **Decision 2:** Approve LTV methodology (capped 12-month vs 1/churn). Conservative cap recommended for investor memo.
 - **Decision 3:** Who reviews the memo before publish. Recommend at minimum a CFO-shaped advisor + one current investor / advisor.

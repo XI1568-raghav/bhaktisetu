@@ -61,3 +61,9 @@ apps/web/pitch-captures/
 # Pitch reel intermediate artifacts (regenerable via stitch-pitch-video-v2.sh)
 apps/web/scripts/build/
 .worktrees/
+
+# Chat archives may quote live connection strings — never track them.
+# 2026-08-19: one tracked file held 20 password-bearing Supabase URLs, 15 of
+# them pointing at the production Tokyo pooler. Rotation is the real remedy
+# (git history still holds them); this stops any NEW leak.
+docs/chat-archive/

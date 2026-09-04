@@ -1,11 +1,24 @@
 // Topical hub for 27 programmatic-SEO wisdom routes. Pure local data → SSG.
 // Crawlers get a strong internal-link hub; users get a searchable index.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
+// CI-12: this hub advertised /jyotirlinga as "All 12 swayambhu Shiva abodes",
+// while the dataset behind that page flags Somnath, Kashi Vishwanath and
+// Rameshwar `swayambhu: false` and its own badges show nine. Both numbers are
+// derived here for the same reason app/jyotirlinga/page.tsx derives them — a
+// literal is what let the two drift apart in the first place. This is a server
+// component, so the import costs the client bundle nothing.
+import { JYOTIRLINGAS } from '../../lib/jyotirlingas';
+import { RECEIPT_NOUN } from '../../lib/eighty-g';
 
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';
+
+const JYOTIRLINGA_SWAYAMBHU = JYOTIRLINGAS.filter((j) => j.swayambhu).length;
+const JYOTIRLINGA_INSTALLED = JYOTIRLINGAS.length - JYOTIRLINGA_SWAYAMBHU;
 
 type DiscoverItem = {
   label: string;
@@ -95,7 +108,7 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Vedic Yajnas', href: '/vedic-yajnas', description: 'Agnihotra, Soma, Vajapeya, Ashwamedha and 6 more — fire-altar rituals with mantra, materials and procedure.', count: '10 yajnas' },
       { label: 'Rudraksha', href: '/rudraksha', description: '1-mukhi to 18-mukhi rudraksha beads — deity, planet, benefits, wearing rules and identification.', count: '18 mukhi' },
       { label: 'Sacred Tirthas', href: '/tirth', description: 'Single-destination pilgrim guides — Kashi, Tirupati, Vaishno Devi, Char Dham and more.', count: '12 tirthas' },
-      { label: '12 Jyotirlinga', href: '/jyotirlinga', description: 'All 12 swayambhu Shiva abodes in canonical order — Bhasma Aarti, Sphatika Linga, 22 Theertham and signature rituals.', count: '12 jyotirlinga' },
+      { label: `${JYOTIRLINGAS.length} Jyotirlinga`, href: '/jyotirlinga', description: `All ${JYOTIRLINGAS.length} Shiva light-abodes in canonical order — ${JYOTIRLINGA_SWAYAMBHU} swayambhu, ${JYOTIRLINGA_INSTALLED} with an installed linga. Bhasma Aarti, Sphatika Linga, 22 Theertham and signature rituals.`, count: `${JYOTIRLINGAS.length} jyotirlinga` },
       { label: '51 Shakti Peeth', href: '/shakti-peeth', description: "Where Sati's body fell — across India, Nepal, Bangladesh, Sri Lanka, Pakistan and Tibet. Devi-Bhairava pairings and Navratri rituals.", count: '51 peeths' },
       { label: '5 Pancha Bhoota Stalam', href: '/pancha-bhoota', description: 'Five Tamil Nadu Shiva temples representing the five elements — Earth, Water, Fire, Air, Ether.', count: '5 temples' },
       { label: '9 Navaratna Gems', href: '/navaratna', description: 'Nine sacred gems of Vedic gemology — one per Nava-Graha. Finger, metal, day, mantra, benefits.', count: '9 gems' },
@@ -116,7 +129,7 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Today’s Panchang', href: '/today', description: 'Day-of-week deity, current mantra, today’s tithi and the next upcoming festival.' },
       { label: 'Hindu Calendar 2026', href: '/calendar', description: 'Month-by-month festival calendar with fasting flags and bookable-puja CTAs.' },
       { label: 'Shloka Cards', href: '/shloka-card', description: 'Shareable WhatsApp / X / FB cards from any shloka — three starter presets.' },
-      { label: 'Gift a Puja', href: '/gift', description: 'NRI senders gift a puja to family in India with WhatsApp delivery and 80G receipt.' },
+      { label: 'Gift a Puja', href: '/gift', description: `NRI senders gift a puja to family in India with WhatsApp delivery and a ${RECEIPT_NOUN}.` },
       { label: 'FAQs', href: '/faqs', description: '~20 questions across booking, darshan, refunds, NRI lane and yatra packages.' },
       { label: 'Why Darshya', href: '/why-darshya', description: '14-row honest comparison vs Sri Mandir, Utsav and AstroSage.' },
       { label: 'Kundli Matchmaking', href: '/matchmaking', description: 'Free Ashtakoot 36-point Guna Milan with optional pandit consult.' },
@@ -193,7 +206,7 @@ export default function DiscoverPage() {
 
       <header className="mb-10 max-w-3xl">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{TOTAL} curated guides</p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Discover Hindu Wisdom</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Discover Hindu Wisdom</h1>
         <p className="mt-3 text-base text-gray-700">
           Every wisdom guide on Darshya in one place — scriptures, cosmology, ritual
           practice and devotional tools. Each link below is a full canonical guide; the

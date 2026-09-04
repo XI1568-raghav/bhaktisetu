@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, X } from 'lucide-react';
 import { OnboardingGate, type PrimaryIntent } from './_useOnboardingSafe';
 
+import { buttonClass } from '../../components/ui/button-recipe';
 type IntentMeta = {
   label: string;
   href: string;
@@ -57,8 +58,7 @@ function Card({
           <Link
             href={meta.href}
             prefetch={false}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white btn-press shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-            style={{ background: 'var(--color-primary)' }}
+            className={buttonClass('primary', 'md', 'btn-press shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2')}
           >
             {meta.label}
             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

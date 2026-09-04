@@ -337,7 +337,7 @@ export const CITIES: CityInfo[] = [
     famousTemples: ['Dagdusheth Halwai Ganpati', 'Kasba Ganpati', 'Parvati', 'Chaturshringi', 'Chinchwad Morya Gosavi', 'Shreemant Bhausaheb Rangari Ganpati'],
     popularDeities: ['ganesha', 'shiva', 'devi'],
     popularPujas: ['ganesh-puja', 'rudrabhishek', 'satyanarayan-puja', 'navaratri-puja', 'shanti-puja'],
-    significance: 'Lokmanya Tilak revived public Ganesh Chaturthi here in 1893. Pune Ganpati visarjan procession is one of largest in world. Kasba Ganpati is Pune\'s grama-devata. Chinchwad Morya Gosavi samadhi is the origin of the "Mangalmurti Morya" chant. R-Q1-G-006: 6th city soft-launch via /mr/pune Marathi landing.',
+    significance: 'Lokmanya Tilak revived public Ganesh Chaturthi here in 1893. Pune Ganpati visarjan procession is one of largest in world. Kasba Ganpati is Pune\'s grama-devata. Chinchwad Morya Gosavi samadhi is the origin of the "Mangalmurti Morya" chant.',
     pinPrefix: '411',
   },
   {

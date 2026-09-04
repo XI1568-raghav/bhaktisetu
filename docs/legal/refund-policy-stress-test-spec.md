@@ -2,6 +2,14 @@
 
 > **Roadmap item**: R-Q1-L-002 (P2) · **Authored**: 2026-06-13
 
+> **Correction 2026-09-02 (`OPS-10`).** Case 8 below used to read *"NRI payment
+> chargeback (Stripe) — Force refund per Stripe rules"*. **Stripe was removed from
+> the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`,
+> `services/payment.service.ts:2506-2517`); Razorpay is the only live rail and it
+> settles INR only. No replacement international processor has been chosen, so the
+> chargeback rules that would apply are unknown. The case is kept — the exposure is
+> real — with the processor marked `[verify]` instead of guessed.
+
 ## Goal
 
 Q1 stress-test refund policy w/ 10 edge cases + lawyer review. Closes legal exposure on disputes.
@@ -17,7 +25,7 @@ Q1 stress-test refund policy w/ 10 edge cases + lawyer review. Closes legal expo
 | 5 | User cancels <24hr | 50% refund | Pandit advance work |
 | 6 | User no-show at scheduled time | 0% refund | User can claim disability/emergency |
 | 7 | Tech failure (Bhaktisetu side) | 100% refund + credit | OK |
-| 8 | NRI payment chargeback (Stripe) | Force refund per Stripe rules | Bhaktisetu absorbs |
+| 8 | NRI payment chargeback (international rail — processor `[verify]`) | Forced refund per that processor's scheme rules — `[verify]`, they are not knowable until a processor is chosen | Bhaktisetu absorbs |
 | 9 | Booking date confusion (system bug) | 100% refund + free re-book | Bhaktisetu liability |
 | 10 | Pandit performs but family unsatisfied | Mediation, partial refund | Subjective, hardest |
 

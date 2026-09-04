@@ -53,12 +53,76 @@ export function apiErrorCode(body: unknown): string | null {
   return typeof code === 'string' && code.trim() ? code.trim() : null;
 }
 
-/** True if the message looks like an auth/session failure (401/403). */
+/**
+ * True if the message looks like an AUTHENTICATION failure — 401, "we do not
+ * know who you are". The only error class for which signing in again is the
+ * remedy.
+ *
+ * AUTH-06 (2026-08-28): 403 and "forbidden" used to be in here, and that was
+ * wrong in a way that only became load-bearing when AUTH-06 wired `reauth` up
+ * to <ReauthPrompt> — which renders INSTEAD of Retry. See `isForbiddenError`.
+ *
+ * AUTH-06 (2026-09-01): `session expired` did not match the sentence this
+ * module's own `friendlyApiError` RETURNS — "Your session has expired." — nor
+ * the one app/bookings/view/page.tsx composes for its 401. So the classifier
+ * was not idempotent on its own output: any screen that stored the friendly
+ * message and later re-classified it (which is exactly what `userFacingMessage`
+ * does, and what a page does when it keeps `err.message` in state) got
+ * `reauth: false` on the second pass and lost the sign-in affordance. `has`
+ * and `have` are optional so all four phrasings land in the same branch.
+ */
 export function isAuthError(message: string): boolean {
-  return /401|403|unauthorized|unauthenticated|forbidden|demo tokens|invalid.*token|session expired/i.test(
+  return /401|unauthorized|unauthenticated|demo tokens|invalid.*token|sessions?\s+(?:has\s+|have\s+)?expired/i.test(
     message,
   );
 }
+
+/**
+ * True if the message looks like an AUTHORIZATION refusal — 403, "we know
+ * exactly who you are and you still cannot have this".
+ *
+ * AUTH-06 (2026-08-28) — why this had to be split out of `isAuthError`.
+ *
+ * A 403 never means an expired session in this API. Every one of the ~40
+ * `reply.code(403)` sites is an authorization outcome, and the middleware says
+ * so in its own words (apps/api/src/middlewares/auth.ts:80): "403 (not 401)
+ * signals 'we know who you are, you just can't be here' so the frontend can
+ * show a 'account suspended' screen instead of bouncing back to login". The two
+ * populations are a SUSPENDED account (rejectIfBlocked, :88 — body "Account
+ * suspended: <reason>") and role/ownership guards. Every session failure is a
+ * 401.
+ *
+ * While `reauth` was a flag nobody read, folding 403 in here only mis-worded a
+ * sentence. Once AUTH-06 made <ReauthPrompt> REPLACE the Retry button, it
+ * became a trap: a suspended devotee was told her session had expired, given a
+ * "Sign in again" button, signed in successfully — the block is enforced per
+ * request, not at the door — was sent by `reauthLoginHref(pathname)` straight
+ * back to the page that refused her, and got the same sentence again. A loop
+ * whose only exit is the one control that cannot work is exactly the pathology
+ * AUTH-06 exists to remove.
+ *
+ * Deliberately DISJOINT from `isAuthError` rather than merely ordered ahead of
+ * it, so no future caller can get the wrong answer by testing them in the wrong
+ * order. "Unauthorized" (401's name) is not matched here: the `not authorised`
+ * pattern requires the word break, so 403's "Not authorized for this
+ * consultation." matches and 401's "Unauthorized" does not.
+ */
+export function isForbiddenError(message: string): boolean {
+  return /\b403\b|forbidden|account suspended|\bnot authori[sz]ed\b|role required|insufficient_scope|\bnotorgmember\b|\bnot owner\b/i.test(
+    message,
+  );
+}
+
+/**
+ * What to say when the server refused on authorization grounds. Names support
+ * because that is the ONLY exit from a suspension — and because "please try
+ * again" is advice that can never succeed against one. Says nothing about which
+ * of the two 403 populations this is: `friendlyApiError` sees a bare message,
+ * and guessing "your account is suspended" at a devotee who merely followed a
+ * stale link would be worse than the generic truth.
+ */
+export const FORBIDDEN_ERROR_MESSAGE =
+  'You do not have access to this. Contact support@darshya.online if you think that is wrong.';
 
 /** True if the message looks like a rate-limit (429). */
 export function isRateLimitError(message: string): boolean {
@@ -73,6 +137,12 @@ export function isRateLimitError(message: string): boolean {
 export function friendlyApiError(err: unknown): { message: string; reauth: boolean } {
   const raw = err instanceof Error ? err.message : String(err ?? '');
 
+  // AUTH-06: authorization BEFORE authentication. The two predicates are
+  // disjoint so the order cannot change the answer, but a 403 reaching the
+  // 401 branch is the specific mistake this ordering documents against.
+  if (isForbiddenError(raw)) {
+    return { message: FORBIDDEN_ERROR_MESSAGE, reauth: false };
+  }
   if (isAuthError(raw)) {
     return {
       message: 'Your session has expired. Please sign in again to continue.',
@@ -91,7 +161,19 @@ export function friendlyApiError(err: unknown): { message: string; reauth: boole
       reauth: false,
     };
   }
-  if (/network|failed to fetch|fetch failed|econn|timeout|timed out/i.test(raw)) {
+  // RES-09 (2026-08-28): this list was Chromium-shaped. Every browser words a
+  // failed fetch differently and only Chrome's and Firefox's were here —
+  // Chrome "Failed to fetch", Firefox "NetworkError when attempting to fetch
+  // resource." (caught by `network`), Safari/iOS "Load failed" and "The
+  // Internet connection appears to be offline.", neither of which matched. On
+  // an iPhone those fell through to the generic bucket, so a devotee on a
+  // dropped connection was told "We could not load this right now" — no
+  // mention of the connection, which is the one thing they could have fixed.
+  if (
+    /network|failed to fetch|fetch failed|load failed|connection appears to be offline|econn|timeout|timed out/i.test(
+      raw,
+    )
+  ) {
     return {
       message: 'Could not reach the server. Please check your connection and try again.',
       reauth: false,
@@ -99,7 +181,174 @@ export function friendlyApiError(err: unknown): { message: string; reauth: boole
   }
   // 404 / not-found and anything else → a neutral, non-technical message.
   return {
-    message: 'We could not load this right now. Please try again.',
+    message: GENERIC_ERROR_MESSAGE,
     reauth: false,
   };
+}
+
+/**
+ * The bucket `friendlyApiError` lands in when it recognises nothing. Exported
+ * because `userFacingMessage` needs to tell "I classified this" apart from
+ * "I gave up" — see below.
+ */
+export const GENERIC_ERROR_MESSAGE = 'We could not load this right now. Please try again.';
+
+/**
+ * RES-09 (2026-08-28) — the seam that was missing, and the reason the pattern
+ * kept coming back.
+ *
+ * `friendlyApiError` maps a RAW error to friendly copy. But most screens do
+ * this instead:
+ *
+ *     if (!res.ok) throw new Error(`Could not load X (${res.status}). ${body}`)
+ *     …
+ *     catch (err) { setError(err instanceof Error ? err.message : '…') }
+ *
+ * and the message they render is whatever `err.message` happens to hold —
+ * their own composed string on a bad status, but the PLATFORM's on anything
+ * else: "Failed to fetch", "Load failed", "NetworkError when attempting to
+ * fetch resource", "Unexpected token '<' … is not valid JSON". Dropping
+ * `friendlyApiError` in on top of that is not enough either: it cannot tell a
+ * sentence the product wrote from one the browser wrote, so it flattens the
+ * good one to GENERIC_ERROR_MESSAGE.
+ *
+ * `UserFacingError` is that missing distinction. A screen throws one when it
+ * has already built copy fit for a user; `userFacingMessage` passes those
+ * straight through and routes everything else through `friendlyApiError`.
+ */
+export class UserFacingError extends Error {
+  /**
+   * AUTH-06 (2026-09-01) — the HTTP status this copy was built from, when the
+   * thrower knows it.
+   *
+   * Without it the `reauth` decision is unrecoverable on the screens that
+   * compose their own sentence, and that is not hypothetical. On
+   * app/priest/payouts a 401 whose body is the developer name "Unauthorized"
+   * goes: `serverErrorText` refuses the developer name -> falls back to the
+   * page's own "Could not load your payouts. Please try again." -> the status
+   * is gone -> `friendlyApiError` sees a sentence with no 401 in it and answers
+   * `reauth: false`. The pandit gets a Retry button, a sentence that does not
+   * even mention the session, and no way out. Carrying the number keeps the
+   * classification possible without putting the number on a screen — it is
+   * read by `classifyUserFacing` and never rendered.
+   */
+  readonly status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = 'UserFacingError';
+    this.status = status;
+    // Subclassing a built-in loses the prototype link when the class is
+    // downlevelled. Without this the `instanceof` below silently returns false
+    // and every deliberate message falls through to the generic bucket.
+    Object.setPrototypeOf(this, UserFacingError.prototype);
+  }
+}
+
+/**
+ * The server's own sentence out of an error response BODY AS TEXT, else
+ * `fallback`. The text form matters: these screens read `await res.text()`
+ * because an error response is not guaranteed to be JSON at all — a gateway or
+ * a proxy answers HTML, and `JSON.parse` throwing is exactly the signal that
+ * there is nothing quotable in there. Never renders the raw body.
+ */
+export function serverErrorText(text: string, fallback: string): string {
+  if (!text || !text.trim()) return fallback;
+  try {
+    return serverErrorMessage(JSON.parse(text), fallback);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * What to show the user for a caught error.
+ *
+ *  - a `UserFacingError` → its own message, untouched
+ *  - anything `friendlyApiError` recognises (auth, rate limit, 5xx, network)
+ *    → that classification, which is more specific than a page's own copy
+ *  - anything else → the caller's `fallback` if it has one, since a page can
+ *    say "Could not load your payouts" where this helper can only say "this"
+ */
+export function userFacingMessage(err: unknown, fallback?: string): string {
+  if (err instanceof UserFacingError && err.message.trim()) return err.message;
+  const { message } = friendlyApiError(err);
+  if (message === GENERIC_ERROR_MESSAGE && fallback && fallback.trim()) return fallback;
+  return message;
+}
+
+/**
+ * AUTH-06 (2026-09-01) — `userFacingMessage`, plus the decision it throws away.
+ *
+ * The finding is usually stated as "six pages call `friendlyApiError` and read
+ * only `.message`". That is the visible half. The invisible half is every
+ * screen that calls `userFacingMessage`, whose signature can only ever return a
+ * string: it computes `reauth` internally, via the same `friendlyApiError`, and
+ * discards it somewhere no grep for `.reauth` will ever look. Those screens
+ * render the identical dead end — "Your session has expired. Please sign in
+ * again to continue." beside a Retry button that re-fires the request with the
+ * same dead credential.
+ *
+ * Two things this does that a bare `friendlyApiError(err).reauth` at the call
+ * site cannot:
+ *
+ *  1. It reads `UserFacingError.status` first. A page that composed its own
+ *     sentence has usually destroyed the status on the way — see the class
+ *     comment above — so classifying the composed sentence answers `false` for
+ *     a real 401.
+ *  2. It keeps the message and the flag derived from the SAME error, so the
+ *     two can never disagree about what happened.
+ *
+ * 403 stays `reauth: false`: signing in again does not lift a suspension, and
+ * offering it produces the loop documented on `isForbiddenError`.
+ */
+export function classifyUserFacing(
+  err: unknown,
+  fallback?: string,
+): { message: string; reauth: boolean } {
+  const message = userFacingMessage(err, fallback);
+  const status = err instanceof UserFacingError ? err.status : undefined;
+  // A known status is authoritative — it is the one fact the composed sentence
+  // may have dropped. Everything else falls back to classifying the text.
+  if (typeof status === 'number') {
+    if (status === 401) return { message, reauth: true };
+    if (status === 403) return { message, reauth: false };
+    return { message, reauth: false };
+  }
+  return { message, reauth: friendlyApiError(err).reauth };
+}
+
+/**
+ * AUTH-06 (2026-08-23) — the link that makes `reauth: true` actionable.
+ *
+ * `friendlyApiError` has returned a `reauth` flag since #208 and not one of the
+ * six call sites reads it. They render "Your session has expired. Please sign in
+ * again to continue." next to a Retry button, and Retry re-fires the request
+ * that just 401'd. Telling someone to sign in again while handing them a control
+ * that cannot is worse than saying nothing: it looks like the way out.
+ *
+ * Two rules are baked in here rather than left to each caller:
+ *
+ *  1. ROOT-RELATIVE ONLY. app/auth/login's own `safeRedirect` (P0-1, 2026-07-17)
+ *     drops anything that is not root-relative or same-origin, so an off-origin
+ *     value would silently land the user on their dashboard instead of where
+ *     they were. Not emitting it means the URL never reaches a rendered link at
+ *     all, which is the stronger position.
+ *  2. NEVER BACK INTO /auth. A signed-out user sent to
+ *     `/auth/login?redirect=/auth/login` bounces in a circle.
+ *
+ * Encoding matters too: `/bookings/view?id=BS-…` must arrive as ONE parameter,
+ * so the caller passes a raw `usePathname()` (plus search, if it has it) and
+ * this function does the encoding once.
+ */
+export function reauthLoginHref(pathname: string | null | undefined): string {
+  const LOGIN = '/auth/login';
+  if (!pathname) return LOGIN;
+  const target = pathname.trim();
+  // Root-relative, and not protocol-relative ("//evil.com" is off-origin).
+  if (!target.startsWith('/') || target.startsWith('//')) return LOGIN;
+  // /auth/login, /auth/logout, /auth/verify … all send a signed-out user in a
+  // loop or straight back out again.
+  if (target === '/auth' || target.startsWith('/auth/')) return LOGIN;
+  return `${LOGIN}?redirect=${encodeURIComponent(target)}`;
 }

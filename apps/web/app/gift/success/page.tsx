@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { MessageCircle } from 'lucide-react';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * This page was the Stripe return URL for the gift-puja checkout: it read
@@ -12,8 +14,18 @@ import { MessageCircle } from 'lucide-react';
  * than deleted — so any stale link lands somewhere honest instead of a 404,
  * and it is now static: no query parsing, no fetch, no client component.
  */
+/**
+ * SEO-09 residual (2026-08-16): this export carried a `title` but no
+ * `description`, so the page inherited the ROOT layout's — "Experience live
+ * darshan, book pujas, explore panchang…" — which describes the homepage and
+ * not this dead-end confirmation. It was one of only two served pages left
+ * doing that after the SEO-09 sweep. `noindex` keeps it out of a SERP, but the
+ * description is what a WhatsApp or Slack unfurl of a stale link still shows.
+ */
 export const metadata = {
   title: 'Gift Puja',
+  description:
+    'Gift-puja orders are arranged by the Darshya team directly. This page is kept so older payment links still land somewhere that explains what to do next.',
   robots: { index: false, follow: false },
 };
 
@@ -23,7 +35,7 @@ export default function GiftSuccessPage() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-2xl border border-surface-100 p-8 shadow-sm text-center">
           <MessageCircle className="w-12 h-12 text-saffron-600 mx-auto mb-3" />
-          <h1 className="text-2xl font-bold text-surface-800 mb-2">
+          <h1 className={`${H1.portal} mb-2`}>
             Gift puja requests are handled by our team
           </h1>
           <p className="text-sm text-surface-500 mb-6">
@@ -34,7 +46,7 @@ export default function GiftSuccessPage() {
           </p>
           <Link
             href="/gift"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Request a gift puja
           </Link>

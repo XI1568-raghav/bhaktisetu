@@ -4,7 +4,7 @@ import {
   COMMISSION_RATES,
   getPlanById,
   getPlanFeatures,
-  getCommissionRate,
+  chargedCommissionRate,
   formatPrice,
   getUpgradePlan,
 } from '../lib/pricing';
@@ -27,14 +27,38 @@ describe('pricing — getPlanFeatures', () => {
   });
 });
 
-describe('pricing — getCommissionRate', () => {
-  it('returns role-specific rate for a plan', () => {
-    expect(getCommissionRate('pandit', 'pro')).toBe(15);
-    expect(getCommissionRate('temple', 'enterprise')).toBe(5);
+/**
+ * PM-01 (2026-08-28) — REWRITTEN DELIBERATELY, not weakened.
+ *
+ * This block used to assert `getCommissionRate('pandit', 'pro') === 15` and
+ * `getCommissionRate('temple', 'enterprise') === 5`, certifying a tier-discount
+ * ladder that no server code applies: `commissionOverride` appears nowhere in
+ * apps/api and the five Commission writers each take a flat rate that never
+ * reads a subscription. A pandit on Pro is charged 20%, not 15%, and a temple
+ * is charged nothing at all on any tier. The helper and the ladder behind it
+ * are deleted, so the contract this described no longer exists.
+ *
+ * What replaces it is the rate that IS charged — the single number /pricing
+ * publishes, cross-checked against the apps/api constants by
+ * __tests__/pricing-commission-truth.test.tsx.
+ */
+describe('pricing — chargedCommissionRate is the only rate helper left', () => {
+  it('returns the flat platform take for a commissioned role', () => {
+    expect(chargedCommissionRate('pandit')).toBe(20);
+    expect(chargedCommissionRate('astrologer')).toBe(20);
+  });
+
+  it('returns null for the roles no Commission writer charges', () => {
+    expect(chargedCommissionRate('temple')).toBeNull();
+    expect(chargedCommissionRate('gaushala')).toBeNull();
   });
 
   it('throws for unknown role', () => {
-    expect(() => getCommissionRate('alien' as never, 'pro')).toThrow();
+    expect(() => chargedCommissionRate('alien' as never)).toThrow();
+  });
+
+  it('takes no plan tier — there is no per-tier rate to ask for', () => {
+    expect(chargedCommissionRate.length).toBe(1);
   });
 });
 
@@ -84,7 +108,18 @@ describe('pricing — PLANS data integrity', () => {
     expect(JSON.stringify(PLANS)).not.toMatch(/499|1499|4999/);
   });
 
-  it('orders tiers from cheapest commission cut to richest', () => {
+  it('orders tiers from cheapest to richest', () => {
     expect(PLANS.map((p) => p.id)).toEqual(['free', 'basic', 'pro', 'enterprise']);
+  });
+
+  // PM-01: the tier copy carried "30% / 20% / 15% / 10% platform commission"
+  // bullets and a matching `commissionOverride`. Nothing charges a tiered rate.
+  it('no tier advertises a commission, because no tier changes one', () => {
+    for (const plan of PLANS) {
+      expect(plan, plan.id).not.toHaveProperty('commissionOverride');
+      for (const f of plan.features) {
+        expect(f.text, `${plan.id} bullet`).not.toMatch(/commission/i);
+      }
+    }
   });
 });

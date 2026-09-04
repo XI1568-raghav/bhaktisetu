@@ -1,8 +1,9 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../lib/theme';
 import { RoleGuard } from '../../lib/role-guard';
+import { useTabBarStyle } from '../../lib/portal-screen';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -11,14 +12,20 @@ function TabIcon({ name, color, size }: { name: IoniconsName; color: string; siz
 }
 
 export default function PriestLayout() {
+  const tabBarStyle = useTabBarStyle();
   return (
     <RoleGuard allowedRoles={['priest']}>
+      {/* Android hardware back returns to Home. `initialRouteName` is load-bearing:
+          expo-router orders tab routes by NAME LENGTH, so the default `firstRoute`
+          would land on whichever route has the shortest file name. */}
       <Tabs
+        backBehavior="initialRoute"
+        initialRouteName="dashboard"
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.saffron[600],
           tabBarInactiveTintColor: colors.stone[400],
-          tabBarStyle: styles.tabBar,
+          tabBarStyle: [styles.tabBar, tabBarStyle],
           tabBarLabelStyle: styles.tabBarLabel,
         }}
       >
@@ -48,6 +55,8 @@ export default function PriestLayout() {
         />
         <Tabs.Screen name="reviews" options={{ href: null, title: 'Reviews' }} />
         <Tabs.Screen name="messages" options={{ href: null, title: 'Messages' }} />
+      <Tabs.Screen name="offers" options={{ href: null, title: 'Puja Offers' }} />
+      <Tabs.Screen name="booking-detail" options={{ href: null, title: 'Booking' }} />
       </Tabs>
     </RoleGuard>
   );
@@ -58,9 +67,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopColor: colors.stone[200],
     borderTopWidth: 1,
-    height: Platform.OS === 'ios' ? 88 : 64,
-    paddingTop: 6,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 8,
   },
   tabBarLabel: { fontSize: 11, fontWeight: '600', marginTop: 2 },
 });

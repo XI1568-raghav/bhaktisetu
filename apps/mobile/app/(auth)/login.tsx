@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
@@ -80,146 +81,165 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.flex}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
       >
-        <View style={styles.header}>
-          <Text style={styles.brand}>🕉 Darshya</Text>
-          <Text style={styles.tagline}>Your devotional companion</Text>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.tabs}>
-            <TouchableOpacity
-              style={[styles.tab, tab === 'email' && styles.tabActive]}
-              onPress={() => setTab('email')}
-            >
-              <Ionicons
-                name="mail-outline"
-                size={16}
-                color={tab === 'email' ? colors.saffron[700] : colors.stone[500]}
-              />
-              <Text style={[styles.tabText, tab === 'email' && styles.tabTextActive]}>
-                Email
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, tab === 'phone' && styles.tabActive]}
-              onPress={() => setTab('phone')}
-            >
-              <Ionicons
-                name="phone-portrait-outline"
-                size={16}
-                color={tab === 'phone' ? colors.saffron[700] : colors.stone[500]}
-              />
-              <Text style={[styles.tabText, tab === 'phone' && styles.tabTextActive]}>
-                Phone OTP
-              </Text>
-            </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Text style={styles.brand}>🕉 Darshya</Text>
+            <Text style={styles.tagline}>Your devotional companion</Text>
           </View>
 
-          {tab === 'email' ? (
-            <View>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.stone[400]}
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-                editable={!busy}
-              />
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor={colors.stone[400]}
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                editable={!busy}
-              />
+          <View style={styles.card}>
+            <View style={styles.tabs}>
               <TouchableOpacity
-                style={[styles.primaryBtn, busy && styles.btnDisabled]}
-                onPress={handleEmailLogin}
-                disabled={busy}
+                style={[styles.tab, tab === 'email' && styles.tabActive]}
+                onPress={() => setTab('email')}
               >
-                {busy ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <Text style={styles.primaryBtnText}>Sign In</Text>
-                )}
+                <Ionicons
+                  name="mail-outline"
+                  size={16}
+                  color={tab === 'email' ? colors.saffron[700] : colors.stone[500]}
+                />
+                <Text style={[styles.tabText, tab === 'email' && styles.tabTextActive]}>
+                  Email
+                </Text>
               </TouchableOpacity>
-
-              <View style={styles.demoBox}>
-                <Text style={styles.demoTitle}>Demo accounts (password: demo123)</Text>
-                <View style={styles.demoChips}>
-                  {DEMO_HINTS.map((d) => (
-                    <TouchableOpacity
-                      key={d.email}
-                      style={styles.demoChip}
-                      onPress={() => fillDemo(d.email)}
-                    >
-                      <Text style={styles.demoChipText}>{d.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+              <TouchableOpacity
+                style={[styles.tab, tab === 'phone' && styles.tabActive]}
+                onPress={() => setTab('phone')}
+              >
+                <Ionicons
+                  name="phone-portrait-outline"
+                  size={16}
+                  color={tab === 'phone' ? colors.saffron[700] : colors.stone[500]}
+                />
+                <Text style={[styles.tabText, tab === 'phone' && styles.tabTextActive]}>
+                  Phone OTP
+                </Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            <View>
-              <Text style={styles.label}>Mobile number</Text>
-              <View style={styles.phoneRow}>
-                <View style={styles.countryCode}>
-                  <Text style={styles.countryCodeText}>+91</Text>
-                </View>
+
+            {tab === 'email' ? (
+              <View>
+                <Text style={styles.label}>Email</Text>
                 <TextInput
-                  style={[styles.input, styles.phoneInput]}
-                  placeholder="9876543210"
+                  style={styles.input}
+                  placeholder="you@example.com"
                   placeholderTextColor={colors.stone[400]}
-                  keyboardType="number-pad"
-                  maxLength={10}
-                  value={phone}
-                  onChangeText={(t) => setPhone(t.replace(/\D/g, ''))}
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
                   editable={!busy}
                 />
-              </View>
-              <TouchableOpacity
-                style={[styles.primaryBtn, busy && styles.btnDisabled]}
-                onPress={handlePhoneSubmit}
-                disabled={busy}
-              >
-                {busy ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <Text style={styles.primaryBtnText}>Send OTP</Text>
-                )}
-              </TouchableOpacity>
-              <Text style={styles.hint}>
-                We&apos;ll send a 6-digit code to your phone.
-              </Text>
-            </View>
-          )}
-        </View>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor={colors.stone[400]}
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                  editable={!busy}
+                />
+                <TouchableOpacity
+                  style={[styles.primaryBtn, busy && styles.btnDisabled]}
+                  onPress={handleEmailLogin}
+                  disabled={busy}
+                >
+                  {busy ? (
+                    <ActivityIndicator color={colors.white} />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>Sign In</Text>
+                  )}
+                </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.footerLink}
-          onPress={() => router.push('/(auth)/signup' as any)}
-        >
-          <Text style={styles.footerText}>
-            New to Darshya? <Text style={styles.footerTextBold}>Create account</Text>
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+                {/* The only entry point to password recovery. Without it both
+                    (auth)/forgot-password and (auth)/reset-password are
+                    unreachable, and a user who forgets their password has no
+                    in-app route back into the account. */}
+                <TouchableOpacity
+                  style={styles.forgotLink}
+                  onPress={() => router.push('/(auth)/forgot-password')}
+                  disabled={busy}
+                >
+                  <Text style={styles.forgotLinkText}>Forgot password?</Text>
+                </TouchableOpacity>
+
+                {/* Dev-only. A release build must never advertise demo logins —
+                    this block previously shipped an "admin@demo.com" one-tap chip
+                    and the password in plain text to every production user. */}
+                {__DEV__ ? (
+                  <View style={styles.demoBox}>
+                    <Text style={styles.demoTitle}>Demo accounts (password: demo123)</Text>
+                    <View style={styles.demoChips}>
+                      {DEMO_HINTS.map((d) => (
+                        <TouchableOpacity
+                          key={d.email}
+                          style={styles.demoChip}
+                          onPress={() => fillDemo(d.email)}
+                        >
+                          <Text style={styles.demoChipText}>{d.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              <View>
+                <Text style={styles.label}>Mobile number</Text>
+                <View style={styles.phoneRow}>
+                  <View style={styles.countryCode}>
+                    <Text style={styles.countryCodeText}>+91</Text>
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.phoneInput]}
+                    placeholder="9876543210"
+                    placeholderTextColor={colors.stone[400]}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                    value={phone}
+                    onChangeText={(t) => setPhone(t.replace(/\D/g, ''))}
+                    editable={!busy}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={[styles.primaryBtn, busy && styles.btnDisabled]}
+                  onPress={handlePhoneSubmit}
+                  disabled={busy}
+                >
+                  {busy ? (
+                    <ActivityIndicator color={colors.white} />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>Send OTP</Text>
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.hint}>
+                  We&apos;ll send a 6-digit code to your phone.
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={styles.footerLink}
+            onPress={() => router.push('/(auth)/signup' as any)}
+          >
+            <Text style={styles.footerText}>
+              New to Darshya? <Text style={styles.footerTextBold}>Create account</Text>
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -228,7 +248,10 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     padding: spacing.lg,
-    paddingTop: spacing['2xl'] + spacing.md,
+    // Was spacing['2xl'] + spacing.md (64) — a fixed constant standing in for
+    // the status bar. SafeAreaView now supplies the real top inset, so this is
+    // the design gap only; leaving 64 here would double-pad the notch.
+    paddingTop: spacing.xl,
   },
   header: { alignItems: 'center', marginBottom: spacing.xl },
   brand: {
@@ -305,6 +328,14 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.6 },
   primaryBtnText: { color: colors.white, fontSize: fontSize.lg, fontWeight: '700' },
+  forgotLink: {
+    alignSelf: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
+  forgotLinkText: { color: colors.saffron[600], fontSize: fontSize.base, fontWeight: '600' },
   hint: {
     fontSize: fontSize.sm,
     color: colors.stone[500],

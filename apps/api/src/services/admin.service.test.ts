@@ -89,7 +89,12 @@ describe('AdminService.getUsers', () => {
     const out = await service.getUsers({ role: 'PANDIT' });
 
     const listWhere = prismaMock.user.findMany.mock.calls[0]![0]!.where;
-    expect(listWhere.id).toEqual({ in: ['u-1'] });
+    // SCAL-04 (2026-08-28): the predicate used to be `id: { in: [...holders] }`
+    // — correct, but produced by reading every holder of the role and sending
+    // the id list back to Postgres. It is now the relation predicate that shape
+    // was imitating. Same contract ("the where clause carries the role"), same
+    // page/count agreement below; only the expression of it changed.
+    expect(listWhere.roleAssignments).toEqual({ some: { role: 'PANDIT' } });
     expect(prismaMock.user.count.mock.calls[0]![0]!.where).toEqual(listWhere);
     expect(out.users).toHaveLength(1);
     expect(out.users[0]!.id).toBe('u-1');

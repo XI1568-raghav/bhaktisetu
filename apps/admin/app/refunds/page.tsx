@@ -1,6 +1,7 @@
 import { adminApiBase, adminApiHeaders } from "../../lib/api";
 import { formatPrice } from "../../lib/format";
 import { RefundActions } from "./refund-actions";
+import { H1 } from "../../components/ui/heading-recipe";
 
 export const revalidate = 60;
 
@@ -42,15 +43,13 @@ async function fetchRefunds(): Promise<RefundResult> {
   }
 }
 
-const SAFFRON = "#E16318";
-
 export default async function RefundsPage() {
   const result = await fetchRefunds();
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl" style={{ color: SAFFRON }}>
+        <h1 className={H1.portal}>
           Pending refunds
         </h1>
         <p className="mt-2 text-sm text-stone-600">

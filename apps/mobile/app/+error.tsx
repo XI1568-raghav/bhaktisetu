@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
 import { colors, spacing, fontSize, borderRadius } from '../lib/theme';
 
@@ -30,8 +31,11 @@ export default function ErrorBoundary({ error, reset }: { error: Error; reset: (
     }
   };
 
+  // Safe area matters more here than anywhere else in the app: the Reload
+  // Pressable is the only control that recovers from a crash, and under Android
+  // 15 edge-to-edge an unpadded centred card can put it under the gesture bar.
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.card}>
         <Text style={styles.emoji}>🙏</Text>
         <Text style={styles.title}>Something went wrong</Text>
@@ -48,7 +52,7 @@ export default function ErrorBoundary({ error, reset }: { error: Error; reset: (
           <Text style={styles.buttonText}>Reload</Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

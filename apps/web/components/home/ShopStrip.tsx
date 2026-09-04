@@ -45,7 +45,7 @@ const PRODUCTS: Product[] = [
 export default function ShopStrip() {
   return (
     <section
-      className="py-6 md:py-8"
+      className="defer-paint py-6 md:py-8"
       style={{ background: 'var(--color-surface)' }}
       aria-labelledby="shop-strip-heading"
     >

@@ -32,22 +32,58 @@ B. Antim Sanskar Service Data
 - Family right to perpetual deletion regardless of legal retention
 
 C. Cross-border data flow
-- India primary servers (Render Mumbai + Supabase Mumbai)
-- Singapore standby for disaster recovery
-- UK + EU NRI access processed in India under DPDP framework
+
+> **OPS-10 correction (2026-08-28).** The four claims previously stated here —
+> Render Mumbai, Supabase Mumbai, a Singapore standby, and multi-region
+> Supabase — describe infrastructure this product has never had. They are
+> restated below as what the repository actually proves. Do NOT re-assert a
+> data-residency fact in a signed instrument that is not on this list; a
+> residency representation is a warranty, and every one of the removed lines
+> was false at the time it was written. Ground truth:
+> `docs/runbooks/disaster-recovery.md`.
+
+- Application + API servers: **Render `oregon` region (US West)**, not India.
+  Verified in `render.yaml:15` (API) and `render.yaml:56` (web).
+- Database: Supabase Postgres. **The region is not recorded anywhere in this
+  repository — [verify] in the Supabase dashboard and fill it in here before
+  signing any instrument that states a residency.**
+- **No standby region, no read replica, no warm spare exists** in any
+  geography. There is no disaster-recovery failover site.
+- Backups: daily `pg_dump` into Supabase Storage — i.e. **the same Supabase
+  project the database lives in**, so backup residency equals database
+  residency and a single account suspension takes both.
+- **There is no backup today.** The workflow's three secrets have never been
+  set; every run produced zero bytes (`OPS-02`). Do not represent a backup
+  regime, an RPO or an RTO to any counterparty until
+  `docs/runbooks/db-restore.md` → *DR drill history* has a row in it. Those
+  numbers are targets, and no restore has ever been performed.
+- **Forward-looking, and it changes this section the day it happens:** the code
+  now supports a second, offsite backup destination (`OPS-03`). If the owner
+  configures it with Cloudflare R2 — the recommended option — then **Cloudflare
+  becomes a processor of a full copy of the production database**, not merely a
+  DNS and CDN provider, and the R2 bucket's jurisdiction becomes part of the
+  backup residency answer. Update the sub-processor entry and the residency
+  statement below **before** signing anything, not after.
+- UK + EU NRI access processed under the DPDP framework
 - US NRI data processed with CCPA-compliant safeguards
 
 D. Sub-processor list (transparency)
 - Razorpay (payments — India)
-- Stripe (NRI payments — US)
 - Resend (email — Israel + US)
 - WhatsApp Cloud API (Meta — US)
 - PostHog (analytics — Hungary + US)
 - FCM (push notifications — Google US)
 - Sentry (error tracking — US)
-- Cloudflare (CDN + Pages — Global)
-- Render (web hosting — US + Singapore)
-- Supabase (database — multi-region)
+- Cloudflare (DNS + CDN — Global; Pages is **not** a hosting layer). **If R2 is
+  configured as the offsite backup destination (`OPS-03`), Cloudflare's role
+  changes to a processor of database backups and this entry must be rewritten.**
+- Render (web + API hosting — US, `oregon` region)
+- Supabase (database + backup storage — region [verify])
+
+> Stripe was listed here as "NRI payments — US" and has been removed: the
+> 2026-08-11 audit records the Stripe rail as removed and its webhook as
+> 404, so disclosing it named a processor that receives no personal data.
+> Razorpay is the only payment processor.
 
 E. AI processing disclosure
 - Customer support: AI-assisted classification of inquiries
@@ -202,8 +238,16 @@ DATA CATEGORIES:
 - Identity data (PAN for 80G receipts, where applicable)
 
 DATA RESIDENCY:
-- Primary: India
-- Standby: Singapore
+- Primary: [VERIFY BEFORE SIGNING — do not copy a region in from memory.
+  Application + API run on Render `oregon` (US West) per render.yaml:15/:56.
+  The Supabase database region is not recorded in the repository; read it
+  from the Supabase dashboard and state it here.]
+- Standby: NONE. There is no standby region, read replica or warm spare.
+  Do not represent one. (The earlier "Standby: Singapore" line was false —
+  see docs/runbooks/disaster-recovery.md.)
+- Cross-border transfer: personal data IS processed outside India today,
+  because the application tier is US-hosted. Any "no cross-border transfer"
+  representation must be reconciled with that fact, not asserted over it.
 - No cross-border transfer beyond [list of approved jurisdictions]
 
 PROCESSOR OBLIGATIONS:

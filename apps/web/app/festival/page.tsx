@@ -1,8 +1,11 @@
 // Festival index — gateway to /festival/[slug] pages. Drives seasonal
 // search traffic (Diwali / Holi / Navaratri queries spike hard).
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
-import { FESTIVALS, nextFestival } from '../../lib/festivals';
+import { FESTIVAL_YEAR, FESTIVALS, nextFestival } from '../../lib/festivals';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -57,7 +60,7 @@ export default function FestivalIndex() {
         <span className="inline-block px-2.5 py-0.5 mb-4 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
           📅 Tyohar Samay
         </span>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-3">
+        <h1 className={`${H1.catalogue} mb-3`}>
           Hindu festival calendar 2026
         </h1>
         <p className="text-surface-700 text-base leading-relaxed max-w-3xl">
@@ -80,7 +83,7 @@ export default function FestivalIndex() {
           </p>
           <Link
             href={`/festival/${upcoming.slug}`}
-            className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Plan {upcoming.name} →
           </Link>
@@ -100,6 +103,14 @@ export default function FestivalIndex() {
             </div>
             <p className="text-xs text-saffron-700 font-semibold mb-2">
               {fmtDate(f.date2026)} · {f.deity}
+              {/* CI-11: `date2026` is not always in 2026 — Maha Kumbh Mela's next
+                  occurrence is 2027-01-14. This grid sits under a "calendar 2026"
+                  heading, so an off-year date has to announce itself. */}
+              {!f.date2026.startsWith(`${FESTIVAL_YEAR}-`) && (
+                <span className="ml-2 rounded bg-surface-200 px-1.5 py-0.5 text-xs font-medium text-surface-700">
+                  Not in {FESTIVAL_YEAR}
+                </span>
+              )}
             </p>
             <p className="text-sm text-surface-700 leading-relaxed line-clamp-3">
               {f.description}

@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # Support Macros — Darshya CS (Hindi v1, Devanagari)
 
 > **Doctrine source**: `docs/company/07-cs.md` — verbatim: _"A devotee complaint is not a UX bug — it is a disrupted spiritual experience. We respond to the emotion first, the ticket second."_
@@ -30,7 +41,7 @@
 > 1. **पूरा रिफंड** ₹{amountInr} — Razorpay rails पर 5-7 banking days में वापस, या
 >    (Poora refund ₹{amountInr} — Razorpay rails par 5-7 banking days mein wapas, ya)
 > 2. **मुफ्त पुनः पूजा** उसी पंडित जी के साथ या किसी अन्य verified पंडित जी के साथ, या
->    (Muft punah-puja usi pandit ji ke saath ya kisi anya verified pandit ji ke saath, ya)
+>    (Muft punah-puja usi pandit ji ke saath ya kisi anya pandit ji ke saath, ya)
 > 3. **वॉलेट क्रेडिट** ₹{amountInr × 1.25} (25% बोनस, 90 दिन वैध)
 >    (Wallet credit ₹{amountInr × 1.25} — 25% bonus, 90 din valid)
 >
@@ -61,7 +72,7 @@
 >
 > आज ही (48 घंटे के अंदर) आपको **किसी अन्य verified पंडित जी** से जोड़ रहे हैं — उसी date/time slot पर, कोई अतिरिक्त शुल्क नहीं। पंडित ID + WhatsApp 2 घंटे में मिलेगा।
 >
-> (Aaj hi 48 ghante ke andar aapko doosre verified pandit ji se assign kar rahe hain — same date/time slot, no extra charge. Pandit ID + WhatsApp 2 ghante mein milega.)
+> (Aaj hi 48 ghante ke andar aapko doosre pandit ji se assign kar rahe hain — same date/time slot, no extra charge. Pandit ID + WhatsApp 2 ghante mein milega.)
 >
 > अगर पुनर्निर्धारण संभव नहीं → **पूरा रिफंड** ₹{amountInr} 5-7 banking days में।
 >

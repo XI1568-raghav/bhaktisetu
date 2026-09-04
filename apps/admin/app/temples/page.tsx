@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { adminApiBase, adminApiHeaders } from "../../lib/api";
+import { H1 } from "../../components/ui/heading-recipe";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function TemplesAdminPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-stone-900 sm:text-3xl">Temple aarti timings</h1>
+        <h1 className={H1.portal}>Temple aarti timings</h1>
         <p className="mt-2 text-sm text-stone-600">
           Correct best-effort timings per temple. Each row links to the editor.
         </p>

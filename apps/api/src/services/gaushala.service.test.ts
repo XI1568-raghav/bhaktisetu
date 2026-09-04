@@ -128,6 +128,13 @@ describe('GaushalaService.adoptCow', () => {
 
   it('throws when cow already adopted', async () => {
     const service = await loadService();
+    // TC-11: this used to lean on cow_002 arriving pre-adopted by "Rajesh
+    // Kumar" — one of six invented donors baked into the fixture, which the
+    // detail page rendered as "This cow has been adopted by {name}" and which
+    // suppressed availableCows. Those are gone, so the precondition is
+    // established here instead. The assertion is unchanged: a second adoption
+    // of the same cow must be rejected.
+    service.adoptCow('user-0', 'cow_002', 'plan_monthly');
     expect(() => service.adoptCow('user-1', 'cow_002', 'plan_monthly')).toThrow(/already been adopted/);
   });
 

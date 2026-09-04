@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # Support Macros — Darshya CS (Tamil v1)
 
 > **Doctrine source**: `docs/company/07-cs.md` — verbatim: _"A devotee complaint is not a UX bug — it is a disrupted spiritual experience. We respond to the emotion first, the ticket second."_
@@ -30,7 +41,7 @@
 > 1. **முழு ரிஃபண்ட்** ₹{amountInr} — Razorpay மூலம் 5-7 banking days இல் திரும்பும், அல்லது
 >    (Muzhu refund ₹{amountInr} — Razorpay moolam 5-7 banking days il thirumbum, alladhu)
 > 2. **இலவச மீள்-பூஜை** அதே பண்டிதரோடு அல்லது வேறு verified பண்டிதரோடு, அல்லது
->    (Ilavasa meel-pooja athe panditharodu alladhu vēru verified panditharodu, alladhu)
+>    (Ilavasa meel-pooja athe panditharodu alladhu vēru panditharodu, alladhu)
 > 3. **Wallet credit** ₹{amountInr × 1.25} (25% bonus, 90 நாட்கள் செல்லும்)
 >    (Wallet credit ₹{amountInr × 1.25} — 25% bonus, 90 naatkal sellum)
 >
@@ -61,7 +72,7 @@
 >
 > இன்றே (48 மணி நேரத்திற்குள்) **வேறு verified பண்டிதரை** ஒதுக்குகிறோம் — அதே தேதி/நேரம், கூடுதல் கட்டணம் இல்லை. பண்டிதர் ID + WhatsApp 2 மணி நேரத்தில் கிடைக்கும்.
 >
-> (Indre 48 mani neraththirkul vēru verified panditharai othukkugirom — athe thethi/neram, koodudal kattanam illai. Pandithar ID + WhatsApp 2 mani neraththil kidaikkum.)
+> (Indre 48 mani neraththirkul vēru panditharai othukkugirom — athe thethi/neram, koodudal kattanam illai. Pandithar ID + WhatsApp 2 mani neraththil kidaikkum.)
 >
 > மீள்-பதிவு சாத்தியமில்லை எனில் → **முழு ரிஃபண்ட்** ₹{amountInr} 5-7 banking days இல்.
 >

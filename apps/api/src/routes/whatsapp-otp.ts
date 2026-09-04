@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { createEmailSession } from '../lib/email-session.js';
 import { sendWhatsappTemplate, whatsapp } from '../lib/whatsapp.js';
+import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
 
 // P1-1 (2026-07-17): mirror the 10/min per-IP sensitive-auth rate limit that
 // /auth/send-otp + /auth/login already carry. Without this the WhatsApp-OTP
@@ -130,7 +131,7 @@ export async function whatsappOtpRoutes(server: FastifyInstance) {
         data: {
           phone,
           fullName: 'Devotee',
-          preferredLanguage: 'hi',
+          preferredLanguage: SIGNUP_DEFAULT_LANGUAGE,
         },
       });
     }

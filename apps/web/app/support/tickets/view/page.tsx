@@ -28,6 +28,8 @@ import {
  postMessage,
 } from '../../../../lib/support-api';
 import { useAuth } from '../../../../lib/auth-context';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 import {
  StatusBadge,
  PriorityBadge,
@@ -130,7 +132,7 @@ function TicketDetailInner() {
  </p>
  <button
  onClick={() => router.push('/support/tickets')}
- className="px-4 py-2 rounded-lg bg-saffron-600 text-white text-sm font-semibold hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Back to my tickets
  </button>
@@ -162,7 +164,7 @@ function TicketDetailInner() {
  {cat?.emoji} {cat?.name ?? ticket.category}
  </span>
  </div>
- <h1 className="text-xl font-semibold text-surface-900">{ticket.subject}</h1>
+ <h1 className={H1.portal}>{ticket.subject}</h1>
  <div className="flex items-center gap-2 mt-3 flex-wrap">
  <StatusBadge status={ticket.status} />
  <PriorityBadge priority={ticket.priority} />
@@ -232,7 +234,7 @@ function TicketDetailInner() {
  <button
  onClick={sendReply}
  disabled={sending || !reply.trim()}
- className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-saffron-600 hover:bg-saffron-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
  {sending ? 'Sending…' : 'Send reply'}

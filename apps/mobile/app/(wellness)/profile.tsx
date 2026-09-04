@@ -7,9 +7,32 @@ import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+// AUTH-09: the confirmation used to ask "Are you sure?" without saying what
+// it was sure about. POST /auth/logout defaults to scope 'global'.
+import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
-const FALLBACK_SPECIALIZATIONS = ['Hatha', 'Ashtanga', 'Pranayama', 'Meditation', 'Restorative'];
-const FALLBACK_CERTS = ['RYT-500 Yoga Alliance', 'Vipassana Teacher Training (10-day)'];
+/**
+ * NO FABRICATED CREDENTIALS ON THIS SCREEN.
+ *
+ * This file used to carry two literals:
+ *
+ *   const FALLBACK_SPECIALIZATIONS = ['Hatha', 'Ashtanga', 'Pranayama', …];
+ *   const FALLBACK_CERTS = ['RYT-500 Yoga Alliance',
+ *                           'Vipassana Teacher Training (10-day)'];
+ *
+ * and rendered the certifications one UNCONDITIONALLY — every instructor who
+ * signed up saw, and could screenshot, a profile stating they hold an RYT-500
+ * from Yoga Alliance and a 10-day Vipassana teacher training. Neither is stored
+ * anywhere: there is no certifications column, no upload, no verification step,
+ * and no endpoint that returns one for the signed-in user. That is not a
+ * placeholder, it is a qualification claim about a real person's fitness to
+ * teach a physical practice, published by us on their behalf.
+ *
+ * Both are deleted. The certifications section is gone rather than emptied,
+ * because an empty "Certifications" heading still implies the platform tracks
+ * them. Specializations now show only what the API actually returned, and
+ * `EmptyHint` says so when it returned nothing.
+ */
 
 export default function WellnessProfile() {
   const { user, signOut } = useAuth();
@@ -20,7 +43,7 @@ export default function WellnessProfile() {
     (i) => i.name === user?.fullName,
   );
 
-  const specializations = me?.specializations ?? FALLBACK_SPECIALIZATIONS;
+  const specializations = me?.specializations ?? [];
 
   async function onRefresh() {
     setRefreshing(true);
@@ -29,7 +52,7 @@ export default function WellnessProfile() {
   }
 
   function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure?', [
+    Alert.alert(SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
@@ -79,14 +102,9 @@ export default function WellnessProfile() {
         </Section>
       ) : null}
 
-      <Section title="Certifications">
-        {FALLBACK_CERTS.map((c) => (
-          <View key={c} style={styles.row}>
-            <Ionicons name="ribbon" size={18} color={colors.amber[500]} />
-            <Text style={styles.rowText}>{c}</Text>
-          </View>
-        ))}
-      </Section>
+      {/* The "Certifications" section stood here. See the note at the top of
+          this file — it published two credentials the platform has never held,
+          for every instructor, unconditionally. */}
 
       <Section title="Specializations">
         {specializations.length === 0 ? (

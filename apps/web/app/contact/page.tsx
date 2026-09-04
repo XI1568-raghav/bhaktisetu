@@ -2,6 +2,8 @@
 
 import { Mail, Clock, Send, Briefcase, Handshake, Scale, Newspaper, MessageSquare } from "lucide-react";
 import Link from "next/link";
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 import {
   COMPANY,
   grievanceOfficerLine,
@@ -63,17 +65,12 @@ export default function ContactPage() {
             Contact Us
           </p>
           <h1
-            className="text-2xl sm:text-3xl font-bold mb-4"
-            style={{
-              fontFamily: "var(--font-display)",
-              color: "var(--color-text)",
-              lineHeight: "var(--leading-tight)",
-            }}
+            className={`${H1.catalogue} mb-4`}
           >
             We&apos;re Here to Help
           </h1>
           <p
-            className="text-sm max-w-xl leading-relaxed"
+            className="prose-body max-w-xl leading-relaxed"
             style={{ color: "var(--color-text-muted)" }}
           >
             Whether you have a question about a puja booking, need technical
@@ -273,8 +270,7 @@ export default function ContactPage() {
                   </div>
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg btn-press transition-colors"
-                    style={{ background: "var(--color-primary)", color: "var(--color-text-inverse)" }}
+                    className={buttonClass('primary', 'md', 'btn-press')}
                   >
                     <Send className="w-3.5 h-3.5" />
                     Open in email

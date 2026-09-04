@@ -36,7 +36,7 @@ const WEB_HOST = 'darshya.online';
 const SCHEME = 'darshya:';
 
 export function parseDeepLink(rawUrl: string | null | undefined): DeepLinkRoute {
-  const fallback: DeepLinkRoute = { pathname: '/(devotee)/home' };
+  const fallback: DeepLinkRoute = { pathname: '/(devotee)' };
   if (!rawUrl) return fallback;
 
   // Normalize darshya://x and https://darshya.online/x to a single shape.
@@ -69,26 +69,26 @@ export function parseDeepLink(rawUrl: string | null | undefined): DeepLinkRoute 
 
   switch (head) {
     case 'puja':
-      if (decoded) return { pathname: '/(devotee)/puja-details', params: { slug: decoded } };
+      if (decoded) return { pathname: '/(devotee)/puja-book', params: { slug: decoded } };
       return fallback;
     case 'darshan':
       if (decoded) return { pathname: '/(devotee)/darshan-player', params: { id: decoded } };
       return fallback;
     case 'booking':
-      if (decoded) return { pathname: '/(devotee)/booking-detail', params: { bn: decoded } };
+      if (decoded) return { pathname: '/(devotee)/bookings', params: { bn: decoded } };
       return fallback;
     case 'consultation':
-      if (decoded) return { pathname: '/(devotee)/consultation', params: { id: decoded } };
+      if (decoded) return { pathname: '/(devotee)/consultations', params: { id: decoded } };
       return fallback;
     case 'chat':
     case 'inbox':
-      if (decoded) return { pathname: '/(devotee)/inbox', params: { thread: decoded } };
-      return { pathname: '/(devotee)/inbox' };
+      if (decoded) return { pathname: '/(devotee)/messages', params: { thread: decoded } };
+      return { pathname: '/(devotee)/messages' };
     case 'order':
-      if (decoded) return { pathname: '/(devotee)/order-detail', params: { id: decoded } };
+      if (decoded) return { pathname: '/(devotee)/store', params: { id: decoded } };
       return fallback;
     case 'today':
-      return { pathname: '/(devotee)/today' };
+      return fallback;
     default:
       return fallback;
   }

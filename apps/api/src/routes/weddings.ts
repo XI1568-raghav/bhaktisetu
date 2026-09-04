@@ -22,10 +22,27 @@ const InquiryBody = z.object({
 });
 
 export async function weddingRoutes(server: FastifyInstance) {
-  // POST /muhurat — compute ranked muhurat list.
-  // Auth gate: prior version was open and let an attacker burn the
-  // mhah-panchang compute loop (Ayanamsa + dasha calc) in a tight loop.
-  server.post('/muhurat', { preHandler: [authenticateUser] }, async (request, reply) => {
+  // POST /muhurat — compute ranked muhurat list. PUBLIC, deliberately.
+  //
+  // PAR-14. This route used to sit behind `authenticateUser`, added to stop an
+  // attacker burning the mhah-panchang compute loop (Ayanamsa + dasha calc) in
+  // a tight loop. That control was the wrong shape for the risk: the concern is
+  // REQUEST RATE, and authentication does not cap a rate — a signed-up attacker
+  // has an account in thirty seconds and the loop is just as burnable, only now
+  // with a session. Meanwhile the gate broke the product: /inquiry below emails
+  // https://darshya.online/weddings/muhurat to brand-new prospects who are by
+  // definition signed out, so lead-gen traffic landed on a sign-in wall.
+  //
+  // The control that actually caps compute is a rate limit, so that is what is
+  // attached. `config.rateLimit` is read by @fastify/rate-limit's own onRoute
+  // hook at registration time, and server.ts's per-prefix override hook bails
+  // out when a route already declares one (`if (existing) return`), so this
+  // value wins over the global 100/min. Anonymous callers key on
+  // `ip:<clientIp>` via rateLimitKey — 10/min per IP against a loop that takes
+  // milliseconds per day scanned.
+  server.post('/muhurat', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
     const parsed = MuhuratInputSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply

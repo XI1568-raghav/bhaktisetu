@@ -22,6 +22,9 @@ import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
@@ -91,6 +94,10 @@ function CheckoutContent() {
  const [orderPlaced, setOrderPlaced] = useState(false);
  const [orderNumber, setOrderNumber] = useState<string | null>(null);
  const [placeError, setPlaceError] = useState<string | null>(null);
+ // AUTH-06: the flag `friendlyApiError` has returned since P1 #208 that no
+ // page read. Here it decides whether the buyer gets a route back into their
+ // session or just a sentence telling them to find one.
+ const [placeReauth, setPlaceReauth] = useState(false);
  // P0 #S-08 (2026-07-09): idempotency key for the create-order POST. Held in a
  // ref so retries within one checkout attempt share a key (server dedupes),
  // and regenerated for each fresh attempt. crypto.randomUUID is available in
@@ -126,7 +133,7 @@ function CheckoutContent() {
  <p className="text-surface-500 mb-6">Add some items to your cart first.</p>
  <Link
  href="/store"
- className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700"
+ className={buttonClass('primary', 'md')}
  >
  Browse Store
  </Link>
@@ -181,6 +188,7 @@ function CheckoutContent() {
  async function handlePlaceOrder() {
  setPlacing(true);
  setPlaceError(null);
+ setPlaceReauth(false);
  // P0 #S-08: (re)generate an idempotency key for this attempt. If a key is
  // already set (e.g. this is a retry of the same attempt after a network
  // error), reuse it so the server returns the existing order. Clearing it
@@ -354,7 +362,13 @@ function CheckoutContent() {
  } else if (/payment cancelled/i.test(raw)) {
  setPlaceError('Payment was cancelled. Your cart is still saved.');
  } else {
- setPlaceError(friendlyApiError(err).message);
+ // AUTH-06: this read only `.message` and dropped `reauth`, at the highest
+ // -intent moment in the funnel. A session that died between opening the
+ // cart and pressing Place Order left one line of red text saying "sign in
+ // again" with no way to do it — and the cart, correctly, still full.
+ const { message, reauth: needsReauth } = friendlyApiError(err);
+ setPlaceError(message);
+ setPlaceReauth(needsReauth);
  }
  } finally {
  setPlacing(false);
@@ -400,7 +414,7 @@ function CheckoutContent() {
  Back to Cart
  </Link>
 
- <h1 className="text-2xl font-bold text-surface-800 mb-8">Checkout</h1>
+ <h1 className={`${H1.portal} mb-8`}>Checkout</h1>
 
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
  {/* Left: Form */}
@@ -598,7 +612,14 @@ function CheckoutContent() {
  </button>
 
  {placeError && (
+ placeReauth ? (
+ <ReauthPrompt
+ message={placeError}
+ className="mt-3 flex flex-col items-center gap-2 text-center"
+ />
+ ) : (
  <p className="text-xs text-red-600 text-center mt-3">{placeError}</p>
+ )
  )}
  <p className="text-xs text-surface-400 text-center mt-3">
  By placing this order, you agree to our Terms of Service.

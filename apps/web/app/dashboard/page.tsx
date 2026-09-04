@@ -28,8 +28,13 @@ import {
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: true ONLY for 401. A 403 is a suspended account, and offering
+ // sign-in there loops back to the same refusal.
+ loadErrorIsReauth,
 } from '../../lib/api-config';
 import { H1 } from '../../components/ui/heading-recipe';
+import { buttonClass } from '../../components/ui/button-recipe';
+import ReauthPrompt from '../../components/ReauthPrompt';
 
 interface Booking {
  id: string;
@@ -74,7 +79,7 @@ const statusLabels: Record<string, string> = {
 };
 
 function DashboardContent() {
- const { user, session, signOut } = useAuth();
+ const { user, session } = useAuth();
  const [bookings, setBookings] = useState<Booking[]>([]);
  const [bookingsCount, setBookingsCount] = useState(0);
  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
@@ -84,6 +89,10 @@ function DashboardContent() {
  // devotee who already had confirmed pujas, with no error anywhere. Telling
  // someone their bookings do not exist is worse than telling them we are down.
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: the decision `loadErrorMessage` makes internally and this page
+ // threw away. A devotee whose session expired mid-session was told to sign in
+ // again beside a Retry that could only 401 forever.
+ const [loadReauth, setLoadReauth] = useState(false);
 
  const fetchDashboardData = useCallback(async () => {
  if (!session?.accessToken) return;
@@ -105,6 +114,7 @@ function DashboardContent() {
  setBookingsCount(bookingsData.pagination?.total || 0);
  } else {
  setLoadError(loadErrorMessage(bookingsRes));
+ setLoadReauth(loadErrorIsReauth(bookingsRes));
  }
 
  if (subscriptionRes.ok) {
@@ -113,6 +123,7 @@ function DashboardContent() {
  }
  } catch (err) {
  setLoadError(loadErrorMessage(err));
+ setLoadReauth(loadErrorIsReauth(err));
  } finally {
  setIsLoadingData(false);
  }
@@ -160,13 +171,22 @@ function DashboardContent() {
  >
  <Settings className="w-5 h-5 text-surface-600" />
  </a>
- <button
- onClick={signOut}
+ {/* AUTH-09: this was `onClick={signOut}`, which sends the DEFAULT scope —
+     global. POST /auth/logout burns every refresh_token_jtis row the account
+     holds, so pressing this on a shared machine also ended the session on the
+     user's phone, and nothing on this screen or the one it landed on said so.
+
+     /auth/logout runs the identical global sign-out and puts "this signs you
+     out on all your devices" on screen while it happens. Same fix already
+     applied to components/NavAuthButton.tsx. A user who wants the narrow
+     scope has the choice on /profile → Security. */}
+ <a
+ href="/auth/logout"
  className="p-2.5 bg-surface-800/10 hover:bg-surface-800/20 rounded-lg transition-colors"
  title="Sign Out"
  >
  <LogOut className="w-5 h-5 text-surface-600" />
- </button>
+ </a>
  </div>
  </div>
  </div>
@@ -257,13 +277,22 @@ function DashboardContent() {
     that reads as "your bookings were cancelled". */
  <div role="alert" className="bg-amber-50 rounded-xl p-6 border border-amber-200 text-center">
  <p className="text-sm text-amber-800">{loadError}</p>
+ {/*
+   AUTH-06: the sign-in link REPLACES Retry — it does not join it. Leaving
+   Retry beside it keeps the one control that cannot work (it re-fires with
+   the same expired token) as the bigger, more familiar target.
+ */}
+ {loadReauth ? (
+ <ReauthPrompt message="" className="mt-3 flex flex-col items-center gap-3" />
+ ) : (
  <button
  type="button"
  onClick={() => { setIsLoadingData(true); void fetchDashboardData(); }}
- className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg text-sm hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md', 'mt-3')}
  >
  Retry
  </button>
+ )}
  </div>
  ) : bookings.length === 0 ? (
  <div className="bg-[var(--color-surface)] rounded-xl p-8 border border-[var(--color-border)] text-center">
@@ -276,7 +305,7 @@ function DashboardContent() {
  </p>
  <a
  href="/pujas"
- className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-semibold rounded-lg text-sm hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  <Flame className="w-4 h-4" />
  Explore Pujas

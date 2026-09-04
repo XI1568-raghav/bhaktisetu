@@ -164,7 +164,7 @@ export default function WaitlistScreen() {
           <Text style={styles.eyebrow}>Early access</Text>
           <Text style={styles.title}>Join the Darshya waitlist</Text>
           <Text style={styles.subtitle}>
-            India's devotional super-app. Live darshan, verified pujas, 80G donations and
+            India's devotional super-app. Live darshan, pujas with video proof, donations and
             jyotish — all in one place. Reserve your spot.
           </Text>
 

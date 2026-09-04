@@ -1,6 +1,20 @@
 #!/usr/bin/env node
 // Onboarding Agent — generates 7-touch drip sequence per role.
+//
+// TC-01 / TC-08: this fleet writes mail the founder actually sends, so the two
+// unbacked trust claims are gated here rather than typed. See _claims.mjs for
+// why neither an 80G deduction nor a "verified pandit" can be promised today.
+// The DONEE's own 12A/80G upload steps below are untouched: collecting a
+// temple's or gaushala's registration is not a claim about Darshya's.
 import { writeReport, TODAY, isoNow, fetchJson } from './_lib.mjs';
+import {
+  DONATION_RECEIPT_LINE,
+  NO_80G_DISCLOSURE,
+  RECEIPT_NOUN,
+  SUPPLY_BADGE_LINE,
+  verifiedNoun,
+  withEightyG,
+} from './_claims.mjs';
 
 const SEQUENCES = {
   devotee: [
@@ -9,7 +23,7 @@ const SEQUENCES = {
 Your Darshya account is live. Three things to try this week:
 
 1. Watch a live darshan: darshya.online/temples (10+ temples streaming now)
-2. Book your first puja with a verified pandit (₹999 starting): darshya.online/pujas
+2. Book your first puja with a ${verifiedNoun('pandit')} (₹999 starting): darshya.online/pujas
 3. Start a 5-min daily practice: darshya.online/sanskrit
 
 Reply to this email if you have a special intention — we'll help find the right pandit.` },
@@ -31,12 +45,12 @@ Includes Sanskrit + transliteration + meaning + audio.` },
 - Sri Suktam at Tirupati (₹1,800) — 18 booked
 - Govardhan puja at Vrindavan (₹2,400) — 15 booked
 
-Video proof sent within 24h. 80G receipt if temple offers.
+Video proof sent within 24h. A numbered ${RECEIPT_NOUN} PDF follows by email.${withEightyG(' It is an 80G receipt where the temple holds its own registration.')}
 
 darshya.online/pujas` },
-    { day: 12, subject: "🐄 Adopt a cow for ₹2,000/month — and get 80G", body: `One verified gaushala. One cow. One monthly photo update.
+    { day: 12, subject: `🐄 Adopt a cow for ₹2,000/month${withEightyG(' — and get 80G')}`, body: `One listed gaushala. One cow. One monthly photo update.
 
-80G certificate issued within 24 hours.
+${DONATION_RECEIPT_LINE}
 
 More: darshya.online/gaushalas` },
     { day: 21, subject: "Are you NRI? Read this", body: `If you're outside India, you have a dedicated tier:
@@ -67,12 +81,10 @@ We pay T+1 via UPI/IMPS. 20% platform commission. KYC takes 24h.` },
     { day: 1, subject: "KYC pending — payouts blocked until uploaded", body: `Aadhaar + PAN required for legal payout. 24h verification.
 
 Upload: darshya.online/priest/kyc` },
-    { day: 3, subject: "Why verified pandits get 3x more bookings", body: `Verification badge moves you to top of search.
-
-Devotees filter for verified-only by default. Unverified profiles get 80% fewer impressions.
+    { day: 3, subject: `What actually moves your ${verifiedNoun('pandit')} profile up`, body: `${SUPPLY_BADGE_LINE}
 
 24h KYC: darshya.online/priest/kyc` },
-    { day: 7, subject: "Add your puja offerings — first booking comes 2-3 days after", body: `Median time-to-first-booking for verified pandits: 3 days.
+    { day: 7, subject: "Add your puja offerings — first booking comes 2-3 days after", body: `Median time-to-first-booking for ${verifiedNoun('pandits')} with a complete profile: 3 days.
 
 Minimum: 3 puja types with pricing.
 
@@ -113,7 +125,7 @@ Guide: darshya.online/docs/live-darshan-setup` },
 
 darshya.online/gaushala-portal
 
-80G donations: receipts auto-generated within 24h.` },
+${NO_80G_DISCLOSURE}` },
     { day: 3, subject: "Adopt-a-cow tier converts at 8% — vs 1.2% for generic donations", body: `Reason: emotional anchor (a specific cow, a specific name, monthly photo).
 
 Setup: 5 cows, 5 names, 5 photos. ₹2,000/month each.
@@ -137,7 +149,7 @@ Medusa-powered. Razorpay/UPI ready. We take 8% platform fee.` },
 2. Set per-minute consult rate (₹15-₹120/min standard)
 3. Set availability slots
 
-First free consultation matched within 7 days for verified astrologers.` },
+First free consultation matched within 7 days for ${verifiedNoun('astrologers')} once your profile is approved.` },
   ],
   wellness: [
     { day: 0, subject: "Welcome — Darshya wellness instructor portal is live", body: `Setup:

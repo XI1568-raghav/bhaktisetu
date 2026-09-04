@@ -3,6 +3,8 @@
 // Pulls today's panchang + suggests an article topic + draft outline.
 // Output: docs/agent-reports/YYYY-MM-DD-content-draft.md
 import { fetchJson, writeReport, TODAY, API_BASE } from './_lib.mjs';
+// TC-08 — no vetting pipeline exists; see ./_claims.mjs.
+import { verifiedNoun } from './_claims.mjs';
 
 const TOPICS = {
   Mon: { theme: 'Shiva', deity: 'Lord Shiva', knowledge: ['Rudra Suktam', 'Lingashtakam', 'Mahamrityunjaya'] },
@@ -60,7 +62,7 @@ async function run() {
 2. Daily 5-min practice (mantra + visualization)
 3. Free downloadable: ${topic.knowledge.join(', ')}
 4. Live darshan link — temples on Darshya broadcasting today
-5. CTA: book a custom puja with a verified pandit (₹999 starting)
+5. CTA: book a custom puja with a ${verifiedNoun('pandit')} (₹999 starting)
 
 **Target keyword cluster**: \`${topic.deity.toLowerCase()} worship\`, \`${dk}day puja\`, \`${topic.knowledge[0].toLowerCase()} meaning\`
 

@@ -1,18 +1,40 @@
 import crypto from 'node:crypto';
 
 /**
- * FCM HTTP v1 client (singleton). Uses direct fetch + service-account JWT
- * (signed with Node crypto, RS256) so we don't add the heavy `firebase-admin`
- * dependency. firebase-admin isn't in package.json, and adding it pulls in a
- * gRPC native binding tree we don't need on Render free tier.
+ * Device-push client (singleton). TWO rails, dispatched on token SHAPE:
  *
- * Env vars (all required to enable):
+ *   1. Expo Push Service  — `ExponentPushToken[…]`, POSTed to exp.host.
+ *      This is the rail apps/mobile speaks. `expo-notifications`
+ *      `getExpoPushTokenAsync()` returns the SAME bracketed format on iOS and
+ *      on Android, so one stored column and one send path cover both stores.
+ *      Needs no credentials in THIS service: the FCM v1 service account and
+ *      the APNs key live in the EAS project (expo.dev → credentials), and
+ *      Expo fans out to FCM/APNs on our behalf. `EXPO_ACCESS_TOKEN` is
+ *      OPTIONAL and only turns on Expo's enhanced-security mode.
+ *
+ *   2. FCM HTTP v1 — raw `…:APA91b…` registration tokens, for any client that
+ *      obtains one directly (none today; kept because rows may already exist
+ *      and because a future bare-RN client would land here). Direct fetch +
+ *      service-account JWT (Node crypto, RS256) so we don't add the heavy
+ *      `firebase-admin` dependency: it isn't in package.json and it pulls in a
+ *      gRPC native binding tree we don't need on Render free tier.
+ *
+ * NOTIF-17: rail 1 exists because the two ends did not agree. The mobile client
+ * has always produced an Expo token (~41 chars, bracketed) while this file
+ * validated with `isFcmRegistrationToken` (length ≥ 60, `[A-Za-z0-9_:.-]+`) —
+ * the Expo token fails BOTH checks, so `POST /register-token` answered a hard
+ * 400 and no phone could ever register. The fix is a sibling validator plus
+ * shape dispatch, NOT a loosened `isFcmRegistrationToken`: that function is the
+ * only thing stopping apps/web from posting a Web Push endpoint URL (NOTIF-07).
+ *
+ * FCM env vars (all required to enable rail 2):
  *   FCM_PROJECT_ID    — e.g. "darshya-prod"
  *   FCM_CLIENT_EMAIL  — service-account email
  *   FCM_PRIVATE_KEY   — full PEM, with BEGIN/END lines. Pass via env with
  *                       literal "\n" allowed; we normalise.
  *
- * If any is missing → `enabled = false` and every send returns `{skipped:true}`.
+ * If any is missing → `enabled = false` and every rail-2 send returns
+ * `{skipped:true}`. Rail 1 is unaffected by those vars.
  * Tokens are never logged in full.
  */
 
@@ -25,6 +47,22 @@ const enabled = !!(projectId && clientEmail && privateKey);
 
 const FCM_AUDIENCE = 'https://oauth2.googleapis.com/token';
 const FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+
+const EXPO_PUSH_ENDPOINT = 'https://exp.host/--/api/v2/push/send';
+/**
+ * OPTIONAL. Only needed if the owner turns on "enhanced security for push
+ * notifications" in the Expo dashboard; without it Expo accepts unauthenticated
+ * sends to tokens belonging to the project. Never logged.
+ */
+const expoAccessToken = process.env.EXPO_ACCESS_TOKEN ?? '';
+/**
+ * Rail 1 needs no server-side credentials, so it is always available. This is
+ * deliberately NOT folded into `fcmConfig.enabled`: that flag answers "are FCM
+ * v1 service-account creds present?" and /health/channels reports it as such.
+ * Claiming push is configured because a credential-free HTTP endpoint exists
+ * would be exactly the dark-transport-reads-green failure NOTIF-03 fixed.
+ */
+const expoEnabled = true;
 
 interface CachedToken {
   accessToken: string;
@@ -127,10 +165,142 @@ export function isFcmRegistrationToken(token: string): boolean {
   if (/^\s*[{[]/.test(t)) return false; // a serialised PushSubscription
   if (/^https?:/i.test(t) || t.includes('://')) return false; // a push endpoint URL
   if (/\s/.test(t)) return false;
+  if (/^[0-9a-f]{64}$/i.test(t)) return false; // a raw APNs device token — 64 hex, not FCM
   return /^[A-Za-z0-9_:.-]+$/.test(t);
 }
 
+/**
+ * Is this an Expo Push Service token?
+ *
+ * The only shape `expo-notifications` `getExpoPushTokenAsync()` produces:
+ * `ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]` (the modern `ExpoPushToken[…]`
+ * spelling is accepted too). Identical on iOS and Android — that platform
+ * symmetry is the whole reason this rail was chosen over raw FCM/APNs, where
+ * iOS would hand back a 64-hex APNs token that FCM cannot deliver to.
+ *
+ * Strict on purpose. `expo-server-sdk`'s own `isExpoPushToken` also accepts a
+ * bare UUID (a legacy form nothing in this product emits) and does not look at
+ * the payload between the brackets at all; a validator that waves through
+ * `ExponentPushToken[]` or `ExponentPushToken[{"endpoint":…}]` is no better
+ * than no validator. We require a non-empty URL-safe body of plausible length.
+ */
+export function isExpoPushToken(token: string): boolean {
+  const t = token?.trim() ?? '';
+  if (t.length > 256) return false;
+  return /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{16,128}\]$/.test(t);
+}
+
+/**
+ * Is this a device-push token we can actually deliver to, on either rail?
+ *
+ * This is what the write path (`POST /notifications/register-token`) must use.
+ * It is the union of two STRICT validators, never a loosened one: a Web Push
+ * endpoint URL, a serialised PushSubscription, an empty bracket pair and a raw
+ * APNs token are all still refused.
+ */
+export function isPushToken(token: string): boolean {
+  return isExpoPushToken(token) || isFcmRegistrationToken(token);
+}
+
+interface ExpoTicket {
+  status?: string;
+  message?: string;
+  details?: { error?: string };
+}
+
+/**
+ * Send one message through the Expo Push Service.
+ *
+ * Expo answers 200 with a *ticket* even for per-message failures, so the status
+ * code alone proves nothing — the ticket has to be read. Classification follows
+ * the same NOTIF-07 rule as the FCM path: only a genuinely dead device is
+ * `expired` (the caller deletes those rows); a token/credential problem is
+ * `invalidToken`/`error` and the row is KEPT so the bug stays diagnosable.
+ */
+export async function sendExpoPush(token: string, payload: FcmPayload): Promise<FcmSendResult> {
+  if (!expoEnabled) return { ok: false, skipped: true };
+  if (!isExpoPushToken(token)) {
+    return {
+      ok: false,
+      invalidToken: true,
+      error: `not an Expo push token (${maskToken(token)})`,
+    };
+  }
+  try {
+    const headers: Record<string, string> = {
+      accept: 'application/json',
+      'content-type': 'application/json',
+    };
+    if (expoAccessToken) headers.authorization = `Bearer ${expoAccessToken}`;
+    const resp = await fetch(EXPO_PUSH_ENDPOINT, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        to: token,
+        title: payload.title,
+        body: payload.body,
+        data: payload.data,
+        sound: 'default',
+        priority: 'high',
+        // Must match the channel apps/mobile creates in lib/push-notifications.ts,
+        // or Android 8+ drops the notification silently.
+        channelId: 'default',
+      }),
+    });
+    const text = await resp.text();
+    if (!resp.ok) {
+      return {
+        ok: false,
+        error: `Expo push ${resp.status} ${maskToken(token)}: ${text.slice(0, 200)}`,
+      };
+    }
+    let parsed: { data?: ExpoTicket | ExpoTicket[]; errors?: Array<{ message?: string }> };
+    try {
+      parsed = JSON.parse(text || '{}');
+    } catch {
+      return {
+        ok: false,
+        error: `Expo push returned non-JSON for ${maskToken(token)}: ${text.slice(0, 200)}`,
+      };
+    }
+    if (parsed.errors?.length) {
+      return {
+        ok: false,
+        error: `Expo push request error ${maskToken(token)}: ${parsed.errors[0]?.message ?? 'unknown'}`,
+      };
+    }
+    const ticket = Array.isArray(parsed.data) ? parsed.data[0] : parsed.data;
+    if (!ticket) {
+      return { ok: false, error: `Expo push returned no ticket for ${maskToken(token)}` };
+    }
+    if (ticket.status === 'ok') return { ok: true };
+    const code = ticket.details?.error ?? '';
+    // The app was uninstalled or the token rotated — the device is gone.
+    if (code === 'DeviceNotRegistered') return { ok: false, expired: true };
+    // MismatchSenderId / InvalidCredentials are OUR configuration being wrong
+    // (wrong FCM service account or APNs key on the EAS project). Deleting the
+    // row would hide a misconfiguration behind an empty audience.
+    return {
+      ok: false,
+      error: `Expo push ${code || 'error'} ${maskToken(token)}: ${(ticket.message ?? '').slice(0, 200)}`,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * Send one device push, choosing the rail from the token's SHAPE.
+ *
+ * Kept under the historical name because every caller (jobs/aarti-notify.ts,
+ * routes/notifications.ts) already imports it; the rail is an implementation
+ * detail of the stored token, not of the call site.
+ */
 export async function sendFcm(token: string, payload: FcmPayload): Promise<FcmSendResult> {
+  // Rail 1 first: an Expo token must NOT be gated on the FCM service-account
+  // env, which it does not use. Gating it there would reproduce the original
+  // defect one layer down — a registered phone with a silently skipped send.
+  if (token && isExpoPushToken(token)) return sendExpoPush(token.trim(), payload);
   if (!enabled) return { ok: false, skipped: true };
   if (!token) return { ok: false, error: 'empty token' };
   if (!isFcmRegistrationToken(token)) {
@@ -195,7 +365,13 @@ export async function sendFcmMulticast(
   failed: number;
   skipped?: boolean;
 }> {
-  if (!enabled) return { sent: 0, expired: [], invalid: [], failed: 0, skipped: true };
+  // Only "everything here is a dark rail-2 send" is a skip. One Expo token in
+  // the batch is deliverable with no FCM credentials at all, and sendFcm below
+  // still returns `skipped` per-token for the rail-2 rows (never counted as
+  // `failed`), so mixed batches stay honest.
+  if (!enabled && !tokens.some((t) => isExpoPushToken(t))) {
+    return { sent: 0, expired: [], invalid: [], failed: 0, skipped: true };
+  }
   const expired: string[] = [];
   const invalid: string[] = [];
   let sent = 0;
@@ -212,4 +388,17 @@ export async function sendFcmMulticast(
   return { sent, expired, invalid, failed };
 }
 
+/** Rail 2 (raw FCM HTTP v1) credential state. Reported by /health/channels. */
 export const fcmConfig = { enabled, projectId };
+
+/**
+ * Rail 1 (Expo Push Service) state. `enabled` is always true — the endpoint
+ * needs no server credentials — so this says "this service CAN call Expo", not
+ * "push is fully provisioned". Whether Expo can then reach FCM/APNs depends on
+ * credentials held in the EAS project, which this service cannot observe.
+ */
+export const expoPushConfig = {
+  enabled: expoEnabled,
+  endpoint: EXPO_PUSH_ENDPOINT,
+  enhancedSecurity: !!expoAccessToken,
+};

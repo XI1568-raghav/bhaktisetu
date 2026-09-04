@@ -392,7 +392,7 @@ export default function AdminPayoutsPage() {
                           </span>
                         </p>
                         {r.providerEmail && (
-                          <p className="text-xs text-surface-400 truncate max-w-[220px]">{r.providerEmail}</p>
+                          <p className="prose-meta text-surface-400 truncate max-w-[220px]">{r.providerEmail}</p>
                         )}
                       </td>
                       <td className="py-2.5 px-4 text-surface-500">{formatDay(r.requestedAt)}</td>
@@ -406,7 +406,7 @@ export default function AdminPayoutsPage() {
                           {r.status}
                         </span>
                         {r.reference && (
-                          <p className="text-xs text-surface-400 mt-0.5 truncate max-w-[160px]">ref {r.reference}</p>
+                          <p className="prose-meta text-surface-400 mt-0.5 truncate max-w-[160px]">ref {r.reference}</p>
                         )}
                       </td>
                       <td className="py-2.5 px-4 text-right font-semibold text-surface-800">

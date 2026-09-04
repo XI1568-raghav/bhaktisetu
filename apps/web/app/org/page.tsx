@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
+import { useAuth } from "../../lib/auth-context";
+import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../lib/api-config";
 
 interface Org {
   id: string;
@@ -13,20 +17,43 @@ interface Org {
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-function authHeader(): HeadersInit {
-  if (typeof window === "undefined") return {};
-  let token: string | null = null;
-  try {
-    const raw = window.localStorage.getItem("poojly_session");
-    if (raw) token = JSON.parse(raw)?.accessToken ?? null;
-  } catch {
-    // ignore
-  }
-  if (!token) token = window.localStorage.getItem("poojly_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
+/**
+ * SEC-02 step 3 — this file used to hand-build its own Bearer by reading
+ * `localStorage['poojly_session'].accessToken` (and an older `poojly_token`).
+ *
+ * Six files did that, and between them they are what kept the access token in
+ * localStorage: lib/auth-context cannot stop WRITING it while surfaces outside
+ * that module read it directly, because deleting the write logs each of them
+ * out on the next page load. The token now has one owner — `useAuth()` — so
+ * the write can be removed in one place instead of seven.
+ *
+ * `credentials: 'include'` is the other half, and it is not optional: the API
+ * is a different ORIGIN (api.darshya.online), `fetch` defaults to
+ * 'same-origin', and without this the httpOnly `darshya_session` cookie is
+ * never sent — which is the credential a cookie-revived browser has INSTEAD of
+ * a token. Same SITE, so SameSite=Lax still permits it. `fetchWithTimeout`
+ * defaults that flag on, which is why it is used here rather than bare fetch.
+ */
 export default function OrgHubPage() {
+  const { session, isLoading: authLoading } = useAuth();
+  const token = session?.accessToken;
+
+  const orgFetch = (path: string, init: RequestInit = {}) =>
+    fetchWithTimeout(
+      `${API}${path}`,
+      {
+        ...init,
+        headers: {
+          ...(init.headers ?? {}),
+          // Present only while a session still carries a JS-readable token
+          // (mobile-shaped and transitional sessions). A cookie-revived
+          // browser sends no Authorization header at all and the API's
+          // `darshya_session` fallback answers instead.
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      },
+      DATA_FETCH_TIMEOUT_MS,
+    );
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -36,7 +63,7 @@ export default function OrgHubPage() {
   async function load() {
     setLoading(true);
     try {
-      const r = await fetch(`${API}/api/v1/orgs/my`, { headers: authHeader() });
+      const r = await orgFetch("/api/v1/orgs/my");
       const j = await r.json();
       setOrgs(j.orgs ?? []);
     } catch (e) {
@@ -46,18 +73,24 @@ export default function OrgHubPage() {
     }
   }
 
+  // Wait for auth-context to settle before the first load. `authHeader()` read
+  // localStorage synchronously and so did not need to; `useAuth()` resolves
+  // asynchronously (it may have to revive from the cookie), and firing before
+  // it settles would send an anonymous request for a signed-in user.
   useEffect(() => {
+    if (authLoading) return;
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, token]);
 
   async function createOrg(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
     setError(null);
     try {
-      const r = await fetch(`${API}/api/v1/orgs`, {
+      const r = await orgFetch("/api/v1/orgs", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader() },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, plan: "free" }),
       });
       if (!r.ok) {
@@ -75,7 +108,7 @@ export default function OrgHubPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="text-3xl font-bold mb-6">Your Organizations</h1>
+      <h1 className={`${H1.portal} mb-6`}>Your Organizations</h1>
 
       <section className="mb-8 rounded-lg border bg-white p-6">
         <h2 className="text-lg font-semibold mb-3">Create new org</h2>
@@ -94,7 +127,7 @@ export default function OrgHubPage() {
           <button
             type="submit"
             disabled={creating || !name.trim()}
-            className="rounded bg-orange-600 px-4 py-2 text-white disabled:opacity-50"
+            className={buttonClass('primary', 'md')}
           >
             {creating ? "Creating..." : "Create"}
           </button>

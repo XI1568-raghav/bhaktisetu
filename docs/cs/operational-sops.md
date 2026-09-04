@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # Operational SOPs — Pandit / Video / Refund / Payout Issues
 
 > Tier-2 ops runbook. Founder + CS contractor reference.
@@ -16,7 +27,7 @@
 2. **Within 1 hour**
    - Apologetic call/WhatsApp to devotee from CS contractor
    - Script: "We're deeply sorry. [Pandit name] could not perform the puja today due to [reason]. We'd like to do one of:"
-     - Option A: Re-book with another verified pandit within 24 hours (no extra charge)
+     - Option A: Re-book with another pandit within 24 hours (no extra charge)
      - Option B: Full refund within 5 business days (₹200 added as goodwill)
      - Option C: Reschedule to next available date with original pandit (if applicable)
    - Get devotee's choice in writing/WA
@@ -74,6 +85,21 @@
 
 ## SOP 3 — Refund Request
 
+> **Correction 2026-09-02 (`OPS-10`).** Three lines in this SOP used to name **Stripe**
+> as a live refund rail: the matrix row *"NRI chargeback (Stripe) | Force-refund per
+> Stripe rules"*, step 3's *"process within 24 hours via Razorpay/Stripe original
+> payment method"*, and the metric *"means our process matched Stripe/Razorpay would
+> do"*. **Stripe was removed from the codebase on 2026-08-11** — every remaining
+> mention in `apps/api/src` is a removal note (`lib/env.ts:45-46`,
+> `services/payment.service.ts:2506-2517`, `routes/payments.ts:304`). Razorpay is the
+> only live rail and it settles INR only, and no replacement international processor
+> has been chosen. These were not cosmetic: an SOP is executed literally, and step 3
+> instructed a CS contractor to open a dashboard that no longer receives our traffic —
+> a refund routed at a dead rail is a refund that never reaches the devotee while the
+> clock on the 24-hour target keeps running. The Stripe-specific chargeback procedure
+> ("force-refund per Stripe rules") has no equivalent to substitute, so it is marked
+> `[verify]` and escalated rather than replaced with a guessed process.
+
 **Trigger:** Devotee requests refund (any reason, any timing).
 
 ### Refund matrix (per R-Q1-L-002 policy)
@@ -89,13 +115,13 @@
 | User no-show on scheduled time | 0% | Founder discretion |
 | User unhappy with puja quality | Mediated 50% | Founder personally calls |
 | Booking date confusion (system bug) | 100% + free re-book | Automatic |
-| NRI chargeback (Stripe) | Force-refund per Stripe rules | Bhaktisetu absorbs |
+| NRI chargeback | [verify — Stripe was removed; the NRI rail is undecided] · escalate to founder | Bhaktisetu absorbs |
 
 ### Step-by-step
 
 1. **Receive request** (email/WhatsApp/in-app)
 2. **CS contractor classifies** per refund matrix
-3. **If automatic refund**: process within 24 hours via Razorpay/Stripe original payment method
+3. **If automatic refund**: process within 24 hours via Razorpay, back to the original payment method (Razorpay is the only live rail)
 4. **If founder-review required**: escalate to founder within 4 hours, decision within 48 hours
 5. **Communicate to devotee** in writing, with refund timeline (5-7 business days back to original card/bank)
 6. **Document** in refunds log with reason classification
@@ -104,7 +130,7 @@
 
 - Target: <2% of bookings end in refund
 - Target: 95% refunds processed within 5 business days
-- Target: 0 chargeback-driven refunds (means our process matched Stripe/Razorpay would do)
+- Target: 0 chargeback-driven refunds (means our process matched what Razorpay would do)
 
 ## SOP 4 — Pandit Payout Dispute
 

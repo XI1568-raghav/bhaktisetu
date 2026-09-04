@@ -23,6 +23,11 @@
  *     pnpm tsx apps/api/scripts/ops/cs005-resend-stale-leads.ts --limit=100
  */
 
+import { HAS_80G, COMPLIANCE_LINE } from '../../src/lib/eighty-g.js';
+// TC-08: the pandit body said "30 verified pandit prospects shortlisted".
+// Nothing verifies a pandit — see src/lib/pandit-vetting.ts.
+import { verifiedNoun } from '../../src/lib/pandit-vetting.js';
+
 export interface LeadRow {
   id: string;
   role: string | null;
@@ -139,6 +144,35 @@ export interface RenderedTemplate {
 }
 
 /**
+ * TC-01 (P0, trust) — the two sentences in this mailer that were not true.
+ *
+ * This script re-sends 230 stale leads through Resend. Two of its bodies made
+ * tax claims the code contradicts:
+ *
+ *   temple:   "- Bhaktisetu Foundation: active 80G + CSR-1 in India"
+ *   gaushala: "...monthly disbursement milta hai with 80G receipt for donor."
+ *
+ * `apps/web/lib/company.ts` records `HAS_80G_VERIFIED: false` and
+ * `HAS_CSR1_VERIFIED: false`, with `pan`, `eightyGNumber` and `csr1Number` all
+ * `null`. `src/lib/pdf-receipt.ts` `is80GEligible()` needs a donee 80G number
+ * AND a donee PAN, both read from `gaushala_profiles.regn_80g` / `.pan`, which
+ * no route in this repository writes — so every receipt ever minted prints
+ * "Proof of donation — not a tax exemption certificate".
+ *
+ * A sent email cannot be edited, and the CSR-1 half is the worse claim: a
+ * corporate donor's own CSR compliance would rest on it. Both lines are now
+ * bound to `src/lib/eighty-g.ts` and return verbatim when the flags flip.
+ *
+ * Kept as a static import because `src/lib/eighty-g.ts` is two `const`s and a
+ * template string with no dependencies — importing it does not compromise the
+ * "zero deps at import time" property the lazy `prisma`/`resend` imports below
+ * exist to preserve.
+ */
+const DONOR_RECEIPT_LINE: string = HAS_80G
+  ? 'Donor ko 80G receipt milti hai.'
+  : 'Donor ko numbered receipt PDF milti hai — proof of payment, tax-exemption certificate nahi (Darshya ke paas abhi Section 80G registration nahi hai).';
+
+/**
  * Pure: render warm-followup template for a lead. Templates live in
  * docs/cs/templates/cs005-warm-followup-{role}.md — this renderer keeps
  * a minimal HTML version inline so the script has zero filesystem deps
@@ -153,8 +187,32 @@ export function renderTemplate(candidate: SendCandidate): RenderedTemplate {
   const subjects: Record<SendCandidate['templateKey'], string> = {
     pandit: `Bhaktisetu — ${city} pandit network update + ek aur ask`,
     temple: `Bhaktisetu — ${city} temple listing pilot, 60-80% commission, no upfront fee`,
+/*
+ * OPS-10 / TC-01 — corrected 2026-09-02. THIS FILE SENDS EMAIL.
+ *
+ * The three templates below are an INLINE COPY of docs/cs/templates/cs005-*.md.
+ * Those markdown files were corrected first, and correcting them changed
+ * nothing that a lead receives: this script is what Resend actually posts. The
+ * copies had diverged, which is the same shape as the secret scanner whose
+ * workflow carried its own stale duplicate of the tested rule table.
+ *
+ * Four claims were live here and are now gone:
+ *   :191  an "USD rails for NRI clients" subject line
+ *   :207  "NRI USD consultations going live with Stripe rails"
+ *   :229  "Devotees pay via Razorpay/Stripe"
+ *   :269  "Stripe USD rails live ... US/UK/CA/AU paying $80-$200 per session"
+ *
+ * All four are false. Stripe was removed entirely (apps/api/src/env.ts:45-46,
+ * services/payment.service.ts:2506-2517, routes/payments.ts:304) and the only
+ * live rail is Razorpay, INR only. There is no USD price anywhere in the
+ * product, so the $80-$200 figure was quoting a rate nobody can be charged.
+ *
+ * An email cannot be edited after it is delivered. That is why this file is
+ * worth more care than the markdown it duplicates — and why the right fix is
+ * eventually to read the templates from disk rather than restate them here.
+ */
     gaushala: `Bhaktisetu — gauseva recurring-donation platform, ${city} pilot`,
-    astrologer: `Bhaktisetu — astrologer consultation platform, USD rails for NRI clients`,
+    astrologer: `Bhaktisetu — astrologer consultation platform, {city} pilot`,
   };
 
   const bodies: Record<SendCandidate['templateKey'], string> = {
@@ -168,9 +226,9 @@ Possible hai woh email aap tak nahi pahuncha — humare DNS setup ka ek issue
 tha. Aaj theek hai.
 
 Update humari taraf se:
-- 30 verified pandit prospects shortlisted across BLR
+- 30 ${verifiedNoun('pandit')} prospects shortlisted across BLR
 - First 5 pilot pandits onboarded
-- NRI USD consultations going live with Stripe rails
+- Consultations live on the domestic Razorpay rail (INR)
 - 70-80% commission to pandit, no upfront fee
 
 Agar aap interested hain ek 15-min call ke liye —
@@ -190,9 +248,9 @@ Possible hai spam folder mein chali gayi — humara DNS setup theek hua hai
 aaj.
 
 Updated context:
-- Bhaktisetu Foundation: active 80G + CSR-1 in India
+- ${COMPLIANCE_LINE}
 - 30 ${city} temples in pipeline; 5 pilots will be live by Q2-end
-- Devotees pay via Razorpay/Stripe; temple ko 60-80% commission
+- Devotees pay via Razorpay; temple ko 60-80% commission
 - Video proof mandatory per puja; founder personally onboards first 5
 
 Agar aapke temple ko pilot karna chahein — 15-min exploratory call?
@@ -213,10 +271,11 @@ Re-sending humari original ask:
 
 Bhaktisetu pe gauseva recurring-donation platform launch ho raha hai. NRI
 + India donors monthly contribute karte hain (₹500-₹10000/mo), aur gaushala
-ko monthly disbursement milta hai with 80G receipt for donor.
+ko monthly disbursement milta hai. ${DONOR_RECEIPT_LINE}
 
 ${city} ki gaushala ko list karna chahte hain pilot batch mein. Aapke
-gaushala ka basic info + 80G regn + PAN bhejein, hum 7 din mein onboard
+gaushala ka basic info + 80G regn + PAN bhejein (hum record kar lete hain;
+abhi donor receipt par print nahi hote), hum 7 din mein onboard
 kar denge — koi upfront fee nahi.
 
 15-min call ke liye reply karein OR "remove" likhein agar interested nahi.
@@ -231,7 +290,7 @@ consultation platform ke baare mein. DNS issue tha humare side, theek hua
 aaj — re-sending.
 
 Quick update:
-- Stripe USD rails live for NRI clients (US/UK/CA/AU paying $80-$200 per session)
+- Consultations live on the domestic Razorpay rail (INR)
 - INR Razorpay rails active for domestic clients
 - Bhaktisetu commission 20-30%; astrologer keeps 70-80%
 - Verified Jyotish profile shown on darshya.online/astrology

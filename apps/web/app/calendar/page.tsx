@@ -1,6 +1,15 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
-import { FESTIVALS, resolveBookablePujas } from '../../lib/festivals';
+// CI-11: `date2026` is not always in 2026 — Maha Kumbh Mela is 2027-01-14. A
+// month bucket keyed on the MONTH segment alone filed it under a section headed
+// "January 2026" and counted it in the strapline, the jump chip and the
+// ItemList JSON-LD, while /calendar/january (already year-aware) excluded it —
+// the two surfaces disagreed. `festivalsInMonth` filters on the year too, so
+// the index and the month route now show the same set. The off-year rows are
+// not dropped; they are listed below the twelve months with their real year.
+import { FESTIVALS, festivalsInMonth, resolveBookablePujas } from '../../lib/festivals';
 import { getCatalogueSlugs } from '../../lib/puja-catalogue';
 
 export const revalidate = 86400;
@@ -32,6 +41,12 @@ const MONTH_SANSKRIT = [
   'भाद्रपद / आश्विन', 'आश्विन / कार्तिक', 'कार्तिक / मार्गशीर्ष', 'मार्गशीर्ष / पौष',
 ];
 
+/** "2027-01-14" → "14 January 2027". The year is the point; never omit it. */
+function formatLongDate(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${Number(d)} ${MONTH_NAMES[Number(m) - 1] ?? ''} ${y}`;
+}
+
 export default async function CalendarPage() {
   // DF-02: `pujasAvailable` is editorial, not inventory. Counting it printed
   // "2 pujas bookable" for festivals whose pujas both 404. Count only what the
@@ -41,22 +56,24 @@ export default async function CalendarPage() {
     resolveBookablePujas(f.pujasAvailable, catalogue).length;
 
   const byMonth: Map<number, typeof FESTIVALS> = new Map();
-  for (let m = 0; m < 12; m++) byMonth.set(m, []);
-  for (const f of FESTIVALS) {
-    const [, mm] = f.date2026.split('-');
-    if (!mm) continue;
-    const monthIdx = parseInt(mm, 10) - 1;
-    const bucket = byMonth.get(monthIdx);
-    if (bucket) bucket.push(f);
+  for (let m = 0; m < 12; m++) {
+    byMonth.set(
+      m,
+      festivalsInMonth(m, YEAR).sort((a, b) => a.date2026.localeCompare(b.date2026)),
+    );
   }
-  for (const arr of byMonth.values()) arr.sort((a, b) => a.date2026.localeCompare(b.date2026));
+
+  const inYear = FESTIVALS.filter((f) => f.date2026.startsWith(`${YEAR}-`));
+  const offYear = FESTIVALS.filter((f) => !f.date2026.startsWith(`${YEAR}-`)).sort((a, b) =>
+    a.date2026.localeCompare(b.date2026),
+  );
 
   const ld = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: `Hindu Festival Calendar ${YEAR}`,
-    numberOfItems: FESTIVALS.length,
-    itemListElement: FESTIVALS.map((f, idx) => ({
+    numberOfItems: inYear.length,
+    itemListElement: inYear.map((f, idx) => ({
       '@type': 'ListItem',
       position: idx + 1,
       item: {
@@ -92,8 +109,8 @@ export default async function CalendarPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-8">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">{FESTIVALS.length} festivals · all month-by-month</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Hindu Calendar {YEAR}</h1>
+        <p className="text-xs uppercase tracking-wider text-saffron-600">{inYear.length} festivals · all month-by-month</p>
+        <h1 className={`${H1.catalogue} mt-1`}>Hindu Calendar {YEAR}</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Every major Hindu festival in {YEAR} with dates, presiding deity, rituals, fasting requirements,
           and direct puja booking. Lunar dates are approximate — verify with your family priest for exact muhurat.
@@ -178,6 +195,34 @@ export default async function CalendarPage() {
           </section>
         );
       })}
+
+      {offYear.length > 0 && (
+        <section className="mb-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+          <h2 className="text-2xl font-bold text-gray-900">Beyond {YEAR}</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Tracked in our calendar but falling outside {YEAR}, so they are not listed in the months
+            above.
+          </p>
+          <div className="mt-4 space-y-3">
+            {offYear.map((f) => (
+              <Link
+                key={f.slug}
+                href={`/festival/${f.slug}`}
+                className="block rounded-xl border border-gray-200 bg-white p-4 transition hover:shadow-md"
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="text-base font-semibold text-gray-900">{f.name}</h3>
+                  <span className="font-serif text-sm text-gray-600">{f.sanskrit}</span>
+                </div>
+                <p className="mt-1 text-xs uppercase tracking-wider text-gray-500">
+                  {formatLongDate(f.date2026)} · {f.deity}
+                </p>
+                <p className="mt-2 line-clamp-2 text-sm text-gray-700">{f.description}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mt-12 rounded-2xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Related calendars & tools</h2>

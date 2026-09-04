@@ -65,6 +65,31 @@ const PORTAL_PREFIXES = [
 
 // A session exists iff the poojly_user cookie is present and non-empty.
 // We intentionally do NOT parse or trust the `role` field inside it.
+//
+// ── SEC-02, STEP 4: this gate is COSMETIC, and cannot currently be made
+//    otherwise. Stated plainly so nobody mistakes it for a security boundary.
+//
+// `poojly_user` is JS-readable and client-writable, so anyone can set it and
+// walk past this check. That buys them a rendered shell and nothing else: every
+// portal route fetches its data from the API, and the API authorises each
+// request itself (middlewares/auth.ts + requireRole). This gate exists to send
+// a signed-OUT visitor to /auth/login instead of showing them an empty screen —
+// it is UX, not authorization.
+//
+// The obvious hardening — gate on the httpOnly `darshya_session` instead — DOES
+// NOT WORK HERE, and it is worth recording why before someone tries it:
+// apps/api sets that cookie with NO `domain` option (routes/auth.ts,
+// setAuthCookies), so it is a HOST-ONLY cookie for api.darshya.online. The web
+// app is served from darshya.online, a different host, so the browser never
+// sends `darshya_session` to Next at all and `req.cookies.get('darshya_session')`
+// would be undefined for every signed-in user. Switching the gate would
+// redirect 100% of authenticated traffic to /auth/login.
+//
+// Making it real needs a cross-host session cookie (`domain=.darshya.online`,
+// which widens the cookie's exposure and is a deliberate security decision), or
+// a first-party /api proxy route on darshya.online. Both are larger changes than
+// SEC-02's localStorage work and are NOT prerequisites for it — the token can
+// leave localStorage without touching this gate at all.
 function hasSession(req: NextRequest): boolean {
   const raw = req.cookies.get('poojly_user')?.value;
   return !!raw && raw.trim().length > 0;
@@ -86,6 +111,61 @@ function hasSession(req: NextRequest): boolean {
  * whatever is already stored) but never WRITTEN by one. `Next-Router-Prefetch`
  * is what next/link sends; `Sec-Purpose` / `Purpose` cover browser-level
  * speculation-rules prefetches and the Google prefetch proxy.
+ *
+ * ── 2026-08-28. Two changes have been proposed to this function and BOTH are
+ *    regressions. Measured against next 15.5.20 in this workspace, and pinned
+ *    by __tests__/i18n-prefetch-detection.i08.test.ts:
+ *
+ *    • "the next-router-prefetch branch is dead, drop it" — it is not. The
+ *      classic prefetch path sets it for PrefetchKind.AUTO, which is the
+ *      <Link> default and what every `/`- and `?lang=`-targeting link in this
+ *      app uses (client/components/router-reducer/fetch-server-response.js:77).
+ *      Middleware runs inside the Next server on Render, so no adapter is
+ *      between the browser and this line to remove it. The segment cache sends
+ *      the same header with the value '2', which is why this is a truthiness
+ *      check and not `=== '1'`.
+ *
+ *      ── CORRECTION, 2026-09-01. The paragraph above is WRONG about the
+ *      deployed runtime, and it was wrong in the direction that let the defect
+ *      survive three passes. next/link does send the header; this line never
+ *      sees it, because Next strips every FLIGHT_HEADER from the request
+ *      before middleware runs. MEASURED against production — Render
+ *      standalone, not a dev server — with `Cookie: poojly_language=hi`:
+ *
+ *        Sec-Purpose: prefetch           GET /              200          ✓
+ *        Purpose: prefetch               GET /              200          ✓
+ *        X-Moz: prefetch                 GET /              200          ✓
+ *        Next-Router-Prefetch: 1         GET /              307 -> /hi   ✗
+ *        RSC:1 + Next-Router-Prefetch:1  GET /hi?_rsc=abc   Set-Cookie:
+ *                                                           poojly_language=hi
+ *                                                           Max-Age=31536000 ✗
+ *
+ *      Three branches out of four do their job. The fourth cannot, so the ONE
+ *      path this app actually has — next/link prefetching the footer's six
+ *      locale links on every page — went unguarded, and a scroll to the footer
+ *      set a language for a year without a click.
+ *
+ *      The branch is kept: it costs one header read, and it is correct wherever
+ *      the header does survive (a proxy replaying it, a future Next that stops
+ *      stripping). What changed is that the guarantee is no longer claimed
+ *      here. Per the note below, the fix went to the CALL SITE —
+ *      app/layout.tsx now marks all six locale links `prefetch={false}`, and
+ *      __tests__/i18n-locale-links-are-not-prefetched.i08.test.ts keeps every
+ *      future locale link that way.
+ *
+ *    • "detect the prefetch by the `_rsc` union query instead" — `_rsc` is a
+ *      cache-buster appended to EVERY RSC fetch, navigations included
+ *      (router-reducer/set-cache-busting-search-param.js:52-56). Using it here
+ *      classifies a real click as a prefetch, so the root redirect stops
+ *      firing and `?lang=` stops storing the choice — i.e. it un-fixes I-08.
+ *
+ *    THE GAP THAT IS REAL: `prefetch` (PrefetchKind.FULL) and the segment
+ *    cache's FetchStrategy.Full send `RSC: 1` with no prefetch header at all,
+ *    so they are indistinguishable from a soft navigation and this function
+ *    cannot see them. Latent today — no <Link> to `/` or `?lang=` sets
+ *    `prefetch`, and experimental.clientSegmentCache is off — but if that
+ *    changes, the fix is at the call site (drop the prefetch, or make the
+ *    redirect safe for the Router Cache), never in header sniffing.
  */
 function isPrefetch(req: NextRequest): boolean {
   const h = req.headers;

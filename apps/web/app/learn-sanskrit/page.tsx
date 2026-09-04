@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getAllLessons } from '../../lib/sanskrit-lessons-catalog';
 import LessonCard from '../../components/LessonCard';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/learn-sanskrit' },
@@ -19,7 +20,7 @@ export default function LearnSanskritPage() {
     <main className="max-w-4xl mx-auto px-4 py-8">
       <header className="mb-8">
         <div className="text-4xl mb-2">अ आ इ ई</div>
-        <h1 className="text-4xl font-bold text-surface-900">Learn Sanskrit</h1>
+        <h1 className={H1.catalogue}>Learn Sanskrit</h1>
         <p className="text-surface-600 mt-2 max-w-2xl">
           From the first letter of Devanagari to the verses of the Gita — one short lesson at a time. Quizzes after each lesson. Daily streak tracking. Badges to keep you going.
         </p>

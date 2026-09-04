@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { homePujaCategories } from '../../../lib/home-pujas';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pujas/home-puja' },
  title: 'Home Puja — Book a Pandit at Your Residence',
@@ -59,10 +61,10 @@ export default function HomePujaHubPage() {
  <Home className="w-3.5 h-3.5" />
  At-home pandit service
  </div>
- <h1 className="text-4xl md:text-5xl font-bold text-surface-800 leading-tight tracking-tight">
+ <h1 className={H1.marketing}>
  Book a Pandit at Your Home
  </h1>
- <p className="mt-5 text-lg text-surface-500 max-w-xl leading-relaxed">
+ <p className="prose-lead mt-5 text-surface-500 max-w-xl leading-relaxed">
  Verified pandits, Aadhaar-authenticated, who conduct pujas at your
  residence for any occasion — Griha Pravesh, Satyanarayan, Navratri,
  weddings, and life events. They arrive with all samagri, prasadam,
@@ -71,8 +73,7 @@ export default function HomePujaHubPage() {
  <div className="mt-7 flex flex-wrap gap-3">
  <a
  href="#categories"
- className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-colors"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md')}
  >
  Browse All Home Pujas
  <ArrowRight className="w-4 h-4" />

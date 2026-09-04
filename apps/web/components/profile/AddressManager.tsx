@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { MapPin, Plus, Trash2, Star, Loader2, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 interface Address {
   id: string;
@@ -169,7 +170,7 @@ export default function AddressManager() {
           <button
             onClick={addAddress}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-saffron-600 text-white text-sm font-semibold rounded-lg hover:bg-saffron-700 disabled:opacity-50"
+            className={buttonClass('primary', 'md')}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             {saving ? 'Saving…' : 'Save address'}

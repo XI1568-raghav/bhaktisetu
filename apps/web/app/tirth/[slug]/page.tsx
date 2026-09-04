@@ -1,22 +1,43 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getTirtha, tirthaSlugs, TIRTHAS } from '../../../lib/tirthas';
+// CI-05: 84 shrine pages that printed "✓ Online booking available" above a
+// list of "Primary pujas performed here" rendered as inert text. The badge is
+// now a statement about the shrine that sits next to a control that acts on it.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
+import {
+  TIRTHA_ALIASES,
+  canonicalTirthaSlug,
+  dedupeTirthas,
+  resolveNearbyTirthas,
+} from '../../../lib/tirtha-slug';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
 
 const BASE_URL = 'https://darshya.online';
 
+// CI-07: the retired duplicate slugs stay in the prerender set. `dynamicParams`
+// is false, so an unlisted slug 404s — and these were live, indexed URLs. They
+// are served as permanent redirects onto the surviving temple page instead.
+//
+// `tirthaSlugs()` deliberately returns only the canonical URLs, because
+// app/sitemap.ts builds the tirtha section from it and a sitemap must not
+// advertise a redirect. The aliases are added back here, and only here.
 export function generateStaticParams() {
-  return tirthaSlugs().map((slug) => ({ slug }));
+  return [...tirthaSlugs(), ...Object.keys(TIRTHA_ALIASES)].map((slug) => ({ slug }));
 }
 
 interface Props { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const t = getTirtha(slug);
+  const canonical = canonicalTirthaSlug(slug);
+  const t = getTirtha(canonical);
   if (!t) return { title: 'Not found' };
   return {
     title: `${t.name} — Complete Pilgrim Guide`,
@@ -34,12 +55,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TirthaPage({ params }: Props) {
   const { slug } = await params;
-  const t = getTirtha(slug);
+  // CI-07: one temple, one URL. A duplicate slug redirects onto the survivor
+  // rather than serving a second copy of the same shrine.
+  const canonical = canonicalTirthaSlug(slug);
+  if (canonical !== slug) permanentRedirect(`/tirth/${canonical}`);
+  const t = getTirtha(canonical);
   if (!t) notFound();
 
-  const idx = TIRTHAS.findIndex((x) => x.slug === slug);
-  const prev = idx > 0 ? TIRTHAS[idx - 1] : undefined;
-  const next = idx < TIRTHAS.length - 1 ? TIRTHAS[idx + 1] : undefined;
+  // Walk the deduped catalogue so prev/next never lands on a redirecting URL.
+  const nearby = resolveNearbyTirthas(t.nearbyTirthas);
+
+  // Only slugs the live catalogue confirms become links; an unreachable API
+  // yields an empty set and the CTA degrades to the browse exit (DF-02 rule).
+  const catalogue = await getCatalogueSlugs();
+
+  const cards = dedupeTirthas(TIRTHAS);
+  const idx = cards.findIndex((x) => x.slug === canonical);
+  const prev = idx > 0 ? cards[idx - 1] : undefined;
+  const next = idx >= 0 && idx < cards.length - 1 ? cards[idx + 1] : undefined;
 
   const breadcrumb = {
     '@context': 'https://schema.org',
@@ -73,7 +106,7 @@ export default async function TirthaPage({ params }: Props) {
 
       <header className="mb-8">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{t.category} · {t.state}</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">{t.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{t.name}</h1>
         <p className="mt-1 font-serif text-xl text-gray-700">{t.sanskrit}</p>
         <p className="mt-3 text-base text-gray-700"><strong>Presiding deity:</strong> {t.presiding}</p>
         <p className="mt-1 text-sm text-gray-600">Established: {t.established}</p>
@@ -130,6 +163,13 @@ export default async function TirthaPage({ params }: Props) {
         <p className="mt-3 text-sm text-gray-700"><strong>What to offer:</strong> {t.whatToOffer}</p>
       </section>
 
+      {detailCta({
+        routePrefix: 'tirth',
+        subject: t.name,
+        relatedPujas: t.primaryPujas,
+        catalogue,
+      })}
+
       <section className="mb-8 grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
           <div className="text-xs uppercase tracking-wide text-amber-700">Dress code</div>
@@ -144,17 +184,39 @@ export default async function TirthaPage({ params }: Props) {
       <section className="mb-8">
         <h2 className="mb-2 text-xl font-semibold text-gray-900">Modern access</h2>
         <p className="text-base leading-relaxed text-gray-700">{t.modernRelevance}</p>
-        <div className="mt-3 flex gap-2 text-xs">
-          {t.onlineBookingAvailable && <span className="rounded bg-emerald-100 px-2 py-1 font-semibold text-emerald-800">✓ Online booking available</span>}
-          {t.vipDarshanAvailable && <span className="rounded bg-indigo-100 px-2 py-1 font-semibold text-indigo-800">✓ VIP darshan available</span>}
+        {/* CI-05: these two pills used to read "✓ Online booking available" and
+            "✓ VIP darshan available" with nothing to click, on 84 pages. They
+            describe facilities the SHRINE runs — Tirupati's own slot system,
+            Vaishno Devi's VIP darshan — not Darshya inventory, and worded as
+            they were they read as an unclickable Darshya promise. They are
+            attributed now, and the control that Darshya can actually honour is
+            the CTA above. */}
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          {t.onlineBookingAvailable && <span className="rounded bg-emerald-100 px-2 py-1 font-semibold text-emerald-800">Temple runs its own online darshan booking</span>}
+          {t.vipDarshanAvailable && <span className="rounded bg-indigo-100 px-2 py-1 font-semibold text-indigo-800">Temple offers paid VIP darshan</span>}
         </div>
       </section>
 
-      {t.nearbyTirthas.length > 0 && (
+      {nearby.length > 0 && (
         <section className="mb-8 rounded-2xl border border-gray-200 bg-white p-5">
           <h2 className="mb-2 text-lg font-semibold text-gray-900">Nearby tirthas</h2>
+          {/* CI-13: `nearbyTirthas` mixes display names with bare slugs. Half
+              the catalogue stored slugs, so this list used to print bullets
+              reading "thillai-kali-temple", and nothing in it linked anywhere.
+              Entries that name a published tirtha are links now; the rest are
+              humanised text rather than links into a 404. */}
           <ul className="grid gap-1 pl-5 list-disc text-sm text-gray-700 sm:grid-cols-2">
-            {t.nearbyTirthas.map((n) => <li key={n}>{n}</li>)}
+            {nearby.map((n) => (
+              <li key={n.label}>
+                {n.href ? (
+                  <Link href={n.href} className="text-saffron-700 hover:underline">
+                    {n.label}
+                  </Link>
+                ) : (
+                  n.label
+                )}
+              </li>
+            ))}
           </ul>
         </section>
       )}

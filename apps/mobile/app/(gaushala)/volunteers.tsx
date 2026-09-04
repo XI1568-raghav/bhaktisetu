@@ -9,6 +9,7 @@ import {
   EmptyHint,
 } from '../../lib/portal-screen';
 import { colors, spacing } from '../../lib/theme';
+import { userRoleLabel } from '../../lib/enum-labels';
 
 function formatJoined(iso: string | undefined): string {
   if (!iso) return '';
@@ -51,7 +52,7 @@ export default function Volunteers() {
           volunteers.map((v) => (
             <ListRow
               key={v.id}
-              primary={`${v.fullName}${v.role ? ` • ${v.role}` : ''}`}
+              primary={[v.fullName, userRoleLabel(v.role)].filter(Boolean).join(' • ')}
               secondary={v.phone ?? 'No phone'}
               trailing={formatJoined(v.joinedAt)}
               trailingHint="joined"

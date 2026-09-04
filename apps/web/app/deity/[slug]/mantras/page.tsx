@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import { ChevronRight, Repeat, Sparkles, BookOpen } from 'lucide-react';
 import { getDeity, DEITIES } from '../../../../lib/deities';
 import { getMantrasForDeity, deitiesWithMantras } from '../../../../lib/deity-mantras';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -87,7 +89,7 @@ export default async function DeityMantrasPage({ params }: Params) {
             Sacred Mantras
           </span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.marketing} mb-2`}>
           {d.name} Mantras
         </h1>
         <p className="text-3xl font-serif text-saffron-700 mb-4">{d.sanskrit}</p>
@@ -154,7 +156,7 @@ export default async function DeityMantrasPage({ params }: Params) {
         </p>
         <Link
           href={`/deity/${d.slug}`}
-          className="inline-flex items-center gap-1.5 px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+          className={buttonClass('primary', 'md')}
         >
           {d.name} pujas <ChevronRight className="w-4 h-4" />
         </Link>

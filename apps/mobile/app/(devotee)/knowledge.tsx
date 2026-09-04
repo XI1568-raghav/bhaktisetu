@@ -19,17 +19,60 @@ const categories: CategoryCard[] = [
   { key: 'sanatan', title: 'Sanatan Dharma', subtitle: 'Living tradition', icon: 'flower', color: colors.green[600] ?? colors.saffron[500] },
 ];
 
+/**
+ * The v1 gate. docs/mobile-v1-scope.md records the hub as an explicit
+ * exclusion and lib/__tests__/mobile-v1-scope.par22.test.ts pins this exact
+ * comparison, so the flag stays and the shape of the check stays with it.
+ *
+ * It is no longer off everywhere, which is the point: eas.json sets
+ * EXPO_PUBLIC_KNOWLEDGE_ENABLED="true" for the preview, production and
+ * testflight profiles, and GET /api/v1/knowledge/:category serves real
+ * articles. .env.example keeps it false for local dev. app/(devotee)/index.tsx
+ * reads the same env var the same way and only shows its Knowledge entry when
+ * this is on, so the home screen can never link to the "launching soon" card.
+ *
+ * NAV-01 removed a second constant here — `GURUKUL_ENABLED`, read from
+ * EXPO_PUBLIC_GURUKUL_ENABLED and then never referenced by anything in app/ or
+ * lib/. It could not be adopted retroactively either: this screen's Gurukuls
+ * card is the ONLY inbound link to (devotee)/gurukuls.tsx in the whole tree,
+ * and the flag is absent from every eas.json profile, so gating on it would
+ * have stranded the gurukul screens exactly the way pandits and puja-detail
+ * were stranded. Deleted as dead code; the card stays reachable.
+ */
 const KNOWLEDGE_ENABLED = process.env.EXPO_PUBLIC_KNOWLEDGE_ENABLED === 'true';
-const GURUKUL_ENABLED = process.env.EXPO_PUBLIC_GURUKUL_ENABLED === 'true';
+
+/**
+ * NAV-01. `headerShown` is false for the whole (devotee) group
+ * (_layout.tsx:30), and this screen is now PUSHED — from the home quick
+ * actions — rather than only deep-linked into. Every other pushed screen in
+ * the group draws its own back control (pandits.tsx:311, gurukuls.tsx:39,
+ * kundli.tsx:74, knowledge-category.tsx); this one did not, so on iOS there
+ * was no way back out of it. 44x44, labelled.
+ */
+function Header() {
+  return (
+    <View style={styles.header}>
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={styles.backBtn}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+      >
+        <Ionicons name="chevron-back" size={24} color={colors.stone[900]} />
+      </TouchableOpacity>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.headerTitle}>Knowledge</Text>
+        <Text style={styles.headerSubtitle}>Sanskrit, Vedas, and Sanatan Dharma</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function KnowledgeHubScreen() {
   if (!KNOWLEDGE_ENABLED) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Knowledge</Text>
-          <Text style={styles.headerSubtitle}>Sanskrit, Vedas, and Sanatan Dharma</Text>
-        </View>
+        <Header />
         <View style={{ flex: 1, padding: spacing.md, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="construct-outline" size={40} color={colors.stone[400]} />
           <Text style={{ fontSize: fontSize.lg, color: colors.stone[600], marginTop: spacing.sm, textAlign: 'center' }}>
@@ -41,15 +84,15 @@ export default function KnowledgeHubScreen() {
   }
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Knowledge</Text>
-        <Text style={styles.headerSubtitle}>Sanskrit, Vedas, and Sanatan Dharma</Text>
-      </View>
+      <Header />
       <ScrollView contentContainerStyle={styles.content}>
         {categories.map((c) => (
           <TouchableOpacity
             key={c.key}
             activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={c.title}
+            accessibilityHint={`Opens ${c.title} articles`}
             onPress={() => router.push(`/(devotee)/knowledge-category?category=${c.key}`)}
             style={[styles.card, { borderLeftColor: c.color }]}
           >
@@ -66,6 +109,9 @@ export default function KnowledgeHubScreen() {
 
         <TouchableOpacity
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Learn Sanskrit"
+          accessibilityHint="Opens the Sanskrit lessons"
           onPress={() => router.push('/(devotee)/learn-sanskrit')}
           style={[styles.card, { borderLeftColor: colors.saffron[600] }]}
         >
@@ -81,6 +127,9 @@ export default function KnowledgeHubScreen() {
 
         <TouchableOpacity
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Gurukuls"
+          accessibilityHint="Opens the gurukul directory"
           onPress={() => router.push('/(devotee)/gurukuls')}
           style={[styles.card, { borderLeftColor: colors.saffron[500] }]}
         >
@@ -100,7 +149,22 @@ export default function KnowledgeHubScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.stone[50] },
-  header: { paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm, backgroundColor: colors.white },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.white,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    marginLeft: -spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: { fontSize: fontSize['3xl'], fontWeight: '800', color: colors.stone[900] },
   headerSubtitle: { fontSize: fontSize.base, color: colors.stone[500], marginTop: 2 },
   content: { padding: spacing.md, gap: spacing.sm },

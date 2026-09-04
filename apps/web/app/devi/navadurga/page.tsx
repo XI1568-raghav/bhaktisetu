@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { NAVADURGA, NAVRATRI_TYPES } from '../../../lib/navadurga';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -113,9 +116,9 @@ export default function NavadurgaPage() {
 
      <header className="mt-4 text-center">
       <p className="text-xs uppercase tracking-wider text-saffron-600">Free 9-day Navratri guide</p>
-      <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Navadurga — 9 Forms of Maa Durga</h1>
+      <h1 className={`${H1.catalogue} mt-1`}>Navadurga — 9 Forms of Maa Durga</h1>
       <p className="mt-2 text-sm text-saffron-700">नवदुर्गा · The 9 nights of Shakti</p>
-      <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+      <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
        9 sequential manifestations of Adi-Shakti, worshipped one per night
        through Navratri. Each form rules a planet, a chakra, and a stage of
        spiritual journey. Per Devi Mahatmya (Chandi Path), Markandeya Purana &amp; Devi Bhagavata Purana.
@@ -192,7 +195,7 @@ export default function NavadurgaPage() {
        graha-position and life-goal — the most powerful 9-day sadhana of the year.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/pujas" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

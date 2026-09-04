@@ -260,6 +260,12 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
+    // DI-06: the confirm-path writers insert with `createMany({ skipDuplicates
+    // })` so the losing side of a two-rail race gets ON CONFLICT DO NOTHING
+    // instead of a P2002 that aborts the enclosing payment transaction.
+    // ADDED, never reassigned — `create` stays for the writers outside
+    // payment.service.ts that still use it.
+    createMany: vi.fn(),
     update: vi.fn(),
     // RV-02: refund-time ledger reversal uses updateMany + count.
     updateMany: vi.fn(),
@@ -271,6 +277,12 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
+    // DI-06: writeTemplePayoutOnConfirm inserts with `createMany({
+    // skipDuplicates })` for the same reason the commission writers do — the
+    // UNIQUE index on temple_payouts.booking_id must settle a concurrent
+    // confirm inside the INSERT rather than raising P2002 and aborting the
+    // caller's payment transaction. ADDED, never reassigned.
+    createMany: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
     count: vi.fn(),

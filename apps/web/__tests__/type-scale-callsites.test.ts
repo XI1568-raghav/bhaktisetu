@@ -137,16 +137,43 @@ describe('DU-10 — the exemptions are narrow and stay honest', () => {
    */
   const FRAME = /w-\[3(75|90)px\]|PhoneFrame/;
 
+  /**
+   * A layout may delegate the frame to a co-located component instead of
+   * painting it inline — app/mobile/layout.tsx does exactly that since SEO-09
+   * split it into a server shell (which carries the metadata) plus
+   * ./MobileTabBar (which is 'use client' because it reads usePathname, and
+   * which owns the 390x844 bezel). Following the layout's own relative imports
+   * one level keeps the exemption honest without hard-coding that filename.
+   */
+  function framePaintedBy(file: string): boolean {
+    let src: string;
+    try {
+      src = code(file);
+    } catch {
+      return false;
+    }
+    if (FRAME.test(src)) return true;
+    const dir = path.dirname(file);
+    for (const m of src.matchAll(/from\s+'(\.[^']+)'/g)) {
+      const spec = m[1]!;
+      for (const ext of ['.tsx', '.ts']) {
+        const candidate = path.join(dir, spec + ext);
+        try {
+          if (FRAME.test(code(candidate))) return true;
+        } catch {
+          /* not a local module */
+        }
+      }
+    }
+    return false;
+  }
+
   function insideDeviceFrame(r: string): boolean {
-    if (FRAME.test(code(root(r)))) return true;
+    if (framePaintedBy(root(r))) return true;
     const parts = r.split('/');
     for (let i = parts.length - 1; i > 0; i--) {
       const layout = [...parts.slice(0, i), 'layout.tsx'].join('/');
-      try {
-        if (FRAME.test(code(root(layout)))) return true;
-      } catch {
-        /* no layout at this level */
-      }
+      if (framePaintedBy(root(layout))) return true;
     }
     return false;
   }

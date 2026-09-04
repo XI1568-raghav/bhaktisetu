@@ -77,8 +77,38 @@ function snapToLadder(width: number): number {
  * the og-image placeholder, and it was being requested at 1280 (160,061 B)
  * where 500 costs 52,125 B.
  *
- * Only under-1280 files need a row — anything wider is never overshot. Keys
- * are the DECODED Commons file name, which is what `ladderWidth` looks up.
+ * COMPLETENESS IS THE WHOLE MECHANISM — corrected 2026-08-20. This block used
+ * to say "Only under-1280 files need a row — anything wider is never
+ * overshot", and listed 9 rows. That reasoning is circular: you cannot know a
+ * file is wider than 1280 without measuring it, and nothing forced the
+ * measurement. Re-read from the Commons `imageinfo` API on 2026-08-20, 17 of
+ * the 70 files referenced here are narrower than IMG_W.HERO — the widest slot
+ * every getter is exercised at — and 8 of those 17 had no row:
+ *
+ *   Red_Sindhi_Cow_at_Pakistan.jpg 960 · (1)_Aarti_Thali,_Prayer_Plate_India.jpg
+ *   1024 · Dwarakadheesh_Temple,_2014.jpg 1024 · Surabhi_Cow_Vrindavan.jpg 1024
+ *   · Ganesha_Basohli_…_p73.jpg 1033 · Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg
+ *   1057 · StandingHanumanCholaDynasty11thCentury.jpg 1058 ·
+ *   Vishnu_from_Gita_Govinda.jpg 1112
+ *
+ * Their 1280px thumbs cost 2,764,770 B against 1,684,784 B for the widest step
+ * the sources can actually satisfy (HEAD, 2026-08-20) — 1,079,986 B spent
+ * making eight images blurrier. `Dwarakadheesh_Temple,_2014.jpg` is
+ * `IMAGES.temples['dwarkadhish'].hero`, so `/temples/dwarkadhish` was shipping
+ * a 266,721 B upscale where 176,149 B is the real file.
+ *
+ * The overshoot assertion in `commons-asset-integrity.test.ts` could not catch
+ * any of it: it reads `COMMONS_INTRINSIC_WIDTH[file]` and skips the check when
+ * the lookup is `undefined`, so a missing row reads as "no violation". The
+ * table therefore records EVERY referenced file now, wide ones included, and
+ * `cm08-intrinsic-width-completeness.test.ts` fails when a referenced file has
+ * no row — which is what makes that older assertion able to fail at all.
+ *
+ * Keys are the DECODED Commons file name, which is what `ladderWidth` looks
+ * up. Values are `imageinfo.width`, read from
+ *   https://commons.wikimedia.org/w/api.php?action=query&format=json
+ *     &prop=imageinfo&iiprop=size&titles=File:<name>
+ * never guessed — a wrong number here silently disables the clamp.
  * `commons-asset-integrity.test.ts` fails if a key here stops being
  * referenced, so the table cannot quietly drift into fiction.
  */
@@ -92,6 +122,69 @@ export const COMMONS_INTRINSIC_WIDTH: Readonly<Record<string, number>> = {
  'Navaratri_Bajan.jpg': 800,
  'Swaminarayan_Akshardham,_Delhi.jpg': 800,
  'Saraswati.jpg': 925,
+ 'Red_Sindhi_Cow_at_Pakistan.jpg': 960,
+ '(1)_Aarti_Thali,_Prayer_Plate_India.jpg': 1024,
+ 'Dwarakadheesh_Temple,_2014.jpg': 1024,
+ 'Surabhi_Cow_Vrindavan.jpg': 1024,
+ 'Ganesha_Basohli_miniature_***REMOVED***.jpg': 1033,
+ 'Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg': 1057,
+ 'StandingHanumanCholaDynasty11thCentury.jpg': 1058,
+ 'Vishnu_from_Gita_Govinda.jpg': 1112,
+ 'Goshala-ISKCON.jpg': 1280,
+ 'The_Hindu_Goddess_Shri_Lakshmi_LACMA_M.87.210_(1_of_2).jpg': 1325,
+ 'Priest_performing_Homa.jpg': 1363,
+ 'Lord_Rama_with_arrows.jpg': 1366,
+ 'GHANTI.jpg': 1463,
+ 'JanakpurChhathParvaFestival.jpg': 1600,
+ 'Night_view_of_Srisailam_Temple_South_Gopuram.jpg': 1752,
+ 'A_beautiful_photo_of_cows_grazing_in_the_field.jpg': 1836,
+ 'Gayatri_japa.jpg': 1903,
+ 'The_Rangoli_of_Lights.jpg': 1932,
+ 'Surya_with_Adityas_and_attendants.jpg': 1994,
+ 'Hindu_pooja_thali.jpg': 2000,
+ '1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg': 2031,
+ 'Grishneshwar_temple_in_Aurangabad_district.jpg': 2048,
+ '02_Mahashivratree_festival.JPG': 2112,
+ 'Gangotri_Temple_2.jpg': 2272,
+ 'Yamunotri_temple_and_ashram.jpg': 2304,
+ 'Indian_Arati_diya.jpg': 2342,
+ 'Shree_Siddhivinayak_Temple_Mumbai.jpg': 2410,
+ 'Ramanathaswamy_temple7.JPG': 2448,
+ 'Brass_standing_figure_***REMOVED***._Wellcome_M0012566.jpg': 2520,
+ 'Bangalore_Shiva.jpg': 2560,
+ 'Omkareswar_Jyotirlinga.jpg': 2560,
+ 'Nageshwar.JPG': 2571,
+ 'From_Abhisheka_To_Panchamrutha.jpg': 2592,
+ 'Vrindavan,_India_(21178969102).jpg': 2848,
+ 'Khairathabad_Vinayakudu_2021.jpg': 3000,
+ 'Marble_Dagadusheth_Halwai_Ganapati_Statue_from_Maliyas.com_Jaipur_India.jpg': 3000,
+ 'Navratri_Kalash_Puja.jpg': 3072,
+ 'Gir_cow.jpg': 3264,
+ 'Holi_Festival_of_Colors.jpg': 3456,
+ 'ILRI,_Stevie_Mann_-_Women_washing_and_cow_drinking_at_a_river_in_Rajasthan,_India.jpg': 3504,
+ 'Hanuman_Chalisa_4x3.jpg': 3600,
+ '(A)_puja_fire,_Havanam.jpg': 3872,
+ 'Badrinath_Temple_,_Uttarakhand.jpg': 4000,
+ 'Rudraksha_mala.jpg': 4000,
+ 'Kedarnath_Temple_in_Rainy_season.jpg': 4073,
+ 'Baidyanath_temple_and_temple_complex,_Deoghar_04.jpg': 4080,
+ 'Bhagavad_Gita_book_(small)_01.jpg': 4080,
+ 'Tirumala_090615.jpg': 4096,
+ 'Shardiya_Navratri_Festival_in_Pune_2020.jpg': 4128,
+ 'The_Golden_Temple_of_Amrithsar_7.jpg': 4176,
+ 'Rakhi_1.JPG': 4272,
+ 'An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg': 4365,
+ 'Mahakaleshwar_Temple,_Ujjain.jpg': 4608,
+ 'Vaishno_Devi_Bhawan.jpg': 4608,
+ 'Sahiwala_01.JPG': 5184,
+ 'Tharparkar_01.JPG': 5184,
+ // Read from imageinfo on 2026-09-01, same as every other row here.
+ 'Ramcharitmanas_book.jpg': 5456,
+ 'Somanath_mandir_(cropped).jpg': 5712,
+ 'A_beautiful_gaze.jpg': 6000,
+ 'Pure_Ghee-Homemade-Maharashtra.jpg': 6000,
+ 'Shri_Jagannath_temple.jpg': 6000,
+ 'Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg': 6000,
 };
 
 /** Commons file names are percent-encoded in URLs; the table is keyed decoded. */
@@ -133,12 +226,52 @@ function ladderWidth(requested: number, encodedFile?: string): number {
  *   .../commons/a/bc/Foo.jpg          → .../commons/thumb/a/bc/Foo.jpg/<w>px-Foo.jpg
  *   .../commons/thumb/a/bc/Foo.jpg/1280px-Foo.jpg → ...rewritten width
  */
+/**
+ * CM-08 — PNG is the wrong container for a photograph, and Commons hands this
+ * catalogue three of them: a manuscript scan, a museum painting and a temple
+ * photo. Commons' own thumbnailer will re-encode a thumbnail into another
+ * format when the target extension is appended to the thumb file name
+ * (`…/500px-Foo.png` → `…/500px-Foo.png.jpg`), so this costs no infrastructure.
+ *
+ * Measured 2026-09-01 at the 500px card width, every Commons PNG this repo
+ * references (`grep -o "commons/[^\"]*\.png"` across apps/web + apps/api →
+ * exactly three files, plus two `.svg`):
+ *
+ *   Birla_Mandir,_Hyderabad.png                       221,440 B → 33,057 B
+ *   Rāmacaritamānasa_manuscript_(19th_century).png    505,253 B → 84,584 B
+ *   Krishna_Holds_Up_Mount_Govardhan_(MET_70694).png  663,567 B → 103,456 B
+ *   ───────────────────────────────────────────────────────────────────────
+ *   total                                           1,390,260 B → 221,097 B  (−84.1%)
+ *
+ * SAFE BECAUSE THE ALPHA WAS CHECKED, NOT ASSUMED. Each PNG was decoded to a
+ * canvas: min alpha 255 and 0 translucent pixels on all three, and the mean
+ * absolute channel difference against the JPEG is 2.3 / 4.1 / 3.2 of 255
+ * (ordinary JPEG quantisation). `.webp` was measured too and is the worse
+ * trade here (505,253 → 332,796 B, only −34%).
+ *
+ * SVG-DERIVED THUMBS ARE EXCLUDED, and that exclusion is load-bearing:
+ * `500px-1_Om.svg.png` is 65% translucent (168,177 of 258,000 px, min alpha 0)
+ * and flattening it to JPEG moves pixels by a mean of 162.9/255 — it would
+ * paint a white slab where the glyph should float over the card gradient.
+ */
+function transcodeThumbFile(thumbFile: string): string {
+ if (/\.svg\.png$/i.test(thumbFile)) return thumbFile;
+ if (/\.png$/i.test(thumbFile)) return `${thumbFile}.jpg`;
+ return thumbFile;
+}
+
 export function wikiThumb(url: string, width: number): string {
  if (!url.includes('upload.wikimedia.org/wikipedia/commons/')) return url;
  if (url.includes('/commons/thumb/')) {
    const thumbFile = /\/commons\/thumb\/[0-9a-f]\/[0-9a-f]{2}\/([^/?#]+)\//.exec(url)?.[1];
    const w = ladderWidth(width, thumbFile);
-   return url.replace(/\/(\d+)px-/, `/${w}px-`);
+   // Rewrite the width, then transcode the tail. Order matters: the tail of an
+   // already-transcoded URL ends `.png.jpg`, which must not pick up a second
+   // `.jpg`, so the guard tests the tail as it stands after the width swap.
+   const resized = url.replace(/\/(\d+)px-/, `/${w}px-`);
+   const tail = /\/(\d+px-[^/?#]+)$/.exec(resized)?.[1];
+   if (!tail) return resized;
+   return resized.replace(/\/(\d+px-[^/?#]+)$/, `/${transcodeThumbFile(tail)}`);
  }
  const match = url.match(/\/commons\/([0-9a-f])\/([0-9a-f]{2})\/([^/?#]+)$/);
  if (!match) return url;
@@ -146,7 +279,7 @@ export function wikiThumb(url: string, width: number): string {
  const w = ladderWidth(width, file);
  // .svg → .svg.png thumb (Commons rule). Other extensions pass through.
  const thumbFile = /\.svg$/i.test(file!) ? `${file}.png` : file;
- return `https://upload.wikimedia.org/wikipedia/commons/thumb/${a}/${bc}/${file}/${w}px-${thumbFile}`;
+ return `https://upload.wikimedia.org/wikipedia/commons/thumb/${a}/${bc}/${file}/${w}px-${transcodeThumbFile(thumbFile!)}`;
 }
 
 /**
@@ -524,9 +657,34 @@ export const IMAGES = {
  'havan-samagri': wiki('https://upload.wikimedia.org/wikipedia/commons/c/c7/%28A%29_puja_fire%2C_Havanam.jpg'),
 
  // Books & Scriptures
+ //
+ // CM-08 (2026-09-01): 'sunderkand-book' and 'hanuman-chalisa-book' were the
+ // SAME Commons file. Two SKUs at two prices, one picture, and the picture was
+ // of the other book — a devotee buying the Sunderkand saw a Hanuman Chalisa.
+ // Guarded now by __tests__/cm08-store-image-distinctness.test.ts, which fails
+ // if any two store SKUs ever share an image again.
+ //
+ // The Sunderkand is the fifth kanda of the Ramcharitmanas, so a photograph of
+ // a printed Ramcharitmanas is the honest picture for it. Verified against the
+ // Commons imageinfo API on 2026-09-01: File:Ramcharitmanas book.jpg,
+ // 5456x3632, CC BY-SA 4.0, author Wikilover90, AttributionRequired true —
+ // credited in lib/image-credits.ts. Its 500px thumb is 33,340 B against the
+ // 102,278 B it replaces, measured the same day.
  'bhagavad-gita': wiki('https://upload.wikimedia.org/wikipedia/commons/3/34/Bhagavad_Gita_book_%28small%29_01.jpg'),
+ // KNOWN DEFECT, needs a photograph nobody has taken yet — do not "fix" this
+ // by pointing it at another book. Hanuman_Chalisa_4x3.jpg is not a photograph
+ // of a printed edition at all: it is a poster graphic of the text, and it
+ // carries a third-party design studio's watermark and phone number
+ // ("Impressions.Graphics", twice, plus a number) burnt into the top of the
+ // frame. So the store's paid product card advertises somebody else's
+ // business. Commons was searched on 2026-09-01 (intitle:"Hanuman Chalisa",
+ // Category:Hanuman Chalisa, and four keyword queries): every candidate is
+ // either the same watermarked poster re-uploaded (File:Hanuman Chalisa.jpg)
+ // or a crowd photograph of a recitation, and none is a book. This is the
+ // finding's "real photography of actual products" half and it needs the owner
+ // to shoot the SKU.
  'hanuman-chalisa-book': wiki('https://upload.wikimedia.org/wikipedia/commons/d/da/Hanuman_Chalisa_4x3.jpg'),
- 'sunderkand-book': wiki('https://upload.wikimedia.org/wikipedia/commons/d/da/Hanuman_Chalisa_4x3.jpg'),
+ 'sunderkand-book': wiki('https://upload.wikimedia.org/wikipedia/commons/c/ca/Ramcharitmanas_book.jpg'),
 
  // Spiritual Jewellery
  'rudraksha-bracelet': u('photo-1622993361118-b6365d859ab6', 600, 600),

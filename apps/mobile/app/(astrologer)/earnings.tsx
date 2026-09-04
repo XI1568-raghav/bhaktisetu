@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import {
   PortalScreen,
   Section,
@@ -10,6 +12,7 @@ import {
 import { useAstrologerEarnings } from '../../lib/portal-queries';
 import { selectAstrologerEarnings, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { commissionStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-22. The astrologer earnings page exists on the web
@@ -75,6 +78,27 @@ export default function AstrologerEarnings() {
         </Text>
       ) : null}
 
+      {/*
+        PAR-22. This screen answers "what did I earn"; it has never answered
+        "send it to me". That surface exists on the web for every provider role
+        (/payouts) and had no mobile equivalent for astrologers. It is a hidden
+        route — the astrologer tab bar already carries six — so this is its ONLY
+        entry point, which is why it sits outside the `vm` branch: a failed
+        earnings read must not also take away the way to withdraw.
+      */}
+      <TouchableOpacity
+        style={styles.payoutLink}
+        activeOpacity={0.8}
+        accessibilityRole="link"
+        accessibilityLabel="Payouts"
+        accessibilityHint="Opens your withdrawable balance and payout history"
+        onPress={() => router.push('/(astrologer)/payouts' as never)}
+      >
+        <Ionicons name="cash-outline" size={18} color={colors.saffron[600]} />
+        <Text style={styles.payoutLinkText}>Balance and payouts</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.stone[400]} />
+      </TouchableOpacity>
+
       {vm ? (
         <>
           <View style={{ flexDirection: 'row' }}>
@@ -122,7 +146,7 @@ export default function AstrologerEarnings() {
                     .join(' · ')}
                   trailing={r.earningsInr === null ? '—' : formatInr(r.earningsInr)}
                   trailingHint="your share"
-                  status={{ label: r.status, color: statusColor(r.status) }}
+                  status={{ label: commissionStatusLabel(r.status), color: statusColor(r.status) }}
                 />
               ))
             )}
@@ -162,5 +186,22 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.stone[600],
     lineHeight: 19,
+  },
+  payoutLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.stone[200],
+  },
+  payoutLinkText: {
+    flex: 1,
+    fontSize: fontSize.base,
+    fontWeight: '700',
+    color: colors.stone[800],
   },
 });

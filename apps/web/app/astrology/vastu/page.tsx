@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import VastuClient from './VastuClient';
 import { DISHAS, ROOMS } from '../../../lib/vastu';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -100,8 +103,8 @@ export default function VastuPage() {
 
    <header className="mt-4 text-center">
     <p className="text-xs uppercase tracking-widest text-saffron-600">वास्तु शास्त्र · Vastu Shastra Calculator</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Vastu Calculator — 8-Direction Room Scorer</h1>
-    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+    <h1 className={`${H1.catalogue} mt-1`}>Vastu Calculator — 8-Direction Room Scorer</h1>
+    <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
      Pick the direction your home faces, then place each room in a disha. We score every placement
      against classical Vastu texts (Mayamatam, Vishwakarma Prakash, Brihat Samhita) and flag any Vastu doshas.
     </p>
@@ -184,7 +187,7 @@ export default function VastuPage() {
      This calculator flags doshas. A pandit prescribes specific remedies (yantra, colour correction, mirror, copper pyramid) tailored to your dwelling without structural change.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
       Ask a Vastu Pandit
      </Link>
      <Link href="/astrology/shubh-muhurat" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

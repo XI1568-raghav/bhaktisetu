@@ -21,6 +21,8 @@ import {
 } from '../../../lib/support';
 import { listTickets } from '../../../lib/support-api';
 import { useAuth } from '../../../lib/auth-context';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  StatusBadge,
  PriorityBadge,
@@ -69,14 +71,14 @@ export default function MyTicketsPage() {
  <div className="max-w-6xl mx-auto px-6">
  <div className="flex items-center justify-between mb-8">
  <div>
- <h1 className="text-3xl font-[family-name:var(--font-display)] font-bold text-surface-900 tracking-tight">
+ <h1 className={H1.catalogue}>
  My tickets
  </h1>
  <p className="text-sm text-surface-500 mt-1">Track and reply to your support requests.</p>
  </div>
  <Link
  href="/support/ticket/new"
- className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-saffron-600 hover:bg-saffron-700 text-white text-sm font-semibold transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  <Plus className="w-4 h-4" />
  New ticket
@@ -213,7 +215,7 @@ function EmptyState({ hasAny }: { hasAny: boolean }) {
  </p>
  <Link
  href="/support/ticket/new"
- className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-saffron-600 hover:bg-saffron-700 text-white text-sm font-semibold transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  <TicketIcon className="w-4 h-4" /> Raise a ticket
  </Link>

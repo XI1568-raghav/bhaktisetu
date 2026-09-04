@@ -21,9 +21,13 @@ import {
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: true ONLY for 401. A 403 here is a suspended pandit or a role
+ // refusal, and sending them to sign in again loops back to the same wall.
+ loadErrorIsReauth,
 } from '../../lib/api-config';
 import EarningsCard from '../../components/provider/EarningsCard';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
+import LoadErrorBanner from '../../components/LoadErrorBanner';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -124,6 +128,11 @@ export default function PriestDashboard() {
  const [data, setData] = useState<DashboardData | null>(null);
  const [loading, setLoading] = useState(true);
  const [fetchError, setFetchError] = useState<string | null>(null);
+ // AUTH-06: /priest never classified its failure at all — the non-ok branch
+ // below throws `res.status` away and prints one fixed sentence, so an
+ // expired session was indistinguishable from a 500 and the only control on
+ // screen was a Retry that re-fires with the same dead token.
+ const [fetchReauth, setFetchReauth] = useState(false);
  // RES-06 (2026-08-12): 'unknown' until /provider-kyc actually ANSWERS.
  // Defaulting to 'unsubmitted' and returning early on !r.ok meant every
  // backend hiccup told a verified, approved pandit "KYC required for payout"
@@ -168,8 +177,8 @@ export default function PriestDashboard() {
  } else {
  setDutyError(
  next
- ? `Could not go on duty (HTTP ${res.status}) — you are still OFF duty and will not receive instant requests. Try again.`
- : `Could not go off duty (HTTP ${res.status}) — you are still ON duty. Try again.`,
+ ? 'Could not go on duty — you are still OFF duty and will not receive instant requests. Try again.'
+ : 'Could not go off duty — you are still ON duty. Try again.',
  );
  }
  } catch {
@@ -199,12 +208,23 @@ export default function PriestDashboard() {
  // read leaves the toggle where it was rather than asserting "off".
  setOnDuty(payload.priest?.isOnDuty === true);
  setFetchError(null);
+ setFetchReauth(false);
  } else {
- setFetchError(`Could not load dashboard (status ${res.status}). Showing baseline.`);
+ // RES-09: this carried `(status ${res.status})`. The wording otherwise
+ // stays as it was — __tests__/resilience-load-honesty.test.tsx (RES-06)
+ // waits on this exact banner to know both dashboard fetches have
+ // settled before asserting the KYC state, so the leading clause is the
+ // test's handle on "the load failed", not decoration.
+ setFetchError('Could not load dashboard right now. Showing baseline figures.');
+ // The sentence stays byte-identical on purpose:
+ // __tests__/resilience-load-honesty.test.tsx waits on this exact banner to
+ // know both dashboard fetches have settled. Only the CONTROL changes.
+ setFetchReauth(loadErrorIsReauth(res));
  setData(zeroDashboard(displayName));
  }
  } catch (e) {
  setFetchError(loadErrorMessage(e));
+ setFetchReauth(loadErrorIsReauth(e));
  setData(zeroDashboard(displayName));
  } finally {
  setLoading(false);
@@ -248,7 +268,50 @@ export default function PriestDashboard() {
  );
  }
 
- if (!data) return null;
+ // PF-14 / RES-09: `return null` here rendered a BLANK PAGE when
+ // /priest/dashboard failed. Two things were wrong with that. The pandit lost
+ // the on-duty control — the one switch that decides whether they receive
+ // dispatched work — and the friendly error this component now computes was
+ // never shown, so a 500 looked identical to a slow network.
+ //
+ // The toggle renders in its SAFE state: aria-pressed=false. Never claim
+ // on-duty when the dashboard could not be read; a pandit who believes they are
+ // on duty and is not will miss work silently.
+ if (!data) {
+   return (
+     <div className="space-y-6 max-w-5xl">
+       {fetchError && (
+         <LoadErrorBanner
+           message={fetchError}
+           reauth={fetchReauth}
+           onRetry={() => { void loadAll(); }}
+           className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+         />
+       )}
+       <div className="rounded-xl border border-surface-100 bg-white p-4">
+         <div className="flex items-center justify-between gap-3">
+           <div>
+             <p className="text-sm font-medium text-surface-800">On-duty</p>
+             <p className="prose-meta text-surface-500">
+               Your duty status could not be read, so it is shown as off.
+             </p>
+           </div>
+           <button
+             onClick={() => toggleDuty(!onDuty)}
+             disabled={dutySaving}
+             className="-m-2 inline-flex shrink-0 items-center justify-center p-2 disabled:opacity-50"
+             aria-pressed={onDuty}
+             aria-label="Toggle on-duty"
+           >
+             <span className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${onDuty ? 'bg-tulsi-green' : 'bg-surface-300'}`}>
+               <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${onDuty ? 'translate-x-7' : 'translate-x-1'}`} />
+             </span>
+           </button>
+         </div>
+       </div>
+     </div>
+   );
+ }
 
  const statCards = [
  { label: 'Total Bookings', value: data.bookings.total, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -271,7 +334,7 @@ export default function PriestDashboard() {
  Namaste, {data.priest.displayName.split(' ')[0]}!
  </h1>
  <div className="mt-1 flex items-center gap-3 flex-wrap">
- <p className="text-surface-500">Here is your dashboard overview for today.</p>
+ <p className="prose-body text-surface-500">Here is your dashboard overview for today.</p>
  <KycStatusBadge state={kycState} reason={kycReason} />
  </div>
  </div>
@@ -288,7 +351,7 @@ export default function PriestDashboard() {
  <p className="font-semibold text-surface-800">
  {onDuty ? 'You are ON DUTY' : 'Go on duty for instant bookings'}
  </p>
- <p className="text-xs text-surface-500">
+ <p className="prose-body text-surface-500">
  {onDuty
  ? 'You will receive instant puja requests near you. Respond within a minute.'
  : 'Turn on to receive instant puja requests near you (Uber-style dispatch).'}
@@ -335,12 +398,12 @@ export default function PriestDashboard() {
  />
 
  {fetchError && (
- <div role="alert" className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
- <span className="flex-1 min-w-[12rem]">{fetchError}</span>
- <button type="button" onClick={() => { void loadAll(); }} className="font-semibold underline underline-offset-2">
- Retry
- </button>
- </div>
+ <LoadErrorBanner
+ message={fetchError}
+ reauth={fetchReauth}
+ onRetry={() => { void loadAll(); }}
+ className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+ />
  )}
 
  {/* Quick Stats */}
