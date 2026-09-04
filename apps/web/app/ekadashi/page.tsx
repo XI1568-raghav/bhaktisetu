@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EKADASHIS, EKADASHI_GROUPS, getEkadashi } from '../../lib/ekadashis';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -110,7 +112,7 @@ export default function EkadashiIndexPage() {
        <Link href="/" className="hover:text-saffron-700">Home</Link> ·{' '}
        <span className="text-gray-900">Ekadashi Vratas</span>
       </nav>
-      <h1 className="mt-3 font-serif text-4xl font-bold text-gray-900 sm:text-5xl">
+      <h1 className={`${H1.marketing} mt-3`}>
        24 Ekadashi Vratas
       </h1>
       <p className="mt-2 font-serif text-lg text-saffron-700">एकादशी व्रत — Vishnu&apos;s Fortnightly Fast</p>
@@ -214,7 +216,7 @@ export default function EkadashiIndexPage() {
        procedure for breaking fast on Dwadashi morning.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/vrat" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

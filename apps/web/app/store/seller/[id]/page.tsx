@@ -3,9 +3,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronRight, Store, Truck, Shield, RotateCcw } from 'lucide-react';
 import { getLiveProduct } from '../../../../lib/store-live';
+import { remoteImage, remoteSrcSet, IMG_W } from '../../../../lib/images';
 import AddToCartButton from '../../../../components/store/AddToCartButton';
 import type { CartProduct } from '../../../../components/CartContext';
 import { productJsonLd, SITE_URL } from '../../../../lib/jsonld';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 /**
  * COM-11: the detail page for a real seller's product.
@@ -71,7 +73,13 @@ export default async function SellerProductPage({ params }: { params: Promise<Pa
     handle: product.handle,
     title: product.title,
     price: product.price,
-    compareAtPrice: product.compareAtPrice ?? product.price,
+    // LEG-17: was `product.compareAtPrice ?? product.price`. A seller who
+    // listed no reference price got one MANUFACTURED equal to their price on
+    // the way into the cart, and the cart then struck it through — "₹499
+    // ~~₹499~~". getLiveProduct already returns null unless the seller's own
+    // compareAtPrice is strictly greater than the price, so pass it through
+    // and let null stay null.
+    compareAtPrice: product.compareAtPrice,
     image: product.imageUrl ?? '',
     category: product.category,
     inStock: product.stock > 0,
@@ -96,12 +104,29 @@ export default async function SellerProductPage({ params }: { params: Promise<Pa
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-white rounded-xl border border-surface-100 overflow-hidden">
             <div className="aspect-square bg-gradient-to-br from-surface-50 to-saffron-50 flex items-center justify-center">
+              {/* CM-08: this painted the RAW `product.imageUrl` — the one
+                  product surface in the app that skipped `remoteImage`, and the
+                  one where the URL is least controlled (it is whatever a store
+                  operator typed, not a seeded value). With `loading="eager"` a
+                  pasted Wikimedia Commons original is then the largest blocking
+                  download on the page; the biggest measured in this codebase
+                  was 14,905 KB into a 343px slot.
+
+                  Funnelling is safe for any host: `remoteImage` rewrites
+                  Commons and Unsplash URLs and returns everything else — a
+                  Supabase or CDN URL — completely untouched, and `remoteSrcSet`
+                  returns undefined for those, which React renders as an omitted
+                  attribute. `sizes` is required alongside `srcSet`: without it
+                  the browser assumes 100vw and picks the widest candidate on
+                  every viewport, which is worse than no srcSet at all. */}
               {product.imageUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
-                  src={product.imageUrl}
-                  width={960}
-                  height={960}
+                  src={remoteImage(product.imageUrl, IMG_W.WIDE)}
+                  srcSet={remoteSrcSet(product.imageUrl, [IMG_W.CARD, IMG_W.WIDE])}
+                  sizes="(min-width: 1024px) 480px, 100vw"
+                  width={IMG_W.WIDE}
+                  height={IMG_W.WIDE}
                   loading="eager"
                   decoding="async"
                   alt={product.title}
@@ -121,7 +146,7 @@ export default async function SellerProductPage({ params }: { params: Promise<Pa
           <div className="space-y-5">
             <div>
               <p className="text-sm text-saffron-600 font-medium mb-1">{product.category}</p>
-              <h1 className="text-2xl lg:text-3xl font-bold text-surface-800 mb-2">
+              <h1 className={`${H1.catalogue} mb-2`}>
                 {product.title}
               </h1>
               {product.storeName && (

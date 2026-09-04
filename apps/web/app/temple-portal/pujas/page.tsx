@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import {
   listTemplePujasWithLinkState,
   createTemplePuja,
@@ -28,6 +29,7 @@ import {
   type PujaTypeSummary,
 } from '../../../lib/temple-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -107,7 +109,7 @@ function TemplePujasPageContent() {
       setPriests(priestList);
       setPujaTypes(typeList);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load pujas');
+      setError(userFacingMessage(err, 'We could not load your pujas. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -172,7 +174,7 @@ function TemplePujasPageContent() {
       }
       resetForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(userFacingMessage(err, 'We could not save that puja. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -190,7 +192,7 @@ function TemplePujasPageContent() {
       setPujas((cur) => cur.map((x) => (x.id === p.id ? updated : x)));
     } catch (err) {
       setPujas(prev);
-      setError(err instanceof Error ? err.message : 'Toggle failed');
+      setError(userFacingMessage(err, 'We could not change that puja. Please try again.'));
     } finally {
       setBusyId(null);
     }
@@ -206,7 +208,7 @@ function TemplePujasPageContent() {
       await deleteTemplePuja(token, id);
     } catch (err) {
       setPujas(prev);
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(userFacingMessage(err, 'We could not delete that puja. Please try again.'));
     } finally {
       setBusyId(null);
     }
@@ -241,7 +243,7 @@ function TemplePujasPageContent() {
           }}
           disabled={!!templeLinkIssue}
           title={templeLinkIssue ?? undefined}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className={buttonClass('primary', 'md', 'disabled:cursor-not-allowed')}
         >
           <Plus className="w-4 h-4" /> Add Puja
         </button>
@@ -389,7 +391,7 @@ function TemplePujasPageContent() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+                className={buttonClass('primary', 'md')}
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

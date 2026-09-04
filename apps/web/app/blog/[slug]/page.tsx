@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBlogPost, listBlogPosts } from '../../../lib/blog-posts';
 import { markdownToHtml } from '../../../lib/markdown';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 3600;
 
@@ -88,7 +89,7 @@ export default async function BlogPostPage({ params }: Params) {
             day: 'numeric',
           })}
         </p>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 leading-tight">
+        <h1 className={H1.catalogue}>
           {post.title}
         </h1>
       </header>

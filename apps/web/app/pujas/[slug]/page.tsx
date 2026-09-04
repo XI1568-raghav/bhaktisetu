@@ -27,7 +27,7 @@ import {
  Undo2,
 } from 'lucide-react';
 import { getDeityImage, getPujaImage } from '../../../lib/images';
-import { formatTrustScoreOutOf } from '../../../lib/trust-score';
+import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-score';
 // CM-03 (prod sweep 2026-08-12): this page advertises the bare puja price in
 // three places while checkout charges it plus a ₹51 platform fee. The fee is
 // real (apps/api booking.service folds it into the amount Razorpay is asked
@@ -45,6 +45,7 @@ import {
 import { pujaOffersJsonLd } from '../../../lib/jsonld';
 import { getPujaCompletionCounts } from '../../../lib/social-proof';
 import PujaShareButton from '../../../components/puja/PujaShareButton';
+import { pujaCardBlurb, HERO_BLURB_MAX } from '../../../lib/puja-blurb';
 import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import PujaSocialProof from '../../../components/PujaSocialProof';
 
@@ -166,7 +167,10 @@ export async function generateMetadata({
 
  const url = `https://darshya.online/pujas/${slug}`;
  const title = `${puja.name} — Book Online`;
- const description = `Book ${puja.name} online at verified temples. ${puja.description.slice(0, 140)}`;
+ // CM-10 + TC-08: `slice(0, 140)` cut mid-word ("...performed as prescr"),
+ // and "verified temples" claimed a vetting step the product does not run —
+ // the temple list is filtered on `isActive`, not on any verification column.
+ const description = `Book ${puja.name} online, with video proof of the ceremony. ${pujaCardBlurb(puja.description)}`;
 
  // P0 #202 (cont.): the api returns `images` as a string[] of URLs, but the
  // page previously read `images[0].url` (object shape) → undefined → Next
@@ -236,8 +240,11 @@ export default async function PujaDetailPage({
  '@context': 'https://schema.org',
  '@type': 'Product',
  name: puja.name,
- description: puja.description,
- category: puja.category,
+ // CM-10: this was the full ~1,144-char description. A Product description
+ // in structured data is what a search engine quotes back, so it gets the
+ // same derived blurb the page shows rather than a scripture citation.
+ description: pujaCardBlurb(puja.description, HERO_BLURB_MAX),
+ category: pujaCategoryLabel(puja.category) || puja.category,
  image:
    Array.isArray(puja.images) && puja.images.length > 0
      ? puja.images.map((i) => (typeof i === 'string' ? i : (i as { url?: string })?.url)).filter(Boolean)
@@ -300,12 +307,15 @@ export default async function PujaDetailPage({
  {puja.nameLocal && (
  <p className="mb-4 text-lg text-white/80">{puja.nameLocal}</p>
  )}
- {/* CM-10: unclamped, these average 1,144 chars of scripture citation and
-   push the price and the Book button ~900px down a 390px phone. The full
-   text is still rendered in the About section below, where a reader who
-   wants the Shiva Purana references will find it. */}
- <p className="mb-6 line-clamp-3 max-w-xl text-base leading-relaxed text-white/90">
- {puja.description}
+ {/* CM-10: these average 1,144 chars of scripture citation and push the
+   price and the Book button ~900px down a 390px phone. `line-clamp-3` only
+   hid that from a sighted reader — every character still shipped, and a
+   screen reader still read the lot before reaching the price. The hero now
+   carries whole leading sentences up to 220 chars; the full text is
+   rendered in the About section below, where a reader who wants the Shiva
+   Purana references will find it. */}
+ <p className="mb-6 max-w-xl text-base leading-relaxed text-white/90">
+ {pujaCardBlurb(puja.description, HERO_BLURB_MAX)}
  </p>
 
  <div className="flex flex-wrap items-center gap-4 text-sm text-white/90">
@@ -388,7 +398,14 @@ export default async function PujaDetailPage({
  <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
  {[
- { icon: Shield, label: 'Verified Pandits', desc: 'Aadhaar-verified priests' },
+ // TC-08: this badge read "Verified Pandits" / "Aadhaar-verified
+ // priests". `Priest.isVerified`, `.verificationStatus` and
+ // `.aadhaarVerified` have no writer outside apps/api/prisma/seed.ts, and
+ // `.aadhaarVerified` is read in exactly one place — payment.service.ts —
+ // where it gates the PAYOUT. So the truthful badge is the payout gate:
+ // nothing about the pandit is checked before the booking, but nothing is
+ // paid out to them until Aadhaar KYC is on file.
+ { icon: Shield, label: 'Aadhaar KYC before payout', desc: 'A payout gate, not a credential check' },
  { icon: Video, label: 'Live Video Proof', desc: 'Watch your puja live' },
  { icon: Gift, label: 'Prasad Delivery', desc: 'Sacred prasad to your door' },
  // DB-06 (2026-08-12): this badge promised "100% refund if not satisfied".
@@ -512,10 +529,21 @@ export default async function PujaDetailPage({
  {temple.templeCity}, {temple.templeState}
  </p>
  <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
+ {/* TC-07: this pill rendered a filled amber star beside "4.9/5" on every
+   temple in the offering list, which a devotee reads as a customer
+   rating. `Temple.trustScore` has no writer anywhere in the codebase —
+   every value is one of twenty literals typed into apps/api/prisma/seed.ts
+   before the platform took a booking. Gated, not deleted, so the honest
+   presentation comes back on the day the writer lands: flip
+   TRUST_SCORE_IS_COMPUTED in lib/trust-score.ts and this renders again,
+   on the one scale, through the one formatter. Guarded by
+   __tests__/puja-temples-copy-honesty.tc08.test.tsx. */}
+ {canPublishTrustScore(temple.trustScore) && (
  <span className="flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
  {formatTrustScoreOutOf(temple.trustScore)}
  </span>
+ )}
  <span className="rounded-full bg-surface-100 px-2 py-0.5">
  {temple.availableSlots.length} time slots
  </span>

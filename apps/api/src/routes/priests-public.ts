@@ -6,6 +6,13 @@ import { prisma } from '../lib/prisma.js';
 // trimmed + lowercased once at parse time so the Prisma where clause below
 // is exact-match deterministic. Empty string after trim is treated as
 // absent so `?specialization=&deity=ganesh` filters only on deity.
+/**
+ * SCAL-04: hard cap on the public priest directory page. See the comment at the
+ * query site — the default equals the cap on purpose, because a web caller
+ * walks the whole list to resolve an offering.
+ */
+export const PUBLIC_PRIESTS_MAX_LIMIT = 100;
+
 export const publicPriestsQuerySchema = z.object({
   specialization: z
     .string()
@@ -19,6 +26,12 @@ export const publicPriestsQuerySchema = z.object({
     .max(64)
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
+  // SCAL-04: this route is registered with NO preHandler (server.ts), so it is
+  // the only unbounded scan an ANONYMOUS caller could trigger. Coerced through
+  // zod so `?page=abc` is a 400 rather than a silent NaN that pages from
+  // nowhere.
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).optional(),
 });
 
 // PJ-07: `Priest.id` is a uuid column. Anything else — `/priests/me`, a slug,
@@ -141,24 +154,53 @@ export async function priestsPublicRoutes(server: FastifyInstance) {
     }
     // 5-minute public cache (matches getPublicPriests next.revalidate=300).
     reply.header('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=60');
-    const priests = await prisma.priest.findMany({
-      where,
-      orderBy: { ratingAvg: 'desc' },
-      select: {
-        id: true,
-        displayName: true,
-        avatarUrl: true,
-        bio: true,
-        languages: true,
-        specializations: true,
-        experienceYears: true,
-        ratingAvg: true,
-        ratingCount: true,
-        isVerified: true,
-      },
-    });
+    // ── SCAL-04: bound the page, and report a TRUE total ──
+    //
+    // This was `findMany({ where, orderBy, select })` with no take and no
+    // cursor — the widest rows of any remaining unbounded read (bio,
+    // languages[], specializations[]) over every verified priest, reachable by
+    // anyone. The 5-minute Cache-Control above is a CDN hint, not a database
+    // bound: a cold cache or a client that skips the CDN goes straight to
+    // Postgres for the whole table.
+    //
+    // DEFAULT IS THE CAP, DELIBERATELY. apps/web/app/checkout/offering/page.tsx
+    // resolves an offering by walking this entire list (there is no
+    // GET /priests/offerings/:id), so a smaller default would silently stop
+    // resolving offerings owned by priests past the first page. Lowering
+    // PUBLIC_PRIESTS_MAX_LIMIT requires fixing that caller in the same commit.
+    const pageNum = q.page ?? 1;
+    const pageSize = Math.min(q.limit ?? PUBLIC_PRIESTS_MAX_LIMIT, PUBLIC_PRIESTS_MAX_LIMIT);
+    const skip = (pageNum - 1) * pageSize;
 
-    if (priests.length === 0) return reply.send({ priests: [] });
+    // Paired count on the IDENTICAL where. SCAL-09's defect was a `total` taken
+    // from the page length, which tells every client there is exactly one page.
+    const [priests, total] = await Promise.all([
+      prisma.priest.findMany({
+        where,
+        orderBy: { ratingAvg: 'desc' },
+        select: {
+          id: true,
+          displayName: true,
+          avatarUrl: true,
+          bio: true,
+          languages: true,
+          specializations: true,
+          experienceYears: true,
+          ratingAvg: true,
+          ratingCount: true,
+          isVerified: true,
+        },
+        skip,
+        take: pageSize,
+      }),
+      prisma.priest.count({ where }),
+    ]);
+
+    // `priests` stays the first key of the response so every existing client
+    // keeps working; page/limit/total are additive.
+    if (priests.length === 0) {
+      return reply.send({ priests: [], total, page: pageNum, limit: pageSize });
+    }
 
     // Batch the active-offering count to avoid an N+1.
     const counts = await prisma.priestPujaOffering.groupBy({
@@ -172,6 +214,9 @@ export async function priestsPublicRoutes(server: FastifyInstance) {
 
     return reply.send({
       priests: priests.map((p) => serializePriest(p, countByPriest.get(p.id) ?? 0)),
+      total,
+      page: pageNum,
+      limit: pageSize,
     });
   });
 

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAdminPendingApprovals } from '@poojly/api-client';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { userRoleLabel } from '../../lib/enum-labels';
 
 export default function AdminApprovals() {
   const approvalsQuery = useAdminPendingApprovals();
@@ -56,7 +57,7 @@ export default function AdminApprovals() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{u.fullName}</Text>
                 <Text style={styles.meta}>
-                  {u.role} • {u.email ?? u.phone}
+                  {userRoleLabel(u.role)} • {u.email ?? u.phone}
                 </Text>
                 <Text style={styles.dateText}>
                   Applied {new Date(u.createdAt).toLocaleDateString('en-IN')}

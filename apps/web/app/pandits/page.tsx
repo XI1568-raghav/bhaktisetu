@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { getPublicPriests, type PriestSummary } from '../../lib/pandit-api';
 import { remoteImage, IMG_W } from '../../lib/images';
+import { AvatarWithFallback } from '../../components/AvatarWithFallback';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pandits' },
@@ -32,24 +34,27 @@ function PriestCard({ priest }: { priest: PriestSummary }) {
    className="block bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-5 hover:border-saffron-300 hover:shadow-md transition-all"
   >
    <div className="flex items-start gap-3 mb-3">
-    {priest.avatarUrl ? (
-     // eslint-disable-next-line @next/next/no-img-element
-     <img
-      src={remoteImage(priest.avatarUrl, IMG_W.THUMB)}
-      width={48}
-      height={48}
-      loading="lazy"
-      decoding="async"
-      alt={priest.displayName}
-      className="w-12 h-12 rounded-full object-cover shrink-0"
-     />
-    ) : (
-     <div className="w-12 h-12 bg-saffron-100 rounded-full flex items-center justify-center shrink-0">
-      <span className="text-sm font-bold text-saffron-700">
-       {initials(priest.displayName)}
-      </span>
-     </div>
-    )}
+    {/* PF-04: this was `{priest.avatarUrl ? <img/> : <initials/>}` — a
+        FALSY-only guard, which a present-but-dead URL walks straight past into
+        a broken-image icon. `priests.avatar_url` is the column that actually
+        holds the dead `images.darshya.online` host, and this is the public
+        pandit directory, so it is where the defect is most visible.
+        AvatarWithFallback renders the same tile on error and removes the
+        <img>, so there is no request loop. */}
+    <AvatarWithFallback
+     src={remoteImage(priest.avatarUrl ?? '', IMG_W.THUMB)}
+     width={48}
+     height={48}
+     alt={priest.displayName}
+     className="w-12 h-12 rounded-full object-cover shrink-0"
+     fallback={
+      <div className="w-12 h-12 bg-saffron-100 rounded-full flex items-center justify-center shrink-0">
+       <span className="text-sm font-bold text-saffron-700">
+        {initials(priest.displayName)}
+       </span>
+      </div>
+     }
+    />
     <div className="min-w-0 flex-1">
      <div className="flex items-center gap-1.5">
       <h3 className="font-semibold text-surface-800 truncate">
@@ -133,7 +138,7 @@ export default async function PanditsListingPage() {
    {/* Hero */}
    <section className="bg-gradient-to-b from-saffron-50 to-[var(--color-bg)] py-12 px-4">
     <div className="max-w-6xl mx-auto">
-     <h1 className="text-3xl sm:text-4xl font-semibold text-surface-800 mb-3">
+     <h1 className={`${H1.catalogue} mb-3`}>
       Verified Pandits
      </h1>
      <p className="text-surface-600 max-w-2xl">
@@ -150,7 +155,7 @@ export default async function PanditsListingPage() {
        <h2 className="text-lg font-semibold text-surface-800 mb-2">
         No pandits listed yet
        </h2>
-       <p className="text-sm text-surface-500 max-w-md mx-auto">
+       <p className="prose-meta text-surface-500 max-w-md mx-auto">
         We are onboarding verified pandits. New profiles appear here once
         reviewed by our team.
        </p>

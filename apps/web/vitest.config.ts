@@ -11,6 +11,33 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     include: ['__tests__/**/*.test.{ts,tsx}', 'app/**/__tests__/**/*.test.{ts,tsx}'],
     css: false,
+
+    // ── Suite stability, added 2026-08-23 after three false alarms in one day ──
+    //
+    // This suite passed 35 files a few months ago and now runs ~300. At that
+    // size, unbounded file parallelism starved render-heavy tests of CPU and
+    // they failed on TIMEOUT rather than on any assertion. Three separate
+    // batches were investigated as regressions and all three turned out to be
+    // contention — identical code went green the moment it ran serially
+    // (6 files / 74 tests, and an API signature test that needs 14.5s alone).
+    //
+    // The cost is not the wasted investigation. It is that a full-suite failure
+    // stopped being evidence: the honest reading of a red run became "probably
+    // contention", which is exactly the state in which a real regression walks
+    // through. A slower suite that means something beats a fast one that does
+    // not.
+    //
+    // maxThreads is capped rather than parallelism disabled outright — serial
+    // execution of ~300 files is slow enough that people skip it, and a gate
+    // nobody runs is worse than a flaky one.
+    poolOptions: {
+      threads: { maxThreads: 4, minThreads: 1 },
+    },
+    // happy-dom render + async assertions routinely exceed vitest's 5s default
+    // on a loaded machine. These are ceilings for a hung test, not budgets any
+    // healthy test should approach.
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
   },
   resolve: {
     alias: [

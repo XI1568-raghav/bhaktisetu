@@ -42,6 +42,8 @@ import DarshanPlayer from '../../../components/DarshanPlayer';
 import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
 import AdSlot from '../../../components/AdSlot';
 import { getTempleHero } from '../../../lib/images';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 import {
  currentAartiState,
  getScheduleForTemple,
@@ -150,14 +152,26 @@ const YOUTUBE_STREAMS: Record<string, string> = {
  'iskcon-vrindavan': ytEmbed('UCAA6IsLVfbHrP1I_lzxv09Q'),
 };
 
+// DF-10 (2026-08-24): `viewerCount`/`peakViewers` are pinned to 0 throughout
+// this library. They previously carried invented audiences — 12450/24000 for
+// Kashi, 28300/52000 for Tirupati — which is the same figure the 2026-05-02
+// content audit deleted from the homepage (docs/content-audit-2026-05-02.md:31)
+// and which then went on shipping here. Nothing on this page counts an
+// audience; the DF-10 note at the stream-info block below already says why the
+// "{viewerCount} watching" line was removed, and the numbers feeding it are now
+// removed too so a future edit cannot resurrect the line from live-looking data.
+//
+// Kept as 0 rather than deleted because DarshanStream requires both fields as
+// `number` (lib/api.ts:370-371); 0 is this codebase's "not counted" and it is
+// what suppresses the player badge (components/DarshanPlayer.tsx:225).
 const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  'kashi-vishwanath': {
  id: 'live-kashi',
  templeId: 'temple-kashi',
  playbackUrl: ytEmbed('UCdMj2twWfMHXrWgX5oVdoyA'),
  status: 'live',
- viewerCount: 12450,
- peakViewers: 24000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -173,8 +187,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-somnath',
  playbackUrl: ytEmbed('UCT1egsvA08YcdMLiEu1DTRg'),
  status: 'live',
- viewerCount: 8450,
- peakViewers: 15200,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -190,8 +204,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-ttd',
  playbackUrl: ytEmbed('UCS2Y83GD-fc7qqgNW5uj41g'),
  status: 'live',
- viewerCount: 28300,
- peakViewers: 52000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -207,8 +221,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-golden',
  playbackUrl: ytEmbed('UCYn6UEtQ771a_OWSiNBoG8w'),
  status: 'live',
- viewerCount: 15600,
- peakViewers: 32000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -224,8 +238,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-shirdi',
  playbackUrl: ytEmbed('UCKGvJDh7g_Kzocbwy7aKicA'),
  status: 'live',
- viewerCount: 6200,
- peakViewers: 18000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -241,8 +255,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-siddhi',
  playbackUrl: ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
  status: 'live',
- viewerCount: 8760,
- peakViewers: 14000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -258,8 +272,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-mahakal',
  playbackUrl: ytEmbed('UC7q12ONY2mvuq066rreluhQ'),
  status: 'live',
- viewerCount: 9400,
- peakViewers: 22000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -275,8 +289,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-vaishno',
  playbackUrl: ytEmbed('UCFYQr1l7ereS27SrLJ8bBtw'),
  status: 'live',
- viewerCount: 5800,
- peakViewers: 16000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -292,8 +306,8 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  templeId: 'temple-jagannath',
  playbackUrl: ytEmbed('UCstacpPsNLSiGcYe7qbF14Q'),
  status: 'live',
- viewerCount: 7300,
- peakViewers: 45000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -335,6 +349,10 @@ const fallbackSchedule = [
  { time: '9:00 PM', event: 'Shayan Aarti', status: 'upcoming' },
 ];
 
+// DF-10: the `viewers` key is gone from these rows (9800 / 5420 / 0 — invented,
+// and 0 for Kedarnath was no better sourced than the other two). The Related
+// Temples list only ever rendered `isLive` as a digit-free LIVE pill, so the
+// numbers were dead weight that any future edit could have wired to the screen.
 const fallbackRelatedTemples = [
  {
  name: 'Mahakaleshwar Temple',
@@ -342,7 +360,6 @@ const fallbackRelatedTemples = [
  deity: 'Lord Shiva',
  slug: 'mahakaleshwar',
  isLive: true,
- viewers: 9800,
  },
  {
  name: 'Somnath Temple',
@@ -350,7 +367,6 @@ const fallbackRelatedTemples = [
  deity: 'Lord Shiva',
  slug: 'somnath',
  isLive: true,
- viewers: 5420,
  },
  {
  name: 'Kedarnath Temple',
@@ -358,7 +374,6 @@ const fallbackRelatedTemples = [
  deity: 'Lord Shiva',
  slug: 'kedarnath',
  isLive: false,
- viewers: 0,
  },
 ];
 
@@ -486,16 +501,16 @@ export default async function DarshanDetailPage({
  <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
  <div className="bg-surface-800 border border-surface-700 rounded-2xl p-8 text-center">
  <Video className="w-12 h-12 text-saffron-400 mx-auto mb-4 opacity-80" />
- <h1 className="text-2xl font-bold text-white mb-2">{name}</h1>
+ <h1 className={`${H1.portalInverse} mb-2`}>{name}</h1>
  <p className="text-surface-400 mb-1">Live darshan coming soon</p>
- <p className="text-sm text-surface-500 max-w-md mx-auto mb-6">
+ <p className="prose-meta text-surface-500 max-w-md mx-auto mb-6">
  We don&rsquo;t have an active live stream for this temple yet. Browse the temples
  streaming right now below, or visit our full directory.
  </p>
  <div className="flex flex-col sm:flex-row gap-3 justify-center">
  <a
  href="/darshan"
- className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-saffron-600 text-white font-semibold text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  Browse All Live Streams
  <ChevronRight className="w-4 h-4" />
@@ -641,7 +656,7 @@ export default async function DarshanDetailPage({
  <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
  <div className="flex items-start justify-between">
  <div>
- <h1 className="text-xl sm:text-2xl font-bold text-white">
+ <h1 className={H1.portalInverse}>
  {stream.temple.name}
  </h1>
  <div className="flex items-center gap-3 mt-2 text-sm text-surface-400">
@@ -808,7 +823,7 @@ export default async function DarshanDetailPage({
  Join the community chat and submit prayer requests during live
  darshan.
  </p>
- <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors">
+ <button className={buttonClass('primary', 'md')}>
  <MessageCircle className="w-4 h-4" />
  Join Chat
  </button>
@@ -870,7 +885,6 @@ export default async function DarshanDetailPage({
  deity: s.temple.deityPrimary,
  slug: s.temple.slug,
  isLive: s.status === 'live',
- viewers: s.viewerCount,
  streamId: s.id,
  }))
  : fallbackRelatedTemples.map((t) => ({

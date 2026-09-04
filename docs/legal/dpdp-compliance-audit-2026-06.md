@@ -106,10 +106,23 @@ DPDP Act 2023 (Digital Personal Data Protection Act) enforcement starts staggere
 
 ### 8. Cross-border data transfer
 
-**Rule**: Section 16 — GoI may restrict transfer to certain countries. NRI users in US/UK/AU/CA — data flows TO Bhaktisetu India (acceptable). Some processors are US-based (Stripe, Resend) — outbound flows.
+**Rule**: Section 16 — GoI may restrict transfer to certain countries. NRI users in US/UK/AU/CA — data flows TO Bhaktisetu India (acceptable). Some processors are US-based (Resend; others `[verify]`) — outbound flows.
+
+> **Corrected 2026-09-02 (`OPS-10`).** This paragraph used to read *"Some processors
+> are US-based (Stripe, Resend)"*. **Stripe was removed from the codebase on
+> 2026-08-11** (`apps/api/src/lib/env.ts:45-46`,
+> `services/payment.service.ts:2506-2517`) and no replacement international processor
+> has been chosen, so there is currently no payment-processor leg in the cross-border
+> analysis. Two further corrections belong here, both verified in this repository on
+> 2026-09-02 and both material to a Section 16 assessment: hosting is **not** in
+> India — both Render services run in region `oregon`, US West (`render.yaml:15` API,
+> `:56` web) — and the Supabase Postgres region is not recorded anywhere in this
+> repository, so it is `[verify]` and must not be assumed to be Mumbai. The
+> authoritative processor and transfer inventory is
+> `docs/legal/records-of-processing-activities.md`.
 
 **To ship**:
-- [ ] Data flow diagram: India ↔ US (Stripe, Resend, Anthropic API, etc.) ↔ Other geos
+- [ ] Data flow diagram: hosting is US (Render `oregon`) — draw the real topology, not an assumed India origin. Processors: Resend, Anthropic API, plus the rest per `docs/legal/records-of-processing-activities.md` (`[verify]`; Stripe removed 2026-08-11)
 - [ ] Verify each outbound processor has Standard Contractual Clauses (SCC) equivalent
 - [ ] Privacy policy explicit on cross-border: which countries, which processors, what data
 

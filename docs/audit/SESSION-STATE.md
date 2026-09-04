@@ -332,77 +332,73 @@ recommended — `*/10` alone is 4,320 min/month. Read
 
 ---
 
-## ▶ NEXT SESSION STARTS HERE (2026-08-16)
+## ▶ NEXT SESSION STARTS HERE (2026-08-16, wave stopped early)
 
-**307 of 388 closed. ALL LIVE IN PRODUCTION** — merged `ca044898` (PR #247),
-both Render services deployed and probe-verified 2026-08-16. No migration
-outstanding; all four applied.
+**312 of 388 closed. COMMITTED, NOT PUSHED, NOT DEPLOYED.** Branch
+`feat/recurring-razorpay-planid` @ `50c0c0a9`. Production is still running
+`ca044898` (307 fixed) — everything since is local only.
 
 | Sev | Total | Fixed | Partial | Owner | Open |
 |---|---:|---:|---:|---:|---:|
 | P0 | 65 | 54 | 1 | 8 | **0** |
-| P1 | 155 | 128 | 11 | 15 | 1 |
-| P2 | 120 | 86 | 11 | 20 | 3 |
-| P3 | 48 | 39 | 3 | 6 | **0** |
-| **All** | **388** | **307** | **26** | **49** | **4** |
+| P1 | 155 | 131 | 7 | 16 | 1 |
+| P2 | 120 | 87 | 12 | 20 | **0** |
+| P3 | 48 | 40 | 2 | 6 | **0** |
+| **All** | **388** | **312** | **22** | **50** | **1** |
 
-Plus 2 `wontfix` (LEG-03, CWV-01) where the findings themselves were wrong.
-Suites: api **1965** · web **2210** · mobile **165** · all three `tsc` clean.
+Suites: api **2006** · web **2317** · mobile **200** · all three `tsc` clean.
 
-### The tally is partly bookkeeping — read this before quoting it
+### ⚠ SEVEN CLAIMS ARE UNVERIFIED — do not treat this tally as settled
 
-21 findings came back `already_correct`: closed by earlier waves and never
-re-marked. Each cites `git show HEAD:path` with line numbers and disclaims
-credit; LEG-01, AO-13 and AO-14 were hand-verified. **The "56 partial" was
-inflated.** Treat any future partial count as suspect until re-checked.
+The wave was stopped on request partway through. All 11 fix lanes reported, but
+2 verifiers were killed, so only 10 of ~30 claims were adversarially checked.
+These seven carry a fixer's word alone and are tagged in LEDGER.json:
 
-### Live-verified 2026-08-16
+`SEO-09` · `CM-10` · `PF-04` · `DU-12` · `DF-12` · `SCAL-04` · `DI-05`
 
-`/temples/kashi-vishwanath` and `/tirumala-tirupati` render Devanagari and Telugu
-(I-07 — the API had shipped these names for 20/20 temples and nothing rendered
-them) · `/health/channels` 200 · `/ops/scheduler` fresh boot 12:29:24 ·
-`/astrology/astrologers/live` 200 · web `/`, `/jyotirlinga/somnath`,
-`/sitemap.xml` 200.
+Calibration: in the PREVIOUS wave verifiers refuted 11 of 34 claims, and three
+of those had **no code change at all**. An unverified claim here is materially
+weaker evidence. **`DI-05` deserves the most scrutiny** — it sits next to
+commission math the lane was forbidden to touch, and it self-reports `fixed`.
 
-**Known-not-live, correctly recorded as partial:** API error localization
-(I-04 / I18N-03). Probed both `/temples/<bad>` and a `POST /auth/login`
-validation error with `Accept-Language: hi` — both still answer English. The
-catalogue and serializer exist in code; the wiring does not reach these routes.
-Verifiers caught the overclaim; do not trust the lane summary over this probe.
+Re-run verification for those seven before quoting 312 as a real number.
 
-### Four findings whose own instructions were damaging
+### What IS solid
 
-LEG-03 (code hard-refuses inside-24h cancellation, so "fixing" the copy would
-publish unreachable refund tiers — manufacturing LEG-01) · DF-12 and the
-astrologer map (load-bearing; the live API overlay merges onto it) · TD-08
-(`innerText` reading `''` through a collapsed `<details>`) · PF-10 (a
-`'use client'` page cannot set a status code). DU-12's 2,128-utility codemod was
-also refused with reasoning rather than performed.
+- **I-04 / I18N-03 (localized API errors)** — the claim that slipped through last
+  wave with passing unit tests while production answered English. Now wired at
+  the GLOBAL error handler (`plugins/error-localization.ts`, registered
+  `server.ts:176`), not per call site, which is why it can cover 756 responses.
+  The lane added `error-localization.wiring.test.ts` guarding the registration
+  itself — the exact failure mode from last round — plus probes for both paths.
+  19 tests green. **STILL NEEDS A LIVE PROBE:** after deploy, confirm
+  `curl -H "Accept-Language: hi" https://api.darshya.online/api/v1/temples/__no_such__`
+  returns Hindi. Until then it is verified locally only.
+- **I-03 was DOWNGRADED** partial → open by its verifier. Recorded as refuted,
+  not as claimed.
+- **DU-12 refused twice.** Two different agents independently disputed the
+  2,128-utility cool-gray codemod with their own reasoning. Two refusals means
+  the finding is probably wrong — treat as wontfix, not outstanding work.
 
-### The guard bug that recurred five times
+### Next steps, in order
 
-A guard that scans source text matches its own documentation. Instances: a
-localStorage ban tripping on the comment explaining it; a 5xx `error.message`
-scan flagging six valid 4xx echoes; a CTA test matching a comment naming the
-CTA; the SCAL-04 ratchet held over baseline by a comment describing a DELETED
-query; and one agent catching its own draft before shipping. **Strip comments
-first, always.**
+1. Re-verify the seven unverified claims (a read-only verifier wave is enough).
+2. Push → PR → CI → merge → deploy both Render services (no migration pending).
+3. Live-probe I-04 as above, plus the standard set in DEPLOY-PLAN.md.
+4. **50 owner-gated** remain — 80G registration number, WhatsApp BSP templates,
+   FCM keys, Razorpay Route, Supabase SMTP, `images.darshya.online` DNS, legal
+   entity/GSTIN, pricing decisions.
+5. **`launch-readiness-delta` is still incomplete** (7 agents dispatched, 5 area
+   blocks returned, no consolidated brief). **388 is a floor, not the true
+   defect count.**
 
-### `-X ours` merge hazard (hit once, avoided once)
+### Recurring hazards — both bit again this session
 
-main's squash of this branch's own PR makes every shared file conflict. `-X ours`
-is correct for code — but it applies the other side ADDITIVELY where there is no
-textual conflict. It once left two byte-identical 93-line copies and a redeclared
-const behind a clean merge exit. **Always run the full suite after a strategy
-merge.**
-
-### What remains
-
-- **49 owner-gated** — config/account/legal actions outside the repo: 80G
-  registration number, WhatsApp BSP templates, FCM keys, Razorpay Route,
-  Supabase SMTP + reset-password URL, `images.darshya.online` DNS, senior
-  astrologer price band, GTM catalogue decision, legal entity/GSTIN.
-- **26 partial · 4 open** — none P0; one P1 (SCAL-04 unbounded reads).
-- **Coverage repair still owed:** `launch-readiness-delta` ran 7 agents and
-  returned 5 area blocks with no consolidated brief. **388 is a floor.**
+- A guard that scans source text matches **its own comments**. Five instances so
+  far, one self-caught.
+- A `-RESIDUE` / `-count` sub-claim id collapses onto its base finding and
+  overwrites the base state. Hit `COM-02` last wave and `I18N-09` this wave —
+  both corrected by hand. Strip suffixes carefully when reconciling.
+- `-X ours` merges apply blocks **additively** where they do not textually
+  conflict. Always run the full suite after a strategy merge.
 

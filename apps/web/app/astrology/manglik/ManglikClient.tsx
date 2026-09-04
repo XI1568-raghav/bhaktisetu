@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { checkManglik, MANGLIK_REMEDIES, CANCELLATION_RULES, type ManglikResult } from '../../../lib/manglik';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type TimezoneOption = { value: number; label: string };
 
@@ -98,7 +99,7 @@ export default function ManglikClient({ options }: { options: TimezoneOption[] }
 
     <button
      type="submit"
-     className="mt-4 w-full rounded-full bg-saffron-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-saffron-700 sm:w-auto"
+     className={buttonClass('primary', 'md', 'mt-4 w-full shadow-sm sm:w-auto')}
     >
      Check Manglik Dosh
     </button>
@@ -162,7 +163,7 @@ export default function ManglikClient({ options }: { options: TimezoneOption[] }
        result alongside your full Ashtakoot kundli milan?
       </p>
       <div className="mt-3 flex flex-wrap justify-center gap-3">
-       <Link href="/astrology/kundli-milan" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/astrology/kundli-milan" className={buttonClass('primary', 'md')}>
         Free Kundli Milan
        </Link>
        <Link href="/ask-pandit" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

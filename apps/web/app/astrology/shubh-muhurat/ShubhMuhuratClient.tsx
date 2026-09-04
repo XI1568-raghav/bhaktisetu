@@ -11,6 +11,7 @@ import {
  type MuhuratWindow,
 } from '../../../lib/shubh-muhurat';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const VERDICT_STYLE: Record<MuhuratWindow['verdict'], { border: string; bg: string; pill: string; label: string }> = {
  excellent: { border: 'border-emerald-400', bg: 'bg-emerald-50/70', pill: 'bg-emerald-200 text-emerald-900', label: 'Excellent' },
@@ -135,7 +136,7 @@ export default function ShubhMuhuratClient() {
        Want a pandit to confirm + perform the puja inside this muhurat?
       </p>
       <div className="mt-3 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/astrology/choghadiya" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

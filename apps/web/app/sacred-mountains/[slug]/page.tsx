@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSacredMountain, SACRED_MOUNTAINS } from '../../../lib/sacred-mountains';
 import { formatNumber } from '../../../lib/format-locale';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 
@@ -93,7 +97,7 @@ export default async function SacredMountainPage({ params }: Props) {
         <p className="text-xs uppercase tracking-wider text-saffron-600">
           Sacred mountain · {isCosmic ? 'cosmological' : m.location.split(',').slice(-1)[0]?.trim()}
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">{m.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{m.name}</h1>
         <p className="mt-1 font-serif text-xl text-gray-700">{m.sanskrit}</p>
         {isCosmic && (
           <p className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-900">
@@ -184,6 +188,10 @@ export default async function SacredMountainPage({ params }: Props) {
           <div />
         )}
       </nav>
+      {detailCta({
+        routePrefix: 'sacred-mountains',
+        subject: m.name,
+      })}
     </main>
   );
 }

@@ -58,14 +58,30 @@ describe('CM-10 — puja category is a label, never the database value', () => {
     expect(page).not.toMatch(/\{puja\.category\}/);
   });
 
-  it('the detail hero clamps the description instead of dumping 1,144 chars', () => {
+  /**
+   * REWRITTEN 2026-09-01. This case used to require the opposite of the fix it
+   * is named for: it asserted that the hero renders `{puja.description}` inside
+   * a `<p>` carrying `line-clamp-*`. A clamp is a CSS max-height — it hides the
+   * ~1,144 characters from a sighted reader and ships every one of them into
+   * the DOM, the accessibility tree and the response body regardless, so the
+   * test locked in the appearance of the fix and forbade the fix itself.
+   *
+   * The hero now cuts the string with `pujaCardBlurb` (lib/puja-blurb.ts),
+   * which returns whole leading sentences within a budget. Asserted here in
+   * the source and covered behaviourally in __tests__/puja-blurb.cm10.test.ts.
+   */
+  it('the detail hero cuts the description rather than clamping it', () => {
     const page = src('app/pujas/[slug]/page.tsx');
-    const hero = page.slice(page.indexOf('{/* Hero Section */}'), page.indexOf('About This Puja'));
-    const at = hero.indexOf('{puja.description}');
-    expect(at).toBeGreaterThan(-1);
-    // The <p> that wraps it must carry a clamp.
-    const openTag = hero.slice(hero.lastIndexOf('<p', at), at);
-    expect(openTag).toMatch(/line-clamp-\d/);
+    const hero = page
+      .slice(page.indexOf('{/* Hero Section */}'), page.indexOf('About This Puja'))
+      // Comments stripped, so the note recording the removed clamp neither
+      // trips nor satisfies its own guard.
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+    expect(hero.length).toBeGreaterThan(500);
+    expect(hero).toMatch(/pujaCardBlurb\(puja\.description, HERO_BLURB_MAX\)/);
+    // The raw column no longer reaches the hero at all, clamped or otherwise.
+    expect(hero).not.toMatch(/\{puja\.description\}/);
+    expect(hero).not.toMatch(/line-clamp-\d/);
   });
 
   it('the full text still lives in the About section below', () => {

@@ -9,7 +9,15 @@ export function initSentryMobile(): void {
 
   Sentry.init({
     dsn,
-    environment: process.env.EXPO_PUBLIC_ENV ?? 'production',
+    // Accept both spellings. eas.json's `testflight` profile sets
+    // EXPO_PUBLIC_ENVIRONMENT while this read only ever looked at
+    // EXPO_PUBLIC_ENV, so every TestFlight build silently reported its crashes
+    // as `production` — mixing release-candidate noise into production data.
+    // Reading both is the fix that cannot break either spelling later.
+    environment:
+      process.env.EXPO_PUBLIC_ENV ??
+      process.env.EXPO_PUBLIC_ENVIRONMENT ??
+      'production',
     tracesSampleRate: 0.1,
     sendDefaultPii: false,
     enableAutoSessionTracking: true,

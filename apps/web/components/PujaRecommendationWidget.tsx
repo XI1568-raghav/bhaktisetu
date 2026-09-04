@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { API_BASE_URL } from '../lib/api-config';
+import { buttonClass } from '../components/ui/button-recipe';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -161,7 +162,7 @@ export default function PujaRecommendationWidget({
  </p>
  <a
  href="/auth/login"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-semibold text-white hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  Sign In <ArrowRight className="h-3.5 w-3.5" />
  </a>
@@ -190,7 +191,7 @@ export default function PujaRecommendationWidget({
  </p>
  <a
  href="/profile"
- className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-4 py-2 text-sm font-semibold text-white hover:bg-saffron-700 transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  Complete Profile <ArrowRight className="h-3.5 w-3.5" />
  </a>
@@ -318,7 +319,7 @@ export default function PujaRecommendationWidget({
  <div className="mt-3 pt-3 border-t border-surface-50">
  <a
  href={`/pujas/${rec.pujaSlug}/book${rec.templeSlug ? `?temple=${rec.templeSlug}` : ''}`}
- className="inline-flex items-center gap-1.5 rounded-lg bg-saffron-600 px-4 py-2 text-xs font-semibold text-white hover:bg-saffron-700 transition-colors w-full justify-center"
+ className={buttonClass('primary', 'md', 'w-full')}
  >
  <Flame className="h-3.5 w-3.5" />
  Book Now

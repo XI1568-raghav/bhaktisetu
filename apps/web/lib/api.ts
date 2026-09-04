@@ -2,6 +2,52 @@
  * Server-side API helper for Next.js Server Components.
  * Fetches data from the Fastify backend during SSR.
  */
+import {
+  UserFacingError,
+  friendlyApiError,
+  serverErrorText,
+} from './friendly-error';
+
+/**
+ * RES-09 — what `serverFetch` throws when the API says no.
+ *
+ * It used to throw an Error whose whole message was the words "API error"
+ * followed by the HTTP status and its status text. Two
+ * things were wrong with that. It is developer text by construction — a status
+ * name is not something a devotee can act on — and it DISCARDED the server's
+ * own sentence, which the API goes to the trouble of localizing into five
+ * languages (apps/api/src/lib/error-i18n.ts). "API error: 409 Conflict" is
+ * strictly less useful than "That slot is no longer available."
+ *
+ * Nothing renders it today: every error boundary in apps/web
+ * (app/error.tsx, app/global-error.tsx and the four route-level ones) prints
+ * `error.digest`, never `error.message`, and Next replaces server-component
+ * messages with a digest in production anyway. So this is the latent half of
+ * RES-09 — fixed at the throw, where it cannot depend on every future caller
+ * remembering.
+ *
+ * The message is now user-safe: the server's own sentence when it wrote one
+ * worth reading, otherwise the classification `friendlyApiError` gives the
+ * status. The diagnostic detail operators need moves onto the error object,
+ * where a logger or Sentry picks it up and a render never does.
+ */
+export class ApiResponseError extends UserFacingError {
+  readonly status: number;
+  readonly statusText: string;
+  readonly path: string;
+
+  constructor(
+    message: string,
+    detail: { status: number; statusText: string; path: string },
+  ) {
+    super(message);
+    this.name = 'ApiResponseError';
+    this.status = detail.status;
+    this.statusText = detail.statusText;
+    this.path = detail.path;
+    Object.setPrototypeOf(this, ApiResponseError.prototype);
+  }
+}
 
 // API base URL.
 // - In a Next.js node SSR context: process.env.API_URL is set
@@ -48,7 +94,19 @@ async function serverFetch<T>(
  }
 
  if (!res.ok) {
- throw new Error(`API error: ${res.status} ${res.statusText}`);
+ const body = await res.text().catch(() => '');
+ // `friendlyApiError` classifies off the message text, so it is given the
+ // status — and its answer is used only as the FALLBACK, behind whatever the
+ // server actually said. `serverErrorText` refuses a non-JSON body (a gateway
+ // answering HTML) and refuses a developer name for the status.
+ const classified = friendlyApiError(
+ new Error(String(res.status) + ' ' + res.statusText),
+ ).message;
+ throw new ApiResponseError(serverErrorText(body, classified), {
+ status: res.status,
+ statusText: res.statusText,
+ path,
+ });
  }
 
  const json = await res.json();

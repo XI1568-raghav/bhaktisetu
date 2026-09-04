@@ -4,9 +4,104 @@
 > Postgres DB from a daily `pg_dump --format=custom` artifact.
 >
 > Targets: **RPO 24h** (daily backup), **RTO 4h** (manual restore + smoke).
+> These are TARGETS, not measurements — see *DR drill history*, which is empty.
 >
 > **Founder must be able to follow this BLIND. Every step has a verbatim
 > command.**
+
+---
+
+## STEP 0 — OWNER: there is nothing to restore until you do this (`OPS-02`)
+
+**~10 minutes, once, and every other section of this runbook is inert until it
+is done.** The daily backup has never produced an object, because the three
+secrets it needs have never been set. It used to answer
+`{"ok":true,"skipped":true}` and show a green tick; since 2026-08-21 a skip fails
+the run instead, but a failing job is still not a backup.
+
+### 0a. Set exactly three GitHub Actions secrets
+
+GitHub → repo **Settings** → **Secrets and variables** → **Actions** →
+**New repository secret**. The names must match **exactly**:
+
+| Secret | Where to get it | Trap |
+|---|---|---|
+| `SUPABASE_DB_URL` | Supabase → Project Settings → **Database** → Connection string → **URI** | Take the **DIRECT** connection on port **5432**. NOT the pooled one on **6543** — `pg_dump` needs a direct session and fails against the transaction pooler. This is the most likely way for a first attempt to fail. |
+| `SUPABASE_URL` | Supabase → Project Settings → **API** → Project URL | Shape is `https://<ref>.supabase.co`. No trailing slash. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → **API** → `service_role` key | Server-side only. Never ship it to a client, never paste it into a PR. |
+
+### 0a-ii. Those three are necessary and NOT sufficient — read this before dispatching
+
+**With only the three secrets above, the run goes RED and takes no backup.** That
+is deliberate, and it is not a misconfiguration on your part. Since the `OPS-03`
+change, `planDestinations()` in `scripts/backup/supabase-backup.mjs` refuses to
+run when the only destination is the *same Supabase project* named in
+`SUPABASE_DB_URL` — because a copy inside the account it insures is a second
+copy, not a backup, and one suspension takes both. (Exactly what Render did to
+this product's two services on 2026-08-17.) The failure message says so.
+
+Pick one before you dispatch:
+
+**Recommended — a real second destination.** Add four more secrets, same place,
+~15 minutes, free: `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`,
+`BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`. Leave
+`BACKUP_S3_REGION` unset — it defaults to `auto`, which is what Cloudflare R2
+wants. Bucket and token steps are in `docs/runbooks/disaster-recovery.md` →
+*What is missing* → item 2. This is the only path that produces `"offsite":true`.
+
+**Stopgap — accept the risk knowingly.** Set `ALLOW_SAME_PROJECT_BACKUP` to the
+literal string `true`. The run then succeeds with a loud warning and
+`"offsite":false`. Use this only to get *some* restore point today while the R2
+bucket is being created, and do not let it become the permanent state: a backup
+in the same account is not a backup against the failure that has actually
+happened to this product.
+
+### 0b. Take one backup by hand and read the output
+
+```bash
+gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid
+gh run watch
+```
+
+**The `--ref` is load-bearing, not decoration.** `db-backup.yml` exists on `main`,
+so it is dispatchable — but a dispatch runs whichever copy lives on the ref you
+pick, and `main` still carries the 72-line pre-guard version: no skip check, no
+size check, no `restore_drill` input. Dispatching without the `--ref` therefore
+runs exactly the version whose silent zero-byte "success" is the finding, and it
+reports green. Drop the `--ref` only once this branch has merged.
+
+### 0c. Confirm the backup is real
+
+The run must be **green**, and the `Run daily backup` step must print a single
+JSON line containing all of:
+
+- `"ok":true`
+- **no** `"skipped"`
+- `sizeBytes` in the **millions**
+- `tocEntries` in the **hundreds**
+- `"offsite":true` — **or** `"offsite":false` plus the same-project warning, if
+  you took the `ALLOW_SAME_PROJECT_BACKUP` stopgap in 0a-ii. `false` is not a
+  pass; it is a restore point that dies with the account.
+
+The job summary repeats `sizeBytes` and `tocEntries` as a table. Then open
+Supabase → **Storage** → bucket `db-backups` → `backups/YYYY/MM/DD/` and confirm
+the object is listed at a **non-zero size matching `sizeBytes`**. A green tick
+with `sizeBytes` 0 is now impossible — but check the object anyway, because it is
+the only evidence that does not come from the thing being tested.
+
+If the run is red with `NO BACKUP WAS TAKEN`, the secrets are still unset. The
+error names which ones are missing.
+
+### 0d. Then prove the restore, which has never been done
+
+```bash
+gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid -f restore_drill=true
+gh run watch
+```
+
+Record the printed numbers in *DR drill history* at the bottom of this file.
+Until that table has a row, RPO 24h / RTO 4h at the top of this page are targets
+and **must not be quoted to a counterparty, an investor, an insurer or a user.**
 
 ---
 
@@ -81,6 +176,50 @@ curl -s -L \
 ls -lh /tmp/$DUMP   # sanity: expect MB-to-GB scale, not bytes
 ```
 
+## Steps 1–2, ALTERNATE — when Supabase itself is what you lost (`OPS-03`)
+
+**Read this before assuming steps 1 and 2 are available.** Both of them call the
+Supabase Storage REST API using `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` —
+i.e. they read the backup out of *the same Supabase project the database lives
+in*. In the failure mode that most needs a backup (account suspended, project
+deleted, credentials revoked — precisely what Render did to this product's two
+services on 2026-08-17) that project is gone and **steps 1 and 2 have no endpoint
+to call.**
+
+The second destination exists for exactly this. `scripts/backup/supabase-backup.mjs`
+uploads the same object, under the same key, to any S3-compatible store
+configured through `BACKUP_S3_*`, and the backup run's JSON reports `"offsite":true`
+with a `destinations` array of two entries when it did. If that was never
+configured, there is no second copy and this section has no input — say so out
+loud immediately rather than spending the recovery window looking.
+
+Same key shape in both stores: `backups/YYYY/MM/DD/bhaktisetu-<ISO>.dump`.
+
+```bash
+# Credentials are the same four values held as GitHub Actions secrets.
+export AWS_ACCESS_KEY_ID="$BACKUP_S3_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$BACKUP_S3_SECRET_ACCESS_KEY"
+export AWS_DEFAULT_REGION="${BACKUP_S3_REGION:-auto}"   # R2 wants "auto"
+EP="$BACKUP_S3_ENDPOINT"                                # https://<acct>.r2.cloudflarestorage.com
+
+# 1-ALT — list what is actually there, newest last.
+aws s3 ls --endpoint-url "$EP" "s3://$BACKUP_S3_BUCKET/backups/" --recursive | sort | tail -20
+
+# 2-ALT — pull one down. Expect MB-to-GB, never bytes.
+KEY="backups/2026/06/13/bhaktisetu-2026-06-13T19-00-00-000Z.dump"
+aws s3 cp --endpoint-url "$EP" "s3://$BACKUP_S3_BUCKET/$KEY" "/tmp/$(basename "$KEY")"
+ls -lh "/tmp/$(basename "$KEY")"
+```
+
+No `aws` CLI to hand? `rclone` or any S3 client works — the object is a plain
+`pg_dump --format=custom` file and nothing about it is Supabase-specific. From
+there, **steps 3 onward are unchanged**: the dump restores identically whichever
+store it came from, which is the whole point of keeping the two byte-identical.
+
+If you are restoring because the Supabase project is gone, you are also
+provisioning a fresh one — do that first so `$RESTORE_DB_URL` in step 4 points
+somewhere, and finish with step 6 (swap traffic).
+
 ## Step 3 — Verify dump integrity
 
 ```bash
@@ -146,7 +285,45 @@ The last query should return a timestamp close to the backup date.
 5. Update PostHog + Sentry release tags with restore note.
 6. Post in #ops: "Restore complete from $DATE backup; RTO Xh Ymin".
 
-## DR drill checklist (annual)
+## DR drill — the automated one (do this first)
+
+> `OPS-02`. Added 2026-08-21. This exists because the manual checklist below has
+> been in this file since 2026-06-14 and **has never been performed** — the
+> history table underneath it is empty, and an empty drill history means every
+> claim in this runbook is untested.
+
+One command, ~6 minutes, zero scheduled CI cost:
+
+```bash
+gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid -f restore_drill=true
+gh run watch
+```
+
+(`--ref` for the reason in step 0b: `main`'s copy of `db-backup.yml` has no
+`restore_drill` input at all and rejects the flag. Drop it after the merge.)
+
+What it does, in the `restore-drill` job of `.github/workflows/db-backup.yml`:
+
+1. Downloads the **newest** object from the backup bucket
+   (`scripts/backup/fetch-latest-backup.mjs` — read-only; it cannot write to or
+   delete from the bucket).
+2. `pg_restore`s it into a **throwaway Postgres service container inside the
+   GitHub runner**. It cannot reach production, staging, or any Supabase
+   project, and the container is destroyed with the runner.
+3. Asserts the restored database actually holds data: it counts `public` tables
+   and rows in `users`, prints both in the job summary, and **fails the run if
+   fewer than 50 tables restored**.
+
+Run it once as soon as the first real backup exists, then quarterly. Record each
+run in the history table below — the automated job prints exactly the numbers
+that table wants.
+
+It does **not** replace the full manual drill for RTO measurement: the runner
+restores into a local container, which is faster than restoring into a fresh
+Supabase project over the network. Use the manual checklist when you need a
+real RTO figure.
+
+## DR drill checklist (annual, manual — for a real RTO number)
 
 - [ ] Pick a recent dump (≤7 days old)
 - [ ] Provision a throwaway Supabase project (free tier)
@@ -157,7 +334,14 @@ The last query should return a timestamp close to the backup date.
 
 ## DR drill history
 
-_(append entries as drills complete)_
+> **AS OF 2026-08-21 THIS TABLE IS EMPTY, AND THAT IS THE FINDING.** No restore
+> of this database has ever been performed or recorded. RPO 24h / RTO 4h at the
+> top of this file are targets, not measurements. Do not quote them to anyone —
+> a counterparty, an investor, a user — as if they had been demonstrated.
+>
+> There is also nothing to drill against yet: the daily backup has never
+> produced an object, because its secrets have never been set. See the owner
+> setup block at the top of `.github/workflows/db-backup.yml`.
 
 | Date | Source dump | Target | Elapsed | Notes |
 |---|---|---|---|---|
@@ -170,7 +354,10 @@ _(append entries as drills complete)_
 | `permission denied for schema public` | Service role missing | Reset role via Supabase SQL editor: `grant all on schema public to service_role;` |
 | `FATAL: too many connections` | Pool exhausted | Use DIRECT_URL, not pooled; restart Render service |
 | Restore hangs >2h | Parallel jobs deadlock | Re-run with `--jobs 1` |
-| No backups in bucket | Workflow never ran with creds | Check `secrets.SUPABASE_*` in GH Actions → re-run `db-backup.yml` manually |
+| No backups in bucket | Workflow never ran with creds | The three secrets in **step 0a** are unset — `SUPABASE_DB_URL` (direct, 5432), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Set them, then re-run per step 0b. |
+| Backup run green but bucket empty | Ran `main`'s pre-guard copy of the workflow | Re-dispatch with `--ref feat/recurring-razorpay-planid` (step 0b) |
+| Supabase project gone, no dump reachable | Steps 1–2 read from the project that was lost | Use *Steps 1–2, ALTERNATE* above. If `BACKUP_S3_*` was never configured there is no second copy — `OPS-03` |
+| `SignatureDoesNotMatch` (403) from R2/S3 | `content-length` is a signed header; a Node release overriding it breaks the signature | Drop `'content-length'` from the signed set in `buildS3Authorization` (`scripts/backup/supabase-backup.mjs`) and from the test's `SignedHeaders` assertion. A comment sits at that exact line. |
 
 ## Related
 

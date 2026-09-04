@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { buttonClass } from '../../../components/ui/button-recipe';
 import {
  ALL_NAKSHATRAS_FOR_DROPDOWN,
  ELEMENT_COLOR,
@@ -124,7 +125,7 @@ export default function PanchaPakshiClient() {
      <div className="mt-5 flex flex-wrap gap-3">
       <Link
        href={`/astrology/pancha-pakshi/${myBird.slug}`}
-       className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+       className={buttonClass('primary', 'md')}
       >
        Full {myBird.name} guide →
       </Link>

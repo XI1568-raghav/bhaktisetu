@@ -60,7 +60,7 @@ export default function DarshanPlayer({
  {/* Background placeholder */}
  <div className="absolute inset-0 bg-gradient-to-br from-surface-800 to-surface-900">
  {templeImage && (
- <img
+ <img width={1280} height={720} 
  src={templeImage}
  alt={templeName}
  className="w-full h-full object-cover opacity-30 blur-sm"
@@ -74,7 +74,7 @@ export default function DarshanPlayer({
  <Lock className="w-8 h-8 text-temple-gold" />
  </div>
  <h3 className="text-white font-bold text-lg mb-1">Premium Darshan</h3>
- <p className="text-surface-400 text-sm text-center max-w-xs mb-4">
+ <p className="text-surface-400 prose-meta text-center max-w-xs mb-4">
  Upgrade to Darshya Premium for exclusive HD darshan from{' '}
  {templeName}
  </p>
@@ -183,7 +183,7 @@ export default function DarshanPlayer({
  /* No stream URL — show static placeholder */
  <div className="absolute inset-0 bg-gradient-to-br from-surface-800 to-surface-900">
  {templeImage && (
- <img
+ <img width={1280} height={720} 
  src={templeImage}
  alt={templeName}
  className="w-full h-full object-cover opacity-40"

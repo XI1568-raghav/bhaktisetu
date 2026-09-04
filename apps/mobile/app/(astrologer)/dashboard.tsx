@@ -10,7 +10,9 @@ import {
 } from '../../lib/portal-screen';
 import { selectAstrologerDashboard, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { consultationStatusLabel } from '../../lib/enum-labels';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
  * PAR-13, the app half.
  *
@@ -32,6 +34,11 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * dashboard now reads as unreachable.
  */
 export default function AstrologerDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const dashboardQuery = useAstrologerDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -137,7 +144,7 @@ export default function AstrologerDashboard() {
                 .join(' • ')}
               trailing={c.amountInr === null ? undefined : formatInr(c.amountInr)}
               status={{
-                label: c.status ?? 'scheduled',
+                label: consultationStatusLabel(c.status) || 'Scheduled',
                 color: c.status === 'confirmed' ? colors.green[600] : colors.amber[600],
               }}
             />

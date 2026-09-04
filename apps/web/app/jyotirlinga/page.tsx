@@ -1,6 +1,14 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { JYOTIRLINGAS } from '../../lib/jyotirlingas';
+
+// CI-12: the page used to assert that all twelve are swayambhu directly above a
+// grid that badges nine. Somnath, Kashi Vishwanath and Rameshwar carry
+// `swayambhu: false`. Both numbers are now read off the data.
+const SWAYAMBHU = JYOTIRLINGAS.filter((j) => j.swayambhu);
+const NOT_SWAYAMBHU = JYOTIRLINGAS.filter((j) => !j.swayambhu);
 
 export const revalidate = 86400;
 
@@ -49,16 +57,18 @@ export default function JyotirlingaIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">12 self-manifest abodes of Shiva</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">The 12 Jyotirlinga</h1>
+        <p className="text-xs uppercase tracking-wider text-saffron-600">{JYOTIRLINGAS.length} abodes of Shiva across 8 states</p>
+        <h1 className={`${H1.catalogue} mt-1`}>The 12 Jyotirlinga</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
-          Canonical Shiva Purana order across 8 states. Each Jyotirlinga is a swayambhu (self-manifest) form
-          where the cosmic pillar of light is said to have emerged. Bhasma Aarti at Mahakal, Sphatika Linga at
-          Rameshwar, 22 Theerthams, Kanwar Yatra at Vaidyanath — found nowhere else.
+          Canonical Shiva Purana order across 8 states — each a site where the cosmic pillar of
+          light is said to have emerged. {SWAYAMBHU.length} of the {JYOTIRLINGAS.length} are
+          worshipped as swayambhu (self-manifest); at {NOT_SWAYAMBHU.map((j) => j.name).join(', ')}{' '}
+          the linga was installed. Bhasma Aarti at Mahakal, Sphatika Linga at Rameshwar,
+          22 Theerthams, Kanwar Yatra at Vaidyanath — found nowhere else.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           For broader pilgrim destinations including Vaishnava + Shakti sites, see{' '}
-          <Link href="/tirth" className="text-saffron-700 underline">12 Sacred Tirthas</Link>.
+          <Link href="/tirth" className="text-saffron-700 underline">the Sacred Tirthas guide</Link>.
           For multi-destination journeys see{' '}
           <Link href="/pilgrimage/12-jyotirlinga" className="text-saffron-700 underline">the 12 Jyotirlinga circuit</Link>.
         </p>

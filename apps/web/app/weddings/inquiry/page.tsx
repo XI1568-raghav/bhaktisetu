@@ -3,6 +3,8 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DateInput } from '../../../components/ui/DateInput';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { UserFacingError, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
 
 function apiBase(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
@@ -49,10 +51,18 @@ function InquiryForm() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      if (!res.ok) {
+        // RES-09: this rendered the literal string "Request failed: 400" to a
+        // prospective wedding client. The API's own sentence is used when it
+        // sent one; a non-JSON body (a gateway's HTML) is never shown.
+        const detail = await res.text().catch(() => '');
+        throw new UserFacingError(
+          serverErrorText(detail, 'We could not send your enquiry. Please try again.'),
+        );
+      }
       setStatus('sent');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(userFacingMessage(err, 'We could not send your enquiry. Please try again.'));
       setStatus('error');
     }
   }
@@ -188,7 +198,7 @@ function InquiryForm() {
 export default function InquiryPage() {
   return (
     <main className="min-h-[100dvh] bg-amber-50/40 py-12 px-4">
-      <h1 className="font-serif text-3xl text-amber-900 text-center">Wedding inquiry</h1>
+      <h1 className={`${H1.catalogue} text-center`}>Wedding inquiry</h1>
       <p className="mt-2 text-stone-700 text-center max-w-2xl mx-auto">
         Tell us a little about your wedding. A Darshya concierge will respond within 24 hours.
       </p>

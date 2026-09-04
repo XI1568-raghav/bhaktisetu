@@ -6,6 +6,10 @@
 // Run weekly (founder-triggered). Zero free-tier impact.
 
 import { writeReport, upsertLog, TODAY } from '../_lib.mjs';
+// TC-01 / TC-08 — a YouTube description is published verbatim and cannot be
+// edited once a video has been indexed. Both trust claims are gated on the
+// owner flags; see ../_claims.mjs.
+import { verifiedNoun, withEightyG, HAS_80G } from '../_claims.mjs';
 
 // 12-week rotation of how-to-puja explainer topics. Long-tail SEO + scriptural.
 const HOWTO_PUJAS = [
@@ -78,17 +82,17 @@ function buildHowToDescription(p) {
     '▸ Common mistakes to avoid',
     '▸ When + where + who can perform',
     '',
-    'Book a verified pandit at home (anywhere in India):',
+    `Book a ${verifiedNoun('pandit')} at home (anywhere in India):`,
     `→ https://bhaktisetu.com/pujas/${p.slug}`,
     '',
     'NRI gift puja (sponsor from US/UK/Canada/Australia):',
     '→ https://bhaktisetu.com/nri',
     '',
-    'Get 80G tax receipt for temple donations:',
+    HAS_80G ? 'Get 80G tax receipt for temple donations:' : 'Donate to temples (numbered receipt PDF, not a tax certificate):',
     '→ https://bhaktisetu.com/donate',
     '',
     'About Bhaktisetu:',
-    'India\'s devotional super-app. Live darshan from 100+ verified temples, video-proof pujas, NRI gift seva, 80G receipts. Founded by devotees, for devotees.',
+    `India's devotional super-app. Live darshan from 100+ verified temples, video-proof pujas, NRI gift seva,${withEightyG(' 80G receipts', ' numbered donation receipts')}. Founded by devotees, for devotees.`,
     '',
     `Scriptural references: see pinned comment for verse-level citations.`,
     '',

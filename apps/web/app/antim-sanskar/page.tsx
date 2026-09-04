@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { H1 } from '../../components/ui/heading-recipe';
 
 // Layer AT — Antim sanskar (death rites) landing.
 //
@@ -107,11 +108,7 @@ export default function AntimSanskarPage() {
             Antim Sanskar — Last Rites Support
           </p>
           <h1
-            className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] max-w-3xl"
-            style={{
-              fontFamily: 'var(--font-display)',
-              color: 'var(--color-text)',
-            }}
+            className={`${H1.marketing} max-w-3xl`}
           >
             When you need help most, we coordinate everything.
           </h1>
@@ -206,7 +203,7 @@ export default function AntimSanskarPage() {
             Transparent pricing
           </h2>
           <p
-            className="text-sm mb-10 max-w-2xl"
+            className="prose-body mb-10 max-w-2xl"
             style={{ color: 'var(--color-text-muted)' }}
           >
             Three options to choose from. The amount is settled on-site after

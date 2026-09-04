@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import KaalSarpClient from './KaalSarpClient';
 import { KAAL_SARP_TYPES } from '../../../lib/kaal-sarp';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -100,8 +103,8 @@ export default function KaalSarpPage() {
 
    <header className="mt-4 text-center">
     <p className="text-xs uppercase tracking-widest text-indigo-600">काल सर्प दोष · Kalsarpa Yoga</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Kaal Sarp Dosh Calculator — Free Online</h1>
-    <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-700">
+    <h1 className={`${H1.catalogue} mt-1`}>Kaal Sarp Dosh Calculator — Free Online</h1>
+    <p className="mx-auto mt-3 max-w-2xl prose-body text-gray-700">
      Detect all 12 types of Kaal Sarp Yoga from your birth chart. When all 7 classical planets fall
      between Rahu and Ketu, the yoga forms — bringing concentrated karmic effects to one life domain.
     </p>
@@ -167,7 +170,7 @@ export default function KaalSarpPage() {
      a pandit can prescribe a combined upaya that resolves multiple doshas in one ritual.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/astrology/manglik" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/astrology/manglik" className={buttonClass('primary', 'md')}>
       Manglik Dosh
      </Link>
      <Link href="/astrology/sade-sati" className="rounded-full border border-indigo-300 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">

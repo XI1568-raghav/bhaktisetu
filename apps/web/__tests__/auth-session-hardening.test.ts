@@ -75,11 +75,29 @@ describe('A-011 — API role is translated before it is persisted', () => {
   });
 });
 
-describe('A-007 — tokens live in exactly one JS-readable store', () => {
-  it('writes the session to localStorage and NOT to a cookie', () => {
+/**
+ * REWRITTEN 2026-08-28 (SEC-02 step 4). This block used to be titled "tokens
+ * live in exactly one JS-readable store" and asserted that the session WAS
+ * written to localStorage. A-007's actual finding was that the token was in
+ * TWO JS-readable stores at once (localStorage plus a `path=/` cookie the
+ * browser then attached to every same-origin navigation, RSC payload and static
+ * asset), and its fix reduced that to one. SEC-02 finishes the job and reduces
+ * it to zero: nothing outside lib/auth-context reads `poojly_session` any more,
+ * both session kinds revive from the httpOnly cookies, so the last JS-readable
+ * copy is pure exposure.
+ *
+ * Every property A-007 was defending is kept below and tightened rather than
+ * relaxed — no token in a cookie, no token on the wire for same-origin
+ * requests, the token-free profile cookie still written for middleware.ts, a
+ * stale cookie from an older build actively cleared, and both stores emptied on
+ * sign-out. The one assertion that is INVERTED is the localStorage write
+ * itself, which is the finding.
+ */
+describe('A-007 / SEC-02 — the token lives in NO JS-readable store', () => {
+  it('writes the session to neither localStorage nor a cookie', () => {
     persistAuthStorage(SESSION, USER);
 
-    expect(JSON.parse(localStorage.getItem('poojly_session')!)).toEqual(SESSION);
+    expect(localStorage.getItem('poojly_session')).toBeNull();
     expect(cookieValue('poojly_session')).toBeNull();
     // No token may ride along on same-origin requests.
     expect(document.cookie).not.toContain(SESSION.accessToken);
@@ -103,21 +121,33 @@ describe('A-007 — tokens live in exactly one JS-readable store', () => {
     expect(cookieValue('poojly_session')).toBeNull();
   });
 
-  it('falls back to the cookie when localStorage is unavailable (session must survive)', () => {
-    // Safari private mode et al: the cookie is then the ONLY copy of the
-    // session, so dropping it would log those users out on every reload.
+  it('writes no token cookie even when localStorage is unavailable', () => {
+    // A-007 kept a `path=/` session cookie for exactly this case (Safari
+    // private mode), on the reasoning that it was then the ONLY copy. It is not
+    // any more: the httpOnly `darshya_session`/`darshya_refresh` pair covers
+    // this browser, lib/session-revive brings it back from them, and the
+    // token-free `poojly_user` cookie written above is the marker that triggers
+    // the revive — so the session still survives a reload. A `path=/` copy
+    // would now be strictly worse exposure than the localStorage entry SEC-02
+    // just removed, since the browser attaches it to every same-origin request.
     vi.stubGlobal('localStorage', {
       getItem: () => null,
       setItem: () => {
         throw new Error('localStorage blocked');
       },
-      removeItem: () => {},
+      removeItem: () => {
+        throw new Error('localStorage blocked');
+      },
       clear: () => {},
     });
 
     try {
       persistAuthStorage(SESSION, USER);
-      expect(JSON.parse(cookieValue('poojly_session')!)).toEqual(SESSION);
+      expect(cookieValue('poojly_session')).toBeNull();
+      expect(document.cookie).not.toContain(SESSION.accessToken);
+      // ...and the browser is still revivable: the profile marker is a cookie,
+      // so it survives localStorage being blocked outright.
+      expect(cookieValue('poojly_user')).not.toBeNull();
     } finally {
       vi.unstubAllGlobals();
     }

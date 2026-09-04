@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, ReactNode } from 'react';
 
+import { buttonClass } from '../components/ui/button-recipe';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 
 export type OnboardRole =
@@ -168,8 +169,7 @@ export default function SelfOnboardForm({ role, ctaLabel, extraFields }: SelfOnb
       <button
         type="submit"
         disabled={submitting}
-        className="w-full px-5 py-3 text-sm font-medium rounded-lg text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-        style={{ background: 'var(--color-primary, #ea580c)' }}
+        className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
       >
         {submitting ? 'Submitting…' : ctaLabel}
       </button>

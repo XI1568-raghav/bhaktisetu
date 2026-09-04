@@ -56,7 +56,7 @@ For the running API container to tag its in-process Sentry events with the relea
 SENTRY_RELEASE = darshya@<sha-of-deployed-commit>
 ```
 
-This must be updated per deploy. If using Render's auto-deploy from `main`, you can omit this — Sentry will receive events tagged `unknown release` but error grouping still works. Tagging gives you "regression introduced in release X" detection. Add a Render post-deploy hook later (out of scope for this scaffold).
+This must be updated per deploy. (**Corrected 2026-09-02, OPS-06:** this sentence used to offer "if you rely on Render deploying `main` for you, skip it" as an alternative. There is no such mechanism — `render.yaml` carries `autoDeploy: false` on both services, `:28` and `:60`, and every deploy is a hand-dispatched `render-diag.yml -f mode=deploy`, so the SHA is always known at deploy time.) You may still omit it — Sentry will receive events tagged `unknown release` and error grouping still works. Tagging gives you "regression introduced in release X" detection. Add a Render post-deploy hook later (out of scope for this scaffold).
 
 ## Smoke test
 

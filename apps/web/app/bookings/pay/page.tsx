@@ -32,6 +32,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 // ─── Razorpay ───────────────────────────────────────────────────
 
@@ -146,7 +147,8 @@ function ResumePaymentContent() {
             setLoadError(
               res.status === 404
                 ? 'We could not find that booking on your account.'
-                : `We could not load that booking (HTTP ${res.status}).`,
+                // RES-09: the status code told the devotee nothing actionable.
+                : 'We could not load that booking. Please try again.',
             );
             setLoading(false);
           }
@@ -202,7 +204,7 @@ function ResumePaymentContent() {
         setPayError(
           detail?.error ??
             (res
-              ? `We could not start the payment (HTTP ${res.status}). Your booking is unchanged — please try again or email support@darshya.online.`
+              ? 'We could not start the payment. Your booking is unchanged — please try again or email support@darshya.online.'
               : 'Network error reaching the payment service. Your booking is unchanged — please try again.'),
         );
         setPaying(false);
@@ -412,7 +414,7 @@ function ResumePaymentContent() {
                   type="button"
                   onClick={handlePay}
                   disabled={paying}
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-saffron-600 px-6 py-3.5 font-semibold text-white transition-colors hover:bg-saffron-700 disabled:opacity-60"
+                  className={buttonClass('primary', 'md', 'mt-5 w-full')}
                 >
                   {paying && <Loader2 className="h-4 w-4 animate-spin" />}
                   Pay ₹{booking.amount.toLocaleString('en-IN')}

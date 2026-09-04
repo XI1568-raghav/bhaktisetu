@@ -11,6 +11,9 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { writeReport, TODAY, isoNow, API_BASE, WEB_BASE } from './_lib.mjs';
+// TC-08 — this agent sends real mail through Resend, and it called the pandit
+// pool "verified". Nothing promotes a Priest to verified; see ./_claims.mjs.
+import { verifiedNoun } from './_claims.mjs';
 
 const CRON_TOKEN = process.env.CRON_AUTH_TOKEN || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
@@ -55,7 +58,7 @@ function emailHtml({ name, nakshatra }) {
   const pujasUrl = `${WEB_BASE.replace(/\/$/, '')}/pujas?utm_source=dormant-reactivation&utm_medium=email`;
   return `<p>Namaste ${escapeHtml(name || 'devotee')},</p>
 <p>It's been a while since your last seva on Darshya. Based on your nakshatra${nakshatra ? ` (${escapeHtml(nakshatra)})` : ''}, this is a particularly auspicious month for <strong>${recommendation}</strong>.</p>
-<p>Our verified pandits can book one this week with full video proof delivered straight to your phone.</p>
+<p>Our ${verifiedNoun('pandits')} can book one this week with full video proof delivered straight to your phone.</p>
 <p><a href="${pujasUrl}">Browse pujas →</a></p>
 <p>Hari Om,<br>— Darshya team</p>`;
 }

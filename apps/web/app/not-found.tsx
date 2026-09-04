@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { buttonClass } from '../components/ui/button-recipe';
+import { H1 } from '../components/ui/heading-recipe';
 
 // TD-04 (prod sweep 2026-08-12): this page inherited the root layout's default
 // and every 404 on the site was served titled "Darshya — India's Devotional
@@ -61,8 +63,7 @@ export default function NotFound() {
       </svg>
 
       <h1
-        className="mb-2 text-xl font-semibold"
-        style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+        className={`${H1.portal} mb-2`}
       >
         Page not found
       </h1>
@@ -102,7 +103,7 @@ export default function NotFound() {
         />
         <button
           type="submit"
-          className="btn-press bg-saffron-600 hover:bg-saffron-700 min-h-[44px] rounded-lg px-4 text-sm font-medium text-white"
+          className={buttonClass('primary', 'md', 'btn-press')}
         >
           Search
         </button>
@@ -162,7 +163,7 @@ export default function NotFound() {
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/pujas"
-          className="btn-press bg-saffron-600 hover:bg-saffron-700 inline-flex min-h-[44px] items-center gap-2 rounded-lg px-5 text-sm font-medium text-white"
+          className={buttonClass('primary', 'md', 'btn-press')}
         >
           Browse all pujas
         </Link>

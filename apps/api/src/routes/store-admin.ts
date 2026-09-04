@@ -48,6 +48,14 @@ async function resolveStoreProfileId(userId: string): Promise<string | null> {
   return profile?.id ?? null;
 }
 
+/**
+ * SCAL-04: the merchant catalogue page. The default is generous because the
+ * store-admin page renders the full list client-side; the cap is what stops the
+ * response being sized by the catalogue.
+ */
+const STORE_PRODUCTS_PAGE_SIZE = 200;
+const STORE_PRODUCTS_MAX_LIMIT = 200;
+
 function serializeProduct(p: {
   id: string;
   storeProfileId: string;
@@ -132,11 +140,52 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     // The page previously showed the same "Add your first product" empty state
     // for both, then failed the add with an internal string.
     if (!storeProfileId) return reply.send({ products: [], storeProfileMissing: true });
-    const products = await prisma.storeProduct.findMany({
-      where: { storeProfileId },
-      orderBy: { createdAt: 'desc' },
+    // SCAL-04 (2026-08-19): no `select` and no `take` — one merchant's ENTIRE
+    // catalogue, every column including the free-text `description`. Bounded by
+    // one merchant, but unbounded in that merchant's success: the response grows
+    // with the catalogue and nothing stops it. Now an explicit column list (the
+    // exact set serializeProduct reads, nothing wider) and an explicit page.
+    const pageSize = Math.min(
+      Number((request.query as Record<string, unknown> | undefined)?.limit) ||
+        STORE_PRODUCTS_PAGE_SIZE,
+      STORE_PRODUCTS_MAX_LIMIT,
+    );
+    const pageNum = Math.max(
+      1,
+      Number((request.query as Record<string, unknown> | undefined)?.page) || 1,
+    );
+    const [products, total] = await Promise.all([
+      prisma.storeProduct.findMany({
+        where: { storeProfileId },
+        select: {
+          id: true,
+          storeProfileId: true,
+          name: true,
+          description: true,
+          price: true,
+          imageUrl: true,
+          category: true,
+          stock: true,
+          sku: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (pageNum - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.storeProduct.count({ where: { storeProfileId } }),
+    ]);
+    // `products` stays the first key so the existing merchant page keeps
+    // working; total/page/limit are additive. `total` is the paired COUNT, never
+    // the page length (SCAL-09's lying number).
+    return reply.send({
+      products: products.map(serializeProduct),
+      total,
+      page: pageNum,
+      limit: pageSize,
     });
-    return reply.send({ products: products.map(serializeProduct) });
   });
 
   // ─── POST /products ─────────────────────────────────────────────────────────
@@ -229,10 +278,17 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     return reply.send({ ok: true });
   });
 
-  // StoreOrder.items is Json [{ productId, qty, priceAtPurchase }]. There's no
-  // direct FK from order → store, so dashboard/revenue iterate orders in JS and
-  // attribute lines whose productId belongs to this store. Fine for early scale;
-  // revisit when order volume justifies a denormalized store_order_lines table.
+  // Which ORDERS belong to this store is answered by the S-11 FK — the queries
+  // below filter on `storeProfileId` directly. This walk answers the narrower
+  // question the FK cannot: how much of an order's money is THIS store's, given
+  // StoreOrder.items is Json [{ productId, qty, priceAtPurchase }] with no
+  // per-line store column. Fine for early scale; revisit when order volume
+  // justifies a denormalized store_order_lines table.
+  //
+  // Caveat, deliberately not papered over: it matches lines against products
+  // that still EXIST, so a hard-deleted product's revenue silently leaves these
+  // totals. Commission no longer depends on that (see store-commission.service),
+  // but the dashboard figures still do.
 
   function attributeOrderToStore(
     items: unknown,

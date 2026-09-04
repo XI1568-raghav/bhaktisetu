@@ -44,7 +44,10 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import { apiErrorCode, serverErrorMessage } from '../../../lib/friendly-error';
 import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { DateInput } from '../../../components/ui/DateInput';
-import { formatTrustScoreOutOf, hasMeaningfulTrustScore } from '../../../lib/trust-score';
+import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-score';
+// CM-10: this subtitle used to interpolate puja.category, i.e. the raw Prisma
+// enum, on the CHECKOUT page — 'special_occasion' beside the price.
+import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import {
  PLATFORM_FEE_INR,
  PRASAD_DELIVERY_FEE_INR,
@@ -79,6 +82,7 @@ import {
  validateDeliveryAddress,
 } from '../../../lib/delivery-address';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // PostHog never throws on capture, but its singleton may not be initialised
 // in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
@@ -747,8 +751,22 @@ function PujaBookingInner() {
  let cancelled = false;
  (async () => {
  try {
+ // days=30 is the picker's own ceiling, not a guess: `bookingWindowMax`
+ // above is getMaxDate() = istDatePlusDays(30), and that is what DateInput
+ // receives as `max`, so nothing past today+30 is selectable.
+ //
+ // The horizon used to be 60, and that was actively worse rather than
+ // merely wasteful. The endpoint does NOT return a day-per-entry array: it
+ // scores every day in the horizon and returns only the TOP FIVE
+ // (apps/api/src/lib/puja-muhurat.ts:246 `findPujaMuhurats(…, topN = 5)`,
+ // called with 5 at apps/api/src/services/panchang.service.ts:750). Over a
+ // 60-day horizon all five winners can fall in days 31-60 — beyond `max` —
+ // and then `muhuratMarkers`, `avoidDates` and `selectedDayMuhurat` are all
+ // keyed on dates the devotee can never pick and the whole shubh-window
+ // layer renders as nothing. Halving the horizon to the selectable window
+ // also halves the server-side computePanchang loop (30 days instead of 60).
  const res = await fetch(
- `${API_BASE_URL}/panchang/puja-muhurat?pujaType=${pujaType}&days=60`,
+ `${API_BASE_URL}/panchang/puja-muhurat?pujaType=${pujaType}&days=30`,
  );
  if (!res.ok) throw new Error('muhurat unavailable');
  const data = await res.json();
@@ -1411,7 +1429,7 @@ function PujaBookingInner() {
  </div>
  </div>
 
- <h1 className="mb-2 text-3xl font-bold text-surface-800">Booking Confirmed!</h1>
+ <h1 className={`${H1.catalogue} mb-2`}>Booking Confirmed!</h1>
  <p className="mb-6 text-surface-500">
  Your puja has been booked successfully. The temple will assign a priest shortly.
  </p>
@@ -1519,11 +1537,14 @@ function PujaBookingInner() {
  <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
  {/* Page title */}
  <div className="mb-8 text-center">
- <h1 className="mb-1 text-2xl font-bold text-surface-800 md:text-3xl">
+ <h1 className={`${H1.catalogue} mb-1`}>
  Book {puja.name}
  </h1>
  <p className="text-surface-500">
- {puja.deity} &middot; {puja.durationMinutes} min &middot; {puja.category}
+ {puja.deity} &middot; {puja.durationMinutes} min
+ {pujaCategoryLabel(puja.category) && (
+ <> &middot; {pujaCategoryLabel(puja.category)}</>
+ )}
  </p>
  </div>
 
@@ -1632,7 +1653,7 @@ function PujaBookingInner() {
  <p className="mb-1 font-semibold text-surface-700">
  No temple is offering this puja right now
  </p>
- <p className="mx-auto mb-4 max-w-sm text-sm text-surface-500">
+ <p className="mx-auto mb-4 max-w-sm prose-meta text-surface-500">
  We only list temples that have completed verification, and none of them
  currently has {puja.name} open for booking. Please pick another puja, or
  check back shortly.
@@ -1700,8 +1721,16 @@ function PujaBookingInner() {
  {/* trustScore is 0-5 (see lib/trust-score.ts). The 2026-08-03 note here
    claimed 0-100 — taken from this file's own MOCK fixtures, which used 98/96/95
    while the API served 4.9. That made the `>= 20` guard hide the badge on every
-   REAL temple. Scale and threshold now come from one shared module. */}
- {hasMeaningfulTrustScore(temple.trustScore) && (
+   REAL temple. Scale and threshold now come from one shared module.
+
+   TC-07: the gate is `canPublishTrustScore`, not `hasMeaningfulTrustScore`.
+   The weaker one only asks whether the number is thick enough to render; it
+   is not the right question, because nothing in the codebase WRITES
+   `Temple.trustScore` — every value is a literal typed into
+   apps/api/prisma/seed.ts. This is the temple picker on the booking flow, so
+   a fabricated star here is the number a devotee actually chooses on.
+   Guarded by __tests__/puja-temples-copy-honesty.tc08.test.tsx. */}
+ {canPublishTrustScore(temple.trustScore) && (
  <span className="flex items-center gap-1 text-xs text-surface-400">
  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
  {formatTrustScoreOutOf(temple.trustScore)}

@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CalendarDays, Clock, Loader2, Inbox, IndianRupee, Search } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -61,11 +62,18 @@ function TempleBookingsContent() {
       const res = await fetch(`${API_BASE_URL}/temple-portal/bookings${qs}`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        // RES-09: this threw `HTTP 500` and the catch below rendered that
+        // string to the temple manager verbatim.
+        throw new UserFacingError(
+          serverErrorText(await res.text().catch(() => ''), 'We could not load your bookings.'),
+          res.status,
+        );
+      }
       const j = await res.json();
       setBookings(j.bookings ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load bookings');
+      setError(userFacingMessage(e, 'We could not load your bookings. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -120,7 +128,17 @@ function TempleBookingsContent() {
             <Loader2 className="w-4 h-4 animate-spin" /> Loading bookings…
           </div>
         ) : error ? (
-          <p className="p-8 text-sm text-red-600 text-center">{error}</p>
+          <div className="p-8 text-center">
+            <p className="text-sm text-red-600">{error}</p>
+            {/* RES-09: an error state with no retry. */}
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="mt-2 text-xs font-medium text-red-700 underline hover:no-underline"
+            >
+              Retry
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <Inbox className="w-8 h-8 text-surface-300 mx-auto mb-2" />

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { IndianRupee, Clock, CheckCircle2, Loader2, Inbox, Landmark } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -46,13 +47,20 @@ function TemplePayoutsContent() {
       const res = await fetch(`${API_BASE_URL}/temple-portal/payouts`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // RES-09: this threw `HTTP 502` and the catch rendered it to the
+      // temple manager as the whole of the error message.
+      if (!res.ok) {
+        throw new UserFacingError(
+          serverErrorText(await res.text().catch(() => ''), 'We could not load your payouts.'),
+          res.status,
+        );
+      }
       const j = await res.json();
       setRows(j.payouts ?? []);
       setPendingInr(j.pendingInr ?? 0);
       setPaidInr(j.paidInr ?? 0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load payouts');
+      setError(userFacingMessage(e, 'We could not load your payouts. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -104,7 +112,18 @@ function TemplePayoutsContent() {
               <Loader2 className="w-4 h-4 animate-spin" /> Loading…
             </div>
           ) : error ? (
-            <p className="text-sm text-red-600 text-center py-6">{error}</p>
+            <div className="py-6 text-center">
+              <p className="text-sm text-red-600">{error}</p>
+              {/* RES-09: the error state offered no way out — the only
+                  recovery was a full page reload. */}
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="mt-2 text-xs font-medium text-red-700 underline hover:no-underline"
+              >
+                Retry
+              </button>
+            </div>
           ) : rows.length === 0 ? (
             <div className="p-8 text-center">
               <Inbox className="w-8 h-8 text-surface-300 mx-auto mb-2" />

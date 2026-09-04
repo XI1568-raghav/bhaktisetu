@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../lib/auth-context';
+import { serverErrorMessage } from '../../../lib/friendly-error';
 import AuthGuard from '../../../components/AuthGuard';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { Mail, Building2, CheckCircle2, Loader2, AlertCircle, Upload, FileText } from 'lucide-react';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Profile = {
   id: string;
@@ -96,7 +98,8 @@ function Content() {
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setError(j.error ?? `Failed (${r.status})`);
+        // RES-09: `Failed (500)` was the whole message on a server error.
+        setError(serverErrorMessage(j, 'We could not save your profile. Please try again.'));
         return;
       }
       setSaved(true);
@@ -114,7 +117,7 @@ function Content() {
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl space-y-6">
-      <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>Gaushala Profile</h1>
+      <h1 className={H1.portal}>Gaushala Profile</h1>
 
       <div className="bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] p-6">
         <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-5">Manager Details</h2>
@@ -165,7 +168,7 @@ function Content() {
           <button
             onClick={handleSave}
             disabled={saving || !form.gaushalaName.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-sm font-medium hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {saving ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>

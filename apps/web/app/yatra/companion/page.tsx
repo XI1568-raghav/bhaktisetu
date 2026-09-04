@@ -18,15 +18,23 @@ import {
  ChevronRight,
 } from 'lucide-react';
 import ScrollReveal from '../../../components/ScrollReveal';
-import { companions, formatINR } from '../../../lib/yatra-data';
+import { formatINR } from '../../../lib/yatra-data';
+// TC-06: the roster is read from lib/companion-roster.ts, which publishes only
+// companions Darshya has actually recruited and vetted. The eight invented
+// profiles in lib/yatra-data.ts are no longer rendered as bookable people.
+import { publishedCompanions } from '../../../lib/companion-roster';
 
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/yatra/companion' },
- title: 'Travel Companions — Verified helpers for elderly yatris',
- description: 'Book verified travel companions for elderly devotees undertaking sacred pilgrimages. Aadhaar verified, background checked, first-aid certified.',
+ title: 'Travel Companions for elderly yatris',
+ description: 'Register interest in a travel companion for an elderly devotee on pilgrimage. Every companion we list must clear ID, background and first-aid checks before appearing here.',
 };
 
 export default function CompanionListingPage() {
+ const companions = publishedCompanions;
+ const rosterOpen = companions.length > 0;
  return (
  <ScrollReveal>
  <div style={{ background: 'var(--color-bg)' }}>
@@ -43,19 +51,21 @@ export default function CompanionListingPage() {
  Travel Companion Service
  </div>
 
- <h1 data-reveal="cinematic" className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+ <h1 data-reveal="cinematic" className={H1.catalogue}>
  A verified companion for every step of your{' '}
  <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>sacred journey</span>
  </h1>
 
  <p data-reveal="up" data-delay="2" className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
- Our trained companions assist elderly devotees with mobility, medication reminders, logistics, photos, and real-time family updates. Aadhaar verified, background checked, first-aid certified.
+ A companion assists an elderly devotee with mobility, medication reminders, logistics, photos and family updates. {rosterOpen
+ ? 'Every companion listed below has cleared ID, background and first-aid checks.'
+ : 'We are recruiting the first companions now — nobody is listed until they have cleared ID, background and first-aid checks in person.'}
  </p>
 
  <div data-reveal="fade" data-delay="3" className="mt-6 flex flex-wrap items-center gap-5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
- <span className="flex items-center gap-1.5"><BadgeCheck className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> 100% Aadhaar verified</span>
- <span className="flex items-center gap-1.5"><Stethoscope className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> First-aid certified</span>
- <span className="flex items-center gap-1.5"><Navigation className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> Real-time GPS tracking</span>
+ <span className="flex items-center gap-1.5"><BadgeCheck className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> ID check required to list</span>
+ <span className="flex items-center gap-1.5"><Stethoscope className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> First-aid training required</span>
+ <span className="flex items-center gap-1.5"><Navigation className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> Location shared with family</span>
  </div>
  </div>
  </div>
@@ -71,7 +81,7 @@ export default function CompanionListingPage() {
 
  <div data-reveal="up" className="grid md:grid-cols-3 gap-5">
  {[
- { n: '01', icon: Users, title: 'Book with your yatra', desc: 'Add a companion when booking any yatra or browse our companion pool and select by language, specialization and availability.' },
+ { n: '01', icon: Users, title: 'Ask for a companion', desc: rosterOpen ? 'Add a companion when booking any yatra, or pick one from the roster below by language, specialization and availability.' : 'Add a companion when booking any yatra, or call us. We match you to a companion once one is available in your region.' },
  { n: '02', icon: MapPin, title: 'Meet at departure', desc: 'Your companion arrives at your pickup city a day before departure for briefing and to meet the family.' },
  { n: '03', icon: Heart, title: 'They handle everything', desc: 'Mobility assistance, medicine reminders, photos, darshan queue management, family video calls — so you focus on devotion.' },
  ].map((s) => (
@@ -95,13 +105,37 @@ export default function CompanionListingPage() {
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-end justify-between mb-6">
  <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>Meet our companions</p>
+ <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-primary)' }}>{rosterOpen ? 'Meet our companions' : 'Companion roster'}</p>
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- 8 verified travel companions
+ {rosterOpen
+ ? `${companions.length} vetted travel companion${companions.length === 1 ? '' : 's'}`
+ : 'No companions listed yet'}
  </h2>
  </div>
- <p className="text-xs hidden sm:block" style={{ color: 'var(--color-text-muted)' }}>All verified · Background checked · First-aid certified</p>
+ {rosterOpen && (
+ <p className="text-xs hidden sm:block" style={{ color: 'var(--color-text-muted)' }}>ID checked · Background checked · First-aid trained</p>
+ )}
  </div>
+
+ {!rosterOpen && (
+ <div className="rounded-xl p-6 md:p-8 max-w-2xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text)' }}>We are still building this roster</h3>
+ <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-muted)' }}>
+ Darshya has not yet signed and vetted any travel companions, so there is nobody to show you and
+ nobody to book. We will not list a name until we have met that person, checked their government ID,
+ taken up references and confirmed their first-aid training. Tell us your dates and we will call you
+ as soon as a companion who fits is available.
+ </p>
+ <div className="flex items-center gap-3 flex-wrap">
+ <Link href="/yatra/plan" className={buttonClass('primary', 'md', 'btn-press')}>
+ Tell us your yatra plan <ArrowRight className="w-3.5 h-3.5" />
+ </Link>
+ <Link href="tel:+919255109400" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
+ <Phone className="w-3.5 h-3.5" /> Talk to an advisor
+ </Link>
+ </div>
+ </div>
+ )}
 
  <div data-reveal="up" className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
  {companions.map((c) => (
@@ -134,7 +168,14 @@ export default function CompanionListingPage() {
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{c.age} yrs · {c.gender === 'male' ? 'Male' : 'Female'} · {c.city}</p>
  </div>
 
- {/* Rating */}
+ {/* Rating. TC-06: this card printed five stars and c.rating.toFixed(1)
+ unconditionally. The fixture rows it was written against carried
+ 60-124 invented reviews each, so the zero case never showed — but the
+ first genuinely recruited companion has no reviews at all, and this
+ would have rendered a flat "0.0 (0)" star row as if yatris had rated
+ them badly. The detail page already gated on reviewCount; the card
+ now does too, and says plainly that nobody has rated them yet. */}
+ {c.reviewCount > 0 ? (
  <div className="mt-2 flex items-center gap-1.5">
  <div className="flex items-center gap-0.5">
  {Array.from({ length: 5 }).map((_, s) => (
@@ -144,6 +185,9 @@ export default function CompanionListingPage() {
  <span className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{c.rating.toFixed(1)}</span>
  <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>({c.reviewCount})</span>
  </div>
+ ) : (
+ <p className="mt-2 text-xs" style={{ color: 'var(--color-text-faint)' }}>No yatri ratings yet</p>
+ )}
 
  <div className="mt-3 flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <Sparkles className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {c.yatrasCompleted} yatras completed
@@ -180,8 +224,7 @@ export default function CompanionListingPage() {
 
  <Link
  href={`/yatra/companion/${c.id}`}
- className="mt-3 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'mt-3 btn-press')}
  >
  Book Companion <ArrowRight className="w-3 h-3" />
  </Link>
@@ -201,10 +244,10 @@ export default function CompanionListingPage() {
 
  <div data-reveal="up" className="grid md:grid-cols-4 gap-4">
  {[
- { icon: Shield, title: 'Background verified', desc: 'Aadhaar, police verification and reference checks done for every companion.' },
- { icon: Stethoscope, title: 'First-aid certified', desc: 'Basic nursing, BP monitoring, oximeter handling, CPR — all companions trained.' },
- { icon: Phone, title: 'Family emergency contact', desc: 'Companion shares daily video calls. Emergency hotline runs 24/7.' },
- { icon: Navigation, title: 'Real-time GPS tracking', desc: 'Live location shared with up to 3 family members throughout the yatra.' },
+ { icon: Shield, title: 'Background checked before listing', desc: 'Government ID, police verification and reference checks are a precondition for appearing on this page.' },
+ { icon: Stethoscope, title: 'First-aid trained', desc: 'Basic nursing, BP monitoring, oximeter handling and CPR training are required before a companion is listed.' },
+ { icon: Phone, title: 'Family emergency contact', desc: 'Your companion shares a daily call, and our advisor line is reachable through the yatra.' },
+ { icon: Navigation, title: 'Location shared with family', desc: 'The companion shares live location with up to 3 family members for the duration of the yatra.' },
  ].map((t) => (
  <div key={t.title} className="rounded-xl p-5" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: 'var(--color-primary-highlight)' }}>
@@ -227,10 +270,10 @@ export default function CompanionListingPage() {
  <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>How payment works</p>
  </div>
  <h3 className="text-lg font-semibold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Companion is paid upfront by Darshya
+ How we intend to pay companions
  </h3>
  <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-muted)' }}>
- Unlike freelance gigs, our companions are paid in full at the time of your booking. This ensures:
+ When the roster opens, a companion is paid in full at the time of your booking rather than on completion. That is designed to give you:
  </p>
  <ul className="space-y-1.5 text-sm" style={{ color: 'var(--color-text)' }}>
  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} /> Full commitment to your yatra dates</li>
@@ -251,7 +294,7 @@ export default function CompanionListingPage() {
  </h2>
  <div data-reveal="up" className="space-y-3">
  {[
- { q: 'Can I choose a specific companion?', a: 'Yes. Browse profiles, pick one who matches your language, regional familiarity and specialization. We confirm availability within 2 hours.' },
+ { q: 'Can I choose a specific companion?', a: rosterOpen ? 'Yes. Browse the roster, pick one who matches your language, regional familiarity and specialization, and we confirm availability with you.' : 'Not yet — no companions are listed. Tell us the language, regional familiarity and specialization you need and we will come back to you when we have matched someone.' },
  { q: 'Does the companion need separate hotel booking?', a: 'No. Companion stay is covered in their daily rate. They share accommodation arrangements made by Darshya or stay in adjacent rooms.' },
  { q: 'Can the companion administer medicines?', a: 'They can remind and assist with self-administration of prescribed oral medicines. For injections/IV, a nurse can be booked separately.' },
  { q: 'What if the companion gets sick?', a: 'We provide a backup companion within 12 hours. You never bear the cost of replacement.' },
@@ -278,10 +321,12 @@ export default function CompanionListingPage() {
  Send your parents on yatra with peace of mind
  </h2>
  <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
- Companion cost starts at {formatINR(2800)}/day. Book along with any yatra or standalone.
+ {rosterOpen
+ ? `Companion cost starts at ${formatINR(Math.min(...companions.map((c) => c.pricePerDay)))}/day. Book along with any yatra or standalone.`
+ : 'Tell us your dates and we will quote a companion as soon as one is available in your region.'}
  </p>
  <div className="flex items-center justify-center gap-3 flex-wrap">
- <Link href="/yatra" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press" style={{ background: 'var(--color-primary)' }}>
+ <Link href="/yatra" className={buttonClass('primary', 'md', 'btn-press')}>
  Browse Yatras <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  <Link href="tel:+919255109400" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg" style={{ background: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>

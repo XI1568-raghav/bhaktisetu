@@ -5,6 +5,8 @@
 > **Owner**: cfo (founder).
 > **Related**: `docs/finance/accelerator-applications-checklist.md` (preexisting general checklist).
 
+> **Correction 2026-09-02 (`OPS-10`).** **Stripe was removed from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`, `apps/api/src/services/payment.service.ts:2438-2450`). Razorpay is the only live rail and it settles INR only; no replacement international processor has been chosen. This handoff listed a "Stripe NRI dashboard" as an MRR-proof source and "**Stripe NRI KYC** (U2)" as a founder blocker. Neither can be actioned: there is no Stripe account, no USD checkout and therefore no USD MRR to screenshot. The Razorpay/U1 half of both items still stands, and an NRI rail would still strengthen the Surge (USD) pitch — but which processor, and on what terms, is `[verify]`.
+
 ## Why this matters
 
 Pre-seed dilution-cheap capital + brand validation + structured 0-day mentorship pipeline. Antler India (₹) for domestic stack credibility; Surge by Sequoia (USD) for global investor signal pre-Series A.
@@ -30,7 +32,7 @@ Optional 4th if bandwidth allows: **Sequoia Spark** (gender-focused, N/A if solo
 | 1-pager teaser | PDF, 1 page | TBD | Hook + traction + ask. Use pitch-deck-v2 slide 1 as base. |
 | Pitch deck v2 | PDF, 12-15 slides | TBD | Reuse `docs/finance/pitch-deck-v2-outline.md` (in_progress separately). |
 | Financial model | XLSX, 3-yr | TBD | Pull from `docs/finance/pitch-deck-v2-financial-model.csv` (preexisting). Reformat into Antler's standard 3-tab (P&L / cap table / unit economics). |
-| MRR proof | Screenshot | TBD | Razorpay dashboard + Stripe NRI dashboard (when U1+U2 KYC clears). Falls back to "₹0 MRR — pre-monetization, 18 paid pilots logged" honest framing. |
+| MRR proof | Screenshot | TBD | Razorpay dashboard (when U1 KYC clears). Falls back to "₹0 MRR — pre-monetization, 18 paid pilots logged" honest framing. The "Stripe NRI dashboard" this row used to name does not exist `[verify — Stripe was removed; the NRI rail is undecided]` |
 | Founder LinkedIn | URL | READY | Verify profile mentions Darshya + Poojly + role. |
 | Cap table | PDF | TBD | Single founder 100%, no other holders. State explicitly. |
 | GST + CIN | PDF | BLOCKED | Awaiting incorporation decision per `R-Q1-F-001` (Pvt Ltd vs sole prop). Antler will fund sole-prop founders and incorporate post-acceptance — state this in app. |
@@ -91,7 +93,7 @@ Optional 4th if bandwidth allows: **Sequoia Spark** (gender-focused, N/A if solo
 
 1. **Pitch deck v2** — separate roadmap item, currently in_progress.
 2. **Razorpay live KYC** (U1) — closes MRR proof gap. Without it, app states "pre-monetization, 18 paid pilots." Honest framing acceptable but weaker than ₹X MRR receipts.
-3. **Stripe NRI KYC** (U2) — closes USD MRR proof for Surge specifically (USD revenue strengthens USD-cheque pitch).
+3. ~~**Stripe NRI KYC** (U2) — closes USD MRR proof for Surge specifically.~~ **Void as written**: Stripe was removed 2026-08-11, so U2 cannot clear and there is no USD revenue to prove. The underlying point survives — an international rail would strengthen the USD-cheque pitch to Surge — but the processor is `[verify — Stripe was removed; the NRI rail is undecided]`
 4. **Incorporation decision** (R-Q1-F-001) — Antler can fund sole-prop, but CIN strengthens app. Decision pending separately.
 
 None of these block scaffold/checklist work. All block the actual submission date.

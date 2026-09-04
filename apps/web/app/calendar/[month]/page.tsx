@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { FESTIVALS, resolveBookablePujas } from '../../../lib/festivals';
+// CI-11: `date2026` is not always in 2026 — Maha Kumbh Mela is 2027-01-14.
+// A month filter that reads only the MONTH segment files it under "Hindu
+// Festivals in January 2026". `festivalsInMonth` filters on the year too;
+// every count and every list on this page goes through it.
+import { festivalsInMonth, resolveBookablePujas } from '../../../lib/festivals';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 
 export const revalidate = 86400;
@@ -33,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ month: st
   const { month } = await params;
   const m = MONTHS.find((x) => x.slug === month);
   if (!m) return { title: 'Not found' };
-  const count = FESTIVALS.filter((f) => parseInt(f.date2026.split('-')[1] || '0', 10) === m.idx + 1).length;
+  const count = festivalsInMonth(m.idx).length;
   return {
     title: `Hindu Festivals in ${m.name} ${YEAR} — ${count} Festivals with Dates`,
     description: `Complete list of Hindu festivals in ${m.name} ${YEAR}: ${m.focus} Dates, deities, rituals, fasting requirements, and puja booking.`,
@@ -62,9 +68,7 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
   const m = MONTHS.find((x) => x.slug === month);
   if (!m) notFound();
 
-  const items = FESTIVALS
-    .filter((f) => parseInt(f.date2026.split('-')[1] || '0', 10) === m.idx + 1)
-    .sort((a, b) => a.date2026.localeCompare(b.date2026));
+  const items = festivalsInMonth(m.idx).sort((a, b) => a.date2026.localeCompare(b.date2026));
 
   const prev = MONTHS[(m.idx + 11) % 12]!;
   const next = MONTHS[(m.idx + 1) % 12]!;
@@ -115,7 +119,7 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
 
       <header className="mb-8">
         <p className="text-xs uppercase tracking-wider text-saffron-600">{items.length} festival{items.length === 1 ? '' : 's'} · {m.season}</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Hindu Festivals in {m.name} {YEAR}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Hindu Festivals in {m.name} {YEAR}</h1>
         <p className="mt-2 font-serif text-base text-gray-600">{m.sanskrit}</p>
         <p className="mt-3 max-w-2xl text-base text-gray-700">{m.focus}</p>
       </header>
@@ -215,7 +219,7 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
         <h2 className="text-lg font-semibold text-gray-900">Jump to another month</h2>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
           {MONTHS.map((mm) => {
-            const count = FESTIVALS.filter((f) => parseInt(f.date2026.split('-')[1] || '0', 10) === mm.idx + 1).length;
+            const count = festivalsInMonth(mm.idx).length;
             const isCurrent = mm.slug === m.slug;
             return (
               <Link

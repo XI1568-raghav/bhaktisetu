@@ -3,6 +3,7 @@ import { requireCronBearer } from '../middlewares/cron-auth.js';
 import { runDailyOps } from '../jobs/master-cron.js';
 import { runAartiNotify } from '../jobs/aarti-notify.js';
 import { dispatchService } from '../services/dispatch.service.js';
+import { accountDeletionService } from '../services/account-deletion.service.js';
 
 /**
  * Cron endpoints, invoked by GitHub Actions and/or an external pinger because
@@ -87,6 +88,16 @@ const JOBS: Record<string, () => Promise<unknown>> = {
   'dispatch-sweep': () => dispatchService.sweepExpiredOffers(),
   /** Pre-aarti reminders — cheap, and worth running more often than daily. */
   'aarti-notify': () => runAartiNotify(),
+  /**
+   * LC-DEL: anonymise accounts whose 30-day deletion grace period has elapsed.
+   *
+   * The grace window is what makes a one-tap wipe safe on a product with no
+   * password — but a grace period nobody ever sweeps is just a deletion that
+   * never happens, which is the store violation this feature exists to fix. This
+   * job is the other half of the promise. Idempotent per account, and one
+   * account's failure never stops the rest of the batch.
+   */
+  'account-purge': () => accountDeletionService.runPurgeSweep(),
 };
 
 // ── Routes ──────────────────────────────────────────────────────────

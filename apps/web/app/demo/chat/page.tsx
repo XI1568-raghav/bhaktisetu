@@ -6,6 +6,7 @@ import { Loader2, Sparkles, MessageSquare, Phone, Video } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
  * One-click demo entry: pretends Razorpay charged ₹1, creates a real puja
@@ -73,8 +74,8 @@ function DemoChatPageInner() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <div className="text-center mb-8">
         <Sparkles className="w-10 h-10 text-saffron-600 mx-auto mb-3" />
-        <h1 className="text-2xl font-semibold text-surface-800">Demo: Chat with a provider</h1>
-        <p className="text-sm text-surface-500 mt-2 max-w-lg mx-auto">
+        <h1 className={H1.portal}>Demo: Chat with a provider</h1>
+        <p className="prose-meta text-surface-500 mt-2 max-w-lg mx-auto">
           Skip payment, instantly open a conversation with one of our seeded demo providers.
           Then sign in as that provider in another browser to chat back.
         </p>

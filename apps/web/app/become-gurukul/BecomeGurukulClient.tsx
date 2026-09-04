@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 function apiBase(): string {
   const b = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
@@ -94,7 +96,7 @@ export default function BecomeGurukulClient() {
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-surface-900 mb-2">Register your gurukul</h1>
+      <h1 className={`${H1.catalogue} mb-2`}>Register your gurukul</h1>
       <p className="text-sm text-surface-600 mb-6">List your gurukul to receive admission inquiries from seekers across India and the diaspora.</p>
 
       {!isAuthenticated && (
@@ -227,7 +229,7 @@ export default function BecomeGurukulClient() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <button type="submit" disabled={submitting || !isAuthenticated} className="w-full px-4 py-3 bg-saffron-600 text-white font-semibold rounded-lg hover:bg-saffron-700 disabled:opacity-50">
+        <button type="submit" disabled={submitting || !isAuthenticated} className={buttonClass('primary', 'md', 'w-full')}>
           {submitting ? 'Registering...' : 'Register gurukul'}
         </button>
       </form>

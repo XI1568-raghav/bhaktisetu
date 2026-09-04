@@ -25,11 +25,42 @@ export async function adminGurukulsRoutes(server: FastifyInstance) {
       status === 'verified' ? { isVerified: true } :
       {};
 
+    // SCAL-04 (2026-08-20): columns pinned, row count deliberately not.
+    //
+    // No `take` here, and that is the considered answer: the moderation screen
+    // renders the complete list and a page size without the paired UI change
+    // would truncate an operator's view with nothing on screen saying so.
+    //
+    // The width was a different question. This was `include`, and `include`
+    // without `select` returns EVERY scalar on the model — 20 of them — while
+    // the `.map()` below returns 12. Among the 8 discarded was `description`,
+    // a required uncapped String holding the directory blurb and the only
+    // column here whose size is not bounded by a short identifier. On a
+    // whole-table scan that is every gurukul's prose crossing the wire into a
+    // 512 MB container for a screen that never renders a character of it.
+    // `owner.id` went the same way — selected, never read.
+    //
+    // The response is built by the explicit `.map()` below, so narrowing the
+    // query changes no byte of the JSON; admin-gurukuls.scal04.test.ts pins the
+    // body as well as the column list so this cannot be satisfied by answering
+    // with less.
     const gurukuls = await prisma.gurukul.findMany({
       where,
       orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
-      include: {
-        owner: { select: { id: true, email: true, fullName: true } },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        city: true,
+        state: true,
+        tradition: true,
+        isVerified: true,
+        isActive: true,
+        contactEmail: true,
+        contactPhone: true,
+        websiteUrl: true,
+        createdAt: true,
+        owner: { select: { email: true, fullName: true } },
         _count: { select: { programs: true } },
       },
     });

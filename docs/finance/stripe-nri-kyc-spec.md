@@ -1,6 +1,19 @@
-# Stripe NRI KYC — US/UK/CA/AU Activation
+# [SUPERSEDED] Stripe NRI KYC — US/UK/CA/AU Activation
 
-> **Roadmap item**: R-Q1-F-004 (P1) · **Authored**: 2026-06-13 · **Unblocks**: U2
+> **Roadmap item**: R-Q1-F-004 (P1) · **Authored**: 2026-06-13 · **Unblocks**: ~~U2~~ (void)
+
+> ## ⛔ SUPERSEDED — DO NOT EXECUTE
+>
+> **Correction 2026-09-02 (`OPS-10`).** This spec is the source document behind `R-Q1-F-004` and describes activating Stripe as the NRI rail: "Option A: Stripe India (preferred — already onboarded)", a submission flow starting "Login Stripe Dashboard → Settings → Activate Account", "Multi-currency settlement: 25% premium vs INR-only", and "Stripe converts USD → INR daily at competitive FX rate (~₹83.50)".
+>
+> **Stripe was removed from the codebase on 2026-08-11** (`apps/api/src/lib/env.ts:45-46`, `apps/api/src/services/payment.service.ts:2438-2450`). Razorpay is the only live rail and it settles INR only. No replacement international processor has been chosen, so:
+>
+> - There is no Stripe account to activate and no dashboard to log into — the founder steps under "Stripe India submission" cannot be executed.
+> - The "Non-profit / Section 8" business type below is **not** the platform entity. The live Razorpay account is an individual/proprietorship; submitting Section 8 documents would be a false declaration to a payment processor.
+> - Every rate here is `[verify]`. The "~₹83.50" FX constant is the hardcoded-rate class RV-01 was rooted in, and the "25% premium" settlement figure is unverified. Do not carry either over to a different processor.
+> - Business rule #2 (NRI pricing 9-10× domestic) does survive as schema data (`PujaType.nriPrice`, `apps/api/prisma/schema.prisma:446`), but it is **not charged at checkout today** and there is no USD checkout.
+>
+> Retained as decision history. The *shape* of the decision — domestic-entity rail vs foreign-entity rail, and the trade-off between KYC effort and NRI conversion — is still a real choice the owner faces once an international processor is picked. The vendor named throughout is not.
 
 ## Goal
 

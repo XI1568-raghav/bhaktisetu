@@ -19,7 +19,16 @@ interface Props {
 export default function EmailCapture({
   source,
   title = 'Get early access',
-  subtitle = 'Daily panchang, festival reminders and exclusive launch credits — straight to your inbox.',
+  // TC-03: this default used to end "…and exclusive launch credits". There is a
+  // real credit system (UserCredit / CreditLedgerEntry via
+  // WalletService.creditUser) but it has exactly two callers in the whole API —
+  // routes/referrals.ts and services/payment.service.ts — and four of the five
+  // CreditLedgerReason values are marked "(future)" in the schema. POST
+  // /waitlist writes a Waitlist row and sends a confirmation email; it never
+  // touches the wallet, and no job grants a credit for joining. So every
+  // landing surface mounting this without its own subtitle offered a reward
+  // nothing could issue. Guarded by __tests__/tc03-email-capture-defaults.test.tsx.
+  subtitle = 'Daily panchang and festival reminders — straight to your inbox.',
   cta = 'Notify me',
   successMessage = 'You’re on the list. Check your inbox to confirm.',
   variant = 'card',

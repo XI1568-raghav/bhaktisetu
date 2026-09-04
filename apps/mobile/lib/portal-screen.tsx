@@ -6,8 +6,39 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, fontSize, borderRadius } from './theme';
+
+/** Icon + label box. Unchanged from the old fixed bars, on every device. */
+const TAB_BAR_CONTENT_HEIGHT = 50;
+const TAB_BAR_PADDING_TOP = 6;
+/** Breathing room where the system reserves nothing (3-button nav, iPad). */
+const TAB_BAR_MIN_PADDING_BOTTOM = 8;
+
+/**
+ * Bottom tab bar geometry that respects the device's bottom inset.
+ *
+ * Every role bar used to hard-code `height: Platform.OS === 'ios' ? 88 : 64`
+ * with a matching fixed `paddingBottom`, which overrode React Navigation's own
+ * inset handling. On Android 15 (targetSdk 35 forces edge-to-edge) the gesture
+ * bar then sat over the labels and the lower half of every tab's touch target;
+ * on iOS a fixed 88 was wrong for any home-indicator inset other than 34, so an
+ * iPhone SE or an iPad carried 28pt of empty bar.
+ *
+ * The content box stays exactly TAB_BAR_CONTENT_HEIGHT tall everywhere — only
+ * the padding beneath it grows to clear whatever the system actually reserves.
+ *
+ * This is a hook: call it from a component body, not from a StyleSheet.
+ */
+export function useTabBarStyle() {
+  const insets = useSafeAreaInsets();
+  const paddingBottom = insets.bottom || TAB_BAR_MIN_PADDING_BOTTOM;
+  return {
+    height: TAB_BAR_CONTENT_HEIGHT + TAB_BAR_PADDING_TOP + paddingBottom,
+    paddingTop: TAB_BAR_PADDING_TOP,
+    paddingBottom,
+  };
+}
 
 interface PortalScreenProps {
   title: string;
@@ -25,7 +56,7 @@ export function PortalScreen({
   children,
 }: PortalScreenProps) {
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{title}</Text>
         {subtitle ? <Text style={styles.headerSubtitle}>{subtitle}</Text> : null}

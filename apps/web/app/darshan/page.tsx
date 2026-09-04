@@ -9,7 +9,10 @@ import {
 } from '../../lib/api';
 import DarshanBrowser from '../../components/DarshanBrowser';
 import DarshanScheduleRemindButton from '../../components/DarshanScheduleRemindButton';
+// NOTIF-15: the real, server-registered reminder. See the section below.
+import AartiOptIn from '../../components/AartiOptIn';
 import { darshanScheduleRows } from '../../lib/darshan-schedule';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/darshan' },
@@ -24,14 +27,28 @@ export const revalidate = 300;
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
 
+// DF-10 (2026-08-24): every `viewerCount`/`peakViewers` below is pinned to 0.
+// They used to carry invented audiences (12450 for Kashi, 28300 for Tirupati —
+// the same figures the 2026-05-02 content audit deleted from the homepage, see
+// docs/content-audit-2026-05-02.md:31). Nothing here counts viewers: no
+// analytics client is mounted, and the YouTube embeds expose no viewer API to
+// us. Per lib/platform-stats.ts:5-24 an uncounted number must lose its digits
+// rather than fall back to a literal, and the LIVE pill already makes the
+// liveness claim without one.
+//
+// 0 rather than a deleted field because DarshanStream requires both as `number`
+// (lib/api.ts:370-371), and 0 is how the rest of this codebase says "not
+// counted" — DarshanPlayer renders its counter only when the value is positive
+// (components/DarshanPlayer.tsx:225). See the note in fetchLiveStreams below
+// for the one consumer that does NOT yet guard on that.
 const fallbackLiveStreams: DarshanStream[] = [
  {
  id: 'live-1',
  templeId: 't1',
  playbackUrl: 'https://www.youtube.com/embed/RwSHT3yg7MI',
  status: 'live',
- viewerCount: 12450,
- peakViewers: 18200,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -47,8 +64,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't2',
  playbackUrl: 'https://www.youtube.com/embed/t5nRpg1j98k',
  status: 'live',
- viewerCount: 28300,
- peakViewers: 35000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -64,8 +81,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't3',
  playbackUrl: 'https://www.youtube.com/embed/MNbnux_0U_E',
  status: 'live',
- viewerCount: 8760,
- peakViewers: 12000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -81,8 +98,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't4',
  playbackUrl: 'https://www.youtube.com/embed/sJtJdv3ecDc',
  status: 'live',
- viewerCount: 9800,
- peakViewers: 14000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -98,8 +115,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't5',
  playbackUrl: 'https://www.youtube.com/embed/2nUrc1wE6do',
  status: 'live',
- viewerCount: 5420,
- peakViewers: 8000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -115,8 +132,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't6',
  playbackUrl: 'https://www.youtube.com/embed/iVbl-AzlnOQ',
  status: 'live',
- viewerCount: 15200,
- peakViewers: 22000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -132,8 +149,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't7',
  playbackUrl: 'https://www.youtube.com/embed/B-9kVJ2orYA',
  status: 'live',
- viewerCount: 7100,
- peakViewers: 10000,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -149,8 +166,8 @@ const fallbackLiveStreams: DarshanStream[] = [
  templeId: 't8',
  playbackUrl: 'https://www.youtube.com/embed/aZf664dsd9k',
  status: 'live',
- viewerCount: 4320,
- peakViewers: 6500,
+ viewerCount: 0,
+ peakViewers: 0,
  isPremium: false,
  scheduledStart: null,
  temple: {
@@ -236,6 +253,18 @@ const fallbackScheduledStreams: DarshanStream[] = [
 
 // ─── Data Fetching ────────────────────────────────────────────────────────────
 
+// DF-10 follow-up, NOT fixable from this file: DarshanBrowser prints the count
+// unconditionally (components/DarshanBrowser.tsx:282-285 —
+// `stream.viewerCount.toLocaleString('en-IN')` beside an Eye icon, with no
+// `> 0` guard the way DarshanPlayer has at components/DarshanPlayer.tsx:225).
+// So the zeroed fallbacks above surface as a literal "0" on each card until
+// that badge gains the same guard or is removed. "0 watching" is still an
+// unmeasured claim, just a discouraging one — it is not the end state.
+//
+// The same invented figures also live in the API fallback table
+// (apps/api/src/routes/darshan.ts:20-124), which is what these local fallbacks
+// stand in for when the API is unreachable. Zeroing one side does not zero the
+// other.
 async function fetchLiveStreams(): Promise<{ streams: DarshanStream[]; upcoming: { templeSlug: string; nextSlot: string; startsInMin: number }[] }> {
  try {
  const res = await getLiveDarshan();
@@ -288,10 +317,10 @@ export default async function DarshanPage() {
  {t('liveNow')}
  </span>
  </div>
- <h1 className="text-3xl md:text-4xl font-semibold text-surface-800 mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+ <h1 className={`${H1.catalogue} mb-3`}>
  {t('pageTitle')}
  </h1>
- <p className="text-surface-500 text-lg max-w-2xl">
+ <p className="prose-lead text-surface-500 max-w-2xl">
  {t('pageSubtitle')}
  </p>
 
@@ -315,6 +344,32 @@ export default async function DarshanPage() {
  <h2 className="text-2xl font-semibold tracking-tight text-surface-800 mb-6">
  {t('scheduleSection')}
  </h2>
+
+ {/*
+   NOTIF-15 — the reminder that actually reaches a server.
+
+   The bell on each row below writes to localStorage and nothing else: no
+   fetch, no push subscription, no scheduled row, and there is no
+   DarshanReminder model for it to write to. An earlier pass made that
+   control HONEST — it is a bookmark icon now, it says "Saved on this
+   device", and it no longer claims a reminder was set — but honest is
+   not the same as delivered, and the page still offered no way to be
+   told about an aarti at all.
+
+   `AartiOptIn` is the other half, and it already existed: it requests
+   notification permission, subscribes through PushManager and POSTs the
+   endpoint to /notifications/register-token with `aartiOptIn: true`, so
+   the server knows and the aarti job has something to read. It was
+   imported by NOTHING in app/ — a working control nobody could reach.
+   Mounted here, at the top of the schedule the finding is about, the
+   page finally offers a reminder that leaves the browser.
+
+   The per-row bookmarks stay: they are a useful device-local shortlist
+   and they no longer lie about what they are.
+ */}
+ <div className="mb-6 max-w-xl">
+ <AartiOptIn />
+ </div>
 
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">
  <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-[var(--color-border)] text-sm font-semibold text-surface-400">

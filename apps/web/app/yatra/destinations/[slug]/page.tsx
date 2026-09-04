@@ -9,6 +9,9 @@ import {
   type AffiliatePartner,
 } from '../../../../lib/yatra-destinations';
 import { remoteImage, remoteSrcSet, IMG_W } from '../../../../lib/images';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../../lib/detail-route-cta';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 type Params = { slug: string };
 
@@ -80,10 +83,10 @@ export default async function YatraDestinationDetailPage({ params }: { params: P
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-xs font-medium text-white mb-3">
               <Compass className="w-3 h-3" /> {dest.region}
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white" style={{ fontFamily: 'var(--font-display)' }}>
+            <h1 className={H1.detail}>
               {dest.name}
             </h1>
-            <p className="mt-2 text-sm md:text-base text-white/85 max-w-2xl">{dest.shortDescription}</p>
+            <p className="mt-2 prose-body text-white/85 max-w-2xl">{dest.shortDescription}</p>
             <div className="mt-4 flex flex-wrap items-center gap-4 text-xs md:text-sm text-white/80">
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {dest.durationDays} days</span>
               <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {dest.state}</span>
@@ -160,6 +163,10 @@ export default async function YatraDestinationDetailPage({ params }: { params: P
           </aside>
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'yatra/destinations',
+        subject: dest.name,
+      })}
     </div>
   );
 }

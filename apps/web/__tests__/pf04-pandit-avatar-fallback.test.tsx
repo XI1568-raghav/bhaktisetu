@@ -22,6 +22,23 @@ import { PanditAvatar, panditInitials } from '../app/pujas/PanditAvatar';
 /** The exact URL the browser failed to resolve in production. */
 const DEAD = 'https://images.darshya.online/priests/pandit-ramesh-shastri.jpg';
 
+/**
+ * A URL on a host that DOES resolve.
+ *
+ * 2026-09-01: the three onError tests below used to drive `DEAD`, because at
+ * the time the only defence was reactive — render the <img>, wait for the
+ * request to fail, swap. `lib/dead-image-hosts.ts` now drops a known-dead host
+ * BEFORE render (no request, no ERR_NAME_NOT_RESOLVED, and correct in the SSR
+ * output, where onError never runs), so `DEAD` legitimately produces no <img>
+ * to fire an error on — asserted in pf04-dead-host-never-requested.test.tsx.
+ *
+ * The onError path still has to work, and it is now the LIVE-host case that
+ * exercises it: a Commons URL that 404s, a Supabase object that was deleted, a
+ * truncated file. Same behaviour, driven through the input that can still reach
+ * it.
+ */
+const LIVE = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/x.jpg';
+
 /** Source with comments removed, so prose cannot satisfy a code guard. */
 function codeOf(rel: string): string {
   return readFileSync(path.resolve(__dirname, '..', rel), 'utf8')
@@ -32,13 +49,13 @@ function codeOf(rel: string): string {
 
 describe('PF-04 — a dead avatar URL falls back instead of rendering broken', () => {
   it('renders the image while it is still loading', () => {
-    render(<PanditAvatar src={DEAD} name="Pandit Ramesh Shastri" className="w-16 h-16" />);
+    render(<PanditAvatar src={LIVE} name="Pandit Ramesh Shastri" className="w-16 h-16" />);
     const img = screen.getByAltText('Pandit Ramesh Shastri') as HTMLImageElement;
-    expect(img.getAttribute('src')).toBe(DEAD);
+    expect(img.getAttribute('src')).toBe(LIVE);
   });
 
   it('swaps to the initials tile when the fetch fails', () => {
-    render(<PanditAvatar src={DEAD} name="Pandit Ramesh Shastri" className="w-16 h-16" />);
+    render(<PanditAvatar src={LIVE} name="Pandit Ramesh Shastri" className="w-16 h-16" />);
     fireEvent.error(screen.getByAltText('Pandit Ramesh Shastri'));
 
     expect(screen.queryByAltText('Pandit Ramesh Shastri')).toBeNull();
@@ -47,10 +64,22 @@ describe('PF-04 — a dead avatar URL falls back instead of rendering broken', (
 
   it('leaves no <img> behind after the swap, so there is no request loop', () => {
     const { container } = render(
-      <PanditAvatar src={DEAD} name="Pandit Suresh Trivedi" className="w-16 h-16" />,
+      <PanditAvatar src={LIVE} name="Pandit Suresh Trivedi" className="w-16 h-16" />,
     );
     fireEvent.error(container.querySelector('img')!);
     expect(container.querySelector('img')).toBeNull();
+  });
+
+  it('never issues the request at all for the host with no DNS record', () => {
+    // Stronger than the swap: the two URLs the seed wrote are not requested,
+    // so there is no net::ERR_NAME_NOT_RESOLVED and no flash of an empty box
+    // on the page asking for a five-figure payment.
+    const { container } = render(
+      <PanditAvatar src={DEAD} name="Pandit Ramesh Shastri" className="w-16 h-16" />,
+    );
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.innerHTML).not.toContain('images.darshya.online');
+    expect(container.textContent).toContain('PS');
   });
 
   it('still shows initials when the profile simply has no photo', () => {

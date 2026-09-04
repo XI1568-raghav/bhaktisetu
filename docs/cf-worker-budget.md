@@ -132,9 +132,12 @@ CF Pages free tier doesn't expose detailed build logs to non-paid users. If `Bui
 
 There are TWO independent deploy paths and they fail differently:
 
-1. **CF Pages git integration (primary)** — CF's dashboard side, posts the
-   `Cloudflare Pages` check directly. Runs on every push to main from CF
-   infra. Counts against CF's 500-builds/mo free cap, NOT GH Actions.
+1. **CF Pages git integration (primary)** — **DISABLED 2026-07-08, marked
+   2026-09-02 (OPS-06).** It used to post the `Cloudflare Pages` check from
+   CF infra whenever a commit reached `main`, against CF's 500-builds/mo cap.
+   `cf-kill-zombie.yml` turned it off at the Render cutover, so this check no
+   longer runs and no longer goes red. Retained to explain historical red
+   checks in old PRs.
 2. **`deploy-web.yml`** — was redundant; now manual-only. When it ran on
    push, it `wrangler pages deploy`-ed the local build. When GH Actions
    billing failed, this workflow precheck-failed → status appeared as

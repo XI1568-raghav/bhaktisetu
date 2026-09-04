@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { DWADASHA_ADITYAS } from '../../lib/dwadasha-aditya';
 
@@ -49,14 +51,14 @@ export default function AdityaIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-amber-700">12 Sons of Aditi · 12 Solar months</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Dwadasha Aditya</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Dwadasha Aditya</h1>
         <p className="mt-1 font-serif text-xl text-gray-700">द्वादश आदित्य</p>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Surya manifests in 12 forms — each presiding over one solar month of the Vedic year. The 12 Surya Namaskar
           mantras (Mitraya, Ravaye, Suryaya…) invoke these Adityas. From Vivasvan (father of dharma) to Trivikrama
           (Vishnu&apos;s solar form), they form the complete solar grid of Sanatana Dharma.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           See also <Link href="/nava-graha" className="text-amber-700 underline">Nava Graha</Link>,{' '}
           <Link href="/ashta-lakshmi" className="text-amber-700 underline">Ashta Lakshmi</Link> and{' '}
           <Link href="/dashavatar" className="text-amber-700 underline">Dashavatar of Vishnu</Link>.

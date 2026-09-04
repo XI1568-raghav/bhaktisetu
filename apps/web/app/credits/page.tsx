@@ -1,92 +1,68 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { COMMONS_CREDITS, commonsSourcePage } from "../../lib/image-credits";
+import { H1 } from '../../components/ui/heading-recipe';
+// CI-15 — Wikipedia text is CC BY-SA 4.0 and attribution is a CONDITION of
+// that licence, not a courtesy. components/CategoryArticle.tsx discharges the
+// per-article half; this is the site-level register, so a reader can learn the
+// licence in one place instead of opening sixty articles one at a time. The
+// list is derived from the published corpus rather than typed out, so an
+// article added or a citation removed cannot leave the notice stale.
+import { getAllArticlesAcrossCategories, type KnowledgeCategory } from "../../lib/content";
+import {
+ WIKIPEDIA_TEXT_LICENSE,
+ parseWikipediaSources,
+ requiresShareAlikeNotice,
+} from "../../lib/encyclopedia-attribution";
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/credits' },
- title: "Image Credits",
+ title: "Credits & Attribution",
  description:
- "Attribution for the photographs and artworks used on Darshya. Many images are sourced from Wikimedia Commons under Creative Commons licenses.",
+ "Attribution for the photographs, artworks and article text used on Darshya. Images come from Wikimedia Commons under Creative Commons or public-domain licenses; article text drawing on Wikipedia is used, and re-shared, under CC BY-SA 4.0.",
 };
 
-interface Credit {
- subject: string;
- filename: string;
- sourcePage: string;
- license: string;
- author: string;
-}
+const CATEGORY_LABEL: Record<KnowledgeCategory, string> = {
+ ved: "Vedas",
+ sanatan: "Sanatan Dharm",
+ sanskrit: "Sanskrit",
+};
 
-const wikimediaCredits: Credit[] = [
- // 12 Jyotirlingas
- { subject: "Somnath Temple", filename: "Somanath_mandir_(cropped).jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Somanath_mandir_(cropped).jpg", license: "CC BY-SA 4.0", author: "B. SurajPatro1997" },
- { subject: "Mallikarjuna Jyotirlinga", filename: "MKJNTemple.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:MKJNTemple.jpg", license: "CC0", author: "Unknown" },
- { subject: "Mahakaleshwar Temple, Ujjain", filename: "Mahakaleshwar_Temple,_Ujjain.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Mahakaleshwar_Temple,_Ujjain.jpg", license: "CC BY-SA 4.0", author: "Ashverse" },
- { subject: "Omkareshwar Jyotirlinga", filename: "Omkareswar_Jyotirlinga.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Omkareswar_Jyotirlinga.jpg", license: "CC BY 4.0", author: "Deveshc92" },
- { subject: "Kedarnath Temple", filename: "Kedarnath_Temple_in_Rainy_season.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Kedarnath_Temple_in_Rainy_season.jpg", license: "CC BY-SA 4.0", author: "Shivam Kumar 766" },
- { subject: "Bhimashankar Temple", filename: "Bhimashankar.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Bhimashankar.jpg", license: "Public domain", author: "SaurabhJain" },
- { subject: "Kashi Vishwanath", filename: "Kashi_Vishwanath.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Kashi_Vishwanath.jpg", license: "CC BY-SA 4.0", author: "Architkumar1234" },
- { subject: "Trimbakeshwar Temple", filename: "Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg", license: "CC BY-SA 4.0", author: "Abhideo21" },
- { subject: "Baidyanath (Vaidyanath) Temple, Deoghar", filename: "Baidyanath_temple_and_temple_complex,_Deoghar_04.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Baidyanath_temple_and_temple_complex,_Deoghar_04.jpg", license: "CC BY 4.0", author: "Pinakpani" },
- { subject: "Nageshwar Jyotirlinga", filename: "Nageshwar.JPG", sourcePage: "https://commons.wikimedia.org/wiki/File:Nageshwar.JPG", license: "CC BY-SA 4.0", author: "Bkjit" },
- { subject: "Ramanathaswamy (Rameshwaram) Temple", filename: "Ramanathaswamy_temple7.JPG", sourcePage: "https://commons.wikimedia.org/wiki/File:Ramanathaswamy_temple7.JPG", license: "CC BY-SA 4.0", author: "Ssriram mt" },
- { subject: "Grishneshwar Temple", filename: "Grishneshwar_temple_in_Aurangabad_district.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Grishneshwar_temple_in_Aurangabad_district.jpg", license: "CC BY-SA 3.0", author: "Rashmi.parab" },
+/**
+ * Every published article whose `sources` frontmatter cites Wikipedia, with
+ * the citations already parsed into linkable {title, url} pairs.
+ */
+const TEXT_SOURCES = getAllArticlesAcrossCategories()
+ .filter((a) => requiresShareAlikeNotice(a.frontmatter.sources))
+ .map((a) => ({
+ category: a.frontmatter.category,
+ slug: a.frontmatter.slug,
+ title: a.frontmatter.title,
+ href: `/${a.frontmatter.category}/${a.frontmatter.slug}`,
+ cites: parseWikipediaSources(a.frontmatter.sources),
+ }));
 
- // Char Dham
- { subject: "Yamunotri Temple", filename: "Yamunotri_temple_and_ashram.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Yamunotri_temple_and_ashram.jpg", license: "CC BY-SA 3.0", author: "Atarax42" },
- { subject: "Gangotri Temple", filename: "Gangotri_Temple_2.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Gangotri_Temple_2.jpg", license: "CC BY-SA 4.0", author: "Arupamdas" },
- { subject: "Badrinath Temple", filename: "Badrinath_Temple_,_Uttarakhand.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Badrinath_Temple_,_Uttarakhand.jpg", license: "CC BY-SA 4.0", author: "Anubha khare" },
+const TEXT_SOURCE_GROUPS = (["ved", "sanatan", "sanskrit"] as KnowledgeCategory[])
+ .map((category) => ({
+ category,
+ label: CATEGORY_LABEL[category],
+ articles: TEXT_SOURCES.filter((a) => a.category === category),
+ }))
+ .filter((g) => g.articles.length > 0);
 
- // Other temples
- { subject: "Tirumala Tirupati Balaji", filename: "Tirumala_090615.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Tirumala_090615.jpg", license: "CC BY-SA 4.0", author: "Nikhilb239" },
- { subject: "Jagannath Temple, Puri", filename: "Shri_Jagannath_temple.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Shri_Jagannath_temple.jpg", license: "CC BY-SA 3.0", author: "Prachites" },
- { subject: "Siddhivinayak Temple, Mumbai", filename: "Shree_Siddhivinayak_Temple_Mumbai.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Shree_Siddhivinayak_Temple_Mumbai.jpg", license: "CC BY-SA 3.0", author: "Darwininan" },
- { subject: "Akshardham, Delhi", filename: "Swaminarayan_Akshardham,_Delhi.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Swaminarayan_Akshardham,_Delhi.jpg", license: "CC BY-SA 4.0", author: "sonani" },
- { subject: "Meenakshi Amman Temple, Madurai", filename: "An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg", license: "CC BY 3.0", author: "எஸ்ஸார்" },
- { subject: "Golden Temple, Amritsar", filename: "The_Golden_Temple_of_Amrithsar_7.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:The_Golden_Temple_of_Amrithsar_7.jpg", license: "CC BY-SA 4.0", author: "Shagil Kannur" },
- { subject: "Vrindavan", filename: "Vrindavan,_India_(21178969102).jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Vrindavan,_India_(21178969102).jpg", license: "CC BY-SA 2.0", author: "Aleksandr Zykov" },
- { subject: "Dwarakadheesh Temple", filename: "Dwarakadheesh_Temple,_2014.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Dwarakadheesh_Temple,_2014.jpg", license: "CC BY-SA 4.0", author: "Vishnupranay.k" },
- { subject: "Mata Vaishno Devi Bhawan", filename: "Vaishno_Devi_Bhawan.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Vaishno_Devi_Bhawan.jpg", license: "CC BY-SA 3.0", author: "Raulcaeser" },
-
- // Deities
- { subject: "Lord Shiva (Bangalore)", filename: "Bangalore_Shiva.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Bangalore_Shiva.jpg", license: "CC BY-SA 3.0", author: "Indianhilbilly" },
- { subject: "Lord Ganesha (Basohli miniature, c.1730)", filename: "Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg", license: "Public domain", author: "Anonymous" },
- { subject: "Lord Krishna lifts Mount Govardhan", filename: "Krishna_Holds_Up_Mount_Govardhan_(MET_70694)_cropped.png", sourcePage: "https://commons.wikimedia.org/wiki/File:Krishna_Holds_Up_Mount_Govardhan_(MET_70694)_cropped.png", license: "CC0", author: "Mughal artist (c.1590)" },
- { subject: "Lord Rama with arrows", filename: "Lord_Rama_with_arrows.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Lord_Rama_with_arrows.jpg", license: "Public domain", author: "Unknown" },
- { subject: "Standing Hanuman (Chola Dynasty, 11th century)", filename: "StandingHanumanCholaDynasty11thCentury.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:StandingHanumanCholaDynasty11thCentury.jpg", license: "CC BY-SA 3.0", author: "PHGCOM" },
- { subject: "Vishnu (Gita Govinda)", filename: "Vishnu_from_Gita_Govinda.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Vishnu_from_Gita_Govinda.jpg", license: "Public domain", author: "Manaku of Guler" },
- { subject: "Surya with Adityas", filename: "Surya_with_Adityas_and_attendants.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Surya_with_Adityas_and_attendants.jpg", license: "Public domain", author: "Unknown" },
- { subject: "Goddess Lakshmi (Raja Ravi Varma, 1896)", filename: "Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg", license: "Public domain", author: "Raja Ravi Varma" },
- { subject: "Goddess Durga (Mahishasura-Mardini)", filename: "Mahishasura-Mardini_Durga.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Mahishasura-Mardini_Durga.jpg", license: "Public domain", author: "Sri Shilpi Siddanthi Siddalinga Swami" },
- { subject: "Goddess Saraswati", filename: "Saraswati.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Saraswati.jpg", license: "Public domain", author: "Raja Ravi Varma" },
-
- // Festivals
- { subject: "Diwali — Rangoli of Lights", filename: "The_Rangoli_of_Lights.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:The_Rangoli_of_Lights.jpg", license: "CC BY 2.0", author: "Subharnab Majumdar" },
- { subject: "Holi Festival of Colors", filename: "Holi_Festival_of_Colors.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Holi_Festival_of_Colors.jpg", license: "CC BY 2.0", author: "Ramesh Lalwani" },
- { subject: "Shardiya Navratri Festival, Pune 2020", filename: "Shardiya_Navratri_Festival_in_Pune_2020.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Shardiya_Navratri_Festival_in_Pune_2020.jpg", license: "CC BY-SA 4.0", author: "आर्या जोशी" },
- { subject: "Khairathabad Vinayakudu (Ganesh Chaturthi 2021)", filename: "Khairathabad_Vinayakudu_2021.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Khairathabad_Vinayakudu_2021.jpg", license: "CC BY-SA 4.0", author: "Batthini Vinay Kumar Goud" },
- { subject: "Mahashivratri Festival", filename: "02_Mahashivratree_festival.JPG", sourcePage: "https://commons.wikimedia.org/wiki/File:02_Mahashivratree_festival.JPG", license: "CC BY-SA 4.0", author: "Navneesh Ramessur" },
- { subject: "Yashoda and Krishna (Janmashtami)", filename: "Yesoda-krishna.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Yesoda-krishna.jpg", license: "Public domain", author: "Raja Ravi Varma" },
- { subject: "Rakhi (Raksha Bandhan)", filename: "Rakhi_1.JPG", sourcePage: "https://commons.wikimedia.org/wiki/File:Rakhi_1.JPG", license: "CC BY-SA 4.0", author: "ସରୋଜ କୁମାର ବେହେରା" },
- { subject: "Janakpur Chhath Parva Festival", filename: "JanakpurChhathParvaFestival.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:JanakpurChhathParvaFestival.jpg", license: "CC BY-SA 3.0", author: "Steffen Gauger" },
-
- // Pujas / rituals
- { subject: "Abhisheka (Rudrabhishek)", filename: "From_Abhisheka_To_Panchamrutha.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:From_Abhisheka_To_Panchamrutha.jpg", license: "CC BY-SA 2.0", author: "Harsha K R" },
- { subject: "Priest performing Homa (Havan)", filename: "Priest_performing_Homa.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Priest_performing_Homa.jpg", license: "GFDL", author: "Arumuga Manivelu" },
- { subject: "Aarti Thali (Prayer Plate)", filename: "(1)_Aarti_Thali,_Prayer_Plate_India.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:(1)_Aarti_Thali,_Prayer_Plate_India.jpg", license: "CC BY 2.0", author: "Pramal" },
- { subject: "Gayatri Japa (Mantra)", filename: "Gayatri_japa.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Gayatri_japa.jpg", license: "Public domain", author: "Mrs. S. C. Belnos" },
- { subject: "Navaratri Bhajan", filename: "Navaratri_Bajan.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Navaratri_Bajan.jpg", license: "CC BY-SA 3.0", author: "Bootervijay" },
- { subject: "Sannyasi in yoga meditation, Rishikesh", filename: "1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg", license: "CC BY-SA 2.0", author: "Ken Wieland" },
-
- // Gaushala / cows
- { subject: "Gir breed cow", filename: "Gir_cow.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Gir_cow.jpg", license: "CC BY-SA 4.0", author: "Jayan.thanal" },
- { subject: "Sahiwal breed cow", filename: "Sahiwala_01.JPG", sourcePage: "https://commons.wikimedia.org/wiki/File:Sahiwala_01.JPG", license: "CC BY-SA 3.0", author: "Pavanaja" },
- { subject: "Tharparkar breed cow", filename: "Tharparkar_01.JPG", sourcePage: "https://commons.wikimedia.org/wiki/File:Tharparkar_01.JPG", license: "CC BY-SA 3.0", author: "Pavanaja" },
- { subject: "Red Sindhi cow", filename: "Red_Sindhi_Cow_at_Pakistan.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Red_Sindhi_Cow_at_Pakistan.jpg", license: "CC BY-SA 4.0", author: "LunaticFringe97" },
- { subject: "Surabhi cow, Vrindavan", filename: "Surabhi_Cow_Vrindavan.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Surabhi_Cow_Vrindavan.jpg", license: "Public domain", author: "GourangaUK" },
- { subject: "Goshala at ISKCON Mayapur", filename: "Goshala-ISKCON.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:Goshala-ISKCON.jpg", license: "CC0", author: "Lakshmikanta Manna" },
- { subject: "Calf in Tripura", filename: "A_beautiful_gaze.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:A_beautiful_gaze.jpg", license: "CC BY-SA 4.0", author: "Cosmicsilverfox" },
- { subject: "Cows grazing in a field", filename: "A_beautiful_photo_of_cows_grazing_in_the_field.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:A_beautiful_photo_of_cows_grazing_in_the_field.jpg", license: "CC0", author: "Samir8609" },
- { subject: "Women washing a cow at a river in Rajasthan", filename: "ILRI,_Stevie_Mann_-_Women_washing_and_cow_drinking_at_a_river_in_Rajasthan,_India.jpg", sourcePage: "https://commons.wikimedia.org/wiki/File:ILRI,_Stevie_Mann_-_Women_washing_and_cow_drinking_at_a_river_in_Rajasthan,_India.jpg", license: "CC BY 2.0", author: "ILRI / Stevie Mann" },
-];
+/**
+ * CM-08 — this page renders lib/image-credits.ts, it does not keep its own list.
+ *
+ * It used to declare a hardcoded 57-row `wikimediaCredits` array while the
+ * register (70 rows, provenance read from the Commons imageinfo/extmetadata
+ * API) sat beside it with zero production consumers. The two drifted: 14
+ * register rows were missing from the page, 11 of them attribution-required,
+ * and a delisted file (MKJNTemple.jpg) was still being credited here after the
+ * register had replaced it. One list, one source of truth.
+ *
+ * Guarded by __tests__/cm08-credits-page-renders-register.test.tsx, which
+ * asserts on the RENDERED output — a source grep would pass on an unused import.
+ */
 
 export default function CreditsPage() {
  return (
@@ -103,14 +79,9 @@ export default function CreditsPage() {
  Credits
  </p>
  <h1
- className="text-2xl sm:text-3xl font-bold mb-3"
- style={{
- fontFamily: "var(--font-display)",
- color: "var(--color-text)",
- lineHeight: "var(--leading-tight)",
- }}
+ className={`${H1.catalogue} mb-3`}
  >
- Image Credits & Attribution
+ Credits &amp; Attribution
  </h1>
  <p
  className="text-sm leading-relaxed"
@@ -120,6 +91,18 @@ export default function CreditsPage() {
  Wikimedia Commons under Creative Commons or public-domain licenses.
  Each image below links to its source page on Wikimedia Commons,
  where you can view the full license terms and original file.
+ </p>
+ <p
+ className="mt-3 text-sm leading-relaxed"
+ style={{ color: "var(--color-text-muted)" }}
+ >
+ Article text is credited too. {TEXT_SOURCES.length} of our
+ encyclopedia articles draw on Wikipedia, which is published under{" "}
+ {WIKIPEDIA_TEXT_LICENSE.name} — see{" "}
+ <a href="#text-sources" className="underline" style={{ color: "var(--color-primary)" }}>
+ Text sources
+ </a>{" "}
+ below.
  </p>
  </div>
  </section>
@@ -167,15 +150,15 @@ export default function CreditsPage() {
  </tr>
  </thead>
  <tbody>
- {wikimediaCredits.map((c) => (
+ {COMMONS_CREDITS.map((c) => (
  <tr
- key={c.filename}
+ key={c.file}
  className="border-t"
  style={{ borderColor: "var(--color-border)" }}
  >
  <td className="px-4 py-3" style={{ color: "var(--color-text)" }}>
  <a
- href={c.sourcePage}
+ href={commonsSourcePage(c.file)}
  target="_blank"
  rel="noopener noreferrer"
  className="hover:underline"
@@ -194,7 +177,18 @@ export default function CreditsPage() {
  className="px-4 py-3 text-xs"
  style={{ color: "var(--color-text-muted)" }}
  >
+ {c.licenseUrl ? (
+ <a
+ href={c.licenseUrl}
+ target="_blank"
+ rel="noopener noreferrer license"
+ className="hover:underline"
+ >
  {c.license}
+ </a>
+ ) : (
+ c.license
+ )}
  </td>
  </tr>
  ))}
@@ -213,8 +207,10 @@ export default function CreditsPage() {
  Other image sources
  </h3>
  <p className="mb-3">
- Stock photography for store products, profile portraits, and
- abstract backgrounds is sourced from{" "}
+ Puja samagri and store product photography is largely Wikimedia
+ Commons as well — those files are credited in the table above, under
+ the same licence terms. The remaining stock shots, profile portraits
+ and abstract backgrounds come from{" "}
  <a
  href="https://unsplash.com/license"
  target="_blank"
@@ -244,6 +240,114 @@ export default function CreditsPage() {
  and downloadable original.
  </p>
  </div>
+ </div>
+ </section>
+
+ {/*
+ CI-15 — the text half of the licence obligation. Wikipedia prose is
+ CC BY-SA 4.0: reuse is allowed, attribution and share-alike are the
+ price. Every article below already carries its own notice; this is the
+ one place the whole reuse is declared at once, and the licence and the
+ wording both come from lib/encyclopedia-attribution.ts so the two
+ surfaces cannot drift.
+ */}
+ <section
+ id="text-sources"
+ data-testid="text-sources"
+ className="pb-16"
+ >
+ <div className="max-w-4xl mx-auto px-6 sm:px-8">
+ <h2
+ className="text-lg font-semibold mb-4"
+ style={{
+ fontFamily: "var(--font-display)",
+ color: "var(--color-text)",
+ }}
+ >
+ Text sources
+ </h2>
+
+ <div
+ className="rounded-lg border p-5 text-sm leading-relaxed"
+ style={{
+ borderColor: "var(--color-border)",
+ background: "var(--color-surface)",
+ color: "var(--color-text-muted)",
+ }}
+ >
+ <p>
+ {TEXT_SOURCES.length} of the encyclopedia articles on Darshya draw on
+ Wikipedia, whose text is published by its contributors under the{" "}
+ <a
+ href={WIKIPEDIA_TEXT_LICENSE.url}
+ target="_blank"
+ rel="noopener noreferrer license"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ {WIKIPEDIA_TEXT_LICENSE.name}
+ </a>{" "}
+ licence ({WIKIPEDIA_TEXT_LICENSE.fullName}). Text on Darshya derived
+ from those articles is shared under the same licence, and each article
+ links back to the Wikipedia page it draws on — the authorship history
+ lives there. Everything else on this site is our own work and is not
+ covered by that licence.
+ </p>
+ <p className="mt-3">
+ The licence also asks that we point to its{" "}
+ <a
+ href={WIKIPEDIA_TEXT_LICENSE.disclaimerUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ disclaimer of warranties
+ </a>
+ . Spotted an attribution that is wrong or missing? Tell us and we will
+ correct it.
+ </p>
+ </div>
+
+ {TEXT_SOURCE_GROUPS.map((group) => (
+ <div key={group.category} className="mt-8">
+ <h3
+ className="text-sm font-semibold mb-3"
+ style={{ color: "var(--color-text)" }}
+ >
+ {group.label} — {group.articles.length}{" "}
+ {group.articles.length === 1 ? "article" : "articles"}
+ </h3>
+ <ul className="space-y-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
+ {group.articles.map((a) => (
+ <li key={a.href}>
+ <Link
+ href={a.href}
+ className="font-medium hover:underline"
+ style={{ color: "var(--color-text)" }}
+ >
+ {a.title}
+ </Link>
+ <span> — draws on </span>
+ {a.cites.map((s, i) => (
+ <span key={s.url}>
+ {i > 0 && <span>, </span>}
+ <a
+ href={s.url}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="hover:underline"
+ style={{ color: "var(--color-primary)" }}
+ >
+ {s.title}
+ </a>
+ </span>
+ ))}
+ </li>
+ ))}
+ </ul>
+ </div>
+ ))}
  </div>
  </section>
  </div>

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Calendar, MapPin, ArrowRight, Mountain } from 'lucide-react';
 import { getTranslations } from '../../../lib/t';
 import { yatraDestinations, formatINRPrice } from '../../../lib/yatra-destinations';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
   title: 'Top 10 Yatra Destinations in India — Booking, Itineraries & Best Time',
@@ -30,10 +31,10 @@ export default async function YatraDestinationsPage() {
             <Mountain className="w-3.5 h-3.5" />
             {t('destinationsBadge')}
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-tight max-w-3xl" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+          <h1 className={`${H1.marketing} max-w-3xl`}>
             {t('destinationsTitle')}
           </h1>
-          <p className="mt-4 text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="mt-4 prose-body leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
             {t('destinationsSubtitle')}
           </p>
         </div>
@@ -51,7 +52,7 @@ export default async function YatraDestinationsPage() {
                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
               >
                 <div className="aspect-[16/10] relative overflow-hidden">
-                  <img src={d.heroImage} alt={d.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  <img width={640} height={400} src={d.heroImage} alt={d.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3">
                     <h3 className="text-base font-semibold text-white tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>{d.name}</h3>

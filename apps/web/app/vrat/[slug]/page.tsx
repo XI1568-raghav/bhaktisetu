@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { VRATS, vratSlugs, getVrat } from '../../../lib/vrats';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -106,7 +109,7 @@ export default async function VratDetail({
         <span className={`inline-block text-xs font-semibold px-2 py-1 rounded-full mb-3 ${catBadge[v.category]}`}>
           {catLabel[v.category]}
         </span>
-        <h1 className="text-3xl sm:text-5xl font-bold text-surface-900 mb-2 leading-tight">
+        <h1 className={`${H1.marketing} mb-2`}>
           {v.name}
           <span className="text-surface-500 text-xl sm:text-2xl font-normal ml-3">
             {v.sanskritName}
@@ -199,7 +202,7 @@ export default async function VratDetail({
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/ask-pandit"
-            className="px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+            className={buttonClass('primary', 'md')}
           >
             Ask a pandit →
           </Link>

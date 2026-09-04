@@ -261,6 +261,97 @@ export function errorCodeForStatus(statusCode: number): ErrorCode {
 }
 
 /**
+ * I-04 — the reverse index: an English catalogue sentence back to its code.
+ *
+ * Routes were written before this catalogue existed and send the English
+ * sentence directly (`reply.code(409).send({ error: 'Your cart is empty.' })`).
+ * Recovering the code from the sentence is what lets the serializer translate
+ * those responses without touching 90 route files — and it is exact-match only,
+ * so it can never guess a code for wording the catalogue does not own.
+ *
+ * Keyed on a trimmed, case-folded sentence: a route that dropped the full stop
+ * or capitalised differently still resolves.
+ */
+const CODE_BY_ENGLISH = new Map<string, ErrorCode>();
+for (const [code, sentence] of Object.entries(en) as [ErrorCode, string][]) {
+  CODE_BY_ENGLISH.set(normalizeSentence(sentence), code);
+  // Same sentence without its terminal punctuation, for routes that dropped it.
+  const bare = normalizeSentence(sentence.replace(/[.!]+$/, ''));
+  if (!CODE_BY_ENGLISH.has(bare)) CODE_BY_ENGLISH.set(bare, code);
+}
+
+function normalizeSentence(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * The code whose English string is exactly `message`, or null.
+ *
+ * Null means "this wording is not ours" — a bespoke sentence a route author
+ * wrote for one situation ("Too many login attempts for this email. Try again
+ * in 15 minutes.") — and the caller must keep it rather than substitute a
+ * vaguer translated one.
+ */
+export function errorCodeForEnglishMessage(message: unknown): ErrorCode | null {
+  if (typeof message !== 'string' || !message.trim()) return null;
+  return CODE_BY_ENGLISH.get(normalizeSentence(message)) ?? null;
+}
+
+/**
+ * I-04 — the ten spellings of "the request was malformed".
+ *
+ * Scanning routes/*.ts turns up 412 4xx bodies with an `error` label, no
+ * `message`, and a status too vague to imply one. 117 distinct labels, but the
+ * head of that distribution is not caller-facing text at all: `Invalid input`
+ * ×26, `Invalid body` ×18, `Invalid request body` ×18, `Invalid query` ×15,
+ * `Validation error` ×12, `INVALID_BODY` ×10, `BadRequest` ×7, `Invalid query
+ * parameters` ×5, `BAD_QUERY` ×5, `Bad request` ×5. 121 responses saying
+ * exactly what `error: 'ValidationError'` says, in ten hand-rolled spellings.
+ *
+ * Each carries zero information a translation could lose, so each maps to a
+ * catalogue code. The tail — "No matched temple for this manager", "Order ID
+ * mismatch." — is caller-specific and deliberately absent: those need authored
+ * translations, not a mapping.
+ */
+const GENERIC_REQUEST_LABELS = new Map<string, ErrorCode>([
+  ['invalid input', 'INVALID_BODY'],
+  ['invalid body', 'INVALID_BODY'],
+  ['invalid_body', 'INVALID_BODY'],
+  ['invalid request body', 'INVALID_BODY'],
+  ['bad request', 'INVALID_BODY'],
+  ['badrequest', 'INVALID_BODY'],
+  ['bad_request', 'INVALID_BODY'],
+  ['validation error', 'INVALID_BODY'],
+  ['validationerror', 'INVALID_BODY'],
+  ['invalid query', 'INVALID_QUERY'],
+  ['invalid_query', 'INVALID_QUERY'],
+  ['bad_query', 'INVALID_QUERY'],
+  ['invalid query parameters', 'INVALID_QUERY'],
+  ['invalid query parameter', 'INVALID_QUERY'],
+]);
+
+/**
+ * The catalogue code a generic "malformed request" label stands for, or null
+ * when the label names something specific that only its author can translate.
+ */
+export function genericRequestErrorCode(label: unknown): ErrorCode | null {
+  if (typeof label !== 'string' || !label.trim()) return null;
+  return GENERIC_REQUEST_LABELS.get(normalizeSentence(label)) ?? null;
+}
+
+/**
+ * True when the HTTP status alone determines the catalogue sentence.
+ *
+ * 404 always means "not found" and 401 always means "sign in", so a body that
+ * carries no message at all can safely be given one. 400/409/422 do NOT have
+ * that property — "The request body is invalid." is wrong for a 400 that
+ * actually meant "that slot is taken" — so those are left alone.
+ */
+export function statusImpliesMessage(statusCode: number): boolean {
+  return errorCodeForStatus(statusCode) !== 'INVALID_BODY';
+}
+
+/**
  * Pick the best supported language from an Accept-Language header value
  * and/or an explicit `?lang=` override. Explicit wins; otherwise we walk
  * the q-weighted list and return the first hit. Defaults to 'en'.

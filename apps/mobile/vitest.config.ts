@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from 'vitest/config';
 
 /**
@@ -17,5 +19,16 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['lib/**/*.test.ts'],
+    alias: {
+      // react-native ships Flow-typed source that vite/rollup cannot parse, so
+      // importing it fails at collection even from a module whose logic is
+      // pure. See test/stubs/react-native.ts.
+      'react-native': fileURLToPath(
+        new URL('./test/stubs/react-native.ts', import.meta.url),
+      ),
+      'expo-router': fileURLToPath(
+        new URL('./test/stubs/expo-router.ts', import.meta.url),
+      ),
+    },
   },
 });

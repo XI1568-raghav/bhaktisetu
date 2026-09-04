@@ -1,10 +1,30 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 /**
- * Generic tax-invoice generator covering the four paid product surfaces of
+ * Payment-receipt generator covering the four paid product surfaces of
  * Darshya: puja bookings (PB), astrology consultations (AC), wellness
  * sessions (WS), and store orders (SO). 80G donation receipts stay on
  * pdf-receipt.ts because their compliance contract is different.
+ *
+ * LEG-10 (audit ledger F230). This document used to head itself with the
+ * statutory heading defined by section 31 of the CGST Act — the one that pairs
+ * the word "tax" with the word "invoice". A document bearing that heading must
+ * carry the supplier's GSTIN, legal name and registered office, and it entitles
+ * the recipient to claim input tax credit. Darshya has none of those:
+ * `IS_INCORPORATED_VERIFIED`
+ * and `HAS_GST_REGISTRATION_VERIFIED` are both false in apps/web/lib/company.ts,
+ * `gstin` is null, and no code path adds a tax line to a booking or a store
+ * order. Issuing statutory-headed paper with no registration number is a
+ * defective document, and a recipient who claims credit against it is harmed.
+ *
+ * What this file produces is proof of payment and nothing more, so that is what
+ * it now says on the page, on the document number, and in the PDF metadata.
+ * Registering the entity and obtaining a GSTIN is the owner's action and is NOT
+ * solved here — see docs/audit/OWNER-ACTIONS.md.
+ *
+ * The exported symbols (`generateInvoice`, `InvoiceInput`) keep their names on
+ * purpose: three call sites outside this module import them, and renaming the
+ * API is a separate, wider change from correcting what the paper claims.
  */
 
 export type InvoiceInput =
@@ -177,7 +197,14 @@ export async function generateInvoice(input: InvoiceInput): Promise<Buffer> {
   const right = 545;
   let y = 800;
 
-  const invoiceNumber = `INV-${TYPE_PREFIX[input.type]}-${shortIdFor(input)}`;
+  const receiptNumber = `RCP-${TYPE_PREFIX[input.type]}-${shortIdFor(input)}`;
+
+  // Metadata, so the document does not describe itself as one thing in the
+  // viewer's title bar and another on the page.
+  pdf.setTitle(`Darshya payment receipt ${receiptNumber}`);
+  pdf.setSubject('Payment receipt — proof of payment only, not a statutory tax document');
+  pdf.setProducer('Darshya');
+  pdf.setCreator('Darshya');
 
   // Brand bar
   page.drawRectangle({ x: 0, y: 822, width: 595, height: 20, color: SAFFRON });
@@ -192,11 +219,12 @@ export async function generateInvoice(input: InvoiceInput): Promise<Buffer> {
   });
 
   y -= 60;
-  page.drawText('DARSHYA TAX INVOICE', { x: left, y, size: 14, font: fontBold, color: TEXT });
+  page.drawText('DARSHYA RECEIPT', { x: left, y, size: 14, font: fontBold, color: TEXT });
 
-  // Invoice meta
+  // Receipt meta. "Receipt No.:" is the same character count as the label it
+  // replaced, so the Date column at x=380 needs no adjustment.
   y -= 32;
-  page.drawText(`Invoice No.:  ${invoiceNumber}`, { x: left, y, size: 10, font, color: TEXT });
+  page.drawText(`Receipt No.:  ${receiptNumber}`, { x: left, y, size: 10, font, color: TEXT });
   page.drawText(`Date:  ${input.createdAt}`, { x: 380, y, size: 10, font, color: TEXT });
   y -= 14;
   page.drawText(referenceFor(input), { x: left, y, size: 10, font, color: MUTED });
@@ -254,18 +282,24 @@ export async function generateInvoice(input: InvoiceInput): Promise<Buffer> {
     x: 460, y, size: 12, font: fontBold, color: SAFFRON,
   });
 
-  // Tax / GST disclaimer
+  // Tax status. The old line here read "Amount inclusive of all applicable
+  // taxes where chargeable", which implies a tax component was computed and
+  // folded into the figure above. None was: no API path adds a tax line to a
+  // booking, a consultation, a session or a store order. The amount shown is
+  // simply the amount taken.
+  //
+  // Kept to two lines, as before, so nothing below shifts down the page.
   y -= 30;
-  page.drawText('Amount inclusive of all applicable taxes where chargeable.', {
+  page.drawText('Amount shown is the full amount charged. No tax was added or collected on it.', {
     x: left, y, size: 9, font, color: MUTED,
   });
   y -= 12;
-  page.drawText('Retain this invoice for your records.', {
+  page.drawText('Proof of payment only — no input tax credit. Retain this receipt for your records.', {
     x: left, y, size: 9, font, color: MUTED,
   });
 
   // Footer
-  page.drawText('Computer-generated invoice — valid without signature when issued via Darshya.', {
+  page.drawText('Computer-generated receipt — valid without signature when issued via Darshya.', {
     x: left, y: 40, size: 8, font, color: MUTED,
   });
   page.drawText('Generated at https://darshya.online   ·   support@darshya.online', {

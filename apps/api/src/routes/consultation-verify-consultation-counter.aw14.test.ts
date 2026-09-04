@@ -74,7 +74,7 @@ beforeEach(() => {
     userId: REAL_USER_ID,
   });
   prismaMock.commission.findFirst.mockResolvedValue(null);
-  prismaMock.commission.create.mockResolvedValue({ id: 'commission-1' });
+  prismaMock.commission.createMany.mockResolvedValue({ count: 1 });
   prismaMock.astrologerProfile.update.mockResolvedValue({ id: REAL_PROFILE_ID });
 });
 
@@ -110,7 +110,7 @@ describe('AW-14 — verify-payment maintains the public consultation counter', (
     prismaMock.commission.findFirst.mockResolvedValue({ id: 'commission-1' });
     const res = await verify();
     expect(res.statusCode).toBe(200);
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
     expect(prismaMock.astrologerProfile.update).not.toHaveBeenCalled();
   });
 
@@ -119,7 +119,7 @@ describe('AW-14 — verify-payment maintains the public consultation counter', (
     prismaMock.astrologerProfile.findFirst.mockResolvedValue(null);
     const res = await verify();
     expect(res.statusCode).toBe(200);
-    expect(prismaMock.commission.create).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
     expect(prismaMock.astrologerProfile.update).not.toHaveBeenCalled();
   });
 
@@ -129,14 +129,21 @@ describe('AW-14 — verify-payment maintains the public consultation counter', (
     expect(res.statusCode).toBe(200);
     // Commission.amount is the PROVIDER's 80% earning; percentage is the
     // PLATFORM's rate (lib/commission-math.ts). Both must survive intact.
-    expect(prismaMock.commission.create).toHaveBeenCalledWith({
-      data: {
-        bookingId: CONSULTATION_ID,
-        providerId: REAL_USER_ID,
-        amount: 300,
-        percentage: 0.2,
-        status: 'PENDING',
-      },
+    // DI-06 (F367): the insert is `createMany({ skipDuplicates })` —
+    // ON CONFLICT DO NOTHING against UNIQUE commissions.booking_id, which this
+    // writer shares with the puja-booking mint because the column is
+    // polymorphic across puja_bookings and astrologer_consultations.
+    expect(prismaMock.commission.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          bookingId: CONSULTATION_ID,
+          providerId: REAL_USER_ID,
+          amount: 300,
+          percentage: 0.2,
+          status: 'PENDING',
+        },
+      ],
+      skipDuplicates: true,
     });
   });
 });

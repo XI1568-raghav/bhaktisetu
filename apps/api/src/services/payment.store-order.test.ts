@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import crypto from 'node:crypto';
 import { prismaMock } from '../lib/__mocks__/prisma.js';
 
@@ -24,6 +24,16 @@ beforeEach(() => {
 afterEach(() => {
   process.env = { ...ORIG_ENV };
 });
+
+// The first dynamic import transpiles the whole payment.service dependency tree,
+// which on a loaded machine costs longer than the 30s default timeout. Without
+// this, that cost is billed to whichever test happens to run first — here
+// 'throws when store order does not exist', which then fails as a timeout while
+// asserting something unrelated. Same fix already applied in payment.service.test.ts.
+beforeAll(async () => {
+  vi.resetModules();
+  await import('./payment.service.js');
+}, 120_000);
 
 async function loadService() {
   vi.resetModules();
@@ -309,8 +319,14 @@ describe('PaymentService.verifyStoreOrderPayment', () => {
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
     expect(sendEmailMock.mock.calls[0]![0]).toMatchObject({
       to: 'user-1@example.com',
-      subject: 'Darshya tax invoice — ORD-1',
+      subject: 'Darshya payment receipt — ORD-1',
     });
+    // LEG-10: the attached PDF is a payment receipt, not a statutory GST tax
+    // invoice — Darshya has no GSTIN, so calling it one in the subject line
+    // told the customer they had received a document we cannot legally issue.
+    // Fixing the PDF alone was not enough; the mail that carries it must not
+    // re-introduce the claim.
+    expect(sendEmailMock.mock.calls[0]![0].subject).not.toMatch(/tax invoice/i);
   });
 
   it('does not re-flip an already CONFIRMED order (replay safety)', async () => {

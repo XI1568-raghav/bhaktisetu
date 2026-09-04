@@ -14,6 +14,8 @@ import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip'
 import UpcomingClassesSection from './UpcomingClassesSection';
 import FeaturedInstructorsSection from './FeaturedInstructorsSection';
 
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness' },
  title: 'Yoga, Meditation & Vipassana',
@@ -94,8 +96,7 @@ export default function WellnessPage() {
 
  <h1
  data-reveal="up-far"
- className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]"
- style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+ className={H1.marketing}
  >
  Yoga, Meditation{' '}
  <span style={{ color: 'var(--color-primary)' }}>&amp; Vipassana</span>
@@ -113,8 +114,7 @@ export default function WellnessPage() {
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
  <Link
  href="/wellness/classes"
- className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Browse live classes <ArrowRight className="w-4 h-4" />
  </Link>
@@ -240,14 +240,13 @@ export default function WellnessPage() {
  <h2 data-reveal="up" className="text-2xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  Start your practice today
  </h2>
- <p data-reveal="up" data-delay="1" className="text-sm max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
+ <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
  Join thousands of practitioners on Darshya. Your first guided meditation session is free.
  </p>
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
  <Link
  href="/wellness/meditation"
- className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg text-white btn-press"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'btn-press')}
  >
  Free Guided Session <ArrowRight className="w-4 h-4" />
  </Link>

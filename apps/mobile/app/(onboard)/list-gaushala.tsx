@@ -1,13 +1,20 @@
 import { OnboardScreen, ExtraTextField, ExtraCheckboxField } from './_form';
+import { HAS_80G } from '../../lib/eighty-g';
 
 const BENEFITS = [
   {
     title: 'Online donations, instant receipts',
-    body: 'Devotees donate via Razorpay. 80G PDF receipts auto-emailed within 60 seconds.',
+    body: `Devotees donate via Razorpay. ${HAS_80G ? '80G PDF receipts' : 'Numbered PDF receipts'} auto-emailed within 60 seconds.`,
   },
   {
-    title: 'Verified-gaushala badge',
-    body: 'Submit registration + 80G certificate once. Verified badge boosts donor conversion 3-4x.',
+    // TC-11 / TC-08: "Verified-gaushala badge" named a credential nothing
+    // awards — GaushalaProfile.verified exists in the schema and no route
+    // writes it (admin.service.ts approves by setting `approved`, and the only
+    // `verified: true` in apps/api is a mock fixture in provider.service.ts).
+    // "boosts donor conversion 3-4x" is a measurement no funnel in the product
+    // has ever taken. Both are replaced by the review step that does run.
+    title: 'Reviewed before you go live',
+    body: 'Submit your registration certificate once. A Darshya reviewer approves the listing before donors can see it.',
   },
   {
     title: 'Cow-count + photo proof',
@@ -25,7 +32,7 @@ export default function ListGaushalaScreen() {
       role="GAUSHALA"
       eyebrow="For Gaushalas"
       title="Receive cow-seva donations from devotees worldwide"
-      subtitle="List your gaushala on Darshya. 80G receipts, monthly subscriptions, and a transparent donor dashboard — built for trust."
+      subtitle={`List your gaushala on Darshya. ${HAS_80G ? '80G receipts' : 'Numbered donation receipts'}, monthly subscriptions, and a transparent donor dashboard — built for trust.`}
       benefits={BENEFITS}
       ctaLabel="Apply to list my gaushala"
       renderExtras={(extras, setExtra) => (

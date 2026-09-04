@@ -175,7 +175,7 @@ DELIVERED-MARKUP PROOF: ran  |
 | F199 | P2 | DU-09 | design-uniformity | partial | — | The other half of the finding — '16 distinct warm brand colours' — counts the temple-gold, amber, sandal and rudraksha ramps, which ARE declared palet |
 | F200 | P2 | DU-10 | design-uniformity | partial | — | 676 hardcoded arbitrary sizes the token layer cannot reach: 364 text-[10px], 210 text-[11px], 102 text-[9px] across app/ and components/. Those are pe |
 | F201 | P2 | DU-11 | design-uniformity | fixed | — | verified: Both halves of the finding are addressed exactly as its fix line asks. --font-body is now 'Satoshi', var(--fon |
-| F202 | P2 | DU-12 | design-uniformity | partial | — | DISPUTED by verify: SCOPE OVER-CLAIM. The delivered half is real and verified — compiled CSS confirms --color-gray-50..950 are warm hexes and slate/zinc/neutral/stone ali |
+| F202 | P2 | DU-12 | design-uniformity | partial | — | DU-12 shadow half FIXED (--shadow-sm/md/lg/float moved from :root into @theme; they were dead and 332 call sites compiled to stock cool #0000001a, .shadow-float to none). Colour-codemod half REFUSED as pixel-neutral: gray/slate/zinc/neutral/stone are already aliased to the warm ramp inside @theme, so text-gray-900 == text-surface-900 == #1a1510. LEDGER.json agreed to "partial" (it read "wontfix"). |
 | F206 | P0 | RESP-01 | responsive | partial | 376153d5 | space reserved, banner 347->321; Sign In still occluded |
 | F207 | P1 | RESP-02 | responsive | fixed | — | already_fixed · Closed by commit 376153d5 "fix(web): stop the consent banner burying page content" (2026-08-13, |
 | F208 | P1 | RESP-03 | responsive | fixed | — | already_fixed · Also closed by commit 376153d5. apps/web/components/MobileBottomTabs.tsx:57 now sets `style={{  |

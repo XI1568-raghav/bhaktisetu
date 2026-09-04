@@ -11,6 +11,7 @@ import { selectPortalCows } from '../../lib/api-contracts';
 import { useGaushalaPortalCows } from '../../lib/portal-queries';
 import { colors, spacing } from '../../lib/theme';
 
+import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
  * PAR-12. This dashboard counted the PUBLIC cow feed — 19 animals across five
  * gaushalas — and reported them as this manager's herd. It then did
@@ -22,6 +23,11 @@ import { colors, spacing } from '../../lib/theme';
  * there is an endpoint behind it.
  */
 export default function GaushalaDashboard() {
+  // Android: guard the app's exit point. This screen is a stack root
+  // (index.tsx router.replace()s here), so back would otherwise quit
+  // outright with no confirmation. No-op on iOS.
+  useExitConfirm();
+
   const cowsQuery = useGaushalaPortalCows();
   const [refreshing, setRefreshing] = useState(false);
 

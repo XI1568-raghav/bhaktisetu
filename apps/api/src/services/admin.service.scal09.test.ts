@@ -33,33 +33,38 @@ beforeEach(() => {
 });
 
 describe('SCAL-09: role filter constrains the query, not the fetched page', () => {
-  it('resolves the role to its holders and constrains the users query on id', async () => {
-    prismaMock.userRoleAssignment.findMany.mockResolvedValue([
-      { userId: 'u-1' },
-      { userId: 'u-7' },
-    ]);
-
+  // REWRITTEN 2026-08-28 (SCAL-04), deliberately, and NOT weakened.
+  //
+  // These two tests used to assert the MECHANISM SCAL-09 happened to ship with:
+  // resolve the role to every holder id, then constrain `user.findMany` with
+  // `where.id = { in: [...] }`. That mechanism is gone — it was the one read in
+  // this service that scaled with the whole user base — and `getUsers` now uses
+  // the relation predicate it was imitating. The INVARIANT is unchanged and is
+  // still what is asserted: the role constrains the QUERY (so the page and the
+  // total are computed from the same set), never a JS `.filter()` over a page
+  // that was already fetched. Only the expected shape of the predicate moved.
+  it('constrains the users query with the role predicate, not a JS filter', async () => {
     await service.getUsers({ role: 'PANDIT' });
 
-    // First query: who holds PANDIT. (`roleAssignments: { some: … }` is not
-    // available — UserRoleAssignment has no Prisma relation to User, verified
-    // live as `Unknown argument 'roleAssignments'` → HTTP 500.)
-    const roleQuery = prismaMock.userRoleAssignment.findMany.mock.calls[0]![0]!;
-    expect(roleQuery.where).toEqual({ role: 'PANDIT' });
-
     const args = prismaMock.user.findMany.mock.calls[0]![0]!;
-    expect(args.where.id).toEqual({ in: ['u-1', 'u-7'] });
+    expect(args.where.roleAssignments).toEqual({ some: { role: 'PANDIT' } });
+
+    // The holder scan this endpoint used to open with must not come back. Only
+    // the page-bounded roles hydration (`userId: { in: page }`) may read that
+    // table now.
+    const roleScans = prismaMock.userRoleAssignment.findMany.mock.calls.filter(
+      (c: unknown[]) => (c[0] as { where?: { role?: unknown } })?.where?.role !== undefined,
+    );
+    expect(roleScans).toHaveLength(0);
   });
 
   it('counts with the SAME predicate, so total matches the filtered list', async () => {
-    prismaMock.userRoleAssignment.findMany.mockResolvedValue([{ userId: 'u-9' }]);
-
     await service.getUsers({ role: 'ADMIN' });
 
     const listWhere = prismaMock.user.findMany.mock.calls[0]![0]!.where;
     const countWhere = prismaMock.user.count.mock.calls[0]![0]!.where;
     expect(countWhere).toEqual(listWhere);
-    expect(countWhere.id).toEqual({ in: ['u-9'] });
+    expect(countWhere.roleAssignments).toEqual({ some: { role: 'ADMIN' } });
   });
 
   it('an unrecognised role is an honest empty answer, not a 500', async () => {

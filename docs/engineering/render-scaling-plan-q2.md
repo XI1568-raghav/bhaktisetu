@@ -24,7 +24,7 @@ Predictable Render scaling: per-trigger upgrade decisions, no surprise bills.
 
 ## Multi-region
 
-When MAU > 50K → activate Singapore standby per R-Q4-IT-001 multi-region failover plan.
+**Corrected 2026-09-02 (`OPS-10`).** This line used to read *"activate Singapore standby"*, as though a standby were sitting there waiting. There is no standby, no replica and no warm spare in any geography; both services run in Render `oregon` (`render.yaml:15`, `:56`). Building a second region is unstarted work, not an activation — and the multi-region plans that described it are retired stubs (`docs/engineering/multi-region-failover-plan.md`). Before it is worth costing, both services must fit the Render free tier's 750 instance-hours per **account** (`docs/free-tier-budgets.md`) and a backup must be proven to restore (`OPS-02`). For an actual outage: `docs/runbooks/disaster-recovery.md`.
 
 ## Monitoring
 

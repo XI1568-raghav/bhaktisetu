@@ -10,6 +10,22 @@ import { payoutRequestRoutes } from './payout-requests.js';
  * Read-only. Filters PriestPayout rows where the calling priest's
  * Priest.id === payout.priestId (resolved via Priest.userId === currentUser.id).
  *
+ * ⚠ THIS IS ONE OF TWO PAYOUT RAILS, and it reads the older one.
+ *
+ * DI-05 (2026-08-16): `PriestPayout` is the legacy sidecar rail.
+ * payment.service.createPriestPayout REFUSES to write a row whenever a live
+ * `Commission` already owns the booking, and since the DI-05 write fix
+ * (booking.service EARNING_ATTACH_STATUSES) every temple-path and
+ * dispatch-assigned booking mints exactly such a Commission. So this endpoint
+ * structurally cannot see a temple-path pandit's earnings, and answering it
+ * alone reads as "you are owed nothing".
+ *
+ * It has no client today — the priest portal calls GET /priest/payouts and the
+ * unified page calls GET /payouts/balance, and BOTH of those merge the two
+ * rails. Do not wire a UI to this one without merging the Commission ledger in
+ * the same way (see routes/priest.ts GET /payouts for the merge, and
+ * routes/admin-bookings.ts for the admin-side equivalent).
+ *
  * NOTE on PriestPayout schema gaps vs typical payout dashboards:
  *   - No `commission` column (currently the priest service computes net of
  *     commission elsewhere and stores only the payable `amount`).

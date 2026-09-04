@@ -33,6 +33,9 @@
 
 import { prisma } from '../lib/prisma.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
+import { mintProviderEarningForBooking } from './provider-earning-mint.js';
+// OPS-05 — the durable money trail. Post-commit only; never inside a tx.
+import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
 import { activeSlotHoldWhere } from './booking.service.js';
 import {
   notifyDevotee,
@@ -314,6 +317,12 @@ export class DispatchService {
    */
   async accept(bookingId: string, priestId: string): Promise<{ bookingId: string; priestId: string }> {
     const now = new Date();
+    // OPS-05: the mint happens inside the transaction below, but the audit row
+    // must be written after it commits (recordMoneyEvent takes no `tx` — a
+    // failed audit INSERT would abort the caller's transaction and roll back
+    // the assignment). Carried out on a closure variable rather than the tx
+    // return value so `accept`'s public shape is unchanged.
+    let mintOutcome = 'no-provider-on-booking';
     return prisma.$transaction(async (tx) => {
       // We need the date+slot to build the lock key, and the lock has to be the
       // FIRST statement in the transaction (see below), so read the booking
@@ -393,13 +402,38 @@ export class DispatchService {
         where: { bookingId, state: 'sent', id: { not: offer.id } },
         data: { state: 'superseded', respondedAt: now },
       });
-      await tx.pujaBooking.update({
+      const assigned = await tx.pujaBooking.update({
         where: { id: bookingId },
         data: { priestId, status: 'priest_assigned', assignedVia: 'broadcast', offerExpiresAt: null },
+        select: { id: true, priestId: true, priceAmount: true, priestPayout: true },
       });
+
+      // DI-05: MINT THE EARNING. This path never enters
+      // booking.service.updateBookingStatus, so the re-mint gated on
+      // EARNING_ATTACH_STATUSES could not fire here — and 'priest_assigned' is
+      // in that set, so it was meant to. A pandit who WON A BROADCAST therefore
+      // held no Commission and no PriestPayout, and his own /priest/payouts
+      // screen answered Rs 0 on money he was owed.
+      //
+      // Reads `assigned`, the row the update just returned, NOT the pre-update
+      // `booking` snapshot above — that one still carries priestId: null, and
+      // minting off it is the original bug wearing a new hat. Inside the same
+      // transaction as the assignment, so an assignment that rolls back cannot
+      // leave a payable behind. All four guards (idempotency, legacy rail,
+      // captured payment, linked User) live in provider-earning-mint.ts.
+      mintOutcome = await mintProviderEarningForBooking(tx, assigned);
 
       return { bookingId, priestId };
     }).then(async (res) => {
+      // OPS-05: record the mint now the assignment is durable. A pandit who
+      // WON A BROADCAST is exactly the case DI-05 was filed for, so this is
+      // the mint most worth having on the trail. No-op unless it minted.
+      await recordProviderEarningMinted({
+        bookingId,
+        outcome: mintOutcome,
+        rail: 'dispatch-accept-offer',
+        actorType: 'provider',
+      });
       // Post-commit: notify devotee + update the winner's acceptance rate.
       const b = await prisma.pujaBooking.findUnique({
         where: { id: bookingId },

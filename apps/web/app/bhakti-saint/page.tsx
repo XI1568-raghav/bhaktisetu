@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BHAKTI_SAINTS } from '../../lib/bhakti-saints';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -72,7 +73,7 @@ export default function BhaktiSaintIndexPage() {
       </nav>
 
       <header className="mb-8 rounded-xl bg-gradient-to-br from-indigo-50 via-saffron-50 to-amber-50 p-6 ring-1 ring-indigo-200">
-        <h1 className="text-3xl font-bold text-indigo-900 sm:text-4xl">Bhakti Saints — भक्ति-संत</h1>
+        <h1 className={H1.catalogue}>Bhakti Saints — भक्ति-संत</h1>
         <p className="mt-2 text-lg text-saffron-900">Twelve medieval masters who carried devotion to the people</p>
         <p className="mt-3 max-w-3xl text-gray-800">
           From the 8th-century Vedanta of Adi Shankara to the 19th-century Kali-bhakti of Ramakrishna, these twelve saints reshaped Sanatana Dharma by making the highest teachings accessible in vernacular tongue — Awadhi, Brajbhasha, Marathi, Tamil, Bengali, Hindi. They composed in song instead of Sanskrit shastra, opened temples to women and shudras, and put the divine name on the lips of farmers, weavers, and queens alike.

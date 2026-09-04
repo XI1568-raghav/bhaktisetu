@@ -33,7 +33,7 @@ A typical household Shiva puja on Monday follows this sequence:
 8. **Aarti** — Conclude with the deity's aarti, circling the lamp clockwise.
 9. **Visarjan** — Respectfully request the deity to return, and distribute prasad.
 
-For a complete, pandit-verified Shiva puja with video proof, book through [our Shiva puja service](/pujas/rudrabhishek). Verified pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
+For a complete Shiva puja with video proof, book through [our Shiva puja service](/pujas/rudrabhishek). Pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
 
 ## Mantras and Aarti
 

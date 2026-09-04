@@ -37,7 +37,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('../lib/api-config', () => ({ API_BASE_URL: 'http://api.test/api/v1' }));
 
-import AstrologerProfilePage from '../app/astrology/view/page';
+import AstrologerProfilePage from '../app/astrology/view/AstrologerProfileClient';
 
 const REAL_UUID = '71e54617-4a5f-4d0e-9f2f-2b1c9a0d5e33';
 

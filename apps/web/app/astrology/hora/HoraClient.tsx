@@ -10,6 +10,7 @@ import {
  type Planet,
 } from '../../../lib/hora';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const QUALITY_STYLE = {
  auspicious:   { border: 'border-emerald-300', bg: 'bg-emerald-50/60', pill: 'bg-emerald-200 text-emerald-900', label: 'Auspicious' },
@@ -126,7 +127,7 @@ export default function HoraClient() {
        Want a pandit to pick the exact hora for your specific task?
       </p>
       <div className="mt-3 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/astrology/choghadiya" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

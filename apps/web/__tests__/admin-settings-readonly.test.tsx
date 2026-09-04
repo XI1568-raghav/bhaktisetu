@@ -296,3 +296,45 @@ describe('AO-10 — subscription plans and admins are fetched, not hardcoded', (
     expect(screen.queryByText(/maintenance mode/i)).toBeNull();
   });
 });
+
+// ─── PM-03: the screen must not brief operators on a defect that is closed ───
+
+/**
+ * PM-03 — "Where the rate is set" told the operator that the schema default was
+ * "still the pre-revamp 70% (a 30% platform take)" and that "reconciling the
+ * two is an open owner decision".
+ *
+ * Both halves were false at the time this was written: schema.prisma has read
+ * `commissionRate Float @default(0.80)` since 2026-08-12 and migration
+ * 20260812000000_priest_commission_rate_80 backfilled the 0.70 rows. This is
+ * the one screen built to be the honest answer to "what do we actually take",
+ * so a stale 30% claim here is the finding's own headline being told back to
+ * the operator by the fix for it.
+ *
+ * Asserted on RENDERED text, so the comment above the copy in page.tsx that
+ * records the history cannot satisfy or trip these.
+ */
+describe('PM-03 — the take-rate briefing matches the schema', () => {
+  it('does not tell the operator the schema default is 70% / a 30% take', async () => {
+    mockApi();
+    await renderSettings();
+
+    const body = document.body.textContent ?? '';
+    expect(body.length).toBeGreaterThan(400);
+    expect(body).not.toMatch(/pre-revamp 70%/i);
+    expect(body).not.toMatch(/30% platform take/i);
+    expect(body).not.toMatch(/schema default is still/i);
+    expect(body).not.toMatch(/open owner decision/i);
+  });
+
+  it('still explains that the stored per-pandit share is the source of truth', async () => {
+    // A gate, not a deletion: the reason a ledger row can differ from 20% has
+    // to survive, or the next reader treats an off-rate row as a display bug.
+    mockApi();
+    await renderSettings();
+
+    const body = document.body.textContent ?? '';
+    expect(body).toMatch(/source of truth/i);
+    expect(body).toMatch(/negotiated|stored share|their provider record/i);
+  });
+});

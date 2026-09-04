@@ -19,10 +19,13 @@ Re-sending humari original ask:
 
 Bhaktisetu pe gauseva recurring-donation platform launch ho raha hai. NRI +
 India donors monthly contribute karte hain (₹500-₹10,000/mo), aur gaushala
-ko monthly disbursement milta hai with 80G receipt for donor.
+ko monthly disbursement milta hai. Donor ko numbered receipt PDF milti hai —
+proof of payment, tax-exemption certificate nahi (Darshya ke paas abhi
+Section 80G registration nahi hai).
 
 {city} ki gaushala ko list karna chahte hain pilot batch mein. Aapke
-gaushala ka basic info + 80G regn + PAN bhejein, hum 7 din mein onboard kar
+gaushala ka basic info + 80G regn + PAN bhejein (hum record kar lete hain;
+abhi donor receipt par print nahi hote), hum 7 din mein onboard kar
 denge — koi upfront fee nahi.
 
 15-min call ke liye reply karein OR "remove" likhein agar interested nahi.

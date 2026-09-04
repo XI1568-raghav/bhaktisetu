@@ -4,6 +4,7 @@ import { useState, useMemo, FormEvent } from 'react';
 import Link from 'next/link';
 import { computeKaalSarp, KAAL_SARP_REMEDIES, type KaalSarpResult } from '../../../lib/kaal-sarp';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const CITY_PRESETS = [
  { label: 'Delhi',     lat: 28.6139, lng: 77.2090, tz: 5.5 },
@@ -96,7 +97,7 @@ export default function KaalSarpClient() {
     </p>
     <button
      type="submit"
-     className="mt-4 w-full rounded-lg bg-saffron-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-saffron-700 sm:w-auto sm:px-8"
+     className={buttonClass('primary', 'md', 'mt-4 w-full sm:w-auto')}
     >
      Check Kaal Sarp Dosh
     </button>
@@ -216,7 +217,7 @@ export default function KaalSarpClient() {
      <div className="rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-5 text-center">
       <p className="text-sm text-gray-800">Want a pandit to confirm the dosh and prescribe the right upaya?</p>
       <div className="mt-3 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

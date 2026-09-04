@@ -5,6 +5,8 @@
 // No external AI calls — deterministic templates seeded with day-of-month.
 // Output: docs/agent-reports/YYYY-MM-DD-founder-tweet-draft.md
 import { fetchText, writeReport, upsertLog, WEB_BASE, TODAY } from './_lib.mjs';
+// TC-08 — nothing promotes a Priest to verified; see ./_claims.mjs.
+import { PANDIT_TRUST_SHORT, verifiedNoun } from './_claims.mjs';
 
 // Indian festivals 2026 (approximate dates — for hook timing only, not authoritative).
 const FESTIVALS = [
@@ -35,9 +37,9 @@ function daysUntil(target, today) {
 
 const TEMPLATES = [
   ({ festival, dDays, sitemapUrls }) =>
-    `${dDays} days to ${festival.name}.\n\nBuilding the puja booking flow nobody is talking about: video proof + verified pandits + transparent commission. ${sitemapUrls}+ pages live now at darshya.online — solo founder, $0 ad spend.`,
+    `${dDays} days to ${festival.name}.\n\nBuilding the puja booking flow nobody is talking about: video proof + ${verifiedNoun('pandits')} + transparent commission. ${sitemapUrls}+ pages live now at darshya.online — solo founder, $0 ad spend.`,
   ({ festival, dDays }) =>
-    `Indian diaspora problem nobody is solving:\n\nyour parents back home want a Satyanarayan puja done for ${festival.name} but you don't trust the random WhatsApp pandit forwarded by relatives.\n\nFix: verified pandits, video proof, fixed price in USD. Building it at darshya.online.`,
+    `Indian diaspora problem nobody is solving:\n\nyour parents back home want a Satyanarayan puja done for ${festival.name} but you don't trust the random WhatsApp pandit forwarded by relatives.\n\nFix: ${PANDIT_TRUST_SHORT}, fixed price in USD. Building it at darshya.online.`,
   () =>
     `Hot take: religion tech in India is undercooked.\n\n- Sri Mandir, AppsForBharat raised $10M+\n- Still no live darshan QoS standard\n- Still no transparent commission to the temple\n- Still no diaspora UX\n\nWe're shipping all three at darshya.online. Solo + bootstrapped.`,
   ({ today }) =>

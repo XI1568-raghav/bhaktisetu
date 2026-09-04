@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { Upload, Video, Loader2, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '../../lib/supabase';
+// RES-09: both catches below rendered `e.message` verbatim — see the notes at
+// each one for what that actually put on a pandit's screen.
+import { userFacingMessage } from '../../lib/friendly-error';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 interface Props {
   bookingId: string;
@@ -67,7 +71,21 @@ export default function VideoProofUpload({
       if (onUploaded) await onUploaded(publicUrl);
       setProgress(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed');
+      // RES-09 (2026-09-02): this rendered the raw error message. The throw two
+      // lines up is `upErr`, a Supabase `StorageError`, so what a pandit read
+      // when an upload was refused was the storage layer's own wording — "new
+      // row violates row-level security policy", "The resource already exists",
+      // "Payload too large", "Bucket not found" — none of which tells them what
+      // to do, and one of which (the RLS one) names an internal mechanism.
+      //
+      // Video proof is MANDATORY for every puja booking (PROJECT_CONTEXT.md
+      // business rule 1), so this is the screen that stands between a completed
+      // puja and the pandit being paid for it. `userFacingMessage` passes
+      // through anything already fit to read, classifies what it recognises
+      // (network, auth, rate limit, 5xx), and otherwise uses the fallback here.
+      setError(
+        userFacingMessage(e, 'We could not upload that video. Please check your connection and try again.'),
+      );
       setProgress(null);
     } finally {
       setUploading(false);
@@ -82,7 +100,13 @@ export default function VideoProofUpload({
       if (onUploaded) await onUploaded(manualUrl.trim());
       setUploadedUrl(manualUrl.trim());
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Submit failed');
+      // RES-09: `onUploaded` is the caller's API write (marking the booking
+      // video_uploaded). It is a bare `fetch` on every current caller, so a
+      // rejection here is the browser's own string — "Failed to fetch", "Load
+      // failed" — and the pandit sees it having just uploaded 200 MB.
+      setError(
+        userFacingMessage(e, 'The video uploaded, but we could not attach it to the booking. Please try again.'),
+      );
     } finally {
       setUploading(false);
     }
@@ -162,7 +186,7 @@ export default function VideoProofUpload({
             type="button"
             onClick={handleManualSubmit}
             disabled={uploading || !manualUrl.trim()}
-            className="px-4 py-2.5 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+            className={buttonClass('primary', 'md')}
           >
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
           </button>

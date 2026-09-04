@@ -17,9 +17,14 @@ import {
 import { fetchPublicStats, type PublicStats } from '../../lib/live-stats';
 import { COMPANY } from '../../lib/company';
 import {
+  CANCELLATION_BADGE_LABEL,
+  CANCELLATION_BADGE_DESC,
   CANCELLATION_POLICY_SENTENCE,
   REFUND_SETTLEMENT_SENTENCE,
 } from '../../lib/cancellation-policy';
+import { NRI_PREMIUM_IS_SELLABLE } from '../nri/plan-availability';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -39,16 +44,46 @@ function countedNoun(count: number | null, noun: string): string {
   return count === null ? noun : `${count.toLocaleString('en-IN')} ${noun}`;
 }
 
+/**
+ * TC-01 (P0) / TC-08 (P1) / LEG-03 straggler — seven surfaces on this page
+ * promised an 80G deduction, two published a pandit vetting process that does
+ * not run, and one trust card published a cancellation ladder the engine does
+ * not honour.
+ *
+ * 80G: `HAS_80G_VERIFIED` is false, `eightyGNumber` and `pan` are both null,
+ * and apps/api/src/lib/pdf-receipt.ts stamps every receipt "Proof of donation
+ * — not a tax exemption certificate" because `is80GEligible()` needs a donee
+ * registration number AND a PAN, and `gaushala_profiles.regn_80g` / `.pan` are
+ * read in one place and written nowhere. Same gate as lib/company.ts.
+ *
+ * Vetting: there is no gotra check, no temple-affiliation letter, no test puja
+ * and no rating gate. `Priest.isVerified`, `.verificationStatus` and
+ * `.aadhaarVerified` have no writer outside apps/api/prisma/seed.ts, and
+ * `.aadhaarVerified` is read in exactly one place — payment.service.ts, as a
+ * PAYOUT gate. The replacement wording is the sentence already shipping at
+ * app/temples/[slug]/pujas/page.tsx, reused verbatim so they cannot drift.
+ *
+ * Cancellation: the "Full refund up to 24h before scheduled time" trust card
+ * slipped past the LEG-03 guards because it phrased the promise differently
+ * from the two literals they scan for. The engine pays 100% at 48h or more and
+ * 75% in the 24-48h band, so the card renders lib/cancellation-policy instead
+ * of a fourth hand-typed ladder.
+ */
+const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
+
 export const metadata: Metadata = {
   title: 'NRI Pujas — Book a Puja from USA, UK, Canada, Australia',
   description:
-    'Complete guide for NRIs to book authentic Hindu pujas at verified India temples. International cards billed in INR, video proof on WhatsApp, 80G receipt eligible donations, 24-hour cancellation. Trusted by Indian diaspora worldwide.',
+    'Complete guide for NRIs to book authentic Hindu pujas at verified India temples. International cards billed in INR, video proof on WhatsApp' +
+    (HAS_80G ? ', 80G receipt eligible donations' : ', numbered donation receipts') +
+    `. ${CANCELLATION_BADGE_LABEL}. Trusted by Indian diaspora worldwide.`,
   robots: { index: false, follow: false },
   alternates: { canonical: 'https://darshya.online/nri-pujas' },
   openGraph: {
     title: 'NRI Pujas — Book from Anywhere in the World | Darshya',
     description:
-      'Step-by-step guide for booking pujas at India temples from abroad. International cards billed in INR, video proof, 80G receipts.',
+      'Step-by-step guide for booking pujas at India temples from abroad. International cards billed in INR, video proof' +
+      (HAS_80G ? ', 80G receipts.' : ', donation receipts.'),
     url: 'https://darshya.online/nri-pujas',
     type: 'website',
     images: ['/og/default.png'],
@@ -85,7 +120,7 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Will I receive video proof of my puja?',
-    a: `Video proof is mandatory on every booking. The verified pandit uploads a 3-7 minute clip showing the sankalp (your name + gotra), the ritual, and the prasad. We aim to have the WhatsApp link with you within ${COMPANY.refunds.videoProofTargetLabel} of completion; if nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write in and a person reviews it.`,
+    a: `Video proof is mandatory on every booking. The assigned pandit uploads a 3-7 minute clip showing the sankalp (your name + gotra), the ritual, and the prasad. We aim to have the WhatsApp link with you within ${COMPANY.refunds.videoProofTargetLabel} of completion; if nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write in and a person reviews it.`,
   },
   {
     q: 'How does pricing work from abroad?',
@@ -93,15 +128,17 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Are the pandits verified?',
-    a: 'Every pandit on Darshya passes a 5-step verification: Aadhaar KYC, lineage/gotra check, temple affiliation letter, video test puja and devotee rating gate. We list the pandit\'s name, photo, lineage and language fluency on every booking page.',
+    a: 'Only in one specific sense, so here is exactly how far it goes. A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check — we do not yet run independent credential verification or temple reference checks, and we do not publish a per-pandit trust score. What every booking does carry is mandatory video proof of the ceremony.',
   },
   {
     q: 'Can my parents in India also benefit?',
     a: 'Yes. You can book a puja for any beneficiary in India. Just enter their name, gotra and date of birth at checkout. The pandit will mention them in the sankalp. Prasad can be shipped to their address (extra fee for shipping) or to yours abroad.',
   },
   {
-    q: 'Is the donation 80G tax-deductible?',
-    a: 'Donations to temples with active 80G registration are eligible for Indian income-tax deduction. You receive a 80G receipt (DR-YYYYMMDD-XXXX) via email within 7 days. NRI status does not block 80G eligibility — anyone with an Indian PAN can claim it on Indian-sourced income.',
+    q: HAS_80G ? 'Is the donation 80G tax-deductible?' : 'Can I claim a tax deduction on the donation?',
+    a: HAS_80G
+      ? 'Donations to temples with active 80G registration are eligible for Indian income-tax deduction. You receive a 80G receipt (DR-YYYYMMDD-XXXX) via email within 7 days. NRI status does not block 80G eligibility — anyone with an Indian PAN can claim it on Indian-sourced income.'
+      : 'Not today. You receive a numbered receipt (DR-YYYYMMDD-XXXX) by email, but it is proof of payment rather than a tax-exemption certificate: it carries no donee registration number and no donee PAN, so nothing can be claimed against it under Indian income-tax law. We will update this answer the day that registration is issued.',
   },
   {
     q: 'What is the cancellation policy?',
@@ -150,20 +187,24 @@ const stepsFor = (stats: PublicStats) => [
   {
     n: 6,
     title: 'Video proof + prasad',
-    body: 'Within 24 hours, a 3-7 minute video clip arrives on WhatsApp showing the sankalp, ritual and prasad offering. Prasad ships if ordered. 80G receipt within 7 days.',
+    body:
+      'Within 24 hours, a 3-7 minute video clip arrives on WhatsApp showing the sankalp, ritual and prasad offering. Prasad ships if ordered.' +
+      (HAS_80G ? ' 80G receipt within 7 days.' : ' Any donation you added is receipted by email.'),
   },
 ];
 
 const trustSignals = [
   { icon: Video, title: 'Video proof mandatory', body: 'Every puja delivers a video — pandit payout is gated on upload.' },
-  { icon: ShieldCheck, title: 'Verified pandits only', body: '5-step KYC: Aadhaar, gotra, temple affiliation, test puja, devotee rating.' },
+  { icon: ShieldCheck, title: 'Aadhaar KYC before payout', body: 'A payout gate, not a credential check — no reference checks, no trust score.' },
   // CM-06: this signal used to advertise dual-currency billing and list seven
   // foreign currencies. There is no multi-currency rail — Razorpay charges in
   // INR only, and the foreign-currency path was deleted with Stripe (RV-01).
   // Say what actually happens at checkout.
   { icon: CreditCard, title: 'International cards, no markup', body: 'Billed in INR — full price shown upfront, no platform FX fee.' },
-  { icon: Clock, title: '24-hour free cancellation', body: 'Full refund up to 24h before scheduled time.' },
-  { icon: FileText, title: '80G tax receipts', body: 'Eligible donations get 80G receipt within 7 days.' },
+  { icon: Clock, title: CANCELLATION_BADGE_LABEL, body: `${CANCELLATION_BADGE_DESC}. Inside that window the slot is locked.` },
+  HAS_80G
+    ? { icon: FileText, title: '80G tax receipts', body: 'Eligible donations get 80G receipt within 7 days.' }
+    : { icon: FileText, title: 'Numbered donation receipts', body: 'Proof of payment by email — not a tax-exemption certificate.' },
   { icon: Globe2, title: 'Trusted by diaspora', body: 'NRIs from USA, UK, Canada, Australia, Singapore, UAE.' },
 ];
 
@@ -237,27 +278,36 @@ export default async function NRIPujasPillarPage() {
             <Globe2 className="h-3.5 w-3.5" />
             For NRIs in USA, UK, Canada, Australia, Singapore, UAE
           </span>
-          <h1 className="mt-4 font-display text-4xl md:text-5xl font-semibold leading-tight text-surface-900">
+          <h1 className={`${H1.marketing} mt-4`}>
             Book a Puja at an India Temple — from Anywhere in the World
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-surface-700">
-            The complete NRI guide to booking authentic Hindu pujas with verified pandits, video
-            proof on WhatsApp, international-card checkout and 80G tax receipts. Trusted by the Indian
-            diaspora across 60+ countries.
+          <p className="prose-lead mt-4 max-w-2xl text-surface-700">
+            The complete NRI guide to booking authentic Hindu pujas at India temples — mandatory
+            video proof on WhatsApp, international-card checkout billed in INR, and{' '}
+            {HAS_80G ? '80G tax receipts' : 'a numbered receipt for every donation'}. Prasad ships
+            to 60+ countries.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/pujas"
-              className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse {countedNoun(stats.pujaTypeCount, 'pujas')}
               <ArrowRight className="h-4 w-4" />
             </Link>
+            {/*
+              TC-04 — this button marketed nri_premium_yearly, which the server
+              has withdrawn: every one of its six benefits carries
+              `enforcedBy: null`, so `nriPremiumIsSellable()` is false,
+              `getPlans()` drops it and both activation rails answer 400. While
+              it is withdrawn the CTA points at the temple catalogue instead of
+              a tier nobody can buy.
+            */}
             <Link
-              href="/nri"
+              href={NRI_PREMIUM_IS_SELLABLE ? '/nri' : '/temples'}
               className="inline-flex items-center gap-2 rounded-lg border border-saffron-300 bg-white px-5 py-3 text-sm font-medium text-saffron-700 hover:bg-saffron-50"
             >
-              See NRI Premium tier
+              {NRI_PREMIUM_IS_SELLABLE ? 'See NRI Premium tier' : 'Browse verified temples'}
             </Link>
           </div>
         </div>
@@ -413,7 +463,7 @@ export default async function NRIPujasPillarPage() {
             <div>
               <Link
                 href="/gift"
-                className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-700"
+                className={buttonClass('primary', 'md')}
               >
                 Send a gift puja
                 <ArrowRight className="h-4 w-4" />
@@ -465,7 +515,7 @@ export default async function NRIPujasPillarPage() {
           <div className="flex flex-col gap-2 md:items-end">
             <Link
               href="/pujas"
-              className="inline-flex items-center gap-2 rounded-lg bg-saffron-600 px-5 py-3 text-sm font-medium text-white hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse pujas
               <ArrowRight className="h-4 w-4" />

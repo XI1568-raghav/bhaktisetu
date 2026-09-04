@@ -5,11 +5,11 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Alert,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProducts, useCart, useAddToCart } from '@poojly/api-client';
 import {
@@ -19,11 +19,7 @@ import {
   type CartVM,
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_GAP = spacing.sm;
-const GRID_PADDING = spacing.md;
-const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
+import { GRID_GAP, GRID_PADDING, useResponsiveGrid } from '../../lib/use-responsive';
 
 /**
  * PAR-16. Nothing could be bought in the app.
@@ -46,6 +42,15 @@ const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
  * Cart mutations return {message, cart} — the hooks type them as a bare Cart,
  * so the badge is read through selectCart, and it only moves after the server
  * has confirmed the new item count.
+ *
+ * THE CART BUTTON USED TO BE A DIALOG
+ * -----------------------------------
+ * `showCart` rendered the whole basket into an `Alert.alert` body — quantities
+ * unchangeable, items unremovable, and a closing line reading "Checkout is on
+ * the web store for now." Nothing in the app could complete a store order at
+ * all. The cart is now app/(devotee)/cart.tsx, checkout is checkout.tsx, and
+ * the placed order is visible in orders.tsx, all against the real endpoints.
+ * The badge stays here because this is the screen that adds to the cart.
  */
 
 type StoreCategory = 'all' | 'puja-items' | 'idols' | 'books' | 'rudraksha' | 'clothing';
@@ -95,13 +100,15 @@ function ProductCard({
   product,
   onAdd,
   adding,
+  width,
 }: {
   product: ProductRow;
   onAdd: (p: ProductRow) => void;
   adding: boolean;
+  width: number;
 }) {
   return (
-    <View style={[styles.productCard, { width: CARD_WIDTH }]}>
+    <View style={[styles.productCard, { width }]}>
       <View style={styles.productImage}>
         <Ionicons name={iconForCategory[product.uiCategory]} size={28} color={colors.saffron[300]} />
         {product.tag ? (
@@ -167,6 +174,9 @@ function ProductCard({
 }
 
 export default function StoreScreen() {
+  // Live geometry. `gridKey` is what keeps the FlatList legal when `columns`
+  // changes at runtime — see the `key` prop on the product grid below.
+  const { columns, cardWidth, gridKey } = useResponsiveGrid();
   const [activeCategory, setActiveCategory] = useState<StoreCategory>('all');
   const productsQuery = useProducts();
   const cartQuery = useCart();
@@ -224,34 +234,6 @@ export default function StoreScreen() {
     }
   }
 
-  function showCart() {
-    if (!cart) {
-      Alert.alert('Cart unavailable', 'Could not read your cart. Pull down to retry.');
-      return;
-    }
-    if (cart.items.length === 0) {
-      Alert.alert('Your cart is empty', 'Add an item to get started.');
-      return;
-    }
-    Alert.alert(
-      `Cart (${cart.itemCount} item${cart.itemCount === 1 ? '' : 's'})`,
-      [
-        ...cart.items.map(
-          (i) =>
-            `${i.quantity} × ${i.title}${i.subtotal !== null ? ` — ₹${i.subtotal.toLocaleString('en-IN')}` : ''}`,
-        ),
-        '',
-        cart.subtotal !== null ? `Subtotal: ₹${cart.subtotal.toLocaleString('en-IN')}` : '',
-        cart.deliveryFee !== null ? `Delivery: ₹${cart.deliveryFee.toLocaleString('en-IN')}` : '',
-        cart.total !== null ? `Total: ₹${cart.total.toLocaleString('en-IN')}` : '',
-        '',
-        'Checkout is on the web store for now.',
-      ]
-        .filter((line) => line !== undefined)
-        .join('\n'),
-    );
-  }
-
   const badgeCount = cart?.itemCount ?? 0;
 
   return (
@@ -268,14 +250,35 @@ export default function StoreScreen() {
                   : `${products.length} items · delivered to your door`}
             </Text>
           </View>
-          <TouchableOpacity style={styles.cartButton} activeOpacity={0.7} onPress={showCart}>
-            <Ionicons name="cart-outline" size={22} color={colors.stone[700]} />
-            {badgeCount > 0 ? (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>{badgeCount}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.cartButton}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="My orders"
+              onPress={() => router.push('/(devotee)/orders' as never)}
+            >
+              <Ionicons name="receipt-outline" size={22} color={colors.stone[700]} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cartButton}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={
+                badgeCount > 0
+                  ? `Your cart, ${badgeCount} item${badgeCount === 1 ? '' : 's'}`
+                  : 'Your cart'
+              }
+              onPress={() => router.push('/(devotee)/cart' as never)}
+            >
+              <Ionicons name="cart-outline" size={22} color={colors.stone[700]} />
+              {badgeCount > 0 ? (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>{badgeCount}</Text>
+                </View>
+              ) : null}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -304,12 +307,24 @@ export default function StoreScreen() {
       </View>
 
       <FlatList
+        // VirtualizedList caches cell layout per column count and throws
+        // "Changing numColumns on the fly is not supported" if the prop moves
+        // under it. Keying the list on the column count remounts it on exactly
+        // the renders where `numColumns` actually differs — a rotation, an
+        // iPad Split View resize, a fold — and on no other render, so ordinary
+        // re-renders (filter, refetch, add-to-cart) keep their scroll offset.
+        key={gridKey}
         data={filteredProducts}
         keyExtractor={(item) => item.id}
-        numColumns={2}
+        numColumns={columns}
         columnWrapperStyle={styles.gridRow}
         renderItem={({ item }) => (
-          <ProductCard product={item} onAdd={handleAdd} adding={addingId === item.id} />
+          <ProductCard
+            product={item}
+            onAdd={handleAdd}
+            adding={addingId === item.id}
+            width={cardWidth}
+          />
         )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -363,9 +378,16 @@ const styles = StyleSheet.create({
     color: colors.stone[500],
     marginTop: 2,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   cartButton: {
     position: 'relative',
-    padding: spacing.sm,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cartBadge: {
     position: 'absolute',

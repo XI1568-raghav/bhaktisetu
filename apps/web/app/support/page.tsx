@@ -11,6 +11,8 @@ import {
  Clock,
 } from 'lucide-react';
 import { SUPPORT_CATEGORIES, POPULAR_ARTICLES } from '../../lib/support';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata = {
  alternates: { canonical: 'https://darshya.online/support' },
@@ -29,22 +31,26 @@ export default function SupportPage() {
  <LifeBuoy className="w-3.5 h-3.5" />
  Darshya Support Center
  </div>
- <h1 className="text-4xl lg:text-5xl font-[family-name:var(--font-display)] font-bold text-surface-900 tracking-tight mb-4">
+ <h1 className={`${H1.marketing} mb-4`}>
  How can we help you today?
  </h1>
- <p className="text-surface-600 text-base lg:text-lg max-w-2xl mx-auto mb-8">
+ <p className="prose-lead text-surface-600 max-w-2xl mx-auto mb-8">
  Search articles, browse categories, or talk to a human — we&apos;re here 8am to 11pm IST, every day.
  </p>
 
- {/* Search */}
- <div className="max-w-2xl mx-auto relative">
+ {/* Search — a plain GET form, so it works without JavaScript and lands
+     on the FAQ with the query applied. It was previously an input bound
+     to nothing: typing and pressing Enter did nothing at all. */}
+ <form action="/support/faq" method="get" className="max-w-2xl mx-auto relative">
  <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-surface-400" />
  <input
  type="search"
+ name="q"
+ aria-label="Search help articles"
  placeholder="Search for help articles..."
  className="w-full pl-12 pr-4 py-4 rounded-xl bg-white border border-surface-200 focus:border-saffron-500 focus:ring-2 focus:ring-saffron-500/20 outline-none text-sm"
  />
- </div>
+ </form>
 
  {/* Quick contact row */}
  <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -73,7 +79,7 @@ export default function SupportPage() {
  </a>
  <Link
  href="/support/ticket/new"
- className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-saffron-600 hover:bg-saffron-700 text-white text-sm font-semibold transition-colors"
+ className={buttonClass('primary', 'md')}
  >
  <TicketIcon className="w-4 h-4" />
  Open Ticket
@@ -119,16 +125,35 @@ export default function SupportPage() {
  {/* Popular articles */}
  <section className="py-14 bg-white border-y border-surface-200/60">
  <div className="max-w-6xl mx-auto px-6">
+ <div className="flex items-end justify-between mb-8">
+ <div>
  <h2 className="text-2xl font-[family-name:var(--font-display)] font-bold text-surface-900 tracking-tight mb-1">
  Popular articles
  </h2>
- <p className="text-sm text-surface-500 mb-8">The ones devotees read most this week.</p>
+ {/* This line used to read "the ones devotees read most this week".
+     Nothing measures that, and the ten rows beneath it were titles
+     nobody had written (I-09). It now says what it is. */}
+ <p className="text-sm text-surface-500">
+ The questions support answers most often.
+ </p>
+ </div>
+ <Link
+ href="/help"
+ className="text-sm font-medium text-saffron-700 hover:text-saffron-800 hidden sm:inline-flex items-center gap-1"
+ >
+ Browse the help centre <ArrowRight className="w-4 h-4" />
+ </Link>
+ </div>
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-2">
  {POPULAR_ARTICLES.map((article, idx) => (
  <a
  key={article.id}
- href={`/support/faq?q=${encodeURIComponent(article.title)}`}
+ // I-09: this used to build its own link out of the row's TITLE and
+ // send it to a `?q=` the FAQ ignored — for ten titles that had never
+ // been written. The destination now comes from the row itself, which
+ // is generated from a real article or a real FAQ entry.
+ href={article.href}
  className="group flex items-start gap-4 py-4 border-b border-surface-100 hover:border-saffron-300 transition-colors"
  >
  <span className="text-sm font-bold text-saffron-600 w-6 shrink-0 pt-0.5">

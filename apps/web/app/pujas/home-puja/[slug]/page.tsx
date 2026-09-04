@@ -24,6 +24,9 @@ import { homePujaCategories } from '../../../../lib/home-pujas';
 import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api';
 import { PanditAvatar } from '../../PanditAvatar';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
+import { CANCELLATION_BADGE_LABEL } from '../../../../lib/cancellation-policy';
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -88,10 +91,10 @@ export default async function HomePujaDetail({ params }: Props) {
  Home Puja
  </div>
  <div className="text-sm text-surface-500 mb-2">{cat.nameLocal}</div>
- <h1 className="text-3xl md:text-5xl font-bold text-surface-800 tracking-tight leading-tight">
+ <h1 className={H1.marketing}>
  {cat.name} at Home
  </h1>
- <p className="mt-4 text-lg text-surface-500 max-w-2xl leading-relaxed">{cat.description}</p>
+ <p className="prose-lead mt-4 text-surface-500 max-w-2xl leading-relaxed">{cat.description}</p>
 
  <div className="mt-6 flex flex-wrap gap-3">
  <div className="inline-flex items-center gap-2 bg-white border border-[var(--color-border)] px-3 py-2 rounded-lg text-sm text-surface-700">
@@ -135,13 +138,15 @@ export default async function HomePujaDetail({ params }: Props) {
 
  <Link
  href={`/pujas/home-puja/${cat.slug}/book`}
- className="block w-full text-center py-3.5 rounded-lg font-semibold text-white transition-colors"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md', 'w-full text-center')}
  >
  Book Now
  </Link>
+ {/* LEG-03 (F223): read "Free cancellation up to 24 hours before", which
+     promises a full refund at a point where DEFAULT_CANCEL_POLICY pays 75%.
+     Rendered from lib/cancellation-policy so it cannot drift again. */}
  <div className="mt-3 text-center text-xs text-surface-500">
- Free cancellation up to 24 hours before
+ {CANCELLATION_BADGE_LABEL}
  </div>
  </aside>
  </div>
@@ -281,7 +286,7 @@ export default async function HomePujaDetail({ params }: Props) {
  <h3 className="text-lg font-semibold text-surface-800 mb-2">
  Verified pandits coming soon
  </h3>
- <p className="text-sm text-surface-500 max-w-md mx-auto">
+ <p className="prose-meta text-surface-500 max-w-md mx-auto">
  We are onboarding verified pandits for {cat.name}. New profiles will appear here shortly.
  </p>
  </div>
@@ -396,8 +401,7 @@ export default async function HomePujaDetail({ params }: Props) {
  <div className="mt-6">
  <Link
  href={`/pujas/home-puja/${cat.slug}/book`}
- className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg font-semibold text-white transition-colors"
- style={{ background: 'var(--color-primary)' }}
+ className={buttonClass('primary', 'md')}
  >
  Book Now
  <ArrowRight className="w-4 h-4" />

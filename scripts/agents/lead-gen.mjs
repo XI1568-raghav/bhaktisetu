@@ -3,6 +3,8 @@
 // Pulls lead targets from a curated CSV (committed) and DB (if DATABASE_URL set).
 // Output: docs/agent-reports/YYYY-MM-DD-lead-gen.md
 import { writeReport, TODAY, isoNow, fetchJson, API_BASE } from './_lib.mjs';
+// TC-01 - the platform holds no Section 80G registration; see ./_claims.mjs.
+import { withEightyG } from './_claims.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 
 // Static priority cities for outbound (top 25 by puja demand + NRI diaspora source).
@@ -96,7 +98,7 @@ What you get:
 - Booking calendar with Razorpay/UPI payouts (T+1)
 - Verified badge once Aadhaar uploaded
 - Reach 12K+ NRI devotees (USD pricing handled)
-- 80G certificate generation (for gaushalas + temples)
+- ${withEightyG('80G certificate generation (for gaushalas + temples)', 'Numbered donation receipt PDFs (for gaushalas + temples) \u2014 proof of payment, not tax-exemption certificates')}
 
 15-min onboarding call if interested? Reply with a slot.
 

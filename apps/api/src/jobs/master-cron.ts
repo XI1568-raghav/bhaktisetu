@@ -16,6 +16,9 @@ import { maybeRunWeeklyBackup, type BackupResult } from './backup-cron.js';
 import { sweepOldRows as sweepWebhookReplay, type SweepResult as WebhookSweepResult } from '../lib/webhook-idempotency.js';
 import { runDailyPanchangCompute } from './daily-panchang-compute-cron.js';
 import { tickConsultationExpire, type ConsultationExpireResult } from './consultation-expire.js';
+// PAY-06: the money reconciliation sweep. Nothing anywhere used to look for a
+// Payment stuck at 'initiated' with a real capture behind it.
+import { reconcilePayments, type ReconcileResult } from './reconcile-payments.js';
 import { runWeeklySettlement } from '../services/payout.service.js';
 import { claimRun, releaseRun } from '../lib/notification-run-log.js';
 
@@ -93,6 +96,8 @@ export interface DailyOpsResult {
   backup: BackupResult;
   webhookReplaySweep: WebhookSweepResult;
   consultationExpire: ConsultationExpireResult;
+  /** PAY-06: Razorpay ↔ local reconciliation sweep. */
+  paymentReconciliation: ReconcileResult;
   weeklySettlement: {
     providersScanned: number;
     requestsCreated: number;
@@ -401,6 +406,18 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
       backup: { ok: true, skipped: true, reason: 'outreachOnly' },
       webhookReplaySweep: { deleted: 0, skipped: true, reason: 'outreachOnly' },
       consultationExpire: { expired: 0, skipped: true, reason: 'outreachOnly' },
+      paymentReconciliation: {
+        scannedPayments: 0,
+        recoveredPayments: 0,
+        failedPayments: 0,
+        scannedConsultations: 0,
+        recoveredConsultations: 0,
+        cancelledConsultations: 0,
+        slotOversoldPending: 0,
+        errors: 0,
+        skipped: true,
+        reason: 'outreachOnly',
+      },
       weeklySettlement: {
         providersScanned: 0,
         requestsCreated: 0,
@@ -431,6 +448,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const backup = await tickWeeklyBackup();
   const webhookReplaySweep = await tickWebhookReplaySweep();
   const consultationExpire = await tickConsultationExpire();
+  const paymentReconciliation = await tickPaymentReconciliation();
   const weeklySettlement = await tickWeeklySettlement();
   return {
     outreach,
@@ -450,9 +468,37 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     backup,
     webhookReplaySweep,
     consultationExpire,
+    paymentReconciliation,
     weeklySettlement,
     ranAt: new Date().toISOString(),
   };
+}
+
+/**
+ * PAY-06: ask Razorpay what actually settled for every order still stuck on our
+ * side, and recover it through the same handlers the webhook uses.
+ *
+ * Best-effort like every other step — reconcilePayments already swallows its
+ * own errors into the result, so this wrapper only guards against the import or
+ * the call itself blowing up in a non-DB environment.
+ */
+async function tickPaymentReconciliation(): Promise<ReconcileResult> {
+  try {
+    return await reconcilePayments();
+  } catch (err) {
+    return {
+      scannedPayments: 0,
+      recoveredPayments: 0,
+      failedPayments: 0,
+      scannedConsultations: 0,
+      recoveredConsultations: 0,
+      cancelledConsultations: 0,
+      slotOversoldPending: 0,
+      errors: 1,
+      skipped: true,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 // Weekly settlement sweep (Phase-2 "guaranteed payout day"). Auto-creates a

@@ -159,8 +159,7 @@ export default function AudioPlayer({
  <div className="flex items-center gap-3 min-w-0">
  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-saffron-200 to-amber-100 flex items-center justify-center shrink-0">
  {imageUrl ? (
- <img
- src={imageUrl}
+ <img width={40} height={40}  src={imageUrl}
  alt={title}
  className="w-full h-full object-cover rounded-lg"
  />

@@ -40,7 +40,7 @@ function GaushalaSidebar({
   setSidebarOpen: (v: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   const isActive = (href: string) =>
     href === '/gaushala-portal' ? pathname === '/gaushala-portal' : pathname.startsWith(href);
@@ -111,13 +111,23 @@ function GaushalaSidebar({
           <ChevronRight className="w-5 h-5 rotate-180" />
           Back to Main Site
         </Link>
-        <button
-          onClick={signOut}
+        {/* AUTH-09 (2026-09-01): this was `onClick={signOut}`, a bare call that
+            sends the DEFAULT scope — global. POST /auth/logout burns every
+            refresh_token_jtis row the account holds, so pressing it on
+            a temple's or a shop's shared desktop also ended the session on the
+            operator's own phone, with nothing on screen saying so.
+
+            /auth/logout runs the identical global sign-out and puts "this signs
+            you out on all your devices" on screen while it happens. Same fix as
+            components/NavAuthButton.tsx and app/dashboard/page.tsx. A user who
+            wants the narrow scope has the choice on /profile -> Security. */}
+        <Link
+          href="/auth/logout"
           className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors mt-1"
         >
           <LogOut className="w-5 h-5" />
           Sign Out
-        </button>
+        </Link>
       </div>
     </aside>
   );

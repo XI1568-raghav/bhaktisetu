@@ -35,6 +35,8 @@ import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import { formatClassPrice, formatClassWhen, type WellnessClass } from '../WellnessClassesClient';
 
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 type ClassDetail = WellnessClass & { roomUrl?: string | null };
 
 let razorpayScriptPromise: Promise<void> | null = null;
@@ -262,7 +264,7 @@ export default function ClassDetailClient() {
   if (loadError) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+        <h1 className={`${H1.portal} mb-2`}>
           Class unavailable
         </h1>
         <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
@@ -270,8 +272,7 @@ export default function ClassDetailClient() {
         </p>
         <Link
           href="/wellness/classes"
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white"
-          style={{ background: 'var(--color-primary)' }}
+          className={buttonClass('primary', 'md')}
         >
           Back to all classes
         </Link>
@@ -303,8 +304,7 @@ export default function ClassDetailClient() {
       </Link>
 
       <h1
-        className="text-2xl sm:text-3xl font-semibold tracking-tight"
-        style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+        className={H1.catalogue}
       >
         {detail.title}
       </h1>
@@ -359,8 +359,7 @@ export default function ClassDetailClient() {
               href={detail.roomUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white"
-              style={{ background: 'var(--color-primary)' }}
+              className={buttonClass('primary', 'md')}
             >
               Join the live room
             </a>
@@ -390,8 +389,7 @@ export default function ClassDetailClient() {
               type="button"
               onClick={handleEnrol}
               disabled={enrolling || isFull}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white disabled:opacity-60"
-              style={{ background: 'var(--color-primary)' }}
+              className={buttonClass('primary', 'md')}
             >
               {enrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {isFull ? 'Class is full' : `Enrol — ${formatClassPrice(detail.priceInr)}`}

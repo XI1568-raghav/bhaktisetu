@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import LalKitabClient from './LalKitabClient';
 import { GRAHAS, PROBLEMS } from '../../../lib/lal-kitab';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -105,10 +108,10 @@ export default function LalKitabPage() {
 
     <div className="mt-4">
      <p className="text-xs uppercase tracking-wider text-saffron-700">Lal Kitab · लाल किताब · Pt. Roop Chand Joshi 1939-1952</p>
-     <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">
+     <h1 className={`${H1.catalogue} mt-1`}>
       Lal Kitab Upay &amp; Farman Finder
      </h1>
-     <p className="mt-2 max-w-3xl text-sm text-gray-700">
+     <p className="mt-2 max-w-3xl prose-body text-gray-700">
       Pick your life problem → identify the troubling graha → get 3 universal Farman + house-by-house remedy.
       All 108 graha-in-house combinations covered with traditional household upay — water, jaggery, mustard oil,
       copper, silver, feeding crows + black dog. Zero gemstone cost. Run for 40 consecutive days for visible change.
@@ -180,7 +183,7 @@ export default function LalKitabPage() {
      <p className="font-serif text-lg text-gray-900">Want a Lal Kitab pandit to read your custom chart?</p>
      <p className="mt-2 text-sm text-gray-700">Free Farman lookup gives you the household remedy. A Lal Kitab pandit reads your exact chart, identifies hidden dosha, and prescribes a 40 / 90 / lifetime karma plan.</p>
      <div className="mt-4 flex flex-wrap justify-center gap-3">
-      <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">Ask a Lal Kitab Pandit</Link>
+      <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>Ask a Lal Kitab Pandit</Link>
       <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">Free Kundli</Link>
       <Link href="/astrology/dasha" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">Vimshottari Dasha</Link>
       <Link href="/astrology/sade-sati" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">Sade Sati Check</Link>

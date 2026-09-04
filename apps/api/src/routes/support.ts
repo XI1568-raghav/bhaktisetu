@@ -11,6 +11,10 @@ import {
   supportTicketReplyEmail,
 } from '../lib/email.js';
 import { summarizeSla, type SlaTicketInput } from '../lib/support-sla.js';
+import {
+  PANDIT_ONBOARDING_ANSWER,
+  PLATFORM_SUMMARY_TRUST_CLAUSE,
+} from '../lib/pandit-vetting.js';
 
 const SUPPORT_INBOX = process.env.SUPPORT_INBOX_EMAIL ?? 'support@darshya.online';
 
@@ -177,7 +181,11 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['what is poojly', 'about poojly', 'who are you', 'what do you do'],
-    message: "Darshya is India's devotional super-app — live darshan from 200+ temples, puja bookings with video proof, astrology, wellness, pilgrimages, and a store for religious items. All Aadhaar-verified priests, all secure payments.",
+    // TC-08: this ended "All Aadhaar-verified priests, all secure payments."
+    // Priest.aadhaarVerified has no writer outside prisma/seed.ts and
+    // scripts/seed-demo-users.ts, so that was a claim about seed rows. See
+    // lib/pandit-vetting.ts — gated, not deleted.
+    message: `Darshya is India's devotional super-app — live darshan from 200+ temples, puja bookings with video proof, astrology, wellness, pilgrimages, and a store for religious items. ${PLATFORM_SUMMARY_TRUST_CLAUSE}`,
     actions: [
       { label: 'Browse Pujas', href: '/pujas' },
       { label: 'Live Darshan', href: '/darshan' },
@@ -222,7 +230,13 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['become pandit', 'become priest', 'pandit onboarding', 'priest register', 'join as priest', 'join as pandit'],
-    message: 'We onboard verified priests and astrologers. Share your credentials at /priest-onboarding — typical verification takes 3–5 days (ID, training, test readings).',
+    // TC-08: this published a three-part vetting process with a 3–5 day SLA
+    // ("ID, training, test readings"). None of the three exists, and nothing
+    // promotes a Priest to verified — routes/priest.ts writes
+    // verificationStatus 'pending' and no route ever writes 'approved' — so a
+    // pandit who followed this answer waited for a review that could not
+    // arrive. See lib/pandit-vetting.ts.
+    message: PANDIT_ONBOARDING_ANSWER,
     actions: [{ label: 'Priest Onboarding', href: '/priest-onboarding' }],
   },
   {

@@ -14,8 +14,7 @@ export function BookCard({ book }: { book: BookManifest }) {
     >
       <div className="relative aspect-[3/4] bg-gradient-to-br from-saffron-100 to-amber-50 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={book.coverImage}
+        <img width={300} height={400}           src={book.coverImage}
           alt={book.title}
           loading="lazy"
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

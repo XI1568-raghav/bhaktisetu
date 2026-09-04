@@ -13,8 +13,20 @@
  * carry the quantified line, plus require both places to agree.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, cleanup, act } from '@testing-library/react';
+
+/**
+ * TC-05 (2026-08-28): step 3 of this wizard used to render a hand-typed pandit
+ * fixture and now fetches the real directory over `GET /priests`. Without this
+ * stub the effect issues a live request from happy-dom, which aborts at
+ * teardown and prints an AbortError stack over an otherwise passing file. The
+ * GST arithmetic under test does not depend on the roster.
+ */
+vi.mock('../lib/pandit-api', () => ({
+  getPublicPriests: vi.fn(async () => []),
+}));
+
 import BookMarriage from '../app/pujas/marriage/book/page';
 import { marriagePricingTiers } from '../lib/home-pujas';
 
@@ -30,6 +42,15 @@ function sidebarText(): string {
   return aside.textContent ?? '';
 }
 
+/**
+ * Render and flush the directory effect. Without the flush React reports the
+ * `getPublicPriests` resolution as an update outside act(...).
+ */
+async function renderWizard(): Promise<void> {
+  render(<BookMarriage />);
+  await act(async () => {});
+}
+
 beforeEach(() => {
   cleanup();
 });
@@ -41,30 +62,30 @@ describe('PF-11 — the sidebar quantifies GST from step 1', () => {
     expect(TOTAL).toBe(29500);
   });
 
-  it('shows the rupee value of the GST, not a bare "+ GST"', () => {
-    render(<BookMarriage />);
+  it('shows the rupee value of the GST, not a bare "+ GST"', async () => {
+    await renderWizard();
     const text = sidebarText();
     expect(text).toContain(GST.toLocaleString('en-IN'));
   });
 
-  it('shows the estimated total the couple will actually be quoted', () => {
-    render(<BookMarriage />);
+  it('shows the estimated total the couple will actually be quoted', async () => {
+    await renderWizard();
     expect(sidebarText()).toContain(TOTAL.toLocaleString('en-IN'));
   });
 
-  it('names the rate so the number is checkable', () => {
-    render(<BookMarriage />);
+  it('names the rate so the number is checkable', async () => {
+    await renderWizard();
     expect(sidebarText()).toMatch(/GST\s*\(18%\)/);
   });
 
-  it('no longer leaves an unquantified "+ GST" dangling in the sidebar', () => {
-    render(<BookMarriage />);
+  it('no longer leaves an unquantified "+ GST" dangling in the sidebar', async () => {
+    await renderWizard();
     // The bare marker: a "+ GST" with no digits attached to it.
     expect(sidebarText()).not.toMatch(/\+\s*GST(?!\s*\()/);
   });
 
-  it('still shows the pre-tax amount, so the breakdown is not replaced by a total', () => {
-    render(<BookMarriage />);
+  it('still shows the pre-tax amount, so the breakdown is not replaced by a total', async () => {
+    await renderWizard();
     expect(sidebarText()).toContain(AMOUNT.toLocaleString('en-IN'));
   });
 });

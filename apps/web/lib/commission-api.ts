@@ -85,12 +85,59 @@ async function asJson<T>(res: Response): Promise<T> {
   return (text ? JSON.parse(text) : {}) as T;
 }
 
+/**
+ * DI-08 (F369) — the three halves of the split, summed over the WHOLE filtered
+ * ledger rather than over the page on screen.
+ *
+ * `GET /admin/commissions` has returned this since the DI-08 API fix
+ * (apps/api/src/routes/admin.ts, `totalsByRate` grouped by `percentage` and
+ * reduced through lib/commission-math.ts). `unwrapPage` used to discard it, so
+ * /admin/commissions kept summing the ≤100 rows it had loaded while
+ * /admin/revenue's "Platform take" tile covered every row in the table. Two
+ * screens, one label, different scopes — which is the shape of the original
+ * finding, only with better words on it.
+ *
+ * Absent on `GET /payouts/commissions` (the provider self-serve route computes
+ * no totals), so every consumer must treat it as optional.
+ */
+export interface CommissionTotals {
+  /** Sum of Commission.amount — what providers earned. */
+  providerEarningsInr: number;
+  /** Sum of amount * p / (1 - p) — the platform's take. */
+  platformTakeInr: number;
+  /** Sum of amount / (1 - p) — the gross transaction value. */
+  grossInr: number;
+}
+
 export interface CommissionPage {
   items: Commission[];
   /** Total rows matching the query across ALL pages, not just this one. */
   total: number;
   page: number;
   pageSize: number;
+  /** Ledger-wide totals over the same filter as `total`. Absent on the provider route. */
+  totals?: CommissionTotals;
+}
+
+/**
+ * The API stringifies Decimals elsewhere but reduces these three to JS numbers
+ * before sending them, so accept either and reject anything non-finite — a
+ * total that renders as "₹NaN" is worse than a total that is honestly absent.
+ */
+function readTotals(raw: unknown): CommissionTotals | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const o = raw as Record<string, unknown>;
+  const num = (v: unknown): number | null => {
+    const n = typeof v === 'string' ? Number(v) : v;
+    return typeof n === 'number' && Number.isFinite(n) ? n : null;
+  };
+  const providerEarningsInr = num(o.providerEarningsInr);
+  const platformTakeInr = num(o.platformTakeInr);
+  const grossInr = num(o.grossInr);
+  if (providerEarningsInr === null || platformTakeInr === null || grossInr === null) {
+    return undefined;
+  }
+  return { providerEarningsInr, platformTakeInr, grossInr };
 }
 
 /**
@@ -115,6 +162,7 @@ function unwrapPage(payload: unknown, fallbackPageSize: number): CommissionPage 
       total: typeof obj.total === 'number' ? obj.total : items.length,
       page: typeof obj.page === 'number' ? obj.page : 1,
       pageSize: typeof obj.pageSize === 'number' ? obj.pageSize : fallbackPageSize,
+      totals: readTotals(obj.totals),
     };
   }
   return { items: [], total: 0, page: 1, pageSize: fallbackPageSize };

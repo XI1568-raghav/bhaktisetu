@@ -1,0 +1,13 @@
+{
+  "_comment": "TC-01 — written by scripts/build-og-default.mjs. Records the pills baked into apps/web/public/og/default.png, which no text search can read. apps/web/__tests__/tc01-og-card-80g.test.ts re-hashes the shipped PNG against sha256 below, so a source-only fix that never re-rendered the raster fails.",
+  "has80G": false,
+  "pills": [
+    "Live Darshan",
+    "Puja Booking",
+    "Vedic Astrology",
+    "Numbered Receipts"
+  ],
+  "output": "apps/web/public/og/default.png",
+  "bytes": 53037,
+  "sha256": "fa95fd98a5e0559dc9473e2df83cfb351882a3a5a4cfb2ee14f16da9fc3f5aa5"
+}

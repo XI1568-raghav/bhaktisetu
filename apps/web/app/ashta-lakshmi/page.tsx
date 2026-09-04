@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { ASHTA_LAKSHMIS } from '../../lib/ashta-lakshmi';
 
@@ -49,14 +51,14 @@ export default function AshtaLakshmiIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-pink-700">Eight forms · eight blessings</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Ashta Lakshmi</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Ashta Lakshmi</h1>
         <p className="mt-1 font-serif text-xl text-gray-700">अष्ट लक्ष्मी</p>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Goddess Lakshmi manifests in eight forms — each presiding over one aspect of true prosperity. From Adi
           (primordial) to Vidya (knowledge), this is the complete Tantric grid worshipped on Diwali and Varalakshmi
           Vrata. Each form has its own beej mantra, vahana, signature festival and vrata.
         </p>
-        <p className="mt-3 max-w-2xl text-sm text-gray-600">
+        <p className="mt-3 max-w-2xl prose-meta text-gray-600">
           See also <Link href="/shakti-peeth" className="text-pink-700 underline">51 Shakti Peeth</Link>,{' '}
           <Link href="/dashavatar" className="text-pink-700 underline">Dashavatar of Vishnu</Link> and{' '}
           <Link href="/nava-graha" className="text-pink-700 underline">Nava Graha</Link>.

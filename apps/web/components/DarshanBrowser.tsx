@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
- Bell,
+ Bookmark,
  Calendar,
  Clock,
  Eye,
@@ -47,6 +47,10 @@ function templeImageFor(stream: DarshanStream): string {
  return templeImageThumb(firstImageUrl(stream.temple.images) ?? getTempleHero(stream.temple.slug) ?? deityFallback(stream.temple.deityPrimary));
 }
 
+// NOTIF-15: the second surface of the same defect. This button said
+// "Remind Me" / "Reminder set" and, like the schedule bell, only ever wrote to
+// the device-local array below. See components/DarshanScheduleRemindButton.tsx
+// for the full note. Storage key deliberately unchanged.
 const REMINDERS_KEY = 'poojly_darshan_reminders';
 
 const DEITY_OPTIONS = [
@@ -179,8 +183,8 @@ export default function DarshanBrowser({
   setReminders(next);
   setToast(
    next.includes(id)
-    ? `Reminder set for ${templeName}`
-    : `Reminder cleared for ${templeName}`,
+    ? `Saved ${templeName} on this device`
+    : `Removed ${templeName} from your saved list`,
   );
  }
 
@@ -279,10 +283,21 @@ export default function DarshanBrowser({
            <div className="absolute top-3 right-3 bg-black/60 text-white text-xs font-bold px-2 py-0.5 rounded backdrop-blur-sm">
             HD
            </div>
-           <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/60 text-white text-xs font-medium px-2 py-1 rounded-md backdrop-blur-sm">
-            <Eye className="w-3 h-3" />
-            {stream.viewerCount.toLocaleString('en-IN')}
-           </div>
+           {/* The `> 0` guard is load-bearing, and mirrors DarshanPlayer.tsx:225.
+               Nothing in this codebase counts viewers of an embedded YouTube
+               stream: the only real counter is a DB column incremented by the
+               join endpoint (apps/api/src/routes/darshan.ts), which the fallback
+               tables never touch. Those fallbacks carried invented figures
+               (12,450 / 28,300 / 8,760) until 2026-08-24 and now carry 0.
+               Without this guard a bare "0" reaches the screen beside a LIVE
+               pill — still an unmeasured claim, just a discouraging one.
+               No count means no badge. */}
+           {stream.viewerCount > 0 && (
+            <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/60 text-white text-xs font-medium px-2 py-1 rounded-md backdrop-blur-sm">
+             <Eye className="w-3 h-3" />
+             {stream.viewerCount.toLocaleString('en-IN')}
+            </div>
+           )}
           </div>
           <div className="p-4">
            <h3 className="font-semibold text-surface-800 group-hover:text-saffron-600 transition-colors truncate">
@@ -404,14 +419,15 @@ export default function DarshanBrowser({
              type="button"
              onClick={() => toggleReminder(stream.id, stream.temple.name)}
              aria-pressed={reminded}
+             title="Saved on this device. Darshya does not send a notification for this yet."
              className={`flex items-center gap-1 text-xs transition-colors ${
               reminded
                ? 'text-saffron-600 hover:text-saffron-700'
                : 'text-surface-400 hover:text-saffron-600'
              }`}
             >
-             <Bell className={`w-3.5 h-3.5 ${reminded ? 'fill-saffron-500' : ''}`} />
-             {reminded ? 'Reminder set' : 'Remind Me'}
+             <Bookmark className={`w-3.5 h-3.5 ${reminded ? 'fill-saffron-500' : ''}`} />
+             {reminded ? 'Saved' : 'Save'}
             </button>
            </div>
           </div>

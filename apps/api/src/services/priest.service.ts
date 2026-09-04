@@ -3,6 +3,9 @@ import { prisma } from '../lib/prisma.js';
 import { BookingService } from './booking.service.js';
 import { notifyUser } from '../routes/notifications.js';
 import { notifyDevotee, buildBookingCtx } from './booking-notify.service.js';
+import { mintProviderEarningForBooking } from './provider-earning-mint.js';
+// OPS-05 — the durable money trail. Post-commit only; never inside a tx.
+import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -370,18 +373,58 @@ export class PriestService {
       );
     }
 
-    const updated = await prisma.pujaBooking.update({
-      where: { id: bookingId },
-      data: {
-        priestId,
-        status: 'priest_assigned',
-      },
-      include: {
-        temple: { select: { id: true, name: true } },
-        pujaType: { select: { id: true, name: true } },
-        user: { select: { id: true, fullName: true, phone: true } },
-        priest: { select: { displayName: true } },
-      },
+    // DI-05: the assignment and the earning mint are ONE transaction.
+    //
+    // This was a bare `prisma.pujaBooking.update`. Like the dispatch-accept
+    // path it writes priestId + status:'priest_assigned' WITHOUT going through
+    // booking.service.updateBookingStatus, so the re-mint gated on
+    // EARNING_ATTACH_STATUSES never fired — even though 'priest_assigned' is in
+    // that set and this is exactly the transition it was written for. A pandit
+    // who accepted a booking in his OWN PORTAL ended up with no Commission and
+    // no PriestPayout, and /priest/payouts told him he had earned nothing.
+    //
+    // Wrapped in a transaction so a mint can never commit against an assignment
+    // that rolled back (money owed to nobody), and so the mint reads the
+    // post-write row. All four guards live in provider-earning-mint.ts.
+    // OPS-05: carried out of the transaction so the mint is recorded only once
+    // the assignment is durable — recordMoneyEvent takes no `tx` on purpose.
+    let mintOutcome = 'no-provider-on-booking';
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.pujaBooking.update({
+        where: { id: bookingId },
+        data: {
+          priestId,
+          status: 'priest_assigned',
+        },
+        include: {
+          temple: { select: { id: true, name: true } },
+          pujaType: { select: { id: true, name: true } },
+          user: { select: { id: true, fullName: true, phone: true } },
+          priest: { select: { displayName: true } },
+        },
+      });
+
+      // `include` returns every scalar, so priceAmount/priestPayout are on the
+      // row without a second read. Tests that mock update() with a partial row
+      // simply fall out at the mint's first guard rather than throwing.
+      mintOutcome = await mintProviderEarningForBooking(tx, {
+        id: row.id ?? bookingId,
+        priestId: row.priestId ?? null,
+        priceAmount: row.priceAmount ?? 0,
+        priestPayout: row.priestPayout ?? 0,
+      });
+
+      return row;
+    });
+
+    // OPS-05: the pandit accepted in his own portal — the second of the two
+    // DI-05 doors that used to leave him with no ledger row at all. Recorded
+    // after the transaction commits; a no-op unless a row was actually minted.
+    await recordProviderEarningMinted({
+      bookingId,
+      outcome: mintOutcome,
+      rail: 'priest-portal-accept-booking',
+      actorType: 'provider',
     });
 
     // D6: notify the devotee their pandit is confirmed. Push + WhatsApp are
@@ -434,19 +477,80 @@ export class PriestService {
       );
     }
 
-    const updated = await prisma.pujaBooking.update({
-      where: { id: bookingId },
-      data: {
-        // Clear the assignment + drop back to confirmed so the assignment
-        // queue can re-pick it. priestId null = unassigned.
-        priestId: null,
-        status: 'confirmed',
-      },
-      include: {
-        temple: { select: { id: true, name: true } },
-        pujaType: { select: { id: true, name: true } },
-        user: { select: { id: true, fullName: true, phone: true } },
-      },
+    // DI-05 residue: RELEASING a booking must void the earning it minted.
+    //
+    // `acceptBooking` above now mints a Commission the moment a pandit attaches
+    // to a paid temple booking. This method is that transition's exact inverse
+    // — and it used to write `priestId: null` while leaving the ledger alone,
+    // so DI-05's own fix opened a hole DI-05's own screen then reported:
+    //
+    //   1. The releasing pandit kept a live PENDING Commission on a booking he
+    //      walked away from. getPayoutBalance counts exactly
+    //      { status: PENDING, payoutRequestId: null } as `availableInr`, so it
+    //      was withdrawable via POST /payouts/request.
+    //   2. The REPLACEMENT pandit was then paid by neither rail: the mint's
+    //      guard 1 sees the stale row and bails 'already-on-unified-rail', and
+    //      createPriestPayout refuses the sidecar row for the same reason. He
+    //      does the puja and /priest/payouts answers him Rs 0.
+    //
+    // The two other detach paths already handle this — booking.service
+    // .rescheduleBooking reverses, routes/bookings.ts PATCH re-points — and
+    // this one had neither.
+    //
+    // REVERSE, never delete: a voided earning is an accounting event, and the
+    // read surfaces already exclude REVERSED (routes/priest.ts unifiedBaseWhere,
+    // payment.service.createPriestPayout), so the replacement pandit is payable
+    // on either rail.
+    //
+    // Only the LEGACY rail is untouched here, and deliberately: PriestPayout is
+    // written at video_uploaded/delivered, and this method refuses any status
+    // past `priest_assigned`, so no sidecar row can exist yet.
+    const hadPriest = Boolean(booking.priestId);
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (hadPriest) {
+        // Money that has left, or is mid-transfer, cannot be voided by a
+        // pandit clicking Release — refuse rather than half-apply, the same
+        // call rescheduleBooking makes.
+        //
+        // Narrower than reschedule's predicate on purpose. That one blocks on
+        // `status: { not: 'PENDING' }`, which also catches an ALREADY-REVERSED
+        // row — void money, not settled money. A booking whose earning was
+        // reversed by an earlier reschedule would then be permanently
+        // un-releasable. Settled means PAID, or linked to a live PayoutRequest.
+        const settled = await tx.commission.findFirst({
+          where: {
+            bookingId,
+            OR: [{ status: 'PAID' }, { payoutRequestId: { not: null } }],
+          },
+          select: { id: true },
+        });
+        if (settled) {
+          throw new Error(
+            'This booking cannot be released: your earning for it has already been paid out or is inside a payout request. Please contact support.',
+          );
+        }
+
+        await tx.commission.updateMany({
+          where: { bookingId, status: 'PENDING', payoutRequestId: null },
+          data: { status: 'REVERSED' },
+        });
+      }
+
+      return tx.pujaBooking.update({
+        where: { id: bookingId },
+        data: {
+          // Clear the assignment + drop back to confirmed so the assignment
+          // queue can re-pick it. priestId null = unassigned.
+          priestId: null,
+          status: 'confirmed',
+        },
+        include: {
+          temple: { select: { id: true, name: true } },
+          pujaType: { select: { id: true, name: true } },
+          user: { select: { id: true, fullName: true, phone: true } },
+        },
+      });
     });
 
     // D6: tell the devotee we're re-matching them (transparency beats silence).

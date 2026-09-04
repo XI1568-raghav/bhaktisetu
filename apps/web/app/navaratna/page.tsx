@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { NAVARATNA } from '../../lib/navaratna';
+import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
@@ -54,8 +56,8 @@ export default function NavaratnaIndexPage() {
         <nav className="text-sm text-gray-600 mb-4">
           <Link href="/" className="hover:text-saffron-600">Home</Link> / <span className="text-gray-900">Navaratna</span>
         </nav>
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">9 Navaratna — Sacred Gems of Vedic Astrology</h1>
-        <p className="text-lg text-gray-700 max-w-3xl mb-3">
+        <h1 className={`${H1.marketing} mb-3`}>9 Navaratna — Sacred Gems of Vedic Astrology</h1>
+        <p className="prose-lead text-gray-700 max-w-3xl mb-3">
           The nine gems of Vedic gemology, one for each of the Nava-Graha. Worn correctly, a gem amplifies the favorable
           effects of its ruling planet and softens its malefic results. Worn wrong, it can cause the very afflictions it
           was meant to cure — which is why proper consultation, trial period, and quality verification matter.
@@ -109,7 +111,7 @@ export default function NavaratnaIndexPage() {
             <Link href="/nava-graha" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
               9 Nava-Graha
             </Link>
-            <Link href="/astrology" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
+            <Link href="/astrology" className={buttonClass('primary', 'md')}>
               Book astrology consult
             </Link>
             <Link href="/rashi" className="px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 text-sm">

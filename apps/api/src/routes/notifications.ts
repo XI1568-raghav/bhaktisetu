@@ -1,7 +1,8 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { authenticateUser } from '../middlewares/auth.js';
 import { sendPush, webPushConfig, PushSubscriptionPayload } from '../lib/web-push.js';
-import { sendFcm, fcmConfig, isFcmRegistrationToken } from '../lib/fcm.js';
+import { sendFcm, fcmConfig, isPushToken, isExpoPushToken } from '../lib/fcm.js';
 import { prisma } from '../lib/prisma.js';
 import { listNotifications, recordNotification } from '../lib/notification-log.js';
 // TYPE-ONLY, and it must stay that way: booking-notify.service imports
@@ -31,6 +32,25 @@ interface StoredSub extends PushSubscriptionPayload {
 }
 
 const subsByUser = new Map<string, StoredSub[]>();
+
+/**
+ * NOTIF-17 — the device-token write path.
+ *
+ * Zod at the boundary (project convention) so the shape is checked once and
+ * `platform` cannot drift from the three values the send path understands. The
+ * token FORMAT check stays in lib/fcm.ts next to the senders that consume it:
+ * one definition of "deliverable", used by both the write and the send.
+ */
+const registerTokenSchema = z.object({
+  deviceToken: z.string().trim().min(1, 'deviceToken required'),
+  platform: z.enum(['ios', 'android', 'web']),
+  language: z.string().trim().min(1).max(16).optional(),
+  aartiOptIn: z.boolean().optional(),
+});
+
+const unregisterTokenSchema = z.object({
+  deviceToken: z.string().trim().min(1, 'deviceToken required'),
+});
 
 /**
  * Every Web Push subscription this devotee has, from BOTH stores.
@@ -219,31 +239,46 @@ export async function notificationRoutes(server: FastifyInstance) {
   // ──────────────────────────────────────────────────────────────────────────
 
   server.post('/register-token', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const body = (request.body ?? {}) as {
-      deviceToken?: string;
-      platform?: string;
-      language?: string;
-      aartiOptIn?: boolean;
-    };
-    const deviceToken = body.deviceToken?.trim();
-    const platform = body.platform;
-    if (!deviceToken) return reply.code(400).send({ error: 'deviceToken required' });
-    if (!platform || !['ios', 'android', 'web'].includes(platform)) {
-      return reply.code(400).send({ error: 'platform must be ios|android|web' });
+    const parsed = registerTokenSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const onPlatform = issue?.path[0] === 'platform';
+      return reply.code(400).send({
+        error: onPlatform ? 'platform must be ios|android|web' : (issue?.message ?? 'invalid body'),
+      });
     }
-    // NOTIF-07: refuse anything that is not an FCM registration token.
+    const body = parsed.data;
+    const deviceToken = body.deviceToken;
+    const platform = body.platform;
+    // NOTIF-17 / NOTIF-07: accept EITHER rail's token, refuse everything else.
     //
-    // apps/web/components/AartiOptIn.tsx posts `pushSubscription.endpoint` — a
-    // Web Push URL — here, on the assumption that "the API treats both as
-    // opaque strings". FCM does not: it answers INVALID_ARGUMENT, which the send
-    // path used to classify as `expired` and DELETE, so the devotee's aarti
-    // toggle went on, no reminder ever arrived, and the row that would have made
-    // it diagnosable was gone by the next tick. Storing it and answering ok is
-    // the dishonest option; the caller already surfaces a non-2xx to the user.
-    if (!isFcmRegistrationToken(deviceToken)) {
+    // NOTIF-17 — apps/mobile registers an Expo push token
+    // (`ExponentPushToken[…]`, ~41 chars). This check used to be
+    // `isFcmRegistrationToken` alone, which demands ≥ 60 chars and no brackets,
+    // so every phone that got as far as asking for a token was answered 400 and
+    // the mobile rail could not work at all, on either platform.
+    //
+    // NOTIF-07 — the opposite failure, still guarded. apps/web's AartiOptIn
+    // posts `pushSubscription.endpoint` (a Web Push URL) here, on the assumption
+    // that "the API treats both as opaque strings". Neither push service does:
+    // FCM answers INVALID_ARGUMENT, which the send path used to classify as
+    // `expired` and DELETE, so the devotee's aarti toggle went on, no reminder
+    // ever arrived, and the row that would have made it diagnosable was gone by
+    // the next tick. Widening this to "any non-empty string" would bring that
+    // straight back; `isPushToken` is a union of two strict validators, not a
+    // loosened one.
+    if (!isPushToken(deviceToken)) {
       return reply.code(400).send({
         error:
-          'deviceToken must be an FCM registration token, not a Web Push endpoint. For browser push use POST /notifications/subscribe with the full PushSubscription (endpoint + p256dh + auth).',
+          'deviceToken must be an Expo push token (ExponentPushToken[...]) or an FCM registration token, not a Web Push endpoint. For browser push use POST /notifications/subscribe with the full PushSubscription (endpoint + p256dh + auth).',
+      });
+    }
+    // An Expo token is minted by expo-notifications on a real iOS/Android
+    // build; a browser cannot produce one. Recording it as `web` would send the
+    // daily blast down the wrong rail for that row.
+    if (isExpoPushToken(deviceToken) && platform === 'web') {
+      return reply.code(400).send({
+        error: 'an Expo push token cannot come from platform "web" — use ios or android',
       });
     }
     const userId = request.currentUser!.id;
@@ -277,9 +312,9 @@ export async function notificationRoutes(server: FastifyInstance) {
   });
 
   server.post('/unregister-token', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const body = (request.body ?? {}) as { deviceToken?: string };
-    const deviceToken = body.deviceToken?.trim();
-    if (!deviceToken) return reply.code(400).send({ error: 'deviceToken required' });
+    const parsed = unregisterTokenSchema.safeParse(request.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ error: 'deviceToken required' });
+    const { deviceToken } = parsed.data;
     const userId = request.currentUser!.id;
     type FcmTokenModel = {
       deleteMany: (args: { where: { deviceToken: string; userId: string } }) => Promise<{ count: number }>;
@@ -306,18 +341,31 @@ export async function notificationRoutes(server: FastifyInstance) {
     // This returned `{ok:true, skipped:true}` on the live API, so the operator
     // probe for "can we push to phones?" read green while FCM had no
     // credentials at all.
-    if (!model || !fcmConfig.enabled) {
+    if (!model) {
       return reply.send({
         ok: false,
         skipped: true,
         sent: 0,
         reason: !fcmConfig.enabled
-          ? 'FCM is not configured — set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY'
+          ? 'FCM is not configured — set FCM_PROJECT_ID, FCM_CLIENT_EMAIL and FCM_PRIVATE_KEY (not needed for Expo push tokens)'
           : 'fcm_device_tokens is not migrated on this database',
       });
     }
     const rows = await model.findMany({ where: { userId: targetUserId }, select: { deviceToken: true } });
     if (rows.length === 0) return reply.code(404).send({ error: 'no devices for user' });
+    // NOTIF-17: the FCM credential gate applies to rail 2 ONLY. Expo tokens are
+    // delivered through exp.host with no server-side credentials, so refusing to
+    // even try because FCM_* is unset would report a working rail as dark —
+    // the mirror image of the NOTIF-03 finding this probe exists to prevent.
+    if (!fcmConfig.enabled && !rows.some((r) => isExpoPushToken(r.deviceToken))) {
+      return reply.send({
+        ok: false,
+        skipped: true,
+        sent: 0,
+        reason:
+          'FCM is not configured — set FCM_PROJECT_ID, FCM_CLIENT_EMAIL and FCM_PRIVATE_KEY. (This user has no Expo push tokens, which would need no credentials here.)',
+      });
+    }
     const expired: string[] = [];
     let sent = 0;
     let failed = 0;

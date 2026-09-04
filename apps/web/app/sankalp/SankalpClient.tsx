@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { buildSankalp, type Gotra, type SankalpIntent } from '../../lib/sankalp';
+import { buttonClass } from '../../components/ui/button-recipe';
 
 interface Props {
   gotras: Gotra[];
@@ -112,7 +113,7 @@ export function SankalpClient({ gotras, intents, nakshatraNames, rashiOptions }:
 
         <button
           type="submit"
-          className="sm:col-span-2 rounded-lg bg-saffron-600 px-4 py-3 text-sm font-semibold text-white shadow hover:bg-saffron-700"
+          className={buttonClass('primary', 'md', 'sm:col-span-2 shadow')}
         >
           Generate Sankalp
         </button>

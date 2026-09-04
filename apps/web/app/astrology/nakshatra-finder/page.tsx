@@ -2,10 +2,13 @@
 // Targets "find my nakshatra by date of birth", "birth star calculator",
 // "janma nakshatra finder", "what is my nakshatra".
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import NakshatraFinderClient from './NakshatraFinderClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
 import { NAKSHATRAS } from '../../../lib/nakshatras';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -97,7 +100,7 @@ export default function NakshatraFinderPage() {
 
    <header className="mb-8">
     <p className="text-xs uppercase tracking-wider text-indigo-600">Free Vedic tool · no signup</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Find My Nakshatra by Date of Birth — Free Vedic Birth Star Calculator</h1>
+    <h1 className={`${H1.catalogue} mt-1`}>Find My Nakshatra by Date of Birth — Free Vedic Birth Star Calculator</h1>
     <p className="mt-2 text-indigo-700">जन्म नक्षत्र · Janma Nakshatra</p>
     <p className="mt-4 text-base text-gray-700">
      Enter your date of birth, time of birth, and timezone to compute your janma nakshatra (Vedic
@@ -149,7 +152,7 @@ export default function NakshatraFinderPage() {
      speak to a verified Vedic astrologer.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/astrology/baby-name" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/astrology/baby-name" className={buttonClass('primary', 'md')}>
       Baby Name by Nakshatra
      </Link>
      <Link href="/astrology/kundli-milan" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

@@ -24,6 +24,9 @@ import {
  type Offering,
 } from '../../../lib/pandit-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { classifyUserFacing, userFacingMessage } from '../../../lib/friendly-error';
+import ReauthPrompt from '../../../components/ReauthPrompt';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -60,6 +63,9 @@ function PriestServicesPageContent() {
  const [offerings, setOfferings] = useState<Offering[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
+ // AUTH-06: the load path could report an expired session and then offer only
+ // Retry, which re-fires the same dead credential.
+ const [reauth, setReauth] = useState(false);
  const [showForm, setShowForm] = useState(false);
  const [editingId, setEditingId] = useState<string | null>(null);
  const [saving, setSaving] = useState(false);
@@ -80,7 +86,12 @@ function PriestServicesPageContent() {
    const data = await listMyOfferings(token);
    setOfferings(data);
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Failed to load pujas');
+   const { message, reauth: needsReauth } = classifyUserFacing(
+    err,
+    'Could not load your pujas. Please try again.',
+   );
+   setError(message);
+   setReauth(needsReauth);
   } finally {
    setLoading(false);
   }
@@ -140,7 +151,7 @@ function PriestServicesPageContent() {
    }
    resetForm();
   } catch (err) {
-   setError(err instanceof Error ? err.message : 'Failed to save puja');
+   setError(userFacingMessage(err, 'Could not save this puja. Please try again.'));
   } finally {
    setSaving(false);
   }
@@ -159,7 +170,7 @@ function PriestServicesPageContent() {
    setOfferings((o) => o.map((s) => (s.id === id ? updated : s)));
   } catch (err) {
    setOfferings(prev);
-   setError(err instanceof Error ? err.message : 'Toggle failed');
+   setError(userFacingMessage(err, 'Could not change this puja. Please try again.'));
   } finally {
    setBusyId(null);
   }
@@ -176,7 +187,7 @@ function PriestServicesPageContent() {
    await deleteOffering(token, id);
   } catch (err) {
    setOfferings(prev);
-   setError(err instanceof Error ? err.message : 'Delete failed');
+   setError(userFacingMessage(err, 'Could not delete this puja. Please try again.'));
   } finally {
    setBusyId(null);
   }
@@ -196,7 +207,7 @@ function PriestServicesPageContent() {
     </div>
     <button
      onClick={openAddForm}
-     className="inline-flex items-center gap-2 px-4 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
+     className={buttonClass('primary', 'md')}
     >
      <Plus className="w-4 h-4" />
      Add Puja
@@ -208,12 +219,17 @@ function PriestServicesPageContent() {
     <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
      <div className="flex-1">{error}</div>
-     <button
-      onClick={() => void loadOfferings()}
-      className="ml-2 text-xs font-medium text-red-700 underline hover:no-underline"
-     >
-      Retry
-     </button>
+     {/* AUTH-06: sign-in replaces Retry when the session is what failed. */}
+     {reauth ? (
+      <ReauthPrompt message="" className="ml-2 shrink-0" />
+     ) : (
+      <button
+       onClick={() => void loadOfferings()}
+       className="ml-2 text-xs font-medium text-red-700 underline hover:no-underline"
+      >
+       Retry
+      </button>
+     )}
     </div>
    )}
 
@@ -323,7 +339,7 @@ function PriestServicesPageContent() {
        <button
         type="submit"
         disabled={saving}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors disabled:opacity-50"
+        className={buttonClass('primary', 'md')}
        >
         {saving ? (
          <Loader2 className="w-4 h-4 animate-spin" />

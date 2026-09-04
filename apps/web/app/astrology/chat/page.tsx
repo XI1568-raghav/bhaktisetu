@@ -478,7 +478,7 @@ How may I guide you today?`,
  <Star className="w-5 h-5 text-white" />
  </div>
  <div>
- <h1 className="text-base font-semibold text-surface-800">AI Astrologer</h1>
+ <h1 className={H1.portal}>AI Astrologer</h1>
  <p className="text-xs text-surface-400">Vedic Jyotish guidance</p>
  </div>
  </div>

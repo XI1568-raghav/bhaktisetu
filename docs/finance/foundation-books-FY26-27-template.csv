@@ -10,7 +10,7 @@ Date,Description,Category,Inflow (INR),Outflow (INR),Balance (INR),Reference
 # 2026-04-06,AWS hosting,infra,0,2400,10100,AWS-INV-202604
 
 # === SHEET 2: Revenue per lane ===
-Date,Lane,Booking/Sub ID,Gross (INR),Platform fee %,Platform fee (INR),Pandit/Temple share (INR),Razorpay/Stripe fee (INR),Net to Foundation (INR),Settlement date
+Date,Lane,Booking/Sub ID,Gross (INR),Platform fee %,Platform fee (INR),Pandit/Temple share (INR),Razorpay fee (INR),Net to Foundation (INR),Settlement date
 # Lanes: L1 puja / L2 darshan / L3 astrology / L4 commerce / L5 yatra / L6 NRI gift / L7 subscription
 # Example: 2026-04-05,L1 puja,BS-20260405-00001,2500,20,500,1800,75,425,2026-04-07
 

@@ -4,7 +4,7 @@
 
 ## Where to paste
 
-Render dashboard → `bhaktisetu-api` service → Environment → Add Environment Variable. After all four added, click "Save Changes" — Render will auto-deploy with the new env.
+Render dashboard → `bhaktisetu-api` service → Environment → Add Environment Variable. After all four are added, click "Save Changes", then start the deploy yourself: Render → **Manual Deploy** on the API, or `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g`. `render.yaml` carries `autoDeploy: false` (`:28`), so do not assume the save alone puts the new values into a running container — confirm a fresh deploy reached `live` before testing. Same procedure as `docs/runbooks/secret-rotation.md` step 5.
 
 ## The four values
 

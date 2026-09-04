@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { UserRole } from '@poojly/api-client';
@@ -76,127 +77,131 @@ export default function SignupScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.flex}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
       >
-        <TouchableOpacity
-          style={styles.back}
-          onPress={() =>
-            step === 'role' ? router.back() : setStep('role')
-          }
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
         >
-          <Ionicons name="arrow-back" size={24} color={colors.stone[700]} />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.back}
+            onPress={() =>
+              step === 'role' ? router.back() : setStep('role')
+            }
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.stone[700]} />
+          </TouchableOpacity>
 
-        {step === 'role' ? (
-          <View>
-            <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>What brings you to Darshya?</Text>
-            <View style={styles.roleList}>
-              {ROLE_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.role}
-                  style={styles.roleCard}
-                  onPress={() => pickRole(opt.role)}
-                >
-                  <View style={styles.roleIcon}>
-                    <Ionicons name={opt.icon} size={28} color={colors.saffron[600]} />
-                  </View>
-                  <View style={styles.roleText}>
-                    <Text style={styles.roleLabel}>{opt.label}</Text>
-                    <Text style={styles.roleDesc}>{opt.description}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.stone[400]} />
-                </TouchableOpacity>
-              ))}
+          {step === 'role' ? (
+            <View>
+              <Text style={styles.title}>Create your account</Text>
+              <Text style={styles.subtitle}>What brings you to Darshya?</Text>
+              <View style={styles.roleList}>
+                {ROLE_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.role}
+                    style={styles.roleCard}
+                    onPress={() => pickRole(opt.role)}
+                  >
+                    <View style={styles.roleIcon}>
+                      <Ionicons name={opt.icon} size={28} color={colors.saffron[600]} />
+                    </View>
+                    <View style={styles.roleText}>
+                      <Text style={styles.roleLabel}>{opt.label}</Text>
+                      <Text style={styles.roleDesc}>{opt.description}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.stone[400]} />
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
-        ) : (
-          <View>
-            <Text style={styles.title}>Tell us about you</Text>
-            <Text style={styles.subtitle}>Joining as: {ROLE_OPTIONS.find((r) => r.role === role)?.label}</Text>
+          ) : (
+            <View>
+              <Text style={styles.title}>Tell us about you</Text>
+              <Text style={styles.subtitle}>Joining as: {ROLE_OPTIONS.find((r) => r.role === role)?.label}</Text>
 
-            <Text style={styles.label}>Full name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Arjun Sharma"
-              placeholderTextColor={colors.stone[400]}
-              value={fullName}
-              onChangeText={setFullName}
-              editable={!busy}
-            />
+              <Text style={styles.label}>Full name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Arjun Sharma"
+                placeholderTextColor={colors.stone[400]}
+                value={fullName}
+                onChangeText={setFullName}
+                editable={!busy}
+              />
 
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor={colors.stone[400]}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              value={email}
-              onChangeText={setEmail}
-              editable={!busy}
-            />
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor={colors.stone[400]}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                value={email}
+                onChangeText={setEmail}
+                editable={!busy}
+              />
 
-            <Text style={styles.label}>Phone (optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="+919876543210"
-              placeholderTextColor={colors.stone[400]}
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-              editable={!busy}
-            />
+              <Text style={styles.label}>Phone (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="+919876543210"
+                placeholderTextColor={colors.stone[400]}
+                keyboardType="phone-pad"
+                value={phone}
+                onChangeText={setPhone}
+                editable={!busy}
+              />
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="At least 6 characters"
-              placeholderTextColor={colors.stone[400]}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              editable={!busy}
-            />
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="At least 6 characters"
+                placeholderTextColor={colors.stone[400]}
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+                editable={!busy}
+              />
 
-            <TouchableOpacity
-              style={[styles.primaryBtn, busy && styles.btnDisabled]}
-              onPress={handleSubmit}
-              disabled={busy}
-            >
-              {busy ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Create Account</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+              <TouchableOpacity
+                style={[styles.primaryBtn, busy && styles.btnDisabled]}
+                onPress={handleSubmit}
+                disabled={busy}
+              >
+                {busy ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.primaryBtnText}>Create Account</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
 
-        <TouchableOpacity
-          style={styles.footerLink}
-          onPress={() => router.replace('/(auth)/login' as any)}
-        >
-          <Text style={styles.footerText}>
-            Already have an account?{' '}
-            <Text style={styles.footerTextBold}>Sign in</Text>
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <TouchableOpacity
+            style={styles.footerLink}
+            onPress={() => router.replace('/(auth)/login' as any)}
+          >
+            <Text style={styles.footerText}>
+              Already have an account?{' '}
+              <Text style={styles.footerTextBold}>Sign in</Text>
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.saffron[50] },
-  scroll: { padding: spacing.lg, paddingTop: spacing.xl },
+  // paddingTop was spacing.xl, a fixed stand-in for the status bar. SafeAreaView
+  // supplies the real top inset now, so the base padding is enough.
+  scroll: { padding: spacing.lg },
   back: { width: 40, height: 40, justifyContent: 'center' },
   title: {
     fontSize: fontSize['2xl'],

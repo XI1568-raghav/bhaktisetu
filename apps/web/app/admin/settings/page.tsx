@@ -36,17 +36,24 @@ import { fetchAllAdminUsers, type AdminUserRecord } from '../users/users-api';
 import { H1 } from '../../../components/ui/heading-recipe';
 
 /**
- * The INTENDED platform take: `DEFAULT_PRIEST_SHARE = 0.8` in
- * apps/api/src/services/booking.service.ts, and the 0.20 default on
- * StoreProfile.commission.
+ * The DEFAULT platform take: `DEFAULT_PRIEST_SHARE = 0.8` in
+ * apps/api/src/services/booking.service.ts, `Priest.commissionRate
+ * @default(0.80)` in prisma/schema.prisma, and the 0.20 default on
+ * StoreProfile.commission — all three agree since 2026-08-12.
  *
- * Deliberately labelled "intended" and never rendered as the rate in force.
- * booking.service.ts carries an open, owner-gated schema mismatch: prisma still
- * declares `Priest.commissionRate @default(0.70)`, so a pandit onboarded through
- * the normal flow is billed at a 30% platform take, and the ledger on this
- * machine holds 10 rows at 33.10%, 5 at 20% and 1 at 23.54%. A screen that
- * announced a flat "20%" would be wrong for most of the money that has actually
- * moved — which is the class of defect this page is being fixed for.
+ * Still never rendered as "the rate in force". The rate in force is per-row:
+ * `Commission.percentage` is stamped when the booking creates the commission
+ * and is immutable afterwards, so a negotiated share and every row created
+ * before the 2026-08-12 change keep their own number. The table above reports
+ * what the ledger actually charged; this constant is only the default a NEW
+ * provider starts at.
+ *
+ * PM-03 (2026-08-28): this block and the copy below used to say the schema
+ * default was "still the pre-revamp 70% (a 30% platform take)" and that
+ * reconciling it was an open owner decision. Both were false — the schema
+ * default was changed and migration 20260812000000_priest_commission_rate_80
+ * backfilled the existing 0.70 rows. Guarded by
+ * __tests__/admin-settings-readonly.test.tsx.
  */
 const INTENDED_TAKE_RATE_PCT = 20;
 
@@ -283,11 +290,11 @@ function AdminSettingsContent() {
             <h2 className="text-sm font-semibold text-surface-800 mb-2">Where the rate is set</h2>
             <ul className="text-sm text-surface-600 space-y-1.5 list-disc pl-5">
               <li>
-                Intended take: {INTENDED_TAKE_RATE_PCT}% platform /{' '}
-                {100 - INTENDED_TAKE_RATE_PCT}% provider. Rows above that differ are not a display
-                fault — a pandit&apos;s stored share is the source of truth, and its schema default
-                is still the pre-revamp 70% (a 30% platform take). Reconciling the two is an open
-                owner decision recorded in the booking service.
+                Default take: {INTENDED_TAKE_RATE_PCT}% platform /{' '}
+                {100 - INTENDED_TAKE_RATE_PCT}% provider, uniform across roles. Rows above that
+                differ are not a display fault — a provider&apos;s stored share is the source of
+                truth, so a negotiated rate, or a booking created before the 2026-08-12 change,
+                keeps whatever it was stamped with.
               </li>
               <li>
                 A pandit&apos;s own share lives on their provider record and is applied when the

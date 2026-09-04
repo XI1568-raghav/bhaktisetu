@@ -12,7 +12,20 @@
  * (and the result is shareable + crawlable). This module is the pure core.
  */
 
-export type StoreSort = 'popular' | 'price-asc' | 'price-desc' | 'rating-desc' | 'newest';
+/**
+ * LEG-17: 'rating-desc' is gone from this union.
+ *
+ * The star average and review tally it sorted on were fabricated on BOTH
+ * catalogue paths — 24 seed rows hardcoded 4.4-4.9 with 145-2,100 reviews
+ * each, and lib/medusa gave every real product 4.5 stars from zero reviews.
+ * Removing the star from the product card while leaving a "Rating: High to
+ * Low" control in place would not have fixed anything: the invented number
+ * would still decide what a shopper sees first, it would just stop being
+ * visible enough to challenge. Both fields are now null at the source, so
+ * there is nothing left to order by. Restore the option when the grid is
+ * joined to the `Review` table in apps/api.
+ */
+export type StoreSort = 'popular' | 'price-asc' | 'price-desc' | 'newest';
 export type StorePriceBand = 'any' | 'under-500' | '500-1000' | '1000-2500' | 'above-2500';
 
 export interface StoreFilters {
@@ -21,7 +34,6 @@ export interface StoreFilters {
   price: StorePriceBand;
   sort: StoreSort;
   freeDelivery: boolean;
-  topRated: boolean;
 }
 
 export const DEFAULT_STORE_FILTERS: StoreFilters = {
@@ -30,10 +42,9 @@ export const DEFAULT_STORE_FILTERS: StoreFilters = {
   price: 'any',
   sort: 'popular',
   freeDelivery: false,
-  topRated: false,
 };
 
-const SORTS: StoreSort[] = ['popular', 'price-asc', 'price-desc', 'rating-desc', 'newest'];
+const SORTS: StoreSort[] = ['popular', 'price-asc', 'price-desc', 'newest'];
 const BANDS: StorePriceBand[] = ['any', 'under-500', '500-1000', '1000-2500', 'above-2500'];
 
 export const PRICE_BAND_LABEL: Record<StorePriceBand, string> = {
@@ -48,7 +59,6 @@ export const SORT_LABEL: Record<StoreSort, string> = {
   popular: 'Sort: Popular',
   'price-asc': 'Price: Low to High',
   'price-desc': 'Price: High to Low',
-  'rating-desc': 'Rating: High to Low',
   newest: 'Newest First',
 };
 
@@ -67,8 +77,11 @@ export function parseStoreFilters(
     category: one('category') || 'all',
     price: BANDS.includes(price) ? price : 'any',
     sort: SORTS.includes(sort) ? sort : 'popular',
+    // A bookmarked ?rating=4plus or ?sort=rating-desc URL from before LEG-17
+    // degrades to the unfiltered grid rather than 404ing: `SORTS.includes`
+    // already rejects the dead sort, and the dead `rating` param is simply not
+    // read.
     freeDelivery: one('delivery') === 'free',
-    topRated: one('rating') === '4plus',
   };
 }
 
@@ -93,8 +106,6 @@ export interface FilterableProduct {
   category?: string;
   collection?: string;
   price: number;
-  rating?: number;
-  reviewCount?: number;
   freeDelivery?: boolean;
   tag?: string | null;
 }
@@ -108,7 +119,6 @@ export function filterAndSortProducts<T extends FilterableProduct>(
     if (filters.category !== 'all' && p.collection !== filters.category) return false;
     if (!inBand(p.price, filters.price)) return false;
     if (filters.freeDelivery && !p.freeDelivery) return false;
-    if (filters.topRated && (p.rating ?? 0) < 4) return false;
     if (q) {
       const haystack = `${p.title} ${p.description ?? ''} ${p.category ?? ''} ${p.tag ?? ''}`.toLowerCase();
       if (!haystack.includes(q)) return false;
@@ -121,15 +131,19 @@ export function filterAndSortProducts<T extends FilterableProduct>(
       return out.sort((a, b) => a.price - b.price);
     case 'price-desc':
       return out.sort((a, b) => b.price - a.price);
-    case 'rating-desc':
-      return out.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     case 'newest':
       // No createdAt on the catalogue — newest is the reverse of listing order,
       // which is the order products were added. Honest about what it can do.
       return out.reverse();
     default:
-      // "Popular" = most-reviewed first; ties keep catalogue order.
-      return out.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
+      // LEG-17: "Popular" used to be `reviewCount` descending. That made the
+      // INVENTED review tally the default ordering of the whole shelf — the
+      // ranking every first-time visitor saw, without touching a control.
+      // Until there is a real popularity signal (orders placed, or the
+      // `Review` table), popular is curator order: the catalogue is authored
+      // in a deliberate sequence, which is an honest editorial choice rather
+      // than a fabricated measurement.
+      return out;
   }
 }
 
@@ -141,7 +155,6 @@ export function buildStoreQuery(filters: StoreFilters): string {
   if (filters.price !== 'any') params.set('price', filters.price);
   if (filters.sort !== 'popular') params.set('sort', filters.sort);
   if (filters.freeDelivery) params.set('delivery', 'free');
-  if (filters.topRated) params.set('rating', '4plus');
   const s = params.toString();
   return s ? `?${s}` : '';
 }

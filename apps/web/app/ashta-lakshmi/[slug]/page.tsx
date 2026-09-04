@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ASHTA_LAKSHMIS, ASHTA_LAKSHMI_SLUGS, getAshtaLakshmiBySlug } from '../../../lib/ashta-lakshmi';
@@ -76,7 +78,7 @@ export default async function AshtaLakshmiPage({ params }: Props) {
         <p className="text-xs uppercase tracking-wider text-pink-700">
           Form {l.number} of 8 · {l.color}
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">{l.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{l.name}</h1>
         <p className="mt-1 font-serif text-xl text-gray-700">{l.sanskrit}</p>
         <p className="mt-3 text-base text-gray-700">{l.domain}</p>
       </header>

@@ -23,6 +23,7 @@ import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import VideoProofUpload from '../../../../components/provider/VideoProofUpload';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { UserFacingError, userFacingMessage, serverErrorText } from '../../../../lib/friendly-error';
 
 interface BookingDetail {
  id: string;
@@ -118,15 +119,19 @@ function PriestBookingDetailInner() {
  });
  if (!res.ok) {
  const body = await res.text().catch(() => '');
- throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
+ // RES-09: this rendered "API 500: {\"error\":\"Internal Server Error\"}"
+ // into the pandit's booking detail page. Server sentence or friendly copy.
+ throw new UserFacingError(
+  serverErrorText(body, 'We could not load this booking. Please try again.'),
+ );
  }
  const data = await res.json();
  if (!data?.booking) {
- throw new Error('Booking not found');
+ throw new UserFacingError('We could not find this booking.');
  }
  setBooking(data.booking);
  } catch (e) {
- const msg = e instanceof Error ? e.message : 'Network error';
+ const msg = userFacingMessage(e, 'We could not load this booking. Please try again.');
  setError(msg);
  setBooking(null);
  } finally {
@@ -164,11 +169,15 @@ function PriestBookingDetailInner() {
  });
  if (!res.ok) {
  const body = await res.text().catch(() => '');
- throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
+ // RES-09: this rendered "API 500: {\"error\":\"Internal Server Error\"}"
+ // into the pandit's booking detail page. Server sentence or friendly copy.
+ throw new UserFacingError(
+  serverErrorText(body, 'We could not load this booking. Please try again.'),
+ );
  }
  await fetchBooking();
  } catch (e) {
- const msg = e instanceof Error ? e.message : 'Network error';
+ const msg = userFacingMessage(e, 'That action did not go through. Please try again.');
  setActionError(msg);
  } finally {
  setActionLoading(false);
@@ -209,9 +218,10 @@ function PriestBookingDetailInner() {
  });
  if (!res.ok) {
  const body = await res.text().catch(() => '');
- const msg = `API ${res.status}${body ? `: ${body.slice(0, 200)}` : ''}`;
+ // RES-09: "API 413: <html>…" was the video-proof rejection a pandit saw.
+ const msg = serverErrorText(body, 'We could not save that recording link. Please try again.');
  setActionError(msg);
- throw new Error(msg);
+ throw new UserFacingError(msg);
  }
  await fetchBooking();
  }
@@ -232,11 +242,13 @@ function PriestBookingDetailInner() {
  });
  if (!res.ok) {
  const body = await res.text().catch(() => '');
- throw new Error(`API ${res.status}${body ? `: ${body.slice(0, 200)}` : ''}`);
+ throw new UserFacingError(
+  serverErrorText(body, 'We could not mark this booking delivered. Please try again.'),
+ );
  }
  await fetchBooking();
  } catch (e) {
- setActionError(e instanceof Error ? e.message : 'Network error');
+ setActionError(userFacingMessage(e, 'That action did not go through. Please try again.'));
  } finally {
  setActionLoading(false);
  }

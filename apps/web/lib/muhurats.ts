@@ -632,37 +632,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Starting new journeys or commercial transactions', 'Eating heavy meals', 'Sleeping during sandhya (considered inauspicious)', 'Cutting hair, nails, or beginning any auspicious work', 'Sexual activity'],
     spiritualSignificance: 'Sandhya literally means junction — the threshold moment when day yields to night or night to day. Vedic tradition identifies these transitions as cosmic intervals where the energetic qualities of time stand suspended, neither tamasic nor rajasic but uniquely conducive to sattvic contemplation. The dwija (twice-born) are obligated to perform sandhyavandana thrice daily, comprising achamana, pranayama, gayatri japa, surya arghya, and the marjana mantras. Beyond ritual, sandhya teaches the householder to mark the day with reverent pauses, anchoring routine in cosmic rhythm rather than commercial schedules.',
     howToCalculate: 'Each sandhya is 48 minutes (2 ghatikas) centered on the precise astronomical event. Pratah sandhya begins 24 minutes before sunrise. Sayam sandhya begins at sunset. Madhyahna is centered on local solar noon. Apps and panchang software display precise per-city times.',
-    modernApplication: 'Daily 5-minute sandhya pause is rising among urban Hindus seeking work-life integration without full ritual commitment — Bhaktisetu push notifications surface the window with a single Gayatri verse. NRI families particularly value the universal time-stamp as a connection to Indian Standard Time devotional rhythm despite distant residence.',
-  },
-  {
-    slug: 'amrit-siddhi-yoga',
-    name: 'Amrit Siddhi Yoga',
-    sanskritName: 'अमृत सिद्धि योग',
-    category: 'auspicious',
-    shortDesc: 'Powerful yoga formed when specific weekday and nakshatra coincide, granting nectar-like success to all undertakings.',
-    timing: 'Specific weekday-nakshatra combinations: Sunday-Hasta, Monday-Mrigashira, Tuesday-Ashwini, Wednesday-Anuradha, Thursday-Pushya, Friday-Revati, Saturday-Rohini',
-    duration: 'Lasts duration of the nakshatra (typically 13-26 hours)',
-    ruledBy: 'Combined weekday lord and nakshatra deity',
-    bestFor: ['Major financial transactions and investments', 'Starting new business ventures', 'Property purchase agreements', 'Beginning long-term spiritual sadhana', 'Foundation stone laying', 'Vehicle purchase', 'Wedding date selection'],
-    avoid: ['Inauspicious activities such as theft or harm — yoga amplifies all karma', 'Performing during Rahu Kaal even within yoga window'],
-    spiritualSignificance: 'Amrit Siddhi is considered the most powerful constructive yoga in Vedic timing science. The word amrit means nectar of immortality; siddhi means accomplishment. The yoga arises when a particular weekday and its compatible nakshatra coincide, creating an energetic envelope where intentions take root rapidly and outcomes carry unusual permanence. Classical jyotisha texts describe Amrit Siddhi as so powerful that it neutralises minor doshas in the chart of the person initiating the activity.',
-    howToCalculate: 'Reference panchang weekly and identify each specific weekday-nakshatra pairing. Sunday paired with Hasta nakshatra produces Amrit Siddhi for that 13-26 hour window. Each of the 7 weekday-nakshatra pairs (above) produces the yoga. Most months contain 2-4 Amrit Siddhi windows. Avoid if Rahu Kaal overlaps; choose Abhijit Muhurta within Amrit Siddhi for compounded benefit.',
-    modernApplication: 'Real-estate brokers, jewellers, automobile dealers, and wedding planners across India consult Amrit Siddhi calendars and schedule major closings within these windows. Bhaktisetu publishes a rolling 90-day Amrit Siddhi calendar with push notifications for upcoming windows.',
-  },
-  {
-    slug: 'tripushkar-yoga',
-    name: 'Tripushkar Yoga',
-    sanskritName: 'त्रिपुष्कर योग',
-    category: 'special',
-    shortDesc: 'Rare yoga that triples the karmic fruit of any action, beneficial for charity and dangerous for negative deeds.',
-    timing: 'When specific tithi (Bhadra), weekday (Sunday/Tuesday/Saturday), and nakshatra (Krittika/Punarvasu/Uttara Phalguni/Vishakha/Uttarashada/Purva Bhadrapada) align',
-    duration: 'Variable, typically 6-18 hours',
-    ruledBy: 'Combined planetary energies of weekday, tithi, and nakshatra lords',
-    bestFor: ['Charitable donations (returns 3x merit)', 'Beginning long-term sadhana', 'Investments expected to multiply', 'Adoption ceremonies', 'Foundation of charitable trusts', 'Major spiritual vows (sankalpa)'],
-    avoid: ['Theft, gambling, or harmful acts (returns 3x negative karma)', 'Disputes and litigation (entrenches conflict 3x)', 'Aggressive commercial deals lacking ethical ground'],
-    spiritualSignificance: 'Tripushkar means three-fold pushkar (lotus, by extension prosperity). The yoga is described in classical jyotisha as creating a karmic amplifier where the seeds planted during the window grow with three-fold vigour. The Sanskrit principle yat bhavam tat bhavati (as the intention, so the becoming) is intensified during Tripushkar. Wise practitioners use the yoga exclusively for sankalpa-driven charitable, devotional, or constructive purposes.',
-    howToCalculate: 'Requires three-way coincidence: a Bhadra tithi (Dvitiya, Saptami, or Dwadashi) on Sunday, Tuesday, or Saturday, during one of the six specified nakshatras. Most months contain 1-2 Tripushkar windows. A panchang software or qualified astrologer is needed for accurate identification.',
-    modernApplication: 'Devotional foundations and charitable trusts schedule launch dates and major donation drives during Tripushkar windows. Bhaktisetu temple-adopt-a-temple feature highlights Tripushkar days for amplified-merit subscription starts. Founders of social enterprises increasingly consult Tripushkar calendars for incorporation dates.',
+    modernApplication: 'Daily 5-minute sandhya pause is rising among urban Hindus seeking work-life integration without full ritual commitment — Darshya push notifications surface the window with a single Gayatri verse. NRI families particularly value the universal time-stamp as a connection to Indian Standard Time devotional rhythm despite distant residence.',
   },
   {
     slug: 'griha-pravesh-muhurat',
@@ -677,7 +647,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Pravesh during Chaturmas (Ashadha to Kartik) per orthodox view', 'Krishna paksha entries (except for nutan pravesh urgent cases)', 'Tuesday and Saturday for first occupancy', 'Bhadra, Vyatipata, Vaidhriti', 'Solar or lunar eclipse days', 'Family member death anniversaries'],
     spiritualSignificance: 'Griha Pravesh marks the consecration of dwelling as sacred space — the home transitions from civil construction to a living entity housing the Vastu Purusha and the family deities. Classical texts identify three categories: apurva (first ever entry into brand new home), sapurva (re-entry after long absence or renovation), and dwandva (entry after restoration following natural calamity). Each carries distinct rituals.',
     howToCalculate: 'Family astrologer selects auspicious month (preferably Magha, Phalguna, Vaishakha), shukla paksha tithi excluding Rikta (Chaturthi, Navami, Chaturdashi), weekday Monday/Wednesday/Thursday/Friday, with nakshatras Anuradha, Mrigashira, Pushya, Hasta, Chitra, Uttara Phalguni, Uttarashada, Revati. Within the day, a benefic lagna with no malefic in 8th house and waxing Moon unafflicted.',
-    modernApplication: 'Real-estate developers and home-purchase platforms increasingly coordinate possession-handover dates with auspicious griha pravesh windows. Bhaktisetu wedding-planner extension (per R-Q4-E-010) is being scoped to include griha pravesh planning as a parallel life-event product — pandit + samagri + caterer bundle with milk-boiling ritual livestream for distant family.',
+    modernApplication: 'Real-estate developers and home-purchase platforms increasingly coordinate possession-handover dates with auspicious griha pravesh windows. Darshya wedding-planner extension is being scoped to include griha pravesh planning as a parallel life-event product — pandit + samagri + caterer bundle with milk-boiling ritual livestream for distant family.',
   },
   {
     slug: 'godhuli-muhurat',
@@ -692,7 +662,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Inauspicious if Tuesday or Saturday sunset coincides', 'Avoid during Bhadra, Vyatipata, or eclipse twilight'],
     spiritualSignificance: 'Godhuli means cow-dust — the hour when cattle return home at sunset, kicking up dust that turns the sky golden. Considered universally auspicious because it neutralises chart-specific doshas through the cosmic transition energy itself. In wedding tradition, when no clean lagna is available for several months, godhuli is the universal sankalp window where bride and groom families can proceed without further astrological complications.',
     howToCalculate: 'Each day godhuli is the 24-minute window straddling sunset. Computed per local latitude+longitude — apps display per-city. For wedding selection, family astrologer overlays the chosen date sunset against weekday + nakshatra eligibility. Strongly avoid Tuesday and Saturday godhuli; prefer Monday, Wednesday, Thursday, Friday, Sunday.',
-    modernApplication: 'Indian destination wedding industry increasingly schedules muhurat at godhuli to allow afternoon mehndi + sangeet to flow naturally into evening vivah ceremony. Bhaktisetu wedding-planner tool (R-Q2-P-002) defaults to godhuli when computational match fails, giving founder + couple a graceful fallback option.',
+    modernApplication: 'Indian destination wedding industry increasingly schedules muhurat at godhuli to allow afternoon mehndi + sangeet to flow naturally into evening vivah ceremony. Darshya wedding-planner tool defaults to godhuli when computational match fails, giving founder + couple a graceful fallback option.',
   },
   {
     slug: 'vijaya-muhurat',
@@ -707,7 +677,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Avoid Tuesday for healing or peace activities (Vijaya is Mars-charged)', 'Bhadra overlap'],
     spiritualSignificance: 'Vijaya literally means victory. Classical Hindu warfare and political traditions held that any campaign launched in vijaya muhurat would succeed regardless of military odds. The Mahabharata describes both Pandavas and Kauravas seeking vijaya muhurat from their respective astrologers before key battles. In modern times the principle extends to any contested arena — legal cases, business negotiations, sports.',
     howToCalculate: 'Vijaya is the 14th of 30 daily muhurats — approximately 2:13 PM to 3:00 PM IST in equatorial regions, varying slightly by latitude and season. Panchang apps display per-city. Overlay with weekday: Tuesday (Mangal) amplifies for combat; avoid Tuesday for healing arts.',
-    modernApplication: 'Litigation lawyers in Delhi High Court routinely consult vijaya muhurat before filing important cases. Sports teams in Indian Premier League cricket reportedly time toss negotiations to vijaya. Bhaktisetu astrologer consultation tool surfaces vijaya windows when clients ask about court cases or major financial decisions.',
+    modernApplication: 'Litigation lawyers in Delhi High Court routinely consult vijaya muhurat before filing important cases. Sports teams in Indian Premier League cricket reportedly time toss negotiations to vijaya. Darshya astrologer consultation tool surfaces vijaya windows when clients ask about court cases or major financial decisions.',
   },
   {
     slug: 'aparahna-muhurat',
@@ -722,7 +692,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Avoid for new beginnings — aparahna is for ancestral karma settlement', 'Avoid for weddings or auspicious life-cycle samskaras'],
     spiritualSignificance: 'Aparahna means later-half-day. Classical Hindu calendar divides daylight into five parts; the afternoon segment three hours after noon is considered the time when the pitru-loka (ancestor realm) is most receptive to offerings from descendants. All shraddha karma is mandated by Manusmriti and Yajnavalkya Smriti to occur during aparahna for the offering to actually reach the ancestors.',
     howToCalculate: 'Per local solar noon, count 3-5 hours forward. Apps display per-city. Pitru Paksha (Bhadrapad Krishna Paksha, ~Sep-Oct) is the most active 16-day window. Within each day of Pitru Paksha, the aparahna kal is when the family priest conducts the tarpana ceremony.',
-    modernApplication: 'NRI families particularly value aparahna timing because it falls in the afternoon IST — convenient for live-streaming pind daan ceremonies from Gaya or Kashi to families in US (early morning) and UK (late morning). Bhaktisetu shraddha booking workflow defaults to aparahna scheduling and offers IST live-stream to NRI family members.',
+    modernApplication: 'NRI families particularly value aparahna timing because it falls in the afternoon IST — convenient for live-streaming pind daan ceremonies from Gaya or Kashi to families in US (early morning) and UK (late morning). Darshya shraddha booking workflow defaults to aparahna scheduling and offers IST live-stream to NRI family members.',
   },
   {
     slug: 'abhijit-nakshatra-muhurat',
@@ -737,7 +707,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Avoid for funeral or shraddha rituals (Abhijit is for new creation)', 'Avoid when Saturday + Bharani overlap'],
     spiritualSignificance: 'Abhijit literally means undefeated. Considered the 28th nakshatra in classical Vedic astronomy though most modern panchang systems use 27. The Mahabharata records that Lord Krishna was born during Abhijit muhurat at midnight. Considered cosmically protected — actions begun in Abhijit are said to be invincible. Some traditions hold that even if Rahu Kaal overlaps, Abhijit cancels its inauspicious effect.',
     howToCalculate: 'Panchang software identifies when Abhijit nakshatra is active in a given lunar month. Most months have a 21-hour window. Verify in source panchang — Drik Panchang, Punarvasu Panchang, and TTD Pancanga.',
-    modernApplication: 'Indian Supreme Court and several High Courts historically schedule major bench hearings during Abhijit windows when astrologically informed counsel advises. Bhaktisetu publishes a rolling Abhijit nakshatra calendar accessible to all astrology subscription customers (R-Q2-P-001) for date selection.',
+    modernApplication: 'Indian Supreme Court and several High Courts historically schedule major bench hearings during Abhijit windows when astrologically informed counsel advises. Darshya publishes a rolling Abhijit nakshatra calendar accessible to all astrology subscription customers for date selection.',
   },
   {
     slug: 'navami-tithi-muhurat',
@@ -752,7 +722,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Shukla Navami avoid for funeral or last-rites', 'Krishna Navami avoid for marriage or auspicious life events'],
     spiritualSignificance: 'Navami is the ninth tithi where the moon has completed 108 degrees from sun. Considered the foundational Devi tithi across Hindu tradition. Shukla Navami of Sharad Navratri marks the slaying of Mahishasura by Maa Durga — celebrated as Maha Navami with mass kanya pujan across North India. Chaitra Shukla Navami celebrates Lord Rama birth as Rama Navami. Krishna Navami is sacred for Annapurna Mata worship.',
     howToCalculate: 'Navami arrives twice per lunar month. Identify in panchang under tithi column. For Devi sadhana, prefer Shukla Navami. For ancestor-related Devi work (e.g., Pitru-related Annapurna), choose Krishna Navami. Combined with Tuesday or Friday for amplification.',
-    modernApplication: 'NRI Hindu families particularly value Maha Navami live-streaming from major Devi temples (Vaishno Devi, Kamakhya, Kalighat, Meenakshi) — Bhaktisetu features dedicated Devi live darshan during all Navami days of the year, with 14x peak traffic during Sharad Navratri Maha Navami.',
+    modernApplication: 'NRI Hindu families particularly value Maha Navami live-streaming from major Devi temples (Vaishno Devi, Kamakhya, Kalighat, Meenakshi) — Darshya features dedicated Devi live darshan during all Navami days of the year, with 14x peak traffic during Sharad Navratri Maha Navami.',
   },
   {
     slug: 'pradosh-muhurat',
@@ -767,7 +737,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Inauspicious activities — Pradosh amplifies karma', 'Bhadra overlap'],
     spiritualSignificance: 'Pradosh literally means twilight + ruler — the time when Shiva and Parvati grant audience to devotees. Per Shiva Mahapurana, all who worship Shiva at Pradosh window receive the equivalent of one full year of Shiva worship. Recommended for Sade Sati relief, marital harmony, and removal of family curses. Particularly potent on Soma Pradosh (Monday) and Shani Pradosh (Saturday) variants.',
     howToCalculate: 'Identify Trayodashi tithi in panchang. Pradosh begins 1.5 hours after local sunset and continues for 1.5 hours. Apps display per-city. Special variants: Soma Pradosh (Monday Trayodashi), Bhauma Pradosh (Tuesday), Shani Pradosh (Saturday) — each carries amplified benefit for specific life issues.',
-    modernApplication: 'NRI Hindu families particularly value Pradosh because it falls in convenient afternoon/evening IST — convenient for live-streaming Rudrabhishek from Kashi or Mahabaleshwar to US/UK morning. Bhaktisetu Pradosh booking workflow displays the precise 1.5hr window for the user\'s city.',
+    modernApplication: 'NRI Hindu families particularly value Pradosh because it falls in convenient afternoon/evening IST — convenient for live-streaming Rudrabhishek from Kashi or Mahabaleshwar to US/UK morning. Darshya Pradosh booking workflow displays the precise 1.5hr window for the user\'s city.',
   },
   {
     slug: 'ekadashi-muhurat',
@@ -782,7 +752,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Avoid consuming grains, beans, rice, wheat (traditional vrat rule)', 'Avoid weddings or auspicious life events on Ekadashi (reserved for Vishnu worship)', 'Avoid arguments and negative speech (counter-productive to vrat)'],
     spiritualSignificance: 'Ekadashi is the 11th tithi where moon has completed 132 degrees from sun. Considered uniquely sacred for Vishnu worship in Vaishnava tradition. The Vaishnava saints (Tulsidas, Surdas, Mirabai, Chaitanya Mahaprabhu) all observed Ekadashi vrat for moksha purification. Each Ekadashi has its own name and significance — Vaikuntha Ekadashi, Mokshada Ekadashi, Devshayani Ekadashi, etc.',
     howToCalculate: 'Identify Ekadashi tithi in panchang. Vrat begins at sunrise of Ekadashi day and ends at sunrise of Dwadashi day (the next day). Strict observers begin vrat at sunrise of Dashami evening and break at Dwadashi morning. Apps publish 24 Ekadashis per year calendar.',
-    modernApplication: 'Vaikuntha Ekadashi (Margashirsha Shukla Ekadashi, ~December) draws 1M+ pilgrims to Tirupati and other major Vishnu temples. Bhaktisetu publishes 24-Ekadashi annual calendar w/ per-Ekadashi significance and recommended Vishnu temples for darshan. Strong NRI Vaishnav diaspora engagement.',
+    modernApplication: 'Vaikuntha Ekadashi (Margashirsha Shukla Ekadashi, ~December) draws 1M+ pilgrims to Tirupati and other major Vishnu temples. Darshya publishes 24-Ekadashi annual calendar w/ per-Ekadashi significance and recommended Vishnu temples for darshan. Strong NRI Vaishnav diaspora engagement.',
   },
   {
     slug: 'sankranti-muhurat',
@@ -797,22 +767,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Major auspicious life events during the actual transit hour (only)', 'Beginning new business ventures during Kshaya Sankranti (declining sun)', 'Eating non-vegetarian food during Sankranti window'],
     spiritualSignificance: 'Sankranti literally means good crossing — the moment Sun enters a new zodiac sign. Considered cosmically important because the Sun has direct influence on Earth through its annual ecliptic journey. Makar Sankranti (Sun enters Capricorn, ~Jan 14) is the most celebrated, marking the start of Uttarayana (northern journey of Sun) considered the auspicious half of the year per Mahabharata.',
     howToCalculate: 'Calculate based on Sun sidereal longitude crossing zodiac sign boundary. Apps publish exact transit time per Sankranti. The window of auspiciousness extends 30 ghatikas (12 hours) before and 30 ghatikas after for charity + bathing.',
-    modernApplication: 'Makar Sankranti drives 50M+ pilgrim bathings at Ganga, Yamuna, Godavari, and Kapilatheertham annually. Bhaktisetu features per-Sankranti livestream from major sacred bathing ghats (Prayagraj Triveni Sangam, Haridwar Har-ki-Pauri) for NRI families who cannot physically attend.',
-  },
-  {
-    slug: 'guru-pushya-yoga',
-    name: 'Guru Pushya Yoga',
-    sanskritName: 'गुरु पुष्य योग',
-    category: 'special',
-    shortDesc: 'Rare yoga when Thursday and Pushya nakshatra coincide — supreme for new beginnings.',
-    timing: 'When Thursday (Guruvar) and Pushya nakshatra coincide — typically 2-3 times per year',
-    duration: '~13-26 hours per occurrence',
-    ruledBy: 'Combined Brihaspati (Jupiter) and Brihaspati (Pushya nakshatra deity)',
-    bestFor: ['Beginning of major life decisions', 'Property purchase and gold buying', 'Vehicle purchase', 'Starting new spiritual sadhana', 'Foundation of educational institutions', 'Saraswati and Lakshmi pujas'],
-    avoid: ['Cremation and antim sanskar (Guru Pushya is for new creation, not endings)', 'Litigation initiation (Pushya is for peace, not combat)'],
-    spiritualSignificance: 'Guru Pushya is among the most powerful auspicious yogas in classical jyotisha. Both Thursday (ruled by Brihaspati, deity of wisdom and growth) and Pushya nakshatra (ruled by Brihaspati, "the nourisher") combine to amplify auspiciousness exponentially. The Mahabharata records that the marriage of Krishna and Rukmini was conducted during Guru Pushya for cosmic blessing. Used historically by kings for coronations.',
-    howToCalculate: 'Check panchang for Thursday occurrences when Pushya nakshatra is active. Typically 2-3 instances per year. Software tools and apps display the next 12 months of Guru Pushya windows. Combine with Abhijit Muhurta within the day for compounded benefit.',
-    modernApplication: 'Indian jewellery retailers (Tanishq, Kalyan, Joyalukkas) heavily advertise Guru Pushya days as premier gold-buying windows — sales spike 3-5x on Guru Pushya vs ordinary Thursdays. Real-estate developers schedule launch dates accordingly. Bhaktisetu publishes a rolling Guru Pushya calendar with push notifications.',
+    modernApplication: 'Makar Sankranti drives 50M+ pilgrim bathings at Ganga, Yamuna, Godavari, and Kapilatheertham annually. Darshya features per-Sankranti livestream from major sacred bathing ghats (Prayagraj Triveni Sangam, Haridwar Har-ki-Pauri) for NRI families who cannot physically attend.',
   },
   {
     slug: 'amavasya-muhurat',
@@ -827,7 +782,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['New auspicious life events (Amavasya is for completion + closure, not new beginning)', 'Solo travel late at night during Amavasya (traditional cautionary)', 'Initiating business launches'],
     spiritualSignificance: 'Amavasya literally means no-moon. Considered the time when the moon is absent and the ancestor realm (pitru-loka) is most accessible to descendants offerings. The 12 Amavasyas of the year each carry specific significance — Mahalaya Amavasya is the most important for shraddha (peak Pitru Paksha). Kartik Amavasya is Diwali / Kali Puja. Tantric tradition uses Amavasya for advanced sadhana given the cosmic absence of moonlight (lunar disturbance minimised).',
     howToCalculate: 'Identify Amavasya tithi in panchang — one occurrence per lunar month. Most months have one Amavasya falling between previous Krishna Chaturdashi and following Shukla Pratipada. Software apps publish 12-Amavasya annual calendar with specific names.',
-    modernApplication: 'Pitru Paksha Amavasya (Mahalaya Amavasya, end of Bhadrapad Krishna Paksha) drives 500K+ pilgrim shraddha bookings at Gaya alone. Diwali Amavasya simultaneously serves as Lakshmi Puja (Vaishnav) and Kali Puja (Shakta) — Bhaktisetu features dedicated dual-tradition Amavasya programming. Strong NRI engagement for pitru tarpana during all 12 monthly Amavasyas.',
+    modernApplication: 'Pitru Paksha Amavasya (Mahalaya Amavasya, end of Bhadrapad Krishna Paksha) drives 500K+ pilgrim shraddha bookings at Gaya alone. Diwali Amavasya simultaneously serves as Lakshmi Puja (Vaishnav) and Kali Puja (Shakta) — Darshya features dedicated dual-tradition Amavasya programming. Strong NRI engagement for pitru tarpana during all 12 monthly Amavasyas.',
   },
   {
     slug: 'purnima-muhurat',
@@ -842,7 +797,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Travel during eclipse-overlap Purnimas', 'New ventures requiring slow incubation (Purnima energy is consummation, not seed)'],
     spiritualSignificance: 'Purnima literally means complete. Considered the cosmic climax of the lunar cycle when the moon mirrors the sun in full brightness. Each of the 12 annual Purnimas carries specific significance — Guru Purnima (Ashadha), Kartik Purnima (Pushkar Mela), Buddha Purnima (Vaishakha), Sharad Purnima (Ashwin — Lakshmi descent night), Holi Purnima (Phalguna).',
     howToCalculate: 'Identify Purnima tithi in panchang. One per lunar month. Special variants per Hindu calendar — apps display all 12 annual Purnimas with significance.',
-    modernApplication: 'Sharad Purnima (October full moon) draws major NRI Vaishnav community participation through Bhaktisetu Lakshmi Puja online streams from Mathura + Vrindavan. Guru Purnima drives major dakshina giving by Bhaktisetu users to their gurus + guru-lineage institutions globally.',
+    modernApplication: 'Sharad Purnima (October full moon) draws major NRI Vaishnav community participation through Darshya Lakshmi Puja online streams from Mathura + Vrindavan. Guru Purnima drives major dakshina giving by Darshya users to their gurus + guru-lineage institutions globally.',
   },
   {
     slug: 'pushya-nakshatra-muhurat',
@@ -857,7 +812,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Cremation and antim sanskar (Pushya is for nourishment, not endings)', 'Litigation initiation'],
     spiritualSignificance: 'Pushya literally means the nourisher — the foremost nakshatra for material and spiritual prosperity. Considered universally auspicious; classical jyotisha texts state that even if other planetary positions are adverse, undertakings initiated during Pushya nakshatra prosper. Combined with Thursday (Guru Pushya yoga) for amplified effect.',
     howToCalculate: 'Per monthly panchang. Pushya nakshatra is active for ~13-26 hours each month. Apps display upcoming Pushya windows. Software like Drik Panchang publishes annual Pushya calendar.',
-    modernApplication: 'Indian gold retailers (Tanishq, Kalyan, Joyalukkas) heavily advertise Pushya days as premier gold-buying windows. Bhaktisetu publishes Pushya calendar with notifications for prosperity-conscious users.',
+    modernApplication: 'Indian gold retailers (Tanishq, Kalyan, Joyalukkas) heavily advertise Pushya days as premier gold-buying windows. Darshya publishes Pushya calendar with notifications for prosperity-conscious users.',
   },
   {
     slug: 'rohini-nakshatra-muhurat',
@@ -872,7 +827,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Cremation and antim sanskar', 'Major financial debt commitments'],
     spiritualSignificance: 'Rohini is the favorite nakshatra of Lord Brahma and also where Lord Krishna was born (Rohini Nakshatra, Krishna Janmashtami). Considered universally fertile and auspicious for any new creation. Classical wedding tradition strongly prefers Rohini nakshatra muhurat. Agricultural communities time sowing operations to Rohini for best crop yield per ancient wisdom.',
     howToCalculate: 'Per monthly panchang. Rohini active ~13-26 hours per month. Combined with Friday (Shukravar) for marriage muhurat optimization. Apps display Rohini calendar.',
-    modernApplication: 'Indian wedding industry strongly prefers Rohini nakshatra dates — wedding planners report 25-40% premium booking on Rohini muhurat days. Real-estate developers schedule possession-handover. Bhaktisetu wedding-planner tool (R-Q2-P-002) prioritises Rohini windows.',
+    modernApplication: 'Indian wedding industry strongly prefers Rohini nakshatra dates — wedding planners report 25-40% premium booking on Rohini muhurat days. Real-estate developers schedule possession-handover. Darshya wedding-planner tool prioritises Rohini windows.',
   },
   {
     slug: 'shubh-vela-muhurat',
@@ -887,7 +842,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Major life-cycle samskaras during Shubh Vela alone (require dedicated muhurat)'],
     spiritualSignificance: 'Shubh Vela is the practical application of Choghadiya system. While major life events require dedicated muhurat (Vivah, Griha Pravesh, Vidyarambha), daily activities benefit from aligning with Shubh, Labh, or Amrit windows. Avoid Char, Rog, Kaal, Udveg Choghadiya for important activities.',
     howToCalculate: 'Per panchang Choghadiya section. Daily 16 Choghadiya windows (8 day + 8 night) of ~1.5hr each. Apps display per-city per-day Choghadiya colour-coded. Free apps: Drik Panchang, Punarvasu Panchang.',
-    modernApplication: 'Daily routine optimization — Indian professionals schedule important calls and emails during Shubh Vela. Bhaktisetu publishes daily Choghadiya for premium subscribers with calendar integration. Strong NRI engagement for IST-based meetings with India family.',
+    modernApplication: 'Daily routine optimization — Indian professionals schedule important calls and emails during Shubh Vela. Darshya publishes daily Choghadiya for premium subscribers with calendar integration. Strong NRI engagement for IST-based meetings with India family.',
   },
   {
     slug: 'panchaka-muhurat',
@@ -902,7 +857,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Construction (especially roof construction)', 'Wedding ceremonies', 'Vehicle purchase', 'Travel commencement (especially southward)', 'Cremation (must be performed with special ritual remedy)', 'Major financial transactions'],
     spiritualSignificance: 'Panchaka literally means five — the 5-day inauspicious window when moon traverses 5 specific nakshatras. Classical jyotisha texts identify specific risks: construction during Panchaka leads to structural issues; weddings face conflicts; travel meets obstacles; cremations without remedy may bind soul to inauspicious rebirth.',
     howToCalculate: 'Identify when moon enters Dhanishta nakshatra (after Shravana). Track 5-day passage through Dhanishta + Shatabhisha + Purva Bhadrapada + Uttara Bhadrapada + Revati. Apps display monthly Panchaka windows.',
-    modernApplication: 'Indian construction industry traditionally pauses major roof-pouring during Panchaka. Wedding planners avoid Panchaka dates entirely. Bhaktisetu wedding-planner tool flags Panchaka dates as inauspicious. For unavoidable cremations during Panchaka, special remedy ritual (offering 5 wheat doughs as substitutes) is prescribed.',
+    modernApplication: 'Indian construction industry traditionally pauses major roof-pouring during Panchaka. Wedding planners avoid Panchaka dates entirely. Darshya wedding-planner tool flags Panchaka dates as inauspicious. For unavoidable cremations during Panchaka, special remedy ritual (offering 5 wheat doughs as substitutes) is prescribed.',
   },
   {
     slug: 'akshay-tritiya-muhurat',
@@ -917,22 +872,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Cremation or shraddha (Akshay is for new beginnings, not endings)', 'Major arguments + litigation (counter-productive to akshay nature)'],
     spiritualSignificance: 'Akshay literally means imperishable + unending. Per Padma Purana, every action begun on Akshay Tritiya carries imperishable merit + multiplies its fruit. One of 3.5 most auspicious muhurats per year (alongside Chaitra Shukla Pratipada, Vijayadashami, and half of Diwali). Also marks Parashurama Jayanti (Vishnu 6th avatar birthday) + the day Krishna and Sudama reunited per Bhagavata.',
     howToCalculate: 'Annual Vaishakha Shukla Tritiya. Specific date varies per Hindu calendar (typically April-May). Apps publish annual Akshay Tritiya calendar. Combine with morning auspicious lagna for amplified effect on major purchases.',
-    modernApplication: 'Indian gold-jewellery industry posts ₹15,000-20,000 Cr in single-day sales during Akshay Tritiya — among the largest single-day commerce events globally. Real estate developers schedule project launches. Bhaktisetu publishes Akshay Tritiya calendar with notifications + dedicated puja booking surge (per Akshay Tritiya 2027 campaign spec).',
-  },
-  {
-    slug: 'sarvartha-siddhi-yoga',
-    name: 'Sarvartha Siddhi Yoga',
-    sanskritName: 'सर्वार्थ सिद्धि योग',
-    category: 'auspicious',
-    shortDesc: 'All-purpose siddhi yoga when specific weekday + nakshatra coincide — universal auspiciousness.',
-    timing: 'Specific weekday-nakshatra combinations: Sun-Hasta/Mula/Uttara Phalguni/Uttara Bhadrapada/Uttara Ashada; Moon-Shravana/Rohini/Mrigashira/Pushya/Anuradha; etc.',
-    duration: '~13-26 hours per occurrence',
-    ruledBy: 'Combined weekday + nakshatra deity blessings',
-    bestFor: ['New ventures of any kind', 'Beginning major transactions', 'Vehicle + property purchase', 'Travel commencement', 'Marriage ceremonies', 'Foundation of any auspicious work'],
-    avoid: ['Inauspicious activities (yoga amplifies karma both ways)'],
-    spiritualSignificance: 'Sarvartha Siddhi literally means accomplishment of all purposes. Classical jyotisha texts identify specific weekday-nakshatra pairings that create this universally auspicious yoga. Unlike Amrit Siddhi (specific to material prosperity), Sarvartha Siddhi is all-purpose — granting success in any well-intentioned activity. Considered one of 4 super-auspicious yogas (alongside Amrit Siddhi, Guru Pushya, Tripushkar).',
-    howToCalculate: 'Check panchang for weekday + favourable nakshatra combinations. Typically 4-8 occurrences per month. Software apps publish monthly Sarvartha Siddhi calendar. Combined with Abhijit Muhurta + Choghadiya Shubh for compounded effect.',
-    modernApplication: 'Real-estate brokers, jewellers, and business consultants in India consult Sarvartha Siddhi calendars regularly. Bhaktisetu publishes monthly Sarvartha Siddhi notifications for premium subscribers — popular for vehicle purchases, property foundations, and wedding date selection.',
+    modernApplication: 'Indian gold-jewellery industry posts ₹15,000-20,000 Cr in single-day sales during Akshay Tritiya — among the largest single-day commerce events globally. Real estate developers schedule project launches. Darshya publishes Akshay Tritiya calendar with notifications + dedicated puja booking surge (per Akshay Tritiya 2027 campaign spec).',
   },
   {
     slug: 'chitra-nakshatra-muhurat',
@@ -947,7 +887,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Cremation (Chitra is for creation, not endings)'],
     spiritualSignificance: 'Chitra literally means brilliance + beauty. Ruled by Vishvakarma — the divine architect who built Dwarka, Lanka, Indrasabha, and the universe itself. Considered uniquely auspicious for any creative or architectural undertaking. Marriage ceremonies during Chitra are believed to grant artistically gifted children.',
     howToCalculate: 'Per monthly panchang. Chitra active ~13-26 hours per month. Combined with Tuesday (Mangalvar) for Mars-amplified creative energy. Architectural foundations particularly auspicious during Chitra + Wednesday combination.',
-    modernApplication: 'Indian architects + interior designers schedule major project launches during Chitra nakshatra. Jewelry designers + textile manufacturers begin new collections. Bhaktisetu lists Chitra-day options in wedding-planner tool (per R-Q2-P-002) for couples seeking artistically blessed marriages.',
+    modernApplication: 'Indian architects + interior designers schedule major project launches during Chitra nakshatra. Jewelry designers + textile manufacturers begin new collections. Darshya lists Chitra-day options in wedding-planner tool for couples seeking artistically blessed marriages.',
   },
   {
     slug: 'krittika-nakshatra-muhurat',
@@ -977,7 +917,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Stationary committments (Svati is movement nakshatra)', 'Decisions requiring stability'],
     spiritualSignificance: 'Svati literally means independent + self-going. Ruled by Vayu — the wind god — and considered the most mobile + independent nakshatra. Said to be where the Hindu pearl forms in the oyster (per ancient tradition — when Svati rain falls into an open oyster, it creates a pearl). Considered uniquely auspicious for movement, communication, and any activity requiring agility.',
     howToCalculate: 'Per monthly panchang. Svati active ~13-26 hours per month. Combined with Wednesday (Mercury, communication-aligned) for amplified communication-business benefit.',
-    modernApplication: 'Public speakers + politicians schedule major addresses during Svati windows. Aviation + shipping industries celebrate Svati as their auspicious nakshatra. Bhaktisetu offers Svati-specific Saraswati puja bookings for students + musicians (Saraswati being patron of communication).',
+    modernApplication: 'Public speakers + politicians schedule major addresses during Svati windows. Aviation + shipping industries celebrate Svati as their auspicious nakshatra. Darshya offers Svati-specific Saraswati puja bookings for students + musicians (Saraswati being patron of communication).',
   },
   {
     slug: 'mrigashira-nakshatra-muhurat',
@@ -992,7 +932,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Cremation (Mrigashira is for new life)'],
     spiritualSignificance: 'Mrigashira literally means deer-headed. Considered the searching nakshatra — represents quest for understanding + new horizons. Ruled by Soma (Moon) for emotional depth + Mars (Mangal) for action. Vedic deer hunting metaphor — the seeker pursuing the divine.',
     howToCalculate: 'Per monthly panchang. Mrigashira active ~13-26 hours per month. Combined with Monday (Soma) for amplified emotional + creative energy.',
-    modernApplication: 'Artists + musicians + writers schedule project launches during Mrigashira. Wedding planners include Mrigashira in muhurat selection. Bhaktisetu wedding-planner tool (R-Q2-P-002) lists Mrigashira windows for couples valuing creative + emotional partnership.',
+    modernApplication: 'Artists + musicians + writers schedule project launches during Mrigashira. Wedding planners include Mrigashira in muhurat selection. Darshya wedding-planner tool lists Mrigashira windows for couples valuing creative + emotional partnership.',
   },
   {
     slug: 'anuradha-nakshatra-muhurat',
@@ -1007,7 +947,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Solo undertakings (Anuradha is partnership-energy)'],
     spiritualSignificance: 'Anuradha literally means following Radha — the highest devotional rasa. Ruled by Mitra (friendship deity). Considered the foundational nakshatra for binding partnerships of all kinds — marital, business, friendship, spiritual community. Saturn rulership adds disciplined commitment.',
     howToCalculate: 'Per monthly panchang. Anuradha active ~13-26 hours per month. Combined with Friday (Shukravar, Venus) for marital amplification.',
-    modernApplication: 'Wedding industry strongly prefers Anuradha nakshatra dates — couples report higher long-term satisfaction. Business partnership signing aligned with Anuradha by tradition-aware professionals. Bhaktisetu wedding-planner tool surfaces Anuradha windows.',
+    modernApplication: 'Wedding industry strongly prefers Anuradha nakshatra dates — couples report higher long-term satisfaction. Business partnership signing aligned with Anuradha by tradition-aware professionals. Darshya wedding-planner tool surfaces Anuradha windows.',
   },
   {
     slug: 'uttara-phalguni-muhurat',
@@ -1022,7 +962,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Cremation', 'Solo isolation undertakings'],
     spiritualSignificance: 'Uttara Phalguni literally means later of the Phalguni twins. Ruled by Aryaman — the Vedic god of contracts + chivalry + marriage. Per Brihad Parashara Hora Shastra, considered the foremost marriage muhurat nakshatra. The Bhishma-Drupada-Drauni marriages in Mahabharata were conducted during Uttara Phalguni.',
     howToCalculate: 'Per monthly panchang. Uttara Phalguni active ~13-26 hours per month. Combined with Sunday (Surya, ruling planet) for amplified marital energy.',
-    modernApplication: 'Wedding industry near-universal preference for Uttara Phalguni dates. Real-estate developers schedule possession-handover. Bhaktisetu wedding-planner tool defaults to Uttara Phalguni when available. NRI Indian families particularly value this nakshatra for engagement + wedding muhurat dates.',
+    modernApplication: 'Wedding industry near-universal preference for Uttara Phalguni dates. Real-estate developers schedule possession-handover. Darshya wedding-planner tool defaults to Uttara Phalguni when available. NRI Indian families particularly value this nakshatra for engagement + wedding muhurat dates.',
   },
   {
     slug: 'jyeshtha-nakshatra-muhurat',
@@ -1037,7 +977,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Marriage ceremonies (Jyeshtha is intense + can disrupt marital harmony)', 'Travel + new ventures with companions', 'Anything requiring stability'],
     spiritualSignificance: 'Jyeshtha literally means eldest. Ruled by Indra (king of gods). Considered intense + transformative nakshatra — power, leadership, eldership. Per Vedic astrology, those born under Jyeshtha tend toward leadership but may face Saturn-related challenges. Recommended for major life transitions, not for marital + family events.',
     howToCalculate: 'Per monthly panchang. Jyeshtha active ~13-26 hours per month. Combined with Wednesday (Budh) for amplified intellectual + leadership energy.',
-    modernApplication: 'Political coronations + corporate CEO transitions traditionally aligned with Jyeshtha. Bhaktisetu astrology consultations note Jyeshtha for life-transition timing. Wedding planners actively avoid Jyeshtha dates.',
+    modernApplication: 'Political coronations + corporate CEO transitions traditionally aligned with Jyeshtha. Darshya astrology consultations note Jyeshtha for life-transition timing. Wedding planners actively avoid Jyeshtha dates.',
   },
   {
     slug: 'revati-nakshatra-muhurat',
@@ -1052,7 +992,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Beginning entirely new ventures (Revati is closure-energy, not opening)', 'Major financial commitments'],
     spiritualSignificance: 'Revati literally means wealthy + abundant. Ruled by Pushan — the nurturing protective deity. Considered gentle + peaceful nakshatra. The final nakshatra of the 27 — represents completion + transition. Particularly favored for life-cycle ceremonies + recovery + reunion.',
     howToCalculate: 'Per monthly panchang. Revati active ~13-26 hours per month. Combined with Wednesday (Budh) for amplified intellectual + nurturing energy.',
-    modernApplication: 'Hospital discharge + recovery rituals scheduled during Revati. Family welcoming home travelers often align with Revati. Wedding planners include Revati as auspicious option. Bhaktisetu offers Revati-specific Surya puja for recovery-from-illness customers.',
+    modernApplication: 'Hospital discharge + recovery rituals scheduled during Revati. Family welcoming home travelers often align with Revati. Wedding planners include Revati as auspicious option. Darshya offers Revati-specific Surya puja for recovery-from-illness customers.',
   },
   {
     slug: 'ashlesha-nakshatra-muhurat',
@@ -1067,7 +1007,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Marriage ceremonies (Ashlesha intense + can disrupt harmony)', 'New business launches', 'Travel with companions'],
     spiritualSignificance: 'Ashlesha literally means embrace. Ruled by Nagas (serpent deities). Considered the most intense + transformative nakshatra in Vedic tradition. Per Brihad Parashara Hora Shastra, those born under Ashlesha possess hypnotic power + healing abilities + intense emotional depth. Recommended only for serpent-related rituals + Kal Sarp Dosh remedies.',
     howToCalculate: 'Per monthly panchang. Ashlesha active ~13-26 hours per month. Naga Panchami (Shravan Shukla Panchami) is the foremost annual Ashlesha event. Combined with Tuesday + Saturday for serpent-deity amplification.',
-    modernApplication: 'Naga Panchami Hindu families perform Ashlesha rituals at major Naga temples (Mannarasala Kerala, Trimbakeshwar Maharashtra). Bhaktisetu Kal Sarp Dosh puja booking spikes during Ashlesha + Naga Panchami windows. Strong Bihari + Maharashtrian + Kerala diaspora engagement.',
+    modernApplication: 'Naga Panchami Hindu families perform Ashlesha rituals at major Naga temples (Mannarasala Kerala, Trimbakeshwar Maharashtra). Darshya Kal Sarp Dosh puja booking spikes during Ashlesha + Naga Panchami windows. Strong Bihari + Maharashtrian + Kerala diaspora engagement.',
   },
   {
     slug: 'mula-nakshatra-muhurat',
@@ -1082,7 +1022,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Marriage ceremonies (Mula root-destruction may dissolve relationship)', 'New business + financial commitments', 'Life-cycle samskaras except renunciation'],
     spiritualSignificance: 'Mula literally means root. Ruled by Nirriti (Vedic goddess of dissolution + chaos). Considered the most karmically dissolving nakshatra. Per ancient tradition, children born under Mula require special pacification rituals (Mula Shanti Puja) to neutralize the intense karmic root. Foundational for spiritual seekers seeking ego-dissolution.',
     howToCalculate: 'Per monthly panchang. Mula active ~13-26 hours per month. Combined with Tuesday (Mangal) + Saturday (Shani) for intense karmic transformation work.',
-    modernApplication: 'Mula Shanti Puja booking is foundational ritual for Mula-born children — Bhaktisetu offers verified pandit-led ceremony for ~₹3,500. Renunciation + sannyasa initiations scheduled during Mula by spiritual seekers. Wedding industry actively avoids Mula dates.',
+    modernApplication: 'Mula Shanti Puja booking is foundational ritual for Mula-born children — Darshya offers verified pandit-led ceremony for ~₹3,500. Renunciation + sannyasa initiations scheduled during Mula by spiritual seekers. Wedding industry actively avoids Mula dates.',
   },
   {
     slug: 'shravana-nakshatra-muhurat',
@@ -1097,7 +1037,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Surgery + medical procedures', 'Confrontational meetings'],
     spiritualSignificance: 'Shravana literally means hearing. Ruled by Lord Vishnu and considered the foremost nakshatra for receptive listening + learning. The entire month of Shravan (July-August) is named after this nakshatra — when Vishnu is believed to descend for spiritual contact. Foundational for shruti tradition (scripture transmitted through hearing).',
     howToCalculate: 'Per monthly panchang. Shravana active ~13-26 hours per month. Shravan month entirely sacred to Lord Shiva (Shiva worship), but Shravana nakshatra specifically belongs to Vishnu — interesting cross-tradition overlap.',
-    modernApplication: 'Vedic schools (Gurukul per R-Q3-P-004) traditionally begin new student admissions during Shravana. Bhaktisetu scripture-listening services (audio Bhagavad Gita, etc.) report higher engagement during Shravana days. Spiritual podcasters launch new shows during Shravana for blessings.',
+    modernApplication: 'Vedic schools (gurukuls) traditionally begin new student admissions during Shravana. Darshya scripture-listening services (audio Bhagavad Gita, etc.) report higher engagement during Shravana days. Spiritual podcasters launch new shows during Shravana for blessings.',
   },
   {
     slug: 'ardra-nakshatra-muhurat',
@@ -1112,7 +1052,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Marriage + family-binding ceremonies', 'New business launches', 'Travel for routine purposes', 'Anything requiring calm + stability'],
     spiritualSignificance: 'Ardra literally means moisture + storm. Ruled by Rudra (the fierce Shiva). Considered the most chaotic + transformative nakshatra. Symbolizes the storm-energy needed to break through stuck patterns. Per Vedic tradition, transformation requires destruction first — Ardra provides that breaking-down energy.',
     howToCalculate: 'Per monthly panchang. Ardra active ~13-26 hours per month. Combined with Monday + Saturday for compounded transformation energy.',
-    modernApplication: 'Sannyasis + serious spiritual seekers use Ardra for breakthrough sadhanas. Crisis-management workshops + therapy sessions sometimes align with Ardra for breakthrough intensity. Bhaktisetu Rudrabhishek booking spikes during Ardra-Monday combinations.',
+    modernApplication: 'Sannyasis + serious spiritual seekers use Ardra for breakthrough sadhanas. Crisis-management workshops + therapy sessions sometimes align with Ardra for breakthrough intensity. Darshya Rudrabhishek booking spikes during Ardra-Monday combinations.',
   },
   {
     slug: 'punarvasu-nakshatra-muhurat',
@@ -1142,7 +1082,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Marriage ceremonies (Magha associated with pitrus, not new starts)', 'New business launches', 'Travel for routine purposes'],
     spiritualSignificance: 'Magha literally means mighty + grand. Ruled by Pitrugana (ancestor deities) — foundational nakshatra for shraddha + Pitru Paksha rituals. Royal lineage + ancestor consciousness amplified. Per Brihad Parashara Hora Shastra, those born under Magha tend toward leadership + royal demeanor + deep ancestor connection.',
     howToCalculate: 'Per monthly panchang. Magha active ~13-26 hours per month. Combined with Sunday + Wednesday + Saturday during Pitru Paksha for amplified ancestor blessings.',
-    modernApplication: 'Pitru Paksha shraddha bookings at Gaya + Kashi spike during Magha nakshatra days. Royal families + descendants of historical lineages often hold ancestor-honoring ceremonies during Magha. Bhaktisetu Pind Daan packages prioritize Magha day options.',
+    modernApplication: 'Pitru Paksha shraddha bookings at Gaya + Kashi spike during Magha nakshatra days. Royal families + descendants of historical lineages often hold ancestor-honoring ceremonies during Magha. Darshya Pind Daan packages prioritize Magha day options.',
   },
   {
     slug: 'purva-phalguni-muhurat',
@@ -1157,7 +1097,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Cremation + death rituals', 'Confrontational meetings'],
     spiritualSignificance: 'Purva Phalguni literally means earlier of the Phalguni twins. Ruled by Bhaga — Vedic god of marital love + fortune. Combined with Venus (Shukra) — planet of marital harmony. Per Brihad Parashara Hora Shastra, considered the most auspicious nakshatra for first marriages. Twin nakshatra of Uttara Phalguni (also marriage-favored).',
     howToCalculate: 'Per monthly panchang. Purva Phalguni active ~13-26 hours per month. Combined with Friday (Shukravar, Venus) for amplified marital energy.',
-    modernApplication: 'Wedding industry near-universal preference for Purva + Uttara Phalguni nakshatra dates. Real estate developers schedule new construction. Bhaktisetu wedding-planner tool prioritizes Phalguni twins. NRI Indian families particularly value Phalguni nakshatra for engagement + wedding muhurat dates.',
+    modernApplication: 'Wedding industry near-universal preference for Purva + Uttara Phalguni nakshatra dates. Real estate developers schedule new construction. Darshya wedding-planner tool prioritizes Phalguni twins. NRI Indian families particularly value Phalguni nakshatra for engagement + wedding muhurat dates.',
   },
   {
     slug: 'hasta-nakshatra-muhurat',
@@ -1187,7 +1127,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Anything requiring single-path commitment (Vishakha is branching-energy)', 'Solo undertakings'],
     spiritualSignificance: 'Vishakha literally means branched (referring to forked roads/decisions). Ruled by Indra-Agni joint deity — represents the cosmic principle of decision-making at crossroads. Per Brihad Parashara Hora Shastra, those born under Vishakha tend toward strategic thinking + difficulty with single-path commitment.',
     howToCalculate: 'Per monthly panchang. Vishakha active ~13-26 hours per month. Combined with Thursday (Guruvar, Jupiter) for amplified wisdom-strategic energy.',
-    modernApplication: 'Strategic consultants + business advisors schedule major planning sessions during Vishakha. Government policy decisions historically aligned with Vishakha. Bhaktisetu astrology consultations recommend Vishakha for major life-decision timing.',
+    modernApplication: 'Strategic consultants + business advisors schedule major planning sessions during Vishakha. Government policy decisions historically aligned with Vishakha. Darshya astrology consultations recommend Vishakha for major life-decision timing.',
   },
   {
     slug: 'dhanishtha-nakshatra-muhurat',
@@ -1202,7 +1142,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Cremation + death rituals'],
     spiritualSignificance: 'Dhanishtha literally means wealthiest. Ruled by Ashta Vasus — 8 wealth + abundance deities. Combined with Mars (Mangal) — amplified energy for wealth pursuit. Per Brihad Parashara Hora Shastra, considered auspicious for music + dance + arts requiring rhythm + structure.',
     howToCalculate: 'Per monthly panchang. Dhanishtha active ~13-26 hours per month. Combined with Tuesday + Friday for amplified wealth-aesthetic energy.',
-    modernApplication: 'Recording studios + music venues schedule major events during Dhanishtha. Real-estate developers + jewelers align launches. Bhaktisetu Kubera puja booking spikes during Dhanishtha-Tuesday combinations.',
+    modernApplication: 'Recording studios + music venues schedule major events during Dhanishtha. Real-estate developers + jewelers align launches. Darshya Kubera puja booking spikes during Dhanishtha-Tuesday combinations.',
   },
 ];
 

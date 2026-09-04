@@ -10,6 +10,7 @@ import {
 import { useTemplePortalPayouts } from '../../lib/portal-queries';
 import { selectTemplePayouts, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { payoutStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-22. Temple payouts existed on the web (/temple-portal/payouts) and had no
@@ -100,7 +101,7 @@ export default function TemplePayouts() {
                   trailing={p.amountInr === null ? '—' : formatInr(p.amountInr)}
                   trailingHint={formatDay(p.processedAt ?? p.createdAt)}
                   status={{
-                    label: p.status,
+                    label: payoutStatusLabel(p.status),
                     color:
                       p.status === 'completed'
                         ? colors.green[600]

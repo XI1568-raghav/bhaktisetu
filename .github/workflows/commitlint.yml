@@ -50,6 +50,167 @@ jobs:
           echo "from=$BASE" >> "$GITHUB_OUTPUT"
           echo "Linting commits from $BASE to HEAD"
 
+          # A PR must be linted on ITS OWN commits, and only those.
+          #
+          # actions/checkout on a `pull_request` event checks out
+          # refs/pull/N/merge -- the PR head already merged into the base, so
+          # HEAD contains the BASE BRANCH's commits too and `BASE..HEAD` sweeps
+          # in whatever landed on main after base.sha was stamped. On
+          # 2026-09-04 that failed PR #249 on four commits it never authored:
+          # `roadmap: orchestrator cycle C-3383...` and three siblings, written
+          # by the roadmap-loop cron, whose `roadmap:` type config-conventional
+          # does not allow. The PR's own six commits all passed.
+          #
+          # Linting head.sha from its merge-base covers exactly the commits the
+          # PR introduces -- nothing skipped, and no author blamed for a commit
+          # on another branch. The `from` output above is deliberately left
+          # alone: the secret scan and rollback tripwire use it in three-dot
+          # `git diff` form, where merge-base semantics are already what three
+          # dots mean.
+          #
+          # The bot commits are a real convention violation and are NOT excused
+          # by this -- scripts/agents/roadmap should emit `chore(roadmap): ...`.
+          # That is a separate fix and cannot retro-fix the 16 such commits
+          # already on main, which is the other reason this gate must not lint
+          # them.
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          if [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "null" ]; then
+            CL_FROM=$(git merge-base "$BASE" "$HEAD_SHA")
+            CL_TO="$HEAD_SHA"
+          else
+            CL_FROM="$BASE"
+            CL_TO="HEAD"
+          fi
+          echo "cl_from=$CL_FROM" >> "$GITHUB_OUTPUT"
+          echo "cl_to=$CL_TO" >> "$GITHUB_OUTPUT"
+          echo "Linting PR-authored commits from $CL_FROM to $CL_TO"
+
+      # ── OPS-11 — secret scan on the PR's added lines ──────────────────────
+      #
+      # This repository has already lost credentials to git history once.
+      # `docs/chat-archive/038e0002-5099-4d22-83b2-f98bbf480df7.md` was
+      # committed in cc02057d (2026-04-28), modified in aafa9386, and untracked
+      # in 085dd3ca (2026-08-19). Untracking removed it from the tip; the blob
+      # is still reachable from the first two commits and always will be until
+      # the history is rewritten. Only rotation actually closes it — see
+      # docs/runbooks/secret-rotation.md.
+      #
+      # It lives HERE rather than in ci.yml because ci.yml carries
+      # `paths-ignore: docs/**, **/*.md` — and the file that leaked was a
+      # markdown file under docs/. A scanner that skips the file type that
+      # already burned you is decoration. This workflow has no paths filter.
+      #
+      # Added lines only, so a pre-existing match in an untouched file cannot
+      # block unrelated work. Placeholder-looking values are ignored, and NO
+      # MATCHED VALUE IS EVER PRINTED — only the file, the line number and the
+      # rule name.
+      #
+      # Free tier: ~5s on an already-checked-out runner, ~20 PRs/mo => <2 min/mo.
+      - name: Secret scan (added lines only)
+        # Calls scripts/secret-scan.mjs rather than carrying a copy of it.
+        #
+        # This step USED to inline its own ~60-line duplicate of the scanner's
+        # rule table and placeholder allowlist. The two then diverged, exactly
+        # the way DI-05 diverged: `scripts/secret-scan.mjs` grew an exact-path
+        # EXEMPT_FILES entry for itself and its own test file — whose fixtures
+        # are credential-SHAPED by necessity, since a scanner test must contain
+        # the patterns it detects — and the inline copy never got it. CI ran the
+        # unhardened duplicate and failed PR #249 on ten "secrets" that were all
+        # test vectors in scripts/test/secret-scan.test.mjs.
+        #
+        # One implementation, with tests. The standalone reads a diff on stdin,
+        # exits 1 on a hit, and prints file:line and the rule name but never the
+        # value. Its exemption is exact-path, not a prefix, and there is a test
+        # asserting that scripts/secret-scan.mjs.bak is still scanned.
+        run: |
+          set -euo pipefail
+          BASE="${{ steps.range.outputs.from }}"
+          { git diff --unified=0 "$BASE"...HEAD || git diff --unified=0 "$BASE" HEAD; }             | node scripts/secret-scan.mjs
+
+      - name: Rollback-honesty scan (added lines only)
+        # OPS-06. There IS a guard for this prose — scripts/test/ops-runbook-honesty.test.mjs
+        # — but it runs in ci.yml, which carries `paths-ignore: docs/**`. A
+        # docs-only PR reintroducing the retired claim therefore skips the only
+        # check that would catch it, which is precisely how three corrected
+        # runbooks drifted back and were found again on 2026-09-01.
+        #
+        # This workflow is the one gate never skipped (no paths filter), so the
+        # cheap version of the check lives here: a grep over ADDED lines only,
+        # no install, ~2s. It is a tripwire, not a replacement — the full
+        # structural test still runs in ci.yml for code PRs.
+        run: |
+          set -euo pipefail
+          BASE="${{ steps.range.outputs.from }}"
+          # `docs/audit/**` is EXCLUDED, and that is not a loophole — it is the
+          # one directory whose job is to quote defects verbatim. The audit
+          # ledger records findings in their own words; a row reading "it says
+          # push a revert, but both services are autoDeploy:false" is the
+          # DESCRIPTION of the problem, not a recurrence of it. Verified: without
+          # this exclusion the scan failed on exactly that row in
+          # delta-completion-2026-08-20.md, i.e. on the finding that motivated
+          # the scan. Rewording it to satisfy a grep would have falsified the
+          # audit record, which is worse than the drift the scan prevents.
+          git diff --unified=0 "$BASE"...HEAD -- '*.md' ':!docs/audit' > /tmp/docs.diff ||             git diff --unified=0 "$BASE" HEAD -- '*.md' ':!docs/audit' > /tmp/docs.diff
+          # Added lines only (leading '+', not the +++ file header).
+          # Added lines, EXCLUDING markdown blockquotes. A correction has to
+          # quote the retired claim in order to refute it, and this repo writes
+          # those as `> ` callouts. Without the exclusion the scan fails the very
+          # commits that fix the problem — verified: it flagged two lines of the
+          # 2026-09-01 OPS-06 corrections, which is why the exclusion exists.
+          # A tripwire, so the trade is deliberate: prose hidden inside a
+          # blockquote is not scanned, and the full structural test in ci.yml
+          # remains the real check for code PRs.
+          added=$(grep -E '^\+[^+]' /tmp/docs.diff | grep -vE '^\+\s*>' || true)
+          if [ -z "$added" ]; then echo "No added markdown lines."; exit 0; fi
+
+          # A revert or a push presented as a way to change PRODUCTION.
+          # Both Render services are autoDeploy:false, so neither deploys.
+          #
+          # WIDENED 2026-09-02. As first written this pattern did NOT match the
+          # two sentences the whole finding is about — verified by running the
+          # extracted regex against them:
+          #   "revert the relevant commits and push."          (deploy-runbook)
+          #   "Revert the commit that broke things and let CI deploy the new HEAD."
+          #                                                     (sentry-releases)
+          # Both miss, because after "revert" the first alternation demands one
+          # of rollback/restore/roll back/production/prod within 80 chars and
+          # neither sentence contains any of them. A tripwire that cannot catch
+          # the exact prose it was installed for is decoration, so three shapes
+          # were added: "revert … and push", "revert … let CI deploy", and
+          # "auto-deploys … on push" (the sixth live copy, found the same day in
+          # docs/engineering/render-build-filter-setup.md).
+          bad=$(echo "$added" | grep -inE             '(git )?revert[^.]{0,80}(rollback|restore|roll back|production|prod|and push|let ci deploy|ci (will )?deploys?)|(rollback|roll back)[^.]{0,80}(git )?revert|push[^.]{0,60}(auto-?deploys?|triggers? (a )?redeploy)|auto-?deploys?[^.]{0,60}on (every |each )?[^.]{0,20}push'             || true)
+
+          # DENIALS ARE NOT ASSERTIONS. The ban pattern matches "push ... auto-deploy"
+          # by proximity, so it fires just as hard on a line REFUTING the claim as on
+          # one making it. It has now blocked three correct sentences: "Not on push —
+          # autoDeploy: false", "Do not push a revert and wait", and "A push deploys
+          # nothing at all". A guard that fails the commits fixing the very defect it
+          # guards trains people to bypass it, which is worse than the drift.
+          #
+          # A line is a denial when it carries an explicit negation of deployment on
+          # the same line. These markers are deliberately specific — `false`, `nothing`,
+          # `never`, `no longer`, an explicit "do not" — so a bare "not" cannot be
+          # sprinkled in to smuggle a real claim through.
+          if [ -n "$bad" ]; then
+            bad=$(echo "$bad" | grep -viE 'autoDeploy: ?false|deploys? nothing|does not deploy|will not deploy|never deploys?|no longer (auto-?)?deploys?|do(es)? not (auto-?)?deploy|DOES NOTHING|not a rollback|deploys nothing at all' || true)
+          fi
+
+          if [ -n "$bad" ]; then
+            echo "::error::Rollback-honesty scan: an added line presents a revert or a push as a production rollback."
+            echo "Both Render services are autoDeploy:false (render.yaml:28, :60) — neither a revert nor a push deploys anything."
+            echo "The real procedure is docs/runbooks/prod-rollback.md:"
+            echo "  gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>"
+            echo ""
+            echo "Offending added lines:"
+            echo "$bad"
+            echo ""
+            echo "If this line is a CORRECTION that quotes the retired claim in order to"
+            echo "refute it, word it so the ban pattern does not match, or extend this rule."
+            exit 1
+          fi
+          echo "Rollback-honesty scan: clean."
+
       - name: Run commitlint
         # The previous `npx --yes -p @commitlint/cli -p @commitlint/config-conventional`
         # form fetched both packages into the npx cache, but commitlint's internal
@@ -68,6 +229,6 @@ jobs:
           npm install --prefix "$CL_DIR" --no-save --no-package-lock \
             @commitlint/cli@19 @commitlint/config-conventional@19
           NODE_PATH="$CL_DIR/node_modules" node "$CL_DIR/node_modules/@commitlint/cli/lib/cli.js" \
-            --from "${{ steps.range.outputs.from }}" \
-            --to HEAD \
+            --from "${{ steps.range.outputs.cl_from }}" \
+            --to "${{ steps.range.outputs.cl_to }}" \
             --verbose

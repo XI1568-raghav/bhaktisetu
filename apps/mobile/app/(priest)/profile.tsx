@@ -8,6 +8,9 @@ import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { MessagesEntry } from '../../lib/inbox';
 import { selectPriestProfile } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+// AUTH-09: the confirmation used to ask "Are you sure?" without saying what
+// it was sure about. POST /auth/logout defaults to scope 'global'.
+import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy';
 
 /**
  * PAR-11. GET /api/v1/priest/profile returns the profile FLAT — there is no
@@ -36,7 +39,7 @@ export default function PriestProfile() {
   }
 
   function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure?', [
+    Alert.alert(SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',

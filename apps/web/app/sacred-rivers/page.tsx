@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { SACRED_RIVERS } from '../../lib/sacred-rivers';
 import { formatNumber } from '../../lib/format-locale';
@@ -42,7 +44,7 @@ export default function SacredRiversIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-saffron-600">10 rivers · Sapta Sindhu + 3 canonical</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Sacred Rivers of Bharat</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>Sacred Rivers of Bharat</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Every river in Sanatana Dharma is worshipped as a living goddess — origin glaciers, sacred ghats,
           presiding deities and the legends that turn flowing water into amrit. From Ganga’s descent through Shiva’s

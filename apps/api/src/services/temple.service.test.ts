@@ -80,6 +80,56 @@ describe('TempleService.findAll', () => {
     );
     expect(out.totalPages).toBe(2);
   });
+
+  /**
+   * TC-12 — `total` is the number the WEB trust strip publishes as
+   * "N verified temples" (apps/web/lib/platform-stats.ts →
+   * components/home/TrustStrip.tsx and app/list-temple/page.tsx). Every other
+   * case in this file asserts on `findMany`, which is the PAGE of rows; none
+   * asserted on `count`, which is the CLAIM.
+   *
+   * That mattered, because the two can diverge without any test noticing: the
+   * count and the page share one `where` object today, but a future
+   * optimisation that gives `count` its own (cheaper, unfiltered) filter would
+   * make the strip assert verification over rows nobody verified, and the row
+   * list would still look right. It read true on 2026-08-13 only because all
+   * 20 seeded temples happened to be verified.
+   *
+   * Note the route's half of the contract, which is what made an absent param
+   * dangerous rather than merely permissive: routes/temples.ts passes
+   * `isVerified: isVerified !== undefined ? isVerified === 'true' : undefined`,
+   * and findAll skips `where.isVerified` entirely on `undefined` — so omitting
+   * the param counts EVERY active temple rather than defaulting to the
+   * verified subset.
+   */
+  it('counts the same filtered set it lists — a verified count means verified', async () => {
+    prismaMock.temple.findMany.mockResolvedValue([]);
+    prismaMock.temple.count.mockResolvedValue(20);
+
+    const out = await service.findAll({ isVerified: true });
+
+    const countArg = prismaMock.temple.count.mock.calls[0]![0]!;
+    expect(countArg.where.isVerified).toBe(true);
+    expect(countArg.where.status).toBe('active');
+    expect(out.total).toBe(20);
+
+    // and the listed page was narrowed by the very same clause
+    const listArg = prismaMock.temple.findMany.mock.calls[0]![0]!;
+    expect(countArg.where).toEqual(listArg.where);
+  });
+
+  it('an absent isVerified counts every active temple, verified or not', async () => {
+    prismaMock.temple.findMany.mockResolvedValue([]);
+    prismaMock.temple.count.mockResolvedValue(31);
+
+    await service.findAll({});
+
+    const countArg = prismaMock.temple.count.mock.calls[0]![0]!;
+    expect(countArg.where.status).toBe('active');
+    // Pinned deliberately: this is WHY apps/web must send ?isVerified=true
+    // before publishing the number as "N verified temples".
+    expect(countArg.where.isVerified).toBeUndefined();
+  });
 });
 
 describe('TempleService.search', () => {

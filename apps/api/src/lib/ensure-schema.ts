@@ -1,13 +1,47 @@
 import { createHash } from 'node:crypto';
 import { prisma } from './prisma.js';
 
-// Boot-time defensive schema check. Render's start command bypasses our
-// `pnpm start` wrapper that runs `prisma migrate deploy`, which means
-// pending migrations never apply in prod. Until the dashboard start
-// command is fixed (see docs/activation-gates.md), we replay every
-// migration table/column the user-facing dashboards touch via
-// IF NOT EXISTS DDL on every boot. All statements here are safe to
-// run repeatedly — they no-op once the schema matches.
+// ─────────────────────────────────────────────────────────────────────────
+// OPS-07 — READ THIS BEFORE RE-ENABLING THE BOOT-TIME REPLAY.
+//
+// `prisma migrate deploy` IS THE SCHEMA AUTHORITY. This file is a backstop and
+// is INERT IN PRODUCTION. Full reasoning: docs/runbooks/schema-authority.md.
+//
+// The header that stood here until 2026-08-21 read:
+//
+//     "Render's start command bypasses our `pnpm start` wrapper that runs
+//      `prisma migrate deploy`, which means pending migrations never apply in
+//      prod."
+//
+// That premise is false, and `render.yaml` disproves it on its face:
+//
+//     startCommand: pnpm --filter @poojly/api start
+//     apps/api/package.json  "start": "prisma migrate deploy && node dist/server.js"
+//
+// `prisma migrate deploy` runs first, to completion, BEFORE the Node process
+// exists. Whatever it applies is the schema. This file then ran ~95 more DDL
+// statements against the same database with no declared winner between them.
+//
+// That is not harmless. Prisma writes plain, non-idempotent DDL — e.g.
+// `20260511_user_blocked/migration.sql` does `ALTER TABLE "users" ADD COLUMN
+// "blocked"` and `CREATE INDEX "users_blocked_idx"`, both of which this file
+// also creates with IF NOT EXISTS. On any database where the replay reached
+// those objects before Prisma had recorded that migration, `migrate deploy`
+// aborts (42701 / 42P07), `&&` short-circuits, `node dist/server.js` never
+// starts, and the container crash-loops — with the migration now recorded
+// FAILED, which blocks every later migration until someone runs
+// `prisma migrate resolve` by hand.
+//
+// So: in production this replay does nothing unless an operator sets
+// SCHEMA_INVARIANTS_FORCE=true for a deliberate recovery. Outside production
+// (local dev, CI, a shell with no migrate-deploy wrapper) it still runs, which
+// is where it was always genuinely useful.
+//
+// The statements stay. They are the documented recovery path for a database
+// that has drifted, and they are the only in-repo description of the tables
+// that were created by the original `prisma db push` and never got a migration
+// (there is NO baseline migration in apps/api/prisma/migrations — see the
+// runbook). Adding to them is not a substitute for writing a migration.
 //
 // Scope: every table/column hit by provider portals (pandit, store,
 // astrologer, wellness, gaushala, temple, admin) + Layer features
@@ -545,12 +579,71 @@ const STATEMENTS: string[] = [
     ON "dsar_requests" ("user_id", "created_at" DESC)`,
   `CREATE INDEX IF NOT EXISTS "dsar_requests_sla_idx"
     ON "dsar_requests" ("sla_deadline") WHERE "resolved_at" IS NULL`,
-  `DO $$ BEGIN
+  `DO $ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'dsar_requests_user_id_fkey') THEN
       ALTER TABLE "dsar_requests" ADD CONSTRAINT "dsar_requests_user_id_fkey"
         FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
     END IF;
-  END $$`,
+  END $`,
+
+  // ─────────────────────────────────────────────────────────────────
+  // LC-DEL — in-app account deletion (2026-09-03).
+  // Apple Guideline 5.1.1(v) + Google Play both require it. Mirror of
+  // migrations/20260903000000_account_deletion, replayed here for the same
+  // reason every other table above is: Render's start command has historically
+  // bypassed migrate deploy, and a missing table turns the deletion surface
+  // into a 500 on a legally mandated flow.
+  //
+  // columns are the tombstone state. See the service for why.
+  // ─────────────────────────────────────────────────────────────────
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deletion_requested_at" TIMESTAMPTZ`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deletion_purge_after" TIMESTAMPTZ`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deleted_at" TIMESTAMPTZ`,
+  `CREATE INDEX IF NOT EXISTS "users_deletion_purge_after_idx"
+    ON "users" ("deletion_purge_after")
+    WHERE "deleted_at" IS NULL AND "deletion_purge_after" IS NOT NULL`,
+  `CREATE INDEX IF NOT EXISTS "users_deleted_at_idx"
+    ON "users" ("deleted_at") WHERE "deleted_at" IS NOT NULL`,
+
+  // 80G(5)/Form 10BE require the donor's NAME beside the PAN. The receipt
+  // generator reads user.fullName live, so the name has to be frozen onto the
+  // donation before the user row becomes a tombstone.
+  `ALTER TABLE "donations" ADD COLUMN IF NOT EXISTS "donor_name_snapshot" TEXT`,
+
+  `CREATE TABLE IF NOT EXISTS "account_deletion_requests" (
+    "id"              UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id"         UUID NOT NULL,
+    "status"          TEXT NOT NULL DEFAULT 'pending_confirmation',
+    "code_hash"       TEXT,
+    "code_expires_at" TIMESTAMPTZ,
+    "code_attempts"   INTEGER NOT NULL DEFAULT 0,
+    "channel"         TEXT,
+    "reason"          TEXT,
+    "requested_at"    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "confirmed_at"    TIMESTAMPTZ,
+    "purge_after"     TIMESTAMPTZ,
+    "purged_at"       TIMESTAMPTZ,
+    "cancelled_at"    TIMESTAMPTZ,
+    "warnings"        JSONB,
+    "created_at"      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updated_at"      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT "account_deletion_requests_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "account_deletion_requests_user_idx"
+    ON "account_deletion_requests" ("user_id", "created_at" DESC)`,
+  `CREATE INDEX IF NOT EXISTS "account_deletion_requests_due_idx"
+    ON "account_deletion_requests" ("purge_after") WHERE "status" = 'scheduled'`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "account_deletion_requests_one_live_per_user"
+    ON "account_deletion_requests" ("user_id")
+    WHERE "status" IN ('pending_confirmation', 'scheduled')`,
+  `DO $ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'account_deletion_requests_user_id_fkey') THEN
+      ALTER TABLE "account_deletion_requests" ADD CONSTRAINT "account_deletion_requests_user_id_fkey"
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END $`,
 ];
 
 /**
@@ -578,6 +671,43 @@ const STATEMENTS: string[] = [
 export const SCHEMA_INVARIANTS_FINGERPRINT = createHash('sha256')
   .update(STATEMENTS.join('\n;\n'))
   .digest('hex');
+
+/**
+ * The replay set, exported so a guard can reason about WHICH objects this file
+ * touches without scraping its source text. Scraping would count a
+ * commented-out statement as live; the array cannot.
+ */
+export const SCHEMA_INVARIANT_STATEMENTS: readonly string[] = STATEMENTS;
+
+/** Who owns the schema. Not a preference — see the header and the runbook. */
+export const SCHEMA_AUTHORITY = 'prisma migrate deploy' as const;
+
+export interface SchemaReplayDecision {
+  replay: boolean;
+  authority: typeof SCHEMA_AUTHORITY;
+  reason: 'no-database-url' | 'authority-owns-production' | 'forced' | 'non-production';
+}
+
+/**
+ * OPS-07 — should the boot-time replay run at all?
+ *
+ * Pure, and exported, so the decision can be asserted directly instead of being
+ * inferred from how many queries a mock happened to receive.
+ */
+export function schemaReplayDecision(
+  env: Partial<Record<string, string | undefined>> = process.env,
+): SchemaReplayDecision {
+  if (!env.DATABASE_URL) {
+    return { replay: false, authority: SCHEMA_AUTHORITY, reason: 'no-database-url' };
+  }
+  if (env.SCHEMA_INVARIANTS_FORCE === 'true') {
+    return { replay: true, authority: SCHEMA_AUTHORITY, reason: 'forced' };
+  }
+  if (env.NODE_ENV === 'production') {
+    return { replay: false, authority: SCHEMA_AUTHORITY, reason: 'authority-owns-production' };
+  }
+  return { replay: true, authority: SCHEMA_AUTHORITY, reason: 'non-production' };
+}
 
 const MARKER_TABLE = '_schema_invariants';
 
@@ -627,8 +757,25 @@ async function recordFingerprint(): Promise<void> {
 export async function ensureSchemaInvariants(
   log: { info: (msg: string) => void; error: (obj: unknown, msg?: string) => void },
 ): Promise<void> {
-  if (!process.env.DATABASE_URL) {
+  const decision = schemaReplayDecision(process.env);
+
+  if (decision.reason === 'no-database-url') {
     log.info('ensureSchemaInvariants: DATABASE_URL unset, skipping');
+    return;
+  }
+
+  // OPS-07 — in production `prisma migrate deploy` has already run to
+  // completion in the start command, and it is the authority. Replaying DDL
+  // behind it is how a plain `ADD COLUMN` in a future migration turns into a
+  // 42701 crash-loop. Say so out loud; a silent skip is how the previous
+  // premise survived unexamined for months.
+  if (!decision.replay) {
+    log.info(
+      `ensureSchemaInvariants: skipped — ${decision.authority} is the schema authority in ` +
+        `production and has already run (apps/api/package.json "start"). Set ` +
+        `SCHEMA_INVARIANTS_FORCE=true for a deliberate recovery replay of ` +
+        `${STATEMENTS.length} statements. See docs/runbooks/schema-authority.md.`,
+    );
     return;
   }
 
@@ -677,6 +824,23 @@ export async function ensureSchemaInvariants(
     `ensureSchemaInvariants: ${applied}/${STATEMENTS.length} statements ran cleanly` +
       (alreadySatisfied > 0 ? ` (+${alreadySatisfied} already satisfied)` : ''),
   );
+
+  // OPS-07 — per-statement errors are logged above, but a boot log with 95
+  // info lines and two scattered errors reads as fine. One summary line at
+  // error level, naming the count, is the difference between "someone will
+  // notice" and "nobody did". This does NOT abort the boot: the schema
+  // authority is `prisma migrate deploy`, which already crash-loops the
+  // container when IT fails, and this replay is a backstop that must not be
+  // able to take the service down on its own.
+  const failed = STATEMENTS.length - applied - alreadySatisfied;
+  if (failed > 0) {
+    log.error(
+      { failed, total: STATEMENTS.length },
+      `ensureSchemaInvariants: ${failed} statement(s) FAILED — the schema may be incomplete ` +
+        'and the marker was NOT recorded, so this replays on the next boot. The authority is ' +
+        '`prisma migrate deploy`; see docs/runbooks/schema-authority.md.',
+    );
+  }
 
   if (applied + alreadySatisfied === STATEMENTS.length) {
     try {

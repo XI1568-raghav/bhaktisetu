@@ -66,7 +66,14 @@ export function renderWarmIntroMessage(
       "Hope you and family are well. I've been quietly building something for the",
       `last few months — Darshya (${shareUrl}) — a devotional super-app where`,
       "Indians and NRIs can book live darshan, pujas (with video proof), astrology",
-      "consults, and 80G donations to verified temples.",
+      // TC-01 / TC-08: this read "80G donations to verified temples". Neither
+      // half is true. COMPANY.donationLegal.HAS_80G_VERIFIED is false with pan
+      // and eightyGNumber null, is80GEligible() (lib/pdf-receipt.ts) needs a
+      // donee 80G number AND PAN from gaushala_profiles columns no route
+      // writes, and the temple list is filtered on isActive, not on any
+      // verification column. This message goes to real people over WhatsApp,
+      // so it is the least recoverable place to overstate either.
+      "consults, and donations with a receipt emailed to you.",
       "",
       "We're going live this week and I'm asking 5 close friends to share with 5",
       "people they think would genuinely benefit (parents who book pujas, NRI",
@@ -85,8 +92,8 @@ export function renderWarmIntroMessage(
     "Hope you're doing well. Quick founder-mode ask:",
     "",
     `I've been building Darshya (${shareUrl}) — a devotional super-app for`,
-    "Indian/NRI Hindus. Live darshan, video-proof pujas, astrology, 80G temple",
-    "donations. Going live this week.",
+    "Indian/NRI Hindus. Live darshan, video-proof pujas, astrology, temple",
+    "donations with an emailed receipt. Going live this week.",
     "",
     "Would really appreciate if you could share with 5 people in your network",
     "who might find it useful — parents/relatives who book pujas, NRI friends,",

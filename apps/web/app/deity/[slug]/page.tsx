@@ -2,17 +2,37 @@
 // deity right now. Programmatic-SEO play for long-tail "{deity} puja online"
 // queries. One file fans out to N deities via [slug] segment.
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getDeity, DEITIES } from '../../../lib/deities';
+// CI-06: 30 encyclopedia links point at a /deity/<slug> that does not exist,
+// and this route is dynamicParams=false so every one is a HARD 404. Seven of
+// them are spelling drift onto a deity that does have a page (murugan →
+// kartikeya, venkateswara → venkateshwara, bhairav → bhairava, …). Serving
+// those aliases here and 308ing them onto the canonical URL repairs the call
+// sites — including lib/festivals.ts and lib/cities.ts — without a second
+// copy of the mapping in every dataset. Same shape as SEO-06 on /temples.
+import { CONTENT_DEITY_SLUG_ALIASES } from '../../../lib/content-deity-link';
 import { getPujaTypes } from '../../../lib/api';
+// CM-10: the chip below is `uppercase tracking-wider`, so the raw enum used to
+// render as 'SPECIAL_OCCASION'.
+import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import { getMantrasForDeity } from '../../../lib/deity-mantras';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { withEightyG } from '../../../lib/eighty-g';
 
 export const revalidate = 3600;
 export const dynamicParams = false;
 
 export async function generateStaticParams() {
-  return DEITIES.map((d) => ({ slug: d.slug }));
+  return [
+    ...DEITIES.map((d) => ({ slug: d.slug })),
+    // The alias slugs render only to 308 (see below). They are deliberately
+    // NOT in app/sitemap.ts — one temple/deity, one advertised URL.
+    ...Object.keys(CONTENT_DEITY_SLUG_ALIASES).map((slug) => ({ slug })),
+  ];
 }
 
 interface Params {
@@ -26,11 +46,20 @@ function fmtINR(s: string): string {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
+  // CI-06: an alias slug only ever 308s; it must not advertise itself.
+  if (CONTENT_DEITY_SLUG_ALIASES[slug]) {
+    return { title: 'Deity', robots: { index: false, follow: true } };
+  }
   const d = getDeity(slug);
   if (!d) return { title: 'Deity' };
   return {
-    title: `${d.name} pujas online — verified pandits, video proof`,
-    description: `Book ${d.name} pujas online with verified pandits. ${d.popularPujas.join(', ')}. Mantra: ${d.mantra}. Video proof + 80G receipts.`,
+    // TC-08: "verified pandits" named a vetting step that does not run.
+    // Priest.isVerified / .verificationStatus / .aadhaarVerified have no
+    // writer outside prisma/seed.ts, and aadhaarVerified is read in one place
+    // (payment.service.ts) as a payout gate. Video proof is the part that is
+    // real, so it is the part the title sells.
+    title: `${d.name} pujas online — video proof on every booking`,
+    description: `Book ${d.name} pujas online at a temple you choose. ${d.popularPujas.join(', ')}. Mantra: ${d.mantra}. Video proof on every booking.${withEightyG(' 80G receipts.')}`,
     alternates: { canonical: `https://darshya.online/deity/${d.slug}` },
     openGraph: {
       title: `${d.name} — pujas, mantras, festivals`,
@@ -44,6 +73,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function DeityPage({ params }: Params) {
   const { slug } = await params;
+  // CI-06: an alias slug is served only to redirect. Never rendered, never
+  // self-canonical — the canonical page owns the link equity.
+  const canonical = CONTENT_DEITY_SLUG_ALIASES[slug];
+  if (canonical) permanentRedirect(`/deity/${canonical}`);
   const d = getDeity(slug);
   if (!d) notFound();
 
@@ -86,7 +119,7 @@ export default async function DeityPage({ params }: Params) {
           </span>
           <span className="text-xs text-surface-500">Festival: {d.festival}</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 mb-2">
+        <h1 className={`${H1.catalogue} mb-2`}>
           {d.name} <span className="text-2xl font-serif text-surface-500 ml-2">{d.sanskrit}</span>
         </h1>
         {d.consort ? (
@@ -140,7 +173,7 @@ export default async function DeityPage({ params }: Params) {
             </p>
             <Link
               href="/pujas"
-              className="inline-block px-5 py-2 bg-saffron-600 text-white rounded-md text-sm font-semibold hover:bg-saffron-700"
+              className={buttonClass('primary', 'md')}
             >
               Browse all pujas →
             </Link>
@@ -153,9 +186,11 @@ export default async function DeityPage({ params }: Params) {
                 className="rounded-xl border border-surface-200 bg-white p-5 hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-center justify-between mb-2 gap-3">
-                  <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
-                    {p.category}
-                  </span>
+                  {pujaCategoryLabel(p.category) && (
+                    <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
+                      {pujaCategoryLabel(p.category)}
+                    </span>
+                  )}
                   <span className="text-xs text-surface-500">{p.durationMinutes} min</span>
                 </div>
                 <h3 className="text-lg font-semibold text-surface-900 mb-1">{p.name}</h3>
@@ -195,7 +230,7 @@ export default async function DeityPage({ params }: Params) {
 
       <footer className="border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-2">
-          <strong>Why Darshya?</strong> Every {d.name} puja booking includes mandatory video proof of the ceremony, 80G donation receipt where applicable, and a verified pandit gated on Aadhaar.
+          <strong>Why Darshya?</strong> Every {d.name} puja booking includes mandatory video proof of the ceremony{withEightyG(', an 80G donation receipt where the donee is registered,')} and a pandit whose payout is gated on Aadhaar-based KYC — a payout gate, not an independent credential check.
         </p>
         <Link href="/deity" className="text-saffron-700 hover:underline">
           ← All deities

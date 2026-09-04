@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { Search, UserPlus, Phone, Mail, Calendar, HandHeart, CheckCircle2, Loader2, X, AlertCircle, Trash2 } from 'lucide-react';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
+import { serverErrorMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type Volunteer = {
   id: string;
@@ -97,7 +99,8 @@ function VolunteersContent() {
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setError(j.error ?? `Failed (${r.status})`);
+        // RES-09: `Failed (500)` was the whole message on a server error.
+        setError(serverErrorMessage(j, 'We could not save that volunteer. Please try again.'));
         setSaving(false);
         return;
       }
@@ -158,12 +161,12 @@ function VolunteersContent() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className={H1.portal} style={{ fontFamily: 'var(--font-display)' }}>Volunteers</h1>
+          <h1 className={H1.portal}>Volunteers</h1>
           <p className="text-sm mt-1 text-[var(--color-text-muted)]">{activeCount} active volunteer{activeCount === 1 ? '' : 's'}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]"
+          className={buttonClass('primary', 'md')}
         >
           <UserPlus className="w-4 h-4" />
           Add Volunteer
@@ -275,7 +278,7 @@ function VolunteersContent() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(42, 37, 32, 0.55)' }}>
-          <div className="rounded-xl shadow-lg w-full max-w-md p-6 bg-[var(--color-surface)] border border-[var(--color-border)]">
+          <div className="rounded-xl shadow-lg w-full max-w-md max-h-[90dvh] overflow-y-auto p-6 bg-[var(--color-surface)] border border-[var(--color-border)]">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-[var(--color-text)]" style={{ fontFamily: 'var(--font-display)' }}>Add Volunteer</h2>
               <button onClick={() => setShowModal(false)} className="text-[var(--color-text-faint)] hover:text-[var(--color-text)]">

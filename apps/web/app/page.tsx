@@ -3,47 +3,34 @@ import Link from 'next/link';
 import {
  ArrowRight,
  Play,
- Users,
  Shield,
  Video,
  Gift,
  Sparkles,
- Music,
- Calendar,
- Heart,
  Moon,
  ChevronDown,
- Zap,
- CheckCircle,
- Leaf,
- Flame,
- Stars,
- Compass,
- BookOpen,
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
-import { buttonClass } from '../components/ui/button-recipe';
 import { getTodayPanchang } from '../lib/api';
 import { getPlatformCounts } from '../lib/platform-stats';
-import Image from 'next/image';
-import TextReveal from '../components/motion/TextReveal';
+// ParallaxLayer is the only motion component this page actually renders.
+// TextReveal, ScrambleReveal and StickyHeadlinePin were imported here and
+// never used in the JSX — three dead imports the bundler still had to resolve,
+// and a StickyHeadlinePin that nobody could find on the page because it was
+// never mounted. TextReveal is still live inside the strip components.
 import ParallaxLayer from '../components/motion/ParallaxLayer';
-import ScrambleReveal from '../components/motion/ScrambleReveal';
-import StickyHeadlinePin from '../components/motion/StickyHeadlinePin';
 import { brandFaqJsonLd } from '../lib/jsonld';
-import { getTempleHero, getDeityImage, getContentImage, getProductImage, IMG_W } from '../lib/images';
+import { getTempleHero, getDeityImage, getContentImage, IMG_W, remoteSrcSet } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
 import { HomeHeroCta } from '../components/HomeHeroCta';
 import IntentTrio from '../components/home/IntentTrio';
 import ContinueJourneyCard from '../components/home/ContinueJourneyCard';
+import ThisWeek from '../components/home/ThisWeek';
+import WhatYouGet from '../components/home/WhatYouGet';
 import WorshipStrip from '../components/home/WorshipStrip';
 import WisdomStrip from '../components/home/WisdomStrip';
 import ConsultStrip from '../components/home/ConsultStrip';
-import ShopStrip from '../components/home/ShopStrip';
-import YatraStrip from '../components/home/YatraStrip';
-import TrustStrip from '../components/home/TrustStrip';
 import EmailCapture from '../components/EmailCapture';
-import NextFestivalStrip from '../components/home/NextFestivalStrip';
 import HowItWorks from '../components/home/HowItWorks';
 import HeroCopyVariant from '../components/home/HeroCopyVariant';
 import NriLaneAbTest from '../components/home/NriLaneAbTest';
@@ -176,15 +163,58 @@ export default async function HomePage() {
  <ParallaxLayer speed={0.12} maxOffset={48} className="hidden md:block">
  <div data-reveal="zoom-rotate" data-delay="1" className="grid grid-cols-2 gap-2.5">
  <Link href="/darshan" className="col-span-2 rounded-xl overflow-hidden relative group" style={{ border: '1px solid var(--color-border)' }}>
- <Image
+ {/* HOME-01 (2026-08-20): this was <Image … priority unoptimized>. `priority`
+     makes next/image call ReactDOM.preload (node_modules/next/dist/client/
+     image-component.js:220), and the last real build proves what that emitted:
+
+       .next/server/app/index.html, one image preload in <head> —
+       <link rel="preload" as="image" href="…/500px-The_Golden_Temple_of_Amrithsar_7.jpg"/>
+
+     no imagesrcset, no imagesizes, no media. The box it fills is inside
+     ParallaxLayer's `hidden md:block`, so on every phone the browser fetched
+     61,099 B at the highest priority there is, into something display:none that
+     is never painted. PERF-02 banned this exact shape in app/layout.tsx; it was
+     living one level down.
+
+     Now a plain <img> (images.unoptimized is true, so <Image> rendered a bare
+     <img> anyway and its prop type omits srcSet) with a `sizes` that tells the
+     truth about the phone slot. Measured candidates: 250px 16,790 B, 330px
+     28,510 B, 500px 61,099 B.
+       phone  <768px  → declared 1px  → 250px candidate →  16,790 B (was 61,099)
+       md-lg          → >= 464 CSS px → 500px candidate →  61,099 B (unchanged)
+       >= 1216px      →    528 CSS px → 500px candidate →  61,099 B (unchanged)
+     No fetchPriority: the tag sits at byte ~22.9k of the document, so the
+     preload scanner still finds it in the first network chunk, and PERF-02's
+     rule against priority hints on maybe-unpainted resources holds here too. */}
+ {/* HOME-01 (2026-08-21) — why there is a 120 px candidate. Dropping
+     `priority` stopped next/image emitting a preload, but REACT 19 emits one of
+     its own for the first non-lazy <img> it renders and copies `sizes` across.
+     Read out of the SSR'd document on 2026-08-21, it is the page's only
+     <link rel="preload">:
+       <link rel="preload" as="image"
+             imagesrcset="…250px… 250w, …330px… 330w, …500px… 500w"
+             imagesizes="(max-width: 767px) 1px, …">
+     It carries no `media`, and a React-emitted preload cannot be given one, so
+     a phone DOES fetch a candidate for a box inside `hidden md:block` —
+     display:none, never painted. Every other <img> on this page is
+     loading="lazy", which makes this preload the WHOLE of a phone's at-load
+     image budget.
+     120 is a real Commons ladder step, so the 1 px declared slot resolves to it
+     instead of to 250. Measured over the wire 2026-08-21 (HEAD to Commons):
+     120px = 4,543 B vs 250px = 16,790 B — 12,247 B, 72.9% of that budget, no
+     longer spent on an invisible box.
+     Nothing that PAINTS can select it: the box exists only at >=768 px, where
+     the narrowest slot is (768 - 96) / 2 = 336 CSS px, and 336 already resolves
+     to the 500 px candidate at DPR 1. Desktop is byte-for-byte unchanged. */}
+ <img
  src={getTempleHero('golden-temple', IMG_W.CARD)}
+ srcSet={remoteSrcSet(getTempleHero('golden-temple', IMG_W.CARD), [120, 250, 330, IMG_W.CARD])}
  alt="Sri Harmandir Sahib (Golden Temple), live darshan"
  width={500}
  height={250}
- sizes="(max-width: 768px) 100vw, 360px"
+ sizes="(max-width: 767px) 1px, (max-width: 1215px) calc((100vw - 6rem) / 2), 528px"
  className="w-full h-40 object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
- priority
- unoptimized
+ decoding="async"
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -226,134 +256,28 @@ export default async function HomePage() {
  <ContinueJourneyCard />
  <IntentTrio liveDarshanTemples={counts.liveDarshanTemples} />
 
- {/* ═══ NEXT FESTIVAL countdown — relocated below intent trio per user feedback 2026-06-07 ═════ */}
- <NextFestivalStrip />
+ {/* ═══ THE DATED SURFACE ═══════════════════════════════════════════
+     Supersedes NextFestivalStrip, which showed exactly one festival and had
+     no browse-fallback story of its own. Urgency here is a tithi, not a
+     discount timer — the deadline is real, which is the only kind of urgency
+     the CCPA dark-pattern guidelines leave open. Every CTA resolves against
+     the live catalogue; when nothing resolves the card offers the guide
+     rather than a dead /pujas/<slug>. */}
+ <ThisWeek />
 
  {/* CM-13: the answer to "how do I know the puja actually happened?", placed
      where the buyer asks it rather than ten screens down. */}
  <HowItWorks />
 
- {/* ═══ CATEGORY COLOR STRIP — 5 brand worlds visible above fold ═══════ */}
- {/* User complaint 2026-06-05: above-fold reads as saffron monoculture. */}
- {/* This strip immediately signals Worship saffron, Library indigo, Astrology indigo, Yatra emerald, Shop amber. */}
- <section aria-label="Browse by category" className="py-5 md:py-7" style={{ background: 'var(--color-bg)' }}>
- <div className="container-wide">
- <div className="flex md:grid md:grid-cols-5 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
- {[
- { label: 'Worship', sub: 'Darshan, Puja, Aarti', href: '/pujas', Icon: Flame, bg: '#FFF8F0', border: '#FDD8AF', text: '#7d4e1f', icon: '#9e6229' },
- { label: 'Library', sub: '500 plus wisdom guides', href: '/discover', Icon: BookOpen, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
- { label: 'Astrology', sub: 'Kundli, Horoscope, Doshas', href: '/astrology', Icon: Stars, bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', icon: '#4F46E5' },
- { label: 'Yatra', sub: 'Pilgrimage, Wellness', href: '/yatra', Icon: Compass, bg: '#ECFDF5', border: '#A7F3D0', text: '#065F46', icon: '#059669' },
- { label: 'Shop', sub: 'Prasad, Idols, Rudraksha', href: '/store', Icon: Heart, bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: '#D97706' },
- ].map((cat) => (
- <Link
- key={cat.label}
- href={cat.href}
- prefetch={false}
- className="snap-start shrink-0 md:shrink flex flex-col items-start justify-between gap-2 min-w-[164px] md:min-w-0 p-3.5 rounded-xl card-hover transition-all"
- style={{ background: cat.bg, border: `1px solid ${cat.border}` }}
- >
- <cat.Icon className="w-5 h-5" style={{ color: cat.icon }} />
- <div>
- <p className="text-sm font-semibold" style={{ color: cat.text }}>{cat.label}</p>
- <p className="text-xs mt-0.5" style={{ color: cat.text, opacity: 0.75 }}>{cat.sub}</p>
- </div>
- </Link>
- ))}
- </div>
- </div>
- </section>
+ {/* The five things the system refuses to operate without. Replaces the four
+     hardcoded trust cards that used to sit here — two of which had rotted into
+     claims the code contradicts. Every row is derived from a module with a
+     drift test rather than written as a literal. */}
+ <WhatYouGet />
 
- {/* ═══ QUICK ACTIONS — 6 chip row (IA P4) ═══════════════════════════ */}
- <section aria-label="Quick actions" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
- <div className="container-wide">
- <div className="flex md:grid md:grid-cols-6 gap-2.5 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scrollbar-thin">
- {[
- { label: 'Darshan', href: '/darshan', Icon: Video, color: 'var(--color-primary)' },
- { label: 'Book Puja', href: '/pujas', Icon: Flame, color: 'var(--color-primary)' },
- { label: 'Kundli', href: '/astrology/kundli', Icon: Stars, color: '#4f46e5' },
- { label: 'Panchang', href: '/panchang', Icon: Calendar, color: '#d97706' },
- { label: 'Donate', href: '/donations', Icon: Heart, color: '#059669' },
- { label: 'Yatra', href: '/yatra', Icon: Compass, color: '#059669' },
- ].map((chip) => (
- <Link
- key={chip.label}
- href={chip.href}
- prefetch={false}
- className="snap-start shrink-0 md:shrink flex flex-col items-center justify-center gap-1.5 min-w-[88px] md:min-w-0 px-3 py-3 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
- >
- <chip.Icon className="w-5 h-5" style={{ color: chip.color }} />
- <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{chip.label}</span>
- </Link>
- ))}
- </div>
- </div>
- </section>
 
- {/* ═══ TRUST STRIP — verified, video-proof, 80G, NRI-friendly ═══ */}
- <section aria-label="Trust signals" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="container-wide">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- {[
- { icon: Shield, title: 'Verified Temples', desc: 'Manager-signed, on-site audit', accent: 'var(--color-primary)' },
- { icon: Video, title: 'Video Proof', desc: 'Every puja recorded + shared', accent: '#059669' },
- { icon: CheckCircle, title: '80G Receipts', desc: 'Tax-deductible donations', accent: '#059669' },
- { icon: Heart, title: 'NRI Friendly', desc: 'Book from 40+ countries', accent: 'var(--color-primary)' },
- ].map((t, i) => (
- <div key={t.title} data-reveal="cascade" data-delay={String(i + 1)} className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
- <t.icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: t.accent }} />
- <div>
- <p className="text-xs font-semibold leading-tight" style={{ color: 'var(--color-text)' }}>{t.title}</p>
- <p className="text-xs mt-0.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>{t.desc}</p>
- </div>
- </div>
- ))}
- </div>
- </div>
- </section>
 
- {/* animated divider */}
- <div data-reveal="fade" className="scroll-divider max-w-xs mx-auto" />
 
- {/* ═══ WHAT WE OFFER — cascade card grid ════════════════════════════ */}
- <section className="py-6 md:py-8">
- <div className="container-wide">
- <div className="flex items-center gap-2.5 mb-3">
- <Zap className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
- <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>{t('everythingOneApp')}</p>
- </div>
- <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug mb-5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('everythingTitle')}
- </h2>
- <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
- {[
- { title: t('featLiveDarshan'), desc: t('featLiveDarshanDesc'), href: '/darshan' },
- { title: t('featVerifiedPujas'), desc: t('featVerifiedPujasDesc'), href: '/pujas' },
- { title: t('featDharmicYatra'), desc: t('featDharmicYatraDesc'), href: '/yatra' },
- { title: t('featAiPandit'), desc: t('featAiPanditDesc'), href: '/ask-pandit' },
- { title: t('featSacredContent'), desc: t('featSacredContentDesc'), href: '/content' },
- { title: t('featAstrology'), desc: t('featAstrologyDesc'), href: '/astrology' },
- { title: t('featWellness'), desc: t('featWellnessDesc'), href: '/wellness' },
- ].map((item, i) => (
- <Link
- key={item.title}
- href={item.href}
- data-reveal="cascade"
- data-delay={String(i + 1)}
- className="group flex gap-2.5 p-3 rounded-xl transition-all card-hover"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
- >
- <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
- <div>
- <h3 className="text-sm font-medium group-hover:underline" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
- <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{item.desc}</p>
- </div>
- </Link>
- ))}
- </div>
- </div>
- </section>
 
  {/* ═══ LIVE DARSHAN — cinematic image reveal ════════════════════════ */}
  <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
@@ -372,15 +296,47 @@ export default async function HomePage() {
 
  <Link href="/darshan" data-reveal="cinematic" className="block relative rounded-xl overflow-hidden card-hover group" style={{ border: '1px solid var(--color-border)' }}>
  <div className="aspect-[16/9] relative">
- <Image
- src={getTempleHero('mahakaleshwar', IMG_W.WIDE)}
- alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
- width={1280}
- height={720}
- sizes="(max-width: 768px) 100vw, 960px"
- className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
- loading="lazy"
- unoptimized
+ {/* HOME-01: the single largest image on the page. images.unoptimized is true
+     in next.config.ts, so Next emits no srcset of its own — without the
+     explicit srcSet below EVERY viewport pulled the 960px / 189,024 B
+     candidate, a 375px phone included (measured mobile saving: 132,270 B).
+
+     The SOURCE width stays WIDE. The painted slot is ~1088 CSS px
+     (.container-wide = 72rem minus 2rem gutters at >=1024px), so the triage
+     doc's advice to drop to IMG_W.CARD (500) would be a 2.18x upscale on the
+     biggest picture on the homepage. The sizes attribute names 1088px for the
+     same reason — 960px understated the slot and made the browser pick one
+     step too small on a 2x screen.
+
+     Plain <img>, not next/image: images.unoptimized is true so <Image> renders a
+     bare <img> anyway, and its prop type OMITS srcSet — the same reason
+     app/pujas/page.tsx:679 uses <img> for the card srcSet.
+
+     CANDIDATE LIST CORRECTED 2026-08-20. It read [CARD, WIDE, HERO]. Adding a
+     candidate does not only give small screens a smaller file — it gives large
+     ones a LARGER file, and the three candidates measure 56,754 / 189,024 /
+     322,706 B. Against sizes="…1088px" a 1x desktop needs 1088 CSS px and picks
+     1280. So does every phone whose DPR x CSS width clears 960: the crossover
+     is DPR 2.56 at 375 CSS px, 2.46 at 390, 2.33 at 412 — so a Pixel 7 (412 @
+     2.625) and every DPR-3 handset take 1280 as well. All of them used to take
+     the 960 src. HERO therefore ADDED 133,682 B to desktop and to the densest
+     half of the phone fleet, to buy back a 1.13x upscale on the image furthest
+     below the fold. Dropping it keeps the whole
+     1x-phone win (375 CSS px → 500px candidate → 56,754 B) and returns every
+     other device to the 189,024 B it paid before any srcSet existed. */}
+ <img
+   src={getTempleHero('mahakaleshwar', IMG_W.WIDE)}
+   srcSet={remoteSrcSet(getTempleHero('mahakaleshwar', IMG_W.WIDE), [
+     IMG_W.CARD,
+     IMG_W.WIDE,
+   ])}
+   alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
+   width={1280}
+   height={720}
+   sizes="(max-width: 768px) 100vw, 1088px"
+   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+   loading="lazy"
+   decoding="async"
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
  <div className="absolute top-3 left-3 flex items-center gap-2">
@@ -419,10 +375,45 @@ export default async function HomePage() {
  </p>
  <div className="grid grid-cols-5 grid-rows-2 gap-2 mb-4" style={{ height: '160px' }}>
  <div className="col-span-3 row-span-2 rounded-lg overflow-hidden" data-parallax="0.04">
- <img src={getDeityImage('lord-shiva', 'portrait', IMG_W.CARD)} alt="Puja ceremony" width={480} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ {/* HOME-01 (2026-08-20): 3 of 5 columns of a 494 CSS px card body, so the slot
+     is ~293 px on desktop and ~(60vw - 46px) below md — nowhere near the 500 px
+     this always downloaded. Candidates measure 250px 17,262 B / 330px 27,483 B /
+     500px 55,881 B, so a 1x desktop now saves 28,398 B and a 1x phone 38,619 B.
+     A 2x screen still resolves to 500 px, unchanged. */}
+ <img
+   src={getDeityImage('lord-shiva', 'portrait', IMG_W.CARD)}
+   srcSet={remoteSrcSet(getDeityImage('lord-shiva', 'portrait', IMG_W.CARD), [250, 330, IMG_W.CARD])}
+   sizes="(max-width: 767px) calc(60vw - 46px), 293px"
+   alt="Puja ceremony"
+   width={480}
+   height={320}
+   className="w-full h-full object-cover"
+   loading="lazy"
+   decoding="async"
+ />
  </div>
  <div className="col-span-2 rounded-lg overflow-hidden">
- <img src={getContentImage('aarti', 'thumbnail', IMG_W.THUMB)} alt="Aarti" width={320} height={320} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+ {/* HOME-01 (2026-08-23 re-rank): this was the only <img> on the homepage with
+     neither srcSet nor sizes, so every device took the 250px / 15,277 B
+     candidate. Slot maths: .container-wide is 1088 CSS px of content at
+     >=1024px, the md:grid-cols-2 gap-5 card is (1088-20)/2 = 534, p-5 leaves a
+     494px body, and grid-cols-5 gap-2 makes col-span-2 = 2*92.4 + 8 = ~193px.
+     Below md the same chain gives ~(40vw - 34px) — 116px at a 375px viewport.
+     Candidates are [120, 250] and deliberately NOT 500: 1x phone takes 120 /
+     5,144 B (-10,133 B) and every other device still resolves to 250, exactly
+     what it pays today. Offering a wider step is the trap documented on the
+     Live Darshan tile, where it ADDED 133,682 B to desktop and DPR-3 phones. */}
+ <img
+   src={getContentImage('aarti', 'thumbnail', IMG_W.THUMB)}
+   srcSet={remoteSrcSet(getContentImage('aarti', 'thumbnail', IMG_W.THUMB), [120, IMG_W.THUMB])}
+   sizes="(max-width: 767px) calc(40vw - 34px), 193px"
+   alt="Aarti"
+   width={320}
+   height={320}
+   className="w-full h-full object-cover"
+   loading="lazy"
+   decoding="async"
+ />
  </div>
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center" style={{ background: 'var(--color-art-3)' }}>
  <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>HD</p>
@@ -484,9 +475,25 @@ export default async function HomePage() {
  <p className="text-sm font-semibold mt-0.5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}></p>
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Lucky: 7</p>
  </div>
- {/* Kundli chart icon */}
+ {/* CM-11 / AW-02: this tile was a `data-counter` count-up reading "15+"
+     above the word "Astrologers". Fifteen was not an estimate — it is the
+     size of the in-memory astrologer fixture, and AW-02 ("the LAST door
+     that still sold the 15 invented astrologers") rebound the directory,
+     the profile page, the reviews and booking endpoints and the Expo
+     app's only astrologer source onto real supply: three approved
+     profiles. The homepage was the door it missed, advertising the
+     fixture's headcount at five times the real roster, animated so it
+     read as a live metric.
+
+     The replacement follows the ruling lib/platform-stats.ts already made
+     for the pandit headcount — "the honest move on a trust strip is to
+     make a claim that is not about volume at all". This makes a claim
+     about vetting instead, which is true of every profile the directory
+     will serve. Restore a number here only if it comes from a server
+     count, the way `verifiedTempleClaim` does. Guarded by
+     __tests__/funnel-inventory-claims.test.tsx. */}
  <div className="col-span-2 rounded-lg p-2.5 flex flex-col justify-center items-center text-center" style={{ background: 'rgba(79, 70, 229, 0.10)' }}>
- <p data-counter data-counter-target="15+" className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#4f46e5' }}>15+</p>
+ <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#4f46e5' }}>Verified</p>
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Astrologers</p>
  </div>
  </div>
@@ -515,246 +522,18 @@ export default async function HomePage() {
  </section>
 
  {/* animated divider */}
- <div data-reveal="fade" className="scroll-divider max-w-xs mx-auto" />
 
- {/* ═══ AI PANDIT — blur-in chat mockup ════════════════════════════ */}
- <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="container-wide">
- <div className="grid md:grid-cols-2 gap-8 items-center">
- <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('aiGuideLabel')}</p>
- <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('aiGuideTitle')}
- </h2>
- <p data-reveal="up" data-delay="1" className="text-xs leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- {t('aiGuideDesc')}
- </p>
- <div data-reveal="spring" data-delay="2">
- <Link href="/ask-pandit" className={buttonClass('primary', 'md', 'btn-press')}>
- {t('askYourQuestion')} <ArrowRight className="w-3.5 h-3.5" />
- </Link>
- </div>
- </div>
 
- <div data-reveal="glow" data-delay="1" className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface-2, #fff)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
- <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: '1px solid var(--color-divider)' }}>
- <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'var(--color-art-2)' }}>
- <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
- </div>
- <div>
- <p className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{t('panditJi')}</p>
- <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>{t('aiSpiritualGuide')}</p>
- </div>
- </div>
- <div className="p-4 space-y-3">
- <div className="flex justify-end">
- <div className="px-3 py-2 rounded-2xl rounded-br-md text-xs max-w-[80%]" style={{ background: 'var(--color-primary)', color: '#fff' }}>
- What does the Gita say about duty?
- </div>
- </div>
- <div className="flex justify-start">
- <div className="px-3 py-2 rounded-2xl rounded-bl-md text-xs max-w-[85%]" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
- <p className="mb-1.5">The Bhagavad Gita teaches us in Chapter 2, Verse 47:</p>
- <p className="italic text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>{"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"}</p>
- <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>&quot;You have the right to perform your duty, but not to the fruits of your actions.&quot;</p>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
- </section>
 
- {/* ═══ BHAKTI STORE — showcase ═══════════════════════════════════ */}
- <section className="py-6 md:py-8">
- <div className="container-wide">
- <div className="grid md:grid-cols-2 gap-8 items-center">
- <div>
- <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('bhaktiStoreLabel')}</p>
- <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('bhaktiStoreTitle')}
- </h2>
- <p data-reveal="up" data-delay="1" className="text-xs leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- {t('bhaktiStoreDesc')}
- </p>
- <div data-reveal="up" data-delay="2" className="flex flex-wrap gap-2 mb-5">
- {['Puja Essentials', 'Rudraksha & Malas', 'Idols', 'Books', 'Organic'].map((tag) => (
- <span key={tag} className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text-muted)' }}>{tag}</span>
- ))}
- </div>
- <div data-reveal="spring" data-delay="3">
- <Link href="/store" className={buttonClass('primary', 'md', 'btn-press')}>
- {t('shopEssentials')} <ArrowRight className="w-3.5 h-3.5" />
- </Link>
- </div>
- </div>
- <div className="grid grid-cols-2 gap-3">
- {[
- { name: 'Brass Puja Thali', price: '₹1,299', img: getProductImage('brass-puja-thali', IMG_W.THUMB) },
- { name: 'Rudraksha Mala', price: '₹599', img: getProductImage('rudraksha-mala', IMG_W.THUMB) },
- { name: 'Sandalwood Incense', price: '₹249', img: getProductImage('incense-sticks', IMG_W.THUMB) },
- { name: 'Ganesh Murti', price: '₹2,499', img: getProductImage('ganesh-murti', IMG_W.THUMB) },
- ].map((p, i) => (
- <div key={p.name} data-reveal="cascade" data-delay={String(i + 1)} className="rounded-xl overflow-hidden card-hover" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <div className="aspect-square">
- <img src={p.img} alt={p.name} width={250} height={250} className="w-full h-full object-cover" loading="lazy" decoding="async" />
- </div>
- <div className="p-2.5">
- <p className="text-xs font-medium truncate" style={{ color: 'var(--color-text)' }}>{p.name}</p>
- <p className="text-xs mt-0.5" style={{ color: 'var(--color-primary)' }}>{p.price}</p>
- </div>
- </div>
- ))}
- </div>
- </div>
- </div>
- </section>
-
- {/* ═══ MORE FEATURES — cascade compact row ═══════════════════════ */}
- <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="container-wide">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- {[
- { title: t('gauSevaTitle'), desc: t('gauSevaDesc'), href: '/gaushala', icon: Heart },
- { title: t('panchangTitle'), desc: t('panchangDesc'), href: '/panchang', icon: Calendar },
- { title: t('contentTitle'), desc: t('contentDesc'), href: '/content', icon: Music },
- { title: t('wellnessTitle'), desc: t('wellnessDesc'), href: '/wellness', icon: Leaf },
- ].map((item, i) => (
- <Link
- key={item.title}
- href={item.href}
- prefetch={false}
- data-reveal="cascade"
- data-delay={String(i + 1)}
- className="group p-3 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
- >
- <item.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-primary)' }} />
- <h3 className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
- <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{item.desc}</p>
- </Link>
- ))}
- </div>
- </div>
- </section>
-
- {/* ═══ FINAL CTA — cinematic + spring ════════════════════════════ */}
- <section className="py-6 md:py-8">
- <div className="container-wide text-center">
- <h2 data-reveal="cinematic" className="text-xl sm:text-2xl font-semibold tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- {t('finalCtaTitle')}
- </h2>
- <p data-reveal="up" data-delay="1" className="text-xs max-w-sm mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
- {t('finalCtaDesc')}
- </p>
- <div data-reveal="spring" data-delay="2" className="flex items-center justify-center gap-3">
- <Link href="/auth/login" className={buttonClass('primary', 'md', 'btn-press')}>
- {tCommon('getStarted')} <ArrowRight className="w-3.5 h-3.5" />
- </Link>
- <Link
- href="/temples"
- className={buttonClass('secondary', 'md')}
- >
- {t('exploreFirst')}
- </Link>
- </div>
- </div>
- </section>
 
  {/* ═══ 5-CATEGORY DISCOVERY STRIPS ═══════════════════════════════════ */}
  <WorshipStrip liveDarshanTemples={counts.liveDarshanTemples} />
  <WisdomStrip />
  <ConsultStrip />
- <ShopStrip />
- <YatraStrip />
 
  {/* ═══ A/B nri_lane_above_fold — below slot (R-Q1-E-009) ═════════════ */}
  <NriLaneAbTest slot="below" />
 
- {/* ═══ LIBRARY TEASER — 4-card row mirroring Library mega-panel (IA P4) ═══ */}
- <section aria-label="Discover the Library" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
- <div className="container-wide">
- <div className="flex items-end justify-between mb-5">
- <div>
- <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#4f46e5' }}>Library</p>
- <h2 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- 500+ guides across scripture, practice, saints and the calendar.
- </h2>
- </div>
- <Link href="/discover" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#4f46e5' }}>
- Browse all <ArrowRight className="w-3 h-3" />
- </Link>
- </div>
- <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
- {[
- { Icon: BookOpen, title: 'Scriptures', desc: 'Vedas, Upanishads, Puranas, Gita, Ramayana.', href: '/discover#scriptures' },
- { Icon: Music, title: 'Devotional', desc: 'Aarti, chalisa, mantra, bhajan, sankalp.', href: '/discover#practice' },
- { Icon: Users, title: 'Saints & Deities', desc: '12 bhakti saints, 10 mahavidyas, navadurga.', href: '/discover#saints' },
- { Icon: Calendar, title: 'Calendar & Cosmology', desc: 'Festivals, tithi, nakshatra, ekadashi.', href: '/discover#cosmology' },
- ].map((card) => (
- <Link
- key={card.title}
- href={card.href}
- prefetch={false}
- className="group flex flex-col gap-2 p-4 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
- >
- <card.Icon className="w-5 h-5" style={{ color: '#4f46e5' }} />
- <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
- <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
- </Link>
- ))}
- </div>
- <div className="sm:hidden mt-4 text-center">
- <Link href="/discover" className="tap-safe items-center gap-1 text-xs font-medium" style={{ color: '#4f46e5' }}>
- Browse all 500+ guides <ArrowRight className="w-3 h-3" />
- </Link>
- </div>
- </div>
- </section>
-
- {/* ═══ YATRA TEASER — 3-card emerald row per audit §3 delta #1 ═══════════ */}
- <section aria-label="Pilgrimage circuits" className="py-6 md:py-8" style={{ background: 'var(--color-bg)' }}>
- <div className="container-wide">
- <div className="flex items-end justify-between mb-5">
- <div>
- <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: '#059669' }}>Yatra</p>
- <h2 className="text-xl sm:text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Walk the sacred circuits of India. Char Dham, 12 Jyotirlinga, 62 Tirth.
- </h2>
- </div>
- <Link href="/yatra" className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
- Plan a trip <ArrowRight className="w-3 h-3" />
- </Link>
- </div>
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- {[
- { Icon: Compass, title: 'Char Dham', desc: 'Yamunotri, Gangotri, Kedarnath, Badrinath. Himalayan moksha route.', href: '/pilgrimage/char-dham' },
- { Icon: Flame, title: '12 Jyotirlinga', desc: 'Shiva self-manifest lights from Somnath to Rameswaram.', href: '/jyotirlinga' },
- { Icon: Leaf, title: '62 Tirth Guides', desc: 'Darshan timings, dress code, vip-darshan tips per shrine.', href: '/tirth' },
- ].map((card) => (
- <Link
- key={card.title}
- href={card.href}
- prefetch={false}
- className="group flex flex-col gap-2 p-4 rounded-xl card-hover transition-all"
- style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
- >
- <card.Icon className="w-5 h-5" style={{ color: '#059669' }} />
- <h3 className="text-sm font-semibold group-hover:underline" style={{ color: 'var(--color-text)' }}>{card.title}</h3>
- <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{card.desc}</p>
- </Link>
- ))}
- </div>
- <div className="sm:hidden mt-4 text-center">
- <Link href="/yatra" className="tap-safe items-center gap-1 text-xs font-medium" style={{ color: '#059669' }}>
- Plan a trip <ArrowRight className="w-3 h-3" />
- </Link>
- </div>
- </div>
- </section>
-
- <TrustStrip verifiedTemples={counts.verifiedTemples} />
 
  {/* Daily-panchang waitlist — single-field email capture, source-tagged for funnel */}
  <section className="container-prose py-12">

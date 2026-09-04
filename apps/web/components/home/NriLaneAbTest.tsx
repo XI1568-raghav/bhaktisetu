@@ -71,7 +71,7 @@ export default function NriLaneAbTest({ slot }: Props) {
                 className="text-xs mt-0.5 leading-snug"
                 style={{ color: '#7d4e1f', opacity: 0.8 }}
               >
-                Pandit-verified, video proof delivered same day, 80G receipt to your PAN.
+                A recording of the ceremony, with your name and gotra spoken in it.
               </p>
             </div>
           </div>

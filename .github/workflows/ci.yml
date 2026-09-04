@@ -29,7 +29,37 @@ jobs:
   verify:
     name: Lint + Type + Test + Build
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # Raised 12 -> 25 on 2026-09-04. MEASURED, not guessed, from the Actions API:
+    #
+    #   August 2026    70 runs, 530 billed min, avg 7.6 min/run, 61 SUCCESS
+    #   September 1-4  10 runs,  96 billed min, avg 9.6 min/run,  0 success,
+    #                  9 cancelled, 1 failure
+    #
+    # Nothing structural broke. The suites simply outgrew the ceiling: every
+    # September run is killed at 12 minutes with `@poojly/web` still in flight.
+    # The completed packages all PASS -- shared, api-client, api (287 files) and
+    # mobile (34) -- so the run is thrown away after doing most of the work.
+    #
+    # A job killed at the cap costs the full 12 minutes and produces NO verdict,
+    # which is strictly worse than letting it finish: `timeout-minutes` bills
+    # actual duration, not the cap, so a higher ceiling costs nothing on runs
+    # that finish sooner. It only stops paying for nothing.
+    #
+    # Free-tier check (cap 2000 min/mo, docs/free-tier-budgets.md): at ~70
+    # runs/mo and an expected ~15-18 min once web completes, ci.yml lands near
+    # ~1050 min/mo against August's actual 530. That fits, but it is the largest
+    # single line item -- so batch pushes rather than pushing per commit, which
+    # is already the CLAUDE.md rule and matters more now than it did.
+    #
+    # 25 is deliberately above the expected 15-18: a ceiling that sits on top of
+    # the expected duration converts ordinary runner variance into another
+    # verdict-free run, which is the failure this comment exists to end.
+    #
+    # NOTE: a timed-out job reports as `cancelled`, NOT `failure` -- which reads
+    # like "superseded by a newer push" and is why nine consecutive dead runs
+    # went unnoticed. If CI says cancelled, check the job duration against this
+    # number before assuming a push cancelled it.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -60,6 +90,78 @@ jobs:
 
       - name: Test
         run: pnpm turbo test --filter=!@poojly/remotion-pitch
+
+      # OPS-01 / OPS-06 guards. `turbo test` is per-package and the repo-root
+      # vitest project (which owns `scripts/**/*.test.mjs`) is not in the task
+      # graph, so nothing under scripts/ has ever run in CI. These three files
+      # assert that the production monitors can still report failure and that
+      # the rollback lever the runbook depends on still exists - guards that
+      # never run are exactly the class of defect being fixed here.
+      #
+      # Named explicitly rather than running `vitest run scripts/`: seven other
+      # files under scripts/ fail on a clean tree today (five are plain scripts
+      # with no vitest suite in them, so vitest errors "No test suite found").
+      # Running the whole directory would red CI for pre-existing reasons and
+      # the step would be deleted within a day. Fixing those is tracked
+      # separately; widen this glob once they pass.
+      #
+      # The two backup files were added to this list on 2026-08-21 (OPS-02 /
+      # OPS-03). `scripts/backup/test/backup.test.mjs` had existed since
+      # 2026-06-14 and had never executed anywhere: not in `turbo test` (wrong
+      # project), not here (not named). The guard on the one script that decides
+      # whether this product has a restore point was dead the whole time.
+      #
+      # Windows note for whoever runs these locally: the three
+      # `scripts/backup/*.mjs` files were CRLF in the working tree until
+      # 2026-08-21, and vitest's transform fails on a CRLF `.mjs` with
+      # `SyntaxError: Invalid or unexpected token` pointing at the IMPORT line
+      # in the test rather than at the module. `.gitattributes` already says
+      # `* text=auto eol=lf`, so the index was always LF and CI was never
+      # affected — only the Windows checkout. If it reappears, re-run
+      # `git add --renormalize .`.
+      #
+      # Two more added 2026-09-04, and they were very nearly the bug this block
+      # already warns about. backup-verification.test.mjs (27 tests) and
+      # db-backup-workflow.test.mjs (11) shipped in 94811871 as the guards for
+      # OPS-02 -- and nothing ran them: not `turbo test` (scripts/ is not a
+      # workspace package), not the root `test:unit` (CI never invokes it), and
+      # not this step, which names its files explicitly. 712 lines of guard that
+      # could never fail, added by the very commit whose subject is a backup
+      # reporting success without doing anything. Caught by the pre-merge review,
+      # because CI had nothing to catch it with.
+      #
+      # The rule this encodes: a test file under scripts/ is invisible until it
+      # is named HERE. Adding one without editing this list ships a dead guard.
+      #
+      # Two more added 2026-08-28 (OPS-02/03/08/10/11):
+      #   scripts/test/ops-runbook-honesty.test.mjs — asserts the ops runbooks
+      #     still name the three backup secrets, still dispatch the guarded copy
+      #     of db-backup.yml, still document the offsite restore path, and that
+      #     the superseded multi-region/DR documents stay marked superseded.
+      #   scripts/test/secret-scan.test.mjs — the OPS-11 pre-commit credential
+      #     scanner, plus assertions that .githooks/pre-commit actually invokes
+      #     it before its early exit and that the root `prepare` installs hooks.
+      #
+      # KNOWN GAP, stated rather than papered over: this workflow carries
+      # `paths-ignore: docs/**, **/*.md`, so a DOCS-ONLY pull request skips it
+      # and the runbook assertions do not run. They run on any PR that also
+      # touches code, and the secret-scan half is code either way. Widening the
+      # filter would cost ~5 min of free-tier budget per docs commit
+      # (docs/free-tier-budgets.md), which is why it was not done here.
+      #
+      # ~12s on an already-installed runner => ~16 min/mo at ~80 runs.
+      - name: Ops guards (production monitoring + rollback lever + backups)
+        run: >-
+          pnpm exec vitest run
+          scripts/agents/health-smoke.test.mjs
+          scripts/agents/prod-monitoring-can-fail.test.mjs
+          scripts/agents/deploy-rollback-lever.test.mjs
+          scripts/backup/test/backup.test.mjs
+          scripts/backup/test/backup-integrity.test.mjs
+          scripts/backup/test/backup-verification.test.mjs
+          scripts/backup/test/db-backup-workflow.test.mjs
+          scripts/test/ops-runbook-honesty.test.mjs
+          scripts/test/secret-scan.test.mjs
 
       - name: Build
         run: pnpm turbo build --filter=!@poojly/remotion-pitch

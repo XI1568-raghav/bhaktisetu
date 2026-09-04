@@ -45,10 +45,23 @@ async function getCommissions(query = '') {
   return res;
 }
 
+const BOOKING_ID_1 = 'aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const BOOKING_ID_2 = 'aaaaaaa2-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const BOOKING_ID_3 = 'aaaaaaa3-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const STORE_ORDER_ID_1 = 'bbbbbbb1-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const ENROLLMENT_ID_1 = 'ccccccc1-cccc-4ccc-8ccc-cccccccccccc';
+
+// DI-07 (F368): these ids are real uuids because the columns they land in are
+// real uuids — `puja_bookings.id`, `store_orders.id` and
+// `wellness_enrollments.id` are all `@db.Uuid`, and the route now filters the
+// text-typed `commissions.*_id` values to uuid shape before handing them to
+// those lookups (Prisma raises P2023 on a malformed one, which 500s the whole
+// ledger). Fixtures like 'bk-1' could never exist in the database and were
+// silently exercising a path production cannot reach.
 /** A Rs 1,100 puja under the uniform 20/80 take rate. */
 const PUJA_ROW = {
   id: 'com-1',
-  bookingId: 'bk-1',
+  bookingId: BOOKING_ID_1,
   storeOrderId: null,
   wellnessEnrollmentId: null,
   payoutRequestId: 'pr-1',
@@ -145,18 +158,18 @@ describe('GET /admin/commissions — derived money columns', () => {
   it('labels the source row for a puja, a store order and a wellness enrolment', async () => {
     prismaMock.commission.findMany.mockResolvedValue([
       PUJA_ROW,
-      { ...PUJA_ROW, id: 'com-2', bookingId: null, storeOrderId: 'so-1' },
-      { ...PUJA_ROW, id: 'com-3', bookingId: null, wellnessEnrollmentId: 'we-1' },
+      { ...PUJA_ROW, id: 'com-2', bookingId: null, storeOrderId: STORE_ORDER_ID_1 },
+      { ...PUJA_ROW, id: 'com-3', bookingId: null, wellnessEnrollmentId: ENROLLMENT_ID_1 },
     ] as never);
     prismaMock.commission.count.mockResolvedValue(3 as never);
     prismaMock.pujaBooking.findMany.mockResolvedValue([
-      { id: 'bk-1', bookingNumber: 'BS-20260801-ABCDE', pujaType: { name: 'Satyanarayan Puja' } },
+      { id: BOOKING_ID_1, bookingNumber: 'BS-20260801-ABCDE', pujaType: { name: 'Satyanarayan Puja' } },
     ] as never);
     prismaMock.storeOrder.findMany.mockResolvedValue([
-      { id: 'so-1', orderNumber: 'SO-1042' },
+      { id: STORE_ORDER_ID_1, orderNumber: 'SO-1042' },
     ] as never);
     prismaMock.wellnessEnrollment.findMany.mockResolvedValue([
-      { id: 'we-1', session: { title: 'Sunrise Yoga' } },
+      { id: ENROLLMENT_ID_1, session: { title: 'Sunrise Yoga' } },
     ] as never);
 
     const data = (await getCommissions()).json().data as Row[];
@@ -182,8 +195,8 @@ describe('GET /admin/commissions — derived money columns', () => {
   it('issues one batched join per source table, never a query per row', async () => {
     prismaMock.commission.findMany.mockResolvedValue([
       PUJA_ROW,
-      { ...PUJA_ROW, id: 'com-2', bookingId: 'bk-2' },
-      { ...PUJA_ROW, id: 'com-3', bookingId: 'bk-3' },
+      { ...PUJA_ROW, id: 'com-2', bookingId: BOOKING_ID_2 },
+      { ...PUJA_ROW, id: 'com-3', bookingId: BOOKING_ID_3 },
     ] as never);
     prismaMock.commission.count.mockResolvedValue(3 as never);
 
@@ -193,7 +206,7 @@ describe('GET /admin/commissions — derived money columns', () => {
     expect(
       (prismaMock.pujaBooking.findMany.mock.calls[0]![0] as { where: { id: { in: string[] } } })
         .where.id.in,
-    ).toEqual(['bk-1', 'bk-2', 'bk-3']);
+    ).toEqual([BOOKING_ID_1, BOOKING_ID_2, BOOKING_ID_3]);
     // No booking/order ids on the page ⇒ no pointless `IN ()` round-trips.
     expect(prismaMock.storeOrder.findMany).not.toHaveBeenCalled();
     expect(prismaMock.wellnessEnrollment.findMany).not.toHaveBeenCalled();

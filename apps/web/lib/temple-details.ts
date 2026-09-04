@@ -258,7 +258,7 @@ export const TEMPLE_DETAILS: Record<string, TempleDetailRich> = {
  significance:
  'The Shiva Purana places Somnath as the Aadi (first) Jyotirlinga — the starting point of any Jyotirlinga Yatra. The shrine is also the southernmost point of mainland India with no land between it and the South Pole along its meridian (marked by the Baan Stambh pillar).',
  deityDescription:
- 'The Shiva lingam at Somnath is described as "Jyotirlinga" — a self-manifested pillar of light. The current lingam is set in a richly decorated sanctum facing east toward the Arabian Sea.',
+ 'The Shiva lingam at Somnath is described as a "Jyotirlinga" — a pillar of light. Tradition credits Chandra with first enshrining it here rather than describing the linga as having arisen of its own accord. The current lingam is set in a richly decorated sanctum facing east toward the Arabian Sea.',
  mainFestivals: [
  { name: 'Maha Shivaratri', when: 'February / March' },
  { name: 'Kartik Purnima', when: 'November' },
@@ -387,7 +387,7 @@ export const TEMPLE_DETAILS: Record<string, TempleDetailRich> = {
  history:
  'Mahakaleshwar in Ujjain is among the twelve Jyotirlingas and is unique for being a "Dakshinamukhi" lingam — the only one facing south. The temple is mentioned in the Skanda Purana, the Shiva Purana and in Kalidasa\'s Meghadūta.\n\nThe original structure was destroyed by Iltutmish in 1235 CE. Between 1732 and 1734, Maratha general Ranoji Shinde rebuilt the present temple in Bhumija style. Mahakaleshwar is considered one of the 7 Mukti-Sthalas — places that grant final liberation.\n\nUjjain is also counted as one of the Sapta Puri and Moksha-puri, and is where the Kumbh Mela (Simhastha) is held every 12 years. The recent Mahakal Lok Corridor, inaugurated in 2022, has transformed the pilgrim experience.',
  significance:
- 'Mahakaleshwar is the only Jyotirlinga that is Swayambhu (self-manifested) and Dakshinamukhi. Ujjain was historically the prime meridian of India, and Shiva here is called "Mahakal" — the master of time itself.',
+ 'Mahakaleshwar is the only south-facing (Dakshinamukhi) Jyotirlinga. Ujjain was historically the prime meridian of India, and Shiva here is called "Mahakal" — the master of time itself.',
  deityDescription:
  'The lingam is anointed every morning with Bhasma (sacred ash), believed to be from a cremation ground — making this the only Bhasma Aarti in the world. The lingam faces south, representing Shiva as the destroyer who faces the realm of Yama.',
  mainFestivals: [
@@ -1948,7 +1948,7 @@ export const TEMPLE_DETAILS: Record<string, TempleDetailRich> = {
  significance:
  'Hindu tradition holds that a pilgrimage is incomplete without bathing at all 22 sacred theerthams (wells) inside the temple complex before darshan — water from each is poured over the pilgrim. Pair Kashi-Vishwanath darshan with Rameshwaram-water-offering to complete the supreme Shaiva pilgrimage.',
  deityDescription:
- 'The Ramalingam — a swayambhu Shiva-linga installed by Sita and consecrated by Sri Rama — sits in the central garbhagriha. The Vishwalingam brought by Hanuman is worshipped first as per Rama\'s wish. Both are housed in the temple.',
+ 'The Ramalingam — a Shiva-linga moulded from sand by Sita and consecrated by Sri Rama — sits in the central garbhagriha. The Vishwalingam brought by Hanuman is worshipped first as per Rama\'s wish. Both are housed in the temple.',
  mainFestivals: [
  { name: 'Maha Shivaratri', when: 'February / March' },
  { name: 'Brahmotsavam', when: 'February — 10 days' },

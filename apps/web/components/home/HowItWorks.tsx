@@ -46,7 +46,12 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section className="py-8 md:py-10" aria-labelledby="how-it-works-heading">
+    // HOME-01 (2026-08-23 re-rank): below the fold, zero images, 4,667 B of
+    // markup. content-visibility: auto skips its layout and paint while it is
+    // far from the viewport and renders it normally once it is near, so this is
+    // safe without a live viewport measurement. Markup stays in the HTML for
+    // crawlers. See __tests__/home-deferral-ranking.home01.test.ts.
+    <section className="defer-paint py-8 md:py-10" aria-labelledby="how-it-works-heading">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2
           id="how-it-works-heading"

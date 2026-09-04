@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
@@ -85,7 +86,7 @@ export default function VerifyOtpScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <TouchableOpacity style={styles.back} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.stone[700]} />
         </TouchableOpacity>
@@ -123,14 +124,16 @@ export default function VerifyOtpScreen() {
             {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
           </Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.saffron[50] },
-  container: { flex: 1, padding: spacing.lg, paddingTop: spacing['2xl'] },
+  // paddingTop was spacing['2xl'] (48), a fixed stand-in for the status bar.
+  // SafeAreaView supplies the real top inset now, so the base padding is enough.
+  container: { flex: 1, padding: spacing.lg },
   back: { width: 40, height: 40, justifyContent: 'center' },
   title: {
     fontSize: fontSize['2xl'],

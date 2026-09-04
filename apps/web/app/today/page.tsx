@@ -7,9 +7,13 @@ import Link from 'next/link';
 import { Calendar, Sunrise, Sparkles, Music, BookOpen, ChevronRight, Clock } from 'lucide-react';
 import { getTodayPanchang } from '../../lib/api';
 import { FESTIVALS, nextFestival } from '../../lib/festivals';
+import { getCatalogueSlugs } from '../../lib/puja-catalogue';
+import { BROWSE_PUJAS_HREF, pujaLinkLabel, resolveContentPujas } from '../../lib/puja-link';
 import { DEITY_MANTRAS } from '../../lib/deity-mantras';
 import { getDeity } from '../../lib/deities';
+import { blogHasPublishedPosts } from '../../lib/footer-blog-link';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { H1 } from '../../components/ui/heading-recipe';
 
 export const revalidate = 3600;
 
@@ -54,6 +58,23 @@ export default async function TodayPage() {
   // Tolerant fetch — panchang API may be cold/down.
   const panchang = await getTodayPanchang().catch(() => null);
 
+  // DF-02/CI-01 rule applied to the "Suggested puja" tile.
+  //
+  // `DAY_DEITY[*].suggestedPuja` is a hand-written editorial slug and it was
+  // interpolated straight into `/pujas/<slug>`. That route sets
+  // `dynamicParams = false` (app/pujas/[slug]/page.tsx), so any slug the
+  // catalogue does not sell is a hard 404, not a soft empty state. Four of the
+  // seven weekdays shipped one: Sunday's `surya-namaskar` is not sold at all,
+  // and Tuesday/Thursday/Saturday named `sundarkand-path`/`satyanarayan-puja`,
+  // whose real catalogue spellings are `sunderkand-path`/`satyanarayan-katha`.
+  //
+  // Routing through resolveContentPujas both applies those spelling aliases and
+  // refuses to emit a link the live catalogue has not confirmed — an unreadable
+  // catalogue yields an empty result, and the tile degrades to /pujas rather
+  // than guessing.
+  const catalogue = await getCatalogueSlugs();
+  const suggestedPujaSlug = resolveContentPujas([todayInfo.suggestedPuja], catalogue)[0] ?? null;
+
   const upcoming = nextFestival(now);
   const daysToFest = upcoming ? daysUntil(upcoming.date2026) : null;
 
@@ -76,7 +97,7 @@ export default async function TodayPage() {
             Today on Darshya
           </span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-surface-900 mb-3">
+        <h1 className={`${H1.marketing} mb-3`}>
           {dayName}, {now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}
         </h1>
         <p className="text-base text-surface-600">{dateLong}</p>
@@ -203,7 +224,7 @@ export default async function TodayPage() {
           <div className="inline-block px-4 py-1.5 bg-white rounded-full text-sm font-semibold text-saffron-700 mb-4">
             {daysToFest === 0 ? 'Today!' : daysToFest === 1 ? 'Tomorrow' : `In ${daysToFest} days`}
           </div>
-          <p className="text-sm text-surface-700 max-w-xl mx-auto mb-4 line-clamp-2">{upcoming.description}</p>
+          <p className="prose-meta text-surface-700 max-w-xl mx-auto mb-4 line-clamp-2">{upcoming.description}</p>
           <Link
             href={`/festival/${upcoming.slug}`}
             className={buttonClass('primary', 'md')}
@@ -214,13 +235,22 @@ export default async function TodayPage() {
       ) : null}
 
       <section className="mb-8 grid sm:grid-cols-3 gap-3">
+        {/* When nothing resolves the copy loses the ritual name as well as the
+            deep link — naming a puja the catalogue has not confirmed is the
+            same promise-with-nothing-behind-it the href fix removes. */}
         <Link
-          href={`/pujas/${todayInfo.suggestedPuja}`}
+          href={suggestedPujaSlug ? `/pujas/${suggestedPujaSlug}` : BROWSE_PUJAS_HREF}
           className="block rounded-xl border border-surface-200 bg-white p-5 hover:border-saffron-300 hover:bg-saffron-50 transition"
         >
           <span className="text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-1 block">Suggested puja</span>
-          <span className="text-lg font-bold text-surface-900 capitalize">{todayInfo.suggestedPuja.replace(/-/g, ' ')}</span>
-          <span className="block text-sm text-surface-600 mt-1">Most-recommended ritual for {dayName}</span>
+          <span className={`text-lg font-bold text-surface-900${suggestedPujaSlug ? ' capitalize' : ''}`}>
+            {suggestedPujaSlug ? pujaLinkLabel(suggestedPujaSlug) : 'Browse all pujas'}
+          </span>
+          <span className="block text-sm text-surface-600 mt-1">
+            {suggestedPujaSlug
+              ? `Most-recommended ritual for ${dayName}`
+              : `Find the right ritual for ${dayName} with a verified pandit`}
+          </span>
         </Link>
         <Link
           href="/astrology/horoscope"
@@ -249,7 +279,10 @@ export default async function TodayPage() {
           <Link href="/aarti" className="text-saffron-700 hover:underline font-semibold">Aartis</Link>
           <Link href="/chalisa" className="text-saffron-700 hover:underline font-semibold">Chalisas</Link>
           <Link href="/shlokas" className="text-saffron-700 hover:underline font-semibold">Shlokas</Link>
-          <Link href="/blog" className="text-saffron-700 hover:underline font-semibold">Blog</Link>
+          {/* HN-11: "more to read" must not point at a section with nothing to read. */}
+          {blogHasPublishedPosts() && (
+            <Link href="/blog" className="text-saffron-700 hover:underline font-semibold">Blog</Link>
+          )}
         </div>
       </section>
 

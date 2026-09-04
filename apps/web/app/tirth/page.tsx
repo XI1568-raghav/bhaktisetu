@@ -1,15 +1,25 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { TIRTHAS, type TirthaCategory } from '../../lib/tirthas';
+import { dedupeTirthas } from '../../lib/tirtha-slug';
 
 export const revalidate = 86400;
 
 const BASE_URL = 'https://darshya.online';
 
+// CI-07: one card per temple. TIRTHAS carries twelve temples twice under two
+// slugs each; the grid used to render both, so the same shrine appeared twice
+// with different darshan timings behind each card.
+const TIRTHA_CARDS = dedupeTirthas(TIRTHAS);
+
 export const metadata: Metadata = {
-  title: '12 Most Sacred Tirthas of India — Complete Pilgrim Guide',
+  // CI-07: the page said "12 Most Sacred Tirthas" above a grid of eighty-odd.
+  // The count now comes from the catalogue so the two cannot drift again.
+  title: `${TIRTHA_CARDS.length} Sacred Tirthas of India — Complete Pilgrim Guide`,
   description:
-    'Single-destination deep dive into Kashi Vishwanath, Tirupati Balaji, Vaishno Devi, Somnath, Jagannath Puri, Amarnath, Rameswaram, Badrinath, Kedarnath, Dwarka, Mahakaleshwar, Ayodhya. Timings, darshan booking, how to reach, dress code, prasad.',
+    `Single-destination deep dive into ${TIRTHA_CARDS.length} tirthas — Kashi Vishwanath, Tirupati Balaji, Vaishno Devi, Somnath, Jagannath Puri, Amarnath, Rameswaram, Badrinath, Kedarnath, Dwarka, Mahakaleshwar, Ayodhya and more. Timings, darshan booking, how to reach, dress code, prasad.`,
   alternates: { canonical: `${BASE_URL}/tirth` },
   openGraph: {
     images: ['/images/golden-temple-og.jpg'],
@@ -20,10 +30,16 @@ export const metadata: Metadata = {
   },
 };
 
+// Every category the catalogue actually uses gets a section. The list used to
+// stop at shakti, which silently orphaned every jain / sikh / syncretic tirtha
+// — they were prerendered and sitemapped but reachable from no index page.
 const CATEGORIES: { key: TirthaCategory; title: string; color: string }[] = [
   { key: 'shaiva', title: 'Shaiva (Shiva-centric)', color: 'border-amber-300 bg-amber-50/40' },
   { key: 'vaishnava', title: 'Vaishnava (Vishnu-centric)', color: 'border-emerald-300 bg-emerald-50/40' },
   { key: 'shakti', title: 'Shakti (Goddess-centric)', color: 'border-pink-300 bg-pink-50/40' },
+  { key: 'jain', title: 'Jain', color: 'border-sky-300 bg-sky-50/40' },
+  { key: 'sikh', title: 'Sikh', color: 'border-indigo-300 bg-indigo-50/40' },
+  { key: 'syncretic', title: 'Syncretic (shared traditions)', color: 'border-violet-300 bg-violet-50/40' },
 ];
 
 export default function TirthIndexPage() {
@@ -31,8 +47,8 @@ export default function TirthIndexPage() {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: 'Sacred Tirthas of India',
-    numberOfItems: TIRTHAS.length,
-    itemListElement: TIRTHAS.map((t, idx) => ({
+    numberOfItems: TIRTHA_CARDS.length,
+    itemListElement: TIRTHA_CARDS.map((t, idx) => ({
       '@type': 'ListItem',
       position: idx + 1,
       url: `${BASE_URL}/tirth/${t.slug}`,
@@ -45,8 +61,8 @@ export default function TirthIndexPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
 
       <header className="mb-10">
-        <p className="text-xs uppercase tracking-wider text-saffron-600">12 destinations · deep guide</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900 sm:text-4xl">Sacred Tirthas of India</h1>
+        <p className="text-xs uppercase tracking-wider text-saffron-600">{TIRTHA_CARDS.length} destinations · deep guide</p>
+        <h1 className={`${H1.catalogue} mt-1`}>Sacred Tirthas of India</h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
           Deep single-destination guides — darshan timings, how to reach, dress code, what to offer,
           nearby tirthas, and the legends behind each. Different from <Link href="/pilgrimage" className="text-saffron-700 underline">pilgrimage circuits</Link> (multi-destination journeys).
@@ -54,7 +70,7 @@ export default function TirthIndexPage() {
       </header>
 
       {CATEGORIES.map((cat) => {
-        const items = TIRTHAS.filter((t) => t.category === cat.key);
+        const items = TIRTHA_CARDS.filter((t) => t.category === cat.key);
         if (items.length === 0) return null;
         return (
           <section key={cat.key} className="mb-10">
@@ -87,7 +103,7 @@ export default function TirthIndexPage() {
       <section className="mt-12 rounded-2xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Plan your full pilgrimage</h2>
         <p className="mt-2 text-sm text-gray-700">
-          For multi-destination circuits, see <Link href="/pilgrimage" className="text-saffron-700 underline">Char Dham, 12 Jyotirlinga, Shakti Peeth and 6 more circuits</Link>.
+          For multi-destination circuits, see <Link href="/pilgrimage" className="text-saffron-700 underline">Char Dham, 12 Jyotirlinga, Shakti Peeth and the other circuits</Link>.
           For day-trip city visits, see <Link href="/city" className="text-saffron-700 underline">25 sacred cities</Link>.
         </p>
       </section>

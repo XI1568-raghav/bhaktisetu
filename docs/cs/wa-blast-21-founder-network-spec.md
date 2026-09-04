@@ -1,3 +1,14 @@
+<!-- TC-08 (P1, trust audit): the "verified pandit" adjective was removed from the
+copy below. Nothing in the codebase promotes a Priest to verified: the only
+production writer of Priest.verificationStatus is apps/api/src/routes/priest.ts,
+which writes 'pending'; isVerified: true appears only in apps/api/prisma/seed.ts
+and apps/api/scripts/seed-demo-users.ts. There is no credential upload, no
+reference workflow, no probation review and no per-pandit trust score column, and
+Priest.aadhaarVerified is read as a PAYOUT gate (apps/api/src/routes/providers.ts),
+not as a published credential. This is markdown a human copies into a real
+message, so there is nothing to gate it on: restore the wording by hand the day
+apps/api/src/lib/pandit-vetting.ts HAS_PANDIT_VETTING is true. -->
+
 # WA Blast 21 Founder-Network Contacts — Asking 5 Referrals Each
 
 > **Roadmap item**: R-Q1-CS-006 (P0) · **Authored**: 2026-06-13
@@ -22,7 +33,7 @@ Namaste {name} ji,
 Hope you and family are well 🙏
 
 I'm building Bhaktisetu — a devotional super-app where people can:
-- Book verified pandit pujas + get video proof
+- Book pujas with mandatory video proof of every one
 - Watch live darshan from major temples
 - NRI families can send pujas to India in 1 click
 

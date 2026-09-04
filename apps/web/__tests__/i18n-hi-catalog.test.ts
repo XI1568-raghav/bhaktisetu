@@ -7,14 +7,17 @@
  * anywhere", and its fix says in as many words that this "is a wiring change
  * against copy that already exists — no new translation needed."
  *
- * THE SPLIT, STATED PLAINLY. That fix has two halves and this file closes one.
- *   - The RENDER half lives in components/ContentPageHeader.tsx and
- *     components/LanguageSwitcher.tsx, which belong to another lane. Those two
- *     files still read three labels out of eighteen.
+ * THE SPLIT, STATED PLAINLY. That fix had two halves and this file closed one.
  *   - The CATALOG half is here: the human-authored Hindi is lifted out of the
  *     component-local CONTENT_LABELS map and into lib/i18n/hi.json under the
  *     key names en.json already uses, so the render half becomes a one-line
  *     `t('content', locale)` swap instead of a copy hunt.
+ *   - The RENDER half is now done too (2026-08-19) and is guarded by
+ *     __tests__/i18n/content-page-locale.i03.test.tsx, which renders /content
+ *     with the locale cookie on `hi` and asserts on the emitted HTML. THAT is
+ *     the test that can fail when a devotee sees English; nothing in THIS file
+ *     can. Everything here asserts a string reached a JSON file — which stayed
+ *     green for the whole period /content shipped "Views" hardcoded in JSX.
  *
  * PROVENANCE IS THE WHOLE POINT, AND IT IS NOW MACHINE-CHECKED. lib/t.ts:23-31
  * claims "Nothing here is machine-translated". That was a comment; below it is
@@ -52,9 +55,15 @@ const enDict = en as unknown as Record<string, Record<string, string>>;
  * ("कथाएँ") is NOT mapped onto content.tabArticle ("Articles") and
  * `todaysFeatured` ("आज का विशेष" — Today's Featured) is NOT mapped onto
  * content.featured ("Featured"), because near enough is how a catalog starts
- * lying. Those two, plus the seven CONTENT_LABELS keys with no en.json slot at
- * all (todaysFeaturedSubtitle, curatedCollections, title, deity, type, tracks,
- * tryDifferentSearch, checkBackSoon), are owner copy decisions.
+ * lying.
+ *
+ * RESOLVED 2026-08-19 (I-03 closer): `stories` and `todaysFeatured`, and the
+ * seven keys that had no en.json slot at all, got slots of their OWN rather
+ * than being folded into a near-enough neighbour — `content.stories`,
+ * `content.todaysFeatured`, and so on. That was never an owner copy decision:
+ * the English twin of every one of them was already hardcoded in
+ * app/content/page.tsx, so both languages had shipped and only the key name was
+ * missing. content.featured and content.tabArticle keep their own meanings.
  */
 const CONTENT_LABEL_MOVES: { from: string; to: string; hindi: string }[] = [
   { from: 'pageTitle', to: 'content.pageTitle', hindi: 'भक्ति संगीत पुस्तकालय' },
@@ -73,6 +82,27 @@ const CONTENT_LABEL_MOVES: { from: string; to: string; hindi: string }[] = [
   { from: 'views', to: 'content.views', hindi: 'दृश्य' },
   { from: 'likes', to: 'content.likes', hindi: 'पसंद' },
   { from: 'noContentFound', to: 'content.noContent', hindi: 'कोई सामग्री नहीं मिली।' },
+  // The ten below had no en.json slot when this file was written, which is why
+  // they were listed above as owner copy decisions. They are not: every one has
+  // an English twin already hardcoded in app/content/page.tsx, so the "decision"
+  // was only ever which key name to give copy that already shipped in both
+  // languages. Slots added, Hindi carried across, page wired — see
+  // __tests__/i18n/content-page-locale.i03.test.tsx, which asserts on the
+  // rendered page rather than on this file.
+  { from: 'todaysFeatured', to: 'content.todaysFeatured', hindi: 'आज का विशेष' },
+  {
+    from: 'todaysFeaturedSubtitle',
+    to: 'content.todaysFeaturedSubtitle',
+    hindi: 'आपकी आध्यात्मिक यात्रा के लिए दैनिक भक्ति सामग्री',
+  },
+  { from: 'curatedCollections', to: 'content.curatedCollections', hindi: 'विशेष संग्रह' },
+  { from: 'stories', to: 'content.stories', hindi: 'कथाएँ' },
+  { from: 'title', to: 'content.title', hindi: 'शीर्षक' },
+  { from: 'deity', to: 'content.deity', hindi: 'देवता' },
+  { from: 'type', to: 'content.type', hindi: 'प्रकार' },
+  { from: 'tracks', to: 'content.tracks', hindi: 'ट्रैक' },
+  { from: 'tryDifferentSearch', to: 'content.tryDifferentSearch', hindi: 'कोई अन्य खोज शब्द आजमाएँ।' },
+  { from: 'checkBackSoon', to: 'content.checkBackSoon', hindi: 'जल्द ही नई सामग्री आएगी।' },
 ];
 
 /**
@@ -193,10 +223,14 @@ describe('coverage is stated in numbers, not implied', () => {
   it('reports the real Hindi coverage rather than a claim of a translated product', () => {
     const cov = localeCoverage('hi');
 
-    expect(cov.total).toBe(374);
+    // 374 -> 384: I-03's render half needed ten `content` slots en.json did not
+    // have (todaysFeatured, todaysFeaturedSubtitle, curatedCollections,
+    // stories, title, deity, type, tracks, tryDifferentSearch, checkBackSoon).
+    expect(cov.total).toBe(384);
     // The floor moves up only when real human copy lands. It is asserted, not
-    // approximated, so a silent regression in hi.json fails the build.
-    expect(cov.translated).toBeGreaterThanOrEqual(42);
+    // approximated, so a silent regression in hi.json fails the build. It moved
+    // 42 -> 67 when the ten slots above were filled from CONTENT_LABELS.hi.
+    expect(cov.translated).toBeGreaterThanOrEqual(67);
     // …and it is nowhere near a finished translation. This ceiling is the
     // honest half: if it ever passes, the disclosure copy has to change too.
     expect(cov.ratio).toBeLessThan(0.5);

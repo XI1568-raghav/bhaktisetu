@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { RASHIS, type RashiInfo } from '../../../lib/rashis';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type DailyHoroscope = RashiInfo;
 
@@ -305,7 +306,7 @@ export default function HoroscopePage() {
  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
  <Link
  href="/astrology/chat"
- className="inline-flex items-center gap-2 px-6 py-3 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-all shadow-md"
+ className={buttonClass('primary', 'md', 'shadow-md')}
  >
  Ask AI Astrologer <ArrowRight className="w-4 h-4" />
  </Link>

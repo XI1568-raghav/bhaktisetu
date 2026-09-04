@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useBookings } from '@poojly/api-client';
 import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
 import {
@@ -10,6 +11,7 @@ import {
   type BookingRow,
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { bookingStatusLabel } from '../../lib/enum-labels';
 
 /** Narrow an `unknown` field off a booking row to a non-empty string. */
 function text(v: unknown): string | undefined {
@@ -27,6 +29,22 @@ export default function DevoteeBookings() {
   const bookingsQuery = useBookings();
   const [filter, setFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
+  /*
+   * DEEP LINK. `lib/deep-link.ts` maps `darshya://booking/{bookingNumber}` to
+   * this screen with `bn`, because when that map was written there was no
+   * detail screen to send it to. There is one now, but the detail endpoint is
+   * keyed by the booking's UUID (`GET /api/v1/bookings/:id`) and a push payload
+   * carries the human booking NUMBER — so the id has to be resolved off the
+   * list before the hand-off. The forward is done here rather than by editing
+   * the deep-link map, which is shared navigation and pinned by its own tests.
+   *
+   * A `bn` that is not on the loaded page is NOT guessed at: the notice below
+   * says so plainly and the list stays usable.
+   */
+  const params = useLocalSearchParams<{ bn?: string | string[] }>();
+  const bookingNumber = Array.isArray(params.bn) ? params.bn[0] : params.bn;
+  const forwarded = useRef<string | null>(null);
+  const [unresolvedRef, setUnresolvedRef] = useState<string | null>(null);
 
   // PAR-02: the envelope is {success, bookings, pagination} — never {data}.
   const all = selectBookings(bookingsQuery.data);
@@ -50,6 +68,26 @@ export default function DevoteeBookings() {
     }
     return status.includes(filter);
   });
+
+  useEffect(() => {
+    if (!bookingNumber || forwarded.current === bookingNumber) return;
+    if (bookingsQuery.isLoading) return;
+    const match = all.find((b) => text(b.bookingNumber) === bookingNumber);
+    forwarded.current = bookingNumber;
+    if (match) {
+      setUnresolvedRef(null);
+      router.push({
+        pathname: '/(devotee)/booking-detail',
+        params: { id: match.id },
+      } as never);
+    } else {
+      setUnresolvedRef(bookingNumber);
+    }
+  }, [bookingNumber, bookingsQuery.isLoading, all]);
+
+  function openBooking(booking: BookingRow) {
+    router.push({ pathname: '/(devotee)/booking-detail', params: { id: booking.id } } as never);
+  }
 
   async function onRefresh() {
     setRefreshing(true);
@@ -75,6 +113,15 @@ export default function DevoteeBookings() {
           <Text style={styles.errorText}>
             Could not load your bookings:{' '}
             {bookingsQuery.error instanceof Error ? bookingsQuery.error.message : 'Unknown error'}
+          </Text>
+        </View>
+      ) : null}
+
+      {unresolvedRef !== null ? (
+        <View style={styles.noticeBanner}>
+          <Text style={styles.noticeText}>
+            Booking {unresolvedRef} is not on this page of your bookings. Pull down to refresh, or
+            find it in the list below.
           </Text>
         </View>
       ) : null}
@@ -120,17 +167,25 @@ export default function DevoteeBookings() {
           const time = text(b.scheduledTime) ?? text(b.scheduledTimeSlot) ?? '';
           const amountNum = toNumber(b.totalAmount ?? b.priceAmount);
           return (
-            <ListRow
+            <TouchableOpacity
               key={b.id}
-              primary={pujaName}
-              secondary={
-                templeName
-                  ? `${templeName} • ${date} ${time}`.trim()
-                  : `${date} ${time}`.trim() || 'Schedule TBD'
-              }
-              trailing={amountNum === null ? undefined : formatInr(amountNum)}
-              status={{ label: text(b.status) ?? 'pending', color }}
-            />
+              onPress={() => openBooking(b)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Open booking ${text(b.bookingNumber) ?? pujaName}`}
+              accessibilityHint="Shows the pandit, payments and prasad delivery for this booking"
+            >
+              <ListRow
+                primary={pujaName}
+                secondary={
+                  templeName
+                    ? `${templeName} • ${date} ${time}`.trim()
+                    : `${date} ${time}`.trim() || 'Schedule TBD'
+                }
+                trailing={amountNum === null ? undefined : formatInr(amountNum)}
+                status={{ label: bookingStatusLabel(text(b.status)) || 'Pending', color }}
+              />
+            </TouchableOpacity>
           );
         })
       )}
@@ -159,4 +214,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   errorText: { color: colors.red[600], fontSize: fontSize.sm },
+  noticeBanner: {
+    backgroundColor: colors.amber[50],
+    borderColor: colors.amber[600],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  noticeText: { color: colors.amber[800], fontSize: fontSize.sm },
 });

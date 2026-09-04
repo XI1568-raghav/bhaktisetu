@@ -187,8 +187,36 @@ model User {
   blocked           Boolean          @default(false)
   blockedReason     String?          @map("blocked_reason")
   blockedAt         DateTime?        @map("blocked_at")
+
+  // ─── LC-DEL (2026-09-03): in-app account deletion ─────────────────────────
+  //
+  // The account is ANONYMISED IN PLACE, never DELETEd. `DELETE FROM users` is
+  // impossible (puja_bookings / payments / subscriptions are required relations
+  // with Prisma's default RESTRICT) and destructive (donations, store_orders and
+  // wellness_enrollments are ON DELETE CASCADE, so a successful delete would
+  // destroy tax records Indian law requires be retained). See
+  // services/account-deletion.service.ts and
+  // migrations/20260903000000_account_deletion.
+  //
+  // Read and written through $executeRawUnsafe rather than this delegate —
+  // the same choice MagicLinkToken and lib/email-session.ts make — so the
+  // deletion service stays usable in tests that mock prisma without a
+  // regenerated client. Declared here so the columns are described objects
+  // rather than invisible drift.
+  //
+  // deletionRequestedAt: set when the user CONFIRMS (grace window opens).
+  // deletionPurgeAfter:  when the sweep may anonymise. NULL once purged.
+  // deletedAt:           the tombstone stamp. Non-null == already anonymised.
+  deletionRequestedAt DateTime? @map("deletion_requested_at") @db.Timestamptz(6)
+  deletionPurgeAfter  DateTime? @map("deletion_purge_after")  @db.Timestamptz(6)
+  deletedAt           DateTime? @map("deleted_at")            @db.Timestamptz(6)
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  // SCAL-04: the back-reference Prisma requires before
+  // `where: { roleAssignments: { some: { role } } }` is a legal argument. See
+  // the note on model UserRoleAssignment for why this took four passes to land.
+  roleAssignments UserRoleAssignment[]
 
   addresses       UserAddress[]
   bookings        PujaBooking[]
@@ -568,6 +596,12 @@ model TemplePayout {
 
   @@index([templeId, status])
   @@index([status])
+  // DI-07 (2026-08-24): Postgres does NOT create an index for the referencing
+  // side of a foreign key — only the referenced side gets one, from its
+  // primary key. So the `booking` relation above bought this table nothing on
+  // the read path, and temple-payout.service.ts:76 scans the whole ledger on
+  // every confirm looking for an existing row by bookingId.
+  @@index([bookingId])
   @@map("temple_payouts")
 }
 
@@ -622,6 +656,21 @@ model Payment {
   wellnessEnrollments WellnessEnrollment[] @relation("WellnessEnrollmentPayment")
 
   @@index([gatewayPaymentId])
+  // DI-07 (2026-09-02): `gateway_order_id` is the natural key of a Razorpay
+  // order and it carried NO index at all, while being the column verifyPayment
+  // (payment.service.ts:875), the store-order verify (:1239), the
+  // `payment.captured` (:1411) and `payment.failed` (:1731) webhook branches
+  // and jobs/reconcile-payments.ts all resolve a Payment by. Every successful
+  // checkout sequentially scanned the whole payments table.
+  @@index([gatewayOrderId])
+  // DI-07: Postgres does not index the referencing side of a foreign key — only
+  // the referenced side gets one, from its primary key — so `Payment.booking`
+  // bought this table nothing on the read path. The createOrder idempotency
+  // guard (payment.service.ts:770) and the admin refund rail's capture lookup
+  // (routes/admin-bookings.ts:634) both filter on it, the first inside the
+  // payment transaction. Same omission, same reason, as commissions,
+  // temple_payouts and priest_payouts.
+  @@index([bookingId])
   @@index([userId])
   @@index([status])
   // SCAL-03: payments are always filtered by status, then sorted by date.
@@ -650,6 +699,21 @@ model PriestPayout {
 
   @@index([priestId])
   @@index([status])
+  // DI-06 (2026-09-02): `createPriestPayout` guards "at most one PriestPayout
+  // per booking" with findFirst-then-create (payment.service.ts) and nothing
+  // backed it — the fifth money-key of this shape, missed when the August
+  // migration counted four. Postgres does NOT index the referencing side of a
+  // foreign key, so the `booking` relation above bought this table nothing on
+  // the read path and that guard scanned the whole payout ledger every time.
+  //
+  // The matching UNIQUE index (`priest_payouts_booking_id_key`) is created
+  // conditionally by migration 20260902000000_di06_priest_payout_booking_key
+  // and is therefore deliberately NOT declared `@@unique` here: schema.prisma
+  // must describe what is guaranteed on every database, not what is hoped for.
+  // Promote it once scripts/check-money-key-duplicates.mjs reports it present
+  // everywhere — the index name already follows Prisma's convention, so that
+  // promotion is a schema-only edit with no further SQL.
+  @@index([bookingId])
   @@map("priest_payouts")
 }
 
@@ -884,6 +948,31 @@ model UserRoleAssignment {
   isPrimary Boolean  @default(false) @map("is_primary")
   createdAt DateTime @default(now()) @map("created_at")
 
+  // SCAL-04 (2026-08-28): this relation is what `admin.service.getUsers` needs
+  // to answer `?role=PANDIT` with `where: { roleAssignments: { some: { role } } }`.
+  // Without it Prisma rejects that argument outright ("Unknown argument
+  // 'roleAssignments'"), which is why the endpoint spent months first reading
+  // EVERY holder id and sending the list back as an `IN (...)`, and then
+  // running a hand-written `$queryRaw` JOIN behind a fallback. Both are gone.
+  //
+  // Three earlier passes refused to declare it because a foreign key is a
+  // migration, migrations auto-apply on API boot (apps/api/package.json
+  // `prisma migrate deploy && node dist/server.js`), no migration in this repo
+  // mentions `user_role_assignments` — the table predates the tracked history —
+  // and a migration that fails on live data takes the API down.
+  //
+  // migrations/20260828100000_scal04_user_role_assignment_fk answers that:
+  // the constraint is added NOT VALID, which reads no existing row and so
+  // cannot fail on data; it is skipped if `pg_constraint` already has it; and
+  // it is wrapped in EXCEPTION WHEN OTHERS so the migration commits regardless.
+  // If the constraint never lands, the QUERY IS UNAFFECTED — Prisma builds the
+  // join from this schema, never from the database's constraint catalogue.
+  //
+  // Cascade, not Prisma's default Restrict for a required relation: nothing in
+  // apps/api/src deletes a User today, and Restrict would silently convert a
+  // future working delete into a foreign-key error.
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, role])
   @@index([userId])
   @@map("user_role_assignments")
@@ -1099,6 +1188,24 @@ model Commission {
   // (bookingId, storeOrderId, wellnessEnrollmentId) is set per row. bookingId
   // was previously non-null + the only key, so store orders + wellness
   // enrollments never got a Commission row (payouts were never written).
+  //
+  // DI-07 (2026-08-24): `bookingId` stays a bare String with NO `@db.Uuid` and
+  // NO `@relation`, and that is not an oversight to be tidied away later. The
+  // column is polymorphic across TWO booking tables:
+  //   * `puja_bookings` (Prisma model PujaBooking) — payment.service.ts:266
+  //   * `astrologer_consultations` (raw SQL, created by
+  //     routes/consultation.ts ensureConsultationTables, NOT in this schema)
+  //     — consultation.ts:178 writes `bookingId: row.id` from that table.
+  // Both have UUID primary keys, so the VALUES are all uuids, but there is no
+  // single referent — a foreign key is not merely "harder later", it is
+  // impossible without first adding a `bookingKind` discriminator or splitting
+  // the column. An earlier audit note read the consultation-backed rows as
+  // "orphans"; they are not, they are the second legitimate kind.
+  //   Corollary: do NOT "fix" this to `@db.Uuid` casually. That emits
+  //   ALTER COLUMN ... USING booking_id::uuid, which rewrites a money table and
+  //   aborts API boot on the first non-uuid legacy value (consultation
+  //   astrologer ids were slugs until 2026-08-12). Migrations auto-apply on
+  //   boot, so that failure mode is an outage.
   bookingId             String?          @map("booking_id")
   storeOrderId          String?          @map("store_order_id")
   wellnessEnrollmentId  String?          @map("wellness_enrollment_id")
@@ -1116,6 +1223,17 @@ model Commission {
 
   @@index([providerId])
   @@index([status])
+  // DI-07 (2026-08-24): bookingId is the ONLY polymorphic key that had no
+  // index, and it is the one the confirm-path idempotency guard reads on every
+  // single payment (payment.service.ts writePujaCommissionOnConfirm, plus
+  // consultation.ts, provider-earning-mint.ts, booking.service.ts). Every
+  // confirm was a sequential scan of the whole commission ledger, inside the
+  // payment transaction. storeOrderId and wellnessEnrollmentId below were
+  // already covered; this closes the gap.
+  //
+  // NOT `@db.Uuid`, and deliberately no @relation — see the DI-07 note on the
+  // bookingId field above: the column points at TWO different tables.
+  @@index([bookingId])
   @@index([storeOrderId])
   @@index([wellnessEnrollmentId])
   @@index([payoutRequestId])
@@ -1410,6 +1528,15 @@ model Donation {
   // dropped before persistence, so the 80G receipt omitted the donor PAN.
   donorPan          String?        @map("donor_pan")
   dedication        String?        @map("dedication")
+  // LC-DEL (2026-09-03): routes/donations.ts builds the 80G receipt with
+  // `donorName: user.fullName`, read LIVE at generation time. Once the user row
+  // is an anonymised tombstone, every receipt reissued for a PAST donation would
+  // carry the wrong donor name — a defective tax document, not a redacted one.
+  // Section 80G(5)/Form 10BE require the donor's name alongside the PAN, so the
+  // account-deletion purge freezes the name here BEFORE scrubbing the user row,
+  // and only for donations that were actually paid and actually got a receipt
+  // number. NULL for every other donation.
+  donorNameSnapshot String?        @map("donor_name_snapshot")
   createdAt         DateTime       @default(now()) @map("created_at")
   paidAt            DateTime?      @map("paid_at")
 
@@ -2052,4 +2179,207 @@ model CreditLedgerEntry {
   @@index([userId, createdAt])
   @@index([reason])
   @@map("credit_ledger_entries")
+}
+
+// ─── OPS-05 · APPEND-ONLY MONEY AUDIT TRAIL ────────────────────────────────────
+//
+// Before this model there was NO durable record of what happened to a payment.
+// 66 models in this schema, none of them an audit log. The money state machine
+// kept only its CURRENT state — Payment.status, Commission.status,
+// PayoutRequest.status — plus a few ad-hoc breadcrumbs smeared into
+// Payment.metadata by whichever code path happened to remember (refundId,
+// refundFailureReason, refundInitiatedBy). Every one of those is overwritten by
+// the next write. So for a disputed booking nobody could answer, from anything
+// the product stores:
+//
+//   - who initiated the refund, and when;
+//   - whether the capture arrived via POST /payments/verify or the webhook;
+//   - what the status was BEFORE the write that changed it;
+//   - which Razorpay ids were involved at each step;
+//   - whether the pandit's earning was minted before or after the refund.
+//
+// The only surviving trace was the Render log stream, which on the free plan is
+// retained for days, is not queryable per-booking, and is gone entirely after a
+// service is suspended. For a platform holding bookings, payments and 80G
+// donation receipts that is a support problem and a legal one.
+//
+// SHAPE: one row per money EVENT, never mutated. The row carries its own copy of
+// actor, amount, gateway ids and before/after status, so a dispute is
+// reconstructed by reading rows in `occurred_at` order without joining anything
+// that may since have been overwritten or deleted.
+//
+// NO FOREIGN KEYS, ON PURPOSE. Three reasons: (1) declaring relations would mean
+// editing Payment/PujaBooking/Commission to add back-relation fields, and this
+// table must be addable without touching the models it observes; (2) an audit
+// row must survive the deletion of its subject — an FK with ON DELETE CASCADE
+// would erase exactly the history a dispute needs, and RESTRICT would make the
+// audit log block ordinary deletes; (3) the reference columns also hold
+// gateway-side ids (Razorpay order/payment/refund) that are not rows in this
+// database at all. Reference columns are therefore TEXT, matching the existing
+// Commission.bookingId / storeOrderId convention.
+//
+// APPEND-ONLY IS ENFORCED IN THE DATABASE, not just by convention: the migration
+// installs a BEFORE UPDATE OR DELETE trigger that raises. A log that can be
+// quietly edited is not evidence.
+//
+// There is deliberately no `updatedAt`. A row that can be updated is a bug.
+model MoneyAuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  // Dotted event name from MONEY_EVENTS in lib/audit-money.ts. TEXT rather than
+  // a Prisma enum so a new event type is a code change, not an ALTER TYPE that
+  // has to survive migrate deploy's per-migration transaction.
+  eventType   String   @map("event_type")
+  occurredAt  DateTime @default(now()) @map("occurred_at")
+
+  // WHO. 'devotee' | 'provider' | 'admin' | 'system' | 'gateway'. `actorId` is
+  // the acting User.id where a human acted; NULL for cron/webhook/system.
+  actorType   String   @default("system") @map("actor_type")
+  actorId     String?  @map("actor_id")
+
+  // WHAT THE EVENT IS ABOUT. subjectType is 'booking' | 'payment' | 'commission'
+  // | 'payout' | 'donation' | 'store_order'.
+  subjectType String   @map("subject_type")
+  subjectId   String   @map("subject_id")
+
+  // Denormalised correlation keys — every one that is known at the call site is
+  // written, so "everything that happened to this booking" is one indexed read.
+  bookingId    String? @map("booking_id")
+  paymentId    String? @map("payment_id")
+  commissionId String? @map("commission_id")
+  payoutId     String? @map("payout_id")
+
+  // HOW MUCH. Decimal(10,2) matches Payment.amount / Commission.amount exactly,
+  // so a reconstructed trail sums against the live rows without a cast.
+  amount   Decimal? @db.Decimal(10, 2)
+  currency String   @default("INR")
+
+  // GATEWAY IDENTIFIERS — the only handles Razorpay support will accept.
+  gateway          String?
+  gatewayOrderId   String? @map("gateway_order_id")
+  gatewayPaymentId String? @map("gateway_payment_id")
+  gatewayRefundId  String? @map("gateway_refund_id")
+
+  // BEFORE/AFTER. The single most valuable pair in a dispute and the one thing
+  // a mutable status column can never tell you afterwards.
+  statusBefore String? @map("status_before")
+  statusAfter  String? @map("status_after")
+
+  // At-least-once delivery is normal here (Razorpay retries a webhook for up to
+  // 24 hours). A caller that passes a stable key gets exactly one row per real
+  // event instead of one row per retry.
+  idempotencyKey String? @map("idempotency_key")
+
+  requestId String? @map("request_id")
+  ip        String?
+  note      String?
+  // Free-form context. Secret-shaped keys are stripped by the writer before it
+  // ever reaches this column — see redactMetadata() in lib/audit-money.ts.
+  metadata  Json?
+
+  @@unique([idempotencyKey])
+  @@index([bookingId, occurredAt])
+  @@index([paymentId, occurredAt])
+  @@index([commissionId])
+  @@index([payoutId])
+  @@index([actorId, occurredAt])
+  @@index([eventType, occurredAt(sort: Desc)])
+  @@index([occurredAt(sort: Desc)])
+  @@map("money_audit_events")
+}
+
+// ─── AUTH-05: MAGIC-LINK SINGLE-USE LEDGER ────────────────────────────────────
+//
+// routes/magic-link.ts used to say, in its own header, that no table was needed:
+// the token is a stateless HMAC and "single-use enforcement is by timestamp
+// (15 min TTL)". PJ-08 then introduced ONBOARDING_TOKEN_TTL_MIN = 72 hours and
+// made that link the ONLY credential a partnerships-provisioned provider holds
+// (there is no password column on User). A three-day link sitting in a
+// forwarded email or a mail-scanner log therefore authenticated as that temple
+// manager again and again, with no way to revoke it.
+//
+// One row per minted token; /verify consumes it with a single conditional
+// UPDATE and the row count is the whole decision. An ABSENT row counts as
+// consumed, so links minted before this ledger existed cannot bypass it.
+//
+// Written and read through $executeRawUnsafe rather than this delegate — the
+// same choice lib/email-session.ts makes for `email_sessions` — so the routes
+// stay usable in tests that mock prisma without a generated client. The model is
+// declared here anyway so the table is a described object rather than invisible
+// drift, and so the index names in
+// migrations/20260828000000_auth05_magic_link_token_ledger match Prisma's own.
+//
+// No relation to User on purpose: /verify CREATES the account on first sign-in,
+// so at mint time there is often no user row to point at, and a foreign key
+// would fail the ledger write for exactly the new-provider case this is for.
+model MagicLinkToken {
+  // sha256 of the token string, hex — NEVER the token. A plaintext ledger of
+  // live credentials would let anyone with read access to this table sign in as
+  // every pending recipient.
+  id String @id
+
+  userEmail String @map("user_email")
+
+  // Copied from the signed payload so expired rows can be swept without parsing
+  // tokens. Not the authority: verifyToken's own timestamp check rejects first.
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  // NULL until the link is used. The single-use flag.
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@index([userEmail])
+  @@map("magic_link_tokens")
+}
+
+// ─── LC-DEL: ACCOUNT-DELETION REQUEST LEDGER ─────────────────────────────────
+//
+// Apple Guideline 5.1.1(v) and Google Play both require in-app account deletion
+// for any app offering account creation. One row per request: the confirmation
+// challenge, the grace-period deadline, and the terminal outcome.
+//
+// Written and read through $queryRawUnsafe rather than this delegate, for the
+// same reason MagicLinkToken is: the routes and the service stay usable in tests
+// that mock prisma without a regenerated client, and the table is created both
+// by migrations/20260903000000_account_deletion and by lib/ensure-schema.ts.
+// The model is declared here anyway so the table is a described object rather
+// than invisible drift, and so the index names in that migration match Prisma's
+// own convention.
+model AccountDeletionRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @map("user_id") @db.Uuid
+
+  /// pending_confirmation | scheduled | purged | cancelled | expired
+  status String @default("pending_confirmation")
+
+  /// sha256 hex of the 6-digit confirmation code — NEVER the code. A plaintext
+  /// column here would be a live credential for irreversible deletion, readable
+  /// by anyone holding SELECT on this table.
+  codeHash      String?   @map("code_hash")
+  codeExpiresAt DateTime? @map("code_expires_at") @db.Timestamptz(6)
+  codeAttempts  Int       @default(0) @map("code_attempts")
+
+  /// whatsapp | email | dev — which rail the code went out on.
+  channel String?
+  reason  String?
+
+  requestedAt DateTime  @default(now()) @map("requested_at") @db.Timestamptz(6)
+  confirmedAt DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  purgeAfter  DateTime? @map("purge_after") @db.Timestamptz(6)
+  purgedAt    DateTime? @map("purged_at") @db.Timestamptz(6)
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz(6)
+
+  /// Non-fatal problems hit during the purge (a legacy table absent on this
+  /// database, a Supabase admin call that failed). Kept so a retry has something
+  /// to act on rather than a log line nobody reads.
+  warnings Json?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([purgeAfter])
+  @@map("account_deletion_requests")
 }

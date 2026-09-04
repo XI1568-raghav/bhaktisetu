@@ -1,236 +1,47 @@
-# Disaster Recovery Runbook
+# Disaster Recovery Runbook — SUPERSEDED, DO NOT FOLLOW
 
-> Operational playbook for catastrophic infrastructure events. Foundation for Series-A reliability story + insurance compliance.
+> **→ The runbook you want is [`docs/runbooks/disaster-recovery.md`](../runbooks/disaster-recovery.md).**
 
-## Recovery Time Objectives (RTO) + Recovery Point Objectives (RPO)
+## Why this file no longer has a body
 
-| Service | RTO target | RPO target |
-|---|---|---|
-| api.darshya.online | 4 hours | 15 minutes |
-| darshya.online (web) | 1 hour | N/A (static) |
-| Database (Supabase) | 4 hours | 1 hour |
-| Video proof storage | 24 hours | 1 hour |
-| Email + WhatsApp | 6 hours | N/A (eventual) |
-| Customer support | 8 hours | N/A |
+`OPS-10`. Every operational instruction previously on this page described
+infrastructure that has never existed in this product. The body was removed on
+2026-08-28 rather than left in place, because a disaster-recovery runbook is
+read exactly once — at 2am, under stress, by someone who believes it. Sending
+that person to look for consoles that do not exist costs the whole recovery
+window. The stub is kept so an old bookmark, a Notion link or a printed page
+still lands somewhere true instead of 404ing.
 
-## Disaster scenarios + response
+The removed content told a responder to:
 
-### Scenario 1: Render API region complete outage
-
-**Trigger**: Render Mumbai region down >5 minutes
-**Detection**: UptimeRobot alert + Sentry error spike
-**Response**:
-1. Verify outage via Render status page (status.render.com)
-2. Manual failover via Cloudflare DNS to Singapore standby (per multi-region spec)
-3. Singapore instance becomes primary
-4. Communicate to customers via Twitter + status page
-5. Monitor for Mumbai recovery
-6. Restore Mumbai → standby when stable 30 min
-
-**Recovery time**: 4 hours (manual coordination)
-**Data loss**: Up to 1 hour (last DB replication)
-
-### Scenario 2: Supabase database complete failure
-
-**Trigger**: Supabase Mumbai PostgreSQL unreachable
-**Detection**: API health endpoint returns 500
-**Response**:
-1. Verify with Supabase support (status.supabase.com)
-2. If Supabase outage: wait for restoration
-3. Activate Singapore read-replica as primary (manual)
-4. Apply pending writes from logs (last 1hr backed up)
-5. Customer notification via Twitter + email
-6. Restore Mumbai primary when stable
-
-**Recovery time**: 4-6 hours
-**Data loss**: Up to 1 hour writes
-
-### Scenario 3: Cloudflare Pages global outage
-
-**Trigger**: darshya.online unreachable globally
-**Detection**: UptimeRobot + global Twitter complaints
-**Response**:
-1. Verify via Cloudflare status page
-2. Activate backup hosting (Vercel / Netlify) if available
-3. DNS update to backup hosting (24-72hr propagation)
-4. Customer notification
-
-**Recovery time**: 1-2 hours
-**Data loss**: None (static content)
-
-### Scenario 4: Payment processor (Razorpay) outage
-
-**Trigger**: New bookings stop generating Razorpay sessions
-**Detection**: Booking funnel analytics + customer complaints
-**Response**:
-1. Verify with Razorpay (status.razorpay.com)
-2. Activate Stripe alternative (manual flag)
-3. Existing bookings unaffected (already processed)
-4. New bookings via Stripe only
-5. Restore Razorpay when available
-
-**Recovery time**: 2-4 hours
-**Revenue impact**: ~₹50K-100K depending on duration
-
-### Scenario 5: Major data breach (security incident)
-
-**Trigger**: Unauthorized access to customer DB detected
-**Detection**: Sentry alerts + security audit + customer complaints
-**Response**:
-1. Immediate: Isolate affected database
-2. Reset all customer passwords + invalidate sessions
-3. Engage independent security firm for forensic audit
-4. Report to Data Protection Board India within 72 hours (DPDP requirement)
-5. Notify affected customers individually
-6. Hire crisis PR firm if affecting >1000 customers
-7. Insurance claim filed (per insurance portfolio spec)
-
-**Recovery time**: 30 days (full incident response)
-**Reputation impact**: Could be significant; mitigation: transparent communication
-
-### Scenario 6: Founder unavailability (illness/accident)
-
-**Trigger**: Founder unable to respond for >24 hours
-**Detection**: Co-founder dependency check
-**Response**:
-1. Advisory board emergency meeting (1 advisor designated as crisis contact)
-2. CS contractor activated for operational continuity
-3. Engineer-contractor activated for technical issues
-4. Investor + customer communication: "Founder personal emergency, operations continue"
-5. Designated successor (TBD post Series A)
-
-**Recovery time**: Variable
-**Mitigation**: Founder personal life insurance + advisor protocols + documented handover
-
-### Scenario 7: Catastrophic data center loss (Mumbai region disappears)
-
-**Trigger**: Render Mumbai region permanently unavailable
-**Detection**: Render announcement + extended outage
-**Response**:
-1. Switch entirely to Singapore region (immediate)
-2. Restore from Supabase backup to new primary
-3. Reconfigure DNS + monitoring + agents
-4. Customer notification (24-72 hour migration window)
-
-**Recovery time**: 24-72 hours
-**Data loss**: Potentially 1-24 hours depending on backup status
-
-## Backup strategy
-
-### Automated daily backups (per R-Q2-IT-003 spec)
-
-```bash
-# GH Actions cron 03:00 UTC daily
-pg_dump $SUPABASE_DIRECT_URL --no-owner > dump-$DATE.sql
-gzip dump-$DATE.sql
-aws s3 cp dump-$DATE.sql.gz s3://bhaktisetu-backups/$DATE.sql.gz
-```
-
-### Retention
-
-- Standard tier first 7 days
-- Glacier 8-30 days
-- Glacier Deep Archive 30-180 days
-- Auto-delete after 180 days
-
-### Verify weekly
-
-- Download latest backup
-- Import to test Supabase project
-- Verify row counts match
-- Alert if verification fails
-
-## Communication templates
-
-### Status page (status.bhaktisetu.com — Q4 launch)
-
-- Real-time service status
-- Incident timeline
-- Founder-level updates
-
-### Customer email (per crisis)
-
-```
-Subject: ⚠️ Bhaktisetu Service Status Update
-
-Namaste,
-
-[Specific scenario] occurred on [date/time]. Our team is working to restore full service.
-
-Current status:
-- [What's down]
-- [What's still working]
-- [Estimated resolution]
-
-For urgent matters:
-- WhatsApp +91-XXXXX-XXXXX
-- Email founder@bhaktisetu.com
-
-We will provide hourly updates here + status.bhaktisetu.com.
-
-Apologies for any inconvenience.
-
-🙏
-Sunil Kumar
-Founder, Bhaktisetu Foundation
-```
-
-### Twitter
-```
-⚠️ Bhaktisetu update: [Specific incident]
-
-Current status: [What's down + working]
-ETA: [Time]
-Updates: status.bhaktisetu.com
-Direct contact: +91-XXXXX-XXXXX
-
-We'll update hourly. Apologies for inconvenience. 🙏
-```
-
-## Founder responsibilities
-
-- Test DR runbook quarterly (planned downtime scenario)
-- Verify backup integrity weekly
-- Maintain status.bhaktisetu.com (Q4 launch)
-- Annual DR drill with full team
-- Insurance coverage review annually
-
-## Counsel involvement
-
-- DPDP incident notification protocols documented
-- Insurance claim filing process documented
-- Customer communication legal review
-- Pre-incident PR firm relationship (Q1 2027)
-
-## Engineering tickets
-
-- Q4 W1: Status page setup (status.bhaktisetu.com)
-- Q4 W2: Backup verification automation
-- Q4 W3: Singapore standby setup
-- Q4 W4: First DR drill (planned downtime)
-- Q1 2027: Quarterly DR drill cadence established
-- Annual: External DR audit by tier-2 firm
-
-## Insurance + contingency
-
-- Cyber liability insurance (per portfolio spec)
-- E&O insurance for service interruption
-- D&O insurance for founder personal liability
-- Business interruption insurance considered Year 2
-
-## Customer compensation matrix
-
-| Outage type | Compensation |
+| Removed instruction | Reality |
 |---|---|
-| <2hr | None (within SLA) |
-| 2-6hr | ₹100 wallet credit per affected customer |
-| 6-24hr | ₹500 wallet credit + apology email |
-| >24hr | Full refund of any bookings during outage + ₹500 credit |
-| Data breach affecting customer | Full refund + 1 year free Bhakti Pro + apology + remediation |
+| Fail over from the **Render Mumbai** region | Both services run in Render **`oregon`** (US West) — `render.yaml:15`, `:56`. There has never been a Mumbai region. |
+| Promote the **Singapore standby** / **Singapore read-replica** | No standby, no replica, no warm spare exists in any region. |
+| Route around a **Cloudflare Pages** outage | Pages is not a hosting layer. Auto-deploy was killed 2026-07-08; web is Render Docker behind Cloudflare DNS + edge only. |
+| Switch payments to the **Stripe** rail | Stripe was removed (2026-08-11 audit); its webhook 404s. `PaymentGateway.stripe` survives only as an unused schema enum value. Razorpay is the only rail. |
+| Restore from the **S3 / Glacier / Glacier Deep Archive** tiers | No S3 or Glacier tier exists. Backups are a daily `pg_dump` into Supabase Storage — the same Supabase project the database lives in (`OPS-03`), so one account suspension takes the database and every backup together. |
+| Post to the **status page** (`status.bhaktisetu.com`) | Does not exist. Aspirational copy. |
+| Wait for the **UptimeRobot** alert | No external uptime monitor is wired in this repository. Monitoring runs on GitHub Actions (`OPS-09`). |
+| Meet **RTO 4h / RPO 15min–1h** | Nothing in this system produces those numbers. API/web recovery is bounded only by a human noticing; RPO is unbounded until a backup is *proven* to exist. |
 
-## Founder mental health (post-crisis)
+## What to do instead
 
-- Allocate 2 days recovery after any Tier 1 crisis
-- Process incident with advisory board within 7 days
-- Document lessons learned + share with team
-- Avoid blame culture; focus on system improvement
+1. Open [`docs/runbooks/disaster-recovery.md`](../runbooks/disaster-recovery.md) —
+   authoritative, written 2026-08-20, every row cited to a file in this repo,
+   and anything unverifiable marked `[verify]` rather than asserted.
+2. To roll back or redeploy a service:
+   [`docs/runbooks/prod-rollback.md`](../runbooks/prod-rollback.md).
+   (A `git revert` + push deploys nothing — `autoDeploy: false` on both
+   services. See `OPS-06`.)
+3. To restore the database: [`docs/runbooks/db-restore.md`](../runbooks/db-restore.md).
+   Note that no restore has ever been recorded as executed.
+
+## If you are here to write an RTO/RPO into a document
+
+Do not copy the table that used to be on this page into a pitch deck, an
+insurance form, a DPA or a customer contract. Those were targets that no
+mechanism in this system delivers. `docs/runbooks/disaster-recovery.md` carries
+the honest numbers under "Honest RTO / RPO". The same correction was applied to
+`docs/legal/additional-legal-docs-pack.md`, which was selling a Singapore
+standby to counterparties.

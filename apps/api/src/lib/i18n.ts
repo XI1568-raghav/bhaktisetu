@@ -57,6 +57,29 @@ export type { SupportedLanguage, TranslatedLanguage };
 /** Query parameter that overrides everything for one request. */
 export const LANG_QUERY_PARAM = 'lang';
 
+/**
+ * The language a brand-new account is created with — I18N-07.
+ *
+ * Four signup paths used to answer this question independently and they did not
+ * agree: POST /auth/verify-otp, the Google upsert and the WhatsApp OTP route
+ * all wrote 'hi'; the magic-link route wrote 'en'. Two devotees could sign up
+ * for the same product minutes apart and get their errors in different
+ * languages purely by which button they pressed. Now that
+ * `resolveRequestLanguage` actually READS this column, that inconsistency is
+ * user-visible rather than cosmetic.
+ *
+ * The value is 'hi' because prisma/schema.prisma already declares
+ * `preferredLanguage Language @default(hi)`, so 'hi' is what a create that
+ * omits the field has always produced. Making the code disagree with the schema
+ * would mean a row's language depended on which code path inserted it.
+ * preferred-language-contract.i18n07.test.ts asserts the two stay equal.
+ *
+ * NOTE what this is not: it is not a claim about the visitor. It is the value
+ * stored before anyone has chosen, and a devotee who picks a language in the
+ * profile overwrites it (and clears the resolver cache) on the spot.
+ */
+export const SIGNUP_DEFAULT_LANGUAGE = 'hi' satisfies SupportedLanguage;
+
 /** How long a user's stored language choice is trusted without re-reading it. */
 export const PREFERRED_LANGUAGE_TTL_MS = 5 * 60 * 1000;
 
@@ -68,6 +91,53 @@ interface CacheEntry {
 }
 
 const preferredLanguageCache = new Map<string, CacheEntry>();
+
+/** How many users' language choices this process will hold at once. */
+export const PREFERRED_LANGUAGE_CACHE_MAX = 10_000;
+
+/** Observability seam. Nothing in the request path reads it. */
+export function preferredLanguageCacheSize(): number {
+  return preferredLanguageCache.size;
+}
+
+/**
+ * Write an entry, and keep the map from being a leak while doing it.
+ *
+ * THE DEFECT THIS CLOSES. Expiry decided whether an entry was TRUSTED, never
+ * whether it was KEPT: `expiresAt` was only ever compared on read, and the only
+ * delete in the module was the explicit `clearPreferredLanguageCache` a profile
+ * update calls. So one row was written for every authenticated user who
+ * triggered a single error response and none was ever removed — a Map that
+ * grows monotonically for the life of a process that is not restarted between
+ * deploys. Proven at 12,000 retained entries, every one of them long expired,
+ * by preferred-language-resolver.i18n07.test.ts.
+ *
+ * Pruning on write rather than on a timer keeps the cost proportional to use
+ * and adds no interval to a process that may sit idle: the sweep runs only when
+ * the map is at the cap, which on a normal day never happens. Insertion order
+ * is Map's own, so the fallback eviction after a sweep that freed nothing (all
+ * 10,000 entries live inside the same five minutes) drops the oldest first.
+ */
+function rememberPreferredLanguage(userId: string, lang: string | null, now: number): void {
+  if (
+    preferredLanguageCache.size >= PREFERRED_LANGUAGE_CACHE_MAX &&
+    !preferredLanguageCache.has(userId)
+  ) {
+    for (const [key, entry] of preferredLanguageCache) {
+      if (entry.expiresAt <= now) preferredLanguageCache.delete(key);
+    }
+    while (preferredLanguageCache.size >= PREFERRED_LANGUAGE_CACHE_MAX) {
+      const oldest = preferredLanguageCache.keys().next();
+      if (oldest.done) break;
+      preferredLanguageCache.delete(oldest.value);
+    }
+  }
+
+  preferredLanguageCache.set(userId, {
+    lang,
+    expiresAt: now + PREFERRED_LANGUAGE_TTL_MS,
+  });
+}
 
 /** Test seam, and the hook an admin "user changed their language" event would use. */
 export function clearPreferredLanguageCache(userId?: string): void {
@@ -164,17 +234,11 @@ export async function resolveRequestLanguage(
   let stored: string | null = null;
   try {
     stored = await load(userId);
-    preferredLanguageCache.set(userId, {
-      lang: stored,
-      expiresAt: now + PREFERRED_LANGUAGE_TTL_MS,
-    });
+    rememberPreferredLanguage(userId, stored, now);
   } catch {
     // Negative-cache the failure too, so a database outage does not make every
     // error response re-attempt the same failing query.
-    preferredLanguageCache.set(userId, {
-      lang: null,
-      expiresAt: now + PREFERRED_LANGUAGE_TTL_MS,
-    });
+    rememberPreferredLanguage(userId, null, now);
   }
 
   return resolveLanguage({ preferredLanguage: stored, acceptLanguage });

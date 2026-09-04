@@ -173,8 +173,23 @@ const BOOKING_AUDIENCE_STATUSES = ['confirmed', 'video_uploaded', 'completed', '
  * de-duplicated in Node afterwards. On a 512 MB Render container the whole
  * audience had to fit in memory at once before the fan-out started.
  *
- * Paging keeps peak memory at one page regardless of audience size. Nobody is
- * dropped: the cursor walks the whole set, it just never holds all of it.
+ * What paging actually bought, stated precisely (the previous wording here —
+ * "peak memory at one page regardless of audience size" — was not true):
+ *
+ *   - BOUNDED: the per-QUERY transfer. One page of rows crosses the wire at a
+ *     time instead of the whole audience, and the row WIDTH dropped from full
+ *     rows to a single column. That is the bulk of the win.
+ *   - STILL O(audience): resident memory. `loadWaitlistPhones` /
+ *     `loadBookingHolderPhones` push every phone string into ONE array and
+ *     return it, so `runBroadcast` still receives the complete recipient list —
+ *     roughly 55 MB of V8 strings at 1M recipients. Paging never holds all the
+ *     ROWS; it does hold all the PHONES.
+ *
+ * Making peak memory genuinely O(page) means streaming each page into the
+ * fan-out instead of accumulating, which is a change to runBroadcast's contract,
+ * not to these readers.
+ *
+ * Nobody is dropped either way: the cursor walks the whole set.
  */
 const RECIPIENT_PAGE_SIZE = 1000;
 

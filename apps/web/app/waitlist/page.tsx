@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import WaitlistForm from './WaitlistForm';
+import { H1 } from '../../components/ui/heading-recipe';
 
 
 export const metadata: Metadata = {
@@ -49,12 +50,12 @@ export default async function WaitlistPage({ searchParams }: WaitlistPageProps) 
           Early Access
         </p>
         <h1
-          className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-[1.15]"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text, #1f1b18)' }}
+          className={H1.catalogue}
+          style={{ color: 'var(--color-text, #1f1b18)' }}
         >
           Devotion. Verified. Be among the first 1000 devotees on Darshya.
         </h1>
-        <p className="mt-4 text-sm leading-relaxed max-w-xl mx-auto" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
+        <p className="mt-4 prose-body leading-relaxed max-w-xl mx-auto" style={{ color: 'var(--color-text-muted, #6b6258)' }}>
           Live darshan from verified temples, video-proof pujas, AI Pandit, daily panchang. Join the
           waitlist to lock your spot and unlock priority access.
         </p>

@@ -154,12 +154,176 @@ export function selectPujaBookingDetail(payload: unknown): PujaBookingDetail | n
   };
 }
 
-/** What the devotee actually pays at this temple: the override, else the base. */
+// ─── which offerings can actually be booked ─────────────────────────────────
+/**
+ * PAR-15 (4). The picker offered temples the server refuses.
+ *
+ * booking.service.ts:466 rejects an unverified temple outright:
+ *
+ *     if (!offering.temple?.isVerified) {
+ *       throw new Error('This temple has not been verified yet.');
+ *     }
+ *
+ * which routes/bookings.ts:650 classifies as a 409 TEMPLE_NOT_VERIFIED. The
+ * screen rendered every offering the catalogue returned and appended
+ * " · Verified" to the ones that were — which reads as a badge, a nice-to-have,
+ * not as the difference between a temple that can be booked and one that
+ * cannot. So the devotee chose the unverified temple, picked a day, waited for
+ * the slot read, typed the sankalp names, submitted, and only then learned it
+ * was never possible.
+ *
+ * The two groups are kept apart HERE rather than filtered away, because
+ * dropping the row would make a temple that is visible on the website vanish
+ * from the app with no reason given. The screen shows them, greyed, with the
+ * reason.
+ */
+export interface OfferingPartition {
+  /** The server will accept these. Catalogue order preserved. */
+  bookable: TempleOfferingOption[];
+  /** Real temples, listed, but a booking against them 409s today. */
+  unverified: TempleOfferingOption[];
+}
+
+export function partitionOfferings(offerings: TempleOfferingOption[]): OfferingPartition {
+  const bookable: TempleOfferingOption[] = [];
+  const unverified: TempleOfferingOption[] = [];
+  for (const o of offerings) (o.isVerified ? bookable : unverified).push(o);
+  return { bookable, unverified };
+}
+
+// ─── the request headers ────────────────────────────────────────────────────
+/**
+ * PAR-15 (3). Localised errors arrived in English.
+ *
+ * routes/bookings.ts:898 resolves the reply language with
+ *
+ *     pickLang(request.headers['accept-language'], query.lang)
+ *
+ * and note which function that is NOT: `pickLangFor`, the one that also
+ * consults the user's stored `preferredLanguage`. This call site does not. The
+ * header is therefore the ONLY channel by which this route can be told what
+ * language to answer in — and the app sent none, so every recoverable failure
+ * on the one screen that takes money-shaped input reached a Hindi devotee in
+ * English, while lib/error-i18n.ts has carried the Hindi, Tamil, Telugu and
+ * Kannada strings for SLOT_UNAVAILABLE and TEMPLE_NOT_VERIFIED all along.
+ *
+ * The value comes from `AuthUser.preferredLanguage` — a deliberate profile
+ * choice, which is what pickLangFor's own docblock says should outrank a
+ * handset locale. The app has no device-locale module (expo-localization is
+ * not a dependency), so the profile is the only signal available, and sending
+ * nothing when it is absent is correct: `pickLang` then defaults to English,
+ * exactly as today.
+ */
+const LANGUAGE_TAG_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
+
+/**
+ * A header-safe Accept-Language value, or null when there is nothing to send.
+ *
+ * The validation is not decoration. React Native's fetch does not reject a
+ * header value containing CR or LF, and `preferredLanguage` is a field the
+ * profile screen writes; the day it becomes free text, an unvalidated value
+ * here is request splitting. The tag is passed through rather than mapped to
+ * the five translated languages on purpose — `pickLang` already splits the
+ * primary subtag and falls back to English for anything it has no catalogue
+ * for, and duplicating that table here is how the two drift.
+ */
+export function acceptLanguageFor(preferredLanguage: string | null | undefined): string | null {
+  if (typeof preferredLanguage !== 'string') return null;
+  const tag = preferredLanguage.trim();
+  if (tag.length === 0 || tag.length > 35) return null;
+  return LANGUAGE_TAG_RE.test(tag) ? tag : null;
+}
+
+/**
+ * Headers for POST /api/v1/bookings/book.
+ *
+ * One place, because the screen used to build them inline and a second inline
+ * copy is how the bearer or the language goes missing from one call and not
+ * the other. The Accept-Language key is OMITTED rather than set empty: an
+ * empty header is a malformed request that happens to produce the same
+ * fallback.
+ */
+export function bookingRequestHeaders(input: {
+  token: string;
+  preferredLanguage?: string | null;
+}): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${input.token}`,
+  };
+  const lang = acceptLanguageFor(input.preferredLanguage);
+  if (lang) headers['Accept-Language'] = lang;
+  return headers;
+}
+
+/** The puja price at this temple: the override, else the base. NOT the total. */
 export function offeringPriceInr(
   detail: PujaBookingDetail,
   offering: TempleOfferingOption,
 ): number | null {
   return offering.priceInr ?? detail.basePriceInr;
+}
+
+// ─── what the devotee is actually charged ───────────────────────────────────
+/**
+ * THE FEE SCHEDULE. The puja price is not the total, and this screen used to
+ * say it was.
+ *
+ * `createBooking` charges the puja price PLUS a flat platform fee, plus a
+ * prasad-delivery fee when that is requested:
+ *
+ *     priceAmount = pujaPrice + PLATFORM_FEE_INR (+ PRASAD_DELIVERY_FEE_INR)
+ *     — apps/api/src/services/booking.service.ts
+ *
+ * and the Razorpay order is minted from `priceAmount`
+ * (payment.service.ts:702), so `/bookings/pay` — the page this screen hands
+ * off to — renders "Pay ₹1,151" for a ₹1,100 puja. The screen previously
+ * printed "Total ₹1,100", which is the CM-03 defect the web wizard was fixed
+ * for in 2026-08: an advertised price that grows on the payment sheet.
+ *
+ * ⚠ THE API IS THE SOURCE OF TRUTH. These two numbers live here only so the
+ * app can show what the server will collect. Drift is a mischarge, so
+ * `__tests__/booking-fee-disclosure.par15.test.ts` parses the API constants
+ * and asserts equality — and asserts equality with the web mirror
+ * (apps/web/lib/puja-pricing.ts) too, so the two clients cannot quote
+ * different totals for one booking.
+ */
+
+/** Flat platform fee added to every puja booking. */
+export const PLATFORM_FEE_INR = 51;
+
+/** Added only when the devotee opts into prasad delivery. */
+export const PRASAD_DELIVERY_FEE_INR = 150;
+
+export interface PujaPriceBreakdown {
+  /** The puja itself. null when no temple is chosen or no price is published. */
+  pujaPriceInr: number | null;
+  platformFeeInr: number;
+  /** 0 unless prasad delivery was requested. */
+  prasadFeeInr: number;
+  /** What will be collected. null exactly when the puja price is unknown. */
+  totalInr: number | null;
+}
+
+export function bookingPriceBreakdown(
+  detail: PujaBookingDetail | null,
+  offering: TempleOfferingOption | null,
+  opts: { prasadDeliveryRequested?: boolean } = {},
+): PujaPriceBreakdown {
+  const pujaPriceInr = detail && offering ? offeringPriceInr(detail, offering) : null;
+  const prasadFeeInr = opts.prasadDeliveryRequested ? PRASAD_DELIVERY_FEE_INR : 0;
+  // A price of exactly 0 is a real price here and totals to the bare platform
+  // fee, because that IS what the server would collect. The web mirror returns
+  // 0 for a 0 input instead, and the difference is deliberate: its input is a
+  // bare number, so it has to overload 0 to mean "nothing chosen yet". This
+  // signature has `null` for that, so 0 can mean zero.
+  const known = typeof pujaPriceInr === 'number' && pujaPriceInr >= 0;
+  return {
+    pujaPriceInr,
+    platformFeeInr: PLATFORM_FEE_INR,
+    prasadFeeInr,
+    totalInr: known ? pujaPriceInr + PLATFORM_FEE_INR + prasadFeeInr : null,
+  };
 }
 
 // ─── GET /api/v1/bookings/slots?templeId=<offeringId>&date=YYYY-MM-DD ───────
@@ -200,6 +364,60 @@ export function selectBookableSlots(payload: unknown): BookableSlot[] {
  */
 export function isSlotBookable(slot: BookableSlot): boolean {
   return slot.remaining !== null && slot.remaining > 0;
+}
+
+/**
+ * What the availability read actually told us — four outcomes, not one array.
+ *
+ * The screen used to keep a bare `BookableSlot[]`, so every failure arrived at
+ * the renderer indistinguishable from a successful empty answer and was printed
+ * as a claim about the temple: "This temple has published no slots for that
+ * day. Try another day." A dropped connection is not a fact about the temple,
+ * and the advice it comes with is wrong — the next day fails identically.
+ *
+ *   live        the server answered with per-slot capacity. The real answer.
+ *   published   the server resolved nothing ({slots: []} — inactive or
+ *               unresolvable offering) but the catalogue lists slots. They are
+ *               shown with remaining=null, which isSlotBookable refuses, and
+ *               the screen has to say capacity is unknown.
+ *   none        the read SUCCEEDED and there is genuinely nothing to book.
+ *               The only outcome allowed to make a statement about the temple.
+ *   unreadable  the request threw, or returned non-2xx, or returned a body
+ *               that is not {slots: [...]}. An error plus a retry — never a
+ *               slot grid, never "no slots".
+ */
+export type SlotAvailabilityKind = 'live' | 'published' | 'none' | 'unreadable';
+
+export interface SlotAvailability {
+  kind: SlotAvailabilityKind;
+  slots: BookableSlot[];
+}
+
+/**
+ * `reply` is null exactly when the fetch threw. Passing the raw {ok, body}
+ * pair rather than a pre-parsed list is deliberate: `ok` is the only thing that
+ * separates "the server said there are no slots" from "the server did not
+ * answer", and a caller that has already thrown it away cannot get it back.
+ */
+export function resolveSlotAvailability(
+  reply: { ok: boolean; body: unknown } | null,
+  publishedSlots: Array<{ time: string; label: string }>,
+): SlotAvailability {
+  if (!reply || !reply.ok) return { kind: 'unreadable', slots: [] };
+  // A 2xx whose body is not the documented shape is still a read we could not
+  // understand. Treating it as "no slots" is the same lie with extra steps.
+  if (!isRecord(reply.body) || !Array.isArray(reply.body.slots)) {
+    return { kind: 'unreadable', slots: [] };
+  }
+  const live = selectBookableSlots(reply.body);
+  if (live.length > 0) return { kind: 'live', slots: live };
+  if (publishedSlots.length > 0) {
+    return {
+      kind: 'published',
+      slots: publishedSlots.map((s) => ({ ...s, remaining: null, total: null })),
+    };
+  }
+  return { kind: 'none', slots: [] };
 }
 
 // ─── the form ───────────────────────────────────────────────────────────────
@@ -246,6 +464,17 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export function buildCreateBookingBody(form: BookingFormState): CreateBookingBody {
   if (!form.offering) {
     throw new BookingInputError('Choose the temple where the puja should be performed.');
+  }
+  // PAR-15 (4). The server refuses an unverified temple with a 409
+  // (booking.service.ts:466). Refusing here means the devotee is told before
+  // they fill in the sankalp names rather than after — and it covers the path
+  // the picker cannot: the screen pre-selects a sole offering, so a puja
+  // offered by exactly one unverified temple used to arrive with the form
+  // already pointed at a booking that could never succeed.
+  if (!form.offering.isVerified) {
+    throw new BookingInputError(
+      'This temple is not verified yet, so it cannot take bookings. Choose another temple.',
+    );
   }
   if (!form.scheduledDate || !DATE_RE.test(form.scheduledDate)) {
     throw new BookingInputError('Choose a date for the puja.');
@@ -346,6 +575,55 @@ export function bookingErrorMessage(body: unknown, statusCode: number): string {
 }
 
 /**
+ * What the create call actually told us — three outcomes, not two.
+ *
+ * The screen used to decide with `!res.ok || !booking`, which folds two
+ * unrelated events into one sentence:
+ *
+ *   failed      the server refused (4xx/5xx) or the request never arrived.
+ *               Nothing was created. Retrying is the right advice.
+ *   uncertain   the server ACCEPTED (2xx) but the body did not parse into a
+ *               booking. A `PujaBooking` row now exists at `pending_payment`
+ *               holding one of the offering’s seats. Retrying mints a SECOND
+ *               row and a SECOND hold for one customer intent — which is
+ *               exactly how the ghost bookings in DB-03 accumulated, and the
+ *               reason this module refuses to call /create-order at all.
+ *   created     the documented 201 `{ booking }`.
+ *
+ * Under the old shape the uncertain case reached the devotee as “Could not
+ * create the booking (status 201)”: a self-contradiction attached to the one
+ * instruction that makes the problem worse.
+ *
+ * `reply` is null exactly when the fetch threw — the request never reached the
+ * server, so nothing can have been created and that case IS a failure.
+ */
+export type CreateBookingOutcome =
+  | { kind: 'created'; booking: CreatedBooking }
+  | { kind: 'failed'; message: string }
+  | { kind: 'uncertain'; message: string };
+
+export function createBookingOutcome(
+  reply: { ok: boolean; status: number; body: unknown } | null,
+): CreateBookingOutcome {
+  if (!reply) {
+    return {
+      kind: 'failed',
+      message: 'Could not reach the server. Your booking was not created.',
+    };
+  }
+  if (!reply.ok) {
+    return { kind: 'failed', message: bookingErrorMessage(reply.body, reply.status) };
+  }
+  const booking = selectCreatedBooking(reply.body);
+  if (booking) return { kind: 'created', booking };
+  return {
+    kind: 'uncertain',
+    message:
+      'The server accepted the booking but did not describe it. Open My Bookings to check before trying again — a second attempt would hold a second slot.',
+  };
+}
+
+/**
  * The page that finishes payment for a booking that already exists.
  *
  * NOT /pujas/book — that is the wizard, and sending someone there after the
@@ -353,11 +631,39 @@ export function bookingErrorMessage(body: unknown, statusCode: number): string {
  * page below is built for precisely this case and is documented as never
  * re-posting /create-order (apps/web/app/bookings/pay/page.tsx:20-27). Its
  * query parameter is `id`.
+ *
+ * `webOrigin` is REQUIRED and carries no default. It used to be the literal
+ * `https://darshya.online`, while every API call in the app went through
+ * `apiBase()` — so any build not pointed at production created a real booking
+ * on ITS server and then opened PRODUCTION to pay for an id that does not
+ * exist there, after the slot hold had already been taken. A default here
+ * would let the next call site re-introduce that by omission with the type
+ * checker silent; lib/web-origin.ts resolves the value.
+ *
+ * AND IT GOES THROUGH THE LOGIN GATE, DELIBERATELY.
+ *
+ * `/bookings/pay` is wrapped in <AuthGuard> (pay/page.tsx:445), and AuthGuard
+ * redirects an unauthenticated visitor to
+ * `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`
+ * (AuthGuard.tsx:37) — `pathname` ONLY. The `?id=<bookingId>` is dropped, so
+ * after signing in the devotee arrives at a payment page with no booking to
+ * pay for, while the slot hold their booking took is already running.
+ *
+ * They will be unauthenticated almost every time: the app keeps its session in
+ * expo-secure-store and the website keeps its in
+ * localStorage['poojly_session'], and opening a link in the mobile browser
+ * shares neither. So the link addresses the login page itself with a redirect
+ * that keeps the query string. `safeRedirect` returns a root-relative target
+ * verbatim (login/page.tsx:31) and the already-authenticated effect forwards to
+ * the same target (login/page.tsx:117-120), so one URL is correct in both
+ * states. Repairing AuthGuard to forward `pathname + search` is the root cause
+ * and is a web-lane change; this URL keeps working after that lands.
  */
-export function resumePaymentUrl(bookingId: string): string {
-  return `https://darshya.online/bookings/pay?id=${encodeURIComponent(
+export function resumePaymentUrl(bookingId: string, webOrigin: string): string {
+  const target = `/bookings/pay?id=${encodeURIComponent(
     bookingId,
   )}&utm_source=mobile-app&utm_medium=booking-payment`;
+  return `${webOrigin.replace(/\/+$/, '')}/auth/login?redirect=${encodeURIComponent(target)}`;
 }
 
 // ─── dates ──────────────────────────────────────────────────────────────────

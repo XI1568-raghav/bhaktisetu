@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { NAVARATNA, NAVARATNA_SLUGS, getNavaratnaBySlug } from '../../../lib/navaratna';
+// CI-05: every encyclopedia detail page ends somewhere a devotee can act.
+import { detailCta } from '../../../lib/detail-route-cta';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -65,7 +69,7 @@ export default async function NavaratnaDetailPage({ params }: { params: Promise<
         <div className="inline-block text-sm font-semibold px-3 py-1 rounded-full bg-saffron-100 text-saffron-900 border border-saffron-300 mb-3">
           Gem #{n.number} of 9
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">{n.englishName}</h1>
+        <h1 className={`${H1.marketing} mb-2`}>{n.englishName}</h1>
         <div className="text-2xl text-gray-700 mb-1">{n.hindiName} · {n.sanskritName}</div>
         <div className="text-base text-gray-600 mb-1" lang="sa">{n.sanskritDevanagari}</div>
         <div className="text-base text-gray-600 italic mb-6">{n.alternateNames}</div>
@@ -182,7 +186,7 @@ export default async function NavaratnaDetailPage({ params }: { params: Promise<
           <Link href={`/nava-graha/${n.planetSlug}`} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
             About {n.planet}
           </Link>
-          <Link href="/astrology" className="px-4 py-2 bg-saffron-600 text-white rounded-lg hover:bg-saffron-700 text-sm">
+          <Link href="/astrology" className={buttonClass('primary', 'md')}>
             Book astrology consult before buying
           </Link>
           <Link href="/rashi" className="px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 text-sm">
@@ -190,6 +194,10 @@ export default async function NavaratnaDetailPage({ params }: { params: Promise<
           </Link>
         </div>
       </section>
+      {detailCta({
+        routePrefix: 'navaratna',
+        subject: n.englishName,
+      })}
     </main>
   );
 }

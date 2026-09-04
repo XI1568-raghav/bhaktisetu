@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { findNakshatra, type NakshatraFinderResult } from '../../../lib/nakshatra-finder';
 import { DateInput } from '../../../components/ui/DateInput';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 type TimezoneOption = { value: number; label: string };
 
@@ -77,7 +78,7 @@ export default function NakshatraFinderClient({ options }: { options: TimezoneOp
 
     <button
      type="submit"
-     className="mt-4 w-full rounded-full bg-saffron-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-saffron-700 sm:w-auto"
+     className={buttonClass('primary', 'md', 'mt-4 w-full shadow-sm sm:w-auto')}
     >
      Find My Nakshatra
     </button>
@@ -134,7 +135,7 @@ export default function NakshatraFinderClient({ options }: { options: TimezoneOp
       <div className="mt-5 flex flex-wrap gap-3">
        <Link
         href={`/astrology/baby-name?nak=${result.nakshatra.slug}`}
-        className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700"
+        className={buttonClass('primary', 'md')}
        >
         Find baby names for {result.nakshatra.name} →
        </Link>

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getMahavidya, MAHAVIDYAS } from '../../../../lib/mahavidyas';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -69,7 +71,7 @@ export default async function MahavidyaPage({ params }: { params: Promise<{ slug
       <div className="flex flex-wrap items-start justify-between gap-4">
        <div>
         <p className="text-xs uppercase tracking-wider text-saffron-600">Mahavidya {m.order} of 10</p>
-        <h1 className="mt-1 font-serif text-4xl font-bold text-gray-900">{m.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{m.name}</h1>
         <p className="mt-1 text-base text-saffron-700">{m.sanskrit}</p>
         <p className="mt-2 text-sm italic text-gray-700">{m.epithet}</p>
        </div>
@@ -196,7 +198,7 @@ export default async function MahavidyaPage({ params }: { params: Promise<{ slug
        indication of whether initiation (diksha) is appropriate for your spiritual goal.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/ask-pandit" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>
         Ask a Pandit Live
        </Link>
        <Link href="/pujas" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

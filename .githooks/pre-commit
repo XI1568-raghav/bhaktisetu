@@ -1,12 +1,43 @@
 #!/usr/bin/env bash
 # .githooks/pre-commit
-# Enable: git config core.hooksPath .githooks (already set per repo)
 #
-# Runs roadmap validator + index regen if docs/roadmap/items/ touched.
-# Blocks commit if validator finds errors. Auto-stages regenerated _index.json.
+# ENABLE (per clone, once — it is NOT automatic and this file does nothing until
+# you do it):
+#     git config core.hooksPath .githooks
+#     git config --get core.hooksPath      # must print .githooks
+# `pnpm install` runs this for you via the root `prepare` script. A fresh clone
+# that has never installed is unprotected; check with the command above.
+#
+# 1. Secret scan on the staged diff  (OPS-11) — runs on EVERY commit.
+# 2. Roadmap validator + index regen — only when docs/roadmap/items/ is touched.
 
 set -e
 
+# ── 1. SECRET SCAN — must come before any early exit ────────────────────────
+#
+# OPS-11. A credential that reaches a commit has to be rotated whatever happens
+# afterwards, so the only check worth having is one that runs BEFORE the commit
+# object exists. The CI scan in .github/workflows/commitlint.yml sees pull
+# requests only; a direct push to main is never scanned by it.
+#
+# Note what is deliberately absent: any path filter. ci.yml carries
+# `paths-ignore: docs/**, **/*.md` — and the file that actually leaked here
+# (docs/chat-archive/038e0002-…​.md) was markdown under docs/. A scanner that
+# skips the file type that already burned you is decoration.
+#
+# -U0 is required, not stylistic: scripts/secret-scan.mjs counts line numbers
+# forward from each hunk header, and context lines make that count drift.
+#
+# No matched value is printed. Bypass with `git commit --no-verify` if you are
+# certain it is a false positive — and then say so in the PR.
+if ! git diff --cached -U0 | node scripts/secret-scan.mjs; then
+  echo ""
+  echo "[pre-commit] SECRET SCAN FAILED — commit blocked. See the paths above."
+  echo "[pre-commit] To bypass: git commit --no-verify (say why in the PR)"
+  exit 1
+fi
+
+# ── 2. ROADMAP VALIDATION ───────────────────────────────────────────────────
 # Only run if staged files include docs/roadmap/items/
 if ! git diff --cached --name-only | grep -qE '^docs/roadmap/items/'; then
   exit 0

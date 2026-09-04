@@ -6,6 +6,8 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// TC-08 - these 28 drafts become published articles; see ./_claims.mjs.
+import { verifiedNoun } from './_claims.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, '..', '..', 'docs', 'agent-reports', 'blog-drafts');
@@ -110,7 +112,7 @@ A typical household ${deity} puja on ${weekday} follows this sequence:
 8. **Aarti** — Conclude with the deity's aarti, circling the lamp clockwise.
 9. **Visarjan** — Respectfully request the deity to return, and distribute prasad.
 
-For a complete, pandit-verified ${deity} puja with video proof, book through [our ${deity} puja service](/pujas/${pujaSlug}). Verified pandits perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
+For a complete ${deity} puja with video proof, book through [our ${deity} puja service](/pujas/${pujaSlug}). ${verifiedNoun('Pandits')} perform the full vidhi on your behalf and stream the entire ritual live, with the puja sankalpa taken in your name and gotra.
 
 ## Mantras and Aarti
 

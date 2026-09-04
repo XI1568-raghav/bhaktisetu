@@ -34,6 +34,15 @@ vi.mock('../lib/auth-context', () => ({
 
 vi.mock('../lib/api-config', () => ({
   API_BASE_URL: 'https://api.test',
+  // 401 ONLY, matching lib/api-config.ts:288. Omitting it makes the component
+  // throw inside its own catch; the test still passes and the throw escapes as
+  // an unhandled rejection, which vitest exits non-zero for. That failed the
+  // whole web suite in CI while all 4071 tests passed (priest-portal-p2).
+  // A 403 must NOT be reauth — see AUTH-06's second pass.
+  loadErrorIsReauth: (c: unknown) =>
+    typeof c === 'object' && c !== null && 'status' in c
+      ? (c as { status: number }).status === 401
+      : false,
 }));
 
 vi.mock('../components/AuthGuard', () => ({

@@ -267,7 +267,27 @@ Should be: `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` (mobile-first stack).
 4. Lighthouse mobile score baseline before/after
 
 ### Rollback
-Single `git revert` on batched commit restores prior IA. globals.css token edit isolated — own commit if risky.
+
+> **CORRECTED 2026-09-02 (OPS-06). The line that stood here was wrong.**
+> It named undoing the batched commit in git as the thing that restores the
+> prior IA. It does not. Both Render services carry `autoDeploy: false`
+> (`render.yaml:28` API, `:60` web) and no workflow in this repository deploys
+> on push, so undoing a commit rewrites history and leaves the same bytes
+> serving `darshya.online`.
+
+Rolling production back is a separate, hand-dispatched step. The authoritative
+procedure is `docs/runbooks/prod-rollback.md`:
+
+```bash
+# 1. find the last good SHA for the WEB service
+gh workflow run render-diag.yml -f mode=deploys -f sid=srv-d970l2ks728c738fc33g
+# 2. deploy that SHA — this, and only this, is the rollback
+gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f commit=<SHA>
+```
+
+Keeping the `globals.css` token edit in its own commit is still worth doing,
+but only because it narrows the diff a human has to read when choosing that
+SHA — not because committing is a deploy lever.
 
 ---
 

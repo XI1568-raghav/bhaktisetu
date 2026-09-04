@@ -12,6 +12,9 @@ import {
  Flame,
 } from 'lucide-react';
 import { getPublicPriest, type Offering } from '../../../lib/pandit-api';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { AvatarWithFallback } from '../../../components/AvatarWithFallback';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 
 interface PageProps {
@@ -87,8 +90,8 @@ function OfferingCard({
     </div>
     <div className="shrink-0">
      <Link
-      href={`/checkout/offering/${offering.id}`}
-      className="inline-flex items-center justify-center px-4 py-2 bg-saffron-600 text-white text-sm font-medium rounded-lg hover:bg-saffron-700 transition-colors"
+      href={`/checkout/offering?id=${offering.id}`}
+      className={buttonClass('primary', 'md')}
      >
       Book This Puja
      </Link>
@@ -118,23 +121,27 @@ export default async function PanditDetailPage({ params }: PageProps) {
     {/* Hero card */}
     <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-6 mb-6">
      <div className="flex flex-col sm:flex-row gap-5">
-      {priest.avatarUrl ? (
-       // eslint-disable-next-line @next/next/no-img-element
-       <img
-        src={priest.avatarUrl}
-        alt={priest.displayName}
-        className="w-20 h-20 rounded-full object-cover shrink-0"
-       />
-      ) : (
-       <div className="w-20 h-20 bg-saffron-100 rounded-full flex items-center justify-center shrink-0">
-        <span className="text-2xl font-bold text-saffron-700">
-         {initials(priest.displayName)}
-        </span>
-       </div>
-      )}
+      {/* PF-04: was a FALSY-only guard, so the dead `images.darshya.online`
+          URL in `priests.avatar_url` rendered as a broken-image icon on the
+          public pandit profile. AvatarWithFallback swaps to the same initials
+          tile on error and removes the <img>. */}
+      <AvatarWithFallback
+       src={priest.avatarUrl}
+       width={80}
+       height={80}
+       alt={priest.displayName}
+       className="w-20 h-20 rounded-full object-cover shrink-0"
+       fallback={
+        <div className="w-20 h-20 bg-saffron-100 rounded-full flex items-center justify-center shrink-0">
+         <span className="text-2xl font-bold text-saffron-700">
+          {initials(priest.displayName)}
+         </span>
+        </div>
+       }
+      />
       <div className="flex-1 min-w-0">
        <div className="flex items-center gap-2 mb-2">
-        <h1 className="text-2xl font-semibold text-surface-800">
+        <h1 className={H1.portal}>
          {priest.displayName}
         </h1>
         {priest.isVerified && (

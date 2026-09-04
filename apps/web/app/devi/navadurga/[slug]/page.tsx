@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getNavadurga, NAVADURGA } from '../../../../lib/navadurga';
+import { buttonClass } from '../../../../components/ui/button-recipe';
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -69,7 +71,7 @@ export default async function NavadurgaFormPage({ params }: { params: Promise<{ 
       <div className="flex flex-wrap items-start justify-between gap-4">
        <div>
         <p className="text-xs uppercase tracking-wider text-saffron-600">Day {form.day} of Navratri</p>
-        <h1 className="mt-1 font-serif text-4xl font-bold text-gray-900">{form.name}</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>{form.name}</h1>
         <p className="mt-1 text-base text-saffron-700">{form.sanskrit}</p>
         <p className="mt-2 text-sm italic text-gray-700">{form.meaning}</p>
        </div>
@@ -190,7 +192,7 @@ export default async function NavadurgaFormPage({ params }: { params: Promise<{ 
        muhurat — color, mantra, prasad, flower offered exactly as Devi Mahatmya prescribes.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
-       <Link href="/pujas" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+       <Link href="/pujas" className={buttonClass('primary', 'md')}>
         Book Navratri puja
        </Link>
        <Link href="/ask-pandit" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

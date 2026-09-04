@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { MAHABHARATA_PARVAS } from '../../lib/mahabharata-parvas';
 import { formatNumber } from '../../lib/format-locale';
@@ -54,7 +56,7 @@ export default function MahabharataIndexPage() {
 
       <header className="mb-10">
         <p className="text-xs uppercase tracking-wider text-indigo-600">18 parvas · {formatNumber(TOTAL_ADHYAYAS)} adhyayas · ~100,000 shlokas</p>
-        <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">महाभारत</h1>
+        <h1 className={`${H1.catalogue} mt-1`}>महाभारत</h1>
         <p className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">The Mahabharata, All 18 Parvas</p>
         <p className="mt-3 max-w-3xl text-base text-gray-700">
           The longest epic ever composed, Vyasa&apos;s account of the Kuru dynasty&apos;s

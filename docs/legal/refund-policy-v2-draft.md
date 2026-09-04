@@ -1,5 +1,12 @@
 # Refund Policy v2 — DRAFT (alias)
 
+> **Correction 2026-09-02 (`OPS-10`).** Row 8 of the treatment table used to read
+> *"NRI Stripe chargeback — Proof-of-delivery package within Stripe 7-day window"*.
+> **Stripe was removed on 2026-08-11**; Razorpay (INR only) is the live rail and no
+> replacement international processor has been chosen. The 7-day figure was a
+> Stripe-specific window and does not survive the removal, so it is marked `[verify]`
+> rather than replaced with a number nobody has confirmed.
+
 > R-Q1-L-002 canonical draft lives in companion files (split for translation workflow + lawyer-brief packaging). This alias preserves the spec-mandated filename so future cycles + the lawyer brief reference resolve cleanly.
 
 ## Canonical files
@@ -28,7 +35,7 @@ See `refund-policy-gap-analysis.md` for full table with Consumer Protection Act 
 | 5 | Cancel 24–72h | 50% refund |
 | 6 | Cancel >72h | 100% refund (draft does not deduct processing fee; lawyer-confirm) |
 | 7 | Payment failed + bank debited | Razorpay T+10 auto-reconciliation; manual 100% if unresolved |
-| 8 | NRI Stripe chargeback | Proof-of-delivery package within Stripe 7-day window |
+| 8 | NRI chargeback on the international rail (processor `[verify]` — Stripe removed 2026-08-11) | Proof-of-delivery package within the processor's evidence window — window length `[verify]` |
 | 9 | Force majeure | Reschedule first; 100% refund within 14 business days if declined |
 | 10 | Astrology consult dissatisfaction | NO REFUND — pre-purchase disclaimer mandatory in `apps/api/src/routes/consultation.ts` booking flow |
 | 11 | Subscription cancel mid-cycle | Pro-rata refund unused days; no refund if >50% consumed |

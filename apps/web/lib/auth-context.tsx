@@ -7,13 +7,18 @@ import {
  useState,
  useCallback,
  type ReactNode,
+ type MouseEvent as ReactMouseEvent,
 } from 'react';
 import {
  API_BASE_URL,
  fetchWithTimeout,
  isNetworkFailure,
  NETWORK_ERROR_MESSAGE,
+ UNREADABLE_RESPONSE_MESSAGE,
+ readJsonBody,
+ authHttpErrorMessage,
 } from './api-config';
+import { hasStoredProfile, reviveSessionFromCookieResult } from './session-revive';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -55,6 +60,50 @@ export interface AuthSession {
  expiresAt: number;
 }
 
+/**
+ * AUTH-09 — how far a sign-out reaches.
+ *
+ * `global` ends every session the account holds (the API burns every
+ * `refresh_token_jtis` row); `local` ends only the one on this device.
+ * Mirrors `logoutSchema` in apps/api/src/routes/auth.ts.
+ */
+export type SignOutScope = 'local' | 'global';
+
+export interface SignOutOptions {
+ scope?: SignOutScope;
+}
+
+/**
+ * What `signOut` will actually be handed at runtime.
+ *
+ * Eight portal layouts wire it straight into a button — `onClick={signOut}` in
+ * app/{admin,astrologer-portal,gaushala-portal,priest,store-admin,
+ * temple-portal,wellness-portal}/layout.tsx and app/dashboard/page.tsx — so the
+ * first argument is frequently a React MouseEvent and not an options bag. A
+ * bare `(options?: SignOutOptions)` signature makes every one of those eight a
+ * compile error (TypeScript's weak-type check: a MouseEvent shares no property
+ * with SignOutOptions), which is why the previous pass left the signature
+ * alone. Admitting the event in the type — and ignoring it at runtime via
+ * `readSignOutScope` — keeps those call sites untouched and still gives callers
+ * that DO pass options full checking on `scope`.
+ */
+export type SignOutArg = SignOutOptions | ReactMouseEvent;
+
+/**
+ * Reads a scope out of whatever `signOut` was called with.
+ *
+ * Deliberately structural rather than a cast: `onClick={signOut}` passes a
+ * MouseEvent, which has no `scope`, so this returns undefined and the API's
+ * global default applies — the pre-existing behaviour of every such button.
+ * An unrecognised string is also treated as absent rather than forwarded, so a
+ * typo can never widen or narrow a sign-out by accident.
+ */
+function readSignOutScope(arg: SignOutArg | undefined): SignOutScope | undefined {
+ if (!arg || typeof arg !== 'object') return undefined;
+ const raw = (arg as { scope?: unknown }).scope;
+ return raw === 'local' || raw === 'global' ? raw : undefined;
+}
+
 interface AuthContextValue {
  user: AuthUser | null;
  session: AuthSession | null;
@@ -64,7 +113,12 @@ interface AuthContextValue {
  verifyOtp: (phone: string, token: string) => Promise<{ success: boolean; message: string; isNewUser?: boolean }>;
  signInWithCredentials: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
  signUpWithCredentials: (data: SignUpData) => Promise<{ success: boolean; message: string; accessToken?: string; userId?: string }>;
- signOut: () => Promise<void>;
+ /**
+  * AUTH-09: the argument is OPTIONAL and omitting it keeps today's behaviour
+  * exactly — no `scope` on the wire, and the API's own default (global) applies.
+  * See the implementation for why global must stay the default.
+  */
+ signOut: (options?: SignOutArg) => Promise<void>;
  refreshUser: () => Promise<void>;
  demoSignIn: () => void;
 }
@@ -341,10 +395,28 @@ const STORAGE_KEYS = {
  * session survives a reload — and a stale cookie from an older build is
  * actively cleared whenever localStorage works.
  *
- * NOTE: this only shrinks the blast radius. Full remediation needs the API to
- * accept the httpOnly `darshya_refresh` cookie on POST /auth/refresh (its Zod
- * schema currently REQUIRES `refreshToken` in the body), after which the web
- * can stop persisting tokens in JS-readable storage at all.
+ * NOTE: this only shrinks the blast radius, and the note that used to sit here
+ * is now OUT OF DATE — it said full remediation waited on the API accepting the
+ * httpOnly `darshya_refresh` cookie on POST /auth/refresh, "its Zod schema
+ * currently REQUIRES refreshToken in the body". It no longer does:
+ * apps/api/src/routes/auth.ts:54-55 marks the field `.optional()` and
+ * `resolveRefreshToken` (:78-82) falls back to the cookie. loadSession now uses
+ * exactly that (see the SEC-02 revive branch below), so a token-free browser
+ * can already come back signed in.
+ *
+ * SEC-02 STEP 4 IS DONE — the token write below is gone. What used to force it
+ * was never the API; it was the files that read
+ * `localStorage['poojly_session'].accessToken` by hand and built their own
+ * Bearer header, all outside this module. Re-grepped 2026-08-28 after the last
+ * three were migrated (app/org/{accept,members,settings}, joining
+ * app/org/page.tsx, components/AartiOptIn and components/NotificationPrompt):
+ * NOTHING outside this file reads the key any more. app/auth/verify/page.tsx
+ * had already dropped off that list.
+ *
+ * The API side is done too: apps/api/src/middlewares/auth.ts treats an empty or
+ * whitespace-only `Authorization: Bearer` as ABSENT rather than as the
+ * empty-string token, so a page that interpolates a missing token falls through
+ * to the httpOnly `darshya_session` cookie instead of 401ing.
  */
 export function persistAuthStorage(sess: AuthSession | null, usr: AuthUser | null) {
   if (!sess || !usr) {
@@ -363,18 +435,71 @@ export function persistAuthStorage(sess: AuthSession | null, usr: AuthUser | nul
   // It carries profile fields only, never a token.
   setCookie(STORAGE_KEYS.USER, JSON.stringify(usr), 7);
 
-  let localStorageOk = true;
+  // SEC-02 step 4 (2026-08-28) — THE TOKEN IS NO LONGER WRITTEN ANYWHERE A
+  // SCRIPT CAN READ IT.
+  //
+  // The httpOnly `darshya_session` / `darshya_refresh` cookies are the durable
+  // store now, and loadSession revives from them (see the revive branch below).
+  // Every prerequisite is in place: the API accepts the cookie as a credential
+  // (#200), both session kinds can revive from cookies alone — Supabase via
+  // POST /auth/refresh, magic-link/email via POST /auth/session/revive — and no
+  // file outside this module reads `poojly_session` by hand any more. The last
+  // three that did (app/org/{accept,members,settings}) were migrated in the same
+  // pass; the write was the only thing keeping them alive, and they were the
+  // only thing keeping the write.
+  //
+  // The stale copy is actively REMOVED rather than left to expire: a browser
+  // that signed in before this shipped would otherwise carry the exposure for
+  // the entry's full lifetime, which is exactly what the finding is about.
+  //
+  // DEMO SESSIONS ARE THE ONE CARVE-OUT and it is compile-time dead in
+  // production — the NODE_ENV test is first so Terser folds the whole branch
+  // away, the same trick #198 used on DEMO_ACCOUNTS. A `demo-*` token is minted
+  // locally by this file, has no cookie behind it and so nothing to revive
+  // from, and is refused by the API in production. Without it the demo
+  // walkthrough would forget itself on every reload.
+  const isDemoSession =
+    process.env.NODE_ENV !== 'production' && sess.accessToken.startsWith('demo-');
+
   try {
-    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sess));
+    if (isDemoSession) localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sess));
+    else localStorage.removeItem(STORAGE_KEYS.SESSION);
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(usr));
   } catch {
-    localStorageOk = false;
+    // localStorage unavailable (Safari private mode). Nothing to fall back to
+    // and nothing lost: the profile marker was already written to the cookie
+    // above, and the httpOnly session pair is what this browser reloads from.
   }
 
-  if (localStorageOk) {
-    removeCookie(STORAGE_KEYS.SESSION);
-  } else {
-    setCookie(STORAGE_KEYS.SESSION, JSON.stringify(sess), 7);
+  // A-007 kept a `path=/` cookie copy of the session for the localStorage-
+  // unavailable case (Safari private mode). That is no longer a fallback worth
+  // having: the browser attaches a `path=/` cookie to every same-origin
+  // navigation, RSC payload and static asset, so it is strictly worse exposure
+  // than the localStorage entry just removed — and the httpOnly pair already
+  // covers that browser. Any copy an older build left behind is cleared.
+  removeCookie(STORAGE_KEYS.SESSION);
+}
+
+/**
+ * SEC-02 — persist the profile and NOTHING ELSE.
+ *
+ * Used by the cookie-revive path. That session was reconstructed from the
+ * httpOnly `darshya_refresh` cookie, which means the cookie is already a
+ * complete and durable store for it; writing a JS-readable copy alongside would
+ * hand an injected script the credential back for no gain whatsoever. The
+ * session lives in React state for the lifetime of the tab and is re-minted
+ * from the cookie on the next load.
+ *
+ * `poojly_user` carries profile fields only — never a token — and is written to
+ * both stores because middleware.ts reads the cookie while the in-app readers
+ * read localStorage.
+ */
+function persistProfileOnly(usr: AuthUser): void {
+  setCookie(STORAGE_KEYS.USER, JSON.stringify(usr), 7);
+  try {
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(usr));
+  } catch {
+    // localStorage unavailable — the cookie above is enough for the gate.
   }
 }
 
@@ -382,12 +507,26 @@ export function persistAuthStorage(sess: AuthSession | null, usr: AuthUser | nul
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * AUTH-07 retry budget for the proactive token refresh.
+ *
+ * Bounded on purpose: a browser that cannot reach the API must not sit in a
+ * retry loop for the life of the tab. Backoff is 30s, 60s, 2m, 4m, 5m (capped),
+ * which covers a Render cold start and a short connectivity gap and gives up
+ * well inside the token's own remaining life.
+ */
+const REFRESH_RETRY_BASE_MS = 30_000;
+const MAX_REFRESH_ATTEMPTS = 5;
+
 // ─── Provider ──────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
  const [user, setUser] = useState<AuthUser | null>(null);
  const [session, setSession] = useState<AuthSession | null>(null);
  const [isLoading, setIsLoading] = useState(true);
+ // AUTH-07: bumping this re-arms the proactive-refresh effect below. Without
+ // it a failed refresh could never schedule another one.
+ const [refreshAttempt, setRefreshAttempt] = useState(0);
 
  /**
  * Persists session data via the shared writer (see persistAuthStorage) and
@@ -433,6 +572,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const userCookie = getCookie(STORAGE_KEYS.USER);
  if (sessCookie) storedSession = JSON.parse(sessCookie);
  if (userCookie) storedUser = JSON.parse(userCookie);
+ }
+
+ // SEC-02: the profile can be in the cookie while localStorage holds
+ // nothing — /auth/verify writes only localStorage, persistAuthStorage
+ // writes both, and a browser that evicted localStorage keeps the cookie.
+ // Fill it in before deciding this visitor is signed out.
+ if (!storedUser) {
+ const userCookie = getCookie(STORAGE_KEYS.USER);
+ if (userCookie) {
+ try {
+ storedUser = JSON.parse(userCookie);
+ } catch {
+ storedUser = null;
+ }
+ }
+ }
+
+ // ── SEC-02: no JS-readable token, but this browser has signed in before.
+ //
+ // This is the branch that makes the whole migration possible. Until now it
+ // did not exist: "no `poojly_session` in localStorage" meant "signed out",
+ // full stop, so deleting the localStorage write logged every user out on
+ // their next page load and the token could never leave.
+ //
+ // The httpOnly `darshya_refresh` cookie is now sufficient on its own — see
+ // the evidence in lib/session-revive.ts — so a token-free browser can mint
+ // a live session and come back signed in.
+ //
+ // Gated on the profile marker (`poojly_user`, token-free) so an anonymous
+ // visitor never pays a cross-origin round-trip and the homepage never needs
+ // the API to be up in order to render.
+ //
+ // The revived session is put in MEMORY ONLY. It was reconstructed from a
+ // cookie, so writing a JS-readable copy of it would re-create the exact
+ // exposure this exists to remove.
+ //
+ // As of SEC-02 step 4 this IS the ordinary path, not a fallback: nothing
+ // outside this module reads `poojly_session` any more, so persistAuthStorage
+ // has stopped writing it and every signed-in browser arrives here on a cold
+ // load. Only a demo session (dev-only) still has a local token to find.
+ if (!storedSession && hasStoredProfile()) {
+ const outcome = storedUser
+ ? await reviveSessionFromCookieResult()
+ : { session: null, apiAnswered: true };
+ if (outcome.session && storedUser) {
+ const revivedUser: AuthUser = { ...storedUser, role: fromApiRole(storedUser.role) };
+ setSession(outcome.session as AuthSession);
+ setUser(revivedUser);
+ persistProfileOnly(revivedUser);
+ } else if (outcome.apiAnswered) {
+ // The marker outlived the cookie. Clear it: middleware.ts gates every
+ // portal on its mere presence, so leaving it behind keeps handing a
+ // signed-out visitor the portal shell instead of a clean 307 to login.
+ persistSession(null, null);
+ }
+ // SEC-02 step 4: and if the API never ANSWERED, keep the marker. `null` used
+ // to mean both "your cookies are dead" and "we never heard back", and this
+ // branch cleared on either — survivable while only a token-free browser
+ // reached it, but step 4 sends EVERY signed-in browser through here on every
+ // cold load. A waking Render dyno past the 20s budget would otherwise sign
+ // the whole user base out. This visitor renders as signed out for this load
+ // and revives on the next one, which is the honest answer to "we do not know".
+ setIsLoading(false);
+ return;
  }
 
  if (!storedSession || !storedUser) {
@@ -523,6 +726,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // Proactive refresh while the tab stays open. Supabase access tokens
  // last ~1h; we refresh ~5 min before expiry so long single-page sessions
  // (gaushala dashboard, etc.) never hit a 401 mid-action.
+ //
+ // AUTH-07 (2026-08-20): THIS USED TO BE SILENT *AND* TERMINAL.
+ //
+ // The body was `if (res.ok) { … }` with no `else` and an empty `catch`, so a
+ // failed refresh set no state at all — and this effect re-arms only when one
+ // of its dependencies changes. Nothing changed, so the timer was never
+ // scheduled again. ONE transient failure (a cold dyno, a dropped connection,
+ // a 502) meant the token was never renewed, expired minutes later, and the
+ // next action the user took 401'd with no explanation. `refreshAttempt` is
+ // what lets the effect re-arm: it is a dependency, and bumping it IS the
+ // retry.
  useEffect(() => {
  if (!session || session.accessToken.startsWith('demo-')) return;
  const expMs =
@@ -531,8 +745,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  : session.expiresAt;
  if (!expMs) return;
  const refreshAt = expMs - 5 * 60_000;
- const delay = Math.max(refreshAt - Date.now(), 10_000);
+ // A retry must not wait for the (already passed) refresh point again —
+ // that is what turns a 30s backoff into a 10s-floor busy loop.
+ const delay =
+ refreshAttempt === 0
+ ? Math.max(refreshAt - Date.now(), 10_000)
+ : Math.min(REFRESH_RETRY_BASE_MS * 2 ** (refreshAttempt - 1), 5 * 60_000);
+
  const timer = setTimeout(async () => {
+ // The session cannot be renewed. Signing out is the honest end state:
+ // leaving a dead token in place makes every later action 401 with no
+ // explanation, which is exactly what this finding describes.
+ const giveUp = () => {
+ setSession(null);
+ setUser(null);
+ persistSession(null, null);
+ };
+ const retryOrGiveUp = () => {
+ if (Date.now() >= expMs || refreshAttempt >= MAX_REFRESH_ATTEMPTS) {
+ giveUp();
+ return;
+ }
+ setRefreshAttempt(refreshAttempt + 1);
+ };
+
  try {
  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
  method: 'POST',
@@ -541,18 +777,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ refreshToken: session.refreshToken }),
  });
  if (res.ok) {
- const data = await res.json();
+ const data = await readJsonBody<{ session?: AuthSession }>(res);
  if (data?.session && user) {
  setSession(data.session);
  persistSession(data.session, user);
+ setRefreshAttempt(0);
+ return;
  }
+ // 200 with a body we cannot use is not a success.
+ retryOrGiveUp();
+ return;
  }
+ if (res.status === 401 || res.status === 403) {
+ // Definitive: the refresh credential itself is dead (expired,
+ // rotated away, or family-revoked after a replay). Retrying cannot
+ // help and would only delay telling the user.
+ giveUp();
+ return;
+ }
+ retryOrGiveUp();
  } catch {
- // Silent — next API call's own retry path will surface if still bad.
+ // Network/timeout — the recoverable case, and the one the old empty
+ // catch made permanent.
+ retryOrGiveUp();
  }
  }, delay);
  return () => clearTimeout(timer);
- }, [session, user, persistSession]);
+ }, [session, user, persistSession, refreshAttempt]);
 
  /**
  * Sends OTP to the given phone number.
@@ -565,13 +816,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ phone }),
  });
 
- const data = await res.json();
-
+ // AUTH-02: status BEFORE body. A gateway 502/503 answers with HTML, and
+ // parsing that first threw a SyntaxError into the catch below — where it
+ // came back out as "Network error", a sentence that names the wrong cause.
  if (!res.ok) {
- return { success: false, message: data.message || 'Failed to send OTP' };
+ const errBody = await readJsonBody<{ message?: string }>(res);
+ return {
+ success: false,
+ message: errBody?.message || authHttpErrorMessage(res.status, 'Failed to send OTP'),
+ };
  }
 
- return { success: true, message: data.message };
+ const data = await readJsonBody<{ message?: string }>(res);
+ return { success: true, message: data?.message ?? 'OTP sent.' };
  } catch {
  return { success: false, message: 'Network error. Please check your connection.' };
  }
@@ -588,10 +845,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ phone, token }),
  });
 
- const data = await res.json();
-
+ // AUTH-02: status BEFORE body — see signInWithOtp above.
  if (!res.ok) {
- return { success: false, message: data.message || 'Verification failed' };
+ const errBody = await readJsonBody<{ message?: string }>(res);
+ return {
+ success: false,
+ message: errBody?.message || authHttpErrorMessage(res.status, 'Verification failed'),
+ };
+ }
+
+ const data = await readJsonBody<{ session?: AuthSession; user?: AuthUser; message?: string }>(res);
+ if (!data?.session || !data?.user) {
+ return { success: false, message: UNREADABLE_RESPONSE_MESSAGE };
  }
 
  const newSession: AuthSession = data.session;
@@ -606,7 +871,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
  return {
  success: true,
- message: data.message,
+ message: data.message ?? 'Signed in successfully',
  isNewUser: newUser.isNewUser,
  };
  } catch {
@@ -648,9 +913,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // Purely additive: the JSON Bearer response and the localStorage write below
  // are untouched, so no signed-in user is disturbed by this shipping. Retiring
  // the localStorage copy is a separate, larger step — 95 files under apps/web
- // hand-build `Authorization: Bearer ${session.accessToken}` and only 11 send
- // credentials, and POST /auth/refresh still REQUIRES `refreshToken` in the
- // body (its Zod schema), so cutting it now would 401 most of the product.
+ // hand-build `Authorization: Bearer ${session.accessToken}`, and seven of them
+ // read it straight out of localStorage rather than from useAuth(), so cutting
+ // the write now would 401 those surfaces. (The other half of that sentence —
+ // "POST /auth/refresh still REQUIRES refreshToken in its Zod schema" — was
+ // true when it was written and is not any more; see persistAuthStorage.)
  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
@@ -658,10 +925,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ email: emailLower, password }),
  });
 
- const data = await res.json();
-
+ // AUTH-02 (2026-08-20): STATUS FIRST. This used to be
+ // `const data = await res.json(); if (!res.ok) …`, and the order was the
+ // whole defect. A cold, crashed or suspended API answers through a gateway
+ // that sends 502/503 with an HTML body; `res.json()` on HTML throws a
+ // SyntaxError, which is not a network failure by isNetworkFailure's
+ // definition, so it fell through the catch below to the last line and told
+ // a user whose password was CORRECT that their email or password was
+ // wrong. They then go and reset a password that was never the problem.
+ // A 5xx is our failure and must say so.
  if (!res.ok) {
- return { success: false, message: data.message || 'Invalid email or password' };
+ const errBody = await readJsonBody<{ message?: string }>(res);
+ return {
+ success: false,
+ message:
+ errBody?.message || authHttpErrorMessage(res.status, 'Invalid email or password'),
+ };
+ }
+
+ const data = await readJsonBody<{ session?: AuthSession; user?: AuthUser }>(res);
+ if (!data?.session || !data?.user) {
+ return { success: false, message: UNREADABLE_RESPONSE_MESSAGE };
  }
 
  const newSession: AuthSession = data.session;
@@ -703,10 +987,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  body: JSON.stringify({ ...data, role: toApiRole(data.role) }),
  });
 
- const result = await res.json();
-
+ // AUTH-02: status BEFORE body — a gateway 502 was being reported as
+ // "Registration failed", which reads as "we rejected your details".
  if (!res.ok) {
- return { success: false, message: result.message || 'Registration failed' };
+ const errBody = await readJsonBody<{ message?: string }>(res);
+ return {
+ success: false,
+ message: errBody?.message || authHttpErrorMessage(res.status, 'Registration failed'),
+ };
+ }
+
+ const result = await readJsonBody<{ session?: AuthSession; user?: AuthUser }>(res);
+ if (!result?.session || !result?.user) {
+ return { success: false, message: UNREADABLE_RESPONSE_MESSAGE };
  }
 
  const newSession: AuthSession = result.session;
@@ -740,8 +1033,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
  /**
  * Signs out the user and clears the session.
+ *
+ * AUTH-09 — scope is now sayable, and it was not before.
+ *
+ * POST /auth/logout accepts `scope: 'local' | 'global'`
+ * (apps/api/src/routes/auth.ts `logoutSchema`), but this function hardcoded a
+ * body of `{ accessToken }`, so every sign-out in the product was global and no
+ * screen could offer "just this device" even if it wanted to. The local session
+ * is cleared either way; what `scope` decides is whether the user's OTHER
+ * devices stay signed in.
+ *
+ * GLOBAL REMAINS THE DEFAULT, and deliberately by OMISSION rather than by
+ * sending `scope: 'global'`: every current caller invokes `signOut()` bare, and
+ * the API reads an absent field as global. Defaulting to `local` here would
+ * silently stop revoking other sessions on a lost or shared device — a security
+ * regression dressed as a UX improvement. Callers that want the narrow scope
+ * must ask for it, and should say so in the UI first (see /auth/logout, which
+ * discloses the multi-device effect).
  */
- const signOut = useCallback(async () => {
+ const signOut = useCallback(async (options?: SignOutArg) => {
+ const scope = readSignOutScope(options);
  try {
  if (session?.accessToken && !session.accessToken.startsWith('demo-')) {
  // P1#4: credentials:'include' ensures the HttpOnly `darshya_session`
@@ -751,7 +1062,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  credentials: 'include',
- body: JSON.stringify({ accessToken: session.accessToken }),
+ body: JSON.stringify({
+   accessToken: session.accessToken,
+   // Omitted, not defaulted — see the note above.
+   ...(scope ? { scope } : {}),
+ }),
  });
  }
  } catch {

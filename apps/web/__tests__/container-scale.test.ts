@@ -144,3 +144,57 @@ function sources(): string[] {
   walk(root('components'));
   return out;
 }
+
+/**
+ * DU-14, second pass — the GLOBAL chrome.
+ *
+ * The first pass migrated six page shells onto .container-wide and left
+ * app/layout.tsx alone, which made the defect worse on exactly those routes.
+ * At 1440px the left content edge used to be:
+ *
+ *   header  mx-auto max-w-7xl px-4/6/8   -> 80rem box, 112px edge
+ *   content .container-wide              -> 72rem box, 176px edge
+ *   footer  max-w-6xl mx-auto px-6/8/10  -> 72rem box but a THIRD gutter ramp,
+ *                                           184px edge
+ *
+ * Three x positions on one page, on every route — the finding's own headline
+ * defect, reproduced by the fix for it. The header and footer are on every one
+ * of the 389 routes, so this is the highest-leverage container in the tree.
+ */
+describe('DU-14 — the site header and footer sit on the container scale', () => {
+  const layout = code('app/layout.tsx');
+
+  it('uses .container-wide for both chrome shells', () => {
+    const uses = layout.match(/container-wide/g) ?? [];
+    expect(
+      uses.length,
+      'app/layout.tsx should carry .container-wide on the header nav AND the footer',
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it('declares no ad-hoc centred container of its own', () => {
+    const offenders = [...layout.matchAll(/className="[^"]*"/g)]
+      .map((m) => m[0])
+      .filter((cls) => /\bmx-auto\b/.test(cls) && /\bmax-w-(?:3xl|4xl|5xl|6xl|7xl)\b/.test(cls));
+    expect(
+      offenders,
+      'the global chrome must not pick its own width — every route inherits it, so a ' +
+        'mismatch here misaligns the header/footer against the page content on all 389 ' +
+        'routes at once.\n' + offenders.join('\n'),
+    ).toEqual([]);
+  });
+
+  it('does not re-declare the gutter ramp beside the utility', () => {
+    // .container-wide already supplies padding-inline 1rem / 1.5rem / 2rem. A
+    // px-* alongside it is the third gutter ramp this block exists to remove.
+    const withUtility = [...layout.matchAll(/className="([^"]*container-wide[^"]*)"/g)].map(
+      (m) => m[1]!,
+    );
+    expect(withUtility.length).toBeGreaterThanOrEqual(2);
+    for (const cls of withUtility) {
+      expect(cls, `"${cls}" re-declares a horizontal gutter beside .container-wide`).not.toMatch(
+        /\bpx-\d|\bsm:px-\d|\blg:px-\d|\bmax-w-/,
+      );
+    }
+  });
+});

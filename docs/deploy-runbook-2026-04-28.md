@@ -88,18 +88,32 @@ End-to-end provider onboarding (real test):
 
 ## Rollback procedures
 
-If something breaks:
+> **OPS-06 correction (2026-08-28). The procedure this section used to give —
+> `git revert 0fa525c && git push origin rebrand/darshya` — DOES NOTHING.**
+> `render.yaml` sets `autoDeploy: false` on both services (`:28` API, `:60`
+> web) and no workflow in this repository deploys on push. A revert produces a
+> clean history and leaves the exact same bytes serving traffic. Under an
+> incident that reads as "I rolled back and it did not help".
+>
+> **Authoritative procedure: [`docs/runbooks/prod-rollback.md`](runbooks/prod-rollback.md).**
+> A rollback is an explicit deploy of an older commit:
+>
+> ```bash
+> gh workflow run render-diag.yml -f mode=deploys -f sid=<SID>   # find last good SHA
+> gh workflow run render-diag.yml -f mode=deploy  -f sid=<SID> -f commit=<SHA>
+> gh run watch
+> ```
+>
+> API `srv-d7mc2n8sfn5c73dfce0g` · web `srv-d970l2ks728c738fc33g`.
+
+The two config-level mitigations below are still correct and are faster than a
+redeploy when they apply:
 
 - **Webhook stops working**: set Render env `RAZORPAY_VERIFY_RAW=false`
   to fall back to the legacy path. Fix forward later.
 - **/provider-kyc 500s**: probable migration not applied. Apply it (§1).
-- **Anything else catastrophic**: revert the relevant commits and push.
-
-```bash
-# Revert just the security cutover (most likely candidate)
-git revert 0fa525c
-git push origin rebrand/darshya
-```
+- **Anything else catastrophic**: deploy the last good commit per
+  `docs/runbooks/prod-rollback.md`. Do not push a revert and wait.
 
 ## What this push does NOT change
 

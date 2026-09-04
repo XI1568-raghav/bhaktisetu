@@ -2,9 +2,12 @@
 // timeline from janma nakshatra. Targets "vimshottari dasha calculator",
 // "current mahadasha", "dasha period calculator free".
 import type { Metadata } from 'next';
+// DU-05: the one h1 recipe per page archetype. Extras are layout-only.
+import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import DashaClient from './DashaClient';
 import { TIMEZONE_OPTIONS } from '../../../lib/nakshatra-finder';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
 
@@ -96,7 +99,7 @@ export default function DashaPage() {
 
    <header className="mb-8">
     <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool · no signup</p>
-    <h1 className="mt-1 font-serif text-3xl text-gray-900 sm:text-4xl">Vimshottari Dasha Calculator — Free 120-Year Mahadasha Timeline</h1>
+    <h1 className={`${H1.catalogue} mt-1`}>Vimshottari Dasha Calculator — Free 120-Year Mahadasha Timeline</h1>
     <p className="mt-2 text-saffron-700">विंशोत्तरी महादशा · Vimshottari Mahadasha</p>
     <p className="mt-4 text-base text-gray-700">
      Enter your DOB + birth time + timezone to compute your janma nakshatra-derived dasha sequence:
@@ -154,7 +157,7 @@ export default function DashaPage() {
      the pandit&rsquo;s craft. Use our free tools, then book a consultation.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
-     <Link href="/astrology/nakshatra-finder" className="rounded-full bg-saffron-600 px-5 py-2 text-sm font-semibold text-white hover:bg-saffron-700">
+     <Link href="/astrology/nakshatra-finder" className={buttonClass('primary', 'md')}>
       Find My Nakshatra
      </Link>
      <Link href="/astrology/kundli" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

@@ -13,9 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { api, useYatraPackage, useYatra, useBookYatraPackage } from '@poojly/api-client';
+import { useYatraPackage, useYatra, useBookYatraPackage } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
-import { buildYatraInquiry, YatraInquiryError } from '../../lib/api-contracts';
+import { formatInr, toNumber } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 export default function YatraDetailScreen() {
@@ -37,80 +37,11 @@ export default function YatraDetailScreen() {
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [notes, setNotes] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  // Destination-enquiry fields (PAR-18).
-  const [name, setName] = useState(user?.fullName ?? '');
-  const [startDate, setStartDate] = useState('');
-  const [inquirySubmitting, setInquirySubmitting] = useState(false);
-  const [inquiryRef, setInquiryRef] = useState<string | null>(null);
 
   async function onRefresh() {
     setRefreshing(true);
     await (isPackage ? pkg.refetch() : dest.refetch());
     setRefreshing(false);
-  }
-
-  /**
-   * PAR-18. For a destination (as opposed to a package) the only booking path
-   * was `Linking.openURL('https://wa.me/919999999999?…')` — a placeholder
-   * number, not a business line, with no env var behind it. A high-intent
-   * yatra lead tapped Plan My Yatra, WhatsApp opened on a number that does not
-   * exist, and the lead was gone with no server-side trace. The sibling
-   * "Talk to concierge" button was worse: it fired no request at all and said
-   * "Our team will contact you within 24 hours."
-   *
-   * Both are replaced by POST /api/v1/yatra-inquiry (public, registered at
-   * server.ts:434), which persists the lead, emails the yatra desk and the
-   * traveller, and returns a reference id — which is now what the traveller is
-   * shown, so the confirmation is evidence rather than a promise.
-   */
-  async function submitInquiry() {
-    let body;
-    try {
-      body = buildYatraInquiry({
-        yatraSlug: slug,
-        yatraTitle: typeof title === 'string' ? title : slug,
-        packageTier: 'standard',
-        startDate,
-        travelersCount: travelers,
-        name: name.trim() || user?.fullName || '',
-        email,
-        phone,
-        notes,
-      });
-    } catch (err) {
-      Alert.alert(
-        'Check your details',
-        err instanceof YatraInquiryError ? err.message : 'Please review the form.',
-      );
-      return;
-    }
-    setInquirySubmitting(true);
-    try {
-      const res = await api.post<{ referenceId?: string; ok?: boolean }>(
-        '/api/v1/yatra-inquiry',
-        body,
-      );
-      // Only claim success when the server hands back its own reference.
-      if (!res?.referenceId) {
-        Alert.alert(
-          'Not submitted',
-          'The yatra desk did not confirm your enquiry. Please try again.',
-        );
-        return;
-      }
-      setInquiryRef(res.referenceId);
-      Alert.alert(
-        'Enquiry received',
-        `Reference ${res.referenceId}. The yatra desk will email ${body.buyer.email} within 24 hours.`,
-      );
-    } catch (err) {
-      Alert.alert(
-        'Could not send',
-        err instanceof Error ? err.message : 'Could not reach the yatra desk. Please retry.',
-      );
-    } finally {
-      setInquirySubmitting(false);
-    }
   }
 
   async function onBook() {
@@ -167,7 +98,15 @@ export default function YatraDetailScreen() {
 
   const title = (data as { name?: string; title?: string }).name ?? (data as { title?: string }).title ?? slug;
   const description = (data as { short_description?: string; description?: string }).short_description ?? (data as { description?: string }).description ?? '';
-  const price = (data as { price_inr?: string | number; priceFromInr?: number }).price_inr ?? (data as { priceFromInr?: number }).priceFromInr;
+  // `price_inr` is the yatra_packages column (a Decimal, so a STRING over
+  // JSON); `startingPrice` is what GET /api/v1/yatra/:slug sends for a curated
+  // destination. `priceFromInr` was read here too — it is declared on
+  // api-client's `YatraDestination` and the API has never sent it, so it was
+  // always undefined. `toNumber` refuses anything unparseable rather than
+  // rendering `₹NaN`, which is what `Number(undefined)` produced.
+  const price = toNumber(
+    (data as { price_inr?: unknown }).price_inr ?? (data as { startingPrice?: unknown }).startingPrice,
+  );
   const duration = (data as { duration_days?: number; durationDays?: number }).duration_days ?? (data as { durationDays?: number }).durationDays;
   const region = (data as { destination_slug?: string; region?: string; state?: string }).destination_slug
     ?? (data as { region?: string }).region
@@ -199,10 +138,10 @@ export default function YatraDetailScreen() {
           </View>
         ) : null}
 
-        {price !== undefined ? (
+        {price !== null ? (
           <View style={styles.priceCard}>
-            <Text style={styles.priceLabel}>Per traveller</Text>
-            <Text style={styles.priceValue}>₹{Number(price).toLocaleString('en-IN')}</Text>
+            <Text style={styles.priceLabel}>{isPackage ? 'Per traveller' : 'From, per traveller'}</Text>
+            <Text style={styles.priceValue}>{formatInr(price)}</Text>
           </View>
         ) : null}
 
@@ -268,93 +207,35 @@ export default function YatraDetailScreen() {
           <View style={styles.card}>
             <Text style={styles.cardHeading}>Plan this yatra</Text>
             <Text style={styles.cardBody}>
-              This is a curated destination, so dates, add-ons and pickup points are
-              planned with you. Send an enquiry and the yatra desk replies by email
+              This is a curated destination, so tier, dates, pickup city, traveller details and
+              add-ons are all part of the request. The full booking flow collects them and sends
+              one request to the yatra desk, which confirms availability and emails your invoice
               within 24 hours.
             </Text>
-            {inquiryRef ? (
-              <View style={styles.refBox}>
-                <Ionicons name="checkmark-circle" size={18} color={colors.green[600]} />
-                <Text style={styles.refText}>
-                  Enquiry {inquiryRef} received. The yatra desk has your details.
-                </Text>
-              </View>
-            ) : (
-              <>
-                <Field label="Your name">
-                  <TextInput
-                    style={styles.input}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Full name"
-                    placeholderTextColor={colors.stone[400]}
-                  />
-                </Field>
-                <Field label="Email">
-                  <TextInput
-                    style={styles.input}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="you@example.com"
-                    placeholderTextColor={colors.stone[400]}
-                  />
-                </Field>
-                <Field label="Phone (optional)">
-                  <TextInput
-                    style={styles.input}
-                    keyboardType="phone-pad"
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder="+91…"
-                    placeholderTextColor={colors.stone[400]}
-                  />
-                </Field>
-                <Field label="Approximate start date">
-                  <TextInput
-                    style={styles.input}
-                    value={startDate}
-                    onChangeText={setStartDate}
-                    placeholder="e.g. Sept 2026 or 10 Sept 2026"
-                    placeholderTextColor={colors.stone[400]}
-                  />
-                </Field>
-                <Field label="Travellers (1-50)">
-                  <TextInput
-                    style={styles.input}
-                    keyboardType="number-pad"
-                    value={travelers}
-                    onChangeText={setTravelers}
-                  />
-                </Field>
-                <Field label="Anything we should know (optional)">
-                  <TextInput
-                    style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]}
-                    multiline
-                    value={notes}
-                    onChangeText={setNotes}
-                    placeholder="Veg meals, elderly travellers, pickup city…"
-                    placeholderTextColor={colors.stone[400]}
-                  />
-                </Field>
-                <TouchableOpacity
-                  style={[styles.bookBtn, inquirySubmitting && { opacity: 0.6 }]}
-                  activeOpacity={0.85}
-                  disabled={inquirySubmitting}
-                  onPress={submitInquiry}
-                >
-                  {inquirySubmitting ? (
-                    <ActivityIndicator color={colors.white} />
-                  ) : (
-                    <>
-                      <Ionicons name="chatbubbles" size={18} color={colors.white} />
-                      <Text style={styles.bookText}>Send enquiry</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </>
-            )}
+            {/*
+              PAR-18 replaced a wa.me placeholder here with an inline one-shot
+              enquiry that hardcoded `packageTier: 'standard'` and collected no
+              traveller roster or pickup city — so the desk got a lead it could
+              not quote. The full flow (app/(devotee)/yatra-book.tsx, mirroring
+              web /yatra/book) posts the same endpoint with all of it. Two
+              routes into one inquiry would only be two things to keep in sync,
+              so this is now the single door.
+            */}
+            <TouchableOpacity
+              style={styles.bookBtn}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`Request a booking for ${typeof title === 'string' ? title : slug}`}
+              onPress={() =>
+                router.push({
+                  pathname: '/(devotee)/yatra-book' as never,
+                  params: { slug, title: typeof title === 'string' ? title : slug },
+                } as never)
+              }
+            >
+              <Ionicons name="calendar" size={18} color={colors.white} />
+              <Text style={styles.bookText}>Request a booking</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>

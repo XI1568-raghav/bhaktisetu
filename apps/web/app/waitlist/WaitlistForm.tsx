@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { buttonClass } from '../../components/ui/button-recipe';
 interface WaitlistFormProps {
   initialRef: string;
   cities: string[];
@@ -198,8 +199,7 @@ export default function WaitlistForm({ initialRef, cities, deities }: WaitlistFo
       <button
         type="submit"
         disabled={submitting}
-        className="w-full px-5 py-3 text-sm font-medium rounded-lg text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-        style={{ background: 'var(--color-primary, #ea580c)' }}
+        className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
       >
         {submitting ? 'Reserving your spot…' : 'Reserve my spot'}
       </button>

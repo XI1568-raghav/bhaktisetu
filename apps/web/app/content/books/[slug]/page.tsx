@@ -8,6 +8,7 @@ import {
 } from "../../../../lib/books";
 import { ChapterTOC } from "../../../../components/books/ChapterTOC";
 import { ContinueReadingCTA } from "../../../../components/books/ContinueReadingCTA";
+import { H1 } from '../../../../components/ui/heading-recipe';
 
 type Params = { slug: string };
 
@@ -79,7 +80,7 @@ export default async function BookDetailPage({
         <header className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 mb-12">
           <div className="aspect-[3/4] rounded-xl overflow-hidden border border-saffron-200 bg-white shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <img width={300} height={400} 
               src={book.coverImage}
               alt={book.title}
               className="w-full h-full object-cover"
@@ -95,11 +96,11 @@ export default async function BookDetailPage({
                 {book.titleSanskrit}
               </p>
             )}
-            <h1 className="text-3xl sm:text-4xl font-semibold text-surface-900 tracking-tight">
+            <h1 className={H1.catalogue}>
               {book.title}
             </h1>
             {book.subtitle && (
-              <p className="text-lg text-surface-600 mt-2">{book.subtitle}</p>
+              <p className="prose-lead text-surface-600 mt-2">{book.subtitle}</p>
             )}
             {book.tradition && (
               <p className="text-sm text-saffron-700 mt-1">{book.tradition}</p>

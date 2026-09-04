@@ -33,7 +33,10 @@ am I willing to carry while I get to PMF." Honest tradeoff:
   professional spend, in exchange for (a) a real liability shield, (b) the ability to sign
   partnership MoUs as an entity (temples will eventually demand this), (c) a clean cap table
   if you ever raise, (d) credibility for 80G(5) and FCRA paths later, and (e) FEMA-clean
-  mechanism for receiving Stripe USD inflows.
+  mechanism for receiving NRI USD inflows *(corrected 2026-09-02, `OPS-10` — this
+  read "Stripe USD inflows"; Stripe was removed from the codebase on 2026-08-11,
+  `apps/api/src/lib/env.ts:45-46`, and the replacement processor is `[verify]`,
+  undecided. The incorporation rationale is unaffected).
 - **OPC (One Person Company)** is a middle path — single-member Pvt Ltd, lighter than full
   Pvt Ltd but still gives the corporate veil. Worth asking the CA about if the founder is
   uncomfortable with nominee shareholders.
@@ -112,7 +115,7 @@ heavy curation can void safe harbour.
 | 5 | Grievance Officer named with contact | ❌ not done | Email-only at `refunds/page.tsx:213`. DPDP + IT Rules want a named officer, designation, postal address. |
 | 6 | Reasonable security safeguards | ⚠️ partial | `privacy/page.tsx:179-191` lists TLS, RLS, PCI processors. Acceptable as a claim; no documented security policy / pen-test cadence. |
 | 7 | Breach notification readiness (Board + affected principals, "without delay") | ❌ not done | No mention anywhere. Need a runbook (template draft, Board-of-DPDP form, comms script). |
-| 8 | Cross-border transfer disclosure (esp. for NRI Stripe flow, R2 storage region, Resend US, PostHog) | ❌ not done | `privacy/page.tsx:148-176` lists processors but does not name jurisdictions or invoke the Section 16 transfer regime. |
+| 8 | Cross-border transfer disclosure (compute and storage run outside India — Render region `oregon`, `render.yaml:15`/`:56`; Supabase region `[verify]`, not recorded in this repo; Resend US; PostHog. Any future NRI/international payment processor is `[verify]` — Stripe was removed 2026-08-11 and no replacement is chosen; R2 is not in use, `docs/company/03-cfo.md`) | ❌ not done | `privacy/page.tsx:148-176` lists processors but does not name jurisdictions or invoke the Section 16 transfer regime. |
 
 ---
 
@@ -174,8 +177,14 @@ non-illusory remedy.
   Darshya's mix of commercial puja bookings, donations, and gaushala seva.
 - Exact GST classification of "puja booking" (services? agency? exempt as religious service?)
   and the platform-commission GST treatment.
-- Whether NRI USD inflows via Stripe need to be routed through an AD-Category-I bank under
-  FEMA, what FIRC documentation is required, and whether Stripe's India entity covers it.
+- Whether NRI USD inflows need to be routed through an AD-Category-I bank under
+  FEMA, what FIRC documentation is required, and whether the chosen processor's
+  India entity covers it. *(Corrected 2026-09-02, `OPS-10`: these two questions
+  named Stripe. The Stripe rail was deleted from the codebase on 2026-08-11 —
+  `apps/api/src/lib/env.ts:45-46` — and no replacement international processor
+  has been chosen, so the processor-specific half of this question is
+  `[verify]` and cannot be put to a lawyer until a vendor exists. The FEMA/FIRC
+  question itself is still live and still worth asking.)*
 - Whether the platform qualifies for Section 79 intermediary safe harbour given the
   "video proof verification" step (does that constitute editorial selection?).
 - Whether 80G(5) is even attainable for the donation flow, and the right entity to apply.

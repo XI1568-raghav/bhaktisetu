@@ -1,4 +1,33 @@
-# R-Q4-E-014 — Multi-region failover plan (Mumbai + Singapore + Frankfurt + automatic DNS swap)
+# R-Q4-E-014 — Multi-region failover plan — SUPERSEDED, DO NOT FOLLOW
+
+> **→ For an actual outage, read [`docs/runbooks/disaster-recovery.md`](../runbooks/disaster-recovery.md).**
+>
+> Retired 2026-09-02 under `OPS-10`, alongside the siblings already retired on
+> 2026-08-28: [`multi-region-failover-plan.md`](multi-region-failover-plan.md),
+> [`multi-region-deployment-strategy.md`](multi-region-deployment-strategy.md)
+> and [`disaster-recovery-runbook.md`](disaster-recovery-runbook.md). This file
+> was missed by that pass and kept asserting the same infrastructure in the
+> present tense.
+>
+> **Nothing below is deployed.** Read out of this repository on 2026-09-02:
+>
+> | Claim in this document | Reality |
+> |---|---|
+> | Render **Mumbai** / `BOM` primary, `api-bom.render.com` | Both services run in Render **`oregon`** (US West) — `render.yaml:15` (API), `:56` (web). There has never been a Mumbai region, and no such hostname exists. |
+> | **Singapore** standby / `api-sin.render.com` / Frankfurt | No standby, no second Render service, no warm spare, in any geography. |
+> | Supabase **Mumbai** primary + SIN/FRA **read replicas** | One Supabase Postgres instance, no replica. The repository does not record its region anywhere — `[verify]` in the dashboard rather than assuming Mumbai. |
+> | Cloudflare load balancer, health checks, weighted pools, DNS swap | Cloudflare is DNS + edge proxy only. Apex and `www` CNAME to `darshya-web.onrender.com`; there is no load balancer and no second origin to fail over to. |
+> | An RTO / RPO, or a promotion runbook | Nothing in this system produces those numbers. Honest figures are in the DR runbook under *Honest RTO / RPO*. |
+>
+> Two things must be true before any of this is worth costing: both services fit
+> inside the Render free tier's **750 instance-hours per ACCOUNT per month** (today
+> they do not — see `docs/free-tier-budgets.md`), and a backup has been proven to
+> restore (it has not — `OPS-02`). A DR plan on top of an unproven backup is
+> decoration.
+>
+> Kept as a stub rather than deleted so an old bookmark still lands somewhere true.
+> Everything below this line is a **historical proposal, not a procedure.**
+
 
 Status: handoff scaffold (founder + infra decisions required before execution)
 Category: engineering

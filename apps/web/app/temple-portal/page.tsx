@@ -8,6 +8,10 @@ import {
  DATA_FETCH_TIMEOUT_MS,
  fetchWithTimeout,
  loadErrorMessage,
+ // AUTH-06: the 401/403 split. `loadErrorIsReauth` is true ONLY for 401 —
+ // a 403 is a suspended account or a role refusal, and offering sign-in there
+ // loops the user back to the same wall.
+ loadErrorIsReauth,
 } from '../../lib/api-config';
 import Link from 'next/link';
 import {
@@ -20,6 +24,7 @@ import {
  Calendar,
 } from 'lucide-react';
 import { H1 } from '../../components/ui/heading-recipe';
+import LoadErrorBanner from '../../components/LoadErrorBanner';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -70,6 +75,10 @@ export default function TempleDashboard() {
  // 500, with no error anywhere. A temple manager mid-incident was told their
  // temple earned nothing this month. Track the failure and say so.
  const [loadError, setLoadError] = useState<string | null>(null);
+ // AUTH-06: the decision `loadErrorMessage` makes internally and this page used
+ // to throw away, so the banner below can offer a sign-in instead of a Retry
+ // that re-fires the request with the same expired token.
+ const [loadReauth, setLoadReauth] = useState(false);
 
  const load = useCallback(async () => {
   // P0 #AP-07 (2026-07-10): fetch for demo sessions too. The old
@@ -88,12 +97,14 @@ export default function TempleDashboard() {
    );
    if (!r.ok) {
     setLoadError(loadErrorMessage(r));
+    setLoadReauth(loadErrorIsReauth(r));
     return;
    }
    const j = (await r.json()) as ApiDashboard;
    setApi(j);
   } catch (err) {
    setLoadError(loadErrorMessage(err));
+   setLoadReauth(loadErrorIsReauth(err));
   }
  }, [session?.accessToken]);
 
@@ -129,12 +140,12 @@ export default function TempleDashboard() {
  </div>
 
  {loadError && (
- <div role="alert" className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
- <span className="flex-1 min-w-[12rem]">{loadError}</span>
- <button type="button" onClick={() => { void load(); }} className="font-semibold underline underline-offset-2 hover:text-amber-900">
- Retry
- </button>
- </div>
+ <LoadErrorBanner
+ message={loadError}
+ reauth={loadReauth}
+ onRetry={() => { void load(); }}
+ className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+ />
  )}
 
  <MyProviderProfileCard role="TEMPLE_MANAGER" onboardingSlug="temple_manager" publicListingType="temple" />
