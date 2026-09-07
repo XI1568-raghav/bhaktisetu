@@ -318,6 +318,11 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    // Present so a test can ASSERT IT IS NEVER CALLED. Store products are soft
+    // deleted (`deletedAt`) because `reviews.product_id` is ON DELETE CASCADE —
+    // a real delete destroys buyers' reviews. Without the spy the assertion
+    // throws "undefined is not a spy" instead of guarding anything.
+    delete: vi.fn(),
     count: vi.fn(),
   },
   userCredit: {
