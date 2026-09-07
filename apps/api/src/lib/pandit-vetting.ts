@@ -86,9 +86,9 @@ export function verifiedNoun(noun: string): string {
  * readings)"; nothing in the repository performs any of the three.
  */
 export const PANDIT_ONBOARDING_ANSWER = HAS_PANDIT_VETTING
-  ? 'We onboard verified priests and astrologers. Share your credentials at /priest-onboarding — ' +
+  ? 'We onboard verified priests and astrologers. Share your credentials at /become-priest — ' +
     'typical verification takes 3–5 days (ID, training, test readings).'
-  : 'You can register at /priest-onboarding. Honestly, so you can plan: we do not yet run an ' +
+  : 'You can register at /become-priest. Honestly, so you can plan: we do not yet run an ' +
     'independent credential check, temple reference calls or a probation review, and we cannot ' +
     'quote a turnaround — a new profile stays pending until a person reviews it by hand. What is ' +
     'in place is Aadhaar-based KYC before any payout, and mandatory video proof of every puja.';
