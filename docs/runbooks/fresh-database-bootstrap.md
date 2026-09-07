@@ -125,47 +125,82 @@ remaining sharp edge is documented in the migration file itself:
 
 ---
 
-## Production: the ten perf indexes are probably missing
+## Production: what the unexecuted migrations actually left behind
 
-Production's `_prisma_migrations` row for `20260503_perf_indexes` has
-`finished_at` set with `applied_steps_count = 0` — hand-resolved with
-`prisma migrate resolve --applied`, never executed. So the ten indexes it
-describes were most likely never created.
-
-It is not the only one. Measured 2026-09-02, six of production's 35 recorded
-migrations carry `applied_steps_count = 0`: `20260503_perf_indexes`,
-`20260511_user_blocked`, `20260514000000_reading_progress`,
-`20260519000000_gaushala_cows_volunteers`,
-`20260520000000_priest_puja_offerings` and
-`20260709020000_store_order_store_profile`. The last one's DDL *is* present in
-production (column, index and FK all verified), so "recorded, not executed" does
-not by itself mean the objects are missing — someone applied them by hand and
-then resolved the row. **The other four have not been checked.** Whether their
-objects exist is an open question, answerable read-only the same way.
-
-Read-only check, safe against production:
+Six of production's 35 recorded migrations carry `applied_steps_count = 0` —
+recorded with `prisma migrate resolve --applied`, never executed by
+`migrate deploy`. **A zero there does not mean the objects are missing.** In
+every one of these cases someone applied the DDL by hand and then resolved the
+row. Checked object by object on 2026-09-02, read-only:
 
 ```bash
 cd apps/api
+node scripts/verify-migration-objects.mjs --unexecuted --env-file .env.production
+```
+
+| migration | result |
+|---|---|
+| `20260503_perf_indexes` | all 10 indexes present and valid |
+| `20260511_user_blocked` | 3 columns + the partial index present |
+| `20260514000000_reading_progress` | table, PK and both indexes present; **FK missing** |
+| `20260519000000_gaushala_cows_volunteers` | all 11 objects present |
+| `20260520000000_priest_puja_offerings` | all 5 objects present |
+| `20260709020000_store_order_store_profile` | column, index and FK present |
+
+**37 of 38 objects exist.** That script parses the expected objects out of each
+migration's own SQL rather than carrying a checklist, so it cannot drift.
+
+### The perf indexes are NOT missing — this document used to say they were
+
+This section previously stated that the ten TD8 indexes "were most likely never
+created", and `scripts/apply-perf-indexes.mjs` said the same in its header.
+Both were inference from `applied_steps_count = 0`, and both were wrong: all
+ten exist and are `indisvalid`. Someone created them out of band. The
+`--check` mode remains the right way to confirm that on any database, and is
+still the thing to run before assuming anything about an index:
+
+```bash
 node scripts/apply-perf-indexes.mjs --check --env-file .env.production
 ```
 
-To create them (owner approval required — it writes to production):
-
-```bash
-node scripts/apply-perf-indexes.mjs --yes --env-file .env.production
-```
-
-CONCURRENTLY builds do not lock the table for writes, but they are not free:
-each is a full index build. Run them one at a time, off-peak, and re-run
-`--check` afterwards.
-
 **If `--check` reports `INVALID`:** a previous CONCURRENTLY build failed
-part-way and left a dead index. The planner ignores it and `IF NOT EXISTS` will
-not repair it — the name is taken. Drop it and re-run:
+part-way and left a dead index. The planner ignores it and `IF NOT EXISTS`
+will not repair it — the name is taken. Drop it and re-run:
 
 ```sql
 DROP INDEX CONCURRENTLY IF EXISTS "<name>";
+```
+
+### The one real gap, and why it is not worth a lone fix
+
+`reading_progress_user_id_fkey` — `reading_progress.user_id` → `users.id`
+ON DELETE CASCADE — does not exist in production. Measured cost so far: none.
+`reading_progress` holds **0 rows**, there are no orphans, and
+`account-deletion.service.ts` does not rely on the cascade — it issues an
+explicit `readingProgress.deleteMany({ where: { userId } })`.
+
+More to the point, it is not an anomaly of that migration. **20 of the 40 tables
+with a `user_id` column have no foreign key to `users` at all**:
+`WeeklyDigestOptOut`, `astrologer_consultations`, `astrologer_profiles`,
+`fcm_device_tokens`, `gaushala_profiles`, `marketplace_subscriptions`,
+`notification_log`, `onboarding_steps`, `org_members`, `pandit_profiles`,
+`provider_kyc`, `reading_progress`, `reviews`, `store_profiles`,
+`temple_follows`, `temple_profiles`, `transactions`,
+`user_role_assignments`, `wellness_profiles`, `yatra_bookings`. That is the
+same story as the missing `0_init` above — this database came from
+`prisma db push` and was baselined over, so `schema.prisma` relations and
+actual Postgres constraints are not the same set.
+
+Adding one FK back would make production marginally less consistent with itself,
+not more. The question worth answering is whether the whole set should be
+reconciled, and that is a decision plus a maintenance window, not a patch. It
+needs the owner's approval either way — the statement is a write:
+
+```sql
+ALTER TABLE "reading_progress"
+  ADD CONSTRAINT "reading_progress_user_id_fkey"
+  FOREIGN KEY ("user_id") REFERENCES "users"("id")
+  ON DELETE CASCADE ON UPDATE CASCADE;
 ```
 
 ---

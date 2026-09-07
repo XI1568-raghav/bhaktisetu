@@ -14,9 +14,17 @@
  *
  * Production's `_prisma_migrations` row for that migration has `finished_at`
  * set with `applied_steps_count = 0` — it was marked applied by hand with
- * `prisma migrate resolve --applied` and never ran. So on production these ten
- * indexes were most likely NEVER CREATED. `--check` answers that for whichever
- * database you point it at; it is read-only and safe to run against production.
+ * `prisma migrate resolve --applied` and never ran.
+ *
+ * That USED to be written up here as "so these ten indexes were most likely
+ * never created". Measured 2026-09-02 against production: false. All ten exist
+ * and are `indisvalid` — someone created them out of band. `applied_steps_count
+ * = 0` says the migration did not RUN, and nothing about whether its objects
+ * are there. `--check` is what answers that, for whichever database you point
+ * it at; it is read-only and safe to run against production. The same holds for
+ * the other five migrations recorded that way — see
+ * scripts/verify-migration-objects.mjs, which checks any of them object by
+ * object.
  *
  * The SQL is not copied into this script. It is READ OUT OF the migration file,
  * so there is exactly one copy and it cannot drift. The migration file is left
