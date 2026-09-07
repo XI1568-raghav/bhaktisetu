@@ -237,7 +237,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
     // pandit who followed this answer waited for a review that could not
     // arrive. See lib/pandit-vetting.ts.
     message: PANDIT_ONBOARDING_ANSWER,
-    actions: [{ label: 'Priest Onboarding', href: '/priest-onboarding' }],
+    actions: [{ label: 'Become a Darshya pandit', href: '/become-priest' }],
   },
   {
     keywords: ['video proof', 'proof of puja', 'how will i know'],
@@ -425,6 +425,19 @@ export async function supportRoutes(server: FastifyInstance) {
     status: z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']).optional(),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
     assignedToId: z.string().uuid().nullable().optional(),
+  });
+
+  // The reporter's OWN closing action. Deliberately NOT `updateTicketSchema`:
+  // the only thing a devotee may say about their own ticket is "this is done".
+  // RESOLVED and CLOSED are the two members of SupportTicketStatus that mean
+  // that; OPEN and IN_PROGRESS are queue state that belongs to support, and
+  // priority / assignedToId are not fields on this schema at all, so `z.object`
+  // strips them before the handler can see them. Defined AFTER
+  // `updateTicketSchema` on purpose — apps/web/__tests__/support-ticket-wire-
+  // contract.test.ts re-reads the FIRST `status: z.enum([...])` in this file as
+  // the admin status vocabulary.
+  const ownerResolutionSchema = z.object({
+    status: z.enum(['RESOLVED', 'CLOSED']).default('RESOLVED'),
   });
 
   function nextTicketNumber(): string {
@@ -635,6 +648,113 @@ export async function supportRoutes(server: FastifyInstance) {
       data,
     });
     return reply.send({ data: updated });
+  });
+
+  // POST /tickets/:id/resolve — the REPORTER closes their own ticket.
+  //
+  // WHY THIS EXISTS AS ITS OWN ROUTE
+  // --------------------------------
+  // /support/tickets/view rendered "Mark resolved" for the devotee and wired it
+  // to PATCH /tickets/:id, which is admin-only — so the owner of the ticket got
+  // 403 "Admin role required" from a button on their own ticket. A support
+  // product where the person who reported the problem cannot say "this is
+  // fixed" is worse than one with no button, but the fix is NOT to loosen the
+  // PATCH guard: that route also sets priority and assignedToId, and widening
+  // it would hand every devotee the queue's controls.
+  //
+  // So this is a second, narrower door with its own guard:
+  //   · owner only — `ticket.userId === currentUser.id`. Not admins (they have
+  //     PATCH), not the assignee, not another devotee.
+  //   · RESOLVED or CLOSED only — `ownerResolutionSchema` has no other member.
+  //   · status + resolvedAt are the only columns written. priority and
+  //     assignedToId are not on the schema, so a body carrying them is stripped
+  //     by `z.object` and cannot reach the update.
+  server.post('/tickets/:id/resolve', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const params = ticketIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid ticket id' });
+    const body = ownerResolutionSchema.safeParse(request.body ?? {});
+    if (!body.success) {
+      return reply.code(400).send({ error: 'Invalid request body', details: body.error.flatten() });
+    }
+    const ticket = await prisma.supportTicket.findUnique({ where: { id: params.data.id } });
+    if (!ticket) return reply.code(404).send({ error: 'Ticket not found' });
+
+    // The guard. Ownership is the whole authorisation — an admin acting on
+    // someone else's ticket uses PATCH /tickets/:id, which is where the
+    // priority/assignment powers live and where the admin check already is.
+    if (ticket.userId !== request.currentUser!.id) {
+      return reply
+        .code(403)
+        .send({ error: 'Only the devotee who opened this ticket can close it' });
+    }
+
+    const updated = await prisma.supportTicket.update({
+      where: { id: ticket.id },
+      data: { status: body.data.status, resolvedAt: new Date() },
+    });
+    return reply.send({ data: updated });
+  });
+
+  // GET /agents — admin-only. The assignee picker's options.
+  //
+  // /admin/support/view offered a hardcoded list of five display names
+  // ("Priya S.", "Arjun K.", …) and sent the chosen NAME at
+  // `assignedToId: z.string().uuid()`, so every assignment 400'd. The picker
+  // has to offer real accounts and send real ids.
+  //
+  // "Real admin" here is the same union the auth middleware enforces
+  // (middlewares/auth.ts:353-375): a UserRoleAssignment row with role ADMIN,
+  // OR an address on the ADMIN_EMAILS allow-list — the allow-list is the
+  // bootstrap path (routes/auth.ts:168), and an operator-listed admin usually
+  // has no role row at all, so filtering on role alone would return an empty
+  // picker on exactly the deployment that has admins.
+  //
+  // Deliberately NOT a user directory: id and a display name only, admin-gated,
+  // bounded. Blocked accounts are excluded — a suspended account must not be
+  // offered as somebody to hand a ticket to.
+  server.get('/agents', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!isAdmin(request)) {
+      return reply.code(403).send({ error: 'Admin role required' });
+    }
+
+    // Parsed exactly as middlewares/auth.ts and routes/auth.ts parse it:
+    // comma-split, trimmed, lowercased, blanks dropped (an empty ADMIN_EMAILS
+    // must not produce a '' entry that a blank email could match).
+    const allowList = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    try {
+      const users = await prisma.user.findMany({
+        where: {
+          blocked: false,
+          OR: [
+            { roleAssignments: { some: { role: 'ADMIN' } } },
+            // `equals` + `mode: 'insensitive'` per address rather than one
+            // `in:` — addresses are stored as the user typed them and the
+            // allow-list is lowercased, so a case difference would silently
+            // drop the operator's own account from their picker.
+            ...allowList.map((email) => ({ email: { equals: email, mode: 'insensitive' as const } })),
+          ],
+        },
+        select: { id: true, fullName: true, email: true },
+        orderBy: { fullName: 'asc' },
+        take: 100,
+      });
+
+      const agents = users.map((u) => ({
+        id: u.id,
+        // A display name, never the raw address: `fullName` is required on the
+        // model but can be an empty string, and the local part is a better
+        // label than a blank option.
+        name: u.fullName?.trim() || u.email?.split('@')[0] || 'Support agent',
+      }));
+      return reply.send({ data: agents });
+    } catch (err: any) {
+      request.log.error({ err: err?.message }, 'support /agents lookup failed');
+      return reply.code(500).send({ error: 'Failed to list support agents' });
+    }
   });
 
   // ─── R-Q4-CS-001 — 24h response SLA tracker ─────────────────────────────

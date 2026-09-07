@@ -233,7 +233,10 @@ describe('TC-08 — the support bot answers honestly on the live route', () => {
     expect(answer).not.toMatch(/\(ID, training, test readings\)/i);
     expect(answer).not.toMatch(/verified priests/i);
     // It still routes them to the form, and it says what IS in place.
-    expect(answer).toContain('/priest-onboarding');
+    // MEASURED on live prod 2026-09-08: /priest-onboarding -> 404, /become-priest -> 200.
+    // The honest answer TC-08 shipped was sending every aspiring pandit to a dead page.
+    expect(answer).toContain('/become-priest');
+    expect(answer).not.toContain('/priest-onboarding');
     expect(answer).toMatch(/Aadhaar-based KYC/);
     expect(answer).toMatch(/video proof/);
   });
@@ -322,7 +325,7 @@ describe('TC-08 — it is a gate, not a deletion', () => {
       verifiedNoun: (noun: string) => `verified ${noun}`,
       PANDIT_ONBOARDING_ANSWER:
         'We onboard verified priests and astrologers. Share your credentials at ' +
-        '/priest-onboarding — typical verification takes 3–5 days (ID, training, test readings).',
+        '/become-priest — typical verification takes 3–5 days (ID, training, test readings).',
       PLATFORM_SUMMARY_TRUST_CLAUSE: 'All Aadhaar-verified priests, all secure payments.',
     };
     vi.doMock('./pandit-vetting.js', () => patched);
