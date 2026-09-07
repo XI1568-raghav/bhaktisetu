@@ -1075,8 +1075,14 @@ model StoreProduct {
   stock          Int      @default(0)
   sku            String?
   isActive       Boolean  @default(true) @map("is_active")
+  // The owner's LISTING toggle. Owner-controlled: POST accepts it, PATCH flips
+  // it. Not a deletion marker — see deletedAt.
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+  // Soft delete. `reviews.product_id` is ON DELETE CASCADE, so a real DELETE
+  // destroys buyers' reviews; DELETE /store-admin/products/:id stamps this
+  // instead and the owner's catalogue filters on it.
+  deletedAt      DateTime? @map("deleted_at")
 
   storeProfile StoreProfile @relation(fields: [storeProfileId], references: [id], onDelete: Cascade)
   reviews      Review[]

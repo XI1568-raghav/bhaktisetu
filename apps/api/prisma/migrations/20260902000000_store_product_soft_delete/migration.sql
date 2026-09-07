@@ -1,0 +1,19 @@
+-- Soft delete for store products.
+--
+-- DELETE /store-admin/products/:id called prisma.storeProduct.delete(), and
+-- `reviews.product_id` is declared ON DELETE CASCADE — so a store owner
+-- removing one of their products permanently destroyed every review BUYERS had
+-- written about it. services/account-deletion.service.ts already refuses to do
+-- this to the same table on account closure ("a review is another devotee's
+-- content, not this user's") and deactivates instead; the route now agrees.
+--
+-- Why a new column rather than reusing `is_active`: that is the owner's own
+-- listing toggle (POST accepts it, PATCH flips it), so hiding rows on it would
+-- make a deliberately deactivated product vanish from the owner's catalogue
+-- with no way to switch it back on. Deletion needs its own marker.
+--
+-- Additive and nullable, so it is safe to apply with traffic in flight: every
+-- existing product reads as not-deleted. No index — the owner's catalogue query
+-- is already covered by store_***REMOVED*** and this table is
+-- one merchant's SKUs, not a scan-sized relation.
+ALTER TABLE "store_products" ADD COLUMN "deleted_at" TIMESTAMP(3);
