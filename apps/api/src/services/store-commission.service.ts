@@ -40,12 +40,14 @@ export async function writeStoreOrderCommission(
   // 20260709020000) added `store_orders.store_profile_id` for exactly this, and
   // routes/store-orders.ts has written it at order creation since 2026-07-09.
   //
-  // The old route — first line item -> product -> store — is not merely
-  // indirect, it loses money: DELETE /store-admin/products/:id hard-deletes,
-  // so deleting a product that heads an unconfirmed order made this lookup
-  // return null and this function return early with NO Commission row. The
-  // owner was then never paid, while the order still appeared on their
-  // dashboard, which reads the FK. Keep the product path for legacy rows only.
+  // The old route — first line item -> product -> store — was not merely
+  // indirect, it lost money. DELETE /store-admin/products/:id used to hard
+  // delete, so removing a product that headed an unconfirmed order made this
+  // lookup return null and this function return early with NO Commission row:
+  // the owner was never paid, while the order still appeared on their
+  // dashboard, which reads the FK. That route now soft deletes, but products
+  // hard-deleted before 2026-09-02 are gone for good — which is exactly why the
+  // fallback below must not be the primary path. Legacy rows only.
   let storeProfileId = order.storeProfileId;
   if (!storeProfileId) {
     // Orders predating S-11. The migration's own backfill never populated them:

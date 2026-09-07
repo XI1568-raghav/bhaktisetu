@@ -156,7 +156,10 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     );
     const [products, total] = await Promise.all([
       prisma.storeProduct.findMany({
-        where: { storeProfileId },
+        // `deletedAt: null` and NOT `isActive: true` — isActive is the owner's
+        // own listing toggle, so filtering on it would strand a deliberately
+        // deactivated product where the owner can never switch it back on.
+        where: { storeProfileId, deletedAt: null },
         select: {
           id: true,
           storeProfileId: true,
@@ -175,7 +178,9 @@ export async function storeAdminRoutes(server: FastifyInstance) {
         skip: (pageNum - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.storeProduct.count({ where: { storeProfileId } }),
+      // Same filter as the page above. A count without it is SCAL-09's lying
+      // number again: `total` would promise rows the page can never show.
+      prisma.storeProduct.count({ where: { storeProfileId, deletedAt: null } }),
     ]);
     // `products` stays the first key so the existing merchant page keeps
     // working; total/page/limit are additive. `total` is the paired COUNT, never
@@ -274,7 +279,25 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     if (existing.storeProfileId !== storeProfileId) {
       return reply.code(403).send({ error: 'You do not own this product.' });
     }
-    await prisma.storeProduct.delete({ where: { id } });
+    // Soft delete. `reviews.product_id` is ON DELETE CASCADE, so the previous
+    // `storeProduct.delete()` destroyed every review BUYERS wrote about this
+    // product — other devotees' content, deleted by the merchant.
+    // account-deletion.service.ts already refuses to do that to this table.
+    //
+    // isActive:false + stock:0 is what makes it behave like a deletion
+    // everywhere else without a second flag to check: routes/store.ts filters
+    // the public catalogue on isActive, and routes/store-orders.ts rejects an
+    // inactive product at checkout, so a deleted product cannot be seen or
+    // bought. `deletedAt` is what hides it from the OWNER's catalogue — isActive
+    // cannot, because the owner controls that one and must be able to unlist a
+    // product and switch it back on.
+    //
+    // Keeping the row also stops historical revenue moving: the dashboard and
+    // /revenue attribute order lines against products that still exist.
+    await prisma.storeProduct.update({
+      where: { id },
+      data: { deletedAt: new Date(), isActive: false, stock: 0 },
+    });
     return reply.send({ ok: true });
   });
 
