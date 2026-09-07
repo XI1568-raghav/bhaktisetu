@@ -3,12 +3,17 @@
  *
  * The bug these tests were written for: the writer resolved the owning store by
  * looking up the order's FIRST LINE ITEM'S PRODUCT, and `DELETE
- * /store-admin/products/:id` hard-deletes products. Delete a product that heads
+ * /store-admin/products/:id` hard-deleted products. Delete a product that heads
  * an unconfirmed order and the lookup returns null, the writer returns early,
  * and no Commission row is ever written — the store owner is silently never
  * paid, while the order still shows on their dashboard (which reads
  * `store_orders.store_profile_id`, the FK migration 20260709020000 added for
  * exactly this).
+ *
+ * That route soft deletes now (see store-admin.product-soft-delete.test.ts), so
+ * it can no longer strand an order this way. These tests stay because products
+ * hard-deleted before that change are permanently gone, and because the reason
+ * to read the FK is not "deletes are dangerous" but "the order already knows".
  *
  * The order carries `storeProfileId` itself since 2026-07-09. Read that, and
  * fall back to the product only for legacy rows predating it.
@@ -76,7 +81,7 @@ describe('writeStoreOrderCommission', () => {
       storeProfileId: STORE_ID,
       items: [{ productId: 'deleted-product', qty: 1, priceAtPurchase: 1000 }],
     });
-    // DELETE /store-admin/products/:id hard-deletes: the row is simply gone.
+    // A product hard-deleted before 2026-09-02: the row is simply gone.
     prismaMock.storeProduct.findUnique.mockResolvedValue(null);
 
     await writeStoreOrderCommission(ORDER_ID);
