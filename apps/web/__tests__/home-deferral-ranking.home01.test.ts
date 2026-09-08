@@ -66,48 +66,42 @@
  *
  * ── RANKED BY MEASURED SAVEABLE BYTES (below-fold rows only) ──────────────
  *
- *  #  row                          desktop img   phone img    markup   deferred
- *  1  WorshipStrip                    82,094 B   170,339 B   14,100 B   no
- *       Jagannath 16,797/27,304/60,931 · Kashi 17,748/27,426/52,125 (x2,
- *       fetched once) · Somnath 17,176/27,364/57,283 at 250/330/500 px.
- *       Desktop slot 260 CSS px -> 330 candidates; phone slot ~343 -> 500.
- *  2  Live Darshan                   189,024 B    56,754 B    2,981 B   no
- *       Mahakaleshwar 56,754 B @500 / 189,024 B @960. Slot ~1088 CSS px on
- *       desktop, 100vw on phone — this is the one row where DESKTOP pays more
- *       than the phone, and by 3.3x.
- *  3  Puja bento                      42,760 B    32,539 B    9,810 B   no
- *       Bangalore Shiva 17,262/27,483/55,881 @250/330/500 · Aarti Thali
- *       5,144 B @120 / 15,277 B @250.
- *  4  WhatYouGet                            0 B         0 B    6,363 B   NO  <-
- *  5  WisdomStrip                           0 B         0 B    7,447 B   yes
- *  6  ConsultStrip                          0 B         0 B    6,825 B   yes
- *  7  HowItWorks                            0 B         0 B    4,667 B   NO  <-
- *  8  NriLaneAbTest (below)                 0 B         0 B    1,869 B   no
- *  9  EmailCapture section                  0 B         0 B    1,128 B   no
- *     ThisWeek                              ?           ?      (async, stubbed)
+ * RE-MEASURED 2026-09-08 after the home redesign. Four rows in the previous
+ * table no longer exist — WorshipStrip, WisdomStrip and ConsultStrip were moved
+ * off the home page onto the pages that own their intent, and WhatYouGet was
+ * merged into HowItWorks (the two answered the same question twice for ~550px).
+ * Two rows are new: ServiceLanes and NriLane. Byte figures below are this
+ * file's own scan, not estimates.
+ *
+ *  #  row                                     markup   images   deferred
+ *  1  Every way to be present (ServiceLanes)  12,872 B    0      yes
+ *  2  Authentic rituals, verified priests     10,688 B    2      no
+ *  3  How it works (+ merged promises)         9,928 B    0      yes
+ *  4  See the divine, from anywhere            6,914 B    3      no
+ *  5  Be at the temple without the flight      4,854 B    0      yes
+ *  6  Daily panchang in your inbox             1,134 B    0      no
+ *     ThisWeek                                    32 B    0      (async, stubbed)
  *
  * ── WHAT THE RANKING SAYS TO DO, AND WHAT THIS FILE THEREFORE ASSERTS ─────
  *
- * (a) Rows 4 and 7 are the actionable ones and they are a REGRESSION of work
- *     that already shipped. `.defer-paint` (content-visibility: auto +
- *     contain-intrinsic-size, app/globals.css:798) was applied to the
- *     below-fold text-only strips in an earlier pass. The revamp then added
- *     `WhatYouGet` and `HowItWorks` — 11,030 B of markup, zero images, both
- *     below the fold — without it, and deleted the two rows the earlier pass
- *     had deferred inline. So the deferral coverage went DOWN while the
- *     ranking that would have caught it went stale. Asserted below.
+ * (a) Every below-fold, image-free row over the 3 KB floor now carries
+ *     `.defer-paint` (rows 1, 3 and 5). The regression this paragraph used to
+ *     describe — the revamp adding WhatYouGet and HowItWorks without it while
+ *     deleting the two rows an earlier pass had deferred — is closed, and the
+ *     2026-09-08 redesign kept it closed by deferring both new sections as it
+ *     added them. Asserted below, so it cannot silently reopen.
  *
  *     `content-visibility: auto` is self-correcting on the fold question: the
  *     browser skips layout and paint only while the element is far from the
  *     viewport and renders it normally once it is near, so a tall desktop that
- *     shows row 4 at load pays nothing extra. That is why this is safe to apply
- *     from a static rank without a live viewport measurement.
+ *     shows a deferred row at load pays nothing extra. That is why this is safe
+ *     to apply from a static rank without a live viewport measurement.
  *
- * (b) Rows 8 and 9 are deliberately NOT deferred, and the reason is written
- *     down so a later pass does not "finish the job": 1,869 B and 1,128 B are
- *     below the point where skipping layout is worth a contain-intrinsic-size
- *     guess, row 8 is an A/B impression slot, and row 9 is the last element on
- *     the page where a wrong intrinsic size is a visible scrollbar jump.
+ * (b) Row 6 is deliberately NOT deferred, and the reason is written down so a
+ *     later pass does not "finish the job": 1,134 B is below the point where
+ *     skipping layout is worth a contain-intrinsic-size guess, and it is the
+ *     last element on the page, where a wrong intrinsic size is a visible
+ *     scrollbar jump.
  *
  * (c) The Aarti Thali thumbnail is the ONLY <img> on the homepage with neither
  *     `srcSet` nor `sizes`, so every device takes the 250 px / 15,277 B
@@ -206,7 +200,7 @@ describe('[HOME-01] the ranking describes the page that exists', () => {
       'the homepage top-level child count moved. Re-measure the ranked deferral ' +
         'list in this file header before changing this number — a ranking that ' +
         'names sections the page no longer has is what this file exists to prevent.',
-    ).toBe(12);
+    ).toBe(9);
   });
 
   it('the rows the two earlier rankings put at #1 and #4 are genuinely gone', () => {
@@ -242,7 +236,7 @@ describe('[HOME-01] every below-fold text-only section skips layout and paint', 
     expect(
       judged.map((r) => r.label).sort(),
       'the set of below-fold text-only sections changed',
-    ).toEqual(['Daily panchang, scriptures, audio, horoscope.', 'How it works', 'Talk to an expert.', 'What you actually get']);
+    ).toEqual(['Be at the temple without the flight', 'Every way to be present', 'How it works']);
   });
 
   it('each of them carries .defer-paint on its own section root', () => {

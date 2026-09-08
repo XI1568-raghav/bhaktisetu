@@ -94,7 +94,7 @@ export default function SankalpThread({ stops }: { stops: ThreadStop[] }) {
               {/* The label only exists on hover/focus, so the rail stays a rail. */}
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute left-6 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+                className="pointer-events-none absolute left-6 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
                 style={{
                   background: 'var(--color-surface)',
                   color: 'var(--color-text)',

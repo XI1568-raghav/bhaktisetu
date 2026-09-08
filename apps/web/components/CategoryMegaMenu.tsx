@@ -160,7 +160,7 @@ export function CategoryMegaMenu({ category, onItemClick, labelledBy }: Props) {
         <div className="flex flex-col gap-2.5">
           {category.groups.map((group) => (
             <div key={group.heading}>
-              <p className="mb-0.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-surface-400">
+              <p className="mb-0.5 px-3 text-xs font-semibold uppercase tracking-wider text-surface-400">
                 {group.heading}
               </p>
               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
