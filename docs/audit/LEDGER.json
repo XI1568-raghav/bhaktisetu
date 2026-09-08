@@ -2727,7 +2727,7 @@
   "title": "The h1 is a different thing on every screen: 7 treatments, 18px to 70.4px, two typefaces — and two of the ten screens have no h1 at all",
   "state": "partial",
   "commit": "",
-  "note": "Repo-wide, 349 h1 tags across 45 size+weight recipes still exist outside the ten migrated call sites. Not swept."
+  "note": "SUBSTANTIALLY CLOSED 2026-09-08; stays partial ONLY because two screens cannot be measured. The finding's \"349 h1 across 45 recipes, not swept\" is an ARTIFACT: measured with comments stripped, 408 non-test h1 across 864 files, 406 already on a named recipe, 2 genuinely hand-rolled. An intermediate estimate of 38 decomposed as 32 where <h1 and H1.<archetype> sit on different LINES (invisible to a per-line grep), 1 using h1Class(), and 3 inside COMMENTS — this repo documents h1 decisions in prose at the call site, so an unstripped scan invents a backlog. The real open half was the OTHER clause: /auth/signup shipped with NO h1 at all (1,198 lines, four h2s, title a span carrying H1.portal's four utilities by hand) — byte-for-byte the shape /auth/login had before its fix. Now H1.portal, computed size unchanged. Two migrations refused on purpose: app/pitch (.pitch-h1 is clamp(48px,8vw,120px); migrating shrinks the investor deck hook by up to 72px) and app/global-error.tsx (renders INSTEAD of the root layout, so globals.css never loads and no class can reach it). RESIDUAL: /priest and /admin both 307 to auth and are LIVE-UNVERIFIED. Source shows one h1 each on H1.portal and no h1 in either layout; the new rule test pins both by name."
  },
  {
   "key": "F196",
@@ -5133,9 +5133,9 @@
   "workflow": "scale-mindset",
   "line": 3571,
   "title": "Zero UNIQUE constraints on any money table — every idempotency guard is an application-level TOCTOU",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-triage26-2026-08-24",
-  "note": "Needs a Prisma migration. apps/api/prisma/schema.prisma and prisma/migrations/** are serialised to another agent this session, so I stopped as instruc"
+  "note": "CLOSED 2026-09-08. Three PARTIAL unique indexes in migration 20260908000000_di06_inflight_and_pair_money_uniques, each replacing a named application-level TOCTOU: payments_booking_id_inflight_key (guard payment.service.ts:702->:738, with a RAZORPAY NETWORK CALL at :724 between check and write, so two concurrent create-orders open two real payable Razorpay sessions for one puja); referral_claims_referrer_id_referee_id_key (referrals.ts:166->:177, and the wallet unique cannot catch it because the idempotency key differs between the two rows); marketplace_subscriptions_user_id_role_active_key (subscription.service.ts:457->:462, where cancel() can revoke one row while isPremium() stays true from the other). Whole-table uniques would be WRONG on two of the three — retried payments and CANCELLED billing history are legitimate. Measured 0/0/0 duplicates in production with the exact predicate each index uses. Also corrects a prior false negative: pg_constraint is empty on every money table, which was read as \"no uniqueness\" — CREATE UNIQUE INDEX makes an index, not a constraint, and pg_indexes shows all 7 present and enforcing."
  },
  {
   "key": "F368",
@@ -5147,9 +5147,9 @@
   "workflow": "scale-mindset",
   "line": 3577,
   "title": "commissions.booking_id is text pointing at a uuid primary key, with no index, no foreign key, and 2 existing orphans",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-triage26-2026-08-24",
-  "note": "Needs a Prisma migration (schema.prisma + prisma/migrations/** are owned by another agent this session). TWO PARTS, and the first one is safe while th"
+  "note": "CLOSED 2026-09-08 as REFUTED-AND-SUPERSEDED. The premise does not hold: DI-07 cites \"2 existing orphans\" and production commissions has 0 rows, 0 non-uuid-shaped. Those rows were consultation-backed, a legitimate second kind. The index half already shipped in 20260824000000. The type change is deliberately NOT made and should not be revived: commissions.booking_id is POLYMORPHIC across puja_bookings and astrologer_consultations (consultation.ts:185 -> :242), so a foreign key is not \"harder later\", it is impossible without a discriminator — the change would buy no integrity, only a narrower domain, while ALTER ... USING ::uuid rewrites a money table and aborts API boot on the first non-uuid value in any database it ever meets."
  },
  {
   "key": "F369",
@@ -5359,7 +5359,7 @@
   "title": "Images ship without width/height and the 404 page weighs 200-260 KB",
   "state": "partial",
   "commit": "wave-2026-08-15",
-  "note": ""
+  "note": "BOTH TITLE CLAUSES CLOSED, evidence clause partly closed. Verified on production 2026-09-08: width/height present on / (0 of 8 missing, was 11 of 15), /pujas (0 of 10, was 10 of 10) and /temples/[slug] (0 of 10); the 404 is 116,976 B raw / 18,194 wire against the title's 200 KB floor. The heavy-HTML clause buried in the evidence had got WORSE and is now cut: /aarti 616,628 B with 326 inline <svg> (117,569 B of literal SVG, roughly double in the RSC payload where every quote escapes to four bytes) -> <symbol> sprite plus <use>; /chants 419,824 B and the WORST-compressing page on the site at 66,955 gzip, because its weight is unique prose that does not compress while /aarti's is 300 near-identical icons that gzip to nearly nothing -> bounded in code, since line-clamp is a PAINT instruction and hides bytes already on the wire; /calendar 382,166 B -> description bounded in both places it appears. Guarded structurally by __tests__/perf04-heavy-document-guards.test.ts. RESIDUAL: the 404 still renders <nav>, <footer> and 41 RSC flight pushes — the prescribed minimal standalone page is only part done (inline <svg> 100+ -> 26)."
  },
  {
   "key": "F384",
@@ -5637,9 +5637,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "Every 401 handler computes a `reauth` flag that no code in the product reads — a session that expires mid-action shows \"sign in again\" beside a Retry button and no way to sign in",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-2026-08-21",
-  "note": ""
+  "note": "CLOSED 2026-09-08 on the stated contract. `reauth` appears ZERO times in apps/api/src — the flag is a web construct. loadErrorIsReauth (api-config.ts:288) reads ONLY the numeric status, never the body, so the API already emits everything the contract consumes, and middlewares/auth.ts:80 states the 401/403 split outright. The web side consumes it since 2026-09-04. The real remaining defect is a DIFFERENT one and is filed separately: api-config.ts:333 asserts \"Your session has expired\" for EVERY 401."
  },
  {
   "key": "F404",
@@ -5791,9 +5791,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "No durable audit trail for money events — a disputed booking or refund cannot be reconstructed after the fact",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-2026-08-21",
-  "note": ""
+  "note": "CLOSED 2026-09-08. Five call sites wired, not the three predicted — the coverage table it was built from omitted the whole routes/ layer. payment.service.ts:2056 REFUND_FAILED (the gateway call was NAKED: a Razorpay refusal threw straight out of processRefund, so there was zero evidence an admin had ever attempted a refund) and :2090 REFUND_INITIATED (gateway accepted means money has left; if the local transaction then fails the devotee is refunded while Payment.status still reads captured). consultation.ts:391/:664/:785 — both consultation rails write the SAME four columns on a raw-SQL table with no history, and one writes no prisma.payment row at all, so \"which rail got here first\" was unanswerable. All 16 MONEY_EVENTS types now emit somewhere. Verified 121/121 new+adjacent, 801/801 across 71 money-path files. NOTE the separate open finding for the store-order rail, which has no trail at all."
  },
  {
   "key": "F415",
@@ -5805,9 +5805,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The written rollback procedure cannot work — it says push a revert, but both services are autoDeploy:false and no workflow deploys from main",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-45-final",
-  "note": ""
+  "note": "CLOSED 2026-09-08, and the guard is the fix. scripts/test/ops-runbook-honesty.test.mjs ENUMERATED its pages in an OPS06_PAGES array, which is why it was green while pages were live-wrong — anything off the list was invisible. It now WALKS every .md under docs/ and the repo root at paragraph granularity, denial-aware, 2,380 files, 109 tests. The prior pass claim that three docs were broken was half right (only cloudflare-pages-migration.md was), and the walk found others nobody had reported — free-tier-budgets.md:334 advising \"[skip ci]\" for a CF build pipeline killed 2026-07-08, and company/03-cfo.md:103 saying \"revert deploy\". The deprecated -f branch= flag is gone from 5 docs plus CLAUDE.md, TASKS.md and AUDIT.md. Non-vacuity proven by four injected regressions, each restored."
  },
  {
   "key": "F416",
@@ -6312,5 +6312,75 @@
   "state": "open",
   "commit": "",
   "note": "OBSERVED 2026-09-08 while re-measuring audit findings against production. A burst of roughly ten concurrent requests triggered a window of 429/503 responses whose bodies are Cloudflare block pages containing an h1 reading \"darshya.online\" at 40px system-ui. A measurement script that does not assert the status code before reading the DOM will silently record that h1 as the page h1 and report a false typography or layout result — which is exactly the shape of error that produces confident, wrong audit numbers. Mitigation used during the sweep: 7-12s pacing plus a browser UA, and every reading taken inside the throttled window was discarded and re-taken. Worth recording independently of any single finding: it affects every future production sweep, and it is the reason a sweep must assert 200 before trusting a measurement."
+ },
+ {
+  "key": "F452",
+  "id": "DI-08",
+  "sev": "P0",
+  "kind": "data-integrity",
+  "size": "M",
+  "area": "data-integrity",
+  "workflow": "partials-wave-2026-09-08",
+  "line": 0,
+  "state": "open",
+  "commit": "",
+  "title": "The referral reward rail queries two tables that do not exist in production — user_credits and credit_ledger_entries are in schema.prisma but no migration ever creates them",
+  "note": "FOUND 2026-09-08 while adding money constraints; read-only measurement against production. Both models exist in apps/api/prisma/schema.prisma and NEITHER table exists in the production database — no migration creates them. wallet.service.ts:73 relies on an @@unique([userId, idempotencyKey]) that is therefore not there. Any call reaching that rail raises Postgres 42P01 (undefined_table) in production today. This is the purest instance of DI-06 in the codebase — not a missing constraint but a missing TABLE behind a money path — and it is bigger than a constraint fix, so it is filed rather than patched. Confirm the blast radius before choosing between creating the tables and removing the rail."
+ },
+ {
+  "key": "F453",
+  "id": "OPS-13",
+  "sev": "P1",
+  "kind": "ops",
+  "size": "M",
+  "area": "ops-observability",
+  "workflow": "partials-wave-2026-09-08",
+  "line": 0,
+  "state": "open",
+  "commit": "",
+  "title": "The store-order money rail emits no audit events at all — a fourth rail with no trail, after OPS-05 closed the other three",
+  "note": "FOUND 2026-09-08 while closing OPS-05. payment.service.ts:1034 createStoreOrderRazorpay creates a Payment row at status `initiated` with no PAYMENT_INITIATED, and :1129 verifyStoreOrderPayment captures the payment, flips StoreOrder to CONFIRMED and mints a store-owner commission inside its $transaction with no PAYMENT_VERIFIED, PAYMENT_CAPTURED or COMMISSION_MINTED. Coverage was clearly intended: MoneySubjectType already declares 'store_order' (lib/audit-money.ts:109). Deliberately not wired in that wave because store.service.ts, store-orders.ts and store.ts were all dirty from another session — wiring audit calls into a rail being actively rewritten is how two sessions destroy each other's work. Do it when that work has landed."
+ },
+ {
+  "key": "F454",
+  "id": "AUTH-07",
+  "sev": "P2",
+  "kind": "auth",
+  "size": "S",
+  "area": "auth-session-lifecycle",
+  "workflow": "partials-wave-2026-09-08",
+  "line": 0,
+  "state": "open",
+  "commit": "",
+  "title": "Every 401 tells the user their session expired — including when no token was sent, when registration is incomplete, and when the database is down",
+  "note": "FOUND 2026-09-08 while verifying AUTH-06. apps/web/lib/api-config.ts:333 asserts \"Your session has expired — sign in again\" for EVERY 401. The API answers 401 in at least three cases where that is false: auth.ts:110 (no token was ever sent), auth.ts:341 (registration incomplete) and auth.ts:1136 (a DATABASE OUTAGE). Telling a user their session expired during an outage sends them to re-authenticate against the thing that is down. The API side cannot fix it as the contract stands: loadErrorIsReauth reads only the numeric status and never the body, so any discriminator added to the 401 body is dead on arrival. The fix is web-side and needs the contract widened first. Note the API also destroys the expiry signal at three points — supabase-jwt.ts:123 returns a bare null by design, auth.ts:312 discards Supabase's error code, error-localization.ts:244 stamps a constant UNAUTHORIZED derived from the status number."
+ },
+ {
+  "key": "F455",
+  "id": "DI-09",
+  "sev": "P2",
+  "kind": "data-integrity",
+  "size": "S",
+  "area": "data-integrity",
+  "workflow": "partials-wave-2026-09-08",
+  "line": 0,
+  "state": "open",
+  "commit": "",
+  "title": "Two money writes that no index can protect: an unhandled duplicate-key 500 on priest payout, and a receipt mint that can double-write",
+  "note": "FOUND 2026-09-08. (1) payment.service.ts:2348 -> :2438 createPriestPayout is a bare `create` with no P2002 handler, while priest_payouts_booking_id_key is ALREADY LIVE in production — so the duplicate path is an unhandled 500 today, independent of any new constraint. (2) routes/donations.ts:175 mints the receipt with an UPDATE carrying no `AND status <> 'paid'` predicate, unlike claimCaptureTransition elsewhere, so two concurrent calls both mint and the second overwrites the first. No index can fix a row overwriting its own column — it is a one-line predicate. (3) Related and also not index-shaped: wellness-sessions.ts:436 -> :449 counts then creates, so a session can be oversold; a COUNT ceiling needs a lock or a trigger."
+ },
+ {
+  "key": "F456",
+  "id": "OPS-14",
+  "sev": "P2",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops-observability",
+  "workflow": "partials-wave-2026-09-08",
+  "line": 0,
+  "state": "open",
+  "commit": "",
+  "title": "A maintenance script silently queries PRODUCTION when run with --env-file .env.local",
+  "note": "FOUND 2026-09-08. Importing @prisma/client auto-loads .env — which holds the PRODUCTION URLs for both DATABASE_URL and DIRECT_URL — BEFORE a script's own env-file loop runs. scripts/check-money-key-duplicates.mjs:49 then evaluates `process.env.DIRECT_URL || ...`, and .env.local has no DIRECT_URL to override it, so `--env-file .env.local` reads production while appearing to read local. apps/api/scripts/guard-db-target.ts exists for exactly this and is wired to predev/predb:*/preseed:* but NOT to this checker. Caught only because a probe carried its own localhost guard. Audit every script that reads DIRECT_URL for the same shape."
  }
 ]
