@@ -27,11 +27,25 @@ function patternToRegex(routePattern) {
   return new RegExp('^/' + parts.join('/') + '/?$');
 }
 
+// A parenthesised directory is a Next.js ROUTE GROUP: it organises files without
+// appearing in the URL, so `pujas/(index)/page.tsx` serves `/pujas`. Dropping
+// these segments is what makes the derived pattern match the real URL.
+//
+// This was missing, and stayed invisible while every index page sat directly in
+// its own directory. The moment SEO-11 moved /pujas, /temples and /astrology
+// into `(index)` groups so unknown slugs could 404, the manifest started
+// emitting `pujas/(index)` and fleet-integrity-check reported the probe URLs
+// /pujas and /temples as unroutable — pages that serve 200 in production.
+const isRouteGroup = (seg) => seg.startsWith('(') && seg.endsWith(')');
+
 export function buildRouteManifest(appDir) {
   const manifest = [];
   for (const pagePath of walk(appDir)) {
     const rel = path.relative(appDir, path.dirname(pagePath));
-    const routePattern = rel.split(path.sep).join('/');
+    const routePattern = rel
+      .split(path.sep)
+      .filter((seg) => seg && !isRouteGroup(seg))
+      .join('/');
     manifest.push({ pattern: routePattern, regex: patternToRegex(routePattern) });
   }
   return manifest;
