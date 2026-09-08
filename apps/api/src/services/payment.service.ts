@@ -32,6 +32,12 @@ import { appendRefundId } from './refund.service.js';
 // safe to `void` — a logging failure must not roll back a real capture. Record
 // AFTER the write it describes, and after a `$transaction` has RESOLVED.
 import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
+// DI-09: the narrowing for the error a UNIQUE index raises. It has lived in
+// wallet.service.ts since the wallet was written and had ZERO call sites — it
+// was correct, dead and undefended. `createPriestPayout` is its first real
+// user; see the P2002 branch there for why a bare `err.code === 'P2002'` check
+// is not good enough on a money path.
+import { isUniqueViolation } from './wallet.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
@@ -153,6 +159,88 @@ async function tryRewardReferralForBooking(refereeUserId: string, bookingId: str
   } catch (err) {
     // Swallow — referral failure MUST NOT fail booking confirmation.
     console.warn('[payment.service] tryRewardReferralForBooking failed:', err);
+  }
+}
+
+/**
+ * OPS-13 — record COMMISSION_MINTED for a store order whose owner commission
+ * was just written. The store-order twin of `recordProviderEarningMinted`
+ * (lib/audit-money-callsites.ts), and it exists for the same two reasons that
+ * one does.
+ *
+ *   1. It must run AFTER the caller's transaction commits. `recordMoneyEvent`
+ *      takes no `tx` on purpose: a failed audit INSERT inside a Postgres
+ *      transaction aborts the whole transaction, and Prisma issues no
+ *      per-query savepoint, so catching in JavaScript does not recover it.
+ *      Logging from inside would let a broken audit table roll back a capture
+ *      Razorpay has already taken.
+ *   2. It must recover the commission id, which only exists after the write.
+ *      `writeStoreOrderCommission` returns `void` — it cannot hand one back —
+ *      so the row is re-read once the transaction is durable.
+ *
+ * Re-read rather than recomputed. The amount on the trail must be the amount in
+ * the ledger; recomputing `total * (1 - platformRate)` here would make this a
+ * SECOND writer of the same money figure, and the two would drift the first
+ * time the rate changed.
+ *
+ * NEVER THROWS, same contract as `recordMoneyEvent` itself, extended to cover
+ * the lookup. Both call sites are past the point of no return: the money is
+ * captured and the order is CONFIRMED.
+ *
+ * Callers must invoke this only when their own transaction actually minted
+ * (`shouldConfirm`). Calling it unconditionally would log a mint on every
+ * replayed verify of an already-CONFIRMED order — the event's idempotency key
+ * would collapse the duplicates, but the trail must not depend on that to be
+ * truthful about which call did the work.
+ */
+async function recordStoreOrderCommissionMinted(
+  storeOrderId: string,
+  rail: string,
+  metadata: Record<string, unknown> = {},
+): Promise<void> {
+  try {
+    const commission = (await prisma.commission.findFirst({
+      where: { storeOrderId },
+      select: { id: true, amount: true, providerId: true },
+      orderBy: { createdAt: 'desc' },
+    })) as { id: string; amount: unknown; providerId: string | null } | null;
+
+    // No row means the mint did not survive, or `writeStoreOrderCommission`
+    // returned early (a legacy order it could not attribute to a store). A
+    // trail row keyed on a commission id that is not real is worse than a gap —
+    // this log is evidence.
+    if (!commission?.id) return;
+
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.COMMISSION_MINTED,
+      actorType: 'system',
+      subjectType: 'commission',
+      subjectId: commission.id,
+      commissionId: commission.id,
+      // `Commission.amount` is the PROVIDER's earning in rupees — here the
+      // store owner's share, not the order total and not the platform's cut.
+      // One column, one meaning (lib/commission-math.ts).
+      amount: commission.amount as never,
+      statusAfter: 'PENDING',
+      // The bare natural key; recordMoneyEvent namespaces it by event type.
+      idempotencyKey: commission.id,
+      note: `store owner earning minted via ${rail}`,
+      metadata: {
+        rail,
+        storeOrderId,
+        ...(commission.providerId ? { providerId: commission.providerId } : {}),
+        ...metadata,
+      },
+    });
+  } catch (err) {
+    // The lookup can fail even though recordMoneyEvent cannot. Swallow it for
+    // the same reason recordMoneyEvent swallows: the capture has already
+    // committed, and nothing about logging it may surface as a failure.
+    console.warn(
+      '[payment.service] failed to record store-order commission mint for',
+      storeOrderId,
+      err instanceof Error ? err.message : String(err),
+    );
   }
 }
 
@@ -1110,6 +1198,41 @@ export class PaymentService {
       data: { paymentId: payment.id },
     });
 
+    // OPS-13 — the store-order rail joins the money trail. A REAL Razorpay
+    // order has just been opened and a Payment row written at `initiated`; the
+    // puja rail has recorded exactly this since OPS-05 (:756) and the store
+    // rail recorded nothing, so "when did checkout open for this order" was
+    // unanswerable from anything the product stores.
+    //
+    // `subjectType: 'store_order'` matches the store rail's existing webhook
+    // event rather than the puja rail's 'payment': `MoneySubjectType` declares
+    // 'store_order' (lib/audit-money.ts:109) and PAYMENT_CAPTURED on the
+    // webhook path already keys on the order. One rail, one subject.
+    //
+    // RUPEES off the stored DECIMAL(10,2), never `amountInPaise` — a paise
+    // figure both overflows the audit column and silently breaks every sum
+    // taken over the trail.
+    //
+    // Deliberately NOT emitted on the idempotent-reuse branch above: a refresh
+    // mid-checkout opens no order and writes no row, and an event there would
+    // put one checkout on the trail once per page reload.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_INITIATED,
+      actorType: 'devotee',
+      actorId: userId,
+      subjectType: 'store_order',
+      subjectId: order.id,
+      paymentId: payment.id,
+      amount: order.totalAmountInr,
+      currency: 'INR',
+      gateway: 'razorpay',
+      gatewayOrderId: razorpayOrder.id,
+      statusAfter: 'initiated',
+      idempotencyKey: razorpayOrder.id,
+      note: `Razorpay order opened for store order ${order.orderNumber}`,
+      metadata: { rail: 'store-order-create', orderNumber: order.orderNumber },
+    });
+
     return {
       orderId: razorpayOrder.id,
       amount: amountInPaise,
@@ -1219,9 +1342,58 @@ export class PaymentService {
         await writeStoreOrderCommission(storeOrder.id, tx);
       }
     });
+
+    // OPS-13 — everything below runs AFTER the transaction has RESOLVED, and
+    // that placement is the whole design, not a formatting choice. The audit
+    // writer takes no `tx` because a failed INSERT inside a Postgres
+    // transaction aborts it outright; logging from inside would let a missing
+    // `money_audit_events` table roll back a capture the gateway has already
+    // taken.
     if (shouldConfirm) {
+      // The store owner's earning. Awaited rather than `void`ed: it re-reads
+      // the commission row before it can log, and it swallows everything by
+      // contract, so awaiting costs a round trip and buys the guarantee that
+      // the trail row is down before this method answers.
+      await recordStoreOrderCommissionMinted(storeOrder.id, 'store-client-verify', {
+        gatewayPaymentId: razorpayPaymentId,
+      });
       void sendStoreOrderInvoice(storeOrder.id);
     }
+
+    // OPS-13 — the client-verify rail. `payment.status` is the pre-image read
+    // before the update, and it is the one fact the mutable status column can
+    // never answer afterwards: it is what separates "verified then captured"
+    // from "captured twice" when a store order is disputed.
+    //
+    // PAYMENT_VERIFIED and NOT also PAYMENT_CAPTURED, matching the puja
+    // client-verify rail (:987) and the two-rail split audit-money.ts:303
+    // documents. The webhook records PAYMENT_CAPTURED for store orders already
+    // (:1580) keyed on the SAME razorpay_payment_id, and the audit insert is
+    // ON CONFLICT DO NOTHING — so a capture event emitted here would silently
+    // erase the webhook's row, which is the one that records the GATEWAY as
+    // the actor. The capture fact is carried by `statusAfter` instead.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_VERIFIED,
+      actorType: 'devotee',
+      actorId: userId,
+      subjectType: 'store_order',
+      subjectId: storeOrder.id,
+      paymentId: payment.id,
+      amount: payment.amount,
+      currency: payment.currency,
+      gateway: 'razorpay',
+      gatewayOrderId: razorpayOrderId,
+      gatewayPaymentId: razorpayPaymentId,
+      statusBefore: payment.status,
+      statusAfter: 'captured',
+      idempotencyKey: razorpayPaymentId,
+      note: `client-verify rail (store order ${storeOrder.orderNumber})`,
+      metadata: {
+        rail: 'store-client-verify',
+        orderNumber: storeOrder.orderNumber,
+        confirmedOrder: shouldConfirm,
+      },
+    });
 
     return {
       verified: true,
@@ -1595,6 +1767,18 @@ export class PaymentService {
               metadata: { rail: 'webhook-store-order', confirmedOrder: shouldConfirm },
             });
             if (shouldConfirm) {
+              // OPS-13 — the same gap as the client rail, on the rail that
+              // actually confirms most store orders in production. This
+              // transaction just minted the store owner's commission and
+              // recorded only the capture, so an owner's earning appeared on
+              // the ledger with nothing on the trail saying where it came
+              // from. Post-commit, and keyed on the commission id — so if the
+              // client rail also reaches the same order the two collapse to
+              // one row rather than double-counting one earning.
+              await recordStoreOrderCommissionMinted(storeOrder.id, 'webhook-store-order', {
+                gatewayPaymentId: paymentEntity.id,
+                webhookEvent: event,
+              });
               void sendStoreOrderInvoice(storeOrder.id);
             }
           } else {
@@ -2435,23 +2619,71 @@ export class PaymentService {
       };
     }
 
-    const payout = await prisma.priestPayout.create({
-      data: {
-        priestId: booking.priestId,
-        bookingId,
-        amount: booking.priestPayout,
-        status: 'pending',
-        payoutMethod: 'bank_transfer', // Default method
-      },
-      include: {
-        priest: {
-          select: { id: true, displayName: true },
+    // ── DI-09 (F455): the guard above is a TOCTOU, and the constraint is what
+    //    actually stops the second row — so the LOSER's experience is the fix.
+    //
+    // `priest_payouts_booking_id_key` has been live in production since
+    // migrations/20260902000000_di06_priest_payout_booking_key, and the
+    // `findFirst` at the top of this method is separated from this INSERT by
+    // three further awaits with no transaction and no lock around them. Two
+    // concurrent calls both read "no payout" and both arrive here; the index
+    // rejects the second with 23505 -> P2002.
+    //
+    // Unhandled, that P2002 leaves this method as a raw
+    // PrismaClientKnownRequestError. Nothing between here and the HTTP layer
+    // translates it, so the caller gets a 500 — for a condition this very
+    // method already has a considered answer for, thirty lines up. And the two
+    // callers that reach it are unattended status transitions
+    // (booking.service.ts:1008 and :1746), where a 500 is a failed booking
+    // transition rather than a failed payout.
+    //
+    // The translation below is deliberately the SAME sentence the guard throws,
+    // built from the winner's row. Both orderings of the race are one fact — a
+    // payout already exists for this booking — and they must be indistinguishable
+    // to every caller. What it must NOT do is succeed: returning the winner's
+    // row as though this call created it would put a second
+    // PRIEST_PAYOUT_CREATED on the money trail for one payout, and the caller
+    // would log a mint it did not make.
+    //
+    // Narrowed with `isUniqueViolation` rather than a bare code check so a
+    // P2003 (foreign key) or P2025 (record not found) — neither of which is a
+    // duplicate — keeps propagating untouched. Reporting "already exists" for a
+    // real fault on a money path is worse than the 500 this replaces.
+    let payout;
+    try {
+      payout = await prisma.priestPayout.create({
+        data: {
+          priestId: booking.priestId,
+          bookingId,
+          amount: booking.priestPayout,
+          status: 'pending',
+          payoutMethod: 'bank_transfer', // Default method
         },
-        booking: {
-          select: { bookingNumber: true },
+        include: {
+          priest: {
+            select: { id: true, displayName: true },
+          },
+          booking: {
+            select: { bookingNumber: true },
+          },
         },
-      },
-    });
+      });
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
+
+      // Re-read so the message carries the WINNER's status, exactly as the
+      // guard's does. `?? 'unknown'` covers the vanishingly rare case where the
+      // winning row was deleted between its INSERT and this SELECT: the write
+      // still did not happen here, so this call still must not report success.
+      const winner = (await prisma.priestPayout.findFirst({
+        where: { bookingId },
+        select: { id: true, status: true },
+      })) as { id: string; status: string } | null;
+
+      throw new Error(
+        `A payout already exists for this booking (status: ${winner?.status ?? 'unknown'}).`,
+      );
+    }
 
     // OPS-05 — rail B had no audit trail at all. `PRIEST_PAYOUT_CREATED` was a
     // declared event with no call site anywhere in the repo, so the moment a
