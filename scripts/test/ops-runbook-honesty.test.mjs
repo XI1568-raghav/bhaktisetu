@@ -846,27 +846,12 @@ describe('OPS-06 (2026-09-08) — the deprecated `-f branch=` input', () => {
     );
   });
 
-  // Three root files still carry the flag and were OUTSIDE the lane of the
-  // 2026-09-08 docs pass (they are the @-imported context files and the audit
-  // master record, edited centrally):
-  //     CLAUDE.md:19   TASKS.md:116   AUDIT.md:454
-  // They are exempted here rather than silently dropped, and the exemption is
-  // self-cleaning: the test below FAILS if one of them no longer carries the
-  // flag, which is the signal to delete it from this list. An exception nobody
-  // is forced to revisit is how the last dead guard got to 712 lines.
-  const OUT_OF_LANE = ['CLAUDE.md', 'TASKS.md', 'AUDIT.md'];
-
-  it('the out-of-lane exemptions are still needed (delete each one as it is fixed)', () => {
-    for (const file of OUT_OF_LANE) {
-      const stillWrong = read(file)
-        .split('\n')
-        .some((l) => l.includes('render-diag.yml') && /-f\s+branch=/.test(l));
-      expect(
-        stillWrong,
-        `${file} no longer carries -f branch= — remove it from OUT_OF_LANE in this test`,
-      ).toBe(true);
-    }
-  });
+  // The 2026-09-08 docs pass could not reach CLAUDE.md, TASKS.md and AUDIT.md,
+  // so it exempted them here behind a self-cleaning assertion that failed the
+  // moment one was fixed. All three were fixed on 2026-09-08 and the exemption
+  // is gone, which is the whole point of writing it that way: the guard, not a
+  // person's memory, is what noticed the debt was paid.
+  const OUT_OF_LANE = [];
 
   it('no document hands an operator a render-diag dispatch carrying -f branch=', () => {
     const offenders = [];
