@@ -557,6 +557,23 @@ export class AdminService {
                 where: { userId: id },
                 data: { approved: updates.approved, approvedAt: updates.approved ? now : null },
               });
+              // A pandit lives in TWO tables and approval only ever reached one
+              // of them. routes/priests-public.ts lists on
+              // `{ isVerified: true, status: 'active' }` (Priest), while the
+              // admin queue reads PanditProfile.approved — and nothing in the
+              // API wrote Priest.isVerified, since POST/PATCH /admin/priests
+              // are notImplemented stubs. Measured on prod 2026-09-08: after an
+              // admin clicked Approve, PanditProfile.approved was true and
+              // Priest.isVerified was still false, so GET /priests kept
+              // returning only the 3 pandits seeded straight into the DB. The
+              // operator saw "All caught up!" and the pandit was unbookable.
+              // updateMany (not update) because a pandit who has not completed
+              // /onboarding/provider has no Priest row yet — that must be a
+              // no-op, not a throw that rolls back the approval.
+              await prisma.priest.updateMany({
+                where: { userId: id },
+                data: { isVerified: updates.approved },
+              });
               break;
             case 'STORE_OWNER':
               await prisma.storeProfile.updateMany({
