@@ -1,0 +1,2776 @@
+{
+  "generatedAt": "2026-09-07T22:13:07.845Z",
+  "base": "https://darshya.online",
+  "totals": {
+    "routes": 391,
+    "static": 293,
+    "dynamic": 98,
+    "PASS": 219,
+    "REVIEW": 74,
+    "FAIL": 0,
+    "UNVISITED": 98
+  },
+  "elapsedMs": 369541,
+  "static": [
+    {
+      "route": "/",
+      "status": 200,
+      "location": null,
+      "bytes": 277678,
+      "title": "Darshya, India&#x27;s Devotional Super App",
+      "ms": 5868,
+      "state": "PASS"
+    },
+    {
+      "route": "/aarti",
+      "status": 200,
+      "location": null,
+      "bytes": 610856,
+      "title": "Hindu Aarti Lyrics — Shiv, Ganesh, Lakshmi, Durga, Hanuman, Sai | Darshya",
+      "ms": 3579,
+      "state": "PASS"
+    },
+    {
+      "route": "/about",
+      "status": 200,
+      "location": null,
+      "bytes": 211427,
+      "title": "About Darshya · The story, the founders, the road ahead | Darshya",
+      "ms": 344,
+      "state": "PASS"
+    },
+    {
+      "route": "/account/digest/unsubscribe",
+      "status": 200,
+      "location": null,
+      "bytes": 107449,
+      "title": "Unsubscribe from Darshya Emails | Darshya",
+      "ms": 1017,
+      "state": "PASS"
+    },
+    {
+      "route": "/account/privacy",
+      "status": 200,
+      "location": null,
+      "bytes": 107208,
+      "title": "Your Data &amp; Privacy Controls | Darshya",
+      "ms": 298,
+      "state": "PASS"
+    },
+    {
+      "route": "/account/subscriptions",
+      "status": 200,
+      "location": null,
+      "bytes": 107253,
+      "title": "My Subscriptions | Darshya",
+      "ms": 517,
+      "state": "PASS"
+    },
+    {
+      "route": "/aditya",
+      "status": 200,
+      "location": null,
+      "bytes": 141969,
+      "title": "Dwadasha Aditya — 12 Forms of Surya (Names, Mantras, Months) | Darshya",
+      "ms": 291,
+      "state": "PASS"
+    },
+    {
+      "route": "/admin",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin",
+      "bytes": 0,
+      "title": null,
+      "ms": 265,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/agents",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fagents",
+      "bytes": 0,
+      "title": null,
+      "ms": 288,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/approvals",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fapprovals",
+      "bytes": 0,
+      "title": null,
+      "ms": 271,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/b2b-onboarding",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fb2b-onboarding",
+      "bytes": 0,
+      "title": null,
+      "ms": 285,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/commissions",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fcommissions",
+      "bytes": 0,
+      "title": null,
+      "ms": 584,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/consultations",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fconsultations",
+      "bytes": 0,
+      "title": null,
+      "ms": 582,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/kyc",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fkyc",
+      "bytes": 0,
+      "title": null,
+      "ms": 276,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/leads",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fleads",
+      "bytes": 0,
+      "title": null,
+      "ms": 291,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/metrics",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fmetrics",
+      "bytes": 0,
+      "title": null,
+      "ms": 289,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/outreach",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Foutreach",
+      "bytes": 0,
+      "title": null,
+      "ms": 254,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/payouts",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fpayouts",
+      "bytes": 0,
+      "title": null,
+      "ms": 260,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/ratings",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fratings",
+      "bytes": 0,
+      "title": null,
+      "ms": 262,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/refunds",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Frefunds",
+      "bytes": 0,
+      "title": null,
+      "ms": 290,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/reports",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Freports",
+      "bytes": 0,
+      "title": null,
+      "ms": 289,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/revenue",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Frevenue",
+      "bytes": 0,
+      "title": null,
+      "ms": 267,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/roadmap",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Froadmap",
+      "bytes": 0,
+      "title": null,
+      "ms": 282,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/settings",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fsettings",
+      "bytes": 0,
+      "title": null,
+      "ms": 278,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/subscriptions",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fsubscriptions",
+      "bytes": 0,
+      "title": null,
+      "ms": 260,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/support",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fsupport",
+      "bytes": 0,
+      "title": null,
+      "ms": 282,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/support/view",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fsupport%2Fview",
+      "bytes": 0,
+      "title": null,
+      "ms": 293,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/users",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fusers",
+      "bytes": 0,
+      "title": null,
+      "ms": 283,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/users/view",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fusers%2Fview",
+      "bytes": 0,
+      "title": null,
+      "ms": 262,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/admin/waitlist",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fadmin%2Fwaitlist",
+      "bytes": 0,
+      "title": null,
+      "ms": 289,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/antim-sanskar",
+      "status": 200,
+      "location": null,
+      "bytes": 135594,
+      "title": "Antim Sanskar | Darshya",
+      "ms": 296,
+      "state": "PASS"
+    },
+    {
+      "route": "/antim-sanskar/book",
+      "status": 200,
+      "location": null,
+      "bytes": 114305,
+      "title": "Book Antim Sanskar &amp; Asthi Visarjan | Darshya",
+      "ms": 319,
+      "state": "PASS"
+    },
+    {
+      "route": "/ashta-lakshmi",
+      "status": 200,
+      "location": null,
+      "bytes": 136774,
+      "title": "Ashta Lakshmi — 8 Forms of Goddess Lakshmi (Mantras, Vahana, Vrata) | Darshya",
+      "ms": 288,
+      "state": "PASS"
+    },
+    {
+      "route": "/ask-pandit",
+      "status": 200,
+      "location": null,
+      "bytes": 106689,
+      "title": "Ask a Pandit — Free AI Astrology Consultation | Darshya",
+      "ms": 287,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrologer-portal",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fastrologer-portal",
+      "bytes": 0,
+      "title": null,
+      "ms": 285,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/astrologer-portal/availability",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fastrologer-portal%2Favailability",
+      "bytes": 0,
+      "title": null,
+      "ms": 260,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/astrologer-portal/consultations",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fastrologer-portal%2Fconsultations",
+      "bytes": 0,
+      "title": null,
+      "ms": 280,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/astrologer-portal/earnings",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fastrologer-portal%2Fearnings",
+      "bytes": 0,
+      "title": null,
+      "ms": 263,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/astrologer-portal/messages",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fastrologer-portal%2Fmessages",
+      "bytes": 0,
+      "title": null,
+      "ms": 289,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/astrologer-portal/profile",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fastrologer-portal%2Fprofile",
+      "bytes": 0,
+      "title": null,
+      "ms": 275,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/astrologer-portal/subscription",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fastrologer-portal%2Fsubscription",
+      "bytes": 0,
+      "title": null,
+      "ms": 278,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/astrology",
+      "status": 200,
+      "location": null,
+      "bytes": 193251,
+      "title": "Vedic Astrology — Kundli, Dosha &amp; Daily Horoscope | Darshya",
+      "ms": 416,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/astrologers",
+      "status": 200,
+      "location": null,
+      "bytes": 119883,
+      "title": "Astrologers on Darshya — Verified Vedic Astrologer Directory | Darshya",
+      "ms": 432,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/astrologers/live",
+      "status": 200,
+      "location": null,
+      "bytes": 120082,
+      "title": "Live Astrologers — Verified Vedic Astrologers Online Now | Darshya",
+      "ms": 305,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/baby-name",
+      "status": 200,
+      "location": null,
+      "bytes": 235350,
+      "title": "Baby Name by Nakshatra — Free Namakaran Calculator (Sanskrit + Vedic) | Darshya",
+      "ms": 306,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/chat",
+      "status": 200,
+      "location": null,
+      "bytes": 125972,
+      "title": "Ask an AI Astrologer — Free Instant Answers | Darshya",
+      "ms": 3498,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/choghadiya",
+      "status": 200,
+      "location": null,
+      "bytes": 168782,
+      "title": "Choghadiya Today — Free Muhurat Calculator (8 Day + 8 Night Periods) | Darshya",
+      "ms": 3492,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/dasha",
+      "status": 200,
+      "location": null,
+      "bytes": 157772,
+      "title": "Vimshottari Dasha Calculator — Free 120-Year Mahadasha Timeline | Darshya",
+      "ms": 296,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/hora",
+      "status": 200,
+      "location": null,
+      "bytes": 167658,
+      "title": "Hora Calculator — Free Planetary Hour (Hora Chakra) for Any City | Darshya",
+      "ms": 543,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/horoscope",
+      "status": 200,
+      "location": null,
+      "bytes": 188538,
+      "title": "Daily Horoscope Today — All 12 Rashis | Darshya",
+      "ms": 516,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/kaal-sarp",
+      "status": 200,
+      "location": null,
+      "bytes": 168282,
+      "title": "Kaal Sarp Dosh Calculator — Free Online Kalsarpa Yoga Check | Darshya",
+      "ms": 295,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/kundli",
+      "status": 200,
+      "location": null,
+      "bytes": 125137,
+      "title": "Free Kundli — Janam Kundli &amp; Birth Chart Online | Darshya",
+      "ms": 858,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/kundli-milan",
+      "status": 200,
+      "location": null,
+      "bytes": 149837,
+      "title": "Free Kundli Milan Online — Ashtakoot 36-Point Guna Match Calculator | Darshya",
+      "ms": 736,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/lal-kitab",
+      "status": 200,
+      "location": null,
+      "bytes": 187261,
+      "title": "Lal Kitab Upay &amp; Farman Finder — Free 108 Graha-House Remedies | Darshya",
+      "ms": 312,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/manglik",
+      "status": 200,
+      "location": null,
+      "bytes": 160509,
+      "title": "Manglik Dosh Calculator — Free Mangal Dosha Check (DOB + Time) | Darshya",
+      "ms": 910,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/nakshatra-finder",
+      "status": 200,
+      "location": null,
+      "bytes": 182748,
+      "title": "Find My Nakshatra by Date of Birth — Free Vedic Birth Star Calculator | Darshya",
+      "ms": 522,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/numerology",
+      "status": 200,
+      "location": null,
+      "bytes": 158179,
+      "title": "Free Numerology Calculator — Life Path + Name Number + Lucky Day | Darshya",
+      "ms": 521,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/pancha-pakshi",
+      "status": 200,
+      "location": null,
+      "bytes": 166689,
+      "title": "Pancha Pakshi Shastra — Tamil Siddhar 5-Bird Astrology | Free | Darshya",
+      "ms": 312,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/pitra-dosh",
+      "status": 200,
+      "location": null,
+      "bytes": 165119,
+      "title": "Pitra Dosha Calculator — 5 Types, 30 Symptoms, 18 Remedies | Free Vedic | Darshya",
+      "ms": 663,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/rahu-kalam",
+      "status": 200,
+      "location": null,
+      "bytes": 153792,
+      "title": "Rahu Kalam Today — Free Rahu Kaal, Yamaganda &amp; Gulika Calculator | Darshya",
+      "ms": 591,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/sade-sati",
+      "status": 200,
+      "location": null,
+      "bytes": 157856,
+      "title": "Sade Sati Calculator — Am I in Sade Sati? Free Saturn Transit Check | Darshya",
+      "ms": 525,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/shubh-muhurat",
+      "status": 200,
+      "location": null,
+      "bytes": 178715,
+      "title": "Shubh Muhurat Finder — Free Auspicious Time Calculator (Marriage, Griha Pravesh, Vehicle) | Darshya",
+      "ms": 940,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/vastu",
+      "status": 200,
+      "location": null,
+      "bytes": 215634,
+      "title": "Vastu Shastra Calculator — Free 8-Direction Room Placement Scorer | Darshya",
+      "ms": 877,
+      "state": "PASS"
+    },
+    {
+      "route": "/astrology/view",
+      "status": 200,
+      "location": null,
+      "bytes": 117178,
+      "title": "Astrologer Profile | Darshya",
+      "ms": 1111,
+      "state": "PASS"
+    },
+    {
+      "route": "/auth/callback",
+      "status": 200,
+      "location": null,
+      "bytes": 105369,
+      "title": "Signing In… | Darshya",
+      "ms": 323,
+      "state": "PASS"
+    },
+    {
+      "route": "/auth/forgot-password",
+      "status": 200,
+      "location": null,
+      "bytes": 107330,
+      "title": "Reset your password | Darshya",
+      "ms": 313,
+      "state": "PASS"
+    },
+    {
+      "route": "/auth/login",
+      "status": 200,
+      "location": null,
+      "bytes": 112066,
+      "title": "Sign In | Darshya",
+      "ms": 316,
+      "state": "PASS"
+    },
+    {
+      "route": "/auth/logout",
+      "status": 200,
+      "location": null,
+      "bytes": 105115,
+      "title": "Sign In | Darshya",
+      "ms": 703,
+      "state": "PASS"
+    },
+    {
+      "route": "/auth/reset-password",
+      "status": 200,
+      "location": null,
+      "bytes": 104832,
+      "title": "Choose a new password | Darshya",
+      "ms": 594,
+      "state": "PASS"
+    },
+    {
+      "route": "/auth/signup",
+      "status": 200,
+      "location": null,
+      "bytes": 114879,
+      "title": "Create Account | Darshya",
+      "ms": 351,
+      "state": "PASS"
+    },
+    {
+      "route": "/auth/verify",
+      "status": 200,
+      "location": null,
+      "bytes": 104977,
+      "title": "Verify OTP | Darshya",
+      "ms": 563,
+      "state": "PASS"
+    },
+    {
+      "route": "/become-astrologer",
+      "status": 200,
+      "location": null,
+      "bytes": 119749,
+      "title": "Become a Darshya astrologer | Darshya",
+      "ms": 2836,
+      "state": "PASS"
+    },
+    {
+      "route": "/become-gurukul",
+      "status": 200,
+      "location": null,
+      "bytes": 112572,
+      "title": "Register Your Gurukul | Darshya",
+      "ms": 2526,
+      "state": "PASS"
+    },
+    {
+      "route": "/become-priest",
+      "status": 200,
+      "location": null,
+      "bytes": 119090,
+      "title": "Become a Darshya pandit | Darshya",
+      "ms": 592,
+      "state": "PASS"
+    },
+    {
+      "route": "/become-wellness",
+      "status": 200,
+      "location": null,
+      "bytes": 119086,
+      "title": "Teach yoga &amp; meditation | Darshya",
+      "ms": 308,
+      "state": "PASS"
+    },
+    {
+      "route": "/bhakti-saint",
+      "status": 200,
+      "location": null,
+      "bytes": 139762,
+      "title": "Bhakti Saints — 12 Medieval Devotional Masters | Darshya",
+      "ms": 584,
+      "state": "PASS"
+    },
+    {
+      "route": "/blog",
+      "status": 200,
+      "location": null,
+      "bytes": 116112,
+      "title": "Blog | Darshya",
+      "ms": 294,
+      "state": "PASS"
+    },
+    {
+      "route": "/bn",
+      "status": 200,
+      "location": null,
+      "bytes": 116443,
+      "title": "দর্শ্যা — ভারতের আধ্যাত্মিক সুপার অ্যাপ | Darshya",
+      "ms": 366,
+      "state": "PASS"
+    },
+    {
+      "route": "/bookings",
+      "status": 200,
+      "location": null,
+      "bytes": 106908,
+      "title": "My Bookings | Darshya",
+      "ms": 594,
+      "state": "PASS"
+    },
+    {
+      "route": "/bookings/pay",
+      "status": 200,
+      "location": null,
+      "bytes": 107228,
+      "title": "Complete Your Booking Payment | Darshya",
+      "ms": 1138,
+      "state": "PASS"
+    },
+    {
+      "route": "/bookings/view",
+      "status": 200,
+      "location": null,
+      "bytes": 107368,
+      "title": "Booking Details | Darshya",
+      "ms": 768,
+      "state": "PASS"
+    },
+    {
+      "route": "/calendar",
+      "status": 200,
+      "location": null,
+      "bytes": 378926,
+      "title": "Hindu Calendar 2026 — Complete Festival &amp; Vrat Calendar | Darshya",
+      "ms": 6929,
+      "state": "PASS"
+    },
+    {
+      "route": "/careers",
+      "status": 200,
+      "location": null,
+      "bytes": 145467,
+      "title": "Careers | Darshya",
+      "ms": 6792,
+      "state": "PASS"
+    },
+    {
+      "route": "/chakras",
+      "status": 200,
+      "location": null,
+      "bytes": 133200,
+      "title": "7 Chakras (Muladhara → Sahasrara) — Bija Mantras, Deities, Awakening | Darshya",
+      "ms": 283,
+      "state": "PASS"
+    },
+    {
+      "route": "/chalisa",
+      "status": 200,
+      "location": null,
+      "bytes": 407900,
+      "title": "Hindu Chalisa Lyrics — Hanuman, Ganesh, Shiv, Durga, Sai | Darshya",
+      "ms": 765,
+      "state": "PASS"
+    },
+    {
+      "route": "/changelog",
+      "status": 200,
+      "location": null,
+      "bytes": 107405,
+      "title": "Changelog — every Darshya commit | Darshya",
+      "ms": 2990,
+      "state": "PASS"
+    },
+    {
+      "route": "/chants",
+      "status": 200,
+      "location": null,
+      "bytes": 413204,
+      "title": "12 Famous Hindu Chants — Gayatri, Mahamrityunjaya, Hare Krishna, Hanuman Chalisa | Darshya",
+      "ms": 2286,
+      "state": "PASS"
+    },
+    {
+      "route": "/checkout/offering",
+      "status": 200,
+      "location": null,
+      "bytes": 104279,
+      "title": "Checkout — Temple Offering | Darshya",
+      "ms": 1015,
+      "state": "PASS"
+    },
+    {
+      "route": "/checkout/success",
+      "status": 200,
+      "location": null,
+      "bytes": 109864,
+      "title": "Payment received | Darshya",
+      "ms": 971,
+      "state": "PASS"
+    },
+    {
+      "route": "/city",
+      "status": 200,
+      "location": null,
+      "bytes": 169260,
+      "title": "Pujas and temples by city — Varanasi, Mumbai, Tirupati &amp; more | Darshya",
+      "ms": 672,
+      "state": "PASS"
+    },
+    {
+      "route": "/contact",
+      "status": 200,
+      "location": null,
+      "bytes": 113206,
+      "title": "Contact Darshya Support — Bookings, Partnerships &amp; Help | Darshya",
+      "ms": 490,
+      "state": "PASS"
+    },
+    {
+      "route": "/content",
+      "status": 200,
+      "location": null,
+      "bytes": 235380,
+      "title": "Content | Darshya",
+      "ms": 5105,
+      "state": "PASS"
+    },
+    {
+      "route": "/content/books",
+      "status": 200,
+      "location": null,
+      "bytes": 116104,
+      "title": "Sacred Texts — Bhagavad Gita, Ramayana, Upanishads | Darshya",
+      "ms": 1057,
+      "state": "PASS"
+    },
+    {
+      "route": "/credits",
+      "status": 200,
+      "location": null,
+      "bytes": 399397,
+      "title": "Credits &amp; Attribution | Darshya",
+      "ms": 3265,
+      "state": "PASS"
+    },
+    {
+      "route": "/csr-match",
+      "status": 404,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 342,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/darshan",
+      "status": 200,
+      "location": null,
+      "bytes": 175431,
+      "title": "Live Darshan | Darshya",
+      "ms": 425,
+      "state": "PASS"
+    },
+    {
+      "route": "/darshanas",
+      "status": 200,
+      "location": null,
+      "bytes": 128035,
+      "title": "The 6 Darshanas — Schools of Hindu Philosophy | Darshya",
+      "ms": 3656,
+      "state": "PASS"
+    },
+    {
+      "route": "/dashavatar",
+      "status": 200,
+      "location": null,
+      "bytes": 131120,
+      "title": "Dashavatar — 10 Avatars of Vishnu | Darshya",
+      "ms": 3655,
+      "state": "PASS"
+    },
+    {
+      "route": "/dashboard",
+      "status": 200,
+      "location": null,
+      "bytes": 106834,
+      "title": "Your Dashboard | Darshya",
+      "ms": 529,
+      "state": "PASS"
+    },
+    {
+      "route": "/data-deletion",
+      "status": 200,
+      "location": null,
+      "bytes": 142691,
+      "title": "Delete Your Account | Darshya",
+      "ms": 529,
+      "state": "PASS"
+    },
+    {
+      "route": "/deity",
+      "status": 200,
+      "location": null,
+      "bytes": 275920,
+      "title": "Hindu deities — pujas, mantras, temples by deity | Darshya",
+      "ms": 459,
+      "state": "PASS"
+    },
+    {
+      "route": "/demo",
+      "status": 200,
+      "location": null,
+      "bytes": 119809,
+      "title": "Product Demo — All Seven Roles | Darshya",
+      "ms": 435,
+      "state": "PASS"
+    },
+    {
+      "route": "/demo/chat",
+      "status": 200,
+      "location": null,
+      "bytes": 107061,
+      "title": "Demo — Messaging a Provider | Darshya",
+      "ms": 3871,
+      "state": "PASS"
+    },
+    {
+      "route": "/devi/mahavidyas",
+      "status": 200,
+      "location": null,
+      "bytes": 171475,
+      "title": "Dasa Mahavidya — 10 Tantric Wisdom Goddesses | Kali Tara Sundari Bhuvaneshwari | Darshya",
+      "ms": 4086,
+      "state": "PASS"
+    },
+    {
+      "route": "/devi/navadurga",
+      "status": 200,
+      "location": null,
+      "bytes": 167461,
+      "title": "Navadurga — 9 Forms of Goddess Durga | Navratri Day-by-Day Guide | Darshya",
+      "ms": 1629,
+      "state": "PASS"
+    },
+    {
+      "route": "/discover",
+      "status": 200,
+      "location": null,
+      "bytes": 208199,
+      "title": "Discover Hindu Wisdom — All 61 Guides on Scriptures, Cosmology, Practice &amp; Tools | Darshya",
+      "ms": 1490,
+      "state": "PASS"
+    },
+    {
+      "route": "/donations",
+      "status": 200,
+      "location": null,
+      "bytes": 169054,
+      "title": "Donate to Temples &amp; Gaushalas | Darshya",
+      "ms": 4126,
+      "state": "PASS"
+    },
+    {
+      "route": "/ekadashi",
+      "status": 200,
+      "location": null,
+      "bytes": 200676,
+      "title": "24 Ekadashi Vratas — Names, Stories, Fasting Rules &amp; Mantras | Darshya",
+      "ms": 2209,
+      "state": "PASS"
+    },
+    {
+      "route": "/faqs",
+      "status": 200,
+      "location": null,
+      "bytes": 160926,
+      "title": "FAQs — Puja Booking, Live Darshan, Pricing, Yatra | Darshya",
+      "ms": 536,
+      "state": "PASS"
+    },
+    {
+      "route": "/festival",
+      "status": 200,
+      "location": null,
+      "bytes": 247466,
+      "title": "Hindu festival calendar 2026 — pujas, rituals, dates | Darshya",
+      "ms": 574,
+      "state": "PASS"
+    },
+    {
+      "route": "/festivals",
+      "status": 307,
+      "location": "/festival",
+      "bytes": 0,
+      "title": null,
+      "ms": 338,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/for-temple-chains",
+      "status": 200,
+      "location": null,
+      "bytes": 140825,
+      "title": "Darshya for Temple Chains, Ashrams &amp; Mathas — B2B SaaS | Darshya",
+      "ms": 351,
+      "state": "PASS"
+    },
+    {
+      "route": "/free-pandit-advice",
+      "status": 200,
+      "location": null,
+      "bytes": 150353,
+      "title": "Free Pandit Kundli Astrology Advice — 13 Topics Answered by Verified Pandits | Darshya",
+      "ms": 3788,
+      "state": "PASS"
+    },
+    {
+      "route": "/gaushala",
+      "status": 200,
+      "location": null,
+      "bytes": 240631,
+      "title": "Gau Seva — Adopt a Cow | Darshya",
+      "ms": 3892,
+      "state": "PASS"
+    },
+    {
+      "route": "/gaushala-portal",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fgaushala-portal",
+      "bytes": 0,
+      "title": null,
+      "ms": 3088,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/gaushala-portal/cows",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fgaushala-portal%2Fcows",
+      "bytes": 0,
+      "title": null,
+      "ms": 3266,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/gaushala-portal/donations",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fgaushala-portal%2Fdonations",
+      "bytes": 0,
+      "title": null,
+      "ms": 276,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/gaushala-portal/messages",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fgaushala-portal%2Fmessages",
+      "bytes": 0,
+      "title": null,
+      "ms": 279,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/gaushala-portal/profile",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fgaushala-portal%2Fprofile",
+      "bytes": 0,
+      "title": null,
+      "ms": 281,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/gaushala-portal/volunteers",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fgaushala-portal%2Fvolunteers",
+      "bytes": 0,
+      "title": null,
+      "ms": 280,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/gift",
+      "status": 200,
+      "location": null,
+      "bytes": 138101,
+      "title": "Gift a puja to your family in India | Darshya",
+      "ms": 506,
+      "state": "PASS"
+    },
+    {
+      "route": "/gift/success",
+      "status": 200,
+      "location": null,
+      "bytes": 109249,
+      "title": "Gift Puja | Darshya",
+      "ms": 915,
+      "state": "PASS"
+    },
+    {
+      "route": "/gita",
+      "status": 200,
+      "location": null,
+      "bytes": 150811,
+      "title": "Bhagavad Gita, All 18 Chapters with Sanskrit, Meaning &amp; Key Verses | Darshya",
+      "ms": 1503,
+      "state": "PASS"
+    },
+    {
+      "route": "/gurukul-portal",
+      "status": 200,
+      "location": null,
+      "bytes": 91790,
+      "title": "Gurukul Portal | Darshya",
+      "ms": 489,
+      "state": "PASS"
+    },
+    {
+      "route": "/gurukul-portal/applications",
+      "status": 200,
+      "location": null,
+      "bytes": 92420,
+      "title": "Admission Applications — Gurukul Portal | Darshya",
+      "ms": 359,
+      "state": "PASS"
+    },
+    {
+      "route": "/gurukuls",
+      "status": 200,
+      "location": null,
+      "bytes": 108142,
+      "title": "Gurukuls — Traditional Sanskrit &amp; Vedic Schools | Darshya",
+      "ms": 734,
+      "state": "PASS"
+    },
+    {
+      "route": "/help",
+      "status": 200,
+      "location": null,
+      "bytes": 194812,
+      "title": "Help Center | Darshya",
+      "ms": 430,
+      "state": "PASS"
+    },
+    {
+      "route": "/hi",
+      "status": 200,
+      "location": null,
+      "bytes": 116513,
+      "title": "दर्शया — भारत का आध्यात्मिक सुपर-ऐप | Darshya",
+      "ms": 3030,
+      "state": "PASS"
+    },
+    {
+      "route": "/hindu-philosophies",
+      "status": 200,
+      "location": null,
+      "bytes": 136106,
+      "title": "Hindu Philosophies — Shad Darshana + Vedanta Sub-Schools | Darshya",
+      "ms": 3435,
+      "state": "PASS"
+    },
+    {
+      "route": "/hindu-symbols",
+      "status": 200,
+      "location": null,
+      "bytes": 146227,
+      "title": "Hindu Sacred Symbols — Om, Swastika, Sri Yantra, Kalash, Lotus &amp; 8 More | Darshya",
+      "ms": 773,
+      "state": "PASS"
+    },
+    {
+      "route": "/home-v2",
+      "status": 200,
+      "location": null,
+      "bytes": 231887,
+      "title": "Home v2 (preview) | Darshya",
+      "ms": 3796,
+      "state": "PASS"
+    },
+    {
+      "route": "/jyotirlinga",
+      "status": 200,
+      "location": null,
+      "bytes": 144580,
+      "title": "12 Jyotirlinga of Lord Shiva — Canonical Order, Darshan Booking, Bhasma Aarti | Darshya",
+      "ms": 4015,
+      "state": "PASS"
+    },
+    {
+      "route": "/launch",
+      "status": 200,
+      "location": null,
+      "bytes": 129367,
+      "title": "Darshya is launching — India’s devotional super app | Darshya",
+      "ms": 742,
+      "state": "PASS"
+    },
+    {
+      "route": "/learn-sanskrit",
+      "status": 200,
+      "location": null,
+      "bytes": 114559,
+      "title": "Learn Sanskrit — Lessons, Streaks, Badges | Darshya",
+      "ms": 408,
+      "state": "PASS"
+    },
+    {
+      "route": "/legal/cookies",
+      "status": 200,
+      "location": null,
+      "bytes": 111923,
+      "title": "Cookie Policy | Darshya",
+      "ms": 675,
+      "state": "PASS"
+    },
+    {
+      "route": "/legal/privacy-uk",
+      "status": 200,
+      "location": null,
+      "bytes": 116950,
+      "title": "UK Privacy Notice | Darshya",
+      "ms": 341,
+      "state": "PASS"
+    },
+    {
+      "route": "/list-gaushala",
+      "status": 200,
+      "location": null,
+      "bytes": 121038,
+      "title": "List your gaushala | Darshya",
+      "ms": 3833,
+      "state": "PASS"
+    },
+    {
+      "route": "/list-temple",
+      "status": 200,
+      "location": null,
+      "bytes": 118940,
+      "title": "List your temple | Darshya",
+      "ms": 3699,
+      "state": "PASS"
+    },
+    {
+      "route": "/live",
+      "status": 308,
+      "location": "/darshan",
+      "bytes": 0,
+      "title": null,
+      "ms": 297,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/mahabharata",
+      "status": 200,
+      "location": null,
+      "bytes": 188092,
+      "title": "Mahabharata, All 18 Parvas: Adi, Sabha, Vana, Virata, Udyoga, Bhishma, Drona, Karna, Shalya, Sauptika, Stri, Shanti, Anu",
+      "ms": 831,
+      "state": "PASS"
+    },
+    {
+      "route": "/masa",
+      "status": 200,
+      "location": null,
+      "bytes": 136490,
+      "title": "12 Vedic Months (Masa) — Hindu Lunar Calendar | Darshya",
+      "ms": 332,
+      "state": "PASS"
+    },
+    {
+      "route": "/matchmaking",
+      "status": 200,
+      "location": null,
+      "bytes": 146238,
+      "title": "Kundli Matching Online — Free Ashtakoot 36-Point Guna Milan + Pandit | Darshya",
+      "ms": 1213,
+      "state": "PASS"
+    },
+    {
+      "route": "/messages",
+      "status": 200,
+      "location": null,
+      "bytes": 106557,
+      "title": "Messages | Darshya",
+      "ms": 1191,
+      "state": "PASS"
+    },
+    {
+      "route": "/mobile",
+      "status": 200,
+      "location": null,
+      "bytes": 124232,
+      "title": "Darshya Mobile App Preview | Darshya",
+      "ms": 3213,
+      "state": "PASS"
+    },
+    {
+      "route": "/mobile/content",
+      "status": 200,
+      "location": null,
+      "bytes": 124190,
+      "title": "Mobile App Preview — Content Tab | Darshya",
+      "ms": 3075,
+      "state": "PASS"
+    },
+    {
+      "route": "/mobile/darshan",
+      "status": 200,
+      "location": null,
+      "bytes": 120684,
+      "title": "Mobile App Preview — Live Darshan Tab | Darshya",
+      "ms": 528,
+      "state": "PASS"
+    },
+    {
+      "route": "/mobile/profile",
+      "status": 200,
+      "location": null,
+      "bytes": 124021,
+      "title": "Mobile App Preview — Profile Tab | Darshya",
+      "ms": 372,
+      "state": "PASS"
+    },
+    {
+      "route": "/mobile/temples",
+      "status": 200,
+      "location": null,
+      "bytes": 125870,
+      "title": "Mobile App Preview — Temples Tab | Darshya",
+      "ms": 526,
+      "state": "PASS"
+    },
+    {
+      "route": "/mr",
+      "status": 200,
+      "location": null,
+      "bytes": 116431,
+      "title": "दर्श्या — भारताचे आध्यात्मिक सुपर अ‍ॅप | Darshya",
+      "ms": 627,
+      "state": "PASS"
+    },
+    {
+      "route": "/mr/pune",
+      "status": 200,
+      "location": null,
+      "bytes": 132436,
+      "title": "दर्श्या पुणे — पूजा, दर्शन, पंचांग (मराठीत) | Darshya",
+      "ms": 3298,
+      "state": "PASS"
+    },
+    {
+      "route": "/muhurat",
+      "status": 200,
+      "location": null,
+      "bytes": 190958,
+      "title": "Muhurat Guide — Rahu Kalam, Abhijit, Brahma Muhurta, Vivah Dates | Darshya",
+      "ms": 3961,
+      "state": "PASS"
+    },
+    {
+      "route": "/nakshatra",
+      "status": 200,
+      "location": null,
+      "bytes": 182996,
+      "title": "27 Nakshatras — Vedic Lunar Mansions, Lords, Deities, Compatibility | Darshya",
+      "ms": 414,
+      "state": "PASS"
+    },
+    {
+      "route": "/nava-graha",
+      "status": 200,
+      "location": null,
+      "bytes": 141792,
+      "title": "Nava-Graha — 9 Planets of Vedic Astrology, Mantras &amp; Remedies | Darshya",
+      "ms": 786,
+      "state": "PASS"
+    },
+    {
+      "route": "/navaratna",
+      "status": 200,
+      "location": null,
+      "bytes": 139104,
+      "title": "9 Navaratna Gems — Vedic Gemology for Nava-Graha | Darshya",
+      "ms": 655,
+      "state": "PASS"
+    },
+    {
+      "route": "/nri",
+      "status": 200,
+      "location": null,
+      "bytes": 161211,
+      "title": "NRI Premium — Stay Connected to India | Darshya",
+      "ms": 373,
+      "state": "PASS"
+    },
+    {
+      "route": "/nri-pujas",
+      "status": 200,
+      "location": null,
+      "bytes": 204649,
+      "title": "NRI Pujas — Book a Puja from USA, UK, Canada, Australia | Darshya",
+      "ms": 583,
+      "state": "PASS"
+    },
+    {
+      "route": "/nri/ca",
+      "status": 200,
+      "location": null,
+      "bytes": 157611,
+      "title": "Canada NRI — Live Puja Booking &amp; Darshan from India | Darshya",
+      "ms": 1160,
+      "state": "PASS"
+    },
+    {
+      "route": "/offline",
+      "status": 200,
+      "location": null,
+      "bytes": 113387,
+      "title": "Offline | Darshya",
+      "ms": 3412,
+      "state": "PASS"
+    },
+    {
+      "route": "/onboarding/view",
+      "status": 200,
+      "location": null,
+      "bytes": 107036,
+      "title": "Complete Your Provider Profile | Darshya",
+      "ms": 2229,
+      "state": "PASS"
+    },
+    {
+      "route": "/org",
+      "status": 200,
+      "location": null,
+      "bytes": 107128,
+      "title": "Your Organisations | Darshya",
+      "ms": 522,
+      "state": "PASS"
+    },
+    {
+      "route": "/org/accept",
+      "status": 200,
+      "location": null,
+      "bytes": 107026,
+      "title": "Accept an Organisation Invitation | Darshya",
+      "ms": 389,
+      "state": "PASS"
+    },
+    {
+      "route": "/org/members",
+      "status": 200,
+      "location": null,
+      "bytes": 106770,
+      "title": "Organisation Members | Darshya",
+      "ms": 338,
+      "state": "PASS"
+    },
+    {
+      "route": "/org/settings",
+      "status": 200,
+      "location": null,
+      "bytes": 106612,
+      "title": "Organisation Settings | Darshya",
+      "ms": 667,
+      "state": "PASS"
+    },
+    {
+      "route": "/pancha-bhoota",
+      "status": 200,
+      "location": null,
+      "bytes": 130169,
+      "title": "5 Pancha Bhoota Stalam — Five Element Shiva Temples | Darshya",
+      "ms": 1374,
+      "state": "PASS"
+    },
+    {
+      "route": "/panchang",
+      "status": 200,
+      "location": null,
+      "bytes": 176118,
+      "title": "Panchang Today — Tithi, Nakshatra, Rahu Kaal | Darshya",
+      "ms": 1368,
+      "state": "PASS"
+    },
+    {
+      "route": "/panchang/karana",
+      "status": 200,
+      "location": null,
+      "bytes": 140412,
+      "title": "11 Karanas — 5th Anga of Panchang | Free Vedic Reference | Darshya",
+      "ms": 3709,
+      "state": "PASS"
+    },
+    {
+      "route": "/panchang/yoga",
+      "status": 200,
+      "location": null,
+      "bytes": 173202,
+      "title": "27 Nitya Yogas — 4th Anga of Panchang | Free Vedic Reference | Darshya",
+      "ms": 6813,
+      "state": "PASS"
+    },
+    {
+      "route": "/pandits",
+      "status": 200,
+      "location": null,
+      "bytes": 138330,
+      "title": "Verified Pandits | Darshya",
+      "ms": 3775,
+      "state": "PASS"
+    },
+    {
+      "route": "/payouts",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpayouts",
+      "bytes": 0,
+      "title": null,
+      "ms": 421,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/pilgrimage",
+      "status": 200,
+      "location": null,
+      "bytes": 151061,
+      "title": "Hindu Pilgrimage Circuits — Char Dham, Jyotirlinga, Shakti Peeth &amp; More | Darshya",
+      "ms": 536,
+      "state": "PASS"
+    },
+    {
+      "route": "/pitch",
+      "status": 200,
+      "location": null,
+      "bytes": 153842,
+      "title": "Darshya — Investor Deck | Darshya",
+      "ms": 372,
+      "state": "PASS"
+    },
+    {
+      "route": "/press",
+      "status": 200,
+      "location": null,
+      "bytes": 121526,
+      "title": "Press kit | Darshya",
+      "ms": 652,
+      "state": "PASS"
+    },
+    {
+      "route": "/pricing",
+      "status": 200,
+      "location": null,
+      "bytes": 262322,
+      "title": "Pricing — Free &amp; Paid Plans for Devotees and Providers | Darshya",
+      "ms": 3165,
+      "state": "PASS"
+    },
+    {
+      "route": "/priest",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest",
+      "bytes": 0,
+      "title": null,
+      "ms": 2065,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/bookings",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Fbookings",
+      "bytes": 0,
+      "title": null,
+      "ms": 708,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/bookings/view",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Fbookings%2Fview",
+      "bytes": 0,
+      "title": null,
+      "ms": 301,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/messages",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Fmessages",
+      "bytes": 0,
+      "title": null,
+      "ms": 2811,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/offers",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Foffers",
+      "bytes": 0,
+      "title": null,
+      "ms": 2580,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/payouts",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Fpayouts",
+      "bytes": 0,
+      "title": null,
+      "ms": 291,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/profile",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Fprofile",
+      "bytes": 0,
+      "title": null,
+      "ms": 268,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/reviews",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Freviews",
+      "bytes": 0,
+      "title": null,
+      "ms": 341,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/services",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Fservices",
+      "bytes": 0,
+      "title": null,
+      "ms": 309,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/priest/subscription",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fpriest%2Fsubscription",
+      "bytes": 0,
+      "title": null,
+      "ms": 276,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/privacy",
+      "status": 200,
+      "location": null,
+      "bytes": 139364,
+      "title": "Privacy Policy | Darshya",
+      "ms": 363,
+      "state": "PASS"
+    },
+    {
+      "route": "/privacy/v2",
+      "status": 200,
+      "location": null,
+      "bytes": 133704,
+      "title": "Privacy Policy v2 (Multi-Geo) | Darshya",
+      "ms": 370,
+      "state": "PASS"
+    },
+    {
+      "route": "/profile",
+      "status": 200,
+      "location": null,
+      "bytes": 106516,
+      "title": "Edit Your Profile | Darshya",
+      "ms": 598,
+      "state": "PASS"
+    },
+    {
+      "route": "/profile/consultations",
+      "status": 200,
+      "location": null,
+      "bytes": 107074,
+      "title": "My Consultations | Darshya",
+      "ms": 827,
+      "state": "PASS"
+    },
+    {
+      "route": "/profile/yatra-bookings",
+      "status": 200,
+      "location": null,
+      "bytes": 107229,
+      "title": "My Yatra Bookings | Darshya",
+      "ms": 421,
+      "state": "PASS"
+    },
+    {
+      "route": "/provider/kyc",
+      "status": 200,
+      "location": null,
+      "bytes": 107057,
+      "title": "Provider KYC Verification | Darshya",
+      "ms": 335,
+      "state": "PASS"
+    },
+    {
+      "route": "/pujas",
+      "status": 200,
+      "location": null,
+      "bytes": 278787,
+      "title": "Book Online Pujas at Indian Temples | Darshya",
+      "ms": 4886,
+      "state": "PASS"
+    },
+    {
+      "route": "/pujas/book",
+      "status": 200,
+      "location": null,
+      "bytes": 114990,
+      "title": "Book a Puja — Choose Your Temple, Date and Pandit | Darshya",
+      "ms": 1007,
+      "state": "PASS"
+    },
+    {
+      "route": "/pujas/home-puja",
+      "status": 200,
+      "location": null,
+      "bytes": 184780,
+      "title": "Home Puja — Book a Pandit at Your Residence | Darshya",
+      "ms": 2588,
+      "state": "PASS"
+    },
+    {
+      "route": "/pujas/home-puja/book",
+      "status": 200,
+      "location": null,
+      "bytes": 120243,
+      "title": "Book a Pandit for a Puja at Your Home | Darshya",
+      "ms": 5634,
+      "state": "PASS"
+    },
+    {
+      "route": "/pujas/marriage",
+      "status": 200,
+      "location": null,
+      "bytes": 249699,
+      "title": "Book a Pandit for Your Wedding | Darshya",
+      "ms": 4213,
+      "state": "PASS"
+    },
+    {
+      "route": "/pujas/marriage/book",
+      "status": 200,
+      "location": null,
+      "bytes": 134444,
+      "title": "Book a Wedding Pandit | Darshya",
+      "ms": 1040,
+      "state": "PASS"
+    },
+    {
+      "route": "/puranas",
+      "status": 200,
+      "location": null,
+      "bytes": 157994,
+      "title": "The 18 Mahapuranas, Complete List, Summaries, Presiding Deities | Darshya",
+      "ms": 3519,
+      "state": "PASS"
+    },
+    {
+      "route": "/ramayana",
+      "status": 200,
+      "location": null,
+      "bytes": 141585,
+      "title": "Valmiki Ramayana, All 7 Kandas: Bala, Ayodhya, Aranya, Kishkindha, Sundara, Yuddha, Uttara | Darshya",
+      "ms": 3139,
+      "state": "PASS"
+    },
+    {
+      "route": "/rashi",
+      "status": 200,
+      "location": null,
+      "bytes": 144721,
+      "title": "12 Rashis (Vedic Zodiac Signs) — Traits, Compatibility, Lucky Stones | Darshya",
+      "ms": 1308,
+      "state": "PASS"
+    },
+    {
+      "route": "/refer",
+      "status": 200,
+      "location": null,
+      "bytes": 106083,
+      "title": "Refer &amp; Earn Darshya Credits | Darshya",
+      "ms": 1145,
+      "state": "PASS"
+    },
+    {
+      "route": "/refund",
+      "status": 200,
+      "location": null,
+      "bytes": 135116,
+      "title": "Refund &amp; Cancellation Policy | Darshya",
+      "ms": 331,
+      "state": "PASS"
+    },
+    {
+      "route": "/refunds",
+      "status": 200,
+      "location": null,
+      "bytes": 135142,
+      "title": "Refund &amp; Cancellation Policy | Darshya",
+      "ms": 331,
+      "state": "PASS"
+    },
+    {
+      "route": "/rudraksha",
+      "status": 200,
+      "location": null,
+      "bytes": 172514,
+      "title": "Rudraksha Guide — All 14 Mukhi + 4 Special Varieties, Benefits, Mantras | Darshya",
+      "ms": 4775,
+      "state": "PASS"
+    },
+    {
+      "route": "/sacred-mountains",
+      "status": 200,
+      "location": null,
+      "bytes": 135867,
+      "title": "10 Sacred Mountains of Hindu Tradition — Pilgrim &amp; Cosmology Guide | Darshya",
+      "ms": 6989,
+      "state": "PASS"
+    },
+    {
+      "route": "/sacred-rivers",
+      "status": 200,
+      "location": null,
+      "bytes": 143612,
+      "title": "10 Sacred Rivers of Bharat — Sapta Sindhu Complete Guide | Darshya",
+      "ms": 3811,
+      "state": "PASS"
+    },
+    {
+      "route": "/sacred-trees",
+      "status": 200,
+      "location": null,
+      "bytes": 144503,
+      "title": "12 Sacred Trees of Sanatana Dharma — Peepal, Banyan, Bilva, Tulsi &amp; More | Darshya",
+      "ms": 1293,
+      "state": "PASS"
+    },
+    {
+      "route": "/samskaras",
+      "status": 200,
+      "location": null,
+      "bytes": 149093,
+      "title": "16 Samskaras — Hindu Rites of Passage from Conception to Cremation | Darshya",
+      "ms": 3908,
+      "state": "PASS"
+    },
+    {
+      "route": "/sanatan",
+      "status": 200,
+      "location": null,
+      "bytes": 193708,
+      "title": "Sanatana Dharma — A Complete Evergreen Guide to the Eternal Way | Darshya",
+      "ms": 5094,
+      "state": "PASS"
+    },
+    {
+      "route": "/sankalp",
+      "status": 200,
+      "location": null,
+      "bytes": 127584,
+      "title": "Sankalp Generator — Personalized Vedic Vow for Any Puja | Darshya",
+      "ms": 4456,
+      "state": "PASS"
+    },
+    {
+      "route": "/sanskrit",
+      "status": 200,
+      "location": null,
+      "bytes": 195870,
+      "title": "Sanskrit — Knowledge &amp; History | Darshya",
+      "ms": 4043,
+      "state": "PASS"
+    },
+    {
+      "route": "/sapta-mathruka",
+      "status": 200,
+      "location": null,
+      "bytes": 131818,
+      "title": "Sapta Matrika — 7 Mother Goddesses (Names, Mantras, Vahana, Weapons) | Darshya",
+      "ms": 317,
+      "state": "PASS"
+    },
+    {
+      "route": "/sapta-rishis",
+      "status": 200,
+      "location": null,
+      "bytes": 126409,
+      "title": "Sapta Rishis — The 7 Great Sages of Sanatana Dharma | Darshya",
+      "ms": 3516,
+      "state": "PASS"
+    },
+    {
+      "route": "/search",
+      "status": 200,
+      "location": null,
+      "bytes": 105974,
+      "title": "Search pujas, temples and the library | Darshya",
+      "ms": 3117,
+      "state": "PASS"
+    },
+    {
+      "route": "/settings/earnings",
+      "status": 307,
+      "location": "/payouts",
+      "bytes": 0,
+      "title": null,
+      "ms": 377,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/settings/subscription",
+      "status": 200,
+      "location": null,
+      "bytes": 107122,
+      "title": "Manage Your Subscription | Darshya",
+      "ms": 294,
+      "state": "PASS"
+    },
+    {
+      "route": "/shakti-peeth",
+      "status": 200,
+      "location": null,
+      "bytes": 257144,
+      "title": "51 Shakti Peeth — Complete List, Devi-Bhairava Pairings, Darshan Guide | Darshya",
+      "ms": 399,
+      "state": "PASS"
+    },
+    {
+      "route": "/shipping",
+      "status": 200,
+      "location": null,
+      "bytes": 126029,
+      "title": "Shipping &amp; Delivery Policy | Darshya",
+      "ms": 663,
+      "state": "PASS"
+    },
+    {
+      "route": "/shloka-card",
+      "status": 200,
+      "location": null,
+      "bytes": 116462,
+      "title": "Shloka Card Maker — Share a Verse as an Image | Darshya",
+      "ms": 526,
+      "state": "PASS"
+    },
+    {
+      "route": "/shlokas",
+      "status": 200,
+      "location": null,
+      "bytes": 310001,
+      "title": "Sanskrit Shlokas — Sacred Verses with Meaning | Darshya",
+      "ms": 373,
+      "state": "PASS"
+    },
+    {
+      "route": "/status",
+      "status": 200,
+      "location": null,
+      "bytes": 111679,
+      "title": "Status | Darshya",
+      "ms": 1065,
+      "state": "PASS"
+    },
+    {
+      "route": "/store",
+      "status": 200,
+      "location": null,
+      "bytes": 258743,
+      "title": "Store | Darshya",
+      "ms": 1949,
+      "state": "PASS"
+    },
+    {
+      "route": "/store-admin",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fstore-admin",
+      "bytes": 0,
+      "title": null,
+      "ms": 375,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/store-admin/messages",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fstore-admin%2Fmessages",
+      "bytes": 0,
+      "title": null,
+      "ms": 401,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/store-admin/orders",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fstore-admin%2Forders",
+      "bytes": 0,
+      "title": null,
+      "ms": 317,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/store-admin/products",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fstore-admin%2Fproducts",
+      "bytes": 0,
+      "title": null,
+      "ms": 308,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/store-admin/revenue",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fstore-admin%2Frevenue",
+      "bytes": 0,
+      "title": null,
+      "ms": 259,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/store-admin/reviews",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fstore-admin%2Freviews",
+      "bytes": 0,
+      "title": null,
+      "ms": 278,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/store/cart",
+      "status": 200,
+      "location": null,
+      "bytes": 108290,
+      "title": "Your Shopping Cart | Darshya",
+      "ms": 543,
+      "state": "PASS"
+    },
+    {
+      "route": "/store/checkout",
+      "status": 200,
+      "location": null,
+      "bytes": 106882,
+      "title": "Store Checkout | Darshya",
+      "ms": 3212,
+      "state": "PASS"
+    },
+    {
+      "route": "/store/orders",
+      "status": 200,
+      "location": null,
+      "bytes": 106866,
+      "title": "My Orders | Darshya",
+      "ms": 2571,
+      "state": "PASS"
+    },
+    {
+      "route": "/store/products/live",
+      "status": 200,
+      "location": null,
+      "bytes": 110398,
+      "title": "Live Store Products — Listed by Verified Darshya Sellers | Darshya",
+      "ms": 494,
+      "state": "PASS"
+    },
+    {
+      "route": "/store/view",
+      "status": 200,
+      "location": null,
+      "bytes": 106845,
+      "title": "Product Details | Darshya",
+      "ms": 714,
+      "state": "PASS"
+    },
+    {
+      "route": "/support",
+      "status": 200,
+      "location": null,
+      "bytes": 173770,
+      "title": "Support Center | Darshya",
+      "ms": 1105,
+      "state": "PASS"
+    },
+    {
+      "route": "/support/faq",
+      "status": 200,
+      "location": null,
+      "bytes": 107419,
+      "title": "Support FAQs — Bookings, Payments &amp; Refunds | Darshya",
+      "ms": 630,
+      "state": "PASS"
+    },
+    {
+      "route": "/support/ticket/new",
+      "status": 200,
+      "location": null,
+      "bytes": 114069,
+      "title": "Open a Support Ticket | Darshya",
+      "ms": 340,
+      "state": "PASS"
+    },
+    {
+      "route": "/support/tickets",
+      "status": 200,
+      "location": null,
+      "bytes": 109472,
+      "title": "My Support Tickets | Darshya",
+      "ms": 577,
+      "state": "PASS"
+    },
+    {
+      "route": "/support/tickets/view",
+      "status": 200,
+      "location": null,
+      "bytes": 107756,
+      "title": "Support Ticket | Darshya",
+      "ms": 529,
+      "state": "PASS"
+    },
+    {
+      "route": "/ta",
+      "status": 200,
+      "location": null,
+      "bytes": 116888,
+      "title": "தர்ஷ்யா — இந்தியாவின் ஆன்மீக சூப்பர் ஆப் | Darshya",
+      "ms": 764,
+      "state": "PASS"
+    },
+    {
+      "route": "/ta/chennai",
+      "status": 200,
+      "location": null,
+      "bytes": 130036,
+      "title": "தர்ஷ்யா சென்னை — பூஜை, தரிசனம், பஞ்சாங்கம் (தமிழில்) | Darshya",
+      "ms": 22884,
+      "state": "PASS"
+    },
+    {
+      "route": "/te",
+      "status": 502,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 22363,
+      "state": "PASS",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/te/hyderabad",
+      "status": 503,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 278,
+      "state": "PASS",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/temple-portal",
+      "status": 503,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 283,
+      "state": "REVIEW",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/temple-portal/bookings",
+      "status": 503,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 266,
+      "state": "REVIEW",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/temple-portal/darshan",
+      "status": 503,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 284,
+      "state": "REVIEW",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/temple-portal/donations",
+      "status": 503,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 1407,
+      "state": "REVIEW",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/temple-portal/messages",
+      "status": 503,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 1377,
+      "state": "REVIEW",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/temple-portal/payouts",
+      "status": 503,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 285,
+      "state": "REVIEW",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/temple-portal/pujas",
+      "status": 503,
+      "location": null,
+      "bytes": 0,
+      "title": null,
+      "ms": 790,
+      "state": "REVIEW",
+      "reprobed": true,
+      "note": "5xx was API-restart transient; re-probed clean"
+    },
+    {
+      "route": "/temple-portal/schedule",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Ftemple-portal%2Fschedule",
+      "bytes": 0,
+      "title": null,
+      "ms": 998,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/temple-portal/subscription",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Ftemple-portal%2Fsubscription",
+      "bytes": 0,
+      "title": null,
+      "ms": 491,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/temples",
+      "status": 200,
+      "location": null,
+      "bytes": 138111,
+      "title": "Sacred Temples of India | Darshya",
+      "ms": 1512,
+      "state": "PASS"
+    },
+    {
+      "route": "/terms",
+      "status": 200,
+      "location": null,
+      "bytes": 136075,
+      "title": "Terms of Service | Darshya",
+      "ms": 1326,
+      "state": "PASS"
+    },
+    {
+      "route": "/tirth",
+      "status": 200,
+      "location": null,
+      "bytes": 306992,
+      "title": "72 Sacred Tirthas of India — Complete Pilgrim Guide | Darshya",
+      "ms": 1942,
+      "state": "PASS"
+    },
+    {
+      "route": "/tithi",
+      "status": 200,
+      "location": null,
+      "bytes": 171933,
+      "title": "30 Tithis — Lunar Days of the Hindu Calendar | Darshya",
+      "ms": 2861,
+      "state": "PASS"
+    },
+    {
+      "route": "/today",
+      "status": 200,
+      "location": null,
+      "bytes": 135978,
+      "title": "Today — Tithi, Mantra, Deity of the Day, Upcoming Festival | Darshya",
+      "ms": 4585,
+      "state": "PASS"
+    },
+    {
+      "route": "/uk",
+      "status": 200,
+      "location": null,
+      "bytes": 151641,
+      "title": "Darshya UK — Pujas, Darshan &amp; Donations for the UK Hindu Diaspora | Darshya",
+      "ms": 4096,
+      "state": "PASS"
+    },
+    {
+      "route": "/upanishads",
+      "status": 200,
+      "location": null,
+      "bytes": 206199,
+      "title": "The Upanishads — all 48, with the 10 Dashopanishads, Mahavakyas &amp; Summaries | Darshya",
+      "ms": 1650,
+      "state": "PASS"
+    },
+    {
+      "route": "/updates",
+      "status": 200,
+      "location": null,
+      "bytes": 137775,
+      "title": "Updates — what Darshya shipped this week | Darshya",
+      "ms": 1954,
+      "state": "PASS"
+    },
+    {
+      "route": "/upgrade",
+      "status": 200,
+      "location": null,
+      "bytes": 106768,
+      "title": "Upgrade to Bhakti Pass | Darshya",
+      "ms": 541,
+      "state": "PASS"
+    },
+    {
+      "route": "/ved",
+      "status": 200,
+      "location": null,
+      "bytes": 212443,
+      "title": "Vedas — Knowledge &amp; History | Darshya",
+      "ms": 3785,
+      "state": "PASS"
+    },
+    {
+      "route": "/vedas",
+      "status": 200,
+      "location": null,
+      "bytes": 125423,
+      "title": "The 4 Vedas, Rigveda, Samaveda, Yajurveda, Atharvaveda | Darshya",
+      "ms": 3394,
+      "state": "PASS"
+    },
+    {
+      "route": "/vedic-yajnas",
+      "status": 200,
+      "location": null,
+      "bytes": 148507,
+      "title": "Vedic Yajnas — 10 Fire Rituals of the Shrauta Tradition | Darshya",
+      "ms": 3596,
+      "state": "PASS"
+    },
+    {
+      "route": "/vrat",
+      "status": 200,
+      "location": null,
+      "bytes": 342265,
+      "title": "Hindu Vrats Guide — Ekadashi, Karva Chauth, Shivratri, Navratri Fasting | Darshya",
+      "ms": 4034,
+      "state": "PASS"
+    },
+    {
+      "route": "/waitlist",
+      "status": 200,
+      "location": null,
+      "bytes": 113758,
+      "title": "Early-access waitlist | Darshya",
+      "ms": 1692,
+      "state": "PASS"
+    },
+    {
+      "route": "/waitlist/confirm",
+      "status": 307,
+      "location": "/waitlist",
+      "bytes": 0,
+      "title": null,
+      "ms": 771,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/waitlist/welcome",
+      "status": 200,
+      "location": null,
+      "bytes": 107442,
+      "title": "You&#x27;re on the Darshya Waitlist | Darshya",
+      "ms": 758,
+      "state": "PASS"
+    },
+    {
+      "route": "/weddings",
+      "status": 200,
+      "location": null,
+      "bytes": 121526,
+      "title": "Hindu Wedding Planning — Muhurat, Pandit, Samagri | Darshya",
+      "ms": 483,
+      "state": "PASS"
+    },
+    {
+      "route": "/weddings/inquiry",
+      "status": 200,
+      "location": null,
+      "bytes": 107133,
+      "title": "Wedding Pandit Inquiry | Darshya",
+      "ms": 943,
+      "state": "PASS"
+    },
+    {
+      "route": "/weddings/muhurat",
+      "status": 200,
+      "location": null,
+      "bytes": 116504,
+      "title": "Vivah Muhurat Dates — Auspicious Wedding Days | Darshya",
+      "ms": 706,
+      "state": "PASS"
+    },
+    {
+      "route": "/weddings/packages",
+      "status": 200,
+      "location": null,
+      "bytes": 118912,
+      "title": "Wedding Packages — Basic, Premium, Royal | Darshya",
+      "ms": 3165,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness",
+      "status": 200,
+      "location": null,
+      "bytes": 150041,
+      "title": "Yoga, Meditation &amp; Vipassana | Darshya",
+      "ms": 2985,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness-portal",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fwellness-portal",
+      "bytes": 0,
+      "title": null,
+      "ms": 291,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/wellness-portal/earnings",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fwellness-portal%2Fearnings",
+      "bytes": 0,
+      "title": null,
+      "ms": 284,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/wellness-portal/messages",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fwellness-portal%2Fmessages",
+      "bytes": 0,
+      "title": null,
+      "ms": 579,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/wellness-portal/profile",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fwellness-portal%2Fprofile",
+      "bytes": 0,
+      "title": null,
+      "ms": 578,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/wellness-portal/sessions",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fwellness-portal%2Fsessions",
+      "bytes": 0,
+      "title": null,
+      "ms": 290,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/wellness-portal/students",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fwellness-portal%2Fstudents",
+      "bytes": 0,
+      "title": null,
+      "ms": 289,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/wellness-portal/subscription",
+      "status": 307,
+      "location": "/auth/login?redirect=%2Fwellness-portal%2Fsubscription",
+      "bytes": 0,
+      "title": null,
+      "ms": 290,
+      "state": "REVIEW"
+    },
+    {
+      "route": "/wellness/classes",
+      "status": 200,
+      "location": null,
+      "bytes": 108276,
+      "title": "Live Wellness Classes | Darshya",
+      "ms": 343,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness/instructors",
+      "status": 200,
+      "location": null,
+      "bytes": 108143,
+      "title": "Yoga &amp; Meditation Instructors | Darshya",
+      "ms": 642,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness/meditation",
+      "status": 200,
+      "location": null,
+      "bytes": 189987,
+      "title": "Meditation — Guided Sessions &amp; Daily Practice | Darshya",
+      "ms": 514,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness/my-classes",
+      "status": 200,
+      "location": null,
+      "bytes": 107160,
+      "title": "My Wellness Classes | Darshya",
+      "ms": 548,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness/vipassana",
+      "status": 200,
+      "location": null,
+      "bytes": 223357,
+      "title": "Vipassana — 10-Day Silent Meditation Retreats | Darshya",
+      "ms": 1142,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness/vipassana/centers",
+      "status": 200,
+      "location": null,
+      "bytes": 201179,
+      "title": "Vipassana Centers Worldwide — 26 Goenka &amp; Insight Meditation Centers | Darshya",
+      "ms": 1244,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness/vipassana/learn",
+      "status": 200,
+      "location": null,
+      "bytes": 153647,
+      "title": "Learn Vipassana — The Complete Guide to the 10-Day Course | Darshya",
+      "ms": 1064,
+      "state": "PASS"
+    },
+    {
+      "route": "/wellness/yoga",
+      "status": 200,
+      "location": null,
+      "bytes": 210569,
+      "title": "Yoga — Live Classes &amp; Expert Instructors | Darshya",
+      "ms": 389,
+      "state": "PASS"
+    },
+    {
+      "route": "/why-darshya",
+      "status": 200,
+      "location": null,
+      "bytes": 143414,
+      "title": "Why Darshya — vs Sri Mandir, Utsav, AstroSage | Devotional App Comparison | Darshya",
+      "ms": 1275,
+      "state": "PASS"
+    },
+    {
+      "route": "/yatra",
+      "status": 200,
+      "location": null,
+      "bytes": 162456,
+      "title": "Yatra &amp; Pilgrimage Tour Packages | Darshya",
+      "ms": 5617,
+      "state": "PASS"
+    },
+    {
+      "route": "/yatra-packages",
+      "status": 200,
+      "location": null,
+      "bytes": 107148,
+      "title": "Yatra Packages — Curated Pilgrimage Tours | Darshya",
+      "ms": 4365,
+      "state": "PASS"
+    },
+    {
+      "route": "/yatra/book",
+      "status": 200,
+      "location": null,
+      "bytes": 107427,
+      "title": "Request a Yatra Booking | Darshya",
+      "ms": 1342,
+      "state": "PASS"
+    },
+    {
+      "route": "/yatra/companion",
+      "status": 200,
+      "location": null,
+      "bytes": 169627,
+      "title": "Travel Companions for elderly yatris | Darshya",
+      "ms": 862,
+      "state": "PASS"
+    },
+    {
+      "route": "/yatra/destinations",
+      "status": 200,
+      "location": null,
+      "bytes": 365212,
+      "title": "Top 10 Yatra Destinations in India — Booking, Itineraries &amp; Best Time | Darshya",
+      "ms": 846,
+      "state": "PASS"
+    },
+    {
+      "route": "/yatra/plan",
+      "status": 200,
+      "location": null,
+      "bytes": 130215,
+      "title": "Plan a Custom Yatra | Darshya",
+      "ms": 625,
+      "state": "PASS"
+    },
+    {
+      "route": "/yoga-sutras",
+      "status": 200,
+      "location": null,
+      "bytes": 123769,
+      "title": "Patanjali Yoga Sutras — 4 Padas, 196 Sutras, Ashtanga Yoga | Darshya",
+      "ms": 891,
+      "state": "PASS"
+    }
+  ],
+  "dynamicUnresolved": [
+    "/aarti/[slug]",
+    "/aditya/[slug]",
+    "/admin/users/[id]",
+    "/ashta-lakshmi/[slug]",
+    "/astrology/[id]",
+    "/astrology/[id]/book",
+    "/astrology/horoscope/[rashi]",
+    "/astrology/horoscope/[rashi]/today",
+    "/astrology/pancha-pakshi/[slug]",
+    "/bhakti-saint/[slug]",
+    "/blog/[slug]",
+    "/calendar/[month]",
+    "/chakras/[slug]",
+    "/chalisa/[slug]",
+    "/chants/[slug]",
+    "/city/[slug]",
+    "/consultation/[id]",
+    "/consultation/[id]/success",
+    "/content/[slug]",
+    "/content/books/[slug]",
+    "/content/books/[slug]/[...chapter]",
+    "/darshan/[id]",
+    "/darshan/[id]/replay",
+    "/darshanas/[slug]",
+    "/dashavatar/[slug]",
+    "/deity/[slug]",
+    "/deity/[slug]/mantras",
+    "/demo/[role]",
+    "/devi/mahavidyas/[slug]",
+    "/devi/navadurga/[slug]",
+    "/ekadashi/[slug]",
+    "/festival/[slug]",
+    "/free-pandit-advice/[topic]",
+    "/gaushala/[id]",
+    "/gaushala/profile/[id]",
+    "/gita/[chapter]",
+    "/gurukuls/[slug]",
+    "/gurukuls/apply/[programId]",
+    "/help/articles/[lang]/[slug]",
+    "/hindu-philosophies/[slug]",
+    "/hindu-symbols/[slug]",
+    "/jyotirlinga/[slug]",
+    "/learn-sanskrit/lesson/[id]",
+    "/mahabharata/[parva]",
+    "/masa/[slug]",
+    "/muhurat/[slug]",
+    "/nakshatra/[slug]",
+    "/nava-graha/[slug]",
+    "/navaratna/[slug]",
+    "/pancha-bhoota/[slug]",
+    "/panchang/[city]",
+    "/panchang/karana/[slug]",
+    "/panchang/yoga/[slug]",
+    "/pandits/[id]",
+    "/pilgrimage/[slug]",
+    "/priest/bookings/[id]",
+    "/priest/bookings/[id]/accept",
+    "/puja/[city]/[slug]",
+    "/pujas/[slug]",
+    "/pujas/[slug]/book",
+    "/pujas/[slug]/temples",
+    "/pujas/home-puja/[slug]",
+    "/pujas/home-puja/[slug]/book",
+    "/pujas/pandits/[id]",
+    "/puranas/[slug]",
+    "/ramayana/[kanda]",
+    "/rashi/[slug]",
+    "/rudraksha/[slug]",
+    "/sacred-mountains/[slug]",
+    "/sacred-rivers/[slug]",
+    "/sacred-trees/[slug]",
+    "/samskaras/[slug]",
+    "/sanatan/[slug]",
+    "/sanskrit/[slug]",
+    "/sapta-mathruka/[slug]",
+    "/sapta-rishis/[slug]",
+    "/shakti-peeth/[slug]",
+    "/shlokas/[slug]",
+    "/store/[handle]",
+    "/store/seller/[id]",
+    "/temples/[slug]",
+    "/temples/[slug]/pujas",
+    "/tirth/[slug]",
+    "/tithi/[slug]",
+    "/upanishads/[slug]",
+    "/ved/[slug]",
+    "/vedas/[slug]",
+    "/vedic-yajnas/[slug]",
+    "/vrat/[slug]",
+    "/wellness/classes/[id]",
+    "/wellness/instructors/[id]",
+    "/wellness/vipassana/centers/[slug]",
+    "/yatra-packages/[slug]",
+    "/yatra/[slug]",
+    "/yatra/[slug]/book",
+    "/yatra/companion/[id]",
+    "/yatra/destinations/[slug]",
+    "/yoga-sutras/[pada]"
+  ],
+  "dynamicSummary": {
+    "FAIL": 7,
+    "UNRESOLVED": 33,
+    "PASS": 58
+  }
+}
