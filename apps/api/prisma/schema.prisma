@@ -675,6 +675,31 @@ model Payment {
   @@index([status])
   // SCAL-03: payments are always filtered by status, then sorted by date.
   @@index([status, createdAt(sort: Desc)])
+  // DI-06 (2026-09-08): there is a PARTIAL UNIQUE INDEX on this table that
+  // cannot appear here, because Prisma's schema language has no way to express
+  // a filtered index:
+  //
+  //   payments_booking_id_inflight_key
+  //     UNIQUE (booking_id) WHERE booking_id IS NOT NULL
+  //                           AND status IN ('initiated', 'authorized')
+  //
+  // Created by 20260908000000_di06_inflight_and_pair_money_uniques. It is the
+  // constraint behind the createOrder guard at services/payment.service.ts:702
+  // -> :738 ("at most one LIVE payment per booking"), which is a check and a
+  // create on a bare client with a Razorpay network round-trip (:724) sitting
+  // between them — so two concurrent create-order calls for one booking open two
+  // real Razorpay orders and hand the devotee two payable checkout sessions.
+  //
+  // A WHOLE-TABLE `@@unique([bookingId])` would be wrong and would break real
+  // flows: a failed-then-retried payment, or a capture on a rebooked slot,
+  // legitimately leaves several rows on one booking. Only the live states are
+  // exclusive. `scripts/check-money-key-duplicates.mjs` reached the right
+  // conclusion about a plain UNIQUE here and the wrong one about constraints in
+  // general — state-scoped invariants are what partial indexes are for.
+  //
+  // The predicate must stay a character-for-character match for that guard's
+  // `status: { in: ['initiated', 'authorized'] }`. If the guard's state list
+  // changes, change the index with it.
   @@map("payments")
 }
 
@@ -1184,6 +1209,22 @@ model MarketplaceSubscription {
 
   @@index([userId])
   @@index([status])
+  // DI-06 (2026-09-08): there is a PARTIAL UNIQUE INDEX on this table that
+  // cannot appear here, because Prisma's schema language has no way to express
+  // a filtered index:
+  //
+  //   marketplace_subscriptions_user_id_role_active_key
+  //     UNIQUE (user_id, role) WHERE status = 'ACTIVE'
+  //
+  // It is created by 20260908000000_di06_inflight_and_pair_money_uniques and it
+  // replaces the cancel-then-create guard in services/subscription.service.ts —
+  // updateMany(ACTIVE -> CANCELLED) at :457 followed by create(ACTIVE) at :462,
+  // with NO surrounding $transaction, so two concurrent activations each cancel
+  // nothing and both insert. A plain `@@unique([userId, role])` would be WRONG:
+  // a user legitimately accumulates many CANCELLED/EXPIRED rows per role, and
+  // that history is the billing record. Only ACTIVE is exclusive.
+  //
+  // Do not "tidy" this into a @@unique. See the migration for the full note.
   @@map("marketplace_subscriptions")
 }
 
@@ -2129,6 +2170,27 @@ model ReferralClaim {
 
   @@index([referrerId, status])
   @@index([refereeId])
+  // DI-06 (2026-09-08): a UNIQUE INDEX on (referrer_id, referee_id) is created
+  // by 20260908000000_di06_inflight_and_pair_money_uniques —
+  // `referral_claims_referrer_id_referee_id_key`. It replaces the check-then-
+  // create guard at routes/referrals.ts:166 -> :177, whose own comment (:161)
+  // states the rule: "one signed_up claim per (referrer, referee) pair". That
+  // guard has no transaction and no lock, so two concurrent POST /referrals/claim
+  // both read "no claim" and both insert — and this is a money table
+  // (`rewardAmount`): the reward rail keys its wallet idempotency on
+  // `referral-reward-${claim.id}`, which DIFFERS between the two rows, so the
+  // wallet's own unique does not catch the double-reward. It has to stop here.
+  //
+  // Deliberately NOT declared as `@@unique([referrerId, refereeId])`. The index
+  // is created conditionally (skipped with a RAISE WARNING if the key is already
+  // dirty, so a dirty database still boots), and this schema must describe what
+  // is GUARANTEED rather than what is hoped for — the same rule the four earlier
+  // DI-06 migrations follow. The index name above is already Prisma's own
+  // naming convention for that @@unique, so promoting it once every environment
+  // is proven clean is a schema-only edit with no further SQL.
+  //
+  // `refereeId` is nullable and NULLS DISTINCT is the Postgres default, so rows
+  // orphaned by the onDelete: SetNull above never collide and need no filter.
   @@map("referral_claims")
 }
 

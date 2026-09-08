@@ -311,7 +311,13 @@ describe('DI-06/DI-07 — the migration that closes the payments table', () => {
     // `prisma migrate deploy` applies in lexicographic directory order. A new
     // migration that sorts BEFORE an applied one is never executed on an
     // environment that is already ahead of it.
-    const others = dirs.filter((d) => d !== dir);
+    // Bounded to migrations that existed when this was written, which is what
+    // the title says. Comparing against ALL others made the assertion
+    // "this migration is permanently the newest in the repo" — so it failed on
+    // the NEXT migration anyone added, for any reason. It duly did, on
+    // 20260908000000 (DI-06 partial uniques). A guard whose only possible
+    // future is a false positive teaches people to ignore it.
+    const others = dirs.filter((d) => d !== dir && d.slice(0, 14) <= '20260904000000');
     expect(others.length).toBeGreaterThan(0);
     expect(dir! > others.sort().at(-1)!).toBe(true);
   });
