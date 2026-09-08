@@ -43,44 +43,64 @@ function code(rel: string): string {
 const page = code('app/page.tsx');
 
 describe('[HOME-01] the largest homepage image serves a phone-sized candidate', () => {
-  it('the Live Darshan tile is still the image being guarded', () => {
+  /**
+   * HOME-IA (2026-09-08). This block used to guard ONE 16:9 Mahakaleshwar tile
+   * painted into a ~1088 CSS px slot — the single largest image on the page and
+   * a full 768px of height to link to one temple. That tile is gone; the section
+   * is now three 4:3 cards, so the geometry every assertion below depends on
+   * changed and the assertions changed with it. What did NOT change is the job:
+   * no homepage image may quietly start shipping a candidate wider than the box
+   * it is painted into.
+   *
+   * THE ONE INVERSION, stated plainly so it is not read as a weakened test. The
+   * old block asserted the source width must NOT drop to IMG_W.CARD, because
+   * against a 1088px slot CARD (500) is a 2.18x upscale. The new slot is ~349
+   * CSS px (1088 container / 3 columns / gap-3), so CARD is now the CORRECT
+   * source and WIDE is the 2x step. Same rule, measured against the real box.
+   */
+  const DARSHAN_IMG = /getTempleHero\(temple\.slug/;
+
+  it('the Live Darshan row is still the image being guarded', () => {
     // If this ever stops matching, the assertions below would silently measure
     // nothing — so the anchor is asserted, not assumed.
-    expect(page, "the Live Darshan tile's source moved").toMatch(
-      /getTempleHero\('mahakaleshwar'/,
-    );
+    expect(page, "the Live Darshan row's source moved").toMatch(DARSHAN_IMG);
   });
 
-  it('declares a srcSet so a 375px phone does not download the 960px candidate', () => {
-    // The <img> block for the Live Darshan tile.
-    const block = /<img[^>]*getTempleHero\('mahakaleshwar'[\s\S]{0,700}?\/>/.exec(page)?.[0];
+  it('declares a srcSet so a 1x phone does not download the 2x candidate', () => {
+    const block = /<img[^>]*getTempleHero\(temple\.slug[\s\S]{0,700}?\/>/.exec(page)?.[0];
     expect(block, 'could not isolate the Live Darshan <img>').toBeTruthy();
     expect(
       block!,
-      'no srcSet: every viewport downloads the 960px / 189,024 B candidate, including ' +
-        'a 375px phone that paints it at 375 CSS px. images.unoptimized is true in ' +
-        'next.config.ts, so Next emits no srcset of its own — remoteSrcSet() is the ' +
-        'only thing that can.',
+      'no srcSet: every viewport downloads the same candidate. images.unoptimized ' +
+        'is true in next.config.ts, so Next emits no srcset of its own — ' +
+        'remoteSrcSet() is the only thing that can.',
     ).toMatch(/srcSet=/);
-    expect(block!, 'the srcSet must include a phone-sized candidate').toMatch(
+    expect(block!, 'the srcSet must include the 1x candidate').toMatch(
       /remoteSrcSet\([\s\S]*?IMG_W\.CARD/,
     );
   });
 
-  it('declares the painted desktop slot honestly in `sizes`', () => {
-    const block = /<img[^>]*getTempleHero\('mahakaleshwar'[\s\S]{0,700}?\/>/.exec(page)?.[0]!;
-    // .container-wide is 72rem with 2rem gutters at >=1024px => ~1088 CSS px.
-    // Declaring 960px understates the slot and makes the browser pick a
-    // candidate one step too small on a 2x screen.
-    expect(block, '`sizes` still claims a 960px desktop slot').not.toMatch(/,\s*960px"/);
-    expect(block).toMatch(/sizes="[^"]*1088px"/);
+  it('declares the painted slot honestly in `sizes`', () => {
+    const block = /<img[^>]*getTempleHero\(temple\.slug[\s\S]{0,700}?\/>/.exec(page)?.[0]!;
+    // .container-wide is 72rem with 2rem gutters at >=1024px => ~1088 CSS px of
+    // content, split into three columns with gap-3 => ~349 px per card. Below
+    // sm the cards stack full width, hence calc(100vw - 32px).
+    // The old 1088px figure described the single full-width tile and would now
+    // overstate the slot by 3.1x, making every device pick a step too large.
+    expect(block, '`sizes` still claims the old full-width 1088px slot').not.toMatch(
+      /1088px/,
+    );
+    expect(block).toMatch(/sizes="[^"]*349px"/);
+    expect(block).toMatch(/calc\(100vw - 32px\)/);
   });
 
-  it('does NOT downgrade the source width to CARD (the triage doc advises wrongly)', () => {
-    // docs/audit/triage-2026-08-15.md:147 recommends IMG_W.WIDE -> IMG_W.CARD
-    // here. That is a 2.18x upscale in a ~1088px slot. The srcSet above gets
-    // the mobile saving without the desktop quality loss.
-    expect(page).toMatch(/getTempleHero\('mahakaleshwar', IMG_W\.WIDE\)/);
+  it('sources at CARD, which the ~349px slot now makes correct', () => {
+    // INVERTED from the pre-2026-09-08 assertion, deliberately — see the block
+    // comment above. Against the old ~1088px slot, CARD (500) was a 2.18x
+    // upscale and the test forbade it. Against a ~349px card it is the right 1x
+    // source and WIDE is the 2x step. If the row ever goes back to one
+    // full-width tile, this must flip back with it.
+    expect(page).toMatch(/getTempleHero\(temple\.slug, IMG_W\.CARD\)/);
   });
 });
 
@@ -233,8 +253,8 @@ function imgFor(src: string, needle: RegExp): string {
 }
 
 describe('[HOME-01] no homepage image offers a candidate wider than its slot', () => {
-  it('the Live Darshan srcSet stops at WIDE — the HERO candidate costs more than no srcSet at all', () => {
-    const block = imgFor(page, /getTempleHero\('mahakaleshwar'/);
+  it('the Live Darshan srcSet stops at WIDE — no card needs a 1280px candidate', () => {
+    const block = imgFor(page, /getTempleHero\(temple\.slug/);
     const widths = /remoteSrcSet\([\s\S]*?\[([\s\S]*?)\]/.exec(block)?.[1] ?? '';
     expect(widths, 'the srcSet candidate list moved').toMatch(/IMG_W\.CARD/);
     expect(

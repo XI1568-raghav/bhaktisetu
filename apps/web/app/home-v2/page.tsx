@@ -26,7 +26,6 @@ import { HomeHeroCta } from '../../components/HomeHeroCta';
 import IntentTrio from '../../components/home/IntentTrio';
 import ContinueJourneyCard from '../../components/home/ContinueJourneyCard';
 import ThisWeek from '../../components/home/ThisWeek';
-import WhatYouGet from '../../components/home/WhatYouGet';
 import CategoryTabs from '../../components/home/CategoryTabs';
 import PricingBand from '../../components/home/PricingBand';
 import ProofStrip from '../../components/home/ProofStrip';
@@ -287,7 +286,7 @@ export default async function HomeV2Page() {
      100% money-back, the unreachable 50%/25% refund tiers) and why. Replacing that with a
      hand-written proof block would have thrown away the one component on this
      page that cannot rot. It stays exactly where it is. */}
- <WhatYouGet />
+ {/* HOME-IA 2026-09-08: removed. HowItWorks now renders these promises itself, so a second mount printed them twice. */}
 
 
 
