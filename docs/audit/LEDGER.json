@@ -2879,9 +2879,9 @@
   "workflow": "authenticated-deep",
   "line": 1715,
   "title": "Cookie consent card buries the entire /auth/login form at 390x844 — Sign In is invisible and un-tappable on first visit",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-triage26-2026-08-24",
-  "note": "OWNER/COMPLIANCE: the consent card cannot shrink further without deciding what may be dropped from the notice, or moving to a compact bar with a 'more options' "
+  "note": "CLOSED 2026-09-08 by live measurement (headless Chromium, fresh context, consent key confirmed absent). At 390x844 the banner went 347px/41.2% -> 227px/26.9%; body padding-bottom 227px and --consent-h are published, which is the fix this finding itself prescribed. Sign In rect 649-699 -> 508-552, and elementFromPoint at its centre now returns the Sign In button rather than \"Reject all\" — intercepted true -> false. 5 of the 6 controls the finding listed as buried are reachable at rest. Also verified clean at 768x1024 and 1440x900. The finding's hardest claim, \"scrolling does not help because the overlay is position:fixed\", is now false: 211px of scroll frees the last control, because the reserved body padding lets content clear the fixed card. RESIDUAL (owner/compliance, unchanged and already described in the prior note): Sign Up, and Terms at 1440x900, still hit-test to the banner h2 at scrollY=0 and need that scroll. They are no longer dead controls. The card cannot shrink further without deciding what to drop from the notice."
  },
  {
   "key": "F207",
@@ -6284,5 +6284,33 @@
   "state": "fixed",
   "commit": "wave-2026-08-23",
   "note": ""
+ },
+ {
+  "key": "F450",
+  "id": "SEO-11",
+  "sev": "P2",
+  "kind": "seo",
+  "size": "M",
+  "area": "seo",
+  "workflow": "prod-remeasure-2026-09-08",
+  "line": 0,
+  "title": "Unknown temple and puja slugs are soft-404s: HTTP 200 with a rendered not-found page, a self-canonical to the bogus URL, and two contradictory robots directives",
+  "state": "open",
+  "commit": "",
+  "note": "MEASURED on live production 2026-09-08. GET /temples/<bogus> and /pujas/<bogus> both return HTTP 200 while rendering not-found UI. The generic catch-all /definitely-not-a-page-xyz correctly returns 404, and the API itself correctly returns 404 with code NOT_FOUND, so neither is the cause. NOT a cache artifact: a never-before-requested slug returns x-nextjs-cache: MISS and still 200. Both pages DO call notFound() — temples/[slug]/page.tsx:196 and pujas/[slug]/page.tsx:227 — and both declare export const revalidate = 3600 with an error.tsx in-segment. This is the Next ISR + notFound() interaction and the fix needs to be reasoned about rather than guessed. Collateral on the temple page: title renders as \"Temple — ,  | Darshya\" (empty interpolations); link rel=canonical points at the bogus URL; and the page emits BOTH robots \"index, follow\" AND robots \"noindex\". SEVERITY IS LIMITED BY THAT CONFLICT: Google resolves conflicting robots directives by taking the most restrictive, so noindex wins and these URLs are not being indexed. The real cost is wasted crawl budget across an unbounded URL space, a broken title, and a canonical that contradicts the noindex. The puja title also exhibits SEO-03 brand doubling — \"Puja not found | Darshya | Darshya\" — because the page metadata at :162 already ends in \"| Darshya\" and the root template appends it again. NOT introduced by the 2026-09-04 wave: d8f59587 touched temples/[slug]/page.tsx but changed none of the notFound / robots / canonical logic. It was shipped by that deploy, not authored by it."
+ },
+ {
+  "key": "F451",
+  "id": "OPS-12",
+  "sev": "P3",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops",
+  "workflow": "prod-remeasure-2026-09-08",
+  "line": 0,
+  "title": "The origin rate-limits under a ~10-way concurrent burst and serves Cloudflare block pages that render a fake h1, so any unpaced measurement script measures the block page",
+  "state": "open",
+  "commit": "",
+  "note": "OBSERVED 2026-09-08 while re-measuring audit findings against production. A burst of roughly ten concurrent requests triggered a window of 429/503 responses whose bodies are Cloudflare block pages containing an h1 reading \"darshya.online\" at 40px system-ui. A measurement script that does not assert the status code before reading the DOM will silently record that h1 as the page h1 and report a false typography or layout result — which is exactly the shape of error that produces confident, wrong audit numbers. Mitigation used during the sweep: 7-12s pacing plus a browser UA, and every reading taken inside the throttled window was discarded and re-taken. Worth recording independently of any single finding: it affects every future production sweep, and it is the reason a sweep must assert 200 before trusting a measurement."
  }
 ]
