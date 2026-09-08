@@ -2025,16 +2025,90 @@ export class PaymentService {
     // 3. Call Razorpay refund API
     const refundAmountInPaise = Number(refundAmount.mul(100).toFixed(0));
 
-    const refund = await razorpay.payments.refund(payment.gatewayPaymentId, {
-      amount: refundAmountInPaise,
-      notes: {
+    let refund: { id: string };
+    try {
+      refund = await razorpay.payments.refund(payment.gatewayPaymentId, {
+        amount: refundAmountInPaise,
+        notes: {
+          bookingId: booking.id,
+          bookingNumber: booking.bookingNumber,
+          adminId: adminId ?? 'system',
+          reason: reason.slice(0, 250),
+          tier: tierLabel ?? 'admin-specified amount',
+        },
+      }) as { id: string };
+    } catch (err) {
+      // OPS-05 — a refund the gateway REFUSED on the ADMIN rail.
+      //
+      // This call was previously naked: the throw propagated straight out of
+      // `processRefund` and the attempt left NOTHING behind. Not a Payment
+      // metadata crumb (the write below the gateway call never runs), not a
+      // status change, not a row. `refund.service.ts` has recorded this since
+      // the first OPS-05 pass — the admin rail is the one that did not, which
+      // is the worse gap of the two: this rail is the one a human drives, so
+      // "who tried to refund whom, and what did Razorpay say" is exactly the
+      // question a dispute asks and the one nothing could answer.
+      //
+      // Awaited, not `void`ed. `recordMoneyEvent` never throws by contract, and
+      // we are about to rethrow and end the request — a detached write would
+      // race the failure out of the process.
+      await recordMoneyEvent({
+        eventType: MONEY_EVENTS.REFUND_FAILED,
+        actorType: adminId ? 'admin' : 'system',
+        actorId: adminId ?? null,
+        subjectType: 'payment',
+        subjectId: payment.id,
         bookingId: booking.id,
-        bookingNumber: booking.bookingNumber,
-        adminId: adminId ?? 'system',
-        reason: reason.slice(0, 250),
-        tier: tierLabel ?? 'admin-specified amount',
+        paymentId: payment.id,
+        amount: refundAmount,
+        currency: payment.currency,
+        gateway: 'razorpay',
+        gatewayPaymentId: payment.gatewayPaymentId,
+        // Unchanged on both sides: the gateway refused, so nothing moved.
+        statusBefore: payment.status,
+        statusAfter: payment.status,
+        note: err instanceof Error ? err.message : String(err),
+        metadata: {
+          rail: 'admin',
+          tierLabel: tierLabel ?? null,
+          refundFraction: refundFraction ?? null,
+          refundableBeforeInr: refundable.toFixed(2),
+          requestedInr: refundAmount.toFixed(2),
+          reason,
+        },
+      });
+      throw err;
+    }
+
+    // OPS-05 — the gateway ACCEPTED, so the money has already left. Recorded
+    // here, before the local transaction, for the same reason refund.service
+    // records at this point: if the `$transaction` below fails, the devotee has
+    // still been refunded and the Payment row still says `captured`. That
+    // divergence is precisely the state an audit trail exists to show, and
+    // REFUND_COMPLETED (emitted only after the commit) cannot show it.
+    void recordMoneyEvent({
+      eventType: MONEY_EVENTS.REFUND_INITIATED,
+      actorType: adminId ? 'admin' : 'system',
+      actorId: adminId ?? null,
+      subjectType: 'payment',
+      subjectId: payment.id,
+      bookingId: booking.id,
+      paymentId: payment.id,
+      amount: refundAmount,
+      currency: payment.currency,
+      gateway: 'razorpay',
+      gatewayPaymentId: payment.gatewayPaymentId,
+      gatewayRefundId: refund.id,
+      statusBefore: payment.status,
+      idempotencyKey: refund.id,
+      note: reason,
+      metadata: {
+        rail: 'admin',
+        tierLabel: tierLabel ?? null,
+        refundFraction: refundFraction ?? null,
+        refundableBeforeInr: refundable.toFixed(2),
       },
-    }) as { id: string };
+    });
 
     const newRefundTotal = alreadyRefunded.plus(refundAmount);
     const newPaymentStatus = isFullRefund ? 'refunded' : 'partially_refunded';
