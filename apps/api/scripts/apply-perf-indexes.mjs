@@ -45,29 +45,16 @@
  * invalid, or failed. 2 = usage error. Usable as a gate, not just a report.
  */
 import { PrismaClient } from '@prisma/client';
-import { readFileSync } from 'node:fs';
 import {
   PERF_INDEX_MIGRATION,
   readMigration,
   concurrentIndexStatements,
   describeIndexStatement,
 } from './lib/migration-inventory.mjs';
+import { resolveDbTargetOrExit } from './lib/resolve-db-target.mjs';
 
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
-
-const envFileIdx = args.indexOf('--env-file');
-if (envFileIdx !== -1) {
-  const path = args[envFileIdx + 1];
-  if (!path) {
-    console.error('--env-file needs a path');
-    process.exit(2);
-  }
-  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
-    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-    if (m) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-}
 
 const checkOnly = has('--check');
 const concurrent = !has('--no-concurrently');
@@ -82,11 +69,13 @@ if (!checkOnly && !has('--yes')) {
 
 // DIRECT_URL, not the pooled URL: pgbouncer in transaction mode breaks
 // schema-level work, and CONCURRENTLY in particular needs a real session.
-const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
-if (!url) {
-  console.error('No DIRECT_URL or DATABASE_URL in the environment.');
-  process.exit(2);
-}
+//
+// OPS-14 (F456). Resolved from the env file the operator NAMED, never from
+// process.env — the hoisted `@prisma/client` import above has already loaded
+// apps/api/.env (production) by this line, and a named file that happens not to
+// define DIRECT_URL used to let that production value win silently. This script
+// CREATES INDEXES, so that silent substitution was a production write.
+const { url } = resolveDbTargetOrExit({ argv: args });
 
 const migration = readMigration(PERF_INDEX_MIGRATION);
 const statements = concurrentIndexStatements(migration.sql);
