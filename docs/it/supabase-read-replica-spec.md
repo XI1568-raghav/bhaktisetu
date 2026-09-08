@@ -1,5 +1,16 @@
 # Supabase Read-Replica + Cloudflare Analytics Eval
 
+> **NOT IMPLEMENTED — status note added 2026-09-08 (`OPS-10`).** This page is an
+> *evaluation proposal* and has always been one, but other documents cite its roadmap
+> id (`R-Q3-IT-002`) as though it had produced a replica: the retired multi-region
+> plans, the founder FAQ and a DPIA all said "Supabase Mumbai primary + Singapore
+> read-replica (R-Q3-IT-002)". **There is one Supabase Postgres instance and no read
+> replica, in any region.** The repository does not record the region of that instance
+> anywhere — `[verify]` it in the Supabase dashboard rather than assuming Mumbai.
+> `DATABASE_URL_REPLICA` (referenced in the sketch below) is not set anywhere and
+> `apps/api/src/lib/prisma.ts` contains no `prismaRead`/`prismaWrite` split.
+> Ground truth: `docs/runbooks/disaster-recovery.md` ("Replicas / standby: **None**").
+
 > **Roadmap item**: R-Q3-IT-002 (P1) · **Authored**: 2026-06-13
 
 ## Goal

@@ -592,3 +592,453 @@ describe('OPS-10 — documents describing infrastructure that does not exist', (
     expect(read('render.yaml')).not.toContain('NEXT_PUBLIC_UPTIME_STATUS_URL');
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Added 2026-09-08 — the holes the 2026-09-02 pass left open.
+//
+// Every check above this line names its documents in a hand-maintained array.
+// That is why OPS-06 was reported "already correct" twice and was twice wrong:
+// a page nobody had thought to add to `OPS06_PAGES` was invisible to the guard,
+// and being listed there was mistaken for being fixed. Three further live
+// copies were found on 2026-09-08 by grepping, not by running this file:
+//
+//   docs/cloudflare-pages-migration.md   "Push any commit to trigger redeploy"
+//                                        still asserted BELOW its own
+//                                        DO-NOT-FOLLOW banner, in page voice.
+//   docs/ui-revamp-audit-2026-06-05.md   an entire "Push impact / 1 CF build
+//                                        slot" budget, priced in builds that a
+//                                        push has not produced since 2026-07-08.
+//   docs/company/03-cfo.md               "→ Sentry alert + revert deploy".
+//
+// None of them was in `OPS06_PAGES`, so all 83 assertions above were green
+// while all three were live. The fix is to stop enumerating: walk every
+// markdown file a human could follow and check the shape, so the next page
+// nobody thought of is caught on the day it is written.
+//
+// DENIALS ARE NOT ASSERTIONS — the same rule `.github/workflows/commitlint.yml`
+// carries, for the same reason. The ban matches "push … deploys" by proximity,
+// so it fires just as hard on a sentence refuting the claim. Every correction
+// in this repository reproduces the wrong sentence in order to correct it, and
+// a guard that fails the commits fixing the defect trains people to bypass it.
+// A paragraph carrying an explicit negation is therefore exempt, and the
+// markers are deliberately specific (`autoDeploy: false`, `deploys nothing`,
+// `used to say`, …) so a bare "not" cannot smuggle a real claim through.
+//
+// GRANULARITY IS THE PARAGRAPH, not the line. Verified: at line granularity
+// this sweep failed on `docs/operational-context.md`, whose correction wraps as
+//     **Not** on push — `autoDeploy: false` at `render.yaml:60`. (This line
+//     previously said Render auto-deploys on main push; corrected 2026-09-01.)
+// — the denial sits on the first physical line and the ban shape on the second.
+// Splitting on blank lines and re-joining wraps is how a reader parses it. The
+// per-line, added-lines-only tripwire in commitlint.yml is the stricter half of
+// the pair; this is the half that sees the whole file.
+import { readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+
+const WINDOWS_SEP = String.fromCharCode(92);
+
+/**
+ * Every markdown file a human might open and follow — walked, never listed.
+ *
+ * `docs/audit/**` is excluded for the reason commitlint.yml excludes it: that
+ * directory's job is to quote defects verbatim, and a ledger row reading "it
+ * says push a revert, but both services are autoDeploy:false" is the
+ * DESCRIPTION of the finding, not a recurrence of it. Rewording the audit
+ * record to satisfy a grep would falsify it. `docs/chat-archive/**` is raw
+ * conversation transcript, not instruction. Nothing else is excluded — the
+ * cron-written directories (`docs/agent-reports`, `docs/roadmap/_dryrun`,
+ * `docs/roadmap/_alerts`) are deliberately IN scope, because a scheduled agent
+ * writing the retired claim into the repo is a regression worth failing on.
+ */
+const EXCLUDED = [
+  // The audit ledger's job is to quote defects verbatim (same exclusion, same
+  // reason, as .github/workflows/commitlint.yml).
+  /^docs\/audit\//,
+  // Raw conversation transcript, not instruction.
+  /^docs\/chat-archive\//,
+  // CLAUDE.md declares docs/handoff.md an APPEND-ONLY ARCHIVE. Its June entries
+  // record, in the past tense, a period when Cloudflare Pages really did build
+  // on every push and Render really did auto-redeploy the API — "Phase 5 final
+  // push (fc52ea5): single CF build slot consumed. Render auto-redeploys api on
+  // push." That was true when it was written. Banning it would mean editing the
+  // record of what happened to satisfy a grep, which is the trade this
+  // repository already refused for docs/audit/.
+  /^docs\/handoff\.md$/,
+  /^docs\/handoff-\d{4}-\d{2}-\d{2}/,
+  // Machine-written dry-run output from the 2026-06 roadmap orchestrator.
+  /^docs\/roadmap\/_dryrun\//,
+];
+
+export function allFollowableDocs(root = '.') {
+  const out = [];
+  const skipDir = new Set(['node_modules', '.git', '.next', 'dist', 'coverage']);
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir)) {
+      const p = join(dir, entry);
+      let st;
+      try {
+        st = statSync(p);
+      } catch {
+        continue;
+      }
+      if (st.isDirectory()) {
+        if (skipDir.has(entry)) continue;
+        walk(p);
+      } else if (entry.endsWith('.md')) {
+        out.push(p.split(WINDOWS_SEP).join('/').replace(/^\.\//, ''));
+      }
+    }
+  };
+  walk(join(root, 'docs'));
+  for (const entry of readdirSync(root)) {
+    if (entry.endsWith('.md')) out.push(entry);
+  }
+  return out.filter((f) => !EXCLUDED.some((re) => re.test(f)));
+}
+
+/**
+ * The document's own voice, split into paragraphs with wrapped lines rejoined.
+ * Fences, blockquotes and table rows are already gone via documentVoice().
+ */
+export function ownVoiceParagraphs(md) {
+  return documentVoice(md)
+    .split(/\n\s*\n/)
+    .map((p) => p.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean);
+}
+
+/**
+ * Blockquote markers stripped and whitespace collapsed. Needed because the
+ * corrections in this repository are written as `> ` callouts wrapped at ~90
+ * columns, so a phrase like "not been reviewed or approved by the owner" is
+ * physically "…by the\n> owner". Three assertions below were written against
+ * the raw text, and all three failed on that wrap rather than on the thing they
+ * were checking — which is how a guard ends up loosened until it stops biting.
+ */
+export function flatten(md) {
+  return String(md ?? '')
+    .replace(/^[ \t]*>+ ?/gm, '')
+    .replace(/\s+/g, ' ');
+}
+
+/** A push, or a revert, presented as a thing that changes production. */
+const PUSH_DEPLOYS_BAN = [
+  /revert the (relevant )?commits? .{0,40}and push/i,
+  /revert the commit .{0,60}let CI deploy/i,
+  /\bgit revert\b[^.]{0,60}\brestores?\b/i,
+  /\bcommit \+ push\b[^.]{0,40}auto-?deploys?/i,
+  /auto-?deploys?\b[^.]{0,60}\bon\b[^.]{0,20}\bpush\b/i,
+  /\bpush\b[^.]{0,60}(auto-?deploys?|triggers? (a )?redeploy|to (deploy|ship) to prod)/i,
+  /(pushing|a push|push any commit)[^.]{0,60}(deploys?|redeploys?|builds?)\b/i,
+  // Added after the first run of this sweep, which surfaced two more shapes the
+  // patterns above did not reach. Cloudflare Pages stopped building this
+  // repository on 2026-07-08 (`cf-kill-zombie.yml`), so a live budget priced in
+  // builds-per-push is a cost that cannot be incurred and a batching rule that
+  // buys nothing:
+  //   "**Single batched apps/web push = 1 CF build slot** for full 5-batch sweep."
+  //   "CF Pages git-integration runs on every push regardless of paths"
+  /\bpush\b[^.]{0,30}=\s*(\d+|a|one|single)?\s*(cf |cloudflare )?build/i,
+  /\b(\d+|single|one)\s+cf build\b/i,
+  /\bpush\b[^.]{0,40}\bto trigger\b[^.]{0,30}\bbuild/i,
+  /\b(cf|cloudflare)[^.]{0,60}\bruns? on (every |each )?[^.]{0,20}push\b/i,
+  /\bcf builds?\b[^.]{0,20}\bpush\b/i,
+];
+
+/** An explicit negation of deployment, on the same paragraph. */
+const PUSH_DEPLOYS_DENIAL =
+  /autoDeploy:\s?false|deploys? nothing|does not deploy|will not deploy|never deploys?|no longer (auto-?)?(deploys?|builds?)|do(es)? not (auto-?)?(deploy|build)|DOES NOTHING|not a rollback|is not a deploy|neither a revert nor a push|deploys? no\b|builds? nothing|used to (say|claim|read)|previously (said|read|claimed)|false since/i;
+
+/** Paragraphs where this document tells you, in its own voice, that a push ships. */
+export function pushAsDeployAssertions(md) {
+  return ownVoiceParagraphs(md).filter(
+    (para) => !PUSH_DEPLOYS_DENIAL.test(para) && PUSH_DEPLOYS_BAN.some((re) => re.test(para)),
+  );
+}
+
+describe('OPS-06 (2026-09-08) — the ban is enumerated by walking, not by listing', () => {
+  // ── Non-vacuity first. Every string below is the VERBATIM prose that was
+  // live in this repository on the morning of 2026-09-08, on a page that no
+  // previous OPS-06 pass had listed. If the sweep below ever passes while
+  // these pass too, the sweep has stopped working.
+  const LIVE_ON_2026_09_08 = [
+    // docs/cloudflare-pages-migration.md, below its own "DO NOT FOLLOW" banner
+    'Or set the repo variable: `CLOUDFLARE_PROJECT_NAME = poojly-web`. Push any commit to trigger redeploy.',
+    // docs/ui-revamp-audit-2026-06-05.md
+    '**Single batched apps/web push = 1 CF build slot** for full 5-batch sweep.',
+    // the two shapes the 2026-08-28 pass was written for, kept as anchors
+    '- **Anything else catastrophic**: revert the relevant commits and push.',
+    'Revert the commit that broke things and let CI deploy the new HEAD.',
+  ];
+
+  it('fires on every shape that was live in the repository this morning', () => {
+    for (const prose of LIVE_ON_2026_09_08) {
+      expect(pushAsDeployAssertions(prose), `ban missed: ${prose}`).toHaveLength(1);
+    }
+  });
+
+  it('does not fire on the corrections that replaced them', () => {
+    // Each of these is real text now in the repository. A guard that failed
+    // these would fail the commit that fixes the defect.
+    const corrections = [
+      'so "Push any commit to trigger redeploy" deploys nothing at all, and both Render services carry `autoDeploy: false`.',
+      '**Not** on push — `autoDeploy: false` at `render.yaml:60`. (This line previously said Render auto-deploys on main push; corrected 2026-09-01, `OPS-06`.)',
+      '- [ ] **CF Pages does NOT build** on push (auto-deploy killed 2026-07-08)',
+      'A push deploys nothing at all — both Render services are `autoDeploy: false`.',
+    ];
+    for (const prose of corrections) {
+      expect(pushAsDeployAssertions(prose), `false positive on: ${prose}`).toHaveLength(0);
+    }
+  });
+
+  it('a bare "not" cannot smuggle an assertion past the denial exemption', () => {
+    // The denial markers are specific on purpose. This paragraph negates
+    // something unrelated and must still fail.
+    const smuggled =
+      'This is not a difficult procedure: push to main and Render auto-deploys the web service within three minutes.';
+    expect(pushAsDeployAssertions(smuggled)).toHaveLength(1);
+  });
+
+  it('the walker actually finds the documents (it is not returning an empty set)', () => {
+    const docs = allFollowableDocs();
+    expect(docs.length).toBeGreaterThan(200);
+    for (const known of [
+      'docs/runbooks/prod-rollback.md',
+      'docs/caveats.md',
+      'docs/cloudflare-pages-migration.md',
+      'docs/ui-revamp-audit-2026-06-05.md',
+      'docs/company/03-cfo.md',
+      'DARSHYA_DEPLOYMENT.md',
+    ]) {
+      expect(docs, `walker missed ${known}`).toContain(known);
+    }
+    // And it must NOT sweep the audit ledger, whose job is verbatim quotation.
+    expect(docs.some((f) => f.startsWith('docs/audit/'))).toBe(false);
+  });
+
+  it('NO markdown document in this repository presents a push or a revert as a deploy', () => {
+    const offenders = [];
+    for (const file of allFollowableDocs()) {
+      for (const para of pushAsDeployAssertions(read(file))) {
+        offenders.push(`${file}: ${para.slice(0, 160)}`);
+      }
+    }
+    expect(offenders, `\n${offenders.join('\n')}\n`).toEqual([]);
+  });
+});
+
+describe('OPS-06 (2026-09-08) — the deprecated `-f branch=` input', () => {
+  // render-diag.yml's own input description reads "DEPRECATED - Render ignores
+  // this. Kept so older documented commands still parse." Render's create-deploy
+  // API takes `commitId`, not a branch. A runbook that shows `-f branch=main`
+  // teaches an operator that the flag selects what gets deployed; under an
+  // outage that is the difference between rolling back and redeploying the
+  // broken HEAD. Seven documents carried it on 2026-09-08.
+  const WORKFLOW = '.github/workflows/render-diag.yml';
+
+  it('the workflow still declares the input deprecated — this rule is grounded in it', () => {
+    const wf = yaml.load(read(WORKFLOW));
+    const desc = wf?.on?.workflow_dispatch?.inputs?.branch?.description ?? '';
+    expect(desc, `${WORKFLOW} branch input description: ${desc}`).toMatch(/DEPRECATED/i);
+    expect(desc).toMatch(/ignores/i);
+    // And the lever that DOES roll back is still the commit input.
+    expect(wf?.on?.workflow_dispatch?.inputs?.commit?.description ?? '').toMatch(
+      /rollback lever/i,
+    );
+  });
+
+  // Three root files still carry the flag and were OUTSIDE the lane of the
+  // 2026-09-08 docs pass (they are the @-imported context files and the audit
+  // master record, edited centrally):
+  //     CLAUDE.md:19   TASKS.md:116   AUDIT.md:454
+  // They are exempted here rather than silently dropped, and the exemption is
+  // self-cleaning: the test below FAILS if one of them no longer carries the
+  // flag, which is the signal to delete it from this list. An exception nobody
+  // is forced to revisit is how the last dead guard got to 712 lines.
+  const OUT_OF_LANE = ['CLAUDE.md', 'TASKS.md', 'AUDIT.md'];
+
+  it('the out-of-lane exemptions are still needed (delete each one as it is fixed)', () => {
+    for (const file of OUT_OF_LANE) {
+      const stillWrong = read(file)
+        .split('\n')
+        .some((l) => l.includes('render-diag.yml') && /-f\s+branch=/.test(l));
+      expect(
+        stillWrong,
+        `${file} no longer carries -f branch= — remove it from OUT_OF_LANE in this test`,
+      ).toBe(true);
+    }
+  });
+
+  it('no document hands an operator a render-diag dispatch carrying -f branch=', () => {
+    const offenders = [];
+    for (const file of allFollowableDocs().filter((f) => !OUT_OF_LANE.includes(f))) {
+      read(file)
+        .split('\n')
+        .forEach((line, i) => {
+          if (!line.includes('render-diag.yml')) return;
+          if (/-f\s+branch=/.test(line)) offenders.push(`${file}:${i + 1} ${line.trim()}`);
+        });
+    }
+    expect(offenders, `\n${offenders.join('\n')}\n`).toEqual([]);
+  });
+
+  it('the rule is capable of failing — the exact line seven docs carried', () => {
+    const retired =
+      'gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main';
+    expect(retired.includes('render-diag.yml') && /-f\s+branch=/.test(retired)).toBe(true);
+  });
+});
+
+describe('OPS-10 (2026-09-08) — a retirement banner is not a correction', () => {
+  // The 2026-09-02 pass gave `multi-region-failover-spec.md` and
+  // `R-Q4-E-014-handoff.md` a "SUPERSEDED, DO NOT FOLLOW" banner and a reality
+  // table, and stopped there. Both then went on to describe Mumbai, Singapore,
+  // read replicas and a Cloudflare load balancer in the PRESENT TENSE, in the
+  // page's own voice, for 44 and 284 lines respectively — which is what a
+  // reader skimming past a banner actually absorbs. The prose ban above was
+  // only ever applied to two of the five retired documents; these are the other
+  // three.
+  const RETIRED_MULTI_REGION = [
+    DR_STUB,
+    MR_FAILOVER,
+    MR_STRATEGY,
+    'docs/engineering/multi-region-failover-spec.md',
+    'docs/engineering/R-Q4-E-014-handoff.md',
+  ];
+
+  /** Present-tense assertion of a topology that has never existed. */
+  const FICTION = [
+    /\b(singapore|mumbai)\s+(standby|secondary|primary|replica|read-?replica|region)\b/i,
+    /\brender\s+(mumbai|singapore)\b/i,
+    /\bapi-(bom|sin)\.render\.com\b/i,
+    /\bsingapore (becomes primary|pre-?warmed)\b/i,
+    /\bs3 mumbai\b/i,
+  ];
+  const FICTION_DENIAL =
+    /never (been|existed|had)|does not exist|do(es)? not exist|no such|there is no|there has never|was selling|used to (say|claim|read)|previously (said|read|claimed)|\bgot mumbai\b|is not deployed|nothing below is deployed/i;
+
+  function assertsFictionalTopology(md) {
+    return ownVoiceParagraphs(md).filter(
+      (para) => !FICTION_DENIAL.test(para) && FICTION.some((re) => re.test(para)),
+    );
+  }
+
+  it('the fiction ban fires on the exact prose these two files carried this morning', () => {
+    // Verbatim from docs/engineering/multi-region-failover-spec.md before the
+    // 2026-09-08 fix, in the page's own voice, below its own banner.
+    const preFixSpec = [
+      'Q4 multi-region failover plan. Mumbai primary + Singapore standby + Frankfurt for EU/NRI.',
+      '- **Primary**: Render Mumbai region (R-Q4-E-003 Standard tier)',
+      '- **Standby**: Render Singapore (passive replica)',
+      '- Mumbai region 5xx >50% sustained 10min → manual flip Singapore primary',
+      '- Singapore standby pre-warmed (always running)',
+    ];
+    // Verbatim from docs/engineering/R-Q4-E-014-handoff.md, same morning.
+    const preFixHandoff = [
+      'live aarti/darshan during peak festival windows cannot tolerate Mumbai region downtime.',
+      '5. On Mumbai outage: founder promotes Singapore replica to primary via Supabase dashboard.',
+    ];
+    for (const prose of [...preFixSpec, ...preFixHandoff]) {
+      expect(assertsFictionalTopology(prose), `fiction ban missed: ${prose}`).toHaveLength(1);
+    }
+  });
+
+  it('the fiction ban does not fire on the corrections beside them', () => {
+    for (const prose of [
+      'Anyone reading this page to answer *where does our data live* got Mumbai and Singapore, and both are wrong.',
+      '`docs/legal/additional-legal-docs-pack.md`, which was selling a Singapore standby to counterparties.',
+      'There has never been a Mumbai region for this product.',
+    ]) {
+      expect(assertsFictionalTopology(prose), `false positive on: ${prose}`).toHaveLength(0);
+    }
+  });
+
+  for (const path of RETIRED_MULTI_REGION) {
+    it(`${path} does not assert the topology in its own voice`, () => {
+      const offenders = assertsFictionalTopology(read(path));
+      expect(offenders, `\n${path}\n${offenders.join('\n')}\n`).toEqual([]);
+    });
+  }
+});
+
+describe('OPS-10 (2026-09-08) — proposals that read as inventories', () => {
+  it('the read-replica eval says it was never implemented', () => {
+    // Four documents cited this page's roadmap id (R-Q3-IT-002) as the source
+    // of a "Supabase Mumbai primary + Singapore read-replica" claim. The page
+    // itself never said a replica exists — but it never said one does not,
+    // either, and it is the page they pointed at.
+    const text = read('docs/it/supabase-read-replica-spec.md');
+    expect(text).toContain('NOT IMPLEMENTED');
+    expect(text).toContain('OPS-10');
+    expect(flatten(text)).toMatch(/no read.?replica/i);
+    expect(text).toMatch(/docs\/runbooks\/disaster-recovery\.md/);
+  });
+
+  it('the observability spec says its stack is not deployed', () => {
+    // Its "Stack overview" table reads as an inventory of what is running.
+    // Logflare appears in no source file, workflow or env var; StatusPage is
+    // not purchased; UptimeRobot is an unstarted founder action.
+    const text = read('docs/engineering/monitoring-observability-stack-spec.md');
+    expect(text).toContain('PROPOSAL, NOT A DEPLOYED STACK');
+    expect(text).toContain('OPS-10');
+    expect(text).toMatch(/Logflare/);
+    expect(text).toMatch(/\[verify\]/i);
+  });
+
+  it('operational-context.md no longer states monitoring probe regions as fact', () => {
+    // The row read "| HetrixTools regions | Mumbai + Singapore + Frankfurt |
+    // 1-min interval |". `hetrix` appears nowhere in this repository, and the
+    // code names cron-job.org as its external scheduler instead
+    // (apps/api/src/jobs/master-cron.ts:39). Next to a file full of residency
+    // statements, "Mumbai + Singapore" read as one.
+    const text = read('docs/operational-context.md');
+    expect(text).not.toContain('| Mumbai + Singapore + Frankfurt |');
+    expect(flatten(text)).toMatch(/hetrix[\s\S]{0,400}appears nowhere in this repository/i);
+  });
+});
+
+describe('OPS-10 (2026-09-08) — the signable instruments carry an owner gate', () => {
+  // A residency representation in a legal instrument is a WARRANTY. The
+  // 2026-09-02 pass did not merely annotate these three — it REWROTE the
+  // warranting text (§5 of the policy, the DPA residency clause, §3 of the
+  // DPIA). Changing what a company warrants to counterparties and to a
+  // regulator is not a documentation edit and was never the owner's decision to
+  // skip. The corrected text may well be right; it is still unreviewed. The
+  // gate below is what makes that visible on the page instead of only in a
+  // commit message, and locking it here is what stops a later tidy-up pass from
+  // quietly deleting it.
+  const INSTRUMENTS = [
+    ['Privacy Policy (published under five regimes)', 'docs/legal/privacy-policy-v2-multi-geo.md', /DO NOT PUBLISH/],
+    ['DPA / vendor agreement template (signed)', 'docs/legal/contractor-vendor-agreement-templates.md', /DO NOT SIGN OR SEND/],
+    ['UK DPIA (regulator-facing)', 'docs/legal/dpia-uk-launch.md', /DO NOT FILE OR DISCLOSE/],
+  ];
+
+  for (const [label, path, verb] of INSTRUMENTS) {
+    it(`${label} is gated on owner sign-off`, () => {
+      const text = read(path);
+      expect(text, `${path} lost its sign-off banner`).toContain('PENDING OWNER SIGN-OFF');
+      expect(text, `${path} does not say what must not be done with it`).toMatch(verb);
+      // The banner must say the surrounding text is provisional — the whole
+      // point is that the CORRECTION is unreviewed too, not just the original.
+      expect(text, `${path} does not mark the surrounding text provisional`).toMatch(
+        /provisional/i,
+      );
+      expect(flatten(text), `${path} does not say the rewrite is unreviewed`).toMatch(
+        /not been reviewed or approved by (the )?owner/i,
+      );
+    });
+
+    it(`${label} states the verified infrastructure and cites it`, () => {
+      const text = read(path);
+      // A removed warranty with nothing in its place gets refilled from memory,
+      // which is how "Mumbai" arrived the first time.
+      expect(text).toContain('render.yaml');
+      expect(text).toMatch(/oregon/i);
+      expect(text).toMatch(/\[verify\]|VERIFY BEFORE SIGNING/i);
+    });
+  }
+
+  it('the gate is capable of failing — an instrument without it', () => {
+    const ungated = '# Privacy Policy\n\nData residency: Mumbai primary, Singapore standby.\n';
+    expect(ungated.includes('PENDING OWNER SIGN-OFF')).toBe(false);
+  });
+});

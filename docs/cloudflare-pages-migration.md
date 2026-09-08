@@ -104,36 +104,44 @@ Required secrets (already configured, unchanged):
 >
 > Kept below as a record of the 2026-05 migration, not as an instruction.
 
-If the new `darshya` project has a critical regression within 7 days of cutover:
+> **The three options below are a RECORD of the 2026-05 Cloudflare Pages rollback plan.**
+> They are quoted, not offered. None of them can change what production serves today:
+> Cloudflare Pages has not been a hosting layer since 2026-07-08 (`cf-kill-zombie.yml`),
+> so "Push any commit to trigger redeploy" deploys nothing at all, and both Render services
+> carry `autoDeploy: false` (`render.yaml:28`, `:60`) so no push reaches them either.
+> The live procedure is `docs/runbooks/prod-rollback.md`:
+> `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>`.
 
-**Option A — Re-point GitHub Actions back to legacy (fastest, ~2 min):**
-
-```yaml
-# .github/workflows/deploy-web.yml
---project-name=poojly-web
-```
-
-Or set the repo variable: `CLOUDFLARE_PROJECT_NAME = poojly-web`. Push any commit to trigger redeploy. The legacy project still has its custom domain config from before cutover — re-attach `darshya.online` to `poojly-web` in Cloudflare Pages → Custom domains.
-
-**Option B — Recreate `darshya` from a known-good Git tag:**
-
-```bash
-git checkout v<last-good-tag>      # or the commit before TD13
-git tag -a hotfix-rollback -m "rollback: pre-TD13 deploy"
-git push --tags
-```
-
-Then redeploy via GitHub Actions on that tag.
-
-**Option C — Manual emergency redeploy from a clean checkout:**
-
-```bash
-cd apps/web
-NEXT_PUBLIC_API_URL=https://api.darshya.online pnpm run pages:deploy
-```
-
-This uses the `wrangler` config in `apps/web/wrangler.toml` (now `name = "darshya"`). If you must point at the legacy project temporarily, override on the CLI: `wrangler pages deploy .vercel/output/static --project-name=poojly-web`.
-
+> If the new `darshya` project has a critical regression within 7 days of cutover:
+>
+> **Option A — Re-point GitHub Actions back to legacy (fastest, ~2 min):**
+>
+> ```yaml
+> # .github/workflows/deploy-web.yml
+> --project-name=poojly-web
+> ```
+>
+> Or set the repo variable: `CLOUDFLARE_PROJECT_NAME = poojly-web`. Push any commit to trigger redeploy. The legacy project still has its custom domain config from before cutover — re-attach `darshya.online` to `poojly-web` in Cloudflare Pages → Custom domains.
+>
+> **Option B — Recreate `darshya` from a known-good Git tag:**
+>
+> ```bash
+> git checkout v<last-good-tag>      # or the commit before TD13
+> git tag -a hotfix-rollback -m "rollback: pre-TD13 deploy"
+> git push --tags
+> ```
+>
+> Then redeploy via GitHub Actions on that tag.
+>
+> **Option C — Manual emergency redeploy from a clean checkout:**
+>
+> ```bash
+> cd apps/web
+> NEXT_PUBLIC_API_URL=https://api.darshya.online pnpm run pages:deploy
+> ```
+>
+> This uses the `wrangler` config in `apps/web/wrangler.toml` (now `name = "darshya"`). If you must point at the legacy project temporarily, override on the CLI: `wrangler pages deploy .vercel/output/static --project-name=poojly-web`.
+>
 ## Verification after migration
 
 After any deploy to the new `darshya` project, run:

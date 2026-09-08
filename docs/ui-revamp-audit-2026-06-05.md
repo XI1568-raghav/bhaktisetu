@@ -4,6 +4,18 @@
 
 ---
 
+> **CORRECTED 2026-09-08 (`OPS-06`) — the “Push impact” / “CF build slot”
+> accounting throughout this page is obsolete.** It was written on 2026-06-05, when
+> Cloudflare Pages built the web tier from a push. Pages stopped serving the web tier
+> at the 2026-07-08 cutover and its auto-build was killed (`cf-kill-zombie.yml`); the
+> web tier is the Render Docker service `darshya-web` (`render.yaml:52-60`) with
+> `autoDeploy: false` (`render.yaml:60`), as is the API (`:28`). So there are no CF
+> build slots to conserve and a push deploys nothing at all — batching commits no
+> longer buys anything except a smaller diff. Read every “1 CF build” cell below as
+> “0 builds, and a hand-dispatched deploy afterwards if you want the change live”:
+> `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g`.
+> Rollback is the same dispatch with `-f commit=<SHA>` — `docs/runbooks/prod-rollback.md`.
+
 ## 1. Brand color audit
 
 ### Token reality (from `apps/web/app/globals.css`)
@@ -73,7 +85,7 @@
 | **B4: Home category-accent injection** | `app/page.tsx` Library/Astrology/Yatra teasers | ~10 edits | rides B1 |
 | **B5: Edge cases** | yatra "limited" pill → amber, store amber chips, etc | ~10 edits | rides B1 |
 
-**Single batched apps/web push = 1 CF build slot** for full 5-batch sweep.
+**Single batched apps/web push, for the full 5-batch sweep.** *(This read “= 1 CF build slot” until 2026-09-08, `OPS-06`. There is no Cloudflare Pages build slot to spend: a push builds nothing since the 2026-07-08 cutover, and `autoDeploy: false` on both Render services (`render.yaml:28`, `:60`) means it deploys nothing either. Batch anyway — for a reviewable diff, not for a build budget.)*
 
 ---
 
@@ -190,7 +202,7 @@ Without live firecrawl fetches (proxy spent), pulling from category knowledge:
 - Type-scale fix: 5 mins (globals.css)
 - Inline-style → tailwind class refactor: 1 hour mechanical
 - Local `pnpm next build` verify: 5 mins
-- Total: ~5 hours single sitting, 1 CF build push
+- Total: ~5 hours single sitting, one push *(was “1 CF build push” — corrected 2026-09-08, `OPS-06`; a push builds nothing)*
 
 ---
 

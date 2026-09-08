@@ -1,5 +1,42 @@
 # Data Protection Impact Assessment (DPIA) — UK NRI Launch
 
+> # ⚠ PENDING OWNER SIGN-OFF — DO NOT FILE OR DISCLOSE
+>
+> **Added 2026-09-08 (`OPS-10`).** This is a **regulator-facing UK DPIA**. Its data-flow
+> map is the artefact an ICO reviewer reads first, and every transfer conclusion and
+> SCC/IDTA argument in it rests on that map. The previous version was wrong in five of
+> seven hops, including warranting a **Mumbai primary + Singapore standby** topology and
+> naming processors that receive no personal data — in a DPIA that is a **false
+> disclosure to a regulator**, not a stale doc.
+>
+> An automated correction pass on 2026-09-02 rewrote §3. **That rewrite has not been
+> reviewed or approved by the owner or by counsel. Until it is, the surrounding text is
+> provisional and this DPIA must not be filed, disclosed, or relied on.**
+>
+> **What the infrastructure actually is** (read out of the repository 2026-09-08; every
+> line here is checkable):
+>
+> | Layer | Reality | Evidence |
+> |---|---|---|
+> | Web tier | Render Docker service `darshya-web`, region **`oregon`** (US West) | `render.yaml:52-60` |
+> | API tier | Render service `bhaktisetu`, region **`oregon`** (US West) | `render.yaml:10-22` |
+> | India-hosted server | **None.** There has never been a Render Mumbai region for this product | `render.yaml:15`, `:56` |
+> | Standby / failover region | **None** in any geography | `docs/runbooks/disaster-recovery.md` |
+> | Read replica | **None.** One Supabase Postgres instance | `docs/runbooks/disaster-recovery.md` |
+> | Database region | **Not recorded anywhere in this repository** — `[verify]` in the Supabase dashboard | — |
+> | Cloudflare | DNS + edge proxy only; not a hosting layer since 2026-07-08 | `cf-kill-zombie.yml` |
+> | Payment processor | Razorpay only; the Stripe rail was removed 2026-08-11 | `apps/api/src/lib/env.ts:45-46` |
+>
+> **What the owner must decide before this document is used:**
+>
+> 1. Read the Supabase project region from the dashboard and write it in, replacing every
+>    `[verify]`. Do not fill it in from memory — that is how “Mumbai” got here.
+> 2. Decide whether to state the true residency (personal data is processed **outside
+>    India**, on US-West infrastructure) or to move the infrastructure before the document
+>    is used. Those are different commercial decisions and only the owner can take either.
+> 3. Confirm the corrected text with counsel before any signature, publication or filing.
+
+
 > **Roadmap item**: R-Q3-L-002 · **Authored**: 2026-06-14 · **Owner**: legal
 > **Status**: living document — re-assess before major feature launches affecting personal data
 

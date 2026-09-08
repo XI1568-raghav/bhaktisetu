@@ -39,12 +39,14 @@ one-shot July migration. The only thing that changes what production runs is a
 `workflow_dispatch` on `.github/workflows/render-diag.yml`:
 
 ```bash
-gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f branch=main   # deploy HEAD
+gh workflow run render-diag.yml -f mode=deploy -f sid=<SID>   # deploy HEAD
 gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>  # ROLL BACK
 ```
 
-`branch` is accepted but **Render ignores it** (its create-deploy API takes `commitId`, not a
-branch), so the first form redeploys whatever the service's tracked branch already points at —
+`-f branch=` is accepted but **Render ignores it** (its create-deploy API takes `commitId`,
+not a branch), which is why it has been dropped from the commands above and from the other
+runbooks in this repository. `render-diag.yml`'s own input description reads
+`DEPRECATED - Render ignores this`. The first form redeploys whatever the service's tracked branch already points at —
 which is what you want for "ship what just merged" and is useless for a rollback. `-f commit=<SHA>`
 is the rollback lever. Full procedure, including the API-vs-web decision table and the
 suspension case that is *not* a code fault: **`docs/runbooks/prod-rollback.md`**.
@@ -62,11 +64,11 @@ traffic. Reverting is still correct for the repo's history — it is simply not 
 - **Build**: `pnpm install && pnpm --filter @poojly/api build`
 - **Start**: `pnpm --filter @poojly/api start`
 - **Env vars set via**: Render Dashboard → service → Environment tab → Save → service auto-redeploys
-- **Deploy / roll back**: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g -f branch=main`
+- **Deploy / roll back**: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g`
   (add `-f commit=<SHA>` to roll back to a specific commit). A push to `main` deploys nothing —
   `autoDeploy: false` at `render.yaml:28`. Procedure: `docs/runbooks/prod-rollback.md`.
 - **Manual deploy (dashboard alternative)**: Dashboard → Manual Deploy → Deploy latest commit.
-  Equivalent to the `branch=main` form above; needs dashboard access, which CI and agents do not have.
+  Equivalent to the bare `mode=deploy` form above; needs dashboard access, which CI and agents do not have.
 - **Smoke endpoints**: `/health`, `/api/v1/providers/pandit`
 - **Free-tier cron disabled** — use external pingers (§9)
 
@@ -77,7 +79,7 @@ traffic. Reverting is still correct for the repo's history — it is simply not 
 - **Service**: `darshya-web` (`srv-d970l2ks728c738fc33g`) — docker, free, oregon
 - **URL**: `https://darshya-web.onrender.com` → custom domains `darshya.online` + `www.darshya.online` (CNAME, CF DNS proxied)
 - **Origin**: Next standalone `apps/web/Dockerfile` (`ENV HOSTNAME=0.0.0.0` — Render port scan needs 0.0.0.0, not pod hostname, else 502)
-- **Deploy**: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main`.
+- **Deploy**: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g`.
   **Not** on push — `autoDeploy: false` at `render.yaml:60`. (This line previously said Render
   auto-deploys on main push; corrected 2026-09-01, `OPS-06`.)
 - **Env vars baked at build**: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_ENV`, `API_URL` (set in `render-cutover.yml` Step A1 + `render.yaml`)
@@ -192,10 +194,28 @@ DSN/key paste = gates U6 (Sentry) + U8 (PostHog). Verify via DevTools network ta
 
 Render free tier = no native cron. External pingers:
 
+> **`[verify]` — flagged 2026-09-08 (`OPS-10`). This table is unverified, and it names the
+> wrong pinger as primary.** Searched 2026-09-08: **`hetrix` appears nowhere in this
+> repository** — no source file, workflow, script, env var or `render.yaml` entry. What the
+> code actually names as its external scheduler is **cron-job.org**, in comments at
+> `apps/api/src/jobs/master-cron.ts:39`, `apps/api/src/jobs/scheduler.ts:21`,
+> `apps/api/src/routes/cron.ts:83` and `apps/api/src/jobs/aarti-notify.ts:29`. Those are
+> comments describing intent, not evidence that anything is configured, and
+> `docs/runbooks/disaster-recovery.md` records “External uptime monitor: **None wired in
+> this repository**”. Neither service would leave a repository trace if it were configured,
+> so absence is not proof — but “HetrixTools (primary)” is asserted here on no evidence at
+> all while the code points elsewhere. The row below also stated three probe regions
+> (Mumbai + Singapore + Frankfurt) with a 1-minute interval as fact. Those were HetrixTools’
+> own probe locations if configured, never Darshya infrastructure; the Mumbai/Singapore
+> pairing read as a residency claim next to the rest of this file and is the same wording
+> `OPS-10` retired elsewhere. **Confirm in the HetrixTools and cron-job.org dashboards and
+> write the answer here.** If no external pinger is live, nothing invokes
+> `/api/v1/admin/cron/tick` and every scheduled job in §9 is silently not running.
+
 | Service | Path | Token |
 |---|---|---|
 | HetrixTools (primary) | `GET /api/v1/admin/cron/tick?token=<CRON_AUTH_TOKEN>` | `CRON_AUTH_TOKEN` env (Render) |
-| HetrixTools regions | Mumbai + Singapore + Frankfurt | 1-min interval |
+| HetrixTools regions | `[verify]` — probe regions are HetrixTools', not ours | `[verify]` |
 | cron-job.org (fallback) | `POST /api/v1/admin/jobs/daily-ops` | same token |
 
 ---
