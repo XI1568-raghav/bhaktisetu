@@ -74,6 +74,9 @@ export const prismaMock = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    // admin.service.updateUser mirrors a pandit approval onto Priest.isVerified,
+    // which is the column routes/priests-public.ts filters the directory on.
+    updateMany: vi.fn(),
     upsert: vi.fn(),
     count: vi.fn(),
   },
@@ -365,6 +368,20 @@ export const prismaMock = {
     findMany: vi.fn(),
     deleteMany: vi.fn(),
     upsert: vi.fn(),
+    create: vi.fn(),
+  },
+  // routes/support.ts — tickets, their messages, and the owner-scoped
+  // …/resolve route. Added, not reassigned.
+  supportTicket: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    count: vi.fn(),
+  },
+  supportTicketMessage: {
+    findMany: vi.fn(),
     create: vi.fn(),
   },
   $queryRaw: vi.fn(),
