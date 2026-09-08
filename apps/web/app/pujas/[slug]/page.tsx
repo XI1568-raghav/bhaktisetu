@@ -626,7 +626,29 @@ export default async function PujaDetailPage({
  <div className="space-y-3">
  {[
  { step: '1', title: 'Book Online', desc: 'Select temple, date, and time slot' },
- { step: '2', title: 'Pandit Performs Puja', desc: 'Verified priest performs the ritual' },
+ // TC-08 (re-measured live on 10 of 10 puja slugs, 2026-09-08): this read
+ // "Verified priest performs the ritual". It was the last unbacked pandit
+ // credential on this page — the trust badge above had already been
+ // corrected, but the earlier sweeps scanned for "verified pandit" and
+ // "verified temple" and this one says "priest", singular.
+ //
+ // Nothing promotes a pandit to verified. Every writer of a Priest row was
+ // read on 2026-09-08: routes/priest.ts:347 creates with
+ // verificationStatus 'pending' / status 'inactive'; priest.ts:500 writes
+ // isOnDuty; admin.ts:549 writes commissionRate; dispatch.service.ts:480
+ // writes acceptanceRate; onboarding.service.ts:375 and
+ // priest.service.ts:814 write profile fields. POST/PATCH /admin/priests
+ // both answer 501. `isVerified: true` exists only in prisma/seed.ts:1024
+ // and scripts/seed-demo-users.ts:117 — apps/api/src/routes/b2b.ts:245
+ // calls it "a column no route writes".
+ //
+ // What IS enforced is the video-proof gate: checkVideoProofGate
+ // (apps/api/src/routes/bookings.ts:287) answers 409 on video_uploaded and
+ // delivered unless a videoProofUrl is present, and those two statuses are
+ // where the pandit's payout is minted. So the step names that, in the same
+ // words lib/faqs.ts and lib/jsonld.ts already ship. A softer adjective
+ // ("experienced", "trusted") would be the same claim in quieter words.
+ { step: '2', title: 'Pandit Performs Puja', desc: 'The assigned pandit performs the ritual — video proof is mandatory' },
  { step: '3', title: 'Watch Live', desc: 'Stream the puja on your device' },
  { step: '4', title: 'Receive Prasad', desc: 'Sacred prasad delivered to your home' },
  ].map((item) => (

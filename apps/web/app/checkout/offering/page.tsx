@@ -36,6 +36,41 @@ import {
   CANCELLATION_BADGE_LABEL,
   CANCELLATION_BADGE_DESC,
 } from '../../../lib/cancellation-policy';
+import {
+  GENERIC_ERROR_MESSAGE,
+  UserFacingError,
+  friendlyApiError,
+  serverErrorMessage,
+  userFacingMessage,
+} from '../../../lib/friendly-error';
+
+/**
+ * RES-09 (2026-09-08) — raw developer text on the screen where a devotee pays.
+ *
+ *   :158 throw new Error(`Could not load pandits (${listRes.status}).`)
+ *   :183 setLoadError(err.message || 'Failed to load this puja offering.')
+ *   :340 setPaymentError(err.message || 'Something went wrong. Please try again.')
+ *
+ * `loadError` renders at :376 and `paymentError` at :598, so the status code
+ * reached the screen; and on a dropped connection `err.message` was the
+ * browser's own string — "Failed to fetch" on Chrome, "Load failed" on iOS
+ * Safari — which no status sweep catches, because the string is not ours.
+ * `err` was also typed `any`, so nothing forced the question.
+ */
+const LOAD_FALLBACK = 'Could not load this puja offering right now. Please try again.';
+const PAY_FALLBACK = 'Could not start the payment right now. Please try again.';
+const CREATE_FALLBACK =
+  'Could not create your booking right now. Please try again, or email support@darshya.online if it keeps failing.';
+
+/**
+ * The copy for a status, or the page's own line when the status says nothing
+ * useful. The number is passed via String() rather than interpolated, so it
+ * reaches the classifier and never a screen.
+ */
+function statusCopy(status: number, fallback: string): string {
+  const classified = friendlyApiError(new Error(String(status))).message;
+  return classified === GENERIC_ERROR_MESSAGE ? fallback : classified;
+}
 
 // ─── Razorpay loader ───────────────────────────────────────────
 // RES-04 (2026-08-12): the loader used to live inline here (and, verbatim, in
@@ -156,7 +191,7 @@ function OfferingCheckoutInner() {
     try {
       const listRes = await fetch(`${API_BASE_URL}/priests`);
       if (!listRes.ok) {
-        throw new Error(`Could not load pandits (${listRes.status}).`);
+        throw new UserFacingError(statusCopy(listRes.status, LOAD_FALLBACK));
       }
       const listData = (await listRes.json()) as { priests: PriestSummary[] };
       const priests = listData.priests ?? [];
@@ -179,8 +214,8 @@ function OfferingCheckoutInner() {
         }
       }
       setLoadError('This puja offering could not be found or is no longer available.');
-    } catch (err: any) {
-      setLoadError(err.message || 'Failed to load this puja offering.');
+    } catch (err) {
+      setLoadError(userFacingMessage(err, LOAD_FALLBACK));
     } finally {
       setLoading(false);
     }
@@ -245,11 +280,15 @@ function OfferingCheckoutInner() {
 
       if (!res || !res.ok) {
         const body = res ? await res.json().catch(() => null) : null;
-        const msg = body?.error
-          ? `${body.error}`
-          : res
-            ? `Could not create your booking (${res.status}). Please try again or contact support@darshya.online.`
-            : 'Network error reaching the booking service. Please check your connection.';
+        // RES-09: `body?.error` was rendered verbatim, so an API answering
+        // {"error":"Internal Server Error"} put a developer name on the pay
+        // screen; and the fallback interpolated res.status. serverErrorMessage
+        // keeps the server's sentence only when it wrote one worth reading —
+        // the API localizes its error bodies into five languages
+        // (apps/api/src/lib/error-i18n.ts) — and refuses the developer names.
+        const msg = res
+          ? serverErrorMessage(body, statusCopy(res.status, CREATE_FALLBACK))
+          : 'Could not reach the booking service. Please check your connection and try again.';
         setPaymentError(msg);
         setPaymentLoading(false);
         return;
@@ -336,8 +375,8 @@ function OfferingCheckoutInner() {
         setPaymentLoading(false);
       });
       rzp.open();
-    } catch (err: any) {
-      setPaymentError(err.message || 'Something went wrong. Please try again.');
+    } catch (err) {
+      setPaymentError(userFacingMessage(err, PAY_FALLBACK));
       setPaymentLoading(false);
     }
   };
