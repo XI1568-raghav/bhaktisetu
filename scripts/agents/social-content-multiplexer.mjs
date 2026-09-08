@@ -10,7 +10,7 @@
 //
 // Output: docs/agent-reports/YYYY-MM-DD-social-content-multiplexer.md
 
-import { writeReport, upsertLog, fetchText, WEB_BASE, TODAY } from './_lib.mjs';
+import { writeReport, upsertLog, fetchVerified, WEB_BASE, TODAY } from './_lib.mjs';
 // TC-01 / TC-08 — see ./_claims.mjs. Everything this file emits is written to
 // be posted verbatim to X, LinkedIn and Instagram, so the two unbacked trust
 // claims are read off the owner flags instead of being typed into templates.
@@ -62,9 +62,34 @@ function recentReports(n = 7) {
     }));
 }
 
+/**
+ * OPS-12 (F451). This used to destructure `{ text }` out of `fetchText` and
+ * count `<loc>` in whatever came back. Under the origin's rate limiter that
+ * body is a Cloudflare block page, `<loc>` appears zero times, and the drafts
+ * below went out claiming "Darshya now indexes 0+ devotional pages" — a
+ * confident, wrong, PUBLIC number. `fetchVerified` returns `text: null` for
+ * anything it did not verify, so there is no body to miscount.
+ *
+ * Returns null, never 0, when the count is not trustworthy: 0 is a measurement
+ * and null is the absence of one, and the caller must be able to tell them apart.
+ */
 async function getSitemapUrlCount() {
-  const { text } = await fetchText(`${WEB_BASE}/sitemap.xml`);
-  return (text.match(/<loc>/g) || []).length;
+  const r = await fetchVerified(`${WEB_BASE}/sitemap.xml`);
+  if (!r.verified) {
+    console.error(`[social-content-multiplexer] sitemap UNVERIFIED — ${r.reason}`);
+    return null;
+  }
+  return (r.text.match(/<loc>/g) || []).length;
+}
+
+/**
+ * OPS-12. A draft that states the page count may not ship on a count we could
+ * not verify. Probes each template with a sentinel to find the ones that do.
+ */
+function renderDrafts(templates, ctx) {
+  if (ctx.urls !== null) return templates.map((t) => t(ctx));
+  const probe = { ...ctx, urls: '__URLS__' };
+  return templates.filter((t) => !String(t(probe)).includes('__URLS__')).map((t) => t(ctx));
 }
 
 const X_TEMPLATES = [
@@ -180,18 +205,22 @@ function igStatus(s) { return chars(s) <= 2200 ? '✓' : '✗ over cap'; }
 async function main() {
   console.log('[social-content-multiplexer] starting');
 
-  const urls = await getSitemapUrlCount().catch(() => 0);
+  const urls = await getSitemapUrlCount().catch(() => null);
   const festival = nextFestival(TODAY);
   const dDays = daysUntil(festival.date, TODAY);
   const reports = recentReports(7);
   const ctx = { festival, dDays, today: TODAY, urls };
 
-  const xDrafts = X_TEMPLATES.map((t) => t(ctx));
-  const liDrafts = LINKEDIN_TEMPLATES.map((t) => t(ctx));
-  const igDrafts = INSTA_TEMPLATES.map((t) => t(ctx));
+  const xDrafts = renderDrafts(X_TEMPLATES, ctx);
+  const liDrafts = renderDrafts(LINKEDIN_TEMPLATES, ctx);
+  const igDrafts = renderDrafts(INSTA_TEMPLATES, ctx);
 
   let md = `# Social content multiplexer — ${TODAY}\n\n`;
-  md += `Context: ${festival.name} in ${dDays}d · ${urls} URLs live · ${reports.length} fleet reports past 7d\n\n`;
+  const urlsLine =
+    urls === null
+      ? 'sitemap URL count UNVERIFIED (origin did not return a verified 200 — see stderr); count-stating drafts withheld'
+      : `${urls} URLs live`;
+  md += `Context: ${festival.name} in ${dDays}d · ${urlsLine} · ${reports.length} fleet reports past 7d\n\n`;
   md += `One content pack, three channels. Copy any; personalize before posting — algorithms reward variation.\n\n`;
   md += `> _Supersedes founder-tweet-draft + rss-to-thread + content-publisher dedup work._\n\n`;
 
