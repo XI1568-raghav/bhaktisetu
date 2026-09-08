@@ -1,0 +1,866 @@
+{
+  "agent": "admin",
+  "scope": "Admin surface on live prod: 51 registered /api/v1/admin/* GET endpoints plus /consultation/admin/all, /support/tickets, /support/agents (happy path with the ct+admin token, 403 check with ct+devotee, 401 check unauthenticated), 20 unhappy-path/validation probes on the admin lists, and all 23 admin web pages under apps/web/app/admin plus a nonexistent-page control. READ-ONLY throughout: no approvals approved or rejected, no user blocked or unblocked, no temple/priest/puja/content/rating edited or deleted, no payout processed, no refund issued, no commission rate changed, and no PATCH/POST/DELETE of any kind was sent.",
+  "checked": [
+    {
+      "target": "/admin/dashboard",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 248B real data"
+    },
+    {
+      "target": "/admin/users",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 5439B real data"
+    },
+    {
+      "target": "/admin/users?role=PANDIT",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 1664B real data"
+    },
+    {
+      "target": "/admin/users?role=NOT_A_ROLE",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 42B real data"
+    },
+    {
+      "target": "/admin/users?status=active",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 5439B real data"
+    },
+    {
+      "target": "/admin/users?status=pending",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 400,
+      "note": "devotee=403 anon=401;"
+    },
+    {
+      "target": "/admin/users?limit=100000",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 12375B real data"
+    },
+    {
+      "target": "/admin/revenue",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 537B real data"
+    },
+    {
+      "target": "/admin/reports",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 1360B real data"
+    },
+    {
+      "target": "/admin/pending-approvals",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 42B real data"
+    },
+    {
+      "target": "/admin/temples",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 5277B real data"
+    },
+    {
+      "target": "/admin/priests",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 1061B real data"
+    },
+    {
+      "target": "/admin/pujas",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 2045B real data"
+    },
+    {
+      "target": "/admin/content",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 5712B real data"
+    },
+    {
+      "target": "/admin/payments",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 1706B real data"
+    },
+    {
+      "target": "/admin/commissions",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 112B real data"
+    },
+    {
+      "target": "/admin/ratings",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 44B real data"
+    },
+    {
+      "target": "/admin/leads",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 31903B real data"
+    },
+    {
+      "target": "/admin/leads/stats",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 247B real data"
+    },
+    {
+      "target": "/admin/outreach/stats",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 1722B real data"
+    },
+    {
+      "target": "/admin/waitlist/stats",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 1162B real data"
+    },
+    {
+      "target": "/admin/metrics/investor",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=401 anon=401; body 356B real data"
+    },
+    {
+      "target": "/admin/metrics/funnel",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=401 anon=401; body 724B real data"
+    },
+    {
+      "target": "/admin/metrics/dashboard",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=401 anon=401; body 195B real data"
+    },
+    {
+      "target": "/admin/metrics/latency",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 25703B real data"
+    },
+    {
+      "target": "/admin/bookings",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 17047B real data"
+    },
+    {
+      "target": "/admin/bookings/payouts/pending",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 430B real data"
+    },
+    {
+      "target": "/admin/bookings/payout-requests",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 15B real data"
+    },
+    {
+      "target": "/admin/bookings/refunds/pending",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 116B real data"
+    },
+    {
+      "target": "/admin/bookings/provider-kyc",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 37B real data"
+    },
+    {
+      "target": "/admin/ops/kyc-abandoned",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 401,
+      "note": "devotee=401 anon=401;"
+    },
+    {
+      "target": "/admin/ops/sla-overdue-bookings",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 401,
+      "note": "devotee=401 anon=401;"
+    },
+    {
+      "target": "/admin/ops/recent-first-bookings",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 401,
+      "note": "devotee=401 anon=401;"
+    },
+    {
+      "target": "/admin/ops/dormant-users",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 401,
+      "note": "devotee=401 anon=401;"
+    },
+    {
+      "target": "/admin/ops/cold-temples",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 401,
+      "note": "devotee=401 anon=401;"
+    },
+    {
+      "target": "/admin/agents/runs",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 5700B real data"
+    },
+    {
+      "target": "/admin/agents/recent",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 2649B real data"
+    },
+    {
+      "target": "/admin/agents/feed",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "devotee=404 anon=404;"
+    },
+    {
+      "target": "/admin/leads/conversion",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 654B real data"
+    },
+    {
+      "target": "/admin/leads/conversion/timeline",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 2022B real data"
+    },
+    {
+      "target": "/admin/content-queue/auto-post/status",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 95B real data"
+    },
+    {
+      "target": "/admin/gurukuls",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 1282B real data"
+    },
+    {
+      "target": "/admin/temple-timings",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 7593B real data"
+    },
+    {
+      "target": "/admin/queue/health",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 249B real data"
+    },
+    {
+      "target": "/admin/donations/export.csv",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 95B real data"
+    },
+    {
+      "target": "/admin/roadmap",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 517956B real data"
+    },
+    {
+      "target": "/admin/roadmap/orchestrator-status",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 410,
+      "note": "devotee=410 anon=410;"
+    },
+    {
+      "target": "/admin/subscriptions",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 2408B real data"
+    },
+    {
+      "target": "/admin/outreach/logs",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 19219B real data"
+    },
+    {
+      "target": "/admin/outreach/config",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 156B real data"
+    },
+    {
+      "target": "/admin/marketplace/keys",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "devotee=403 anon=401; body 11B real data"
+    },
+    {
+      "target": "/admin/payouts",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "devotee=404 anon=404;"
+    },
+    {
+      "target": "/admin/refunds",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "devotee=404 anon=404;"
+    },
+    {
+      "target": "/admin/kyc",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "devotee=404 anon=404;"
+    },
+    {
+      "target": "/admin/support-tickets",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "devotee=404 anon=404;"
+    },
+    {
+      "target": "/admin/b2b-onboarding/chains",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "{\"message\":\"Route GET:/api/v1/admin/b2b-onboarding/chains not found\",\"error\":\"No"
+    },
+    {
+      "target": "/consultation/admin/all",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "body 529B"
+    },
+    {
+      "target": "/support/tickets",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "body 11B"
+    },
+    {
+      "target": "/support/agents",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "body 212B"
+    },
+    {
+      "target": "/admin/settings",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "{\"message\":\"Route GET:/api/v1/admin/settings not found\",\"error\":\"Not Found\",\"sta"
+    },
+    {
+      "target": "/admin/users/00000000-0000-0000-0000-000000000000",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "{\"error\":\"User not found\",\"message\":\"अनुरोधित संसाधन नहीं मिला।\",\"code\":\"NOT_FOUND\"}"
+    },
+    {
+      "target": "/admin/users/not-a-uuid",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 500,
+      "note": "{\"error\":\"Failed to load user\",\"message\":\"हमारी ओर से कुछ गड़बड़ हुई है।\",\"code\":\"INTERNAL_ERROR\"}"
+    },
+    {
+      "target": "/admin/users/'%20OR%201%3D1--",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 403,
+      "note": "<!DOCTYPE html> <html lang=\"en\">   <head>     <meta charset=\"utf-8\" />     <meta name=\"viewport\" content=\"width=device-width, initial-scale="
+    },
+    {
+      "target": "/admin/users?search=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=0 total=0 limit=20"
+    },
+    {
+      "target": "/admin/users?page=999999",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=0 total=45 limit=20"
+    },
+    {
+      "target": "/admin/leads?role=TEMPLE",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=50 total=231 limit=50"
+    },
+    {
+      "target": "/admin/leads?role=NOPE",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=0 total=0 limit=50"
+    },
+    {
+      "target": "/admin/leads?status=NEW",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=19 total=19 limit=50"
+    },
+    {
+      "target": "/admin/ratings?rating=-5",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=0 total=0 limit=50"
+    },
+    {
+      "target": "/admin/commissions?status=NOPE",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 400,
+      "note": "{\"error\":\"Invalid query parameters\",\"details\":{\"formErrors\":[],\"fieldErrors\":{\"status\":[\"Invalid enum value. Expected 'PENDING' | 'PAID' | '"
+    },
+    {
+      "target": "/admin/bookings?status=NOPE",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 400,
+      "note": "{\"error\":\"Invalid query\",\"details\":{\"formErrors\":[],\"fieldErrors\":{\"status\":[\"Invalid enum value. Expected 'pending_payment' | 'confirmed' |"
+    },
+    {
+      "target": "/admin/bookings?limit=100000",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=19 total=19 limit=100"
+    },
+    {
+      "target": "/admin/temples?limit=100000",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=20 total=20 limit=100"
+    },
+    {
+      "target": "/admin/priests?limit=100000",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=4 total=4 limit=100"
+    },
+    {
+      "target": "/admin/content?limit=100000",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=22 total=22 limit=100"
+    },
+    {
+      "target": "/admin/payments?limit=100000",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 200,
+      "note": "rows=6 total=6 limit=100"
+    },
+    {
+      "target": "/admin/subscriptions?status=NOPE",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 400,
+      "note": "{\"error\":\"Invalid query\",\"details\":{\"formErrors\":[],\"fieldErrors\":{\"status\":[\"Invalid enum value. Expected 'all' | 'active' | 'cancelled' | "
+    },
+    {
+      "target": "/admin/subscriptions?limit=100000",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 400,
+      "note": "{\"error\":\"Invalid query\",\"details\":{\"formErrors\":[],\"fieldErrors\":{\"limit\":[\"Number must be less than or equal to 500\"]}},\"message\":\"एक या अ"
+    },
+    {
+      "target": "/admin/agents/runs/..%2F..%2F..%2Fetc%2Fpasswd",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 400,
+      "note": "{\"error\":\"invalid file name\"}"
+    },
+    {
+      "target": "/admin/agents/runs/nonexistent-file.md",
+      "method": "GET",
+      "role": "ADMIN",
+      "status": 404,
+      "note": "{\"error\":\"not found\",\"message\":\"अनुरोधित संसाधन नहीं मिला।\",\"code\":\"NOT_FOUND\"}"
+    },
+    {
+      "target": "WEB /admin",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/agents",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/approvals",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/b2b-onboarding",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/commissions",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/consultations",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/kyc",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/leads",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/metrics",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/outreach",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/payouts",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/ratings",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/refunds",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/reports",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/revenue",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/roadmap",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Roadmap · Admin | Darshya\""
+    },
+    {
+      "target": "WEB /admin/settings",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/subscriptions",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/support",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/support/view",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/users",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/users/view",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/waitlist",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/users/00000000-0000-0000-0000-000000000000",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/users/not-a-uuid",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 200,
+      "note": "title=\"Darshya — India’s Devotional Super App\""
+    },
+    {
+      "target": "WEB /admin/does-not-exist-qa",
+      "method": "GET",
+      "role": "ADMIN(page)",
+      "status": 404,
+      "note": "title=\"Page not found | Darshya\""
+    }
+  ],
+  "findings": [
+    {
+      "id": "admin-1",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "/admin/users/:id",
+      "repro": [
+        "GET https://api.darshya.online/api/v1/admin/users/not-a-uuid with the ct+admin token",
+        "compare: GET /admin/users/00000000-0000-0000-0000-000000000000 -> 404 (correct)"
+      ],
+      "observed": "500 INTERNAL_ERROR. The Prisma uuid cast failure is caught and re-answered as a server fault.",
+      "expected": "400 (malformed id) or 404. A client-supplied bad id is a bad request, not a server error.",
+      "evidence": "status 500, body: {\"error\":\"Failed to load user\",\"message\":\"<hindi>\",\"code\":\"INTERNAL_ERROR\"}. Handler at apps/api/src/routes/admin.ts:215-227 has no uuid guard before adminService.getUserById(id). The admin page /admin/users/[id] passes the raw path segment through, so a mistyped or truncated id yields a 500 rather than 'not found'.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "admin-2",
+      "severity": "P2",
+      "kind": "MONEY",
+      "target": "/admin/reports (popularPujas[].revenueInr)",
+      "repro": [
+        "GET /admin/reports with ct+admin token -> popularPujas: Rudrabhishek revenueInr 4703, Lakshmi Puja 1102, Hanuman Chalisa Path 502 (sum 6307)",
+        "GET /admin/bookings?limit=100 -> 19 bookings: 13 cancelled, 6 pending_payment, 0 confirmed/completed/delivered",
+        "GET /admin/payments?limit=100 -> 6 payments, none with status captured",
+        "GET /admin/dashboard -> totalRevenue 0 ; GET /admin/metrics/investor -> gmvCumulativePaise 0"
+      ],
+      "observed": "A field named revenueInr reports INR 6,307 that is 100% the price of bookings still sitting in pending_payment, with no captured payment behind any of them. Three admin money screens therefore disagree: /admin/reports says 6,307, /admin/dashboard says 0, /admin/metrics/investor says 0.",
+      "expected": "Either exclude pending_payment from anything labelled revenue, or rename the field to booked/pipeline value. COUNTED_BOOKING_STATUSES (apps/api/src/services/admin.service.ts:93) includes pending_payment, which is right for a bookings COUNT and wrong for a revenue SUM.",
+      "evidence": "reports popularPujas sum 6307 == my own rollup of /admin/bookings over the same statuses (6 bookings, every one pending_payment), vs dashboard totalRevenue 0 which is captured-payments-only (admin.service.ts:729). Row counts cross-check exactly, so this is a labelling defect, not an arithmetic one. Re-verified twice ~15 min apart; the first read showed 7 bookings / 7459 and the second 6 / 6307 because another test agent cancelled a booking in between, so the two endpoints track each other correctly.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "admin-3",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "apps/api/src/server.ts:226-247 - per-prefix rate-limit override (governs /admin/*, /auth/*, /ai/*, /donations/create-order, /bookings/create-order, /affiliate/*)",
+      "repro": [
+        "GET /admin/dashboard with the ct+admin token and read the x-ratelimit-limit response header",
+        "repeat on /admin/users and /admin/roadmap"
+      ],
+      "observed": "x-ratelimit-limit: 100 on every /admin/* route - the global default. The onRoute hook intends 60/min for /admin/. It never fires: it tests routeOpts.url, which under Fastify is the FULL prefixed url (/api/v1/admin/users), against unprefixed literals ('/admin/', '/auth/', '/ai/', '/donations/create-order', ...). No route can ever match, so every per-prefix policy in that hook is dead and all traffic falls back to RATE_LIMIT_MAX (100/min).",
+      "expected": "x-ratelimit-limit: 60 on /admin/*. The consequential sibling is /auth/ - the intended 10/min brute-force cap - and /donations/create-order (intended 10/min).",
+      "evidence": "measured headers: /admin/dashboard {limit:100, remaining:99}, /admin/users {limit:100, remaining:98}, /admin/roadmap {limit:100, remaining:95}. Every route is registered with a '/api/v1/...' prefix (server.ts:406 auth, :424 admin, :453-489 the rest). The comment at server.ts:220-225 records that this same hook was already found to be a no-op once and 'fixed' by moving its registration earlier; it is still a no-op, now for a different reason. I did NOT probe /auth/* (brief rule 'do not call /auth/login'), so the auth half is inferred from the shared root cause and the measured admin case, not measured directly.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "admin-4",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "every admin page except /admin/roadmap",
+      "repro": [
+        "GET https://darshya.online/admin/users with any non-empty poojly_user cookie (to pass the middleware gate)",
+        "read the <title>; repeat for the other 22 admin pages"
+      ],
+      "observed": "22 of 23 admin pages serve the marketing homepage title 'Darshya - India's Devotional Super App'. Only /admin/roadmap sets its own ('Roadmap - Admin | Darshya').",
+      "expected": "A per-page admin title such as 'Users - Admin | Darshya'. An operator with several admin tabs open cannot tell them apart.",
+      "evidence": "identical title across /admin, /admin/users, /admin/payouts, /admin/refunds, /admin/kyc, /admin/revenue, /admin/commissions, /admin/metrics, /admin/leads, /admin/ratings, /admin/support, /admin/settings, /admin/waitlist, /admin/subscriptions, /admin/approvals, /admin/agents, /admin/outreach, /admin/consultations, /admin/b2b-onboarding, /admin/reports, /admin/users/view, /admin/support/view. grep for 'export const metadata|generateMetadata' under apps/web/app/admin returns only roadmap/page.tsx, and apps/web/app/admin/layout.tsx exports no metadata. Not a broken interpolation - simply absent.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "admin-5",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "admin API error payloads (every /admin/* error that carries a `code`)",
+      "repro": [
+        "GET /admin/users/00000000-0000-0000-0000-000000000000 with the ct+admin token and header Accept-Language: en-US,en;q=0.9"
+      ],
+      "observed": "The payload mixes languages - an English `error` and a Hindi `message` in the same object - and an explicit Accept-Language: en does not change it.",
+      "expected": "One language per payload, and an explicit Accept-Language: en honoured.",
+      "evidence": "The identical Hindi `message` came back for Accept-Language absent, 'en-US,en;q=0.9' and 'hi'. Cause: pickLangFor (apps/api/src/lib/error-i18n.ts:377-409) ranks User.preferredLanguage above the header, and apps/api/prisma/schema.prisma:178 defaults preferredLanguage to `hi`, so an account that never chose a language is pinned to Hindi. Routes that build their own error string stay English - /admin/users?status=pending returns fully English text - so the admin surface answers in two languages depending on which code path failed. Plausibly an intentional India-first default; filed as an inconsistency at P3, not as a defect.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "admin-6",
+      "severity": "P3",
+      "kind": "VALIDATION",
+      "target": "/admin/ops/kyc-abandoned, /admin/ops/dormant-users, /admin/ops/cold-temples, /admin/ops/sla-overdue-bookings, /admin/ops/recent-first-bookings",
+      "repro": [
+        "GET /admin/ops/kyc-abandoned with the ct+admin bearer token -> 401",
+        "read apps/api/src/routes/admin-ops.ts:136 - the guard is authorisedToken(request.query.token)"
+      ],
+      "observed": "Five endpoints mounted under /admin/ do not accept the admin bearer at all (401 for admin and for devotee alike). They authenticate on a shared secret passed in the QUERY STRING (?token=...), which is recorded in Cloudflare/Render access logs, browser history and Referer headers.",
+      "expected": "A header-borne secret (Authorization or X-Cron-Token), or admin-bearer access, for anything mounted under /admin/.",
+      "evidence": "401 with a valid admin token on all five, while /admin/dashboard returned 200 with the same token in the same run. No bypass exists - authorisedToken (admin-ops.ts:25-33) is fail-closed on a missing or wrong-length secret and uses crypto.timingSafeEqual - so the finding is secret-in-URL plus a namespace that implies admin-console reachability it does not have.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "admin-7",
+      "severity": "P3",
+      "kind": "VALIDATION",
+      "target": "/admin/roadmap",
+      "repro": [
+        "GET /admin/roadmap with the ct+admin token; measure the body size and read index.generatedAt"
+      ],
+      "observed": "517,956 bytes (about 506 KB) of JSON in one unpaginated response - the whole roadmap index with full per-item detail. index.generatedAt is 2026-06-15T12:25:05.964Z, roughly three months stale.",
+      "expected": "Pagination or a summary projection, as every other admin list already has (page/limit, clamped to 100).",
+      "evidence": "status 200, application/json, body length 517956; no page/limit parameter is honoured. Every other admin list endpoint I tested clamps to 100 rows. The admin roadmap page therefore pulls half a megabyte on each load from a free-tier dyno.",
+      "confidence": "confirmed"
+    }
+  ],
+  "blocked": [
+    {
+      "target": "every admin write path (PATCH /admin/users/:id, POST|PATCH|DELETE /admin/temples|priests|pujas|content, POST /admin/ratings/:id/hide, payout processing, refund issuing, commission-rate override)",
+      "reason": "scope rule: admin token can mutate other people's data; read-only mandate. Existence confirmed by source enumeration only, never invoked."
+    },
+    {
+      "target": "GET /admin/cron/youtube-discovery, GET /admin/cron/apollo-refresh",
+      "reason": "GET-shaped manual cron TRIGGERS (apps/api/src/routes/admin-cron.ts:27,32), not reads - invoking them would run a job. Not called."
+    },
+    {
+      "target": "/auth/* rate-limit verification for finding admin-3",
+      "reason": "brief rule: do not call /auth/login. The /admin/ half of the same dead code path was measured instead."
+    },
+    {
+      "target": "authenticated in-browser rendering of the 23 admin pages",
+      "reason": "pages are client components whose data comes from the API via a bearer held in client state; an HTTP fetch can verify the shell, the title and the absence of an error boundary, but not the rendered table. API-side coverage of the same data is complete."
+    }
+  ]
+}

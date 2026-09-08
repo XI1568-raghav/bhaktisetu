@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T11:58:30.124Z",
+  "generatedAt": "2026-09-08T15:54:28.235Z",
   "api": "https://api.darshya.online/api/v1",
   "findings": [],
   "rows": [
@@ -32,7 +32,7 @@
       "role": "ADMIN",
       "path": "/admin/pending-approvals",
       "status": 200,
-      "bytes": 234,
+      "bytes": 42,
       "snippet": null
     },
     {
@@ -721,7 +721,7 @@
       "role": "DEVOTEE",
       "path": "/notifications?limit=1",
       "status": 200,
-      "bytes": 47,
+      "bytes": 449,
       "snippet": null
     },
     {

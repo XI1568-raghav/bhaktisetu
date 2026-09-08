@@ -1,0 +1,158 @@
+{
+  "agent": "astro-wellness",
+  "scope": "Astrologer portal (API /astrologer-portal/{dashboard,online,earnings,profile} + 8 web pages), Wellness-instructor portal (API /wellness-portal/{dashboard,students,instructor/mine,profile} + 7 web pages), public astrology + wellness surfaces (9 pages + /astrology/astrologers/live, /astrology/astrologers, /wellness/{instructors,programs,sessions} APIs), and the full cross-role/unauthenticated authz matrix for both portals.",
+  "checked": [
+    { "target": "/astrologer-portal/dashboard", "method": "GET", "role": "ASTROLOGER", "status": 200, "note": "Real shape, honest empty account. profile:null, every money field numeric 0 (not null/NaN), astrologerShare 0.8, upcomingSessions []." },
+    { "target": "/astrologer-portal/earnings", "method": "GET", "role": "ASTROLOGER", "status": 200, "note": "ANSWERS BRIEF QUESTION: returns exactly 0, never null/NaN. Body: {\"data\":[],\"summary\":{\"totalEarningsInr\":0,\"pendingInr\":0,\"paidInr\":0,\"astrologerShare\":0.8}}." },
+    { "target": "/astrologer-portal/online", "method": "GET", "role": "ASTROLOGER", "status": 200, "note": "Baseline read before mutation: {\"online\":false,\"mode\":{\"chat\":true,\"call\":true}}." },
+    { "target": "/astrologer-portal/online", "method": "POST", "role": "ASTROLOGER", "status": 200, "note": "SAFE MUTATION, toggled ON with {online:true,chat:true,call:false}. PERSISTENCE CONFIRMED BY INDEPENDENT READ-BACK (not the write's response body): a following GET returned {\"online\":true,\"mode\":{\"chat\":true,\"call\":false}}. It does not silently no-op." },
+    { "target": "/astrologer-portal/online", "method": "POST", "role": "ASTROLOGER", "status": 200, "note": "Double-submit of the same ON payload is idempotent; read-back after the second write still {\"online\":true,\"mode\":{\"chat\":true,\"call\":false}}. No duplicate state, no error." },
+    { "target": "/astrologer-portal/online", "method": "POST", "role": "ASTROLOGER", "status": 200, "note": "Toggled back OFF to leave the account as found. Read-back confirmed {\"online\":false,...}. Account restored to its pre-test state." },
+    { "target": "/astrologer-portal/online", "method": "POST", "role": "ASTROLOGER", "status": 500, "note": "Invalid input {online:'yes'} returned 500 instead of 400. See finding astro-wellness-3." },
+    { "target": "/astrologer-portal/online", "method": "POST", "role": "ASTROLOGER", "status": 500, "note": "Missing required field (empty object) returned 500 instead of 400. See finding astro-wellness-3." },
+    { "target": "/wellness-portal/dashboard", "method": "GET", "role": "WELLNESS_INSTRUCTOR", "status": 200, "note": "Real shape, honest zeros. profile:null, all 6 money/count fields numeric 0, instructorShare 0.8 / platformRate 0.2 (matches the uniform 20/80 take-rate doctrine)." },
+    { "target": "/wellness-portal/students", "method": "GET", "role": "WELLNESS_INSTRUCTOR", "status": 200, "note": "{\"students\":[],\"total\":0} — correct empty shape for a fresh instructor." },
+    { "target": "/wellness-portal/instructor/mine", "method": "GET", "role": "WELLNESS_INSTRUCTOR", "status": 200, "note": "{\"total\":0,\"limit\":50,\"offset\":0,\"sessions\":[]} — paginated empty shape, no crash on the non-uuid-id path." },
+    { "target": "/wellness/instructors", "method": "GET", "role": "PUBLIC", "status": 200, "note": "ANSWERS BRIEF QUESTION: NOT real people. Returns 10 hardcoded fixtures (inst-001..inst-010) from apps/api/src/routes/wellness.ts:5 with invented ratings, review counts, certifications and Unsplash stock portraits. Identical body with and without a devotee token. See finding astro-wellness-1." },
+    { "target": "/wellness/programs", "method": "GET", "role": "PUBLIC", "status": 200, "note": "6 hardcoded fixtures (prog-001..prog-006) with invented spotsLeft/spotsTotal scarcity, from the same fixture block." },
+    { "target": "/wellness/instructors/{uuid}", "method": "GET", "role": "PUBLIC", "status": 404, "note": "Nonexistent uuid correctly 404s with a typed body. Non-uuid garbage (__ct_bogus_zzz) also 404s cleanly — no 500, no Postgres 22P02." },
+    { "target": "/wellness/programs/{uuid}", "method": "GET", "role": "PUBLIC", "status": 404, "note": "Correct 404 for a nonexistent id." },
+    { "target": "/wellness/sessions", "method": "GET", "role": "PUBLIC", "status": 200, "note": "{\"data\":[]} — the REAL wellness supply is genuinely empty. This is the ground truth that /wellness/yoga and /wellness/meditation contradict (finding astro-wellness-1)." },
+    { "target": "/astrology/astrologers/live", "method": "GET", "role": "PUBLIC", "status": 200, "note": "ANSWERS BRIEF QUESTION: real people. 3 real DB rows with real UUIDs (Acharya Vinod Sharma, Ritika Menon, Dr. Mahesh Iyer) and HONEST zeros — rating 0, consultationCount 0, isOnline false. No invented social proof. Same body authenticated and unauthenticated." },
+    { "target": "/astrology/astrologers", "method": "GET", "role": "PUBLIC", "status": 200, "note": "Same 3 real astrologers." },
+    { "target": "/astrologer-portal/{dashboard,online,earnings}", "method": "GET", "role": "NO TOKEN", "status": 401, "note": "All 3 correctly 401 with 'Missing or invalid Authorization header'. A garbage bearer token also 401s with 'Invalid or expired access token'." },
+    { "target": "/astrologer-portal/{dashboard,earnings}", "method": "GET", "role": "WELLNESS_INSTRUCTOR + DEVOTEE", "status": 403, "note": "Correct 403 'ASTROLOGER role required' for both wrong-role tokens. NO cross-role read." },
+    { "target": "/astrologer-portal/online", "method": "GET", "role": "WELLNESS_INSTRUCTOR + DEVOTEE", "status": 200, "note": "MISSING ROLE GATE — the one exception in the whole matrix. See finding astro-wellness-2." },
+    { "target": "/astrologer-portal/online", "method": "POST", "role": "WELLNESS_INSTRUCTOR", "status": 403, "note": "The WRITE is correctly gated: a wellness instructor cannot go online as an astrologer. 401 unauthenticated." },
+    { "target": "/astrologer-portal/profile", "method": "PATCH", "role": "WELLNESS_INSTRUCTOR", "status": 403, "note": "Correct 403 — no cross-role profile mutation." },
+    { "target": "/wellness-portal/{dashboard,students,instructor/mine}", "method": "GET", "role": "NO TOKEN", "status": 401, "note": "All 3 correctly 401." },
+    { "target": "/wellness-portal/{dashboard,students,instructor/mine}", "method": "GET", "role": "ASTROLOGER + DEVOTEE", "status": 403, "note": "All 6 combinations correctly 403 'WELLNESS_INSTRUCTOR role required'. NO cross-role read in either direction." },
+    { "target": "/wellness-portal/profile", "method": "PATCH", "role": "ASTROLOGER", "status": 403, "note": "Correct 403." },
+    { "target": "/astrology", "method": "GET", "role": "PUBLIC", "status": 200, "note": "Sane title 'Vedic Astrology — Kundli, Dosha & Daily Horoscope | Darshya'. No error boundary." },
+    { "target": "/astrology/horoscope", "method": "GET", "role": "PUBLIC", "status": 200, "note": "Browser-verified: renders full predictions for all 12 rashis with graha, lucky number, colour, direction and element. Real content, no placeholder." },
+    { "target": "/astrology/astrologers/live", "method": "GET", "role": "PUBLIC", "status": 200, "note": "Browser-verified render is GOOD and honest: '3 verified · 0 online now', every card reads 'New on Darshya · not rated yet' (no fake stars), and the CTA is correctly 'Book a slot' rather than 'Consult now' because all 3 are offline. Profile/Book hrefs resolve to the real UUIDs. Source carries designed empty states for both the empty-directory and empty-filter cases." },
+    { "target": "/astrology/kundli", "method": "GET", "role": "PUBLIC", "status": 200, "note": "200, sane title, h1 'Free Kundli Generator', no error boundary." },
+    { "target": "/astrology/__ct_nonexistent_zzz", "method": "GET", "role": "PUBLIC", "status": 200, "note": "SOFT-404 as instructed to check: 200, 126157 bytes, with the generic root title 'Darshya — India's Devotional Super App' instead of a not-found title. This is the /astrology/[id] case already filed as CT-SEO-1 in the brief's known list, so NOT re-reported as a finding." },
+    { "target": "/wellness", "method": "GET", "role": "PUBLIC", "status": 200, "note": "200, sane title, no fixture names in the SSR HTML." },
+    { "target": "/wellness/classes", "method": "GET", "role": "PUBLIC", "status": 200, "note": "Browser-verified: resolves to a DESIGNED empty state — 'No live classes scheduled right now. New sessions are published by instructors through the week — check back soon.' Correct behaviour for empty supply." },
+    { "target": "/wellness/instructors", "method": "GET", "role": "PUBLIC", "status": 200, "note": "Browser-verified: resolves to a DESIGNED empty state — 'There are no instructors with an upcoming class right now...'. This page deliberately does NOT consume the fixture endpoint (documented AW-17), which is exactly why /wellness/yoga still doing so is a defect." },
+    { "target": "/wellness/yoga", "method": "GET", "role": "PUBLIC", "status": 200, "note": "200 with a sane title, but the body is fabricated. See findings astro-wellness-1 and astro-wellness-4." },
+    { "target": "/wellness/meditation", "method": "GET", "role": "PUBLIC", "status": 200, "note": "200 with a sane title; same fabricated-instructor and dead-Book-button pattern as /wellness/yoga." },
+    { "target": "/wellness/instructors/inst-999", "method": "GET", "role": "PUBLIC", "status": 200, "note": "Soft-404: 200 for a nonexistent id, BUT it renders a designed not-found page with a correct title 'Instructor Not Found | Darshya'. Since the title is sane this is not the broken-title defect CT-SEO-1 describes, and it plausibly falls inside that finding's 'and 3 more'. Recorded, deliberately not filed as a new finding." },
+    { "target": "/astrologer-portal + 7 subpages", "method": "GET", "role": "NO SESSION", "status": 307, "note": "All 8 correctly 307 to /auth/login with a properly URL-encoded redirect param (e.g. ?redirect=%2Fastrologer-portal%2Fearnings). No content leaked pre-auth." },
+    { "target": "/wellness-portal + 6 subpages", "method": "GET", "role": "NO SESSION", "status": 307, "note": "All 7 correctly 307 to /auth/login with the correct redirect param." },
+    { "target": "/astrologer-portal/* and /wellness-portal/* page shells", "method": "GET", "role": "poojly_user cookie set", "status": 200, "note": "The web middleware gate is presence-of-poojly_user only and is documented in middleware.ts:69-90 as deliberately COSMETIC (SEC-02), not an authorization boundary. Verified the real boundary holds: every portal API 401s/403s correctly regardless of this cookie, so the shell renders with no data. Recorded as design-as-documented, NOT filed as a finding. 14 of 15 shells return 200 and render without an error boundary; the 15th is finding astro-wellness-5." }
+  ],
+  "findings": [
+    {
+      "id": "astro-wellness-1",
+      "severity": "P1",
+      "kind": "COPY",
+      "target": "/wellness/yoga and /wellness/meditation",
+      "repro": [
+        "GET https://darshya.online/wellness/yoga (unauthenticated)",
+        "Search the server-rendered HTML for 'Aarav Sharma', 'reviews' and 'spots left'",
+        "Compare against the real supply: GET https://api.darshya.online/api/v1/wellness/sessions -> {\"data\":[]}",
+        "Compare against the sibling page GET /wellness/instructors, which correctly renders an empty state"
+      ],
+      "observed": "Both pages server-render fabricated instructors with invented social proof and invented scarcity, presented as real bookable supply. /wellness/yoga renders 6 people under 'Instructors — Learn from the best' with star ratings and review counts: Aarav Sharma 4.9 / 342 reviews / 12 yrs exp / Rs 599; Meera Iyer 4.8 / 218 reviews; Rajesh Kulkarni 4.8 / 276 reviews; Nandini Raghavan 4.6 / 154 reviews; Swami Dhyanananda 4.9 / 512 reviews; Kavya Menon 4.5 / 98 reviews. Below them a 'Weekly Schedule' lists classes with fake scarcity: 5:30 AM Sunrise Pranayama, Aarav Sharma, 30 min, '15 spots left'; 6:00 AM Morning Hatha Flow '8 spots left'; 6:00 AM Kundalini Awakening '6 spots left'; 7:00 AM Power Vinyasa '5 spots left'; 7:00 AM Ashtanga Primary Series '4 spots left'. /wellness/meditation renders 4 of the same fabricated people (Swami Dhyanananda 4.9/512, Anita Desai 4.7/189, Kavya Menon 4.5/98, Rajesh Kulkarni 4.8/276) with the same 'spots left' pattern. None of these people or classes exist: the real feed GET /api/v1/wellness/sessions returns {\"data\":[]}, and the cards link to /wellness/instructors/inst-001 etc., which resolve only because apps/api/src/routes/wellness.ts:5 hardcodes them. The ratings, review counts, certifications, prices and seat counts are literals in apps/web/app/wellness/yoga/page.tsx:66-71 and apps/web/app/wellness/meditation/page.tsx:62-65 — there is no data source behind any of them. This is a live commercial page publishing invented reviews and invented scarcity. The team already removed exactly this fiction from the neighbouring surfaces (COM-14, AW-07, AW-17): /wellness/instructors carries the comment 'No rating, no experience claim, no stock portrait — the platform holds none of those for these people' and correctly renders an empty state on prod. These two landing pages were missed by that sweep.",
+      "expected": "Either the real (currently empty) wellness supply behind the designed empty state /wellness/instructors already ships, or clearly-labelled illustrative content with no star ratings, no review counts and no seat counts.",
+      "evidence": "GET /wellness/yoga -> 200, 219337 bytes. HTML text: '... Instructors Learn from the best AS Aarav Sharma Hatha Yoga & Pranayama 4.9 342 reviews 12 yrs exp Rs 599 MI Meera Iyer Vinyasa Flow & Ashtanga 4.8 218 reviews 8 yrs exp Rs 499 ... Weekly Schedule Morning & evening sessions Morning Sessions 5:30 AM Pranayama Sunrise Pranayama Aarav Sharma 30 min 15 spots left Book ...'. Anchor hrefs present in the HTML: /wellness/instructors/inst-001, inst-002, inst-005, inst-006, inst-003, inst-008. Ground truth GET /api/v1/wellness/sessions -> 200 {\"data\":[]}. Source: apps/web/app/wellness/yoga/page.tsx:66-71, apps/web/app/wellness/meditation/page.tsx:62-65, apps/api/src/routes/wellness.ts:5.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "astro-wellness-2",
+      "severity": "P2",
+      "kind": "AUTH_LEAK",
+      "target": "/astrologer-portal/online",
+      "repro": [
+        "GET https://api.darshya.online/api/v1/astrologer-portal/online with the ct+wellness@darshya.online bearer token",
+        "Repeat with the ct+devotee@darshya.online bearer token",
+        "expected 403 — every other /astrologer-portal/* route returns 403 for these tokens"
+      ],
+      "observed": "200 for both the wellness-instructor token and the devotee token. Body: {\"online\":false,\"mode\":{\"chat\":true,\"call\":true}}. The handler at apps/api/src/routes/astrologer-portal.ts:398 is the only route in that file with no ASTROLOGER role check — /dashboard (:160), /profile (:282), /availability (:327), POST /online (:375) and /earnings (:409) all guard with roles.includes('ASTROLOGER'), and all five correctly returned 403 for the same two tokens. I am deliberately NOT rating this P0 despite the brief's default rule for a 200 on a wrong-role /astrologer-portal/* route, because the body contains no other user's data: getAstrologerPresence is keyed on request.currentUser.id, so a non-astrologer only ever reads their own always-default presence and no astrologer's real status is reachable through it. It is a missing guard, not a cross-tenant read. The write path is correctly closed (POST /online with the wellness token returns 403), so a non-astrologer cannot make themselves appear in the live directory.",
+      "expected": "403 {\"error\":\"ASTROLOGER role required\"}, matching the other five routes in the same file.",
+      "evidence": "GET /astrologer-portal/online, Authorization: Bearer <ct+wellness> -> 200, 49 bytes, {\"online\":false,\"mode\":{\"chat\":true,\"call\":true}}. Same with <ct+devotee> -> 200, byte-identical body. Control: GET /astrologer-portal/dashboard with <ct+wellness> -> 403 {\"error\":\"ASTROLOGER role required\",\"code\":\"FORBIDDEN\"}. Control: POST /astrologer-portal/online with <ct+wellness> -> 403. Unauthenticated GET -> 401.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "astro-wellness-3",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "/astrologer-portal/online",
+      "repro": [
+        "POST /astrologer-portal/online with the astrologer token and body {\"online\":\"yes\"} (wrong type)",
+        "POST /astrologer-portal/online with the astrologer token and body {} (required field missing)",
+        "expected 400 with a field-level validation error"
+      ],
+      "observed": "Both return 500 {\"error\":\"InternalServerError\",\"code\":\"INTERNAL_ERROR\"} with the generic Hindi user-facing message. The handler uses a bare z.object({online: z.boolean(), chat: ..., call: ...}).parse(request.body ?? {}) at apps/api/src/routes/astrologer-portal.ts:381-387; .parse throws a ZodError that nothing catches, so client input error surfaces as a server fault. Two consequences: the caller is told the server broke when in fact their request was malformed, and every malformed toggle logs as a 5xx, which will poison error-rate alerting on the endpoint an astrologer hits most often. The sibling route GET /wellness-portal/instructor/mine already does this correctly (safeParse then 400 with issues), so the right pattern exists in the codebase.",
+      "expected": "400 with a typed validation body, e.g. {\"error\":\"Invalid body\",\"issues\":{...}} — the shape /wellness-portal/instructor/mine already returns.",
+      "evidence": "POST /astrologer-portal/online {\"online\":\"yes\"} -> 500, 98 bytes: {\"error\":\"InternalServerError\",\"message\":\"...\",\"code\":\"INTERNAL_ERROR\"}. POST with {} -> identical 500. Both reproduced with a valid ASTROLOGER token; the same token returned 200 on well-formed bodies immediately before and after. Source: apps/api/src/routes/astrologer-portal.ts:381.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "astro-wellness-4",
+      "severity": "P1",
+      "kind": "BROKEN_CTA",
+      "target": "/wellness/yoga and /wellness/meditation",
+      "repro": [
+        "GET https://darshya.online/wellness/yoga",
+        "Scroll to 'Weekly Schedule' and click any orange 'Book' button next to a class"
+      ],
+      "observed": "Nothing happens. The Book buttons in the weekly schedule are bare <button> elements with no onClick, no form, no wrapping Link and no href — and both pages are server components (neither file carries a 'use client' directive), so no handler can be attached at runtime. They are structurally inert. apps/web/app/wellness/yoga/page.tsx has two of them (line 274 in the morning block, line 311 in the evening block) and apps/web/app/wellness/meditation/page.tsx one (line 396), rendering roughly ten dead Book buttons across the two pages. Each sits directly beneath a scarcity line such as '4 spots left', which is the strongest possible prompt to click. The pages' other CTA, 'Book a Session' at yoga/page.tsx:376, is a real Link but points at /wellness — the hub the visitor just came from, not a booking flow. So the flagship yoga and meditation landing pages offer no working path to enrol in anything.",
+      "expected": "Either a working enrol flow into the real /wellness/classes rail, or — while supply is empty — no Book affordance at all.",
+      "evidence": "Prod HTML of /wellness/yoga around 'spots left': '<span ...>15 spots left</span><button class=\"inline-flex items-center justify-center rounded-lg font-semibold whitespace-nowrap transition-colors duration-150 ... bg-saffron-600 text-white hover:bg-saffron-700 active:bg-saffron-700\">Book</button>'. No onclick attribute, no form, no anchor. Source confirms: apps/web/app/wellness/yoga/page.tsx:274 and :311, apps/web/app/wellness/meditation/page.tsx:396; neither file declares 'use client'.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "astro-wellness-5",
+      "severity": "P3",
+      "kind": "BROKEN_CTA",
+      "target": "/astrologer-portal/online",
+      "repro": [
+        "GET https://darshya.online/astrologer-portal/online with a session present",
+        "expected the go-online page TASKS.md records as shipped under PR #227"
+      ],
+      "observed": "404 'Page not found | Darshya'. The page does not exist: apps/web/app/astrologer-portal/ contains availability, consultations, earnings, messages, profile and subscription, but no online/ directory. Unauthenticated the route looks alive — the middleware's /astrologer-portal prefix match 307s it to /auth/login exactly like every real page — so the 404 only appears after sign-in, which is what makes it easy to miss. Impact is genuinely low and rated accordingly: the toggle UI itself does exist and works, it just lives on the /astrologer-portal dashboard (apps/web/app/astrologer-portal/page.tsx:130-153 calls the API endpoint directly), and no navigation anywhere links to /astrologer-portal/online. The defect is that a URL recorded as shipped, and reachable by guess or bookmark, dead-ends.",
+      "expected": "Either a page at that route, or a redirect to /astrologer-portal where the toggle actually lives.",
+      "evidence": "GET /astrologer-portal/online with a session cookie present -> 404, <title>Page not found | Darshya</title>, h1 'Page not found', 125539 bytes. All 14 sibling portal pages returned 200 in the same sweep. Unauthenticated the same URL -> 307 -> /auth/login?redirect=%2Fastrologer-portal%2Fonline. Filesystem: no apps/web/app/astrologer-portal/online/page.tsx exists.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "astro-wellness-6",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "all 14 /astrologer-portal/* and /wellness-portal/* pages",
+      "repro": [
+        "GET any portal page with a session present and read the <title>",
+        "Repeat across all 14 pages"
+      ],
+      "observed": "Every one returns the generic root title 'Darshya — India's Devotional Super App'. None sets a per-page title, so an astrologer with Earnings, Consultations and Availability open has three identical browser tabs and cannot tell them apart. This is not the empty-interpolation defect the brief flags — the title is well-formed, just not specific — hence P3. The public pages in the same scope all do this correctly ('Daily Horoscope Today — All 12 Rashis | Darshya', 'Live Wellness Classes | Darshya'), so the pattern is established and only the portals are missing it.",
+      "expected": "A per-page title, e.g. 'Earnings — Astrologer Portal | Darshya'.",
+      "evidence": "14/14 portal pages returned <title>Darshya — India's Devotional Super App</title>: /astrologer-portal, /astrologer-portal/{availability,consultations,earnings,messages,profile,subscription}, /wellness-portal, /wellness-portal/{earnings,messages,profile,sessions,students,subscription}.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "astro-wellness-7",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "/astrology/astrologers/live",
+      "repro": [
+        "GET https://darshya.online/astrology/astrologers/live in a browser and let it hydrate",
+        "Look at the avatar initials on the third card"
+      ],
+      "observed": "The avatar for 'Dr. Mahesh Iyer' shows '.M' — the initials helper takes the first character of each of the first two name tokens, so the honorific 'Dr.' contributes a literal full stop. The other two cards are correct ('VS' for Acharya Vinod Sharma, 'RM' for Ritika Menon), so this only bites names carrying an abbreviated honorific. Purely cosmetic, on an otherwise well-built page.",
+      "expected": "'MI', with honorific tokens (Dr., Sri, Smt., Pt.) skipped, or at minimum non-alphabetic characters filtered out of the initials.",
+      "evidence": "Browser-rendered card list on prod: 'VS Acharya Vinod Sharma ... 22 yrs exp | Hindi, Sanskrit', 'RM Ritika Menon ... 9 yrs exp | English, Hindi', '.M Dr. Mahesh Iyer ... 15 yrs exp | English, Tamil'.",
+      "confidence": "confirmed"
+    }
+  ],
+  "blocked": [
+    {
+      "target": "/astrologer-portal/* and /wellness-portal/* page bodies as a signed-in provider",
+      "reason": "Cannot establish a browser session without /auth/login, which the brief forbids. In production the auth context deliberately does NOT persist the access token to localStorage (apps/web/lib/auth-context.tsx:465 removes poojly_session outside the compile-time-dead demo branch), and the API's darshya_session cookie is host-only for api.darshya.online so it cannot be replayed against darshya.online (documented in apps/web/middleware.ts:79-90). A cached bearer token therefore cannot be injected into the page's auth state. Mitigation: the full data layer was proved instead — every portal API these pages call returns 200 with a correct empty shape for its own role and 401/403 otherwise — and all 15 page shells were confirmed to render server-side without an error boundary. What remains unverified is only the client-side rendering of those empty shapes."
+    },
+    { "target": "/astrologer-portal/subscription and /wellness-portal/subscription checkout", "reason": "live razorpay key" },
+    { "target": "Enrolment / consultation purchase from /wellness/classes and the 'Book a slot' CTA on /astrology/astrologers/live", "reason": "live razorpay key" }
+  ]
+}
