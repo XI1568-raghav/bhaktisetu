@@ -83,6 +83,11 @@ import {
   type PreferredLanguageLoader,
   type SupportedLanguage,
 } from '../lib/i18n.js';
+import {
+  AUTH_REASON_HEADER,
+  AUTH_REASON_BODY_FIELD,
+  isAuthFailureReason,
+} from '../lib/auth-reason.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -290,6 +295,65 @@ async function languageFor(
   return language;
 }
 
+/**
+ * AUTH-07 (F454, 2026-09-08) — make `X-Auth-Reason` readable by the browser,
+ * and keep the body and the header saying the same thing.
+ *
+ * WHY THIS LIVES HERE AND NOT IN THE MIDDLEWARE. A custom response header is
+ * invisible to cross-origin JavaScript unless the server names it in
+ * `Access-Control-Expose-Headers`, and @fastify/cors is registered in
+ * src/server.ts:214 WITHOUT an `exposedHeaders` option. Probing production on
+ * 2026-09-08 confirmed it: no `access-control-expose-headers` on any response
+ * from api.darshya.online, on the 401 or on the CORS preflight. darshya.online
+ * and api.darshya.online are separate origins, so a header stamped by the auth
+ * middleware and not exposed here would be dropped by the browser before
+ * apps/web ever saw it — the discriminator would be dead on arrival a second
+ * time, in a way no server-side test would catch. This onSend hook is the one
+ * place every error response already passes through.
+ *
+ * It APPENDS rather than overwrites, so if `exposedHeaders` is ever configured
+ * in server.ts this keeps working instead of silently deleting it.
+ *
+ * The body→header mirror covers the other direction: a route that hand-builds
+ * `{ error, message, authReason }` without touching headers still ends up with
+ * a header, so the two carriers agree no matter which one the writer thought
+ * about. The header wins if both are present — it is the one the middleware
+ * sets deliberately.
+ *
+ * It is a NO-OP unless a reason is actually present. No reason means no header
+ * and no change to `Access-Control-Expose-Headers`, so this cannot alter the
+ * response shape of the ~890 hand-built error bodies that have nothing to do
+ * with authentication.
+ */
+function exposeAuthReason(reply: FastifyReply, payload: unknown): void {
+  let reason = reply.getHeader(AUTH_REASON_HEADER);
+
+  if (!isAuthFailureReason(reason) && typeof payload === 'string' && payload.startsWith('{')) {
+    // Cheap pre-filter before JSON.parse — the same trick the localizer below
+    // uses, for the same reason: this runs on every error response.
+    if (payload.includes(`"${AUTH_REASON_BODY_FIELD}"`)) {
+      try {
+        const body = JSON.parse(payload) as Record<string, unknown>;
+        const fromBody = body[AUTH_REASON_BODY_FIELD];
+        if (isAuthFailureReason(fromBody)) {
+          reply.header(AUTH_REASON_HEADER, fromBody);
+          reason = fromBody;
+        }
+      } catch {
+        /* not JSON after all — nothing to mirror */
+      }
+    }
+  }
+
+  if (!isAuthFailureReason(reason)) return;
+
+  const existing = reply.getHeader('Access-Control-Expose-Headers');
+  const names = typeof existing === 'string' && existing.trim() ? existing.split(',') : [];
+  const already = names.some((n) => n.trim().toLowerCase() === AUTH_REASON_HEADER.toLowerCase());
+  if (!already) names.push(AUTH_REASON_HEADER);
+  reply.header('Access-Control-Expose-Headers', names.map((n) => n.trim()).join(', '));
+}
+
 export async function errorLocalizationPlugin(
   server: FastifyInstance,
   opts: ErrorLocalizationOptions = {},
@@ -327,6 +391,10 @@ export async function errorLocalizationPlugin(
 
   server.addHook('onSend', async (request, reply, payload) => {
     if (reply.statusCode < 400) return payload;
+    // AUTH-07 (F454): before anything else, make the auth reason SURVIVE THE
+    // BROWSER. Everything below is about the body; this is about whether the
+    // client can read the header at all.
+    exposeAuthReason(reply, payload);
     if (typeof payload !== 'string') return payload;
     // Cheap pre-filter. The previous version required `"code"`, which is why
     // this hook never fired in production: the two probes that proved

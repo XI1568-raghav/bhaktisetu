@@ -2,7 +2,12 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { supabaseAdmin, isDemoMode } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { getCachedAuth, setCachedAuth } from '../lib/auth-cache.js';
-import { verifySupabaseJwt } from '../lib/supabase-jwt.js';
+import { inspectSupabaseJwt } from '../lib/supabase-jwt.js';
+import {
+  AUTH_REASON_HEADER,
+  AUTH_REASON_BODY_FIELD,
+  type AuthFailureReason,
+} from '../lib/auth-reason.js';
 
 export type MarketplaceRole = 'DEVOTEE' | 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER' | 'ADMIN';
 
@@ -97,6 +102,97 @@ function rejectIfBlocked(
 }
 
 /**
+ * AUTH-07 — recover the expiry signal that the Supabase path threw away twice.
+ *
+ * Two independent witnesses, in order of how much we trust them:
+ *
+ *  1. THE LOCAL VERIFIER. `inspectSupabaseJwt` reports `expired` only after the
+ *     HMAC and `aud` already passed, so that verdict is a proof: this project
+ *     minted the token and its `exp` is behind us. Nothing Supabase can say
+ *     afterwards makes that untrue. Unavailable when `SUPABASE_JWT_SECRET` is
+ *     unset, which is the default (SCAL-05) — hence witness 2.
+ *
+ *  2. GoTrue's OWN ERROR, which this middleware previously reduced to
+ *     `if (error || !data?.user)` and dropped on the floor. It carries a `code`
+ *     ('bad_jwt', 'session_expired') and, on older SDKs, only a message. Read
+ *     narrowly and only to promote to `session_expired`; anything unrecognised
+ *     stays `invalid_credential`, which is the honest "we refused it and cannot
+ *     tell you more".
+ *
+ * Never returns `verify_unavailable`. A GoTrue outage does not land here: it
+ * throws, and the catch at the bottom of `authenticateUser` already answers 500
+ * "Authentication service unavailable." — which is the correct shape, and the
+ * shape routes/auth.ts:1136 does NOT use. See the AUTH-07 report.
+ */
+function supabaseRefusalReason(
+  inspection: { ok: boolean; reason?: string },
+  supabaseError: unknown,
+): AuthFailureReason {
+  if (!inspection.ok && inspection.reason === 'expired') return 'session_expired';
+
+  if (supabaseError && typeof supabaseError === 'object') {
+    const err = supabaseError as { code?: unknown; message?: unknown };
+    if (err.code === 'session_expired' || err.code === 'session_not_found') {
+      return 'session_expired';
+    }
+    // Older @supabase/supabase-js versions carry no `code` on AuthApiError, so
+    // the sentence is the only witness left. Deliberately narrow: only the word
+    // GoTrue uses for this, never a substring of some other failure.
+    if (typeof err.message === 'string' && /\bexpired\b/i.test(err.message)) {
+      return 'session_expired';
+    }
+  }
+
+  return 'invalid_credential';
+}
+
+/**
+ * AUTH-07 (F454, 2026-09-08) — the single chokepoint for "we do not know who
+ * you are", carrying WHY.
+ *
+ * Every `reply.code(401)` in this file used to send `{ error, message }` and
+ * nothing else, and apps/web read only the number: `loadErrorIsReauth` was
+ * `loadErrorStatus(cause) === 401`. So all thirteen of these sites — no token
+ * sent, demo token in prod, unseeded demo account, forged email token, a
+ * DATABASE ERROR during session lookup, revoked, expired, no user row, Supabase
+ * refusal, registration incomplete, and three "authentication required" guards
+ * — rendered as "Your session has expired — sign in again to see your live
+ * figures." Three of those are false and one of them is actively harmful: it
+ * sends a user to re-authenticate against a database that is down.
+ *
+ * The reason rides in TWO places, from one argument, so they cannot drift:
+ *   - `X-Auth-Reason`, because a `Response`'s headers are readable
+ *     synchronously and its body is not. All ten web call sites pass a bare
+ *     `Response` to a synchronous classifier and never read the body of a
+ *     failed load, so a body-only discriminator would have been dead on
+ *     arrival — see apps/web/lib/api-config.ts.
+ *   - `authReason` in the body, for clients that parse JSON (apps/mobile).
+ *
+ * The message argument is UNCHANGED at every call site. This adds a field; it
+ * does not restate anything, and the bespoke sentences ("Demo account … is not
+ * seeded in this database.") are still the ones a developer reads in a log.
+ *
+ * 403 deliberately does not route through here. `rejectIfBlocked` above stays
+ * exactly as it was, because a 403 is an authorization outcome and must never
+ * acquire an auth reason: apps/web consults the reason for 401 only, and an
+ * earlier pass of AUTH-06 proved what happens when a 403 is allowed to read as
+ * "sign in again" — the suspended provider signs in successfully and lands back
+ * on the same refusal, forever.
+ */
+function denyUnauthenticated(
+  reply: FastifyReply,
+  reason: AuthFailureReason,
+  message: string,
+): void {
+  reply.header(AUTH_REASON_HEADER, reason);
+  reply.code(401).send({
+    error: 'Unauthorized',
+    message,
+    [AUTH_REASON_BODY_FIELD]: reason,
+  });
+}
+
+/**
  * Fastify preHandler hook that verifies the JWT with Supabase
  * and attaches the authenticated user from Prisma to the request.
  */
@@ -107,10 +203,13 @@ export async function authenticateUser(
   const token = extractBearerToken(request);
 
   if (!token) {
-    reply.code(401).send({
-      error: 'Unauthorized',
-      message: 'Missing or invalid Authorization header. Expected: Bearer <token>',
-    });
+    // AUTH-07: nothing expired — nothing was ever sent. The user is signed out
+    // on this device, which is a different sentence and a different remedy.
+    denyUnauthenticated(
+      reply,
+      'no_credentials',
+      'Missing or invalid Authorization header. Expected: Bearer <token>',
+    );
     return;
   }
 
@@ -136,10 +235,7 @@ export async function authenticateUser(
     // but the explicit reject is faster, logs cleaner, and stops Supabase
     // from getting hit with obvious junk.
     if (token.startsWith('demo-') && !demoAllowed) {
-      reply.code(401).send({
-        error: 'Unauthorized',
-        message: 'Demo tokens not accepted in production.',
-      });
+      denyUnauthenticated(reply, 'invalid_credential', 'Demo tokens not accepted in production.');
       return;
     }
     if (token.startsWith('demo-') && demoAllowed) {
@@ -192,10 +288,11 @@ export async function authenticateUser(
         { event: 'demo_user_not_seeded', handle, email: profile.email },
         'demo token presented for an account that is not seeded',
       );
-      reply.code(401).send({
-        error: 'Unauthorized',
-        message: `Demo account ${profile.email} is not seeded in this database. Run the demo seed before using this token.`,
-      });
+      denyUnauthenticated(
+        reply,
+        'invalid_credential',
+        `Demo account ${profile.email} is not seeded in this database. Run the demo seed before using this token.`,
+      );
       return;
     }
 
@@ -205,7 +302,7 @@ export async function authenticateUser(
     if (token.startsWith('email-')) {
       const match = token.match(/^email-([0-9a-f-]{36})-[0-9a-f]{32}$/i);
       if (!match) {
-        reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email session token.' });
+        denyUnauthenticated(reply, 'invalid_credential', 'Invalid email session token.');
         return;
       }
       const userId = match[1];
@@ -225,26 +322,36 @@ export async function authenticateUser(
         );
       } catch (err) {
         request.log.error({ err }, 'EmailSession lookup failed — rejecting (fail-closed)');
-        reply.code(401).send({ error: 'Unauthorized', message: 'Could not validate session.' });
+        // AUTH-07: fail-closed is right (A-005) but "could not validate" is not
+        // "your session expired". The lookup THREW — a database outage — and the
+        // user's credential may be perfectly good. Sending them to sign in again
+        // aims them at the thing that is down. See the 503 recommendation in the
+        // AUTH-07 report: the status is arguably wrong here too, but changing it
+        // ripples through every client including apps/mobile.
+        denyUnauthenticated(reply, 'verify_unavailable', 'Could not validate session.');
         return;
       }
       const row = sessionRow?.[0];
       if (!row) {
-        reply.code(401).send({ error: 'Unauthorized', message: 'Invalid or expired email session token.' });
+        denyUnauthenticated(
+          reply,
+          'invalid_credential',
+          'Invalid or expired email session token.',
+        );
         return;
       }
       if (row.revoked_at !== null) {
-        reply.code(401).send({ error: 'Unauthorized', message: 'Session revoked.' });
+        denyUnauthenticated(reply, 'session_revoked', 'Session revoked.');
         return;
       }
       if (new Date(row.expires_at).getTime() < Date.now()) {
-        reply.code(401).send({ error: 'Unauthorized', message: 'Session expired.' });
+        denyUnauthenticated(reply, 'session_expired', 'Session expired.');
         return;
       }
 
       const dbUser = await prisma.user.findUnique({ where: { id: userId } });
       if (!dbUser) {
-        reply.code(401).send({ error: 'Unauthorized', message: 'User not found for session token.' });
+        denyUnauthenticated(reply, 'registration_incomplete', 'User not found for session token.');
         return;
       }
       if (rejectIfBlocked(dbUser, reply)) return;
@@ -298,7 +405,16 @@ export async function authenticateUser(
     //
     // Only IDENTITY is short-circuited. The Prisma lookup, the blocked gate and
     // the role read all still run underneath.
-    const locallyVerified = verifySupabaseJwt(token, process.env.SUPABASE_JWT_SECRET);
+    // AUTH-07: `inspectSupabaseJwt` is `verifySupabaseJwt` WITH its verdict. The
+    // token/null contract and the fall-through below are byte-for-byte what they
+    // were; the only thing that changes is that a refusal now remembers whether
+    // the reason was "this token is past its `exp`". That signal used to be
+    // destroyed twice — once by the bare `null` (lib/supabase-jwt.ts) and again
+    // by testing Supabase's `error` for truthiness and discarding its code — so
+    // an expired session and a forged token were indistinguishable by the time
+    // the 401 was written, and apps/web asserted "expired" for both.
+    const inspection = inspectSupabaseJwt(token, process.env.SUPABASE_JWT_SECRET);
+    const locallyVerified = inspection.ok ? inspection.token : null;
 
     let supabaseUser: { id: string; email?: string | null; phone?: string | null };
     if (locallyVerified) {
@@ -310,10 +426,11 @@ export async function authenticateUser(
     } else {
       const { data, error } = await supabaseAdmin.auth.getUser(token);
       if (error || !data?.user) {
-        reply.code(401).send({
-          error: 'Unauthorized',
-          message: 'Invalid or expired access token.',
-        });
+        denyUnauthenticated(
+          reply,
+          supabaseRefusalReason(inspection, error),
+          'Invalid or expired access token.',
+        );
         return;
       }
       supabaseUser = data.user;
@@ -338,10 +455,15 @@ export async function authenticateUser(
     }
 
     if (!dbUser) {
-      reply.code(401).send({
-        error: 'Unauthorized',
-        message: 'User account not found. Please complete registration.',
-      });
+      // AUTH-07: the credential VERIFIED. There is simply no Darshya account
+      // behind it. Signing in again succeeds and lands right back here, which is
+      // the AUTH-06 loop with a 401 on it, so this reason is deliberately one
+      // the web does NOT treat as "sign in again".
+      denyUnauthenticated(
+        reply,
+        'registration_incomplete',
+        'User account not found. Please complete registration.',
+      );
       return;
     }
 
@@ -419,10 +541,7 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
   return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
     // authenticateUser must run first
     if (!request.currentUser) {
-      reply.code(401).send({
-        error: 'Unauthorized',
-        message: 'Authentication required.',
-      });
+      denyUnauthenticated(reply, 'no_credentials', 'Authentication required.');
       return;
     }
 
@@ -498,10 +617,7 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
 export function requireAnyRole(...roles: MarketplaceRole[]) {
   return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
     if (!request.currentUser) {
-      reply.code(401).send({
-        error: 'Unauthorized',
-        message: 'Authentication required.',
-      });
+      denyUnauthenticated(reply, 'no_credentials', 'Authentication required.');
       return;
     }
 
