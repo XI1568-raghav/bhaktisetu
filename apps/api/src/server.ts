@@ -14,6 +14,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { clientIp, rateLimitKey } from './lib/rate-limit-key.js';
+import { resolveRateLimitPolicy } from './lib/rate-limit-policy.js';
 import { resolveCorsOrigins } from './lib/cors-origins.js';
 import { startOpsScheduler, getSchedulerStatus } from './jobs/scheduler.js';
 import fastifyRawBody from 'fastify-raw-body';
@@ -224,22 +225,23 @@ async function bootstrap() {
   // route-registration time, see node_modules/@fastify/rate-limit/index.js
   // line 143) sees the merged config and applies the tightened policy.
   // Previously the override hook was added after the plugin and was a no-op.
+  // The matching lives in lib/rate-limit-policy.ts, with tests, because it was
+  // WRONG here and nothing could see it. Routes register with a prefix, so this
+  // hook receives `/api/v1/auth/login`, while the tests here read
+  // `url.startsWith('/auth/')`. No branch ever matched: measured on prod
+  // 2026-09-08, `/api/v1/admin/users` answered `x-ratelimit-limit: 100` — the
+  // global default — where the admin branch intends 60. `/auth/*` intends 10/min
+  // as brute-force protection on password login and was likewise running at 100.
+  //
+  // Note the comment above: this hook had already been found to be a no-op once
+  // and "fixed" by moving its registration before the plugin. That fix was real
+  // and is still required; the matching was independently broken, and a
+  // registration-order fix could never have surfaced it.
   server.addHook('onRoute', (routeOpts) => {
-    const url = routeOpts.url ?? '';
     const existing = (routeOpts.config as { rateLimit?: unknown } | undefined)?.rateLimit;
     if (existing) return;
     const authMax = Number(process.env.RATE_LIMIT_AUTH_MAX) || 10;
-    let policy: { max: number; timeWindow: string } | null = null;
-    if (url.startsWith('/auth/') || url.startsWith('/auth')) policy = { max: authMax, timeWindow: '1 minute' };
-    // P0 — cap ALL /ai/* (was only /ai/chat). Groq/Anthropic spend exposure.
-    // Covers /ai/chat, /ai/summarize, /ai/recommend, and any future /ai/* added.
-    else if (url.startsWith('/ai/')) policy = { max: 20, timeWindow: '1 minute' };
-    // Astrology AI endpoint shares the LLM bill — cap separately.
-    else if (url.startsWith('/astrology/ask') || url === '/astrology/ask') policy = { max: 20, timeWindow: '1 minute' };
-    else if (url.startsWith('/bookings/create-order') || url.startsWith('/bookings/verify-payment')) policy = { max: 30, timeWindow: '1 minute' };
-    else if (url.startsWith('/donations/create-order')) policy = { max: 10, timeWindow: '1 minute' };
-    else if (url.startsWith('/admin/')) policy = { max: 60, timeWindow: '1 minute' };
-    else if (url.startsWith('/affiliate/')) policy = { max: 60, timeWindow: '1 minute' };
+    const policy = resolveRateLimitPolicy(routeOpts.url ?? '', authMax);
     if (policy) {
       routeOpts.config = { ...(routeOpts.config ?? {}), rateLimit: policy };
     }

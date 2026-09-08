@@ -16,6 +16,50 @@ Of the 293 static: 217 → 200, 65 → correct `307 /auth/login?redirect=…` au
 
 ## Confirmed findings
 
+### CT-MONEY-1 · P0 · `ALLOW_DEMO_PAYMENTS=true` is set on the production API
+
+The documented "staging only" escape hatch is live in production. Proven from outside,
+three independent facts:
+
+1. **`NODE_ENV` is production.** `GET /auth/me` with a demo bearer answers
+   `401 {"message":"Demo tokens not accepted in production."}` — that string is emitted
+   only when `NODE_ENV === 'production'` (`middlewares/auth.ts`).
+2. **The payment guard does not fire.** `POST /api/v1/store/orders/not-a-uuid/payment-confirm`
+   with a store-owner token returns **`400 {"error":"Invalid order id"}`**. The guard is the
+   FIRST statement of that handler (`routes/store-orders.ts:496-503`) and would return 403;
+   reaching the id parser proves execution passed it. A malformed id was used deliberately
+   so nothing could be acted on.
+3. The guard condition is `NODE_ENV === 'production' && ALLOW_DEMO_PAYMENTS !== 'true'`.
+
+(1) and (2) together leave only one value for the flag.
+
+**Blast radius — it gates three separate protections:**
+
+| Where | What it disables |
+|---|---|
+| `lib/payment-mode.ts:26` | `assertNotProductionDemo()` — the platform-wide refusal to run demo payment paths in prod |
+| `services/payment.service.ts:583` | the boot-time crash on demo Razorpay credentials |
+| `routes/store-orders.ts:498` | the manual `payment-confirm` override |
+
+**The exploitable chain.** `POST /store/orders/:id/payment-confirm` flips a `PENDING`
+order to `CONFIRMED` with **no Razorpay signature**, and `store-orders.ts:478` mints a
+`Commission` row on exactly that transition (`writeStoreOrderCommission`). Commission is
+what the payout rail pays out. So a store owner can confirm their own unpaid order and
+create withdrawable balance from nothing. `canManageOrder` admits STORE_OWNER for their
+own store's orders, so this needs no admin.
+
+**What is NOT wrong:** the live Razorpay key is set, so `isRazorpayDemoMode()` is false
+and the `order_demo_*` path is not being taken today. Revenue is Rs 0, so nothing appears
+to have been exploited. The mechanics of the real Razorpay verify path are intact.
+
+**Action:** unset `ALLOW_DEMO_PAYMENTS` on the Render API service (`srv-d7mc2n8sfn5c73dfce0g`)
+and redeploy. It is a one-variable change and needs no code. Verify the fix by re-running
+step 2 above and expecting **403**.
+
+Credit: surfaced by the `store` agent as an inference from a wrong status code; the flag
+value itself was then proven independently here.
+
+
 ### CT-SUPPLY-1 · P0 · an approved pandit never becomes bookable — FIXED
 
 Reproduced end to end on prod, 2026-09-08:
@@ -117,6 +161,70 @@ string joining fields that are empty, with no guard.
 Cosmetic, and the rest of the page is correct (it shows the right "Complete your Temple
 profile" onboarding CTA and honest zero states). Worth a single guard where the parts
 are joined, since the pattern has now shown up twice.
+
+### CT-TRUST-1 · P1 · a junk record passed "verification" onto a live money path
+
+Found by the `gaushala-donations` agent, independently re-verified against prod.
+
+`/donations` renders a donation card for gaushala `03edd2ff-4479-48f3-9ad1-6940e5558a4d`
+with `name: "saharanpur"`, `description: "skkss"`, `address: "ssdwdqe"` — obvious
+keyboard-mash test data. It is `approved: true`, carries a stock ISKCON photograph and a
+"1+ cows" badge, and its Donate CTA is live:
+
+```
+?causeId=03edd2ff-4479-48f3-9ad1-6940e5558a4d&causeKind=gaushala&causeName=saharanpur
+```
+
+The same page states **"Support verified temples and gaushalas across India"** under a
+badge reading **"Every cause verified by our team"**.
+
+Verified independently: `curl https://darshya.online/donations` returns 200 / 177,838
+bytes containing `saharanpur`, `skkss` and the record id, next to the verification claim.
+The junk record is NOT in the public `/api/v1/gaushala` list (that returns the 5 clean
+seeded gaushalas), so this surfaces only through the donations aggregation.
+
+The payment mechanics are not broken. The **claim** is: money can be routed to a record
+that says `skkss`, on a page promising every cause is vetted. That is a trust and
+compliance exposure on a money path, not a data-quality nit. Two fixes are needed — purge
+the record, and add a quality gate so approval cannot pass a cause with no real
+description or address.
+
+### CT-API-1 · P2 · a malformed id returns 500 instead of 404
+
+`GET /api/v1/gaushala/:id` with a non-uuid path segment throws instead of 404ing.
+Re-verified: `not-a-uuid`, `123`, `__ct_zzz`, `abc-def` all → **500**, while a
+well-formed but nonexistent uuid (`00000000-0000-4000-8000-000000000000`) correctly
+→ **404**. That isolates it to id *format*: there is no uuid guard before the Prisma
+lookup (`apps/api/src/routes/gaushala.ts:29-31`). Same shape on the authenticated
+`/gaushala-portal/cows/:id`. Publicly reachable, so any crawler following a malformed
+link generates 500s.
+
+### CT-CONSENT-1 · P2 · digest opt-out is unsigned and irreversible
+
+Found by the `devotee` agent as "missing authentication". Verification refined it — the
+agent's framing was wrong, the underlying defect is real.
+
+**Not a missing auth gate.** `routes/digest.ts:10` documents the choice: *"It's
+intentionally unauthenticated (the link lands from an email, possibly signed out)."*
+That is correct and expected for an unsubscribe link; requiring login to unsubscribe
+would be the worse bug.
+
+**The actual defect is the identifier and the one-way door.** The body is
+`{userId: <raw uuid>}` — not an HMAC-signed token. That id is returned verbatim by
+`/auth/me` and embedded in every digest email link (`weekly-digest.ts:471`). And the
+opt-out cannot be undone through the product: `WeeklyDigestOptOut` is only ever
+`INSERT`ed or `SELECT`ed (no `DELETE`, no `UPDATE`), and `digest.ts` exposes only
+`POST /unsubscribe` — there is no resubscribe route.
+
+So anyone who obtains a user id can permanently suppress that user's digest, and the
+victim has no in-product way to reverse it. There is also no rate limit on the route.
+
+Verified: unauthenticated POST with a malformed body returns **400** (validation, so the
+handler was reached) where the control `/bookings/my` returns **401**. Proven with a
+malformed id — nothing was written against a real user.
+
+Fix is the standard one: sign the unsubscribe parameter (HMAC over the user id, as the
+List-Unsubscribe convention expects) and add a resubscribe path.
 
 ## Verified working on prod (authenticated, real accounts)
 

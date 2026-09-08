@@ -1,0 +1,750 @@
+{
+  "generatedAt": "2026-09-08T16:25:35.503Z",
+  "shards": 6,
+  "checkedByAgent": {
+    "admin": 106,
+    "astro-wellness": 40,
+    "devotee": 93,
+    "gaushala-donations": 38,
+    "pandit-temple": 114,
+    "store": 93
+  },
+  "totalChecked": 484,
+  "rawFindings": 31,
+  "afterDedupe": 31,
+  "bySeverity": {
+    "P1": 5,
+    "P2": 13,
+    "P3": 13
+  },
+  "needsVerification": 5,
+  "unparseableShards": [],
+  "findings": [
+    {
+      "agent": "astro-wellness",
+      "id": "astro-wellness-1",
+      "severity": "P1",
+      "kind": "COPY",
+      "target": "/wellness/yoga and /wellness/meditation",
+      "repro": [
+        "GET https://darshya.online/wellness/yoga (unauthenticated)",
+        "Search the server-rendered HTML for 'Aarav Sharma', 'reviews' and 'spots left'",
+        "Compare against the real supply: GET https://api.darshya.online/api/v1/wellness/sessions -> {\"data\":[]}",
+        "Compare against the sibling page GET /wellness/instructors, which correctly renders an empty state"
+      ],
+      "observed": "Both pages server-render fabricated instructors with invented social proof and invented scarcity, presented as real bookable supply. /wellness/yoga renders 6 people under 'Instructors — Learn from the best' with star ratings and review counts: Aarav Sharma 4.9 / 342 reviews / 12 yrs exp / Rs 599; Meera Iyer 4.8 / 218 reviews; Rajesh Kulkarni 4.8 / 276 reviews; Nandini Raghavan 4.6 / 154 reviews; Swami Dhyanananda 4.9 / 512 reviews; Kavya Menon 4.5 / 98 reviews. Below them a 'Weekly Schedule' lists classes with fake scarcity: 5:30 AM Sunrise Pranayama, Aarav Sharma, 30 min, '15 spots left'; 6:00 AM Morning Hatha Flow '8 spots left'; 6:00 AM Kundalini Awakening '6 spots left'; 7:00 AM Power Vinyasa '5 spots left'; 7:00 AM Ashtanga Primary Series '4 spots left'. /wellness/meditation renders 4 of the same fabricated people (Swami Dhyanananda 4.9/512, Anita Desai 4.7/189, Kavya Menon 4.5/98, Rajesh Kulkarni 4.8/276) with the same 'spots left' pattern. None of these people or classes exist: the real feed GET /api/v1/wellness/sessions returns {\"data\":[]}, and the cards link to /wellness/instructors/inst-001 etc., which resolve only because apps/api/src/routes/wellness.ts:5 hardcodes them. The ratings, review counts, certifications, prices and seat counts are literals in apps/web/app/wellness/yoga/page.tsx:66-71 and apps/web/app/wellness/meditation/page.tsx:62-65 — there is no data source behind any of them. This is a live commercial page publishing invented reviews and invented scarcity. The team already removed exactly this fiction from the neighbouring surfaces (COM-14, AW-07, AW-17): /wellness/instructors carries the comment 'No rating, no experience claim, no stock portrait — the platform holds none of those for these people' and correctly renders an empty state on prod. These two landing pages were missed by that sweep.",
+      "expected": "Either the real (currently empty) wellness supply behind the designed empty state /wellness/instructors already ships, or clearly-labelled illustrative content with no star ratings, no review counts and no seat counts.",
+      "evidence": "GET /wellness/yoga -> 200, 219337 bytes. HTML text: '... Instructors Learn from the best AS Aarav Sharma Hatha Yoga & Pranayama 4.9 342 reviews 12 yrs exp Rs 599 MI Meera Iyer Vinyasa Flow & Ashtanga 4.8 218 reviews 8 yrs exp Rs 499 ... Weekly Schedule Morning & evening sessions Morning Sessions 5:30 AM Pranayama Sunrise Pranayama Aarav Sharma 30 min 15 spots left Book ...'. Anchor hrefs present in the HTML: /wellness/instructors/inst-001, inst-002, inst-005, inst-006, inst-003, inst-008. Ground truth GET /api/v1/wellness/sessions -> 200 {\"data\":[]}. Source: apps/web/app/wellness/yoga/page.tsx:66-71, apps/web/app/wellness/meditation/page.tsx:62-65, apps/api/src/routes/wellness.ts:5.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "astro-wellness"
+      ]
+    },
+    {
+      "agent": "astro-wellness",
+      "id": "astro-wellness-4",
+      "severity": "P1",
+      "kind": "BROKEN_CTA",
+      "target": "/wellness/yoga and /wellness/meditation",
+      "repro": [
+        "GET https://darshya.online/wellness/yoga",
+        "Scroll to 'Weekly Schedule' and click any orange 'Book' button next to a class"
+      ],
+      "observed": "Nothing happens. The Book buttons in the weekly schedule are bare <button> elements with no onClick, no form, no wrapping Link and no href — and both pages are server components (neither file carries a 'use client' directive), so no handler can be attached at runtime. They are structurally inert. apps/web/app/wellness/yoga/page.tsx has two of them (line 274 in the morning block, line 311 in the evening block) and apps/web/app/wellness/meditation/page.tsx one (line 396), rendering roughly ten dead Book buttons across the two pages. Each sits directly beneath a scarcity line such as '4 spots left', which is the strongest possible prompt to click. The pages' other CTA, 'Book a Session' at yoga/page.tsx:376, is a real Link but points at /wellness — the hub the visitor just came from, not a booking flow. So the flagship yoga and meditation landing pages offer no working path to enrol in anything.",
+      "expected": "Either a working enrol flow into the real /wellness/classes rail, or — while supply is empty — no Book affordance at all.",
+      "evidence": "Prod HTML of /wellness/yoga around 'spots left': '<span ...>15 spots left</span><button class=\"inline-flex items-center justify-center rounded-lg font-semibold whitespace-nowrap transition-colors duration-150 ... bg-saffron-600 text-white hover:bg-saffron-700 active:bg-saffron-700\">Book</button>'. No onclick attribute, no form, no anchor. Source confirms: apps/web/app/wellness/yoga/page.tsx:274 and :311, apps/web/app/wellness/meditation/page.tsx:396; neither file declares 'use client'.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "astro-wellness"
+      ]
+    },
+    {
+      "agent": "gaushala-donations",
+      "id": "gaushala-donations-1",
+      "severity": "P1",
+      "kind": "COPY",
+      "target": "/donations",
+      "repro": [
+        "GET https://darshya.online/donations (unauthenticated)",
+        "Read the hero line and the trust-badge row, then the 'Gaushala Causes' list below it",
+        "GET https://api.darshya.online/api/v1/gaushala/03edd2ff-4479-48f3-9ad1-6940e5558a4d"
+      ],
+      "observed": "The page states, verbatim: \"Support verified temples and gaushalas across India.\" and carries a trust badge reading \"Every cause verified by our team\". The fourth gaushala cause listed directly under that badge, with a live \"Donate\" CTA, is an unvetted record: name \"saharanpur\", location \"saharanpur\", description \"skkss\", address \"ssdwdqe\", totalCows 1. The API confirms approved:true and returns donationCauseId d56b9b2a-f520-4c34-8dc6-93cd07a9116e, so it resolves to a real donee that /donations/create-order would accept — real money can be routed to it.",
+      "expected": "Either the record is unapproved and removed from the public directory, or the page stops asserting that every listed cause is verified. A donations page taking real money must not publish a verification claim that its own listings contradict.",
+      "evidence": "Page text: 'Support verified temples and gaushalas across India. Every donation gets a numbered PDF receipt by email. Razorpay-secured payments.' plus badge 'Every cause verified by our team'. Cause card text: '1+ cows  saharanpur  saharanpur  skkss  Donate'. API GET /gaushala/03edd2ff-4479-48f3-9ad1-6940e5558a4d -> 200 {\"gaushala\":{\"id\":\"03edd2ff-4479-48f3-9ad1-6940e5558a4d\",\"name\":\"saharanpur\",\"location\":\"saharanpur\",\"description\":\"skkss\",\"address\":\"ssdwdqe\",\"totalCows\":1,\"approved\":true,...,\"donationCauseId\":\"d56b9b2a-f520-4c34-8dc6-93cd07a9116e\"}}. The same record also appears on /gaushala under the badge 'Reviewed Gaushalas — Approved before they are listed' and has its own live page at /gaushala/profile/03edd2ff-... (200, title 'saharanpur — Gau Seva | Darshya'). Note: the payment mechanics are not themselves broken — money would reach the donee the page names. What is wrong is the verification claim and the fact that an obviously junk record passed approval into a live money path.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "gaushala-donations"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-1",
+      "severity": "P1",
+      "kind": "MONEY",
+      "target": "POST /api/v1/store/orders/:id/payment-confirm",
+      "repro": [
+        "POST /store/orders/00000000-0000-0000-0000-000000000000/payment-confirm with the ct+devotee token",
+        "POST /store/orders/not-a-uuid/payment-confirm with the ct+store token",
+        "GET /store-admin/profile with Authorization: Bearer demo-store-token"
+      ],
+      "observed": "The first two return 404 {\"error\":\"Order not found\"} and 400 {\"error\":\"Invalid order id\"} — execution reached the id parser and the DB lookup. The handler's first statement is `if (NODE_ENV === \"production\" && ALLOW_DEMO_PAYMENTS !== \"true\") return 403` (apps/api/src/routes/store-orders.ts:496-503), so that guard did not fire. The third probe returns \"Demo tokens not accepted in production.\", which proves NODE_ENV === \"production\" on the live API (and that ALLOW_DEMO_TOKENS is not true, since the server refuses to boot in that combination — middlewares/auth.ts:17-28). The only remaining explanation is ALLOW_DEMO_PAYMENTS=true in the API service environment. The guard itself is old (commit 4244ced8, 2026-05-13), so this is not a stale deploy.",
+      "expected": "403 {\"error\":\"Manual payment-confirm disabled in production. Use /verify-payment with a real Razorpay signature.\"}",
+      "evidence": "POST /store/orders/not-a-uuid/payment-confirm (ct+store) -> 400 {\"error\":\"Invalid order id\"}; POST /store/orders/00000000-0000-0000-0000-000000000000/payment-confirm (ct+devotee) -> 404 {\"error\":\"Order not found\",\"code\":\"NOT_FOUND\"}; GET /store-admin/profile with demo-store-token -> 401 {\"error\":\"Unauthorized\",\"message\":\"Demo tokens not accepted in production.\"}",
+      "confidence": "confirmed",
+      "note": "Impact, stated honestly: no money moved and there is no order on this account to exploit. The route is reachable only by an admin or by the store owner whose product is in the order (canManageOrder, store-orders.ts:101-119), so the concrete abuse is a merchant flipping their own PENDING order to CONFIRMED with no Razorpay payment — which also emails the buyer a generated invoice. The wider consequence is that the same flag disables assertNotProductionDemo (apps/api/src/lib/payment-mode.ts:22-33), the guard that stops donation and subscription code paths from issuing order_demo_* ids and reporting \"payment successful\" when no money moved. That is latent while a real Razorpay key is set and becomes live the moment one is not. Fix: unset ALLOW_DEMO_PAYMENTS on the API service and re-run the two probes — both should become 403.",
+      "reportedBy": [
+        "store"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-2",
+      "severity": "P1",
+      "kind": "BROKEN_CTA",
+      "target": "https://darshya.online/store and POST /api/v1/store/orders",
+      "repro": [
+        "GET https://darshya.online/store — 24 products in the grid",
+        "GET https://darshya.online/store/bhagavad-gita-deluxe-edition — the PDP shows \"Add to Cart\" and \"Buy Now\"",
+        "POST /api/v1/store/orders with items[{productId:\"prod_015\",qty:1,priceAtPurchase:1299}], totalAmountInr 1348 and a valid shippingAddress, ct+devotee token"
+      ],
+      "observed": "400 {\"error\":\"Unknown product: prod_015\"} — a raw developer string with no code and no user-facing message. All 24 catalogue products are hand-written fixtures with prod_NNN ids that have no store_products row, so none of them can be ordered; GET /store/products/live returned 0 real seller rows before this test, i.e. the platform's entire orderable inventory was empty. Nothing on the storefront or the PDP says so: Add to Cart and Buy Now render normally and the item goes into the cart fine, so a shopper only finds out at the end of checkout.",
+      "expected": "Either the CTA is disabled or labelled (\"catalogue preview — not yet stocked\") on unorderable items, or the order route answers with friendly copy. Both already exist in the working tree as COM-01 (buyable / unavailableReason on every catalogue entry, plus the \"One item in your basket is a catalogue preview…\" message) but that code is uncommitted (git status: M apps/api/src/routes/store.ts, M apps/web/app/store/page.tsx) and therefore not on prod. Live prod returns neither the flag nor the message.",
+      "evidence": "GET /api/v1/store/products -> total 24, buyableTotal undefined, 0 entries with buyable:true, and the product objects have no buyable/unavailableReason keys. GET /api/v1/store/products/live -> {\"products\":[],\"total\":0}. POST /api/v1/store/orders -> 400 {\"error\":\"Unknown product: prod_015\"}.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "store"
+      ]
+    },
+    {
+      "agent": "admin",
+      "id": "admin-1",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "/admin/users/:id",
+      "repro": [
+        "GET https://api.darshya.online/api/v1/admin/users/not-a-uuid with the ct+admin token",
+        "compare: GET /admin/users/00000000-0000-0000-0000-000000000000 -> 404 (correct)"
+      ],
+      "observed": "500 INTERNAL_ERROR. The Prisma uuid cast failure is caught and re-answered as a server fault.",
+      "expected": "400 (malformed id) or 404. A client-supplied bad id is a bad request, not a server error.",
+      "evidence": "status 500, body: {\"error\":\"Failed to load user\",\"message\":\"<hindi>\",\"code\":\"INTERNAL_ERROR\"}. Handler at apps/api/src/routes/admin.ts:215-227 has no uuid guard before adminService.getUserById(id). The admin page /admin/users/[id] passes the raw path segment through, so a mistyped or truncated id yields a 500 rather than 'not found'.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "admin"
+      ]
+    },
+    {
+      "agent": "admin",
+      "id": "admin-2",
+      "severity": "P2",
+      "kind": "MONEY",
+      "target": "/admin/reports (popularPujas[].revenueInr)",
+      "repro": [
+        "GET /admin/reports with ct+admin token -> popularPujas: Rudrabhishek revenueInr 4703, Lakshmi Puja 1102, Hanuman Chalisa Path 502 (sum 6307)",
+        "GET /admin/bookings?limit=100 -> 19 bookings: 13 cancelled, 6 pending_payment, 0 confirmed/completed/delivered",
+        "GET /admin/payments?limit=100 -> 6 payments, none with status captured",
+        "GET /admin/dashboard -> totalRevenue 0 ; GET /admin/metrics/investor -> gmvCumulativePaise 0"
+      ],
+      "observed": "A field named revenueInr reports INR 6,307 that is 100% the price of bookings still sitting in pending_payment, with no captured payment behind any of them. Three admin money screens therefore disagree: /admin/reports says 6,307, /admin/dashboard says 0, /admin/metrics/investor says 0.",
+      "expected": "Either exclude pending_payment from anything labelled revenue, or rename the field to booked/pipeline value. COUNTED_BOOKING_STATUSES (apps/api/src/services/admin.service.ts:93) includes pending_payment, which is right for a bookings COUNT and wrong for a revenue SUM.",
+      "evidence": "reports popularPujas sum 6307 == my own rollup of /admin/bookings over the same statuses (6 bookings, every one pending_payment), vs dashboard totalRevenue 0 which is captured-payments-only (admin.service.ts:729). Row counts cross-check exactly, so this is a labelling defect, not an arithmetic one. Re-verified twice ~15 min apart; the first read showed 7 bookings / 7459 and the second 6 / 6307 because another test agent cancelled a booking in between, so the two endpoints track each other correctly.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "admin"
+      ]
+    },
+    {
+      "agent": "admin",
+      "id": "admin-3",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "apps/api/src/server.ts:226-247 - per-prefix rate-limit override (governs /admin/*, /auth/*, /ai/*, /donations/create-order, /bookings/create-order, /affiliate/*)",
+      "repro": [
+        "GET /admin/dashboard with the ct+admin token and read the x-ratelimit-limit response header",
+        "repeat on /admin/users and /admin/roadmap"
+      ],
+      "observed": "x-ratelimit-limit: 100 on every /admin/* route - the global default. The onRoute hook intends 60/min for /admin/. It never fires: it tests routeOpts.url, which under Fastify is the FULL prefixed url (/api/v1/admin/users), against unprefixed literals ('/admin/', '/auth/', '/ai/', '/donations/create-order', ...). No route can ever match, so every per-prefix policy in that hook is dead and all traffic falls back to RATE_LIMIT_MAX (100/min).",
+      "expected": "x-ratelimit-limit: 60 on /admin/*. The consequential sibling is /auth/ - the intended 10/min brute-force cap - and /donations/create-order (intended 10/min).",
+      "evidence": "measured headers: /admin/dashboard {limit:100, remaining:99}, /admin/users {limit:100, remaining:98}, /admin/roadmap {limit:100, remaining:95}. Every route is registered with a '/api/v1/...' prefix (server.ts:406 auth, :424 admin, :453-489 the rest). The comment at server.ts:220-225 records that this same hook was already found to be a no-op once and 'fixed' by moving its registration earlier; it is still a no-op, now for a different reason. I did NOT probe /auth/* (brief rule 'do not call /auth/login'), so the auth half is inferred from the shared root cause and the measured admin case, not measured directly.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "admin"
+      ]
+    },
+    {
+      "agent": "astro-wellness",
+      "id": "astro-wellness-2",
+      "severity": "P2",
+      "kind": "AUTH_LEAK",
+      "target": "/astrologer-portal/online",
+      "repro": [
+        "GET https://api.darshya.online/api/v1/astrologer-portal/online with the ct+wellness@darshya.online bearer token",
+        "Repeat with the ct+devotee@darshya.online bearer token",
+        "expected 403 — every other /astrologer-portal/* route returns 403 for these tokens"
+      ],
+      "observed": "200 for both the wellness-instructor token and the devotee token. Body: {\"online\":false,\"mode\":{\"chat\":true,\"call\":true}}. The handler at apps/api/src/routes/astrologer-portal.ts:398 is the only route in that file with no ASTROLOGER role check — /dashboard (:160), /profile (:282), /availability (:327), POST /online (:375) and /earnings (:409) all guard with roles.includes('ASTROLOGER'), and all five correctly returned 403 for the same two tokens. I am deliberately NOT rating this P0 despite the brief's default rule for a 200 on a wrong-role /astrologer-portal/* route, because the body contains no other user's data: getAstrologerPresence is keyed on request.currentUser.id, so a non-astrologer only ever reads their own always-default presence and no astrologer's real status is reachable through it. It is a missing guard, not a cross-tenant read. The write path is correctly closed (POST /online with the wellness token returns 403), so a non-astrologer cannot make themselves appear in the live directory.",
+      "expected": "403 {\"error\":\"ASTROLOGER role required\"}, matching the other five routes in the same file.",
+      "evidence": "GET /astrologer-portal/online, Authorization: Bearer <ct+wellness> -> 200, 49 bytes, {\"online\":false,\"mode\":{\"chat\":true,\"call\":true}}. Same with <ct+devotee> -> 200, byte-identical body. Control: GET /astrologer-portal/dashboard with <ct+wellness> -> 403 {\"error\":\"ASTROLOGER role required\",\"code\":\"FORBIDDEN\"}. Control: POST /astrologer-portal/online with <ct+wellness> -> 403. Unauthenticated GET -> 401.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "astro-wellness"
+      ]
+    },
+    {
+      "agent": "astro-wellness",
+      "id": "astro-wellness-3",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "/astrologer-portal/online",
+      "repro": [
+        "POST /astrologer-portal/online with the astrologer token and body {\"online\":\"yes\"} (wrong type)",
+        "POST /astrologer-portal/online with the astrologer token and body {} (required field missing)",
+        "expected 400 with a field-level validation error"
+      ],
+      "observed": "Both return 500 {\"error\":\"InternalServerError\",\"code\":\"INTERNAL_ERROR\"} with the generic Hindi user-facing message. The handler uses a bare z.object({online: z.boolean(), chat: ..., call: ...}).parse(request.body ?? {}) at apps/api/src/routes/astrologer-portal.ts:381-387; .parse throws a ZodError that nothing catches, so client input error surfaces as a server fault. Two consequences: the caller is told the server broke when in fact their request was malformed, and every malformed toggle logs as a 5xx, which will poison error-rate alerting on the endpoint an astrologer hits most often. The sibling route GET /wellness-portal/instructor/mine already does this correctly (safeParse then 400 with issues), so the right pattern exists in the codebase.",
+      "expected": "400 with a typed validation body, e.g. {\"error\":\"Invalid body\",\"issues\":{...}} — the shape /wellness-portal/instructor/mine already returns.",
+      "evidence": "POST /astrologer-portal/online {\"online\":\"yes\"} -> 500, 98 bytes: {\"error\":\"InternalServerError\",\"message\":\"...\",\"code\":\"INTERNAL_ERROR\"}. POST with {} -> identical 500. Both reproduced with a valid ASTROLOGER token; the same token returned 200 on well-formed bodies immediately before and after. Source: apps/api/src/routes/astrologer-portal.ts:381.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "astro-wellness"
+      ]
+    },
+    {
+      "agent": "devotee",
+      "id": "devotee-1",
+      "severity": "P2",
+      "kind": "AUTH_LEAK",
+      "target": "POST /digest/unsubscribe",
+      "repro": [
+        "POST https://api.darshya.online/api/v1/digest/unsubscribe with NO Authorization header and body {\"userId\":\"not-a-uuid\"}",
+        "Observe 400 (a zod validation error), NOT 401 — the request reached the handler, so the route has no authentication gate at all",
+        "apps/api/src/routes/digest.ts:31 registers server.post('/unsubscribe', ...) with no preHandler and no authenticateUser",
+        "Its body schema (digest.ts:25) is {userId: z.string().uuid(), reason?: string} — the caller names the victim",
+        "digest.ts:46 then INSERTs that userId into WeeklyDigestOptOut with ON CONFLICT DO UPDATE, and jobs/weekly-digest.ts:238 reads that table to suppress the send",
+        "The ids are in circulation: jobs/weekly-digest.ts:471 builds the email link as /account/digest/unsubscribe?u=<raw user.id>, and GET /auth/me returns the caller's own id verbatim",
+        "I did NOT execute the write against any real user id — that would mutate a record I did not create"
+      ],
+      "observed": "The endpoint is anonymous and takes the target user's raw primary key as its only parameter, so anyone holding or enumerating a Darshya user UUID can silently opt that user out of the weekly digest. It is also one-way: WeeklyDigestOptOut is only ever INSERTed (digest.ts:46) or SELECTed (weekly-digest.ts:238) — no route in the API deletes a row, so neither the victim nor support can re-subscribe them through the product. There is no sensitiveRateLimit on this route either, unlike account.ts:178 and :287 which do carry it, so the user table can be walked.",
+      "expected": "A one-click unsubscribe link should carry a signed, per-user, single-purpose token (an HMAC of the user id and a secret, RFC 8058 style) rather than the raw primary key, so that possessing an id is not the same as possessing the authority to act on it. The opt-out should also be reversible — a re-subscribe path so a mistaken or malicious opt-out can be undone.",
+      "evidence": "Unauthenticated POST /digest/unsubscribe {\"userId\":\"not-a-uuid\"} -> HTTP 400 {\"error\":\"Invalid request.\"}. A 400 rather than a 401 is the proof: the handler ran. Same 400 for an empty body and for no body at all.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "devotee"
+      ]
+    },
+    {
+      "agent": "gaushala-donations",
+      "id": "gaushala-donations-2",
+      "severity": "P2",
+      "kind": "CRASH",
+      "target": "/gaushala/:id and /gaushala-portal/cows/:id",
+      "repro": [
+        "GET https://api.darshya.online/api/v1/gaushala/__ct_nonexistent_zzz (no auth required)",
+        "GET https://api.darshya.online/api/v1/gaushala/abc",
+        "GET https://api.darshya.online/api/v1/gaushala-portal/cows/abc with the gaushala token",
+        "Compare with GET /gaushala/00000000-0000-0000-0000-000000000000 -> 404 (correct)"
+      ],
+      "observed": "Any :id that is not a valid uuid and is not one of the gs_00x fixtures returns 500 {\"error\":\"InternalServerError\",\"message\":\"Something went wrong on our end.\",\"code\":\"INTERNAL_ERROR\"}. Reproduced on 5/5 non-uuid inputs on the public route (__ct_nonexistent_zzz, abc, gs_999, a space, an emoji string) and 2/2 on the authenticated portal route. A well-formed but nonexistent uuid correctly returns 404 on both routes, which isolates the cause to the id format rather than to the lookup.",
+      "expected": "404 (or 400) — the same as for a well-formed nonexistent uuid.",
+      "evidence": "GET /gaushala/__ct_nonexistent_zzz -> 500; /gaushala/abc -> 500; /gaushala/gs_999 -> 500; /gaushala/00000000-0000-0000-0000-000000000000 -> 404 'Gaushala not found.'; GET /gaushala-portal/cows/abc -> 500 while /gaushala-portal/cows/00000000-0000-0000-0000-000000000000 -> 404 'Cow not found'. Likely source: apps/api/src/routes/gaushala.ts:29-31 falls through to prisma.gaushalaProfile.findFirst({where:{approved:true,OR:[{id},{userId:id}]}}) with no uuid guard on the path param, so Postgres rejects the cast. The public route needs no authentication, so this is reachable by any visitor or crawler; the web layer masks it with its own 404 page, but the API returns 500 and it will show in error rates.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "gaushala-donations"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-3",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "PATCH /api/v1/store-admin/products/:id",
+      "repro": [
+        "POST /store-admin/products {name:\"QA-Test-Product\",price:199.5,stock:1} -> 201, id 8b460bdb-…",
+        "DELETE /store-admin/products/8b460bdb-… -> 200 {\"ok\":true} (soft delete: deletedAt set, isActive false, stock 0)",
+        "GET /store-admin/products -> product absent (correct)",
+        "PATCH /store-admin/products/8b460bdb-… {isActive:true, stock:5, price:1} with the SAME store-owner token",
+        "GET /store-admin/products, then GET /store/products/live"
+      ],
+      "observed": "The PATCH succeeds (200) on a soft-deleted row — PATCH looks the product up with findUnique and never checks deletedAt (apps/api/src/routes/store-admin.ts:248). The product immediately reappeared on the PUBLIC shelf (GET /store/products/live returned it at the new price of ₹1, in stock) while staying INVISIBLE in the owner's own catalogue, which filters deletedAt:null. Net effect: a deleted product can be back on sale, at a price the owner can still change, with no row in the UI the owner can click to take it down again.",
+      "expected": "PATCH on a soft-deleted product should 404 (or 409), the same way GET /store-admin/products already hides it. The trigger needs no attacker: two tabs open on /store-admin/products, delete in one, save an edit in the other.",
+      "evidence": "PATCH -> 200 {\"product\":{…,\"price\":\"1\",\"stock\":5,\"isActive\":true}}; GET /store-admin/products -> total 2, QA-Test-Product absent; GET /store/products/live -> {\"products\":[{\"title\":\"QA-Test-Product\",\"price\":1,\"stock\":5,…}]}. Cleaned up by re-issuing DELETE; the public shelf went back to 0.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "store"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-4",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "GET /api/v1/store-admin/dashboard",
+      "repro": [
+        "Create 3 products, then DELETE all 3 via /store-admin/products/:id",
+        "GET /store-admin/products -> {\"products\":[],\"total\":0}",
+        "GET /store-admin/dashboard"
+      ],
+      "observed": "{\"stats\":{\"todaySales\":0,\"todayOrders\":0,\"monthSales\":0,\"lowStock\":3,\"pendingShipments\":0}} — the dashboard tells an owner with an empty catalogue that 3 products are low on stock. The products query at store-admin.ts:381 selects where { storeProfileId } with no deletedAt:null, and soft delete sets stock to 0, so every deleted product is permanently counted as low stock. The number only ever grows.",
+      "expected": "lowStock 0. The same missing filter on /revenue and /reviews is deliberate and correct — historical revenue and buyer reviews must still resolve against deleted products — but lowStock is a restock prompt for products that still exist.",
+      "evidence": "FINAL dashboard {\"stats\":{\"todaySales\":0,\"todayOrders\":0,\"monthSales\":0,\"lowStock\":3,\"pendingShipments\":0},\"recentOrders\":[]} alongside FINAL catalogue {\"products\":[],\"total\":0,\"page\":1,\"limit\":200}.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "store"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-5",
+      "severity": "P2",
+      "kind": "CRASH",
+      "target": "DELETE and PATCH /api/v1/store-admin/products/:id",
+      "repro": [
+        "DELETE /store-admin/products/not-a-uuid with the ct+store token",
+        "PATCH /store-admin/products/not-a-uuid {price:5} with the ct+store token"
+      ],
+      "observed": "Both return 500 {\"error\":\"InternalServerError\",\"message\":\"हमारी ओर से कुछ गड़बड़ हुई है।\",\"code\":\"INTERNAL_ERROR\"}. The id goes straight into prisma.storeProduct.findUnique against a uuid column, so Prisma raises P2023 and the request 500s. A valid-but-absent uuid correctly returns 404, so only the malformed-id path is affected.",
+      "expected": "400 \"Invalid product id\" (or 404). This exact bug class was already fixed on the order route — store-orders.ts:200-206 filters ids through a UUID_RE before the Prisma lookup precisely to stop a P2023 500, and orderIdParams uses z.string().uuid(). store-admin.ts has neither guard on :id.",
+      "evidence": "DELETE /store-admin/products/not-a-uuid -> 500; PATCH /store-admin/products/not-a-uuid -> 500; DELETE /store-admin/products/00000000-0000-0000-0000-000000000000 -> 404 {\"error\":\"Product not found\"}; GET /store/orders/not-a-uuid -> 400 {\"error\":\"Invalid order id\"} for contrast.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "store"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-6",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "GET /api/v1/store/products/live and https://darshya.online/store",
+      "repro": [
+        "PUT /store-admin/profile {storeName:\"QA-Test-Store\"} -> profile created with approved:false",
+        "POST /store-admin/products {name:\"QA-Test-Product\",price:199.5,stock:1} -> 201",
+        "GET /api/v1/store/products/live (no token) and GET https://darshya.online/store"
+      ],
+      "observed": "The product from a brand-new, unapproved, unreviewed store was publicly listed within seconds — on the API shelf and rendered on the /store page, under a heading that reads \"Listed directly by approved sellers on Darshya. Sold and shipped by the seller named on each item.\" The /store/products/live page title is \"Live Store Products — Listed by Verified Darshya Sellers\". Neither claim was true of this store: StoreProfile.approved was false throughout. The query at store.ts:82-89 filters only on isActive and stock; nothing joins on storeProfile.approved (a grep for storeProfile + approved finds it only in admin.service counts, onboarding, and provider.service's seller page).",
+      "expected": "Either the public shelf filters on storeProfile.approved, or the \"approved sellers\" / \"Verified Darshya Sellers\" copy is removed. As it stands, anyone who can sign up as a store owner publishes straight to the storefront with no review, and the page vouches for them.",
+      "evidence": "GET /store-admin/profile -> {\"approved\":false,…,\"storeName\":\"QA-Test-Store\"}; GET /store/products/live -> product present with \"storeName\":\"QA-Test-Store\"; the /store HTML contains the QA product card plus the string \"Listed directly by approved sellers on Darshya\".",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "store"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-7",
+      "severity": "P2",
+      "kind": "DATA_LOSS",
+      "target": "GET/POST /api/v1/store/cart",
+      "repro": [
+        "POST /store/cart/items {productId:\"prod_015\",quantity:1} at 16:00:47Z -> 200, item ci_1788883247111_1",
+        "GET /store/cart three times immediately -> item present",
+        "GET /store/cart again at ~16:07Z with no intervening delete"
+      ],
+      "observed": "The cart was empty — itemCount 0 — with no user action. The cart has no database table: apps/api/src/services/store.service.ts:852 is `const cartStore = new Map<string, CartItem[]>()`, held in the API process memory, and there is no Cart model in apps/api/prisma/schema.prisma. Any restart, redeploy or cold start (Render free tier spins down) empties every shopper's basket. A follow-up control run held an item for 3.5 minutes across four reads, so the loss is restart-driven rather than per-request.",
+      "expected": "A basket survives a server restart. The same design also means a cart cannot follow a user between devices, and it compounds FINDING store-2: the item a shopper adds is one the order route will refuse anyway.",
+      "evidence": "add at 2026-09-08T16:00:47.111Z (the item id encodes the ms timestamp); GET at ~16:07Z -> {\"items\":[],\"itemCount\":0}; source services/store.service.ts:852 `const cartStore = new Map<string, CartItem[]>();`; no Cart or StoreCart model in prisma/schema.prisma.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "store"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-8",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "GET /api/v1/store/orders (store-owner branch) — backs the /store-admin/orders page",
+      "repro": [
+        "Read apps/api/src/routes/store-orders.ts:335-361",
+        "GET /store/orders with the ct+store token"
+      ],
+      "observed": "For a STORE_OWNER the handler runs prisma.storeOrder.findMany({ orderBy: createdAt desc, take: 200 }) with NO where clause — the 200 most recent orders on the whole platform — and only then filters them in JavaScript for items belonging to this store. Once the platform passes 200 orders in total, a merchant's own orders start dropping off their orders page silently, and a merchant whose last sale is older than the platform's newest 200 sees an empty page. The correct filter already exists and is used two routes away: StoreOrder.storeProfileId, which both /store-admin/dashboard and /store-admin/revenue scope on.",
+      "expected": "where { storeProfileId } with real pagination, as the dashboard and revenue queries already do.",
+      "evidence": "Live response is {\"data\":[]} — this account has no orders, so the runtime symptom is not yet visible on prod (the platform is below the 200-order threshold). Code: store-orders.ts:352-359. Steady-state latency was 1.2s over three runs; the first 8.4s call was a cold start, not a perf finding.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "store"
+      ]
+    },
+    {
+      "agent": "admin",
+      "id": "admin-4",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "every admin page except /admin/roadmap",
+      "repro": [
+        "GET https://darshya.online/admin/users with any non-empty poojly_user cookie (to pass the middleware gate)",
+        "read the <title>; repeat for the other 22 admin pages"
+      ],
+      "observed": "22 of 23 admin pages serve the marketing homepage title 'Darshya - India's Devotional Super App'. Only /admin/roadmap sets its own ('Roadmap - Admin | Darshya').",
+      "expected": "A per-page admin title such as 'Users - Admin | Darshya'. An operator with several admin tabs open cannot tell them apart.",
+      "evidence": "identical title across /admin, /admin/users, /admin/payouts, /admin/refunds, /admin/kyc, /admin/revenue, /admin/commissions, /admin/metrics, /admin/leads, /admin/ratings, /admin/support, /admin/settings, /admin/waitlist, /admin/subscriptions, /admin/approvals, /admin/agents, /admin/outreach, /admin/consultations, /admin/b2b-onboarding, /admin/reports, /admin/users/view, /admin/support/view. grep for 'export const metadata|generateMetadata' under apps/web/app/admin returns only roadmap/page.tsx, and apps/web/app/admin/layout.tsx exports no metadata. Not a broken interpolation - simply absent.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "admin"
+      ]
+    },
+    {
+      "agent": "admin",
+      "id": "admin-5",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "admin API error payloads (every /admin/* error that carries a `code`)",
+      "repro": [
+        "GET /admin/users/00000000-0000-0000-0000-000000000000 with the ct+admin token and header Accept-Language: en-US,en;q=0.9"
+      ],
+      "observed": "The payload mixes languages - an English `error` and a Hindi `message` in the same object - and an explicit Accept-Language: en does not change it.",
+      "expected": "One language per payload, and an explicit Accept-Language: en honoured.",
+      "evidence": "The identical Hindi `message` came back for Accept-Language absent, 'en-US,en;q=0.9' and 'hi'. Cause: pickLangFor (apps/api/src/lib/error-i18n.ts:377-409) ranks User.preferredLanguage above the header, and apps/api/prisma/schema.prisma:178 defaults preferredLanguage to `hi`, so an account that never chose a language is pinned to Hindi. Routes that build their own error string stay English - /admin/users?status=pending returns fully English text - so the admin surface answers in two languages depending on which code path failed. Plausibly an intentional India-first default; filed as an inconsistency at P3, not as a defect.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "admin"
+      ]
+    },
+    {
+      "agent": "admin",
+      "id": "admin-6",
+      "severity": "P3",
+      "kind": "VALIDATION",
+      "target": "/admin/ops/kyc-abandoned, /admin/ops/dormant-users, /admin/ops/cold-temples, /admin/ops/sla-overdue-bookings, /admin/ops/recent-first-bookings",
+      "repro": [
+        "GET /admin/ops/kyc-abandoned with the ct+admin bearer token -> 401",
+        "read apps/api/src/routes/admin-ops.ts:136 - the guard is authorisedToken(request.query.token)"
+      ],
+      "observed": "Five endpoints mounted under /admin/ do not accept the admin bearer at all (401 for admin and for devotee alike). They authenticate on a shared secret passed in the QUERY STRING (?token=...), which is recorded in Cloudflare/Render access logs, browser history and Referer headers.",
+      "expected": "A header-borne secret (Authorization or X-Cron-Token), or admin-bearer access, for anything mounted under /admin/.",
+      "evidence": "401 with a valid admin token on all five, while /admin/dashboard returned 200 with the same token in the same run. No bypass exists - authorisedToken (admin-ops.ts:25-33) is fail-closed on a missing or wrong-length secret and uses crypto.timingSafeEqual - so the finding is secret-in-URL plus a namespace that implies admin-console reachability it does not have.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "admin"
+      ]
+    },
+    {
+      "agent": "admin",
+      "id": "admin-7",
+      "severity": "P3",
+      "kind": "VALIDATION",
+      "target": "/admin/roadmap",
+      "repro": [
+        "GET /admin/roadmap with the ct+admin token; measure the body size and read index.generatedAt"
+      ],
+      "observed": "517,956 bytes (about 506 KB) of JSON in one unpaginated response - the whole roadmap index with full per-item detail. index.generatedAt is 2026-06-15T12:25:05.964Z, roughly three months stale.",
+      "expected": "Pagination or a summary projection, as every other admin list already has (page/limit, clamped to 100).",
+      "evidence": "status 200, application/json, body length 517956; no page/limit parameter is honoured. Every other admin list endpoint I tested clamps to 100 rows. The admin roadmap page therefore pulls half a megabyte on each load from a free-tier dyno.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "admin"
+      ]
+    },
+    {
+      "agent": "astro-wellness",
+      "id": "astro-wellness-5",
+      "severity": "P3",
+      "kind": "BROKEN_CTA",
+      "target": "/astrologer-portal/online",
+      "repro": [
+        "GET https://darshya.online/astrologer-portal/online with a session present",
+        "expected the go-online page TASKS.md records as shipped under PR #227"
+      ],
+      "observed": "404 'Page not found | Darshya'. The page does not exist: apps/web/app/astrologer-portal/ contains availability, consultations, earnings, messages, profile and subscription, but no online/ directory. Unauthenticated the route looks alive — the middleware's /astrologer-portal prefix match 307s it to /auth/login exactly like every real page — so the 404 only appears after sign-in, which is what makes it easy to miss. Impact is genuinely low and rated accordingly: the toggle UI itself does exist and works, it just lives on the /astrologer-portal dashboard (apps/web/app/astrologer-portal/page.tsx:130-153 calls the API endpoint directly), and no navigation anywhere links to /astrologer-portal/online. The defect is that a URL recorded as shipped, and reachable by guess or bookmark, dead-ends.",
+      "expected": "Either a page at that route, or a redirect to /astrologer-portal where the toggle actually lives.",
+      "evidence": "GET /astrologer-portal/online with a session cookie present -> 404, <title>Page not found | Darshya</title>, h1 'Page not found', 125539 bytes. All 14 sibling portal pages returned 200 in the same sweep. Unauthenticated the same URL -> 307 -> /auth/login?redirect=%2Fastrologer-portal%2Fonline. Filesystem: no apps/web/app/astrologer-portal/online/page.tsx exists.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "astro-wellness"
+      ]
+    },
+    {
+      "agent": "astro-wellness",
+      "id": "astro-wellness-6",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "all 14 /astrologer-portal/* and /wellness-portal/* pages",
+      "repro": [
+        "GET any portal page with a session present and read the <title>",
+        "Repeat across all 14 pages"
+      ],
+      "observed": "Every one returns the generic root title 'Darshya — India's Devotional Super App'. None sets a per-page title, so an astrologer with Earnings, Consultations and Availability open has three identical browser tabs and cannot tell them apart. This is not the empty-interpolation defect the brief flags — the title is well-formed, just not specific — hence P3. The public pages in the same scope all do this correctly ('Daily Horoscope Today — All 12 Rashis | Darshya', 'Live Wellness Classes | Darshya'), so the pattern is established and only the portals are missing it.",
+      "expected": "A per-page title, e.g. 'Earnings — Astrologer Portal | Darshya'.",
+      "evidence": "14/14 portal pages returned <title>Darshya — India's Devotional Super App</title>: /astrologer-portal, /astrologer-portal/{availability,consultations,earnings,messages,profile,subscription}, /wellness-portal, /wellness-portal/{earnings,messages,profile,sessions,students,subscription}.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "astro-wellness"
+      ]
+    },
+    {
+      "agent": "astro-wellness",
+      "id": "astro-wellness-7",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "/astrology/astrologers/live",
+      "repro": [
+        "GET https://darshya.online/astrology/astrologers/live in a browser and let it hydrate",
+        "Look at the avatar initials on the third card"
+      ],
+      "observed": "The avatar for 'Dr. Mahesh Iyer' shows '.M' — the initials helper takes the first character of each of the first two name tokens, so the honorific 'Dr.' contributes a literal full stop. The other two cards are correct ('VS' for Acharya Vinod Sharma, 'RM' for Ritika Menon), so this only bites names carrying an abbreviated honorific. Purely cosmetic, on an otherwise well-built page.",
+      "expected": "'MI', with honorific tokens (Dr., Sri, Smt., Pt.) skipped, or at minimum non-alphabetic characters filtered out of the initials.",
+      "evidence": "Browser-rendered card list on prod: 'VS Acharya Vinod Sharma ... 22 yrs exp | Hindi, Sanskrit', 'RM Ritika Menon ... 9 yrs exp | English, Hindi', '.M Dr. Mahesh Iyer ... 15 yrs exp | English, Tamil'.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "astro-wellness"
+      ]
+    },
+    {
+      "agent": "devotee",
+      "id": "devotee-2",
+      "severity": "P3",
+      "kind": "VALIDATION",
+      "target": "GET /bookings/:id/cancel-quote",
+      "repro": [
+        "POST /bookings/book -> 201, booking 5902e915-2406-4d6c-a42f-81d7830ec9b7 (BS-20260908-5EJ3Y), priceAmount 1152",
+        "POST /bookings/5902e915.../cancel -> 200, status becomes cancelled",
+        "POST /bookings/5902e915.../cancel again -> 409 'Booking cannot be cancelled in its current status cancelled.' (correct)",
+        "GET /bookings/5902e915.../cancel-quote -> 200 with cancellationAllowed true and refundAmountInr 1152"
+      ],
+      "observed": "After the booking is cancelled, the quote endpoint still answers cancellationAllowed:true and offers a full 1152 refund on a booking the cancel endpoint will refuse with 409. Root cause: devoteeCancelAllowed() (apps/api/src/services/cancellation.service.ts:83) tests only hoursUntilSlot plus an early return for pending_payment; it never checks for a terminal status such as cancelled or completed.",
+      "expected": "cancellationAllowed:false with the refund figures zeroed, matching what POST /cancel will actually do. The endpoint's own comment block (routes/bookings.ts:1864-1881) says this flag exists precisely so the quote and the executor can never disagree — the LEG-03 defect. That guarantee holds for the time-cutoff case but not for the status case. Not user-visible on web today: app/bookings/view/page.tsx:856 gates the Cancel button on statusIsCancellable, so the dialog that fetches the quote cannot open on a cancelled booking. It is an API-contract defect that any other client (mobile, a retry, a direct caller) can still hit.",
+      "evidence": "GET /bookings/5902e915-2406-4d6c-a42f-81d7830ec9b7/cancel-quote after cancelling -> 200 {\"bookingId\":\"5902e915-2406-4d6c-a42f-81d7830ec9b7\",\"cancellationAllowed\":true,\"cancellationCutoffHours\":24,\"refundFraction\":1,\"refundAmountInr\":1152,\"feeAmountInr\":0,\"tierLabel\":\"Full refund (48h+ before)\",\"hoursUntilSlot\":873.4}",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "devotee"
+      ]
+    },
+    {
+      "agent": "devotee",
+      "id": "devotee-3",
+      "severity": "P3",
+      "kind": "VALIDATION",
+      "target": "POST /bookings/book — devoteeNames[].name",
+      "repro": [
+        "POST /bookings/book with devoteeNames [{name: <10,000 characters>}] -> 201 Created (BS-20260908-DVZZN)",
+        "GET /bookings/79337475-93eb-4ab8-b0ef-44a82a9b8295 -> the stored name is 10,000 characters, untruncated",
+        "POST /bookings/book with devoteeNames [{name: '  '}] (two spaces) -> 201 Created (BS-20260908-KSR9M)",
+        "GET that booking -> devoteeNames is [{\"name\":\"  \"}], a booking with a blank devotee"
+      ],
+      "observed": "createBookingSchema (apps/api/src/routes/bookings.ts:85-88) validates the devotee name with z.string().min(1) and nothing else — no .max() and no .trim(). A 10,000-character name is persisted in full, and a whitespace-only string satisfies min(1), so a booking can be made with no readable devotee name at all. The name is the sankalp identity: it is rendered on the booking page, on the pandit's job card, and in the WhatsApp booking templates, none of which have a length budget for 10k characters. sankalpDetails and specialInstructions on the same schema are likewise unbounded.",
+      "expected": "A .trim() before the min(1) check so two spaces is rejected as empty, and a sane .max() on the name and the two free-text fields beside it.",
+      "evidence": "201 {\"booking\":{\"id\":\"79337475-93eb-4ab8-b0ef-44a82a9b8295\",\"bookingNumber\":\"BS-20260908-DVZZN\"}} then GET /bookings/79337475... -> first devotee name length 10000. And 201 {\"bookingNumber\":\"BS-20260908-KSR9M\"} whose devoteeNames read back as [{\"name\":\"  \"}].",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "devotee"
+      ]
+    },
+    {
+      "agent": "devotee",
+      "id": "devotee-4",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "POST /bookings/book — malformed scheduledTimeSlot",
+      "repro": [
+        "POST /bookings/book with scheduledTimeSlot '99:99' and everything else valid",
+        "-> 409 {\"error\":\"The selected time slot is no longer available.\",\"code\":\"SLOT_UNAVAILABLE\"}"
+      ],
+      "observed": "A syntactically impossible time is reported as a capacity conflict. scheduledTimeSlot is only z.string().min(1), so 99:99 passes schema validation and is caught later by the availableSlots membership test, which owns the 'no longer available' copy. The devotee is told to try another time because this one filled up, when the request was in fact malformed and no such time exists.",
+      "expected": "A 400 with a format error (the slot must match HH:MM and be one of the offering's availableSlots), reserving SLOT_UNAVAILABLE / 409 for a well-formed slot that is genuinely taken. The request IS correctly rejected either way and no booking is created, so this is copy accuracy only.",
+      "evidence": "409 {\"error\":\"The selected time slot is no longer available.\",\"code\":\"SLOT_UNAVAILABLE\",\"message\":\"चुना गया समय स्लॉट अब उपलब्ध नहीं है।\"} for slot 99:99. Contrast: slot '' -> 400 'Time slot is required'.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "devotee"
+      ]
+    },
+    {
+      "agent": "gaushala-donations",
+      "id": "gaushala-donations-3",
+      "severity": "P3",
+      "kind": "SEO",
+      "target": "/gaushala-portal/*",
+      "repro": [
+        "GET https://darshya.online/gaushala-portal with a poojly_user cookie set",
+        "Repeat for /cows /donations /profile /volunteers /messages",
+        "Read the <title> of each"
+      ],
+      "observed": "All six gaushala-portal pages return the site-wide default title \"Darshya — India's Devotional Super App\". None defines its own metadata, so a manager with several portal tabs open cannot tell them apart.",
+      "expected": "Per-page titles, e.g. 'Cows — Gaushala Portal | Darshya'. The public gaushala pages already do this correctly ('Gau Seva — Adopt a Cow | Darshya', 'Pathmeda Gauseva Sansthan — Gau Seva | Darshya').",
+      "evidence": "Six fetches, identical title string on all six: /gaushala-portal 200 len=102566, /cows 200 len=102747, /donations 200 len=102782, /profile 200 len=102769, /volunteers 200 len=102833, /messages 200 len=103006.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "gaushala-donations"
+      ]
+    },
+    {
+      "agent": "pandit-temple",
+      "id": "pandit-temple-1",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "API-wide localized `message` field (observed on /priest/* and /temple-portal/*)",
+      "repro": [
+        "GET https://api.darshya.online/api/v1/priest/bookings?limit=500 with the ct+pandit bearer token and header 'Accept-Language: en-GB,en;q=0.9'",
+        "expected the user-facing `message` in English — the caller asked for English and this account never chose a language",
+        "repeat the same request with '&lang=en' to see the English catalogue entry the header could not reach"
+      ],
+      "observed": "The `message` comes back in Hindi regardless of Accept-Language. Same with no Accept-Language header at all, and reproduced on three different codes: INVALID_QUERY (/priest/bookings), FORBIDDEN (/temple-portal/dashboard) and NOT_FOUND (/priest/bookings/:id). Adding '?lang=en' DOES return 'One or more query parameters are invalid.', which proves the English catalogue is present and only the header is being ignored. Cause: signup hard-sets the language to Hindi (SIGNUP_DEFAULT_LANGUAGE = 'hi', apps/api/src/lib/i18n.ts:81, applied at apps/api/src/routes/auth.ts:516 and :1464; the column default at apps/api/prisma/schema.prisma:178 is also hi), and pickLangFor ranks the stored value ABOVE Accept-Language (apps/api/src/lib/error-i18n.ts:377-410) on the stated reasoning that 'a profile setting is a deliberate choice' — reasoning that does not hold when the stored value is a signup default the user never saw. Net effect: Accept-Language is dead for every signed-in account and only an explicit ?lang= selects English. HONEST SCOPING — this does not reach a screen today, and I checked why rather than assuming: packages/api-client/src/error-shapes.ts:103-111 lists FORBIDDEN/NOT_FOUND/INVALID_BODY/INVALID_QUERY in LOCALIZER_GENERIC_CODES and prefers the English `error` label for exactly these, and on the pandit pages apps/web/lib/pandit-api.ts:54 composes a string that apps/web/lib/friendly-error.ts:182 then flattens to English copy. So this is a latent defect in the localization layer, not a visible one — it becomes user-visible the moment any client starts trusting `message`.",
+      "expected": "With no explicit language choice on record, Accept-Language should decide; the stored value should only outrank the header once the user has actually picked a language.",
+      "evidence": "HTTP 400 with Accept-Language: en-GB,en;q=0.9 — body: {\"error\":\"Invalid query\",\"details\":{\"formErrors\":[],\"fieldErrors\":{\"limit\":[\"Number must be less than or equal to 100\"]}},\"message\":\"एक या अधिक क्वेरी पैरामीटर अमान्य हैं।\",\"code\":\"INVALID_QUERY\"}. Verified twice, and against ?lang=en which returns the English sentence for the same code.",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "pandit-temple"
+      ]
+    },
+    {
+      "agent": "store",
+      "id": "store-9",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "GET /api/v1/store/cart",
+      "repro": [
+        "GET /store/cart with the ct+devotee token and an empty basket"
+      ],
+      "observed": "{\"items\":[],\"subtotal\":0,\"deliveryFee\":49,\"tax\":0,\"total\":49,\"currency\":\"INR\",\"itemCount\":0} — an empty cart quotes a ₹49 delivery fee and a ₹49 total.",
+      "expected": "deliveryFee and total 0 when itemCount is 0. Cosmetic today: the cart page renders its empty state rather than the number, so no shopper is currently shown \"₹49\" for nothing — but any client that renders cart.total without first checking itemCount will show it.",
+      "evidence": "GET /store/cart -> {\"cart\":{\"id\":\"cart_e476f95c-…\",\"items\":[],\"subtotal\":0,\"deliveryFee\":49,\"tax\":0,\"total\":49,\"currency\":\"INR\",\"itemCount\":0}}",
+      "confidence": "confirmed",
+      "reportedBy": [
+        "store"
+      ]
+    }
+  ],
+  "blocked": [
+    {
+      "agent": "admin",
+      "target": "every admin write path (PATCH /admin/users/:id, POST|PATCH|DELETE /admin/temples|priests|pujas|content, POST /admin/ratings/:id/hide, payout processing, refund issuing, commission-rate override)",
+      "reason": "scope rule: admin token can mutate other people's data; read-only mandate. Existence confirmed by source enumeration only, never invoked."
+    },
+    {
+      "agent": "admin",
+      "target": "GET /admin/cron/youtube-discovery, GET /admin/cron/apollo-refresh",
+      "reason": "GET-shaped manual cron TRIGGERS (apps/api/src/routes/admin-cron.ts:27,32), not reads - invoking them would run a job. Not called."
+    },
+    {
+      "agent": "admin",
+      "target": "/auth/* rate-limit verification for finding admin-3",
+      "reason": "brief rule: do not call /auth/login. The /admin/ half of the same dead code path was measured instead."
+    },
+    {
+      "agent": "admin",
+      "target": "authenticated in-browser rendering of the 23 admin pages",
+      "reason": "pages are client components whose data comes from the API via a bearer held in client state; an HTTP fetch can verify the shell, the title and the absence of an error boundary, but not the rendered table. API-side coverage of the same data is complete."
+    },
+    {
+      "agent": "astro-wellness",
+      "target": "/astrologer-portal/* and /wellness-portal/* page bodies as a signed-in provider",
+      "reason": "Cannot establish a browser session without /auth/login, which the brief forbids. In production the auth context deliberately does NOT persist the access token to localStorage (apps/web/lib/auth-context.tsx:465 removes poojly_session outside the compile-time-dead demo branch), and the API's darshya_session cookie is host-only for api.darshya.online so it cannot be replayed against darshya.online (documented in apps/web/middleware.ts:79-90). A cached bearer token therefore cannot be injected into the page's auth state. Mitigation: the full data layer was proved instead — every portal API these pages call returns 200 with a correct empty shape for its own role and 401/403 otherwise — and all 15 page shells were confirmed to render server-side without an error boundary. What remains unverified is only the client-side rendering of those empty shapes."
+    },
+    {
+      "agent": "astro-wellness",
+      "target": "/astrologer-portal/subscription and /wellness-portal/subscription checkout",
+      "reason": "live razorpay key"
+    },
+    {
+      "agent": "astro-wellness",
+      "target": "Enrolment / consultation purchase from /wellness/classes and the 'Book a slot' CTA on /astrology/astrologers/live",
+      "reason": "live razorpay key"
+    },
+    {
+      "agent": "devotee",
+      "target": "POST /bookings/create-order",
+      "reason": "live razorpay key"
+    },
+    {
+      "agent": "devotee",
+      "target": "POST /bookings/verify-payment",
+      "reason": "live razorpay key — unreachable without a real order"
+    },
+    {
+      "agent": "devotee",
+      "target": "POST /store/cart/checkout",
+      "reason": "live razorpay key"
+    },
+    {
+      "agent": "devotee",
+      "target": "POST /subscriptions/subscribe and /subscriptions/create",
+      "reason": "live razorpay key — read-only per brief; /subscriptions/plans, /my, /is-premium and /entitlements were all read successfully"
+    },
+    {
+      "agent": "devotee",
+      "target": "POST /recurring/subscribe",
+      "reason": "live razorpay key — /recurring/plans and /recurring/my read successfully"
+    },
+    {
+      "agent": "devotee",
+      "target": "/checkout/offering form submit and /store/checkout",
+      "reason": "live razorpay key — pages fetched and confirmed 200, never submitted"
+    },
+    {
+      "agent": "devotee",
+      "target": "POST /digest/unsubscribe with a real userId",
+      "reason": "would write an irreversible opt-out row against a user account (no re-subscribe path exists). The missing auth gate was proved instead with a malformed body, which returns 400 before the INSERT and writes nothing."
+    },
+    {
+      "agent": "devotee",
+      "target": "PUT /me/reading-progress, PATCH /users/me, POST /users/me/addresses",
+      "reason": "brief scope is read for these; skipped so as not to change account state (safety rule 5). The GETs were verified."
+    },
+    {
+      "agent": "gaushala-donations",
+      "target": "POST /donations/create-order (authenticated)",
+      "reason": "live razorpay key"
+    },
+    {
+      "agent": "gaushala-donations",
+      "target": "POST /donations/verify (authenticated)",
+      "reason": "live razorpay key"
+    },
+    {
+      "agent": "gaushala-donations",
+      "target": "/donations donate CTA and /gaushala 'Select Plan' CTAs (Razorpay modal)",
+      "reason": "live razorpay key"
+    },
+    {
+      "agent": "gaushala-donations",
+      "target": "/gaushala-portal/subscription checkout",
+      "reason": "live razorpay key — moot in practice, the route does not exist (404)"
+    },
+    {
+      "agent": "gaushala-donations",
+      "target": "Malformed-body 400 probe on POST /donations/create-order",
+      "reason": "live razorpay key. Source review shows createOrderSchema.safeParse runs before razorpay.orders.create (donations.ts:346-353), so an authenticated malformed body would return 400 with no side effect — but prod may not be running this commit, so certainty was not available and the brief says skip when in doubt. Endpoint existence was confirmed unauthenticated instead (401 at the preHandler, handler body never reached)."
+    },
+    {
+      "agent": "gaushala-donations",
+      "target": "Authenticated rendering of /gaushala-portal/* (empty states, spinners, raw [] rendered as content)",
+      "reason": "Not verifiable within the brief's rules. Per SEC-02 step 4 (apps/web/lib/auth-context.tsx:421-424) the access token is no longer written to any JS-readable store, and the API's darshya_session cookie is host-only for api.darshya.online, so a session cannot be injected into a browser from the cached token. Establishing one requires POST /auth/login, which the brief forbids. Over plain HTTP these pages SSR only a loading skeleton. The API behind every one of them was verified directly and returns correct empty shapes."
+    },
+    {
+      "agent": "gaushala-donations",
+      "target": "POST/PATCH/DELETE on /gaushala-portal/cows and /volunteers, and PATCH /gaushala-portal/profile",
+      "reason": "Not attempted, by judgement rather than by rule. Creating a QA- cow or volunteer was permitted, but the gaushala account has no GaushalaProfile (dashboard returns profile:null), so PATCH /profile would have created the account's first record — a named entry in the public gaushala directory that then appears as a live donation cause. Given finding gaushala-donations-1 is precisely about junk records reaching that directory, adding one during the audit was the wrong trade. Read paths and the full authz matrix were covered instead."
+    },
+    {
+      "agent": "pandit-temple",
+      "target": "Authenticated render of all 19 portal pages (/priest/*, /temple-portal/*)",
+      "reason": "The web revives its session from the httpOnly darshya_session cookie, which the API sets host-only for api.darshya.online and only ever mints on POST /auth/login — the one endpoint the brief forbids. The token cache holds bearer tokens with no refresh token, so no browser session could be constructed by any permitted route. Pages were verified three other ways instead: logged-out HTTP (clean 307 to /auth/login for all 19), HTML past the cosmetic poojly_user middleware marker (200, sane title, no error boundary), and one live in-browser load confirming the shell resolves to the login redirect in ~3 s rather than hanging. What could NOT be observed is each list page's authenticated empty-state rendering."
+    },
+    {
+      "agent": "pandit-temple",
+      "target": "Any checkout action reachable from /priest/subscription and /temple-portal/subscription",
+      "reason": "live razorpay key"
+    },
+    {
+      "agent": "store",
+      "target": "POST /api/v1/store/cart/checkout and the /store/checkout page submit",
+      "reason": "live razorpay key — the page was loaded (200) and its title verified, never submitted"
+    },
+    {
+      "agent": "store",
+      "target": "POST /api/v1/store/orders with a real seller product (happy-path order creation)",
+      "reason": "live razorpay key — a successful order is the first step of a real payment; only the failing fixture path was exercised, which returns 400 before any DB write or payment call"
+    },
+    {
+      "agent": "store",
+      "target": "POST /api/v1/store/orders/:id/payment-confirm (actual invocation on a real order)",
+      "reason": "would mark an order paid and email a generated invoice; the guard state was established with nonexistent and malformed ids only"
+    },
+    {
+      "agent": "store",
+      "target": "Authenticated rendering of the /store-admin/* pages",
+      "reason": "the brief forbids calling /auth/login, so no browser session could be established; the pages were verified at the HTTP level (all 307 to /auth/login with a correct redirect param) and their data endpoints were verified directly against the API"
+    }
+  ]
+}

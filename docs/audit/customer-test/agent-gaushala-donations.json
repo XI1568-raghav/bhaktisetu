@@ -1,0 +1,101 @@
+{
+  "agent": "gaushala-donations",
+  "scope": "GAUSHALA_MANAGER portal API + pages (ct+gaushala@darshya.online); public gaushala directory + cow + plans API; /gaushala and /donations pages incl. 80G compliance copy; cross-role authz on /gaushala-portal/*. Donation money endpoints inspected read-only and probed unauthenticated only — never invoked with a token (live Razorpay key).",
+  "checked": [
+    { "target": "/gaushala", "method": "GET", "role": "public", "status": 200, "note": "5 fixture gaushalas (gs_001..gs_005). Real data, not a placeholder shape." },
+    { "target": "/gaushala/gs_001", "method": "GET", "role": "public", "status": 200, "note": "Full fixture detail incl. cows, source:'fixture'." },
+    { "target": "/gaushala/f0dfee69-aaf3-4b90-a589-8a7df95cda0b", "method": "GET", "role": "public", "status": 200, "note": "Real approved DB profile (Pathmeda Gauseva Sansthan), source:'profile'." },
+    { "target": "/gaushala/2342e603-5af8-469a-acb3-da18d5a6b40b", "method": "GET", "role": "public", "status": 200, "note": "Real approved DB profile (Shri Krishna Gaushala, Mathura)." },
+    { "target": "/gaushala/00000000-0000-0000-0000-000000000000", "method": "GET", "role": "public", "status": 404, "note": "Correct 404 for a well-formed but nonexistent uuid." },
+    { "target": "/gaushala/__ct_nonexistent_zzz", "method": "GET", "role": "public", "status": 500, "note": "FINDING gaushala-donations-2. Non-uuid id crashes instead of 404." },
+    { "target": "/gaushala/cows", "method": "GET", "role": "public", "status": 200, "note": "19 fixture cows, total=19." },
+    { "target": "/gaushala/cows?available=true", "method": "GET", "role": "public", "status": 200, "note": "total=19; available=false -> 0; gaushalaId=gs_999 -> 0. Filter behaves correctly." },
+    { "target": "/gaushala/cows/cow_001", "method": "GET", "role": "public", "status": 200, "note": "Cow detail returns a real fixture body." },
+    { "target": "/gaushala/cows/__nope__", "method": "GET", "role": "public", "status": 404, "note": "Correct 404 with a clean error body." },
+    { "target": "/gaushala/plans", "method": "GET", "role": "public", "status": 200, "note": "4 adoption tiers (51 / 3,000 / 30,000 / 2,25,000 INR). Annual + Lifetime features read 'Numbered donation receipt PDF (not a tax-exemption certificate)' — honest, and consistent with HAS_80G_VERIFIED false." },
+    { "target": "/gaushala-portal/dashboard", "method": "GET", "role": "GAUSHALA_MANAGER", "status": 200, "note": "profile:null, all stats 0, recentDonations/recentCows empty. Correct empty shape for a fresh account; no crash." },
+    { "target": "/gaushala-portal/donations", "method": "GET", "role": "GAUSHALA_MANAGER", "status": 200, "note": "{donations:[]} — correct empty state." },
+    { "target": "/gaushala-portal/cows", "method": "GET", "role": "GAUSHALA_MANAGER", "status": 200, "note": "{cows:[]} — correct empty state." },
+    { "target": "/gaushala-portal/volunteers", "method": "GET", "role": "GAUSHALA_MANAGER", "status": 200, "note": "{volunteers:[]} — correct empty state. Volunteer endpoints are present." },
+    { "target": "/gaushala-portal/cows/00000000-0000-0000-0000-000000000000", "method": "GET", "role": "GAUSHALA_MANAGER", "status": 404, "note": "Correct 404 for a nonexistent uuid." },
+    { "target": "/gaushala-portal/cows/abc", "method": "GET", "role": "GAUSHALA_MANAGER", "status": 500, "note": "FINDING gaushala-donations-2. Same non-uuid crash as the public route." },
+    { "target": "/gaushala-portal/donations?status=received|bogus", "method": "GET", "role": "GAUSHALA_MANAGER", "status": 200, "note": "Both 200 empty. The account has no donations, so an unknown status value could not be distinguished from a valid one at runtime. The code path (gaushala-portal.ts:29-33) maps an unknown value to undefined and drops the filter rather than returning 400 — unverified against data, so not filed as a finding." },
+    { "target": "/gaushala-portal/donations?limit=-5|999999|abc", "method": "GET", "role": "GAUSHALA_MANAGER", "status": 200, "note": "No crash on negative, huge or NaN limit. The empty dataset means Prisma's negative-take semantics could not be observed." },
+    { "target": "/gaushala-portal/dashboard", "method": "GET", "role": "unauthenticated", "status": 401, "note": "Correct." },
+    { "target": "/gaushala-portal/dashboard", "method": "GET", "role": "DEVOTEE|STORE_OWNER|TEMPLE_MANAGER|ADMIN", "status": 403, "note": "All four 403 with 'GAUSHALA_MANAGER role required'. Admin is correctly NOT granted a bypass." },
+    { "target": "/gaushala-portal/donations", "method": "GET", "role": "unauth + 4 other roles", "status": 403, "note": "401 unauthenticated, 403 for devotee/store/temple/admin." },
+    { "target": "/gaushala-portal/cows", "method": "GET", "role": "unauth + 4 other roles", "status": 403, "note": "401 unauthenticated, 403 for devotee/store/temple/admin." },
+    { "target": "/gaushala-portal/volunteers", "method": "GET", "role": "unauth + 4 other roles", "status": 403, "note": "401 unauthenticated, 403 for devotee/store/temple/admin. Full matrix 20/20 correct — no cross-role data leak anywhere in the portal." },
+    { "target": "/gaushala-portal/dashboard", "method": "GET", "role": "malformed bearer token", "status": 401, "note": "'Invalid or expired access token.' — correct." },
+    { "target": "/donations/create-order", "method": "POST", "role": "unauthenticated", "status": 401, "note": "Endpoint exists and is gated at the authenticateUser preHandler, so the handler body — and any Razorpay order creation — never runs. No token was ever attached to this request." },
+    { "target": "/donations/verify", "method": "POST", "role": "unauthenticated", "status": 401, "note": "Same: exists, auth-gated, never invoked with a token." },
+    { "target": "/donations", "method": "GET", "role": "unauthenticated", "status": 404, "note": "No such route. donations.ts registers only POST /create-order and POST /verify — there is no donor-facing endpoint to list past donations or re-fetch a receipt, so a donor who loses the receipt email has no self-serve recovery. Noted rather than filed: it is devotee scope." },
+    { "target": "web /gaushala", "method": "GET", "role": "public", "status": 200, "note": "title 'Gau Seva — Adopt a Cow | Darshya'. Real content, no error boundary. The 80G FAQ is honest — see the PASS note below." },
+    { "target": "web /gaushala 80G copy", "method": "GET", "role": "public", "status": 200, "note": "PASS — the headline compliance check of this scope. The FAQ reads verbatim: 'Is my donation tax-deductible? Not yet. Darshya does not hold a Section 80G registration today, so a donation made here cannot be claimed as a deduction. You will receive a receipt PDF by email as proof of your donation, and we will publish the registration number on this page the day it is issued.' That matches lib/company.ts HAS_80G_VERIFIED false / pan null / eightyGNumber null exactly. No page in scope advertises 80G eligibility. No compliance finding." },
+    { "target": "web /donations", "method": "GET", "role": "public", "status": 200, "note": "title 'Donate to Temples & Gaushalas | Darshya'. Makes NO 80G or tax-deduction claim anywhere on the page — correct given HAS_80G_VERIFIED false. It does claim 'Every cause verified by our team' — see finding gaushala-donations-1." },
+    { "target": "web /donations?planId=plan_daily", "method": "GET", "role": "public", "status": 200, "note": "The planId prefill from the /gaushala 'Select Plan' CTAs loads cleanly." },
+    { "target": "web /gaushala/__ct_nonexistent_zzz", "method": "GET", "role": "public", "status": 404, "note": "PASS — a real 404 with title 'Page not found | Darshya'. NOT a soft-404, unlike the CT-SEO-1 routes. /gaushala/[id] is the cow-detail route; /gaushala/cow_999 also correctly 404s." },
+    { "target": "web /gaushala/profile/<4 real uuids>", "method": "GET", "role": "public", "status": 200, "note": "All four directory-linked profile pages 200 with correct per-gaushala titles (Pathmeda Gauseva Sansthan, Hinganghat Goseva Samiti, Shri Krishna Gaushala, saharanpur). No broken links from /gaushala." },
+    { "target": "web /gaushala/profile/00000000-... and /__ct_nonexistent_zzz", "method": "GET", "role": "public", "status": 404, "note": "Both correctly 404. The web layer catches the API 500 on a non-uuid rather than propagating it." },
+    { "target": "web /gaushala-portal (+ /cows /donations /profile /volunteers)", "method": "GET", "role": "unauthenticated", "status": 307, "note": "All redirect to /auth/login?redirect=<path>. Correct signed-out UX gate." },
+    { "target": "web /gaushala-portal (+ /cows /donations /profile /volunteers /messages)", "method": "GET", "role": "poojly_user cookie present", "status": 200, "note": "All six render a loading skeleton. The middleware gate on poojly_user is documented in middleware.ts:73-77 as UX-only and explicitly not an authorization boundary — the API authorises every request itself, which the 20/20 role matrix above confirms. Not filed as a finding." },
+    { "target": "web /gaushala-portal/subscription", "method": "GET", "role": "poojly_user cookie present", "status": 404, "note": "The route does not exist in apps/web/app/gaushala-portal/ and nothing in the repo links to it (the portal sidebar is Overview/Messages/Donations/Cows/Volunteers/Profile, all of which exist and load). Correct 404 — not a finding." }
+  ],
+  "findings": [
+    {
+      "id": "gaushala-donations-1",
+      "severity": "P1",
+      "kind": "COPY",
+      "target": "/donations",
+      "repro": [
+        "GET https://darshya.online/donations (unauthenticated)",
+        "Read the hero line and the trust-badge row, then the 'Gaushala Causes' list below it",
+        "GET https://api.darshya.online/api/v1/gaushala/03edd2ff-4479-48f3-9ad1-6940e5558a4d"
+      ],
+      "observed": "The page states, verbatim: \"Support verified temples and gaushalas across India.\" and carries a trust badge reading \"Every cause verified by our team\". The fourth gaushala cause listed directly under that badge, with a live \"Donate\" CTA, is an unvetted record: name \"saharanpur\", location \"saharanpur\", description \"skkss\", address \"ssdwdqe\", totalCows 1. The API confirms approved:true and returns donationCauseId d56b9b2a-f520-4c34-8dc6-93cd07a9116e, so it resolves to a real donee that /donations/create-order would accept — real money can be routed to it.",
+      "expected": "Either the record is unapproved and removed from the public directory, or the page stops asserting that every listed cause is verified. A donations page taking real money must not publish a verification claim that its own listings contradict.",
+      "evidence": "Page text: 'Support verified temples and gaushalas across India. Every donation gets a numbered PDF receipt by email. Razorpay-secured payments.' plus badge 'Every cause verified by our team'. Cause card text: '1+ cows  saharanpur  saharanpur  skkss  Donate'. API GET /gaushala/03edd2ff-4479-48f3-9ad1-6940e5558a4d -> 200 {\"gaushala\":{\"id\":\"03edd2ff-4479-48f3-9ad1-6940e5558a4d\",\"name\":\"saharanpur\",\"location\":\"saharanpur\",\"description\":\"skkss\",\"address\":\"ssdwdqe\",\"totalCows\":1,\"approved\":true,...,\"donationCauseId\":\"d56b9b2a-f520-4c34-8dc6-93cd07a9116e\"}}. The same record also appears on /gaushala under the badge 'Reviewed Gaushalas — Approved before they are listed' and has its own live page at /gaushala/profile/03edd2ff-... (200, title 'saharanpur — Gau Seva | Darshya'). Note: the payment mechanics are not themselves broken — money would reach the donee the page names. What is wrong is the verification claim and the fact that an obviously junk record passed approval into a live money path.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "gaushala-donations-2",
+      "severity": "P2",
+      "kind": "CRASH",
+      "target": "/gaushala/:id and /gaushala-portal/cows/:id",
+      "repro": [
+        "GET https://api.darshya.online/api/v1/gaushala/__ct_nonexistent_zzz (no auth required)",
+        "GET https://api.darshya.online/api/v1/gaushala/abc",
+        "GET https://api.darshya.online/api/v1/gaushala-portal/cows/abc with the gaushala token",
+        "Compare with GET /gaushala/00000000-0000-0000-0000-000000000000 -> 404 (correct)"
+      ],
+      "observed": "Any :id that is not a valid uuid and is not one of the gs_00x fixtures returns 500 {\"error\":\"InternalServerError\",\"message\":\"Something went wrong on our end.\",\"code\":\"INTERNAL_ERROR\"}. Reproduced on 5/5 non-uuid inputs on the public route (__ct_nonexistent_zzz, abc, gs_999, a space, an emoji string) and 2/2 on the authenticated portal route. A well-formed but nonexistent uuid correctly returns 404 on both routes, which isolates the cause to the id format rather than to the lookup.",
+      "expected": "404 (or 400) — the same as for a well-formed nonexistent uuid.",
+      "evidence": "GET /gaushala/__ct_nonexistent_zzz -> 500; /gaushala/abc -> 500; /gaushala/gs_999 -> 500; /gaushala/00000000-0000-0000-0000-000000000000 -> 404 'Gaushala not found.'; GET /gaushala-portal/cows/abc -> 500 while /gaushala-portal/cows/00000000-0000-0000-0000-000000000000 -> 404 'Cow not found'. Likely source: apps/api/src/routes/gaushala.ts:29-31 falls through to prisma.gaushalaProfile.findFirst({where:{approved:true,OR:[{id},{userId:id}]}}) with no uuid guard on the path param, so Postgres rejects the cast. The public route needs no authentication, so this is reachable by any visitor or crawler; the web layer masks it with its own 404 page, but the API returns 500 and it will show in error rates.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "gaushala-donations-3",
+      "severity": "P3",
+      "kind": "SEO",
+      "target": "/gaushala-portal/*",
+      "repro": [
+        "GET https://darshya.online/gaushala-portal with a poojly_user cookie set",
+        "Repeat for /cows /donations /profile /volunteers /messages",
+        "Read the <title> of each"
+      ],
+      "observed": "All six gaushala-portal pages return the site-wide default title \"Darshya — India's Devotional Super App\". None defines its own metadata, so a manager with several portal tabs open cannot tell them apart.",
+      "expected": "Per-page titles, e.g. 'Cows — Gaushala Portal | Darshya'. The public gaushala pages already do this correctly ('Gau Seva — Adopt a Cow | Darshya', 'Pathmeda Gauseva Sansthan — Gau Seva | Darshya').",
+      "evidence": "Six fetches, identical title string on all six: /gaushala-portal 200 len=102566, /cows 200 len=102747, /donations 200 len=102782, /profile 200 len=102769, /volunteers 200 len=102833, /messages 200 len=103006.",
+      "confidence": "confirmed"
+    }
+  ],
+  "blocked": [
+    { "target": "POST /donations/create-order (authenticated)", "reason": "live razorpay key" },
+    { "target": "POST /donations/verify (authenticated)", "reason": "live razorpay key" },
+    { "target": "/donations donate CTA and /gaushala 'Select Plan' CTAs (Razorpay modal)", "reason": "live razorpay key" },
+    { "target": "/gaushala-portal/subscription checkout", "reason": "live razorpay key — moot in practice, the route does not exist (404)" },
+    { "target": "Malformed-body 400 probe on POST /donations/create-order", "reason": "live razorpay key. Source review shows createOrderSchema.safeParse runs before razorpay.orders.create (donations.ts:346-353), so an authenticated malformed body would return 400 with no side effect — but prod may not be running this commit, so certainty was not available and the brief says skip when in doubt. Endpoint existence was confirmed unauthenticated instead (401 at the preHandler, handler body never reached)." },
+    { "target": "Authenticated rendering of /gaushala-portal/* (empty states, spinners, raw [] rendered as content)", "reason": "Not verifiable within the brief's rules. Per SEC-02 step 4 (apps/web/lib/auth-context.tsx:421-424) the access token is no longer written to any JS-readable store, and the API's darshya_session cookie is host-only for api.darshya.online, so a session cannot be injected into a browser from the cached token. Establishing one requires POST /auth/login, which the brief forbids. Over plain HTTP these pages SSR only a loading skeleton. The API behind every one of them was verified directly and returns correct empty shapes." },
+    { "target": "POST/PATCH/DELETE on /gaushala-portal/cows and /volunteers, and PATCH /gaushala-portal/profile", "reason": "Not attempted, by judgement rather than by rule. Creating a QA- cow or volunteer was permitted, but the gaushala account has no GaushalaProfile (dashboard returns profile:null), so PATCH /profile would have created the account's first record — a named entry in the public gaushala directory that then appears as a live donation cause. Given finding gaushala-donations-1 is precisely about junk records reaching that directory, adding one during the audit was the wrong trade. Read paths and the full authz matrix were covered instead." }
+  ]
+}
