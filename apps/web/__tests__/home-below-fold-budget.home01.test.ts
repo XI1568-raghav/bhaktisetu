@@ -91,8 +91,12 @@ describe('[HOME-01] the homepage cannot silently grow more below-fold sections',
   it('counts real sections (the ratchet is measuring something)', () => {
     // Floor lowered 5 -> 3 alongside the 14 -> 4 ratchet below. This canary
     // exists so a regex that silently stops matching cannot be mistaken for a
-    // page that got smaller; 3 keeps it doing that job at the new size.
-    expect(sections).toBeGreaterThan(3);
+    // page that got smaller.
+    // 2026-09-04 HOME-IA: floor lowered 3 -> 2 alongside the 4 -> 3 ratchet
+    // below. The email-capture wrapper stopped being a <section> (EmailCapture
+    // renders its own, so the wrapper was a duplicate landmark), leaving hero,
+    // Live Darshan and the pujas/astrology block as the three literal openings.
+    expect(sections).toBeGreaterThan(2);
   });
 
   it('holds the section count at or below its measured baseline', () => {
@@ -124,7 +128,26 @@ describe('[HOME-01] the homepage cannot silently grow more below-fold sections',
     //
     // Two sections were ADDED as components (ThisWeek, WhatYouGet), so they sit
     // outside this regex — see the denominator note below.
-    const BASELINE = 4;
+    //
+    // 2026-09-04 HOME-IA: RATCHET LOWERED 4 -> 3. One <section> opening left
+    // app/page.tsx — the wrapper around EmailCapture, which became a <div>
+    // because EmailCapture renders its own <section> with the same heading and
+    // the pair put two identical "Daily panchang in your inbox" landmarks in
+    // the a11y tree, nested.
+    //
+    // Four component-level sections also left the composition in the same
+    // change. They sit outside this regex (same denominator note as ThisWeek /
+    // WhatYouGet), so they do not move this number — listed here because the
+    // page shrank by 1,507px of the 6,382px measured on the live DOM at
+    // 1440x900, and that has to be auditable somewhere:
+    //
+    //   WorshipStrip     said the same "here are our lanes" thing IntentTrio
+    //                    and WhatYouGet already say, two screens above
+    //   WisdomStrip      rendered with no heading at all — an anonymous rail
+    //   ConsultStrip     rendered with no heading at all
+    //   NriLaneAbTest    both slots; the experiment cannot report while
+    //                    NEXT_PUBLIC_POSTHOG_KEY is unset in production
+    const BASELINE = 3;
     expect(
       sections,
       `app/page.tsx grew past ${BASELINE} <section> openings. ` +

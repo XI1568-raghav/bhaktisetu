@@ -27,13 +27,10 @@ import IntentTrio from '../components/home/IntentTrio';
 import ContinueJourneyCard from '../components/home/ContinueJourneyCard';
 import ThisWeek from '../components/home/ThisWeek';
 import WhatYouGet from '../components/home/WhatYouGet';
-import WorshipStrip from '../components/home/WorshipStrip';
-import WisdomStrip from '../components/home/WisdomStrip';
-import ConsultStrip from '../components/home/ConsultStrip';
 import EmailCapture from '../components/EmailCapture';
 import HowItWorks from '../components/home/HowItWorks';
 import HeroCopyVariant from '../components/home/HeroCopyVariant';
-import NriLaneAbTest from '../components/home/NriLaneAbTest';
+import TempleClock from '../components/home/TempleClock';
 
 // Edge runtime + 1-hour revalidate — TTFB win per Pillar 4 audit (2026-06-08).
 // Panchang chip cache OK at 1h granularity. Personal salutation deferred to client.
@@ -102,7 +99,9 @@ export default async function HomePage() {
  {/* Waitlist banner + NextFestivalStrip moved below hero per user feedback 2026-06-07. */}
 
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}
- <section className="flex flex-col justify-center relative overflow-hidden">
+ {/* HOME-TOD: `data-tod-wash` layers the time-of-day gradient behind the hero.
+     The hero is already `position: relative`, which the rule depends on. */}
+ <section data-tod-wash className="flex flex-col justify-center relative overflow-hidden">
  <div className="container-wide py-6 md:py-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
@@ -149,6 +148,14 @@ export default async function HomePage() {
  Explore temples <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
+
+ {/* HOME-TOD (2026-09-05): the live line — which part of the day it is at the
+     temples, and which real aarti is next, from lib/aarti-schedules.ts.
+     Deliberately NOT inside a data-reveal wrapper: this is the one element on
+     the page whose whole job is to be true at the moment you look at it, and
+     an element that starts at opacity 0 waiting for an observer is the one
+     element that must not carry a countdown. */}
+ <TempleClock />
 
  <div data-reveal="fade" data-delay="4" className="mt-8 flex items-center gap-6 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <div><span className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{t('heroBadgeVerified')}</span> {t('heroBadgeTemples')}</div>
@@ -248,9 +255,6 @@ export default async function HomePage() {
  <ChevronDown className="w-4 h-4" style={{ color: 'var(--color-text-faint)' }} />
  </div>
  </section>
-
- {/* ═══ A/B nri_lane_above_fold — above slot (R-Q1-E-009) ═════════════ */}
- <NriLaneAbTest slot="above" />
 
  {/* ═══ ONBOARDING — intent trio (anon) / continue card (returning) — moved below hero per Phase D-6 ═══ */}
  <ContinueJourneyCard />
@@ -521,29 +525,37 @@ export default async function HomePage() {
  </div>
  </section>
 
- {/* animated divider */}
+ {/* HOME-IA (2026-09-04): the five discovery strips that used to close the page
+     — WorshipStrip, WisdomStrip, ConsultStrip and both NriLaneAbTest slots —
+     are gone from here. Measured on the live DOM at 1440x900 they added 1,507px
+     to a 6,382px page, and three of the four rendered with NO heading at all: a
+     devotee scrolling past was shown anonymous rails of links with nothing
+     saying what they were or why now. They also said what the page had already
+     said twice — IntentTrio ("Choose where to begin") and WhatYouGet cover the
+     same "here are our lanes" job, above the fold, with headings.
 
+     Nothing is deleted. Each strip is a section of the page that owns its
+     intent (/discover, /astrology, /gift), where the visitor has already
+     declared it. The components stay in components/home/ and are unchanged.
 
+     nri_lane_above_fold is retired rather than relocated: the experiment cannot
+     report. NEXT_PUBLIC_POSTHOG_KEY is unset in production, so useFeatureFlag
+     returns its default and every visitor has been served the "below" control
+     since the test shipped. A geo-conditional gift lane beats both variants
+     without spending a test slot. */}
 
-
- {/* ═══ 5-CATEGORY DISCOVERY STRIPS ═══════════════════════════════════ */}
- <WorshipStrip liveDarshanTemples={counts.liveDarshanTemples} />
- <WisdomStrip />
- <ConsultStrip />
-
- {/* ═══ A/B nri_lane_above_fold — below slot (R-Q1-E-009) ═════════════ */}
- <NriLaneAbTest slot="below" />
-
-
- {/* Daily-panchang waitlist — single-field email capture, source-tagged for funnel */}
- <section className="container-prose py-12">
+ {/* Daily-panchang waitlist — single-field email capture, source-tagged for funnel.
+     A <div>, not a <section>: EmailCapture renders its own <section> with the
+     heading, so wrapping it in a second one put two identical "Daily panchang in
+     your inbox" landmarks in the a11y tree, one nested inside the other. */}
+ <div className="container-prose py-12">
  <EmailCapture
  source="home-hero"
  title="Daily panchang in your inbox"
  subtitle="Tithi, nakshatra, festival reminders and launch credits. Free forever, unsubscribe any time."
  cta="Get free panchang"
  />
- </section>
+ </div>
 
  </div>
  </ScrollReveal>

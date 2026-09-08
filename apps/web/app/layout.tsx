@@ -401,8 +401,47 @@ export default function RootLayout({
  <html
  lang="en"
  className={`${notoSans.variable} ${notoSansDevanagari.variable} ${notoSansTamil.variable} ${notoSansTelugu.variable} ${notoSansBengali.variable} ${crimsonPro.variable}`}
+ // HOME-TOD: the script below writes data-tod onto this element before React
+ // hydrates, so the server markup and the first client render disagree by
+ // design. Without this, React logs a hydration mismatch on every page load.
+ suppressHydrationWarning
  >
  <head>
+ {/*
+   HOME-TOD (2026-09-05) — the time-of-day ground tint.
+
+   Sets `data-tod` on <html> from the CURRENT hour in Asia/Kolkata, so the page
+   arrives already tinted to the part of the day it actually is at the temples:
+   indigo before dawn, saffron through the morning, neutral at midday, amber at
+   sandhya, deep at night. globals.css redefines a handful of tokens per value.
+
+   WHY AN INLINE SCRIPT IN <head> AND NOT A SERVER RENDER. Every marketing route
+   here is prerendered (app/page.tsx sets `revalidate = 3600`), so a server-side
+   `new Date()` would freeze the BUILD's clock into the HTML and serve it for an
+   hour — a devotee opening the page at dusk would get the midday palette. This
+   has to resolve on the viewer's own clock, and it has to happen before first
+   paint or the page visibly repaints from one palette to another.
+
+   WHY IT IS SAFE ON THE CRITICAL PATH. ~40 lines minified, no network, no
+   layout read, no DOM query beyond documentElement. It is wrapped in try/catch
+   because Intl with a timeZone option throws on a handful of stripped-down
+   Android WebViews; when it throws, no attribute is written and every token
+   keeps its default value, which is the existing design exactly. The tint is
+   an enhancement and never a dependency.
+
+   NOT A MUHURAT CALCULATION. These are fixed clock windows, not solar time —
+   real brahma-muhurta moves with sunrise and latitude. lib/muhurat.ts and the
+   API's panchang service own that; this only answers "roughly what part of the
+   day is it", and nothing bookable is derived from it.
+ */}
+ <script
+   dangerouslySetInnerHTML={{
+     __html:
+       "try{var h=parseInt(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',hour12:false}).format(new Date()),10);" +
+       "var t=h>=4&&h<6?'brahma':h>=6&&h<10?'pratah':h>=10&&h<14?'madhyahna':h>=14&&h<17?'aparahna':h>=17&&h<20?'sandhya':'ratri';" +
+       "document.documentElement.setAttribute('data-tod',t);}catch(e){}",
+   }}
+ />
  {/*
  PERF-03 (closed 2026-08-28) — the two brand cuts that paint the FIRST
  VIEWPORT of every route, self-hosted from public/fonts and declared in

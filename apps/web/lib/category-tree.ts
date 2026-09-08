@@ -16,6 +16,48 @@ export type LibrarySubGroup = {
   items: CategoryItem[];
 };
 
+/**
+ * A labelled run of items inside one panel. NOT a link and NOT a submenu — the
+ * items stay exactly where they were, in the same 2-column grid, with a small
+ * caption above each run.
+ *
+ * NAV-IA (2026-09-05). Astrology carried 14 ungrouped rows, past the ~10 at
+ * which Baymard's participants "began to feel overwhelmed". The obvious fix —
+ * collapse the five dosha pages behind one "Doshas & Remedies" door — was
+ * rejected on two grounds. NN/g's 179-participant study found hidden navigation
+ * cut discoverability ~20%, and a global-nav link is the strongest sitewide
+ * internal link a page gets, so demoting five indexed dosha pages one level
+ * costs real organic equity with no redirect signal to offset it. There is also
+ * no destination to demote them TO: /astrology serves exactly one anchor,
+ * #online-astrologers — the doors would have pointed at nothing.
+ *
+ * Grouping is what actually buys the scan. Hick's logarithmic speed-up only
+ * holds when a reader can SKIP a run of options; Landauer & Nachbar showed an
+ * unordered list is scanned linearly however short it is. So every link stays
+ * reachable in one click and the panel gains the structure that lets a devotee
+ * skip three quarters of it.
+ */
+export type CategoryGroup = {
+  /** Short caption, sentence case. Never a verb — "Doshas & remedies", not "Explore". */
+  heading: string;
+  items: CategoryItem[];
+  /**
+   * Render the labels without their descriptions.
+   *
+   * Descriptions are Darshya's real advantage in this category — no competitor
+   * panel carries them — so this is used sparingly and only where the label is
+   * already self-evident. The dosha rows are the case: "Manglik Dosh" and
+   * "Sade Sati" are the names a devotee arrives already knowing (a relative told
+   * them they have one), and the descriptions beneath them restate the label in
+   * other words. Dropping five of them buys ~80px, which is most of what keeps
+   * this panel from needing an internal scrollbar.
+   *
+   * The description stays in the data either way — MobileNavV2 renders the flat
+   * `items` list and still shows it, where there is vertical room.
+   */
+  terse?: boolean;
+};
+
 export type Category = {
   key: CategoryKey;
   label: string;
@@ -25,6 +67,15 @@ export type Category = {
   featured?: { label: string; href: string; sublabel?: string };
   /** Only set for `library` · drives 4-col LibraryMegaPanel layout. */
   subGroups?: LibrarySubGroup[];
+  /**
+   * When present, CategoryMegaMenu renders these captioned runs instead of the
+   * flat `items` grid. `items` MUST still list every link — it is the flat
+   * source of truth that the mobile drawer (MobileNavV2 renders `items` only)
+   * and the category-tree count tests read. `groups` is a presentation layer
+   * over it, and __tests__/category-group-integrity.nav-ia.test.ts fails if the
+   * two ever disagree.
+   */
+  groups?: CategoryGroup[];
 };
 
 export const CATEGORY_TREE: Category[] = [
@@ -194,6 +245,51 @@ export const CATEGORY_TREE: Category[] = [
       { label: 'Talk to Astrologer', href: '/astrology', description: '1:1 paid consultation.' },
       { label: 'Ask Pandit', href: '/ask-pandit', description: 'Instant LLM-assisted Q&A.' },
     ],
+    /**
+     * Four captioned runs over the same fourteen links. The order is the order
+     * a devotee arrives in: someone talks to a human first, reaches for a free
+     * tool second, and only lands on a dosha page because a relative told them
+     * they have one — which is why the five dosha pages sit together under a
+     * heading that names that exact question rather than scattered through an
+     * alphabetical fourteen.
+     */
+    groups: [
+      {
+        heading: 'Talk to someone',
+        items: [
+          { label: 'Talk to Astrologer', href: '/astrology', description: '1:1 paid consultation.' },
+          { label: 'Ask Pandit', href: '/ask-pandit', description: 'Instant LLM-assisted Q&A.' },
+        ],
+      },
+      {
+        heading: 'Free tools',
+        items: [
+          { label: 'Free Kundli', href: '/astrology/kundli', description: 'Vedic birth chart with D9 Navamsa.' },
+          { label: 'Daily Horoscope', href: '/astrology/horoscope', description: 'Rashi-based daily reading.' },
+          { label: 'Wedding Muhurat', href: '/weddings/muhurat', description: 'Most auspicious wedding date.' },
+          { label: 'Baby Name', href: '/astrology/baby-name', description: 'Nakshatra-based name suggestions.' },
+          { label: 'Numerology', href: '/astrology/numerology', description: 'Driver + conductor number reading.' },
+        ],
+      },
+      {
+        heading: 'Doshas & remedies',
+        terse: true,
+        items: [
+          { label: 'Manglik Dosh', href: '/astrology/manglik', description: 'Mars dosha analysis + remedies.' },
+          { label: 'Sade Sati', href: '/astrology/sade-sati', description: '7.5-year Saturn transit check.' },
+          { label: 'Kaal Sarp Dosh', href: '/astrology/kaal-sarp', description: 'Rahu-Ketu axis analysis.' },
+          { label: 'Pitra Dosh', href: '/astrology/pitra-dosh', description: 'Ancestor karma remedies.' },
+          { label: 'Lal Kitab', href: '/astrology/lal-kitab', description: 'Remedial Vedic astrology.' },
+        ],
+      },
+      {
+        heading: 'Signs & planets',
+        items: [
+          { label: 'Rashi (12)', href: '/rashi', description: '12 zodiac sign profiles + traits.' },
+          { label: 'Nava Graha (9)', href: '/nava-graha', description: '9 planetary deities + remedies.' },
+        ],
+      },
+    ],
   },
   {
     key: 'yatra',
@@ -209,6 +305,31 @@ export const CATEGORY_TREE: Category[] = [
       { label: 'Wellness (Yoga + Ayurveda)', href: '/wellness', description: 'Yoga, meditation, Ayurveda guidance.' },
       { label: 'Plan a Trip', href: '/yatra/plan', description: 'Custom yatra trip builder.' },
     ],
+    /**
+     * Seven rows is under the threshold, so nothing is cut here — but the panel
+     * was mixing two different trips. Booking a Char Dham package and reading a
+     * tirth guide are not the same errand, and a silent retreat is neither.
+     * Captions separate them; every link stays.
+     */
+    groups: [
+      {
+        heading: 'Book a yatra',
+        items: [
+          { label: 'Packages', href: '/yatra', description: 'Curated multi-day pilgrimage itineraries.' },
+          { label: 'Destinations', href: '/yatra/destinations', description: '35 sacred destinations across India.' },
+          { label: 'Pilgrimage Circuits', href: '/pilgrimage', description: 'Char Dham, Jyotirlinga, Shakti Peeth…' },
+          { label: 'Plan a Trip', href: '/yatra/plan', description: 'Custom yatra trip builder.' },
+        ],
+      },
+      {
+        heading: 'Retreats & guides',
+        items: [
+          { label: 'Vipassana Centers', href: '/wellness/vipassana', description: '26 Goenka-tradition retreat centers.' },
+          { label: 'Wellness (Yoga + Ayurveda)', href: '/wellness', description: 'Yoga, meditation, Ayurveda guidance.' },
+          { label: 'Tirth Guides', href: '/tirth', description: '72 single-destination pilgrim guides.' },
+        ],
+      },
+    ],
   },
   {
     key: 'shop',
@@ -222,7 +343,14 @@ export const CATEGORY_TREE: Category[] = [
       { label: 'Books', href: '/store?cat=books', description: 'Hardcover scriptures + commentaries.' },
       { label: 'Rudraksha (18)', href: '/rudraksha', description: '1- to 18-mukhi rudraksha guides.' },
       { label: 'Navaratna (9)', href: '/navaratna', description: '9 sacred gems for planetary remedies.' },
-      { label: 'Cart', href: '/store/cart', description: 'Review and check out saved items.' },
+      /**
+       * NAV-IA (2026-09-05): "Cart" was here and is gone. A cart is a STATE, not
+       * a category — it is already a persistent header icon carrying the live
+       * item count (NavCartButton), which is where every devotee looks for it.
+       * Listing it as a seventh sibling of Prasad and Idols implied there was a
+       * category of thing called Cart. No organic equity is lost: /store/cart is
+       * not an indexed page.
+       */
     ],
   },
 ];
