@@ -137,8 +137,13 @@ const OPEN_LANES: Lane[] = [
 ];
 
 export default function ServiceLanes() {
+  // HOME-01: below the fold, zero <img> (the icons are inline SVG) and over the
+  // 3 KB floor, so the ranked deferral rule in
+  // __tests__/home-deferral-ranking.home01.test.ts requires .defer-paint —
+  // content-visibility: auto skips layout and paint until it is near the
+  // viewport, and the markup stays in the HTML for crawlers.
   return (
-    <section id="lanes" className="py-8 md:py-11" style={{ background: 'var(--color-surface)' }}>
+    <section id="lanes" className="defer-paint py-8 md:py-11" style={{ background: 'var(--color-surface)' }}>
       <div className="container-wide">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -157,7 +162,7 @@ export default function ServiceLanes() {
               Every way to be present
             </h2>
           </div>
-          <p className="max-w-[38ch] text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="prose-meta max-w-[38ch]" style={{ color: 'var(--color-text-muted)' }}>
             Six lanes, one account. Each one runs on the same verified supply and the same refund
             policy.
           </p>
@@ -203,7 +208,7 @@ export default function ServiceLanes() {
 
                   <span className="mt-auto flex items-center justify-between gap-2">
                     <span
-                      className="rounded-md px-2 py-1 text-[11px] font-semibold"
+                      className="rounded-md px-2 py-1 text-xs font-semibold"
                       style={{ background: a.tint, color: a.fg }}
                     >
                       {lane.meta}
@@ -256,7 +261,7 @@ export default function ServiceLanes() {
                     </span>
                   </span>
                   <span
-                    className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold"
+                    className="shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold"
                     style={{ background: a.tint, color: a.fg }}
                   >
                     {lane.meta}
