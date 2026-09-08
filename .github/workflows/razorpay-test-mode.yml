@@ -19,11 +19,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'test = switch to Razorpay TEST key | restore = put the LIVE key back | status = show current key id only'
+        description: 'test = switch to Razorpay TEST key | restore = put the LIVE key back | status = show current key id only | secure-demo-flag = unset ALLOW_DEMO_PAYMENTS (closes CT-MONEY-1)'
         required: true
         default: 'status'
         type: choice
-        options: [status, test, restore]
+        options: [status, test, restore, secure-demo-flag]
 
 jobs:
   swap:
@@ -65,7 +65,37 @@ jobs:
           if [ "$MODE" = "status" ]; then
             BK=$(get_var RAZORPAY_KEY_ID_BACKUP)
             echo "backup RAZORPAY_KEY_ID_BACKUP = ${BK:-<none>}"
+            DEMO=$(get_var ALLOW_DEMO_PAYMENTS)
+            echo "ALLOW_DEMO_PAYMENTS = ${DEMO:-<unset>}   (must be unset in production)"
             exit 0
+          fi
+
+          # CT-MONEY-1. ALLOW_DEMO_PAYMENTS is the documented staging-only escape
+          # hatch, and it is set on production. It disables three separate guards:
+          # assertNotProductionDemo (lib/payment-mode.ts:26), the boot-time crash on
+          # demo Razorpay credentials (services/payment.service.ts:583), and the
+          # manual payment-confirm override (routes/store-orders.ts:498). That last
+          # one flips an order PENDING -> CONFIRMED with no Razorpay signature, and
+          # store-orders.ts:478 mints a Commission on exactly that transition -- so a
+          # store owner can create withdrawable balance on an order nobody paid for.
+          #
+          # Deleting it is safe with either key: assertNotProductionDemo only throws
+          # when isRazorpayDemoMode() is true, which requires RAZORPAY_KEY_ID to be
+          # empty or the literal 'rzp_test_demo'. A real rzp_live_* or rzp_test_<id>
+          # key is neither, so the API will not crash-loop on boot.
+          if [ "$MODE" = "secure-demo-flag" ]; then
+            CUR_KEY=$(get_var RAZORPAY_KEY_ID)
+            case "$CUR_KEY" in
+              ""|rzp_test_demo)
+                echo "::error::RAZORPAY_KEY_ID is '${CUR_KEY:-<unset>}' — removing the flag would crash-loop the API on boot. Set a real key first."
+                exit 1 ;;
+            esac
+            code=$(curl -s -o /tmp/del.out -w '%{http_code}' -X DELETE -H "$A" "$BASE/ALLOW_DEMO_PAYMENTS")
+            echo "DELETE ALLOW_DEMO_PAYMENTS -> http $code"
+            if [ "$code" != "200" ] && [ "$code" != "204" ] && [ "$code" != "404" ]; then
+              cat /tmp/del.out; echo "::error::could not remove the flag"; exit 1
+            fi
+            [ "$code" = "404" ] && echo "already absent — nothing to do"
           fi
 
           if [ "$MODE" = "test" ]; then

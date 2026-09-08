@@ -1,10 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { prismaMock } from '../lib/__mocks__/prisma.js';
 
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
+// CT-CONSENT-1 added an authenticated /resubscribe to this router. None of the
+// cases below touch it; the mock only keeps the real middleware (and the
+// Supabase client it constructs at import) out of this file's graph.
+vi.mock('../middlewares/auth.js', () => ({
+  authenticateUser: async (request: any) => {
+    request.currentUser = { id: 'unused-in-this-file' };
+  },
+}));
+
 import Fastify from 'fastify';
-import { digestRoutes } from './digest.js';
+import { digestRoutes, LEGACY_UNSIGNED_LINKS_ACCEPTED_UNTIL } from './digest.js';
 
 // NOTIF-02 regression — digest unsubscribe must actually record the opt-out,
 // and must never claim success when it did not.
@@ -79,6 +88,17 @@ beforeEach(() => {
   vi.clearAllMocks();
   optOutRows.clear();
   prismaMock.$executeRawUnsafe.mockImplementation(fakePostgres as never);
+  // These cases are about the uuid BIND, so they post a bare uuid the way the
+  // pre-CT-CONSENT-1 link did. That shape is only honoured inside the legacy
+  // grace window, so pin the clock into it — otherwise this file starts failing
+  // on a calendar date rather than on a code change. Date only: faking
+  // setImmediate as well would stall every app.inject().
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(LEGACY_UNSIGNED_LINKS_ACCEPTED_UNTIL - 24 * 60 * 60 * 1000);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('POST /api/v1/digest/unsubscribe', () => {
