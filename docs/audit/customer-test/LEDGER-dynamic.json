@@ -1,0 +1,1769 @@
+{
+  "generatedAt": "2026-09-07T22:26:33.084Z",
+  "totals": {
+    "FAIL": 7,
+    "UNRESOLVED": 33,
+    "PASS": 58
+  },
+  "routes": [
+    {
+      "pattern": "/astrology/horoscope/[rashi]/today",
+      "valid": [
+        {
+          "url": "/astrology/horoscope/aries/today",
+          "status": 200,
+          "bytes": 163855,
+          "location": null
+        },
+        {
+          "url": "/astrology/horoscope/taurus/today",
+          "status": 200,
+          "bytes": 160890,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/astrology/horoscope/__ct_does_not_exist_zzz/today",
+        "status": 200,
+        "bytes": 118038,
+        "location": null
+      },
+      "state": "FAIL",
+      "note": "bogus slug returned 200 — soft 404, page renders for nonexistent content"
+    },
+    {
+      "pattern": "/content/books/[slug]/[...chapter]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/help/articles/[lang]/[slug]",
+      "valid": [
+        {
+          "url": "/help/articles/en/how-to-book-a-puja",
+          "status": 200,
+          "bytes": 122605,
+          "location": null
+        },
+        {
+          "url": "/help/articles/en/cancel-or-reschedule-a-puja",
+          "status": 200,
+          "bytes": 120153,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/help/articles/__ct_does_not_exist_zzz/[slug]",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/priest/bookings/[id]/accept",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/pujas/home-puja/[slug]/book",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/wellness/vipassana/centers/[slug]",
+      "valid": [
+        {
+          "url": "/wellness/vipassana/centers/dhamma-giri",
+          "status": 200,
+          "bytes": 127046,
+          "location": null
+        },
+        {
+          "url": "/wellness/vipassana/centers/dhamma-pattana",
+          "status": 200,
+          "bytes": 127000,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/wellness/vipassana/centers/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/admin/users/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/astrology/[id]/book",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/astrology/horoscope/[rashi]",
+      "valid": [
+        {
+          "url": "/astrology/horoscope/aries",
+          "status": 200,
+          "bytes": 157621,
+          "location": null
+        },
+        {
+          "url": "/astrology/horoscope/taurus",
+          "status": 200,
+          "bytes": 159160,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/astrology/horoscope/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/astrology/pancha-pakshi/[slug]",
+      "valid": [
+        {
+          "url": "/astrology/pancha-pakshi/vulture",
+          "status": 200,
+          "bytes": 140610,
+          "location": null
+        },
+        {
+          "url": "/astrology/pancha-pakshi/owl",
+          "status": 200,
+          "bytes": 140929,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/astrology/pancha-pakshi/__ct_does_not_exist_zzz",
+        "status": 200,
+        "bytes": 117474,
+        "location": null
+      },
+      "state": "FAIL",
+      "note": "bogus slug returned 200 — soft 404, page renders for nonexistent content"
+    },
+    {
+      "pattern": "/consultation/[id]/success",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/content/books/[slug]",
+      "valid": [
+        {
+          "url": "/content/books/bhagavad-gita",
+          "status": 200,
+          "bytes": 137240,
+          "location": null
+        },
+        {
+          "url": "/content/books/ramayana",
+          "status": 200,
+          "bytes": 211776,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/content/books/__ct_does_not_exist_zzz",
+        "status": 500,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/darshan/[id]/replay",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/deity/[slug]/mantras",
+      "valid": [
+        {
+          "url": "/deity/shiva/mantras",
+          "status": 200,
+          "bytes": 166669,
+          "location": null
+        },
+        {
+          "url": "/deity/vishnu/mantras",
+          "status": 200,
+          "bytes": 162393,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/deity/__ct_does_not_exist_zzz/mantras",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/devi/mahavidyas/[slug]",
+      "valid": [
+        {
+          "url": "/devi/mahavidyas/kali",
+          "status": 200,
+          "bytes": 130434,
+          "location": null
+        },
+        {
+          "url": "/devi/mahavidyas/tara",
+          "status": 200,
+          "bytes": 130003,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/devi/mahavidyas/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/devi/navadurga/[slug]",
+      "valid": [
+        {
+          "url": "/devi/navadurga/shailaputri",
+          "status": 200,
+          "bytes": 128042,
+          "location": null
+        },
+        {
+          "url": "/devi/navadurga/brahmacharini",
+          "status": 200,
+          "bytes": 128371,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/devi/navadurga/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/gaushala/profile/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/gurukuls/apply/[programId]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/learn-sanskrit/lesson/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/panchang/karana/[slug]",
+      "valid": [
+        {
+          "url": "/panchang/karana/bava",
+          "status": 200,
+          "bytes": 119703,
+          "location": null
+        },
+        {
+          "url": "/panchang/karana/balava",
+          "status": 200,
+          "bytes": 119768,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/panchang/karana/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/panchang/yoga/[slug]",
+      "valid": [
+        {
+          "url": "/panchang/yoga/vishkambha",
+          "status": 200,
+          "bytes": 119813,
+          "location": null
+        },
+        {
+          "url": "/panchang/yoga/priti",
+          "status": 200,
+          "bytes": 119477,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/panchang/yoga/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/priest/bookings/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/puja/[city]/[slug]",
+      "valid": [
+        {
+          "url": "/puja/bengaluru/satyanarayan-puja",
+          "status": 200,
+          "bytes": 125731,
+          "location": null
+        },
+        {
+          "url": "/puja/mumbai/griha-pravesh",
+          "status": 200,
+          "bytes": 125378,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/puja/__ct_does_not_exist_zzz/[slug]",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/pujas/[slug]/book",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/pujas/[slug]/temples",
+      "valid": [
+        {
+          "url": "/pujas/rudrabhishek/temples",
+          "status": 200,
+          "bytes": 127185,
+          "location": null
+        },
+        {
+          "url": "/pujas/ganesh-puja/temples",
+          "status": 200,
+          "bytes": 129163,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/pujas/__ct_does_not_exist_zzz/temples",
+        "status": 200,
+        "bytes": 120392,
+        "location": null
+      },
+      "state": "FAIL",
+      "note": "bogus slug returned 200 — soft 404, page renders for nonexistent content"
+    },
+    {
+      "pattern": "/pujas/home-puja/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/pujas/pandits/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/store/seller/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/temples/[slug]/pujas",
+      "valid": [
+        {
+          "url": "/temples/tirupati-balaji/pujas",
+          "status": 200,
+          "bytes": 143347,
+          "location": null
+        },
+        {
+          "url": "/temples/akshardham/pujas",
+          "status": 200,
+          "bytes": 120885,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/temples/__ct_does_not_exist_zzz/pujas",
+        "status": 200,
+        "bytes": 116782,
+        "location": null
+      },
+      "state": "FAIL",
+      "note": "bogus slug returned 200 — soft 404, page renders for nonexistent content"
+    },
+    {
+      "pattern": "/wellness/classes/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/wellness/instructors/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/yatra/[slug]/book",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/yatra/companion/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/yatra/destinations/[slug]",
+      "valid": [
+        {
+          "url": "/yatra/destinations/vaishno-devi",
+          "status": 200,
+          "bytes": 132221,
+          "location": null
+        },
+        {
+          "url": "/yatra/destinations/tirupati-balaji",
+          "status": 200,
+          "bytes": 132411,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/yatra/destinations/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/aarti/[slug]",
+      "valid": [
+        {
+          "url": "/aarti/om-jai-jagdish-hare",
+          "status": 200,
+          "bytes": 131178,
+          "location": null
+        },
+        {
+          "url": "/aarti/shiv-aarti",
+          "status": 200,
+          "bytes": 130948,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/aarti/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/aditya/[slug]",
+      "valid": [
+        {
+          "url": "/aditya/vivasvan",
+          "status": 200,
+          "bytes": 119016,
+          "location": null
+        },
+        {
+          "url": "/aditya/aryaman",
+          "status": 200,
+          "bytes": 119591,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/aditya/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/ashta-lakshmi/[slug]",
+      "valid": [
+        {
+          "url": "/ashta-lakshmi/adi-lakshmi",
+          "status": 200,
+          "bytes": 121459,
+          "location": null
+        },
+        {
+          "url": "/ashta-lakshmi/dhana-lakshmi",
+          "status": 200,
+          "bytes": 122606,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/ashta-lakshmi/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/astrology/[id]",
+      "valid": [
+        {
+          "url": "/astrology/horoscope",
+          "status": 200,
+          "bytes": 188538,
+          "location": null
+        },
+        {
+          "url": "/astrology/kundli",
+          "status": 200,
+          "bytes": 125137,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/astrology/__ct_does_not_exist_zzz",
+        "status": 200,
+        "bytes": 117430,
+        "location": null
+      },
+      "state": "FAIL",
+      "note": "bogus slug returned 200 — soft 404, page renders for nonexistent content"
+    },
+    {
+      "pattern": "/bhakti-saint/[slug]",
+      "valid": [
+        {
+          "url": "/bhakti-saint/tulsidas",
+          "status": 200,
+          "bytes": 132614,
+          "location": null
+        },
+        {
+          "url": "/bhakti-saint/mirabai",
+          "status": 200,
+          "bytes": 131363,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/bhakti-saint/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/blog/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/calendar/[month]",
+      "valid": [
+        {
+          "url": "/calendar/january",
+          "status": 200,
+          "bytes": 162073,
+          "location": null
+        },
+        {
+          "url": "/calendar/february",
+          "status": 200,
+          "bytes": 144379,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/calendar/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/chakras/[slug]",
+      "valid": [
+        {
+          "url": "/chakras/muladhara",
+          "status": 200,
+          "bytes": 130499,
+          "location": null
+        },
+        {
+          "url": "/chakras/svadhisthana",
+          "status": 200,
+          "bytes": 130644,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/chakras/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/chalisa/[slug]",
+      "valid": [
+        {
+          "url": "/chalisa/hanuman-chalisa",
+          "status": 200,
+          "bytes": 179986,
+          "location": null
+        },
+        {
+          "url": "/chalisa/ganesh-chalisa",
+          "status": 200,
+          "bytes": 175365,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/chalisa/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/chants/[slug]",
+      "valid": [
+        {
+          "url": "/chants/gayatri-mantra",
+          "status": 200,
+          "bytes": 123226,
+          "location": null
+        },
+        {
+          "url": "/chants/mahamrityunjaya-mantra",
+          "status": 200,
+          "bytes": 123806,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/chants/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/city/[slug]",
+      "valid": [
+        {
+          "url": "/city/varanasi",
+          "status": 200,
+          "bytes": 145364,
+          "location": null
+        },
+        {
+          "url": "/city/mumbai",
+          "status": 200,
+          "bytes": 143697,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/city/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/consultation/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/content/[slug]",
+      "valid": [
+        {
+          "url": "/content/books",
+          "status": 200,
+          "bytes": 116104,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/content/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/darshan/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/darshanas/[slug]",
+      "valid": [
+        {
+          "url": "/darshanas/nyaya",
+          "status": 200,
+          "bytes": 128835,
+          "location": null
+        },
+        {
+          "url": "/darshanas/vaisheshika",
+          "status": 200,
+          "bytes": 129648,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/darshanas/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/dashavatar/[slug]",
+      "valid": [
+        {
+          "url": "/dashavatar/matsya",
+          "status": 200,
+          "bytes": 125457,
+          "location": null
+        },
+        {
+          "url": "/dashavatar/kurma",
+          "status": 200,
+          "bytes": 125753,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/dashavatar/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/deity/[slug]",
+      "valid": [
+        {
+          "url": "/deity/shiva",
+          "status": 200,
+          "bytes": 147494,
+          "location": null
+        },
+        {
+          "url": "/deity/vishnu",
+          "status": 200,
+          "bytes": 147516,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/deity/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/demo/[role]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/ekadashi/[slug]",
+      "valid": [
+        {
+          "url": "/ekadashi/utpanna",
+          "status": 200,
+          "bytes": 126326,
+          "location": null
+        },
+        {
+          "url": "/ekadashi/mokshada",
+          "status": 200,
+          "bytes": 125808,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/ekadashi/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/festival/[slug]",
+      "valid": [
+        {
+          "url": "/festival/maha-shivratri",
+          "status": 200,
+          "bytes": 121399,
+          "location": null
+        },
+        {
+          "url": "/festival/holi",
+          "status": 200,
+          "bytes": 119885,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/festival/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/free-pandit-advice/[topic]",
+      "valid": [
+        {
+          "url": "/free-pandit-advice/marriage",
+          "status": 200,
+          "bytes": 136653,
+          "location": null
+        },
+        {
+          "url": "/free-pandit-advice/career",
+          "status": 200,
+          "bytes": 136834,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/free-pandit-advice/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/gaushala/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/gita/[chapter]",
+      "valid": [
+        {
+          "url": "/gita/arjuna-vishada-yoga",
+          "status": 200,
+          "bytes": 126087,
+          "location": null
+        },
+        {
+          "url": "/gita/sankhya-yoga",
+          "status": 200,
+          "bytes": 127864,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/gita/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/gurukuls/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/hindu-philosophies/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/hindu-symbols/[slug]",
+      "valid": [
+        {
+          "url": "/hindu-symbols/om-aum",
+          "status": 200,
+          "bytes": 123991,
+          "location": null
+        },
+        {
+          "url": "/hindu-symbols/swastika",
+          "status": 200,
+          "bytes": 126917,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/hindu-symbols/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/jyotirlinga/[slug]",
+      "valid": [
+        {
+          "url": "/jyotirlinga/somnath",
+          "status": 200,
+          "bytes": 124768,
+          "location": null
+        },
+        {
+          "url": "/jyotirlinga/mallikarjuna",
+          "status": 200,
+          "bytes": 125008,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/jyotirlinga/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/mahabharata/[parva]",
+      "valid": [
+        {
+          "url": "/mahabharata/adi-parva",
+          "status": 200,
+          "bytes": 127685,
+          "location": null
+        },
+        {
+          "url": "/mahabharata/sabha-parva",
+          "status": 200,
+          "bytes": 128808,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/mahabharata/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/masa/[slug]",
+      "valid": [
+        {
+          "url": "/masa/chaitra",
+          "status": 200,
+          "bytes": 123239,
+          "location": null
+        },
+        {
+          "url": "/masa/vaishakha",
+          "status": 200,
+          "bytes": 123442,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/masa/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/muhurat/[slug]",
+      "valid": [
+        {
+          "url": "/muhurat/brahma-muhurta",
+          "status": 200,
+          "bytes": 126756,
+          "location": null
+        },
+        {
+          "url": "/muhurat/abhijit-muhurta",
+          "status": 200,
+          "bytes": 125993,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/muhurat/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/nakshatra/[slug]",
+      "valid": [
+        {
+          "url": "/nakshatra/ashwini",
+          "status": 200,
+          "bytes": 120987,
+          "location": null
+        },
+        {
+          "url": "/nakshatra/bharani",
+          "status": 200,
+          "bytes": 121226,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/nakshatra/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/nava-graha/[slug]",
+      "valid": [
+        {
+          "url": "/nava-graha/surya",
+          "status": 200,
+          "bytes": 134819,
+          "location": null
+        },
+        {
+          "url": "/nava-graha/chandra",
+          "status": 200,
+          "bytes": 135239,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/nava-graha/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/navaratna/[slug]",
+      "valid": [
+        {
+          "url": "/navaratna/ruby-manik",
+          "status": 200,
+          "bytes": 130590,
+          "location": null
+        },
+        {
+          "url": "/navaratna/pearl-moti",
+          "status": 200,
+          "bytes": 130555,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/navaratna/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/pancha-bhoota/[slug]",
+      "valid": [
+        {
+          "url": "/pancha-bhoota/ekambareshwarar-kanchipuram",
+          "status": 200,
+          "bytes": 127868,
+          "location": null
+        },
+        {
+          "url": "/pancha-bhoota/jambukeshwarar-thiruvanaikaval",
+          "status": 200,
+          "bytes": 129141,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/pancha-bhoota/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/panchang/[city]",
+      "valid": [
+        {
+          "url": "/panchang/varanasi",
+          "status": 200,
+          "bytes": 126525,
+          "location": null
+        },
+        {
+          "url": "/panchang/mumbai",
+          "status": 200,
+          "bytes": 126429,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/panchang/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/pandits/[id]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/pilgrimage/[slug]",
+      "valid": [
+        {
+          "url": "/pilgrimage/char-dham",
+          "status": 200,
+          "bytes": 130211,
+          "location": null
+        },
+        {
+          "url": "/pilgrimage/12-jyotirlinga",
+          "status": 200,
+          "bytes": 144074,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/pilgrimage/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/pujas/[slug]",
+      "valid": [
+        {
+          "url": "/pujas/rudrabhishek",
+          "status": 200,
+          "bytes": 192337,
+          "location": null
+        },
+        {
+          "url": "/pujas/ganesh-puja",
+          "status": 200,
+          "bytes": 197520,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/pujas/__ct_does_not_exist_zzz",
+        "status": 200,
+        "bytes": 119960,
+        "location": null
+      },
+      "state": "FAIL",
+      "note": "bogus slug returned 200 — soft 404, page renders for nonexistent content"
+    },
+    {
+      "pattern": "/puranas/[slug]",
+      "valid": [
+        {
+          "url": "/puranas/brahma-purana",
+          "status": 200,
+          "bytes": 127236,
+          "location": null
+        },
+        {
+          "url": "/puranas/padma-purana",
+          "status": 200,
+          "bytes": 128179,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/puranas/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/ramayana/[kanda]",
+      "valid": [
+        {
+          "url": "/ramayana/bala-kanda",
+          "status": 200,
+          "bytes": 121378,
+          "location": null
+        },
+        {
+          "url": "/ramayana/ayodhya-kanda",
+          "status": 200,
+          "bytes": 121837,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/ramayana/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/rashi/[slug]",
+      "valid": [
+        {
+          "url": "/rashi/aries",
+          "status": 200,
+          "bytes": 123704,
+          "location": null
+        },
+        {
+          "url": "/rashi/taurus",
+          "status": 200,
+          "bytes": 123889,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/rashi/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/rudraksha/[slug]",
+      "valid": [
+        {
+          "url": "/rudraksha/ek-mukhi-rudraksha",
+          "status": 200,
+          "bytes": 123505,
+          "location": null
+        },
+        {
+          "url": "/rudraksha/do-mukhi-rudraksha",
+          "status": 200,
+          "bytes": 123259,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/rudraksha/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/sacred-mountains/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/sacred-rivers/[slug]",
+      "valid": [
+        {
+          "url": "/sacred-rivers/ganga",
+          "status": 200,
+          "bytes": 131363,
+          "location": null
+        },
+        {
+          "url": "/sacred-rivers/yamuna",
+          "status": 200,
+          "bytes": 129821,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/sacred-rivers/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/sacred-trees/[slug]",
+      "valid": [
+        {
+          "url": "/sacred-trees/peepal-ashvattha",
+          "status": 200,
+          "bytes": 124091,
+          "location": null
+        },
+        {
+          "url": "/sacred-trees/banyan-vata",
+          "status": 200,
+          "bytes": 124041,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/sacred-trees/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/samskaras/[slug]",
+      "valid": [
+        {
+          "url": "/samskaras/garbhadhana",
+          "status": 200,
+          "bytes": 127927,
+          "location": null
+        },
+        {
+          "url": "/samskaras/pumsavana",
+          "status": 200,
+          "bytes": 127561,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/samskaras/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/sanatan/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/sanskrit/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/sapta-mathruka/[slug]",
+      "valid": [
+        {
+          "url": "/sapta-mathruka/brahmani",
+          "status": 200,
+          "bytes": 121359,
+          "location": null
+        },
+        {
+          "url": "/sapta-mathruka/vaishnavi",
+          "status": 200,
+          "bytes": 121890,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/sapta-mathruka/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/sapta-rishis/[slug]",
+      "valid": [
+        {
+          "url": "/sapta-rishis/atri",
+          "status": 200,
+          "bytes": 126106,
+          "location": null
+        },
+        {
+          "url": "/sapta-rishis/bharadvaja",
+          "status": 200,
+          "bytes": 126642,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/sapta-rishis/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/shakti-peeth/[slug]",
+      "valid": [
+        {
+          "url": "/shakti-peeth/kamakhya",
+          "status": 200,
+          "bytes": 122573,
+          "location": null
+        },
+        {
+          "url": "/shakti-peeth/kalighat",
+          "status": 200,
+          "bytes": 122312,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/shakti-peeth/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/shlokas/[slug]",
+      "valid": [
+        {
+          "url": "/shlokas/gita-2-47",
+          "status": 200,
+          "bytes": 130450,
+          "location": null
+        },
+        {
+          "url": "/shlokas/gita-4-7",
+          "status": 200,
+          "bytes": 128765,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/shlokas/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/store/[handle]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/temples/[slug]",
+      "valid": [
+        {
+          "url": "/temples/tirupati-balaji",
+          "status": 200,
+          "bytes": 294431,
+          "location": null
+        },
+        {
+          "url": "/temples/akshardham",
+          "status": 200,
+          "bytes": 257366,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/temples/__ct_does_not_exist_zzz",
+        "status": 200,
+        "bytes": 115135,
+        "location": null
+      },
+      "state": "FAIL",
+      "note": "bogus slug returned 200 — soft 404, page renders for nonexistent content"
+    },
+    {
+      "pattern": "/tirth/[slug]",
+      "valid": [
+        {
+          "url": "/tirth/kashi-vishwanath",
+          "status": 200,
+          "bytes": 124223,
+          "location": null
+        },
+        {
+          "url": "/tirth/tirupati-balaji",
+          "status": 200,
+          "bytes": 126517,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/tirth/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/tithi/[slug]",
+      "valid": [
+        {
+          "url": "/tithi/pratipada",
+          "status": 200,
+          "bytes": 123398,
+          "location": null
+        },
+        {
+          "url": "/tithi/dwitiya",
+          "status": 200,
+          "bytes": 123152,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/tithi/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/upanishads/[slug]",
+      "valid": [
+        {
+          "url": "/upanishads/isha-upanishad",
+          "status": 200,
+          "bytes": 143598,
+          "location": null
+        },
+        {
+          "url": "/upanishads/kena-upanishad",
+          "status": 200,
+          "bytes": 144373,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/upanishads/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/ved/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/vedas/[slug]",
+      "valid": [
+        {
+          "url": "/vedas/rigveda",
+          "status": 200,
+          "bytes": 135947,
+          "location": null
+        },
+        {
+          "url": "/vedas/samaveda",
+          "status": 200,
+          "bytes": 131636,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/vedas/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/vedic-yajnas/[slug]",
+      "valid": [
+        {
+          "url": "/vedic-yajnas/agnihotra",
+          "status": 200,
+          "bytes": 127196,
+          "location": null
+        },
+        {
+          "url": "/vedic-yajnas/darshapurnamasa",
+          "status": 200,
+          "bytes": 127886,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/vedic-yajnas/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/vrat/[slug]",
+      "valid": [
+        {
+          "url": "/vrat/ekadashi",
+          "status": 200,
+          "bytes": 129022,
+          "location": null
+        },
+        {
+          "url": "/vrat/pradosh",
+          "status": 200,
+          "bytes": 128016,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/vrat/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/yatra-packages/[slug]",
+      "valid": [],
+      "notFound": null,
+      "state": "UNRESOLVED"
+    },
+    {
+      "pattern": "/yatra/[slug]",
+      "valid": [
+        {
+          "url": "/yatra/companion",
+          "status": 200,
+          "bytes": 169627,
+          "location": null
+        },
+        {
+          "url": "/yatra/plan",
+          "status": 200,
+          "bytes": 130215,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/yatra/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    },
+    {
+      "pattern": "/yoga-sutras/[pada]",
+      "valid": [
+        {
+          "url": "/yoga-sutras/samadhi-pada",
+          "status": 200,
+          "bytes": 128485,
+          "location": null
+        },
+        {
+          "url": "/yoga-sutras/sadhana-pada",
+          "status": 200,
+          "bytes": 129498,
+          "location": null
+        }
+      ],
+      "notFound": {
+        "url": "/yoga-sutras/__ct_does_not_exist_zzz",
+        "status": 404,
+        "bytes": 0,
+        "location": null
+      },
+      "state": "PASS"
+    }
+  ]
+}
