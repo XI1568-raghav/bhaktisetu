@@ -107,6 +107,17 @@ Anyone following this doc submits four dead links.
 | 33 dynamic patterns | 33 | Need real ids; most are auth-gated so they need B1 resolved first. |
 | Every CTA / form / interaction | all | Deterministic sweep proves reachability only. Click-level testing is the next phase. |
 
+### CT-UI-1 · P3 · empty interpolation in portal headings
+
+`/temple-portal` renders its subheading as `, · Temple management dashboard` for an
+account with no temple profile yet — a leading comma and separator with nothing
+between them. Same class as the soft-404 `<title>Temple — , ` in CT-SEO-1: a template
+string joining fields that are empty, with no guard.
+
+Cosmetic, and the rest of the page is correct (it shows the right "Complete your Temple
+profile" onboarding CTA and honest zero states). Worth a single guard where the parts
+are joined, since the pattern has now shown up twice.
+
 ## Verified working on prod (authenticated, real accounts)
 
 All 8 roles provisioned as real Supabase accounts (`ct+<role>@darshya.online`) and
