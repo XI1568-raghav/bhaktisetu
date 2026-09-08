@@ -138,7 +138,7 @@ const OPEN_LANES: Lane[] = [
 
 export default function ServiceLanes() {
   return (
-    <section className="py-8 md:py-11" style={{ background: 'var(--color-surface)' }}>
+    <section id="lanes" className="py-8 md:py-11" style={{ background: 'var(--color-surface)' }}>
       <div className="container-wide">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>

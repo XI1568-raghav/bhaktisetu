@@ -654,6 +654,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* HOME-SCROLL: the header is fixed at 64px, so an anchor jump without this
+     lands the target UNDER it. 5rem leaves a little breathing room above. */
+  scroll-padding-top: 5rem;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -1664,4 +1667,89 @@ input[type="datetime-local"]::-moz-calendar-picker-indicator {
 [data-tod-wash] > * {
   position: relative;
   z-index: 1;
+}
+
+/* ── sankalp thread — the scroll-linked rail ───────────────────────────────
+   HOME-SCROLL (2026-09-08). components/home/SankalpThread.tsx renders the
+   markup; this is the entire behaviour.
+
+   THE WHOLE THING IS INSIDE @supports AND prefers-reduced-motion. Nesting the
+   media query INSIDE the supports block is deliberate, not stylistic: an
+   `animation-timeline` declaration that lands in a browser without support does
+   not simply no-op, it can reset `animation` to a time-based default and run the
+   keyframes on a TIMER — a thread that fills itself in 0.3s while nobody
+   scrolls. The guard has to wrap the declarations, not sit beside them.
+
+   TRANSFORM AND OPACITY ONLY. These are the two properties a compositor can
+   animate without paint. Driving the fill with `height`, or the knots with
+   `background-color`, would put paint work on every scroll frame and forfeit the
+   reason to use a scroll timeline at all — and on the 4G Android this audience
+   is actually on, that is the difference between free and janky.
+
+   THE FALLBACK IS THE RESTING STATE. Outside @supports the fill keeps
+   scaleY(0) (invisible) and the knots keep their dim resting style, so the rail
+   renders as a plain hairline with dots — a deliberate margin rule, not a broken
+   feature. Nothing here is load-bearing for reading or navigating the page; the
+   knots are ordinary anchor links and work with CSS off entirely. */
+
+[data-sankalp-fill] {
+  transform: scaleY(0);
+}
+
+[data-sankalp-knot] [data-sankalp-dot] {
+  opacity: 0.28;
+}
+
+@supports (animation-timeline: scroll()) and (animation-range: 0% 100%) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* LONGHANDS, NOT THE `animation` SHORTHAND. The shorthand sets
+       animation-duration to 0s, and a scroll-driven animation needs `auto` —
+       with 0s the animation is complete before it starts and the element sits
+       frozen on one keyframe while the page scrolls past it. It LOOKS wired:
+       animation-timeline computes to scroll(root) and CSS.supports() returns
+       true. Only the rendered transform gives it away. */
+    [data-sankalp-fill] {
+      animation-name: sankalp-grow;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: forwards;
+      animation-timeline: scroll(root block);
+    }
+
+    /* Each knot lights as the page reaches it. One shared timeline; the only
+       per-knot value is --at, set inline from ThreadStop.at. `both` holds the
+       lit state after the range ends, so a knot you have passed stays tied. */
+    [data-sankalp-knot] [data-sankalp-dot] {
+      animation-name: sankalp-tie;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root block);
+      animation-range: 0% var(--at, 100%);
+    }
+  }
+}
+
+@keyframes sankalp-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes sankalp-tie {
+  from {
+    opacity: 0.28;
+    transform: scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

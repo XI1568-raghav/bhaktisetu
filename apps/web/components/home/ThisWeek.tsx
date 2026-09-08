@@ -104,7 +104,7 @@ export default async function ThisWeek({ catalogueSlugs, now }: Props = {}) {
   });
 
   return (
-    <section aria-label="This week" className="py-7 md:py-10" style={{ background: 'var(--color-bg)' }}>
+    <section id="coming-up" aria-label="This week" className="py-7 md:py-10" style={{ background: 'var(--color-bg)' }}>
       <div className="container-wide">
         <div className="flex items-baseline justify-between gap-4 mb-1.5">
           <h2

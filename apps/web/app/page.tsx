@@ -33,6 +33,7 @@ import EmailCapture from '../components/EmailCapture';
 import HowItWorks from '../components/home/HowItWorks';
 import HeroCopyVariant from '../components/home/HeroCopyVariant';
 import TempleClock from '../components/home/TempleClock';
+import SankalpThread from '../components/home/SankalpThread';
 
 // Edge runtime + 1-hour revalidate — TTFB win per Pillar 4 audit (2026-06-08).
 // Panchang chip cache OK at 1h granularity. Personal salutation deferred to client.
@@ -95,6 +96,21 @@ export default async function HomePage() {
    type="application/ld+json"
    dangerouslySetInnerHTML={{ __html: JSON.stringify(brandFaqJsonLd) }}
  />
+ {/* HOME-SCROLL (2026-09-08): the kalava rail. Decorative + a jump nav; lg-only,
+     lives in the gutter a wide viewport already has spare. */}
+ <SankalpThread
+   stops={[
+     { id: 'hero', label: 'Book a puja', at: 4 },
+     { id: 'begin', label: 'Choose where to begin', at: 16 },
+     { id: 'coming-up', label: 'What is coming up', at: 21 },
+     { id: 'how-it-works', label: 'How it works', at: 29 },
+     { id: 'lanes', label: 'Every way to be present', at: 47 },
+     { id: 'nri', label: 'Living abroad', at: 58 },
+     { id: 'darshan', label: 'Live darshan', at: 66 },
+     { id: 'offerings', label: 'Pujas and astrology', at: 76 },
+     { id: 'panchang', label: 'Daily panchang', at: 92 },
+   ]}
+ />
  <div data-scroll-progress className="fixed top-0 left-0 right-0 h-0.5 z-[60] origin-left scale-x-0" style={{ background: 'var(--color-primary)' }} />
  <div style={{ background: 'var(--color-bg)' }}>
 
@@ -103,7 +119,7 @@ export default async function HomePage() {
  {/* ═══ HERO — parallax bento, spring reveals ═════════════════════════ */}
  {/* HOME-TOD: `data-tod-wash` layers the time-of-day gradient behind the hero.
      The hero is already `position: relative`, which the rule depends on. */}
- <section data-tod-wash className="flex flex-col justify-center relative overflow-hidden">
+ <section id="hero" data-tod-wash className="flex flex-col justify-center relative overflow-hidden">
  <div className="container-wide py-6 md:py-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
@@ -295,7 +311,7 @@ export default async function HomePage() {
 
 
  {/* ═══ LIVE DARSHAN — cinematic image reveal ════════════════════════ */}
- <section className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
+ <section id="darshan" className="py-6 md:py-8" style={{ background: 'var(--color-surface)' }}>
  <div className="container-wide">
  <div className="flex items-center justify-between mb-5">
  <div>
@@ -372,7 +388,7 @@ export default async function HomePage() {
  </section>
 
  {/* ═══ PUJA BOOKING + ASTROLOGY — side by side ═══════════════════ */}
- <section className="py-6 md:py-8">
+ <section id="offerings" className="py-6 md:py-8">
  <div className="container-wide">
  <div className="grid md:grid-cols-2 gap-5">
  {/* Puja Booking card */}
@@ -575,7 +591,7 @@ export default async function HomePage() {
      A <div>, not a <section>: EmailCapture renders its own <section> with the
      heading, so wrapping it in a second one put two identical "Daily panchang in
      your inbox" landmarks in the a11y tree, one nested inside the other. */}
- <div className="container-prose py-12">
+ <div id="panchang" className="container-prose py-12">
  <EmailCapture
  source="home-hero"
  title="Daily panchang in your inbox"
