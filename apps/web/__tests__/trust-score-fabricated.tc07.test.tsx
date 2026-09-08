@@ -116,7 +116,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-import TemplesPage from '../app/temples/page';
+import TemplesPage from '../app/temples/(index)/page';
 import TempleDetailPage from '../app/temples/[slug]/page';
 
 interface BrowserProps {
@@ -185,7 +185,7 @@ describe('TC-07 — /temples manufactures no trust signal of its own', () => {
   });
 
   it('does not decide Jyotirlinga status from an operations score', () => {
-    const src = stripComments(read('app/temples/page.tsx'));
+    const src = stripComments(read('app/temples/(index)/page.tsx'));
     expect(src).not.toMatch(/TRUST_SCORE_MARQUEE/);
     expect(src).not.toMatch(/trustScore\s*>=/);
     expect(src).not.toMatch(/popularity:\s*t\.trustScore/);

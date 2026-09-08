@@ -30,7 +30,7 @@ function codeOf(rel: string): string {
     .replace(/^\s*\/\/.*$/gm, '');
 }
 
-const src = codeOf('app/pujas/page.tsx');
+const src = codeOf('app/pujas/(index)/page.tsx');
 
 describe('PF-07 — a phone can reach the catalogue without 2.3 screens of scroll', () => {
   it('the catalogue grid has an anchor to jump to', () => {
