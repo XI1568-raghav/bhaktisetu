@@ -46,6 +46,7 @@ const POINTS = [
 export default function NriLane() {
   return (
     <section
+      id="nri"
       aria-labelledby="nri-lane-heading"
       className="py-8 md:py-11"
       style={{

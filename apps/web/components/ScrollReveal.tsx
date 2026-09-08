@@ -129,6 +129,63 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
  progressBar.style.transform = `scaleX(${progress})`;
  }
 
+ // ─── 6. Sankalp thread — fallback only ───────────────────────────
+ /**
+  * HOME-SCROLL (2026-09-08). The rail in components/home/SankalpThread.tsx is
+  * driven by CSS `animation-timeline: scroll(root block)`, which costs nothing
+  * and runs off the main thread. This is the fallback for engines where that
+  * timeline never becomes active.
+  *
+  * It is NOT a support check. `CSS.supports('animation-timeline: scroll()')`
+  * returns true in environments where the timeline is still never ticked — a
+  * bare control element with a scroll-driven keyframe reported
+  * `timeline.currentTime === null` at both ends of the page while a
+  * JS-constructed `new ScrollTimeline()` on the same document reported "0%".
+  * So the probe below asks the only question that matters: is the animation
+  * this element already has actually receiving time? If it is, we write nothing
+  * and the compositor keeps the job.
+  *
+  * The cost when it IS needed is one transform write plus at most one opacity
+  * write per knot, inside the rAF tick this file already runs for the progress
+  * bar — no new listener, no second rAF.
+  */
+ const threadFill = document.querySelector('[data-sankalp-fill]') as HTMLElement | null;
+ const threadDots = Array.from(
+ document.querySelectorAll('[data-sankalp-knot] [data-sankalp-dot]'),
+ ) as HTMLElement[];
+ const threadStops = threadDots.map((dot) => {
+ const at = (dot.closest('[data-sankalp-knot]') as HTMLElement | null)?.style.getPropertyValue('--at');
+ return Math.max(0, Math.min(100, parseFloat(at || '100'))) / 100;
+ });
+ let threadNeedsJs: boolean | null = null;
+ let litCount = -1;
+
+ function cssTimelineIsLive(el: HTMLElement): boolean {
+ const anims = typeof el.getAnimations === 'function' ? el.getAnimations() : [];
+ return anims.some((a) => {
+ try {
+ return a.timeline != null && a.timeline.currentTime != null;
+ } catch {
+ return false;
+ }
+ });
+ }
+
+ function updateThread(progress: number) {
+ if (!threadFill) return;
+ if (threadNeedsJs === null) threadNeedsJs = !cssTimelineIsLive(threadFill);
+ if (!threadNeedsJs) return;
+ threadFill.style.transform = `scaleY(${progress})`;
+ // Only touch the dots when the lit COUNT changes, not every frame.
+ let lit = 0;
+ for (const stop of threadStops) if (progress >= stop) lit++;
+ if (lit === litCount) return;
+ litCount = lit;
+ threadDots.forEach((dot, i) => {
+ dot.style.opacity = progress >= (threadStops[i] ?? 1) ? '1' : '0.28';
+ });
+ }
+
  // ─── Single rAF-throttled scroll tick ────────────────────────────
  function onScroll() {
  if (ticking) return;
@@ -136,6 +193,8 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
  requestAnimationFrame(() => {
  updateParallax();
  updateProgress();
+ const docH = document.documentElement.scrollHeight - window.innerHeight;
+ updateThread(docH > 0 ? Math.min(window.scrollY / docH, 1) : 0);
  ticking = false;
  });
  }
@@ -147,7 +206,7 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
 
  window.addEventListener('scroll', onScroll, { passive: true });
  // Initial positions (wrapped in rAF so it batches with first paint).
- requestAnimationFrame(() => { updateParallax(); updateProgress(); });
+ requestAnimationFrame(() => { updateParallax(); updateProgress(); updateThread(0); });
 
  return () => {
  revealObserver.disconnect();

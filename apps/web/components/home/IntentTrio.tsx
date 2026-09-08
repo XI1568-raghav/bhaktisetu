@@ -60,6 +60,7 @@ function TrioCards({ liveDarshanTemples }: { liveDarshanTemples: number | null }
   const CARDS = cards(liveDarshanTemples);
   return (
     <section
+      id="begin"
       className="py-8 md:py-10"
       aria-labelledby="intent-trio-heading"
     >

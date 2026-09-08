@@ -52,7 +52,7 @@ export default function HowItWorks() {
     // far from the viewport and renders it normally once it is near, so this is
     // safe without a live viewport measurement. Markup stays in the HTML for
     // crawlers. See __tests__/home-deferral-ranking.home01.test.ts.
-    <section className="defer-paint py-8 md:py-10" aria-labelledby="how-it-works-heading">
+    <section id="how-it-works" className="defer-paint py-8 md:py-10" aria-labelledby="how-it-works-heading">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2
           id="how-it-works-heading"
