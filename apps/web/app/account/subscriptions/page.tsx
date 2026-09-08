@@ -217,15 +217,29 @@ function AccountSubscriptionsInner() {
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading…
           </div>
         ) : !subscription ? (
-          <div className="rounded-2xl bg-white p-6 border text-center" style={{ borderColor: 'var(--color-border, #e8dcc8)' }}>
-            <p className="text-surface-600 mb-4">You don&rsquo;t have an active subscription.</p>
-            <button
-              onClick={() => router.push('/upgrade')}
-              className={buttonClass('primary', 'md')}
-            >
-              See plans
-            </button>
-          </div>
+          /* RES-09 (2026-09-08) — the residual the F357 note names: "plus
+             suppressing the empty-state". Every error path above leaves
+             `subscription` null, so a FAILED load rendered exactly what a
+             successful empty one renders: "You don't have an active
+             subscription." under a red banner saying the load failed. That is
+             a factual claim about someone's billing, made from data the page
+             never received, and no amount of friendly error copy fixes it —
+             the copy here was already correct.
+
+             Gated on `error` rather than on the absence of data, so a server
+             that genuinely answers `{"subscription": null}` still gets the real
+             empty state and its plans link. */
+          error ? null : (
+            <div className="rounded-2xl bg-white p-6 border text-center" style={{ borderColor: 'var(--color-border, #e8dcc8)' }}>
+              <p className="text-surface-600 mb-4">You don&rsquo;t have an active subscription.</p>
+              <button
+                onClick={() => router.push('/upgrade')}
+                className={buttonClass('primary', 'md')}
+              >
+                See plans
+              </button>
+            </div>
+          )
         ) : (
           <div className="rounded-2xl bg-white p-6 shadow-sm border" style={{ borderColor: 'var(--color-border, #e8dcc8)' }}>
             <div className="flex items-start justify-between mb-4">

@@ -10,6 +10,40 @@ import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import {
+  GENERIC_ERROR_MESSAGE,
+  UserFacingError,
+  friendlyApiError,
+  serverErrorText,
+  userFacingMessage,
+} from '../../../../lib/friendly-error';
+
+/**
+ * RES-09 (2026-09-08) — the same two defects as /profile/consultations, on the
+ * screen a devotee lands on straight after paying.
+ *
+ *   :57 throw new Error(`Cancel ${res.status}${body ? `: ${body.slice(0,140)}` : ''}`)
+ *   :63 setCancelError(e instanceof Error ? e.message : 'Could not cancel')
+ *   :79 throw new Error(`Could not load consultation (${res.status})`)
+ *   :84 setError(err instanceof Error ? err.message : 'Could not load consultation.')
+ *
+ * The cancel path spliced up to 140 characters of the RESPONSE BODY into the
+ * message and rendered it, so a gateway answering HTML put "<html><head><title>
+ * 502 Bad Gateway" on a devotee's confirmation page. The load path printed the
+ * status. On a dropped connection both printed whatever the browser wrote.
+ */
+const LOAD_FALLBACK = 'Could not load this booking right now. Please try again.';
+const CANCEL_FALLBACK = 'Could not cancel this consultation right now. Please try again.';
+
+/**
+ * The copy for a status, or the page's own line when the status says nothing
+ * useful. The number is passed via String() rather than interpolated, so it
+ * reaches the classifier and never a screen.
+ */
+function statusCopy(status: number, fallback: string): string {
+  const classified = friendlyApiError(new Error(String(status))).message;
+  return classified === GENERIC_ERROR_MESSAGE ? fallback : classified;
+}
 
 type Consultation = {
   id: string;
@@ -56,11 +90,11 @@ function SuccessContent() {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
-        throw new Error(`Cancel ${res.status}${body ? `: ${body.slice(0, 140)}` : ''}`);
+        throw new UserFacingError(serverErrorText(body, statusCopy(res.status, CANCEL_FALLBACK)));
       }
       setConsultation({ ...consultation, status: 'cancelled' });
     } catch (e) {
-      setCancelError(e instanceof Error ? e.message : 'Could not cancel');
+      setCancelError(userFacingMessage(e, CANCEL_FALLBACK));
     } finally {
       setCancelling(false);
     }
@@ -74,14 +108,17 @@ function SuccessContent() {
           headers: buildAuthHeaders(session?.accessToken),
           credentials: 'include',
         });
-        if (!res.ok) throw new Error(`Could not load consultation (${res.status})`);
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          throw new UserFacingError(serverErrorText(body, statusCopy(res.status, LOAD_FALLBACK)));
+        }
         const json = (await res.json()) as { consultation?: Consultation };
         if (!cancelled) {
           if (json.consultation) setConsultation(json.consultation);
           else setError('Consultation not found.');
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load consultation.');
+        if (!cancelled) setError(userFacingMessage(err, LOAD_FALLBACK));
       } finally {
         if (!cancelled) setLoading(false);
       }
