@@ -1,0 +1,103 @@
+name: Razorpay test mode (temporary)
+
+# Swaps the API service's Razorpay credentials between the LIVE key and a TEST
+# key so end-to-end money flows can be exercised against prod without moving
+# real money. Deliberately manual-only.
+#
+# Safety design:
+#   - Before the first overwrite, the current LIVE values are copied to
+#     RAZORPAY_KEY_ID_BACKUP / RAZORPAY_KEY_SECRET_BACKUP on the SAME Render
+#     service. That keeps the secret inside the boundary that already holds it
+#     (no GitHub log, no repo file) and makes `restore` a pure Render-side move.
+#   - The backup is written ONCE. Re-running `test` will not clobber a good
+#     backup with the test value.
+#   - Values are read from encrypted GitHub secrets and never echoed.
+#
+# REMEMBER TO RUN `restore` WHEN TESTING IS DONE.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'test = switch to Razorpay TEST key | restore = put the LIVE key back | status = show current key id only'
+        required: true
+        default: 'status'
+        type: choice
+        options: [status, test, restore]
+
+jobs:
+  swap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SID: srv-d7mc2n8sfn5c73dfce0g
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+    steps:
+      - name: Swap Razorpay credentials
+        env:
+          MODE: ${{ inputs.mode }}
+          TEST_KEY_ID: ${{ secrets.RZP_TEST_KEY_ID }}
+          TEST_KEY_SECRET: ${{ secrets.RZP_TEST_KEY_SECRET }}
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer ${RENDER_API_KEY}"
+          BASE="https://api.render.com/v1/services/${SID}/env-vars"
+
+          get_var() {
+            curl -sf -H "$A" "$BASE?limit=100" \
+              | jq -r --arg k "$1" '.[].envVar | select(.key==$k) | .value' | head -1
+          }
+          put_var() {
+            code=$(curl -s -o /tmp/put.out -w '%{http_code}' -X PUT -H "$A" \
+              -H 'Content-Type: application/json' \
+              -d "$(jq -n --arg v "$2" '{value:$v}')" "$BASE/$1")
+            if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+              echo "::error::PUT $1 failed with HTTP $code"; cat /tmp/put.out; exit 1
+            fi
+            echo "  set $1 (http $code)"
+          }
+
+          CUR_ID=$(get_var RAZORPAY_KEY_ID)
+          # Key IDs are publishable (the browser needs one), so printing it is safe.
+          # The secret is never printed.
+          echo "current RAZORPAY_KEY_ID = ${CUR_ID:-<unset>}"
+
+          if [ "$MODE" = "status" ]; then
+            BK=$(get_var RAZORPAY_KEY_ID_BACKUP)
+            echo "backup RAZORPAY_KEY_ID_BACKUP = ${BK:-<none>}"
+            exit 0
+          fi
+
+          if [ "$MODE" = "test" ]; then
+            case "$CUR_ID" in
+              rzp_test_*) echo "already on a test key — nothing to do"; exit 0 ;;
+            esac
+            BK=$(get_var RAZORPAY_KEY_ID_BACKUP)
+            if [ -z "$BK" ]; then
+              echo "backing up live credentials on the service..."
+              put_var RAZORPAY_KEY_ID_BACKUP "$CUR_ID"
+              put_var RAZORPAY_KEY_SECRET_BACKUP "$(get_var RAZORPAY_KEY_SECRET)"
+            else
+              echo "backup already present (${BK}) — leaving it untouched"
+            fi
+            put_var RAZORPAY_KEY_ID "$TEST_KEY_ID"
+            put_var RAZORPAY_KEY_SECRET "$TEST_KEY_SECRET"
+          fi
+
+          if [ "$MODE" = "restore" ]; then
+            BK_ID=$(get_var RAZORPAY_KEY_ID_BACKUP)
+            BK_SEC=$(get_var RAZORPAY_KEY_SECRET_BACKUP)
+            if [ -z "$BK_ID" ] || [ -z "$BK_SEC" ]; then
+              echo "::error::No backup found — restore the live key from the Razorpay dashboard instead."
+              exit 1
+            fi
+            put_var RAZORPAY_KEY_ID "$BK_ID"
+            put_var RAZORPAY_KEY_SECRET "$BK_SEC"
+            echo "restored to ${BK_ID}"
+          fi
+
+          echo "triggering deploy so the new env takes effect..."
+          curl -sf -X POST -H "$A" -H 'Content-Type: application/json' \
+            -d '{"clearCache":"do_not_clear"}' \
+            "https://api.render.com/v1/services/${SID}/deploys" \
+            | jq -r '"deploy \(.id) \(.status)"'
