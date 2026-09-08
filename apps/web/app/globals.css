@@ -1590,3 +1590,78 @@ input[type="date"]::-moz-calendar-picker-indicator,
 input[type="datetime-local"]::-moz-calendar-picker-indicator {
   display: none !important;
 }
+
+/* ── data-tod — the temple hour, as a ground tint ──────────────────────────
+   HOME-TOD (2026-09-05). app/layout.tsx writes `data-tod` onto <html> before
+   first paint from the current hour in Asia/Kolkata. This block is the whole
+   visual consequence: a wash behind the hero and one accent dot.
+
+   WHAT IT DELIBERATELY DOES NOT TOUCH. No text colour, no border, no link
+   colour, no button. Every contrast pair the site was audited against stays
+   exactly as it was — the tint sits behind content at 4-7% alpha, so it can
+   never move a foreground/background ratio across a WCAG threshold. Change a
+   text token here and that guarantee is gone.
+
+   NO MOTION. There is no transition on these values, by choice. A palette that
+   eases between states is a palette that animates on a timer, which is a
+   `prefers-reduced-motion` obligation and a repaint on a page that has neither
+   today. The hour changes while nobody is looking; it does not need to be seen
+   changing.
+
+   FALLBACK IS THE DEFAULT DESIGN. When the attribute is absent — the inline
+   script threw, JS is off, a crawler — nothing below matches and the page
+   renders in its normal palette. Nothing here is load-bearing. */
+:root {
+  --tod-wash: transparent;
+  --tod-dot: var(--color-primary);
+}
+
+/* Pre-dawn. The one hour the shastras name as most auspicious for worship. */
+:root[data-tod='brahma'] {
+  --tod-wash: rgba(79, 70, 229, 0.05);
+  --tod-dot: #6366f1;
+}
+/* Morning aarti. */
+:root[data-tod='pratah'] {
+  --tod-wash: rgba(225, 99, 24, 0.055);
+  --tod-dot: #e16318;
+}
+/* Midday: the working middle of the day, and the quietest tint. */
+:root[data-tod='madhyahna'] {
+  --tod-wash: rgba(202, 138, 4, 0.035);
+  --tod-dot: #ca8a04;
+}
+:root[data-tod='aparahna'] {
+  --tod-wash: rgba(180, 83, 9, 0.045);
+  --tod-dot: #b45309;
+}
+/* Sandhya — the twilight juncture, when most temples run their largest aarti. */
+:root[data-tod='sandhya'] {
+  --tod-wash: rgba(217, 119, 6, 0.07);
+  --tod-dot: #d97706;
+}
+:root[data-tod='ratri'] {
+  --tod-wash: rgba(30, 41, 59, 0.05);
+  --tod-dot: #64748b;
+}
+
+/* The wash itself. A pseudo-element on the hero rather than a background on it,
+   so the section keeps whatever background it already had and this layers over
+   it. `inset: 0` + `z-index: 0` with the hero's own children above; the hero is
+   already `position: relative`. aria-hidden by construction — a ::before has no
+   accessibility surface. */
+[data-tod-wash] {
+  position: relative;
+}
+[data-tod-wash]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--tod-wash), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+[data-tod-wash] > * {
+  position: relative;
+  z-index: 1;
+}
