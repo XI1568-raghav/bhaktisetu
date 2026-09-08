@@ -2,6 +2,17 @@ import { FastifyInstance } from 'fastify';
 import { gaushalaService } from '../services/gaushala.service.js';
 import { prisma } from '../lib/prisma.js';
 
+// CT-API-1 (prod probe 2026-09-09): `GET /api/v1/gaushala/<id>` answered 500 for
+// every id that is not shaped like a uuid — `not-a-uuid`, `123`, `__ct_zzz`,
+// `abc-def` all measured against api.darshya.online — while the well-formed but
+// absent `00000000-0000-4000-8000-000000000000` correctly answered 404. So the
+// split was the id FORMAT, not existence: `GaushalaProfile.id` and `.userId` are
+// both `@db.Uuid`, the findFirst below raised P2023, and the error handler
+// published it as INTERNAL_ERROR. A crawler following a stale or mangled link
+// got a server error where the resource simply is not there.
+// Same regex as routes/priests-public.ts:42 and lib/gaushala-donee.ts:27.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function gaushalaRoutes(server: FastifyInstance) {
   // ─── GET / — List all gaushalas ────────────────────────────────────────────────
 
@@ -18,6 +29,16 @@ export async function gaushalaRoutes(server: FastifyInstance) {
 
     if (gaushala) {
       return { gaushala: { ...gaushala, source: 'fixture', donationCauseId: id } };
+    }
+
+    // CT-API-1: the guard sits BELOW the fixture lookup, not in front of the
+    // handler. The directory serves gs_001…gs_005, which are not uuids and must
+    // keep resolving; matching them by identity above rather than by a guessed
+    // id shape means no future fixture id can be 404'd here. What remains is an
+    // id that is neither a fixture nor parseable as a uuid, and it cannot match
+    // a uuid column — a miss decided before the query runs, not a P2023.
+    if (!UUID_RE.test(id)) {
+      return reply.code(404).send({ error: 'Gaushala not found.' });
     }
 
     // COM-07: the /gaushala page's "Approved gaushalas you can support
