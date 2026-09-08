@@ -451,7 +451,9 @@ Branch `feat/recurring-razorpay-planid`, 4 commits ahead of `main`, 0 behind. Di
 - **One Supabase project serves everything.** There is no separate test database.
 - Cloudflare is DNS + edge proxy only (Pages abandoned 2026-07-08). CF **blocks bot user-agents with 403**, so `WebFetch`-style tooling fails against darshya.online. Use curl or a real browser — Playwright's Chrome UA works (confirmed by a live run during this recon).
 - Render free tier **sleeps after 15 min idle with a ~30–50s cold start**. Any E2E run against prod must tolerate a slow first hit or the whole suite flakes.
-- Deploys are manual: `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f branch=main`. A new push to main **cancels an in-flight deploy** on free tier.
+- Deploys are manual: `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID>`. A new push to main
+  **cancels an in-flight deploy** on free tier.
+  The old `branch` input is deprecated and ignored by Render. `-f commit=<SHA>` pins or rolls back.
 - Migrations never auto-apply. They must be run by hand against `DIRECT_URL` after the deploy, then the API redeployed so it boots against the new schema.
 
 **Practical consequence for this audit:** every option is unsafe in a different way. Running Playwright with defaults hits production. Running the API locally with default env hits the production database *and executes DDL against it*. The only safe path is for the auditor to stand up their own Postgres, point `apps/api/.env.local` at it, seed it, and launch with an explicit `--env-file`. That is setup work someone has to authorize and do; it does not exist today.

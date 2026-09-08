@@ -113,7 +113,9 @@ Accounts: `qa-audit-probe@gmail.com`, `qa-audit-probe2@outlook.com`, `qa-live-se
 
 ### Deploy/migrate procedure (the proven pattern)
 1. PR → CI green → `gh pr merge <n> --squash`.
-2. Deploy: `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f branch=main`. **API sid = `srv-d7mc2n8sfn5c73dfce0g`, web sid = `srv-d970l2ks728c738fc33g`.**
+2. Deploy: `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID>`. **API sid = `srv-d7mc2n8sfn5c73dfce0g`, web sid = `srv-d970l2ks728c738fc33g`.**
+   The old `branch` input is deprecated and ignored by Render — it selects nothing. To pin a specific
+   commit, or to roll back, pass `-f commit=<SHA>` instead.
 3. **Migrations DO auto-apply — on API START, not build.** `render.yaml:20` → `pnpm --filter @poojly/api start`; `apps/api/package.json:10` → `prisma migrate deploy && node dist/server.js`. This line said the opposite until 2026-09-08 (same class of wrong-and-load-bearing sentence as OPS-06 in CLAUDE.md; TASKS.md is @-imported, so every session read it). **Consequence: a failing migration is a CRASH-LOOP, not a failed build** — the API never comes up. Check a new migration applies cleanly against prod read-only first (`scripts/verify-migration-objects.mjs`; 42P07/42701 "already exists" is the usual killer). Manual application is still right to land schema ahead of a deploy, or to unstick a phantom ledger row: load `.env.production` DIRECT_URL, `prisma migrate resolve --rolled-back <name>`, then `npx prisma migrate deploy`.
 4. **Redeploy API after a MANUAL migration** so it boots against the new schema. Unnecessary when the deploy applied it — step 3 ran inside that boot.
 5. Verify live: curl prod endpoint (401 = live/auth-gated, not 404); web page 200.
