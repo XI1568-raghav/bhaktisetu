@@ -29,6 +29,7 @@ import { z } from 'zod';
 import { useAuth, getRoleDashboardPath, type UserRole } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
 
 // Mirrors apps/api/src/routes/auth.ts `signupSchema`. Field constraints
 // (password length + letter/digit, fullName >= 2, email format, optional
@@ -1175,14 +1176,31 @@ export default function SignupPage() {
  <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-warm overflow-hidden">
  {/* Header */}
  <div className="bg-[#ede9e3] px-6 py-6 text-center border-b border-[var(--color-border)]">
- <div className="flex items-center justify-center gap-2 mb-2">
- <div className="w-7 h-7 bg-saffron-600/15 rounded-lg flex items-center justify-center">
+ {/* DU-05: /auth/signup shipped with NO <h1> at all — the finding's own
+     "two of the ten screens have no h1" half, still open on this screen after
+     its sibling was closed. The lockup below already spelled out H1.portal's
+     four utilities (`text-xl font-semibold text-surface-800 tracking-tight`)
+     by hand, on a CHILD span of a plain div, so the screen had a title that
+     looked like a heading and was not one.
+
+     This is the identical fix already applied to /auth/login on 2026-09-01,
+     down to the same span: the archetype moves onto the heading and the
+     duplicate is deleted from the child, which inherits the same four values.
+     Nothing moves — Tailwind v4 preflight resets h1 to `font-size: inherit;
+     font-weight: inherit` and every margin to 0, globals.css adds only
+     `scroll-margin-top` to headings, the icon chip is a fixed h-7 w-7 flex box
+     with no text in it, gap-2 is rem-based, and tracking-tight is em-relative
+     off the same text-xl on either element. */}
+ <h1 className={`${H1.portal} flex items-center justify-center gap-2 mb-2`}>
+ {/* span, not div: h1 takes phrasing content, and /auth/login's h1 already
+     carries the identical chip as a span with `flex` on it. */}
+ <span className="w-7 h-7 bg-saffron-600/15 rounded-lg flex items-center justify-center">
  <Flame className="w-4 h-4 text-saffron-600" />
- </div>
- <span className="text-xl font-semibold text-surface-800 tracking-tight">
+ </span>
+ <span>
  Darsh<span className="text-saffron-600">ya</span>
  </span>
- </div>
+ </h1>
  <p className="text-surface-500 text-sm">
  {step === 0 && 'Create your account'}
  {step === 1 && `Step 2 of 3 \u2014 Your details`}
