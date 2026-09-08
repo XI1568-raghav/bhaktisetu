@@ -51,7 +51,13 @@ type Row = {
   backing: string;
 };
 
-const ROWS: Row[] = [
+/**
+ * Exported for HowItWorks, which renders these as the promise strip under its
+ * three steps (HOME-IA 2026-09-08 merge). ONE source of truth: the wording here
+ * is sourced line by line against the code that enforces it — a second copy in
+ * the other component is how a promise drifts away from its mechanism.
+ */
+export const PROMISES: Row[] = [
   {
     Icon: Video,
     title: 'A recording of your ceremony',
@@ -123,7 +129,7 @@ export default function WhatYouGet() {
         </p>
 
         <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {ROWS.map((row, i) => (
+          {PROMISES.map((row, i) => (
             <li
               key={row.title}
               data-reveal="cascade"

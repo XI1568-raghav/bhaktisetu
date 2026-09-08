@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { buttonClass } from '../ui/button-recipe';
 import { CalendarCheck, UserCheck, Video, ArrowRight } from 'lucide-react';
+import { PROMISES } from './WhatYouGet';
 
 /**
  * CM-13 (prod sweep 2026-08-12) — the homepage never answered the one question
@@ -97,7 +98,71 @@ export default function HowItWorks() {
           ))}
         </ol>
 
-        <div className="mt-4 flex flex-wrap items-center gap-4">
+        {/*
+          HOME-IA (2026-09-08) — "What you actually get" merged in here.
+          It was a separate section immediately below this one, and the two were
+          answering the same question twice: this one says what happens, that one
+          said what you are owed while it happens. A devotee read three steps,
+          then read five more cards covering the same ground, and the page paid
+          ~550px for the repetition.
+
+          The rows are imported, never copied: PROMISES is sourced line by line
+          against the code that enforces each one (the refund ladder from
+          lib/cancellation-policy, the fee from lib/puja-pricing, video proof
+          from the API gate that refuses to mark a booking delivered without it).
+          A second hand-written copy here is exactly how a promise drifts away
+          from its mechanism.
+
+          Rendered tighter than the old section: title and body, no `backing`
+          small print. The mechanism sentences still ship on /refunds and the
+          puja pages, where a reader who wants them has already asked.
+        */}
+        <div className="mt-7 border-t pt-6" style={{ borderColor: 'var(--color-border)' }}>
+          <h3
+            className="mb-1 text-base font-semibold tracking-tight"
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+          >
+            What you are owed, at every step
+          </h3>
+          <p className="mb-4 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            Each line is something the system refuses to operate without — not a policy we
+            intend to follow.
+          </p>
+
+          <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            {PROMISES.map((row, i) => (
+              <li
+                key={row.title}
+                data-reveal="cascade"
+                data-delay={String(Math.min(i + 1, 6))}
+                className="flex items-start gap-3 rounded-xl p-3.5"
+                style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+              >
+                <row.Icon
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                  style={{ color: 'var(--color-primary)' }}
+                  aria-hidden="true"
+                />
+                <div className="min-w-0">
+                  <p
+                    className="text-sm font-semibold leading-snug"
+                    style={{ color: 'var(--color-text)' }}
+                  >
+                    {row.title}
+                  </p>
+                  <p
+                    className="mt-1 text-xs leading-relaxed"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    {row.body}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-4">
           <Link
             href="/pujas"
             className={buttonClass('primary', 'md')}

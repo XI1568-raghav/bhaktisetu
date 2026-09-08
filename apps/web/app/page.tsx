@@ -22,11 +22,13 @@ import ParallaxLayer from '../components/motion/ParallaxLayer';
 import { brandFaqJsonLd } from '../lib/jsonld';
 import { getTempleHero, getDeityImage, getContentImage, IMG_W, remoteSrcSet } from '../lib/images';
 import ScrollReveal from '../components/ScrollReveal';
+import { buttonClass } from '../components/ui/button-recipe';
 import { HomeHeroCta } from '../components/HomeHeroCta';
 import IntentTrio from '../components/home/IntentTrio';
 import ContinueJourneyCard from '../components/home/ContinueJourneyCard';
 import ThisWeek from '../components/home/ThisWeek';
-import WhatYouGet from '../components/home/WhatYouGet';
+import ServiceLanes from '../components/home/ServiceLanes';
+import NriLane from '../components/home/NriLane';
 import EmailCapture from '../components/EmailCapture';
 import HowItWorks from '../components/home/HowItWorks';
 import HeroCopyVariant from '../components/home/HeroCopyVariant';
@@ -271,16 +273,25 @@ export default async function HomePage() {
 
  {/* CM-13: the answer to "how do I know the puja actually happened?", placed
      where the buyer asks it rather than ten screens down. */}
+ {/* HOME-IA (2026-09-08): HowItWorks now also renders the five promises that
+     used to be the separate <WhatYouGet /> section directly beneath it. The two
+     answered the same question twice — what happens, then what you are owed
+     while it happens — for ~550px. The rows are imported from WhatYouGet, which
+     is still the single sourced definition; only the second MOUNT is gone. */}
  <HowItWorks />
 
- {/* The five things the system refuses to operate without. Replaces the four
-     hardcoded trust cards that used to sit here — two of which had rotted into
-     claims the code contradicts. Every row is derived from a module with a
-     drift test rather than written as a literal. */}
- <WhatYouGet />
+ {/* HOME-IA (2026-09-08): the six lanes. The page sold one of them — a puja at
+     a temple — across every section above, while a devotee wanting a pandit at
+     their own house, an astrologer, a yatra, gaushala seva or simply to donate
+     had no route from this page at all. One grid rather than five strips: five
+     strips is how this page reached twelve sections, and four of those rendered
+     with no heading. */}
+ <ServiceLanes />
 
-
-
+ {/* HOME-IA (2026-09-08): NRI pricing is 9-10x domestic (PROJECT_CONTEXT rule 2),
+     so this is the highest-margin lane in the product — and the only one whose
+     objection is distance rather than trust. It gets a band, not a card. */}
+ <NriLane />
 
 
  {/* ═══ LIVE DARSHAN — cinematic image reveal ════════════════════════ */}
@@ -298,69 +309,65 @@ export default async function HomePage() {
  </Link>
  </div>
 
- <Link href="/darshan" data-reveal="cinematic" className="block relative rounded-xl overflow-hidden card-hover group" style={{ border: '1px solid var(--color-border)' }}>
- <div className="aspect-[16/9] relative">
- {/* HOME-01: the single largest image on the page. images.unoptimized is true
-     in next.config.ts, so Next emits no srcset of its own — without the
-     explicit srcSet below EVERY viewport pulled the 960px / 189,024 B
-     candidate, a 375px phone included (measured mobile saving: 132,270 B).
+ {/* HOME-IA (2026-09-08): this was ONE 16:9 tile of Mahakaleshwar, 768px tall
+     — the largest single element on the page, spending a full viewport to link
+     to one temple and to imply the product had one stream. Three 4:3 cards say
+     more in less than half the height: they prove there are several temples,
+     they name where each one is, and each links to its own darshan page.
 
-     The SOURCE width stays WIDE. The painted slot is ~1088 CSS px
-     (.container-wide = 72rem minus 2rem gutters at >=1024px), so the triage
-     doc's advice to drop to IMG_W.CARD (500) would be a 2.18x upscale on the
-     biggest picture on the homepage. The sizes attribute names 1088px for the
-     same reason — 960px understated the slot and made the browser pick one
-     step too small on a 2x screen.
+     All three slugs carry a real photo in IMAGES.temples AND a schedule in
+     lib/aarti-schedules.ts, so none falls through to FALLBACK_IMAGE and none
+     lands on a "Coming soon" panel. Check both before swapping a temple in.
 
-     Plain <img>, not next/image: images.unoptimized is true so <Image> renders a
-     bare <img> anyway, and its prop type OMITS srcSet — the same reason
-     app/pujas/page.tsx:679 uses <img> for the card srcSet.
-
-     CANDIDATE LIST CORRECTED 2026-08-20. It read [CARD, WIDE, HERO]. Adding a
-     candidate does not only give small screens a smaller file — it gives large
-     ones a LARGER file, and the three candidates measure 56,754 / 189,024 /
-     322,706 B. Against sizes="…1088px" a 1x desktop needs 1088 CSS px and picks
-     1280. So does every phone whose DPR x CSS width clears 960: the crossover
-     is DPR 2.56 at 375 CSS px, 2.46 at 390, 2.33 at 412 — so a Pixel 7 (412 @
-     2.625) and every DPR-3 handset take 1280 as well. All of them used to take
-     the 960 src. HERO therefore ADDED 133,682 B to desktop and to the densest
-     half of the phone fleet, to buy back a 1.13x upscale on the image furthest
-     below the fold. Dropping it keeps the whole
-     1x-phone win (375 CSS px → 500px candidate → 56,754 B) and returns every
-     other device to the 189,024 B it paid before any srcSet existed. */}
+     No srcSet gymnastics needed at this size: the painted slot is ~349 CSS px
+     on desktop (1088 container, 3 columns, gap-3) and ~100vw-32px below sm, so
+     CARD (500) covers a 1x desktop and a 1x phone, and the 2x step resolves to
+     WIDE. That is the same two-candidate list the old tile ended up with after
+     HERO was measured to ADD 133,682 B. */}
+ <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+ {[
+ { slug: 'kashi-vishwanath', name: 'Kashi Vishwanath', place: 'Varanasi, Uttar Pradesh' },
+ { slug: 'mahakaleshwar', name: 'Mahakaleshwar Jyotirlinga', place: 'Ujjain, Madhya Pradesh' },
+ { slug: 'golden-temple', name: 'Sri Harmandir Sahib', place: 'Amritsar, Punjab' },
+ ].map((temple, i) => (
+ <li key={temple.slug}>
+ <Link
+   href={`/darshan/${temple.slug}`}
+   data-reveal="up"
+   data-delay={String(i + 1)}
+   className="group block relative rounded-xl overflow-hidden card-hover h-full"
+   style={{ border: '1px solid var(--color-border)' }}
+ >
+ <div className="aspect-[4/3] relative">
  <img
-   src={getTempleHero('mahakaleshwar', IMG_W.WIDE)}
-   srcSet={remoteSrcSet(getTempleHero('mahakaleshwar', IMG_W.WIDE), [
-     IMG_W.CARD,
-     IMG_W.WIDE,
-   ])}
-   alt="Mahakaleshwar Jyotirlinga, Ujjain, live darshan"
-   width={1280}
-   height={720}
-   sizes="(max-width: 768px) 100vw, 1088px"
-   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+   src={getTempleHero(temple.slug, IMG_W.CARD)}
+   srcSet={remoteSrcSet(getTempleHero(temple.slug, IMG_W.CARD), [IMG_W.CARD, IMG_W.WIDE])}
+   sizes="(max-width: 639px) calc(100vw - 32px), 349px"
+   alt={`${temple.name} live darshan`}
+   width={500}
+   height={375}
+   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
    loading="lazy"
    decoding="async"
  />
- <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
- <div className="absolute top-3 left-3 flex items-center gap-2">
- <span className="flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+ <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+ <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
  </span>
- </div>
- <div className="absolute bottom-4 left-4 right-4">
- {/* P2 #217 (2026-08-03): image is Mahakaleshwar (Ujjain) but the caption read
-   "Sri Harmandir Sahib / Amritsar" — wrong temple. Match the image. */}
- <h3 className="text-lg sm:text-xl font-semibold text-white">Mahakaleshwar Jyotirlinga</h3>
- <p className="text-xs text-white/80 mt-0.5">Live Darshan • Ujjain, Madhya Pradesh</p>
- </div>
- <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
- <div className="w-16 h-16 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:bg-white/40 group-hover:scale-110">
- <Play className="w-7 h-7 text-white ml-0.5" />
- </div>
- </div>
+ <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+ <span className="w-11 h-11 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:bg-white/40 group-hover:scale-110">
+ <Play className="w-5 h-5 text-white ml-0.5" />
+ </span>
+ </span>
+ <span className="absolute bottom-3 left-3 right-3">
+ <span className="block text-sm font-semibold text-white leading-snug">{temple.name}</span>
+ <span className="block text-[11px] text-white/80 mt-0.5">{temple.place}</span>
+ </span>
  </div>
  </Link>
+ </li>
+ ))}
+ </ul>
  </div>
  </section>
 
@@ -369,7 +376,13 @@ export default async function HomePage() {
  <div className="container-wide">
  <div className="grid md:grid-cols-2 gap-5">
  {/* Puja Booking card */}
- <div data-reveal="spring" className="rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+ {/* HOME-IA (2026-09-08): `flex flex-col h-full` + `mt-auto` on the footer below.
+     This card is shorter than the astrology card beside it, and a CSS grid
+     stretches both cells to the tallest — so the surplus used to fall as dead
+     whitespace under a 12px text link, which read as an unfinished component.
+     The height difference is real and fine; what was wrong was leaving the
+     bottom of the card empty instead of anchoring the action to it. */}
+ <div data-reveal="spring" className="flex h-full flex-col rounded-xl p-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>{t('pujaBookingLabel')}</p>
  <h3 className="text-lg font-semibold tracking-tight mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
  {t('pujaBookingTitle')}
@@ -424,7 +437,8 @@ export default async function HomePage() {
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Video proof every puja</p>
  </div>
  </div>
- <div className="flex flex-wrap gap-3 mb-4">
+ <div className="mt-auto">
+ <div className="flex flex-wrap gap-3 border-t pt-4" style={{ borderColor: 'var(--color-border)' }}>
  {[
  { icon: Shield, label: tCommon('verified') },
  { icon: Video, label: t('videoProof') },
@@ -436,9 +450,22 @@ export default async function HomePage() {
  </div>
  ))}
  </div>
- <Link href="/pujas" className="tap-safe items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
- {t('browsePujas')} <ArrowRight className="w-3 h-3" />
+ {/* A real button, not a 12px text link. This is the puja catalogue — the
+     single highest-intent destination on the page — and it was the only
+     lane whose card closed on a link lighter than its own body copy. */}
+ <div className="mt-4 flex flex-wrap items-center gap-3">
+ <Link href="/pujas" className={buttonClass('primary', 'sm')}>
+ {t('browsePujas')} <ArrowRight className="w-3.5 h-3.5" />
  </Link>
+ <Link
+   href="/temples"
+   className="inline-flex min-h-[44px] items-center text-xs underline underline-offset-4"
+   style={{ color: 'var(--color-text-muted)' }}
+ >
+ Browse temples
+ </Link>
+ </div>
+ </div>
  </div>
 
  {/* Astrology card — indigo accent per audit §3 section 7 (reference/decision lane, not action) */}

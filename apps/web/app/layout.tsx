@@ -684,7 +684,42 @@ export default function RootLayout({
  {/* Decorative top border */}
  <div className="h-px bg-gradient-to-r from-transparent via-saffron-600/40 to-transparent" />
 
- <div className="container-wide py-16 lg:py-20">
+ {/*
+   HOME-IA (2026-09-08) — the reassurance strip.
+
+   The footer opened straight onto five columns of links. That is a sitemap, and
+   a sitemap is the last thing a devotee who has just read a price wants. These
+   four lines are the objections that actually stop a first booking, and each is
+   a mechanism the code enforces rather than a slogan — the same bar the
+   "What you are owed" rows are held to. No payment-network logos: we are not
+   going to imply a certification nobody has audited.
+
+   It is a <ul> of plain text, not links, on purpose. Four more links here would
+   compete with the five columns directly beneath them; this row is there to be
+   READ, not clicked.
+ */}
+ <div className="border-b border-white/10">
+ <div className="container-wide py-5">
+ <ul className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+ {[
+ { Icon: Video, label: 'Video proof on every puja', sub: 'A booking cannot be marked delivered without one' },
+ { Icon: Sparkles, label: 'Free cancellation to 24h', sub: 'Full refund before the pandit is assigned' },
+ { Icon: Heart, label: 'One price, shown first', sub: 'The platform fee is inside the total, not added later' },
+ { Icon: Flame, label: 'Pandits paid against ID', sub: 'Aadhaar KYC on file before any payout' },
+ ].map((item) => (
+ <li key={item.label} className="flex items-start gap-2.5">
+ <item.Icon className="mt-0.5 h-4 w-4 shrink-0 text-saffron-400" aria-hidden="true" />
+ <div className="min-w-0">
+ <p className="text-xs font-semibold text-white leading-snug">{item.label}</p>
+ <p className="text-xs text-surface-400 leading-snug mt-0.5">{item.sub}</p>
+ </div>
+ </li>
+ ))}
+ </ul>
+ </div>
+ </div>
+
+ <div className="container-wide py-12 lg:py-14">
  <div className="grid grid-cols-2 md:grid-cols-7 gap-10">
  {/* Brand column */}
  <div className="col-span-2">
@@ -694,7 +729,7 @@ export default function RootLayout({
  Darsh<span className="text-saffron-400">ya</span>
  </span>
  </div>
- <p className="prose-meta text-surface-500 mb-6 max-w-xs leading-relaxed">
+ <p className="prose-meta text-surface-400 mb-6 max-w-xs leading-relaxed">
  {tFooter('tagline')}
  </p>
  <div className="flex items-center gap-2">
@@ -703,7 +738,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="Facebook"
- className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-400 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Facebook className="w-4 h-4" />
  </a>
@@ -712,7 +747,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="Instagram"
- className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-400 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Instagram className="w-4 h-4" />
  </a>
@@ -721,7 +756,7 @@ export default function RootLayout({
  target="_blank"
  rel="noopener noreferrer"
  aria-label="YouTube"
- className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-500 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+ className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-surface-400 hover:text-saffron-400 hover:bg-white/5 rounded-lg transition-all duration-200"
  >
  <Youtube className="w-4 h-4" />
  </a>
@@ -739,7 +774,7 @@ export default function RootLayout({
  <li key={`${section.titleKey}-${link.href}-${link.key}`}>
  <a
  href={link.href}
- className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
+ className="text-sm text-surface-400 hover:text-saffron-400 transition-colors duration-200"
  >
  {tFor[link.t](link.key)}
  </a>
@@ -759,7 +794,7 @@ export default function RootLayout({
  <li key="support-cookie-settings">
  <CookieSettingsButton
  label="Cookie settings"
- className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
+ className="text-sm text-surface-400 hover:text-saffron-400 transition-colors duration-200"
  />
  </li>
  )}
@@ -773,7 +808,7 @@ export default function RootLayout({
  <li key="support-data-deletion">
  <a
  href="/data-deletion"
- className="text-sm text-surface-500 hover:text-saffron-400 transition-colors duration-200"
+ className="text-sm text-surface-400 hover:text-saffron-400 transition-colors duration-200"
  >
  Delete My Account
  </a>
