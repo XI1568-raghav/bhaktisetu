@@ -100,7 +100,7 @@ Cross-checked against CMO's "first 100 users" target:
 2. **Supabase Storage > 800 MB** (80% of 1GB free) → cut over to Cloudflare R2 (10GB free, zero egress). `lib/r2.ts` is already R2-shaped — flip the adapter back. **Do NOT add a card to Supabase.**
 3. **Razorpay payouts blocked > ₹50,000 in escrow** → priests not getting paid = trust collapse. Trigger weekly payout job + Aadhaar verification chase. (Not a cost tripwire — a reputational one bigger than any AWS bill.)
 
-Bonus panic line: **anyone enables AWS IVS env vars** → Sentry alert + revert deploy. Live streaming is the only service in this stack that can produce a 4-figure surprise bill in a weekend.
+Bonus panic line: **anyone enables AWS IVS env vars** → Sentry alert, then **unset the variables in the Render dashboard**. *(Corrected 2026-09-08, `OPS-06`: this used to say “revert deploy”. A revert is not a rollback here for two reasons — IVS env vars live in the Render dashboard, not in the repository, so no commit contains them; and `autoDeploy: false` on both services (`render.yaml:28`, `:60`) means a revert that is committed and pushed deploys nothing anyway. Unset the variables, then redeploy by hand if the service needs restarting: `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID>` — `docs/runbooks/prod-rollback.md`.)* Live streaming is the only service in this stack that can produce a 4-figure surprise bill in a weekend.
 
 ## Numbers I made up
 

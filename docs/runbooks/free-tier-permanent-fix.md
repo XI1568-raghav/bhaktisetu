@@ -87,8 +87,19 @@ ready, not as a finished migration.
 9. **Only then** suspend `bhaktisetu` in the Render dashboard. Suspend, do not
    delete — it is the rollback.
 
-**Rollback:** un-suspend `bhaktisetu`, point `api` DNS back at it, revert
-`darshya-web`'s Dockerfile path. No code change is involved in either direction.
+**Rollback:** un-suspend `bhaktisetu`, point `api` DNS back at it, and put
+`darshya-web`'s Dockerfile path back to `apps/web/Dockerfile` in the Render
+dashboard. No repository change is involved in either direction — and note that
+no repository change would help if it were: `autoDeploy: false` on both services
+(`render.yaml:28`, `:60`) means a commit and push deploys nothing. After putting
+the Dockerfile path back, dispatch the deploy yourself so the setting takes
+effect:
+
+```bash
+gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g
+```
+
+See `docs/runbooks/prod-rollback.md` for the full rollback decision table.
 
 **Watch for:** OOM restarts in the Render log. If the container restarts under
 normal traffic, option A has failed on memory and the answer is option C.

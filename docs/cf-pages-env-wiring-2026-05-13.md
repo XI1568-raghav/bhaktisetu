@@ -17,7 +17,7 @@
 > hand-dispatched deploy:
 >
 > ```bash
-> gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main
+> gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g
 > ```
 >
 > Canonical deploy/rollback procedure: `docs/runbooks/prod-rollback.md`.

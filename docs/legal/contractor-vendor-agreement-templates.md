@@ -1,5 +1,42 @@
 # Contractor + Vendor Agreement Templates — 5 Core Docs
 
+> # ⚠ PENDING OWNER SIGN-OFF — DO NOT SIGN OR SEND (Doc 4 / DPA)
+>
+> **Added 2026-09-08 (`OPS-10`).** Doc 4 below contains a **Data Processing Addendum**.
+> A data-residency line in an executed vendor agreement is a **warranty** — the clause a
+> counterparty quotes back when something goes wrong. This template previously warranted
+> *“Data residency: India primary, Singapore standby”*. Neither half has ever been true.
+>
+> An automated correction pass on 2026-09-02 replaced that line with a
+> verify-before-signing gate. **Changing what this company warrants to a counterparty is
+> not a documentation edit, and that change has not been reviewed or approved by the
+> owner. Until it is, the surrounding text is provisional and nothing here may be signed
+> or sent to a vendor.**
+>
+> **What the infrastructure actually is** (read out of the repository 2026-09-08; every
+> line here is checkable):
+>
+> | Layer | Reality | Evidence |
+> |---|---|---|
+> | Web tier | Render Docker service `darshya-web`, region **`oregon`** (US West) | `render.yaml:52-60` |
+> | API tier | Render service `bhaktisetu`, region **`oregon`** (US West) | `render.yaml:10-22` |
+> | India-hosted server | **None.** There has never been a Render Mumbai region for this product | `render.yaml:15`, `:56` |
+> | Standby / failover region | **None** in any geography | `docs/runbooks/disaster-recovery.md` |
+> | Read replica | **None.** One Supabase Postgres instance | `docs/runbooks/disaster-recovery.md` |
+> | Database region | **Not recorded anywhere in this repository** — `[verify]` in the Supabase dashboard | — |
+> | Cloudflare | DNS + edge proxy only; not a hosting layer since 2026-07-08 | `cf-kill-zombie.yml` |
+> | Payment processor | Razorpay only; the Stripe rail was removed 2026-08-11 | `apps/api/src/lib/env.ts:45-46` |
+>
+> **What the owner must decide before this document is used:**
+>
+> 1. Read the Supabase project region from the dashboard and write it in, replacing every
+>    `[verify]`. Do not fill it in from memory — that is how “Mumbai” got here.
+> 2. Decide whether to state the true residency (personal data is processed **outside
+>    India**, on US-West infrastructure) or to move the infrastructure before the document
+>    is used. Those are different commercial decisions and only the owner can take either.
+> 3. Confirm the corrected text with counsel before any signature, publication or filing.
+
+
 > Foundation for hiring + vendor management post pre-seed. Counsel-finalize before signing.
 
 ## Doc 1 — Contractor Services Agreement (CS-ops + Content + iOS engineer)

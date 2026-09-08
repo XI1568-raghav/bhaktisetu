@@ -51,7 +51,7 @@ The SMS quota resets monthly. Two real outages in a month and SMS goes silent â€
 7. Deploy `darshya-web` explicitly. *(Corrected 2026-09-02, `OPS-10`: this step used to say "Trigger one Cloudflare Pages redeploy (uses 1 of the 500/mo build slots)". There is no Pages build pipeline and no 500/mo build quota.)* `autoDeploy: false` (`render.yaml:60`), so a push deploys nothing â€” dispatch the deploy by hand per `docs/runbooks/prod-rollback.md`:
 
    ```bash
-   gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main
+   gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g
    ```
 
    After the deploy reports live, `https://darshya.online/status` will render the live monitor table.

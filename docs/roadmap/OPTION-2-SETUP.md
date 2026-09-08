@@ -146,7 +146,7 @@ kill an in-flight orchestrator cycle. There is nothing to toggle.
 
 **Consequence, and it is the whole point of the setting**: a code fix to
 `apps/api` does not reach production by being merged. Deploys are dispatched by
-hand — `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f branch=main`
+hand — `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID>`
 (API sid `srv-d7mc2n8sfn5c73dfce0g`), procedure in `docs/runbooks/prod-rollback.md`.
 
 ### If cycles still fail after both mitigations
