@@ -19,6 +19,49 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import {
+  GENERIC_ERROR_MESSAGE,
+  UserFacingError,
+  friendlyApiError,
+  serverErrorText,
+  userFacingMessage,
+} from '../../../lib/friendly-error';
+
+/**
+ * RES-09 (2026-09-08) — this screen put developer text in a devotee's face and
+ * then answered a question it had no answer to.
+ *
+ *   :78  throw new Error(`Could not load (${res.status})`)
+ *   :81  setError(e instanceof Error ? e.message : 'Network error')
+ *   :102 throw new Error(`Cancel ${res.status}${body ? `: ${body.slice(0,140)}` : ''}`)
+ *   :105 setCancelError(e instanceof Error ? e.message : 'Could not cancel')
+ *
+ * So an expired token read as "Could not load (401)", and a cancel against a
+ * gateway that answers HTML spliced 140 characters of `<html><head><title>502
+ * Bad Gateway` into a red box. On a dropped connection `e.message` was
+ * whatever the browser wrote — "Failed to fetch" on Chrome, "Load failed" on
+ * iOS Safari — which no status-code sweep ever sees, because the string is not
+ * ours.
+ *
+ * `friendlyApiError` alone could not be dropped in: it cannot tell a sentence
+ * the product wrote from one the browser wrote, so it flattens the good one.
+ * `UserFacingError` marks deliberate copy and `userFacingMessage` routes on it.
+ */
+const LOAD_FALLBACK = 'Could not load your consultations right now. Please try again.';
+const CANCEL_FALLBACK = 'Could not cancel this consultation right now. Please try again.';
+
+/**
+ * The copy for a status, or the page's own line when the status says nothing
+ * useful. `friendlyApiError` classifies off message TEXT, so it is handed the
+ * number — 401/403 become "your session has expired", 429 the rate-limit line,
+ * 5xx "something went wrong on our side", anything else falls through to the
+ * caller's sentence. The number is passed via String() rather than
+ * interpolated, so it can never be mistaken for rendered copy.
+ */
+function statusCopy(status: number, fallback: string): string {
+  const classified = friendlyApiError(new Error(String(status))).message;
+  return classified === GENERIC_ERROR_MESSAGE ? fallback : classified;
+}
 
 type Consultation = {
   id: string;
@@ -74,11 +117,17 @@ function ListContent() {
         headers: buildAuthHeaders(session?.accessToken),
         credentials: 'include',
       });
-      if (!res.ok) throw new Error(`Could not load (${res.status})`);
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        // The server's own sentence when it wrote one worth reading; otherwise
+        // the copy for THIS status. serverErrorText refuses a non-JSON body and
+        // refuses a developer name for the status ("Unauthorized").
+        throw new UserFacingError(serverErrorText(body, statusCopy(res.status, LOAD_FALLBACK)));
+      }
       const json = (await res.json()) as { consultations?: Consultation[] };
       setItems(json.consultations ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Network error');
+      setError(userFacingMessage(e, LOAD_FALLBACK));
     } finally {
       setLoading(false);
     }
@@ -98,11 +147,11 @@ function ListContent() {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
-        throw new Error(`Cancel ${res.status}${body ? `: ${body.slice(0, 140)}` : ''}`);
+        throw new UserFacingError(serverErrorText(body, statusCopy(res.status, CANCEL_FALLBACK)));
       }
       await load();
     } catch (e) {
-      setCancelError(e instanceof Error ? e.message : 'Could not cancel');
+      setCancelError(userFacingMessage(e, CANCEL_FALLBACK));
     } finally {
       setCancellingId(null);
     }
@@ -136,14 +185,22 @@ function ListContent() {
         )}
 
         {items.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-surface-100 p-10 text-center">
-            <Sparkles className="w-12 h-12 text-saffron-400 mx-auto mb-3" />
-            <h2 className="text-lg font-semibold text-surface-700 mb-1">No consultations yet</h2>
-            <p className="text-sm text-surface-500 mb-6">Book a session with a verified astrologer.</p>
-            <Link href="/astrology" className={buttonClass('primary', 'md')}>
-              Browse Astrologers
-            </Link>
-          </div>
+          /* RES-09 (2026-09-08): a failed load leaves `items` empty, so this
+             told a devotee "No consultations yet" underneath a banner saying
+             the list could not be loaded — a claim about their own bookings,
+             made from data the page never received. Gated on `error` rather
+             than on the emptiness of the array, so a server that genuinely
+             returns no consultations still gets the real empty state. */
+          error ? null : (
+            <div className="bg-white rounded-2xl border border-surface-100 p-10 text-center">
+              <Sparkles className="w-12 h-12 text-saffron-400 mx-auto mb-3" />
+              <h2 className="text-lg font-semibold text-surface-700 mb-1">No consultations yet</h2>
+              <p className="text-sm text-surface-500 mb-6">Book a session with a verified astrologer.</p>
+              <Link href="/astrology" className={buttonClass('primary', 'md')}>
+                Browse Astrologers
+              </Link>
+            </div>
+          )
         ) : (
           <div className="space-y-3">
             {items.map((c) => {
