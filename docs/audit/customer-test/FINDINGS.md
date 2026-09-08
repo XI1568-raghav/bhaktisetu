@@ -16,6 +16,38 @@ Of the 293 static: 217 → 200, 65 → correct `307 /auth/login?redirect=…` au
 
 ## Confirmed findings
 
+### CT-SUPPLY-1 · P0 · an approved pandit never becomes bookable — FIXED
+
+Reproduced end to end on prod, 2026-09-08:
+
+1. `ct+pandit` onboarded via `POST /onboarding/provider` → `Priest` row created,
+   `status: 'active'`, `isVerified: false`.
+2. Appeared in `GET /admin/pending-approvals` and in the admin UI at `/admin/approvals`.
+3. Admin clicked **Approve**. `PATCH /admin/users/:id` answered
+   `200 {"message":"User updated"}`; the queue rendered **"All caught up!"**.
+4. `PanditProfile.approved` → `true` (`approvedAt 12:11:43Z`).
+5. `Priest.isVerified` → **still `false`**. `GET /priests` still returned the same
+   3 pandits — *Pandit Ramesh Shastri, Pandit Suresh Trivedi, Demo Pandit* — all
+   seeded straight into the DB. The approved pandit was absent.
+
+**Root cause.** A pandit lives in two tables. `routes/priests-public.ts` lists on
+`Priest {isVerified: true, status: 'active'}` (lines 146, 228, 260); the admin
+queue reads `PanditProfile.approved`. Nothing in the API ever wrote
+`Priest.isVerified` — `POST/PATCH/DELETE /admin/priests` are `notImplemented`
+stubs and `provider-kyc.ts` never touches `prisma.priest`. The two were never bridged.
+
+**Why it is P0.** The supply funnel — recruit → onboard → approve — terminates in
+a pandit no devotee can find or book, and the operator is shown a green success
+with no error anywhere. Only hand-seeded pandits were ever bookable. The GTM plan
+is to recruit 25–50 Gurugram pandits; every one of them would have landed here.
+
+**Fix** (`1a041677`): `admin.service.updateUser` now mirrors the approval onto
+`Priest.isVerified`. `updateMany`, not `update` — a pandit who has not completed
+onboarding has no `Priest` row and that must no-op rather than throw and roll back
+the approval. Rejection sets it false so a revoked pandit leaves the directory.
+3 new tests; 64/64 `admin.service` tests green. Awaiting deploy to re-verify on prod.
+
+
 ### CT-SEO-1 · P2 · soft-404 on 7 dynamic route patterns
 
 A nonexistent slug returns **HTTP 200** instead of 404, with a broken `<title>`.
@@ -74,3 +106,51 @@ Anyone following this doc submits four dead links.
 | Money paths | booking→pay→commission→payout→refund | Razorpay test keys not yet set on the API service. |
 | 33 dynamic patterns | 33 | Need real ids; most are auth-gated so they need B1 resolved first. |
 | Every CTA / form / interaction | all | Deterministic sweep proves reachability only. Click-level testing is the next phase. |
+
+## Verified working on prod (authenticated, real accounts)
+
+All 8 roles provisioned as real Supabase accounts (`ct+<role>@darshya.online`) and
+exercised against the live API. Full matrix in `LEDGER-roles.json`.
+
+### Authorization — clean
+
+| Check | Result |
+|---|---|
+| Each role on its own portal endpoints | **53 x 200** |
+| Every role against every other role's endpoints | **51 x 403** |
+| Anonymous against gated endpoints | **7 x 401** |
+| **Cross-role data leaks** | **0** |
+
+### Booking journey (booking `BS-20260908-LPI98`, Rs 1152)
+
+- Past date -> **400** `Cannot book a past date.`
+- Slot `99:99` -> **409** `SLOT_UNAVAILABLE`
+- Unauthenticated booking -> **401**
+- Create booking -> **201**, `status: pending_payment`, booking number matches the
+  documented `BS-YYYYMMDD-XXXXX` contract
+- Devotee sees own booking in `/bookings/my`; `store_owner` -> **403**,
+  `pandit` -> **403**, anonymous -> **401**. No leak.
+- `cancel-quote` -> tier `50% refund (4-24h before)`, `refundAmountInr 576` on a
+  Rs 1152 booking — an exact half, no float drift, matching the documented
+  100/75/50/25/0 ladder. `hoursUntilSlot 13.1`.
+- Cancel -> **200**, `requiresRefund:false` (correct, nothing was captured)
+- Double cancel -> **409** `Booking cannot be cancelled in its current status "cancelled".`
+
+### Admin portal — now click-verified (closes the long-open `#211`)
+
+Dashboard (45 users / 29 providers / 1 pending approval), Users, Approvals,
+Commissions, Payouts and Refunds all render with correct data and honest empty
+states. The payouts page even self-documents the missing settle endpoint.
+
+### Auth unhappy path
+
+Wrong password on `/auth/login` renders **"Invalid email or password."**, the button
+returns to "Sign In", no infinite spinner. The LIVE P0 recorded in `TASKS.md`
+(2026-08-11) **does not reproduce on prod**.
+
+## Still to run
+
+Payment capture and refund-with-money require the Razorpay test key. Prod is on
+a live `rzp_live_*` key, so `journey-booking.mjs` refuses to run and creates no
+orders — that guard is deliberate. Blocked on PR #253 merging so the
+`razorpay-test-mode` workflow is dispatchable from main.

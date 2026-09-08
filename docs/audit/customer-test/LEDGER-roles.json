@@ -1,0 +1,1001 @@
+{
+  "generatedAt": "2026-09-08T11:58:30.124Z",
+  "api": "https://api.darshya.online/api/v1",
+  "findings": [],
+  "rows": [
+    {
+      "kind": "own",
+      "role": "ADMIN",
+      "path": "/admin/users?limit=1",
+      "status": 200,
+      "bytes": 314,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "ADMIN",
+      "path": "/admin/dashboard",
+      "status": 200,
+      "bytes": 248,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "ADMIN",
+      "path": "/admin/revenue",
+      "status": 200,
+      "bytes": 537,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "ADMIN",
+      "path": "/admin/pending-approvals",
+      "status": 200,
+      "bytes": 234,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "ADMIN",
+      "path": "/admin/temples?limit=1",
+      "status": 200,
+      "bytes": 292,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "ADMIN",
+      "path": "/admin/priests?limit=1",
+      "status": 200,
+      "bytes": 288,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "PANDIT",
+      "path": "/priest/dashboard",
+      "status": 200,
+      "bytes": 285,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "PANDIT",
+      "path": "/priest/bookings?limit=1",
+      "status": 200,
+      "bytes": 142,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "PANDIT",
+      "path": "/priest/offers",
+      "status": 200,
+      "bytes": 13,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "PANDIT",
+      "path": "/priest/payouts",
+      "status": 200,
+      "bytes": 117,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "PANDIT",
+      "path": "/priest/profile",
+      "status": 200,
+      "bytes": 621,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "PANDIT",
+      "path": "/priest/reviews",
+      "status": 200,
+      "bytes": 24,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "PANDIT",
+      "path": "/priest/pujas",
+      "status": 200,
+      "bytes": 16,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "STORE_OWNER",
+      "path": "/store-admin/dashboard",
+      "status": 200,
+      "bytes": 109,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "STORE_OWNER",
+      "path": "/store-admin/products",
+      "status": 200,
+      "bytes": 42,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "STORE_OWNER",
+      "path": "/store-admin/profile",
+      "status": 200,
+      "bytes": 16,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "STORE_OWNER",
+      "path": "/store-admin/revenue",
+      "status": 200,
+      "bytes": 67,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "STORE_OWNER",
+      "path": "/store-admin/reviews",
+      "status": 200,
+      "bytes": 14,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "ASTROLOGER",
+      "path": "/astrologer-portal/dashboard",
+      "status": 200,
+      "bytes": 280,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "ASTROLOGER",
+      "path": "/astrologer-portal/online",
+      "status": 200,
+      "bytes": 49,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "ASTROLOGER",
+      "path": "/astrologer-portal/earnings",
+      "status": 200,
+      "bytes": 93,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/dashboard",
+      "status": 200,
+      "bytes": 266,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/students",
+      "status": 200,
+      "bytes": 25,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/dashboard",
+      "status": 200,
+      "bytes": 137,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/donations",
+      "status": 200,
+      "bytes": 16,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "TEMPLE_MANAGER",
+      "path": "/temple-portal/dashboard",
+      "status": 200,
+      "bytes": 139,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "TEMPLE_MANAGER",
+      "path": "/temple-portal/bookings",
+      "status": 200,
+      "bytes": 15,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "TEMPLE_MANAGER",
+      "path": "/temple-portal/donations",
+      "status": 200,
+      "bytes": 26,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "TEMPLE_MANAGER",
+      "path": "/temple-portal/payouts",
+      "status": 200,
+      "bytes": 51,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "TEMPLE_MANAGER",
+      "path": "/temple-portal/pujas",
+      "status": 200,
+      "bytes": 215,
+      "snippet": null
+    },
+    {
+      "kind": "own",
+      "role": "TEMPLE_MANAGER",
+      "path": "/temple-portal/darshan",
+      "status": 200,
+      "bytes": 14,
+      "snippet": null
+    },
+    {
+      "kind": "cross",
+      "role": "DEVOTEE",
+      "owner": "ADMIN",
+      "path": "/admin/users?limit=1",
+      "status": 403,
+      "bytes": 71,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires admin privileges.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "PANDIT",
+      "owner": "ADMIN",
+      "path": "/admin/users?limit=1",
+      "status": 403,
+      "bytes": 71,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires admin privileges.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "STORE_OWNER",
+      "owner": "ADMIN",
+      "path": "/admin/users?limit=1",
+      "status": 403,
+      "bytes": 71,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires admin privileges.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ASTROLOGER",
+      "owner": "ADMIN",
+      "path": "/admin/users?limit=1",
+      "status": 403,
+      "bytes": 71,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires admin privileges.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "WELLNESS_INSTRUCTOR",
+      "owner": "ADMIN",
+      "path": "/admin/users?limit=1",
+      "status": 403,
+      "bytes": 71,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires admin privileges.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "GAUSHALA_MANAGER",
+      "owner": "ADMIN",
+      "path": "/admin/users?limit=1",
+      "status": 403,
+      "bytes": 71,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires admin privileges.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "TEMPLE_MANAGER",
+      "owner": "ADMIN",
+      "path": "/admin/users?limit=1",
+      "status": 403,
+      "bytes": 71,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires admin privileges.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "DEVOTEE",
+      "owner": "PANDIT",
+      "path": "/priest/dashboard",
+      "status": 403,
+      "bytes": 79,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires an active priest account.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "STORE_OWNER",
+      "owner": "PANDIT",
+      "path": "/priest/dashboard",
+      "status": 403,
+      "bytes": 79,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires an active priest account.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ASTROLOGER",
+      "owner": "PANDIT",
+      "path": "/priest/dashboard",
+      "status": 403,
+      "bytes": 79,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires an active priest account.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "WELLNESS_INSTRUCTOR",
+      "owner": "PANDIT",
+      "path": "/priest/dashboard",
+      "status": 403,
+      "bytes": 79,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires an active priest account.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "GAUSHALA_MANAGER",
+      "owner": "PANDIT",
+      "path": "/priest/dashboard",
+      "status": 403,
+      "bytes": 79,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires an active priest account.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "TEMPLE_MANAGER",
+      "owner": "PANDIT",
+      "path": "/priest/dashboard",
+      "status": 403,
+      "bytes": 79,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires an active priest account.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ADMIN",
+      "owner": "PANDIT",
+      "path": "/priest/dashboard",
+      "status": 403,
+      "bytes": 79,
+      "snippet": "{\"error\":\"Forbidden\",\"message\":\"This route requires an active priest account.\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "DEVOTEE",
+      "owner": "STORE_OWNER",
+      "path": "/store-admin/dashboard",
+      "status": 403,
+      "bytes": 104,
+      "snippet": "{\"error\":\"STORE_OWNER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "PANDIT",
+      "owner": "STORE_OWNER",
+      "path": "/store-admin/dashboard",
+      "status": 403,
+      "bytes": 104,
+      "snippet": "{\"error\":\"STORE_OWNER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ASTROLOGER",
+      "owner": "STORE_OWNER",
+      "path": "/store-admin/dashboard",
+      "status": 403,
+      "bytes": 104,
+      "snippet": "{\"error\":\"STORE_OWNER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "WELLNESS_INSTRUCTOR",
+      "owner": "STORE_OWNER",
+      "path": "/store-admin/dashboard",
+      "status": 403,
+      "bytes": 104,
+      "snippet": "{\"error\":\"STORE_OWNER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "GAUSHALA_MANAGER",
+      "owner": "STORE_OWNER",
+      "path": "/store-admin/dashboard",
+      "status": 403,
+      "bytes": 104,
+      "snippet": "{\"error\":\"STORE_OWNER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "TEMPLE_MANAGER",
+      "owner": "STORE_OWNER",
+      "path": "/store-admin/dashboard",
+      "status": 403,
+      "bytes": 104,
+      "snippet": "{\"error\":\"STORE_OWNER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ADMIN",
+      "owner": "STORE_OWNER",
+      "path": "/store-admin/dashboard",
+      "status": 403,
+      "bytes": 104,
+      "snippet": "{\"error\":\"STORE_OWNER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "DEVOTEE",
+      "owner": "ASTROLOGER",
+      "path": "/astrologer-portal/dashboard",
+      "status": 403,
+      "bytes": 103,
+      "snippet": "{\"error\":\"ASTROLOGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "PANDIT",
+      "owner": "ASTROLOGER",
+      "path": "/astrologer-portal/dashboard",
+      "status": 403,
+      "bytes": 103,
+      "snippet": "{\"error\":\"ASTROLOGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "STORE_OWNER",
+      "owner": "ASTROLOGER",
+      "path": "/astrologer-portal/dashboard",
+      "status": 403,
+      "bytes": 103,
+      "snippet": "{\"error\":\"ASTROLOGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "WELLNESS_INSTRUCTOR",
+      "owner": "ASTROLOGER",
+      "path": "/astrologer-portal/dashboard",
+      "status": 403,
+      "bytes": 103,
+      "snippet": "{\"error\":\"ASTROLOGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "GAUSHALA_MANAGER",
+      "owner": "ASTROLOGER",
+      "path": "/astrologer-portal/dashboard",
+      "status": 403,
+      "bytes": 103,
+      "snippet": "{\"error\":\"ASTROLOGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "TEMPLE_MANAGER",
+      "owner": "ASTROLOGER",
+      "path": "/astrologer-portal/dashboard",
+      "status": 403,
+      "bytes": 103,
+      "snippet": "{\"error\":\"ASTROLOGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ADMIN",
+      "owner": "ASTROLOGER",
+      "path": "/astrologer-portal/dashboard",
+      "status": 403,
+      "bytes": 103,
+      "snippet": "{\"error\":\"ASTROLOGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "DEVOTEE",
+      "owner": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/dashboard",
+      "status": 403,
+      "bytes": 112,
+      "snippet": "{\"error\":\"WELLNESS_INSTRUCTOR role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "PANDIT",
+      "owner": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/dashboard",
+      "status": 403,
+      "bytes": 112,
+      "snippet": "{\"error\":\"WELLNESS_INSTRUCTOR role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "STORE_OWNER",
+      "owner": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/dashboard",
+      "status": 403,
+      "bytes": 112,
+      "snippet": "{\"error\":\"WELLNESS_INSTRUCTOR role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ASTROLOGER",
+      "owner": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/dashboard",
+      "status": 403,
+      "bytes": 112,
+      "snippet": "{\"error\":\"WELLNESS_INSTRUCTOR role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "GAUSHALA_MANAGER",
+      "owner": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/dashboard",
+      "status": 403,
+      "bytes": 112,
+      "snippet": "{\"error\":\"WELLNESS_INSTRUCTOR role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "TEMPLE_MANAGER",
+      "owner": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/dashboard",
+      "status": 403,
+      "bytes": 112,
+      "snippet": "{\"error\":\"WELLNESS_INSTRUCTOR role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ADMIN",
+      "owner": "WELLNESS_INSTRUCTOR",
+      "path": "/wellness-portal/dashboard",
+      "status": 403,
+      "bytes": 112,
+      "snippet": "{\"error\":\"WELLNESS_INSTRUCTOR role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "DEVOTEE",
+      "owner": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/dashboard",
+      "status": 403,
+      "bytes": 109,
+      "snippet": "{\"error\":\"GAUSHALA_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "PANDIT",
+      "owner": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/dashboard",
+      "status": 403,
+      "bytes": 109,
+      "snippet": "{\"error\":\"GAUSHALA_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "STORE_OWNER",
+      "owner": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/dashboard",
+      "status": 403,
+      "bytes": 109,
+      "snippet": "{\"error\":\"GAUSHALA_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ASTROLOGER",
+      "owner": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/dashboard",
+      "status": 403,
+      "bytes": 109,
+      "snippet": "{\"error\":\"GAUSHALA_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "WELLNESS_INSTRUCTOR",
+      "owner": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/dashboard",
+      "status": 403,
+      "bytes": 109,
+      "snippet": "{\"error\":\"GAUSHALA_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "TEMPLE_MANAGER",
+      "owner": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/dashboard",
+      "status": 403,
+      "bytes": 109,
+      "snippet": "{\"error\":\"GAUSHALA_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ADMIN",
+      "owner": "GAUSHALA_MANAGER",
+      "path": "/gaushala-portal/dashboard",
+      "status": 403,
+      "bytes": 109,
+      "snippet": "{\"error\":\"GAUSHALA_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "DEVOTEE",
+      "owner": "TEMPLE_MANAGER",
+      "path": "/temple-portal/dashboard",
+      "status": 403,
+      "bytes": 107,
+      "snippet": "{\"error\":\"TEMPLE_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "PANDIT",
+      "owner": "TEMPLE_MANAGER",
+      "path": "/temple-portal/dashboard",
+      "status": 403,
+      "bytes": 107,
+      "snippet": "{\"error\":\"TEMPLE_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "STORE_OWNER",
+      "owner": "TEMPLE_MANAGER",
+      "path": "/temple-portal/dashboard",
+      "status": 403,
+      "bytes": 107,
+      "snippet": "{\"error\":\"TEMPLE_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ASTROLOGER",
+      "owner": "TEMPLE_MANAGER",
+      "path": "/temple-portal/dashboard",
+      "status": 403,
+      "bytes": 107,
+      "snippet": "{\"error\":\"TEMPLE_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "WELLNESS_INSTRUCTOR",
+      "owner": "TEMPLE_MANAGER",
+      "path": "/temple-portal/dashboard",
+      "status": 403,
+      "bytes": 107,
+      "snippet": "{\"error\":\"TEMPLE_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "GAUSHALA_MANAGER",
+      "owner": "TEMPLE_MANAGER",
+      "path": "/temple-portal/dashboard",
+      "status": 403,
+      "bytes": 107,
+      "snippet": "{\"error\":\"TEMPLE_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "cross",
+      "role": "ADMIN",
+      "owner": "TEMPLE_MANAGER",
+      "path": "/temple-portal/dashboard",
+      "status": 403,
+      "bytes": 107,
+      "snippet": "{\"error\":\"TEMPLE_MANAGER role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "shared",
+      "role": "DEVOTEE",
+      "path": "/auth/me",
+      "status": 200,
+      "bytes": 473,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "DEVOTEE",
+      "path": "/payouts/balance",
+      "status": 403,
+      "bytes": 101,
+      "snippet": "{\"error\":\"Provider role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "shared",
+      "role": "DEVOTEE",
+      "path": "/bookings?limit=1",
+      "status": 404,
+      "bytes": 95,
+      "snippet": "{\"message\":\"Route GET:/api/v1/bookings?limit=1 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+    },
+    {
+      "kind": "shared",
+      "role": "DEVOTEE",
+      "path": "/notifications?limit=1",
+      "status": 200,
+      "bytes": 47,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "PANDIT",
+      "path": "/auth/me",
+      "status": 200,
+      "bytes": 470,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "PANDIT",
+      "path": "/payouts/balance",
+      "status": 200,
+      "bytes": 154,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "PANDIT",
+      "path": "/bookings?limit=1",
+      "status": 404,
+      "bytes": 95,
+      "snippet": "{\"message\":\"Route GET:/api/v1/bookings?limit=1 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+    },
+    {
+      "kind": "shared",
+      "role": "PANDIT",
+      "path": "/notifications?limit=1",
+      "status": 200,
+      "bytes": 47,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "STORE_OWNER",
+      "path": "/auth/me",
+      "status": 200,
+      "bytes": 473,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "STORE_OWNER",
+      "path": "/payouts/balance",
+      "status": 200,
+      "bytes": 155,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "STORE_OWNER",
+      "path": "/bookings?limit=1",
+      "status": 404,
+      "bytes": 95,
+      "snippet": "{\"message\":\"Route GET:/api/v1/bookings?limit=1 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+    },
+    {
+      "kind": "shared",
+      "role": "STORE_OWNER",
+      "path": "/notifications?limit=1",
+      "status": 200,
+      "bytes": 47,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "ASTROLOGER",
+      "path": "/auth/me",
+      "status": 200,
+      "bytes": 472,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "ASTROLOGER",
+      "path": "/payouts/balance",
+      "status": 200,
+      "bytes": 155,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "ASTROLOGER",
+      "path": "/bookings?limit=1",
+      "status": 404,
+      "bytes": 95,
+      "snippet": "{\"message\":\"Route GET:/api/v1/bookings?limit=1 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+    },
+    {
+      "kind": "shared",
+      "role": "ASTROLOGER",
+      "path": "/notifications?limit=1",
+      "status": 200,
+      "bytes": 47,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "WELLNESS_INSTRUCTOR",
+      "path": "/auth/me",
+      "status": 200,
+      "bytes": 487,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "WELLNESS_INSTRUCTOR",
+      "path": "/payouts/balance",
+      "status": 200,
+      "bytes": 155,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "WELLNESS_INSTRUCTOR",
+      "path": "/bookings?limit=1",
+      "status": 404,
+      "bytes": 95,
+      "snippet": "{\"message\":\"Route GET:/api/v1/bookings?limit=1 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+    },
+    {
+      "kind": "shared",
+      "role": "WELLNESS_INSTRUCTOR",
+      "path": "/notifications?limit=1",
+      "status": 200,
+      "bytes": 47,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "GAUSHALA_MANAGER",
+      "path": "/auth/me",
+      "status": 200,
+      "bytes": 484,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "GAUSHALA_MANAGER",
+      "path": "/payouts/balance",
+      "status": 200,
+      "bytes": 155,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "GAUSHALA_MANAGER",
+      "path": "/bookings?limit=1",
+      "status": 404,
+      "bytes": 95,
+      "snippet": "{\"message\":\"Route GET:/api/v1/bookings?limit=1 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+    },
+    {
+      "kind": "shared",
+      "role": "GAUSHALA_MANAGER",
+      "path": "/notifications?limit=1",
+      "status": 200,
+      "bytes": 47,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "TEMPLE_MANAGER",
+      "path": "/auth/me",
+      "status": 200,
+      "bytes": 478,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "TEMPLE_MANAGER",
+      "path": "/payouts/balance",
+      "status": 200,
+      "bytes": 155,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "TEMPLE_MANAGER",
+      "path": "/bookings?limit=1",
+      "status": 404,
+      "bytes": 95,
+      "snippet": "{\"message\":\"Route GET:/api/v1/bookings?limit=1 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+    },
+    {
+      "kind": "shared",
+      "role": "TEMPLE_MANAGER",
+      "path": "/notifications?limit=1",
+      "status": 200,
+      "bytes": 47,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "ADMIN",
+      "path": "/auth/me",
+      "status": 200,
+      "bytes": 467,
+      "snippet": null
+    },
+    {
+      "kind": "shared",
+      "role": "ADMIN",
+      "path": "/payouts/balance",
+      "status": 403,
+      "bytes": 101,
+      "snippet": "{\"error\":\"Provider role required\",\"message\":\"आपके पास यह करने की अनुमति नहीं है।\",\"code\":\"FORBIDDEN\"}"
+    },
+    {
+      "kind": "shared",
+      "role": "ADMIN",
+      "path": "/bookings?limit=1",
+      "status": 404,
+      "bytes": 95,
+      "snippet": "{\"message\":\"Route GET:/api/v1/bookings?limit=1 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+    },
+    {
+      "kind": "shared",
+      "role": "ADMIN",
+      "path": "/notifications?limit=1",
+      "status": 200,
+      "bytes": 47,
+      "snippet": null
+    },
+    {
+      "kind": "anon",
+      "path": "/admin/users?limit=1",
+      "status": 401,
+      "bytes": 102,
+      "snippet": "{\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}"
+    },
+    {
+      "kind": "anon",
+      "path": "/priest/dashboard",
+      "status": 401,
+      "bytes": 102,
+      "snippet": "{\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}"
+    },
+    {
+      "kind": "anon",
+      "path": "/store-admin/dashboard",
+      "status": 401,
+      "bytes": 102,
+      "snippet": "{\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}"
+    },
+    {
+      "kind": "anon",
+      "path": "/astrologer-portal/dashboard",
+      "status": 401,
+      "bytes": 102,
+      "snippet": "{\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}"
+    },
+    {
+      "kind": "anon",
+      "path": "/wellness-portal/dashboard",
+      "status": 401,
+      "bytes": 102,
+      "snippet": "{\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}"
+    },
+    {
+      "kind": "anon",
+      "path": "/gaushala-portal/dashboard",
+      "status": 401,
+      "bytes": 102,
+      "snippet": "{\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}"
+    },
+    {
+      "kind": "anon",
+      "path": "/temple-portal/dashboard",
+      "status": 401,
+      "bytes": 102,
+      "snippet": "{\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}"
+    }
+  ]
+}
