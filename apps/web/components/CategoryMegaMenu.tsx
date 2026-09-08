@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { AccentColor, Category } from '../lib/category-tree';
+import type { AccentColor, Category, CategoryItem } from '../lib/category-tree';
 import { LibraryMegaPanel } from './LibraryMegaPanel';
 
 type Props = {
@@ -71,10 +71,59 @@ const ACCENT: Record<AccentColor, AccentClasses> = {
 };
 
 /**
+ * One row of the panel. Extracted so the flat grid and the grouped runs render
+ * byte-identical markup — the grouping is a caption, never a different item.
+ */
+function MegaMenuItem({
+  item,
+  accent,
+  onItemClick,
+  dense,
+  terse,
+}: {
+  item: CategoryItem;
+  accent: AccentClasses;
+  onItemClick?: () => void;
+  /**
+   * Grouped panels carry captions and inter-group gaps that an ungrouped one
+   * does not — roughly 120px of extra chrome. Measured at 1440x900 the grouped
+   * Astrology panel came to 720px and hit `max-h`, which put a SCROLLBAR INSIDE
+   * THE DROPDOWN. That is the precise failure this whole change exists to avoid:
+   * AstroTalk's 23-link Calculators panel scrolls internally and is the clearest
+   * example in the category of a panel that has lost. Denser rows buy the ~56px
+   * that keeps every link visible without one.
+   */
+  dense?: boolean;
+  /** Suppress the description — see CategoryGroup.terse. */
+  terse?: boolean;
+}) {
+  return (
+    <Link
+      href={item.href}
+      prefetch
+      role="menuitem"
+      onClick={onItemClick}
+      // `title` keeps the description reachable on hover even when the row does
+      // not paint it, so terse never means the information is gone.
+      title={terse ? item.description : undefined}
+      className={`group flex flex-col gap-0.5 px-3 ${dense ? 'py-1.5' : 'py-3'} rounded-lg ${accent.itemHoverBg} focus:outline-none focus-visible:ring-2 ${accent.focusRing} transition-colors`}
+    >
+      <span className={`text-sm font-semibold text-surface-800 ${accent.itemHoverText} leading-snug`}>
+        {item.label}
+      </span>
+      {!terse && (
+        <span className="text-xs text-surface-500 leading-snug">{item.description}</span>
+      )}
+    </Link>
+  );
+}
+
+/**
  * Desktop mega-menu panel under a CategoryNav trigger. Pure presentation.
  *
- * Library variant: detects `category.subGroups` → renders 4-col LibraryMegaPanel.
- * Other categories: 2-col items grid + optional featured tile, color per accent.
+ * Library variant: detects `category.subGroups` → renders LibraryMegaPanel.
+ * A category with `groups` renders captioned runs; otherwise a flat 2-col
+ * items grid. Both plus an optional featured tile, color per accent.
  */
 export function CategoryMegaMenu({ category, onItemClick, labelledBy }: Props) {
   if (category.key === 'library' && category.subGroups && category.subGroups.length) {
@@ -100,25 +149,42 @@ export function CategoryMegaMenu({ category, onItemClick, labelledBy }: Props) {
         <p className="mt-1 text-sm text-surface-500">{category.tagline}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-        {category.items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            prefetch
-            role="menuitem"
-            onClick={onItemClick}
-            className={`group flex flex-col gap-0.5 px-3 py-3 rounded-lg ${a.itemHoverBg} focus:outline-none focus-visible:ring-2 ${a.focusRing} transition-colors`}
-          >
-            <span className={`text-sm font-semibold text-surface-800 ${a.itemHoverText} leading-snug`}>
-              {item.label}
-            </span>
-            <span className="text-xs text-surface-500 leading-snug">
-              {item.description}
-            </span>
-          </Link>
-        ))}
-      </div>
+      {/*
+       * NAV-IA (2026-09-05): when a category declares `groups`, the same items
+       * render in the same 2-column grid with a caption above each run. Nothing
+       * is hidden and nothing moves behind an extra click — Astrology's fourteen
+       * rows become four scannable runs, so a devotee can skip three quarters of
+       * the panel instead of reading it linearly.
+       */}
+      {category.groups?.length ? (
+        <div className="flex flex-col gap-2.5">
+          {category.groups.map((group) => (
+            <div key={group.heading}>
+              <p className="mb-0.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-surface-400">
+                {group.heading}
+              </p>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                {group.items.map((item) => (
+                  <MegaMenuItem
+                    key={item.href}
+                    item={item}
+                    accent={a}
+                    onItemClick={onItemClick}
+                    dense
+                    terse={group.terse}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+          {category.items.map((item) => (
+            <MegaMenuItem key={item.href} item={item} accent={a} onItemClick={onItemClick} />
+          ))}
+        </div>
+      )}
 
       {category.featured && (
         <div className="mt-5 pt-4 border-t border-surface-100">

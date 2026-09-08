@@ -9,9 +9,16 @@ const HOVER_OPEN_DELAY_MS = 120;
 const HOVER_CLOSE_DELAY_MS = 120;
 
 /**
- * Focusable descendants of an open panel, in DOM order. The Library panel
- * renders plain links (no role="menuitem"), so match on focusability rather
- * than on the menuitem role — otherwise Library would have no keyboard entry.
+ * Focusable descendants of an open panel, in DOM order. Match on focusability
+ * rather than on the menuitem role.
+ *
+ * HOME-IA (2026-09-04): the Library panel now DOES carry role="menuitem", like
+ * the other four — the note that used to sit here said it rendered plain links,
+ * which was the reason this selector was written this way and is no longer
+ * true. Keeping the focusability match anyway: it is the weaker precondition,
+ * so it survives a panel choosing either contract, and the alternative would
+ * silently strand a future panel's keyboard entry the way it once stranded
+ * Library's (A11Y-03, WCAG 2.1.1 Level A).
  */
 const PANEL_ITEM_SELECTOR = 'a[href], button:not([disabled])';
 
@@ -294,11 +301,15 @@ export function CategoryNav() {
         <div
           ref={panelRef}
           id={`${baseId}-panel-${openCategory.key}`}
-          className={
-            openCategory.key === 'library'
-              ? 'fixed top-16 left-1/2 -translate-x-1/2 w-[min(1120px,calc(100vw-48px))] max-h-[min(720px,calc(100vh-120px))] overflow-y-auto z-50'
-              : 'fixed top-16 left-1/2 -translate-x-1/2 w-[min(640px,calc(100vw-48px))] max-h-[min(720px,calc(100vh-120px))] overflow-y-auto z-50'
-          }
+          // HOME-IA (2026-09-04): one width for all five panels. Library used to
+          // take a 1120px branch of its own because it painted 41 subGroup links
+          // in four columns — measured live at 1120x655, two thirds of a 900px
+          // viewport, covering the hero it exists to navigate away from.
+          // LibraryMegaPanel now renders the same 2-column item shape as every
+          // other category (12 links, not 46), so the special case has nothing
+          // left to justify it. The max-height stays as a safety net; at this
+          // link count the content no longer reaches it.
+          className="fixed top-16 left-1/2 -translate-x-1/2 w-[min(640px,calc(100vw-48px))] max-h-[min(720px,calc(100vh-120px))] overflow-y-auto z-50"
           onMouseEnter={clearTimers}
           onMouseLeave={scheduleClose}
           onKeyDown={onPanelKeyDown}
