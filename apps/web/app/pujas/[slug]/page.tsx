@@ -2,6 +2,17 @@ import type { Metadata } from 'next';
 
 export const revalidate = 3600;
 
+// SEO-11 (prod sweep 2026-09-08) — an unknown slug renders app/not-found.tsx
+// but still answers HTTP 200. The cause is `app/pujas/loading.tsx`, not this
+// file, not ISR, and not the sibling error.tsx: a parent segment's loading.tsx
+// wraps the whole child subtree in a <Suspense>, so the shell (and the status)
+// is flushed before this page's notFound() throws, and the throw is then
+// swallowed by HTTPAccessFallbackBoundary instead of reaching the catch in
+// next/dist/server/app-render/app-render.js:1402 that sets the 404. The full
+// derivation, the prod measurements that isolate loading.tsx as the single
+// variable, and the fix live in the header of app/temples/[slug]/page.tsx.
+// Guarded by __tests__/seo/soft-404-status.test.ts.
+
 import Link from 'next/link';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
@@ -158,8 +169,16 @@ export async function generateMetadata({
  // for a slug we could not resolve — that is what turned every typo URL into
  // a soft-404 carrying fabricated price schema.
  if (lookup.status !== 'ok') {
+   // SEO-03 (prod sweep 2026-09-08): the brand used to be hard-coded on both
+   // arms, so prod served <title>Puja not found | Darshya | Darshya</title> —
+   // the root layout's TITLE_TEMPLATE appends "| Darshya" to any plain-string
+   // page title, and this one already carried it. The existing guard
+   // (__tests__/seo/title-template.test.ts) missed it because its TITLE_PROP
+   // regex only matches `title:` followed IMMEDIATELY by a string literal, and
+   // this was a ternary. __tests__/seo/soft-404-status.test.ts closes that hole.
+   // The template supplies the brand; the page supplies only the phrase.
    return {
-     title: lookup.status === 'not-found' ? 'Puja not found | Darshya' : 'Puja unavailable | Darshya',
+     title: lookup.status === 'not-found' ? 'Puja not found' : 'Puja unavailable',
      robots: { index: false, follow: false },
    };
  }
