@@ -1,5 +1,22 @@
 # Monitoring + Observability Stack Spec
 
+> **PROPOSAL, NOT A DEPLOYED STACK — corrected 2026-09-08 (`OPS-10`).** The "Stack
+> overview" table below reads as an inventory of what is running. It is not. Checked
+> against the repository on 2026-09-08: **Logflare** appears in no source file, no
+> workflow and no env var — there is no centralised log aggregation. **StatusPage** is
+> not purchased and no public status page exists; `status.bhaktisetu.com` does not
+> serve (`docs/cs/crisis-communications-playbook.md`). **UptimeRobot** is an unstarted
+> founder action (`docs/it/uptime-setup.md`), and the DR runbook records "External
+> uptime monitor: **None wired in this repository**". **Sentry** has an SDK integration
+> but `SENTRY_DSN` is `.optional()` (`apps/api/src/lib/env.ts:71`) and appears nowhere in
+> `render.yaml`, so whether it is receiving events in production is `[verify]`.
+> **PostHog** is wired in code and gated on `NEXT_PUBLIC_POSTHOG_KEY`, which is unset in
+> production — recorded in the source itself at `apps/web/app/page.tsx:585` and absent
+> from `render.yaml`'s build env — so every `capture()` is a no-op. The SLO table
+> below is therefore an aspiration with nothing measuring it — no alert fires from any
+> of these numbers today. Ground truth: `docs/runbooks/disaster-recovery.md`,
+> `.github/workflows/`, `render.yaml`.
+
 > Unified monitoring architecture across Bhaktisetu infrastructure. Foundation for Series-A reliability story.
 
 ## Stack overview

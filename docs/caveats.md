@@ -146,7 +146,7 @@ Imports are hoisted but Sentry's instrumentation needs to run before route handl
    Dispatch the deploy by hand:
 
    ```bash
-   gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main
+   gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g
    ```
 
    `_headers` is also a Cloudflare Pages artefact and is no longer the file

@@ -1,5 +1,41 @@
 # Privacy Policy v2 — Multi-Geo (DPDP + GDPR + CCPA + UK/CA/AU)
 
+> # ⚠ PENDING OWNER SIGN-OFF — DO NOT PUBLISH THIS POLICY
+>
+> **Added 2026-09-08 (`OPS-10`).** This is a **Privacy Policy destined for publication**
+> under five regimes (DPDP, GDPR, UK GDPR, CCPA, PIPEDA/Privacy Act). A data-residency
+> sentence in it is a **representation to every reader and every regulator**, not a
+> documentation detail. This document previously warranted *“India servers (Mumbai)”* and
+> named **Stripe** as a US processor. Both were false.
+>
+> An automated correction pass on 2026-09-02 restated §5 to match the repository.
+> **That restatement has not been reviewed or approved by the owner, and until it is,
+> every word of the surrounding text is provisional — including the corrected §5.**
+>
+> **What the infrastructure actually is** (read out of the repository 2026-09-08; every
+> line here is checkable):
+>
+> | Layer | Reality | Evidence |
+> |---|---|---|
+> | Web tier | Render Docker service `darshya-web`, region **`oregon`** (US West) | `render.yaml:52-60` |
+> | API tier | Render service `bhaktisetu`, region **`oregon`** (US West) | `render.yaml:10-22` |
+> | India-hosted server | **None.** There has never been a Render Mumbai region for this product | `render.yaml:15`, `:56` |
+> | Standby / failover region | **None** in any geography | `docs/runbooks/disaster-recovery.md` |
+> | Read replica | **None.** One Supabase Postgres instance | `docs/runbooks/disaster-recovery.md` |
+> | Database region | **Not recorded anywhere in this repository** — `[verify]` in the Supabase dashboard | — |
+> | Cloudflare | DNS + edge proxy only; not a hosting layer since 2026-07-08 | `cf-kill-zombie.yml` |
+> | Payment processor | Razorpay only; the Stripe rail was removed 2026-08-11 | `apps/api/src/lib/env.ts:45-46` |
+>
+> **What the owner must decide before this document is used:**
+>
+> 1. Read the Supabase project region from the dashboard and write it in, replacing every
+>    `[verify]`. Do not fill it in from memory — that is how “Mumbai” got here.
+> 2. Decide whether to state the true residency (personal data is processed **outside
+>    India**, on US-West infrastructure) or to move the infrastructure before the document
+>    is used. Those are different commercial decisions and only the owner can take either.
+> 3. Confirm the corrected text with counsel before any signature, publication or filing.
+
+
 > **Roadmap item**: R-Q4-L-001 (P0) · **Authored**: 2026-06-13 · **Extends**: docs/legal/dpdp-compliance-audit-2026-06.md
 
 ## Goal
