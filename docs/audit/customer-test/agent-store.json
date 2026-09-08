@@ -1,0 +1,816 @@
+{
+  "agent": "store",
+  "scope": "Commerce, both sides. STORE_OWNER (ct+store@darshya.online): /store-admin/{profile,products,dashboard,revenue,reviews,orders}, the full create -> verify -> soft-delete -> double-delete product journey, 8 input-validation probes, and the /store-admin web pages. BUYER (ct+devotee@darshya.online and unauthenticated): /store/{products,products/live,products/:handle,collections,orders,cart,reviews}, the cart lifecycle, the order route rejection path, and the /store, /store/cart, /store/checkout (load only), /store/products/live, a fixture PDP, a real seller PDP and a nonexistent product page. Cross-role: every /store-admin/* endpoint with the devotee token and with no token.",
+  "summary": "Authorization is clean — every /store-admin/* endpoint returned 403 for the devotee token and 401 unauthenticated, on reads and writes alike, with the role checked before any row lookup; no cross-role read was possible anywhere. Input validation is strong: 8 of 8 malformed product payloads were rejected with field-level detail, pagination params are clamped, and emoji plus Devanagari names round-trip intact. The soft-delete fix works as designed: the product left the owner catalogue and the public shelf, the other two products were untouched, revenue and reviews stayed at zero, and a second DELETE of the same id was idempotent. /store-admin/revenue returns exactly 0, never null. /store/__ct_nonexistent_zzz returns a real 404 with a correct title — no soft-404 here. Nine findings: two P1 (a production payment guard that is not in effect, and a storefront where every product has a live buy CTA but cannot be ordered), six P2, one P3. All QA artifacts were cleaned up except one StoreProfile the API has no endpoint to delete.",
+  "artifacts_left_behind": [
+    "StoreProfile \"QA-Test-Store\" (id 740b6460-9409-4561-b706-209a39422b03, city \"QA-City\", approved:false) on user ct+store@darshya.online. It had to be created because the account had none and POST /store-admin/products correctly 409s without one. There is no DELETE endpoint for a StoreProfile, so it can only be removed in the DB. It is unapproved and its catalogue is empty, so none of it is publicly visible.",
+    "3 soft-deleted store_products rows under that profile (QA-Test-Product, QA-Test-Zero-Price, QA-Test-🕉️-Emoji-नाम), all deletedAt-stamped with isActive false and stock 0 — invisible to buyers and to the owner catalogue. They are what makes the dashboard read lowStock:3 (FINDING store-4)."
+  ],
+  "checked": [
+    {
+      "target": "/store-admin/profile",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "{\"profile\":null} before setup — honest \"not set up yet\", not a stub"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "{\"products\":[],\"storeProfileMissing\":true} — distinguishes no-store from no-products"
+    },
+    {
+      "target": "/store-admin/dashboard",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "all stats exactly 0, recentOrders []"
+    },
+    {
+      "target": "/store-admin/revenue",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "totals {todayInr:0,monthInr:0,yearInr:0} — exactly 0, never null (brief question: answered)"
+    },
+    {
+      "target": "/store-admin/reviews",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "{\"reviews\":[]}"
+    },
+    {
+      "target": "/store-admin/orders",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 404,
+      "note": "endpoint does not exist; the /store-admin/orders PAGE calls GET /store/orders instead — not a defect"
+    },
+    {
+      "target": "/store-admin/profile",
+      "method": "PUT",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "created StoreProfile \"QA-Test-Store\"; approved=false, commission=0.2 (20% take rate as per doctrine)"
+    },
+    {
+      "target": "/store-admin/profile",
+      "method": "PUT",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "storeName \"Q\" (1 char) rejected with field-level zod detail"
+    },
+    {
+      "target": "/store-admin/profile",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": "STORE_OWNER role required"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": "STORE_OWNER role required"
+    },
+    {
+      "target": "/store-admin/dashboard",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": "STORE_OWNER role required"
+    },
+    {
+      "target": "/store-admin/revenue",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": "STORE_OWNER role required"
+    },
+    {
+      "target": "/store-admin/reviews",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": "STORE_OWNER role required"
+    },
+    {
+      "target": "/store-admin/profile",
+      "method": "PUT",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/products/:id",
+      "method": "PATCH",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": "role checked before any row lookup"
+    },
+    {
+      "target": "/store-admin/products/:id",
+      "method": "DELETE",
+      "role": "DEVOTEE",
+      "status": 403,
+      "note": "role checked before any row lookup"
+    },
+    {
+      "target": "/store-admin/profile",
+      "method": "GET",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "GET",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/dashboard",
+      "method": "GET",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/revenue",
+      "method": "GET",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/reviews",
+      "method": "GET",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/profile",
+      "method": "PUT",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store-admin/profile",
+      "method": "GET",
+      "role": "garbage bearer token",
+      "status": 401,
+      "note": "\"Invalid or expired access token.\""
+    },
+    {
+      "target": "/store-admin/profile",
+      "method": "GET",
+      "role": "demo-store-token",
+      "status": 401,
+      "note": "\"Demo tokens not accepted in production.\" — proves NODE_ENV===\"production\" on the live API"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "price:-100 rejected (\"greater than or equal to 0\")"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "stock:-5 rejected"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "10000-char description rejected (max 5000)"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "1-char name rejected (min 2)"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "missing price rejected"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "price as string \"100\" rejected (no coercion)"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "imageUrl \"not-a-url\" rejected"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "stock 1.5 rejected (int required)"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 201,
+      "note": "QA-Test-Product created, price \"199.5\" returned as string (Decimal-safe)"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 201,
+      "note": "price:0 ACCEPTED by design (z.number().nonnegative()) — a free listing is possible; recorded as behaviour, not a bug"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 201,
+      "note": "name \"QA-Test-🕉️-Emoji-नाम\" — emoji + Devanagari stored and echoed intact"
+    },
+    {
+      "target": "/store-admin/products?limit=99999",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "clamped to limit=200"
+    },
+    {
+      "target": "/store-admin/products?page=-1",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "clamped to page=1"
+    },
+    {
+      "target": "/store-admin/products?limit=abc",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "falls back to 200"
+    },
+    {
+      "target": "/store-admin/products?limit=0",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "falls back to 200"
+    },
+    {
+      "target": "/store-admin/products?page=999",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "empty page, total still correct"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "3 QA products listed, total=3 — create verified in the owner catalogue"
+    },
+    {
+      "target": "/store-admin/products/:id",
+      "method": "DELETE",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "{\"ok\":true} — soft delete of QA-Test-Product"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "total=2, QA-Test-Product gone, other 2 products intact — nothing else destroyed"
+    },
+    {
+      "target": "/store-admin/products/:id",
+      "method": "DELETE",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "second DELETE of the same id: idempotent {\"ok\":true}, catalogue still total=2 — double-delete handled"
+    },
+    {
+      "target": "/store/products/live",
+      "method": "GET",
+      "role": "anon",
+      "status": 200,
+      "note": "deleted product gone from the public shelf (isActive:false + stock:0 do the work)"
+    },
+    {
+      "target": "/store-admin/products/00000000-0000-0000-0000-000000000000",
+      "method": "DELETE",
+      "role": "STORE_OWNER",
+      "status": 404,
+      "note": "\"Product not found\""
+    },
+    {
+      "target": "/store-admin/products/not-a-uuid",
+      "method": "DELETE",
+      "role": "STORE_OWNER",
+      "status": 500,
+      "note": "FINDING store-5"
+    },
+    {
+      "target": "/store-admin/products/not-a-uuid",
+      "method": "PATCH",
+      "role": "STORE_OWNER",
+      "status": 500,
+      "note": "FINDING store-5"
+    },
+    {
+      "target": "/store-admin/products/:softDeletedId",
+      "method": "PATCH",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "FINDING store-3 — deleted product PATCHed back to isActive with stock>0"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "FINAL: total=0, catalogue empty — all QA products cleaned up"
+    },
+    {
+      "target": "/store-admin/dashboard",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "FINAL: lowStock=3 with 0 live products — FINDING store-4"
+    },
+    {
+      "target": "/store-admin/revenue",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "FINAL: totals still exactly 0, topProducts [] — soft delete moved no money"
+    },
+    {
+      "target": "/store-admin/reviews",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "FINAL: [] — no review rows harmed by the deletes"
+    },
+    {
+      "target": "/store/products",
+      "method": "GET",
+      "role": "anon",
+      "status": 200,
+      "note": "24 fixture products; no buyable/buyableTotal fields on prod (COM-01 is uncommitted local work) — FINDING store-2"
+    },
+    {
+      "target": "/store/products/live",
+      "method": "GET",
+      "role": "anon",
+      "status": 200,
+      "note": "0 real seller products platform-wide before the test; the QA product appeared here within seconds of creation"
+    },
+    {
+      "target": "/store/collections",
+      "method": "GET",
+      "role": "anon",
+      "status": 200,
+      "note": "6 collections with counts"
+    },
+    {
+      "target": "/store/products/:handle",
+      "method": "GET",
+      "role": "anon",
+      "status": 200,
+      "note": "fixture handle resolves"
+    },
+    {
+      "target": "/store/products/__ct_nonexistent_zzz",
+      "method": "GET",
+      "role": "anon",
+      "status": 404,
+      "note": "correct 404, not a soft-200"
+    },
+    {
+      "target": "/store/products/<seller uuid>",
+      "method": "GET",
+      "role": "anon",
+      "status": 404,
+      "note": "seller rows are not in this keyspace by design — their PDP is /store/seller/<id>, which works"
+    },
+    {
+      "target": "/store/orders",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 200,
+      "note": "{\"data\":[]}"
+    },
+    {
+      "target": "/store/orders",
+      "method": "GET",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store/orders",
+      "method": "GET",
+      "role": "STORE_OWNER",
+      "status": 200,
+      "note": "{\"data\":[]} seller inbox — see FINDING store-8 for how it is queried"
+    },
+    {
+      "target": "/store/orders/00000000-0000-0000-0000-000000000000",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 404,
+      "note": ""
+    },
+    {
+      "target": "/store/orders/not-a-uuid",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 400,
+      "note": "\"Invalid order id\" — uuid guard present here, absent on /store-admin/products/:id"
+    },
+    {
+      "target": "/store/orders/:id/status",
+      "method": "PATCH",
+      "role": "DEVOTEE",
+      "status": 404,
+      "note": "nonexistent order; order lookup precedes authz"
+    },
+    {
+      "target": "/store/orders/:id/payment-confirm",
+      "method": "POST",
+      "role": "DEVOTEE",
+      "status": 404,
+      "note": "production guard did NOT fire — FINDING store-1"
+    },
+    {
+      "target": "/store/orders/not-a-uuid/payment-confirm",
+      "method": "POST",
+      "role": "STORE_OWNER",
+      "status": 400,
+      "note": "\"Invalid order id\" — second confirmation the prod guard is off"
+    },
+    {
+      "target": "/store/orders",
+      "method": "POST",
+      "role": "DEVOTEE",
+      "status": 400,
+      "note": "fixture id prod_015 -> {\"error\":\"Unknown product: prod_015\"} — no order row created, no payment call"
+    },
+    {
+      "target": "/store/orders",
+      "method": "POST",
+      "role": "DEVOTEE",
+      "status": 400,
+      "note": "empty body -> zod field errors"
+    },
+    {
+      "target": "/store/orders",
+      "method": "POST",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store/cart",
+      "method": "GET",
+      "role": "DEVOTEE",
+      "status": 200,
+      "note": "empty cart reports deliveryFee 49 / total 49 — FINDING store-9"
+    },
+    {
+      "target": "/store/cart",
+      "method": "GET",
+      "role": "anon",
+      "status": 401,
+      "note": ""
+    },
+    {
+      "target": "/store/cart/items",
+      "method": "POST",
+      "role": "DEVOTEE",
+      "status": 200,
+      "note": "add fixture prod_015, cart re-read twice — item persisted across requests"
+    },
+    {
+      "target": "/store/cart/items",
+      "method": "POST",
+      "role": "DEVOTEE",
+      "status": 400,
+      "note": "quantity:-5 -> \"Quantity must be between 1 and 10.\""
+    },
+    {
+      "target": "/store/cart/items",
+      "method": "POST",
+      "role": "DEVOTEE",
+      "status": 400,
+      "note": "unknown productId -> \"Product not found.\""
+    },
+    {
+      "target": "/store/cart/items/:id",
+      "method": "DELETE",
+      "role": "DEVOTEE",
+      "status": 200,
+      "note": "item removed, cart back to 0"
+    },
+    {
+      "target": "/store/cart/items/:id",
+      "method": "PATCH",
+      "role": "DEVOTEE",
+      "status": 400,
+      "note": "\"Cart item not found.\" after removal — no phantom item"
+    },
+    {
+      "target": "/store",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 200,
+      "note": "<title>Store | Darshya</title>; renders both the fixture grid and a live-seller section"
+    },
+    {
+      "target": "/store/cart",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 200,
+      "note": "<title>Your Shopping Cart | Darshya</title>, no error boundary"
+    },
+    {
+      "target": "/store/checkout",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 200,
+      "note": "<title>Store Checkout | Darshya</title> — LOADED ONLY, never submitted"
+    },
+    {
+      "target": "/store/orders",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 200,
+      "note": "<title>My Orders | Darshya</title>"
+    },
+    {
+      "target": "/store/products/live",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 200,
+      "note": "<title>Live Store Products — Listed by Verified Darshya Sellers | Darshya</title> — see FINDING store-6"
+    },
+    {
+      "target": "/store/bhagavad-gita-deluxe-edition",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 200,
+      "note": "fixture PDP renders with Add to Cart + Buy Now — FINDING store-2"
+    },
+    {
+      "target": "/store/seller/<QA product uuid>",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 200,
+      "note": "<title>QA-Test-Product | Darshya</title>, correct store name, Add to Cart present — the seller PDP is healthy"
+    },
+    {
+      "target": "/store/__ct_nonexistent_zzz",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 404,
+      "note": "REAL 404 with <title>Page not found | Darshya</title> — no soft-404 here, unlike the CT-SEO-1 patterns"
+    },
+    {
+      "target": "/store-admin",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 307,
+      "note": "-> /auth/login?redirect=%2Fstore-admin"
+    },
+    {
+      "target": "/store-admin/products",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 307,
+      "note": "-> /auth/login?redirect=%2Fstore-admin%2Fproducts"
+    },
+    {
+      "target": "/store-admin/orders",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 307,
+      "note": "-> /auth/login?redirect=%2Fstore-admin%2Forders"
+    },
+    {
+      "target": "/store-admin/revenue",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 307,
+      "note": "-> /auth/login?redirect=%2Fstore-admin%2Frevenue"
+    },
+    {
+      "target": "/store-admin/reviews",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 307,
+      "note": "-> /auth/login?redirect=%2Fstore-admin%2Freviews"
+    },
+    {
+      "target": "/store-admin/messages",
+      "method": "GET (page)",
+      "role": "anon",
+      "status": 307,
+      "note": "-> /auth/login?redirect=%2Fstore-admin%2Fmessages"
+    }
+  ],
+  "findings": [
+    {
+      "id": "store-1",
+      "severity": "P1",
+      "kind": "MONEY",
+      "target": "POST /api/v1/store/orders/:id/payment-confirm",
+      "repro": [
+        "POST /store/orders/00000000-0000-0000-0000-000000000000/payment-confirm with the ct+devotee token",
+        "POST /store/orders/not-a-uuid/payment-confirm with the ct+store token",
+        "GET /store-admin/profile with Authorization: Bearer demo-store-token"
+      ],
+      "observed": "The first two return 404 {\"error\":\"Order not found\"} and 400 {\"error\":\"Invalid order id\"} — execution reached the id parser and the DB lookup. The handler's first statement is `if (NODE_ENV === \"production\" && ALLOW_DEMO_PAYMENTS !== \"true\") return 403` (apps/api/src/routes/store-orders.ts:496-503), so that guard did not fire. The third probe returns \"Demo tokens not accepted in production.\", which proves NODE_ENV === \"production\" on the live API (and that ALLOW_DEMO_TOKENS is not true, since the server refuses to boot in that combination — middlewares/auth.ts:17-28). The only remaining explanation is ALLOW_DEMO_PAYMENTS=true in the API service environment. The guard itself is old (commit 4244ced8, 2026-05-13), so this is not a stale deploy.",
+      "expected": "403 {\"error\":\"Manual payment-confirm disabled in production. Use /verify-payment with a real Razorpay signature.\"}",
+      "evidence": "POST /store/orders/not-a-uuid/payment-confirm (ct+store) -> 400 {\"error\":\"Invalid order id\"}; POST /store/orders/00000000-0000-0000-0000-000000000000/payment-confirm (ct+devotee) -> 404 {\"error\":\"Order not found\",\"code\":\"NOT_FOUND\"}; GET /store-admin/profile with demo-store-token -> 401 {\"error\":\"Unauthorized\",\"message\":\"Demo tokens not accepted in production.\"}",
+      "confidence": "confirmed",
+      "note": "Impact, stated honestly: no money moved and there is no order on this account to exploit. The route is reachable only by an admin or by the store owner whose product is in the order (canManageOrder, store-orders.ts:101-119), so the concrete abuse is a merchant flipping their own PENDING order to CONFIRMED with no Razorpay payment — which also emails the buyer a generated invoice. The wider consequence is that the same flag disables assertNotProductionDemo (apps/api/src/lib/payment-mode.ts:22-33), the guard that stops donation and subscription code paths from issuing order_demo_* ids and reporting \"payment successful\" when no money moved. That is latent while a real Razorpay key is set and becomes live the moment one is not. Fix: unset ALLOW_DEMO_PAYMENTS on the API service and re-run the two probes — both should become 403."
+    },
+    {
+      "id": "store-2",
+      "severity": "P1",
+      "kind": "BROKEN_CTA",
+      "target": "https://darshya.online/store and POST /api/v1/store/orders",
+      "repro": [
+        "GET https://darshya.online/store — 24 products in the grid",
+        "GET https://darshya.online/store/bhagavad-gita-deluxe-edition — the PDP shows \"Add to Cart\" and \"Buy Now\"",
+        "POST /api/v1/store/orders with items[{productId:\"prod_015\",qty:1,priceAtPurchase:1299}], totalAmountInr 1348 and a valid shippingAddress, ct+devotee token"
+      ],
+      "observed": "400 {\"error\":\"Unknown product: prod_015\"} — a raw developer string with no code and no user-facing message. All 24 catalogue products are hand-written fixtures with prod_NNN ids that have no store_products row, so none of them can be ordered; GET /store/products/live returned 0 real seller rows before this test, i.e. the platform's entire orderable inventory was empty. Nothing on the storefront or the PDP says so: Add to Cart and Buy Now render normally and the item goes into the cart fine, so a shopper only finds out at the end of checkout.",
+      "expected": "Either the CTA is disabled or labelled (\"catalogue preview — not yet stocked\") on unorderable items, or the order route answers with friendly copy. Both already exist in the working tree as COM-01 (buyable / unavailableReason on every catalogue entry, plus the \"One item in your basket is a catalogue preview…\" message) but that code is uncommitted (git status: M apps/api/src/routes/store.ts, M apps/web/app/store/page.tsx) and therefore not on prod. Live prod returns neither the flag nor the message.",
+      "evidence": "GET /api/v1/store/products -> total 24, buyableTotal undefined, 0 entries with buyable:true, and the product objects have no buyable/unavailableReason keys. GET /api/v1/store/products/live -> {\"products\":[],\"total\":0}. POST /api/v1/store/orders -> 400 {\"error\":\"Unknown product: prod_015\"}.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "store-3",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "PATCH /api/v1/store-admin/products/:id",
+      "repro": [
+        "POST /store-admin/products {name:\"QA-Test-Product\",price:199.5,stock:1} -> 201, id 8b460bdb-…",
+        "DELETE /store-admin/products/8b460bdb-… -> 200 {\"ok\":true} (soft delete: deletedAt set, isActive false, stock 0)",
+        "GET /store-admin/products -> product absent (correct)",
+        "PATCH /store-admin/products/8b460bdb-… {isActive:true, stock:5, price:1} with the SAME store-owner token",
+        "GET /store-admin/products, then GET /store/products/live"
+      ],
+      "observed": "The PATCH succeeds (200) on a soft-deleted row — PATCH looks the product up with findUnique and never checks deletedAt (apps/api/src/routes/store-admin.ts:248). The product immediately reappeared on the PUBLIC shelf (GET /store/products/live returned it at the new price of ₹1, in stock) while staying INVISIBLE in the owner's own catalogue, which filters deletedAt:null. Net effect: a deleted product can be back on sale, at a price the owner can still change, with no row in the UI the owner can click to take it down again.",
+      "expected": "PATCH on a soft-deleted product should 404 (or 409), the same way GET /store-admin/products already hides it. The trigger needs no attacker: two tabs open on /store-admin/products, delete in one, save an edit in the other.",
+      "evidence": "PATCH -> 200 {\"product\":{…,\"price\":\"1\",\"stock\":5,\"isActive\":true}}; GET /store-admin/products -> total 2, QA-Test-Product absent; GET /store/products/live -> {\"products\":[{\"title\":\"QA-Test-Product\",\"price\":1,\"stock\":5,…}]}. Cleaned up by re-issuing DELETE; the public shelf went back to 0.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "store-4",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "GET /api/v1/store-admin/dashboard",
+      "repro": [
+        "Create 3 products, then DELETE all 3 via /store-admin/products/:id",
+        "GET /store-admin/products -> {\"products\":[],\"total\":0}",
+        "GET /store-admin/dashboard"
+      ],
+      "observed": "{\"stats\":{\"todaySales\":0,\"todayOrders\":0,\"monthSales\":0,\"lowStock\":3,\"pendingShipments\":0}} — the dashboard tells an owner with an empty catalogue that 3 products are low on stock. The products query at store-admin.ts:381 selects where { storeProfileId } with no deletedAt:null, and soft delete sets stock to 0, so every deleted product is permanently counted as low stock. The number only ever grows.",
+      "expected": "lowStock 0. The same missing filter on /revenue and /reviews is deliberate and correct — historical revenue and buyer reviews must still resolve against deleted products — but lowStock is a restock prompt for products that still exist.",
+      "evidence": "FINAL dashboard {\"stats\":{\"todaySales\":0,\"todayOrders\":0,\"monthSales\":0,\"lowStock\":3,\"pendingShipments\":0},\"recentOrders\":[]} alongside FINAL catalogue {\"products\":[],\"total\":0,\"page\":1,\"limit\":200}.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "store-5",
+      "severity": "P2",
+      "kind": "CRASH",
+      "target": "DELETE and PATCH /api/v1/store-admin/products/:id",
+      "repro": [
+        "DELETE /store-admin/products/not-a-uuid with the ct+store token",
+        "PATCH /store-admin/products/not-a-uuid {price:5} with the ct+store token"
+      ],
+      "observed": "Both return 500 {\"error\":\"InternalServerError\",\"message\":\"हमारी ओर से कुछ गड़बड़ हुई है।\",\"code\":\"INTERNAL_ERROR\"}. The id goes straight into prisma.storeProduct.findUnique against a uuid column, so Prisma raises P2023 and the request 500s. A valid-but-absent uuid correctly returns 404, so only the malformed-id path is affected.",
+      "expected": "400 \"Invalid product id\" (or 404). This exact bug class was already fixed on the order route — store-orders.ts:200-206 filters ids through a UUID_RE before the Prisma lookup precisely to stop a P2023 500, and orderIdParams uses z.string().uuid(). store-admin.ts has neither guard on :id.",
+      "evidence": "DELETE /store-admin/products/not-a-uuid -> 500; PATCH /store-admin/products/not-a-uuid -> 500; DELETE /store-admin/products/00000000-0000-0000-0000-000000000000 -> 404 {\"error\":\"Product not found\"}; GET /store/orders/not-a-uuid -> 400 {\"error\":\"Invalid order id\"} for contrast.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "store-6",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "GET /api/v1/store/products/live and https://darshya.online/store",
+      "repro": [
+        "PUT /store-admin/profile {storeName:\"QA-Test-Store\"} -> profile created with approved:false",
+        "POST /store-admin/products {name:\"QA-Test-Product\",price:199.5,stock:1} -> 201",
+        "GET /api/v1/store/products/live (no token) and GET https://darshya.online/store"
+      ],
+      "observed": "The product from a brand-new, unapproved, unreviewed store was publicly listed within seconds — on the API shelf and rendered on the /store page, under a heading that reads \"Listed directly by approved sellers on Darshya. Sold and shipped by the seller named on each item.\" The /store/products/live page title is \"Live Store Products — Listed by Verified Darshya Sellers\". Neither claim was true of this store: StoreProfile.approved was false throughout. The query at store.ts:82-89 filters only on isActive and stock; nothing joins on storeProfile.approved (a grep for storeProfile + approved finds it only in admin.service counts, onboarding, and provider.service's seller page).",
+      "expected": "Either the public shelf filters on storeProfile.approved, or the \"approved sellers\" / \"Verified Darshya Sellers\" copy is removed. As it stands, anyone who can sign up as a store owner publishes straight to the storefront with no review, and the page vouches for them.",
+      "evidence": "GET /store-admin/profile -> {\"approved\":false,…,\"storeName\":\"QA-Test-Store\"}; GET /store/products/live -> product present with \"storeName\":\"QA-Test-Store\"; the /store HTML contains the QA product card plus the string \"Listed directly by approved sellers on Darshya\".",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "store-7",
+      "severity": "P2",
+      "kind": "DATA_LOSS",
+      "target": "GET/POST /api/v1/store/cart",
+      "repro": [
+        "POST /store/cart/items {productId:\"prod_015\",quantity:1} at 16:00:47Z -> 200, item ci_1788883247111_1",
+        "GET /store/cart three times immediately -> item present",
+        "GET /store/cart again at ~16:07Z with no intervening delete"
+      ],
+      "observed": "The cart was empty — itemCount 0 — with no user action. The cart has no database table: apps/api/src/services/store.service.ts:852 is `const cartStore = new Map<string, CartItem[]>()`, held in the API process memory, and there is no Cart model in apps/api/prisma/schema.prisma. Any restart, redeploy or cold start (Render free tier spins down) empties every shopper's basket. A follow-up control run held an item for 3.5 minutes across four reads, so the loss is restart-driven rather than per-request.",
+      "expected": "A basket survives a server restart. The same design also means a cart cannot follow a user between devices, and it compounds FINDING store-2: the item a shopper adds is one the order route will refuse anyway.",
+      "evidence": "add at 2026-09-08T16:00:47.111Z (the item id encodes the ms timestamp); GET at ~16:07Z -> {\"items\":[],\"itemCount\":0}; source services/store.service.ts:852 `const cartStore = new Map<string, CartItem[]>();`; no Cart or StoreCart model in prisma/schema.prisma.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "store-8",
+      "severity": "P2",
+      "kind": "VALIDATION",
+      "target": "GET /api/v1/store/orders (store-owner branch) — backs the /store-admin/orders page",
+      "repro": [
+        "Read apps/api/src/routes/store-orders.ts:335-361",
+        "GET /store/orders with the ct+store token"
+      ],
+      "observed": "For a STORE_OWNER the handler runs prisma.storeOrder.findMany({ orderBy: createdAt desc, take: 200 }) with NO where clause — the 200 most recent orders on the whole platform — and only then filters them in JavaScript for items belonging to this store. Once the platform passes 200 orders in total, a merchant's own orders start dropping off their orders page silently, and a merchant whose last sale is older than the platform's newest 200 sees an empty page. The correct filter already exists and is used two routes away: StoreOrder.storeProfileId, which both /store-admin/dashboard and /store-admin/revenue scope on.",
+      "expected": "where { storeProfileId } with real pagination, as the dashboard and revenue queries already do.",
+      "evidence": "Live response is {\"data\":[]} — this account has no orders, so the runtime symptom is not yet visible on prod (the platform is below the 200-order threshold). Code: store-orders.ts:352-359. Steady-state latency was 1.2s over three runs; the first 8.4s call was a cold start, not a perf finding.",
+      "confidence": "confirmed"
+    },
+    {
+      "id": "store-9",
+      "severity": "P3",
+      "kind": "COPY",
+      "target": "GET /api/v1/store/cart",
+      "repro": [
+        "GET /store/cart with the ct+devotee token and an empty basket"
+      ],
+      "observed": "{\"items\":[],\"subtotal\":0,\"deliveryFee\":49,\"tax\":0,\"total\":49,\"currency\":\"INR\",\"itemCount\":0} — an empty cart quotes a ₹49 delivery fee and a ₹49 total.",
+      "expected": "deliveryFee and total 0 when itemCount is 0. Cosmetic today: the cart page renders its empty state rather than the number, so no shopper is currently shown \"₹49\" for nothing — but any client that renders cart.total without first checking itemCount will show it.",
+      "evidence": "GET /store/cart -> {\"cart\":{\"id\":\"cart_e476f95c-…\",\"items\":[],\"subtotal\":0,\"deliveryFee\":49,\"tax\":0,\"total\":49,\"currency\":\"INR\",\"itemCount\":0}}",
+      "confidence": "confirmed"
+    }
+  ],
+  "blocked": [
+    {
+      "target": "POST /api/v1/store/cart/checkout and the /store/checkout page submit",
+      "reason": "live razorpay key — the page was loaded (200) and its title verified, never submitted"
+    },
+    {
+      "target": "POST /api/v1/store/orders with a real seller product (happy-path order creation)",
+      "reason": "live razorpay key — a successful order is the first step of a real payment; only the failing fixture path was exercised, which returns 400 before any DB write or payment call"
+    },
+    {
+      "target": "POST /api/v1/store/orders/:id/payment-confirm (actual invocation on a real order)",
+      "reason": "would mark an order paid and email a generated invoice; the guard state was established with nonexistent and malformed ids only"
+    },
+    {
+      "target": "Authenticated rendering of the /store-admin/* pages",
+      "reason": "the brief forbids calling /auth/login, so no browser session could be established; the pages were verified at the HTTP level (all 307 to /auth/login with a correct redirect param) and their data endpoints were verified directly against the API"
+    }
+  ]
+}
