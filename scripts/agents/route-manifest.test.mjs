@@ -26,3 +26,18 @@ test('resolves static + named dynamic + catch-all routes', () => {
   assert.equal(resolveProbe(manifest, '/docs/a/b/c'), true);
   assert.equal(resolveProbe(manifest, '/nope/missing'), false);
 });
+
+test('route groups do not appear in the URL', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'routes-group-'));
+  mk(root, 'pujas/(index)/page.tsx'); // serves /pujas, NOT /pujas/(index)
+  mk(root, 'temples/(index)/page.tsx'); // serves /temples
+  mk(root, 'pujas/[slug]/page.tsx'); // /pujas/:slug still resolves alongside
+  mk(root, '(marketing)/about/page.tsx'); // a leading group serves /about
+  const manifest = buildRouteManifest(root);
+  assert.equal(resolveProbe(manifest, '/pujas'), true);
+  assert.equal(resolveProbe(manifest, '/temples'), true);
+  assert.equal(resolveProbe(manifest, '/pujas/ganesh'), true);
+  assert.equal(resolveProbe(manifest, '/about'), true);
+  // The group name itself is not a URL segment.
+  assert.equal(manifest.some((m) => m.pattern.includes('(')), false);
+});
