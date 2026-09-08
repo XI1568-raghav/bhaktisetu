@@ -370,6 +370,51 @@ export async function finalizeConsultationPaymentFromWebhook(
     '[consultation] confirmed from the Razorpay webhook — the devotee never reached /verify-payment',
   );
 
+  // OPS-05 — "which rail got there first", for the consultation rail.
+  //
+  // That question is the one `lib/audit-money.ts` names in its own header as
+  // unanswerable-before-the-trail, and for consultations it stayed unanswerable
+  // after it: this backstop and POST /verify-payment write the SAME columns on
+  // `astrologer_consultations` (status, razorpay_payment_id, paid_at, room_name)
+  // and the row keeps no history, so once either had run the finished row was
+  // byte-identical whichever rail produced it. `recovered` is the sharpest case
+  // — a consultation the expiry cron had already flipped to `cancelled`, which
+  // this rail silently un-cancels; the trail is now the only place that fact
+  // survives at all.
+  //
+  // Recorded AFTER the claiming UPDATE, which is also the idempotency gate: a
+  // replayed webhook updates 0 rows and returns above, so this never fires
+  // twice for one capture. `idempotencyKey` is the gateway payment id, which
+  // `recordMoneyEvent` namespaces by event type — so it does NOT collide with
+  // the PAYMENT_VERIFIED row /verify-payment writes against the same id.
+  await recordMoneyEvent({
+    eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
+    // Razorpay acted, not a human and not our cron. That distinction is the
+    // whole reason MoneyActorType carries 'gateway' separately from 'system'.
+    actorType: 'gateway',
+    actorId: null,
+    subjectType: 'consultation',
+    subjectId: row.id,
+    amount: row.amount_inr,
+    currency: row.currency ?? 'INR',
+    gateway: 'razorpay',
+    gatewayOrderId: row.razorpay_order_id,
+    gatewayPaymentId: razorpayPaymentId ?? row.razorpay_payment_id,
+    statusBefore: row.status,
+    statusAfter: 'confirmed',
+    idempotencyKey: razorpayPaymentId ?? row.id,
+    note: 'consultation confirmed from the Razorpay webhook backstop',
+    metadata: {
+      rail: 'consultation-webhook-backstop',
+      reference: row.reference,
+      astrologerId: row.astrologer_id,
+      astrologerName: row.astrologer_name,
+      minutes: row.minutes,
+      // True when the expiry cron had already cancelled this row.
+      recovered: row.status === 'cancelled' || row.status === 'payment_review',
+    },
+  });
+
   await writeConsultationCommission(row, log);
 
   void notifyAstrologerNewConsult({
@@ -604,6 +649,44 @@ export async function consultationRoutes(server: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to persist consultation.' });
     }
 
+    // OPS-05 — the opening of the consultation money story.
+    //
+    // Every other rail that opens a gateway order records this: the puja rail
+    // in payment.service.createRazorpayOrder, the donation rail in
+    // routes/donations. Consultations did not, so a devotee whose money was
+    // captured against an order our own logs never recorded had no first entry
+    // to reconstruct from — and this rail is the one that writes NO
+    // `prisma.payment` row at all (see findConsultationByOrderId), so the
+    // Payment table cannot stand in for the missing row the way it can
+    // elsewhere. Without this the trail for a disputed consultation began at
+    // confirmation, with the order id appearing from nowhere.
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_INITIATED,
+      actorType: 'devotee',
+      actorId: userId,
+      subjectType: 'consultation',
+      subjectId: row.id,
+      amount: amountInr,
+      currency: 'INR',
+      gateway: isDemoPayment ? 'demo' : 'razorpay',
+      gatewayOrderId: razorpayOrderId,
+      statusAfter: 'pending_payment',
+      idempotencyKey: razorpayOrderId,
+      requestId: request.id ? String(request.id) : null,
+      ip: request.ip ?? null,
+      note: `consultation order opened for ${minutes} min with ${astrologer.name}`,
+      metadata: {
+        rail: 'consultation-book',
+        reference: row.reference,
+        astrologerId,
+        astrologerName: astrologer.name,
+        minutes,
+        perMinuteRateInr: perMinuteRate,
+        scheduledAt: scheduledAt ?? null,
+        demo: isDemoPayment,
+      },
+    });
+
     return reply.code(201).send({
       consultationId: row.id,
       reference: row.reference,
@@ -684,6 +767,49 @@ export async function consultationRoutes(server: FastifyInstance) {
       roomName,
       consultationId,
     );
+
+    // OPS-05 — the devotee-driven confirmation rail.
+    //
+    // The signature has verified and the row is now `confirmed` and `paid_at`.
+    // Until this call the only surviving evidence that a HUMAN completed this
+    // payment (rather than the webhook backstop below completing it for them)
+    // was the row's own final state, which both rails write identically. The
+    // pair PAYMENT_VERIFIED-here / PAYMENT_CAPTURED-there is what makes the two
+    // distinguishable after the fact.
+    //
+    // Recorded before the fire-and-forget notifications so a notification
+    // failure cannot skip it, and awaited: this is a request handler, and the
+    // extra millisecond buys the guarantee the row is down before the devotee
+    // is told they are confirmed.
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.PAYMENT_VERIFIED,
+      actorType: 'devotee',
+      actorId: userId,
+      subjectType: 'consultation',
+      subjectId: consultationId,
+      amount: row.amount_inr,
+      currency: row.currency ?? 'INR',
+      gateway: isDemoPayment ? 'demo' : 'razorpay',
+      gatewayOrderId: row.razorpay_order_id,
+      gatewayPaymentId: razorpay_payment_id ?? null,
+      statusBefore: row.status,
+      statusAfter: 'confirmed',
+      // The gateway payment id is the natural key; recordMoneyEvent namespaces
+      // it by event type, so the webhook's PAYMENT_CAPTURED on the same id is a
+      // second row rather than a silently-swallowed duplicate.
+      idempotencyKey: razorpay_payment_id ?? consultationId,
+      requestId: request.id ? String(request.id) : null,
+      ip: request.ip ?? null,
+      note: 'consultation confirmed from POST /verify-payment',
+      metadata: {
+        rail: 'consultation-verify-payment',
+        reference: row.reference,
+        astrologerId: row.astrologer_id,
+        astrologerName: row.astrologer_name,
+        minutes: row.minutes,
+        demo: isDemoPayment,
+      },
+    });
 
     // Astrologer revamp (2026-08-05): ping the astrologer that a paid consult
     // just landed (there was NO astrologer notification before — they only saw
