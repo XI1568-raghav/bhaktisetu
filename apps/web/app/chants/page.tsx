@@ -62,6 +62,45 @@ const diffLabel: Record<string, string> = {
   advanced: 'Advanced',
 };
 
+/* PERF-04 — line-clamp IS A PAINT INSTRUCTION, NOT A TRANSFER INSTRUCTION.
+ *
+ * Measured on production 2026-09-08 (status asserted 200 before the body was
+ * read — OPS-12/F451): /chants was 419,824 B of HTML and, unusually, the
+ * WORST-compressing page on the site at 66,955 B gzip against /aarti's 43,758 B
+ * from a document half again as large. /aarti is heavy with 300 identical
+ * icons, which compress to nearly nothing. This page is heavy with unique
+ * prose, which does not compress, so its weight lands on the wire in full.
+ *
+ * Where it came from: the card summary below is `line-clamp-2`, which paints
+ * two lines and ships all of them. Measured over lib/chants.ts: `meaning` is
+ * n=96, avg 364 chars, max 735, 34,985 B in total — and, because 59.1% of this
+ * document is `self.__next_f.push` flight payload re-encoding the same tree,
+ * every one of those characters is paid for twice.
+ *
+ * Two lines of text-sm in this card is ~110 characters at any viewport, so
+ * everything past the bound below was transferred, parsed, hydrated, and never
+ * shown to one reader.
+ *
+ * This is a genuine data reduction, not a content deletion: the untruncated
+ * `meaning` is the body copy of /chants/[slug], which is the URL that should
+ * be ranking for it. An index page that repeats the full text of 96 detail
+ * pages is competing with its own children, not helping them.
+ *
+ * 180 is deliberately generous — comfortably more than any viewport paints —
+ * so this bounds the waste without policing anybody's copy.
+ * Locked by __tests__/catalogue-index-payload-weight.perf04.test.tsx.
+ */
+const CARD_SUMMARY_MAX = 180;
+
+function cardSummary(text: string): string {
+  if (text.length <= CARD_SUMMARY_MAX) return text;
+  const cut = text.slice(0, CARD_SUMMARY_MAX);
+  const lastSpace = cut.lastIndexOf(' ');
+  // Never cut mid-word, but never hand back a stub either if the "word" is
+  // pathologically long (Devanagari compounds do run long).
+  return `${(lastSpace > CARD_SUMMARY_MAX * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
 export default function ChantsIndex() {
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
@@ -97,11 +136,27 @@ export default function ChantsIndex() {
         </Link>
       </section>
 
-      {sections.map((sec) => {
+      {sections.map((sec, i) => {
         const items = chantsByCategory(sec.key);
         if (items.length === 0) return null;
         return (
-          <section key={sec.key} className="mb-10">
+          <section
+            key={sec.key}
+            className="mb-10"
+            /* CWV-01 — the same trade the homepage already makes in four
+               places (`.defer-paint`, app/globals.css): these sections are
+               below the fold and text-only, so skipping their layout and paint
+               until they approach the viewport costs nothing visible and
+               removes the largest share of this page's main-thread work. The
+               markup stays in the HTML for crawlers, in-page search and
+               hydration — this is a paint saving, NOT a byte saving.
+               `auto` on contain-intrinsic-size lets the browser remember each
+               section's real height after first render, so the scrollbar stays
+               honest and no jump-link lands short. Section 0 is excluded
+               because it is above the fold, which is the one case where
+               content-visibility is a regression. */
+            style={i === 0 ? undefined : { contentVisibility: 'auto', containIntrinsicSize: 'auto 900px' }}
+          >
             <h2 className="text-2xl font-bold text-surface-900 mb-1">{sec.title}</h2>
             <p className="text-sm text-surface-600 mb-4">{sec.desc}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -122,7 +177,9 @@ export default function ChantsIndex() {
                       {diffLabel[c.difficulty]}
                     </span>
                   </div>
-                  <p className="text-sm text-surface-700 leading-snug mb-3 line-clamp-2">{c.meaning}</p>
+                  <p className="text-sm text-surface-700 leading-snug mb-3 line-clamp-2">
+                    {cardSummary(c.meaning)}
+                  </p>
                   <div className="text-xs text-surface-600">
                     <strong className="text-surface-800">Deity:</strong> {c.deity}
                     <span className="mx-2">·</span>

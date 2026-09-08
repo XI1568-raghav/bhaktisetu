@@ -47,6 +47,63 @@ function formatLongDate(iso: string): string {
   return `${Number(d)} ${MONTH_NAMES[Number(m) - 1] ?? ''} ${y}`;
 }
 
+/* PERF-04 — WHY THE FESTIVAL DESCRIPTION IS BOUNDED IN BOTH PLACES IT APPEARS.
+ *
+ * Measured on production 2026-09-08 (status asserted 200 first — the origin
+ * serves Cloudflare block pages under a concurrent burst and those carry a fake
+ * h1, so an unpaced probe measures the block page: OPS-12/F451):
+ *
+ *   /calendar   382,166 B raw   70,807 B gzip   31,090 B brotli
+ *
+ * That gzip figure is the largest on the site, from the SMALLEST of the three
+ * heavy index pages — because this page's weight is unique prose, which does
+ * not compress the way /aarti's 300 repeated icons do. Raw size alone would
+ * have ranked this page third and sent the work to the wrong file.
+ *
+ * `FESTIVALS[].description` measured n=56, avg 419 chars, max 1,341. It was
+ * being emitted THREE times per festival:
+ *
+ *   1. the month card, inside a `line-clamp-2` box that paints ~110 chars;
+ *   2. the "Beyond 2026" card, same clamp;
+ *   3. Event.description in the ItemList JSON-LD.
+ *
+ * The JSON-LD block measured 35,010 B — 9.2% of the document — and because
+ * dangerouslySetInnerHTML content is a prop like any other, the identical
+ * string is serialised AGAIN into the RSC flight payload: the largest single
+ * `self.__next_f.push` on this page measured 35,201 B, which is exactly it.
+ * ~70 KB for a field Google truncates far below 200 characters.
+ *
+ * Nothing is deleted. Every festival keeps its card, its link, its name and
+ * its Event node; the full description is the body copy of /festival/[slug],
+ * which is the URL that should rank for it. Locked by
+ * __tests__/catalogue-index-payload-weight.perf04.test.tsx.
+ *
+ * ── WHY THIS PAGE DELIBERATELY DOES *NOT* USE content-visibility: auto ────
+ *
+ * /chants got it and the homepage has it in four places, so the obvious next
+ * step is to "finish the job" here on the twelve month sections. Do not.
+ *
+ * This page's primary navigation is the row of twelve jump chips above, each
+ * an `#m-N` anchor onto a month <section>. `content-visibility: auto` makes a
+ * section's height an ESTIMATE from contain-intrinsic-size until it has been
+ * rendered once, and the scroll offset of `#m-11` is the sum of the eleven
+ * estimates before it. On a first visit — the only visit that matters here,
+ * since nothing has been measured yet — every chip would land short and then
+ * jerk into place as the real heights resolve. That trades this page's whole
+ * interaction model for a paint saving it does not need, having already given
+ * up the ~120 KB above. The homepage sections it was copied from have no
+ * anchors into them, which is exactly why it is safe there and not here.
+ */
+const CARD_SUMMARY_MAX = 180;
+const LD_SUMMARY_MAX = 200;
+
+function summarise(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
 export default async function CalendarPage() {
   // DF-02: `pujasAvailable` is editorial, not inventory. Counting it printed
   // "2 pujas bookable" for festivals whose pujas both 404. Count only what the
@@ -80,7 +137,7 @@ export default async function CalendarPage() {
         '@type': 'Event',
         name: f.name,
         startDate: f.date2026,
-        description: f.description,
+        description: summarise(f.description, LD_SUMMARY_MAX),
         url: `${BASE_URL}/festival/${f.slug}`,
       },
     })),
@@ -173,7 +230,9 @@ export default async function CalendarPage() {
                           <span className="font-serif text-sm text-gray-600">{f.sanskrit}</span>
                         </div>
                         <p className="mt-1 text-xs text-gray-600">{f.deity}</p>
-                        <p className="mt-2 line-clamp-2 text-sm text-gray-700">{f.description}</p>
+                        <p className="mt-2 line-clamp-2 text-sm text-gray-700">
+                          {summarise(f.description, CARD_SUMMARY_MAX)}
+                        </p>
                         <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
                           {f.fastingType !== 'none' && (
                             <span className={`rounded px-2 py-0.5 font-semibold uppercase ${
@@ -217,7 +276,9 @@ export default async function CalendarPage() {
                 <p className="mt-1 text-xs uppercase tracking-wider text-gray-500">
                   {formatLongDate(f.date2026)} · {f.deity}
                 </p>
-                <p className="mt-2 line-clamp-2 text-sm text-gray-700">{f.description}</p>
+                <p className="mt-2 line-clamp-2 text-sm text-gray-700">
+                  {summarise(f.description, CARD_SUMMARY_MAX)}
+                </p>
               </Link>
             ))}
           </div>
