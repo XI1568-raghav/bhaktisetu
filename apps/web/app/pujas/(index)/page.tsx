@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import RemoteImage from '../../components/RemoteImage';
+import RemoteImage from '../../../components/RemoteImage';
 import Link from "next/link";
-import { getTranslations } from '../../lib/t';
-import { buttonClass } from '../../components/ui/button-recipe';
-import { H1 } from '../../components/ui/heading-recipe';
-import { getDeityImage, remoteImage, remoteSrcSet, IMG_W } from "../../lib/images";
-import { getPujaTypes, type PujaType } from "../../lib/api";
-import { getPujaCompletionCounts } from "../../lib/social-proof";
-import { pujaCardBlurb } from '../../lib/puja-blurb';
-import { pujaCategoryLabel } from "../../lib/puja-labels";
+import { getTranslations } from '../../../lib/t';
+import { buttonClass } from '../../../components/ui/button-recipe';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { getDeityImage, remoteImage, remoteSrcSet, IMG_W } from "../../../lib/images";
+import { getPujaTypes, type PujaType } from "../../../lib/api";
+import { getPujaCompletionCounts } from "../../../lib/social-proof";
+import { pujaCardBlurb } from '../../../lib/puja-blurb';
+import { pujaCategoryLabel } from "../../../lib/puja-labels";
 // PF-06: the fee has to come from the same module the wizard and the detail
 // hero read, or the catalogue starts advertising a number checkout will not
 // honour the moment either side changes.
-import { PLATFORM_FEE_INR, formatInr, pujaTotalInr } from "../../lib/puja-pricing";
+import { PLATFORM_FEE_INR, formatInr, pujaTotalInr } from "../../../lib/puja-pricing";
 import {
  applyPujaCatalogue,
  buildPujaFacets,
@@ -21,9 +21,9 @@ import {
  pujaCatalogueHref,
  PUJA_PRICE_OPTIONS,
  PUJA_SORT_OPTIONS,
-} from "../../lib/puja-catalogue-filters";
-import PujaSocialProof from "../../components/PujaSocialProof";
-import AdSlot from "../../components/AdSlot";
+} from "../../../lib/puja-catalogue-filters";
+import PujaSocialProof from "../../../components/PujaSocialProof";
+import AdSlot from "../../../components/AdSlot";
 import {
  Flame,
  Star,

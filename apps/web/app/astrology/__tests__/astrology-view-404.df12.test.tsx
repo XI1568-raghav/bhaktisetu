@@ -48,7 +48,9 @@ vi.mock('../view/AstrologerProfileClient', () => ({
   ProfileLoadingShell: () => null,
 }));
 
-const { default: AstrologerViewPage, isRenderableAstrologerId } = await import('../view/page');
+const { default: AstrologerViewPage } = await import('../view/page');
+// Helpers moved out of the page: Next forbids non-page exports from page.tsx.
+const { isRenderableAstrologerId } = await import('../view/astrologer-id');
 
 beforeEach(() => {
   notFound.mockClear();

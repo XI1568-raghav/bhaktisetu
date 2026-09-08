@@ -305,7 +305,12 @@ export async function generateMetadata({
   // "Content is loading" page under a title invented from the URL.
   if (lookup.status !== 'found') {
     return {
-      title: lookup.status === 'not-found' ? 'Content not found | Darshya' : 'Content unavailable | Darshya',
+      // No brand here: app/layout.tsx's TITLE_TEMPLATE appends " | Darshya" to
+      // any plain-string page title, so carrying it renders it twice and eats
+      // ~11 chars of a ~60-char SERP budget. The existing title-template guard
+      // could not see this — its regex matches `title:` followed IMMEDIATELY by
+      // a string literal, and this is a ternary.
+      title: lookup.status === 'not-found' ? 'Content not found' : 'Content unavailable',
       robots: { index: false, follow: false },
     };
   }

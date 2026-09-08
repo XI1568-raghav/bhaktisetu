@@ -2,9 +2,9 @@ import { Suspense } from 'react';
 import AstrologyLoading from './loading';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import AstrologyClient from './AstrologyClient';
-import { ApprovedProvidersStrip } from '../../components/ApprovedProvidersStrip';
-import { buttonClass } from '../../components/ui/button-recipe';
+import AstrologyClient from '../AstrologyClient';
+import { ApprovedProvidersStrip } from '../../../components/ApprovedProvidersStrip';
+import { buttonClass } from '../../../components/ui/button-recipe';
 
 const BASE_URL = 'https://darshya.online';
 

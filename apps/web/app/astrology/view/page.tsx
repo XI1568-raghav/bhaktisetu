@@ -1,5 +1,10 @@
 import { notFound, redirect } from 'next/navigation';
 import AstrologerProfileClient from './AstrologerProfileClient';
+import {
+  ASTROLOGER_DIRECTORY,
+  firstParam,
+  isRenderableAstrologerId,
+} from './astrologer-id';
 
 /**
  * DF-12 (prod sweep 2026-08-12) — /astrology/view answered HTTP 200 for an id
@@ -37,26 +42,6 @@ import AstrologerProfileClient from './AstrologerProfileClient';
  * problem, not a routing one; the SSR shell's two anchors are all this file can
  * offer it.
  */
-
-/** Mirrors UUID_RE in apps/api/src/routes/astrology.ts. */
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Where a visitor with no usable id should end up. */
-export const ASTROLOGER_DIRECTORY = '/astrology/astrologers/live';
-
-/** First value of a query param that may repeat, trimmed. */
-export function firstParam(v: string | string[] | undefined): string {
-  return (Array.isArray(v) ? v[0] : v)?.trim() ?? '';
-}
-
-/**
- * True when the API could conceivably serve this id. Exported so the guard test
- * can pin it against the API's own regex — if the two drift, this page starts
- * 404ing profiles that are live and bookable.
- */
-export function isRenderableAstrologerId(id: string): boolean {
-  return UUID_RE.test(id.trim());
-}
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
