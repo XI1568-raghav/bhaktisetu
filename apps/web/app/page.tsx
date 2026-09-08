@@ -367,7 +367,7 @@ export default async function HomePage() {
    decoding="async"
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
- <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+ <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> LIVE
  </span>
  <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -377,7 +377,7 @@ export default async function HomePage() {
  </span>
  <span className="absolute bottom-3 left-3 right-3">
  <span className="block text-sm font-semibold text-white leading-snug">{temple.name}</span>
- <span className="block text-[11px] text-white/80 mt-0.5">{temple.place}</span>
+ <span className="block text-xs text-white/80 mt-0.5">{temple.place}</span>
  </span>
  </div>
  </Link>
@@ -475,7 +475,10 @@ export default async function HomePage() {
  </Link>
  <Link
    href="/temples"
-   className="inline-flex min-h-[44px] items-center text-xs underline underline-offset-4"
+   // RESP-09: a bare inline anchor, so it takes the tap-safe opt-in rather than
+   // a hand-rolled min-h. The global 44px floor in globals.css reaches
+   // button/[role=button]/nav li>a and footer li>a — never a naked <a> like this.
+   className="tap-safe text-xs underline underline-offset-4"
    style={{ color: 'var(--color-text-muted)' }}
  >
  Browse temples

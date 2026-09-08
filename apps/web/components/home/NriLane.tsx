@@ -48,7 +48,7 @@ export default function NriLane() {
     <section
       id="nri"
       aria-labelledby="nri-lane-heading"
-      className="py-8 md:py-11"
+      className="defer-paint py-8 md:py-11"
       style={{
         background: 'linear-gradient(180deg, #FFF7EE 0%, var(--color-bg) 78%)',
         borderTop: '1px solid var(--color-border)',
