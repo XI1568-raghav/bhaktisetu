@@ -78,7 +78,7 @@ const FAILS_WITH_WHITE = Object.entries(PALETTE)
  * over white text and is reachable from every route.
  */
 const SURFACES = [
-  'app/pujas/page.tsx',
+  'app/pujas/(index)/page.tsx',
   'app/store/page.tsx',
   'components/CookieBanner.tsx',
   'app/not-found.tsx',
@@ -149,12 +149,12 @@ describe('A11Y-10 — no white text on a sub-4.5:1 fill', () => {
 });
 
 describe('A11Y-10 — /pujas category badges', () => {
-  const src = read('app/pujas/page.tsx');
+  const src = read('app/pujas/(index)/page.tsx');
 
   /** TAG_COLORS entries carry their own fill AND text colour. */
   function tagColorEntries(): string[] {
     const block = /const TAG_COLORS\s*=\s*\[([\s\S]*?)\]/.exec(src);
-    expect(block, 'TAG_COLORS not found in app/pujas/page.tsx').not.toBeNull();
+    expect(block, 'TAG_COLORS not found in app/pujas/(index)/page.tsx').not.toBeNull();
     return [...block![1]!.matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]!);
   }
 

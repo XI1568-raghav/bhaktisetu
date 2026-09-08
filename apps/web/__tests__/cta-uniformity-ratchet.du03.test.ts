@@ -7,7 +7,7 @@
  * files, and the ONLY guards were:
  *
  *   - "these 8 files contain the substring `buttonClass(`" — a bare
- *     whole-file match, so app/pujas/page.tsx passed while hand-rolling 8 CTAs
+ *     whole-file match, so app/pujas/(index)/page.tsx passed while hand-rolling 8 CTAs
  *     beside its 5 recipe calls; and
  *   - "no MIGRATED file hand-rolls a CTA" — real, but hardcoded to those same
  *     8 files, blind to the other 181.
