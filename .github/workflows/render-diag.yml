@@ -71,9 +71,25 @@ jobs:
         run: |
           set -uo pipefail
           A="Authorization: Bearer $RK"
+          # OPS-17 (2026-09-09): this projection used to drop envSpecificDetails,
+          # which is where the DEPLOYED start command lives. That mattered:
+          # render.yaml and apps/api/package.json both invoke
+          # `prisma migrate deploy && node dist/server.js`, yet migrations
+          # measurably do NOT apply on deploy — every finished_at in
+          # _prisma_migrations clusters into ~1s hand-run bursts. A dashboard
+          # startCommand overriding the blueprint is the leading explanation, and
+          # this mode could not see it, so the question stayed open.
+          #
+          # Region is why it also now prints branch/autoDeploy/rootDir: the first
+          # widened run showed the API in SINGAPORE, not the Oregon that finding
+          # SCAL-02 is written against.
+          #
+          # No secret is exposed. envSpecificDetails carries commands and
+          # dockerfile paths, never env VALUES — those live behind /env-vars,
+          # which this workflow deliberately does not call.
           echo "=== GET /v1/services/$SID (raw) ==="
           curl -s -H "$A" "https://api.render.com/v1/services/$SID" \
-            | jq '{name, id, type, suspended, suspenders, serviceDetails: (.serviceDetails | {url, plan, numInstances, region}), updatedAt, createdAt}'
+            | jq '{name, id, type, suspended, suspenders, autoDeploy, branch, rootDir, serviceDetails: (.serviceDetails | {url, plan, numInstances, region, preDeployCommand, envSpecificDetails}), updatedAt, createdAt}'
 
       - name: resume — POST /v1/services/$SID/resume (unsuspend after monthly free-hours reset)
         if: ${{ github.event.inputs.mode == 'resume' }}
