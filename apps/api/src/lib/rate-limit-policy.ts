@@ -71,6 +71,12 @@ export function resolveRateLimitPolicy(url: string, authMax: number): RateLimitP
   }
   if (underPrefix(path, '/donations/create-order')) return { max: 10, timeWindow: WINDOW };
 
+  // /digest/unsubscribe is unauthenticated by design — the link lands from an
+  // email, possibly signed out — and it WRITES. Signing the identifier (CT-CONSENT-1)
+  // stops enumeration, but an unauthenticated DB write on the global 100/min
+  // default is still the wrong default for a consent endpoint.
+  if (underPrefix(path, '/digest')) return { max: 10, timeWindow: WINDOW };
+
   if (underPrefix(path, '/admin')) return { max: 60, timeWindow: WINDOW };
   if (underPrefix(path, '/affiliate')) return { max: 60, timeWindow: WINDOW };
 

@@ -10,6 +10,32 @@ import { resolveProviderRole } from '../services/payout.service.js';
 import { clampLimit, clampPage } from '../lib/pagination.js';
 import type { Prisma } from '@prisma/client';
 
+/**
+ * CT-ADMIN-1 (prod, ct+admin token, 2026-09-08):
+ *
+ *   GET /admin/users/not-a-uuid                            -> 500 INTERNAL_ERROR
+ *   GET /admin/users/00000000-0000-0000-0000-000000000000  -> 404
+ *
+ * Same account, same handler; the only difference is the SHAPE of the id. Every
+ * path id on this file resolves against a `@db.Uuid` primary key, and Prisma
+ * raises P2023 ("Error creating UUID") instead of missing when it cannot cast
+ * one — so the cast failure travelled up as a server fault. The admin page
+ * /admin/users/[id] passes its raw path segment straight through, which makes a
+ * truncated or mistyped link a 500 on an operator's screen.
+ *
+ * A value that cannot be a uuid cannot match a uuid column, so the honest answer
+ * is the miss a well-formed absent id already gets. 404 rather than 400: the
+ * caller is asking for a resource that does not exist, and answering the two
+ * ways of being wrong with two different codes would make every client branch
+ * on a distinction it cannot act on.
+ *
+ * Same regex as routes/astrologer-portal.ts:27 and lib/gaushala-donee.ts:27.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(value: string | null | undefined): value is string {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
 
 const userQuerySchema = z.object({
@@ -214,6 +240,9 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.get('/users/:id', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!isUuid(id)) {
+      return reply.code(404).send({ error: 'User not found' });
+    }
     try {
       const user = await adminService.getUserById(id);
 
@@ -239,6 +268,13 @@ export async function adminRoutes(server: FastifyInstance) {
       return reply
         .code(400)
         .send({ error: 'Invalid request body', details: parsed.error.flatten() });
+    }
+
+    // No try/catch below, so a P2023 from a malformed id escaped into Fastify's
+    // handler as a bare 500 — the moderation path, on the id an operator most
+    // often pastes by hand.
+    if (!isUuid(id)) {
+      return reply.code(404).send({ error: 'User not found' });
     }
 
     const result = await adminService.updateUser(id, parsed.data);
@@ -536,6 +572,13 @@ export async function adminRoutes(server: FastifyInstance) {
           error:
             'commissionRate below 0.5 would take more than half of the pandit\'s booking. If that is genuinely intended it needs a schema-level decision, not an admin override.',
         });
+      }
+
+      // Guarded after the rate band on purpose: an out-of-band share is the
+      // more dangerous input (it silently falls back at booking time), so it
+      // keeps answering 400 no matter which id it arrives on.
+      if (!isUuid(id)) {
+        return reply.code(404).send({ error: 'Priest not found' });
       }
 
       const existing = await prisma.priest.findUnique({
@@ -847,9 +890,7 @@ export async function adminRoutes(server: FastifyInstance) {
     // Filtering the ids to uuid shape degrades that to exactly what a
     // non-matching id already does: the row renders with a blank booking
     // number. A missing label on one row is not worth the whole screen.
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const uuidsOf = (values: Array<string | null>): string[] =>
-      values.filter((v): v is string => !!v && UUID_RE.test(v));
+    const uuidsOf = (values: Array<string | null>): string[] => values.filter(isUuid);
 
     const providerIds = Array.from(new Set(rows.map((r) => r.providerId)));
     const bookingIds = uuidsOf(rows.map((r) => r.bookingId));

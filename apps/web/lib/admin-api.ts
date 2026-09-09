@@ -203,7 +203,18 @@ export type ReportsResponse = {
     pujaTypeId: string;
     name: string;
     bookings: number;
+    /**
+     * CT-ADMIN-2: COLLECTED money — the API now requires a captured payment, so
+     * this agrees with /admin/dashboard and /admin/metrics. It used to sum
+     * priceAmount over every counted booking including pending_payment.
+     */
     revenueInr: number;
+    /**
+     * The pipeline figure `revenueInr` used to carry. Optional because a server
+     * that has not shipped CT-ADMIN-2 yet omits it, and the card must render
+     * against both.
+     */
+    bookedValueInr?: number;
     avgRating: number | null;
   }>;
   popularServices: Array<{

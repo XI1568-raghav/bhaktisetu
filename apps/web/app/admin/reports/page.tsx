@@ -364,7 +364,12 @@ export default function AdminReportsPage() {
      pending_payment. That is BOOKED value, not captured revenue, and it
      was rendered bare — an operator read "Rs. 54.7K" as money in the
      bank. The word is the whole fix; the number is honest with it. */}
- <span className="text-xs text-surface-500">{revenueShort(puja.revenueInr)} booked</span>
+ <span className="text-xs text-surface-500">
+   {revenueShort(puja.revenueInr)} collected
+   {puja.bookedValueInr !== undefined && puja.bookedValueInr !== puja.revenueInr && (
+     <span className="text-surface-400"> · {revenueShort(puja.bookedValueInr)} booked</span>
+   )}
+ </span>
  {puja.avgRating !== null && (
  <span className="text-xs text-amber-600 flex items-center gap-0.5">
  <Star className="w-3 h-3" /> {puja.avgRating}
