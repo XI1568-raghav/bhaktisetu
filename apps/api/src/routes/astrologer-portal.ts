@@ -70,7 +70,16 @@ const availabilityUpdateSchema = z.object({
   }, 'availability JSON exceeds 64KB cap'),
 });
 
-export const __testing = { profileUpdateSchema, availabilityUpdateSchema };
+// astro-wellness-3 (2026-09-09, P2): this lived inline in POST /online as a
+// bare `.parse()`. Hoisted here so it is declared the way every other body
+// schema in this file is, and so the handler can `safeParse` it.
+const onlineUpdateSchema = z.object({
+  online: z.boolean(),
+  chat: z.boolean().optional(),
+  call: z.boolean().optional(),
+});
+
+export const __testing = { profileUpdateSchema, availabilityUpdateSchema, onlineUpdateSchema };
 
 /**
  * The caller's consultation earnings, straight off the Commission ledger.
@@ -378,13 +387,17 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     if (!roles.includes('ASTROLOGER')) {
       return reply.code(403).send({ error: 'ASTROLOGER role required' });
     }
-    const body = z
-      .object({
-        online: z.boolean(),
-        chat: z.boolean().optional(),
-        call: z.boolean().optional(),
-      })
-      .parse(request.body ?? {});
+    // astro-wellness-3 (2026-09-09, P2): measured on prod — `{"online":"yes"}`
+    // and `{}` both answered 500 `{"error":"InternalServerError"}` because the
+    // ZodError from `.parse()` escaped the handler. The astrologer was told the
+    // server had broken when their own body was malformed, and every mistyped
+    // toggle counted toward the 5xx rate on the endpoint this portal calls most.
+    // Same 400 shape as PATCH /profile and PATCH /availability above.
+    const parsed = onlineUpdateSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const body = parsed.data;
     const presence = setAstrologerOnline(userId, body.online, { chat: body.chat, call: body.call });
     return reply.send({
       ok: true,
@@ -395,8 +408,21 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
   });
 
   // ─── GET /online — read the caller's current presence ───────────────────────
+  // astro-wellness-2 (2026-09-09, P2): this was the one handler in the file with
+  // no role check — measured on prod, it answered 200 to both the
+  // wellness-instructor and the devotee token while the other five routes 403'd
+  // the same two. Nothing leaked: `getAstrologerPresence` is keyed on
+  // `currentUser.id`, so a non-astrologer only ever read their own permanently
+  // default presence, and the write above was already gated. The guard is here
+  // because the payload will not stay that thin — the moment presence carries
+  // anything derived from the astrologer's profile or queue, the same 200
+  // becomes a real read of astrologer state by someone who is not one.
   server.get('/online', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('ASTROLOGER')) {
+      return reply.code(403).send({ error: 'ASTROLOGER role required' });
+    }
     const presence = getAstrologerPresence(userId);
     return reply.send({ online: presence.online, mode: presence.mode });
   });

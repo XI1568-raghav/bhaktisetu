@@ -39,6 +39,8 @@ describe('resolveRateLimitPolicy', () => {
     expect(resolveRateLimitPolicy('/api/v1/bookings/verify-payment', AUTH_MAX)).toEqual({ max: 30, timeWindow: '1 minute' });
     expect(resolveRateLimitPolicy('/api/v1/donations/create-order', AUTH_MAX)).toEqual({ max: 10, timeWindow: '1 minute' });
     expect(resolveRateLimitPolicy('/api/v1/affiliate/click', AUTH_MAX)).toEqual({ max: 60, timeWindow: '1 minute' });
+    // Unauthenticated by design AND a write — see CT-CONSENT-1.
+    expect(resolveRateLimitPolicy('/api/v1/digest/unsubscribe', AUTH_MAX)).toEqual({ max: 10, timeWindow: '1 minute' });
   });
 
   it('still matches unprefixed urls, so a route registered without a prefix is covered too', () => {

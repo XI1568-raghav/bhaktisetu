@@ -100,8 +100,49 @@ const COUNTED_BOOKING_STATUSES: readonly BookingStatus[] = [
   'delivered',
 ];
 
-/** Exported for the AO-15 population test. */
-export const __reportsTesting = { COUNTED_BOOKING_STATUSES };
+/**
+ * CT-ADMIN-2 — the population every MONEY figure on /admin/reports is summed
+ * over, which is NOT the population the bookings are counted over.
+ *
+ * Measured on prod 2026-09-08: `popularPujas[].revenueInr` totalled Rs 6,307
+ * while /admin/dashboard reported `totalRevenue: 0` and /admin/metrics/investor
+ * reported `gmvCumulativePaise: 0`. All three were arithmetically correct. The
+ * 6,307 was the price of six bookings still in `pending_payment` with not one
+ * `captured` Payment row behind them, published under a field named revenue.
+ *
+ * `COUNTED_BOOKING_STATUSES` is right for the COUNT and is deliberately left
+ * alone — a booking awaiting payment is still a booking the platform took, and
+ * removing `pending_payment` from it would move the "Total Bookings" tile,
+ * which is currently correct. But "did this booking happen?" and "did the money
+ * arrive?" are different questions, and only the payments table answers the
+ * second: booking status is a proxy that the schema does not enforce, since
+ * `pending_payment -> confirmed` is a permitted manual transition
+ * (booking.service.ts:358) that no payment has to precede.
+ *
+ * So the money population keeps the status whitelist — cancelled and refunded
+ * money is not revenue either — and adds the evidence. `payments: { some: {
+ * status: 'captured' } }` is the same test /admin/dashboard applies
+ * (`payment.aggregate({ where: { status: 'captured' } })`, getDashboard below)
+ * and the same idiom /admin/metrics already uses to identify a paying user
+ * (routes/admin-metrics.ts:214), so the three screens now answer from one
+ * definition of collected money instead of three.
+ *
+ * `partially_refunded` is deliberately NOT in that list even though such a
+ * booking still holds money, for two reasons that point the same way: including
+ * it would de-reconcile this figure from getDashboard, which counts `captured`
+ * only; and the amount summed here is `booking.priceAmount`, which a partial
+ * refund does not reduce, so counting one would overstate by the refunded part.
+ * Excluding it understates instead — the safe direction for a money figure. If
+ * the platform decides partial refunds count, this and getDashboard change
+ * together or they diverge again.
+ */
+const COLLECTED_BOOKING_WHERE: Prisma.PujaBookingWhereInput = {
+  status: { in: [...COUNTED_BOOKING_STATUSES] },
+  payments: { some: { status: 'captured' } },
+};
+
+/** Exported for the AO-15 and CT-ADMIN-2 population tests. */
+export const __reportsTesting = { COUNTED_BOOKING_STATUSES, COLLECTED_BOOKING_WHERE };
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -223,7 +264,16 @@ interface ReportsResponse {
     pujaTypeId: string;
     name: string;
     bookings: number;
+    /** Money collected: bookings from `bookings` that have a captured payment. */
     revenueInr: number;
+    /**
+     * CT-ADMIN-2: the price of all `bookings`, paid or not. The pipeline number
+     * is useful — it is just not revenue, and it used to be published as
+     * `revenueInr`. Both ship, over populations that differ only by "was it paid
+     * for", so the relationship is visible rather than inferred (the DI-08
+     * precedent on /admin/commissions).
+     */
+    bookedValueInr: number;
     avgRating: number | null;
   }>;
   popularServices: Array<{
@@ -982,6 +1032,11 @@ export class AdminService {
       //
       // One population, declared once (COUNTED_BOOKING_STATUSES) and used by
       // both, so the card and the tile cannot drift apart again.
+      //
+      // CT-ADMIN-2 (2026-09-08) then split the MONEY back out of it: this
+      // aggregate's `_sum` is the booked value of everything counted here, which
+      // is the right number for `bookedValueInr` and the wrong one for anything
+      // called revenue. `revenueInr` now comes from COLLECTED_BOOKING_WHERE below.
       const pujaAgg = await prisma.pujaBooking.groupBy({
         by: ['pujaTypeId'],
         where: { status: { in: [...COUNTED_BOOKING_STATUSES] } },
@@ -991,16 +1046,37 @@ export class AdminService {
         orderBy: { _count: { pujaTypeId: 'desc' } },
         take: 8,
       });
-      const pujaTypes = await prisma.pujaType.findMany({
-        where: { id: { in: pujaAgg.map((p) => p.pujaTypeId) } },
-        select: { id: true, name: true },
-      });
+      // CT-ADMIN-2: the money column, over the same eight puja types but the
+      // COLLECTED population — see COLLECTED_BOOKING_WHERE. A second aggregate
+      // rather than a second field on the one above, because a `_sum` cannot
+      // carry a narrower `where` than the `_count` beside it. Narrowed to the
+      // eight ids the card is about, and the EXISTS on payments rides
+      // `payments_booking_id_idx` (DI-07) — so it costs the same order as the
+      // aggregate above it, not a second full pass.
+      const topPujaTypeIds = pujaAgg.map((p) => p.pujaTypeId);
+      const [pujaTypes, collectedAgg] = await Promise.all([
+        prisma.pujaType.findMany({
+          where: { id: { in: topPujaTypeIds } },
+          select: { id: true, name: true },
+        }),
+        prisma.pujaBooking.groupBy({
+          by: ['pujaTypeId'],
+          where: { ...COLLECTED_BOOKING_WHERE, pujaTypeId: { in: topPujaTypeIds } },
+          _sum: { priceAmount: true },
+        }),
+      ]);
       const pujaNameMap = new Map(pujaTypes.map((p) => [p.id, p.name] as const));
+      const collectedMap = new Map(
+        collectedAgg.map((p) => [p.pujaTypeId, Number(p._sum.priceAmount ?? 0)] as const),
+      );
       const popularPujas = pujaAgg.map((p) => ({
         pujaTypeId: p.pujaTypeId,
         name: pujaNameMap.get(p.pujaTypeId) ?? 'Unknown Puja',
         bookings: p._count._all,
-        revenueInr: Number(p._sum.priceAmount ?? 0),
+        // A puja type with no captured payment is absent from collectedAgg, not
+        // zero in it — the Rs 0 the prod state should have shown all along.
+        revenueInr: collectedMap.get(p.pujaTypeId) ?? 0,
+        bookedValueInr: Number(p._sum.priceAmount ?? 0),
         avgRating: p._avg.rating !== null ? Number(p._avg.rating.toFixed(1)) : null,
       }));
 

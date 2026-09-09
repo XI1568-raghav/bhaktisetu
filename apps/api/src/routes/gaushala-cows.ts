@@ -21,6 +21,27 @@ const healthRecordSchema = z.object({
  vetName: z.string().max(100).optional(),
 });
 
+// CT-API-1: `Cow.id` is `@db.Uuid`, so every `:id` handler below handed a
+// non-uuid path segment straight to Prisma, which raised P2023 and surfaced as a
+// 500. Measured on the public sibling of this defect against api.darshya.online
+// on 2026-09-09: `/gaushala/not-a-uuid` -> 500 where the well-formed but absent
+// `/gaushala/00000000-0000-4000-8000-000000000000` -> 404. Unlike the public
+// route there are no fixture ids here — every cow this portal can reach is a DB
+// row — so an id that cannot be a uuid is simply a cow this manager does not
+// have, which is the 404 the lookup would have produced anyway.
+// Same regex as routes/gaushala.ts and routes/priests-public.ts:42.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * 404 for an id no `cows` row can carry. Returns true when it answered, so the
+ * caller can bail before the query.
+ */
+function rejectUnstorableCowId(id: string, reply: any): boolean {
+ if (UUID_RE.test(id)) return false;
+ reply.code(404).send({ error: 'Cow not found' });
+ return true;
+}
+
 async function requireGaushalaManager(request: any, reply: any): Promise<string | null> {
  const roles = request.currentUser?.roles ?? [];
  if (!roles.includes('GAUSHALA_MANAGER')) {
@@ -77,6 +98,7 @@ export async function gaushalaCowsRoutes(server: FastifyInstance) {
  const gaushalaUserId = await requireGaushalaManager(request, reply);
  if (!gaushalaUserId) return;
  const { id } = request.params as { id: string };
+ if (rejectUnstorableCowId(id, reply)) return;
  const cow = await prisma.cow.findFirst({
  where: { id, gaushalaId: gaushalaUserId },
  include: {
@@ -96,6 +118,7 @@ export async function gaushalaCowsRoutes(server: FastifyInstance) {
  if (!parsed.success) {
  return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
  }
+ if (rejectUnstorableCowId(id, reply)) return;
  const existing = await prisma.cow.findFirst({ where: { id, gaushalaId: gaushalaUserId } });
  if (!existing) return reply.code(404).send({ error: 'Cow not found' });
  const cow = await prisma.cow.update({ where: { id }, data: parsed.data });
@@ -107,6 +130,7 @@ export async function gaushalaCowsRoutes(server: FastifyInstance) {
  const gaushalaUserId = await requireGaushalaManager(request, reply);
  if (!gaushalaUserId) return;
  const { id } = request.params as { id: string };
+ if (rejectUnstorableCowId(id, reply)) return;
  const existing = await prisma.cow.findFirst({ where: { id, gaushalaId: gaushalaUserId } });
  if (!existing) return reply.code(404).send({ error: 'Cow not found' });
  await prisma.cow.delete({ where: { id } });
@@ -123,6 +147,7 @@ export async function gaushalaCowsRoutes(server: FastifyInstance) {
  if (!parsed.success) {
  return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
  }
+ if (rejectUnstorableCowId(id, reply)) return;
  const cow = await prisma.cow.findFirst({ where: { id, gaushalaId: gaushalaUserId } });
  if (!cow) return reply.code(404).send({ error: 'Cow not found' });
  const record = await prisma.cowHealthRecord.create({
