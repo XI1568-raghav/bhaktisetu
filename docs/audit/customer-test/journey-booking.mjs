@@ -114,7 +114,19 @@ record('create booking', !!bookingId, `${booking.status} id=${bookingId || 'none
 if (!bookingId) { writeFindings(); process.exit(0); }
 
 console.log('\n3. payment order + signature verification');
-const order = await call('/bookings/create-order', { method: 'POST', token: devotee, body: { bookingId } });
+// create-order does NOT take a bookingId: it resolves puja + offering server-side
+// and mints its own booking, so the client can never name a temple/puja pair the
+// offering does not actually bind (bookings.ts:2006-2010).
+const order = await call('/bookings/create-order', {
+  method: 'POST', token: devotee,
+  body: {
+    pujaSlug: 'sunderkand-path',
+    templeOfferingId: OFFERING.templePujaOfferingId,
+    scheduledDate: tomorrow,
+    scheduledTime: '07:00',
+    devotees: [{ name: 'CT Devotee', gotra: 'Kashyap' }],
+  },
+});
 const orderId = order.json?.order?.id || order.json?.razorpayOrderId || order.json?.orderId;
 record('create razorpay order', !!orderId, `${order.status} order=${orderId || 'none'} ${orderId ? '' : order.text}`);
 if (orderId && !String(orderId).startsWith('order_')) {
