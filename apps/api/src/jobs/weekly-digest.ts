@@ -3,6 +3,11 @@ import { sendEmail } from '../lib/email.js';
 import { panchangService } from '../services/panchang.service.js';
 import { parseSchedule } from '../lib/darshan-schedule.js';
 import { claimRun, releaseRun } from '../lib/notification-run-log.js';
+// CT-CONSENT-1: minted by the route that verifies it, so the two cannot drift.
+// The direction of this import (job → route module) is deliberate: the token
+// format is the unsubscribe endpoint's contract, and duplicating the HMAC here
+// is how mint and verify silently disagree.
+import { signDigestUnsubscribeToken } from '../routes/digest.js';
 
 /**
  * Weekly devotee digest — Sunday 9 AM IST fan-out.
@@ -468,7 +473,11 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
         continue;
       }
 
-      const unsubscribeUrl = `https://darshya.online/account/digest/unsubscribe?u=${encodeURIComponent(user.id)}`;
+      // CT-CONSENT-1: `?u=` used to be the raw user id, which /auth/me hands
+      // out, so anyone with an id could opt that user out. It now carries a
+      // signed token. The web page forwards this param verbatim to the API, so
+      // the shape change needs nothing on the web side.
+      const unsubscribeUrl = `https://darshya.online/account/digest/unsubscribe?u=${encodeURIComponent(signDigestUnsubscribeToken(user.id))}`;
       const tpl = digestEmailHtml({ user, ctx, weekStartLabel, unsubscribeUrl });
 
       try {

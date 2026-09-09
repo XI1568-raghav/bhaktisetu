@@ -38,6 +38,33 @@ const storeProfileSchema = z.object({
 
 export const __testing = { productCreateSchema, productUpdateSchema, storeProfileSchema };
 
+/**
+ * The `:id` lookup both write verbs share.
+ *
+ * `store_products.id` is `@db.Uuid`, so an id that is not uuid-shaped reaches
+ * Prisma, raises P2023 ("Error creating UUID"), and 500s the request — measured
+ * on prod 2026-09-08, DELETE and PATCH /store-admin/products/not-a-uuid both
+ * answered `500 INTERNAL_ERROR` while the absent-but-valid
+ * 00000000-0000-0000-0000-000000000000 correctly 404'd. An id that cannot be a
+ * uuid cannot match a uuid column, so this is a lookup that MISSES, and the
+ * handlers' existing `!existing → 404` line is the right answer.
+ *
+ * routes/store-orders.ts fixed the same class the same way and reaches the same
+ * outcome; it filters ids through a UUID_RE up front because it looks up a
+ * whole basket at once and has to keep the good ids. With a single id there is
+ * nothing to partition, so the verdict is taken from the column itself rather
+ * than from a second copy of the uuid grammar. P2023 only — any other Prisma
+ * error still propagates to the 5xx redactor (lib/error-redaction.ts).
+ */
+async function findProductById(id: string) {
+  try {
+    return await prisma.storeProduct.findUnique({ where: { id } });
+  } catch (err) {
+    if ((err as { code?: unknown } | null)?.code === 'P2023') return null;
+    throw err;
+  }
+}
+
 // Resolve the StoreProfile that belongs to the authenticated user. Returns
 // null when the user has no profile — caller maps that to 400.
 async function resolveStoreProfileId(userId: string): Promise<string | null> {
@@ -246,11 +273,22 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
     }
-    const existing = await prisma.storeProduct.findUnique({ where: { id } });
+    const existing = await findProductById(id);
     if (!existing) return reply.code(404).send({ error: 'Product not found' });
     if (existing.storeProfileId !== storeProfileId) {
       return reply.code(403).send({ error: 'You do not own this product.' });
     }
+    // A deleted product is not editable. This lookup used to read the row with
+    // findUnique and never consult `deletedAt`, so the same owner could PATCH a
+    // deleted product back to `isActive:true, stock:5, price:1` — measured on
+    // prod 2026-09-08, it returned 200 and the product reappeared on the PUBLIC
+    // shelf (GET /store/products/live) at the new price while staying absent
+    // from GET /store-admin/products, which does filter deletedAt. Buyable by
+    // devotees, with no row in the owner's own catalogue to take it down again.
+    // No attacker needed: two tabs on /store-admin/products, delete in one,
+    // save an edit in the other. A row the reads cannot show, the writes must
+    // not resurrect — hence 404, matching what a read already answers.
+    if (existing.deletedAt) return reply.code(404).send({ error: 'Product not found' });
     const data: Record<string, unknown> = {};
     if (parsed.data.name !== undefined) data.name = parsed.data.name;
     if (parsed.data.description !== undefined) data.description = parsed.data.description;
@@ -274,11 +312,16 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     const storeProfileId = await resolveStoreProfileId(request.currentUser!.id);
     if (!storeProfileId) return reply.code(400).send({ error: 'No StoreProfile for this user' });
     const { id } = request.params as { id: string };
-    const existing = await prisma.storeProduct.findUnique({ where: { id } });
+    const existing = await findProductById(id);
     if (!existing) return reply.code(404).send({ error: 'Product not found' });
     if (existing.storeProfileId !== storeProfileId) {
       return reply.code(403).send({ error: 'You do not own this product.' });
     }
+    // Deliberately NOT short-circuited on an already-set `deletedAt`: re-running
+    // the write is what re-unlists a row that the PATCH bug above already
+    // resurrected (deletedAt set, isActive back to true), and prod rows in that
+    // state predate the guard. A second DELETE stays `{ ok: true }` either way.
+    //
     // Soft delete. `reviews.product_id` is ON DELETE CASCADE, so the previous
     // `storeProduct.delete()` destroyed every review BUYERS wrote about this
     // product — other devotees' content, deleted by the merchant.
@@ -380,10 +423,20 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     }
     const products = await prisma.storeProduct.findMany({
       where: { storeProfileId },
-      select: { id: true, stock: true },
+      select: { id: true, stock: true, deletedAt: true },
     });
+    // The `where` stays unfiltered on purpose. `productIds` is what attributes
+    // historical order lines to this store (attributeOrderToStore), so dropping
+    // deleted rows here would move a deleted product's past revenue out of
+    // todaySales/monthSales — the exact loss soft delete exists to prevent.
+    // Only lowStock describes the CURRENT catalogue, so only lowStock filters.
     const productIds = new Set(products.map((p) => p.id));
-    const lowStock = products.filter((p) => p.stock <= 5).length;
+    // Soft delete forces stock to 0, so an unfiltered count charges every
+    // deletion to this number permanently and it only ever grows: measured on
+    // prod 2026-09-08, an owner whose catalogue read `{"products":[],"total":0}`
+    // was told `lowStock: 3` — a restock prompt for three products that no
+    // longer exist.
+    const lowStock = products.filter((p) => !p.deletedAt && p.stock <= 5).length;
 
     const now = new Date();
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
