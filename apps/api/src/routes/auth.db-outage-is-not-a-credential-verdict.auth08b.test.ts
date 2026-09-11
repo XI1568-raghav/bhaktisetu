@@ -67,7 +67,7 @@ const REAL_USER = {
 /** The kind of message a Prisma connection failure actually carries. */
 const LEAKY_DB_ERROR =
   "Can't reach database server at `db.abcdefgh.supabase.co:5432` — " +
-  'postgresql://darshya:s3cr3t-password@db.abcdefgh.supabase.co:5432/postgres';
+  'postgresql://darshya:<s3cr3t>@db.abcdefgh.supabase.co:5432/postgres';
 
 type LogLine = Record<string, unknown>;
 
