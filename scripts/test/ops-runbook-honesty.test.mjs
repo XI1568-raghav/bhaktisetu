@@ -1007,7 +1007,6 @@ describe('OPS-15 (2026-09-09) — the audit exclusion is scoped by kind, not by 
       'docs/audit/OWNER-ACTIONS.md',
       'docs/audit/RESUME.md',
       'docs/audit/SESSION-STATE.md',
-      'docs/audit/CUSTOMER-TEST-PROMPT.md',
       'docs/audit/customer-test/AGENT-BRIEF.md',
       'docs/audit/customer-test/FIX-BRIEF.md',
       'docs/audit/customer-test/RESUME.md',
