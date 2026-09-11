@@ -3950,16 +3950,16 @@
  {
   "key": "F283",
   "id": "SCAL-02",
-  "sev": "P0",
+  "sev": "P1",
   "kind": "scalability",
   "size": "M",
   "area": "scalability",
   "workflow": "scale-mindset",
   "line": 3055,
-  "title": "API runs in Render Oregon while the database is Supabase Tokyo — every query crosses the Pacific",
+  "title": "The web tier runs in Render Oregon and the API in Singapore — server-rendered API calls cross the Pacific (API-to-database does not)",
   "state": "owner",
   "commit": "",
-  "note": "The region change is pure infrastructure and owner-only: either recreate the Supabase project in ap-south-1 (Mumbai) and move both Render services to region: si"
+  "note": "PREMISE CORRECTED 2026-09-12 BY MEASUREMENT. This record was titled 'API runs in Render Oregon while the database is Supabase Tokyo — every query crosses the Pacific'. That came from render.yaml, which does not govern this service. The Render API reports the API in singapore and darshya-web in oregon; the Supabase pooler host is ap-northeast-1 (Tokyo). So API-to-database is Singapore to Tokyo, not a Pacific crossing, and the Pacific hop that remains is web (oregon) to API (singapore) on server-rendered fetches. Latency was NOT measured, so P0 -> P1 is a judgement on the corrected topology, not a measurement. Still owner-only: a Render service's region cannot be changed in place. ORIGINAL NOTE: The region change is pure infrastructure and owner-only: either recreate the Supabase project in ap-south-1 (Mumbai) and move both Render services to region: si"
  },
  {
   "key": "F284",
@@ -6392,10 +6392,10 @@
   "area": "ops-observability",
   "workflow": "open-wave-2026-09-08",
   "line": 0,
-  "state": "open",
-  "commit": "",
+  "state": "fixed",
+  "commit": "7e855343",
   "title": "The runbook-honesty guard cannot see docs/audit/DEPLOY-PLAN.md, which still hands an operator the dead -f branch= flag",
-  "note": "FOUND 2026-09-08. docs/audit/DEPLOY-PLAN.md:85 instructs \"gh workflow run render-diag.yml -f mode=deploy -f sid=... -f branch=main\". Render IGNORES that input — the workflow says so in its own description — so following step 4 deploys whatever the service tracks rather than what the operator thinks they pinned. scripts/test/ops-runbook-honesty.test.mjs exists to forbid exactly this and passes 108/108 while the line sits there, because allFollowableDocs() filters through EXCLUDED, which carries /^docs\\/audit\\// so the LEDGER can quote defects verbatim. That reason is correct for the ledger, but THE EXCLUSION IS SCOPED BY DIRECTORY WHILE ITS JUSTIFICATION IS SCOPED BY DOCUMENT KIND, so it also swallows a deploy plan someone would actually follow. Same shape as OPS-06 itself: a wrong load-bearing instruction sitting where someone will act on it, with a guard that cannot reach it. The fix needs BOTH halves in one change — narrow EXCLUDED to records rather than the directory, and correct the doc — because either alone reds CI."
+  "note": "CLOSED 2026-09-09 in 7e855343, both halves in one change as the finding required. scripts/test/ops-runbook-honesty.test.mjs no longer excludes the docs/audit/ directory: EXCLUDED is narrowed to AUDIT_RECORDS, 13 exact paths that are records by kind, so a plan in that directory someone would follow is scanned like any other page. docs/audit/DEPLOY-PLAN.md no longer carries the dead flag (re-checked on the branch tip 2026-09-12: zero occurrences of branch=main). NOT YET RUN IN CI when closed: the wave branch had no PR, and ci.yml runs only on pull_request and on push to main."
  },
  {
   "key": "F458",
@@ -6406,10 +6406,10 @@
   "area": "auth-session-lifecycle",
   "workflow": "open-wave-2026-09-08",
   "line": 0,
-  "state": "open",
-  "commit": "",
+  "state": "fixed",
+  "commit": "55e41615",
   "title": "Sign-in answers a database outage with 401 \"Invalid credentials.\", and the same handler already gets it right 110 lines earlier",
-  "note": "FOUND 2026-09-08 while closing AUTH-07. routes/auth.ts:1136 catches an unreachable database and answers 401 \"Invalid credentials.\" The strongest argument that this is wrong is in the same file: :1024 answers an unreachable database with 503 \"Sign-in is temporarily unavailable. Please try again in a moment.\" The demo path gets it right and the real path does not. A failure to VERIFY is not an authentication verdict. It also defeats AUTH-02: auth-context.tsx:941 uses errBody?.message || authHttpErrorMessage(status), so the body message wins and authHttpErrorMessage's >=500 branch (\"Your details were not the problem\") is unreachable at 401 — meaning CHANGING THE STATUS ALONE WOULD NOT FIX IT. The fix is both, exactly as :1024 does it. Not done in the AUTH-07 wave because routes/** was out of lane and the change ripples to every client including mobile."
+  "note": "CLOSED 2026-09-09 in 55e41615 — status AND body together, since the finding showed a status change alone would not reach the user. routes/auth.ts now answers an unreachable database on the real sign-in path the way the demo path already did: 503 ServiceUnavailable, 'Sign-in is temporarily unavailable. Please try again in a moment.', logged as event login_db_unreachable. Pinned by an API test and a web test (auth08b) asserting that an outage is not presented as a credential verdict. Re-checked on the branch tip 2026-09-12. Not in production: the fix is on the unmerged wave branch."
  },
  {
   "key": "F459",
@@ -6420,10 +6420,10 @@
   "area": "data-integrity",
   "workflow": "open-wave-2026-09-08",
   "line": 0,
-  "state": "open",
-  "commit": "",
+  "state": "fixed",
+  "commit": "7e855343",
   "title": "A wellness session can be oversold: capacity is counted, then created, with nothing in between",
-  "note": "FOUND 2026-09-08. routes/wellness-sessions.ts:436 -> :449 counts existing enrolments and then creates, with no transaction, lock or constraint between the two. Two concurrent enrolments both read the same count and both insert, so a session exceeds its capacity. Deliberately NOT closed by the DI-06 partial-unique work: a COUNT ceiling is not expressible as a unique index — no index can enforce \"at most N rows matching a predicate\". It needs a row lock on the session, a serialisable transaction, or a trigger. Filed separately rather than stretched into a constraint that cannot hold it."
+  "note": "CLOSED 2026-09-09 in 7e855343 with a lock, not a constraint — as the finding said, a count ceiling is not index-shaped. enrollUnderCapacityLock (routes/wellness-sessions.ts:156) opens one transaction, takes pg_advisory_xact_lock(hashtextextended(key, 0)) on a per-session key, then counts held enrolments and creates inside that transaction, so two concurrent enrolments serialise on the session instead of both reading the same count. BOTH enrolment paths go through it — free (:571) and paid (:632) of POST /sessions/:id/enroll, traced 2026-09-12. The count at :603 is a deliberate cheap pre-check before razorpay.orders.create so a provably-full class never mints a live order; the authoritative re-count is under the lock. A transaction-scoped advisory lock releases at COMMIT, so it holds under Supabase's transaction-mode pooler where a session-scoped one would not. WHAT THE TEST DOES AND DOES NOT PROVE: wellness-enroll-capacity.f455.test.ts mocks Prisma and models the advisory lock as a per-key mutex, then fires six concurrent enrolments through the real route. It proves the route takes the lock and that count-then-create is serialised under that model; by its own header it does not prove Postgres blocks a second backend. No run against a real database was made. DISCLOSURE: the same commit normalised wellness-sessions.ts from CRLF to LF (per .gitattributes, * text=auto eol=lf) without saying so — raw diff +867/-672, real change +231/-36 under --ignore-cr-at-eol."
  },
  {
   "key": "F460",
@@ -6434,10 +6434,10 @@
   "area": "ops-observability",
   "workflow": "open-wave-2026-09-08",
   "line": 0,
-  "state": "open",
+  "state": "owner",
   "commit": "",
   "title": "apps/api/.env is partly corrupt — a UTF-16LE tail with duplicate keys and NUL bytes, in the file env parsing is now load-bearing on",
-  "note": "FOUND 2026-09-08. Bytes 840-1112 of apps/api/.env are a UTF-16LE tail containing two duplicate COHERE_API_KEY lines and 116 NUL bytes — the signature of a PowerShell >> or Add-Content without -Encoding utf8. The ASCII portion parses, so nothing is broken today. It matters because OPS-14 made env-file parsing load-bearing for choosing which DATABASE a maintenance script connects to: a file that resolution depends on should not carry mojibake. Rewrite it as clean UTF-8 with the duplicate removed. Do NOT do this from an agent — the file holds production credentials and is on the credential-store deny list."
+  "note": "FOUND 2026-09-08. Bytes 840-1112 of apps/api/.env are a UTF-16LE tail containing two duplicate COHERE_API_KEY lines and 116 NUL bytes — the signature of a PowerShell >> or Add-Content without -Encoding utf8. The ASCII portion parses, so nothing is broken today. It matters because OPS-14 made env-file parsing load-bearing for choosing which DATABASE a maintenance script connects to: a file that resolution depends on should not carry mojibake. Rewrite it as clean UTF-8 with the duplicate removed. Do NOT do this from an agent — the file holds production credentials and is on the credential-store deny list. RE-MEASURED 2026-09-12: unchanged — 1,112 bytes, 116 NUL bytes, COHERE_API_KEY still duplicated. Moved open -> owner: the fix is a hand edit of a credential file that agents are denied by the credential-store deny list, so no agent lane can close it."
  },
  {
   "key": "F461",
@@ -6448,9 +6448,37 @@
   "area": "ops-observability",
   "workflow": "open-wave-2026-09-08",
   "line": 0,
-  "state": "open",
-  "commit": "",
+  "state": "fixed",
+  "commit": "7e855343",
   "title": "TASKS.md claims a deploy applies migrations on API start; measured twice, it does not — and TASKS.md is @-imported into every session",
-  "note": "MEASURED 2026-09-08, twice including a commit-pinned deploy: deploying the API does NOT run migrations. The service comes up live and healthy with the schema unmoved. TASKS.md states the opposite (\"Migrations DO auto-apply — on API START, not build... a failing migration is a CRASH-LOOP\"), and because TASKS.md is @-imported by CLAUDE.md, every session in this repo reads it and then reasons about deploys from it — the same class of wrong load-bearing sentence as OPS-06. The practical consequence is the opposite of the stated risk: a migration is not a crash-loop danger, it is silently NOT APPLIED, so a deploy can report success while the schema the new code expects is absent. Apply manually via DIRECT_URL, then redeploy. Second correction in the same area: `verify-migration-objects --unexecuted` is NOT a pending-migration check — trust `prisma migrate status`."
+  "note": "CLOSED 2026-09-09 in 7e855343: TASKS.md no longer claims migrations auto-apply on API start; it says they do not, and that they must be applied by hand over DIRECT_URL and followed by a redeploy (re-checked on the branch tip 2026-09-12: zero occurrences of 'Migrations DO auto-apply'). CAUSE NOW PINNED BY MEASUREMENT — it was a hypothesis when this closed. render-diag mode=detail, sampled 2026-09-09 and again 2026-09-12, reports the dashboard startCommand as `pnpm --filter @poojly/api exec tsx src/server.ts`. render.yaml's `pnpm --filter @poojly/api start` (prisma migrate deploy && node dist/server.js) is never used, so migrate deploy never runs. That mechanism is its own defect, filed as OPS-19 (F463)."
+ },
+ {
+  "key": "F462",
+  "id": "OPS-18",
+  "sev": "P1",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops-observability",
+  "workflow": "tally-2026-09-12",
+  "line": 0,
+  "state": "owner",
+  "commit": "",
+  "title": "The API deploys itself on every push to main — CLAUDE.md, render.yaml and the OPS-06 guard all say no push can deploy anything",
+  "note": "MEASURED 2026-09-12 from the Render API, not read from render.yaml. The dashboard reports autoDeploy 'yes' on branch main for the API (sampled 2026-09-09 and 2026-09-12). Its last 20 deploys (2026-09-07 to 2026-09-11) are 13 trigger=new_commit and 7 trigger=api, and every new_commit deploy starts a median 3 s after its commit. Ten of those 13 were scheduled agent-report commits, which touch only docs/agent-reports/ (measured on a health-smoke commit, 166b3868, and a daily-fleet commit, 171e2266). At that cadence — health smoke twice a day, daily fleet run once — production is rebuilt ~90 times a month for markdown: at the measured 3.5 min median that is ~315 deploy-minutes, 63% of the 500 build-minute budget in docs/free-tier-budgets.md, before any real deploy (deploy wall time includes non-build phases, so these are upper bounds on build minutes). WHAT IT BREAKS: (1) CLAUDE.md's 'A push builds NOTHING', repeated in ~45 files, is false for the API, so merging a PR ships API code within seconds — and per OPS-19 no migration runs, so code can land ahead of its schema. (2) The OPS-06 correction (F415) deleted a TRUE sentence: render-build-filter-setup.md's 'Render auto-deploys bhaktisetu-api on every push to main'. ops-runbook-honesty.test.mjs keeps it as PRE_FIX_BUILD_FILTER and bans the claim, so the accurate statement cannot be written back without redding CI. (3) The rollback doctrine is half wrong in the opposite direction: for the API, a revert pushed to main DOES redeploy. The web service reports autoDeploy 'no' and is unaffected. THE FIX IS A DECISION: turn Auto-Deploy off for the API in the Render dashboard, which makes every doc and the guard true again (recommended), or keep it and rewrite the docs and the guard together. Owner: it is a dashboard setting."
+ },
+ {
+  "key": "F463",
+  "id": "OPS-19",
+  "sev": "P1",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops-observability",
+  "workflow": "tally-2026-09-12",
+  "line": 0,
+  "state": "owner",
+  "commit": "",
+  "title": "Production API starts with tsx from source — a dashboard Start Command overrides render.yaml, so migrate deploy never runs and dist/ is never executed",
+  "note": "MEASURED 2026-09-09 and 2026-09-12 (render-diag mode=detail). The Render dashboard Start Command for the API is `pnpm --filter @poojly/api exec tsx src/server.ts`. render.yaml declares `pnpm --filter @poojly/api start`, and apps/api/package.json's start is `prisma migrate deploy && node dist/server.js`; neither is used. (1) Migrations never run on deploy — the mechanism behind OPS-17's measurement that deploys leave the schema unmoved. With OPS-18, any push to main can ship code ahead of the schema it needs. (2) The dashboard build compiles dist/ with tsc and nothing ever runs it: production executes TypeScript through a dev transpiler on a free-plan instance. Boot time and memory cost were NOT measured. The dashboard also disagrees with render.yaml on region (singapore vs oregon) and autoDeploy (yes vs false), so render.yaml is descriptive, not authoritative, for this service. DO NOT just paste render.yaml's command into the dashboard: that switches on migrate-on-boot (a failing migration then fails the deploy) and runs `node dist/server.js`, a path production has never executed. Boot the dist build once somewhere safe first. Owner: dashboard setting."
  }
 ]
