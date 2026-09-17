@@ -1,6 +1,8 @@
 # social-content-multiplexer log
 
 
+- 2026-09-17T08:50:33.075Z — festival=Navratri (start) d=24 x=5 li=3 ig=3
+
 - 2026-09-10T08:21:22.753Z — festival=Ganesh Chaturthi d=5 x=5 li=3 ig=3
 
 - 2026-09-08T08:18:37.121Z — festival=Ganesh Chaturthi d=7 x=5 li=3 ig=3
