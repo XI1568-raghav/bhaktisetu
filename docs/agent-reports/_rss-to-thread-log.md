@@ -1,6 +1,8 @@
 # rss-to-thread log
 
 
+- 2026-09-21T09:35:39.451Z — sources=16 tweets=7
+
 - 2026-09-14T09:33:56.706Z — sources=11 tweets=7
 
 - 2026-09-07T08:55:10.240Z — sources=16 tweets=7
