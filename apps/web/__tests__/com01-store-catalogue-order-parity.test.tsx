@@ -139,7 +139,7 @@ describe('COM-01 — checkout refuses before the money step, in words', () => {
     // The old code threw `Order failed (${res.status})` for every 400 — which
     // was the ONLY thing a devotee ever saw, because every product 400'd.
     expect(src).toMatch(/product_not_orderable/);
-    expect(src).toMatch(/throw new Error\(parsed\.message\)/);
+    expect(src).toMatch(/throw new UserFacingError\(parsed\.message\)/);
   });
 });
 

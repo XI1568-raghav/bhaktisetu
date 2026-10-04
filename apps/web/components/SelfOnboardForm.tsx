@@ -3,6 +3,7 @@
 import { useState, FormEvent, ReactNode } from 'react';
 
 import { buttonClass } from '../components/ui/button-recipe';
+import { userFacingMessage, serverErrorMessage } from '../lib/friendly-error';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 
 export type OnboardRole =
@@ -56,7 +57,7 @@ export default function SelfOnboardForm({ role, ctaLabel, extraFields }: SelfOnb
       });
       const json = (await res.json()) as { ok?: boolean; leadId?: string; error?: string };
       if (!res.ok || !json.ok) {
-        setError(json.error ?? 'Something went wrong. Please try again.');
+        setError(serverErrorMessage(json, 'Something went wrong. Please try again.'));
         setSubmitting(false);
         return;
       }
@@ -65,7 +66,7 @@ export default function SelfOnboardForm({ role, ctaLabel, extraFields }: SelfOnb
       );
       (event.target as HTMLFormElement).reset();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error. Please try again.');
+      setError(userFacingMessage(err, 'Network error. Please try again.'));
     }
     setSubmitting(false);
   }
@@ -169,7 +170,8 @@ export default function SelfOnboardForm({ role, ctaLabel, extraFields }: SelfOnb
       <button
         type="submit"
         disabled={submitting}
-        className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
+        className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
+
       >
         {submitting ? 'Submitting…' : ctaLabel}
       </button>

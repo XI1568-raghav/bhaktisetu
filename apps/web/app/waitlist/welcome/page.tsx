@@ -6,6 +6,7 @@ import RouteFallback from '../../../components/ui/RouteFallback';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 
 interface Stats {
@@ -53,7 +54,7 @@ function WelcomeContent() {
         const json = (await res.json()) as Stats;
         if (!cancelled) setStats(json);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Network error.');
+        if (!cancelled) setError(userFacingMessage(err, 'Network error.'));
       }
     }
     void load();

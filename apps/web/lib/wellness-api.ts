@@ -1,4 +1,5 @@
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
+import { UserFacingError, serverErrorMessage, userFacingMessage } from './friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 // Mirrors the /wellness-portal/students response — one row per devotee,
@@ -29,12 +30,13 @@ function authHeaders(token: string | undefined): Record<string, string> {
 }
 
 async function describeFailure(res: Response, fallback: string): Promise<string> {
+  // RES-09: the server's own sentence when it wrote one worth reading, else
+  // friendly copy for the status. Never `fallback (HTTP status): raw detail`.
+  const friendly = userFacingMessage(new Error(`HTTP ${res.status}`), fallback);
   try {
-    const body = (await res.json()) as { message?: string; error?: string };
-    const detail = body.message ?? body.error;
-    return detail ? `${fallback} (${res.status}): ${detail}` : `${fallback} (${res.status})`;
+    return serverErrorMessage(await res.json(), friendly);
   } catch {
-    return `${fallback} (${res.status})`;
+    return friendly;
   }
 }
 
@@ -46,7 +48,7 @@ export async function getMyStudents(
   const res = await fetchWithTimeout(`${API_BASE_URL}/wellness-portal/students`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load students'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load students'), res.status);
   const data = (await res.json()) as { students: WellnessStudent[]; total: number };
   return data.students ?? [];
 }
@@ -94,7 +96,7 @@ export async function listMySessions(token: string | undefined): Promise<Wellnes
   const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/sessions/mine`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load sessions'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load sessions'), res.status);
   const body = (await res.json()) as { data: WellnessSession[] };
   return body.data;
 }
@@ -108,7 +110,7 @@ export async function createWellnessSession(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create session'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to create session'), res.status);
   const body = (await res.json()) as { data: WellnessSession };
   return body.data;
 }
@@ -123,7 +125,7 @@ export async function updateWellnessSession(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update session'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to update session'), res.status);
   const body = (await res.json()) as { data: WellnessSession };
   return body.data;
 }
@@ -136,7 +138,7 @@ export async function deleteWellnessSession(
     method: 'DELETE',
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete session'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to delete session'), res.status);
 }
 
 // Wellness revamp (2026-08-05): the /sessions/:id/room endpoint existed but the
@@ -152,7 +154,7 @@ export async function setWellnessSessionRoom(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ roomUrl }),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to set room URL'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to set room URL'), res.status);
   const body = (await res.json()) as { data: WellnessSession };
   return body.data;
 }

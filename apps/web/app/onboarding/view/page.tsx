@@ -26,6 +26,7 @@ import { type UserRole, getRoleDashboardPath, getRoleLabel, useAuth } from '../.
 import { API_BASE_URL } from '../../../lib/api-config';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, serverErrorText } from '../../../lib/friendly-error';
 
 // Maps the URL role slug to the backend MarketplaceRole enum.
 const BACKEND_ROLE: Record<string, string> = {
@@ -554,7 +555,7 @@ function OnboardingInner() {
  });
  if (!res.ok) {
  const txt = await res.text().catch(() => '');
- throw new Error(`Submission failed (${res.status}). ${txt}`);
+ throw new UserFacingError(serverErrorText(txt, 'Submission failed. Please try again.'), res.status);
  }
 
  // Cache the submitted snapshot for the local "Submitted" state and
@@ -571,7 +572,7 @@ function OnboardingInner() {
 
  setIsSubmitted(true);
  } catch (err) {
- setSubmitError(err instanceof Error ? err.message : 'Submission failed');
+ setSubmitError(userFacingMessage(err, 'Submission failed'));
  } finally {
  setIsSubmitting(false);
  }

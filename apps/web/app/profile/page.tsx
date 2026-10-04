@@ -34,6 +34,7 @@ import { ACCOUNT_LANGUAGES, accountLanguageLabel } from '../../lib/i18n/locales'
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
 import ReauthPrompt from '../../components/ReauthPrompt';
+import { serverErrorMessage } from '../../lib/friendly-error';
 
 interface ProfileFormData {
  fullName: string;
@@ -249,7 +250,7 @@ function ProfileContent() {
  const data = await res.json();
 
  if (!res.ok) {
- setError(data.message || 'Failed to save profile.');
+ setError(serverErrorMessage(data, 'Failed to save profile.'));
  return;
  }
 

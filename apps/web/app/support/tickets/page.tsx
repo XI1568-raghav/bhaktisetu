@@ -29,6 +29,7 @@ import {
  PriorityBadge,
  formatDate,
 } from '../../../components/support/badges';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 export default function MyTicketsPage() {
  const { session } = useAuth();
@@ -48,7 +49,7 @@ export default function MyTicketsPage() {
  // Fall back to localStorage so offline / demo flows still render.
  if (!cancelled) {
  setTickets(loadUserTickets());
- setError(err instanceof Error ? err.message : 'Failed to load tickets');
+ setError(userFacingMessage(err, 'Failed to load tickets'));
  }
  } finally {
  if (!cancelled) setLoading(false);

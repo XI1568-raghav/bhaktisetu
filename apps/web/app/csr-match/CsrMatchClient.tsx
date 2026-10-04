@@ -15,6 +15,7 @@
 import { useState, type FormEvent } from 'react';
 import { csrCredentialLine, COMPANY } from '../../lib/company';
 import { H1 } from '../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../lib/friendly-error';
 
 function formatINR(n: number): string {
   return new Intl.NumberFormat('en-IN').format(Math.max(0, Math.round(n)));
@@ -61,7 +62,7 @@ export default function CsrMatchClient() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'submission failed');
+      setError(userFacingMessage(err, 'submission failed'));
     } finally {
       setSubmitting(false);
     }

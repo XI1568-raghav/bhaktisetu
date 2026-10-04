@@ -11,6 +11,7 @@
  * keep rendering instead of crashing.
  */
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
+import { UserFacingError, serverErrorText, userFacingMessage } from './friendly-error';
 
 export type ProviderRole =
   | 'priest'
@@ -101,14 +102,12 @@ function authHeaders(token: string | undefined): Record<string, string> {
 async function asJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      const parsed = text ? JSON.parse(text) : null;
-      if (parsed && typeof parsed.message === 'string') message = parsed.message;
-    } catch {
-      /* keep default */
-    }
-    throw new Error(message);
+    // RES-09: the server's own sentence when it wrote one worth reading, else
+    // friendly copy for the status; the status rides along for reauth.
+    throw new UserFacingError(
+      serverErrorText(text, userFacingMessage(new Error(`HTTP ${res.status}`), 'Request failed. Please try again.')),
+      res.status,
+    );
   }
   return (text ? JSON.parse(text) : {}) as T;
 }

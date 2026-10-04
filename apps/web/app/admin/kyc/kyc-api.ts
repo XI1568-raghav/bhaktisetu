@@ -30,6 +30,7 @@ import {
   isNetworkFailure,
   NETWORK_ERROR_MESSAGE,
 } from '../../../lib/api-config';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 
 export type KycQueueStatus = 'pending' | 'verified' | 'rejected';
 
@@ -90,22 +91,20 @@ function authHeaders(token: string | undefined): Record<string, string> {
 async function asJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      const parsed = text ? (JSON.parse(text) as { error?: string; message?: string }) : null;
-      if (parsed && typeof parsed.error === 'string') message = parsed.error;
-      else if (parsed && typeof parsed.message === 'string') message = parsed.message;
-    } catch {
-      /* keep the default */
-    }
-    throw new Error(message);
+    // RES-09: the server's own sentence when it wrote one worth reading (the
+    // API localises its validation and guard messages); otherwise friendly copy.
+    // The status is carried so the page can still tell a dead session apart.
+    throw new UserFacingError(
+      serverErrorText(text, userFacingMessage(new Error(`HTTP ${res.status}`), 'Request failed. Please try again.')),
+      res.status,
+    );
   }
   return (text ? JSON.parse(text) : {}) as T;
 }
 
 function rethrow(err: unknown): never {
-  if (isNetworkFailure(err)) throw new Error(NETWORK_ERROR_MESSAGE);
-  throw err instanceof Error ? err : new Error('KYC request failed.');
+  if (isNetworkFailure(err)) throw new UserFacingError(NETWORK_ERROR_MESSAGE);
+  throw err instanceof UserFacingError ? err : new UserFacingError(userFacingMessage(err, 'KYC request failed.'));
 }
 
 export async function listKycSubmissions(
@@ -160,7 +159,7 @@ export async function decideKyc(
     );
     const body = await asJson<{ ok?: boolean; userId?: string; verified?: unknown; reason?: unknown }>(res);
     if (typeof body.verified !== 'boolean') {
-      throw new Error(
+      throw new UserFacingError(
         'The server accepted the decision but did not confirm the KYC state. Reload the queue before deciding again.',
       );
     }

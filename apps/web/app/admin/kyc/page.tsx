@@ -29,6 +29,7 @@ import {
   type KycSubmission,
 } from './kyc-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError } from '../../../lib/friendly-error';
 
 const TABS: Array<{ key: KycQueueStatus; label: string; blurb: string }> = [
   { key: 'pending', label: 'Pending', blurb: 'Submitted, never decided. These providers cannot withdraw.' },
@@ -75,7 +76,7 @@ export default function AdminKycPage() {
       } catch (err) {
         if (!cancelled) {
           setSubmissions([]);
-          setQueueError(err instanceof Error ? err.message : 'Could not load the KYC queue.');
+          setQueueError(userFacingMessage(err, 'Could not load the KYC queue.'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -130,7 +131,7 @@ export default function AdminKycPage() {
       const result = await decideKyc(token, target.userId, mode, mode === 'reject' ? why : undefined);
       const expected = mode === 'verify';
       if (result.verified !== expected) {
-        throw new Error(
+        throw new UserFacingError(
           `The server reports this provider as ${result.verified ? 'verified' : 'not verified'}, which is not the decision that was made. Reload the queue before deciding again.`,
         );
       }
@@ -146,7 +147,7 @@ export default function AdminKycPage() {
       if (refreshed) {
         setSubmissions(refreshed);
         if (refreshed.some((s) => s.userId === target.userId)) {
-          throw new Error(
+          throw new UserFacingError(
             `The server accepted the decision, but ${target.fullName} is still pending in this queue. Reload and check before deciding again.`,
           );
         }
@@ -161,7 +162,7 @@ export default function AdminKycPage() {
       setDialog(null);
       setReason('');
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not record this KYC decision.');
+      setActionError(userFacingMessage(err, 'Could not record this KYC decision.'));
     } finally {
       inFlight.current = false;
       setSubmitting(false);

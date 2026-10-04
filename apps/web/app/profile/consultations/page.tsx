@@ -32,9 +32,9 @@ import {
  * then answered a question it had no answer to.
  *
  *   :78  throw new Error(`Could not load (${res.status})`)
- *   :81  setError(e instanceof Error ? e.message : 'Network error')
+ *   :81  setError(userFacingMessage(e, 'Network error'))
  *   :102 throw new Error(`Cancel ${res.status}${body ? `: ${body.slice(0,140)}` : ''}`)
- *   :105 setCancelError(e instanceof Error ? e.message : 'Could not cancel')
+ *   :105 setCancelError(userFacingMessage(e, 'Could not cancel'))
  *
  * So an expired token read as "Could not load (401)", and a cancel against a
  * gateway that answers HTML spliced 140 characters of `<html><head><title>502

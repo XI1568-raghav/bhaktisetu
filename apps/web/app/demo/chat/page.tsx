@@ -7,6 +7,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, serverErrorMessage } from '../../../lib/friendly-error';
 
 /**
  * One-click demo entry: pretends Razorpay charged ₹1, creates a real puja
@@ -37,7 +38,7 @@ function DemoChatPageInner() {
           body: JSON.stringify({}),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message ?? 'Demo pay failed');
+        if (!res.ok) throw new UserFacingError(serverErrorMessage(data, 'The demo payment did not go through. Please try again.'), res.status);
         router.push(`/messages`);
         return;
       }
@@ -61,10 +62,10 @@ function DemoChatPageInner() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Could not start chat');
+      if (!res.ok) throw new UserFacingError(serverErrorMessage(data, 'Could not start the chat. Please try again.'), res.status);
       router.push(`/messages`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong');
+      setError(userFacingMessage(e, 'Something went wrong. Please try again.'));
     } finally {
       setLoading(false);
     }

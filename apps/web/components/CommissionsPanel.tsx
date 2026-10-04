@@ -21,6 +21,7 @@ import {
  type CommissionStatus,
  type CommissionTotals,
 } from '../lib/commission-api';
+import { userFacingMessage } from '../lib/friendly-error';
 
 type StatusFilter = 'all' | CommissionStatus;
 
@@ -131,7 +132,7 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
      setLedgerTotals(res.totals ?? null);
     }
    } catch (err) {
-    if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load commissions');
+    if (!cancelled) setError(userFacingMessage(err, 'Failed to load commissions'));
    } finally {
     if (!cancelled) setLoading(false);
    }

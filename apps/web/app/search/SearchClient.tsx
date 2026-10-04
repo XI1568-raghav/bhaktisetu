@@ -9,6 +9,7 @@ import { contentSubtitleLabel, pujaSubtitleLabel } from '../../components/Search
 import { buildRelaxedQueries } from '../../lib/search-relax';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../lib/friendly-error';
 
 /**
  * CM-12 (prod sweep 2026-08-12) — this page searched ONLY the static
@@ -112,7 +113,7 @@ export default function SearchClient() {
     fetch('/search-index.json')
       .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then((data: Entry[]) => setIdx(data))
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'));
+      .catch((e) => setError(userFacingMessage(e, 'Failed to load')));
   }, []);
 
   useEffect(() => {

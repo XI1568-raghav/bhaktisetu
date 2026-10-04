@@ -57,6 +57,7 @@ import {
 } from './refund-api';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { userFacingMessage, UserFacingError } from '../../../lib/friendly-error';
 
 /**
  * Exact rupees, always. Compact formatting ("Rs. 3.2L") is fine for a headline
@@ -120,7 +121,7 @@ export default function AdminRefundsPage() {
       } catch (err) {
         if (!cancelled) {
           setPending([]);
-          setQueueError(err instanceof Error ? err.message : 'Could not load the refund queue.');
+          setQueueError(userFacingMessage(err, 'Could not load the refund queue.'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -140,7 +141,7 @@ export default function AdminRefundsPage() {
       setHistoryError(null);
     } catch (err) {
       setHistory([]);
-      setHistoryError(err instanceof Error ? err.message : 'Could not load refunded bookings.');
+      setHistoryError(userFacingMessage(err, 'Could not load refunded bookings.'));
     }
   }, [token]);
 
@@ -223,7 +224,7 @@ export default function AdminRefundsPage() {
 
       const refreshed = await refetchQueue();
       if (refreshed && refreshed.some((b) => b.id === target.id)) {
-        throw new Error(
+        throw new UserFacingError(
           `The gateway reported a refund, but booking ${target.bookingNumber} is still in the refund queue. ` +
             'Do not refund it again — reconcile the payment against Razorpay first.',
         );
@@ -256,7 +257,7 @@ export default function AdminRefundsPage() {
       // invites a second refund against the same payment.
       await loadHistory();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not refund this booking.');
+      setActionError(userFacingMessage(err, 'Could not refund this booking.'));
     } finally {
       inFlight.current = false;
       setSubmitting(false);
@@ -287,18 +288,18 @@ export default function AdminRefundsPage() {
       // queue — the only evidence is the marker on a refetched booking.
       const refreshed = await refetchQueue();
       if (!refreshed) {
-        throw new Error(
+        throw new UserFacingError(
           'The server accepted the rejection but the queue could not be refreshed, so nothing confirms it was recorded. Treat it as not recorded and reload.',
         );
       }
       const after = refreshed.find((b) => b.id === target.id);
       if (!after) {
-        throw new Error(
+        throw new UserFacingError(
           `Booking ${target.bookingNumber} is no longer in the refund queue, so the ${REFUND_REJECTED_MARKER} marker could not be confirmed. Treat the rejection as not recorded and check the booking.`,
         );
       }
       if (!isRejected(after)) {
-        throw new Error(
+        throw new UserFacingError(
           `The server accepted the rejection, but the refetched booking does not show the ${REFUND_REJECTED_MARKER} marker — it was not recorded. Do not tell the devotee anything yet.`,
         );
       }
@@ -309,7 +310,7 @@ export default function AdminRefundsPage() {
       setDialog(null);
       setReason('');
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not reject this refund.');
+      setActionError(userFacingMessage(err, 'Could not reject this refund.'));
     } finally {
       inFlight.current = false;
       setSubmitting(false);
