@@ -597,6 +597,43 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
  * still in 'cancelled' (status would already be 'refunded' if a prior tick
  * succeeded).
  */
+export interface PolicyRefundQuote {
+  refundAmountInr: number;
+  feeAmountInr: number;
+  refundFraction: number;
+  tierLabel: string;
+}
+
+/**
+ * What the cancellation policy owes this booking, measured from the moment the
+ * devotee cancelled (not now). One function for the cron and the admin screen so
+ * the amount an admin approves is the amount the devotee was quoted.
+ */
+export async function computePolicyRefund(booking: {
+  id: string;
+  scheduledDate: Date;
+  scheduledTimeSlot: string | null;
+  priceAmount: Prisma.Decimal | string | number;
+  cancelledAt: Date | null;
+}): Promise<PolicyRefundQuote> {
+  const policy = await cancellationService.getPolicy(booking.id);
+  const price = Number(booking.priceAmount);
+  const q = cancellationService.computeDevoteeRefund({
+    policy,
+    scheduledDate: booking.scheduledDate,
+    scheduledTimeSlot: booking.scheduledTimeSlot,
+    pujaPriceInr: price,
+    totalPaidInr: price,
+    now: booking.cancelledAt ?? undefined,
+  });
+  return {
+    refundAmountInr: q.refundAmountInr,
+    feeAmountInr: q.feeAmountInr,
+    refundFraction: q.refundFraction,
+    tierLabel: q.tierLabel,
+  };
+}
+
 export async function processAutoRefunds(): Promise<{
   processed: number;
   succeeded: number;
@@ -651,15 +688,7 @@ export async function processAutoRefunds(): Promise<{
       // The tier is measured at the moment the devotee CANCELLED (cancelledAt),
       // not now — this cron runs at least an hour later, and billing them for
       // our own queue latency would push them down a tier.
-      const policy = await cancellationService.getPolicy(c.id);
-      const quote = cancellationService.computeDevoteeRefund({
-        policy,
-        scheduledDate: c.scheduledDate,
-        scheduledTimeSlot: c.scheduledTimeSlot,
-        pujaPriceInr: Number(c.priceAmount),
-        totalPaidInr: Number(c.priceAmount),
-        now: c.cancelledAt ?? undefined,
-      });
+      const quote = await computePolicyRefund(c);
       const isFull = quote.refundFraction >= 1;
       const r = await processRefund({
         bookingId: c.id,
@@ -680,5 +709,6 @@ export async function processAutoRefunds(): Promise<{
 export const refundService = {
   processRefund,
   processAutoRefunds,
+  computePolicyRefund,
   REFUND_REQUESTED_MARKER,
 };
