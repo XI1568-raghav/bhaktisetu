@@ -67,6 +67,8 @@ export interface RefundBooking {
   user: { fullName: string | null; phone: string | null } | null;
   /** Present on the queue projection; absent on the /admin/bookings list. */
   payments?: RefundPayment[];
+  /** What the cancellation policy owes; null/absent when the server could not compute it. */
+  policyQuote?: PolicyQuote | null;
 }
 
 /** apps/api/src/services/refund.service.ts → ProcessRefundResult. */
@@ -82,7 +84,15 @@ export interface RefundResult {
   error?: string;
 }
 
-export type RefundType = 'full' | 'partial';
+/** 'policy' = the server refunds what the cancellation policy owes; the page sends no amount. */
+export type RefundType = 'full' | 'partial' | 'policy';
+
+export interface PolicyQuote {
+  refundAmountInr: number;
+  feeAmountInr: number;
+  refundFraction: number;
+  tierLabel: string;
+}
 
 function authHeaders(token: string | undefined): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
