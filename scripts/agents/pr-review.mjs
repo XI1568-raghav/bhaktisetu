@@ -43,7 +43,10 @@ export const DEFAULT_BASE_URL = 'https://api.anthropic.com';
 export const DEFAULT_MODELS = ['claude-haiku-4-5-20251001'];
 const MESSAGES_PATH = '/v1/messages';
 
-export const MAX_DIFF_CHARS = 120_000;
+// ~100k tokens of diff: well inside a 200k-token Claude context with room for
+// the reply. The old 120,000 was sized for a smaller model and left most of any
+// large PR unread.
+export const MAX_DIFF_CHARS = 400_000;
 const REVIEW_TIMEOUT_MS = 150_000;
 
 // ---- The darshya-code-review checklist as the system prompt ----
@@ -67,7 +70,9 @@ Return JSON:
   "blockingIssues": [{"file": "...", "line": "...", "issue": "...", "fix": "..."}],
   "summary": "one line"
 }
-A FAIL verdict means the PR has a real problem that should block or warn before merge.`;
+A FAIL verdict means the PR has a real problem that should block or warn before merge.
+
+You may be shown only part of the diff. The user message lists EVERY file the PR changes and marks the ones whose contents you were not shown. Those files exist and are part of the PR. Never report a file as missing, an import as unresolved, a function as undefined, or a change as untested because its contents were not shown to you: judge test coverage from the file list (test files are named *.test.* or live under __tests__/), and base blockingIssues only on code you can actually see.`;
 
 // ---- Anthropic API ----
 
@@ -265,7 +270,39 @@ export function prepareDiff(files, maxChars = MAX_DIFF_CHARS) {
       omitted.push(f.path);
     }
   }
-  return { text, totalChars, fileCount: files.length, omitted };
+  return { text, totalChars, fileCount: files.length, omitted, paths: ordered.map((f) => f.path) };
+}
+
+/**
+ * The user message. It carries the whole file list, not just the diff that
+ * fitted: on 2026-10-04 the first real reviews FAILED two PRs for "missing"
+ * files and "zero tests" that were simply past the character budget — the model
+ * had no way to know what it had not been shown.
+ */
+export function buildUserPrompt({ prNumber, title, diff }) {
+  const notShown = new Set(diff.omitted.map((p) => p.replace(/ \(truncated\)$/, '')));
+  const truncated = new Set(diff.omitted.filter((p) => p.endsWith(' (truncated)')).map((p) => p.replace(/ \(truncated\)$/, '')));
+  const list = (diff.paths ?? []).map((p) => `- ${p}${truncated.has(p) ? ' [only the start shown]' : notShown.has(p) ? ' [contents not shown]' : ''}`);
+  const partial = diff.omitted.length
+    ? `Only part of the diff fits below: ${diff.omitted.length} of ${diff.fileCount} files are marked as not shown. They exist and are part of this PR.`
+    : 'The whole diff is below.';
+  return [
+    `Review this PR.`,
+    ``,
+    `PR #${prNumber}: ${title}`,
+    ``,
+    `Files changed (${diff.fileCount}):`,
+    ...list,
+    ``,
+    partial,
+    ``,
+    `Diff:`,
+    '```diff',
+    diff.text,
+    '```',
+    ``,
+    `Return the JSON verdict.`,
+  ].join('\n');
 }
 
 async function gh(fetchImpl, ghToken, path, { accept = 'application/vnd.github+json', method = 'GET', body } = {}) {
@@ -395,7 +432,7 @@ export async function reviewPullRequest({ fetchImpl = fetch, runCli = runCommand
   // The subscription wins when both are set: it is the one that costs nothing extra.
   const backend = oauthToken ? 'Claude subscription' : 'Anthropic API';
   const base = normalizeBase(baseURL);
-  const user = `Review this PR.\n\nPR #${prNumber}: ${prMeta.title}\n\nDiff:\n\`\`\`diff\n${diff.text}\n\`\`\`\n\nReturn the JSON verdict.`;
+  const user = buildUserPrompt({ prNumber, title: prMeta.title, diff });
   const attempts = [];
   for (const model of modelCandidates(modelsEnv)) {
     const res = oauthToken

@@ -26,6 +26,9 @@ import {
   filePriority,
   splitDiff,
   prepareDiff,
+  buildUserPrompt,
+  SYSTEM_PROMPT,
+  MAX_DIFF_CHARS,
   fetchDiffFiles,
   formatComment,
   reviewPullRequest,
@@ -257,6 +260,42 @@ describe('diff preparation', () => {
     const out = prepareDiff([chunk('big.ts', 5000)], 100);
     expect(out.text.length).toBe(100);
     expect(out.omitted).toEqual(['big.ts (truncated)']);
+  });
+});
+
+describe('buildUserPrompt — the model is told what it was not shown', () => {
+  const chunk = (path, size) => ({ path, text: `diff --git a/${path} b/${path}\n${'x'.repeat(size)}\n` });
+
+  it('lists every file and marks the ones past the budget — the 2026-10-04 false FAILs', () => {
+    const files = [chunk('apps/web/lib/support-api.ts', 300), chunk('apps/web/app/page.tsx', 300), chunk('apps/web/__tests__/support.test.ts', 300), chunk('big.ts', 9000)];
+    const diff = prepareDiff(files, 800);
+    const prompt = buildUserPrompt({ prNumber: '7', title: 't', diff });
+    expect(prompt).toContain('Files changed (4):');
+    expect(prompt).toContain('- apps/web/lib/support-api.ts\n');
+    expect(prompt).toContain('- apps/web/app/page.tsx\n');
+    expect(prompt).toContain('- big.ts [contents not shown]');
+    expect(prompt).toContain('- apps/web/__tests__/support.test.ts [contents not shown]');
+    expect(prompt).toContain('2 of 4 files are marked as not shown. They exist and are part of this PR.');
+  });
+
+  it('marks a file cut mid-way differently from one not shown at all', () => {
+    const prompt = buildUserPrompt({ prNumber: '7', title: 't', diff: prepareDiff([chunk('huge.ts', 5000)], 100) });
+    expect(prompt).toContain('- huge.ts [only the start shown]');
+  });
+
+  it('says the whole diff is present when nothing was dropped', () => {
+    const prompt = buildUserPrompt({ prNumber: '7', title: 't', diff: prepareDiff([chunk('a.ts', 10)], 1000) });
+    expect(prompt).toContain('The whole diff is below.');
+    expect(prompt).not.toContain('not shown');
+  });
+
+  it('the system prompt forbids inferring defects from files that were not shown', () => {
+    expect(SYSTEM_PROMPT).toMatch(/Never report a file as missing/);
+    expect(SYSTEM_PROMPT).toMatch(/judge test coverage from the file list/);
+  });
+
+  it('reads enough of a large PR to be useful', () => {
+    expect(MAX_DIFF_CHARS).toBeGreaterThanOrEqual(400_000);
   });
 });
 
