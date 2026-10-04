@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAstrologers } from '@poojly/api-client';
+import { useAstrologerDashboard } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
+import { selectProviderOwnProfile } from '../../lib/provider-profile';
 import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 // PM-10/F062: the rate card is derived in lib/astrologer-rate-card.ts, which
@@ -22,22 +23,27 @@ import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy'
 // EVERY astrologer whose profile had none set — asserting four skills the
 // person never claimed, on the screen they show clients. Same defect class as
 // the RYT-500 certifications removed from (wellness)/profile.tsx.
+//
+// IDENTITY. This screen used to find "me" by scanning the PUBLIC astrologer
+// directory for a row whose name equalled the signed-in user's — see
+// lib/provider-profile.ts for why that is wrong three separate ways, the worst
+// being that two astrologers with the same name resolve to whichever row came
+// back first. GET /astrologer-portal/dashboard returns the caller's OWN row,
+// resolved server-side from the bearer token. There is nothing to match on.
 
 export default function AstrologerProfile() {
   const { user, signOut } = useAuth();
-  const astrologersQuery = useAstrologers();
+  const dashboardQuery = useAstrologerDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
-  const me = astrologersQuery.data?.astrologers?.find(
-    (a) => a.name === user?.fullName || (user?.email && (a as { email?: string }).email === user.email),
-  );
+  const me = selectProviderOwnProfile(dashboardQuery.data, 'pricePerMinute');
 
-  const specializations = me?.specializations ?? [];
-  const rates = astrologerRateRows(me?.pricePerMinute);
+  const specializations = me?.specialties ?? [];
+  const rates = astrologerRateRows(me?.priceInr ?? undefined);
 
   async function onRefresh() {
     setRefreshing(true);
-    await astrologersQuery.refetch();
+    await dashboardQuery.refetch();
     setRefreshing(false);
   }
 
@@ -67,18 +73,34 @@ export default function AstrologerProfile() {
           <Ionicons name="star" size={28} color={colors.saffron[700]} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{me?.name ?? user?.fullName ?? 'Astrologer'}</Text>
+          <Text style={styles.name}>{me?.displayName ?? user?.fullName ?? 'Astrologer'}</Text>
           {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
           {me?.experienceYears ? (
             <Text style={styles.email}>{me.experienceYears} years experience</Text>
           ) : null}
-          {me?.rating ? (
-            <Text style={styles.email}>
-              ⭐ {me.rating.toFixed(1)} ({me.ratingCount ?? 0} reviews)
-            </Text>
+          {/* No review COUNT is on this payload, so none is claimed. The old
+              screen printed "(0 reviews)" beside a real rating. */}
+          {me?.rating !== null && me?.rating !== undefined ? (
+            <Text style={styles.email}>⭐ {me.rating.toFixed(1)}</Text>
           ) : null}
         </View>
       </View>
+
+      {me === null && !dashboardQuery.isLoading ? (
+        <EmptyHint
+          text={
+            dashboardQuery.isError
+              ? 'Your profile could not be loaded. Pull down to retry.'
+              : 'You have no astrologer profile yet. It is created the first time you save your details in the web portal.'
+          }
+        />
+      ) : null}
+
+      {me && !me.approved ? (
+        <Text style={styles.pendingBanner}>
+          Your listing is not approved yet, so devotees cannot find or book you.
+        </Text>
+      ) : null}
 
       <Section title="Messages">
         <MessagesEntry roleGroup="astrologer" />
@@ -104,6 +126,18 @@ export default function AstrologerProfile() {
             here is what stops the three-tier card from being reinvented. */}
         <EmptyHint text={RATE_MODE_NOTE} />
       </Section>
+
+      {me && me.languages.length > 0 ? (
+        <Section title="Languages">
+          <View style={styles.tagRow}>
+            {me.languages.map((l) => (
+              <View key={l} style={styles.tag}>
+                <Text style={styles.tagText}>{l}</Text>
+              </View>
+            ))}
+          </View>
+        </Section>
+      ) : null}
 
       <Section title="Specializations">
         {specializations.length === 0 ? (
@@ -189,4 +223,14 @@ const styles = StyleSheet.create({
     borderColor: colors.red[500],
   },
   signOutText: { fontSize: fontSize.base, fontWeight: '700', color: colors.red[600] },
+  pendingBanner: {
+    marginTop: spacing.sm,
+    fontSize: fontSize.sm,
+    color: colors.stone[700],
+    backgroundColor: colors.amber[50],
+    borderColor: colors.amber[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+  },
 });

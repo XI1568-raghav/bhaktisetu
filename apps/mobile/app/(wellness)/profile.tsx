@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useWellnessInstructors } from '@poojly/api-client';
+import { useWellnessDashboard } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
+import { selectProviderOwnProfile } from '../../lib/provider-profile';
 import { MessagesEntry } from '../../lib/inbox';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 // AUTH-09: the confirmation used to ask "Are you sure?" without saying what
@@ -28,26 +29,36 @@ import { SIGN_OUT_TITLE, SIGN_OUT_GLOBAL_MESSAGE } from '../../lib/signout-copy'
  * placeholder, it is a qualification claim about a real person's fitness to
  * teach a physical practice, published by us on their behalf.
  *
- * Both are deleted. The certifications section is gone rather than emptied,
- * because an empty "Certifications" heading still implies the platform tracks
- * them. Specializations now show only what the API actually returned, and
- * `EmptyHint` says so when it returned nothing.
+ * Both are deleted. Specializations now show only what the API actually
+ * returned, and `EmptyHint` says so when it returned nothing.
+ *
+ * CERTIFICATIONS ARE BACK — BUT ONLY REAL ONES. `WellnessProfile.certifications`
+ * IS a column (prisma/schema.prisma:1123) and `PATCH /wellness-portal/profile`
+ * writes it, so the platform does track them; what it has never done is invent
+ * them. They are rendered here only when the instructor's own row carries them,
+ * and the section does not exist at all when it does not.
+ *
+ * IDENTITY. This screen used to find "me" by scanning the PUBLIC instructor
+ * directory for a row whose name equalled the signed-in user's — see
+ * lib/provider-profile.ts. That directory lists APPROVED instructors only, so a
+ * newly-signed-up instructor matched nothing and was told they had no
+ * specializations on file when they did; and two instructors sharing a name
+ * resolve to whichever row came back first. GET /wellness-portal/dashboard
+ * returns the caller's OWN row, resolved server-side from the bearer token.
  */
 
 export default function WellnessProfile() {
   const { user, signOut } = useAuth();
-  const instructorsQuery = useWellnessInstructors();
+  const dashboardQuery = useWellnessDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
-  const me = instructorsQuery.data?.instructors?.find(
-    (i) => i.name === user?.fullName,
-  );
+  const me = selectProviderOwnProfile(dashboardQuery.data, 'pricePerSession');
 
-  const specializations = me?.specializations ?? [];
+  const specializations = me?.specialties ?? [];
 
   async function onRefresh() {
     setRefreshing(true);
-    await instructorsQuery.refetch();
+    await dashboardQuery.refetch();
     setRefreshing(false);
   }
 
@@ -77,18 +88,43 @@ export default function WellnessProfile() {
           <Ionicons name="leaf" size={28} color={colors.green[600]} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{me?.name ?? user?.fullName ?? 'Instructor'}</Text>
+          <Text style={styles.name}>{me?.displayName ?? user?.fullName ?? 'Instructor'}</Text>
           {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
-          {me?.rating ? (
-            <Text style={styles.email}>
-              ⭐ {me.rating.toFixed(1)} ({me.ratingCount ?? 0} reviews)
-            </Text>
+          {me?.experienceYears ? (
+            <Text style={styles.email}>{me.experienceYears} years experience</Text>
           ) : null}
-          {me?.hourlyRate ? (
-            <Text style={styles.email}>₹{me.hourlyRate.toLocaleString('en-IN')} / hour</Text>
+          {/* No review COUNT is on this payload, so none is claimed. */}
+          {me?.rating !== null && me?.rating !== undefined ? (
+            <Text style={styles.email}>⭐ {me.rating.toFixed(1)}</Text>
+          ) : null}
+          {/* `pricePerSession`, the column. The old screen printed
+              `me.hourlyRate` "/ hour" — the platform bills per SESSION and has
+              no hourly rate anywhere, so that line was both undefined and,
+              had it resolved, the wrong unit. */}
+          {me?.priceInr ? (
+            <Text style={styles.email}>
+              ₹{me.priceInr.toLocaleString('en-IN')} / session
+            </Text>
           ) : null}
         </View>
       </View>
+
+      {me === null && !dashboardQuery.isLoading ? (
+        <EmptyHint
+          text={
+            dashboardQuery.isError
+              ? 'Your profile could not be loaded. Pull down to retry.'
+              : 'You have no instructor profile yet. It is created the first time you save your details in the web portal.'
+          }
+        />
+      ) : null}
+
+      {me && !me.approved ? (
+        <Text style={styles.pendingBanner}>
+          Your listing is not approved yet, so devotees cannot find or book your
+          classes.
+        </Text>
+      ) : null}
 
       <Section title="Messages">
         <MessagesEntry roleGroup="wellness" />
@@ -102,9 +138,21 @@ export default function WellnessProfile() {
         </Section>
       ) : null}
 
-      {/* The "Certifications" section stood here. See the note at the top of
-          this file — it published two credentials the platform has never held,
-          for every instructor, unconditionally. */}
+      {/* Real certifications only. The section is absent — not empty — when the
+          instructor's row carries none, because an empty "Certifications"
+          heading still implies a claim. See the note at the top of this file
+          for the two credentials this screen used to publish unconditionally. */}
+      {me && me.certifications.length > 0 ? (
+        <Section title="Certifications">
+          <View style={styles.tagRow}>
+            {me.certifications.map((c) => (
+              <View key={c} style={styles.tag}>
+                <Text style={styles.tagText}>{c}</Text>
+              </View>
+            ))}
+          </View>
+        </Section>
+      ) : null}
 
       <Section title="Specializations">
         {specializations.length === 0 ? (
@@ -189,4 +237,14 @@ const styles = StyleSheet.create({
     borderColor: colors.red[500],
   },
   signOutText: { fontSize: fontSize.base, fontWeight: '700', color: colors.red[600] },
+  pendingBanner: {
+    marginTop: spacing.sm,
+    fontSize: fontSize.sm,
+    color: colors.stone[700],
+    backgroundColor: colors.amber[50],
+    borderColor: colors.amber[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+  },
 });

@@ -6,9 +6,36 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
+import { fetchWithBudget, readErrorMessage, failureMessage } from '../../lib/fetch-budget';
+import {
+  buildGurukulApplication,
+  effectiveApplicantType,
+  guardianRequired,
+  GurukulApplicationError,
+} from '../../lib/gurukul-application';
 
 type ApplicantType = 'self' | 'parent';
 
+/**
+ * `POST /api/v1/gurukul-applications` (auth required).
+ *
+ * THE CONTRACT DEFECT FIXED HERE
+ * ------------------------------
+ * `submitSchema` closes with a `.refine` whose FIRST clause is
+ *
+ *     if (d.studentAgeYears < 18 && d.applicantType !== 'parent') return false;
+ *
+ * (apps/api/src/routes/gurukul-applications.ts:23). This screen let a devotee
+ * keep `applicantType: 'self'` while typing an age under 18 — it only switched
+ * on the GUARDIAN fieldset — so every under-18 self-application was posted in
+ * a shape the route refuses, and came back 400 with the whole zod flatten()
+ * blob rendered raw inside an `Alert`. The form now says what the server
+ * requires and posts `parent` for a minor, which is the one value that can
+ * succeed.
+ *
+ * `guardianAadhaarLast4` is `regex(/^\d{4}$/)` — a 3-digit entry 400s the
+ * whole submission, so it is validated here rather than round-tripped.
+ */
 export default function GurukulApplyScreen() {
   const { programId } = useLocalSearchParams<{ programId: string }>();
   const { session, isAuthenticated } = useAuth();
@@ -27,60 +54,58 @@ export default function GurukulApplyScreen() {
   const [success, setSuccess] = useState(false);
 
   const age = Number(studentAgeYears) || 0;
-  const isMinor = age < 18 || applicantType === 'parent';
+  const isMinor = age > 0 && age < 18;
+  // The route refuses `{applicantType:'self', studentAgeYears:<18}` outright,
+  // so a minor is ALWAYS submitted as a parent application. Both rules live in
+  // lib/gurukul-application.ts, where vitest can hold them to the route.
+  const applicantTypeToSend: ApplicantType = effectiveApplicantType(applicantType, age);
+  const needsGuardian = guardianRequired(applicantTypeToSend, age);
 
   async function handleSubmit() {
-    if (!programId) { Alert.alert('Missing program'); return; }
     if (!isAuthenticated || !session?.accessToken) {
       Alert.alert('Sign in required', 'Please sign in to submit an application.');
       return;
     }
-    if (!studentName.trim() || !age) {
-      Alert.alert('Missing fields', 'Student name and age are required.');
-      return;
-    }
-    if (statement.trim().length < 20) {
-      Alert.alert('Statement too short', 'Please write at least 20 characters.');
-      return;
-    }
-    if (!consentSigned) {
-      Alert.alert('Consent required', 'Please tick the consent box.');
-      return;
-    }
-    if (isMinor && (!guardianName.trim() || !guardianRelation.trim() || !guardianPhone.trim())) {
-      Alert.alert('Guardian details required', 'Name, relation, and phone are required for minors.');
+
+    let payload;
+    try {
+      payload = buildGurukulApplication({
+        programId: programId ?? '',
+        applicantType,
+        studentName,
+        studentAgeYears,
+        studentEmail,
+        guardianName,
+        guardianRelation,
+        guardianPhone,
+        guardianAadhaarLast4,
+        consentSigned,
+        statement,
+      });
+    } catch (err) {
+      Alert.alert(
+        'Check the form',
+        err instanceof GurukulApplicationError ? err.message : 'Please complete every field.',
+      );
       return;
     }
 
     setSubmitting(true);
     try {
-      const payload: Record<string, unknown> = {
-        programId,
-        applicantType,
-        studentName: studentName.trim(),
-        studentAgeYears: age,
-        consentSigned: true,
-        statement: statement.trim(),
-      };
-      if (studentEmail.trim()) payload.studentEmail = studentEmail.trim();
-      if (isMinor) {
-        payload.guardianName = guardianName.trim();
-        payload.guardianRelation = guardianRelation.trim();
-        payload.guardianPhone = guardianPhone.trim();
-        if (guardianAadhaarLast4.trim()) payload.guardianAadhaarLast4 = guardianAadhaarLast4.trim();
-      }
-      const res = await fetch(`${apiBase()}/api/v1/gurukul-applications`, {
+      const res = await fetchWithBudget(`${apiBase()}/api/v1/gurukul-applications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}` },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || `HTTP ${res.status}`);
+        // The body is JSON on every failure path — `{error}` or zod's
+        // `{error:'Bad Request', details:{fieldErrors}}`. It used to be shown
+        // as `res.text()`, i.e. a raw JSON blob in an Alert.
+        throw new Error(await readErrorMessage(res, 'The gurukul could not accept this application.'));
       }
       setSuccess(true);
     } catch (e) {
-      Alert.alert('Submission failed', e instanceof Error ? e.message : 'Try again later.');
+      Alert.alert('Submission failed', failureMessage(e, 'Try again later.'));
     } finally {
       setSubmitting(false);
     }
@@ -128,15 +153,27 @@ export default function GurukulApplyScreen() {
           {(['self', 'parent'] as const).map((t) => (
             <TouchableOpacity
               key={t}
+              disabled={isMinor}
               onPress={() => setApplicantType(t)}
-              style={[styles.seg, applicantType === t && styles.segActive]}
+              style={[
+                styles.seg,
+                applicantTypeToSend === t && styles.segActive,
+                isMinor && applicantTypeToSend !== t && styles.segOff,
+              ]}
             >
-              <Text style={[styles.segText, applicantType === t && styles.segTextActive]}>
+              <Text
+                style={[styles.segText, applicantTypeToSend === t && styles.segTextActive]}
+              >
                 {t === 'self' ? 'Self (I am the student)' : 'Parent (for child)'}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
+        {isMinor && (
+          <Text style={styles.help}>
+            The student is under 18, so this must be submitted by a parent or guardian.
+          </Text>
+        )}
 
         <Text style={styles.label}>Student name</Text>
         <TextInput style={styles.input} value={studentName} onChangeText={setStudentName} placeholder="Full name" placeholderTextColor={colors.stone[400]} />
@@ -147,9 +184,9 @@ export default function GurukulApplyScreen() {
         <Text style={styles.label}>Student email (optional)</Text>
         <TextInput style={styles.input} value={studentEmail} onChangeText={setStudentEmail} keyboardType="email-address" autoCapitalize="none" />
 
-        {isMinor && (
+        {needsGuardian && (
           <View style={styles.fieldset}>
-            <Text style={styles.fieldsetLegend}>Guardian details (required for minors)</Text>
+            <Text style={styles.fieldsetLegend}>Guardian details (required)</Text>
 
             <Text style={styles.label}>Guardian full name</Text>
             <TextInput style={styles.input} value={guardianName} onChangeText={setGuardianName} />
@@ -183,7 +220,7 @@ export default function GurukulApplyScreen() {
             {consentSigned && <Ionicons name="checkmark" size={14} color="#fff" />}
           </View>
           <Text style={styles.consentText}>
-            I confirm the information is true and{isMinor ? ', as guardian,' : ''} consent to my contact details being shared with the gurukul for the purpose of admission. (DPDP Act 2023 compliant)
+            I confirm the information is true and{needsGuardian ? ', as guardian,' : ''} consent to my contact details being shared with the gurukul for the purpose of admission. (DPDP Act 2023 compliant)
           </Text>
         </TouchableOpacity>
 
@@ -215,6 +252,7 @@ const styles = StyleSheet.create({
   segRow: { flexDirection: 'row', gap: spacing.xs },
   seg: { flex: 1, padding: spacing.sm, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.stone[200], backgroundColor: colors.white, alignItems: 'center' },
   segActive: { backgroundColor: colors.saffron[600], borderColor: colors.saffron[600] },
+  segOff: { opacity: 0.4 },
   segText: { fontSize: fontSize.xs, fontWeight: '600', color: colors.stone[700] },
   segTextActive: { color: '#fff' },
   fieldset: { marginTop: spacing.md, padding: spacing.md, backgroundColor: colors.white, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.stone[200] },

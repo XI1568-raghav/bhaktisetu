@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
+import { fetchWithBudget, readErrorMessage, failureMessage } from '../../lib/fetch-budget';
 
 interface QuizQ { q: string; options: string[]; correct: number; explanation?: string }
 interface Lesson {
@@ -63,6 +64,18 @@ export default function LessonScreen() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /**
+   * Whether the completed lesson actually reached the server.
+   *
+   * `submitProgress` used to `return` silently when there was no token, and
+   * swallow a failure into a dismissable Alert. Either way the "Lesson
+   * complete" screen looked identical, so a signed-out devotee finished three
+   * lessons, saw three trophies, and had nothing recorded — the streak and the
+   * badges the next screen shows are minted server-side from these rows.
+   */
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'signed-out' | 'failed'>(
+    'idle',
+  );
 
   if (!lesson) {
     return (
@@ -75,18 +88,29 @@ export default function LessonScreen() {
   const correctCount = answers.filter((a, i) => a === lesson.quiz[i]?.correct).length;
   const score = Math.round((correctCount / lesson.quiz.length) * 100);
 
-  async function submitProgress() {
-    if (!session?.accessToken) return;
+  async function submitProgress(finalScore: number) {
+    const token = session?.accessToken;
+    if (!token) {
+      setSaveState('signed-out');
+      return;
+    }
     setSubmitting(true);
+    setSaveState('saving');
     try {
-      const res = await fetch(`${apiBase()}/api/v1/lessons/complete`, {
+      // `completeSchema` is `{lessonId: string(1..64), score: int 0..100}`.
+      // The score is passed in rather than read off state because `answers`
+      // has not re-rendered yet when `nextQuestion` calls this — the old code
+      // posted the score from BEFORE the last answer was recorded.
+      const res = await fetchWithBudget(`${apiBase()}/api/v1/lessons/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}` },
-        body: JSON.stringify({ lessonId: lesson!.id, score }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ lessonId: lesson!.id, score: finalScore }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await readErrorMessage(res));
+      setSaveState('saved');
     } catch (e) {
-      Alert.alert('Save failed', e instanceof Error ? e.message : 'Try again later.');
+      setSaveState('failed');
+      Alert.alert('Progress not saved', failureMessage(e, 'Try again later.'));
     } finally {
       setSubmitting(false);
     }
@@ -103,7 +127,12 @@ export default function LessonScreen() {
     setSelected(null);
     if (qIdx + 1 >= lesson!.quiz.length) {
       setPhase('done');
-      submitProgress();
+      // Computed off `next`, not off `answers`: `setAnswers` has not committed
+      // yet at this point, so the old `submitProgress()` posted the score from
+      // BEFORE the final question was answered. A three-question lesson
+      // answered perfectly was recorded as 67%.
+      const finalCorrect = next.filter((a, i) => a === lesson!.quiz[i]?.correct).length;
+      void submitProgress(Math.round((finalCorrect / lesson!.quiz.length) * 100));
     } else {
       setQIdx(qIdx + 1);
     }
@@ -175,6 +204,17 @@ export default function LessonScreen() {
             <Text style={styles.doneScore}>{correctCount} / {lesson.quiz.length} correct</Text>
             <Text style={styles.doneScorePct}>{score}%</Text>
             {submitting && <Text style={styles.savingText}>Saving progress...</Text>}
+            {saveState === 'saved' && <Text style={styles.savingText}>Progress saved.</Text>}
+            {saveState === 'signed-out' && (
+              <Text style={styles.notSavedText}>
+                Not saved — sign in to record this lesson towards your streak and badges.
+              </Text>
+            )}
+            {saveState === 'failed' && (
+              <Text style={styles.notSavedText}>
+                Not saved — we could not reach Darshya. Retake the lesson when you are back online.
+              </Text>
+            )}
             <TouchableOpacity style={[styles.cta, { marginTop: spacing.md }]} onPress={() => router.back()}>
               <Text style={styles.ctaText}>Back to lessons</Text>
             </TouchableOpacity>
@@ -207,4 +247,8 @@ const styles = StyleSheet.create({
   doneScore: { fontSize: fontSize.base, color: colors.stone[600], marginTop: spacing.xs },
   doneScorePct: { fontSize: 48, fontWeight: '800', color: colors.saffron[600], marginTop: spacing.xs },
   savingText: { fontSize: fontSize.xs, color: colors.stone[400], marginTop: spacing.sm },
+  notSavedText: {
+    fontSize: fontSize.sm, color: colors.amber[700], marginTop: spacing.sm,
+    textAlign: 'center', lineHeight: 20,
+  },
 });

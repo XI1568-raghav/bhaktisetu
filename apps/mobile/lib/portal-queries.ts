@@ -29,6 +29,9 @@ import {
   type UseQueryOptions,
 } from '@tanstack/react-query';
 import { api } from '@poojly/api-client';
+import { useAuth } from './auth-context';
+import { apiBase } from './api';
+import { serverSentence } from './provider-queries';
 
 export const portalQueryKeys = {
   templeDashboard: ['temple-portal', 'dashboard'] as const,
@@ -96,6 +99,49 @@ export const earningsQueryKeys = {
   payoutBalance: ['payouts', 'balance'] as const,
 };
 
+// ─── admin user list ─────────────────────────────────────────────────────────
+//
+// `useAdminUsers` in @poojly/api-client sends `{ role, q }`. The route parses
+// `userQuerySchema = { role, status, search, page, limit }` — there is no `q`,
+// and zod STRIPS unknown keys, so the mobile Users screen's search box was
+// silently inert: typing a name changed nothing and the same unfiltered page
+// came back looking like a result.
+//
+// The role value was wrong too. `adminService.getUsers` matches against the
+// Prisma `MarketplaceRole` enum (`DEVOTEE`, `PANDIT`, `ASTROLOGER`, `ADMIN`…)
+// and returns an EMPTY page for anything it does not recognise — deliberately,
+// so a bad parameter is not a 500. The screen sent the client vocabulary
+// (`devotee`, `priest`, `astrologer`, `admin`), so every filter chip except
+// "All" rendered "No users match these filters" against a populated table.
+//
+// Fixing it inside @poojly/api-client would change a signature another
+// workstream owns, so the correct call lives here beside the other
+// mobile-local portal queries. Response shaping stays out — the raw body goes
+// to `selectAdminUsers` in ./api-contracts.
+
+export interface AdminUserQuery {
+  /** Prisma `MarketplaceRole`, upper-snake. Omit for every role. */
+  role?: string;
+  /** Free text matched against fullName / email / phone, server-side. */
+  search?: string;
+}
+
+export function useAdminUserList(params: AdminUserQuery, options?: RawOptions) {
+  const role = params.role?.trim() || undefined;
+  const search = params.search?.trim() || undefined;
+  return useQuery<unknown>({
+    queryKey: ['admin', 'users', { role, search }],
+    queryFn: () => {
+      const qs = new URLSearchParams();
+      if (role) qs.set('role', role);
+      if (search) qs.set('search', search);
+      const suffix = qs.toString();
+      return api.get<unknown>(`/api/v1/admin/users${suffix ? `?${suffix}` : ''}`);
+    },
+    ...options,
+  });
+}
+
 export function useTemplePortalPayouts(options?: RawOptions) {
   return useQuery<unknown>({
     queryKey: earningsQueryKeys.templePayouts,
@@ -147,11 +193,46 @@ export function usePayoutBalance(options?: RawOptions) {
  * verified KYC + a bank account on file and answers 400 with a reason when
  * either is missing; the screen surfaces that reason verbatim rather than
  * inventing one.
+ *
+ * WHY THIS ONE DOES NOT USE `api.post`
+ * ------------------------------------
+ * It used to, and the sentence above was false for as long as it did.
+ * `POST /payouts/request` answers `{ error: "<sentence>" }` — payout-requests.ts:68,
+ * and the reasons are the ones a provider most needs
+ * ("Complete KYC before requesting a payout.", "No bank account on file.",
+ * "Nothing available to pay out.") — while `packages/api-client`'s error mapper
+ * reads `data?.error?.message` (client.ts:210). `error` is a STRING here, so
+ * `.message` is undefined and every one of those reasons was replaced with
+ * "Request failed with status 400" before the screen ever saw it.
+ *
+ * Three provider roles render that alert (pandit, astrologer, wellness
+ * instructor), plus the temple/store/gaushala payout surfaces. A provider whose
+ * money will not move, told only that something failed, has nothing to act on.
+ * The api-client defect is reported upstream; this is the honest call in the
+ * meantime.
  */
 export function useRequestPayout() {
   const queryClient = useQueryClient();
+  const { session } = useAuth();
+  const token = session?.accessToken ?? '';
   return useMutation<unknown, Error, { method: 'upi' | 'bank' }>({
-    mutationFn: (vars) => api.post<unknown>('/api/v1/payouts/request', vars),
+    mutationFn: async (vars) => {
+      const res = await fetch(`${apiBase()}/api/v1/payouts/request`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(vars),
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(
+          serverSentence(payload) || `Could not request payout (${res.status}).`,
+        );
+      }
+      return payload;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: earningsQueryKeys.payoutBalance });
       queryClient.invalidateQueries({ queryKey: earningsQueryKeys.providerCommissions });

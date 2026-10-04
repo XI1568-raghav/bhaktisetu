@@ -379,10 +379,30 @@ describe('PAR-22 — expo-router bookkeeping for the new route', () => {
 describe('PAR-22 — the astrology bounce-outs now prefer the in-app view', () => {
   const src = stripComments(readFileSync(ASTROLOGY, 'utf8'));
 
-  it('both controls go through openWebHandoff rather than calling openURL raw', () => {
+  /**
+   * The count these two assertions pin was 2 and is now 1.
+   *
+   * The Kundli Milan hand-off is gone because the calculation it pointed at
+   * moved: packages/shared/src/astrology owns the Ashtakoot scorer, the Meeus
+   * moon/Mars series, the Lahiri ayanamsa, the Almanac-for-Computers sunrise
+   * solver and the numerology tables; apps/web/lib re-exports them; and
+   * app/(devotee)/{kundli-milan,numerology,nakshatra-finder,manglik,rahu-kalam}
+   * .tsx run them in the app. So the number below is DERIVED from the file
+   * rather than restated — the real invariant was never "there are two", it is
+   * "every hand-off is routed and described by the same call, and at least one
+   * still exists to prove the mechanism is live". Ten tools (sade sati, dasha,
+   * hora, shubh muhurat, kaal sarp, lal kitab, vastu, pitra dosh, pancha
+   * pakshi, baby name) still bounce out, so the mechanism is exercised.
+   *
+   * lib/__tests__/astrology-parity.test.ts is what pins the other direction —
+   * that the five in-app tools exist, are reachable, and cannot fork away from
+   * the website's answers.
+   */
+  const handoffs = (src.match(/openWebHandoff\(/g) ?? []).length;
+
+  it('every control goes through openWebHandoff rather than calling openURL raw', () => {
     expect(src).toMatch(/openWebHandoff\(/);
-    const handoffs = (src.match(/openWebHandoff\(/g) ?? []).length;
-    expect(handoffs).toBe(2);
+    expect(handoffs).toBeGreaterThan(0);
   });
 
   it('no bare Linking.openURL is left on the screen', () => {
@@ -397,7 +417,7 @@ describe('PAR-22 — the astrology bounce-outs now prefer the in-app view', () =
     // Not a hardcoded role or hint anywhere: the destination is a runtime fact
     // now, so a literal claim about it is wrong in one of the two builds.
     const described = (src.match(/describeWebHandoff\(/g) ?? []).length;
-    expect(described).toBe(2);
+    expect(described).toBe(handoffs);
     expect(src).not.toMatch(/accessibilityRole=["']link["']/);
     expect(src).not.toMatch(/in your browser['"`]/);
   });

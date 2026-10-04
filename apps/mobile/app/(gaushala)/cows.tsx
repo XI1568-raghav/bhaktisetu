@@ -12,12 +12,13 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '@poojly/api-client';
+import { api, ApiClientError } from '@poojly/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
 import { selectPortalCows } from '../../lib/api-contracts';
 import { useGaushalaPortalCows, portalQueryKeys } from '../../lib/portal-queries';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { cowHealthStatusLabel } from '../../lib/enum-labels';
 
 /**
  * PAR-12. The list read the PUBLIC GET /api/v1/gaushala/cows — 19 cows across
@@ -102,8 +103,23 @@ export default function GaushalaCows() {
       setModalOpen(false);
       Alert.alert('Registered', `${form.name} added to registry.`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not register cow.';
-      Alert.alert('Error', msg.includes('409') ? 'Tag number already exists.' : msg);
+      // packages/api-client reads ApiClientError.message off `data.error.message`
+      // and this route sends a flat `{error}` body, so the message is always the
+      // generic "Request failed with status N". Matching on the digits in that
+      // string worked only by accident; the status code is the real signal.
+      const code = err instanceof ApiClientError ? err.statusCode : 0;
+      Alert.alert(
+        'Could not register cow',
+        code === 409
+          ? 'That tag number is already in your registry.'
+          : code === 403
+            ? 'This account does not have gaushala-manager permissions.'
+            : code === 400
+              ? 'One of the fields was rejected. Check the tag number, name and age.'
+              : err instanceof Error
+                ? err.message
+                : 'Could not register cow.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +165,7 @@ export default function GaushalaCows() {
             status={
               c.healthStatus
                 ? {
-                    label: c.healthStatus,
+                    label: cowHealthStatusLabel(c.healthStatus),
                     color:
                       c.healthStatus === 'healthy' ? colors.green[600] : colors.amber[600],
                   }

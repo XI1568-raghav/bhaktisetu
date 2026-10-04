@@ -4,9 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,8 +17,29 @@ import { router } from 'expo-router';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { apiBase } from '../../lib/api';
+import { fetchWithBudget, readErrorMessage, failureMessage } from '../../lib/fetch-budget';
 import { applicationStatusLabel } from '../../lib/enum-labels';
 
+/**
+ * The gurukul owner's console, reached from Profile.
+ *
+ * TWO DEFECTS FIXED HERE
+ * ----------------------
+ * 1. `Gurukul` declared `programs: {...}[]` and the card rendered
+ *    `g.programs.length`. `GET /api/v1/gurukuls/mine/list` returns
+ *    `serializeGurukul(g)` (apps/api/src/routes/gurukuls.ts:44-64), which has
+ *    NO `programs` key — only `/gurukuls/:slug` includes programs. So the
+ *    moment a devotee actually owned a gurukul, the list threw
+ *    "Cannot read property 'length' of undefined" during render: the screen
+ *    worked only while it had nothing to show. The count is gone rather than
+ *    faked; the public page (which does carry programs) is one tap away.
+ * 2. `Alert.prompt` is iOS-ONLY. React Native's Android Alert implements
+ *    `alert` and nothing else, so Accept and Reject were INERT on Android —
+ *    tapping them did nothing at all, on the platform this app ships an
+ *    `expo export --platform android` bundle for. Replaced with a real modal
+ *    that works on both, which also lets Reject require its reason instead of
+ *    trusting an iOS-only callback contract.
+ */
 interface Gurukul {
   id: string;
   slug: string;
@@ -25,7 +48,6 @@ interface Gurukul {
   state: string;
   tradition: string;
   isVerified: boolean;
-  programs: { id: string; name: string; durationMonths: number }[];
 }
 
 interface Application {
@@ -65,6 +87,8 @@ export default function GurukulPortalScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ app: Application; status: Decision } | null>(null);
+  const [note, setNote] = useState('');
 
   const load = useCallback(async () => {
     if (!isAuthenticated || !session?.accessToken) {
@@ -75,17 +99,21 @@ export default function GurukulPortalScreen() {
     try {
       const headers = { Authorization: `Bearer ${session.accessToken}` };
       const [gRes, aRes] = await Promise.all([
-        fetch(`${apiBase()}/api/v1/gurukuls/mine/list`, { headers }),
-        fetch(`${apiBase()}/api/v1/gurukul-portal/applications`, { headers }),
+        fetchWithBudget(`${apiBase()}/api/v1/gurukuls/mine/list`, { headers }),
+        fetchWithBudget(`${apiBase()}/api/v1/gurukul-portal/applications`, { headers }),
       ]);
-      if (!gRes.ok) throw new Error(`Gurukuls: HTTP ${gRes.status}`);
-      if (!aRes.ok) throw new Error(`Applications: HTTP ${aRes.status}`);
-      const gData = await gRes.json();
-      const aData = await aRes.json();
-      setGurukuls(gData.gurukuls ?? []);
-      setApplications(aData.applications ?? []);
+      if (!gRes.ok) throw new Error(await readErrorMessage(gRes, `Gurukuls: HTTP ${gRes.status}`));
+      if (!aRes.ok) {
+        throw new Error(await readErrorMessage(aRes, `Applications: HTTP ${aRes.status}`));
+      }
+      const gData: unknown = await gRes.json();
+      const aData: unknown = await aRes.json();
+      const gList = (gData as { gurukuls?: unknown }).gurukuls;
+      const aList = (aData as { applications?: unknown }).applications;
+      setGurukuls(Array.isArray(gList) ? (gList as Gurukul[]) : []);
+      setApplications(Array.isArray(aList) ? (aList as Application[]) : []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load');
+      setError(failureMessage(e, 'Failed to load'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -105,19 +133,33 @@ export default function GurukulPortalScreen() {
     if (!session?.accessToken) return;
     setBusyId(id);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/gurukul-portal/applications/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.accessToken}`,
+      const res = await fetchWithBudget(
+        `${apiBase()}/api/v1/gurukul-portal/applications/${id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+          // `decisionNote` is `z.string().max(2000).optional()` — omitted when
+          // blank rather than sent as '' (which is a different stored value).
+          body: JSON.stringify(decisionNote ? { status, decisionNote } : { status }),
         },
-        body: JSON.stringify({ status, decisionNote }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setApplications((arr) => arr.map((a) => (a.id === id ? { ...a, ...data.application } : a)));
+      );
+      if (!res.ok) throw new Error(await readErrorMessage(res));
+      const data: unknown = await res.json();
+      const updated = (data as { application?: unknown }).application;
+      if (updated && typeof updated === 'object') {
+        setApplications((arr) =>
+          arr.map((a) => (a.id === id ? { ...a, ...(updated as Partial<Application>) } : a)),
+        );
+      } else {
+        // A 2xx the app cannot read means the decision MAY have landed. Re-read
+        // rather than guess — showing the old status would invite a second PATCH.
+        void load();
+      }
     } catch (e) {
-      Alert.alert('Action failed', e instanceof Error ? e.message : 'Try again later');
+      Alert.alert('Action failed', failureMessage(e, 'Try again later'));
     } finally {
       setBusyId(null);
     }
@@ -125,17 +167,24 @@ export default function GurukulPortalScreen() {
 
   function confirmDecide(app: Application, status: Decision) {
     if (status === 'forwarded') {
-      decide(app.id, status);
+      void decide(app.id, status);
       return;
     }
-    Alert.prompt(
-      status === 'accepted' ? 'Acceptance note (optional)' : 'Reason for rejection',
-      undefined,
-      (text?: string) => {
-        if (status === 'rejected' && text === undefined) return;
-        decide(app.id, status, text || undefined);
-      },
-    );
+    // `Alert.prompt` used to open here. It is iOS-only — on Android it is a
+    // no-op, so Accept and Reject did nothing at all on the platform this app
+    // bundles for. A Modal works on both.
+    setNote('');
+    setPending({ app, status });
+  }
+
+  function submitDecision() {
+    if (!pending) return;
+    const trimmed = note.trim();
+    if (pending.status === 'rejected' && trimmed.length === 0) return;
+    const { app, status } = pending;
+    setPending(null);
+    setNote('');
+    void decide(app.id, status, trimmed.length > 0 ? trimmed : undefined);
   }
 
   if (!isAuthenticated) {
@@ -244,9 +293,10 @@ export default function GurukulPortalScreen() {
                   <Text style={styles.cardMeta}>
                     {g.city}, {g.state}
                   </Text>
-                  <Text style={styles.cardMeta}>
-                    {g.programs.length} program{g.programs.length === 1 ? '' : 's'}
-                  </Text>
+                  {/* The program count used to be printed here off a `programs`
+                      array `/gurukuls/mine/list` does not send — it threw on
+                      every owned gurukul. `/gurukuls/:slug` is the route that
+                      carries programs, and that is the page below. */}
                   <TouchableOpacity
                     style={styles.linkBtn}
                     onPress={() => router.push({ pathname: '/(devotee)/gurukul-detail', params: { slug: g.slug } } as any)}
@@ -333,6 +383,59 @@ export default function GurukulPortalScreen() {
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={pending !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPending(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {pending?.status === 'accepted' ? 'Accept application' : 'Reject application'}
+            </Text>
+            <Text style={styles.modalBody}>
+              {pending?.app.studentName}
+              {pending?.status === 'accepted'
+                ? ' will be told they have a place. An acceptance note is optional.'
+                : ' will be told the application was not successful. A reason is required.'}
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={note}
+              onChangeText={setNote}
+              multiline
+              maxLength={2000}
+              placeholder={
+                pending?.status === 'accepted' ? 'Note (optional)' : 'Reason for rejection'
+              }
+              placeholderTextColor={colors.stone[400]}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalCancel]}
+                onPress={() => setPending(null)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalBtn,
+                  pending?.status === 'accepted' ? styles.actionOk : styles.actionNo,
+                  pending?.status === 'rejected' && note.trim().length === 0 && styles.modalBtnOff,
+                ]}
+                disabled={pending?.status === 'rejected' && note.trim().length === 0}
+                onPress={submitDecision}
+              >
+                <Text style={styles.actionText}>
+                  {pending?.status === 'accepted' ? 'Accept' : 'Reject'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -443,6 +546,43 @@ const styles = StyleSheet.create({
   actionOk: { backgroundColor: '#059669' },
   actionNo: { backgroundColor: '#dc2626' },
   actionText: { color: colors.white, fontSize: fontSize.sm, fontWeight: '700' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    padding: spacing.md,
+  },
+  modalCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: '800', color: colors.stone[900] },
+  modalBody: { fontSize: fontSize.sm, color: colors.stone[600], lineHeight: 20 },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.stone[200],
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    minHeight: 84,
+    textAlignVertical: 'top',
+    fontSize: fontSize.sm,
+    color: colors.stone[900],
+    marginTop: spacing.xs,
+  },
+  modalActions: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  modalBtnOff: { opacity: 0.45 },
+  modalCancel: { backgroundColor: colors.stone[100] },
+  modalCancelText: { color: colors.stone[700], fontSize: fontSize.sm, fontWeight: '700' },
   errorBox: {
     backgroundColor: '#fde6df',
     padding: spacing.md,

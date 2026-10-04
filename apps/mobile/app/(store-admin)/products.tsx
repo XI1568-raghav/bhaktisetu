@@ -12,18 +12,34 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { api, useProducts } from '@poojly/api-client';
+import { api, ApiClientError } from '@poojly/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { PortalScreen, ListRow, EmptyHint } from '../../lib/portal-screen';
+import { formatInr } from '../../lib/api-contracts';
+import {
+  selectStoreAdminProducts,
+  storeAdminQueryKeys,
+  useStoreAdminProducts,
+} from '../../lib/store-admin-catalogue';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-const FALLBACK = [
-  { id: '1', title: 'Premium Rudraksha Mala', handle: 'rudraksha-mala-108', stock: 23, price: 1299 },
-  { id: '2', title: 'Brass Ganesha Idol (6 inch)', handle: 'brass-ganesha-6', stock: 8, price: 2499 },
-  { id: '3', title: 'Complete Puja Thali Set', handle: 'puja-thali-set', stock: 0, price: 899 },
-  { id: '4', title: 'Bhagavad Gita (Hindi + English)', handle: 'bhagavad-gita', stock: 45, price: 349 },
-  { id: '5', title: 'Pure Sandalwood Dhoop Sticks', handle: 'sandalwood-dhoop', stock: 4, price: 199 },
-];
+/**
+ * PAR-24. This screen was the worst fabrication in the provider portals.
+ *
+ *   • The list was `useProducts()` = GET /api/v1/store/products, the PUBLIC
+ *     storefront served from a hardcoded seed array. A merchant's own catalogue
+ *     was never on this screen, and the products they added here (which POST to
+ *     the scoped /store-admin/products) could never appear in it.
+ *   • `stock: FALLBACK[i % FALLBACK.length]!.stock` ran for EVERY row,
+ *     unconditionally — so the In-stock / Low / Out pill reported invented
+ *     inventory. `title` and `price` had the same fallback behind `??`.
+ *   • With an empty catalogue the whole five-row FALLBACK array rendered as if
+ *     it were the shop, complete with prices.
+ *
+ * All of it is deleted. The list is now the role-gated
+ * GET /api/v1/store-admin/products, `stock` and `price` are the server's, and
+ * an empty catalogue reads as empty. See lib/store-admin-catalogue.ts.
+ */
 
 type CreateProductForm = {
   name: string;
@@ -44,24 +60,18 @@ const EMPTY_FORM: CreateProductForm = {
 };
 
 export default function StoreProducts() {
-  const productsQuery = useProducts();
+  const productsQuery = useStoreAdminProducts();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CreateProductForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
-  const apiProducts = productsQuery.data?.products ?? [];
-  const display =
-    apiProducts.length > 0
-      ? apiProducts.map((p, i) => ({
-          id: p.id,
-          title: p.title ?? FALLBACK[i % FALLBACK.length]!.title,
-          handle: p.handle ?? '—',
-          stock: FALLBACK[i % FALLBACK.length]!.stock,
-          price: (p as any).price ?? FALLBACK[i % FALLBACK.length]!.price,
-        }))
-      : FALLBACK;
+  const catalogue = selectStoreAdminProducts(productsQuery.data);
+  // `null` = the catalogue is unknown (403 / error envelope). It is NOT the
+  // same as an empty shop and must never be counted or rendered as one.
+  const unavailable = !productsQuery.isLoading && catalogue === null;
+  const rows = catalogue?.rows ?? [];
 
   async function onRefresh() {
     setRefreshing(true);
@@ -96,12 +106,31 @@ export default function StoreProducts() {
         description: form.description.trim() || undefined,
         isActive: true,
       });
-      await qc.invalidateQueries({ queryKey: ['store', 'products'] });
+      // The list is registered under ['store-admin','products']. The old code
+      // invalidated ['store','products'] — the PUBLIC storefront query — so
+      // even once the write succeeded nothing on this screen refetched.
+      await qc.invalidateQueries({ queryKey: storeAdminQueryKeys.products });
+      await productsQuery.refetch();
       setForm(EMPTY_FORM);
       setModalOpen(false);
       Alert.alert('Added', `${name} listed in catalogue.`);
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Could not add product.');
+      // packages/api-client builds ApiClientError.message from
+      // `data.error.message`, but these routes send a FLAT body
+      // (`{code, error, message}`), so `err.message` is always the generic
+      // "Request failed with status N". The status code is the only signal
+      // that survives, so map the one case the owner can act on.
+      const status = err instanceof ApiClientError ? err.statusCode : 0;
+      Alert.alert(
+        'Could not add product',
+        status === 409
+          ? 'Finish setting your store up — add your store name on the web portal — before listing products.'
+          : status === 403
+            ? 'This account does not have store-owner permissions.'
+            : err instanceof Error
+              ? err.message
+              : 'Could not add product.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -110,10 +139,31 @@ export default function StoreProducts() {
   return (
     <PortalScreen
       title="Products"
-      subtitle={`${display.length} in catalogue`}
+      subtitle={
+        productsQuery.isLoading
+          ? 'Loading…'
+          : unavailable
+            ? 'Unavailable'
+            : `${catalogue?.total ?? 0} in catalogue`
+      }
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
+      {unavailable ? (
+        <Text style={styles.errorBanner}>
+          Your catalogue could not be loaded, so nothing is listed. This is a
+          server or permission error — it is not a report that your shop is
+          empty. Pull down to retry.
+        </Text>
+      ) : null}
+
+      {catalogue?.storeProfileMissing ? (
+        <Text style={styles.notice}>
+          Your store is not set up yet. Add your store name on the Darshya web
+          portal, then products you list here will be saved.
+        </Text>
+      ) : null}
+
       <TouchableOpacity
         style={styles.addButton}
         activeOpacity={0.7}
@@ -123,15 +173,23 @@ export default function StoreProducts() {
         <Text style={styles.addButtonText}>Add New Product</Text>
       </TouchableOpacity>
 
-      {display.length === 0 ? (
-        <EmptyHint text="No products yet." />
+      {productsQuery.isLoading ? (
+        <EmptyHint text="Loading your catalogue…" />
+      ) : unavailable ? null : rows.length === 0 ? (
+        <EmptyHint text="No products yet — use Add New Product to list one." />
       ) : (
-        display.map((p) => (
+        rows.map((p) => (
           <ListRow
             key={p.id}
-            primary={p.title}
-            secondary={`${p.handle} • Stock: ${p.stock}`}
-            trailing={`₹${p.price.toLocaleString('en-IN')}`}
+            primary={p.name}
+            secondary={
+              [p.sku, p.categoryName, `Stock: ${p.stock}`, p.isActive ? null : 'Unlisted']
+                .filter(Boolean)
+                .join(' • ')
+            }
+            // A price that failed to parse shows a dash. ₹0 would be a claim
+            // about what the shop charges.
+            trailing={p.priceInr === null ? '—' : formatInr(p.priceInr)}
             status={
               p.stock === 0
                 ? { label: 'Out', color: colors.red[600] }
@@ -259,6 +317,28 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   addButtonText: { color: colors.white, fontSize: fontSize.base, fontWeight: '700' },
+  errorBanner: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: colors.red[500],
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    color: colors.red[600],
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  notice: {
+    backgroundColor: colors.amber[50],
+    borderWidth: 1,
+    borderColor: colors.amber[500],
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    color: colors.stone[700],
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalCard: {
     backgroundColor: colors.white,

@@ -8,6 +8,7 @@ import {
 } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { api, ApiClientError, type AuthSession, type AuthUser, type UserRole } from '@poojly/api-client';
+import { toApiSignupRole } from './signup-contract';
 
 // ─── Demo accounts (mirror of apps/web/lib/auth-context.tsx) ─────────────────
 //
@@ -247,6 +248,7 @@ export interface SignUpData {
   role: UserRole;
 }
 
+
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 interface AuthContextValue {
@@ -429,10 +431,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true, message: 'Signed in successfully' };
       } catch (err) {
         if (demo) return { success: false, message: 'Incorrect password' };
+        // The old fallback read "Invalid email or password. Try a demo
+        // account: devotee@demo.com / demo123". That string is a literal in
+        // the bundle regardless of DEMO_ENABLED, so a production build
+        // advertised a demo credential to any user who hit a non-Error
+        // rejection — the same class as the `admin@demo.com` chip already
+        // removed from the login screen.
         const message =
-          err instanceof Error
-            ? err.message
-            : 'Invalid email or password. Try a demo account: devotee@demo.com / demo123';
+          err instanceof Error ? err.message : 'Invalid email or password.';
         return { success: false, message };
       }
     },
@@ -446,14 +452,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           session: AuthSession;
           user: AuthUser;
           message?: string;
-        }>('/api/v1/auth/signup', data, { noAuth: true });
+        }>(
+          '/api/v1/auth/signup',
+          {
+            fullName: data.fullName,
+            email: data.email,
+            password: data.password,
+            // Optional server-side; an empty string fails nothing but stores a
+            // blank phone on a unique column, so omit it when absent.
+            ...(data.phone ? { phone: data.phone } : {}),
+            role: toApiSignupRole(data.role),
+          },
+          { noAuth: true }
+        );
+        // Keep the CLIENT vocabulary locally: the server answers `pandit`,
+        // every guard and route in this app is keyed on `priest`.
         const newUser: AuthUser = { ...result.user, role: data.role };
         setSession(result.session);
         setUser(newUser);
         await persistSession(result.session, newUser);
         return { success: true, message: 'Account created successfully' };
-      } catch {
-        // Demo fallback — local session
+      } catch (err) {
+        // A FAILED SIGNUP MUST NOT PRODUCE A SESSION.
+        //
+        // This catch used to mint a local `demo-` session carrying whatever
+        // role the signup form had selected, then return
+        // `{ success: true, message: 'Account created successfully (demo
+        // mode)' }`. Three consequences, all shipped:
+        //
+        //   1. Offline role escalation. RoleGuard reads `user.role` from this
+        //      context, so any 4xx — a weak password, an email already taken,
+        //      or the `priest`/`pandit` enum bug above — handed the caller a
+        //      provider portal with a fabricated identity and no server ever
+        //      involved.
+        //   2. Every account created this way existed only on the handset. The
+        //      devotee believed they had registered; nothing was written.
+        //   3. It made the enum bug undetectable for as long as it existed.
+        //
+        // The dev fallback is kept behind DEMO_ENABLED so the Expo Go flow
+        // still works with no backend, exactly like the demo sign-in above,
+        // and it says which mode it is in. Production reports the failure.
+        if (!DEMO_ENABLED) {
+          const message =
+            err instanceof ApiClientError || err instanceof Error
+              ? err.message
+              : 'Could not create your account. Please try again.';
+          return { success: false, message };
+        }
+
         const demoSession = makeDemoSession();
         const newUser: AuthUser = {
           id: `user-${Date.now()}`,

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { apiFetch } from '../../lib/api';
+import { formatInr } from '../../lib/api-contracts';
 
 interface Program {
   id: string; name: string; durationMonths: number; modeOfStudy: string;
@@ -96,7 +97,9 @@ export default function GurukulDetailScreen() {
                   <Text style={styles.programName}>{p.name}</Text>
                   <Text style={styles.programMeta}>
                     {p.durationMonths} months · {p.modeOfStudy} · Age {p.ageMin}-{p.ageMax}
-                    {p.feeAnnualInr ? ` · ₹${p.feeAnnualInr.toLocaleString('en-IN')}/yr` : ''}
+                    {/* `formatInr`, like every other rupee figure in this app.
+                        The fee is READ off `feeAnnualInr` and never derived. */}
+                    {p.feeAnnualInr ? ` · ${formatInr(p.feeAnnualInr)}/yr` : ''}
                   </Text>
                 </View>
                 <TouchableOpacity
