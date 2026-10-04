@@ -20,6 +20,7 @@ import {
  Star,
 } from 'lucide-react';
 import { useAuth } from '../../../../lib/auth-context';
+import { priestBreakdown } from '../../../../lib/priest-breakdown';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import VideoProofUpload from '../../../../components/provider/VideoProofUpload';
 import { H1 } from '../../../../components/ui/heading-recipe';
@@ -531,6 +532,12 @@ function PriestBookingDetailInner() {
  <span className="text-surface-500">Booking Amount</span>
  <span className="text-surface-800">{formatCurrency(booking.priceAmount)}</span>
  </div>
+ {priestBreakdown(booking).platformFee > 0 && (
+ <div className="flex justify-between text-sm">
+ <span className="text-surface-500">Platform fee (paid by the devotee)</span>
+ <span className="text-red-500">-{formatCurrency(priestBreakdown(booking).platformFee)}</span>
+ </div>
+ )}
  <div className="flex justify-between text-sm">
  <span className="text-surface-500">Platform Commission</span>
  <span className="text-red-500">-{formatCurrency(booking.platformCommission)}</span>
