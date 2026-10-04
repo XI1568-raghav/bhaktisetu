@@ -76,7 +76,7 @@ describe('CM-13 / CM-14 — one hero primary, and it is the one that can take mo
 });
 
 describe('CM-09 — the whole product card is the target', () => {
-  const page = () => src('app/pujas/page.tsx');
+  const page = () => src('app/pujas/(index)/page.tsx');
 
   it('wraps the card in a next/link rather than a bare anchor on the button', () => {
     expect(page()).toMatch(/href=\{`\/pujas\/\$\{puja\.slug\}`\}/);

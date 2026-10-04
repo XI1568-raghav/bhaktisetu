@@ -126,7 +126,7 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
     // its own right. Asserting `buttonClass(` appears in page.tsx would now be
     // asserting that a CTA exists there, which is the opposite of the intent.
     // The bespoke-CTA sweep below still runs against it — see HOME_NO_CTA.
-    ['app/pujas/page.tsx', 'catalogue Apply / Load more / empty-state CTA'],
+    ['app/pujas/(index)/page.tsx', 'catalogue Apply / Load more / empty-state CTA'],
     ['app/pricing/page.tsx', 'Get Started Free / Start Free / Subscribe'],
     ['app/auth/login/page.tsx', 'the three submit buttons'],
     ['components/home/ThisWeek.tsx', 'the dated booking CTA and its browse fallback'],
@@ -169,7 +169,7 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
     /*
      * The assertion above is a whole-file substring match, which one recipe
      * call satisfies no matter how many hand-rolled CTAs sit beside it —
-     * app/pujas/page.tsx passed it while carrying 8. "Adopted" has to mean
+     * app/pujas/(index)/page.tsx passed it while carrying 8. "Adopted" has to mean
      * nothing bespoke is left, or the guard reports adoption that is not there.
      */
     it(`${file} has no bespoke CTA left beside the recipe`, () => {
@@ -279,9 +279,9 @@ describe('DU-05 / DU-06 — one h1 recipe per archetype, on the display face', (
   });
 
   const APPLIED: Array<[string, string]> = [
-    ['app/pujas/page.tsx', 'catalogue'],
+    ['app/pujas/(index)/page.tsx', 'catalogue'],
     ['app/store/page.tsx', 'catalogue'],
-    ['app/temples/page.tsx', 'catalogue'],
+    ['app/temples/(index)/page.tsx', 'catalogue'],
     ['components/temples/TemplesBrowser.tsx', 'catalogue'],
     ['app/temples/[slug]/page.tsx', 'detail'],
     ['app/pujas/[slug]/page.tsx', 'detail'],
@@ -328,7 +328,7 @@ describe('DU-07 — rendered size tracks heading level', () => {
     Object.entries(RANK).find(([k]) => new RegExp(`(?:^|\\s|\`)${k}(?![\\w-])`).test(cls))?.[1];
 
   it('/pujas: the section h3s no longer match the h2 above them', () => {
-    const src = read('app/pujas/page.tsx');
+    const src = read('app/pujas/(index)/page.tsx');
     const h2 = /<h2 className="(text-2xl[^"]*)"/.exec(src)?.[1];
     expect(h2, 'the "Pandits at your home" h2 moved').toBeTruthy();
     const h3s = [...src.matchAll(/<h3 className="(text-\w+[^"]*)"/g)].map((m) => m[1]!);
@@ -462,7 +462,7 @@ describe('DU-10 / RESP-05 — nothing under the 12px legibility floor', () => {
   });
 
   it('the sweep landed on the scale, not on another arbitrary value', () => {
-    const catalogue = read('app/store/page.tsx') + read('app/pujas/page.tsx');
+    const catalogue = read('app/store/page.tsx') + read('app/pujas/(index)/page.tsx');
     expect(catalogue).not.toMatch(/text-\[1[01]px\]/);
   });
 });

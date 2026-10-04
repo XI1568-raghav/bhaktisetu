@@ -124,7 +124,7 @@ function allEmittedUrls(): { label: string; url: string }[] {
  * Commons files the DATABASE puts on screen.
  *
  * `lib/images.ts` is not the only route from a Commons URL to an `<img>`. The
- * temple grid never consults it for photographs: `app/temples/page.tsx:43-51,86`
+ * temple grid never consults it for photographs: `app/temples/(index)/page.tsx:43-51,86`
  * paints `imageUrl: firstImageUrl(t.images)` straight off the API's temple rows,
  * and line 169 merges the same API value into the rich cards. Those `images`
  * arrays are written by `apps/api/prisma/seed.ts` and they are Commons

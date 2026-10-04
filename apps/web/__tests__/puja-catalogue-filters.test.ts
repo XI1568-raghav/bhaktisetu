@@ -33,7 +33,7 @@ import {
 } from '../lib/puja-catalogue-filters';
 
 const pujaPageSrc = readFileSync(
-  path.resolve(__dirname, '..', 'app/pujas/page.tsx'),
+  path.resolve(__dirname, '..', 'app/pujas/(index)/page.tsx'),
   'utf8',
 );
 

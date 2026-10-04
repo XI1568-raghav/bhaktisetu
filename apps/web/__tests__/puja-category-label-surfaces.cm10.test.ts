@@ -34,7 +34,7 @@ const read = (rel: string) => stripComments(fs.readFileSync(path.join(WEB, rel),
 
 /** Surface -> the raw interpolation that must not appear on it. */
 const SURFACES: Array<{ file: string; raw: RegExp; what: string }> = [
-  { file: 'app/pujas/page.tsx', raw: /\{puja\.category\}/, what: 'the /pujas card metadata row' },
+  { file: 'app/pujas/(index)/page.tsx', raw: /\{puja\.category\}/, what: 'the /pujas card metadata row' },
   {
     file: 'app/pujas/[slug]/page.tsx',
     raw: /\{puja\.category\}/,

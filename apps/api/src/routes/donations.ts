@@ -172,17 +172,60 @@ export async function finalizeDonationReceipt(
     day: '2-digit', month: 'long', year: 'numeric',
   });
 
-  await prisma.$executeRawUnsafe(
+  // ── DI-09 (F455): `AND status <> 'paid'` is what makes this a CLAIM ─────────
+  //
+  // The early return above closes the SEQUENTIAL double-verify (PBO-10) and
+  // nothing more. Both rails read their `DonationRow` before calling — /verify
+  // from the request, the webhook backstop via `findDonationByOrderId` — so two
+  // concurrent finalizations both hold a snapshot saying `status: 'created'`,
+  // both pass that return, and both reach this statement.
+  //
+  // Unconditional, the second UPDATE overwrites the first. `donations` already
+  // carries `donations_receipt_number_key`, and it does not help: the two calls
+  // generate DIFFERENT numbers (`nextReceiptNumber()` is date + 4 random hex,
+  // one per call), so the unique index is satisfied by both and the collision is
+  // a row overwriting its OWN column — the one shape no index can express.
+  //
+  // The damage is not cosmetic. By the time the loser writes, the winner has
+  // already rendered an 80G PDF and emailed it to the donor bearing the FIRST
+  // number, and that number then exists nowhere in the database. `donations` is
+  // what an Income-Tax 80G claim is reconciled against.
+  //
+  // This is the same single-winner claim `claimCaptureTransition` makes at
+  // services/payment.service.ts:398 (`... AND status <> 'captured'`), read the
+  // same way: `$executeRawUnsafe` returns the affected-row count, exactly one
+  // caller sees 1, and everyone else sees 0.
+  const claimed = await prisma.$executeRawUnsafe(
     `UPDATE donations
         SET status = 'paid',
             paid_at = now(),
             razorpay_payment_id = $2,
             receipt_number = $3
-      WHERE id = $1`,
+      WHERE id = $1 AND status <> 'paid'`,
     donation.id,
     paymentId,
     receiptNumber,
   );
+
+  if (Number(claimed) !== 1) {
+    // Lost the race (or the row is gone). `receiptNumber` above was generated
+    // but never stored, so it must not be returned, logged or emailed —
+    // reporting it would hand the caller a receipt number that exists in no
+    // database. Re-read the winner's instead and answer exactly as the
+    // already-paid early return does.
+    //
+    // Everything below this point is skipped deliberately: the audit event
+    // (this call received no money), the 80G PDF and the receipt email. Two 80G
+    // receipts for one donation is two tax documents for one gift.
+    const winner = await prisma
+      .$queryRawUnsafe<Array<{ receipt_number: string | null }>>(
+        `SELECT receipt_number FROM donations WHERE id = $1 LIMIT 1`,
+        donation.id,
+      )
+      .catch(() => [] as Array<{ receipt_number: string | null }>);
+
+    return { receiptNumber: winner[0]?.receipt_number ?? null, alreadyPaid: true };
+  }
 
   // OPS-05: the donation is now durably 'paid' and a receipt number has been
   // minted. Log it HERE — after the UPDATE resolved, before the PDF and the

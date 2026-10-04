@@ -60,6 +60,7 @@ import {
   describeIndexStatement,
   splitStatements,
 } from './lib/migration-inventory.mjs';
+import { resolveDbTargetOrExit } from './lib/resolve-db-target.mjs';
 
 /**
  * Prisma's `$executeRawUnsafe` goes through the extended query protocol, which
@@ -75,19 +76,6 @@ function errText(e) {
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
 
-const envFileIdx = args.indexOf('--env-file');
-if (envFileIdx !== -1) {
-  const path = args[envFileIdx + 1];
-  if (!path) {
-    console.error('--env-file needs a path');
-    process.exit(2);
-  }
-  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
-    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-    if (m) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-}
-
 const verifyOnly = has('--verify-only');
 const allowRemote = has('--allow-remote');
 
@@ -96,21 +84,14 @@ if (!verifyOnly && !has('--yes')) {
   process.exit(2);
 }
 
-const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
-if (!url) {
-  console.error('No DIRECT_URL or DATABASE_URL in the environment.');
-  process.exit(2);
-}
+// OPS-14 (F456). Resolved from the env file the operator NAMED, never from
+// process.env — the hoisted `@prisma/client` import has already loaded
+// apps/api/.env (production) by this line. The host guard below used to be the
+// only thing standing between `--env-file .env.local` and production, and
+// `--verify-only` walks straight past it.
+const { url, host, local } = resolveDbTargetOrExit({ argv: args });
 
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', 'host.docker.internal']);
-let host = '';
-try {
-  host = new URL(url).hostname.replace(/^\[|\]$/g, '');
-} catch {
-  console.error('DIRECT_URL/DATABASE_URL is not parseable. Refusing (fail closed).');
-  process.exit(2);
-}
-if (!LOCAL_HOSTS.has(host) && !allowRemote && !verifyOnly) {
+if (!local && !allowRemote && !verifyOnly) {
   console.error(
     `Target host is ${host}, which is not local.\n` +
       'Provisioning a remote environment is legitimate, but say so explicitly: --allow-remote.',
