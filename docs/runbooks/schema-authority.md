@@ -1,6 +1,15 @@
 # Schema authority — which mechanism owns the production database shape
 
 > `OPS-07`. Written 2026-08-21. Read this before adding DDL anywhere.
+>
+> **Premise corrected 2026-10-04 (`OPS-10` triage).** The boot sequence below
+> describes what `render.yaml` and `apps/api/package.json` declare. Production
+> does not run it: the Render dashboard Start Command for the API is
+> `pnpm --filter @poojly/api exec tsx src/server.ts` (measured 2026-09-09/12,
+> `OPS-19`), so `migrate deploy` is never run by a deploy, and `bootstrap()` /
+> `ensureSchemaInvariants()` DO run in production. Read the mechanism sections
+> below as the repo's intent and `docs/runbooks/disaster-recovery.md` scenario 3b
+> as the operating truth. A full rewrite of this page is still owed.
 
 ## The one-line answer
 
