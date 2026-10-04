@@ -159,7 +159,7 @@ describe('CT-API-1 — GET /gaushala/:id', () => {
       address: 'Raman Reti, Vrindavan',
       city: 'Vrindavan',
       totalCows: 512,
-      description: null,
+      description: 'ISKCON-affiliated cow shelter.',
       approved: true,
     } as any);
 

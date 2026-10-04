@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { gaushalaService } from '../services/gaushala.service.js';
 import { prisma } from '../lib/prisma.js';
+import { gaushalaQuality } from '../lib/cause-quality.js';
 
 // CT-API-1 (prod probe 2026-09-09): `GET /api/v1/gaushala/<id>` answered 500 for
 // every id that is not shaped like a uuid — `not-a-uuid`, `123`, `__ct_zzz`,
@@ -50,7 +51,8 @@ export async function gaushalaRoutes(server: FastifyInstance) {
     const profile = await prisma.gaushalaProfile.findFirst({
       where: { approved: true, OR: [{ id }, { userId: id }] },
     });
-    if (!profile) {
+    // An approved-but-junk profile is hidden like an unapproved one.
+    if (!profile || !gaushalaQuality(profile).ok) {
       return reply.code(404).send({ error: 'Gaushala not found.' });
     }
 

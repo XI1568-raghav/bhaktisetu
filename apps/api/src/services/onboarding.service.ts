@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { assessCauseProfile } from '../lib/cause-approval-guard.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -299,10 +300,15 @@ export class OnboardingService {
         return r.count > 0;
       }
       case 'GAUSHALA_MANAGER': {
+        // Same cause quality gate as the admin approvals queue.
+        const q = await assessCauseProfile(userId, role);
+        if (q && !q.ok) return false;
         const r = await prisma.gaushalaProfile.updateMany({ where: { userId }, data: { approved: true } });
         return r.count > 0;
       }
       case 'TEMPLE_MANAGER': {
+        const q = await assessCauseProfile(userId, role);
+        if (q && !q.ok) return false;
         const r = await prisma.templeProfile.updateMany({ where: { userId }, data: { approved: true } });
         return r.count > 0;
       }

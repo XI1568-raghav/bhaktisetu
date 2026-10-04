@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { adminService, UnsupportedUserStatusError } from '../services/admin.service.js';
 import { prisma } from '../lib/prisma.js';
+import { CauseQualityError } from '../lib/cause-quality.js';
 import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
 import { resolveProviderRole } from '../services/payout.service.js';
 // AO-16: the previously-stubbed admin lists are real queries now and take the
@@ -277,7 +278,22 @@ export async function adminRoutes(server: FastifyInstance) {
       return reply.code(404).send({ error: 'User not found' });
     }
 
-    const result = await adminService.updateUser(id, parsed.data);
+    let result;
+    try {
+      result = await adminService.updateUser(id, parsed.data);
+    } catch (err) {
+      if (err instanceof CauseQualityError) {
+        return reply.code(400).send({
+          code: 'cause_quality_failed',
+          error: 'Profile is not good enough to approve',
+          message:
+            'This gaushala/temple profile fails the minimum quality check. Ask the owner to complete a real name, a description of at least 20 characters (3+ words) and a full address.',
+          role: err.role,
+          reasons: err.reasons,
+        });
+      }
+      throw err;
+    }
 
     if (!result) {
       return reply.code(404).send({ error: 'User not found' });
