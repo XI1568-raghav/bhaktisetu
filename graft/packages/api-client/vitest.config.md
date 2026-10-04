@@ -1,3 +1,0 @@
-# packages\api-client\vitest.config.ts
-
-_No extracted symbols in this file._
