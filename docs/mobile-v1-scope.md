@@ -229,11 +229,40 @@ root cause as the checkout exclusion in §1. Documented in the code.
 ### 5.3 Session-dropping hand-offs (PAR-22 C, open)
 
 **29 `Linking.openURL` occurrences** exist in `apps/mobile` outside the tests:
-**21 real invocations**, plus **8 places the function is passed as a value** to a
-helper that calls it, spread across 21 files. They fall into three groups, and
+**20 real invocations**, plus **9 places the function is passed as a value** to a
+helper that calls it, spread across 22 files. They fall into three groups, and
 only the first is a defect.
 
 >
+> **Recounted after the devotional-library hand-off landed.** 28 / 20 / 8 across
+> 21 files became 29 / 20 / 9 across 22 files. The one addition is a VALUE
+> reference, not an invocation, and it is in group (b): `(devotee)/library.tsx`
+> builds the same `{ push, openExternal: Linking.openURL }` io object
+> `(devotee)/astrology.tsx` does and hands it to `openWebHandoff`, so the
+> destination is decided by `planWebHandoff` — in-app when the WebView resolves
+> and this build's origin matches, the system browser only when it cannot.
+> Nothing on that screen bounces out unconditionally.
+>
+> The screen exists because darshya.online carries ~130 devotional content
+> routes whose data is 23,253 lines of hardcoded arrays in `apps/web/lib` with
+> no API in front of them. Copying those into the bundle is the drift that made
+> wedding prices differ five-fold between web and mobile; opening the live page
+> is the only mechanism that cannot drift. Index routes only — never slugs — so
+> there is no second list to keep in sync.
+>
+>
+> **Recounted after the provider-portal contract audit.** 29 / 21 / 8 became
+> 28 / 20 / 8, across the same 21 files. The one invocation that went away is
+> not a hand-off that was converted — it is a hand-off that could never have
+> worked. `app/(astrologer)/consultations.tsx` opened the room in two ways: the
+> row's own `roomUrl`, or, failing that, the URL returned by
+> `POST /astrology/consultations/:id/start-call`. That endpoint mutates
+> `astrology.service`'s in-memory `Map`, which holds no row for a real,
+> paid consultation, so the second path answered 404 every time. The screen now
+> reads `GET /consultation/astrologer/mine`, whose rows carry `jitsiUrl`
+> directly, and opens that. One invocation, one file, no behaviour lost.
+>
+
 > **Recounted again 2026-09-02, after the mobile-parity route files landed.**
 > 25 / 19 / 6 across 19 files became 29 / 21 / 8 across 21 files. The count is
 > measured by `lib/__tests__/handoff-census.par22.test.ts`, which fails when this
@@ -271,7 +300,7 @@ the user to sign in again:**
 
 | Call site | Destination |
 |---|---|
-| `app/(devotee)/astrology.tsx` (x2, indirect — see below) | hardcoded `https://darshya.online/astrology…` |
+| `app/(devotee)/astrology.tsx` (x1, indirect — see below) | the web `/astrology` calculator index |
 | `app/(devotee)/temples.tsx:43` | temple detail page |
 | `app/(devotee)/donations.tsx:129` | donation payment |
 | `app/(devotee)/upgrade.tsx:118` | plan upgrade |
@@ -281,13 +310,25 @@ the user to sign in again:**
 | `app/(devotee)/search.tsx:70` | non-live temple + content results (new; inherits the same constraint) |
 
 `astrology.tsx` is the one entry whose **mechanism has already changed**: it no
-longer calls `Linking.openURL` itself. Both controls route through
+longer calls `Linking.openURL` itself. The control routes through
 `openWebHandoff` in `lib/in-app-web.ts`, passing `Linking.openURL` as the
-`openExternal` dependency — which is why the parser counts them as value
-references rather than invocations. The destination is unchanged **today**,
+`openExternal` dependency — which is why the parser counts it as a value
+reference rather than an invocation. The destination is unchanged **today**,
 because `openWebHandoff` falls back to the browser whenever
 `WEBVIEW_AVAILABLE` is false, and it is false in every build produced from this
 tree.
+
+It was **x2** until the Vedic calculators moved. The Kundli Milan hand-off is
+gone: `packages/shared/src/astrology` now owns the Ashtakoot scorer, the Meeus
+moon/Mars longitude series, the Lahiri ayanamsa, the Almanac-for-Computers
+sunrise solver and the numerology tables, `apps/web/lib` re-exports them, and
+`app/(devotee)/{kundli-milan,numerology,nakshatra-finder,manglik,rahu-kalam}
+.tsx` compute them in the app and offline. The reason those tools bounced out
+was that the maths sat inside `apps/web/lib` — a fact about a directory, not
+about the calculation, and pure functions move. The remaining hand-off covers
+the ten tools that did not: sade sati, dasha, hora, shubh muhurat and kaal sarp
+(portable, not built yet) and lal kitab, vastu, pitra dosh, pancha pakshi and
+baby name (editorial lookups over prose datasets the app would bundle whole).
 
 **The in-app route is written and dormant; only the dependency is missing.**
 This entry no longer describes work to do in `apps/mobile`. `lib/in-app-web.ts`

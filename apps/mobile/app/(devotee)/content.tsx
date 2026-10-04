@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
@@ -14,6 +15,7 @@ import { useContent } from '@poojly/api-client';
 import type { ContentFilterParams } from '@poojly/shared';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { contentTypeLabel } from '../../lib/enum-labels';
+import { apiFetch } from '../../lib/api';
 
 /**
  * NAV-01, 2026-09-02 — THE FABRICATED CATALOGUE IS GONE.
@@ -101,7 +103,50 @@ import { contentTypeLabel } from '../../lib/enum-labels';
  * button.
  */
 
-type ContentType = 'aarti' | 'chalisa' | 'mantra' | 'bhajan';
+/**
+ * THE TAB LIST IS THE SERVER'S NOW — and the two bugs that fixed
+ * -------------------------------------------------------------
+ * The four tabs below used to be a literal array: aarti, chalisa, mantra,
+ * bhajan. Measured against production on 2026-09-08:
+ *
+ *   GET /api/v1/content/categories
+ *   -> [{aarti,5},{chalisa,6},{mantra,6},{article,5}]
+ *
+ * So the hardcoded list was wrong in both directions at once. `bhajan` was a
+ * permanent dead tab — zero rows in the library, and the screen's own empty
+ * state ("No bhajan published yet") was the only thing it could ever say. And
+ * `article` — five real, published pieces, the longest-form devotional writing
+ * in the ContentItem table — had NO tab at all, so it was unreachable from the
+ * app entirely while being rendered on the website.
+ *
+ * Hardcoding a list of what the library contains is a claim about data, and
+ * this screen is not the place that knows it. `/content/categories` returns
+ * only types with a published row, with counts, so a tab now exists exactly
+ * when there is something behind it: seeding the first bhajan makes the tab
+ * appear with no app release, and the last aarti being unpublished makes it go
+ * away instead of lying.
+ */
+type ContentType =
+  | 'aarti'
+  | 'chalisa'
+  | 'mantra'
+  | 'bhajan'
+  | 'story'
+  | 'article'
+  | 'shloka'
+  | 'video_reel';
+
+/** Mirrors the Prisma enum. Anything outside it is not a tab and not a row. */
+const CONTENT_TYPES: ReadonlySet<string> = new Set<ContentType>([
+  'aarti',
+  'chalisa',
+  'mantra',
+  'bhajan',
+  'story',
+  'article',
+  'shloka',
+  'video_reel',
+]);
 
 interface ContentRow {
   id: string;
@@ -119,14 +164,11 @@ interface ContentRow {
   body: string | null;
 }
 
-const tabs: { key: ContentType; label: string }[] = [
-  { key: 'aarti', label: 'Aarti' },
-  { key: 'chalisa', label: 'Chalisa' },
-  { key: 'mantra', label: 'Mantra' },
-  { key: 'bhajan', label: 'Bhajan' },
-];
-
-const TAB_KEYS: ReadonlySet<string> = new Set(tabs.map((t) => t.key));
+interface CategoryTab {
+  key: ContentType;
+  label: string;
+  count: number;
+}
 
 // ─── selectors ──────────────────────────────────────────────────────────────
 //
@@ -172,9 +214,8 @@ function formatDuration(v: unknown): string | null {
  * The response -> rows this screen can honestly render.
  *
  * A row without an id, a slug or a title has nothing to key, address or label,
- * so it is dropped rather than filled in. A `type` outside the four tabs is
- * also dropped: the enum has eight values (story, article, shloka, video_reel
- * are the others) and coercing one of those into "Aarti" is exactly the
+ * so it is dropped rather than filled in. A `type` outside the Prisma enum is
+ * also dropped — coercing an unknown type into "Aarti" is exactly the
  * mislabelling this rewrite exists to end.
  */
 function selectContentRows(payload: unknown): ContentRow[] {
@@ -184,7 +225,7 @@ function selectContentRows(payload: unknown): ContentRow[] {
       const slug = str(c.slug);
       const title = str(c.title);
       const type = str(c.type);
-      if (!id || !slug || !title || !type || !TAB_KEYS.has(type)) return null;
+      if (!id || !slug || !title || !type || !CONTENT_TYPES.has(type)) return null;
       return {
         id,
         slug,
@@ -200,11 +241,41 @@ function selectContentRows(payload: unknown): ContentRow[] {
     .filter((r): r is ContentRow => r !== null);
 }
 
+/**
+ * `{ categories: [{ type, count }] }` -> tabs.
+ *
+ * A `type` outside the Prisma enum is dropped rather than rendered: a tab this
+ * build has no icon or label for would show a blank glyph over a list it
+ * cannot describe. A zero count is dropped too — a tab that can only ever say
+ * "nothing here" is the dead `bhajan` tab this replaced.
+ */
+function selectCategoryTabs(payload: unknown): CategoryTab[] {
+  if (!isRecord(payload)) return [];
+  const rows = payload.categories;
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .filter(isRecord)
+    .map((c): CategoryTab | null => {
+      const type = str(c.type);
+      const count = typeof c.count === 'number' && Number.isFinite(c.count) ? c.count : 0;
+      if (!type || !CONTENT_TYPES.has(type) || count <= 0) return null;
+      return { key: type as ContentType, label: contentTypeLabel(type), count };
+    })
+    .filter((t): t is CategoryTab => t !== null);
+}
+
+// Presentation only — a glyph name belongs to this client's icon font, not to
+// the library. An unmapped type still gets a tab and a list; it gets the
+// neutral book glyph rather than disappearing.
 const typeColors: Record<ContentType, string> = {
   aarti: colors.saffron[600],
   chalisa: colors.amber[500],
   mantra: colors.green[600],
   bhajan: colors.stone[600],
+  story: colors.saffron[700],
+  article: colors.amber[700],
+  shloka: colors.green[700],
+  video_reel: colors.stone[700],
 };
 
 const typeIcons: Record<ContentType, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -212,6 +283,10 @@ const typeIcons: Record<ContentType, React.ComponentProps<typeof Ionicons>['name
   chalisa: 'book',
   mantra: 'pulse',
   bhajan: 'musical-notes',
+  story: 'library',
+  article: 'document-text',
+  shloka: 'leaf',
+  video_reel: 'videocam',
 };
 
 const ContentItemRow = React.memo(function ContentItemRow({
@@ -299,41 +374,66 @@ const ContentItemRow = React.memo(function ContentItemRow({
 });
 
 export default function ContentScreen() {
-  const [activeTab, setActiveTab] = useState<ContentType>('aarti');
+  const [tabs, setTabs] = useState<CategoryTab[]>([]);
+  const [tabsLoading, setTabsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<ContentType | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  /**
+   * The tab strip, from the library itself.
+   *
+   * `apiFetch` rather than a `@poojly/api-client` hook: there is no
+   * `useContentCategories`, and adding one would edit a package three other
+   * screens' contracts are pinned against. knowledge-category.tsx reaches the
+   * same API the same way.
+   */
+  const loadTabs = useCallback(async () => {
+    try {
+      const payload = await apiFetch<unknown>('/content/categories');
+      const next = selectCategoryTabs(payload);
+      setTabs(next);
+      // Select the first real tab only if the current selection is gone (or
+      // was never made). Re-selecting on every refresh would yank the devotee
+      // back to Aarti mid-read.
+      setActiveTab((prev) => (prev && next.some((t) => t.key === prev) ? prev : next[0]?.key ?? null));
+    } catch {
+      // The list request failing is not a claim about the library. Leave the
+      // tabs as they are; the content query below reports its own failure.
+    } finally {
+      setTabsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void loadTabs(); }, [loadTabs]);
 
   /**
    * Server-side filter. The tab IS the query, so an empty tab means the
    * library has none of that type — not that page 1 happened to miss it.
    *
-   * THE CAST, AND WHY IT IS NOT LAZINESS
-   * ------------------------------------
-   * `ContentFilterParams.type` is declared as the SHARED `ContentType`
-   * (packages/shared/src/types/index.ts:18) — an UPPERCASE enum, ARTICLE |
-   * VIDEO | AUDIO | MANTRA | AARTI | CHALISA | STORY, with no `bhajan` in it
-   * at all. The wire does not agree with that declaration. The handler casts
-   * the raw query string straight to the PRISMA enum
-   * (content.service.ts:34), whose values are lowercase and are
-   * aarti | chalisa | mantra | bhajan | story | article | shloka |
-   * video_reel.
+   * THE CAST IS GONE.
+   * -----------------
+   * This call used to read
    *
-   * This is not a style difference, it is a live 500. Verified against
-   * production on 2026-09-02:
+   *     type: activeTab as unknown as ContentFilterParams['type']
    *
-   *   GET /api/v1/content?type=aarti  -> 200, 5 rows
-   *   GET /api/v1/content?type=AARTI  -> 500
+   * because the shared `ContentType` declared UPPERCASE members plus invented
+   * `VIDEO`/`AUDIO`, while the handler casts the raw query string straight to
+   * the PRISMA enum (content.service.ts:34) — whose values are lowercase.
+   * Sending the declared spelling was a live 500, verified against production:
+   * `?type=aarti` -> 200 with rows, `?type=AARTI` -> 500.
    *
-   * So the lowercase literal is the correct value and the declared type is
-   * the thing that is wrong — the same class of divergence PAR-07 documents
-   * for pujas. Correcting packages/shared touches every consumer of that
-   * enum and is not this screen's change to make; the cast is the narrowest
-   * possible way to say "the server's spelling wins", confined to one line
-   * with the evidence written beside it.
+   * packages/shared/src/types/index.ts has since been corrected to mirror the
+   * Prisma enum exactly (lowercase values, all eight members, `bhajan`
+   * included), so the declaration and the wire finally agree and the double
+   * cast has nothing left to paper over. `enabled` keeps the query from firing
+   * with no type at all, which would fetch an unfiltered page and render it
+   * under whichever tab appeared first.
    */
-  const contentQuery = useContent({
-    type: activeTab as unknown as ContentFilterParams['type'],
-  });
+  const contentQuery = useContent(
+    { type: activeTab as ContentFilterParams['type'] },
+    { enabled: activeTab !== null },
+  );
 
   // Stable toggle so renderItem stays referentially equal across re-renders
   // (paired with React.memo on ContentItemRow → only the row whose isOpen
@@ -359,56 +459,73 @@ export default function ContentScreen() {
 
   async function onRefresh() {
     setRefreshing(true);
-    await contentQuery.refetch();
+    // Both, because a pull-to-refresh after the library gained its first
+    // bhajan should produce the tab as well as the rows.
+    await Promise.all([loadTabs(), contentQuery.refetch()]);
     setRefreshing(false);
   }
 
+  /**
+   * The subtitle names what is actually there. It used to read "Aartis,
+   * chalisas, mantras and bhajans" — a sentence that was wrong on both ends
+   * for as long as the library held zero bhajans and five articles.
+   */
+  const subtitle = tabs.length > 0
+    ? tabs.map((t) => t.label.toLowerCase()).join(' · ')
+    : 'Devotional texts';
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Spiritual Content</Text>
-        <Text style={styles.headerSubtitle}>
-          Aartis, chalisas, mantras and bhajans
-        </Text>
+        <Text style={styles.headerSubtitle}>{subtitle}</Text>
       </View>
 
-      {/* Segmented Control */}
-      <View style={styles.segmentContainer}>
-        <View style={styles.segmentControl}>
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[
-                  styles.segmentTab,
-                  isActive && styles.segmentTabActive,
-                ]}
-                onPress={() => selectTab(tab.key)}
-                activeOpacity={0.7}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-                accessibilityLabel={tab.label}
-              >
-                <Ionicons
-                  name={typeIcons[tab.key]}
-                  size={14}
-                  color={isActive ? colors.white : colors.stone[500]}
-                />
-                <Text
+      {/* Segmented control. Horizontally scrollable because the tab count is
+          the server's now: it is four today and can be eight, and eight
+          `flex: 1` cells inside one row would each be too narrow to hit. */}
+      {tabs.length > 0 ? (
+        <View style={styles.segmentContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.segmentControl}
+          >
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
                   style={[
-                    styles.segmentText,
-                    isActive && styles.segmentTextActive,
+                    styles.segmentTab,
+                    isActive && styles.segmentTabActive,
                   ]}
+                  onPress={() => selectTab(tab.key)}
+                  activeOpacity={0.7}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isActive }}
+                  accessibilityLabel={`${tab.label}, ${tab.count} item${tab.count === 1 ? '' : 's'}`}
                 >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <Ionicons
+                    name={typeIcons[tab.key]}
+                    size={14}
+                    color={isActive ? colors.white : colors.stone[500]}
+                  />
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      isActive && styles.segmentTextActive,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
-      </View>
+      ) : null}
 
       {/* Content List */}
       <FlatList
@@ -428,7 +545,7 @@ export default function ContentScreen() {
              the devotee can act on only one of them. The old screen had no
              loading state and no error state at all — it substituted the mock
              array for both. */
-          contentQuery.isLoading ? (
+          tabsLoading || contentQuery.isLoading ? (
             <View style={styles.emptyState}>
               <ActivityIndicator color={colors.saffron[600]} />
               <Text style={styles.emptyText}>Loading…</Text>
@@ -438,6 +555,15 @@ export default function ContentScreen() {
               <Ionicons name="cloud-offline-outline" size={48} color={colors.stone[300]} />
               <Text style={styles.emptyText}>Could not load this library</Text>
               <Text style={styles.emptySubtext}>{errorText} — pull down to retry.</Text>
+            </View>
+          ) : activeTab === null ? (
+            /* No tab because the server reported no published type at all.
+               That is a fact about the library, and it is stated once rather
+               than dressed as four separate empty tabs. */
+            <View style={styles.emptyState}>
+              <Ionicons name="book-outline" size={48} color={colors.stone[300]} />
+              <Text style={styles.emptyText}>Nothing published yet</Text>
+              <Text style={styles.emptySubtext}>Pull down to check again.</Text>
             </View>
           ) : (
             <View style={styles.emptyState}>
@@ -488,13 +614,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stone[100],
     borderRadius: borderRadius.md,
     padding: 3,
+    // `flexGrow` rather than `flex: 1` on the children: inside a horizontal
+    // ScrollView the strip sizes to its content, so a short tab list still
+    // fills the width and a long one scrolls instead of crushing.
+    flexGrow: 1,
   },
   segmentTab: {
-    flex: 1,
+    flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    // 44pt minimum touch target, and enough horizontal room that a two-word
+    // label is not clipped when the strip scrolls.
+    minHeight: 44,
+    minWidth: 88,
     paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
     borderRadius: borderRadius.sm,
     gap: 4,
   },

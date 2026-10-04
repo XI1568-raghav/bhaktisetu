@@ -261,19 +261,25 @@ describe('PAR-22 search — searchResultDestination', () => {
     return d;
   }
 
-  it('keeps a live temple INSIDE the app, on the darshan player', () => {
-    // Same rule (devotee)/temples.tsx already follows. A search result must
-    // not eject a session the temple card would have kept.
+  it('sends a LIVE temple where the temple card sends it — the detail screen', () => {
+    // DV-01. This used to jump straight to the darshan player, under a comment
+    // claiming it was "the same rule (devotee)/temples.tsx already follows".
+    // temples.tsx sends live cards to the DETAIL screen and states the reason:
+    // the player was otherwise the only way a streaming temple could be read
+    // about, and the detail's first action is "Live darshan" anyway.
     const dest = inApp(searchResultDestination(liveTemple));
-    expect(dest.pathname).toBe('/(devotee)/darshan-player');
-    expect(dest.params).toMatchObject({ id: 'kashi-vishwanath' });
+    expect(dest.pathname).toBe('/(devotee)/temple-detail');
+    expect(dest.params).toMatchObject({ slug: 'kashi-vishwanath' });
   });
 
-  it('sends a non-live temple to the temple page on the website, by slug', () => {
-    const dest = onWeb(searchResultDestination({ ...liveTemple, isLive: false }));
-    // PAR-17: the web route is /temples/[slug]; linking by id 404s.
-    expect(dest.url).toContain('/temples/kashi-vishwanath');
-    expect(dest.url).not.toContain('tmp_1');
+  it('keeps a NON-live temple in the app too, on the same screen', () => {
+    // DV-01. This opened the WEBSITE because "everything else has no in-app
+    // detail screen yet". app/(devotee)/temple-detail.tsx is that screen.
+    const dest = inApp(searchResultDestination({ ...liveTemple, isLive: false }));
+    expect(dest.pathname).toBe('/(devotee)/temple-detail');
+    // PAR-17: keyed by SLUG. temple-detail queries /temples/:slug; the id 404s.
+    expect(dest.params).toMatchObject({ slug: 'kashi-vishwanath' });
+    expect(JSON.stringify(dest.params)).not.toContain('tmp_1');
   });
 
   it('sends a content row to /content/[slug] on the website', () => {

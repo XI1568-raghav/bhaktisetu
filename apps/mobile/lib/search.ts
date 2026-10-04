@@ -181,26 +181,35 @@ export type SearchDestination =
 /**
  * Where tapping a result goes.
  *
- * A live temple stays INSIDE the app on the darshan player — the same rule
- * (devotee)/temples.tsx already follows, so a search result never ejects a
- * session the temple card would have kept. Everything else has no in-app
- * detail screen yet and opens the website; PAR-22 (C) tracks folding those
- * into an in-app browser, and the screen labels them as leaving the app so
- * the hand-off is never a surprise.
+ * DV-01. BOTH temple branches used to rest on a claim that had stopped being
+ * true, and the two of them disagreed with the temple LIST about where a
+ * temple lives:
+ *
+ *   · A LIVE temple went straight to the darshan player, "the same rule
+ *     (devotee)/temples.tsx already follows". It is not: temples.tsx sends
+ *     live cards to the DETAIL screen too, and says why —
+ *     "jumping past it meant the player was the only way a streaming temple
+ *     could ever be read about. The detail's first action is 'Live darshan',
+ *     one tap further on."
+ *   · A NON-LIVE temple opened the WEBSITE, because "everything else has no
+ *     in-app detail screen yet". `app/(devotee)/temple-detail.tsx` is that
+ *     screen: same slug, same params, carrying the temple's pujas, reviews and
+ *     donate CTA. Search was ejecting devotees to a browser to reach a screen
+ *     the app already had.
+ *
+ * So every temple result now goes where the temple card goes. Content rows
+ * genuinely have no in-app detail screen — `(devotee)/content.tsx` is a list —
+ * so those still open the website, and the screen labels them as leaving the
+ * app so the hand-off is never a surprise.
  */
 export function searchResultDestination(result: SearchResultVM): SearchDestination {
   if (result.kind === 'temple') {
-    if (result.isLive) {
-      return {
-        inApp: true,
-        pathname: '/(devotee)/darshan-player',
-        params: { id: result.slug, title: result.title },
-      };
-    }
-    // PAR-17: the web route is /temples/[slug]. Linking by id 404s.
+    // Keyed by SLUG, which is what temple-detail queries (`/temples/:slug`) and
+    // what `(devotee)/temples.tsx` passes. PAR-17: the id 404s on that route.
     return {
-      inApp: false,
-      url: `${WEB_ORIGIN}/temples/${encodeURIComponent(result.slug)}?utm_source=mobile-app&utm_medium=search`,
+      inApp: true,
+      pathname: '/(devotee)/temple-detail',
+      params: { slug: result.slug, name: result.title },
     };
   }
   return {

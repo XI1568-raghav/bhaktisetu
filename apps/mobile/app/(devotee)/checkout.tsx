@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCart, useUserAddresses, useRemoveCartItem, storeQueryKeys } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
+import { fetchWithBudget, isNetworkFailure, type FetchBudgetError } from '../../lib/fetch-budget';
 import { webOrigin, hostOf } from '../../lib/web-origin';
 import { IN_APP_WEB_ROUTE } from '../../lib/in-app-web';
 import { selectCart, selectAddresses, formatInr, type AddressRow } from '../../lib/api-contracts';
@@ -55,9 +56,12 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * `price_mismatch` when the client's `totalAmountInr` disagrees
  * (store-orders.ts:243-255). That guard exists because a ₹733 button once sat
  * on top of a ₹698 charge for months. So the number on the button is produced
- * by `computeStoreOrderTotals` — a mirror of the API's own store-pricing.ts —
- * and never by `cart.total`, which still carries a 5% "GST estimate" the API
- * does not charge. See app/(devotee)/cart.tsx for the full account.
+ * by `computeStoreOrderTotals` — a mirror of the API's own store-pricing.ts.
+ * `cart.total` used to carry a 5% "GST estimate" the order route does not
+ * charge; store.service.ts now builds the cart from that same store-pricing.ts,
+ * so the two agree. The local mirror stays because the button must be able to
+ * quote a total the route will accept, not because the cart is untrusted. See
+ * app/(devotee)/cart.tsx for the full account.
  *
  * PAYMENT — WHAT ACTUALLY HAPPENS, SAID PLAINLY
  * ---------------------------------------------
@@ -235,7 +239,7 @@ export default function CheckoutScreen() {
       idempotencyKeyRef.current = `mob-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
     }
     try {
-      const res = await fetch(`${apiBase()}/api/v1/store/orders`, {
+      const res = await fetchWithBudget(`${apiBase()}/api/v1/store/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -285,9 +289,15 @@ export default function CheckoutScreen() {
       }
       await queryClient.invalidateQueries({ queryKey: storeQueryKeys.cart });
       await queryClient.invalidateQueries({ queryKey: ['storeOrders'] });
-    } catch {
+    } catch (err) {
+      // A TIMEOUT is not the same as a refused connection. The POST may have
+      // landed and only the reply lost, so "nothing was ordered" would be a
+      // claim this app cannot make. The idempotency key is deliberately NOT
+      // cleared, so a retry returns the same order rather than a second one.
       setPlaceError(
-        'Could not reach the store. Nothing was ordered — check your connection and try again.',
+        isNetworkFailure(err) && (err as FetchBudgetError).timedOut
+          ? 'The store did not answer in time. Your order may or may not have been placed — check Orders before trying again.'
+          : 'Could not reach the store. Nothing was ordered — check your connection and try again.',
       );
     } finally {
       setPlacing(false);

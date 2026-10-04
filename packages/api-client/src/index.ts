@@ -5,6 +5,12 @@
 export { api, initApiClient, ApiClientError } from "./client.js";
 export type { ApiClientConfig, RequestOptions } from "./client.js";
 
+// The server error-body → ApiClientError mapping. Exported so a caller that
+// reads a response by hand (there are several, see error-shapes.ts) can resolve
+// the sentence the same way this client does instead of re-deriving it.
+export { resolveApiErrorBody } from "./error-shapes.js";
+export type { ResolvedApiError } from "./error-shapes.js";
+
 export {
   // Query keys
   queryKeys,
@@ -69,7 +75,10 @@ export type {
 
 // ─── Store hooks ─────────────────────────────
 export {
+  // The PUBLIC storefront catalogue. A merchant's own inventory is
+  // /store-admin/products — see the docblock on useProducts.
   useProducts,
+  usePublicStoreProducts,
   useProduct,
   useCollections,
   useCart,
@@ -132,9 +141,11 @@ export {
   useEnrollWellnessSession,
   useVerifyWellnessEnrollment,
   useSetWellnessRoom,
-  useAstrologyConsultations,
-  useUpdateConsultation,
-  useStartConsultationCall,
+  // useAstrologyConsultations / useUpdateConsultation / useStartConsultationCall
+  // are gone: they wrapped /astrology/consultations, which answers from an
+  // in-memory Map that empties on every restart. See the block at the top of
+  // hooks/wave-1-4.ts for why they were deleted rather than repointed, and use
+  // useMyConsultations / useCancelConsultation (hooks/consultations.js) instead.
   useAdminCommissions,
   useSubscriptionPlans,
   useMySubscription,

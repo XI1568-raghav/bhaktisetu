@@ -75,8 +75,22 @@ function LegacyPanditRail({
       {rows.map((p) => (
         <ListRow
           key={p.id}
-          primary={p.bookingId ? `Puja ${p.bookingId.slice(0, 8)}` : 'Manual payout'}
-          secondary={p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN') : 'Not paid yet'}
+          // The row used to read `p.bookingId` and `p.paidAt`. Neither is sent
+          // by either rail (priest.service.ts#getPayoutHistory:659 and the
+          // merged path at priest.ts:810 both project a nested `booking` and a
+          // `processedAt`), so every row printed "Manual payout" / "Not paid
+          // yet" — including settled ones. The hook's type asserted both
+          // fields, so tsc could not see it; corrected in @poojly/api-client.
+          primary={
+            p.booking
+              ? `${p.booking.pujaType.name} · ${p.booking.bookingNumber}`
+              : 'Manual payout'
+          }
+          secondary={
+            p.processedAt
+              ? new Date(p.processedAt).toLocaleDateString('en-IN')
+              : 'Not paid yet'
+          }
           trailing={formatRupees(p.amount)}
           trailingHint="your share"
           status={{
@@ -90,10 +104,10 @@ function LegacyPanditRail({
 }
 
 /**
- * Local rather than `formatInr` from api-contracts: PriestPayout.amount is
- * already a number on this hook's type, and an unparseable one must render as
- * a dash rather than as ₹0 — the RES-02 rule, applied to a row that names a
- * real puja.
+ * Local rather than `formatInr` from api-contracts: `PriestPayout.amount` is a
+ * `Decimal(10,2)` column and arrives as a STRING, so it is coerced here, and an
+ * unparseable one must render as a dash rather than as ₹0 — the RES-02 rule,
+ * applied to a row that names a real puja.
  */
 function formatRupees(amount: unknown): string {
   const n = typeof amount === 'number' ? amount : Number(amount);

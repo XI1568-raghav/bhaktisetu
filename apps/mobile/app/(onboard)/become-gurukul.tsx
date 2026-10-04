@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { apiBase } from '../../lib/api';
+import { fetchWithBudget, readErrorMessage, failureMessage } from '../../lib/fetch-budget';
 
 const TRADITIONS = ['Advaita', 'Vishishtadvaita', 'Dvaita', 'Smarta', 'Shaiva', 'Shakta', 'Vaishnava'] as const;
 const MODES = ['residential', 'online', 'hybrid'] as const;
@@ -126,7 +127,12 @@ export default function BecomeGurukulScreen() {
           feeAnnualInr: p.feeAnnualInr ? Number(p.feeAnnualInr) : null,
         })),
       };
-      const res = await fetch(`${apiBase()}/api/v1/gurukuls`, {
+      // A bare `fetch` never settles on a half-open socket, so the
+      // `finally { setSubmitting(false) }` below could not run and the button
+      // span forever with no error — the infinite-spinner P0 in TASKS.md, of
+      // which this screen was one instance. `fetchWithBudget` arms an
+      // AbortController AND races a 20s deadline; see lib/fetch-budget.ts.
+      const res = await fetchWithBudget(`${apiBase()}/api/v1/gurukuls`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,14 +141,16 @@ export default function BecomeGurukulScreen() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || `HTTP ${res.status}`);
+        // `res.text()` put a raw JSON blob — `{"error":"Bad Request",
+        // "details":{"fieldErrors":{"slug":["..."]}}}` — straight into the
+        // error box. `readErrorMessage` names the rejected field instead.
+        throw new Error(await readErrorMessage(res));
       }
       Alert.alert('Submitted', 'Your gurukul is pending admin review.', [
         { text: 'OK', onPress: () => router.replace('/gurukul-portal' as any) },
       ]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Submission failed');
+      setError(failureMessage(e, 'Registering your gurukul'));
     } finally {
       setSubmitting(false);
     }

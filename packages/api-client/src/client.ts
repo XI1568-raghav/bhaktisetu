@@ -3,6 +3,7 @@
 // ──────────────────────────────────────────────
 
 import type { ApiResponse, ApiError } from "@poojly/shared";
+import { resolveApiErrorBody } from "./error-shapes.js";
 
 // ─── Types ───────────────────────────────────
 
@@ -58,7 +59,14 @@ export interface RequestOptions<T = unknown> extends Omit<RequestInit, "body"> {
 export class ApiClientError extends Error {
   public statusCode: number;
   public code: string;
-  public details?: Record<string, string[]>;
+  /**
+   * Whatever the route attached under `details` / `issues`. `unknown` rather
+   * than `Record<string, string[]>` because the three shapes actually sent —
+   * zod `flatten()` (`{ formErrors, fieldErrors }`), `ZodIssue[]`, and the
+   * ad-hoc objects account.ts spreads — are none of them that. Narrow at the
+   * call site.
+   */
+  public details?: unknown;
 
   constructor(apiError: ApiError) {
     super(apiError.error.message);
@@ -100,6 +108,10 @@ function getConfig(): ApiClientConfig {
   return clientConfig;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /**
  * Build a full URL from a path and optional query parameters.
  */
@@ -134,12 +146,28 @@ async function request<T>(
 
   const url = buildUrl(path, params);
 
+  /**
+   * `null` counts as "no body" alongside `undefined`; every other value —
+   * including the falsy `0`, `false` and `""` — is a body a caller meant to
+   * send. The old test was `body ? … : undefined`, which silently dropped
+   * those three.
+   */
+  const hasBody = body !== undefined && body !== null;
+
   // Build headers
   const headers = new Headers({
-    "Content-Type": "application/json",
     Accept: "application/json",
     ...config.defaultHeaders,
   });
+
+  // A JSON Content-Type on a request with NO body is what Fastify rejects with
+  // FST_ERR_CTP_EMPTY_JSON_BODY, before the route handler ever runs. This
+  // client set it unconditionally, so every bodyless mutation 400'd:
+  // PATCH /priest/bookings/:id/accept, PATCH /priest/pujas/:id/toggle-active,
+  // PATCH /consultation/:id/complete and the dispatch offer accept/decline
+  // pair are all bodyless by design. Declare the type only when there is
+  // something to describe.
+  if (hasBody) headers.set("Content-Type", "application/json");
 
   // Inject auth token
   if (!noAuth && config.getAuthToken) {
@@ -162,6 +190,11 @@ async function request<T>(
     }
   }
 
+  // Belt and braces for the FST_ERR_CTP_EMPTY_JSON_BODY case above: neither a
+  // `defaultHeaders` entry nor a per-request header may declare a content type
+  // for a request that carries no content.
+  if (!hasBody) headers.delete("Content-Type");
+
   // Abort controller for timeout
   const controller = new AbortController();
   const timeoutMs = timeout ?? config.timeout ?? 30_000;
@@ -171,7 +204,7 @@ async function request<T>(
     const response = await fetch(url, {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: hasBody ? JSON.stringify(body) : undefined,
       signal: controller.signal,
       ...fetchOptions,
     });
@@ -183,7 +216,16 @@ async function request<T>(
       return undefined as T;
     }
 
-    const data = await response.json();
+    // On the ERROR path the body is parsed defensively. `response.json()`
+    // throws on an empty or non-JSON body, and because that throw happened
+    // before the `!response.ok` branch it took the status code with it: a
+    // bodyless 401 (or a 502 HTML page from the CDN in front of the API)
+    // surfaced as NETWORK_ERROR with statusCode 0, so `onUnauthorised` never
+    // fired and no caller could branch on the status. The success path is
+    // unchanged — a 2xx that is not JSON is still an error.
+    const data: unknown = response.ok
+      ? await response.json()
+      : await response.json().catch(() => undefined);
 
     // Handle error responses
     if (!response.ok) {
@@ -203,16 +245,23 @@ async function request<T>(
         }
       }
 
+      // The mapper reads the shapes the API ACTUALLY sends — flat
+      // `{ error: "<sentence>" }` first and foremost. See error-shapes.ts for
+      // the enumeration and the resolution order.
+      const resolved = resolveApiErrorBody(data, response.status);
+
       const apiError: ApiError = {
         success: false,
         error: {
-          code: data?.error?.code ?? "UNKNOWN_ERROR",
-          message:
-            data?.error?.message ?? `Request failed with status ${response.status}`,
-          details: data?.error?.details,
+          code: resolved.code,
+          message: resolved.message,
+          ...(resolved.details !== undefined ? { details: resolved.details } : {}),
           statusCode: response.status,
         },
-        timestamp: data?.timestamp ?? new Date().toISOString(),
+        timestamp:
+          (isRecord(data) && typeof data["timestamp"] === "string"
+            ? data["timestamp"]
+            : undefined) ?? new Date().toISOString(),
       };
 
       throw new ApiClientError(apiError);
