@@ -128,8 +128,11 @@ describe('P1-B the booking page does not ask for a muhurat horizon it cannot ren
   });
 
   it('requests exactly that horizon from /panchang/puja-muhurat', () => {
-    const src = stripComments(code('app/pujas/book/page.tsx'));
-    expect(src).toMatch(/panchang\/puja-muhurat\?pujaType=\$\{pujaType\}&days=30/);
+    // The request lives in lib/puja-muhurat.ts since the muhurat layer moved
+    // out of the 2.7k-line page; the horizon is one constant, pinned to 30.
+    const src = stripComments(code('lib/puja-muhurat.ts'));
+    expect(src).toMatch(/MUHURAT_HORIZON_DAYS = 30\b/);
+    expect(src).toMatch(/panchang\/puja-muhurat\?pujaType=[^`]*&days=\$\{MUHURAT_HORIZON_DAYS\}/);
     expect(src).not.toMatch(/days=60/);
   });
 });
