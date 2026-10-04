@@ -6,6 +6,7 @@ import { Plus, ClipboardList, Building2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { userFacingMessage } from '../../lib/friendly-error';
 
 interface Gurukul {
   id: string; slug: string; name: string; city: string; state: string;
@@ -31,7 +32,7 @@ export default function GurukulPortalClient() {
     })
       .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then((data) => { setItems(data.gurukuls ?? []); setError(null); })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+      .catch((e) => setError(userFacingMessage(e, 'Failed to load')))
       .finally(() => setLoading(false));
   }, [isAuthenticated, session?.accessToken]);
 

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { H1 } from '../../../components/ui/heading-recipe';
 import { useAuth } from "../../../lib/auth-context";
 import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
+import { userFacingMessage, serverErrorMessage } from '../../../lib/friendly-error';
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -60,14 +61,14 @@ function AcceptInner() {
         );
         const j = await r.json();
         if (!r.ok) {
-          setError(j.error || "Failed");
+          setError(serverErrorMessage(j, "Could not accept this invitation. Please try again."));
           setState("error");
           return;
         }
         setState("ok");
         setTimeout(() => router.push("/org"), 1200);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed");
+        setError(userFacingMessage(e, "Could not accept this invitation. Please try again."));
         setState("error");
       }
     })();

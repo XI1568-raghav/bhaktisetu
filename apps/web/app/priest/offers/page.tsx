@@ -41,7 +41,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
-import { UserFacingError, serverErrorText } from '../../../lib/friendly-error';
+import { UserFacingError, serverErrorText, userFacingMessage, serverErrorMessage } from '../../../lib/friendly-error';
 
 interface OfferBooking {
   id: string;
@@ -125,9 +125,7 @@ function PriestOffersInner() {
       setLoadError(
         err instanceof TypeError
           ? 'Could not reach Darshya. Check your connection and try again.'
-          : err instanceof Error && err.message
-            ? err.message
-            : 'Could not load your offers. Please try again.',
+          : userFacingMessage(err, 'Could not load your offers. Please try again.'),
       );
       setOffers([]);
     } finally {
@@ -156,7 +154,7 @@ function PriestOffersInner() {
       if (!res.ok) {
         // The server is the only thing that knows whether the offer is still
         // open — another pandit may have taken it a second ago.
-        setActionError(payload.error ?? `Could not ${action} this offer. Please try again.`);
+        setActionError(serverErrorMessage(payload, `Could not ${action} this offer. Please try again.`));
         return;
       }
       setOffers((prev) => prev.filter((o) => o.bookingId !== bookingId));

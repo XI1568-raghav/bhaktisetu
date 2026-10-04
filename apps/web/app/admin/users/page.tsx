@@ -21,6 +21,7 @@ import {
   type AdminUserRecord,
 } from './users-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -139,7 +140,7 @@ function AdminUsersPageContent() {
        awaiting = await fetchPendingApprovalUserIds(token);
      } catch (err) {
        if (!cancelled) {
-         setApprovalsError(err instanceof Error ? err.message : 'Could not load the approval queue.');
+         setApprovalsError(userFacingMessage(err, 'Could not load the approval queue.'));
        }
      }
 
@@ -150,7 +151,7 @@ function AdminUsersPageContent() {
        setApiTotal(data.total);
        setPartialDirectory(!data.complete);
      } catch (err) {
-       if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load users');
+       if (!cancelled) setError(userFacingMessage(err, 'Failed to load users'));
      } finally {
        if (!cancelled) setLoading(false);
      }
@@ -229,7 +230,7 @@ function AdminUsersPageContent() {
      const verdict = verify(row, awaitingResult);
      if (!verdict.ok) setError(verdict.message);
    } catch (err) {
-     setError(err instanceof Error ? err.message : 'Action failed');
+     setError(userFacingMessage(err, 'Action failed'));
    } finally {
      setActionLoading(null);
    }

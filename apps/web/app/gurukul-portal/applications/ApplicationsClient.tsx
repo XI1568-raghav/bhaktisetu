@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Check, X, Forward, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 interface Application {
   id: string;
@@ -54,7 +55,7 @@ export default function ApplicationsClient() {
     })
       .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then((data) => { setItems(data.applications ?? []); setError(null); })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+      .catch((e) => setError(userFacingMessage(e, 'Failed to load')))
       .finally(() => setLoading(false));
   }, [isAuthenticated, session?.accessToken]);
 
@@ -71,7 +72,7 @@ export default function ApplicationsClient() {
       const data = await res.json();
       setItems((arr) => arr.map((a) => a.id === id ? { ...a, ...data.application } : a));
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Action failed');
+      alert(userFacingMessage(e, 'Action failed'));
     } finally {
       setBusyId(null);
     }

@@ -43,6 +43,7 @@ import {
   isNetworkFailure,
   NETWORK_ERROR_MESSAGE,
 } from '../../../lib/api-config';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 
 /** Payment rows the queue projection includes. `amount` is a stringified Decimal. */
 export interface RefundPayment {
@@ -96,22 +97,20 @@ function authHeaders(token: string | undefined): Record<string, string> {
 async function asJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      const parsed = text ? (JSON.parse(text) as { error?: string; message?: string }) : null;
-      if (parsed && typeof parsed.error === 'string') message = parsed.error;
-      else if (parsed && typeof parsed.message === 'string') message = parsed.message;
-    } catch {
-      /* keep the default */
-    }
-    throw new Error(message);
+    // RES-09: the server's own sentence when it wrote one worth reading (the
+    // API localises its validation and guard messages); otherwise friendly copy.
+    // The status is carried so the page can still tell a dead session apart.
+    throw new UserFacingError(
+      serverErrorText(text, userFacingMessage(new Error(`HTTP ${res.status}`), 'Request failed. Please try again.')),
+      res.status,
+    );
   }
   return (text ? JSON.parse(text) : {}) as T;
 }
 
 function rethrow(err: unknown): never {
-  if (isNetworkFailure(err)) throw new Error(NETWORK_ERROR_MESSAGE);
-  throw err instanceof Error ? err : new Error('Refund request failed.');
+  if (isNetworkFailure(err)) throw new UserFacingError(NETWORK_ERROR_MESSAGE);
+  throw err instanceof UserFacingError ? err : new UserFacingError(userFacingMessage(err, 'Refund request failed.'));
 }
 
 export interface RefundQueue {
@@ -197,12 +196,12 @@ export async function approveRefund(
     const body = await asJson<{ ok?: boolean; refund?: RefundResult }>(res);
     const refund = body.refund;
     if (!refund || typeof refund.ok !== 'boolean') {
-      throw new Error(
+      throw new UserFacingError(
         'The server accepted the request but did not report a refund result. Check the booking before refunding again.',
       );
     }
     if (!refund.ok) {
-      throw new Error(refund.error ?? 'The gateway refused the refund. Nothing was refunded.');
+      throw new UserFacingError(refund.error ?? 'The gateway refused the refund. Nothing was refunded.');
     }
     return refund;
   } catch (err) {

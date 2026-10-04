@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { BarChart3, IndianRupee, Users, Globe2, TrendingUp, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
@@ -85,9 +86,9 @@ export default function MetricsPage() {
       fetch(`${API_BASE_URL}/admin/metrics/funnel?days=7`, hdr).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`funnel ${r.status}`)))),
     ]);
     const failed: string[] = [];
-    if (results[0].status === 'fulfilled') setDashboard(results[0].value); else failed.push(`dashboard (${results[0].reason?.message ?? 'err'})`);
-    if (results[1].status === 'fulfilled') setInvestor(results[1].value); else failed.push(`investor (${results[1].reason?.message ?? 'err'})`);
-    if (results[2].status === 'fulfilled') setFunnel(results[2].value); else failed.push(`funnel (${results[2].reason?.message ?? 'err'})`);
+    if (results[0].status === 'fulfilled') setDashboard(results[0].value); else failed.push(`dashboard (${userFacingMessage(results[0].reason, 'could not load')})`);
+    if (results[1].status === 'fulfilled') setInvestor(results[1].value); else failed.push(`investor (${userFacingMessage(results[1].reason, 'could not load')})`);
+    if (results[2].status === 'fulfilled') setFunnel(results[2].value); else failed.push(`funnel (${userFacingMessage(results[2].reason, 'could not load')})`);
     setErr(failed.length === 3 ? `All panels failed: ${failed.join(', ')}` : failed.length > 0 ? `Partial: ${failed.join(', ')}` : null);
     setLoading(false);
   }

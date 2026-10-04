@@ -23,9 +23,9 @@ import {
  * screen a devotee lands on straight after paying.
  *
  *   :57 throw new Error(`Cancel ${res.status}${body ? `: ${body.slice(0,140)}` : ''}`)
- *   :63 setCancelError(e instanceof Error ? e.message : 'Could not cancel')
+ *   :63 setCancelError(userFacingMessage(e, 'Could not cancel'))
  *   :79 throw new Error(`Could not load consultation (${res.status})`)
- *   :84 setError(err instanceof Error ? err.message : 'Could not load consultation.')
+ *   :84 setError(userFacingMessage(err, 'Could not load consultation.'))
  *
  * The cancel path spliced up to 140 characters of the RESPONSE BODY into the
  * message and rendered it, so a gateway answering HTML put "<html><head><title>

@@ -30,13 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
-import {
- friendlyApiError,
- serverErrorMessage,
- serverErrorText,
- classifyUserFacing,
- UserFacingError,
-} from '../../../lib/friendly-error';
+import { friendlyApiError, serverErrorMessage, serverErrorText, classifyUserFacing, UserFacingError, userFacingMessage } from '../../../lib/friendly-error';
 // AUTH-06: the sixth and last of the screens that computed a `reauth` decision
 // and then had nowhere to send the devotee. See the two call sites below.
 import ReauthPrompt from '../../../components/ReauthPrompt';
@@ -433,7 +427,7 @@ function BookingDetailContent() {
  unauthorized = res.status === 401;
  // 401 takes precedence over the server's own wording ("Unauthorized"
  // tells a devotee nothing); for everything else prefer the API message.
- throw new Error(
+ throw new UserFacingError(
  res.status === 401
  ? 'Your session has expired. Please sign in again to view this booking.'
  // RES-09: `body?.error` is the SERVER's field — a bare
@@ -454,7 +448,7 @@ function BookingDetailContent() {
  const data = (await res.json()) as { booking?: ApiBookingDetail } & ApiBookingDetail;
  const raw = data.booking ?? data;
  if (!raw?.id) {
- throw new Error('The server returned an unrecognised booking.');
+ throw new UserFacingError('We could not load this booking. Please try again.');
  }
  if (!cancelled) {
  setBooking(mapBookingDetail(raw));
@@ -465,9 +459,10 @@ function BookingDetailContent() {
  if (!cancelled) {
  setBooking(null);
  setLoadError(
- err instanceof Error && err.message
- ? err.message
- : 'Could not reach the server. Please check your connection and try again.',
+ userFacingMessage(
+ err,
+ 'Could not reach the server. Please check your connection and try again.',
+ ),
  );
  // AUTH-06: the status wins where we have it; `friendlyApiError` still
  // gets a look in because a 401 raised inside the shared fetch layer
@@ -697,7 +692,7 @@ function BookingDetailContent() {
  setShowReschedule(false);
  } else {
  const body = await res.json().catch(() => ({}));
- setRescheduleMsg(body?.error ?? 'Could not reschedule. Try a date more than 24h away.');
+ setRescheduleMsg(serverErrorMessage(body, 'Could not reschedule. Try a date more than 24h away.'));
  }
  } catch {
  setRescheduleMsg('Network error. Please try again.');

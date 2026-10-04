@@ -6,6 +6,7 @@ import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../lib/ap
 import { useAuth } from '../lib/auth-context';
 
 import { buttonClass } from '../components/ui/button-recipe';
+import { userFacingMessage, UserFacingError } from '../lib/friendly-error';
 /**
  * Web push subscription prompt. Three states:
  *   - hidden: feature unsupported, user dismissed today, or already subscribed
@@ -85,12 +86,12 @@ export function NotificationPrompt() {
   const enable = async () => {
     setState('busy');
     try {
-      if (!isAuthenticated) throw new Error('Sign in to enable notifications');
+      if (!isAuthenticated) throw new UserFacingError('Sign in to enable notifications');
 
       const keyRes = await fetch(`${API_BASE_URL}/notifications/vapid-public-key`);
       const keyData = (await keyRes.json()) as { publicKey?: string; enabled?: boolean };
       if (!keyData.enabled || !keyData.publicKey) {
-        throw new Error('Push notifications are not configured on the server yet');
+        throw new UserFacingError('Push notifications are not configured on the server yet');
       }
 
       const reg = await navigator.serviceWorker.register('/sw.js');
@@ -98,7 +99,7 @@ export function NotificationPrompt() {
 
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        throw new Error(
+        throw new UserFacingError(
           permission === 'denied'
             ? 'Permission denied — enable in browser settings to receive notifications'
             : 'Permission not granted',
@@ -122,11 +123,11 @@ export function NotificationPrompt() {
         },
         DATA_FETCH_TIMEOUT_MS,
       );
-      if (!subRes.ok) throw new Error('Server rejected subscription');
+      if (!subRes.ok) throw new UserFacingError('Server rejected subscription');
 
       setState('hidden');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Could not enable notifications');
+      setErrorMsg(userFacingMessage(err, 'Could not enable notifications'));
       setState('error');
       // Persist dismiss so denied users aren't re-prompted on every navigation
       try {

@@ -1,4 +1,5 @@
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
+import { UserFacingError, serverErrorMessage, userFacingMessage } from './friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 // Donation model is currently gaushala-only (schema.prisma:1080), so the
@@ -24,12 +25,13 @@ function authHeaders(token: string | undefined): Record<string, string> {
 }
 
 async function describeFailure(res: Response, fallback: string): Promise<string> {
+  // RES-09: the server's own sentence when it wrote one worth reading, else
+  // friendly copy for the status. Never `fallback (HTTP status): raw detail`.
+  const friendly = userFacingMessage(new Error(`HTTP ${res.status}`), fallback);
   try {
-    const body = (await res.json()) as { message?: string; error?: string };
-    const detail = body.message ?? body.error;
-    return detail ? `${fallback} (${res.status}): ${detail}` : `${fallback} (${res.status})`;
+    return serverErrorMessage(await res.json(), friendly);
   } catch {
-    return `${fallback} (${res.status})`;
+    return friendly;
   }
 }
 
@@ -41,7 +43,7 @@ export async function getMyDonations(
   const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/donations`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load donations'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load donations'), res.status);
   const data = (await res.json()) as { donations: TempleDonation[]; total: number };
   return data.donations ?? [];
 }
@@ -77,7 +79,7 @@ export async function listTemplePujas(token: string | undefined): Promise<Temple
   const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/pujas`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load pujas'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load pujas'), res.status);
   const body = (await res.json()) as { offerings: TemplePujaOffering[] };
   return body.offerings;
 }
@@ -102,7 +104,7 @@ export async function listTemplePujasWithLinkState(
   const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/pujas`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load pujas'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load pujas'), res.status);
   const body = (await res.json()) as {
     offerings?: TemplePujaOffering[];
     templeLinked?: boolean;
@@ -126,7 +128,7 @@ export async function createTemplePuja(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create puja'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to create puja'), res.status);
   const body = (await res.json()) as { offering: TemplePujaOffering };
   return body.offering;
 }
@@ -141,7 +143,7 @@ export async function updateTemplePuja(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update puja'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to update puja'), res.status);
   const body = (await res.json()) as { offering: TemplePujaOffering };
   return body.offering;
 }
@@ -154,7 +156,7 @@ export async function deleteTemplePuja(
     method: 'DELETE',
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete puja'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to delete puja'), res.status);
 }
 
 // ─── Darshan streams CRUD ───────────────────────────────────────────────────
@@ -206,7 +208,7 @@ export async function listDarshanStreams(token: string | undefined): Promise<Dar
   const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/darshan`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load streams'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load streams'), res.status);
   const body = (await res.json()) as { streams: DarshanStream[] };
   return body.streams;
 }
@@ -220,7 +222,7 @@ export async function createDarshanStream(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create stream'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to create stream'), res.status);
   const body = (await res.json()) as { stream: DarshanStream };
   return body.stream;
 }
@@ -235,7 +237,7 @@ export async function updateDarshanStream(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update stream'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to update stream'), res.status);
   const body = (await res.json()) as { stream: DarshanStream };
   return body.stream;
 }
@@ -248,7 +250,7 @@ export async function deleteDarshanStream(
     method: 'DELETE',
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete stream'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to delete stream'), res.status);
 }
 
 export async function setDarshanStreamStatus(
@@ -261,7 +263,7 @@ export async function setDarshanStreamStatus(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ status }),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update stream status'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to update stream status'), res.status);
   const body = (await res.json()) as { stream: DarshanStream };
   return body.stream;
 }

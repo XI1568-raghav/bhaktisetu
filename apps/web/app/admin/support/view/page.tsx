@@ -46,6 +46,7 @@ import {
 } from '../../../../components/support/badges';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { userFacingMessage } from '../../../../lib/friendly-error';
 
 /**
  * WHY THERE IS NO HARDCODED AGENT LIST HERE ANY MORE
@@ -87,7 +88,7 @@ function AdminTicketDetailInner() {
  if (!cancelled) {
  const fallback = SAMPLE_ADMIN_TICKETS.find((t) => t.id === id);
  if (fallback) setTicket(fallback);
- setError(err instanceof Error ? err.message : 'Failed to load ticket');
+ setError(userFacingMessage(err, 'Failed to load ticket'));
  }
  } finally {
  if (!cancelled) setLoading(false);
@@ -109,7 +110,7 @@ function AdminTicketDetailInner() {
  if (!cancelled) setAgents(list);
  } catch (err) {
  if (!cancelled) {
- setAgentsError(err instanceof Error ? err.message : 'Could not load support agents');
+ setAgentsError(userFacingMessage(err, 'Could not load support agents'));
  }
  }
  })();
@@ -134,7 +135,7 @@ function AdminTicketDetailInner() {
  setTicket({ ...ticket, messages: [...ticket.messages, created] });
  setReply('');
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not send reply');
+ setActionError(userFacingMessage(err, 'Could not send reply'));
  } finally {
  setSendingReply(false);
  }
@@ -157,7 +158,7 @@ function AdminTicketDetailInner() {
  setTicket({ ...ticket, messages: [...ticket.messages, created] });
  setNote('');
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not save note');
+ setActionError(userFacingMessage(err, 'Could not save note'));
  } finally {
  setSavingNote(false);
  }
@@ -170,7 +171,7 @@ function AdminTicketDetailInner() {
  const updated = await patchTicket(session?.accessToken, ticket.id, { status });
  setTicket(updated);
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not update status');
+ setActionError(userFacingMessage(err, 'Could not update status'));
  }
  };
 
@@ -181,7 +182,7 @@ function AdminTicketDetailInner() {
  const updated = await patchTicket(session?.accessToken, ticket.id, { priority });
  setTicket(updated);
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not update priority');
+ setActionError(userFacingMessage(err, 'Could not update priority'));
  }
  };
 
@@ -200,7 +201,7 @@ function AdminTicketDetailInner() {
  });
  setTicket(updated);
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not assign agent');
+ setActionError(userFacingMessage(err, 'Could not assign agent'));
  }
  };
 

@@ -14,6 +14,7 @@
 //   - status='completed' conclusion='failure'   → red ✗
 
 import { useEffect, useState } from 'react';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 interface NormalizedRun {
   id: number;
@@ -147,7 +148,7 @@ export default function OrchestratorProgress() {
           setLastFetch(new Date());
         }
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : String(e));
+        if (!cancelled) setErr(userFacingMessage(e, 'Could not load orchestrator status.'));
       }
     }
 

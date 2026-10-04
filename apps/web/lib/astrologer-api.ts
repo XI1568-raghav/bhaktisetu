@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './api-config';
+import { UserFacingError, serverErrorMessage, userFacingMessage } from './friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -27,12 +28,13 @@ function authHeaders(token: string | undefined): Record<string, string> {
 }
 
 async function describeFailure(res: Response, fallback: string): Promise<string> {
+  // RES-09: the server's own sentence when it wrote one worth reading, else
+  // friendly copy for the status. Never `fallback (HTTP status): raw detail`.
+  const friendly = userFacingMessage(new Error(`HTTP ${res.status}`), fallback);
   try {
-    const body = (await res.json()) as { message?: string; error?: string };
-    const detail = body.message ?? body.error;
-    return detail ? `${fallback} (${res.status}): ${detail}` : `${fallback} (${res.status})`;
+    return serverErrorMessage(await res.json(), friendly);
   } catch {
-    return `${fallback} (${res.status})`;
+    return friendly;
   }
 }
 
@@ -46,7 +48,7 @@ export async function getAvailability(
   const res = await fetch(`${API_BASE_URL}/astrologer-portal/dashboard`, {
     headers: authHeaders(token),
   });
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load availability'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load availability'), res.status);
   const data = (await res.json()) as AstrologerDashboard;
   return data.profile?.availability ?? null;
 }
@@ -60,7 +62,7 @@ export async function updateAvailability(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ availability }),
   });
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to save availability'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to save availability'), res.status);
   const data = (await res.json()) as { availability: AvailabilityJson };
   return data.availability;
 }

@@ -7,6 +7,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, serverErrorText } from '../../lib/friendly-error';
 
 function apiBase(): string {
   const b = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
@@ -84,11 +85,11 @@ export default function BecomeGurukulClient() {
       });
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error(txt || `HTTP ${res.status}`);
+        throw new UserFacingError(serverErrorText(txt, 'Submission failed. Please try again.'), res.status);
       }
       router.push('/gurukul-portal');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Submission failed');
+      setError(userFacingMessage(e, 'Submission failed'));
     } finally {
       setSubmitting(false);
     }

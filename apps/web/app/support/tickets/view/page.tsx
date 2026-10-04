@@ -36,6 +36,7 @@ import {
  formatDateTime,
  timeAgo,
 } from '../../../../components/support/badges';
+import { userFacingMessage } from '../../../../lib/friendly-error';
 
 function TicketDetailInner() {
  const sp = useSearchParams();
@@ -59,7 +60,7 @@ function TicketDetailInner() {
  if (!cancelled) {
  const fallback = getUserTicket(id);
  if (fallback) setTicket(fallback);
- setError(err instanceof Error ? err.message : 'Failed to load ticket');
+ setError(userFacingMessage(err, 'Failed to load ticket'));
  }
  } finally {
  if (!cancelled) setLoading(false);
@@ -86,7 +87,7 @@ function TicketDetailInner() {
  setTicket({ ...ticket, messages: [...ticket.messages, created] });
  setReply('');
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not send reply');
+ setActionError(userFacingMessage(err, 'Could not send reply'));
  } finally {
  setSending(false);
  }
@@ -112,7 +113,7 @@ function TicketDetailInner() {
  const updated = await resolveOwnTicket(session?.accessToken, ticket.id, 'resolved');
  setTicket(updated);
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not update ticket');
+ setActionError(userFacingMessage(err, 'Could not update ticket'));
  }
  };
 

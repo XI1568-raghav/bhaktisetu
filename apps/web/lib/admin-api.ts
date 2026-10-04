@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './api-config';
+import { UserFacingError, serverErrorMessage, userFacingMessage } from './friendly-error';
 
 // Backend role enum (Prisma) → UI role string used by admin pages.
 export type BackendRole =
@@ -105,12 +106,13 @@ function authHeaders(token: string | undefined): Record<string, string> {
 // UI surfaces real diagnostics instead of bare HTTP status codes. The API
 // returns { error, message } on failures — we append message when available.
 async function describeFailure(res: Response, fallback: string): Promise<string> {
+  // RES-09: the server's own sentence when it wrote one worth reading, else
+  // friendly copy for the status. Never `fallback (HTTP status): raw detail`.
+  const friendly = userFacingMessage(new Error(`HTTP ${res.status}`), fallback);
   try {
-    const body = (await res.json()) as { message?: string; error?: string };
-    const detail = body.message ?? body.error;
-    return detail ? `${fallback} (${res.status}): ${detail}` : `${fallback} (${res.status})`;
+    return serverErrorMessage(await res.json(), friendly);
   } catch {
-    return `${fallback} (${res.status})`;
+    return friendly;
   }
 }
 
@@ -128,7 +130,7 @@ export async function getUsers(
     headers: authHeaders(token),
   });
   if (!res.ok) {
-    throw new Error(await describeFailure(res, 'Failed to load users'));
+    throw new UserFacingError(await describeFailure(res, 'Failed to load users'), res.status);
   }
   return (await res.json()) as UsersResponse;
 }
@@ -152,7 +154,7 @@ export async function getPendingApprovals(
     headers: authHeaders(token),
   });
   if (!res.ok) {
-    throw new Error(await describeFailure(res, 'Failed to load approvals'));
+    throw new UserFacingError(await describeFailure(res, 'Failed to load approvals'), res.status);
   }
   return (await res.json()) as PendingApprovalsResponse;
 }
@@ -171,7 +173,7 @@ export async function patchUser(
     body: JSON.stringify(updates),
   });
   if (!res.ok) {
-    throw new Error(await describeFailure(res, 'Action failed'));
+    throw new UserFacingError(await describeFailure(res, 'Action failed'), res.status);
   }
 }
 
@@ -180,7 +182,7 @@ export async function getDashboard(token: string | undefined): Promise<Dashboard
     headers: authHeaders(token),
   });
   if (!res.ok) {
-    throw new Error(await describeFailure(res, 'Failed to load dashboard'));
+    throw new UserFacingError(await describeFailure(res, 'Failed to load dashboard'), res.status);
   }
   return (await res.json()) as DashboardResponse;
 }
@@ -190,7 +192,7 @@ export async function getRevenue(token: string | undefined): Promise<RevenueResp
     headers: authHeaders(token),
   });
   if (!res.ok) {
-    throw new Error(await describeFailure(res, 'Failed to load revenue'));
+    throw new UserFacingError(await describeFailure(res, 'Failed to load revenue'), res.status);
   }
   return (await res.json()) as RevenueResponse;
 }
@@ -232,7 +234,7 @@ export async function getReports(token: string | undefined): Promise<ReportsResp
     headers: authHeaders(token),
   });
   if (!res.ok) {
-    throw new Error(await describeFailure(res, 'Failed to load reports'));
+    throw new UserFacingError(await describeFailure(res, 'Failed to load reports'), res.status);
   }
   return (await res.json()) as ReportsResponse;
 }

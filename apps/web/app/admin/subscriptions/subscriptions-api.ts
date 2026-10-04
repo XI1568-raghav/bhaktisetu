@@ -25,6 +25,7 @@ import {
   NETWORK_ERROR_MESSAGE,
 } from '../../../lib/api-config';
 import type { MarketplaceSubscription } from '../../../lib/subscription-api';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 
 export interface AdminSubscriptionList {
   subscriptions: MarketplaceSubscription[];
@@ -60,22 +61,20 @@ function authHeaders(token: string | undefined): Record<string, string> {
 async function asJson<T>(res: Response, fallback: string): Promise<T> {
   const text = await res.text();
   if (!res.ok) {
-    let message = `${fallback} (${res.status})`;
-    try {
-      const parsed = text ? (JSON.parse(text) as { error?: string; message?: string }) : null;
-      const detail = parsed?.error ?? parsed?.message;
-      if (detail) message = `${fallback} (${res.status}): ${detail}`;
-    } catch {
-      /* keep the default */
-    }
-    throw new Error(message);
+    // RES-09: the server's own sentence when it wrote one worth reading (the
+    // API localises its validation and guard messages); otherwise friendly copy.
+    // The status is carried so the page can still tell a dead session apart.
+    throw new UserFacingError(
+      serverErrorText(text, userFacingMessage(new Error(`HTTP ${res.status}`), fallback)),
+      res.status,
+    );
   }
   return (text ? JSON.parse(text) : {}) as T;
 }
 
 function rethrow(err: unknown): never {
-  if (isNetworkFailure(err)) throw new Error(NETWORK_ERROR_MESSAGE);
-  throw err instanceof Error ? err : new Error('Request failed.');
+  if (isNetworkFailure(err)) throw new UserFacingError(NETWORK_ERROR_MESSAGE);
+  throw err instanceof UserFacingError ? err : new UserFacingError(userFacingMessage(err, 'Request failed.'));
 }
 
 export async function listAdminSubscriptions(

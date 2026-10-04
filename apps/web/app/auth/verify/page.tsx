@@ -22,6 +22,7 @@ import {
   type AuthSession,
   type AuthUser,
 } from '../../../lib/auth-context';
+import { userFacingMessage, serverErrorMessage } from '../../../lib/friendly-error';
 
 /**
  * Magic-link verify page. The /api/v1/auth/magic-link/request endpoint
@@ -80,7 +81,7 @@ function VerifyInner() {
         }>(res);
         if (!data?.ok || !data.session || !data.user) {
           setStatus('error');
-          setErrorMessage(data?.error ?? UNREADABLE_RESPONSE_MESSAGE);
+          setErrorMessage(serverErrorMessage(data, UNREADABLE_RESPONSE_MESSAGE));
           return;
         }
 
@@ -123,9 +124,7 @@ function VerifyInner() {
         setErrorMessage(
           isNetworkFailure(err)
             ? NETWORK_ERROR_MESSAGE
-            : err instanceof Error
-              ? err.message
-              : 'Network error verifying link',
+            : userFacingMessage(err, 'Network error verifying link'),
         );
       }
     })();

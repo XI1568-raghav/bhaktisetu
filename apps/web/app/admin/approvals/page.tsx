@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, serverErrorMessage } from '../../../lib/friendly-error';
 
 // Backend returns aggregated rows from getPendingApprovals():
 //   { id, userId, role: 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' |
@@ -106,16 +107,15 @@ export default function AdminApprovalsPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
-          // Surface API error body so ALLOW_AUTH_DIAGNOSTICS output reaches UI.
-          let detail = '';
-          try {
-            const body = (await res.json()) as { message?: string; error?: string };
-            detail = body.message ?? body.error ?? '';
-          } catch { /* non-JSON body */ }
-          throw new Error(
-            detail
-              ? `Failed to load approvals (${res.status}): ${detail}`
-              : `Failed to load approvals (${res.status})`,
+          // RES-09: the server's own sentence when it wrote one worth reading,
+          // friendly copy for the status otherwise — never `(500): <raw body>`.
+          const body = await res.json().catch(() => null);
+          throw new UserFacingError(
+            serverErrorMessage(
+              body,
+              userFacingMessage(new Error(`HTTP ${res.status}`), 'Could not load approvals.'),
+            ),
+            res.status,
           );
         }
         const data = (await res.json()) as { approvals: BackendApproval[]; total: number };
@@ -131,7 +131,7 @@ export default function AdminApprovalsPage() {
           })),
         );
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load');
+        if (!cancelled) setError(userFacingMessage(err, 'Failed to load'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -155,7 +155,7 @@ export default function AdminApprovalsPage() {
       body: JSON.stringify({ approved }),
     });
     if (!res.ok) {
-      throw new Error(`Action failed (${res.status})`);
+      throw new Error(`HTTP ${res.status}`);
     }
   };
 
@@ -165,7 +165,7 @@ export default function AdminApprovalsPage() {
       await patchUser(approval.userId, true);
       setApprovals((prev) => prev.filter((a) => a.id !== approval.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Approve failed');
+      setError(userFacingMessage(err, 'Approve failed'));
     } finally {
       setActionLoading(null);
     }
@@ -179,7 +179,7 @@ export default function AdminApprovalsPage() {
       setRejectModal(null);
       setRejectReason('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Reject failed');
+      setError(userFacingMessage(err, 'Reject failed'));
     } finally {
       setActionLoading(null);
     }
