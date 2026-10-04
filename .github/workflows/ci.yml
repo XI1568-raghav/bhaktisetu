@@ -168,6 +168,7 @@ jobs:
           scripts/backup/test/backup-verification.test.mjs
           scripts/backup/test/db-backup-workflow.test.mjs
           scripts/agents/probe-verified-fetch.test.mjs
+          scripts/agents/pr-review.test.mjs
           scripts/test/ops-runbook-honesty.test.mjs
           scripts/test/secret-scan.test.mjs
 
