@@ -4,6 +4,7 @@ import { commissionPlatformCut } from '../lib/commission-math.js';
 import { sendEmail, providerApprovedEmail, providerRejectedEmail } from '../lib/email.js';
 import { invalidateAuthUser } from '../lib/auth-cache.js';
 import { clampLimit, clampPage } from '../lib/pagination.js';
+import { assertCauseApprovable } from '../lib/cause-approval-guard.js';
 
 /** SCAL-09: the UserRole enum, as a set, so an unknown ?role= is a clean empty
  *  answer rather than a Prisma enum error surfaced as HTTP 500. */
@@ -496,6 +497,16 @@ export class AdminService {
     try {
       const user = await prisma.user.findUnique({ where: { id } });
       if (!user) return null;
+
+      // Cause quality gate: approving a gaushala/temple whose profile is below
+      // the bar (see lib/cause-quality.ts) is refused BEFORE any write, so a
+      // 400 leaves no partial state. Un-approving is never gated.
+      if (updates.approved === true) {
+        const roles =
+          updates.roles ??
+          (await prisma.userRoleAssignment.findMany({ where: { userId: id }, take: 20 })).map((r) => r.role);
+        await assertCauseApprovable(id, roles, { missingProfileFails: !!updates.roles });
+      }
 
       // If roles are being updated, sync role assignments
       if (updates.roles) {
