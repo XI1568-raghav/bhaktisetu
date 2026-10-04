@@ -50,7 +50,7 @@ const FAQS = [
  },
  {
   q: 'Should I consult a pandit even after using this tool?',
-  a: 'This tool gives you the shastra-correct starting-syllable + a curated Sanskrit name pool. But the final namakaran involves more layers — name-number numerology compatibility, family deity (kuldevta) tradition, parents’ nakshatra harmony, planetary balance in the baby’s kundli, and the auspicious muhurat to whisper the name. A verified pandit-namakaran specialist will weave all these together. Use this tool as a starting shortlist, then consult.',
+  a: 'This tool gives you the shastra-correct starting-syllable + a curated Sanskrit name pool. But the final namakaran involves more layers — name-number numerology compatibility, family deity (kuldevta) tradition, parents’ nakshatra harmony, planetary balance in the baby’s kundli, and the auspicious muhurat to whisper the name. A pandit-namakaran specialist will weave all these together. Use this tool as a starting shortlist, then consult.',
  },
 ];
 
@@ -156,7 +156,7 @@ export default function BabyNamePage() {
    <section className="mt-12 rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
     <h2 className="font-serif text-xl text-gray-900">Ready for the full namakaran ceremony?</h2>
     <p className="mt-2 text-sm text-gray-700">
-     A verified pandit will compute your baby&rsquo;s exact nakshatra-pada from birth time + place,
+     A pandit will compute your baby&rsquo;s exact nakshatra-pada from birth time + place,
      match the shortlisted names against name-number numerology, kuldevta tradition, and graha
      balance in the baby kundli, then perform the namakaran samskara at the auspicious muhurat.
     </p>

@@ -41,11 +41,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  const priest = await getPublicPriest(id);
  if (!priest) return { title: 'Pandit' };
  return {
-  title: `${priest.displayName} · Verified Pandit`,
+  title: `${priest.displayName} · Pandit`,
   alternates: { canonical: `https://darshya.online/pandits/${id}` },
   description:
    priest.bio?.slice(0, 160) ??
-   `Book authentic pujas with ${priest.displayName} on Darshya. Verified pandit, transparent pricing.`,
+   `Book authentic pujas with ${priest.displayName} on Darshya. Pandit, transparent pricing.`,
  };
 }
 

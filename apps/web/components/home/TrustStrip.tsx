@@ -22,7 +22,7 @@ const STATIC_ITEMS: TrustItem[] = [
   // The pandit line is deliberately not a headcount. Three seeded priests is
   // true and reads as an empty marketplace; "Aadhaar-verified" is the claim
   // that is both true and worth making. Restore a number when supply is real.
-  { Icon: Users, text: 'Aadhaar-verified pandits' },
+  { Icon: Users, text: 'Pandit payout after Aadhaar KYC' },
   // CM-03 (prod sweep 2026-08-12): this used to promise zero hidden fees while
   // checkout added a ₹51 platform fee (plus ₹150 for prasad delivery) that no
   // surface before step 3 of 4 mentioned. Both are genuinely charged, so the

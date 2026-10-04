@@ -6,12 +6,12 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/weddings' },
   title: 'Hindu Wedding Planning — Muhurat, Pandit, Samagri',
   description:
-    'Plan your Vedic Hindu wedding end-to-end on Darshya. Find an auspicious muhurat from your kundli, book a verified pandit, and get the full samagri kit shipped. Three packages from ₹15,000.',
+    'Plan your Vedic Hindu wedding end-to-end on Darshya. Find an auspicious muhurat from your kundli, book a pandit, and get the full samagri kit shipped. Three packages from ₹15,000.',
   openGraph: {
     images: ['/images/golden-temple-og.jpg'],
     title: 'Darshya Weddings — Muhurat, Pandit, Samagri',
     description:
-      'Auspicious muhurat finder, verified pandits, full samagri. Three Vedic wedding packages from ₹15,000.',
+      'Auspicious muhurat finder, pandits, full samagri. Three Vedic wedding packages from ₹15,000.',
     type: 'website',
     url: 'https://darshya.online/weddings',
   },
@@ -24,7 +24,7 @@ const jsonLd = {
   provider: { '@type': 'Organization', name: 'Darshya', url: 'https://darshya.online' },
   areaServed: { '@type': 'Country', name: 'India' },
   description:
-    'Vedic Hindu wedding muhurat finder, verified pandit booking, samagri kit, and 4-day Royal ceremony packages.',
+    'Vedic Hindu wedding muhurat finder, pandit booking, samagri kit, and 4-day Royal ceremony packages.',
   offers: [
     { '@type': 'Offer', name: 'Basic — Pandit only', price: '15000', priceCurrency: 'INR' },
     {
@@ -90,8 +90,8 @@ export default function WeddingsPage() {
               d: 'Compute the most auspicious dates from bride + groom nakshatras across abhijit muhurat, panchak avoidance, and chandrashtama.',
             },
             {
-              t: 'Verified pandit',
-              d: 'Hand-picked, Aadhaar-verified pandits trained in classical Vedic rites — Hindi, Sanskrit, regional languages.',
+              t: 'Pandit',
+              d: 'Pandits for classical Vedic rites — Hindi, Sanskrit, regional languages. A pandit is paid only once Aadhaar-based KYC is on file.',
             },
             {
               t: 'End-to-end samagri',

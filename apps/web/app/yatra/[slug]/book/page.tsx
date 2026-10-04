@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   // request-a-booking flow that actually exists.
   return {
     title: `Request a booking — ${yatra.title} (pandit-curated package)`,
-    description: `Request a booking for ${yatra.title}: ${yatra.durationDays} days, all-inclusive package from ₹${yatra.startingPrice.toLocaleString('en-IN')} per person. Verified pandits, hotel + transport handled. Our yatra desk confirms availability and emails your payment link — no charge when you submit.`,
+    description: `Request a booking for ${yatra.title}: ${yatra.durationDays} days, all-inclusive package from ₹${yatra.startingPrice.toLocaleString('en-IN')} per person. Pandits, hotel + transport handled. Our yatra desk confirms availability and emails your payment link — no charge when you submit.`,
     alternates: { canonical: `/yatra/${slug}/book` },
   };
 }

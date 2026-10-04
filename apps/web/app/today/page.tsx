@@ -249,7 +249,7 @@ export default async function TodayPage() {
           <span className="block text-sm text-surface-600 mt-1">
             {suggestedPujaSlug
               ? `Most-recommended ritual for ${dayName}`
-              : `Find the right ritual for ${dayName} with a verified pandit`}
+              : `Find the right ritual for ${dayName} with a pandit`}
           </span>
         </Link>
         <Link

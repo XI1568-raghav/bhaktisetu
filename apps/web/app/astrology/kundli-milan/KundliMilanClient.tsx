@@ -271,7 +271,7 @@ export default function KundliMilanClient({ options }: Props) {
       <p className="font-serif text-lg text-gray-900">Want the full picture?</p>
       <p className="mt-1 text-sm text-gray-700">
        Ashtakoot is one layer. Navamsa (D9), 7th-house lord, dasha timing, and Manglik cancellation
-       need a verified pandit reviewing both charts together.
+       need a pandit reviewing both charts together.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
        <Link

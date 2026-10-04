@@ -153,7 +153,7 @@ export default function PitchPage() {
       <Slide id="05-moat" num="05 / 12">
         <span className="pitch-eyebrow">Differentiation</span>
         <h2 className="pitch-h2">
-          Video proof. Verified priests.
+          Video proof. Priests.
           <br />
           <span className="pitch-grad-text">
             A trust moat the competition cannot replicate quickly.
@@ -162,7 +162,7 @@ export default function PitchPage() {
         <div className="pitch-grid pitch-grid-3" style={{ marginTop: 32 }}>
           <Card title="Video-proof puja booking">
             Every paid puja requires the priest to upload a recording before payout is released.
-            Aadhaar-verified providers, escrow-released settlement.
+            Aadhaar KYC before provider payout, escrow-released settlement.
           </Card>
           <Card title="Eight role portals">
             Devotee, Priest, Astrologer, Wellness, Gaushala, Yatra, Temple Admin, Platform Admin —

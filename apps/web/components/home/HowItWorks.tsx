@@ -35,7 +35,7 @@ const STEPS = [
   },
   {
     Icon: UserCheck,
-    title: 'A verified pandit is assigned',
+    title: 'A pandit is assigned',
     body: 'Every pandit on Darshya is Aadhaar-verified. You get their name and the confirmed time before the day of the puja.',
   },
   {

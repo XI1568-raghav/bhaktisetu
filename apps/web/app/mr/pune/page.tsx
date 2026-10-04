@@ -8,7 +8,7 @@ export const revalidate = 86400;
 export const metadata: Metadata = {
   title: 'दर्श्या पुणे — पूजा, दर्शन, पंचांग (मराठीत)',
   description:
-    'पुणे महानगरात पडताळलेले पंडित + दगडूशेठ हलवाई + कसबा गणपती + पार्वती + चिंचवड + अष्टविनायक — व्हिडिओ पुराव्यासह पूजा, थेट दर्शन, ८०G पावती.',
+    'पुणे महानगरात पंडित + दगडूशेठ हलवाई + कसबा गणपती + पार्वती + चिंचवड + अष्टविनायक — व्हिडिओ पुराव्यासह पूजा, थेट दर्शन, ८०G पावती.',
   alternates: {
     canonical: 'https://darshya.online/mr/pune',
     languages: {
@@ -116,7 +116,7 @@ export default function MarathiPuneLanding() {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: 'दर्श्या पुणे',
-    description: 'Verified pandits + 6 anchor temples in Pune metro. Marathi-language puja booking + live darshan.',
+    description: 'Pandits + 6 anchor temples in Pune metro. Marathi-language puja booking + live darshan.',
     url: 'https://darshya.online/mr/pune',
     areaServed: { '@type': 'City', name: 'Pune', sameAs: 'https://en.wikipedia.org/wiki/Pune' },
     address: { '@type': 'PostalAddress', addressLocality: 'Pune', addressRegion: 'Maharashtra', addressCountry: 'IN' },
@@ -144,7 +144,7 @@ export default function MarathiPuneLanding() {
           दर्श्या पुणे
         </h1>
         <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
-          दगडूशेठ हलवाई गणपतीपासून चिंचवड मोरया गोसावींपर्यंत — पुणे महानगरातील ६ मानाच्या मंदिरांत पडताळलेल्या पंडितांकडून पूजा, व्हिडिओ पुरावा, थेट दर्शन, ८०G पावती.
+          दगडूशेठ हलवाई गणपतीपासून चिंचवड मोरया गोसावींपर्यंत — पुणे महानगरातील ६ मानाच्या मंदिरांत पंडितांकडून पूजा, व्हिडिओ पुरावा, थेट दर्शन, ८०G पावती.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link

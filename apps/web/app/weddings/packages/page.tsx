@@ -25,7 +25,7 @@ const PACKAGES: Package[] = [
     price: '₹15,000',
     tagline: 'Pandit-only at your venue.',
     features: [
-      'Verified Vedic pandit',
+      'Vedic pandit',
       'Sankalp + saat phere',
       'Hindi or Sanskrit recitation',
       'Travel within 25 km of major cities',

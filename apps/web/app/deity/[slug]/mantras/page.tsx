@@ -149,7 +149,7 @@ export default async function DeityMantrasPage({ params }: Params) {
 
       <section className="mb-8 rounded-2xl bg-gradient-to-r from-saffron-50 to-amber-50 border border-saffron-200 p-6 text-center">
         <h2 className="text-lg font-bold text-surface-900 mb-2">
-          Book a {d.name} puja with a verified pandit
+          Book a {d.name} puja with a pandit
         </h2>
         <p className="text-sm text-surface-700 mb-4">
           Trained pandits chant these mantras on your behalf with mandatory video proof.

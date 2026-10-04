@@ -307,7 +307,7 @@ export default async function MarriagePage() {
  />
  <div className="flex-1 min-w-0">
  {/* TC-08: a BadgeCheck gated on `p.isVerified` used to sit here, and a
-     "Verified pandit" / "Profile under review" ternary below. Both were
+     "Pandit" / "Profile under review" ternary below. Both were
      constants dressed as per-pandit judgements: GET /priests filters
      `isVerified: true AND status: 'active'`
      (apps/api/src/routes/priests-public.ts), so every row this page can

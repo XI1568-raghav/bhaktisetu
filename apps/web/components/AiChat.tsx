@@ -93,7 +93,7 @@ Book a **Mahamrityunjaya Japa** or **Dhanvantari Puja** on Darshya for healing b
 - Light a diya at your workspace
 - Place a Saraswati idol in the northeast corner of your room
 
-Visit Darshya's **Pujas** section to book with verified priests.`,
+Visit Darshya's **Pujas** section to book with priests.`,
  },
  {
  keywords: ['peace', 'shanti', 'mantra', 'calm', 'anxiety', 'stress', 'tension', 'worry', 'fear', 'meditation', 'dhyana'],
@@ -172,7 +172,7 @@ Chant 108 times on Fridays for prosperity.
 **Katha Upanishad:** *"श्रेयश्च प्रेयश्च मनुष्यमेतस्तौ"*
 "Both the good and pleasant approach a person. The wise choose the good."
 
-Book **Lakshmi Puja** or **Kubera Puja** on Darshya with verified priests.`,
+Book **Lakshmi Puja** or **Kubera Puja** on Darshya with priests.`,
  },
  {
  keywords: ['child', 'baby', 'son', 'daughter', 'pregnancy', 'fertility', 'santan'],
@@ -190,7 +190,7 @@ Book **Lakshmi Puja** or **Kubera Puja** on Darshya with verified priests.`,
 - **Saraswati Puja** — for wisdom and academic success
 - **Aksharabhyasam** — the traditional learning initiation
 
-Book **Santana Gopala Puja** on Darshya with verified priests across India.`,
+Book **Santana Gopala Puja** on Darshya with priests across India.`,
  },
  {
  keywords: ['grief', 'death', 'loss', 'passed away', 'departed', 'shradh', 'ancestors', 'pitru'],
@@ -210,7 +210,7 @@ Book **Santana Gopala Puja** on Darshya with verified priests across India.`,
 
 *"ॐ शान्तिः शान्तिः शान्तिः"*
 
-Book **Shraddha Puja** or **Pind Daan** on Darshya with verified priests.`,
+Book **Shraddha Puja** or **Pind Daan** on Darshya with priests.`,
  },
  {
  keywords: ['vastu', 'house', 'home', 'direction', 'flat', 'office', 'construction'],
@@ -273,7 +273,7 @@ This reminds us that divine guidance is always available to those who seek it si
 
 *"श्रद्धावान् लभते ज्ञानम्"* — "One who has faith attains wisdom." (Gita 4.39)
 
-Explore Darshya's **Content** section for mantras and spiritual articles, or **Book a Puja** with a verified priest.`;
+Explore Darshya's **Content** section for mantras and spiritual articles, or **Book a Puja** with a priest.`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
