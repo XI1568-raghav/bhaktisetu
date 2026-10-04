@@ -34,12 +34,13 @@ gh run watch                                   # polls to live, then curls the s
 ---
 
 > **Revised 2026-10-04 (`OPS-10`/`OPS-18`/`OPS-19`).** `render.yaml` sets
-> `autoDeploy: false` on both services, but the Render **dashboard** reports
-> Auto-Deploy **yes** on `main` for the API (measured 2026-09-09/12). So: for the
-> **web**, a pushed revert deploys nothing; for the **API**, a push to `main`
-> does redeploy it within seconds, as an unpinned forward deploy of `main` HEAD
-> with no migration step. Either way the pinned `-f commit=<SHA>` dispatch below
-> is the controlled rollback, because it names the exact commit. Section 4 was
+> `autoDeploy: false` on both services. The Render **dashboard** disagreed for the
+> API until the owner switched its Auto-Deploy off on 2026-10-04 (measured before:
+> 2026-09-09/12 `yes`; after: `no`, updated 2026-10-04T06:36Z), so today a push to
+> `main` deploys neither service. Before that, a push redeployed the API within
+> seconds as an unpinned forward deploy of `main` HEAD with no migration step.
+> In every case the pinned `-f commit=<SHA>` dispatch below is the controlled
+> rollback, because it names the exact commit. Section 4 was
 > also wrong about migrations and has been rewritten. When `render.yaml` and the
 > dashboard disagree, the dashboard wins:
 > `gh workflow run render-diag.yml -f mode=detail -f sid=<SID>`.

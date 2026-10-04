@@ -17,8 +17,9 @@
 > 2026-08-20 text were true of `render.yaml` and false of production, and are
 > corrected below from the Render dashboard facts measured 2026-09-09/12
 > (`OPS-18`, `OPS-19` in `docs/audit/LEDGER.json`): the API's dashboard Start
-> Command is not the repo's start script, the API auto-deploys on push, and its
-> region is not `oregon`. Also corrected: the dispatch commands no longer pin the
+> Command is not the repo's start script, the API auto-deployed on push until the
+> owner turned that off on 2026-10-04 (see Scenario 3), and its region is not
+> `oregon`. Also corrected: the dispatch commands no longer pin the
 > old feature branch (its guards merged to `main`). **`render.yaml` describes
 > intent, not production. When the two disagree, read the dashboard (or
 > `gh workflow run render-diag.yml -f mode=detail -f sid=<SID>`).**
@@ -132,11 +133,13 @@ account reached 750.2 / 750 and Render suspended **both** services with
 
 Roll back with `docs/runbooks/prod-rollback.md`: dispatch `render-diag.yml` with
 `-f mode=deploy -f sid=<SID> -f commit=<SHA>`. Do **not** push a revert and wait.
-For the web service Auto-Deploy is off, so a push deploys nothing at all. For the
-API the dashboard reports Auto-Deploy on (`OPS-18`), so a push to `main` does
-redeploy it within seconds, but that is an unpinned forward deploy of whatever
-`main` holds, with no migration step and no way to choose the commit; it is not a
-controlled rollback.
+Auto-Deploy is off on both services, so a push deploys nothing at all. The API's
+was on until the owner switched it off on 2026-10-04 (`OPS-18`; Render's API read
+`autoDeploy: "no"`, last updated 2026-10-04T06:36Z). Before that, a push to `main`
+redeployed the API within seconds as an unpinned forward deploy with no migration
+step. Re-check with `gh workflow run render-diag.yml -f mode=detail -f sid=<SID>`
+before relying on this: the dashboard setting can be flipped back without any
+change to the repository.
 
 ### 3b — the API is up and healthy but returns 500s after a deploy (schema behind code)
 
@@ -145,8 +148,9 @@ new column or table fail at runtime.
 
 Cause, measured (`OPS-19`): the API is started from the dashboard Start Command
 (`tsx src/server.ts`), so **no migration step is part of a deploy.** A deploy
-going green says nothing about the schema. Combined with API Auto-Deploy
-(`OPS-18`), code can reach production seconds after merge, ahead of its schema.
+going green says nothing about the schema. That still holds for every dispatched
+deploy. While API Auto-Deploy was on (`OPS-18`, until 2026-10-04), code also
+reached production seconds after merge, ahead of its schema.
 
 Recovery:
 
