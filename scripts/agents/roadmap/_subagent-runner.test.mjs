@@ -77,7 +77,7 @@ describe('runSubagent', () => {
 });
 
 // ── 0-queue-write fix (2026-07-31): write_queue tool_use output ─────────────
-// glm-5.2 does not reliably emit ---END-QUEUE-FILE--- + YAML-frontmatter text,
+// A model does not reliably emit ---END-QUEUE-FILE--- + YAML-frontmatter text,
 // so sub-agents returned rich briefings that evaporated into "0 queue files".
 // Fix: sub-agents emit each queue file via a write_queue tool_use block (the
 // structured-output mechanism the Decision Agent already uses).

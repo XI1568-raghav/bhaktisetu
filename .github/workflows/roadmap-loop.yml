@@ -55,8 +55,7 @@ concurrency:
 # runner which has its own job lifecycle (60min timeout, no external restart).
 #
 # Required GH repo secrets:
-#   ANTHROPIC_API_KEY_BLACKBOX_PROXY  Anthropic via Blackbox proxy
-#   ANTHROPIC_BASE_URL                Blackbox proxy URL
+#   ANTHROPIC_API_KEY                 Anthropic API key (PAID usage, not free tier)
 #   SUPABASE_DIRECT_URL               Postgres conn for KPI scrape
 #   DATABASE_URL_READONLY             Read-only role conn (preferred)
 #   POSTHOG_PERSONAL_API_KEY          PostHog KPI scrape
@@ -67,6 +66,19 @@ concurrency:
 
 jobs:
   orchestrate:
+    # OPT-IN since 2026-10-04. The scheduled run only happens when the repo
+    # VARIABLE ROADMAP_LOOP_ENABLED is 'true'; a manual dispatch always runs.
+    #
+    # Why a switch and not just the cron: this job and the PR reviewer read the
+    # same ANTHROPIC_API_KEY secret. The reviewer is one cheap request per PR;
+    # this is an Opus-class agent loop. Without the switch, setting the key so
+    # that PRs get reviewed would also start this loop spending every Monday —
+    # on a project with no budget, in a dry-run that has written 0 queue files
+    # per cycle. It also failed every week from 2026-09-04 for want of a working
+    # key, ~2.5 runner-minutes each time for nothing; skipped jobs cost none.
+    #
+    # To turn the weekly run on:  gh variable set ROADMAP_LOOP_ENABLED --body true
+    if: github.event_name == 'workflow_dispatch' || vars.ROADMAP_LOOP_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -88,10 +100,9 @@ jobs:
         env:
           DRY_RUN: ${{ github.event.inputs.dry_run || vars.ROADMAP_DRY_RUN || 'true' }}
           CYCLE_ID: 'C-${{ github.run_id }}'
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
-          ANTHROPIC_API_KEY_BLACKBOX_PROXY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
-          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
-          ANTHROPIC_MODEL: blackboxai/z-ai/glm-5.2
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
           SUPABASE_DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
           DATABASE_URL_READONLY: ${{ secrets.DATABASE_URL_READONLY }}
           POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}

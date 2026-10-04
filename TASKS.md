@@ -145,7 +145,7 @@ Accounts: `qa-audit-probe@gmail.com`, `qa-audit-probe2@outlook.com`, `qa-live-se
 
 - **Wiring (committed):** PR **#234** (`chore/graft-code-graph`, commit `3350de45`) — `.mcp.json` (6 tools: `find_code`/`file_api`/`trace_calls`/`find_all`/`repo_map`/`check_freshness`), `.claude/settings.json` statusline + 5 hooks, `.claude/skills/graft/SKILL.md`, `.claude/helpers/graft-*.cjs`, `.gitignore` (`/graft/` anchored + shareable `.claude` re-included), `.ignore` (graph cards stay greppable). **Action: merge PR #234.**
 - **Windows fix (load-bearing):** hook/statusline commands use `$CLAUDE_PROJECT_DIR`, NOT the `${CLAUDE_PROJECT_DIR:-.}` form `graft init` emits — the `:-` default-expansion literal-corrupts under Git-Bash on win32. If you re-run `graft init`, re-apply this strip.
-- **Graph (local, gitignored — NOT committed):** `graft/` = **7,132 nodes / 14,365 edges / 1,437 cards** (tsx/ts/py). Deep (LLM) layer via local Blackbox proxy `http://127.0.0.1:8787/v1` + model `z-ai/glm-5.2` (`GRAFT_PROVIDER=openai GRAFT_BASE_URL=… GRAFT_API_KEY=proxy GRAFT_MODEL=… graft build --deep -j 6`). Built 2026-08-06; ~955 concept nodes computed; per-symbol summary tail resumed to fill remaining pending. **Rebuild any time:** `graft build` (structural) / `--deep` (LLM, optional). Graph auto-refreshes structurally before each query.
+- **Graph (local, gitignored — NOT committed):** `graft/` = **7,132 nodes / 14,365 edges / 1,437 cards** (tsx/ts/py). The deep (LLM) layer is optional and off by default — it needs an API key. Built 2026-08-06; ~955 concept nodes computed; per-symbol summary tail resumed to fill remaining pending. **Rebuild any time:** `graft build` (structural) / `--deep` (LLM, optional). Graph auto-refreshes structurally before each query.
 - **Pending:** (1) merge PR #234; (2) restart Claude Code to load the graft MCP server; (3) `graft build --deep` re-run fills any remaining per-symbol summaries (cached, cheap).
 - **Detail:** `docs/engineering/graft-code-graph-2026-08-06.md`.
 
@@ -289,8 +289,7 @@ docs/roadmap/
 ### Founder action items before Phase 6 soak
 
 1. Set GH Actions secrets (orchestrator-loop workflow won't fire useful results until set):
-   - `ANTHROPIC_API_KEY_BLACKBOX_PROXY` — Blackbox proxy key from existing CLAUDE_CODE env
-   - `ANTHROPIC_BASE_URL` — Blackbox proxy base URL
+   - `ANTHROPIC_API_KEY` — Anthropic API key (PAID usage — not covered by any free tier)
    - `SUPABASE_DIRECT_URL` (or new `DATABASE_URL_READONLY` w/ read-only role)
    - `POSTHOG_PERSONAL_API_KEY` + `POSTHOG_PROJECT_ID`
    - `RENDER_API_KEY`
@@ -353,7 +352,7 @@ TDD ritual: RED commit (stub) → GREEN commit (impl + pg lockfile)
 - GH min: 0/2000 (0%) — no workflow runs yet (Phase 3 only)
 - Render: unchanged
 - Supabase: unchanged
-- Anthropic Blackbox proxy: ~2.5M tokens consumed across sub-agent dispatches (free)
+- LLM usage: ~2.5M tokens consumed across sub-agent dispatches during the build
 
 ### Pending founder decisions (no blockers — defaults locked)
 
@@ -397,7 +396,7 @@ Low-medium: year-1 revenue targets (₹9 Cr base / ₹25 Cr stretch — tripwire
 Low: solo founder bandwidth for queue consumption + supply onboarding scaling (sub-project 4 addresses)
 
 Top risks:
-1. Blackbox proxy permanently blocks Opus 4.7 (no silent swap = workflow halts, founder must upgrade or approve model change)
+1. No Anthropic API key is set, or the API rejects the model (no silent swap = workflow halts until the founder sets a key or approves a model)
 2. Decision Agent emits low-quality prompts (7d soak gate exists to catch + tune)
 3. Supply onboarding can't scale solo (sub-project 4 + first hire trigger)
 
