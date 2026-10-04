@@ -37,7 +37,7 @@ const INTERACTIVE = 'a[href], button, input, select, textarea, [tabindex]';
 
 /** app/layout.tsx wraps the whole app in CartProvider (layout.tsx:331). */
 async function renderStore() {
-  const ui = await StorePage();
+  const ui = await StorePage({ searchParams: Promise.resolve({}) });
   await act(async () => {
     render(<CartProvider>{ui}</CartProvider>);
   });
@@ -70,13 +70,40 @@ describe('A11Y-11 — /store has no interactive control inside another', () => {
     expect(pairs.slice(0, 5), `${pairs.length} nested-interactive controls`).toEqual([]);
   });
 
-  it('keeps every Add to Cart control outside the product link', async () => {
+  /**
+   * COM-01 changed WHICH control each card renders, not where it sits.
+   *
+   * Every one of the 24 seed rows carries a `prod_NNN` id, and POST
+   * /api/v1/store/orders resolves line items against `StoreProduct` BY UUID —
+   * so "Add to Cart" on these cards led to a basket, an address, a payment
+   * method and then `400 Unknown product: prod_015`. Nothing in the grid could
+   * ever be bought. The cards now render a disabled "Not available to order"
+   * with the reason underneath; a seller row (a real uuid) still gets the live
+   * control, which is what __tests__/store-seller-shelf.test.tsx covers.
+   *
+   * The A11Y-11 property is unchanged and still asserted: whatever control the
+   * card renders, it must not be nested inside the card's link.
+   */
+  it('keeps every cart control outside the product link', async () => {
     await renderStore();
-    const buttons = screen.getAllByRole('button', { name: /add to cart/i });
+    const buttons = screen.getAllByRole('button', {
+      name: /add to cart|not available to order/i,
+    });
     expect(buttons.length).toBeGreaterThan(10);
     for (const b of buttons) {
-      expect(b.closest('a[href]'), 'Add to Cart must not sit inside the card link').toBeNull();
+      expect(b.closest('a[href]'), 'the cart control must not sit inside the card link').toBeNull();
     }
+  });
+
+  it('offers no cart control for a product no seller stocks', async () => {
+    await renderStore();
+    // The whole seed grid is browse-only today, so there must be no live
+    // "Add to Cart" anywhere in it — an enabled button here is a promise the
+    // API refuses to keep.
+    expect(screen.queryAllByRole('button', { name: /^add to cart$/i })).toEqual([]);
+    const disabled = screen.getAllByRole('button', { name: /not available to order/i });
+    expect(disabled.length).toBeGreaterThan(10);
+    for (const b of disabled) expect(b).toBeDisabled();
   });
 
   it('ships no dead "Add to wishlist" control', async () => {
@@ -87,8 +114,18 @@ describe('A11Y-11 — /store has no interactive control inside another', () => {
 
 /* ── The button is real, not decoration ──────────────────────────────────── */
 
+/**
+ * COM-01: this fixture's id used to be `'p1'`.
+ *
+ * `AddToCartButton` now refuses any id that is not a `StoreProduct` uuid,
+ * because that is the only id `POST /api/v1/store/orders` can resolve — so
+ * `'p1'` would exercise the browse-only path and these three tests would be
+ * asserting nothing about the real control. The id below is a uuid, i.e. a
+ * product a seller has actually listed, which is the only case in which "Add to
+ * Cart" is a promise the API will keep.
+ */
 const PRODUCT = {
-  id: 'p1',
+  id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
   handle: 'premium-brass-puja-thali-set',
   title: 'Premium Brass Puja Thali Set',
   price: 1299,
@@ -155,6 +192,30 @@ describe('A11Y-11 — Add to Cart actually adds to the cart', () => {
 
     const button = screen.getByRole('button', { name: /out of stock/i });
     expect(button).toBeDisabled();
+
+    fireEvent.click(button);
+    expect(screen.getByTestId('count').textContent).toBe('0');
+  });
+
+  /**
+   * COM-01. "Out of stock" is the WRONG reason for one of the 24 seed rows: it
+   * says the item exists and will come back. It does not exist — no seller has
+   * ever listed it, prod holds zero `store_products` — and the order route
+   * would answer `400 Unknown product`. The guard therefore runs before the
+   * stock check, and says which.
+   */
+  it('refuses a product no seller stocks, and does not call it out of stock', () => {
+    render(
+      <CartProvider>
+        <AddToCartButton product={{ ...PRODUCT, id: 'prod_001' }} />
+        <CartReadout />
+      </CartProvider>,
+    );
+
+    const button = screen.getByRole('button', { name: /not available to order/i });
+    expect(button).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /out of stock/i })).toBeNull();
+    expect(document.body.textContent).toMatch(/no seller stocks this yet/i);
 
     fireEvent.click(button);
     expect(screen.getByTestId('count').textContent).toBe('0');

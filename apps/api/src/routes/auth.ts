@@ -1131,11 +1131,48 @@ export async function authRoutes(server: FastifyInstance) {
         },
       });
     } catch (err) {
-      // DB/Supabase unavailable — only demo accounts work
-      request.log.error({ err, email: emailLower }, 'Login failed — DB unavailable');
-      return reply.code(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid credentials.',
+      // AUTH-08b (2026-09-09): A FAILURE TO VERIFY IS NOT AN AUTHENTICATION
+      // VERDICT.
+      //
+      // This answered `401 { message: 'Invalid credentials.' }` — telling a
+      // user their password was wrong while the database was down. Nothing in
+      // this catch ever checked a credential: BOTH rejections inside the try
+      // are explicit `return reply.code(401)` statements (the unknown-email
+      // branch and the Supabase `authError` branch) and neither throws. The
+      // only way to arrive here is a dependency failing — prisma.user
+      // .findUnique throwing, createSupabaseClient() throwing, or
+      // signInWithPassword throwing. So the one path that could not possibly
+      // know whether the password was right was the one asserting it was not.
+      //
+      // The answer was already in this handler, 110 lines up: the demo
+      // branch's identical catch answers 503 ServiceUnavailable with this
+      // exact sentence. Two halves of one handler disagreed about what an
+      // unreachable database means; they agree now.
+      //
+      // BOTH the status AND the message have to move. apps/web/lib/
+      // auth-context.tsx:942 reads `errBody?.message || authHttpErrorMessage(
+      // res.status, …)` — the BODY MESSAGE WINS, so authHttpErrorMessage's
+      // >=500 branch ("Your details were not the problem") stays unreachable
+      // for as long as the body still says "Invalid credentials.". A status
+      // change alone would have fixed the wire and left the screen wrong.
+      //
+      // The 401 was also doing damage beyond the sentence: packages/
+      // api-client/src/client.ts:233 fires the global `onUnauthorised` hook on
+      // ANY 401 regardless of the request's `noAuth` flag, and apps/mobile/
+      // app/_layout.tsx:71 wires that to a full sign-out. A database outage
+      // during one person's sign-in therefore cleared the stored session of
+      // whoever was already signed in on that handset. 503 does not trip it.
+      //
+      // `err` goes to the log and NOWHERE else: a Prisma connection failure
+      // carries the host, the port and, in some shapes, the connection string
+      // — the response body stays the two constant fields below.
+      request.log.error(
+        { err, event: 'login_db_unreachable', email: emailLower },
+        'sign-in could not reach the database',
+      );
+      return reply.code(503).send({
+        error: 'ServiceUnavailable',
+        message: 'Sign-in is temporarily unavailable. Please try again in a moment.',
       });
     }
   });

@@ -146,7 +146,7 @@ function BookYatraInner() {
  // Gated on the published roster, not just the toggle. TC-06 deleted the eight
  // invented companions; ₹3,500 was `pricePerDay` on the `rajesh-kumar` row and
  // outlived it. With an empty roster this line quoted a devotee — and flowed
- // into subtotal, GST and total — for a person nobody can supply.
+ // into the subtotal and total — for a person nobody can supply.
  if (data.addOns.companion && hasPublishedCompanions()) {
  const comp = COMPANION_RATE_PER_DAY_INR * data.companionDays;
  lines.push({ label: `Travel companion × ${data.companionDays} days`, amount: comp });
@@ -155,10 +155,31 @@ function BookYatraInner() {
  const ins = 500 * data.travelersCount;
  lines.push({ label: `Travel insurance × ${data.travelersCount}`, amount: ins });
  }
+ // NO TAX LINE — the same removal COM-06 / S-09 made in the store.
+ //
+ // This block used to end with `const gst = Math.round(subtotal * 0.05)` and a
+ // "GST (5%)" row, the character-for-character twin of the line deleted from
+ // apps/api/src/lib/store-pricing.ts and apps/web/lib/store-pricing.ts. It was
+ // wrong for two independent reasons and either one is sufficient:
+ //
+ //   1. The business is not GST-registered. lib/company.ts records
+ //      COMPANY.tax.HAS_GST_REGISTRATION_VERIFIED = false, and /pricing already
+ //      says so in words. A tax line quoted by a business that cannot remit it
+ //      is a number that goes nowhere.
+ //   2. One flat 5% is wrong across what this page quotes anyway. A tour
+ //      package, a helicopter seat, travel insurance and a temple puja do not
+ //      share a rate, so even after a GSTIN existed this arithmetic would still
+ //      be incorrect — it was never a rate, it was a guess.
+ //
+ // And this page charges nothing: `handlePay` POSTs to /yatra-inquiry, a lead
+ // form. So the figure it shows is a QUOTE, and a quote inflated by an invented
+ // tax is simply a wrong quote the operator then has to walk back.
+ //
+ // Amounts are quoted tax-inclusive (the Indian retail norm). A real GST
+ // treatment is an owner decision with per-line rates and a GSTIN behind it,
+ // not a rounding — reintroduce it from lib/company.ts, gated on that flag.
  const subtotal = lines.reduce((s, l) => s + l.amount, 0);
- const gst = Math.round(subtotal * 0.05);
- lines.push({ label: 'GST (5%)', amount: gst });
- return { lines, total: subtotal + gst };
+ return { lines, total: subtotal };
  }, [selectedPackage, data]);
 
  if (!yatra) {
@@ -696,7 +717,10 @@ function BookYatraInner() {
  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Estimated total</span>
  <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>{formatINR(priceBreakdown.total)}</span>
  </div>
- <p className="text-xs mt-1" style={{ color: 'var(--color-text-faint)' }}>For {data.travelersCount} travelers, incl. GST</p>
+ {/* "incl. GST" removed with the 5% line above: the quote contains no tax
+     line at all, so claiming one is included was the same untrue statement
+     stated from the other direction. */}
+ <p className="text-xs mt-1" style={{ color: 'var(--color-text-faint)' }}>For {data.travelersCount} travelers</p>
  </div>
  )}
 

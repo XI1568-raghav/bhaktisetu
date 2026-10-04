@@ -22,6 +22,7 @@ import {
   RASHI_SIGNS,
   type LiveAstrologer,
 } from '../../lib/astrology-directory';
+import { ASTROLOGY_TOOLS } from '../../lib/astrology-tools';
 import { openWebHandoff, describeWebHandoff } from '../../lib/in-app-web';
 import { WEBVIEW_AVAILABLE } from '../../lib/webview-module';
 import { webOrigin, hostOf } from '../../lib/web-origin';
@@ -48,24 +49,39 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * They are gone. What replaces them is the supply that does exist — the
  * approved astrologer directory — and the tools that are genuinely free.
  *
- * THE TWO HAND-OFFS THAT REMAIN, AND WHY THEY ARE THE RIGHT TWO
- * ------------------------------------------------------------
- * Kundli Milan and the Vedic calculator set (numerology, nakshatra finder,
- * sade sati, manglik, rahu kalam, choghadiya, dasha, hora, shubh muhurat, kaal
- * sarp, pitra dosh, lal kitab, baby name, vastu, pancha pakshi) are computed
- * ENTIRELY in the browser from apps/web/lib — `kundli-milan.ts` and
- * `vedic-astrology.ts` are web-app-local modules, not a shared package, and the
- * API exposes no endpoint for any of them. `GET /astrology/compatibility` is
- * not a substitute: it scores two rashi NAMES with arithmetic over their
- * character codes (astrology.service.ts), which is not an Ashtakoot Gun Milan
- * and must not be dressed up as one. So those two controls go to the site that
- * actually runs the calculation, and they say so — `describeWebHandoff` derives
- * the role, hint and glyph from the same call that decides the route, so a
- * control cannot announce a browser hand-off and then stay in the app.
+ * THE HAND-OFF THAT USED TO COVER SIXTEEN TOOLS, AND WHY IT NOW COVERS TEN
+ * ------------------------------------------------------------------------
+ * This screen used to send Kundli Milan and the whole Vedic calculator set to
+ * the website, because they "are computed ENTIRELY in the browser from
+ * apps/web/lib — not a shared package, and the API exposes no endpoint for any
+ * of them". The second half is still true and the first half was never a
+ * property of the maths, only of the directory it sat in. Pure functions move.
  *
- * Everything else on this screen now has a real in-app destination:
+ * They were moved. packages/shared/src/astrology now owns the Ashtakoot
+ * scorer, the Meeus moon/Mars longitude series, the Lahiri ayanamsa, the
+ * Almanac-for-Computers sunrise solver and the numerology tables;
+ * apps/web/lib re-exports them; lib/astrology-tools.ts imports the same
+ * functions. Five tools therefore run IN THE APP, offline, and cannot disagree
+ * with the website because there is one implementation — see
+ * lib/__tests__/astrology-parity.test.ts.
+ *
+ * `GET /astrology/compatibility` is still not a substitute for any of it: it
+ * scores two rashi NAMES with arithmetic over their character codes
+ * (astrology.service.ts), which is not an Ashtakoot Gun Milan and must not be
+ * dressed up as one. Nothing here calls it.
+ *
+ * ONE hand-off remains, for the ten tools that did not move: lal kitab, vastu,
+ * pitra dosh, pancha pakshi and baby name are editorial lookups over large
+ * prose datasets rather than calculations, and sade sati, dasha, hora, shubh
+ * muhurat and kaal sarp compute but are not built here yet. It says it leaves
+ * the app — `describeWebHandoff` derives the role, hint and glyph from the same
+ * call that decides the route, so a control cannot announce a browser hand-off
+ * and then stay in the app.
+ *
+ * Everything else on this screen has a real in-app destination:
  * app/(devotee)/astrologers.tsx, astrologer-detail.tsx, astrologer-book.tsx,
- * horoscope-rashi.tsx, kundli.tsx and astrology-chat.tsx.
+ * horoscope-rashi.tsx, kundli.tsx, astrology-chat.tsx and the five tool
+ * screens listed in ASTROLOGY_TOOLS.
  */
 const WEB = webOrigin();
 
@@ -187,15 +203,10 @@ export default function AstrologyScreen() {
    */
   const handoffOpts = { webViewAvailable: WEBVIEW_AVAILABLE, origin: WEB.origin };
 
-  const MILAN_TARGET = {
-    url: `${WEB.origin}/astrology/kundli-milan?utm_source=mobile-app&utm_medium=tool-card`,
-    title: 'Kundli Milan',
-  };
   const TOOLS_TARGET = {
     url: `${WEB.origin}/astrology?utm_source=mobile-app&utm_medium=tool-card`,
     title: 'Vedic calculators',
   };
-  const milanAffordance = describeWebHandoff(MILAN_TARGET, handoffOpts, hostOf(WEB.origin));
   const toolsAffordance = describeWebHandoff(TOOLS_TARGET, handoffOpts, hostOf(WEB.origin));
 
   const io = { push: (r: unknown) => router.push(r as never), openExternal: Linking.openURL };
@@ -347,28 +358,30 @@ export default function AstrologyScreen() {
               iconRight="chevron-forward"
               onPress={() => router.push('/(devotee)/horoscope' as never)}
             />
-            {/* Gun Milan is computed in the browser from apps/web/lib/kundli-milan.ts.
-                There is no API for it, and the one compatibility endpoint that
-                exists scores rashi NAMES arithmetically rather than running an
-                Ashtakoot — so this goes where the real calculation lives. */}
-            <ToolRow
-              icon="heart"
-              title="Kundli Milan"
-              body="Ashtakoot Gun Milan for marriage compatibility, with the Mangal dosha check."
-              badge={milanAffordance.leavesApp ? hostOf(WEB.origin) : 'In app'}
-              accessibilityRole={milanAffordance.role}
-              accessibilityHint={milanAffordance.hint}
-              iconRight={milanAffordance.icon}
-              onPress={() => openWebHandoff(MILAN_TARGET, handoffOpts, io)}
-            />
-            {/* Numerology, nakshatra finder, sade sati, manglik, rahu kalam,
-                choghadiya, dasha, hora, shubh muhurat, kaal sarp, pitra dosh,
-                lal kitab, baby name, vastu, pancha pakshi — all browser-side
-                calculators in apps/web/lib with no endpoint behind them. */}
+            {/* The calculators that moved into @poojly/shared/astrology. One
+                registry, so a screen cannot be built and left unreachable —
+                lib/__tests__/astrology-parity.test.ts checks every route here
+                against a real file in app/(devotee). */}
+            {ASTROLOGY_TOOLS.map((t) => (
+              <ToolRow
+                key={t.route}
+                icon={t.icon as React.ComponentProps<typeof Ionicons>['name']}
+                title={t.title}
+                body={t.body}
+                badge="Free · in app"
+                accessibilityHint={`Opens ${t.title} in the app`}
+                iconRight="chevron-forward"
+                onPress={() => router.push(t.route as never)}
+              />
+            ))}
+            {/* Sade sati, dasha, hora, shubh muhurat and kaal sarp compute but
+                are not built here yet; lal kitab, vastu, pitra dosh, pancha
+                pakshi and baby name are editorial lookups over prose datasets
+                the app would have to bundle whole. All ten stay on the site. */}
             <ToolRow
               icon="calculator"
               title="More Vedic calculators"
-              body="Numerology, nakshatra finder, sade sati, manglik, rahu kalam, choghadiya, dasha and more."
+              body="Sade sati, dasha, hora, shubh muhurat, kaal sarp, lal kitab, vastu, pitra dosh, pancha pakshi and baby names."
               badge={toolsAffordance.leavesApp ? hostOf(WEB.origin) : 'In app'}
               accessibilityRole={toolsAffordance.role}
               accessibilityHint={toolsAffordance.hint}

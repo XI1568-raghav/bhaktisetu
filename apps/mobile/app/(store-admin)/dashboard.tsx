@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { useProducts, useStoreAdminDashboard } from '@poojly/api-client';
+import { useStoreAdminDashboard } from '@poojly/api-client';
 import {
   PortalScreen,
   Section,
@@ -9,6 +9,10 @@ import {
   EmptyHint,
 } from '../../lib/portal-screen';
 import { MessagesEntry } from '../../lib/inbox';
+import {
+  selectStoreAdminProducts,
+  useStoreAdminProducts,
+} from '../../lib/store-admin-catalogue';
 import { colors, spacing } from '../../lib/theme';
 import { storeOrderStatusLabel } from '../../lib/enum-labels';
 
@@ -23,12 +27,18 @@ export default function StoreDashboard() {
   // outright with no confirmation. No-op on iOS.
   useExitConfirm();
 
-  const productsQuery = useProducts();
+  // PAR-24: was useProducts() = GET /api/v1/store/products, the PUBLIC
+  // storefront served off a hardcoded seed array. The "Catalogue Snapshot"
+  // listed demo products the owner has never sold and the header counted them
+  // as theirs. Now the role-gated /store-admin/products.
+  const productsQuery = useStoreAdminProducts();
   const dashboardQuery = useStoreAdminDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
-  const products = productsQuery.data?.products ?? [];
-  const productCount = products.length;
+  const catalogue = selectStoreAdminProducts(productsQuery.data);
+  const products = catalogue?.rows ?? [];
+  // `null` = catalogue unknown (403 / error body), which is not zero products.
+  const catalogueUnknown = !productsQuery.isLoading && catalogue === null;
   const stats = dashboardQuery.data?.stats ?? {};
   const recentOrders = dashboardQuery.data?.recentOrders ?? [];
 
@@ -41,7 +51,13 @@ export default function StoreDashboard() {
   return (
     <PortalScreen
       title="Store Dashboard"
-      subtitle={`${productCount} products in catalogue`}
+      subtitle={
+        productsQuery.isLoading
+          ? 'Loading…'
+          : catalogueUnknown
+            ? 'Catalogue unavailable'
+            : `${catalogue?.total ?? 0} products in catalogue`
+      }
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
@@ -87,15 +103,22 @@ export default function StoreDashboard() {
       </Section>
 
       <Section title="Catalogue Snapshot">
-        {productCount === 0 ? (
-          <EmptyHint text="No products yet — add some via Products tab." />
+        {productsQuery.isLoading ? (
+          <EmptyHint text="Loading your catalogue…" />
+        ) : catalogueUnknown ? (
+          <EmptyHint text="Could not load your catalogue. Pull to refresh — this is not a report that you have no products." />
+        ) : products.length === 0 ? (
+          <EmptyHint text="No products yet — add some via the Products tab." />
         ) : (
           products.slice(0, 5).map((p) => (
             <ListRow
               key={p.id}
-              primary={p.title ?? 'Product'}
-              secondary={p.handle ?? ''}
-              trailing={`#${p.id.slice(0, 6)}`}
+              primary={p.name}
+              secondary={[p.sku, p.categoryName].filter(Boolean).join(' • ')}
+              // A Decimal that did not parse shows a dash. `inr(undefined)`
+              // would print ₹0, a claim about what the shop charges.
+              trailing={p.priceInr === null ? '—' : inr(p.priceInr)}
+              trailingHint={`Stock ${p.stock}`}
             />
           ))
         )}

@@ -217,7 +217,32 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     for (const it of requestedItems) {
       const product = productById.get(it.productId);
       if (!product) {
-        return reply.code(400).send({ error: `Unknown product: ${it.productId}` });
+        // COM-01. Two different situations reach this line and a shopper is
+        // owed different words for them:
+        //
+        //   - a `prod_NNN` id from the hand-written catalogue, which has no
+        //     seller, no stock record and no fulfilment behind it. It is not
+        //     "unknown", it was never for sale, and saying so is the honest
+        //     answer. GET /store/products now marks these `buyable: false` up
+        //     front, so reaching here means a stale basket or a client that
+        //     ignored the flag.
+        //   - a uuid that genuinely is not in store_products — deleted,
+        //     mistyped, or from another environment.
+        //
+        // `error` keeps the exact `Unknown product: <id>` prefix on purpose:
+        // apps/mobile matches it ((devotee)/checkout.tsx) to render its own
+        // sentence, and changing the string would silently downgrade that to a
+        // bare status code. `code` + `message` are the additive, structured
+        // form for clients that would rather not string-match.
+        const isCatalogueFixture = !UUID_RE.test(it.productId);
+        return reply.code(400).send({
+          error: `Unknown product: ${it.productId}`,
+          code: isCatalogueFixture ? 'product_not_orderable' : 'product_not_found',
+          message: isCatalogueFixture
+            ? 'One item in your basket is a catalogue preview — no seller stocks it yet, so it cannot be ordered. Remove it and the rest of your order can go through.'
+            : 'One item in your basket is no longer listed. Remove it and the rest of your order can go through.',
+          productId: it.productId,
+        });
       }
       if (!product.isActive) {
         return reply.code(409).send({ error: `Product no longer available: ${it.productId}` });

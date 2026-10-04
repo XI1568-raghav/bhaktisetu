@@ -26,6 +26,177 @@ const razorpay = isDemoPayment
   ? null
   : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
 
+/**
+ * ─── F455 / DI-09 limb 3 (2026-09-09): the enrolment capacity ceiling ────────
+ *
+ * THE DEFECT
+ * POST /sessions/:id/enroll counted the held enrolments (:436 pre-fix) and then
+ * created a row (:449 pre-fix) with no transaction, no lock and no constraint in
+ * between. The free-satsang branch (:392 -> :404 pre-fix) had the identical
+ * shape. Under READ COMMITTED (Postgres' default; Prisma passes no isolation
+ * level) two devotees racing the last spot BOTH read `held = capacity - 1`, both
+ * pass the gate and both INSERT. The session is oversold. On the paid branch the
+ * count and the create are separated by a NETWORK CALL to Razorpay
+ * (razorpay.orders.create), so the window is hundreds of milliseconds wide, not
+ * microseconds — and each oversold enrolment is a real payment that mints a real
+ * Commission, so the remedy is a refund plus a commission reversal, not an
+ * apology.
+ *
+ * WHY NOT A UNIQUE INDEX
+ * `wellness_enrollments_session_id_user_id_key` already enforces the OTHER
+ * invariant on this table (one enrolment per session+user). A capacity ceiling
+ * is a COUNT property, not a uniqueness property: no index can express "at most
+ * N rows matching a predicate". The DI-06 migration
+ * (20260908000000_di06_inflight_and_pair_money_uniques) says exactly this in its
+ * THE ONES DELIBERATELY NOT CONSTRAINED footer and defers the fix to "a lock or
+ * a trigger". This is that fix.
+ *
+ * WHY AN ADVISORY LOCK
+ * It is already this repo's answer to this exact problem shape. RV-15 fixed the
+ * identical count-then-create oversell on puja slots with `pg_advisory_xact_lock`
+ * (services/booking.service.ts:161), and the shared priest-slot primitive
+ * (lib/priest-slot.ts:64) issues the same call. Mirroring it keeps ONE mechanism
+ * in the codebase instead of three.
+ *   * vs `SELECT ... FOR UPDATE` on wellness_sessions: that locks the SESSION
+ *     ROW, so every enrolment then contends with the instructor's own
+ *     PATCH /sessions/:id and with the status transitions, and every instructor
+ *     edit blocks enrolments. An advisory lock is keyed on an IDENTITY, not a
+ *     row, so it serialises enrolments against each other and against nothing
+ *     else.
+ *   * vs SERIALIZABLE: correct, but it needs 40001 retry handling wrapped around
+ *     a handler that has ALREADY created a live Razorpay order. Retrying the
+ *     transaction cannot retry the order, so the retry loop would have to reason
+ *     about reusing a minted order id — real complexity for the same outcome.
+ *   * vs a trigger: strongest, but invisible to anyone reading this route, and
+ *     unprovable in this suite (the Prisma client is mocked; there is no
+ *     database). The repo's ONE trigger precedent
+ *     (20260820120000_ops05_money_audit_events: money_audit_events_no_mutate) is
+ *     an append-only guard rail on an audit table, not a business rule. A
+ *     business-rule trigger here would also take effect at API boot via
+ *     `migrate deploy`, and a migration that aborts on this project is an outage.
+ *
+ * NO MIGRATION IS REQUIRED. An advisory lock creates no schema object, so this
+ * change adds no migration and cannot collide with the existing timestamps.
+ *
+ * BEST-EFFORT, DELIBERATELY. If the lock statement cannot run we warn and fall
+ * through to the re-count inside the transaction. Degrading to the old (racy)
+ * behaviour is strictly better than failing every enrolment, and the
+ * session+user unique index still catches the same-user double-tap below.
+ */
+const HELD_STATUSES = ['PAID', 'PENDING_PAYMENT'] as const;
+
+/** The devotee already holds a PAID enrolment on this session. */
+class AlreadyEnrolledError extends Error {
+  constructor() {
+    super('You are already enrolled');
+    this.name = 'AlreadyEnrolledError';
+  }
+}
+
+/** Held enrolments have reached session.capacity. */
+class SessionFullError extends Error {
+  constructor() {
+    super('Session is full');
+    this.name = 'SessionFullError';
+  }
+}
+
+/**
+ * Stable advisory-lock key for one session's capacity bucket. A lock taken on a
+ * different key is the same as no lock at all, so every writer that consumes a
+ * spot must derive its key here.
+ */
+function sessionCapacityKey(sessionId: string): string {
+  return `wellness-session-capacity:${sessionId}`;
+}
+
+/** Any Prisma client that can run raw SQL — top-level or an open transaction. */
+type CapacityLockClient = {
+  $queryRawUnsafe: (sql: string, ...values: unknown[]) => Promise<unknown>;
+};
+
+/**
+ * Take a transaction-scoped advisory lock on a session's capacity key.
+ *
+ * `pg_advisory_xact_lock` releases at COMMIT, so it is safe under Supabase's
+ * transaction-mode pooler (a session-level lock would leak across pooled
+ * clients). MUST be the first statement inside the transaction it guards —
+ * taking it after the count leaves the TOCTOU window wide open.
+ */
+async function lockSessionCapacity(tx: CapacityLockClient, key: string): Promise<void> {
+  try {
+    await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', key);
+  } catch (err) {
+    console.warn('[wellness-sessions] capacity advisory lock unavailable:', err);
+  }
+}
+
+/** Prisma raises P2002 when the session+user unique index rejects the INSERT. */
+function isDuplicateEnrollment(err: unknown): boolean {
+  return (err as { code?: string } | null)?.code === 'P2002';
+}
+
+/**
+ * Claim a spot and write the enrolment, serialised per session.
+ *
+ * Everything that decides whether a spot exists happens INSIDE the transaction,
+ * AFTER the lock: the enrolment is re-read (the row the caller saw may have been
+ * created by a concurrent request from the same devotee) and the held count is
+ * re-taken — that count is the authoritative one, the caller's pre-check is only
+ * an early exit. Capacity itself is passed in from the caller's session read
+ * rather than re-read here, matching services/booking.service.ts, which likewise
+ * compares against the ceiling it read outside the lock: enrol-vs-enrol is the
+ * race being closed, and keeping the lock hold short matters more than racing
+ * the instructor's own PATCH.
+ *
+ * The Razorpay order is created by the caller BEFORE this runs and stays outside
+ * the transaction on purpose — a DB transaction must never be held open across a
+ * third-party network call.
+ */
+async function enrollUnderCapacityLock(opts: {
+  sessionId: string;
+  userId: string;
+  capacity: number;
+  status: 'PAID' | 'PENDING_PAYMENT';
+  razorpayOrderId?: string;
+}) {
+  return prisma.$transaction(async (tx) => {
+    await lockSessionCapacity(
+      tx as unknown as CapacityLockClient,
+      sessionCapacityKey(opts.sessionId),
+    );
+
+    const current = await tx.wellnessEnrollment.findUnique({
+      where: { sessionId_userId: { sessionId: opts.sessionId, userId: opts.userId } },
+    });
+    if (current && current.status === 'PAID') throw new AlreadyEnrolledError();
+
+    // Re-enrolling an existing held row does not consume a NEW spot, so only the
+    // create path is gated — the same rule the pre-fix code applied, now taken
+    // under the lock. `capacity` is INTEGER NOT NULL in the schema and every
+    // write path validates `.positive()`, so there is no null case to interpret;
+    // a capacity of 0 (reachable only by a direct DB write) still means "refuse
+    // everyone", exactly as `held >= 0` did before.
+    if (!current) {
+      const held = await tx.wellnessEnrollment.count({
+        where: { sessionId: opts.sessionId, status: { in: [...HELD_STATUSES] } },
+      });
+      if (held >= opts.capacity) throw new SessionFullError();
+    }
+
+    const data =
+      opts.razorpayOrderId === undefined
+        ? { status: opts.status }
+        : { status: opts.status, razorpayOrderId: opts.razorpayOrderId };
+
+    return current
+      ? tx.wellnessEnrollment.update({ where: { id: current.id }, data })
+      : tx.wellnessEnrollment.create({
+          data: { sessionId: opts.sessionId, userId: opts.userId, ...data },
+        });
+  });
+}
+
 const createSessionSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(1).max(5000),
@@ -388,22 +559,30 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       // instantly as PAID — no Razorpay order, no payment step. This is the
       // research-backed funnel (Isha/AoL free satsang → paid courses).
       if (priceInr <= 0) {
-        if (!existing) {
-          const held = await prisma.wellnessEnrollment.count({
-            where: { sessionId: session.id, status: { in: ['PAID', 'PENDING_PAYMENT'] } },
+        // F455/DI-09: the free satsang branch is the SAME count-then-create race
+        // as the paid one below. It is the top-of-funnel volume path — one
+        // broadcast fills a class in seconds — so it is the branch most likely
+        // to actually oversell, and it enrols straight to PAID, meaning an
+        // oversold row is immediately entitled to the room URL. It takes the
+        // same lock. No money moves here (priceInr <= 0, no Razorpay order, no
+        // Commission), so the only thing the cap protects is a seat.
+        let freeEnrollment;
+        try {
+          freeEnrollment = await enrollUnderCapacityLock({
+            sessionId: session.id,
+            userId,
+            capacity: session.capacity,
+            status: 'PAID',
           });
-          if (held >= session.capacity) {
+        } catch (err) {
+          if (err instanceof SessionFullError) {
             return reply.code(409).send({ error: 'Session is full' });
           }
+          if (err instanceof AlreadyEnrolledError || isDuplicateEnrollment(err)) {
+            return reply.code(409).send({ error: 'You are already enrolled' });
+          }
+          throw err;
         }
-        const freeEnrollment = existing
-          ? await prisma.wellnessEnrollment.update({
-              where: { id: existing.id },
-              data: { status: 'PAID' },
-            })
-          : await prisma.wellnessEnrollment.create({
-              data: { sessionId: session.id, userId, status: 'PAID' },
-            });
         return reply.code(201).send({
           data: {
             enrollmentId: freeEnrollment.id,
@@ -412,6 +591,21 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
             currency: 'INR',
           },
         });
+      }
+
+      // Cheap pre-check, deliberately BEFORE razorpay.orders.create. It is not
+      // the authoritative gate — enrollUnderCapacityLock re-counts under the
+      // lock — but it stops a provably-full session from minting a real
+      // Razorpay order that nobody will ever be allowed to pay. Pre-fix this
+      // check sat AFTER the order call (:436), so every attempt on a full class
+      // left an orphan live order behind.
+      if (!existing) {
+        const held = await prisma.wellnessEnrollment.count({
+          where: { sessionId: session.id, status: { in: [...HELD_STATUSES] } },
+        });
+        if (held >= session.capacity) {
+          return reply.code(409).send({ error: 'Session is full' });
+        }
       }
 
       let razorpayOrderId: string;
@@ -426,34 +620,35 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         razorpayOrderId = `order_demo_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
       }
 
-      // P0 #wp-01 (2026-07-09): capacity check. The old handler created a
-      // PENDING_PAYMENT enrollment without comparing the enrolled count to
-      // session.capacity, so N concurrent enrolls over-booked past the cap.
-      // Count PAID + PENDING_PAYMENT (pending holds a slot until payment
-      // completes or the enrollment is reaped). Re-enrolling an existing
-      // pending row does not consume a new slot, so only gate the create path.
-      if (!existing) {
-        const held = await prisma.wellnessEnrollment.count({
-          where: { sessionId: session.id, status: { in: ['PAID', 'PENDING_PAYMENT'] } },
+      // P0 #wp-01 (2026-07-09) added a capacity check here; F455/DI-09
+      // (2026-09-09) made it hold. The check counted PAID + PENDING_PAYMENT
+      // (a pending row holds a spot until payment completes or it is reaped)
+      // and then created, on the bare client, with the Razorpay round-trip
+      // sitting between them — so it rejected the SEQUENTIAL over-cap enrol and
+      // let the CONCURRENT one straight through. The count and the create now
+      // happen in one transaction behind a per-session advisory lock.
+      let enrollment;
+      try {
+        enrollment = await enrollUnderCapacityLock({
+          sessionId: session.id,
+          userId,
+          capacity: session.capacity,
+          status: 'PENDING_PAYMENT',
+          razorpayOrderId,
         });
-        if (held >= session.capacity) {
+      } catch (err) {
+        // The Razorpay order minted above is now orphaned. That is the correct
+        // trade: an unpaid order expires on its own, whereas an oversold class
+        // is a captured payment plus a minted Commission that has to be refunded
+        // and reversed by hand.
+        if (err instanceof SessionFullError) {
           return reply.code(409).send({ error: 'Session is full' });
         }
+        if (err instanceof AlreadyEnrolledError || isDuplicateEnrollment(err)) {
+          return reply.code(409).send({ error: 'You are already enrolled' });
+        }
+        throw err;
       }
-
-      const enrollment = existing
-        ? await prisma.wellnessEnrollment.update({
-            where: { id: existing.id },
-            data: { status: 'PENDING_PAYMENT', razorpayOrderId },
-          })
-        : await prisma.wellnessEnrollment.create({
-            data: {
-              sessionId: session.id,
-              userId,
-              status: 'PENDING_PAYMENT',
-              razorpayOrderId,
-            },
-          });
 
       return reply.code(201).send({
         data: {

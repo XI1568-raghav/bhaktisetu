@@ -54,6 +54,23 @@ export default function TemplePujas() {
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
+      {/* PAR-24. "Active" is `TemplePujaOffering.isActive` and nothing more. A
+          devotee's booking is refused by booking.service.ts:470 unless
+          `Temple.isVerified` is true — a gate on the TEMPLE, not the offering —
+          so an Active offering at an unverified temple is not bookable and this
+          screen would otherwise say the opposite. Nothing in /temple-portal
+          reports `Temple.isVerified` (the `verified` column on TempleProfile is
+          a different column and has no writer anywhere in the API), so the
+          honest thing is to state the rule rather than assert a status. */}
+      <View style={styles.notice}>
+        <Ionicons name="information-circle" size={18} color={colors.saffron[700]} />
+        <Text style={styles.noticeText}>
+          “Active” means the offering is switched on. Devotees can only book it
+          once Darshya has verified your temple; this screen does not report
+          verification status.
+        </Text>
+      </View>
+
       <TouchableOpacity
         style={styles.addButton}
         activeOpacity={0.7}
@@ -148,4 +165,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   addButtonText: { color: colors.white, fontSize: fontSize.base, fontWeight: '700' },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.saffron[50],
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.saffron[200],
+    marginBottom: spacing.md,
+  },
+  noticeText: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    color: colors.saffron[700],
+    lineHeight: 18,
+  },
 });

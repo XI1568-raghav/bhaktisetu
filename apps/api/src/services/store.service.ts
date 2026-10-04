@@ -1,8 +1,16 @@
 import { commonsThumb } from '../lib/commons-thumb.js';
+import { computeDeliveryFeeInr, computeStoreOrderTotals } from '../lib/store-pricing.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
-export interface Product {
+/**
+ * The hand-written catalogue row shape — what the 24 literals below are.
+ *
+ * Deliberately NOT the shape served over the wire: a row on its own says
+ * nothing about whether it can be bought, and that omission is the bug this
+ * module now closes. See `Product`.
+ */
+export interface CatalogueRow {
   id: string;
   handle: string;
   title: string;
@@ -23,6 +31,71 @@ export interface Product {
   weight: string | null;
   sku: string;
 }
+
+/** Where a catalogue entry came from, and therefore what its `id` means. */
+export type ProductSource =
+  /** A hand-written row in this file. `id` is `prod_NNN`. Not orderable. */
+  | 'fixture'
+  /** A real `store_products` row. `id` is the uuid POST /store/orders resolves. */
+  | 'live';
+
+/**
+ * COM-01 — the catalogue and the order path must agree on product identity.
+ *
+ * `POST /store/orders` resolves every line item against `StoreProduct` BY UUID
+ * (routes/store-orders.ts). The 24 rows below have ids like `prod_015`, which
+ * no `store_products` row has ever had, so the entire shopper-facing catalogue
+ * answered `400 Unknown product: prod_015` at checkout — on web and on mobile
+ * alike. Every item a shopper could see was unorderable; the only orderable
+ * rows came from GET /store/products/live, of which prod has zero.
+ *
+ * The fix is NOT to seed these 24 as real rows. Verified read-only against prod
+ * on 2026-09-08 (scripts/check-store-catalogue.mjs): `store_products` = 0,
+ * `store_profiles` = 0, `store_orders` = 0. There is no seller, no stock
+ * record, no warehouse and no fulfilment behind any of them — they are
+ * marketing copy over Wikimedia Commons photographs. Minting uuids for them
+ * would let a devotee pay for a brass thali that nobody owns and nobody can
+ * ship, which is a worse defect than the one being fixed, not a smaller one.
+ *
+ * So identity is made EXPLICIT instead of inferred. Every product this service
+ * serves now carries `source`, `buyable` and `unavailableReason`, and the
+ * invariant is one line:
+ *
+ *     buyable === true  ⇔  source === 'live'  ⇔  id is a StoreProduct uuid
+ *
+ * i.e. anything the catalogue presents as buyable is something the order route
+ * accepts. Pinned by services/store-catalogue-order-parity.test.ts.
+ */
+export type Product = Omit<CatalogueRow, 'rating'> & {
+  source: ProductSource;
+  /** True only when `id` is a uuid POST /store/orders can resolve. */
+  buyable: boolean;
+  /** Plain-language reason, in shopper-facing words. `null` when buyable. */
+  unavailableReason: string | null;
+  /**
+   * The star average, or `null` when nothing has been rated.
+   *
+   * Widened from `number` for the seller rows: apps/mobile renders the badge on
+   * `rating !== null` ((devotee)/store.tsx:145), so a brand-new listing sent
+   * through as `0` would print "★ 0" — a rating a shopper would read as awful,
+   * derived from no reviews at all. LEG-17 made the same call on the web when
+   * it deleted the hardcoded 4.4-4.9 averages: `null` (not 0) so "not rated
+   * yet" stays distinguishable from "rated zero". The fixtures keep their
+   * numbers; only a row with no reviews behind it answers null.
+   */
+  rating: number | null;
+};
+
+/**
+ * The sentence a shopper is owed in place of a checkout that cannot complete.
+ * Clients render this verbatim — do not make it a code the UI has to translate.
+ */
+export const FIXTURE_UNAVAILABLE_REASON =
+  'This is a preview of the kind of item Darshya sellers will list. No seller stocks it yet, so it cannot be ordered.';
+
+/** The uuid shape `POST /store/orders` filters its StoreProduct lookup on. */
+export const STORE_PRODUCT_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface Collection {
   id: string;
@@ -50,6 +123,14 @@ export interface Cart {
   total: number;
   currency: string;
   itemCount: number;
+  /**
+   * COM-01: false when at least one line item is something POST /store/orders
+   * cannot resolve, so checkout would refuse. True for an empty basket — empty
+   * is a separate condition the route answers on its own.
+   */
+  orderable: boolean;
+  /** The first blocking item's reason, in shopper words. null when orderable. */
+  unorderableReason: string | null;
 }
 
 export interface ProductsParams {
@@ -86,7 +167,7 @@ function img(photoIdOrUrl: string, alt: string): { url: string; alt: string } {
 
 // ─── Hardcoded Product Data (MVP) ───────────────────────────────────────────────
 
-const PRODUCTS: Product[] = [
+const PRODUCTS: CatalogueRow[] = [
   // ─── 1. Puja Essentials ──────────────────────────────────────────
   {
     id: 'prod_001',
@@ -608,6 +689,95 @@ const PRODUCTS: Product[] = [
   },
 ];
 
+// ─── Presentation: stamping identity onto every row served ────────────────────
+
+/**
+ * A hand-written row, as it goes over the wire: browse-only, and it says so.
+ *
+ * `inStock` is left exactly as the row declares it. It answers a different
+ * question ("would this be in stock if it existed") and blanking it here would
+ * make the card read "Out of stock", which is the wrong reason — the item is
+ * not out of stock, it has no seller. `buyable`/`unavailableReason` carry the
+ * real answer so a client never has to conflate the two.
+ */
+export function presentFixture(row: CatalogueRow): Product {
+  return {
+    ...row,
+    source: 'fixture',
+    buyable: false,
+    unavailableReason: FIXTURE_UNAVAILABLE_REASON,
+  };
+}
+
+/** The `store_products` columns this mapper needs. Matches the route's select. */
+export interface LiveProductRow {
+  id: string;
+  name: string;
+  description: string | null;
+  price: unknown; // Prisma Decimal(10,2)
+  imageUrl: string | null;
+  category: string | null;
+  stock: number;
+  sku: string | null;
+  storeProfile?: { storeName: string } | null;
+}
+
+/**
+ * A real seller's `store_products` row, mapped into the catalogue card shape so
+ * one grid can show both keyspaces without the client branching.
+ *
+ * Every field a seller has not supplied stays EMPTY rather than being filled in
+ * with a plausible default — the LEG-17 ruling. In particular `rating` is 0 and
+ * `reviewCount` is 0 because no review exists, never a synthesised 4.5; and
+ * `compareAtPrice`/`discount` stay null/0 because a struck-through price the
+ * seller never charged is a fabricated discount under the Consumer Protection
+ * Act 2019.
+ *
+ * `freeDelivery` is derived from the SAME threshold the order route charges
+ * (lib/store-pricing.ts), so the card cannot promise a fee the checkout then
+ * adds. It is a per-basket rule, so the card claims it only when this one item
+ * already clears the threshold on its own.
+ */
+export function presentLiveProduct(row: LiveProductRow): Product {
+  const price = Number(row.price);
+  return {
+    id: row.id,
+    // No slug column on store_products yet — the id IS the handle, which is
+    // also what GET /store/products/live and /store/seller/<id> already use.
+    handle: row.id,
+    title: row.name,
+    description: row.description ?? '',
+    features: [],
+    price,
+    compareAtPrice: null,
+    discount: 0,
+    currency: 'INR',
+    images: row.imageUrl ? [{ url: row.imageUrl, alt: row.name }] : [],
+    category: row.category ?? 'General',
+    // The 8 fixture collections are a merchandising taxonomy of this file, not
+    // of the sellers' catalogue. Claiming membership would silently drop real
+    // inventory out of a collection-filtered view or into the wrong one.
+    collection: 'seller-listings',
+    tag: null,
+    inStock: row.stock > 0,
+    freeDelivery: computeDeliveryFeeInr(price) === 0,
+    // No reviews exist for a brand-new listing, so there is no average to
+    // report. `null`, never 0 — see the `rating` note on `Product`.
+    rating: null,
+    reviewCount: 0,
+    weight: null,
+    sku: row.sku ?? '',
+    source: 'live',
+    buyable: true,
+    unavailableReason: null,
+  };
+}
+
+/** Sort key for a star average that may not exist yet. Unrated sorts last. */
+function ratingKey(p: Product): number {
+  return p.rating ?? -1;
+}
+
 // ─── Collections ──────────────────────────────────────────────────────────────
 
 const COLLECTIONS: Collection[] = [
@@ -691,9 +861,23 @@ function generateCartItemId(): string {
 export class StoreService {
   /**
    * Get paginated product list with filtering and sorting.
+   *
+   * @param liveProducts real `store_products` rows, already mapped through
+   *   `presentLiveProduct`. The ROUTE supplies them — it owns the prisma
+   *   handle — which keeps this method pure and synchronously testable, and
+   *   keeps ONE filter/sort/paginate implementation across both keyspaces
+   *   instead of two that can disagree about what "cheapest first" means.
+   *
+   *   Omitted → fixtures only, which is what prod returns today: zero seller
+   *   rows exist, so the merged list and the fixture list are the same list.
    */
-  getProducts(params: ProductsParams) {
-    let filtered = [...PRODUCTS];
+  getProducts(params: ProductsParams, liveProducts: Product[] = []) {
+    // Real, orderable inventory leads, ALWAYS — see the buyable-first sort
+    // below. A shopper must not have to scroll past 24 items they cannot buy
+    // to reach the one they can, and the default sort here is by review count,
+    // which would bury every new seller row (0 reviews, honestly) underneath
+    // fixtures carrying invented tallies.
+    let filtered: Product[] = [...liveProducts, ...PRODUCTS.map(presentFixture)];
 
     // Collection filter
     if (params.collection) {
@@ -735,7 +919,9 @@ export class StoreService {
         filtered.sort((a, b) => b.price - a.price);
         break;
       case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
+        // Unrated (a new seller listing) sorts last rather than as a zero —
+        // see the `rating` note on `Product`.
+        filtered.sort((a, b) => ratingKey(b) - ratingKey(a));
         break;
       case 'newest':
         // In real app, sort by createdAt — for hardcoded data, reverse order
@@ -745,6 +931,13 @@ export class StoreService {
         // Default: popular (by review count)
         filtered.sort((a, b) => b.reviewCount - a.reviewCount);
     }
+
+    // Buyable first, under EVERY sort. Array.prototype.sort is stable, so the
+    // ordering chosen above survives inside each group — this only guarantees
+    // that what a shopper can actually put in a basket is never pushed below
+    // what they cannot. A no-op while no seller has listed anything (every row
+    // is then `buyable: false`), which is the state prod is in today.
+    filtered.sort((a, b) => Number(b.buyable) - Number(a.buyable));
 
     const page = params.page ?? 1;
     const limit = params.limit ?? 20;
@@ -763,9 +956,18 @@ export class StoreService {
 
   /**
    * Get a single product by its handle (URL slug).
+   *
+   * A seller row's "handle" is its `StoreProduct.id` — there is no slug column
+   * yet, and that is already the key GET /store/products/live and
+   * /store/seller/<id> use. Passing `liveProducts` lets one PDP route resolve
+   * both keyspaces, so the detail page can never disagree with the grid about
+   * whether an item exists or can be bought.
    */
-  getProductByHandle(handle: string): Product | null {
-    return PRODUCTS.find((p) => p.handle === handle) ?? null;
+  getProductByHandle(handle: string, liveProducts: Product[] = []): Product | null {
+    const live = liveProducts.find((p) => p.handle === handle || p.id === handle);
+    if (live) return live;
+    const fixture = PRODUCTS.find((p) => p.handle === handle);
+    return fixture ? presentFixture(fixture) : null;
   }
 
   /**
@@ -777,9 +979,50 @@ export class StoreService {
 
   /**
    * Add an item to the user's cart.
+   *
+   * COM-01: the item goes in carrying `buyable: false` and its
+   * `unavailableReason`, because every row this in-memory cart can hold is a
+   * fixture. It is NOT refused here, deliberately:
+   *
+   *   - Adding to a basket is not a purchase. The refusal that matters is at
+   *     POST /store/orders, which already answers `400 Unknown product: <id>`
+   *     and which apps/mobile already renders as a specific sentence
+   *     ((devotee)/checkout.tsx). Refusing here would replace that sentence
+   *     with the shared client's generic "Request failed with status 400",
+   *     i.e. a worse message for the same fact.
+   *   - This cart cannot hold a seller product at all (it resolves ids against
+   *     PRODUCTS, and seller ids are uuids), so a blanket refusal would make
+   *     the mobile store screen error on every tap while offering no
+   *     alternative that works.
+   *
+   * What changed is that the cart no longer HIDES the fact: `cart.items[].
+   * product.buyable` and `.unavailableReason` are on the wire, so a client can
+   * say so on the basket screen instead of discovering it at the payment step.
+   *
+   * A SELLER product, on the other hand, can now be added — see `resolved`.
+   * That became mandatory the moment GET /store/products started serving
+   * seller rows: showing a shopper something orderable and then refusing to
+   * put it in their basket would be the same class of defect, pointed the
+   * other way.
    */
-  createCartItem(userId: string, productId: string, quantity: number): Cart {
-    const product = PRODUCTS.find((p) => p.id === productId);
+  createCartItem(
+    userId: string,
+    productId: string,
+    quantity: number,
+    /**
+     * A real `store_products` row the ROUTE already resolved (it owns the
+     * prisma handle). Supplied whenever `productId` is uuid-shaped.
+     *
+     * Without this the basket could hold ONLY fixtures, which became a live
+     * defect the moment GET /store/products started serving seller rows: a
+     * mobile shopper would see an orderable product and get "Product not
+     * found." adding it. The catalogue, the basket and the order route now
+     * agree on the same keyspace.
+     */
+    resolved?: Product,
+  ): Cart {
+    const row = resolved ? null : PRODUCTS.find((p) => p.id === productId);
+    const product = resolved ?? (row ? presentFixture(row) : null);
     if (!product) {
       throw new Error('Product not found.');
     }
@@ -863,23 +1106,51 @@ export class StoreService {
 
   /**
    * Build the full cart object with totals.
+   *
+   * COM-06 / S-09 (prod sweep 2026-08-12) deleted the browser's
+   * `subtotal + delivery + 5% "GST"` line but left the identical line here, so
+   * the two halves of checkout disagreed with each other: GET /store/cart
+   * returned the inflated number while POST /store/orders recomputes
+   * `subtotal + delivery` and refuses with 409 `price_mismatch` on ANY
+   * disagreement (store-orders.ts:243-255). Every client that trusted
+   * `cart.total` therefore could not check out at all — apps/mobile worked
+   * around it by re-deriving the total itself rather than reading this field.
+   *
+   * The totals now come from the single authority, lib/store-pricing.ts — the
+   * same function the order route calls, so the cart cannot drift from the
+   * order again. The 5% was never a tax regime: one flat rate over books
+   * (nil-rated), brass idols and malas alike, quoted by a business with no
+   * GSTIN. Prices are tax-inclusive; introducing a real GST line is an owner
+   * decision with per-HSN rates, not a rounding.
+   *
+   * `tax` stays on the wire as 0 rather than being dropped — mobile's
+   * api-contracts.ts reads the field — and 0 is the honest figure.
+   *
+   * COM-01 adds `orderable` / `unorderableReason`: the basket now states, up
+   * front, whether POST /store/orders will accept it, so a shopper learns that
+   * at the basket rather than at the payment step.
    */
   private buildCart(userId: string, items: CartItem[]): Cart {
-    const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
-    const deliveryFee = subtotal >= 499 ? 0 : 49;
-    const tax = Math.round(subtotal * 0.05); // 5% GST estimate
-    const total = subtotal + deliveryFee + tax;
+    const { subtotalInr, deliveryFeeInr, totalInr } = computeStoreOrderTotals(
+      items.map((i) => ({ qty: i.quantity, unitPriceInr: i.product.price })),
+    );
     const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+    // An empty basket is not "unorderable" — it is empty, and the route already
+    // answers that separately. `every` on [] is true, which is the right answer.
+    const blocked = items.filter((i) => !i.product.buyable);
 
     return {
       id: `cart_${userId}`,
       items,
-      subtotal,
-      deliveryFee,
-      tax,
-      total,
+      subtotal: subtotalInr,
+      deliveryFee: deliveryFeeInr,
+      tax: 0,
+      total: totalInr,
       currency: 'INR',
       itemCount,
+      orderable: blocked.length === 0,
+      unorderableReason:
+        blocked.length === 0 ? null : (blocked[0]!.product.unavailableReason ?? null),
     };
   }
 }

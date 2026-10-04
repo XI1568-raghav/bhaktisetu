@@ -38,16 +38,19 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
  * — react-query's cache under `storeQueryKeys.cart` IS the single source of
  * truth, and every mutation here invalidates it.
  *
- * WHY THE TOTAL IS COMPUTED HERE AND `cart.total` IS IGNORED
- * ----------------------------------------------------------
- * `store.service.ts:868-871` still adds `Math.round(subtotal * 0.05)` as a
- * "5% GST estimate" to `cart.total`. That is the exact line item COM-06 / S-09
- * removed from the web in the ₹733-vs-₹698 incident: it was never charged and
- * never remitted (the business has no GSTIN), and prices are quoted
- * tax-inclusive. `POST /api/v1/store/orders` now recomputes the total itself
- * and REFUSES with 409 `price_mismatch` when the client's number disagrees
- * (store-orders.ts:243-255) — so rendering `cart.total` here would not merely
- * be a display bug, it would make every checkout fail.
+ * WHY THE TOTAL IS COMPUTED HERE AND `cart.total` IS NOT READ
+ * -----------------------------------------------------------
+ * `store.service.ts` used to add `Math.round(subtotal * 0.05)` as a "5% GST
+ * estimate" to `cart.total` — the exact line item COM-06 / S-09 removed from
+ * the web in the ₹733-vs-₹698 incident: never charged, never remitted (the
+ * business has no GSTIN), and prices are quoted tax-inclusive. `POST
+ * /api/v1/store/orders` recomputes the total itself and REFUSES with 409
+ * `price_mismatch` when the client's number disagrees (store-orders.ts:243-255),
+ * so rendering `cart.total` was not merely a display bug — it made every
+ * checkout fail. `buildCart` now calls the same `computeStoreOrderTotals` the
+ * order route calls, so the cart and the order agree; this screen keeps its own
+ * mirror so the number on the button cannot drift from the number the route
+ * will accept.
  *
  * The constants below are therefore a deliberate third copy of the pricing
  * contract, mirroring apps/api/src/lib/store-pricing.ts (the authority) and

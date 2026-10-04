@@ -51,6 +51,25 @@ export type TicketCategory =
  | 'wellness'
  | 'yatra';
 
+/**
+ * The five categories the SERVER stores — apps/api/src/routes/support.ts:413,
+ * `z.enum(['BOOKING','PAYMENT','ACCOUNT','TECHNICAL','OTHER'])`.
+ *
+ * The eight above are this site's help-centre taxonomy (they drive /support,
+ * the FAQ deep-links and the ticket picker); the five below are what the API
+ * will accept and therefore what comes back on a ticket that has round-tripped.
+ * lib/support-api.ts owns the translation between them.
+ */
+export type ApiTicketCategory =
+ | 'BOOKING'
+ | 'PAYMENT'
+ | 'ACCOUNT'
+ | 'TECHNICAL'
+ | 'OTHER';
+
+/** A ticket's category is one vocabulary offline, the other once stored. */
+export type StoredTicketCategory = TicketCategory | ApiTicketCategory;
+
 export interface TicketMessage {
  id: string;
  author: 'user' | 'agent' | 'system';
@@ -70,7 +89,7 @@ export interface TicketActivity {
 export interface Ticket {
  id: string;
  subject: string;
- category: TicketCategory;
+ category: StoredTicketCategory;
  priority: TicketPriority;
  status: TicketStatus;
  createdAt: string;
@@ -150,6 +169,31 @@ export const CATEGORY_MAP: Record<TicketCategory, SupportCategory> =
  acc[c.id] = c;
  return acc;
  }, {} as Record<TicketCategory, SupportCategory>);
+
+/**
+ * Human labels for the five categories the API stores. A ticket fetched from
+ * the server carries `BOOKING`, not `puja`, and `CATEGORY_MAP` has no entry for
+ * it — the pages used to fall back to printing the raw enum at the reader.
+ */
+export const API_CATEGORY_LABELS: Record<ApiTicketCategory, string> = {
+ BOOKING: 'Booking',
+ PAYMENT: 'Payment',
+ ACCOUNT: 'Account',
+ TECHNICAL: 'Technical',
+ OTHER: 'Other',
+};
+
+/** Reads either vocabulary; never prints a raw enum member. */
+export function ticketCategoryLabel(category: StoredTicketCategory | string): string {
+ const web = CATEGORY_MAP[category as TicketCategory];
+ if (web) return web.name;
+ return API_CATEGORY_LABELS[category as ApiTicketCategory] ?? String(category);
+}
+
+/** The help-centre emoji when we have one; nothing rather than a wrong one. */
+export function ticketCategoryEmoji(category: StoredTicketCategory | string): string {
+ return CATEGORY_MAP[category as TicketCategory]?.emoji ?? '';
+}
 
 export const PRIORITIES: { id: TicketPriority; label: string }[] = [
  { id: 'low', label: 'Low' },

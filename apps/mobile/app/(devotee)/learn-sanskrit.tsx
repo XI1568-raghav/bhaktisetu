@@ -6,6 +6,8 @@ import { router } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
+import { fetchWithBudget } from '../../lib/fetch-budget';
+import { selectLessonProgress, badgeLabel, type LessonProgress } from '../../lib/lesson-progress';
 
 interface Lesson {
   id: string;
@@ -15,12 +17,32 @@ interface Lesson {
   minutes: number;
 }
 
-interface ProgressResponse {
-  lessons: { lessonId: string; score: number; completedAt: string }[];
-  streak: { currentDays: number; longestDays: number } | null;
-  badges: { id: string; awardedAt: string }[];
-}
-
+/**
+ * `GET /api/v1/lessons` -> `{ success, progress[], streak, badges[] }`.
+ *
+ * THE BUG THIS SCREEN CARRIED
+ * ---------------------------
+ * It declared the reply as `{lessons, streak, badges}` and then ran
+ * `progress?.lessons.map(...)`. The optional chain guards only the OUTER
+ * object; `lessons` is a key the route has never sent (it is `progress`), so
+ * on every 200 for a signed-in devotee this was `undefined.map(...)` — a
+ * TypeError thrown during render, i.e. a hard crash on the SUCCESS path. The
+ * `.catch()` fallback wrote `{lessons: [], …}` in the same invented shape, so
+ * the only path that did not crash was the failing one.
+ *
+ * `badges` was wrong too, quietly: the route sends `{key, earnedAt}` and the
+ * screen rendered `b.id` as both the React key and the chip's text, so a
+ * devotee who earned three badges saw three chips reading "undefined" under
+ * duplicate keys.
+ *
+ * The reader lives in lib/lesson-progress.ts so vitest can hold it to the
+ * route's shape — this runner is node-only and renders no React Native.
+ *
+ * STATIC_CATALOG is not fabricated API data: the API publishes PROGRESS only
+ * and has no lesson-catalogue endpoint, so the three lessons below are the
+ * app's own authored content, and app/(devotee)/lesson.tsx carries their body
+ * and quiz. The ids are the join key the progress rows come back under.
+ */
 const STATIC_CATALOG: Lesson[] = [
   { id: 'l01-devanagari-vowels', title: 'Devanagari Vowels (स्वराः)', subtitle: '14 vowel sounds', level: 'beginner', minutes: 8 },
   { id: 'l02-devanagari-consonants', title: 'Devanagari Consonants', subtitle: '33 consonants in 5 vargas', level: 'beginner', minutes: 10 },
@@ -29,21 +51,36 @@ const STATIC_CATALOG: Lesson[] = [
 
 export default function LearnSanskritScreen() {
   const { session } = useAuth();
-  const [progress, setProgress] = useState<ProgressResponse | null>(null);
+  const [progress, setProgress] = useState<LessonProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!session?.accessToken) { setLoading(false); return; }
-    fetch(`${apiBase()}/api/v1/lessons`, {
-      headers: { Authorization: `Bearer ${session.accessToken}` },
+    const token = session?.accessToken;
+    if (!token) { setLoading(false); return; }
+    let cancelled = false;
+    // `fetchWithBudget`, not a bare `fetch`: a stalled socket left this screen
+    // spinning forever with no error (the LIVE P0 class in TASKS.md).
+    fetchWithBudget(`${apiBase()}/api/v1/lessons`, {
+      headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      .then(setProgress)
-      .catch(() => setProgress({ lessons: [], streak: null, badges: [] }))
-      .finally(() => setLoading(false));
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((body: unknown) => {
+        if (!cancelled) setProgress(selectLessonProgress(body));
+      })
+      // Progress is decoration on a catalogue that is local either way, so a
+      // failed read shows an unmarked list rather than blocking the lessons.
+      .catch(() => {
+        if (!cancelled) setProgress(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [session?.accessToken]);
 
-  const completed = new Set(progress?.lessons.map((l) => l.lessonId) ?? []);
+  const completed = new Set((progress?.completed ?? []).map((l) => l.lessonId));
   const grouped: Record<Lesson['level'], Lesson[]> = { beginner: [], intermediate: [], advanced: [] };
   STATIC_CATALOG.forEach((l) => { grouped[l.level].push(l); });
 
@@ -103,9 +140,9 @@ export default function LearnSanskritScreen() {
             <Text style={styles.sectionTitle}>Badges earned</Text>
             <View style={styles.badgesWrap}>
               {progress.badges.map((b) => (
-                <View key={b.id} style={styles.badge}>
+                <View key={b.key} style={styles.badge}>
                   <Ionicons name="ribbon" size={16} color={colors.saffron[600]} />
-                  <Text style={styles.badgeText}>{b.id}</Text>
+                  <Text style={styles.badgeText}>{badgeLabel(b.key)}</Text>
                 </View>
               ))}
             </View>

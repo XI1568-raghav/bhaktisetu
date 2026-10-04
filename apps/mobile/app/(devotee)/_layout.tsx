@@ -173,6 +173,8 @@ export default function TabLayout() {
       <Tabs.Screen name="knowledge" options={{ href: null, title: 'Knowledge' }} />
       <Tabs.Screen name="knowledge-category" options={{ href: null, title: 'Knowledge Category' }} />
       <Tabs.Screen name="knowledge-article" options={{ href: null, title: 'Article' }} />
+      <Tabs.Screen name="festivals" options={{ href: null, title: 'Sacred Calendar' }} />
+      <Tabs.Screen name="library" options={{ href: null, title: 'Devotional Library' }} />
       <Tabs.Screen name="learn-sanskrit" options={{ href: null, title: 'Learn Sanskrit' }} />
       <Tabs.Screen name="lesson" options={{ href: null, title: 'Lesson' }} />
       <Tabs.Screen name="gurukuls" options={{ href: null, title: 'Gurukuls' }} />
@@ -220,6 +222,14 @@ export default function TabLayout() {
       <Tabs.Screen name="wellness-instructor" options={{ href: null, title: 'Instructor' }} />
       <Tabs.Screen name="wellness-my-classes" options={{ href: null, title: 'My Classes' }} />
       <Tabs.Screen name="yatra-book" options={{ href: null, title: 'Book Yatra' }} />
+
+      {/* Vedic calculators — computed in-app from @poojly/shared/astrology.
+          Pushed from the astrology hub's ASTROLOGY_TOOLS registry. */}
+      <Tabs.Screen name="kundli-milan" options={{ href: null, title: 'Kundli Milan' }} />
+      <Tabs.Screen name="numerology" options={{ href: null, title: 'Numerology' }} />
+      <Tabs.Screen name="nakshatra-finder" options={{ href: null, title: 'Nakshatra Finder' }} />
+      <Tabs.Screen name="manglik" options={{ href: null, title: 'Manglik Check' }} />
+      <Tabs.Screen name="rahu-kalam" options={{ href: null, title: 'Rahu Kalam' }} />
     </Tabs>
     </RoleGuard>
   );

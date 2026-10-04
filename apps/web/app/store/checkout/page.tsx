@@ -22,6 +22,7 @@ import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { friendlyApiError } from '../../../lib/friendly-error';
+import { isOrderableProductId, BROWSE_ONLY_REASON } from '../../../lib/store-buyability';
 import ReauthPrompt from '../../../components/ReauthPrompt';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -98,6 +99,18 @@ function CheckoutContent() {
  // page read. Here it decides whether the buyer gets a route back into their
  // session or just a sentence telling them to find one.
  const [placeReauth, setPlaceReauth] = useState(false);
+
+ /**
+  * COM-01: the basket lines `POST /api/v1/store/orders` will refuse.
+  *
+  * The order route resolves items against `StoreProduct` by uuid. The 24 seed
+  * rows in lib/products.ts carry `prod_NNN` ids, no seller stocks them (prod:
+  * 0 store_products, verified read-only 2026-09-08), and the route answers
+  * `400 Unknown product: prod_015`. This page rendered that as the string
+  * "Order failed (400)" at the very last step of the funnel. It is now caught
+  * before the button, in words, with the item named.
+  */
+ const blockedItems = items.filter((it) => !isOrderableProductId(it.product.id));
  // P0 #S-08 (2026-07-09): idempotency key for the create-order POST. Held in a
  // ref so retries within one checkout attempt share a key (server dedupes),
  // and regenerated for each fresh attempt. crypto.randomUUID is available in
@@ -240,6 +253,26 @@ function CheckoutContent() {
  // funnel. Log it, show human copy.
  const txt = await res.text().catch(() => '');
  console.error('[checkout] POST /store/orders failed', res.status, txt);
+ // COM-01: the API distinguishes "this was never for sale" from
+ // "this is no longer listed" and sends a sentence for each
+ // (store-orders.ts). Render it. This branch used to be
+ // unreachable-in-practice only because EVERY seed product hit it —
+ // and every devotee who tried to buy anything saw "Order failed
+ // (400)" instead of the reason.
+ if (res.status === 400) {
+ let parsed: { code?: string; message?: string } | null = null;
+ try {
+ parsed = JSON.parse(txt) as { code?: string; message?: string };
+ } catch {
+ parsed = null;
+ }
+ if (
+ parsed?.message &&
+ (parsed.code === 'product_not_orderable' || parsed.code === 'product_not_found')
+ ) {
+ throw new Error(parsed.message);
+ }
+ }
  if (res.status === 409) {
  // COM-06: the API refuses when our displayed total disagrees with its
  // own. Tell the customer to re-check rather than silently charging a
@@ -592,10 +625,40 @@ function CheckoutContent() {
  </div>
  </div>
 
+ {/* COM-01: a basket the API will refuse must say so HERE, not after the
+     devotee has picked an address and a payment method and pressed the
+     button. `POST /store/orders` resolves each line item against
+     StoreProduct by uuid; a `prod_NNN` row from the seed catalogue has no
+     such row and returns 400. The CTAs that could add one are disabled now
+     (components/store/AddToCartButton + ProductDetail), so reaching this
+     state means a basket saved to localStorage before that shipped — which
+     is exactly the case that must not be allowed to reach Razorpay. */}
+ {blockedItems.length > 0 && (
+ <div
+ className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+ data-testid="checkout-unorderable"
+ >
+ <p className="font-semibold">
+ {blockedItems.length === 1
+ ? 'One item in your basket cannot be ordered'
+ : `${blockedItems.length} items in your basket cannot be ordered`}
+ </p>
+ <ul className="mt-1.5 list-disc pl-5">
+ {blockedItems.map((it) => (
+ <li key={it.id}>{it.product.title}</li>
+ ))}
+ </ul>
+ <p className="mt-1.5">{BROWSE_ONLY_REASON}</p>
+ <Link href="/store/cart" className="mt-2 inline-block font-medium underline">
+ Go back to the cart and remove {blockedItems.length === 1 ? 'it' : 'them'}
+ </Link>
+ </div>
+ )}
+
  {/* Place Order */}
  <button
  onClick={handlePlaceOrder}
- disabled={placing || !selectedAddress}
+ disabled={placing || !selectedAddress || blockedItems.length > 0}
  className="w-full flex items-center justify-center gap-2 py-3.5 bg-saffron-600 text-white font-medium rounded-lg hover:bg-saffron-700 transition-colors mt-6 disabled:opacity-50"
  >
  {placing ? (

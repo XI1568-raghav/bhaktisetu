@@ -15,14 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
 import { apiPost } from '../../lib/api';
+import { describeOnboardProblem, type OnboardRole } from '../../lib/onboard-contract';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-export type OnboardRole =
-  | 'TEMPLE'
-  | 'PRIEST'
-  | 'ASTROLOGER'
-  | 'WELLNESS_INSTRUCTOR'
-  | 'GAUSHALA';
+export type { OnboardRole };
 
 interface SelfOnboardResponse {
   ok?: boolean;
@@ -105,8 +101,20 @@ export function OnboardScreen({
 
   function handleSubmit() {
     setError(null);
-    if (!fullName.trim() || !email.trim() || !phone.trim() || !city.trim() || !state.trim()) {
-      setError('Please fill in all required fields.');
+    // `required` on ExtraTextField / ExtraSelectField used to render a `*` and
+    // nothing else: only the five base fields were checked, and the payload
+    // builder above DROPS an empty extra rather than sending it. So a pandit
+    // who left "Years of experience" blank posted a body the route's
+    // discriminated union cannot parse, got a 400, and — because the old
+    // `apiPost` discarded the response body — read "API error: 400". The rule
+    // now lives beside the server's schema in lib/onboard-contract.
+    const problem = describeOnboardProblem(
+      role,
+      { fullName, email, phone, city, state },
+      extras,
+    );
+    if (problem) {
+      setError(problem);
       return;
     }
     mutation.mutate();

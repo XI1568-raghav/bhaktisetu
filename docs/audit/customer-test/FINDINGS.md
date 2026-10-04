@@ -15,8 +15,8 @@
 | wellness | Two pages published fabricated supply + dead CTAs | **FIXED + DEPLOYED** |
 | CT-SEO-1 | Soft-404 on 7 dynamic patterns | fixed by a concurrent agent, on main |
 | CT-TRUST-1 | Junk cause on `/donations` under a "verified" badge | **OPEN — owner decision.** Record belongs to a real user; unapproving is moderation, not a code fix |
-| CT-DOC-1 | Razorpay doc points KYC at four 404 URLs | **OPEN** — doc edit |
-| CT-UI-1 | `, · Temple management dashboard` empty interpolation | OPEN (P3) |
+| CT-DOC-1 | Razorpay doc points KYC at four 404 URLs | **FIXED 2026-10-04** (uncommitted) — doc now lists `/privacy` `/terms` `/refund` `/shipping`, each re-probed 200 |
+| CT-UI-1 | `, · Temple management dashboard` empty interpolation | **FIXED 2026-10-04** (uncommitted, not deployed) — `ct-ui1-temple-portal-empty-place.test.tsx`, red before the change |
 
 ### The money path — exercised end to end against prod, 11/11
 

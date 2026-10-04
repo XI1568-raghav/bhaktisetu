@@ -13,19 +13,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGenerateKundli } from '@poojly/api-client';
+import { selectKundli, type KundliChart } from '../../lib/kundli-chart';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-interface KundliResult {
-  signature?: string;
-  ascendant?: string;
-  moonSign?: string;
-  sunSign?: string;
-  nakshatra?: string;
-  dasha?: string;
-  planets?: Array<{ name: string; sign?: string; house?: number; degree?: number }>;
-  summary?: string;
-}
-
+/**
+ * Free kundli — `POST /api/v1/astrology/kundli` -> `{ kundli }`.
+ *
+ * THE BUG THIS SCREEN CARRIED
+ * ---------------------------
+ * It declared a local `KundliResult` whose every field but `signature` was
+ * invented — `ascendant`, `moonSign`, `planets`, `summary` are keys the route
+ * has never sent (it sends `lagna`, `rashi`, `planetaryPositions`,
+ * `interpretation`). Three of the names it guessed at — `sunSign`,
+ * `nakshatra`, `dasha` — DO exist and are OBJECTS, and each was passed
+ * straight into `<Text>{value}</Text>`. React Native throws "Objects are not
+ * valid as a React child" on that, so a healthy 200 crashed the screen on the
+ * SUCCESS path. `unknown` + `selectKundli` (lib/kundli-chart.ts) is what stops
+ * the compiler agreeing with a guess: the reader is pinned to the route's
+ * `KundliPayload` and unit-tested, because vitest here renders no React Native
+ * and cannot see a shape assumption that lives in a .tsx file.
+ *
+ * Nothing on this screen is derived. `degree` is printed as the string the
+ * server formatted; `ayanamsa` and the dasha years are printed as sent.
+ */
 export default function KundliScreen() {
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
@@ -66,7 +76,9 @@ export default function KundliScreen() {
     }
   }
 
-  const result = (generate.data?.kundli ?? null) as KundliResult | null;
+  const result: KundliChart | null = selectKundli(generate.data);
+  // A 2xx whose body this app cannot read is a failure, not an empty chart.
+  const unreadable = generate.isSuccess && result === null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -144,31 +156,87 @@ export default function KundliScreen() {
           </TouchableOpacity>
         </View>
 
+        {unreadable ? (
+          <View style={styles.resultCard}>
+            <Text style={styles.resultHeading}>Chart unavailable</Text>
+            <Text style={styles.resultSummary}>
+              The astrology service replied in a shape this app does not understand. Nothing was
+              charged. Please try again.
+            </Text>
+          </View>
+        ) : null}
+
         {result ? (
           <View style={styles.resultCard}>
-            <Text style={styles.resultHeading}>Your birth chart</Text>
-            {result.summary ? (
-              <Text style={styles.resultSummary}>{result.summary}</Text>
+            <Text style={styles.resultHeading}>
+              {result.name ? `${result.name}'s birth chart` : 'Your birth chart'}
+            </Text>
+            {result.dob ? (
+              <Text style={styles.resultSummary}>
+                {result.dob}
+                {result.tob ? ` · ${result.tob}` : ''}
+                {result.location ? ` · ${result.location}` : ''}
+              </Text>
             ) : null}
+            {result.warning ? <Text style={styles.warning}>{result.warning}</Text> : null}
+
             <View style={styles.resultGrid}>
-              {result.ascendant ? <ResultRow label="Lagna (Ascendant)" value={result.ascendant} /> : null}
-              {result.moonSign ? <ResultRow label="Rashi (Moon sign)" value={result.moonSign} /> : null}
+              {result.lagna ? <ResultRow label="Lagna (Ascendant)" value={result.lagna} /> : null}
+              {result.rashi ? (
+                <ResultRow
+                  label="Rashi (Moon sign)"
+                  value={result.rashiLord ? `${result.rashi} · lord ${result.rashiLord}` : result.rashi}
+                />
+              ) : null}
               {result.sunSign ? <ResultRow label="Sun sign" value={result.sunSign} /> : null}
-              {result.nakshatra ? <ResultRow label="Nakshatra" value={result.nakshatra} /> : null}
-              {result.dasha ? <ResultRow label="Current Dasha" value={result.dasha} /> : null}
+              {result.nakshatra ? (
+                <ResultRow
+                  label="Nakshatra"
+                  value={
+                    result.nakshatraPada !== null
+                      ? `${result.nakshatra} · pada ${result.nakshatraPada}`
+                      : result.nakshatra
+                  }
+                />
+              ) : null}
+              {result.currentDasha ? (
+                <ResultRow
+                  label="Current Dasha"
+                  value={
+                    result.currentDasha.endDate
+                      ? `${result.currentDasha.planet} · to ${result.currentDasha.endDate}`
+                      : result.currentDasha.planet
+                  }
+                />
+              ) : null}
+              {result.ayanamsa !== null ? (
+                <ResultRow label="Ayanamsa" value={`${result.ayanamsa}°`} />
+              ) : null}
             </View>
 
-            {result.planets && result.planets.length > 0 ? (
+            {result.planets.length > 0 ? (
               <View style={styles.planetsSection}>
                 <Text style={styles.planetsHeading}>Planetary positions</Text>
                 {result.planets.map((p, idx) => (
-                  <View key={`${p.name}-${idx}`} style={styles.planetRow}>
-                    <Text style={styles.planetName}>{p.name}</Text>
+                  <View key={`${p.planet}-${idx}`} style={styles.planetRow}>
+                    <Text style={styles.planetName}>{p.planet}</Text>
                     <Text style={styles.planetMeta}>
-                      {p.sign ?? ''}{typeof p.house === 'number' ? ` • H${p.house}` : ''}
-                      {typeof p.degree === 'number' ? ` • ${p.degree.toFixed(1)}°` : ''}
+                      {p.sign ?? ''}
+                      {p.house !== null ? ` • H${p.house}` : ''}
+                      {p.degree !== null ? ` • ${p.degree}°` : ''}
                     </Text>
                   </View>
+                ))}
+              </View>
+            ) : null}
+
+            {result.interpretation.length > 0 ? (
+              <View style={styles.planetsSection}>
+                <Text style={styles.planetsHeading}>Reading</Text>
+                {result.interpretation.map((para, idx) => (
+                  <Text key={`i-${idx}`} style={styles.interpretation}>
+                    {para}
+                  </Text>
                 ))}
               </View>
             ) : null}
@@ -237,6 +305,14 @@ const styles = StyleSheet.create({
   },
   resultHeading: { fontSize: fontSize.lg, fontWeight: '800', color: colors.stone[900] },
   resultSummary: { fontSize: fontSize.sm, color: colors.stone[600], marginTop: spacing.xs, lineHeight: 20 },
+  warning: {
+    fontSize: fontSize.xs, color: colors.amber[700],
+    backgroundColor: colors.amber[50],
+    borderRadius: borderRadius.sm, padding: spacing.xs, marginTop: spacing.xs, lineHeight: 18,
+  },
+  interpretation: {
+    fontSize: fontSize.sm, color: colors.stone[700], lineHeight: 22, marginBottom: spacing.xs,
+  },
   resultGrid: { marginTop: spacing.sm },
   resultRow: {
     flexDirection: 'row', justifyContent: 'space-between',

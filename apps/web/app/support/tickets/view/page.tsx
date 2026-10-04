@@ -7,7 +7,6 @@ import {
  ArrowLeft,
  Send,
  CheckCircle2,
- RotateCcw,
  AlertCircle,
  Paperclip,
  Clock,
@@ -18,14 +17,15 @@ import {
 } from 'lucide-react';
 import {
  getUserTicket,
- CATEGORY_MAP,
+ ticketCategoryEmoji,
+ ticketCategoryLabel,
  type Ticket,
  type TicketMessage,
 } from '../../../../lib/support';
 import {
  getTicketById,
- patchTicket,
  postMessage,
+ resolveOwnTicket,
 } from '../../../../lib/support-api';
 import { useAuth } from '../../../../lib/auth-context';
 import { buttonClass } from '../../../../components/ui/button-recipe';
@@ -75,10 +75,15 @@ function TicketDetailInner() {
  setSending(true);
  setActionError(null);
  try {
- const updated = await postMessage(session?.accessToken, ticket.id, {
- body: reply.trim(),
- });
- setTicket(updated);
+ // POST …/messages replies with the MESSAGE, not the ticket (support.ts:600).
+ // This used to `setTicket(message)`, which blanked the conversation out.
+ const created = await postMessage(
+ session?.accessToken,
+ ticket.id,
+ { body: reply.trim() },
+ { author: 'user', authorName: 'You' },
+ );
+ setTicket({ ...ticket, messages: [...ticket.messages, created] });
  setReply('');
  } catch (err) {
  setActionError(err instanceof Error ? err.message : 'Could not send reply');
@@ -87,29 +92,27 @@ function TicketDetailInner() {
  }
  };
 
- const changeStatus = async (status: Ticket['status']) => {
+ /**
+  * The only ticket field this screen may change.
+  *
+  * This used to call `patchTicket` — PATCH /tickets/:id, which the route gates
+  * on the ADMIN role and answers 403 "Admin role required" to everybody else,
+  * including the devotee whose ticket it is. Every press of "Mark resolved"
+  * showed a permission error on the user's own ticket. POST …/resolve is the
+  * owner's own route: RESOLVED or CLOSED, on a ticket they opened, and nothing
+  * else. "Reopen" and "Escalate" were removed rather than repointed — status
+  * OPEN and priority are queue state the route does not let an owner touch, so
+  * those two buttons could only ever have been 403s (see the resolved-ticket
+  * note below for what a devotee does instead).
+  */
+ const markResolved = async () => {
  if (!ticket) return;
  setActionError(null);
  try {
- const updated = await patchTicket(session?.accessToken, ticket.id, {
- status,
- });
+ const updated = await resolveOwnTicket(session?.accessToken, ticket.id, 'resolved');
  setTicket(updated);
  } catch (err) {
  setActionError(err instanceof Error ? err.message : 'Could not update ticket');
- }
- };
-
- const escalate = async () => {
- if (!ticket) return;
- setActionError(null);
- try {
- const updated = await patchTicket(session?.accessToken, ticket.id, {
- priority: 'urgent',
- });
- setTicket(updated);
- } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not escalate ticket');
  }
  };
 
@@ -141,8 +144,6 @@ function TicketDetailInner() {
  );
  }
 
- const cat = CATEGORY_MAP[ticket.category];
-
  return (
  <div className="min-h-[100dvh] bg-[#faf7f0] py-10">
  <div className="max-w-6xl mx-auto px-6">
@@ -161,7 +162,7 @@ function TicketDetailInner() {
  <span className="font-mono text-xs text-saffron-700">{ticket.id}</span>
  <span className="text-surface-300">·</span>
  <span className="text-xs text-surface-500">
- {cat?.emoji} {cat?.name ?? ticket.category}
+ {ticketCategoryEmoji(ticket.category)} {ticketCategoryLabel(ticket.category)}
  </span>
  </div>
  <h1 className={H1.portal}>{ticket.subject}</h1>
@@ -175,26 +176,22 @@ function TicketDetailInner() {
  </div>
  <div className="flex items-center gap-2 flex-wrap">
  {ticket.status === 'resolved' || ticket.status === 'closed' ? (
- <button
- onClick={() => changeStatus('open')}
- className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-surface-200 text-sm font-medium text-surface-700 hover:bg-surface-50"
- >
- <RotateCcw className="w-4 h-4" /> Reopen
- </button>
+ // Reopening is queue state: the owner route accepts RESOLVED and CLOSED
+ // only. Replying is the real path back — every devotee reply alerts the
+ // support inbox (support.ts emails SUPPORT_INBOX on a non-admin message),
+ // so this says that instead of offering a button that would 403.
+ <p className="prose-meta text-surface-500 max-w-[16rem] text-right">
+ Marked {ticket.status === 'closed' ? 'closed' : 'resolved'}. Still need help?
+ Reply below and our support team is alerted again.
+ </p>
  ) : (
  <button
- onClick={() => changeStatus('resolved')}
+ onClick={markResolved}
  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium"
  >
  <CheckCircle2 className="w-4 h-4" /> Mark resolved
  </button>
  )}
- <button
- onClick={escalate}
- className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-surface-200 text-sm font-medium text-red-700 hover:bg-red-50"
- >
- <AlertCircle className="w-4 h-4" /> Escalate
- </button>
  </div>
  </div>
  </div>

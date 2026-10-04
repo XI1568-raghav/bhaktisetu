@@ -20,7 +20,19 @@ import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 type Tab = 'email' | 'phone';
 
-const DEMO_HINTS = [
+/**
+ * DEV BUILDS ONLY — and the array itself is gated, not just the JSX.
+ *
+ * This block previously rendered an `admin@demo.com` one-tap chip and the
+ * password in plain text to every production user. The render site is behind
+ * `__DEV__` now, but a module-level array is still a literal in the bundle,
+ * and whether the minifier drops an unreferenced const is not a guarantee to
+ * rest a credential on. Gating the VALUE mirrors `DEMO_ACCOUNTS` in
+ * lib/auth-context.tsx and the web fix (#198, "gated behind a compile-time-dead
+ * branch so Terser drops them"): in a release bundle this is `[]`, so there is
+ * no email/password pairing left to find.
+ */
+const DEMO_HINTS = __DEV__ ? [
   { email: 'devotee@demo.com', label: 'Devotee' },
   { email: 'pandit@demo.com', label: 'Pandit' },
   { email: 'store@demo.com', label: 'Store Owner' },
@@ -29,7 +41,7 @@ const DEMO_HINTS = [
   { email: 'gaushala@demo.com', label: 'Gaushala' },
   { email: 'temple@demo.com', label: 'Temple' },
   { email: 'admin@demo.com', label: 'Admin' },
-];
+] : [];
 
 export default function LoginScreen() {
   const { signInWithCredentials, signInWithOtp } = useAuth();

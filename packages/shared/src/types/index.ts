@@ -95,19 +95,29 @@ export enum StreamStatus {
 
 // ─── User ────────────────────────────────────
 
+/**
+ * A row of `user_addresses` as `GET /api/v1/users/me/addresses` returns it —
+ * `prisma.userAddress.findMany()` with no projection, so the columns are the
+ * wire (prisma/schema.prisma:278).
+ *
+ * `addressLine1` / `addressLine2` / `postalCode` were never sent; the columns
+ * are `line1` / `line2` / `pincode`. `lat` / `lng` were sent and undeclared.
+ * The model has NO `createdAt` / `updatedAt`.
+ */
 export interface UserAddress {
   id: string;
   userId: string;
   label: string;
-  addressLine1: string;
-  addressLine2?: string;
+  line1: string;
+  line2: string | null;
   city: string;
   state: string;
-  postalCode: string;
+  pincode: string;
+  /** A country NAME, e.g. "India" — not an ISO code. */
   country: string;
   isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface User {
@@ -471,7 +481,15 @@ export interface ApiError {
   error: {
     code: string;
     message: string;
-    details?: Record<string, string[]>;
+    /**
+     * `unknown`, not `Record<string, string[]>`. The API attaches three
+     * different shapes here and none of them is that one: zod `flatten()`
+     * (`{ formErrors: string[]; fieldErrors: Record<string, string[]> }`,
+     * routes/priest.ts:410 and ~40 more), `ZodIssue[]`
+     * (lib/i18n.ts#sendLocalizedError), and the ad-hoc objects
+     * services/account-deletion.service.ts spreads. Narrow at the call site.
+     */
+    details?: unknown;
     statusCode: number;
   };
   timestamp: string;
