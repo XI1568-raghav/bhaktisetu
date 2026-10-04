@@ -64,9 +64,21 @@ export default function YatraDetailScreen() {
           specialRequests: notes.trim() || undefined,
         },
       });
+      // The route replies `{bookingNumber, totalInr, status:'pending_payment'}`
+      // and does NOTHING else — no email, no WhatsApp, no payment link
+      // (apps/api/src/routes/yatra-packages.ts:125-183, an INSERT and a log).
+      // This alert used to say the booking was "confirmed" and that payment
+      // instructions would be sent over WhatsApp: one word the server
+      // contradicts, and one promise nothing in the codebase keeps. The total
+      // is READ off the reply and rendered with `formatInr` like every other
+      // rupee figure — never recomputed from price × travellers, which is the
+      // multiplication the server does under a row lock.
+      const total = toNumber(res.totalInr);
       Alert.alert(
-        'Yatra reserved',
-        `Booking ${res.bookingNumber} confirmed for ${count} traveller(s). Total ₹${Number(res.totalInr).toLocaleString('en-IN')}. We will WhatsApp payment instructions to ${phone.trim()}.`,
+        'Seats held',
+        `Reference ${res.bookingNumber} — ${count} traveller(s)${
+          total !== null ? `, ${formatInr(total)}` : ''
+        }. Payment has NOT been taken and your place is not confirmed until it is. Keep this reference and contact the yatra desk to pay.`,
         [{ text: 'Done', onPress: () => router.back() }],
       );
     } catch (err) {

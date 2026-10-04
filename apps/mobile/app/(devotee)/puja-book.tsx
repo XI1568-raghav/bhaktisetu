@@ -15,6 +15,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
+import { fetchWithBudget, isNetworkFailure, type FetchBudgetError } from '../../lib/fetch-budget';
 import {
   selectPujaBookingDetail,
   resolveSlotAvailability,
@@ -144,7 +145,7 @@ export default function PujaBookScreen() {
     }
     (async () => {
       try {
-        const res = await fetch(
+        const res = await fetchWithBudget(
           `${apiBase()}/api/v1/pujas/types/${encodeURIComponent(slug)}`,
         );
         const body: unknown = await res.json().catch(() => null);
@@ -192,7 +193,7 @@ export default function PujaBookScreen() {
       try {
         // The `templeId` query name is a legacy misnomer — the handler resolves
         // an OFFERING id first (bookings.ts:1807), which is what we send.
-        const res = await fetch(
+        const res = await fetchWithBudget(
           `${apiBase()}/api/v1/bookings/slots?templeId=${encodeURIComponent(
             offering.offeringId,
           )}&date=${encodeURIComponent(date)}`,
@@ -274,7 +275,7 @@ export default function PujaBookScreen() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/bookings/book`, {
+      const res = await fetchWithBudget(`${apiBase()}/api/v1/bookings/book`, {
         method: 'POST',
         // PAR-15 (3). The recoverable failures on this screen — SLOT_UNAVAILABLE
         // and TEMPLE_NOT_VERIFIED — are the two the API translates, and the
@@ -309,8 +310,15 @@ export default function PujaBookScreen() {
         // slot as free underneath an error saying it was taken.
         setAvailabilityNonce((n) => n + 1);
       }
-    } catch {
-      setSubmitError('Could not reach the server. Your booking was not created.');
+    } catch (err) {
+      // Same distinction createBookingOutcome already draws for an unreadable
+      // 2xx: a TIMEOUT may have left a `pending_payment` row holding a seat, so
+      // retrying is what mints the SECOND hold. Send them to look, not to retry.
+      setSubmitError(
+        isNetworkFailure(err) && (err as FetchBudgetError).timedOut
+          ? 'The server did not answer in time. A booking may have been created — check My Bookings before trying again.'
+          : 'Could not reach the server. Your booking was not created.',
+      );
     } finally {
       setSubmitting(false);
     }

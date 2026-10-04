@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { UserRole } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
+import { describePasswordProblem } from '../../lib/signup-contract';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 type Step = 'role' | 'details';
@@ -56,8 +57,14 @@ export default function SignupScreen() {
       Alert.alert('Missing fields', 'Please fill in all required fields.');
       return;
     }
-    if (password.length < 6) {
-      Alert.alert('Weak password', 'Password must be at least 6 characters.');
+    // Mirrors `signupSchema` in apps/api/src/routes/auth.ts one-for-one:
+    // min 8, at least one letter, at least one digit. It said 6 and no
+    // character classes, so a 6-character password passed here and was
+    // rejected by zod at the API — and the auth context's old catch-all then
+    // reported that 400 as "Account created successfully".
+    const passwordProblem = describePasswordProblem(password);
+    if (passwordProblem) {
+      Alert.alert('Weak password', passwordProblem);
       return;
     }
     setBusy(true);
@@ -160,7 +167,7 @@ export default function SignupScreen() {
               <Text style={styles.label}>Password</Text>
               <TextInput
                 style={styles.input}
-                placeholder="At least 6 characters"
+                placeholder="8+ characters, with a letter and a digit"
                 placeholderTextColor={colors.stone[400]}
                 secureTextEntry
                 value={password}

@@ -40,6 +40,11 @@ const LINKS = [
   'darshya://order/ord-9',
   'darshya://today',
   'darshya://totally-unknown-head',
+  'darshya://reset-password/tok-123',
+  'darshya://reset-password',
+  'https://darshya.online/auth/reset-password',
+  'https://darshya.online/auth/reset-password/tok-123',
+  'https://darshya.online/auth/some-other-page',
   'https://darshya.online/puja/ganesh-puja',
   'https://darshya.online/',
   'https://evil.example.com/puja/x',
@@ -94,6 +99,45 @@ describe('parseDeepLink', () => {
       pathname: '/(devotee)/puja-book',
       params: { slug: 'ganesh-puja' },
     });
+  });
+
+  it('lands a password-reset link on the screen built for it, not on the login form', () => {
+    // app/(auth)/reset-password.tsx had NO in-app entry point: nothing pushed
+    // it and this table did not name it, so a devotee tapping the reset link
+    // in their email fell through to `/(devotee)` and was bounced to login
+    // with no explanation. The screen cannot set a password — Supabase carries
+    // the credential in the FRAGMENT — but it says so and opens the browser
+    // that can, which beats a dead end.
+    expect(parseDeepLink('darshya://reset-password/tok-123')).toEqual({
+      pathname: '/(auth)/reset-password',
+      params: { token: 'tok-123' },
+    });
+    expect(parseDeepLink('darshya://reset-password')).toEqual({
+      pathname: '/(auth)/reset-password',
+    });
+    expect(parseDeepLink('https://darshya.online/auth/reset-password')).toEqual({
+      pathname: '/(auth)/reset-password',
+    });
+    expect(
+      parseDeepLink('https://darshya.online/auth/reset-password/tok-123'),
+    ).toEqual({ pathname: '/(auth)/reset-password', params: { token: 'tok-123' } });
+  });
+
+  it('does not swallow the rest of /auth — only the reset landing is claimed', () => {
+    expect(parseDeepLink('https://darshya.online/auth/some-other-page').pathname).toBe(
+      '/(devotee)',
+    );
+    expect(parseDeepLink('darshya://auth').pathname).toBe('/(devotee)');
+  });
+
+  it('caps a reset token the same way it caps a slug', () => {
+    const long = 'b'.repeat(1000);
+    expect(parseDeepLink(`darshya://reset-password/${long}`).params?.token).toHaveLength(
+      256,
+    );
+    expect(
+      parseDeepLink(`https://darshya.online/auth/reset-password/${long}`).params?.token,
+    ).toHaveLength(256);
   });
 
   it('caps slug length so a hostile link cannot blow up a param', () => {

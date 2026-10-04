@@ -237,6 +237,125 @@ export function selectAdminDashboard(payload: unknown): AdminDashboardVM | null 
   };
 }
 
+// ─── admin: pending approvals ────────────────────────────────────────────────
+//
+// GET /api/v1/admin/pending-approvals -> {approvals[], total, hasMore}
+//
+// A row is what `adminService.getPendingApprovals()` builds — the shape
+// apps/web/app/admin/approvals/page.tsx documents verbatim:
+//
+//   { id, userId, role: 'PANDIT'|'STORE_OWNER'|'ASTROLOGER'|
+//                       'WELLNESS_INSTRUCTOR'|'GAUSHALA_MANAGER'|
+//                       'TEMPLE_MANAGER',
+//     profileName, city, createdAt }
+//
+// `useAdminPendingApprovals` in @poojly/api-client declares these as
+// `AdminUser[]` — an interface with `fullName`, `email`, `phone` and `status`,
+// none of which this endpoint has ever returned. Same class as PAR-02..07: the
+// fabricated type made the compiler agree, and both admin screens rendered
+// blank names against `u.fullName` and an always-"Pending" badge against
+// `u.status`.
+//
+// `id` vs `userId` is the load-bearing distinction and the reason this selector
+// exists rather than a cast: `id` is the PROFILE row, and the only write that
+// approves anybody is `PATCH /api/v1/admin/users/:userId`. Sending the profile
+// id there answers 404 "User not found".
+
+export interface PendingApprovalRow {
+  /** The provider PROFILE id. Useful as a list key; never a PATCH target. */
+  id: string;
+  /** The USER id — the one `PATCH /admin/users/:id` needs. */
+  userId: string;
+  /** Prisma `MarketplaceRole`, upper-snake (`PANDIT`, `TEMPLE_MANAGER`, …). */
+  role: string;
+  profileName: string;
+  city?: string;
+  createdAt?: string;
+}
+
+export function selectPendingApprovals(payload: unknown): PendingApprovalRow[] {
+  return arrayAt(payload, 'approvals')
+    .filter(isRecord)
+    .map((a) => {
+      const userId = str(a.userId);
+      const id = str(a.id);
+      return {
+        id: id ?? userId ?? '',
+        // No fallback to `id`: a wrong id here would PATCH somebody else's
+        // account. An empty string is refused by the screen instead.
+        userId: userId ?? '',
+        role: str(a.role) ?? '',
+        // The server already falls back through User.fullName → bio →
+        // "Unnamed Pandit", so an empty value here means the row really has
+        // no name — say so rather than rendering a blank line.
+        profileName: str(a.profileName) ?? 'Unnamed',
+        city: str(a.city),
+        createdAt: str(a.createdAt),
+      };
+    })
+    .filter((a) => a.id.length > 0);
+}
+
+/** `total` from the same envelope, falling back to the rows actually present. */
+export function selectPendingApprovalsTotal(payload: unknown, fallbackRows: number): number {
+  if (!isRecord(payload)) return fallbackRows;
+  return toNumberOr(payload.total, fallbackRows);
+}
+
+// ─── admin: user list ────────────────────────────────────────────────────────
+//
+// GET /api/v1/admin/users?role=&status=&search=&page=&limit=
+//   -> {users[], total, page, limit}
+//
+// A row is `adminService.getUsers()`'s `enriched`:
+//   { id, fullName, email, phone, roles: string[], subscriptionTier,
+//     blocked, blockedAt, blockedReason, createdAt }
+//
+// `roles` is an ARRAY of upper-snake Prisma roles. There is no `role` and no
+// `status`, which is what the mobile screen read — so it labelled every row
+// with an empty role and could never show that an account was blocked. AO-01
+// added `blocked` to this response precisely so a client would stop displaying
+// its own optimistic guess; the mobile list never started reading it.
+
+export interface AdminUserRowVM {
+  id: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  /** Upper-snake Prisma roles. Empty only when the server sent none. */
+  roles: string[];
+  /** The role to label the row with — the first non-DEVOTEE, else DEVOTEE. */
+  primaryRole: string;
+  blocked: boolean;
+  blockedReason?: string;
+  createdAt?: string;
+}
+
+export function selectAdminUsers(payload: unknown): AdminUserRowVM[] {
+  return arrayAt(payload, 'users')
+    .filter(isRecord)
+    .map((u) => {
+      const roles = Array.isArray(u.roles)
+        ? u.roles.filter((r): r is string => typeof r === 'string' && r.length > 0)
+        : [];
+      const primaryRole = roles.find((r) => r !== 'DEVOTEE') ?? roles[0] ?? 'DEVOTEE';
+      return {
+        id: String(u.id ?? ''),
+        fullName: str(u.fullName) ?? 'Unnamed',
+        email: str(u.email),
+        phone: str(u.phone),
+        roles,
+        primaryRole,
+        // Only a literal `true` blocks. `undefined` is "the server did not
+        // say", and rendering that as blocked would be the AO-01 lie inverted.
+        blocked: u.blocked === true,
+        blockedReason: str(u.blockedReason),
+        createdAt: str(u.createdAt),
+      };
+    })
+    .filter((u) => u.id.length > 0);
+}
+
 // ─── PAR-05: live darshan ────────────────────────────────────────────────────
 // GET /api/v1/darshan/live ->
 //   {streams:[{id,templeId,playbackUrl,status,viewerCount,currentSlot,endsInMin,

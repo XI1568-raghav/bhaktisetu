@@ -14,21 +14,43 @@ interface ArticleItem {
   readingMinutes?: number;
 }
 
-const labels: Record<string, string> = { sanskrit: 'Sanskrit', ved: 'Vedas', sanatan: 'Sanatan Dharma' };
-
+/**
+ * THE LABEL MAP IS GONE — it was the third copy of the category union.
+ *
+ * This file used to carry
+ *
+ *     const labels = { sanskrit: 'Sanskrit', ved: 'Vedas', sanatan: 'Sanatan Dharma' };
+ *
+ * alongside a `cat` narrowed to those same three strings, duplicating the list
+ * in knowledge.tsx and the union in apps/api/src/routes/knowledge.ts. A fourth
+ * collection would have rendered its raw directory name as the heading here
+ * even after the other two files were updated.
+ *
+ * `GET /api/v1/knowledge/:category` now returns `title` beside `articles`, so
+ * the heading comes from the same place the articles do. The header falls back
+ * to the raw key only while the request is still in flight.
+ */
 export default function KnowledgeCategoryScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
-  const cat = (category ?? 'sanskrit') as 'sanskrit' | 'ved' | 'sanatan';
+  const cat = category ?? 'sanskrit';
   const [items, setItems] = useState<ArticleItem[]>([]);
+  const [title, setTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let live = true;
     setLoading(true);
-    apiFetch<{ articles: ArticleItem[] }>(`/knowledge/${cat}`)
-      .then((d) => { setItems(d.articles ?? []); setError(null); })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
-      .finally(() => setLoading(false));
+    apiFetch<{ title?: string; articles: ArticleItem[] }>(`/knowledge/${encodeURIComponent(cat)}`)
+      .then((d) => {
+        if (!live) return;
+        setItems(Array.isArray(d?.articles) ? d.articles : []);
+        setTitle(typeof d?.title === 'string' && d.title.length > 0 ? d.title : null);
+        setError(null);
+      })
+      .catch((e) => { if (live) setError(e instanceof Error ? e.message : 'Failed to load'); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
   }, [cat]);
 
   const grouped = items.reduce<Record<string, ArticleItem[]>>((acc, a) => {
@@ -39,13 +61,18 @@ export default function KnowledgeCategoryScreen() {
   const sections = Object.entries(grouped);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Ionicons name="chevron-back" size={24} color={colors.stone[900]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>{labels[cat] ?? cat}</Text>
+          <Text style={styles.headerTitle}>{title ?? cat}</Text>
           <Text style={styles.headerSubtitle}>{items.length} article{items.length === 1 ? '' : 's'}</Text>
         </View>
       </View>
@@ -67,7 +94,14 @@ export default function KnowledgeCategoryScreen() {
                 <TouchableOpacity
                   key={a.slug}
                   activeOpacity={0.85}
-                  onPress={() => router.push(`/(devotee)/knowledge-article?category=${cat}&slug=${a.slug}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={a.title}
+                  accessibilityHint="Opens the article"
+                  onPress={() =>
+                    router.push(
+                      `/(devotee)/knowledge-article?category=${encodeURIComponent(cat)}&slug=${encodeURIComponent(a.slug)}`,
+                    )
+                  }
                   style={styles.row}
                 >
                   <View style={{ flex: 1 }}>
@@ -98,7 +132,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm,
     backgroundColor: colors.white,
   },
-  backBtn: { padding: spacing.xs },
+  backBtn: { width: 44, height: 44, marginLeft: -spacing.xs, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: fontSize['2xl'], fontWeight: '800', color: colors.stone[900] },
   headerSubtitle: { fontSize: fontSize.sm, color: colors.stone[500] },
   list: { padding: spacing.md, gap: spacing.md },

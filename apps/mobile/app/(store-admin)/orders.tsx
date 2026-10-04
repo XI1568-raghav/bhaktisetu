@@ -1,55 +1,120 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useStoreOrders, useUpdateStoreOrderStatus } from '@poojly/api-client';
+import { ApiClientError, useStoreOrders, useUpdateStoreOrderStatus } from '@poojly/api-client';
 import { PortalScreen, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { storeOrderStatusLabel } from '../../lib/enum-labels';
 
+/**
+ * PAR-24. Three contract defects on one screen.
+ *
+ * 1. "Change status" sent LOWERCASE values ('pending' | 'packed' | 'shipped' |
+ *    'delivered' | 'cancelled') to PATCH /api/v1/store/orders/:id/status, whose
+ *    body is `z.enum(['PENDING','CONFIRMED','PROCESSING','SHIPPED','DELIVERED',
+ *    'CANCELLED','REFUNDED'])` (store-orders.ts:53). Zod does not coerce case,
+ *    so EVERY status change 400'd and the owner saw a generic "Failed to
+ *    update". 'packed' was not a member at all — the warehouse state is
+ *    PROCESSING, which enum-labels renders as "Packing".
+ * 2. The server also enforces a transition table (store-orders.ts:418) and 409s
+ *    anything else, with terminal DELIVERED/CANCELLED/REFUNDED. The old menu
+ *    offered all five values from every state, so most taps were rejected. The
+ *    menu is now exactly the legal next states for THIS order; an order in a
+ *    terminal state gets no button rather than one that always fails.
+ * 3. `itemCount = o.itemCount ?? o.items ?? 0` — serializeOrder sends no
+ *    `itemCount` and `items` is an ARRAY of line objects, so this put an array
+ *    of objects inside <Text>, which throws "Objects are not valid as a React
+ *    child" and blanks the screen for any owner with at least one order. The
+ *    local interface typed `items?: number`, so tsc agreed.
+ *
+ * Filters were lowercase too and compared against a lowercased status, so
+ * 'packed' matched nothing ever and CONFIRMED / PROCESSING / REFUNDED orders
+ * were invisible under every filter except All.
+ */
+interface OrderItem {
+  productId?: string;
+  name?: string;
+  quantity?: number;
+}
+
 interface Order {
   id: string;
   orderNumber?: string;
-  number?: string;
   customerName?: string;
-  customer?: string;
-  itemCount?: number;
-  items?: number;
+  /** serializeOrder always sends the line array; never a count. */
+  items?: OrderItem[];
   totalAmount?: number | string;
-  amount?: number | string;
   status: string;
   createdAt?: string;
 }
 
-const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'packed', label: 'Packed' },
-  { key: 'shipped', label: 'Shipped' },
-  { key: 'delivered', label: 'Delivered' },
-  { key: 'cancelled', label: 'Cancelled' },
+/** apps/api/src/routes/store-orders.ts:53 — the exact enum, uppercase. */
+const STORE_ORDER_STATUSES = [
+  'PENDING',
+  'CONFIRMED',
+  'PROCESSING',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELLED',
+  'REFUNDED',
+] as const;
+
+type StoreOrderStatus = (typeof STORE_ORDER_STATUSES)[number];
+
+/**
+ * Mirrors ALLOWED_TRANSITIONS in apps/api/src/routes/store-orders.ts:418.
+ * Kept identical so the app never offers a move the server will 409.
+ */
+const ALLOWED_TRANSITIONS: Readonly<Record<StoreOrderStatus, StoreOrderStatus[]>> =
+  Object.freeze({
+    PENDING: ['CONFIRMED', 'CANCELLED'],
+    CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED'],
+    PROCESSING: ['SHIPPED', 'CANCELLED'],
+    SHIPPED: ['DELIVERED'],
+    DELIVERED: [],
+    CANCELLED: [],
+    REFUNDED: [],
+  });
+
+function nextStatuses(current: string): StoreOrderStatus[] {
+  const key = String(current).toUpperCase() as StoreOrderStatus;
+  return ALLOWED_TRANSITIONS[key] ?? [];
+}
+
+const FILTERS: { key: 'ALL' | StoreOrderStatus; label: string }[] = [
+  { key: 'ALL', label: 'All' },
+  ...STORE_ORDER_STATUSES.map((s) => ({
+    key: s,
+    label: storeOrderStatusLabel(s),
+  })),
 ];
 
-const STATUS_OPTIONS = ['pending', 'packed', 'shipped', 'delivered', 'cancelled'];
-
 function statusColor(status: string): string {
-  const s = status.toLowerCase();
-  if (s.includes('cancel')) return colors.red[600];
-  if (s.includes('deliver')) return colors.green[600];
-  if (s.includes('ship')) return colors.stone[600];
-  if (s.includes('pack')) return colors.saffron[600];
-  return colors.amber[600];
+  switch (String(status).toUpperCase()) {
+    case 'CANCELLED':
+    case 'REFUNDED':
+      return colors.red[600];
+    case 'DELIVERED':
+      return colors.green[600];
+    case 'SHIPPED':
+      return colors.stone[600];
+    case 'PROCESSING':
+      return colors.saffron[600];
+    default:
+      return colors.amber[600];
+  }
 }
 
 export default function StoreOrders() {
   const ordersQuery = useStoreOrders();
   const updateStatus = useUpdateStoreOrderStatus();
-  const [filter, setFilter] = useState<string>('all');
+  const [filter, setFilter] = useState<'ALL' | StoreOrderStatus>('ALL');
   const [refreshing, setRefreshing] = useState(false);
 
   const orders = (ordersQuery.data?.data as Order[] | undefined) ?? [];
   const filtered =
-    filter === 'all'
+    filter === 'ALL'
       ? orders
-      : orders.filter((o) => String(o.status).toLowerCase() === filter);
+      : orders.filter((o) => String(o.status).toUpperCase() === filter);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -58,23 +123,43 @@ export default function StoreOrders() {
   }
 
   function handleChangeStatus(order: Order) {
-    const buttons = STATUS_OPTIONS.map((s) => ({
-      text: s.charAt(0).toUpperCase() + s.slice(1),
+    const options = nextStatuses(order.status);
+    if (options.length === 0) return;
+    const buttons = options.map((next) => ({
+      text: storeOrderStatusLabel(next),
       onPress: async () => {
         try {
-          await updateStatus.mutateAsync({ id: order.id, status: s });
+          await updateStatus.mutateAsync({ id: order.id, status: next });
         } catch (err) {
-          Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update');
+          // packages/api-client reads ApiClientError.message off
+          // `data.error.message`; this route sends a flat `{error}` body, so
+          // the message is always "Request failed with status N". Only the
+          // status code survives, so say what each one means.
+          const code = err instanceof ApiClientError ? err.statusCode : 0;
+          Alert.alert(
+            'Status not changed',
+            code === 409
+              ? `This order can no longer move to ${storeOrderStatusLabel(next)}.`
+              : code === 403
+                ? 'You do not have permission to change this order.'
+                : code === 404
+                  ? 'This order no longer exists. Pull down to refresh.'
+                  : err instanceof Error
+                    ? err.message
+                    : 'Failed to update',
+          );
         }
       },
     }));
-    Alert.alert('Update status', `Order ${order.orderNumber ?? order.number ?? order.id}`, [
+    Alert.alert('Update status', `Order ${order.orderNumber ?? order.id}`, [
       ...buttons,
       { text: 'Dismiss', style: 'cancel' },
     ]);
   }
 
-  const pendingCount = orders.filter((o) => String(o.status).toLowerCase() === 'pending').length;
+  const pendingCount = orders.filter(
+    (o) => String(o.status).toUpperCase() === 'PENDING',
+  ).length;
 
   return (
     <PortalScreen
@@ -114,10 +199,13 @@ export default function StoreOrders() {
         <EmptyHint text="No orders match this filter." />
       ) : (
         filtered.map((o) => {
-          const number = o.orderNumber ?? o.number ?? o.id;
-          const customer = o.customerName ?? o.customer ?? 'Customer';
-          const itemCount = o.itemCount ?? o.items ?? 0;
-          const amount = Number(o.totalAmount ?? o.amount ?? 0);
+          const number = o.orderNumber ?? o.id;
+          const customer = o.customerName ?? 'Customer';
+          // `items` is the line array serializeOrder sends. Its LENGTH is the
+          // item count; the array itself is not renderable.
+          const itemCount = Array.isArray(o.items) ? o.items.length : 0;
+          const amount = Number(o.totalAmount ?? 0);
+          const moves = nextStatuses(o.status);
           return (
             <View key={o.id} style={styles.card}>
               <View style={styles.cardHeader}>
@@ -142,16 +230,23 @@ export default function StoreOrders() {
 
               <View style={styles.cardFooter}>
                 <Text style={styles.amount}>₹{amount.toLocaleString('en-IN')}</Text>
-                <TouchableOpacity
-                  style={styles.statusBtn}
-                  onPress={() => handleChangeStatus(o)}
-                  activeOpacity={0.8}
-                  disabled={updateStatus.isPending}
-                >
-                  <Text style={styles.statusBtnText}>
-                    {updateStatus.isPending ? 'Updating...' : 'Change status'}
-                  </Text>
-                </TouchableOpacity>
+                {/* A terminal order (DELIVERED / CANCELLED / REFUNDED) has no
+                    legal next state, so it gets no button. Shipping one that
+                    always answers 409 is worse than not shipping one. */}
+                {moves.length === 0 ? (
+                  <Text style={styles.terminalNote}>No further changes</Text>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.statusBtn}
+                    onPress={() => handleChangeStatus(o)}
+                    activeOpacity={0.8}
+                    disabled={updateStatus.isPending}
+                  >
+                    <Text style={styles.statusBtnText}>
+                      {updateStatus.isPending ? 'Updating...' : 'Change status'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           );
@@ -217,4 +312,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   statusBtnText: { color: colors.saffron[700], fontSize: fontSize.sm, fontWeight: '700' },
+  terminalNote: { color: colors.stone[500], fontSize: fontSize.sm, fontWeight: '600' },
 });
