@@ -1,23 +1,24 @@
 /**
  * pr-review — the reviewer that reviewed nothing for seven weeks.
  *
- * From 2026-08-14 every PR got `Anthropic API 404: ` because the script named
- * one path and one model and the gateway had dropped the pair. PRs past
- * GitHub's 20,000-line diff limit failed earlier still, on a 406. The workflow
- * exits 0 by design, so the check stayed green throughout.
+ * From 2026-08-14 every PR got "Anthropic API 404: " because the script called
+ * a third-party gateway whose host had been retired and whose key was no longer
+ * valid. PRs past GitHub's 20,000-line diff limit failed earlier still, on a
+ * 406. The workflow exits 0 by design, so the check stayed green throughout.
  *
- * These tests pin the two behaviours that end that: the script finds a route
- * that answers instead of assuming one, and it reads oversized PRs through the
- * per-file API. When nothing answers it must say what it tried.
+ * These tests pin what ends that: the script calls the Anthropic API and
+ * nothing else, it says in the PR when it could not review (including when the
+ * key is not set), and it reads oversized PRs through the per-file API.
  *
  * NOTHING HERE TOUCHES THE NETWORK. Every test injects a fake fetch.
  */
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import {
   normalizeBase,
   modelCandidates,
   responseText,
-  findRoutes,
+  callModel,
   extractVerdict,
   filePriority,
   splitDiff,
@@ -25,13 +26,9 @@ import {
   fetchDiffFiles,
   formatComment,
   reviewPullRequest,
-  baseCandidates,
-  ENDPOINTS,
+  DEFAULT_BASE_URL,
   DEFAULT_MODELS,
 } from './pr-review.mjs';
-
-const BASE = 'https://gateway.test';
-const BASES = [{ label: 'configured base', url: BASE }];
 
 function res(status, body, { json = true } = {}) {
   const text = typeof body === 'string' ? body : JSON.stringify(body ?? '');
@@ -43,152 +40,86 @@ function res(status, body, { json = true } = {}) {
   };
 }
 
-const anthropicReply = (text) => res(200, { content: [{ type: 'text', text }] });
-const openaiReply = (text) => res(200, { choices: [{ message: { content: text } }] });
+const reply = (text) => res(200, { content: [{ type: 'text', text }] });
 const VERDICT = JSON.stringify({ verdict: 'PASS', summary: 'fine', items: [{ check: 'tests', status: 'PASS', reason: 'covered' }], blockingIssues: [] });
 
-/** A gateway that answers only the given `path model` pairs. */
-function gateway(working, { reply = VERDICT } = {}) {
-  const calls = [];
-  const fetchImpl = async (url, init) => {
-    const u = String(url);
-    if (!u.startsWith(BASE)) throw new Error(`unexpected url ${u}`);
-    const path = u.slice(BASE.length);
-    const body = JSON.parse(init.body);
-    calls.push({ path, model: body.model, body });
-    if (!working.includes(`${path} ${body.model}`)) return res(404, undefined);
-    return path === '/v1/messages' ? anthropicReply(reply) : openaiReply(reply);
-  };
-  return { fetchImpl, calls };
-}
+describe('no third-party provider — the 2026-10-04 removal', () => {
+  const sources = ['./pr-review.mjs', '../../.github/workflows/ai-review.yml'].map((f) => [f, readFileSync(new URL(f, import.meta.url), 'utf8')]);
 
-describe('normalizeBase', () => {
-  it('drops a trailing slash and a trailing /v1, so endpoint paths are not doubled', () => {
-    expect(normalizeBase('https://gateway.test/')).toBe(BASE);
-    expect(normalizeBase('https://gateway.test/v1')).toBe(BASE);
-    expect(normalizeBase('https://gateway.test/v1/')).toBe(BASE);
-    expect(normalizeBase(' https://gateway.test ')).toBe(BASE);
+  it('names no gateway host, no gateway secret and no non-Claude model', () => {
+    for (const [file, text] of sources) {
+      expect(text, file).not.toMatch(/blackbox/i);
+      expect(text, file).not.toMatch(/glm-?\d|kimi|deepseek|llama|mistral|nemotron|gpt-/i);
+    }
+  });
+
+  it('defaults to the Anthropic API and to Claude models only', () => {
+    expect(DEFAULT_BASE_URL).toBe('https://api.anthropic.com');
+    expect(DEFAULT_MODELS.length).toBeGreaterThan(0);
+    for (const m of DEFAULT_MODELS) expect(m).toMatch(/^claude-/);
   });
 });
 
-describe('baseCandidates — the retired-host fallback', () => {
-  it('adds the provider\'s current host when the configured one is retired', () => {
-    expect(baseCandidates('https://api.blackbox.ai/v1/')).toEqual([
-      { label: 'configured base', url: 'https://api.blackbox.ai' },
-      { label: 'enterprise.blackbox.ai', url: 'https://enterprise.blackbox.ai' },
-    ]);
+describe('normalizeBase', () => {
+  it('falls back to the Anthropic API when nothing is configured', () => {
+    expect(normalizeBase(undefined)).toBe(DEFAULT_BASE_URL);
+    expect(normalizeBase('')).toBe(DEFAULT_BASE_URL);
+    expect(normalizeBase('  ')).toBe(DEFAULT_BASE_URL);
   });
 
-  it('never sends the key anywhere else when the base is another domain', () => {
-    expect(baseCandidates('https://gateway.test')).toEqual([{ label: 'configured base', url: BASE }]);
-    expect(baseCandidates('https://api.blackbox.ai.evil.test')).toHaveLength(1);
-    expect(baseCandidates('https://evil.test/api.blackbox.ai')).toHaveLength(1);
-    expect(baseCandidates('not a url')).toHaveLength(1);
-  });
-
-  it('never puts the configured URL in a label, since labels are logged', () => {
-    for (const b of baseCandidates('https://api.blackbox.ai')) expect(b.label).not.toContain('api.blackbox.ai');
+  it('drops a trailing slash and a trailing /v1, so the path is not doubled', () => {
+    expect(normalizeBase('https://proxy.test/')).toBe('https://proxy.test');
+    expect(normalizeBase('https://proxy.test/v1')).toBe('https://proxy.test');
+    expect(normalizeBase('https://proxy.test/v1/')).toBe('https://proxy.test');
   });
 });
 
 describe('modelCandidates', () => {
-  it('puts PR_REVIEW_MODELS first and de-duplicates', () => {
-    expect(modelCandidates('b, a', ['a', 'c'])).toEqual(['b', 'a', 'c']);
-    expect(modelCandidates('', ['a'])).toEqual(['a']);
-    expect(modelCandidates(undefined, ['a'])).toEqual(['a']);
+  it('uses PR_REVIEW_MODELS when set, the default otherwise, de-duplicated', () => {
+    expect(modelCandidates('b, a, b')).toEqual(['b', 'a']);
+    expect(modelCandidates('')).toEqual(DEFAULT_MODELS);
+    expect(modelCandidates(undefined)).toEqual(DEFAULT_MODELS);
   });
 });
 
 describe('responseText', () => {
-  it('reads both envelopes and returns "" when there is no assistant text', () => {
-    expect(responseText('anthropic', { content: [{ type: 'thinking' }, { type: 'text', text: 'hi' }] })).toBe('hi');
-    expect(responseText('openai', { choices: [{ message: { content: 'hi' } }] })).toBe('hi');
-    expect(responseText('openai', { choices: [{ message: { content: [{ type: 'text', text: 'hi' }] } }] })).toBe('hi');
-    expect(responseText('anthropic', { error: 'nope' })).toBe('');
-    expect(responseText('openai', null)).toBe('');
+  it('joins text blocks, skips non-text ones, and returns "" when there is none', () => {
+    expect(responseText({ content: [{ type: 'thinking' }, { type: 'text', text: 'hi' }, { type: 'text', text: '!' }] })).toBe('hi!');
+    expect(responseText({ error: 'nope' })).toBe('');
+    expect(responseText(null)).toBe('');
   });
 });
 
-describe('findRoutes', () => {
-  it('skips a dead model and uses the next one — the 2026-08-14 failure', async () => {
-    const { fetchImpl } = gateway(['/v1/messages m2']);
-    const { routes, attempts } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2'] });
-    expect(routes).toEqual([{ base: BASES[0], endpoint: ENDPOINTS[0], model: 'm2' }]);
-    expect(attempts.map((a) => `${a.model}:${a.status}`)).toEqual(['m1:404', 'm2:200']);
+describe('callModel', () => {
+  const args = { base: 'https://api.test', apiKey: 'k', model: 'claude-x', system: 'sys', user: 'u', maxTokens: 10 };
+
+  it('posts a Messages API request with the key in x-api-key only', async () => {
+    let seen;
+    const fetchImpl = async (url, init) => { seen = { url: String(url), init }; return reply('hello'); };
+    const out = await callModel({ ...args, fetchImpl });
+    expect(out).toEqual({ ok: true, status: 200, detail: '', text: 'hello' });
+    expect(seen.url).toBe('https://api.test/v1/messages');
+    expect(seen.init.headers['x-api-key']).toBe('k');
+    expect(seen.init.headers.authorization).toBeUndefined();
+    expect(JSON.parse(seen.init.body)).toEqual({ model: 'claude-x', max_tokens: 10, system: 'sys', messages: [{ role: 'user', content: 'u' }] });
   });
 
-  it('moves to the next endpoint when the path itself is gone', async () => {
-    const { fetchImpl, calls } = gateway(['/chat/completions m3']);
-    const { routes } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2', 'm3'] });
-    expect(routes).toEqual([{ base: BASES[0], endpoint: ENDPOINTS[1], model: 'm3' }]);
-    // An empty 404 cannot be told apart from a dropped model, so every model
-    // is tried on a path before it is abandoned.
-    expect(calls.filter((c) => c.path === '/v1/messages').map((c) => c.model)).toEqual(['m1', 'm2', 'm3']);
+  it('reports an HTTP failure with its status and a trimmed body', async () => {
+    const fetchImpl = async () => res(401, 'invalid\n   x-api-key', { json: false });
+    const out = await callModel({ ...args, fetchImpl });
+    expect(out.ok).toBe(false);
+    expect(out.status).toBe(401);
+    expect(out.detail).toContain('invalid x-api-key');
   });
 
-  it('reaches a live model that sits behind several dropped ones on the same path', async () => {
-    const { fetchImpl } = gateway(['/v1/messages m5']);
-    const { routes } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2', 'm3', 'm4', 'm5'] });
-    expect(routes).toEqual([{ base: BASES[0], endpoint: ENDPOINTS[0], model: 'm5' }]);
+  it('does not treat a 200 with no assistant text as a review', async () => {
+    const out = await callModel({ ...args, fetchImpl: async () => res(200, { status: 'ok' }) });
+    expect(out).toEqual({ ok: false, status: 200, detail: 'no assistant text in response', text: '' });
   });
 
-  it('stops at the first endpoint that answers and at the wanted number of routes', async () => {
-    const { fetchImpl, calls } = gateway(['/v1/messages m1', '/v1/messages m2', '/v1/messages m3', '/chat/completions m1']);
-    const { routes } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2', 'm3'], wanted: 2 });
-    expect(routes.map((r) => r.model)).toEqual(['m1', 'm2']);
-    expect(calls.some((c) => c.path === '/chat/completions')).toBe(false);
-    expect(calls).toHaveLength(2);
-  });
-
-  it('walks to the second host only after the first answers nothing — the 2026-10-04 finding', async () => {
-    const dead = 'https://api.blackbox.ai';
-    const live = 'https://enterprise.blackbox.ai';
-    const calls = [];
-    const fetchImpl = async (url, init) => {
-      const u = String(url);
-      calls.push(u);
-      if (u === `${live}/v1/messages` && JSON.parse(init.body).model === 'm2') return anthropicReply('OK');
-      return res(404, undefined);
-    };
-    const { routes, attempts } = await findRoutes({ fetchImpl, bases: baseCandidates(dead), apiKey: 'k', models: ['m1', 'm2'] });
-    expect(routes).toHaveLength(1);
-    expect(routes[0].base.url).toBe(live);
-    expect(routes[0].model).toBe('m2');
-    // All three endpoints x two models on the dead host first, then the live one.
-    expect(calls.filter((u) => u.startsWith(dead))).toHaveLength(6);
-    expect(attempts.at(-1)).toEqual({ base: 'enterprise.blackbox.ai', path: '/v1/messages', model: 'm2', status: 200, detail: '' });
-  });
-
-  it('sends the chat-completions envelope on a chat-completions path', async () => {
-    const { fetchImpl, calls } = gateway(['/chat/completions m1']);
-    await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1'] });
-    const openaiCall = calls.find((c) => c.path === '/chat/completions');
-    expect(openaiCall.body.messages[0].role).toBe('system');
-    expect(openaiCall.body.system).toBeUndefined();
-    const anthropicCall = calls.find((c) => c.path === '/v1/messages');
-    expect(typeof anthropicCall.body.system).toBe('string');
-  });
-
-  it('does not treat a 200 with no assistant text as a working route', async () => {
-    const fetchImpl = async () => res(200, { status: 'ok' });
-    const { routes, attempts } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1'] });
-    expect(routes).toEqual([]);
-    expect(attempts[0].detail).toMatch(/no assistant text/);
-  });
-
-  it('survives a thrown fetch and records it', async () => {
-    const fetchImpl = async () => { throw new Error('ECONNRESET'); };
-    const { routes, attempts } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1'], endpoints: [ENDPOINTS[0]] });
-    expect(routes).toEqual([]);
-    expect(attempts).toEqual([{ base: 'configured base', path: '/v1/messages', model: 'm1', status: 0, detail: 'network error' }]);
-  });
-
-  it('stops when the time budget is spent', async () => {
-    let t = 0;
-    const { fetchImpl } = gateway([]);
-    const { attempts } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2', 'm3'], budgetMs: 10, now: () => (t += 8) });
-    expect(attempts.at(-1).detail).toBe('probe time budget exhausted');
-    expect(attempts.length).toBeLessThan(9);
+  it('survives a thrown fetch', async () => {
+    const out = await callModel({ ...args, fetchImpl: async () => { throw new Error('ECONNRESET'); } });
+    expect(out).toEqual({ ok: false, status: 0, detail: 'network error', text: '' });
   });
 });
 
@@ -287,27 +218,27 @@ describe('fetchDiffFiles', () => {
 describe('formatComment', () => {
   const diff = { text: 'x'.repeat(10), totalChars: 10, fileCount: 2, omitted: [] };
 
-  it('names the model and endpoint that produced the review', () => {
-    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { route: { base: BASES[0], endpoint: ENDPOINTS[1], model: 'm9' }, diff });
-    expect(body).toContain('`m9` via `/chat/completions` on configured base');
+  it('names the model that produced the review', () => {
+    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { model: 'claude-x', diff });
+    expect(body).toContain('`scripts/agents/pr-review.mjs` — `claude-x`.');
     expect(body).toContain('Read all 2 files in the diff.');
   });
 
   it('says a review was partial and lists the files it did not read', () => {
-    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { route: { base: BASES[0], endpoint: ENDPOINTS[0], model: 'm' }, diff: { ...diff, totalChars: 50, omitted: ['docs/x.md'] } });
+    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { model: 'claude-x', diff: { ...diff, totalChars: 50, omitted: ['docs/x.md'] } });
     expect(body).toContain('**Partial review:** read 10 of 50 diff characters. 1 of 2 files were not read');
     expect(body).toContain('- `docs/x.md`');
     expect(body).not.toContain('Read all');
   });
 
-  it('lists every attempt when no route worked', () => {
+  it('lists every attempt when no model produced a verdict', () => {
     const body = formatComment(
-      { verdict: 'UNVERIFIED', summary: 's', error: 'no working model route', items: [], blockingIssues: [] },
-      { attempts: [{ base: 'configured base', path: '/v1/messages', model: 'm1', status: 404, detail: '' }, { base: 'enterprise.blackbox.ai', path: '/chat/completions', model: 'm1', status: 401, detail: 'bad | key' }], diff },
+      { verdict: 'UNVERIFIED', summary: 's', error: 'claude-x → 401 bad key', items: [], blockingIssues: [] },
+      { attempts: [{ model: 'claude-x', status: 401, detail: 'bad | key' }, { model: 'claude-y', status: 0, detail: 'timeout' }], diff },
     );
-    expect(body).toContain('| configured base | `/v1/messages` | `m1` | 404 |');
-    expect(body).toContain('| enterprise.blackbox.ai | `/chat/completions` | `m1` | 401 bad \\| key |');
-    expect(body).toContain('no working model route');
+    expect(body).toContain('| `claude-x` | 401 bad \\| key |');
+    expect(body).toContain('| `claude-y` | — timeout |');
+    expect(body).toContain('no model answered');
   });
 
   it('keeps a pipe in a model-written reason from breaking the table', () => {
@@ -317,9 +248,9 @@ describe('formatComment', () => {
 });
 
 describe('reviewPullRequest — end to end against fakes', () => {
-  function world({ working, reply = VERDICT, replies } = {}) {
-    const gw = gateway(working ?? [], { reply });
-    let reviewCall = 0;
+  /** `models` maps a model id to what the API answers for it. */
+  function world(models) {
+    const calls = [];
     const fetchImpl = async (url, init) => {
       const u = String(url);
       if (u.startsWith('https://api.github.com')) {
@@ -327,51 +258,54 @@ describe('reviewPullRequest — end to end against fakes', () => {
         return res(200, { title: 'a change' });
       }
       const body = JSON.parse(init.body);
-      if (replies && body.max_tokens > 16 && gw && (working ?? []).includes(`${u.slice(BASE.length)} ${body.model}`)) {
-        gw.calls.push({ path: u.slice(BASE.length), model: body.model, body });
-        return anthropicReply(replies[reviewCall++]);
-      }
-      return gw.fetchImpl(url, init);
+      calls.push({ url: u, body });
+      const answer = models[body.model];
+      return answer === undefined ? res(404, { error: { message: 'model not found' } }) : answer;
     };
-    return { fetchImpl, calls: gw.calls };
+    return { fetchImpl, calls };
   }
-  const args = { apiKey: 'k', baseURL: `${BASE}/v1/`, ghToken: 't', repo: 'o/r', prNumber: '7', log: () => {} };
+  const args = { apiKey: 'k', ghToken: 't', repo: 'o/r', prNumber: '7', log: () => {} };
 
-  it('reviews with the first model that answers and reports which one', async () => {
-    const { fetchImpl, calls } = world({ working: ['/v1/messages blackboxai/deepseek/deepseek-v4-pro'] });
+  it('reviews with the default Claude model against the Anthropic API', async () => {
+    const { fetchImpl, calls } = world({ [DEFAULT_MODELS[0]]: reply(VERDICT) });
     const out = await reviewPullRequest({ ...args, fetchImpl });
     expect(out.result.verdict).toBe('PASS');
-    expect(out.meta.route.model).toBe('blackboxai/deepseek/deepseek-v4-pro');
-    const review = calls.find((c) => c.body.max_tokens > 16);
-    expect(review.body.messages[0].content).toContain('diff --git a/apps/api/src/a.ts');
-    expect(review.body.system).toMatch(/Darshya project code reviewer/);
+    expect(out.meta.model).toBe(DEFAULT_MODELS[0]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe('https://api.anthropic.com/v1/messages');
+    expect(calls[0].body.messages[0].content).toContain('diff --git a/apps/api/src/a.ts');
+    expect(calls[0].body.system).toMatch(/Darshya project code reviewer/);
   });
 
-  it('falls through to the next working model when the first returns no verdict', async () => {
-    const { fetchImpl } = world({
-      working: ['/v1/messages blackboxai/z-ai/glm-5.2', '/v1/messages z-ai/glm-5.2'],
-      replies: ['I think it is fine.', VERDICT],
-    });
-    const out = await reviewPullRequest({ ...args, fetchImpl });
-    expect(out.result.verdict).toBe('PASS');
-    expect(out.meta.route.model).toBe('z-ai/glm-5.2');
-  });
-
-  it('returns UNVERIFIED with the full attempt log when the gateway answers nothing', async () => {
-    const { fetchImpl } = world({ working: [] });
-    const out = await reviewPullRequest({ ...args, fetchImpl });
+  it('says the key is not set, in the PR, and calls no model', async () => {
+    const { fetchImpl, calls } = world({});
+    const out = await reviewPullRequest({ ...args, apiKey: undefined, fetchImpl });
     expect(out.result.verdict).toBe('UNVERIFIED');
-    expect(out.result.error).toBe('no working model route');
-    // Every default model on every endpoint, and nothing skipped.
-    expect(out.meta.attempts).toHaveLength(DEFAULT_MODELS.length * ENDPOINTS.length);
-    expect(new Set(out.meta.attempts.map((a) => a.path))).toEqual(new Set(ENDPOINTS.map((e) => e.path)));
-    expect(out.meta.attempts.every((a) => a.status === 404)).toBe(true);
+    expect(out.result.error).toMatch(/ANTHROPIC_API_KEY repository secret is not set/);
+    expect(calls).toHaveLength(0);
+    expect(formatComment(out.result, out.meta)).toContain('ANTHROPIC_API_KEY repository secret is not set');
+  });
+
+  it('tries the next configured model when one returns no verdict', async () => {
+    const { fetchImpl, calls } = world({ 'claude-a': reply('I think it is fine.'), 'claude-b': reply(VERDICT) });
+    const out = await reviewPullRequest({ ...args, fetchImpl, modelsEnv: 'claude-a, claude-b' });
+    expect(out.result.verdict).toBe('PASS');
+    expect(out.meta.model).toBe('claude-b');
+    expect(calls.map((c) => c.body.model)).toEqual(['claude-a', 'claude-b']);
+  });
+
+  it('returns UNVERIFIED with every attempt when the API rejects the key', async () => {
+    const { fetchImpl } = world({ 'claude-a': res(401, { error: { message: 'invalid x-api-key' } }), 'claude-b': res(401, { error: { message: 'invalid x-api-key' } }) });
+    const out = await reviewPullRequest({ ...args, fetchImpl, modelsEnv: 'claude-a,claude-b' });
+    expect(out.result.verdict).toBe('UNVERIFIED');
+    expect(out.result.error).toMatch(/^claude-b → 401/);
+    expect(out.meta.attempts.map((a) => `${a.model}:${a.status}`)).toEqual(['claude-a:401', 'claude-b:401']);
     expect(formatComment(out.result, out.meta)).toContain('What was tried');
   });
 
-  it('honours PR_REVIEW_MODELS ahead of the defaults', async () => {
-    const { fetchImpl } = world({ working: ['/v1/messages custom/model'] });
-    const out = await reviewPullRequest({ ...args, fetchImpl, modelsEnv: 'custom/model' });
-    expect(out.meta.route.model).toBe('custom/model');
+  it('honours a configured base URL instead of the default', async () => {
+    const { fetchImpl, calls } = world({ [DEFAULT_MODELS[0]]: reply(VERDICT) });
+    await reviewPullRequest({ ...args, fetchImpl, baseURL: 'https://proxy.test/v1/' });
+    expect(calls[0].url).toBe('https://proxy.test/v1/messages');
   });
 });

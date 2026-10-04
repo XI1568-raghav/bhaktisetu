@@ -1,22 +1,26 @@
 name: AI Code Review
 
-# Automated code review on PRs (P4.21). Posts findings as a PR comment. The
-# script picks whichever model the gateway currently answers — see the header
-# of scripts/agents/pr-review.mjs for why it no longer names one.
+# Automated code review on PRs (P4.21). Claude reviews the diff against the
+# darshya-code-review checklist and the script posts the findings as a comment.
 # Advisory — exit 0 regardless of verdict: the COMMENT is the gate (a human reads
-# it), not the workflow status. This prevents a flaky proxy/model from blocking
+# it), not the workflow status. This prevents an API outage from blocking
 # unrelated PR checks. Runs only on PRs touching code/migrations/config.
 #
 # Free-tier budget: ~2 min/run × ~15 PRs/mo = 30 min/mo. Well under 5% of the
 # 2000 min/mo GH Actions budget. See darshya-free-tier-check skill.
 #
-# Required GH repo secrets (already set for roadmap-loop):
-#   ANTHROPIC_API_KEY_BLACKBOX_PROXY  proxy key
-#   ANTHROPIC_BASE_URL                Blackbox proxy URL
+# Anthropic API usage is PAID — it is not part of any free tier. One review is
+# one request of at most ~30k input tokens on the cheapest Claude model. Until
+# the secret below is set the script reviews nothing and says so in the PR.
+#
+# Required GH repo secret:
+#   ANTHROPIC_API_KEY   Anthropic API key
 #   (GITHUB_TOKEN auto-provided, has comment permission on PRs)
 #
-# Optional repo VARIABLE (not a secret): PR_REVIEW_MODELS — comma-separated
-# model ids tried before the script's defaults.
+# Optional repo VARIABLES (not secrets):
+#   PR_REVIEW_MODELS    comma-separated Claude model ids, tried in order
+#   ANTHROPIC_BASE_URL  only if requests must go somewhere other than
+#                       https://api.anthropic.com
 #
 # Re-review an existing PR by hand (also how an oversized PR gets reviewed):
 #   gh workflow run ai-review.yml -f pr_number=<N>
@@ -61,9 +65,8 @@ jobs:
 
       - name: Run AI review
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
-          ANTHROPIC_API_KEY_BLACKBOX_PROXY: ${{ secrets.ANTHROPIC_API_KEY_BLACKBOX_PROXY }}
-          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}

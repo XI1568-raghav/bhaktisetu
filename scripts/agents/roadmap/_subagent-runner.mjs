@@ -5,7 +5,7 @@ import yaml from 'js-yaml';
 import { callOpus47 } from './_anthropic-client.mjs';
 
 // Structured-output tool for queue files (0-queue-write fix, 2026-07-31).
-// glm-5.2 does not reliably emit the `---END-QUEUE-FILE---` + YAML-frontmatter
+// A model does not reliably emit the `---END-QUEUE-FILE---` + YAML-frontmatter
 // text format, so sub-agents returned rich briefings that evaporated into
 // "0 queue files". Request each queue file as a `write_queue` tool_use block —
 // the same structured-output mechanism the Decision Agent already uses — and
@@ -125,7 +125,7 @@ export async function runSubagent({
   }
 
   // Preferred path: write_queue tool_use blocks (structured output, immune to
-  // the glm-5.2 text-format drift that caused the 0-queue-write bug).
+  // the model text-format drift that caused the 0-queue-write bug).
   const queueFiles = [];
   const toolCalls = (response.content || []).filter(
     (c) => c?.type === 'tool_use' && c?.name === 'write_queue',

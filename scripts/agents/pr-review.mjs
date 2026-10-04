@@ -1,71 +1,40 @@
 #!/usr/bin/env node
-// pr-review — AI code review on PRs (P4.21). Fetches the PR diff, asks a model
-// behind the Blackbox gateway to review it against the darshya-code-review
-// checklist, and posts the verdict + findings as a PR comment.
+// pr-review — AI code review on PRs (P4.21). Fetches the PR diff, asks Claude
+// to review it against the darshya-code-review checklist, and posts the verdict
+// + findings as a PR comment.
 //
-// WHY THIS FILE DISCOVERS ITS ROUTE INSTEAD OF NAMING ONE. It used to hard-code
-// one path (`/v1/messages`) and one model (`blackboxai/z-ai/glm-5.2`). The
-// gateway's catalogue drifts, and from 2026-08-14 that pair answered an empty
-// 404 on every PR. The script reported `Anthropic API 404: ` for seven weeks
-// and reviewed nothing, while its check stayed green — it exits 0 by design.
-// A second failure sat behind the first: any PR over GitHub's 20,000-line /
-// 300-file diff limit got a 406 and was never read either.
+// HISTORY THAT SHAPES THIS FILE. Until 2026-10-04 it called a third-party
+// gateway with one hard-coded path and model. The gateway retired that host and
+// the key was no longer valid on its replacement, so from 2026-08-14 every PR
+// got "Anthropic API 404: " and nothing was reviewed — while the check stayed
+// green, because this script exits 0 by design. A second failure sat behind the
+// first: any PR over GitHub's 20,000-line / 300-file diff limit got a 406 from
+// the whole-PR diff endpoint and was never read either.
 //
-// So: probe (host x endpoint style x model) with a few-token request, use the
-// first combination that answers, and when none does say exactly what was
-// tried. And read oversized PRs through the per-file API rather than giving up.
-//
-// The host is in that list because the 404 was never about the model. Measured
-// 2026-10-04: api.blackbox.ai answers an empty 404 on every path whatever key is
-// sent, while enterprise.blackbox.ai — where the provider's docs now put
-// /v1/messages — answers 401/403 like a live API. See RETIRED_HOSTS.
+// So this file now: talks to the Anthropic API only, names no third-party host
+// or model, says exactly what it tried when a call fails (including when the
+// key is simply not set), and reads oversized PRs through the per-file API.
 //
 // Self-contained — does NOT depend on roadmap/_anthropic-client.mjs.
 //
 // Env:
-//   ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY_BLACKBOX_PROXY)  gateway key
-//   ANTHROPIC_BASE_URL                                       gateway URL
-//   GH_TOKEN / GITHUB_TOKEN                                  for diff + comment
-//   PR_NUMBER                                                the PR to review
-//   GH_REPOSITORY                                            owner/repo
-//   PR_REVIEW_MODELS   optional, comma-separated — tried before the defaults
+//   ANTHROPIC_API_KEY      Anthropic API key (repo secret)
+//   ANTHROPIC_BASE_URL     optional; defaults to https://api.anthropic.com
+//   PR_REVIEW_MODELS       optional, comma-separated Claude model ids, tried in order
+//   GH_TOKEN / GITHUB_TOKEN  for diff + comment
+//   PR_NUMBER              the PR to review
+//   GH_REPOSITORY          owner/repo
 //
 // Usage in CI:  node scripts/agents/pr-review.mjs
 import { pathToFileURL } from 'node:url';
 
-/** Tried in order. Open-weight models first: this key has never reached the closed Claude models. */
-export const DEFAULT_MODELS = [
-  'blackboxai/z-ai/glm-5.2',
-  'z-ai/glm-5.2',
-  'blackboxai/moonshotai/kimi-k3',
-  'blackboxai/deepseek/deepseek-v4-pro',
-  'blackboxai/mistral/devstral-2',
-  'blackboxai/mistral/mistral-medium-3.5',
-  'blackboxai/nvidia/nemotron-3-ultra',
-  'blackboxai/meta/llama-3.1-70b',
-  'blackboxai/openai/gpt-5.3-codex',
-];
-
-/** `anthropic` = Messages API shape, `openai` = chat-completions shape. */
-export const ENDPOINTS = [
-  { style: 'anthropic', path: '/v1/messages' },
-  { style: 'openai', path: '/chat/completions' },
-  { style: 'openai', path: '/v1/chat/completions' },
-];
-
-/**
- * Hosts the provider has retired, mapped to where the same API lives now. When
- * ANTHROPIC_BASE_URL is on a retired host, its successor is tried as well. The
- * API key is only ever sent to another host of the SAME provider — a base URL
- * on any other domain gets no fallback at all.
- */
-export const RETIRED_HOSTS = { 'api.blackbox.ai': 'https://enterprise.blackbox.ai' };
+export const DEFAULT_BASE_URL = 'https://api.anthropic.com';
+/** The cheapest current Claude model: a checklist review over a diff does not need more. */
+export const DEFAULT_MODELS = ['claude-haiku-4-5-20251001'];
+const MESSAGES_PATH = '/v1/messages';
 
 export const MAX_DIFF_CHARS = 120_000;
-const PROBE_TIMEOUT_MS = 30_000;
 const REVIEW_TIMEOUT_MS = 150_000;
-const PROBE_BUDGET_MS = 180_000;
-const MAX_REVIEW_ATTEMPTS = 3;
 
 // ---- The darshya-code-review checklist as the system prompt ----
 // Mirrors the darshya-code-review skill so CI review == local review.
@@ -90,81 +59,37 @@ Return JSON:
 }
 A FAIL verdict means the PR has a real problem that should block or warn before merge.`;
 
-// ---- Gateway ----
+// ---- Anthropic API ----
 
-/** The secret may or may not carry a trailing slash or `/v1`; the endpoint paths supply their own. */
+/** Unset → the Anthropic API. A configured value may carry a trailing slash or `/v1`. */
 export function normalizeBase(url) {
-  return String(url ?? '').trim().replace(/\/+$/, '').replace(/\/v1$/, '');
+  const trimmed = String(url ?? '').trim().replace(/\/+$/, '').replace(/\/v1$/, '');
+  return trimmed || DEFAULT_BASE_URL;
 }
 
-/**
- * The configured base, then the provider's current host if the configured one
- * is retired. Labels are what gets logged: the configured URL is a secret, so
- * it is never printed.
- */
-export function baseCandidates(url) {
-  const configured = normalizeBase(url);
-  const bases = [{ label: 'configured base', url: configured }];
-  let host = '';
-  try {
-    host = new URL(configured).hostname;
-  } catch {}
-  const successor = RETIRED_HOSTS[host];
-  if (successor) bases.push({ label: new URL(successor).hostname, url: successor });
-  return bases;
-}
-
-/** PR_REVIEW_MODELS first, then the defaults, de-duplicated, order kept. */
+/** PR_REVIEW_MODELS if set, otherwise the default. De-duplicated, order kept. */
 export function modelCandidates(envList, defaults = DEFAULT_MODELS) {
   const fromEnv = String(envList ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  return [...new Set([...fromEnv, ...defaults])];
+  return [...new Set(fromEnv.length ? fromEnv : defaults)];
 }
 
-function authHeaders(apiKey) {
-  return {
-    'content-type': 'application/json',
-    'x-api-key': apiKey,
-    authorization: `Bearer ${apiKey}`,
-    'anthropic-version': '2023-06-01',
-  };
-}
-
-function requestBody(style, { model, system, user, maxTokens }) {
-  if (style === 'anthropic') {
-    return { model, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] };
-  }
-  return {
-    model,
-    max_tokens: maxTokens,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: user },
-    ],
-  };
-}
-
-/** Pull the assistant text out of either response shape. '' when there is none. */
-export function responseText(style, data) {
-  if (style === 'anthropic') {
-    return (data?.content ?? []).map((c) => (typeof c?.text === 'string' ? c.text : '')).join('');
-  }
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) return content.map((c) => (typeof c?.text === 'string' ? c.text : '')).join('');
-  return '';
+/** Pull the assistant text out of a Messages API response. '' when there is none. */
+export function responseText(data) {
+  return (data?.content ?? []).map((c) => (typeof c?.text === 'string' ? c.text : '')).join('');
 }
 
 /**
- * One request. Never throws: a network failure or timeout comes back as
- * `{ ok: false, status: 0 }` so the caller can move to the next route.
+ * One Messages API request. Never throws: a network failure or timeout comes
+ * back as `{ ok: false, status: 0 }` so the caller can try the next model and
+ * report all of them.
  */
-export async function callModel({ fetchImpl = fetch, base, apiKey, endpoint, model, system, user, maxTokens, timeoutMs }) {
+export async function callModel({ fetchImpl = fetch, base, apiKey, model, system, user, maxTokens, timeoutMs = REVIEW_TIMEOUT_MS }) {
   let r;
   try {
-    r = await fetchImpl(`${base}${endpoint.path}`, {
+    r = await fetchImpl(`${base}${MESSAGES_PATH}`, {
       method: 'POST',
-      headers: authHeaders(apiKey),
-      body: JSON.stringify(requestBody(endpoint.style, { model, system, user, maxTokens })),
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] }),
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
@@ -175,50 +100,11 @@ export async function callModel({ fetchImpl = fetch, base, apiKey, endpoint, mod
     return { ok: false, status: r.status, detail, text: '' };
   }
   const data = await r.json().catch(() => null);
-  const text = responseText(endpoint.style, data);
-  // A 200 with no assistant text is not a working route — an HTML landing page
-  // or an error envelope both look like this.
+  const text = responseText(data);
+  // A 200 with no assistant text is not a review — an HTML page or an error
+  // envelope both look like this.
   if (!text) return { ok: false, status: r.status, detail: 'no assistant text in response', text: '' };
   return { ok: true, status: r.status, detail: '', text };
-}
-
-/**
- * Probe (base x endpoint x model) with a tiny request and return every
- * combination that answers, in preference order, plus the log of what was tried.
- *
- * Every model is tried on an endpoint before moving on. The gateway answers an
- * empty 404 both for a path that does not exist and for a model it has dropped,
- * so the two cannot be told apart and an early exit would skip live models.
- * The time budget is what bounds the walk.
- */
-export async function findRoutes({ fetchImpl = fetch, bases, apiKey, models, endpoints = ENDPOINTS, wanted = MAX_REVIEW_ATTEMPTS, budgetMs = PROBE_BUDGET_MS, now = Date.now }) {
-  const attempts = [];
-  const routes = [];
-  const deadline = now() + budgetMs;
-  for (const base of bases) {
-    for (const endpoint of endpoints) {
-      for (const model of models) {
-        if (routes.length >= wanted) return { routes, attempts };
-        if (now() > deadline) {
-          attempts.push({ base: base.label, path: endpoint.path, model, status: 0, detail: 'probe time budget exhausted' });
-          return { routes, attempts };
-        }
-        const res = await callModel({
-          fetchImpl, base: base.url, apiKey, endpoint, model,
-          system: 'Reply with the single word OK.',
-          user: 'ping',
-          maxTokens: 16,
-          timeoutMs: PROBE_TIMEOUT_MS,
-        });
-        attempts.push({ base: base.label, path: endpoint.path, model, status: res.status, detail: res.detail });
-        if (res.ok) routes.push({ base, endpoint, model });
-      }
-      // One endpoint that answers is the gateway's real surface; the others are
-      // the same models behind a different envelope and add nothing.
-      if (routes.length) return { routes, attempts };
-    }
-  }
-  return { routes, attempts };
 }
 
 // ---- Verdict ----
@@ -365,9 +251,9 @@ export function formatComment(result, meta = {}) {
     lines.push('This is informational — a human should review. The PR is not blocked by this.');
     lines.push('');
     if (meta.attempts?.length) {
-      lines.push('<details><summary>What was tried</summary>', '', '| Host | Endpoint | Model | Result |', '|---|---|---|---|');
+      lines.push('<details><summary>What was tried</summary>', '', '| Model | Result |', '|---|---|');
       for (const a of meta.attempts) {
-        lines.push(`| ${cell(a.base)} | \`${a.path}\` | \`${a.model}\` | ${a.status || '—'}${a.detail ? ` ${cell(a.detail)}` : ''} |`);
+        lines.push(`| \`${a.model}\` | ${a.status || '—'}${a.detail ? ` ${cell(a.detail)}` : ''} |`);
       }
       lines.push('', '</details>', '');
     }
@@ -390,7 +276,7 @@ export function formatComment(result, meta = {}) {
       lines.push(`Read all ${fileCount} files in the diff.`, '');
     }
   }
-  const via = meta.route ? `\`${meta.route.model}\` via \`${meta.route.endpoint.path}\` on ${meta.route.base.label}` : 'no working model route';
+  const via = meta.model ? `\`${meta.model}\`` : 'no model answered';
   lines.push('---', `_Automated review by \`scripts/agents/pr-review.mjs\` — ${via}. Advisory: it never blocks a PR._`);
   return lines.join('\n');
 }
@@ -408,34 +294,33 @@ export async function reviewPullRequest({ fetchImpl = fetch, apiKey, baseURL, gh
   const diff = prepareDiff(files);
   log(`Reviewing PR #${prNumber}: ${prMeta.title} — ${diff.fileCount} files, ${diff.totalChars} chars (${source} API), ${diff.omitted.length} not read`);
 
-  const { routes, attempts } = await findRoutes({ fetchImpl, bases: baseCandidates(baseURL), apiKey, models: modelCandidates(modelsEnv) });
-  for (const a of attempts) log(`  probe [${a.base}] ${a.path} ${a.model} → ${a.status || ''}${a.detail ? ` ${a.detail}` : ''}`);
-
-  if (!routes.length) {
+  // Say so in the PR rather than exiting quietly: a reviewer that is switched
+  // off and looks switched on is the failure this file was rewritten to end.
+  if (!apiKey) {
     return {
-      result: { verdict: 'UNVERIFIED', summary: 'AI review could not run — no host, endpoint and model combination answered.', error: 'no working model route', items: [], blockingIssues: [] },
-      meta: { attempts, diff },
+      result: { verdict: 'UNVERIFIED', summary: 'AI review is not configured.', error: 'the ANTHROPIC_API_KEY repository secret is not set', items: [], blockingIssues: [] },
+      meta: { attempts: [], diff },
     };
   }
 
+  const base = normalizeBase(baseURL);
   const user = `Review this PR.\n\nPR #${prNumber}: ${prMeta.title}\n\nDiff:\n\`\`\`diff\n${diff.text}\n\`\`\`\n\nReturn the JSON verdict.`;
-  let lastError = 'unknown';
-  for (const route of routes) {
-    const res = await callModel({ fetchImpl, base: route.base.url, apiKey, endpoint: route.endpoint, model: route.model, system: SYSTEM_PROMPT, user, maxTokens: 4096, timeoutMs: REVIEW_TIMEOUT_MS });
+  const attempts = [];
+  for (const model of modelCandidates(modelsEnv)) {
+    const res = await callModel({ fetchImpl, base, apiKey, model, system: SYSTEM_PROMPT, user, maxTokens: 4096 });
     if (!res.ok) {
-      lastError = `${route.model} → ${res.status || res.detail}${res.status && res.detail ? ` ${res.detail}` : ''}`;
-      attempts.push({ base: route.base.label, path: route.endpoint.path, model: route.model, status: res.status, detail: `review call: ${res.detail}` });
-      log(`  review ${route.model} failed: ${lastError}`);
+      attempts.push({ model, status: res.status, detail: res.detail });
+      log(`  ${model} → ${res.status || ''}${res.detail ? ` ${res.detail}` : ''}`);
       continue;
     }
     const verdict = extractVerdict(res.text);
-    if (verdict.ok) return { result: verdict.result, meta: { route, diff } };
-    lastError = `${route.model}: ${verdict.error}`;
-    attempts.push({ base: route.base.label, path: route.endpoint.path, model: route.model, status: res.status, detail: `review call: ${verdict.error}` });
-    log(`  review ${route.model} unusable: ${verdict.error}`);
+    if (verdict.ok) return { result: verdict.result, meta: { model, diff } };
+    attempts.push({ model, status: res.status, detail: verdict.error });
+    log(`  ${model} → ${verdict.error}`);
   }
+  const last = attempts.at(-1);
   return {
-    result: { verdict: 'UNVERIFIED', summary: 'AI review returned no usable verdict.', error: lastError, items: [], blockingIssues: [] },
+    result: { verdict: 'UNVERIFIED', summary: 'AI review returned no usable verdict.', error: last ? `${last.model} → ${last.status || ''}${last.detail ? ` ${last.detail}` : ''}`.trim() : 'no model configured', items: [], blockingIssues: [] },
     meta: { attempts, diff },
   };
 }
@@ -446,15 +331,15 @@ export async function postComment({ fetchImpl = fetch, ghToken, repo, prNumber, 
 }
 
 async function main() {
-  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY_BLACKBOX_PROXY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   const baseURL = process.env.ANTHROPIC_BASE_URL;
   const ghToken = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   const repo = process.env.GH_REPOSITORY || process.env.GITHUB_REPOSITORY;
   const prNumber = process.env.PR_NUMBER;
 
+  // A missing ANTHROPIC_API_KEY is NOT in this list: that case is reported in
+  // the PR itself by reviewPullRequest.
   const missing = [];
-  if (!apiKey) missing.push('ANTHROPIC_API_KEY');
-  if (!baseURL) missing.push('ANTHROPIC_BASE_URL');
   if (!ghToken) missing.push('GH_TOKEN');
   if (!repo) missing.push('GH_REPOSITORY');
   if (!prNumber) missing.push('PR_NUMBER');
@@ -479,7 +364,7 @@ async function main() {
     } catch {}
   }
   // Exit 0 regardless of verdict — the review is advisory (the comment is the
-  // gate, not the workflow exit). Failing the workflow on a reviewer or gateway
+  // gate, not the workflow exit). Failing the workflow on a reviewer or API
   // problem would block unrelated PR checks.
 }
 
