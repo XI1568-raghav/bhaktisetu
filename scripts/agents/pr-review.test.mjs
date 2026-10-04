@@ -21,6 +21,7 @@ import {
   callModel,
   callClaudeCode,
   runCommand,
+  describeAttempt,
   extractVerdict,
   filePriority,
   splitDiff,
@@ -313,8 +314,17 @@ describe('formatComment', () => {
       { attempts: [{ model: 'claude-x', status: 401, detail: 'bad | key' }, { model: 'claude-y', status: 0, detail: 'timeout' }], diff },
     );
     expect(body).toContain('| `claude-x` | 401 bad \\| key |');
-    expect(body).toContain('| `claude-y` | — timeout |');
+    expect(body).toContain('| `claude-y` | timeout |');
     expect(body).toContain('no model answered');
+  });
+
+  it('does not double the full stop or the space when the error is a sentence with no status', () => {
+    const error = 'claude-x → ' + describeAttempt({ status: 0, detail: 'Claude Code CLI: token is invalid.' });
+    expect(error).toBe('claude-x → Claude Code CLI: token is invalid.');
+    const body = formatComment({ verdict: 'UNVERIFIED', summary: 's', error, items: [], blockingIssues: [] }, { diff });
+    expect(body).toContain('_AI review could not complete: claude-x → Claude Code CLI: token is invalid._');
+    expect(describeAttempt({ status: 401, detail: 'bad key' })).toBe('401 bad key');
+    expect(describeAttempt({ status: 404, detail: '' })).toBe('404');
   });
 
   it('keeps a pipe in a model-written reason from breaking the table', () => {

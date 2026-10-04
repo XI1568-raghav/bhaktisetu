@@ -331,13 +331,13 @@ export function formatComment(result, meta = {}) {
     lines.push('');
   }
   if (result.verdict === 'UNVERIFIED') {
-    lines.push(`_AI review could not complete: ${result.error || 'unknown'}._`);
+    lines.push(`_AI review could not complete: ${String(result.error || 'unknown').replace(/[.\s]+$/, '')}._`);
     lines.push('This is informational — a human should review. The PR is not blocked by this.');
     lines.push('');
     if (meta.attempts?.length) {
       lines.push('<details><summary>What was tried</summary>', '', '| Model | Result |', '|---|---|');
       for (const a of meta.attempts) {
-        lines.push(`| \`${a.model}\` | ${a.status || '—'}${a.detail ? ` ${cell(a.detail)}` : ''} |`);
+        lines.push(`| \`${a.model}\` | ${cell(describeAttempt(a)) || '—'} |`);
       }
       lines.push('', '</details>', '');
     }
@@ -366,6 +366,11 @@ export function formatComment(result, meta = {}) {
 }
 
 // ---- Orchestration ----
+
+/** "401 bad key", "timeout", "200 no JSON" — status and detail, without stray spaces when one is missing. */
+export function describeAttempt(a) {
+  return [a.status || '', a.detail || ''].filter(Boolean).join(' ');
+}
 
 /** Everything except reading env and exiting, so a test can drive it with a fake fetch. */
 export async function reviewPullRequest({ fetchImpl = fetch, runCli = runCommand, oauthToken, apiKey, baseURL, ghToken, repo, prNumber, modelsEnv, log = console.log }) {
@@ -398,7 +403,7 @@ export async function reviewPullRequest({ fetchImpl = fetch, runCli = runCommand
       : await callModel({ fetchImpl, base, apiKey, model, system: SYSTEM_PROMPT, user, maxTokens: 4096 });
     if (!res.ok) {
       attempts.push({ model, status: res.status, detail: res.detail });
-      log(`  ${model} → ${res.status || ''}${res.detail ? ` ${res.detail}` : ''}`);
+      log(`  ${model} → ${describeAttempt(res)}`);
       continue;
     }
     const verdict = extractVerdict(res.text);
@@ -408,7 +413,7 @@ export async function reviewPullRequest({ fetchImpl = fetch, runCli = runCommand
   }
   const last = attempts.at(-1);
   return {
-    result: { verdict: 'UNVERIFIED', summary: 'AI review returned no usable verdict.', error: last ? `${last.model} → ${last.status || ''}${last.detail ? ` ${last.detail}` : ''}`.trim() : 'no model configured', items: [], blockingIssues: [] },
+    result: { verdict: 'UNVERIFIED', summary: 'AI review returned no usable verdict.', error: last ? `${last.model} → ${describeAttempt(last)}` : 'no model configured', items: [], blockingIssues: [] },
     meta: { attempts, diff },
   };
 }
