@@ -171,6 +171,7 @@ jobs:
           scripts/agents/pr-review.test.mjs
           scripts/test/ops-runbook-honesty.test.mjs
           scripts/test/secret-scan.test.mjs
+          scripts/test/graft-cache-untracked.test.mjs
 
       - name: Build
         run: pnpm turbo build --filter=!@poojly/remotion-pitch
