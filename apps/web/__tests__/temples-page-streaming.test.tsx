@@ -28,7 +28,7 @@ vi.mock('../lib/api', () => ({
   getTemples: (...args: unknown[]) => neverSettles(...(args as [])),
 }));
 
-import TemplesPage from '../app/temples/page';
+import TemplesPage from '../app/temples/(index)/page';
 
 const BLOCKED = Symbol('blocked-on-api');
 

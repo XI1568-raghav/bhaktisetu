@@ -4,21 +4,23 @@
  * pooler URL. Pure read, no writes.
  */
 import { PrismaClient } from '@prisma/client';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+// @ts-expect-error — plain-node ESM helper, no types; apps/api/tsconfig.json
+// only type-checks src/**, so scripts/** is not compiled.
+import { resolveDbTargetOrExit } from './lib/resolve-db-target.mjs';
 
-try {
-  const raw = readFileSync(resolve(process.cwd(), '.env'), 'utf-8');
-  for (const line of raw.split(/\r?\n/)) {
-    if (!line || line.startsWith('#')) continue;
-    const eq = line.indexOf('=');
-    if (eq < 0) continue;
-    const k = line.slice(0, eq).trim();
-    if (!process.env[k]) process.env[k] = line.slice(eq + 1).trim();
-  }
-} catch {}
+// OPS-14 (F456). This used to overlay `.env` with `if (!process.env[k])`, which
+// never overrides — so an ambient shell DATABASE_URL always won — and then
+// constructed a bare `new PrismaClient()`, whose datasource is whatever
+// `@prisma/client` loaded from apps/api/.env at import time. Nothing in the
+// output said which database answered. It now resolves from a named env file
+// (default `.env`, the same file it always read) and announces the host.
+const { url } = resolveDbTargetOrExit({
+  argv: process.argv.slice(2).includes('--env-file')
+    ? process.argv.slice(2)
+    : ['--env-file', '.env', ...process.argv.slice(2)],
+});
 
-const p = new PrismaClient();
+const p = new PrismaClient({ datasourceUrl: url });
 
 async function main() {
   const tables = await p.$queryRawUnsafe<Array<{ table_name: string }>>(

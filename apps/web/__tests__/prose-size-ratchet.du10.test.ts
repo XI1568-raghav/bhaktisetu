@@ -88,9 +88,9 @@ describe('[DU-10] prose paragraphs converge on one reading size', () => {
   it('the lead paragraphs the sweep sampled are on the one size', () => {
     // Unambiguous prose: the sentence directly under the h1 on each catalogue.
     const LEADS: Array<[string, RegExp]> = [
-      ['app/temples/page.tsx', /Loading temples/],
+      ['app/temples/(index)/page.tsx', /Loading temples/],
       ['app/store/page.tsx', /prose-body/],
-      ['app/pujas/page.tsx', /prose-body/],
+      ['app/pujas/(index)/page.tsx', /prose-body/],
       ['app/priest/page.tsx', /dashboard overview for today/],
     ];
     for (const [rel] of LEADS) {

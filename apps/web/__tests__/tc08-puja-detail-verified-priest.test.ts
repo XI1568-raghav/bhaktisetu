@@ -100,7 +100,7 @@ describe('TC-08 — /pujas/[slug] does not print an unbacked priest credential',
    */
   const CATALOGUE_SURFACES = [
     'app/pujas/[slug]/page.tsx',
-    'app/pujas/page.tsx',
+    'app/pujas/(index)/page.tsx',
     'app/pujas/marriage/page.tsx',
     'app/temples/[slug]/pujas/page.tsx',
   ];

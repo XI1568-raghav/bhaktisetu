@@ -10,7 +10,7 @@ import path from 'node:path';
  * probationary video review, and a displayed per-pandit trust score) was
  * removed from lib/faqs.ts, /why-darshya, /nri-pujas, /pujas/marriage and
  * /temples/[slug]/pujas in earlier passes. One printed badge survived all of
- * them: app/pujas/page.tsx rendered the literal words "Vedic certified" inside
+ * them: app/pujas/(index)/page.tsx rendered the literal words "Vedic certified" inside
  * the wedding card, one file away from app/pujas/marriage/page.tsx, where the
  * identical badge had already been corrected.
  *
@@ -23,7 +23,7 @@ import path from 'node:path';
  * The scan below strips comments first, so the many notes that quote the
  * removed phrase in order to explain its removal neither trip nor satisfy it.
  * It fails against the tree as it stood on 2026-08-31, where
- * `app/pujas/page.tsx` matched `/vedic[-\s]certified/i` in rendered JSX text.
+ * `app/pujas/(index)/page.tsx` matched `/vedic[-\s]certified/i` in rendered JSX text.
  */
 const WEB = path.resolve(__dirname, '..');
 const SKIP = new Set([
@@ -108,7 +108,7 @@ describe('TC-08 — no surface under apps/web prints a vetting step that does no
 
 describe('TC-08 — the wedding card names the step that actually runs', () => {
   it('/pujas prints the Aadhaar payout gate where the badge used to be', () => {
-    const src = code(path.join(WEB, 'app/pujas/page.tsx'));
+    const src = code(path.join(WEB, 'app/pujas/(index)/page.tsx'));
     expect(src).toMatch(/Pandit paid only after Aadhaar KYC/);
     expect(src).not.toMatch(/vedic[-\s]certified/i);
   });
@@ -126,7 +126,7 @@ describe('TC-08 — the wedding card names the step that actually runs', () => {
    * weakened by an allowlist. These are the catalogue surfaces TC-08 names.
    */
   const CATALOGUE_SURFACES = [
-    'app/pujas/page.tsx',
+    'app/pujas/(index)/page.tsx',
     'app/pujas/[slug]/page.tsx',
     'app/pujas/marriage/page.tsx',
     'app/deity/[slug]/page.tsx',

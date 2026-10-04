@@ -28,7 +28,7 @@ function codeOf(rel: string): string {
 }
 
 describe('PF-06 — the catalogue card discloses the fee', () => {
-  const src = codeOf('app/pujas/page.tsx');
+  const src = codeOf('app/pujas/(index)/page.tsx');
 
   it('imports the shared constant rather than printing a literal 51', () => {
     expect(src).toContain('puja-pricing');

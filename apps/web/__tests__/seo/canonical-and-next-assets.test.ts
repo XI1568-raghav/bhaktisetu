@@ -53,9 +53,26 @@ function collect(dir: string, filename: string, acc: string[] = []): string[] {
   return acc;
 }
 
-/** URL path of the route that owns this page/layout file. Root => ''. */
+/**
+ * URL path of the route that owns this page/layout file. Root => ''.
+ *
+ * Route groups — a directory named `(something)` — organise files WITHOUT
+ * appearing in the URL, so they must be dropped here. Before 2026-09-08 this
+ * function did not drop them, and the moment SEO-11 moved the three index
+ * pages into `(index)` groups it reported `/temples` as a cross-route canonical
+ * on `temples/(index)/page.tsx` — flagging correct code, because it expected
+ * the canonical to be `/temples/(index)`, a URL that cannot exist.
+ *
+ * A path-to-URL mapping that does not model the framework's own routing will
+ * always eventually accuse the code of the mapping's bug.
+ */
 function routeOf(file: string): string {
-  const rel = path.relative(APP_DIR, path.dirname(file)).split(path.sep).filter(Boolean).join('/');
+  const rel = path
+    .relative(APP_DIR, path.dirname(file))
+    .split(path.sep)
+    .filter(Boolean)
+    .filter((seg) => !(seg.startsWith('(') && seg.endsWith(')')))
+    .join('/');
   return rel ? `/${rel}` : '';
 }
 
