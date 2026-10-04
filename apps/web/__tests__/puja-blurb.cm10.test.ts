@@ -96,7 +96,7 @@ describe('CM-10 — the catalogue surfaces use it instead of a clamp', () => {
   const read = (rel: string) => fs.readFileSync(path.join(WEB, rel), 'utf8');
 
   it('/pujas renders the blurb, not the clamped full description', () => {
-    const src = read('app/pujas/page.tsx');
+    const src = read('app/pujas/(index)/page.tsx');
     expect(src).toMatch(/\{pujaCardBlurb\(puja\.description\)\}/);
     expect(src).not.toMatch(/line-clamp-2">\s*\n?\s*\{puja\.description\}/);
   });

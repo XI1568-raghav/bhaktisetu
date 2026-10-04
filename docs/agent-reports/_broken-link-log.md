@@ -1,6 +1,38 @@
 # broken-link log
 
 
+- 2026-10-01T10:25:43.786Z — checked=200 broken=74 slow=20
+
+- 2026-09-30T09:56:06.290Z — checked=0 broken=0 slow=0
+
+- 2026-09-29T10:03:16.827Z — checked=0 broken=0 slow=0
+
+- 2026-09-28T10:04:48.051Z — checked=0 broken=0 slow=0
+
+- 2026-09-27T09:27:42.008Z — checked=0 broken=0 slow=0
+
+- 2026-09-26T08:46:32.461Z — checked=0 broken=0 slow=0
+
+- 2026-09-25T09:01:20.183Z — checked=0 broken=0 slow=0
+
+- 2026-09-24T08:40:45.738Z — checked=0 broken=0 slow=0
+
+- 2026-09-23T08:46:20.687Z — checked=0 broken=0 slow=0
+
+- 2026-09-22T08:45:02.945Z — checked=0 broken=0 slow=0
+
+- 2026-09-21T09:13:18.275Z — checked=0 broken=0 slow=0
+
+- 2026-09-20T08:45:47.555Z — checked=0 broken=0 slow=0
+
+- 2026-09-19T08:13:51.912Z — checked=0 broken=0 slow=0
+
+- 2026-09-18T08:25:54.995Z — checked=0 broken=0 slow=0
+
+- 2026-09-17T08:50:31.496Z — checked=0 broken=0 slow=0
+
+- 2026-09-10T08:21:19.020Z — checked=200 broken=150 slow=7
+
 - 2026-09-08T08:18:33.302Z — checked=200 broken=133 slow=6
 
 - 2026-09-07T08:35:25.652Z — checked=200 broken=152 slow=4

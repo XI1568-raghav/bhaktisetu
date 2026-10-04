@@ -43,6 +43,19 @@ function makeReq(authHeader?: string) {
 
 function makeReply() {
   const reply: any = {
+    // AUTH-07 (2026-09-08): a real FastifyReply always has `header`/`getHeader`,
+    // and `authenticateUser` now stamps `X-Auth-Reason` on every 401 it sends.
+    // Without these on the stub the middleware threw, the throw was swallowed by
+    // its own catch, and these tests read 500 where they assert 401 — a fake
+    // failure produced entirely by an incomplete fake.
+    headers: {} as Record<string, string>,
+    header(name: string, value: string) {
+      reply.headers[String(name).toLowerCase()] = value;
+      return reply;
+    },
+    getHeader(name: string) {
+      return reply.headers[String(name).toLowerCase()];
+    },
     statusCode: 200,
     body: undefined,
     code(c: number) {

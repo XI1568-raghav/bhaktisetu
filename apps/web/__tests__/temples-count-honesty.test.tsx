@@ -58,7 +58,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
-import TemplesPage from '../app/temples/page';
+import TemplesPage from '../app/temples/(index)/page';
 import { TemplesBrowser, type TempleCardData } from '../components/temples/TemplesBrowser';
 
 interface BrowserProps {

@@ -81,7 +81,7 @@ describe('CM-11 — homepage trust numbers are counts, not string literals', () 
 
 describe('DF-05 — wedding volume claim removed (zero completed weddings)', () => {
   it('the /pujas marriage banner does not claim 1,500+ weddings', () => {
-    expect(code('app/pujas/page.tsx')).not.toMatch(/weddings/i);
+    expect(code('app/pujas/(index)/page.tsx')).not.toMatch(/weddings/i);
   });
 
   it('the /pujas/marriage hero does not claim 1,500+ weddings', () => {

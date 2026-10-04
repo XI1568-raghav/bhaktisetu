@@ -120,6 +120,13 @@ jobs:
       # affected — only the Windows checkout. If it reappears, re-run
       # `git add --renormalize .`.
       #
+      # Added 2026-09-08: probe-verified-fetch.test.mjs. The helper it guards
+      # exists because two agents counted <loc> elements out of a sitemap they
+      # never verified, so a Cloudflare block page scored ZERO and the drafts
+      # read "Darshya now indexes 0+ devotional pages" — a public number
+      # produced from an unread body. The lane that wrote it flagged, correctly,
+      # that the file would run NOWHERE until it was named here.
+      #
       # Two more added 2026-09-04, and they were very nearly the bug this block
       # already warns about. backup-verification.test.mjs (27 tests) and
       # db-backup-workflow.test.mjs (11) shipped in 94811871 as the guards for
@@ -160,6 +167,7 @@ jobs:
           scripts/backup/test/backup-integrity.test.mjs
           scripts/backup/test/backup-verification.test.mjs
           scripts/backup/test/db-backup-workflow.test.mjs
+          scripts/agents/probe-verified-fetch.test.mjs
           scripts/test/ops-runbook-honesty.test.mjs
           scripts/test/secret-scan.test.mjs
 

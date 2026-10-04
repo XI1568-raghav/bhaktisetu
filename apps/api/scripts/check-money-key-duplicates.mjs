@@ -26,29 +26,20 @@
  * That makes it usable as a CI/pre-promotion gate, not just a report.
  */
 import { PrismaClient } from '@prisma/client';
-import { readFileSync } from 'node:fs';
+import { resolveDbTargetOrExit } from './lib/resolve-db-target.mjs';
 
 const args = process.argv.slice(2);
-const envFileIdx = args.indexOf('--env-file');
-if (envFileIdx !== -1) {
-  const path = args[envFileIdx + 1];
-  if (!path) {
-    console.error('--env-file needs a path');
-    process.exit(2);
-  }
-  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
-    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-    if (m) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-}
 
-// DIRECT_URL, not the pooled URL: pgbouncer in transaction mode has repeatedly
-// broken schema-level queries in this repo (see docs/caveats.md).
-const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
-if (!url) {
-  console.error('No DIRECT_URL or DATABASE_URL in the environment.');
-  process.exit(2);
-}
+// OPS-14 (F456). This used to be a hand-rolled `--env-file` loop followed by
+// `process.env.DIRECT_URL || process.env.DATABASE_URL`. The `@prisma/client`
+// import above is HOISTED and loads apps/api/.env — the PRODUCTION URLs — before
+// that loop ever ran, and apps/api/.env.local has no DIRECT_URL to override, so
+// `--env-file .env.local` read PRODUCTION while claiming to read local.
+//
+// The resolver takes the connection string from the FILE, never from
+// process.env, so the import order stopped mattering. It announces the resolved
+// host on stderr and refuses when the named file and the target contradict.
+const { url } = resolveDbTargetOrExit({ argv: args });
 
 const prisma = new PrismaClient({ datasourceUrl: url });
 

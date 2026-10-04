@@ -85,7 +85,7 @@ describe('[CM-08] every attribution-required Commons file is credited on /credit
  * those cards paint a blank 382x239 box over the saffron gradient.
  */
 describe('[CM-08] a rate-limited image does not leave a hole in the grid', () => {
-  const cardSrc = readFileSync(path.resolve(__dirname, '../app/pujas/page.tsx'), 'utf8')
+  const cardSrc = readFileSync(path.resolve(__dirname, '../app/pujas/(index)/page.tsx'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
     .replace(/(^|[^:])\/\/[^\n]*/g, '$1');

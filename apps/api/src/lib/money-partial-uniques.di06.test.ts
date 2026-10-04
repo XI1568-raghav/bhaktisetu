@@ -146,9 +146,33 @@ describe('DI-06 — the migration exists and is safely stamped', () => {
     expect(existsSync(join(migrationsDir, MIGRATION, 'migration.sql'))).toBe(true);
   });
 
-  it('sorts after every other migration, so migrate deploy runs it last', () => {
+  // AMENDED 2026-09-08 by DI-08. This asserted `dirs[dirs.length - 1] === MIGRATION`
+  // — "runs it LAST" — which was true the day it was written and is false the
+  // moment any migration is added after it. `20260908010000_di08_wallet_credit_tables`
+  // is the first to land on top of it and broke this assertion while changing
+  // nothing this test was defending.
+  //
+  // What it was actually defending is ORDER, not lastness: these three UNIQUE
+  // indexes must be created after the tables they constrain, so the stamp may
+  // never sort BEFORE a migration that already existed. That is what is asserted
+  // now, and unlike lastness it stays true as the directory grows.
+  it('sorts after every migration that predates it, so migrate deploy runs it in order', () => {
     const dirs = migrationDirs();
-    expect(dirs[dirs.length - 1]).toBe(MIGRATION);
+    const idx = dirs.indexOf(MIGRATION);
+    expect(idx, 'the DI-06 migration is not on disk').toBeGreaterThan(-1);
+
+    const stamp = MIGRATION.slice(0, 14);
+    // Everything applied before it carries an earlier-or-equal stamp...
+    expect(
+      dirs.slice(0, idx).filter((d) => d.slice(0, 14) > stamp),
+      'a migration with a LATER stamp sorts before DI-06 — the ordering is broken',
+    ).toEqual([]);
+    // ...and everything applied after it is strictly newer, so nothing has been
+    // back-dated into the gap between DI-06 and the tables it constrains.
+    expect(
+      dirs.slice(idx + 1).filter((d) => d.slice(0, 14) <= stamp),
+      'a migration with an EARLIER-or-equal stamp sorts after DI-06 — the ordering is broken',
+    ).toEqual([]);
   });
 
   it('introduces no NEW timestamp collision', () => {
@@ -312,15 +336,43 @@ const PENDING_P2002_TRANSLATION = [
 ] as const;
 
 describe('DI-06 — P2002 translation debt is tracked, not buried', () => {
-  const handles = (src: string) =>
-    /code\s*===\s*'P2002'/.test(src) || /isUniqueViolation\s*\(/.test(src);
+  const HANDLER = /code\s*===\s*'P2002'|isUniqueViolation\s*\(/;
 
-  it('every constrained guard file is either handled or listed', () => {
-    const unlisted = CONSTRAINTS.map((c) => c.guard.file).filter(
-      (f) =>
-        !handles(source(f)) &&
-        !(PENDING_P2002_TRANSLATION as readonly string[]).includes(f),
+  /**
+   * AMENDED 2026-09-08 by DI-09. This used to test the WHOLE FILE for a P2002
+   * handler, which conflated three different constraints living in one module.
+   *
+   * DI-09 added a P2002 handler to `payment.service.ts` — but for
+   * `priest_payouts_booking_id_key` at :2438, which is 81,000 characters and
+   * 1,800 lines away from the `payments_booking_id_inflight_key` write this
+   * entry is actually about (`createRazorpayOrder`, :826). File-level matching
+   * reported that debt as PAID when it is untouched, and the only way to make
+   * the suite green was to delete a still-true entry — a ratchet that lies in
+   * the safe direction the first time anyone pays a neighbouring debt.
+   *
+   * Scoped to the guard's own write instead. The window is generous on both
+   * sides because a handler wraps its write in a try/catch, and small next to
+   * the 81k separating the two sites, so it cannot pick up a handler belonging
+   * to a different constraint.
+   */
+  const WINDOW_BEFORE = 800;
+  const WINDOW_AFTER = 2000;
+
+  const handlesGuard = (guard: { file: string; write: string }): boolean => {
+    const src = source(guard.file);
+    const at = src.indexOf(guard.write);
+    expect(at, `${guard.write} not found in ${guard.file}`).toBeGreaterThan(-1);
+    return HANDLER.test(
+      src.slice(Math.max(0, at - WINDOW_BEFORE), at + guard.write.length + WINDOW_AFTER),
     );
+  };
+
+  it('every constrained guard is either handled or listed', () => {
+    const unlisted = CONSTRAINTS.filter(
+      (c) =>
+        !handlesGuard(c.guard) &&
+        !(PENDING_P2002_TRANSLATION as readonly string[]).includes(c.guard.file),
+    ).map((c) => c.guard.file);
     expect(
       unlisted,
       'a guard now has a DB constraint behind it but neither translates P2002 nor admits it here',
@@ -328,12 +380,15 @@ describe('DI-06 — P2002 translation debt is tracked, not buried', () => {
   });
 
   it('the allowlist has not outlived its entries', () => {
-    // Reverse direction: an entry that HAS gained a handler must be removed, so
-    // the list shrinks to nothing as the debt is paid.
-    const stale = PENDING_P2002_TRANSLATION.filter((f) => handles(source(f)));
+    // Reverse direction: an entry whose OWN guard has gained a handler must be
+    // removed, so the list shrinks to nothing as the debt is paid.
+    const handledFiles = new Set(
+      CONSTRAINTS.filter((c) => handlesGuard(c.guard)).map((c) => c.guard.file),
+    );
+    const stale = PENDING_P2002_TRANSLATION.filter((f) => handledFiles.has(f));
     expect(
       stale,
-      'these files now translate P2002 — delete them from PENDING_P2002_TRANSLATION',
+      'these files now translate P2002 at the guard this list is about — delete them from PENDING_P2002_TRANSLATION',
     ).toEqual([]);
   });
 

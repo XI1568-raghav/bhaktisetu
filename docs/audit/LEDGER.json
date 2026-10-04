@@ -3950,16 +3950,16 @@
  {
   "key": "F283",
   "id": "SCAL-02",
-  "sev": "P0",
+  "sev": "P1",
   "kind": "scalability",
   "size": "M",
   "area": "scalability",
   "workflow": "scale-mindset",
   "line": 3055,
-  "title": "API runs in Render Oregon while the database is Supabase Tokyo — every query crosses the Pacific",
+  "title": "The web tier runs in Render Oregon and the API in Singapore — server-rendered API calls cross the Pacific (API-to-database does not)",
   "state": "owner",
   "commit": "",
-  "note": "The region change is pure infrastructure and owner-only: either recreate the Supabase project in ap-south-1 (Mumbai) and move both Render services to region: si"
+  "note": "PREMISE CORRECTED 2026-09-12 BY MEASUREMENT. This record was titled 'API runs in Render Oregon while the database is Supabase Tokyo — every query crosses the Pacific'. That came from render.yaml, which does not govern this service. The Render API reports the API in singapore and darshya-web in oregon; the Supabase pooler host is ap-northeast-1 (Tokyo). So API-to-database is Singapore to Tokyo, not a Pacific crossing, and the Pacific hop that remains is web (oregon) to API (singapore) on server-rendered fetches. Latency was NOT measured, so P0 -> P1 is a judgement on the corrected topology, not a measurement. Still owner-only: a Render service's region cannot be changed in place. ORIGINAL NOTE: The region change is pure infrastructure and owner-only: either recreate the Supabase project in ap-south-1 (Mumbai) and move both Render services to region: si"
  },
  {
   "key": "F284",
@@ -6295,9 +6295,9 @@
   "workflow": "prod-remeasure-2026-09-08",
   "line": 0,
   "title": "Unknown temple and puja slugs are soft-404s: HTTP 200 with a rendered not-found page, a self-canonical to the bogus URL, and two contradictory robots directives",
-  "state": "open",
+  "state": "fixed",
   "commit": "",
-  "note": "MEASURED on live production 2026-09-08. GET /temples/<bogus> and /pujas/<bogus> both return HTTP 200 while rendering not-found UI. The generic catch-all /definitely-not-a-page-xyz correctly returns 404, and the API itself correctly returns 404 with code NOT_FOUND, so neither is the cause. NOT a cache artifact: a never-before-requested slug returns x-nextjs-cache: MISS and still 200. Both pages DO call notFound() — temples/[slug]/page.tsx:196 and pujas/[slug]/page.tsx:227 — and both declare export const revalidate = 3600 with an error.tsx in-segment. This is the Next ISR + notFound() interaction and the fix needs to be reasoned about rather than guessed. Collateral on the temple page: title renders as \"Temple — ,  | Darshya\" (empty interpolations); link rel=canonical points at the bogus URL; and the page emits BOTH robots \"index, follow\" AND robots \"noindex\". SEVERITY IS LIMITED BY THAT CONFLICT: Google resolves conflicting robots directives by taking the most restrictive, so noindex wins and these URLs are not being indexed. The real cost is wasted crawl budget across an unbounded URL space, a broken title, and a canonical that contradicts the noindex. The puja title also exhibits SEO-03 brand doubling — \"Puja not found | Darshya | Darshya\" — because the page metadata at :162 already ends in \"| Darshya\" and the root template appends it again. NOT introduced by the 2026-09-04 wave: d8f59587 touched temples/[slug]/page.tsx but changed none of the notFound / robots / canonical logic. It was shipped by that deploy, not authored by it."
+  "note": "CLOSED 2026-09-08. Cause was neither ISR nor error.tsx: a loading.tsx in the ANCESTOR segment wraps the child subtree in a real Suspense boundary, so React flushes the shell — head and status — before the page resolves; notFound() only sets a status when the error escapes the whole render (app-render.js:1402), and absorbed by that boundary it never escapes. Proof was in the bytes: the 200 body contained \"Loading temples\", the skeleton's own copy. Eight routes measured, one variable, no exceptions. Fixed by moving app/{temples,pujas,astrology}/page.tsx and their loading.tsx into (index) route groups — a route group does not appear in the URL, so the index pages keep the skeleton CM-15 added while the dynamic children stop being wrapped. NINE routes were affected, not two. Metadata also fixed: the head no longer emits an empty-interpolation title, a self-canonical to a bogus URL, a social card, or two contradictory robots directives. COST: the move broke 26 test files that address those pages by path, caught by a concurrent lane rather than by me — repointed in 8cabff24."
  },
  {
   "key": "F451",
@@ -6309,9 +6309,9 @@
   "workflow": "prod-remeasure-2026-09-08",
   "line": 0,
   "title": "The origin rate-limits under a ~10-way concurrent burst and serves Cloudflare block pages that render a fake h1, so any unpaced measurement script measures the block page",
-  "state": "open",
+  "state": "fixed",
   "commit": "",
-  "note": "OBSERVED 2026-09-08 while re-measuring audit findings against production. A burst of roughly ten concurrent requests triggered a window of 429/503 responses whose bodies are Cloudflare block pages containing an h1 reading \"darshya.online\" at 40px system-ui. A measurement script that does not assert the status code before reading the DOM will silently record that h1 as the page h1 and report a false typography or layout result — which is exactly the shape of error that produces confident, wrong audit numbers. Mitigation used during the sweep: 7-12s pacing plus a browser UA, and every reading taken inside the throttled window was discarded and re-taken. Worth recording independently of any single finding: it affects every future production sweep, and it is the reason a sweep must assert 200 before trusting a measurement."
+  "note": "CLOSED 2026-09-08, and NARROWED in the process: 10 of 12 _lib.mjs consumers already asserted status before parsing, and no agent fans out concurrently — every sweep is a sequential for..of, several paced. The ~10-way burst came from the ad-hoc audit measurement, not the fleet. Exactly two ignored status and both fed a PUBLISHED number: founder-tweet-draft.mjs and social-content-multiplexer.mjs each counted <loc> out of sitemap.xml, which on a Cloudflare block page is 0, so the drafts read \"Darshya now indexes 0+ devotional pages\" — the multiplexer even carried .catch(() => 0). Both now return null, never 0: 0 is a measurement, null is the absence of one. fetchVerified lives in the EXISTING scripts/agents/_lib.mjs (a parallel lib nobody imports is the dead-guard failure this repo already booked) and paces per-origin, sends a Chrome UA, asserts the expected status, sniffs Cloudflare interstitials even on a 200, and has no field carrying an unverified body. scripts/agents/probe-verified-fetch.test.mjs is wired into ci.yml Ops guards."
  },
  {
   "key": "F452",
@@ -6322,10 +6322,10 @@
   "area": "data-integrity",
   "workflow": "partials-wave-2026-09-08",
   "line": 0,
-  "state": "open",
+  "state": "fixed",
   "commit": "",
   "title": "The referral reward rail queries two tables that do not exist in production — user_credits and credit_ledger_entries are in schema.prisma but no migration ever creates them",
-  "note": "FOUND 2026-09-08 while adding money constraints; read-only measurement against production. Both models exist in apps/api/prisma/schema.prisma and NEITHER table exists in the production database — no migration creates them. wallet.service.ts:73 relies on an @@unique([userId, idempotencyKey]) that is therefore not there. Any call reaching that rail raises Postgres 42P01 (undefined_table) in production today. This is the purest instance of DI-06 in the codebase — not a missing constraint but a missing TABLE behind a money path — and it is bigger than a constraint fix, so it is filed rather than patched. Confirm the blast radius before choosing between creating the tables and removing the rail."
+  "note": "CLOSED 2026-09-08 and VERIFIED IN PRODUCTION. Two corrections to the finding: `wallets` is not a model (the wallet IS user_credits + credit_ledger_entries, so two tables were missing, not three), and prisma/baseline/0_init.sql already creates both — freshly bootstrapped databases had them; production, which predates the baseline, did not. THE FINDING ALSO NAMED THE WRONG CONSUMER. The referral reward rail is the quiet one (referrals.ts:238 catches 42P01 and answers 503; payment.service.ts:537 swallows it into a console.warn). The loud one is ACCOUNT DELETION: account-deletion.service.ts:488 had no guard at all, so GET /account/deletion-eligibility, POST /account/deletion-request, POST /account/delete/confirm and DELETE /account/ were unhandled 500s, and :1252 runs INSIDE the purge $transaction, where 42P01 poisons it and the entire purge rolls back — the Apple 5.1.1(v) / Google Play in-app deletion obligation failing in production. Migration 20260908010000 is APPLIED (finished_at set) and both tables plus credit_ledger_entries_user_id_idempotency_key_key — the index wallet.service.ts:73 resolves against — are confirmed live by read-only query on 2026-09-08."
  },
  {
   "key": "F453",
@@ -6336,10 +6336,10 @@
   "area": "ops-observability",
   "workflow": "partials-wave-2026-09-08",
   "line": 0,
-  "state": "open",
+  "state": "fixed",
   "commit": "",
   "title": "The store-order money rail emits no audit events at all — a fourth rail with no trail, after OPS-05 closed the other three",
-  "note": "FOUND 2026-09-08 while closing OPS-05. payment.service.ts:1034 createStoreOrderRazorpay creates a Payment row at status `initiated` with no PAYMENT_INITIATED, and :1129 verifyStoreOrderPayment captures the payment, flips StoreOrder to CONFIRMED and mints a store-owner commission inside its $transaction with no PAYMENT_VERIFIED, PAYMENT_CAPTURED or COMMISSION_MINTED. Coverage was clearly intended: MoneySubjectType already declares 'store_order' (lib/audit-money.ts:109). Deliberately not wired in that wave because store.service.ts, store-orders.ts and store.ts were all dirty from another session — wiring audit calls into a rail being actively rewritten is how two sessions destroy each other's work. Do it when that work has landed."
+  "note": "CLOSED 2026-09-08. The store-order rail now emits PAYMENT_INITIATED (createStoreOrderRazorpay, not on the idempotent-reuse branch), and PAYMENT_VERIFIED + COMMISSION_MINTED post-commit on verifyStoreOrderPayment, through a twin of recordProviderEarningMinted that re-reads rather than recomputes and never throws. Extended beyond the finding: the WEBHOOK store rail also minted with no COMMISSION_MINTED, keyed on commission id so the two rails collapse to one row. DELIBERATE OMISSION with a test pinning it: no PAYMENT_CAPTURED from the client-verify rail — both rails would key it on the same razorpay_payment_id and the audit insert is ON CONFLICT DO NOTHING, so emitting here would silently erase the webhook row that records the GATEWAY as actor."
  },
  {
   "key": "F454",
@@ -6350,10 +6350,10 @@
   "area": "auth-session-lifecycle",
   "workflow": "partials-wave-2026-09-08",
   "line": 0,
-  "state": "open",
+  "state": "fixed",
   "commit": "",
   "title": "Every 401 tells the user their session expired — including when no token was sent, when registration is incomplete, and when the database is down",
-  "note": "FOUND 2026-09-08 while verifying AUTH-06. apps/web/lib/api-config.ts:333 asserts \"Your session has expired — sign in again\" for EVERY 401. The API answers 401 in at least three cases where that is false: auth.ts:110 (no token was ever sent), auth.ts:341 (registration incomplete) and auth.ts:1136 (a DATABASE OUTAGE). Telling a user their session expired during an outage sends them to re-authenticate against the thing that is down. The API side cannot fix it as the contract stands: loadErrorIsReauth reads only the numeric status and never the body, so any discriminator added to the 401 body is dead on arrival. The fix is web-side and needs the contract widened first. Note the API also destroys the expiry signal at three points — supabase-jwt.ts:123 returns a bare null by design, auth.ts:312 discards Supabase's error code, error-localization.ts:244 stamps a constant UNAUTHORIZED derived from the status number."
+  "note": "CLOSED 2026-09-08, and the finding was HALF WRONG in the worse direction. routes/auth.ts:1136 never reaches loadErrorMessage: sign-in goes through auth-context.tsx:939, which prefers errBody.message, so a DATABASE OUTAGE renders as literally \"Invalid credentials.\" — telling users their password is wrong while the database is down, the exact lie AUTH-02 exists to stop. Fixed by widening the contract: a body-level code would have been dead on arrival (all ten callers hand a bare Response to a SYNCHRONOUS classifier and never read the body), so the discriminator is an X-Auth-Reason HEADER mirrored into the body, with exposure added at the error-localization onSend chokepoint because server.ts declares no exposedHeaders and the browser would otherwise drop it. Six reasons; registration_incomplete and verify_unavailable are deliberately NOT reauth (the first would loop a valid credential back to the same 401 — the AUTH-06 suspended-provider loop wearing a 401; the second would leave a user in an outage with one control pointing at the thing that is down). A 401 with no reason answers exactly as before. The 403-is-not-reauth guard is pinned five ways, including a structural scan that caught a real holdout on its first run. RESIDUAL, filed separately: :1136 should be a 503."
  },
  {
   "key": "F455",
@@ -6364,10 +6364,10 @@
   "area": "data-integrity",
   "workflow": "partials-wave-2026-09-08",
   "line": 0,
-  "state": "open",
+  "state": "fixed",
   "commit": "",
   "title": "Two money writes that no index can protect: an unhandled duplicate-key 500 on priest payout, and a receipt mint that can double-write",
-  "note": "FOUND 2026-09-08. (1) payment.service.ts:2348 -> :2438 createPriestPayout is a bare `create` with no P2002 handler, while priest_payouts_booking_id_key is ALREADY LIVE in production — so the duplicate path is an unhandled 500 today, independent of any new constraint. (2) routes/donations.ts:175 mints the receipt with an UPDATE carrying no `AND status <> 'paid'` predicate, unlike claimCaptureTransition elsewhere, so two concurrent calls both mint and the second overwrites the first. No index can fix a row overwriting its own column — it is a one-line predicate. (3) Related and also not index-shaped: wellness-sessions.ts:436 -> :449 counts then creates, so a session can be oversold; a COUNT ceiling needs a lock or a trigger."
+  "note": "CLOSED 2026-09-08 for both writes the title names. createPriestPayout had no P2002 handler while priest_payouts_booking_id_key is already live, so the duplicate path leaked \"Unique constraint failed on the fields: (bookingId)\" as an unhandled 500; it now re-reads the winner and throws the same sentence the application guard throws, with P2003/P2025 still propagating. donations.ts now carries AND status <> 'paid' on the mint UPDATE and reads the affected-row count the way claimCaptureTransition already does, so the loser re-reads the winner and skips the audit event, the PDF and the second 80G email. RESIDUAL, filed separately: the wellness count-then-create oversell, which is not index-shaped."
  },
  {
   "key": "F456",
@@ -6378,9 +6378,107 @@
   "area": "ops-observability",
   "workflow": "partials-wave-2026-09-08",
   "line": 0,
-  "state": "open",
+  "state": "fixed",
   "commit": "",
   "title": "A maintenance script silently queries PRODUCTION when run with --env-file .env.local",
-  "note": "FOUND 2026-09-08. Importing @prisma/client auto-loads .env — which holds the PRODUCTION URLs for both DATABASE_URL and DIRECT_URL — BEFORE a script's own env-file loop runs. scripts/check-money-key-duplicates.mjs:49 then evaluates `process.env.DIRECT_URL || ...`, and .env.local has no DIRECT_URL to override it, so `--env-file .env.local` reads production while appearing to read local. apps/api/scripts/guard-db-target.ts exists for exactly this and is wired to predev/predb:*/preseed:* but NOT to this checker. Caught only because a probe carried its own localhost guard. Audit every script that reads DIRECT_URL for the same shape."
+  "note": "CLOSED 2026-09-08, and it was SEVEN scripts, not one. Two are not read-only: apply-perf-indexes.mjs runs CREATE INDEX against whatever won, and bootstrap-fresh-db.mjs is DESTRUCTIVE with a local-host guard that --verify-only bypassed. Premise measured rather than assumed: DIRECT_URL is undefined before the @prisma/client import and points at production after it, and .env.local has no DIRECT_URL to override. Fixed structurally, not with a guard: scripts/lib/resolve-db-target.mjs makes the NAMED ENV FILE the only source of the connection string, so process.env is never consulted for it and the import-order hazard cannot express itself. Three refusals (neither key in the named file; a *.local file resolving to a remote host; an unparseable URL), and every successful run announces its host — hosts only, never credentials, with a test pinning that."
+ },
+ {
+  "key": "F457",
+  "id": "OPS-15",
+  "sev": "P2",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops-observability",
+  "workflow": "open-wave-2026-09-08",
+  "line": 0,
+  "state": "fixed",
+  "commit": "7e855343",
+  "title": "The runbook-honesty guard cannot see docs/audit/DEPLOY-PLAN.md, which still hands an operator the dead -f branch= flag",
+  "note": "CLOSED 2026-09-09 in 7e855343, both halves in one change as the finding required. scripts/test/ops-runbook-honesty.test.mjs no longer excludes the docs/audit/ directory: EXCLUDED is narrowed to AUDIT_RECORDS, 13 exact paths that are records by kind, so a plan in that directory someone would follow is scanned like any other page. docs/audit/DEPLOY-PLAN.md no longer carries the dead flag (re-checked on the branch tip 2026-09-12: zero occurrences of branch=main). NOT YET RUN IN CI when closed: the wave branch had no PR, and ci.yml runs only on pull_request and on push to main."
+ },
+ {
+  "key": "F458",
+  "id": "AUTH-08",
+  "sev": "P2",
+  "kind": "auth",
+  "size": "S",
+  "area": "auth-session-lifecycle",
+  "workflow": "open-wave-2026-09-08",
+  "line": 0,
+  "state": "fixed",
+  "commit": "55e41615",
+  "title": "Sign-in answers a database outage with 401 \"Invalid credentials.\", and the same handler already gets it right 110 lines earlier",
+  "note": "CLOSED 2026-09-09 in 55e41615 — status AND body together, since the finding showed a status change alone would not reach the user. routes/auth.ts now answers an unreachable database on the real sign-in path the way the demo path already did: 503 ServiceUnavailable, 'Sign-in is temporarily unavailable. Please try again in a moment.', logged as event login_db_unreachable. Pinned by an API test and a web test (auth08b) asserting that an outage is not presented as a credential verdict. Re-checked on the branch tip 2026-09-12. Not in production: the fix is on the unmerged wave branch."
+ },
+ {
+  "key": "F459",
+  "id": "DI-10",
+  "sev": "P2",
+  "kind": "data-integrity",
+  "size": "S",
+  "area": "data-integrity",
+  "workflow": "open-wave-2026-09-08",
+  "line": 0,
+  "state": "fixed",
+  "commit": "7e855343",
+  "title": "A wellness session can be oversold: capacity is counted, then created, with nothing in between",
+  "note": "CLOSED 2026-09-09 in 7e855343 with a lock, not a constraint — as the finding said, a count ceiling is not index-shaped. enrollUnderCapacityLock (routes/wellness-sessions.ts:156) opens one transaction, takes pg_advisory_xact_lock(hashtextextended(key, 0)) on a per-session key, then counts held enrolments and creates inside that transaction, so two concurrent enrolments serialise on the session instead of both reading the same count. BOTH enrolment paths go through it — free (:571) and paid (:632) of POST /sessions/:id/enroll, traced 2026-09-12. The count at :603 is a deliberate cheap pre-check before razorpay.orders.create so a provably-full class never mints a live order; the authoritative re-count is under the lock. A transaction-scoped advisory lock releases at COMMIT, so it holds under Supabase's transaction-mode pooler where a session-scoped one would not. WHAT THE TEST DOES AND DOES NOT PROVE: wellness-enroll-capacity.f455.test.ts mocks Prisma and models the advisory lock as a per-key mutex, then fires six concurrent enrolments through the real route. It proves the route takes the lock and that count-then-create is serialised under that model; by its own header it does not prove Postgres blocks a second backend. No run against a real database was made. DISCLOSURE: the same commit normalised wellness-sessions.ts from CRLF to LF (per .gitattributes, * text=auto eol=lf) without saying so — raw diff +867/-672, real change +231/-36 under --ignore-cr-at-eol."
+ },
+ {
+  "key": "F460",
+  "id": "OPS-16",
+  "sev": "P3",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops-observability",
+  "workflow": "open-wave-2026-09-08",
+  "line": 0,
+  "state": "owner",
+  "commit": "",
+  "title": "apps/api/.env is partly corrupt — a UTF-16LE tail with duplicate keys and NUL bytes, in the file env parsing is now load-bearing on",
+  "note": "FOUND 2026-09-08. Bytes 840-1112 of apps/api/.env are a UTF-16LE tail containing two duplicate COHERE_API_KEY lines and 116 NUL bytes — the signature of a PowerShell >> or Add-Content without -Encoding utf8. The ASCII portion parses, so nothing is broken today. It matters because OPS-14 made env-file parsing load-bearing for choosing which DATABASE a maintenance script connects to: a file that resolution depends on should not carry mojibake. Rewrite it as clean UTF-8 with the duplicate removed. Do NOT do this from an agent — the file holds production credentials and is on the credential-store deny list. RE-MEASURED 2026-09-12: unchanged — 1,112 bytes, 116 NUL bytes, COHERE_API_KEY still duplicated. Moved open -> owner: the fix is a hand edit of a credential file that agents are denied by the credential-store deny list, so no agent lane can close it."
+ },
+ {
+  "key": "F461",
+  "id": "OPS-17",
+  "sev": "P1",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops-observability",
+  "workflow": "open-wave-2026-09-08",
+  "line": 0,
+  "state": "fixed",
+  "commit": "7e855343",
+  "title": "TASKS.md claims a deploy applies migrations on API start; measured twice, it does not — and TASKS.md is @-imported into every session",
+  "note": "CLOSED 2026-09-09 in 7e855343: TASKS.md no longer claims migrations auto-apply on API start; it says they do not, and that they must be applied by hand over DIRECT_URL and followed by a redeploy (re-checked on the branch tip 2026-09-12: zero occurrences of 'Migrations DO auto-apply'). CAUSE NOW PINNED BY MEASUREMENT — it was a hypothesis when this closed. render-diag mode=detail, sampled 2026-09-09 and again 2026-09-12, reports the dashboard startCommand as `pnpm --filter @poojly/api exec tsx src/server.ts`. render.yaml's `pnpm --filter @poojly/api start` (prisma migrate deploy && node dist/server.js) is never used, so migrate deploy never runs. That mechanism is its own defect, filed as OPS-19 (F463)."
+ },
+ {
+  "key": "F462",
+  "id": "OPS-18",
+  "sev": "P1",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops-observability",
+  "workflow": "tally-2026-09-12",
+  "line": 0,
+  "state": "owner",
+  "commit": "",
+  "title": "The API deploys itself on every push to main — CLAUDE.md, render.yaml and the OPS-06 guard all say no push can deploy anything",
+  "note": "MEASURED 2026-09-12 from the Render API, not read from render.yaml. The dashboard reports autoDeploy 'yes' on branch main for the API (sampled 2026-09-09 and 2026-09-12). Its last 20 deploys (2026-09-07 to 2026-09-11) are 13 trigger=new_commit and 7 trigger=api, and every new_commit deploy starts a median 3 s after its commit. Ten of those 13 were scheduled agent-report commits, which touch only docs/agent-reports/ (measured on a health-smoke commit, 166b3868, and a daily-fleet commit, 171e2266). At that cadence — health smoke twice a day, daily fleet run once — production is rebuilt ~90 times a month for markdown: at the measured 3.5 min median that is ~315 deploy-minutes, 63% of the 500 build-minute budget in docs/free-tier-budgets.md, before any real deploy (deploy wall time includes non-build phases, so these are upper bounds on build minutes). WHAT IT BREAKS: (1) CLAUDE.md's 'A push builds NOTHING', repeated in ~45 files, is false for the API, so merging a PR ships API code within seconds — and per OPS-19 no migration runs, so code can land ahead of its schema. (2) The OPS-06 correction (F415) deleted a TRUE sentence: render-build-filter-setup.md's 'Render auto-deploys bhaktisetu-api on every push to main'. ops-runbook-honesty.test.mjs keeps it as PRE_FIX_BUILD_FILTER and bans the claim, so the accurate statement cannot be written back without redding CI. (3) The rollback doctrine is half wrong in the opposite direction: for the API, a revert pushed to main DOES redeploy. The web service reports autoDeploy 'no' and is unaffected. THE FIX IS A DECISION: turn Auto-Deploy off for the API in the Render dashboard, which makes every doc and the guard true again (recommended), or keep it and rewrite the docs and the guard together. Owner: it is a dashboard setting."
+ },
+ {
+  "key": "F463",
+  "id": "OPS-19",
+  "sev": "P1",
+  "kind": "ops",
+  "size": "S",
+  "area": "ops-observability",
+  "workflow": "tally-2026-09-12",
+  "line": 0,
+  "state": "owner",
+  "commit": "",
+  "title": "Production API starts with tsx from source — a dashboard Start Command overrides render.yaml, so migrate deploy never runs and dist/ is never executed",
+  "note": "MEASURED 2026-09-09 and 2026-09-12 (render-diag mode=detail). The Render dashboard Start Command for the API is `pnpm --filter @poojly/api exec tsx src/server.ts`. render.yaml declares `pnpm --filter @poojly/api start`, and apps/api/package.json's start is `prisma migrate deploy && node dist/server.js`; neither is used. (1) Migrations never run on deploy — the mechanism behind OPS-17's measurement that deploys leave the schema unmoved. With OPS-18, any push to main can ship code ahead of the schema it needs. (2) The dashboard build compiles dist/ with tsc and nothing ever runs it: production executes TypeScript through a dev transpiler on a free-plan instance. Boot time and memory cost were NOT measured. The dashboard also disagrees with render.yaml on region (singapore vs oregon) and autoDeploy (yes vs false), so render.yaml is descriptive, not authoritative, for this service. DO NOT just paste render.yaml's command into the dashboard: that switches on migrate-on-boot (a failing migration then fails the deploy) and runs `node dist/server.js`, a path production has never executed. Boot the dist build once somewhere safe first. Owner: dashboard setting."
  }
 ]

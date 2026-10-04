@@ -199,7 +199,7 @@ describe('CM-06 copy — stop advertising a multi-currency rail that does not ex
   });
 
   it('/pujas metadata no longer claims dual INR/USD pricing', () => {
-    const src = readFileSync(join(WEB, 'app/pujas/page.tsx'), 'utf8');
+    const src = readFileSync(join(WEB, 'app/pujas/(index)/page.tsx'), 'utf8');
     expect(src).not.toMatch(/dual INR\/USD pricing/i);
   });
 });
