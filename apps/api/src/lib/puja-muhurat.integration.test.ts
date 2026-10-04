@@ -49,3 +49,31 @@ describe('PanchangService.getPujaMuhurats', () => {
     expect(out.length).toBeLessThanOrEqual(5);
   });
 });
+
+describe('PanchangService.getPujaMuhurats — limit', () => {
+  it('still returns only the top 5 by default', async () => {
+    const out = await panchangService.getPujaMuhurats('SATYANARAYAN', '2026-08-07', 30, 'Gurugram');
+    expect(out).toHaveLength(5);
+  });
+
+  it('returns every graded day of the horizon when limit equals the horizon, so a date picker can grey out the bad ones', async () => {
+    const out = await panchangService.getPujaMuhurats('SATYANARAYAN', '2026-08-07', 14, 'Gurugram', 14);
+    expect(out).toHaveLength(14);
+    expect(new Set(out.map((d) => d.date)).size).toBe(14);
+    // Still ranked best-first.
+    const scores = out.map((d) => d.score);
+    expect([...scores].sort((a, b) => b - a)).toEqual(scores);
+  });
+
+  it('a limit larger than the horizon returns the whole horizon, not an error', async () => {
+    const out = await panchangService.getPujaMuhurats('SATYANARAYAN', '2026-08-07', 7, 'Gurugram', 92);
+    expect(out).toHaveLength(7);
+  });
+
+  it('different limits are cached separately', async () => {
+    const five = await panchangService.getPujaMuhurats('GRIHA_PRAVESH', '2026-09-01', 20, 'Gurugram', 5);
+    const all = await panchangService.getPujaMuhurats('GRIHA_PRAVESH', '2026-09-01', 20, 'Gurugram', 20);
+    expect(five).toHaveLength(5);
+    expect(all).toHaveLength(20);
+  });
+});

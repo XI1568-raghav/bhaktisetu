@@ -234,6 +234,9 @@ export const PujaMuhuratQuerySchema = z.object({
   ),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'from must be YYYY-MM-DD').optional(),
   days: z.coerce.number().int().min(1).max(92).default(30),
+  // How many ranked days to return. 5 keeps the old "best days" behaviour; a date
+  // picker that must grey out the bad days asks for the whole horizon (limit = days).
+  limit: z.coerce.number().int().min(1).max(92).default(5),
   city: z.string().min(1).max(80).default('Gurugram'),
 });
 export type PujaMuhuratQuery = z.infer<typeof PujaMuhuratQuerySchema>;

@@ -111,3 +111,23 @@ describe('findPujaMuhurats — ranking', () => {
     expect(out.every((d) => d.grade !== 'avoid')).toBe(true);
   });
 });
+
+describe('PujaMuhuratQuerySchema — limit', () => {
+  const base = { pujaType: 'SATYANARAYAN' };
+
+  it('defaults to 5, the previous behaviour', () => {
+    expect(PujaMuhuratQuerySchema.parse(base).limit).toBe(5);
+  });
+
+  it('accepts 1 to 92 and coerces a query-string number', () => {
+    expect(PujaMuhuratQuerySchema.parse({ ...base, limit: '30' }).limit).toBe(30);
+    expect(PujaMuhuratQuerySchema.parse({ ...base, limit: 92 }).limit).toBe(92);
+    expect(PujaMuhuratQuerySchema.parse({ ...base, limit: 1 }).limit).toBe(1);
+  });
+
+  it('rejects 0, 93 and non-numbers', () => {
+    for (const bad of [0, 93, -1, 'x', 2.5]) {
+      expect(PujaMuhuratQuerySchema.safeParse({ ...base, limit: bad }).success, String(bad)).toBe(false);
+    }
+  });
+});
