@@ -213,7 +213,7 @@ export default async function HomeV2Page() {
  <div className="rounded-xl p-3 flex flex-col justify-between scroll-float" style={{ background: 'var(--color-art-1)', minHeight: '90px', animationDelay: '0s' }}>
  <Shield className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
  <div>
- <p className="text-xs font-medium mt-1" style={{ color: 'var(--color-text)' }}>Verified Priests</p>
+ <p className="text-xs font-medium mt-1" style={{ color: 'var(--color-text)' }}>Priests</p>
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Aadhaar authenticated</p>
  </div>
  </div>

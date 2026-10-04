@@ -15,9 +15,9 @@ import { H1 } from '../../components/ui/heading-recipe';
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pandits' },
- title: 'Verified Pandits',
+ title: 'Pandits',
  description:
-  'Book authentic pujas with verified pandits across India. Each pandit is reviewed by Darshya before being listed.',
+  'Book authentic pujas with pandits across India. Pandits are paid only once Aadhaar-based KYC is on file.',
 };
 
 function initials(name: string): string {
@@ -139,10 +139,10 @@ export default async function PanditsListingPage() {
    <section className="bg-gradient-to-b from-saffron-50 to-[var(--color-bg)] py-12 px-4">
     <div className="max-w-6xl mx-auto">
      <h1 className={`${H1.catalogue} mb-3`}>
-      Verified Pandits
+      Pandits
      </h1>
      <p className="text-surface-600 max-w-2xl">
-      Book authentic pujas with verified pandits across India.
+      Book authentic pujas with pandits across India.
      </p>
     </div>
    </section>
@@ -156,7 +156,7 @@ export default async function PanditsListingPage() {
         No pandits listed yet
        </h2>
        <p className="prose-meta text-surface-500 max-w-md mx-auto">
-        We are onboarding verified pandits. New profiles appear here once
+        We are onboarding pandits. New profiles appear here once
         reviewed by our team.
        </p>
       </div>

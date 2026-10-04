@@ -1022,7 +1022,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Marriage ceremonies (Mula root-destruction may dissolve relationship)', 'New business + financial commitments', 'Life-cycle samskaras except renunciation'],
     spiritualSignificance: 'Mula literally means root. Ruled by Nirriti (Vedic goddess of dissolution + chaos). Considered the most karmically dissolving nakshatra. Per ancient tradition, children born under Mula require special pacification rituals (Mula Shanti Puja) to neutralize the intense karmic root. Foundational for spiritual seekers seeking ego-dissolution.',
     howToCalculate: 'Per monthly panchang. Mula active ~13-26 hours per month. Combined with Tuesday (Mangal) + Saturday (Shani) for intense karmic transformation work.',
-    modernApplication: 'Mula Shanti Puja booking is foundational ritual for Mula-born children — Darshya offers verified pandit-led ceremony for ~₹3,500. Renunciation + sannyasa initiations scheduled during Mula by spiritual seekers. Wedding industry actively avoids Mula dates.',
+    modernApplication: 'Mula Shanti Puja booking is foundational ritual for Mula-born children — Darshya offers pandit-led ceremony for ~₹3,500. Renunciation + sannyasa initiations scheduled during Mula by spiritual seekers. Wedding industry actively avoids Mula dates.',
   },
   {
     slug: 'shravana-nakshatra-muhurat',

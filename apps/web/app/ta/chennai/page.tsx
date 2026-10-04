@@ -9,7 +9,7 @@ export const revalidate = 86400;
 export const metadata: Metadata = {
   title: 'தர்ஷ்யா சென்னை — பூஜை, தரிசனம், பஞ்சாங்கம் (தமிழில்)',
   description:
-    `சென்னை மெட்ரோவில் சரிபார்க்கப்பட்ட பண்டிதர்கள் + 5 அணைய கோயில்கள் (கபாலீஸ்வரர், பார்த்தசாரதி, வடபழனி முருகன், மருந்தீஸ்வரர், இஸ்கான்) — வீடியோ ஆதாரத்துடன் பூஜை, நேரலை தரிசனம், ${HAS_80G ? '80G ரசீது' : 'ரசீது'}.`,
+    `சென்னை மெட்ரோவில் பண்டிதர்கள் + 5 அணைய கோயில்கள் (கபாலீஸ்வரர், பார்த்தசாரதி, வடபழனி முருகன், மருந்தீஸ்வரர், இஸ்கான்) — வீடியோ ஆதாரத்துடன் பூஜை, நேரலை தரிசனம், ${HAS_80G ? '80G ரசீது' : 'ரசீது'}.`,
   alternates: {
     canonical: 'https://darshya.online/ta/chennai',
     languages: {
@@ -108,7 +108,7 @@ export default function TamilChennaiLanding() {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: 'தர்ஷ்யா சென்னை',
-    description: 'Verified pandits + 5 anchor temples in Chennai metro. Tamil-language puja booking + live darshan.',
+    description: 'Pandits + 5 anchor temples in Chennai metro. Tamil-language puja booking + live darshan.',
     url: 'https://darshya.online/ta/chennai',
     areaServed: { '@type': 'City', name: 'Chennai', sameAs: 'https://en.wikipedia.org/wiki/Chennai' },
     address: { '@type': 'PostalAddress', addressLocality: 'Chennai', addressRegion: 'Tamil Nadu', addressCountry: 'IN' },
@@ -136,7 +136,7 @@ export default function TamilChennaiLanding() {
           தர்ஷ்யா சென்னை
         </h1>
         <p className="prose-lead text-surface-700 leading-relaxed max-w-2xl mx-auto">
-          மயிலாப்பூர் கபாலீஸ்வரர் முதல் ECR இஸ்கான் வரை — சென்னை மெட்ரோவின் 5 அணைய ஆலயங்களில் சரிபார்க்கப்பட்ட பண்டிதர்களுடன் பூஜை, வீடியோ ஆதாரம், நேரலை தரிசனம், {HAS_80G ? '80G ரசீது' : 'ரசீது'}.
+          மயிலாப்பூர் கபாலீஸ்வரர் முதல் ECR இஸ்கான் வரை — சென்னை மெட்ரோவின் 5 அணைய ஆலயங்களில் பண்டிதர்களுடன் பூஜை, வீடியோ ஆதாரம், நேரலை தரிசனம், {HAS_80G ? '80G ரசீது' : 'ரசீது'}.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Link

@@ -530,7 +530,7 @@ function RichTemplePage({
  <section data-reveal className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
  {/* COM-12: this used to be an unconditional booking promise. 15 of the 20
  seeded temples have no active offering, so three quarters of temple pages
- promised verified priests and prasad delivery and then handed the devotee
+ promised priests and prasad delivery and then handed the devotee
  an empty list. The card is now rendered from what the API actually
  offers. */}
  <TempleBookPujaCta

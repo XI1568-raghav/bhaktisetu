@@ -336,7 +336,7 @@ export default async function PanchangCommerce({
         >
           <p className="text-sm text-surface-600">
             {occasions ? `The panchang above reads ${occasions}. ` : ''}
-            See which pujas a verified pandit can perform on this date.
+            See which pujas a pandit can perform on this date.
           </p>
           <Link
             href={BROWSE_PUJAS_HREF}

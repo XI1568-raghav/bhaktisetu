@@ -26,7 +26,7 @@ export const FREE_PANDIT_TOPICS: FreePanditTopic[] = [
  slug: 'marriage',
  title: 'Free Pandit Advice on Marriage & Kundli Matching',
  hindiTitle: 'विवाह व कुंडली मिलान — मुफ्त पंडित सलाह',
- metaDescription: 'Free pandit kundli astrology advice on marriage — Guna Milan, Manglik dosh, delayed marriage remedies. Authentic Vedic guidance from verified pandits.',
+ metaDescription: 'Free pandit kundli astrology advice on marriage — Guna Milan, Manglik dosh, delayed marriage remedies. Authentic Vedic guidance from pandits.',
  intro: 'Marriage in Vedic astrology is governed by the 7th house (spouse), Venus (love & harmony), Jupiter (for women — spouse karma), and Mars (for men — initiative). Before fixing a match, a pandit reviews Guna Milan (36-point Ashtakoot compatibility), Manglik status of both charts, Navamsa (D9) divisional chart, and dasha periods of bride & groom. A minimum of 18 Guna match is traditionally recommended; Manglik–non-Manglik mismatches need shanti remedies. Free advice covers chart-reading basics; nuanced compatibility & remedies need a live consultation.',
  commonProblems: [
  'Delayed marriage despite multiple proposals',
@@ -118,7 +118,7 @@ export const FREE_PANDIT_TOPICS: FreePanditTopic[] = [
  slug: 'health',
  title: 'Free Pandit Advice on Health & Astrology Remedies',
  hindiTitle: 'स्वास्थ्य व आरोग्य — मुफ्त पंडित सलाह',
- metaDescription: 'Free pandit kundli astrology advice on health concerns, chronic illness remedies, planetary doshas affecting wellbeing. Vedic guidance from verified pandits.',
+ metaDescription: 'Free pandit kundli astrology advice on health concerns, chronic illness remedies, planetary doshas affecting wellbeing. Vedic guidance from pandits.',
  intro: 'Health in Vedic astrology is read from the 1st house (body & vitality), 6th house (disease & recovery), 8th house (chronic & surgery), and 12th house (hospitalization & sleep). The Ascendant lord shows constitution, the Moon shows mind, Sun shows vitality, and Mars rules blood. Specific body parts map to specific houses (head — 1st, throat — 2nd, chest — 4th, heart — 5th, stomach — 6th, reproductive — 7th, legs — 11th, feet — 12th). A pandit identifies vulnerability windows during malefic dasha and recommends shanti, fasting, mantra, or shastra-approved donations — never as substitutes for medical care, but as karmic complements.',
  commonProblems: [
  'Chronic illness without medical resolution',
@@ -210,7 +210,7 @@ export const FREE_PANDIT_TOPICS: FreePanditTopic[] = [
  slug: 'education',
  title: 'Free Pandit Advice on Education & Children\'s Studies',
  hindiTitle: 'शिक्षा व विद्या — मुफ्त पंडित सलाह',
- metaDescription: 'Free pandit kundli astrology advice on education, exam success, concentration, foreign studies. Vedic remedies for students from verified pandits.',
+ metaDescription: 'Free pandit kundli astrology advice on education, exam success, concentration, foreign studies. Vedic remedies for students from pandits.',
  intro: 'Education in Vedic astrology is read from the 2nd house (basic learning), 4th house (formal schooling), 5th house (intelligence & creative learning), and 9th house (higher education & dharma). Mercury is the karaka for intellect, Jupiter for wisdom, and the Moon for memory. Foreign education is indicated by the 9th house + 12th house combination. A pandit identifies your natural learning style (memorization vs analysis vs intuition), favorable career-aligned subjects, and exam-window dashas. Free advice helps parents understand the child\'s academic direction; specific subject/college guidance needs detailed consultation.',
  commonProblems: [
  'Child not interested in studies despite intelligence',

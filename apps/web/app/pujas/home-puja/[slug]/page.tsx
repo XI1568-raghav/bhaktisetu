@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  const cat = homePujaCategories.find((c) => c.slug === slug);
  if (!cat) return { title: 'Home Puja' };
  return {
- title: `${cat.name} at Home — Book a Verified Pandit`,
+ title: `${cat.name} at Home — Book a Pandit`,
  alternates: { canonical: `https://darshya.online/pujas/home-puja/${slug}` },
  description: cat.description,
  };
@@ -103,7 +103,7 @@ export default async function HomePujaDetail({ params }: Props) {
  </div>
  <div className="inline-flex items-center gap-2 bg-white border border-[var(--color-border)] px-3 py-2 rounded-lg text-sm text-surface-700">
  <Shield className="w-4 h-4 text-tulsi-green" />
- Verified Pandits
+ Pandits
  </div>
  <div className="inline-flex items-center gap-2 bg-white border border-[var(--color-border)] px-3 py-2 rounded-lg text-sm text-surface-700">
  <Package className="w-4 h-4 text-temple-gold" />
@@ -274,7 +274,7 @@ export default async function HomePujaDetail({ params }: Props) {
  </h2>
  <p className="mt-2 text-surface-500">
  {usingFallback
- ? `Top verified pandits on Darshya. Any can perform ${cat.name} at your home.`
+ ? `Top pandits on Darshya. Any can perform ${cat.name} at your home.`
  : `Verified specialists ready to perform ${cat.name} at your home.`}
  </p>
  </div>
@@ -284,10 +284,10 @@ export default async function HomePujaDetail({ params }: Props) {
  <div className="rounded-2xl border border-dashed border-surface-200 p-12 text-center bg-white">
  <Users className="w-12 h-12 text-saffron-300 mx-auto mb-3" />
  <h3 className="text-lg font-semibold text-surface-800 mb-2">
- Verified pandits coming soon
+ Pandits coming soon
  </h3>
  <p className="prose-meta text-surface-500 max-w-md mx-auto">
- We are onboarding verified pandits for {cat.name}. New profiles will appear here shortly.
+ We are onboarding pandits for {cat.name}. New profiles will appear here shortly.
  </p>
  </div>
  ) : (
