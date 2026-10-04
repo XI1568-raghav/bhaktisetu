@@ -12,18 +12,28 @@
 > Every row below was read out of this repository on 2026-08-20. Anything that
 > could not be verified from the repository is marked **[verify]** rather than
 > asserted.
+>
+> **Revised 2026-10-04 (`OPS-10`, second pass).** Three statements in the
+> 2026-08-20 text were true of `render.yaml` and false of production, and are
+> corrected below from the Render dashboard facts measured 2026-09-09/12
+> (`OPS-18`, `OPS-19` in `docs/audit/LEDGER.json`): the API's dashboard Start
+> Command is not the repo's start script, the API auto-deploys on push, and its
+> region is not `oregon`. Also corrected: the dispatch commands no longer pin the
+> old feature branch (its guards merged to `main`). **`render.yaml` describes
+> intent, not production. When the two disagree, read the dashboard (or
+> `gh workflow run render-diag.yml -f mode=detail -f sid=<SID>`).**
 
 ## What this product actually runs on
 
 | Layer | Reality | Where it is written |
 |---|---|---|
-| API | Render free web service `bhaktisetu`, **region `oregon`**, `srv-d7mc2n8sfn5c73dfce0g` | `render.yaml:15`, `:22` |
-| Web | Render free Docker service `darshya-web`, **region `oregon`**, Next standalone, `srv-d970l2ks728c738fc33g` | `render.yaml:56`, `apps/web/Dockerfile` |
+| API | Render free web service `bhaktisetu`, `srv-d7mc2n8sfn5c73dfce0g`. **Region: `render.yaml` says `oregon`, the dashboard reports `singapore`** (measured 2026-09-09/12, `OPS-19`); trust the dashboard. Dashboard Start Command is `pnpm --filter @poojly/api exec tsx src/server.ts` (TypeScript run from source), **not** `render.yaml`'s start script. Dashboard Auto-Deploy is **yes** on `main` (`OPS-18`) | `render.yaml:15`, `:22`; `docs/audit/LEDGER.json` `OPS-18`, `OPS-19` |
+| Web | Render free Docker service `darshya-web`, **region `oregon`** per `render.yaml` (**[verify]** in the dashboard — the API row shows the file can be wrong), Next standalone, `srv-d970l2ks728c738fc33g`. Auto-Deploy is **no**: a push does not deploy the web | `render.yaml:56`, `apps/web/Dockerfile` |
 | DNS / edge | Cloudflare, **proxy + DNS only**. Apex and `www` CNAME to `darshya-web.onrender.com` | `docs/render-web-cutover-runbook.md` |
 | Cloudflare Pages | **Not a hosting layer.** Auto-deploy killed 2026-07-08; last build frozen that day and scheduled for deletion | `cf-kill-zombie.yml`, cutover runbook |
-| Database | Supabase Postgres. **Region is not recorded anywhere in this repo — [verify] in the Supabase dashboard and write it here** | — |
+| Database | Supabase Postgres. The audit records the pooler/database as **Tokyo (`ap-northeast-1`)** (`docs/audit/OWNER-ACTIONS.md`); no config file in the repo states it, so **[verify]** in the Supabase dashboard | `docs/audit/OWNER-ACTIONS.md` |
 | Replicas / standby | **None.** No read replica, no second region, no warm spare | — |
-| Backups | `db-backup.yml` daily 19:00 UTC, `pg_dump --format=custom` into Supabase Storage bucket `db-backups` | `.github/workflows/db-backup.yml`, `scripts/backup/supabase-backup.mjs` |
+| Backups | `db-backup.yml` daily 19:00 UTC, `pg_dump --format=custom` into Supabase Storage bucket `db-backups`; an offsite R2/S3 copy exists in code and is **only active if the four `BACKUP_S3_*` secrets are set** (**[verify]** — read `"offsite"` in a run's JSON line) | `.github/workflows/db-backup.yml`, `scripts/backup/supabase-backup.mjs` |
 | Backup location risk | Backups live in **the same Supabase project they insure** (`OPS-03`). One account suspension takes the database and every backup together | `scripts/backup/supabase-backup.mjs` |
 | Payments | Razorpay. A Stripe rail is **not** available as failover — the 2026-08-11 audit records Stripe as removed and its webhook as 404; `PaymentGateway.stripe` survives only as a schema enum value | `apps/api/prisma/schema.prisma:107` |
 | Status page | **Does not exist.** `status.bhaktisetu.com` is aspirational copy | — |
@@ -45,17 +55,15 @@ produces those numbers.
 **Before treating any RPO as real, run this and read the output:**
 
 ```bash
-gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid
+gh workflow run db-backup.yml
 gh run watch
 # Green plus a non-empty uploaded object = a restore point exists.
 # Red with "NO BACKUP WAS TAKEN"       = the secrets are still unset and there is none.
 ```
 
-`--ref` is load-bearing until this branch merges. `db-backup.yml` is on `main`,
-so it dispatches — but a dispatch runs the copy on the ref you name, and `main`
-still holds the 72-line pre-guard version with no skip check, no size check and
-no `restore_drill` input. Without the `--ref` you get exactly the workflow whose
-silent zero-byte success is the finding, and it will report green.
+Dispatch `main`'s copy with no `--ref`. The guards merged in #249 and were
+extended 2026-09-04; the old `feat/recurring-razorpay-planid` branch is now an
+older, weaker copy and must not be used.
 
 Since 2026-08-21 the run also goes red when the dump is empty, too small, or not
 a readable `pg_restore` archive, when the uploaded object cannot be read back at
@@ -65,7 +73,7 @@ the database (`OPS-02` / `OPS-03`). Green now means something.
 **And then prove the restore, which has never been done:**
 
 ```bash
-gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid -f restore_drill=true
+gh workflow run db-backup.yml -f restore_drill=true
 gh run watch
 ```
 
@@ -105,39 +113,58 @@ account reached 750.2 / 750 and Render suspended **both** services with
 4. There is **no standby to fail over to.** The options are: wait for Supabase,
    or restore into a fresh project via `docs/runbooks/db-restore.md` and repoint
    `DATABASE_URL` / `DIRECT_URL` in the Render dashboard.
-5. The API start command runs `prisma migrate deploy` before serving. A restored
-   database whose `_prisma_migrations` table is empty will re-run every migration
-   on the next boot — read `docs/runbooks/db-restore.md` before repointing.
-   **That re-run cannot succeed.** Measured 2026-09-02 against an empty
-   PostgreSQL 17.10 with pgvector: `migrate deploy` dies on migration 1 of 41,
+5. Production does not apply migrations on boot (the dashboard Start Command is
+   `tsx src/server.ts`, `OPS-19`), so a restored database comes up with whatever
+   schema the dump held and the API will not change it. Check
+   `npx prisma migrate status` against the restored database
+   (`DATABASE_URL="$DIRECT_URL"`) and read `docs/runbooks/db-restore.md` before
+   repointing. A restored database whose `_prisma_migrations` table is empty
+   cannot be brought forward by `migrate deploy`: measured 2026-09-02 against an
+   empty PostgreSQL 17.10 with pgvector, it dies on migration 1 of 41,
    `20260426_pgvector`, with `42P01 relation "content_items" does not exist` —
    there is no `0_init`, so the migration history cannot build the schema. If
    you are restoring onto an EMPTY database rather than from a dump, use
    `apps/api/scripts/bootstrap-fresh-db.mjs`
    (`docs/runbooks/fresh-database-bootstrap.md`), which applies the baseline and
-   records the history so the next boot has nothing pending.
+   records the history so `migrate status` reports nothing pending.
 
 ## Scenario 3 — a bad deploy
 
-Roll back with `docs/runbooks/prod-rollback.md`. Do **not** push a revert and
-wait: both services are `autoDeploy: false`, so nothing deploys on push.
+Roll back with `docs/runbooks/prod-rollback.md`: dispatch `render-diag.yml` with
+`-f mode=deploy -f sid=<SID> -f commit=<SHA>`. Do **not** push a revert and wait.
+For the web service Auto-Deploy is off, so a push deploys nothing at all. For the
+API the dashboard reports Auto-Deploy on (`OPS-18`), so a push to `main` does
+redeploy it within seconds, but that is an unpinned forward deploy of whatever
+`main` holds, with no migration step and no way to choose the commit; it is not a
+controlled rollback.
 
-### 3b — the API restarts forever and never serves
+### 3b — the API is up and healthy but returns 500s after a deploy (schema behind code)
 
-Symptom: the Render log shows `prisma migrate deploy` failing, the container
-exits, Render restarts it, and the same migration fails again. The service is
-**down**, not serving an old schema — the API start command is
-`prisma migrate deploy && node dist/server.js`, so a failed migration means
-`node` is never reached.
+Symptom: `/health` is `ok`, the Render deploy is `live`, but routes that touch a
+new column or table fail at runtime.
 
-This is the correct failure mode (it never serves against a schema the code does
-not expect) but it does not self-heal, and the failed migration is now recorded
-in `_prisma_migrations`, which blocks every later migration too.
+Cause, measured (`OPS-19`): the API is started from the dashboard Start Command
+(`tsx src/server.ts`), so **no migration step is part of a deploy.** A deploy
+going green says nothing about the schema. Combined with API Auto-Deploy
+(`OPS-18`), code can reach production seconds after merge, ahead of its schema.
 
-Recovery, and why it happens at all — including the 16 objects that
-`ensure-schema.ts` and the migrations both create — are in
-**`docs/runbooks/schema-authority.md`**. Read that before touching anything
-under `apps/api/prisma/`.
+Recovery:
+
+1. From `apps/api`, with `DATABASE_URL="$DIRECT_URL"` (the direct connection, not
+   the pooler), run `npx prisma migrate status` and read what is pending.
+2. Apply the pending migrations by hand (`npx prisma migrate deploy`), then
+   confirm `migrate status` reports "Database schema is up to date!".
+3. If a migration fails midway it is recorded as failed and blocks every later
+   one. Do not hand-edit `_prisma_migrations`; follow
+   **`docs/runbooks/schema-authority.md`** (its recovery recipe and the 16
+   objects that `ensure-schema.ts` and the migrations both create) before
+   touching anything under `apps/api/prisma/`.
+
+If someone changes the dashboard Start Command to the repo's start script, the
+failure mode inverts into a boot that fails whenever a migration fails, and the
+service stays down until the migration is fixed. That has never run in production
+(`node dist/server.js` has never been executed there). Do not make that change
+during an incident.
 
 ## Scenario 4 — data loss (corruption, accidental delete)
 

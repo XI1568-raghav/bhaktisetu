@@ -49,7 +49,7 @@
  * costs free-tier minutes on every docs commit — see docs/free-tier-budgets.md.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import yaml from 'js-yaml';
 
 const DB_RESTORE = 'docs/runbooks/db-restore.md';
@@ -209,18 +209,19 @@ describe('OPS-02 — db-restore.md must be followable by the owner, blind', () =
     expect(text).toContain('BACKUP_S3_ENDPOINT');
   });
 
-  it('dispatches the workflow copy that carries the verification guards', () => {
-    // `main` still holds the 72-line pre-guard db-backup.yml: no skip guard, and
-    // no `restore_drill` input at all. A bare `gh workflow run db-backup.yml`
-    // therefore runs the version whose silent-zero-byte success is the finding,
-    // and `-f restore_drill=true` is rejected outright.
-    // WHEN THIS BRANCH MERGES, main's copy becomes the guarded one and the
-    // `--ref` may be dropped here and in the docs, together.
+  it('dispatches main\'s own copy of db-backup.yml, never the stale feature branch', () => {
+    // The guards (skip check, size check, `restore_drill` input) used to live
+    // only on `feat/recurring-razorpay-planid`, and these docs told the reader to
+    // dispatch with `--ref` to reach them. They merged to main in #249 and were
+    // extended afterwards (2026-09-04 read-back fixes). That branch is now an
+    // OLDER copy than main: `--ref` to it runs a workflow with weaker guards.
+    expect(readFileSync('.github/workflows/db-backup.yml', 'utf8')).toContain('restore_drill');
     const hits = dispatchLines(text, 'db-backup.yml');
     expect(hits.length).toBeGreaterThan(0);
     for (const { line, n } of hits) {
-      expect(line, `${DB_RESTORE}:${n} dispatches without --ref`).toContain('--ref');
+      expect(line, `${DB_RESTORE}:${n} pins the stale branch`).not.toContain('razorpay-planid');
     }
+    expect(text).not.toContain('--ref feat/recurring-razorpay-planid');
   });
 });
 
@@ -235,11 +236,11 @@ describe('OPS-03 — a restore must be possible when the Supabase project is gon
     expect(text).toMatch(/r2|s3/i);
   });
 
-  it('the DR runbook dispatches the guarded workflow copy too', () => {
+  it('the DR runbook dispatches main\'s copy too, not the stale feature branch', () => {
     const hits = dispatchLines(read(DR), 'db-backup.yml');
     expect(hits.length).toBeGreaterThan(0);
     for (const { line, n } of hits) {
-      expect(line, `${DR}:${n} dispatches without --ref`).toContain('--ref');
+      expect(line, `${DR}:${n} pins the stale branch`).not.toContain('razorpay-planid');
     }
   });
 });
@@ -258,9 +259,13 @@ describe('OPS-08 — free-tier-budgets.md on scheduled workflows', () => {
     expect(prose).not.toMatch(/only way to run it is[^\n]*gh workflow run render-hours-guard/i);
   });
 
-  it('states positively that dispatch is unavailable until the merge', () => {
-    expect(prose).toMatch(/no way to run/i);
-    expect(prose).toMatch(/workflow_dispatch[\s\S]{0,300}default branch/i);
+  it('does not say the guard is absent from main now that it is on main', () => {
+    // render-hours-guard.yml reached main (it is in the tree), so its cron
+    // registers and it is dispatchable. The page used to say there was "no way
+    // to run" it and recommended `--ref feat/recurring-razorpay-planid`.
+    expect(existsSync('.github/workflows/render-hours-guard.yml')).toBe(true);
+    expect(prose).not.toMatch(/no way to run it/i);
+    expect(read(BUDGETS)).not.toContain('--ref feat/recurring-razorpay-planid');
   });
 
   it('still counts render-hours-guard.yml in the minutes table', () => {
@@ -1299,7 +1304,7 @@ describe('OPS-10 (2026-09-08) — the signable instruments carry an owner gate',
  * catch it without also catching correct prose is not something this pass could
  * do honestly, so it is named instead. That page needs a rewrite, not a regex.
  */
-const OPS17_KNOWN_UNFIXED = ['docs/runbooks/disaster-recovery.md', 'docs/runbooks/prod-rollback.md'];
+const OPS17_KNOWN_UNFIXED = [];
 
 /**
  * Every `` `path:N` → `command` `` citation in a document, as
