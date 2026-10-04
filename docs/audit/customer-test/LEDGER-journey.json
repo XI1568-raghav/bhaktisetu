@@ -1,0 +1,64 @@
+{
+  "generatedAt": "2026-09-09T09:28:27.988Z",
+  "keyId": "rzp_test_TZWsZ41wC3PjF3",
+  "bookingId": "29a31e1c-5705-4b62-87ee-846ea7995c83",
+  "bookingNumber": "BS-20260909-YLZM7",
+  "steps": [
+    {
+      "step": "past date refused",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "step": "invalid slot refused",
+      "ok": true,
+      "detail": "409"
+    },
+    {
+      "step": "anonymous booking refused",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "step": "create booking",
+      "ok": true,
+      "detail": "201 id=29a31e1c-5705-4b62-87ee-846ea7995c83 no=BS-20260909-YLZM7 "
+    },
+    {
+      "step": "create razorpay order",
+      "ok": true,
+      "detail": "201 order=order_TZtAYjsxQf74nr "
+    },
+    {
+      "step": "forged signature refused",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "step": "devotee sees own booking",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "step": "other role cannot read the booking",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "step": "cancel quote",
+      "ok": true,
+      "detail": "200 {\"bookingId\":\"29a31e1c-5705-4b62-87ee-846ea7995c83\",\"cancellationAllowed\":true,\"cancellationCutoffHours\":24,\"refundFract"
+    },
+    {
+      "step": "cancel booking",
+      "ok": true,
+      "detail": "200 "
+    },
+    {
+      "step": "double cancel refused",
+      "ok": true,
+      "detail": "409"
+    }
+  ],
+  "findings": []
+}

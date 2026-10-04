@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTranslations } from '../../lib/t';
+import { isOrderableProductId } from "../../lib/store-buyability";
 import { H1 } from '../../components/ui/heading-recipe';
 import { getProductImage, remoteSrcSet, IMG_W } from "../../lib/images";
 import { PRODUCTS, CATEGORIES } from "../../lib/products";
@@ -72,11 +74,16 @@ const categories = [
 // Catalogue is fetched from Medusa Storefront API when
 // NEXT_PUBLIC_MEDUSA_BACKEND_URL is set; otherwise falls back to PRODUCTS
 // so the grid never blanks. See lib/medusa.ts.
+// Props are NON-optional and un-defaulted on purpose. Next's App Router
+// generates a `PageProps` constraint per page; an optional props object (or a
+// `= {}` default) widens the type to `| undefined`, which fails the build with
+// "Type 'undefined' is not assignable to type 'PageProps'". Callers in tests
+// pass `{ searchParams: Promise.resolve({}) }` rather than calling it bare.
 export default async function StorePage({
  searchParams,
 }: {
- searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
+ searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
  // COM-11: the seed catalogue and the seller catalogue are fetched
  // independently — a seller shelf must not disappear because Medusa is down,
  // and the seed grid must not disappear because the API is. Both degrade to
@@ -88,7 +95,7 @@ export default async function StorePage({
  // S-04: the filter bar used to be inert decoration on this server component.
  // State now lives in the URL, so the filtering happens here (shareable,
  // crawlable) and the client half only pushes query params.
- const filters = parseStoreFilters(searchParams ? await searchParams : {});
+ const filters = parseStoreFilters(await searchParams);
  const products = filterAndSortProducts(allProducts, filters);
  const t = await getTranslations('store');
  const itemListJsonLd = storeItemListJsonLd(products as StoreProductLite[]);
@@ -170,6 +177,41 @@ export default async function StorePage({
  <h2 id="store-all-products" className="sr-only">
  All products
  </h2>
+
+ {/* COM-01: say it once, at the top, rather than leaving a devotee to
+     work it out from 24 disabled buttons.
+
+     Every card below carries a `prod_NNN` id. POST /api/v1/store/orders
+     resolves line items against StoreProduct BY UUID, so not one of them
+     could ever be ordered — the basket filled, the address was entered,
+     and the API answered 400. They are not seeded as real rows because
+     nothing is behind them: prod has 0 store_products, 0 store_profiles
+     and 0 store_orders (read-only check, 2026-09-08), so no one holds
+     this stock and no one can ship it. Taking money for it would be the
+     worse bug. The shelf that IS orderable is the seller shelf below and
+     /store/products/live, and this banner points at it.
+
+     Renders only while nothing in the grid is buyable — the day the grid
+     carries real seller rows it disappears on its own. */}
+ {products.length > 0 && !products.some((p) => isOrderableProductId(p.id)) && (
+ <div
+ className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+ data-testid="store-preview-catalogue-notice"
+ >
+ <p className="font-semibold">This is a preview catalogue</p>
+ <p className="mt-1">
+ These items show the kind of samagri Darshya sellers will list. No seller
+ stocks them yet, so they cannot be ordered — you can browse them, but the
+ order button stays off until a real seller lists the item.
+ </p>
+ <Link
+ href="/store/products/live"
+ className="mt-2 inline-block font-medium underline"
+ >
+ See everything sellers have actually listed
+ </Link>
+ </div>
+ )}
  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
  {products.map((product) => (
  <div
