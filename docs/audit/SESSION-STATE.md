@@ -10,6 +10,41 @@
 
 ---
 
+## ▶ END OF DAY 2026-10-04 — read this first, then the block below
+
+**Ledger: 421 of 463 fixed · 5 partial · 37 owner-gated · 0 open** (`node docs/audit/ledger.mjs`).
+
+**On `main` and verified:** the September wave (#256), the carried-over web/API/mobile work
+(#259, #260), the PR reviewer on a Claude subscription (#261, #263, #267), hook cleanup
+(#262, #266), docs trimmed (#264; TASKS.md 33.7 KB -> 11.3 KB), runbooks corrected (#265),
+auto-deploy note (#269), honest 80G/vetting copy (#268), cause-quality gate (#271), muhurat
+picker (#270), raw error text (#272, RES-09).
+
+**Open PRs at time of writing:** #273 (untrack the graft cache), #274 (muhurat endpoint returns
+every day). **Merged code is NOT deployed:** the API and web run the last deploy, which predates
+#264-#272. Auto-Deploy for the API is off (Render, 2026-10-04T06:36Z), so deploy by hand, API
+first, then web: `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>`.
+No migration is pending (`prisma migrate status` was clean on 2026-10-04).
+
+**Done by hand in production:** the junk gaushala `03edd2ff-...` ("saharanpur") was set to
+`approved = false` (one guarded UPDATE, reversible; it was never deleted). #271 also hides any
+such record from the public list.
+
+**Owner-gated, unchanged:** 80G registration number and PAN (TC-01, API receipts), WhatsApp
+templates, Supabase SMTP and the reset-password URL, a PostHog key, a payout rail, `BACKUP_S3_*`
+secrets and one proven restore (OPS-10), API start command still `tsx` from source with no
+migrate on deploy (OPS-19), self-host vs CDN for images (CM-08), SEC-02's auth migration,
+a Lighthouse measurement (CWV-01).
+
+**Partial and not small:** DU-05 (needs an authenticated h1 count), SEC-02, CM-08, CWV-01, TC-01.
+
+**Hazards found today:** a regex guard that bans "push ... deploy" wording also rejects the
+sentence that corrects it (reword, do not bypass); `.githooks/pre-commit` was tracked
+non-executable so the secret scan silently never ran on fresh clones (fixed, #266); local
+`grep` here cannot run the CI scan's pattern, so replicate it in Python.
+
+---
+
 ## ▶ CURRENT STATE 2026-10-04 — read this block, everything below is history
 
 Everything under this block was written 2026-08-13 → 08-16 and is stale. The
