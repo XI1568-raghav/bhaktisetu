@@ -66,6 +66,19 @@ concurrency:
 
 jobs:
   orchestrate:
+    # OPT-IN since 2026-10-04. The scheduled run only happens when the repo
+    # VARIABLE ROADMAP_LOOP_ENABLED is 'true'; a manual dispatch always runs.
+    #
+    # Why a switch and not just the cron: this job and the PR reviewer read the
+    # same ANTHROPIC_API_KEY secret. The reviewer is one cheap request per PR;
+    # this is an Opus-class agent loop. Without the switch, setting the key so
+    # that PRs get reviewed would also start this loop spending every Monday —
+    # on a project with no budget, in a dry-run that has written 0 queue files
+    # per cycle. It also failed every week from 2026-09-04 for want of a working
+    # key, ~2.5 runner-minutes each time for nothing; skipped jobs cost none.
+    #
+    # To turn the weekly run on:  gh variable set ROADMAP_LOOP_ENABLED --body true
+    if: github.event_name == 'workflow_dispatch' || vars.ROADMAP_LOOP_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
