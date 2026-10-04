@@ -428,6 +428,21 @@ export async function priestRoutes(server: FastifyInstance) {
     }
   });
 
+  // ─── GET /open-requests ───────────────────────────────────────────
+  // Paid bookings no pandit has taken yet (the default "scheduled" tier). An
+  // approved pandit picks one with PATCH /bookings/:id/accept. Not approved =>
+  // `{ eligible: false, requests: [] }` so the portal can say why it is empty.
+
+  server.get('/open-requests', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const priestId = await getPriestId(request.currentUser!.id);
+      return await priestService.getOpenRequests(priestId);
+    } catch (err: any) {
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
+    }
+  });
+
   // ─── GET /bookings/:id ──────────────────────────────────────────────────────
   // PF-08: the detail page had no by-id read, so it downloaded the paginated
   // list and searched it client-side — anything past row 20 was unreachable,

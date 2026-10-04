@@ -48,6 +48,7 @@ describe('PriestService.acceptBooking', () => {
   });
 
   it('updates booking to priest_assigned on success', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: true, status: 'active' });
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
       id: 'bk-1',
       status: 'confirmed',
@@ -70,6 +71,7 @@ describe('PriestService.acceptBooking', () => {
   });
 
   it('throws when priest already has another booking at same date/time', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: true, status: 'active' });
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
       id: 'bk-1',
       status: 'confirmed',
