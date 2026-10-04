@@ -85,6 +85,7 @@ function buildContentSecurityPolicy(isProduction: boolean): string {
         'https://*.posthog.com',
         'https://www.googletagmanager.com',
         'https://connect.facebook.net',
+        'https://cdn.razorpay.com',
         'https://static.cloudflareinsights.com',
         'https://pagead2.googlesyndication.com',
         'https://*.googlesyndication.com',
@@ -115,6 +116,7 @@ function buildContentSecurityPolicy(isProduction: boolean): string {
         'https://*.sentry.io',
         'https://*.posthog.com',
         'https://api.razorpay.com',
+        'https://lumberjack.razorpay.com',
         'https://www.google-analytics.com',
         'https://*.facebook.com',
         'https://*.doubleclick.net',
@@ -127,6 +129,7 @@ function buildContentSecurityPolicy(isProduction: boolean): string {
       [
         "'self'",
         'https://checkout.razorpay.com',
+        'https://api.razorpay.com',
         'https://www.youtube.com',
         'https://www.youtube-nocookie.com',
         'https://meet.jit.si',
