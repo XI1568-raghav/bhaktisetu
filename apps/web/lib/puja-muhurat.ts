@@ -79,7 +79,7 @@ export async function fetchPujaMuhurat(
 ): Promise<PujaMuhuratDay[]> {
   try {
     const res = await fetchWithTimeout(
-      `${API_BASE_URL}/panchang/puja-muhurat?pujaType=${encodeURIComponent(pujaType)}&days=${MUHURAT_HORIZON_DAYS}`,
+      `${API_BASE_URL}/panchang/puja-muhurat?pujaType=${encodeURIComponent(pujaType)}&days=${MUHURAT_HORIZON_DAYS}&limit=${MUHURAT_HORIZON_DAYS}`,
       { signal },
       DATA_FETCH_TIMEOUT_MS,
     );

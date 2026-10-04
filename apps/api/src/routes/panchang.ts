@@ -101,9 +101,9 @@ export async function panchangRoutes(server: FastifyInstance) {
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
     }
-    const { pujaType, from, days, city } = parsed.data;
+    const { pujaType, from, days, city, limit } = parsed.data;
     try {
-      const results = await panchangService.getPujaMuhurats(pujaType, from, days, city);
+      const results = await panchangService.getPujaMuhurats(pujaType, from, days, city, limit);
       return { pujaType, city, from: from ?? new Date().toISOString().split('T')[0], days, results };
     } catch (error) {
       server.log.error(error, 'Failed to compute puja muhurats');
