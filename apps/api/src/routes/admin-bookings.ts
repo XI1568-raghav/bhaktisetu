@@ -45,6 +45,9 @@ import {
 // decision and is NOT done here — only the silent-empty-page bug is closed.
 const listQuerySchema = z.object({
   status: z.nativeEnum(BookingStatus).optional(),
+  // `waiting`: paid bookings no pandit has taken yet (confirmed, no priestId),
+  // soonest slot first. The admin Bookings screen's "waiting for a pandit" tab.
+  waiting: z.enum(['1', 'true']).optional(),
   page: z.string().optional(),
   limit: z.string().optional(),
 });
@@ -110,19 +113,29 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
-    if (parsed.data.status) where.status = parsed.data.status;
+    if (parsed.data.waiting) {
+      // A paid booking nobody is working on. Overrides `status`: the two cannot
+      // both apply, and "waiting" is by definition `confirmed`.
+      where.status = 'confirmed';
+      where.priestId = null;
+    } else if (parsed.data.status) {
+      where.status = parsed.data.status;
+    }
 
     try {
       const [bookings, total] = await Promise.all([
         prisma.pujaBooking.findMany({
           where,
-          orderBy: { createdAt: 'desc' },
+          orderBy: parsed.data.waiting
+            ? [{ scheduledDate: 'asc' }, { createdAt: 'asc' }]
+            : { createdAt: 'desc' },
           skip,
           take: limit,
           include: {
             pujaType: { select: { name: true, slug: true } },
             temple: { select: { name: true, slug: true, city: true } },
             user: { select: { fullName: true, phone: true } },
+            priest: { select: { displayName: true } },
           },
         }),
         prisma.pujaBooking.count({ where }),
