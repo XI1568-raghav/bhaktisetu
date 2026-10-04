@@ -425,8 +425,8 @@ export default async function PujaDetailPage({
  // nothing about the pandit is checked before the booking, but nothing is
  // paid out to them until Aadhaar KYC is on file.
  { icon: Shield, label: 'Aadhaar KYC before payout', desc: 'A payout gate, not a credential check' },
- { icon: Video, label: 'Live Video Proof', desc: 'Watch your puja live' },
- { icon: Gift, label: 'Prasad Delivery', desc: 'Sacred prasad to your door' },
+ { icon: Video, label: 'Video Proof', desc: 'A recording of your puja, delivered after the ceremony' },
+ { icon: Gift, label: 'Prasad Delivery (optional)', desc: 'Add it at checkout and it is sent to your door' },
  // DB-06 (2026-08-12): this badge promised "100% refund if not satisfied".
  // No dissatisfaction refund exists in the API — the shipped guarantee is
  // the cancellation ladder, so the badge now states that instead.
@@ -668,8 +668,8 @@ export default async function PujaDetailPage({
  // words lib/faqs.ts and lib/jsonld.ts already ship. A softer adjective
  // ("experienced", "trusted") would be the same claim in quieter words.
  { step: '2', title: 'Pandit Performs Puja', desc: 'The assigned pandit performs the ritual — video proof is mandatory' },
- { step: '3', title: 'Watch Live', desc: 'Stream the puja on your device' },
- { step: '4', title: 'Receive Prasad', desc: 'Sacred prasad delivered to your home' },
+ { step: '3', title: 'Receive the Video', desc: 'The recording is delivered to you after the ceremony' },
+ { step: '4', title: 'Receive Prasad (optional)', desc: 'If you added it, sacred prasad is delivered to your home' },
  ].map((item) => (
  <div key={item.step} className="flex items-start gap-3">
  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-saffron-100 text-xs font-bold text-saffron-600">

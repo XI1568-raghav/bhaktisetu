@@ -226,7 +226,9 @@ describe('coverage is stated in numbers, not implied', () => {
     // 374 -> 384: I-03's render half needed ten `content` slots en.json did not
     // have (todaysFeatured, todaysFeaturedSubtitle, curatedCollections,
     // stories, title, deity, type, tracks, tryDifferentSearch, checkBackSoon).
-    expect(cov.total).toBe(384);
+    // 384 -> 383 (2026-10-05): dropped the unused pujas.liveStreaming string, which promised a live
+    // stream of the puja itself (puja-pages-no-live-stream-promise.test.ts).
+    expect(cov.total).toBe(383);
     // The floor moves up only when real human copy lands. It is asserted, not
     // approximated, so a silent regression in hi.json fails the build. It moved
     // 42 -> 67 when the ten slots above were filled from CONTENT_LABELS.hi.

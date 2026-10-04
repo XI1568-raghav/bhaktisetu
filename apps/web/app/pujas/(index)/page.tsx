@@ -81,7 +81,6 @@ interface PujaCard {
  duration: string;
  tag: string;
  tagColor: string;
- hasLiveStream: boolean;
  hasPrasadDelivery: boolean;
  description: string;
  imageUrl: string | null;
@@ -172,7 +171,6 @@ function mapPujaTypeToCard(p: PujaType, idx: number): PujaCard {
  duration: formatDuration(p.durationMinutes),
  tag,
  tagColor,
- hasLiveStream: true,
  hasPrasadDelivery: p.samagriIncluded,
  // TC-08: the fallback read "performed by verified pandits". Nothing in
  // the product verifies a pandit — Priest.isVerified/.verificationStatus/
@@ -197,7 +195,6 @@ const FALLBACK_PUJAS: PujaCard[] = [
  duration: '2 hours',
  tag: 'Most Popular',
  tagColor: 'bg-saffron-600 text-white',
- hasLiveStream: true,
  hasPrasadDelivery: true,
  description:
  'Sacred abhishekam of the Shiva Lingam with panchamrit — milk, honey, curd, ghee, and sugar. Includes 108 chants of Om Namah Shivaya.',
@@ -214,7 +211,6 @@ const FALLBACK_PUJAS: PujaCard[] = [
  duration: '1.5 hours',
  tag: 'Recommended',
  tagColor: 'bg-ganga-blue-dark text-white',
- hasLiveStream: true,
  hasPrasadDelivery: true,
  description:
  'Complete Satyanarayan Katha with five chapters, aarti, and prasad distribution. Ideal for new beginnings and thanksgiving.',
@@ -231,7 +227,6 @@ const FALLBACK_PUJAS: PujaCard[] = [
  duration: '2.5 hours',
  tag: 'Health',
  tagColor: 'bg-sacred-red text-white',
- hasLiveStream: true,
  hasPrasadDelivery: true,
  description:
  '108 recitations of the Maha Mrityunjaya Mantra with vedic rituals for health, longevity, and overcoming life-threatening situations.',
@@ -248,7 +243,6 @@ const FALLBACK_PUJAS: PujaCard[] = [
  duration: '3 hours',
  tag: 'Astrology',
  tagColor: 'bg-purple-700 text-white',
- hasLiveStream: true,
  hasPrasadDelivery: false,
  description:
  'Complete Navagraha Shanti Puja to pacify all nine planets. Includes separate homam for each graha and navgraha stotram.',
@@ -265,7 +259,6 @@ const FALLBACK_PUJAS: PujaCard[] = [
  duration: '45 min',
  tag: 'Trending',
  tagColor: 'bg-tulsi-green-dark text-white',
- hasLiveStream: true,
  hasPrasadDelivery: true,
  description:
  'Worship of Lord Ganesha for removing obstacles and bringing success. Includes modak prasad.',
@@ -282,7 +275,6 @@ const FALLBACK_PUJAS: PujaCard[] = [
  duration: '1 hour',
  tag: 'For Prosperity',
  tagColor: 'bg-temple-gold text-surface-800',
- hasLiveStream: true,
  hasPrasadDelivery: true,
  description:
  'Worship of Goddess Mahalakshmi with kumkum archana, lotus offerings, and Shri Suktam recitation for wealth and prosperity.',
@@ -367,10 +359,6 @@ export default async function PujasPage({
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <Shield className="w-4 h-4 text-saffron-600" />
  {t('verifiedPandits')}
- </div>
- <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
- <Video className="w-4 h-4 text-saffron-600" />
- {t('liveStreaming')}
  </div>
  <div className="flex items-center gap-2 bg-saffron-600/10 text-surface-700 text-sm px-4 py-2 rounded-full border border-saffron-200/40">
  <Gift className="w-4 h-4 text-saffron-600" />
@@ -717,16 +705,14 @@ export default async function PujasPage({
  </div>
  {/* Feature badges */}
  <div className="absolute bottom-3 left-3 flex items-center gap-2">
- {puja.hasLiveStream && (
  <span className="flex items-center gap-1 bg-black/60 text-white text-xs font-medium px-2 py-1 rounded-md backdrop-blur-sm">
  <Video className="w-3 h-3" />
- Live Stream
+ Video proof
  </span>
- )}
  {puja.hasPrasadDelivery && (
  <span className="flex items-center gap-1 bg-black/60 text-white text-xs font-medium px-2 py-1 rounded-md backdrop-blur-sm">
  <Gift className="w-3 h-3" />
- Prasad
+ Optional prasad
  </span>
  )}
  </div>
