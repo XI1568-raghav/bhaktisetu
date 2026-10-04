@@ -16,7 +16,8 @@ import {
  SUPPORT_CATEGORIES,
  STATUSES,
  PRIORITIES,
- CATEGORY_MAP,
+ ticketCategoryEmoji,
+ ticketCategoryLabel,
  SAMPLE_ADMIN_TICKETS,
  type Ticket,
  type TicketStatus,
@@ -203,7 +204,7 @@ export default function AdminSupportPage() {
  </td>
  <td className="px-4 py-3">
  <span className="text-xs text-surface-600 whitespace-nowrap">
- {CATEGORY_MAP[t.category]?.emoji} {CATEGORY_MAP[t.category]?.name ?? t.category}
+ {ticketCategoryEmoji(t.category)} {ticketCategoryLabel(t.category)}
  </span>
  </td>
  <td className="px-4 py-3"><PriorityBadge priority={t.priority} /></td>

@@ -541,25 +541,83 @@ export function useDarshanStream(
 
 // ─── User Hooks ──────────────────────────────
 
+/**
+ * The `user` object `GET /api/v1/users/me` and `PATCH /api/v1/users/me` both
+ * project (routes/users.ts:89 and :156). Written out rather than reused from
+ * `@poojly/shared`'s `User` because the projection is explicit and narrower
+ * than that type — and because `User.displayName` does not exist on the wire.
+ */
+export interface UserProfile {
+  id: string;
+  phone: string | null;
+  email: string | null;
+  /** The name column. There is no `displayName`. */
+  fullName: string;
+  avatarUrl: string | null;
+  preferredLanguage: string;
+  locationCity: string | null;
+  locationState: string | null;
+  isNri: boolean;
+  nriCountry: string | null;
+  gotra: string | null;
+  nakshatra: string | null;
+  rashi: string | null;
+  subscriptionTier: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * `GET /api/v1/users/me` -> `{ success, user }`, where `user` carries three
+ * extra joined fields. NOT an `ApiResponse<User>` envelope: there is no `data`
+ * key, so `.data` was always `undefined`.
+ */
+export interface UserProfileResponse {
+  success: boolean;
+  user: UserProfile & {
+    addresses: UserAddress[];
+    activeSubscription: unknown | null;
+    bookingsCount: number;
+  };
+}
+
 export function useUserProfile(
-  options?: Omit<UseQueryOptions<ApiResponse<User>>, "queryKey" | "queryFn">
+  options?: Omit<UseQueryOptions<UserProfileResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
     queryKey: queryKeys.user.profile,
-    queryFn: () =>
-      api.get<ApiResponse<User>>(API_ENDPOINTS.USER_PROFILE),
+    queryFn: () => api.get<UserProfileResponse>(API_ENDPOINTS.USER_PROFILE),
     ...options,
   });
 }
 
+/** `PATCH /api/v1/users/me` -> `{ success, message, user }` (users.ts:156). */
+export interface UpdateProfileResponse {
+  success: boolean;
+  message: string;
+  user: UserProfile;
+}
+
+/**
+ * PATCH /api/v1/users/me
+ *
+ * `UpdateProfile` used to name a `displayName` field the route does not parse,
+ * and zod strips unknown keys — so a rename returned 200 "Profile updated
+ * successfully" and silently discarded the new name. The shared schema now
+ * mirrors routes/users.ts:13 exactly (`fullName`, plus the four location/NRI
+ * fields that were missing). See packages/shared/src/validators/index.ts.
+ */
 export function useUpdateProfile(
-  options?: UseMutationOptions<ApiResponse<User>, Error, UpdateProfile>
+  options?: UseMutationOptions<UpdateProfileResponse, Error, UpdateProfile>
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: UpdateProfile) =>
-      api.patch<ApiResponse<User>>(API_ENDPOINTS.USER_UPDATE_PROFILE, data),
+      api.patch<UpdateProfileResponse>(
+        API_ENDPOINTS.USER_UPDATE_PROFILE,
+        data
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.profile });
     },
@@ -587,14 +645,33 @@ export function useUserAddresses(
   });
 }
 
+/** `POST /api/v1/users/me/addresses` -> `{ success, message, address }`. */
+export interface CreateAddressResponse {
+  success: boolean;
+  message: string;
+  address: UserAddress;
+}
+
+/**
+ * POST /api/v1/users/me/addresses
+ *
+ * `CreateAddress` used to name `addressLine1` / `addressLine2` / `postalCode`
+ * and default `country` to `"IN"`. The route parses `line1` / `line2` /
+ * `pincode` and defaults `country` to `"India"`, so a body built from that type
+ * lost every address field to zod's key-stripping and the request 400'd. The
+ * shared schema now mirrors routes/users.ts:29 exactly.
+ *
+ * The response is `{ success, message, address }` — never an
+ * `ApiResponse<UserAddress>` envelope, so `.data` was always `undefined`.
+ */
 export function useCreateAddress(
-  options?: UseMutationOptions<ApiResponse<UserAddress>, Error, CreateAddress>
+  options?: UseMutationOptions<CreateAddressResponse, Error, CreateAddress>
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: CreateAddress) =>
-      api.post<ApiResponse<UserAddress>>(API_ENDPOINTS.USER_ADDRESSES, data),
+      api.post<CreateAddressResponse>(API_ENDPOINTS.USER_ADDRESSES, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.addresses });
     },

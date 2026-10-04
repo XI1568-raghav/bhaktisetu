@@ -328,6 +328,13 @@ export function consultationTypeLabel(type: string | null | undefined): string {
 /** Consultation lifecycle. Mirrors booking vocabulary on purpose. */
 export const CONSULTATION_STATUS_LABELS: Readonly<Record<string, string>> = Object.freeze({
   pending_payment: 'Payment pending',
+  // The two values `astrologer_consultations.status` actually stores that were
+  // missing here. `confirmed` is the paid, room-minted state an astrologer sees
+  // most often; `payment_review` is a capture the gateway has not settled.
+  // Without these the fallback humanised them to "Confirmed" / "Payment Review",
+  // which reads like software rather than an answer.
+  payment_review: 'Payment in review',
+  confirmed: 'Booked and paid',
   scheduled: 'Scheduled',
   in_progress: 'In progress',
   completed: 'Completed',
@@ -397,4 +404,43 @@ export const APPLICATION_STATUS_LABELS: Readonly<Record<string, string>> = Objec
 
 export function applicationStatusLabel(status: string | null | undefined): string {
   return lookup(APPLICATION_STATUS_LABELS, status);
+}
+
+// ─── donations and gaushala ──────────────────────────────────────────────
+
+/**
+ * PAR-24. `Donation.status` — `created | paid | failed` — was rendered raw on
+ * both donation ledgers, (temple)/donations.tsx and (gaushala)/donations.tsx,
+ * as the pill label. It slipped past the CM-10 sweep because both screens
+ * aliased it first (`const status = (d.status ?? 'created').toLowerCase()`), so
+ * the render site reads `label: status` and not `d.status`.
+ *
+ * "created" is the gateway's word for "the order exists and no money has
+ * arrived". A temple manager reading their own ledger should be told that, not
+ * shown the column value.
+ */
+export const DONATION_STATUS_LABELS: Readonly<Record<string, string>> = Object.freeze({
+  created: 'Awaiting payment',
+  paid: 'Received',
+  failed: 'Failed',
+});
+
+export function donationStatusLabel(status: string | null | undefined): string {
+  return lookup(DONATION_STATUS_LABELS, status);
+}
+
+/**
+ * `Cow.healthStatus` — the enum gaushala-cows.ts writes
+ * (`healthy | treatment | pregnant | recovering`). Same alias escape as above:
+ * the field is `healthStatus`, which the sweep's `\.status` pattern misses.
+ */
+export const COW_HEALTH_STATUS_LABELS: Readonly<Record<string, string>> = Object.freeze({
+  healthy: 'Healthy',
+  treatment: 'Under treatment',
+  pregnant: 'Pregnant',
+  recovering: 'Recovering',
+});
+
+export function cowHealthStatusLabel(status: string | null | undefined): string {
+  return lookup(COW_HEALTH_STATUS_LABELS, status);
 }

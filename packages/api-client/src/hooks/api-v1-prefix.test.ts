@@ -189,8 +189,18 @@ describe('api-client hooks: /api/v1 prefix invariant', () => {
 
     // wave-1-4.ts is the file the regression was in; assert it specifically
     // rather than trusting the aggregate to notice it going quiet.
+    //
+    // The floor was 25, matching the 25 paths that file carried when the
+    // prefix regression was fixed. It is 22 now because three paths were
+    // DELETED, not because the scanner went quiet:
+    // /astrology/consultations, /astrology/consultations/:id and
+    // /astrology/consultations/:id/start-call answered from an in-memory Map
+    // that empties on every restart, and the hooks wrapping them are gone —
+    // see the block in wave-1-4.ts. This floor still only moves down when
+    // something is deliberately removed, and the offender assertion above is
+    // what actually enforces the prefix.
     const wavePaths = paths.filter((p) => p.file === 'wave-1-4.ts');
-    expect(wavePaths.length).toBeGreaterThanOrEqual(25);
+    expect(wavePaths.length).toBeGreaterThanOrEqual(22);
   });
 
   it('keeps the donation money path reachable', () => {

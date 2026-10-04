@@ -67,13 +67,41 @@ describe('store product detail is server-rendered (COM-10)', () => {
     expect(html).not.toContain('Loading…');
   });
 
-  it('emits Product JSON-LD with price and availability', async () => {
+  /**
+   * COM-01 — this used to assert the opposite, and the opposite was a false
+   * commercial claim.
+   *
+   * The page emitted `Offer { price: "1299", availability: schema.org/InStock }`
+   * for a `prod_NNN` seed row. POST /api/v1/store/orders resolves line items
+   * against `StoreProduct` BY UUID and prod holds ZERO of those rows, so no
+   * seller stocks this item, nobody can ship it, and checkout answered
+   * `400 Unknown product`. Google renders that price and in-stock badge
+   * straight into the search result, which made it a machine-readable promise
+   * of a sale the site cannot complete.
+   *
+   * The Offer is WITHDRAWN rather than marked OutOfStock — the same call TC-04
+   * made for the NRI plan, because an OutOfStock Offer still asserts the item
+   * is something this shop sells. The Product node stays: the page is a real,
+   * indexable description of a real kind of item. Only the commercial claim
+   * goes, and it returns the moment a seller lists the item (uuid ⇒ orderable
+   * ⇒ Offer emitted again, no follow-up commit needed).
+   */
+  it('emits a Product node but NO Offer for a product no seller stocks', async () => {
     const html = await ssr(sample.handle);
     expect(html).toContain('"@type":"Product"');
-    expect(html).toContain(`"price":"${sample.price}"`);
-    expect(html).toContain('"priceCurrency":"INR"');
-    expect(html).toContain('schema.org/InStock');
     expect(html).toContain(sample.sku);
+    expect(html).not.toContain('"@type":"Offer"');
+    expect(html).not.toContain(`"price":"${sample.price}"`);
+    expect(html).not.toContain('schema.org/InStock');
+  });
+
+  it('tells a human, on the page, why it cannot be ordered', async () => {
+    // The structured data going quiet is not enough on its own — the devotee
+    // standing on the page is owed the reason at the control they would have
+    // pressed, not a button that fails at the payment step.
+    const html = await ssr(sample.handle);
+    expect(html).toContain('Not available to order');
+    expect(html).toMatch(/No seller stocks it yet/i);
   });
 
   it('404s an unknown handle instead of rendering a soft "does not exist" body', async () => {

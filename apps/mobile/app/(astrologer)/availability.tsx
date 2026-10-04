@@ -1,78 +1,126 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
-import { api, useAstrologers } from '@poojly/api-client';
-import { PortalScreen, Section } from '../../lib/portal-screen';
+import { useAstrologerDashboard } from '@poojly/api-client';
+import { useSaveAstrologerAvailability } from '../../lib/provider-queries';
+import {
+  SLOT_LABELS,
+  buildAvailabilityPayload,
+  countActiveSlots,
+  emptyWeek,
+  parseStoredAvailability,
+  type DayAvailability,
+  type SlotKey,
+} from '../../lib/astrologer-availability';
+import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
-interface Slot {
-  day: string;
-  morning: boolean;
-  afternoon: boolean;
-  evening: boolean;
-}
-
-const INITIAL: Slot[] = [
-  { day: 'Mon', morning: true, afternoon: true, evening: false },
-  { day: 'Tue', morning: true, afternoon: true, evening: true },
-  { day: 'Wed', morning: false, afternoon: true, evening: true },
-  { day: 'Thu', morning: true, afternoon: false, evening: true },
-  { day: 'Fri', morning: true, afternoon: true, evening: true },
-  { day: 'Sat', morning: false, afternoon: true, evening: false },
-  { day: 'Sun', morning: false, afternoon: false, evening: false },
-];
-
-const SLOT_LABELS = [
-  { key: 'morning', label: 'Morning', range: '06:00 – 12:00' },
-  { key: 'afternoon', label: 'Afternoon', range: '12:00 – 18:00' },
-  { key: 'evening', label: 'Evening', range: '18:00 – 22:00' },
-] as const;
-
+/**
+ * NO FABRICATED SCHEDULE ON THIS SCREEN. See lib/astrologer-availability.ts for
+ * the literal that used to sit here — a hardcoded fourteen-slot Mon–Sun working
+ * week, seeded at mount for every astrologer, counted in the subtitle as though
+ * they had set it, and published wholesale to the server the moment any one
+ * switch was touched (the endpoint replaces the stored blob, it does not merge).
+ *
+ * What the screen does now:
+ *   · reads `profile.availability` off GET /astrologer-portal/dashboard;
+ *   · shows an all-off week, and says so, when nothing is stored;
+ *   · says something different when the stored blob is in a shape it cannot
+ *     read, because "you have set nothing" and "I cannot read what you set"
+ *     are different statements and only one of them is safe to make;
+ *   · disables Save until the astrologer changes something.
+ */
 export default function Availability() {
-  const astrologersQuery = useAstrologers();
-  const [slots, setSlots] = useState<Slot[]>(INITIAL);
+  const dashboardQuery = useAstrologerDashboard();
+  const saveAvailability = useSaveAstrologerAvailability();
+
+  const [slots, setSlots] = useState<DayAvailability[]>(emptyWeek);
   const [refreshing, setRefreshing] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
-  function toggle(day: string, key: 'morning' | 'afternoon' | 'evening') {
+  const storedRaw = (dashboardQuery.data as { profile?: { availability?: unknown } } | undefined)
+    ?.profile?.availability;
+  const stored = parseStoredAvailability(storedRaw);
+
+  // Seed from the server exactly once, and never over unsaved edits.
+  useEffect(() => {
+    if (hydrated || dashboardQuery.isLoading || dashboardQuery.isError) return;
+    if (dashboardQuery.data === undefined) return;
+    setSlots(stored ?? emptyWeek());
+    setHydrated(true);
+    // `stored` is derived from `dashboardQuery.data`; depending on the query
+    // state is what keeps this to one seed per load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardQuery.data, dashboardQuery.isLoading, dashboardQuery.isError, hydrated]);
+
+  function toggle(day: string, key: SlotKey) {
     setSlots((s) => s.map((it) => (it.day === day ? { ...it, [key]: !it[key] } : it)));
     setDirty(true);
   }
 
   async function save() {
-    setSaving(true);
     try {
-      await api.patch('/api/v1/astrologer-portal/availability', {
-        availability: { weekly: slots, updatedAt: new Date().toISOString() },
-      });
+      await saveAvailability.mutateAsync(buildAvailabilityPayload(slots));
       setDirty(false);
-      Alert.alert('Saved', 'Availability synced.');
+      Alert.alert('Saved', 'Your availability is now what this screen shows.');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not save availability.';
-      Alert.alert('Error', msg.includes('403') ? 'Astrologer role required.' : msg);
-    } finally {
-      setSaving(false);
+      Alert.alert(
+        'Not saved',
+        err instanceof Error ? err.message : 'Could not save your availability.',
+      );
     }
   }
 
   async function onRefresh() {
     setRefreshing(true);
-    await astrologersQuery.refetch();
-    setRefreshing(false);
+    try {
+      const { data } = await dashboardQuery.refetch();
+      // A refresh the astrologer asked for is allowed to overwrite the grid —
+      // but not silently discard edits they have not saved.
+      if (!dirty) {
+        const next = parseStoredAvailability(
+          (data as { profile?: { availability?: unknown } } | undefined)?.profile?.availability,
+        );
+        setSlots(next ?? emptyWeek());
+      }
+    } finally {
+      setRefreshing(false);
+    }
   }
 
-  const activeCount = slots.reduce(
-    (acc, s) => acc + Number(s.morning) + Number(s.afternoon) + Number(s.evening),
-    0,
-  );
+  const activeCount = countActiveSlots(slots);
+  const unreadable = hydrated && storedRaw != null && stored === null;
 
   return (
     <PortalScreen
       title="Availability"
-      subtitle={`${activeCount} active slots this week`}
+      subtitle={
+        dashboardQuery.isLoading && !hydrated
+          ? 'Loading your schedule…'
+          : dashboardQuery.isError
+            ? 'Schedule unavailable'
+            : activeCount === 0
+              ? 'No slots offered this week'
+              : `${activeCount} ${activeCount === 1 ? 'slot' : 'slots'} offered this week`
+      }
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
+      {dashboardQuery.isError ? (
+        <Text style={styles.errorBanner}>
+          Your saved availability could not be loaded, so the grid below is empty
+          — that is not a report that you offer no slots. Pull down to retry, and
+          do not save until it loads, or you will overwrite what is stored.
+        </Text>
+      ) : null}
+
+      {unreadable ? (
+        <Text style={styles.warnBanner}>
+          Your stored availability is in a format this screen cannot read, so the
+          grid below is empty. Saving will replace whatever is stored.
+        </Text>
+      ) : null}
+
       <Section title="This Week">
         {slots.map((slot) => (
           <View key={slot.day} style={styles.dayCard}>
@@ -87,6 +135,7 @@ export default function Availability() {
                   <Switch
                     value={slot[s.key]}
                     onValueChange={() => toggle(slot.day, s.key)}
+                    disabled={dashboardQuery.isError}
                     trackColor={{ false: colors.stone[200], true: colors.saffron[400] }}
                     thumbColor={slot[s.key] ? colors.saffron[600] : colors.stone[400]}
                   />
@@ -97,15 +146,30 @@ export default function Availability() {
         ))}
       </Section>
 
+      {activeCount === 0 && !dirty && !dashboardQuery.isError ? (
+        <EmptyHint text="You have not offered any slots yet. Switch the ones you want on, then save." />
+      ) : null}
+
       {dirty ? (
         <TouchableOpacity
-          style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+          style={[styles.saveBtn, saveAvailability.isPending && styles.saveBtnDisabled]}
           activeOpacity={0.8}
           onPress={save}
-          disabled={saving}
+          disabled={saveAvailability.isPending}
+          accessibilityRole="button"
+          accessibilityLabel="Save availability"
         >
-          <Text style={styles.saveText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
+          <Text style={styles.saveText}>
+            {saveAvailability.isPending ? 'Saving…' : 'Save Changes'}
+          </Text>
         </TouchableOpacity>
+      ) : null}
+
+      {dirty ? (
+        <Text style={styles.saveNote}>
+          Saving replaces your whole week with what is shown above — the server
+          stores one schedule, it does not merge changes.
+        </Text>
       ) : null}
     </PortalScreen>
   );
@@ -135,6 +199,28 @@ const styles = StyleSheet.create({
   },
   slotName: { fontSize: fontSize.base, fontWeight: '600', color: colors.stone[800] },
   slotRange: { fontSize: fontSize.xs, color: colors.stone[500], marginTop: 2 },
+  errorBanner: {
+    fontSize: fontSize.sm,
+    color: colors.red[600],
+    backgroundColor: '#FEE2E2',
+    borderColor: colors.red[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    lineHeight: 18,
+  },
+  warnBanner: {
+    fontSize: fontSize.sm,
+    color: colors.stone[700],
+    backgroundColor: colors.amber[50],
+    borderColor: colors.amber[500],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    lineHeight: 18,
+  },
   saveBtn: {
     marginTop: spacing.lg,
     paddingVertical: 14,
@@ -144,4 +230,10 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { opacity: 0.5 },
   saveText: { color: colors.white, fontSize: fontSize.base, fontWeight: '700' },
+  saveNote: {
+    marginTop: spacing.sm,
+    fontSize: fontSize.xs,
+    color: colors.stone[500],
+    lineHeight: 17,
+  },
 });

@@ -126,7 +126,7 @@ describe('LEG-17 — no seed product wears a badge nothing measured', () => {
 
 describe('LEG-17 — /store renders none of them either', () => {
   it('no unearned badge reaches the grid', async () => {
-    const ui = await StorePage();
+    const ui = await StorePage({ searchParams: Promise.resolve({}) });
     await act(async () => {
       render(<CartProvider>{ui}</CartProvider>);
     });

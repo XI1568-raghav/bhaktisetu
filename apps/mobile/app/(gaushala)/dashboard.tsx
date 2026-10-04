@@ -10,6 +10,7 @@ import {
 import { selectPortalCows } from '../../lib/api-contracts';
 import { useGaushalaPortalCows } from '../../lib/portal-queries';
 import { colors, spacing } from '../../lib/theme';
+import { cowHealthStatusLabel } from '../../lib/enum-labels';
 
 import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
@@ -85,7 +86,7 @@ export default function GaushalaDashboard() {
               status={
                 c.healthStatus
                   ? {
-                      label: c.healthStatus,
+                      label: cowHealthStatusLabel(c.healthStatus),
                       color:
                         c.healthStatus === 'healthy' ? colors.green[600] : colors.amber[600],
                     }

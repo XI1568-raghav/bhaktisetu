@@ -130,6 +130,12 @@ describe('phoneOtpVerifySchema', () => {
 });
 
 // ─── updateProfileSchema ─────────────────────────────────────────────────────
+//
+// Pinned against apps/api/src/routes/users.ts:13-27 — the schema PATCH
+// /api/v1/users/me actually parses. This block used to assert `displayName`,
+// `dateOfBirth`, `tradition` and `avatarUrl`, none of which that route accepts:
+// zod strips unknown keys, so every one of them was accepted, answered 200
+// "Profile updated successfully", and silently discarded.
 
 describe('updateProfileSchema', () => {
   it('accepts empty object (all fields optional)', () => {
@@ -137,85 +143,63 @@ describe('updateProfileSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('accepts a valid displayName', () => {
-    const result = updateProfileSchema.safeParse({
-      displayName: 'Ram Prasad',
-    });
+  it('accepts a valid fullName', () => {
+    const result = updateProfileSchema.safeParse({ fullName: 'Ram Prasad' });
     expect(result.success).toBe(true);
   });
 
-  it('rejects displayName shorter than 2 chars', () => {
-    const result = updateProfileSchema.safeParse({
-      displayName: 'A',
-    });
+  it('rejects an empty fullName', () => {
+    const result = updateProfileSchema.safeParse({ fullName: '' });
     expect(result.success).toBe(false);
   });
 
-  it('rejects displayName longer than 100 chars', () => {
-    const result = updateProfileSchema.safeParse({
-      displayName: 'A'.repeat(101),
-    });
+  it('rejects fullName longer than 100 chars', () => {
+    const result = updateProfileSchema.safeParse({ fullName: 'A'.repeat(101) });
     expect(result.success).toBe(false);
+  });
+
+  it('does NOT carry displayName through — the route parses fullName', () => {
+    // The silent-failure defect, pinned. A body naming displayName must not
+    // survive parsing as a rename.
+    const result = updateProfileSchema.safeParse({ displayName: 'Ram Prasad' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toHaveProperty('displayName');
+      expect(result.data.fullName).toBeUndefined();
+    }
   });
 
   it('accepts a valid email', () => {
-    const result = updateProfileSchema.safeParse({
-      email: 'test@example.com',
-    });
+    const result = updateProfileSchema.safeParse({ email: 'test@example.com' });
     expect(result.success).toBe(true);
   });
 
   it('rejects an invalid email', () => {
-    const result = updateProfileSchema.safeParse({
-      email: 'not-an-email',
-    });
+    const result = updateProfileSchema.safeParse({ email: 'not-an-email' });
     expect(result.success).toBe(false);
   });
 
-  it('accepts a valid dateOfBirth in YYYY-MM-DD', () => {
+  it('accepts null to clear a nullable column', () => {
     const result = updateProfileSchema.safeParse({
-      dateOfBirth: '1990-05-15',
+      email: null,
+      gotra: null,
+      nriCountry: null,
     });
     expect(result.success).toBe(true);
   });
 
-  it('rejects dateOfBirth in DD/MM/YYYY format', () => {
+  it('accepts the location and NRI fields the route parses', () => {
     const result = updateProfileSchema.safeParse({
-      dateOfBirth: '15/05/1990',
+      locationCity: 'Gurugram',
+      locationState: 'Haryana',
+      isNri: true,
+      nriCountry: 'United States',
     });
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts valid tradition values', () => {
-    const traditions = [
-      'SHAIVA', 'VAISHNAVA', 'SHAKTA', 'SMARTA', 'GANAPATYA',
-      'SAURA', 'BUDDHIST', 'JAIN', 'SIKH',
-    ];
-    for (const tradition of traditions) {
-      const result = updateProfileSchema.safeParse({ tradition });
-      expect(result.success).toBe(true);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isNri).toBe(true);
+      expect(result.data.locationCity).toBe('Gurugram');
     }
-  });
-
-  it('rejects invalid tradition value', () => {
-    const result = updateProfileSchema.safeParse({
-      tradition: 'INVALID',
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts a valid avatar URL', () => {
-    const result = updateProfileSchema.safeParse({
-      avatarUrl: 'https://example.com/avatar.jpg',
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('rejects an invalid avatar URL', () => {
-    const result = updateProfileSchema.safeParse({
-      avatarUrl: 'not-a-url',
-    });
-    expect(result.success).toBe(false);
   });
 
   it('accepts gotra, nakshatra, and rashi fields', () => {
@@ -226,17 +210,28 @@ describe('updateProfileSchema', () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it('accepts a supported preferredLanguage and rejects an unsupported one', () => {
+    expect(updateProfileSchema.safeParse({ preferredLanguage: 'hi' }).success).toBe(true);
+    expect(updateProfileSchema.safeParse({ preferredLanguage: 'zz' }).success).toBe(false);
+  });
 });
 
 // ─── createAddressSchema ─────────────────────────────────────────────────────
+//
+// Pinned against apps/api/src/routes/users.ts:29-40 and the `user_addresses`
+// columns (prisma/schema.prisma:278). This block used to assert `addressLine1`
+// / `postalCode` / `country === 'IN'`; the route parses `line1` / `pincode` and
+// defaults country to the NAME 'India', so a body built from the old shape lost
+// every address field to zod's key-stripping and 400'd.
 
 describe('createAddressSchema', () => {
   const validAddress = {
     label: 'Home',
-    addressLine1: '123 Temple Street',
+    line1: '123 Temple Street',
     city: 'Varanasi',
     state: 'Uttar Pradesh',
-    postalCode: '221001',
+    pincode: '221001',
   };
 
   it('accepts a valid address', () => {
@@ -244,11 +239,11 @@ describe('createAddressSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('defaults country to IN', () => {
+  it('defaults country to India — the NAME that is persisted, not "IN"', () => {
     const result = createAddressSchema.safeParse(validAddress);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.country).toBe('IN');
+      expect(result.data.country).toBe('India');
     }
   });
 
@@ -260,48 +255,79 @@ describe('createAddressSchema', () => {
     }
   });
 
-  it('rejects missing label', () => {
+  it('defaults label to home, matching the column default', () => {
     const { label, ...noLabel } = validAddress;
+    void label;
     const result = createAddressSchema.safeParse(noLabel);
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.label).toBe('home');
+    }
   });
 
-  it('rejects missing addressLine1', () => {
-    const { addressLine1, ...noAddr } = validAddress;
+  it('rejects missing line1', () => {
+    const { line1, ...noAddr } = validAddress;
+    void line1;
     const result = createAddressSchema.safeParse(noAddr);
     expect(result.success).toBe(false);
   });
 
   it('rejects missing city', () => {
     const { city, ...noCity } = validAddress;
+    void city;
     const result = createAddressSchema.safeParse(noCity);
     expect(result.success).toBe(false);
   });
 
   it('rejects missing state', () => {
     const { state, ...noState } = validAddress;
+    void state;
     const result = createAddressSchema.safeParse(noState);
     expect(result.success).toBe(false);
   });
 
-  it('rejects missing postalCode', () => {
-    const { postalCode, ...noPostal } = validAddress;
-    const result = createAddressSchema.safeParse(noPostal);
+  it('rejects missing pincode', () => {
+    const { pincode, ...noPin } = validAddress;
+    void pincode;
+    const result = createAddressSchema.safeParse(noPin);
     expect(result.success).toBe(false);
   });
 
-  it('rejects postalCode shorter than 4 chars', () => {
+  it('rejects a pincode shorter than 4 digits', () => {
+    const result = createAddressSchema.safeParse({ ...validAddress, pincode: '123' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a non-numeric pincode — the route regex is digits only', () => {
+    const result = createAddressSchema.safeParse({ ...validAddress, pincode: 'SW1A1AA' });
+    expect(result.success).toBe(false);
+  });
+
+  it('does NOT carry addressLine1 / postalCode through', () => {
     const result = createAddressSchema.safeParse({
       ...validAddress,
-      postalCode: '123',
+      addressLine1: '123 Temple Street',
+      postalCode: '221001',
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toHaveProperty('addressLine1');
+      expect(result.data).not.toHaveProperty('postalCode');
+    }
   });
 
-  it('accepts addressLine2 as optional', () => {
+  it('accepts line2 as optional and nullable', () => {
+    expect(
+      createAddressSchema.safeParse({ ...validAddress, line2: 'Near Ganga Ghat' }).success,
+    ).toBe(true);
+    expect(createAddressSchema.safeParse({ ...validAddress, line2: null }).success).toBe(true);
+  });
+
+  it('accepts the lat/lng the route parses', () => {
     const result = createAddressSchema.safeParse({
       ...validAddress,
-      addressLine2: 'Near Ganga Ghat',
+      lat: 25.3176,
+      lng: 82.9739,
     });
     expect(result.success).toBe(true);
   });
@@ -310,14 +336,6 @@ describe('createAddressSchema', () => {
     const result = createAddressSchema.safeParse({
       ...validAddress,
       label: 'A'.repeat(51),
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects addressLine1 shorter than 5 chars', () => {
-    const result = createAddressSchema.safeParse({
-      ...validAddress,
-      addressLine1: '123',
     });
     expect(result.success).toBe(false);
   });

@@ -133,8 +133,43 @@ describe('LEG-17 — the product detail page publishes no fabricated numbers', (
     expect(text).not.toContain('1,899');
   });
 
-  it('does not carry a reference price into the cart when added', async () => {
+  /**
+   * COM-01 superseded the original form of this test, and superseded it in the
+   * strongest possible direction.
+   *
+   * It used to click "Add to Cart" on prod_001 and assert that no
+   * `compareAtPrice` reached `poojly_cart`. There is no longer an "Add to Cart"
+   * to click: `POST /api/v1/store/orders` resolves line items against
+   * `StoreProduct` BY UUID, prod holds zero of those rows, and `prod_001` is
+   * not a uuid — so the button led a devotee through a basket, an address and a
+   * payment method to `400 Unknown product: prod_001`. Nothing about this
+   * product can reach the cart at all now, which is a superset of the LEG-17
+   * property: a reference price cannot be carried by an item that cannot be
+   * carried.
+   *
+   * The LEG-17 property itself is still exercised below, on an ORDERABLE
+   * product — the only kind for which "added to the cart" is a thing that
+   * happens.
+   */
+  it('offers no way to add a product no seller stocks', async () => {
     await renderPdp();
+    expect(screen.queryByRole('button', { name: /add to cart/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /buy now/i })).toBeNull();
+    expect(document.body.textContent ?? '').toMatch(/Not available to order/i);
+    expect(JSON.parse(localStorage.getItem(CART_STORAGE_KEY) ?? '[]')).toEqual([]);
+  });
+
+  it('carries no reference price into the cart for a product that CAN be added', async () => {
+    // A seller listing: same row, but with the StoreProduct uuid the order
+    // route resolves, so the live control renders.
+    const orderable = { ...product, id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301' };
+    await act(async () => {
+      render(
+        <CartProvider>
+          <ProductDetail product={orderable} />
+        </CartProvider>,
+      );
+    });
     fireEvent.click(screen.getByRole('button', { name: /add to cart/i }));
     const stored = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) ?? '[]');
     expect(stored).toHaveLength(1);

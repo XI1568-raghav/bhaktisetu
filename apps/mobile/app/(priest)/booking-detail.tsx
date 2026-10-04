@@ -131,11 +131,38 @@ function statusColor(status: string): string {
   }
 }
 
+/**
+ * The sentence a person can act on, out of either envelope this screen meets.
+ *
+ * The `/priest/*` transitions answer `{ error: "<sentence>" }`. But
+ * `PATCH /bookings/:id` — the ONLY call behind the "Mark Delivered" button —
+ * answers `{ error: "<code>", message: "<sentence>" }`, and its codes are the
+ * single words `Forbidden`, `Conflict` and `Video proof required`. Reading
+ * `error` alone therefore turned
+ *
+ *   "Video proof is mandatory before a booking can move to \"delivered\".
+ *    Upload the recording first…"
+ *
+ * — the exact instruction the pandit needs, and the most common refusal on
+ * this screen, because business rule #1 makes proof mandatory — into the word
+ * "Video proof required" with the fix stripped off. `message` wins when both
+ * are present.
+ *
+ * EXCEPT on a 5xx. Fastify's own unhandled-error envelope is
+ * `{statusCode, code, error: "Internal Server Error", message: "<the thrown
+ * error>"}`, and that `message` is the server's internal text — a stack-adjacent
+ * string, sometimes an absolute path (PAR-13 shipped exactly that to the
+ * astrologer dashboard). It is not for a pandit, so above 499 neither field is
+ * used and the caller's own fallback line is shown instead.
+ */
 function serverSentence(payload: unknown): string {
-  if (payload && typeof payload === 'object') {
-    const err = (payload as { error?: unknown }).error;
-    if (typeof err === 'string' && err.trim()) return err.trim();
-  }
+  if (!payload || typeof payload !== 'object') return '';
+  const status = (payload as { statusCode?: unknown }).statusCode;
+  if (typeof status === 'number' && status >= 500) return '';
+  const msg = (payload as { message?: unknown }).message;
+  if (typeof msg === 'string' && msg.trim()) return msg.trim();
+  const err = (payload as { error?: unknown }).error;
+  if (typeof err === 'string' && err.trim()) return err.trim();
   return '';
 }
 

@@ -5,6 +5,7 @@ import { PRODUCTS } from '../../../lib/products';
 import { getProductByHandle } from '../../../lib/medusa';
 import { getProductImage, IMG_W } from '../../../lib/images';
 import { productJsonLd, breadcrumbJsonLd, SITE_URL } from '../../../lib/jsonld';
+import { isOrderableProductId } from '../../../lib/store-buyability';
 
 /**
  * COM-10 (prod sweep 2026-08-12): this route was a redirect shim. Every
@@ -84,14 +85,26 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
   if (!product) notFound();
 
   const url = `${SITE_URL}/store/${product.handle}`;
+  // COM-01: a browse-only product publishes NO Offer.
+  //
+  // `productJsonLd` emits `availability: https://schema.org/InStock` whenever a
+  // price is passed, and Google renders that price and badge straight into the
+  // search result. For the 24 seed rows that was a machine-readable claim that
+  // a devotee could buy something no seller stocks and nobody can ship — the
+  // page then showed them a disabled button. Withdrawing the Offer rather than
+  // marking it OutOfStock is the same call TC-04 made for the NRI plan: an
+  // OutOfStock Offer still asserts the item is a thing this shop sells.
+  //
+  // The Product node itself stays: the page is a real, indexable description of
+  // a real kind of item. Only the commercial claim goes.
+  const orderable = isOrderableProductId(product.id);
   const jsonLd = productJsonLd({
     name: product.title,
     description: product.description,
     image: getProductImage(product.imageKey, IMG_W.WIDE),
     sku: product.sku,
-    priceInr: product.price,
+    ...(orderable ? { priceInr: product.price, inStock: product.inStock } : {}),
     url,
-    inStock: product.inStock,
   });
   const crumbs = breadcrumbJsonLd([
     { name: 'Store', url: `${SITE_URL}/store` },

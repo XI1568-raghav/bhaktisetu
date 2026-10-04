@@ -9,6 +9,7 @@ import {
   EmptyHint,
 } from '../../lib/portal-screen';
 import { colors, spacing } from '../../lib/theme';
+import { donationStatusLabel } from '../../lib/enum-labels';
 
 function relTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -73,7 +74,10 @@ export default function GaushalaDonations() {
                 primary={d.donor ?? 'Anonymous'}
                 secondary={`${d.receiptNumber ?? 'No receipt'} • ${relTime(d.createdAt)}`}
                 trailing={`₹${(d.amountInr ?? 0).toLocaleString('en-IN')}`}
-                status={{ label: status, color: STATUS_COLOR[status] ?? colors.stone[600] }}
+                status={{
+                  label: donationStatusLabel(status),
+                  color: STATUS_COLOR[status] ?? colors.stone[600],
+                }}
               />
             );
           })

@@ -65,7 +65,9 @@ describe('request — 200 success', () => {
 
     const headers = nthCallInit(1).headers as Headers;
     expect(headers.get('Authorization')).toBe('Bearer tok-123');
-    expect(headers.get('Content-Type')).toBe('application/json');
+    // NOT application/json: a GET carries no body. See the bodyless-request
+    // describe block below.
+    expect(headers.get('Content-Type')).toBeNull();
   });
 
   it('skips the Authorization header when noAuth is true', async () => {
@@ -251,5 +253,140 @@ describe('request — schema validation', () => {
     // schema.parse receives the unwrapped `data`, not the envelope.
     expect(schema.parse).toHaveBeenCalledWith({ id: 9, name: 'Vishnu' });
     expect(result).toEqual({ id: 9, name: 'Vishnu' });
+  });
+});
+
+// ─── flat error bodies (the shape the API actually sends) ────────────────────
+
+describe('request — error bodies', () => {
+  it('surfaces the sentence from a flat { error } body instead of the status', async () => {
+    mockFetch(async () =>
+      jsonResponse(409, { error: 'Insufficient stock for tulsi-mala (have 2, want 5)' }),
+    );
+
+    const err = (await api
+      .post('/api/v1/store/orders', { items: [] })
+      .catch((e) => e)) as ApiClientError;
+
+    expect(err).toBeInstanceOf(ApiClientError);
+    expect(err.message).toBe('Insufficient stock for tulsi-mala (have 2, want 5)');
+    expect(err.statusCode).toBe(409);
+  });
+
+  it('surfaces `message` when `error` is a machine label', async () => {
+    mockFetch(async () =>
+      jsonResponse(409, {
+        code: 'store_profile_required',
+        error: 'Store setup incomplete',
+        message: 'Finish setting up your store — add your store name — before listing products.',
+      }),
+    );
+
+    const err = (await api
+      .post('/api/v1/store-admin/products', { name: 'x' })
+      .catch((e) => e)) as ApiClientError;
+
+    expect(err.message).toBe(
+      'Finish setting up your store — add your store name — before listing products.',
+    );
+    expect(err.code).toBe('store_profile_required');
+  });
+
+  it('carries zod `details` through onto ApiClientError', async () => {
+    const flatten = { formErrors: [], fieldErrors: { amountInr: ['Required'] } };
+    mockFetch(async () => jsonResponse(400, { error: 'Invalid input', details: flatten }));
+
+    const err = (await api
+      .post('/api/v1/donations/create-order', {})
+      .catch((e) => e)) as ApiClientError;
+
+    expect(err.details).toEqual(flatten);
+  });
+
+  it('keeps the status code when the error body is not JSON at all', async () => {
+    // A CDN 502 answers with HTML. `response.json()` used to throw here, and
+    // the throw took the status with it — the caller saw NETWORK_ERROR / 0.
+    mockFetch(async () => new Response('<html>502 Bad Gateway</html>', { status: 502 }));
+
+    const err = (await api.get('/api/v1/temples').catch((e) => e)) as ApiClientError;
+
+    expect(err).toBeInstanceOf(ApiClientError);
+    expect(err.statusCode).toBe(502);
+    expect(err.message).toBe('Request failed with status 502');
+  });
+
+  it('fires onUnauthorised for a 401 that carries no body', async () => {
+    const onUnauthorised = vi.fn();
+    initApiClient({ baseUrl: BASE_URL, onUnauthorised });
+    mockFetch(async () => new Response(null, { status: 401 }));
+
+    const err = (await api.get('/api/v1/users/me').catch((e) => e)) as ApiClientError;
+
+    expect(err.statusCode).toBe(401);
+    expect(onUnauthorised).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ─── bodyless requests must not declare a JSON body ─────────────────────────
+
+describe('request — Content-Type only when there is a body', () => {
+  it('omits Content-Type on a bodyless PATCH (FST_ERR_CTP_EMPTY_JSON_BODY)', async () => {
+    mockFetch(async () => jsonResponse(200, { ok: true }));
+
+    await api.patch('/api/v1/priest/pujas/abc/toggle-active');
+
+    const init = nthCallInit(1);
+    expect((init.headers as Headers).get('Content-Type')).toBeNull();
+    expect(init.body).toBeUndefined();
+  });
+
+  it('omits Content-Type on a bodyless POST', async () => {
+    mockFetch(async () => jsonResponse(200, { ok: true }));
+
+    await api.post('/api/v1/consultation/abc/complete');
+
+    expect((nthCallInit(1).headers as Headers).get('Content-Type')).toBeNull();
+  });
+
+  it('sets Content-Type when a body IS sent', async () => {
+    mockFetch(async () => jsonResponse(200, { ok: true }));
+
+    await api.post('/api/v1/store/orders', { items: [] });
+
+    const init = nthCallInit(1);
+    expect((init.headers as Headers).get('Content-Type')).toBe('application/json');
+    expect(init.body).toBe('{"items":[]}');
+  });
+
+  it('treats an explicit {} as a body — many callers pass it to dodge the old bug', async () => {
+    mockFetch(async () => jsonResponse(200, { ok: true }));
+
+    await api.post('/api/v1/subscriptions/cancel', {});
+
+    const init = nthCallInit(1);
+    expect((init.headers as Headers).get('Content-Type')).toBe('application/json');
+    expect(init.body).toBe('{}');
+  });
+
+  it('sends falsy-but-real bodies (0 / false / "") rather than dropping them', async () => {
+    mockFetch(async () => jsonResponse(200, { ok: true }));
+
+    await api.post('/api/v1/x', 0);
+    await api.post('/api/v1/x', false);
+    await api.post('/api/v1/x', '');
+
+    expect(nthCallInit(1).body).toBe('0');
+    expect(nthCallInit(2).body).toBe('false');
+    expect(nthCallInit(3).body).toBe('""');
+  });
+
+  it('strips a Content-Type a caller supplied for a bodyless request', async () => {
+    mockFetch(async () => jsonResponse(200, { ok: true }));
+
+    await api.patch('/api/v1/priest/bookings/abc/accept', undefined, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect((nthCallInit(1).headers as Headers).get('Content-Type')).toBeNull();
   });
 });

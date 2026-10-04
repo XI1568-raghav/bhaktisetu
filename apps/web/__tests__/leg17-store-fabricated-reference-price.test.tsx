@@ -70,7 +70,7 @@ beforeEach(() => {
 
 describe('LEG-17 — /store publishes no fabricated reference price', () => {
   async function renderStore() {
-    const ui = await StorePage();
+    const ui = await StorePage({ searchParams: Promise.resolve({}) });
     await act(async () => {
       render(<CartProvider>{ui}</CartProvider>);
     });

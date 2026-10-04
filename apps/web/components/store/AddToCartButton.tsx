@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, ShoppingCart } from 'lucide-react';
 import { useCart, type CartProduct } from '../CartContext';
+import { isOrderableProductId, BROWSE_ONLY_REASON } from '../../lib/store-buyability';
 
 /**
  * A11Y-11: /store rendered "Add to Cart" as a bare <button> with no onClick,
@@ -27,6 +28,40 @@ export default function AddToCartButton({
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
   }, []);
+
+  /**
+   * COM-01: the browse-only guard lives HERE, in the shared control, rather
+   * than at each call site — /store's grid and the seller shelf both render
+   * this component, and a guard that has to be remembered per grid is a guard
+   * that gets forgotten on the next one. `POST /store/orders` resolves items by
+   * StoreProduct uuid, so a `prod_015` seed row can be added to a basket but
+   * can never be ordered; offering the control was the false promise.
+   *
+   * Checked BEFORE `inStock`, on purpose. "Out of stock" is the wrong reason
+   * and a misleading one: it implies the item exists and will return. It does
+   * not exist — no seller lists it — and the copy says which.
+   */
+  if (!isOrderableProductId(product.id)) {
+    return (
+      <div className="mt-3">
+        <button
+          type="button"
+          disabled
+          aria-describedby={`browse-only-${product.id}`}
+          // Deliberately NOT `className ?? …`: a caller's class list is written
+          // for a live control (the seller PDP passes a solid saffron fill), and
+          // a disabled button wearing it reads as pressable. A refusal has to
+          // look like one.
+          className="w-full py-2.5 bg-surface-100 text-surface-500 font-medium text-sm rounded-lg border border-surface-200 flex items-center justify-center gap-1.5 cursor-not-allowed"
+        >
+          Not available to order
+        </button>
+        <p id={`browse-only-${product.id}`} className="mt-1.5 text-xs text-surface-500">
+          {BROWSE_ONLY_REASON}
+        </p>
+      </div>
+    );
+  }
 
   if (!product.inStock) {
     return (

@@ -40,7 +40,14 @@ interface LiveInstructor {
   nextAt: string;
 }
 
-export function buildInstructorIndex(classes: WellnessClass[]): LiveInstructor[] {
+// NOT exported. Next's App Router generates a type check that permits only a
+// specific export set from a page file (default, metadata, revalidate, dynamic,
+// generateStaticParams …); any other export fails the build with
+// "incompatible with index signature ... not assignable to type 'never'".
+// This helper is only used below, so it stays module-local. If it needs to be
+// unit-tested, move it to a sibling module and import it — do not re-export it
+// from the page.
+function buildInstructorIndex(classes: WellnessClass[]): LiveInstructor[] {
   const byName = new Map<string, LiveInstructor>();
   const sorted = [...classes].sort(
     (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
