@@ -19,6 +19,8 @@ import {
   modelCandidates,
   responseText,
   callModel,
+  callClaudeCode,
+  runCommand,
   extractVerdict,
   filePriority,
   splitDiff,
@@ -123,6 +125,80 @@ describe('callModel', () => {
   });
 });
 
+describe('callClaudeCode — the subscription path', () => {
+  const args = { token: 'tok', model: 'claude-x', system: 'sys', user: 'the diff', env: { PATH: '/bin', ANTHROPIC_API_KEY: 'sk-api', OTHER: '1' } };
+  const cli = (out) => {
+    const calls = [];
+    return { calls, runCli: async (c) => { calls.push(c); return out; } };
+  };
+  const ok = (result, extra = {}) => ({ code: 0, stdout: JSON.stringify({ type: 'result', is_error: false, result, ...extra }), stderr: '' });
+
+  it('runs print mode with every tool disabled and the prompt on stdin', async () => {
+    const { calls, runCli } = cli(ok('hello'));
+    const out = await callClaudeCode({ ...args, runCli });
+    expect(out).toEqual({ ok: true, status: 200, detail: '', text: 'hello' });
+    const { command, args: argv, input } = calls[0];
+    expect(command).toBe('claude');
+    expect(argv.slice(0, 3)).toEqual(['-p', '--output-format', 'json']);
+    // The diff is untrusted text: an empty tool list is what keeps an injected
+    // instruction from doing anything but changing the printed verdict.
+    expect(argv[argv.indexOf('--tools') + 1]).toBe('');
+    expect(argv[argv.indexOf('--model') + 1]).toBe('claude-x');
+    expect(argv[argv.indexOf('--system-prompt') + 1]).toBe('sys');
+    expect(input).toBe('the diff');
+    expect(argv).not.toContain('the diff');
+  });
+
+  it('gives the CLI the subscription token and withholds the API key', async () => {
+    const { calls, runCli } = cli(ok('hello'));
+    await callClaudeCode({ ...args, runCli });
+    expect(calls[0].env.CLAUDE_CODE_OAUTH_TOKEN).toBe('tok');
+    expect(calls[0].env).not.toHaveProperty('ANTHROPIC_API_KEY');
+    expect(calls[0].env.OTHER).toBe('1');
+    // The caller's env object is not mutated.
+    expect(args.env.ANTHROPIC_API_KEY).toBe('sk-api');
+  });
+
+  it('reports the CLI\'s own error, e.g. an expired or missing login', async () => {
+    const { runCli } = cli({ code: 1, stdout: JSON.stringify({ type: 'result', is_error: true, result: 'Not logged in · Please run /login' }), stderr: '' });
+    const out = await callClaudeCode({ ...args, runCli });
+    expect(out).toEqual({ ok: false, status: 0, detail: 'Claude Code CLI: Not logged in · Please run /login', text: '' });
+  });
+
+  it('says so when the CLI is not installed', async () => {
+    const { runCli } = cli({ code: null, stdout: '', stderr: '', spawnError: 'ENOENT' });
+    expect((await callClaudeCode({ ...args, runCli })).detail).toBe('Claude Code CLI is not installed on the runner');
+  });
+
+  it('handles a timeout, non-JSON output and an empty result', async () => {
+    expect((await callClaudeCode({ ...args, runCli: cli({ code: null, stdout: '', stderr: '', timedOut: true }).runCli })).detail).toBe('timeout');
+    expect((await callClaudeCode({ ...args, runCli: cli({ code: 2, stdout: 'Usage: claude', stderr: 'unknown\n option' }).runCli })).detail).toBe('Claude Code CLI exited 2 without JSON: unknown option');
+    expect((await callClaudeCode({ ...args, runCli: cli(ok('')).runCli })).detail).toBe('Claude Code CLI: no result');
+  });
+});
+
+describe('runCommand', () => {
+  it('feeds stdin and collects stdout and the exit code', async () => {
+    const out = await runCommand({ command: process.execPath, args: ['-e', 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{process.stdout.write(s.toUpperCase());process.exit(3)})'], input: 'abc', env: process.env, timeoutMs: 10_000 });
+    expect(out).toEqual({ code: 3, stdout: 'ABC', stderr: '' });
+  });
+
+  it('resolves with ENOENT for a missing binary instead of throwing', async () => {
+    const out = await runCommand({ command: 'definitely-not-a-real-binary-xyz', args: [], input: '', env: process.env, timeoutMs: 10_000 });
+    expect(out.spawnError).toBe('ENOENT');
+  });
+
+  it('kills a command that outlives its timeout', async () => {
+    const out = await runCommand({ command: process.execPath, args: ['-e', 'setTimeout(()=>{}, 60000)'], input: '', env: process.env, timeoutMs: 200 });
+    expect(out.timedOut).toBe(true);
+  });
+
+  it('survives a child that exits without reading a large stdin', async () => {
+    const out = await runCommand({ command: process.execPath, args: ['-e', 'process.exit(0)'], input: 'x'.repeat(2_000_000), env: process.env, timeoutMs: 10_000 });
+    expect(out.code).toBe(0);
+  });
+});
+
 describe('extractVerdict', () => {
   it('accepts a bare object and one wrapped in a fence or prose', () => {
     expect(extractVerdict(VERDICT).ok).toBe(true);
@@ -218,9 +294,9 @@ describe('fetchDiffFiles', () => {
 describe('formatComment', () => {
   const diff = { text: 'x'.repeat(10), totalChars: 10, fileCount: 2, omitted: [] };
 
-  it('names the model that produced the review', () => {
-    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { model: 'claude-x', diff });
-    expect(body).toContain('`scripts/agents/pr-review.mjs` — `claude-x`.');
+  it('names the model and the backend that produced the review', () => {
+    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { model: 'claude-x', backend: 'Claude subscription', diff });
+    expect(body).toContain('`scripts/agents/pr-review.mjs` — `claude-x` (Claude subscription).');
     expect(body).toContain('Read all 2 files in the diff.');
   });
 
@@ -271,19 +347,43 @@ describe('reviewPullRequest — end to end against fakes', () => {
     const out = await reviewPullRequest({ ...args, fetchImpl });
     expect(out.result.verdict).toBe('PASS');
     expect(out.meta.model).toBe(DEFAULT_MODELS[0]);
+    expect(out.meta.backend).toBe('Anthropic API');
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe('https://api.anthropic.com/v1/messages');
     expect(calls[0].body.messages[0].content).toContain('diff --git a/apps/api/src/a.ts');
     expect(calls[0].body.system).toMatch(/Darshya project code reviewer/);
   });
 
-  it('says the key is not set, in the PR, and calls no model', async () => {
+  it('says no credential is set, in the PR, and calls no model', async () => {
     const { fetchImpl, calls } = world({});
-    const out = await reviewPullRequest({ ...args, apiKey: undefined, fetchImpl });
+    const runCli = async () => { throw new Error('must not be called'); };
+    const out = await reviewPullRequest({ ...args, apiKey: undefined, fetchImpl, runCli });
     expect(out.result.verdict).toBe('UNVERIFIED');
-    expect(out.result.error).toMatch(/ANTHROPIC_API_KEY repository secret is not set/);
+    expect(out.result.error).toBe('neither the CLAUDE_CODE_OAUTH_TOKEN nor the ANTHROPIC_API_KEY repository secret is set');
     expect(calls).toHaveLength(0);
-    expect(formatComment(out.result, out.meta)).toContain('ANTHROPIC_API_KEY repository secret is not set');
+    expect(formatComment(out.result, out.meta)).toContain('CLAUDE_CODE_OAUTH_TOKEN');
+  });
+
+  it('uses the subscription when its token is set, and never calls the API — even with an API key present', async () => {
+    const { fetchImpl, calls } = world({ [DEFAULT_MODELS[0]]: reply(VERDICT) });
+    const cliCalls = [];
+    const runCli = async (c) => { cliCalls.push(c); return { code: 0, stdout: JSON.stringify({ is_error: false, result: VERDICT }), stderr: '' }; };
+    const out = await reviewPullRequest({ ...args, oauthToken: 'tok', fetchImpl, runCli });
+    expect(out.result.verdict).toBe('PASS');
+    expect(out.meta.backend).toBe('Claude subscription');
+    expect(calls).toHaveLength(0);
+    expect(cliCalls).toHaveLength(1);
+    expect(cliCalls[0].input).toContain('diff --git a/apps/api/src/a.ts');
+    expect(cliCalls[0].args).toContain(DEFAULT_MODELS[0]);
+  });
+
+  it('reports a failed subscription login in the PR instead of falling back to the paid API silently', async () => {
+    const { fetchImpl, calls } = world({ [DEFAULT_MODELS[0]]: reply(VERDICT) });
+    const runCli = async () => ({ code: 1, stdout: JSON.stringify({ is_error: true, result: 'Not logged in · Please run /login' }), stderr: '' });
+    const out = await reviewPullRequest({ ...args, oauthToken: 'expired', fetchImpl, runCli });
+    expect(out.result.verdict).toBe('UNVERIFIED');
+    expect(out.result.error).toContain('Not logged in');
+    expect(calls).toHaveLength(0);
   });
 
   it('tries the next configured model when one returns no verdict', async () => {

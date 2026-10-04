@@ -17,15 +17,25 @@
 //
 // Self-contained — does NOT depend on roadmap/_anthropic-client.mjs.
 //
+// TWO WAYS TO AUTHENTICATE, checked in this order:
+//   1. CLAUDE_CODE_OAUTH_TOKEN — a Claude subscription. The review runs through
+//      the Claude Code CLI in print mode with every tool disabled, and counts
+//      against the subscription's usage instead of being billed per token.
+//      The token comes from `claude setup-token`.
+//   2. ANTHROPIC_API_KEY — the Anthropic API, billed per token.
+// With neither set the script reviews nothing and says so in the PR.
+//
 // Env:
-//   ANTHROPIC_API_KEY      Anthropic API key (repo secret)
-//   ANTHROPIC_BASE_URL     optional; defaults to https://api.anthropic.com
+//   CLAUDE_CODE_OAUTH_TOKEN  subscription token (repo secret) — preferred
+//   ANTHROPIC_API_KEY      Anthropic API key (repo secret) — alternative
+//   ANTHROPIC_BASE_URL     optional, API path only; defaults to https://api.anthropic.com
 //   PR_REVIEW_MODELS       optional, comma-separated Claude model ids, tried in order
 //   GH_TOKEN / GITHUB_TOKEN  for diff + comment
 //   PR_NUMBER              the PR to review
 //   GH_REPOSITORY          owner/repo
 //
 // Usage in CI:  node scripts/agents/pr-review.mjs
+import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 export const DEFAULT_BASE_URL = 'https://api.anthropic.com';
@@ -105,6 +115,80 @@ export async function callModel({ fetchImpl = fetch, base, apiKey, model, system
   // envelope both look like this.
   if (!text) return { ok: false, status: r.status, detail: 'no assistant text in response', text: '' };
   return { ok: true, status: r.status, detail: '', text };
+}
+
+// ---- Claude Code CLI (subscription) ----
+
+/** Run a command, feed it stdin, collect its output. Never rejects. */
+export function runCommand({ command, args, input, env, timeoutMs }) {
+  return new Promise((resolve) => {
+    let child;
+    try {
+      child = spawn(command, args, { env, stdio: ['pipe', 'pipe', 'pipe'] });
+    } catch (e) {
+      resolve({ code: null, stdout: '', stderr: String(e?.message ?? e), spawnError: e?.code ?? 'spawn failed' });
+      return;
+    }
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    const done = (r) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(r);
+    };
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      done({ code: null, stdout, stderr, timedOut: true });
+    }, timeoutMs);
+    child.stdout.on('data', (d) => { stdout += d; });
+    child.stderr.on('data', (d) => { stderr += d; });
+    child.on('error', (e) => done({ code: null, stdout, stderr, spawnError: e?.code ?? 'spawn failed' }));
+    child.on('close', (code) => done({ code, stdout, stderr }));
+    // The CLI can exit before reading all of a large prompt; that is reported
+    // through its exit, not by crashing this process on EPIPE.
+    child.stdin.on('error', () => {});
+    child.stdin.end(input);
+  });
+}
+
+/**
+ * One review through the Claude Code CLI in print mode. Same return shape as
+ * callModel, so the caller treats both backends alike.
+ *
+ * `--tools ""` is load-bearing, not tidiness: the diff is attacker-controlled
+ * text, and with no tools a prompt injection inside it can change the verdict
+ * it prints and nothing else — it cannot read the runner, the token or the repo.
+ */
+export async function callClaudeCode({ runCli = runCommand, command = 'claude', token, model, system, user, timeoutMs = REVIEW_TIMEOUT_MS, env = process.env }) {
+  // Drop ANTHROPIC_API_KEY for the child: with both present the CLI would bill
+  // the API key, which is exactly what choosing the subscription is meant to avoid.
+  const { ANTHROPIC_API_KEY: _dropped, ...rest } = env;
+  const res = await runCli({
+    command,
+    args: ['-p', '--output-format', 'json', '--model', model, '--system-prompt', system, '--tools', '', '--no-session-persistence'],
+    input: user,
+    env: { ...rest, CLAUDE_CODE_OAUTH_TOKEN: token },
+    timeoutMs,
+  });
+  if (res.spawnError) {
+    return { ok: false, status: 0, detail: res.spawnError === 'ENOENT' ? 'Claude Code CLI is not installed on the runner' : `could not start the Claude Code CLI (${res.spawnError})`, text: '' };
+  }
+  if (res.timedOut) return { ok: false, status: 0, detail: 'timeout', text: '' };
+  let data = null;
+  try {
+    data = JSON.parse(res.stdout);
+  } catch {}
+  if (!data || typeof data !== 'object') {
+    const tail = (res.stderr || res.stdout || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+    return { ok: false, status: 0, detail: `Claude Code CLI exited ${res.code} without JSON${tail ? `: ${tail}` : ''}`, text: '' };
+  }
+  const text = typeof data.result === 'string' ? data.result : '';
+  if (data.is_error || !text) {
+    return { ok: false, status: 0, detail: `Claude Code CLI: ${(text || 'no result').replace(/\s+/g, ' ').slice(0, 160)}`, text: '' };
+  }
+  return { ok: true, status: 200, detail: '', text };
 }
 
 // ---- Verdict ----
@@ -276,7 +360,7 @@ export function formatComment(result, meta = {}) {
       lines.push(`Read all ${fileCount} files in the diff.`, '');
     }
   }
-  const via = meta.model ? `\`${meta.model}\`` : 'no model answered';
+  const via = meta.model ? `\`${meta.model}\`${meta.backend ? ` (${meta.backend})` : ''}` : 'no model answered';
   lines.push('---', `_Automated review by \`scripts/agents/pr-review.mjs\` — ${via}. Advisory: it never blocks a PR._`);
   return lines.join('\n');
 }
@@ -284,7 +368,7 @@ export function formatComment(result, meta = {}) {
 // ---- Orchestration ----
 
 /** Everything except reading env and exiting, so a test can drive it with a fake fetch. */
-export async function reviewPullRequest({ fetchImpl = fetch, apiKey, baseURL, ghToken, repo, prNumber, modelsEnv, log = console.log }) {
+export async function reviewPullRequest({ fetchImpl = fetch, runCli = runCommand, oauthToken, apiKey, baseURL, ghToken, repo, prNumber, modelsEnv, log = console.log }) {
   const prRes = await gh(fetchImpl, ghToken, `/repos/${repo}/pulls/${prNumber}`);
   if (!prRes.ok) throw new Error(`GitHub PR ${prNumber} → ${prRes.status}`);
   const prMeta = await prRes.json();
@@ -296,25 +380,29 @@ export async function reviewPullRequest({ fetchImpl = fetch, apiKey, baseURL, gh
 
   // Say so in the PR rather than exiting quietly: a reviewer that is switched
   // off and looks switched on is the failure this file was rewritten to end.
-  if (!apiKey) {
+  if (!oauthToken && !apiKey) {
     return {
-      result: { verdict: 'UNVERIFIED', summary: 'AI review is not configured.', error: 'the ANTHROPIC_API_KEY repository secret is not set', items: [], blockingIssues: [] },
+      result: { verdict: 'UNVERIFIED', summary: 'AI review is not configured.', error: 'neither the CLAUDE_CODE_OAUTH_TOKEN nor the ANTHROPIC_API_KEY repository secret is set', items: [], blockingIssues: [] },
       meta: { attempts: [], diff },
     };
   }
 
+  // The subscription wins when both are set: it is the one that costs nothing extra.
+  const backend = oauthToken ? 'Claude subscription' : 'Anthropic API';
   const base = normalizeBase(baseURL);
   const user = `Review this PR.\n\nPR #${prNumber}: ${prMeta.title}\n\nDiff:\n\`\`\`diff\n${diff.text}\n\`\`\`\n\nReturn the JSON verdict.`;
   const attempts = [];
   for (const model of modelCandidates(modelsEnv)) {
-    const res = await callModel({ fetchImpl, base, apiKey, model, system: SYSTEM_PROMPT, user, maxTokens: 4096 });
+    const res = oauthToken
+      ? await callClaudeCode({ runCli, token: oauthToken, model, system: SYSTEM_PROMPT, user })
+      : await callModel({ fetchImpl, base, apiKey, model, system: SYSTEM_PROMPT, user, maxTokens: 4096 });
     if (!res.ok) {
       attempts.push({ model, status: res.status, detail: res.detail });
       log(`  ${model} → ${res.status || ''}${res.detail ? ` ${res.detail}` : ''}`);
       continue;
     }
     const verdict = extractVerdict(res.text);
-    if (verdict.ok) return { result: verdict.result, meta: { model, diff } };
+    if (verdict.ok) return { result: verdict.result, meta: { model, backend, diff } };
     attempts.push({ model, status: res.status, detail: verdict.error });
     log(`  ${model} → ${verdict.error}`);
   }
@@ -332,12 +420,13 @@ export async function postComment({ fetchImpl = fetch, ghToken, repo, prNumber, 
 
 async function main() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  const oauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
   const baseURL = process.env.ANTHROPIC_BASE_URL;
   const ghToken = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   const repo = process.env.GH_REPOSITORY || process.env.GITHUB_REPOSITORY;
   const prNumber = process.env.PR_NUMBER;
 
-  // A missing ANTHROPIC_API_KEY is NOT in this list: that case is reported in
+  // Missing model credentials are NOT in this list: that case is reported in
   // the PR itself by reviewPullRequest.
   const missing = [];
   if (!ghToken) missing.push('GH_TOKEN');
@@ -349,7 +438,7 @@ async function main() {
   }
 
   try {
-    const out = await reviewPullRequest({ apiKey, baseURL, ghToken, repo, prNumber, modelsEnv: process.env.PR_REVIEW_MODELS });
+    const out = await reviewPullRequest({ oauthToken, apiKey, baseURL, ghToken, repo, prNumber, modelsEnv: process.env.PR_REVIEW_MODELS });
     if (out.skipped) {
       console.log('No diff — skipping review.');
       return;
