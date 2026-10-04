@@ -41,6 +41,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import BookingStatusTracker, { type BookingStatus } from '../../../components/BookingStatusTracker';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { formatInrExact } from '../../../lib/format-money';
 import {
  CANCELLATION_CUTOFF_HOURS,
  PARTIAL_REFUND_PERCENT,
@@ -285,10 +286,8 @@ type CancelQuote = {
  cancellationCutoffHours?: number;
 };
 
-/** `825` → `"₹825"`. One formatter, so the two dialogs cannot disagree. */
-function inr(amount: number): string {
- return `₹${Math.round(amount).toLocaleString('en-IN')}`;
-}
+/** `825` → `"₹825"`, `376.5` → `"₹376.50"`. One formatter, so the two dialogs cannot disagree and the parts add up. */
+const inr = formatInrExact;
 
 // ─── Component ──────────────────────────────────────────────────
 
@@ -1334,7 +1333,7 @@ function BookingDetailContent() {
  </h3>
  <div className="space-y-3">
  <div className="flex justify-between text-sm">
- <span className="text-surface-600">Puja Amount</span>
+ <span className="text-surface-600">Booking total</span>
  <span className="font-medium text-surface-700">
  ₹{booking.amount.toLocaleString('en-IN')}
  </span>
@@ -1453,9 +1452,9 @@ function BookingDetailContent() {
  cancelQuote && cancelQuote.cancellationAllowed === false
  ? `This booking is within ${cancelQuote.cancellationCutoffHours ?? CANCELLATION_CUTOFF_HOURS} hours of its scheduled time, so it can no longer be cancelled and no refund is due. Contact support@darshya.online if your circumstances have changed.`
  : cancelQuote
- ? `Cancel this booking? You get ${inr(cancelQuote.refundAmountInr)} back${
+ ? `Cancel this booking? You get ${formatInrExact(cancelQuote.refundAmountInr)} back${
  cancelQuote.feeAmountInr > 0
- ? `, and ${inr(cancelQuote.feeAmountInr)} is retained under the cancellation policy`
+ ? `, and ${formatInrExact(cancelQuote.feeAmountInr)} is retained under the cancellation policy`
  : ''
  }${cancelQuote.tierLabel ? ` (${cancelQuote.tierLabel})` : ''}. Refunds reach your account in ${cancelQuote.refundDaysLabel ?? '5-7 business days'}.`
  : 'Cancel this booking? We could not work out your exact refund just now — how much comes back depends on how close the slot is.'}
@@ -1528,12 +1527,12 @@ function BookingDetailContent() {
  ) : cancelQuote ? (
  <>
  <p className="mb-1 text-sm font-semibold text-amber-900">
- You get {inr(cancelQuote.refundAmountInr)} back
+ You get {formatInrExact(cancelQuote.refundAmountInr)} back
  {cancelQuote.tierLabel ? ` — ${cancelQuote.tierLabel}` : ''}
  </p>
  <p className="mb-2 text-xs text-amber-800">
  {cancelQuote.feeAmountInr > 0
- ? `${inr(cancelQuote.feeAmountInr)} of the ${inr(
+ ? `${formatInrExact(cancelQuote.feeAmountInr)} of the ${inr(
  cancelQuote.refundAmountInr + cancelQuote.feeAmountInr,
  )} you paid is retained under the cancellation policy. `
  : 'Nothing is retained. '}
@@ -1647,7 +1646,7 @@ function BookingDetailContent() {
  </a>{' '}
  or call{' '}
  <a href="tel:+919255109400" className="font-medium text-saffron-600 hover:underline">
- +91 80-BHAKTI-00
+ +91 92551 09400
  </a>
  .
  </p>
