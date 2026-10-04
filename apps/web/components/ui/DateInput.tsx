@@ -20,6 +20,8 @@ interface DateInputProps {
   dateMarkers?: Record<string, 'shubh' | 'neutral' | 'avoid'>;
   /** Optional set of dates that cannot be selected (e.g. avoid days). */
   disabledDates?: Set<string>;
+  /** Optional iso → reason, announced/hovered on a date in `disabledDates`. */
+  disabledReasons?: Record<string, string>;
   /**
    * DB-10: called when the user types a date the field then refuses.
    *
@@ -104,6 +106,7 @@ export function DateInput({
   className,
   dateMarkers,
   disabledDates,
+  disabledReasons,
   onInvalid,
 }: DateInputProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -341,7 +344,22 @@ export function DateInput({
                   type="button"
                   disabled={isDisabled}
                   onClick={() => selectDate(day)}
-                  title={marker === 'shubh' ? 'Shubh muhurat' : marker === 'avoid' ? 'Avoid' : undefined}
+                  title={
+                    isAvoid
+                      ? disabledReasons?.[iso] ?? 'Avoid'
+                      : marker === 'shubh'
+                      ? 'Shubh muhurat'
+                      : marker === 'avoid'
+                      ? 'Avoid'
+                      : undefined
+                  }
+                  aria-label={
+                    isAvoid && disabledReasons?.[iso]
+                      ? `${day}, unavailable. ${disabledReasons[iso]}`
+                      : marker === 'shubh' && !isDisabled
+                      ? `${day}, shubh muhurat`
+                      : undefined
+                  }
                   className={`
                     relative aspect-square flex items-center justify-center text-sm rounded-lg transition-colors
                     ${isSelected
