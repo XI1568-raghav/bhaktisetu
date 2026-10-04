@@ -187,8 +187,10 @@ export default function VideoProofUpload({
             onClick={handleManualSubmit}
             disabled={uploading || !manualUrl.trim()}
             className={buttonClass('primary', 'md')}
+            aria-label="Submit link"
           >
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+            <span>Submit link</span>
           </button>
         </div>
       </div>
