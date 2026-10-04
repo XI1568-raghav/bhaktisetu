@@ -114,7 +114,9 @@ describe('booking date picker muhurat layer', () => {
     render(<Harness slug="griha-pravesh" />);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const url = String(fetchMock.mock.calls[0]![0]);
-    expect(url).toContain('/panchang/puja-muhurat?pujaType=GRIHA_PRAVESH&days=30');
+    // limit = days, so the API grades EVERY day of the horizon and the picker can
+    // disable the bad ones (the API default of 5 returns only the best days).
+    expect(url).toContain('/panchang/puja-muhurat?pujaType=GRIHA_PRAVESH&days=30&limit=30');
   });
 
   it('badges a shubh day in the calendar', async () => {

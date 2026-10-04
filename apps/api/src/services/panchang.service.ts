@@ -760,11 +760,13 @@ export class PanchangService {
     from?: string,
     days = 30,
     city = 'Gurugram',
+    limit = 5,
   ): Promise<PujaMuhuratDay[]> {
     const horizon = Math.min(Math.max(Math.floor(days) || 30, 1), 92);
+    const topN = Math.min(Math.max(Math.floor(limit) || 5, 1), 92);
     const startDate = from && !isNaN(Date.parse(from)) ? from : new Date().toISOString().split('T')[0]!;
 
-    const cacheKey = `puja-muhurat:${pujaType}:${startDate}:${horizon}:${city.toLowerCase()}`;
+    const cacheKey = `puja-muhurat:${pujaType}:${startDate}:${horizon}:${topN}:${city.toLowerCase()}`;
     return cached(cacheKey, CACHE_TTL.PANCHANG_DAY, async () => {
       const inputs: DayInputs[] = [];
       const start = new Date(`${startDate}T00:00:00.000Z`);
@@ -785,7 +787,7 @@ export class PanchangService {
           rahuKaal: p.rahuKaal,
         });
       }
-      return findPujaMuhurats(pujaType, inputs, 5);
+      return findPujaMuhurats(pujaType, inputs, topN);
     });
   }
 }
