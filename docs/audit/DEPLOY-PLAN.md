@@ -82,16 +82,71 @@ Render `autoDeploy` is **false** on both services. Deployment is manual.
 | 1 | Merge `origin/main` per the rule above; resolve; tsc + full suites green |
 | 2 | Push branch; open PR; **commitlint runs on every PR and is the one gate never skipped** |
 | 3 | Merge to `main` once CI is green (no branch protection — convention only) |
-| 4 | Deploy API: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g -f branch=main` |
-| 5 | ~~Apply the migration by hand~~ **NOT NEEDED — corrected 2026-08-19.** `prisma migrate deploy` DOES run on every API boot, by both paths: `render.yaml:21` `startCommand: pnpm --filter @poojly/api start` -> `apps/api/package.json` `"start": "prisma migrate deploy && node dist/server.js"`, and `apps/api/Dockerfile:66` `CMD ["sh","-c","npx prisma migrate deploy && node dist/server.js"]`. The old instruction here was wrong and was repeated for several sessions. Running it by hand against prod with DIRECT_URL is strictly riskier than letting boot do it — prefer redeploying the API. Verify after boot with `information_schema`, not by re-running the migration. |
-| 6 | **Redeploy the API** so it boots against the new schema (client regen) |
+| 4 | Deploy API: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g` — read the note under this table before adding any other input |
+| 5 | **Apply pending migrations by hand, then verify.** From `apps/api`: `set -a && . ./.env.production && set +a`, then `DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy`. Confirm with `npx prisma migrate status` → "Database schema is up to date!". Read the note under this table first |
+| 6 | **Redeploy the API** so it boots against the migrated schema (client regen) |
 | 7 | Deploy web: same workflow, `sid=srv-d970l2ks728c738fc33g` |
 | 8 | Live-verify — curl prod endpoints, load key pages, check the deploy log. Never claim green from a summary field |
 
-### Pending migration
+#### On steps 4 and 7 — what actually selects the code that ships
 
-`20260813000000_scal03_growth_table_indexes` — nine indexes on the growth
-tables. Non-destructive, `IF NOT EXISTS`, and **proven to apply inside a single
+Render deploys the branch the service tracks. Until 2026-09-09 step 4 passed a
+`branch` input — and step 7 says "same workflow", so it inherited one — which
+read as though it pinned what would ship. It does not: the input is DEPRECATED
+and Render IGNORES it, and `.github/workflows/render-diag.yml` says exactly that
+in the input's own description. Under an outage the gap between "I pinned it"
+and "I pinned nothing" is the gap between rolling back and redeploying the
+broken HEAD, which is why the input is gone from the command rather than merely
+annotated beside it.
+
+The lever that does select what ships is `-f commit=<SHA>`, appended to the same
+dispatch. Empty means tracked-branch HEAD. That same input is the rollback —
+procedure in `docs/runbooks/prod-rollback.md`, which owns it.
+
+#### On step 5 — a green deploy is not evidence that a migration ran
+
+This step said the opposite until 2026-09-09: "NOT NEEDED — `prisma migrate
+deploy` DOES run on every API boot". The repo configuration does say that.
+`render.yaml:21` starts `pnpm --filter @poojly/api start`,
+`apps/api/package.json:10` is `prisma migrate deploy && node dist/server.js`,
+and `apps/api/Dockerfile:66` carries the same command. The deployed service does
+not behave that way. Measured 2026-09-08, twice — the second run pinned to a SHA
+to rule out a branch mismatch: Render polled to live, `/health` returned
+`db: ok`, and the same three migrations were still pending afterwards.
+Re-measured 2026-09-09 directly from `_prisma_migrations`, their `finished_at`
+timestamps are those of the manual run, not of either deploy. Why the live start
+path skips it is not yet pinned; the full measurement, and the causes already
+ruled out, are recorded in `TASKS.md` under "Deploy/migrate procedure".
+
+The failure mode is therefore not a crash-loop but a silent no-op: the deploy
+reports green, the schema never moves, and the new code 500s at runtime on
+columns that were never created. Apply first, confirm with `migrate status`, and
+only then treat step 6 as the thing that picks the schema up.
+
+### Pending migrations
+
+**Do not take a fixed list from this page.** Written on 2026-08-14, this section
+named `20260813000000_scal03_growth_table_indexes` as *the* migration to watch.
+As of 2026-09-09 `apps/api/prisma/migrations/` holds 44 migrations, 10 of them
+created after that one, so "the pending migration" is no longer a single thing
+and this page is not the source of truth for which are unapplied.
+
+Ask the database, using `DIRECT_URL` from `.env.production` and not the pooled
+URL:
+
+```bash
+cd apps/api && npx prisma migrate status
+```
+
+`apps/api/scripts/verify-migration-objects.mjs --unexecuted` is **not** a pending
+check and must not be read as one: it lists ledger rows whose
+`applied_steps_count` is 0, most of which are fully applied. Measured 2026-09-09
+it reported 6 and exited non-zero while the genuinely pending count was 0. Use
+it only to ask whether specific objects already exist, which is the usual killer
+(42P07 / 42701 "already exists"). `migrate status` is the one to trust.
+
+The original note still holds for `scal03` itself: nine indexes on the growth
+tables, non-destructive, `IF NOT EXISTS`, and **proven to apply inside a single
 transaction** against the local stack, so it will not hit the 25001
 CONCURRENTLY trap that blocked this repo's migrations for two months.
 
@@ -159,9 +214,15 @@ and store those URLs.
 
 ### Cost discipline
 
-**One push = one Render web build + one API build.** This repo burned its
-free-tier pipeline minutes in June with ~120 commits. Batch everything and push
-**once**.
+**A push builds nothing.** Both Render services carry `autoDeploy: false`
+(`render.yaml:28` API, `:60` web), so merging to `main` costs zero build minutes
+and changes nothing in production until step 4 dispatches a deploy by hand.
+This section previously read "One push = one Render web build + one API build";
+that was true before the 2026-07-08 Render cutover and false after it. The June
+burn it cites was real — ~120 commits back when a push did build — but batching
+is now review hygiene, not a cost control. The spend that still exists is the
+dispatched deploy itself, so the discipline that still pays is dispatching once
+per intended change rather than per commit.
 
 ---
 

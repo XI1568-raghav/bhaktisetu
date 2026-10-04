@@ -4,7 +4,7 @@
 // festival proximity). Output is a markdown checklist the founder can copy.
 // No external AI calls — deterministic templates seeded with day-of-month.
 // Output: docs/agent-reports/YYYY-MM-DD-founder-tweet-draft.md
-import { fetchText, writeReport, upsertLog, WEB_BASE, TODAY } from './_lib.mjs';
+import { fetchVerified, writeReport, upsertLog, WEB_BASE, TODAY } from './_lib.mjs';
 // TC-08 — nothing promotes a Priest to verified; see ./_claims.mjs.
 import { PANDIT_TRUST_SHORT, verifiedNoun } from './_claims.mjs';
 
@@ -48,10 +48,32 @@ const TEMPLATES = [
     `Shloka of the day from Bhagavad Gita is live at darshya.online/shlokas.\n\n8 hand-picked shlokas with Sanskrit + transliteration + meaning + shareable OG cards. ${festival.name} themed picks coming soon.\n\nNo paywall. No ads. Just the sacred texts.`,
 ];
 
+/**
+ * OPS-12 (F451). This destructured `{ text }` out of `fetchText` and counted
+ * `<loc>` in whatever came back, status unread. Under the origin's rate limiter
+ * that body is a Cloudflare block page — zero `<loc>` elements — and draft 1
+ * below then advertised "0+ pages live now at darshya.online" as a founder
+ * tweet. `fetchVerified` returns `text: null` for anything it did not verify.
+ *
+ * null, never 0: 0 is a measurement, null is the absence of one.
+ */
 async function getSitemapStats() {
-  const { text } = await fetchText(`${WEB_BASE}/sitemap.xml`);
-  const urlCount = (text.match(/<loc>/g) || []).length;
-  return { sitemapUrls: urlCount };
+  const r = await fetchVerified(`${WEB_BASE}/sitemap.xml`);
+  if (!r.verified) {
+    console.error(`[founder-tweet-draft] sitemap UNVERIFIED — ${r.reason}`);
+    return { sitemapUrls: null };
+  }
+  return { sitemapUrls: (r.text.match(/<loc>/g) || []).length };
+}
+
+/**
+ * OPS-12. A draft that states the page count may not ship on a count we could
+ * not verify. Probes each template with a sentinel to find the ones that do.
+ */
+function renderDrafts(templates, ctx) {
+  if (ctx.sitemapUrls !== null) return templates.map((t) => t(ctx));
+  const probe = { ...ctx, sitemapUrls: '__URLS__' };
+  return templates.filter((t) => !String(t(probe)).includes('__URLS__')).map((t) => t(ctx));
 }
 
 async function run() {
@@ -61,12 +83,18 @@ async function run() {
 
   const ctx = { festival, dDays, today: TODAY, sitemapUrls: stats.sitemapUrls };
 
+  const drafts = renderDrafts(TEMPLATES, ctx);
+
   let md = `# Founder tweet drafts — ${TODAY}\n\n`;
-  md += `Context: ${festival.name} in ${dDays}d · ${stats.sitemapUrls} URLs live\n\n`;
+  md +=
+    `Context: ${festival.name} in ${dDays}d · ` +
+    (stats.sitemapUrls === null
+      ? 'sitemap URL count UNVERIFIED (origin did not return a verified 200 — see stderr); count-stating drafts withheld'
+      : `${stats.sitemapUrls} URLs live`) +
+    `\n\n`;
   md += `Copy any one to X. Personalize, don't auto-post — the algorithm rewards authenticity.\n\n`;
 
-  TEMPLATES.forEach((tpl, i) => {
-    const tweet = tpl(ctx);
+  drafts.forEach((tweet, i) => {
     const chars = tweet.length;
     const status = chars <= 280 ? '✓' : chars <= 4000 ? '⚠ premium' : '✗ too long';
     md += `## Draft ${i + 1} — ${chars} chars ${status}\n\n`;
@@ -77,7 +105,7 @@ async function run() {
   md += `**Posting cadence**: 1-2 per day max. Reply to bigger accounts in your niche (@srimandir, @vedicfolks) within 30 min of their posts for max reach.\n`;
 
   writeReport('founder-tweet-draft', md);
-  upsertLog('founder-tweet-draft', `festival=${festival.name} d=${dDays} drafts=${TEMPLATES.length}`);
+  upsertLog('founder-tweet-draft', `festival=${festival.name} d=${dDays} drafts=${drafts.length}`);
 }
 
 run().catch((e) => {

@@ -22,12 +22,12 @@
  * header nav — showed nothing until the whole segment resolved.
  *
  * This file covers (b) on both routes. It deliberately does NOT claim (a) on
- * /astrology: app/astrology/page.tsx:171 is still
+ * /astrology: app/astrology/(index)/page.tsx:171 is still
  * `<Suspense fallback={<div className="min-h-[100dvh]" />}>` and that file is
  * outside this lane.
  *
  * /pujas added in the second pass. It is the same defect one route over and the
- * worst-placed instance of it: app/pujas/page.tsx is an async server component
+ * worst-placed instance of it: app/pujas/(index)/page.tsx is an async server component
  * that awaits the catalogue AND `getTranslations` with no <Suspense> of its own
  * and had no loading.tsx either, so the single highest-intent navigation on the
  * site — every "Book a puja" CTA, the header nav, the homepage category strip —
@@ -41,9 +41,9 @@ import React from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 
-import TemplesLoading from '../app/temples/loading';
-import AstrologyLoading from '../app/astrology/loading';
-import PujasLoading from '../app/pujas/loading';
+import TemplesLoading from '../app/temples/(index)/loading';
+import AstrologyLoading from '../app/astrology/(index)/loading';
+import PujasLoading from '../app/pujas/(index)/loading';
 
 afterEach(() => cleanup());
 
@@ -115,7 +115,7 @@ describe.each(ROUTES)('CM-15 — %s segment loading state', (route, Loading) => 
  */
 describe('CM-15 — no route hands its Suspense boundary a blank screen', () => {
   const ROUTES: Array<{ label: string; load: () => Promise<{ default: () => unknown }> }> = [
-    { label: '/astrology', load: () => import('../app/astrology/page') },
+    { label: '/astrology', load: () => import('../app/astrology/(index)/page') },
     { label: '/support/faq', load: () => import('../app/support/faq/page') },
     { label: '/waitlist/welcome', load: () => import('../app/waitlist/welcome/page') },
   ];

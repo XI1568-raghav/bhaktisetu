@@ -13,7 +13,7 @@ import { dedupeTempleCards } from '../lib/temple-grid';
 //
 // The alias table that already resolves one-temple-one-URL for the detail
 // route (lib/temple-slug.ts, shipped for SEO-06) was not reaching the grid:
-// app/temples/page.tsx carried its own private slug normaliser that only
+// app/temples/(index)/page.tsx carried its own private slug normaliser that only
 // stripped a trailing `<place>` segment, so it could not see that
 // `tirumala-tirupati` and `tirupati-balaji` are one temple.
 
@@ -94,7 +94,7 @@ describe('TD-03 — one temple, one card', () => {
 
   it('the temples page routes its grid through the shared canonicaliser', () => {
     const src = fs
-      .readFileSync(path.join(__dirname, '../app/temples/page.tsx'), 'utf8')
+      .readFileSync(path.join(__dirname, '../app/temples/(index)/page.tsx'), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/^\s*\/\/.*$/gm, '');
     expect(src).toMatch(/dedupeTempleCards/);

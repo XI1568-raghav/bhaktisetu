@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { H1 } from '../../components/ui/heading-recipe';
-import { getTemples, type TempleListItem } from '../../lib/api';
-import { TEMPLE_DETAILS, type TempleDetailRich } from '../../lib/temple-details';
-import { TemplesBrowser, type TempleCardData } from '../../components/temples/TemplesBrowser';
-import { canonicalTempleSlug } from '../../lib/temple-slug';
-import { dedupeTempleCards } from '../../lib/temple-grid';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { getTemples, type TempleListItem } from '../../../lib/api';
+import { TEMPLE_DETAILS, type TempleDetailRich } from '../../../lib/temple-details';
+import { TemplesBrowser, type TempleCardData } from '../../../components/temples/TemplesBrowser';
+import { canonicalTempleSlug } from '../../../lib/temple-slug';
+import { dedupeTempleCards } from '../../../lib/temple-grid';
 // TC-07: TRUST_SCORE_MARQUEE is no longer imported here. This page used it to
 // decide whether a temple is a Jyotirlinga — see apiToCard below for why that
 // was both a category error and dead code.

@@ -172,7 +172,7 @@ function scannedFiles(): string[] {
 
 describe('PERF-04 — intrinsic image dimensions', () => {
   it('the three pages the finding named still declare width and height everywhere', () => {
-    const named = ['app/page.tsx', 'app/pujas/page.tsx', 'app/temples/[slug]/page.tsx'];
+    const named = ['app/page.tsx', 'app/pujas/(index)/page.tsx', 'app/temples/[slug]/page.tsx'];
     const offenders = named
       .map((rel) => [rel, countImgs(readFileSync(path.join(WEB_ROOT, rel), 'utf8'))] as const)
       .filter(([, c]) => c.missing > 0)
@@ -208,7 +208,7 @@ describe('PERF-04 — intrinsic image dimensions', () => {
       missing,
       'these <img> tags declare no intrinsic box, so the browser reserves zero height ' +
         'until the bytes arrive and everything below them jumps. Copy the pattern at ' +
-        'app/pujas/page.tsx:679 — width/height are the ratio of the painted box, taken ' +
+        'app/pujas/(index)/page.tsx:679 — width/height are the ratio of the painted box, taken ' +
         "from the wrapper's aspect-* or its fixed w-N h-N; CSS keeps doing the sizing.\n" +
         offenders.join('\n'),
     ).toBeLessThanOrEqual(BASELINE_MISSING);

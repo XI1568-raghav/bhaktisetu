@@ -5,6 +5,41 @@
 // Allow dynamic params so api-seeded slugs resolve on-demand (SSR + revalidate).
 export const dynamicParams = true;
 export const revalidate = 3600;
+
+// ──────────────────────────────────────────────────────────────
+// SEO-11 (prod sweep 2026-09-08) — WHY AN UNKNOWN SLUG STILL RETURNS HTTP 200.
+//
+// `notFound()` below is called and Next DOES render app/not-found.tsx, but the
+// status stays 200. The cause is NOT this file, NOT `revalidate`/ISR, and NOT
+// the sibling error.tsx. It is `app/temples/loading.tsx`.
+//
+// A parent segment's loading.tsx makes the App Router wrap that segment's whole
+// child subtree in a real <Suspense> (next/dist/client/components/layout-router.js
+// :353 and :483 — the nesting is ErrorBoundary → LoadingBoundary(Suspense) →
+// HTTPAccessFallbackBoundary → page). React therefore flushes the shell — head
+// included — with the loading skeleton as the fallback BEFORE this page's render
+// resolves. The notFound() then throws inside that boundary and is swallowed by
+// HTTPAccessFallbackBoundary (http-access-fallback/error-boundary.js:30-37),
+// which streams in app/not-found.tsx plus its own <meta robots="noindex">.
+// `renderToHTMLOrFlightImpl`'s catch — app-render.js:1402, the ONLY place a
+// notFound() sets res.statusCode/metadata.statusCode to 404 — never runs.
+//
+// Measured on prod 2026-09-08, paced, status asserted before reading any body:
+//   /blog/<bogus>            no parent loading.tsx   -> 404   (MISS)
+//   /puja/<bogus>/<bogus>    no parent loading.tsx   -> 404   (MISS)
+//   /temples/<bogus>         app/temples/loading.tsx -> 200   (MISS)
+//   /pujas/<bogus>           app/pujas/loading.tsx   -> 200
+//   /pujas/<bogus>/temples   app/pujas/loading.tsx   -> 200
+// and the 200 bodies contain the skeleton's own "Loading temples" / "Loading
+// pujas" string, i.e. the Suspense fallback really was flushed into the shell.
+// loading.tsx is the only structural difference between the two groups.
+//
+// THE FIX IS NOT IN THIS FILE. It is to stop `app/temples/loading.tsx` from
+// covering [slug] — either delete it, or move the directory page into a route
+// group (app/temples/(index)/page.tsx + (index)/loading.tsx) so the skeleton
+// keeps covering /temples without covering /temples/<slug>. Guarded by
+// __tests__/seo/soft-404-status.test.ts.
+// ──────────────────────────────────────────────────────────────
 import type { Metadata } from 'next';
 // DU-03: the one primary-CTA recipe. Layout-only extras in the third slot —
 // never h-*, px-*, py-* or rounded-*, which is the invariant every call site holds.
@@ -109,6 +144,36 @@ export async function generateMetadata({
  const slug = canonicalTempleSlug(rawSlug);
  const rich = getTempleDetail(slug);
  const fallback = (await getApiTemple(slug)) ?? (await getApiTemple(rawSlug));
+
+ // SEO-11 (prod sweep 2026-09-08): this is the SAME predicate the page body
+ // 404s on (`if (!rich && !apiTemple) notFound()` below). Until now only the
+ // body knew that, so an unknown slug still got the success-shaped head:
+ //
+ //   <title>Temple — ,  | Darshya</title>        both interpolations empty
+ //   <link rel="canonical" href=".../temples/definitely-not-a-temple-xyz">
+ //   <meta name="robots" content="index, follow">   inherited from app/layout
+ //
+ // — while Next, having caught the notFound() inside the tree, ALSO emitted
+ // <meta name="robots" content="noindex">. Two directives that contradict each
+ // other on a URL that self-canonicalises and carries an empty title. Google
+ // takes the most restrictive, so noindex wins and nothing was indexed; the
+ // cost was crawl budget over an unbounded slug space plus a broken title on
+ // anything that renders the <head> (link previews, Slack/WhatsApp unfurls).
+ //
+ // No canonical (the root layout deliberately declares none — see SEO-01 in
+ // app/layout.tsx — so omitting `alternates` here emits none at all), no
+ // openGraph/twitter card, and one robots directive that agrees with Next's.
+ //
+ // This does NOT fix the 200 status; nothing inside this file can. See the
+ // note above `export const revalidate` at the top of the file.
+ if (!rich && !fallback) {
+   return {
+     title: 'Temple not found',
+     description: 'This temple page has moved or no longer exists.',
+     robots: { index: false, follow: false },
+   };
+ }
+
  const name = rich?.name ?? fallback?.name ?? 'Temple';
  const location = rich ? `${rich.location}, ${rich.state}` : `${fallback?.city ?? ''}, ${fallback?.state ?? ''}`;
  const deity = rich?.deity ?? fallback?.deityPrimary ?? 'Devotees';

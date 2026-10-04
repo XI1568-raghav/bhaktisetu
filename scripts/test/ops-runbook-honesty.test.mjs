@@ -632,28 +632,99 @@ describe('OPS-10 — documents describing infrastructure that does not exist', (
 // Splitting on blank lines and re-joining wraps is how a reader parses it. The
 // per-line, added-lines-only tripwire in commitlint.yml is the stricter half of
 // the pair; this is the half that sees the whole file.
-import { readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const WINDOWS_SEP = String.fromCharCode(92);
 
 /**
+ * Lines that hand an operator a `render-diag.yml` dispatch carrying the
+ * deprecated branch input, as `path:line text`.
+ *
+ * Extracted to module scope 2026-09-09 so the non-vacuity test runs THIS
+ * function rather than re-implementing the condition inline. The version it
+ * replaced asserted `retired.includes('render-diag.yml') && /-f\s+branch=/`
+ * on a local string, which proves a regex matches a string — not that the
+ * sweep would catch the line. That is the shape of a test that cannot fail.
+ */
+export function branchFlagLines(text, label = '<inline>') {
+  const offenders = [];
+  String(text ?? '')
+    .split('\n')
+    .forEach((line, i) => {
+      if (!line.includes('render-diag.yml')) return;
+      if (/-f\s+branch=/.test(line)) offenders.push(`${label}:${i + 1} ${line.trim()}`);
+    });
+  return offenders;
+}
+
+/**
+ * The audit directory's RECORD files, by exact path.
+ *
+ * OPS-15. Until 2026-09-09 this was the single pattern `/^docs\/audit\//`, and
+ * the mismatch between that pattern and its own justification was the defect.
+ * The justification is about a KIND of document: a ledger row reading "it says
+ * push a revert, but both services are autoDeploy:false" is the DESCRIPTION of
+ * a finding, not a recurrence of it, and rewording it to satisfy a grep would
+ * falsify the record. That reason covers the ledger and the preserved agent
+ * transcripts. It does not cover `docs/audit/DEPLOY-PLAN.md`, which is a
+ * numbered deploy sequence an operator follows at 3am — and which sat at line
+ * 85 handing out a `render-diag.yml` dispatch carrying the deprecated branch
+ * input, invisible to this file's own sweep, while it reported 108/108 green.
+ *
+ * So the exclusion is now scoped the way its reason is scoped, and a reader can
+ * check every entry by opening it. All 22 markdown files under `docs/audit/`
+ * were classified on 2026-09-09:
+ *
+ *   RECORD (below — excluded): the ledger; the four preserved batch runs; the
+ *   two stage-2 raw transcripts and the re-verification results; the raw
+ *   388-finding prod sweep; the delta-completion brief (whose OPS-06 table row
+ *   is the exact line that made commitlint.yml adopt this exclusion); the two
+ *   stale-verification lanes; the triage write-up; the customer-test findings.
+ *   Each of these reproduces defect text in order to record it.
+ *
+ *   INSTRUCTION (NOT excluded — scanned like any other page): DEPLOY-PLAN.md,
+ *   OWNER-ACTIONS.md, RESUME.md, SESSION-STATE.md, CUSTOMER-TEST-PROMPT.md,
+ *   customer-test/{AGENT-BRIEF,FIX-BRIEF,RESUME,MAIN-RED-8-FAILURES}.md. Every
+ *   one of them tells a reader to do something.
+ *
+ * Measured before narrowing: with the whole directory in scope, ONE file fails
+ * — DEPLOY-PLAN.md:85, on the branch-input rule. Every other instruction page
+ * is already clean, and of the record files only delta-completion-2026-08-20.md
+ * carries a line the ban shape matches at all, inside a table row that
+ * `documentVoice()` strips. So the narrowing costs nothing and buys the
+ * directory's default: a NEW file dropped into `docs/audit/` is scanned unless
+ * someone adds it here with a reason.
+ */
+const AUDIT_RECORDS = [
+  'docs/audit/LEDGER.md',
+  'docs/audit/prod-sweep-raw-2026-08-12.md',
+  'docs/audit/stage2-money-path-raw.md',
+  'docs/audit/stage2-reverify-results.md',
+  'docs/audit/delta-completion-2026-08-20.md',
+  'docs/audit/batch5-agent-fixes.md',
+  'docs/audit/batch5-review.md',
+  'docs/audit/batch6-agent-fixes.md',
+  'docs/audit/batch8-review-findings.md',
+  'docs/audit/stale-verification-a.md',
+  'docs/audit/stale-verification-b.md',
+  'docs/audit/triage-2026-08-15.md',
+  'docs/audit/customer-test/FINDINGS.md',
+];
+
+/**
  * Every markdown file a human might open and follow — walked, never listed.
  *
- * `docs/audit/**` is excluded for the reason commitlint.yml excludes it: that
- * directory's job is to quote defects verbatim, and a ledger row reading "it
- * says push a revert, but both services are autoDeploy:false" is the
- * DESCRIPTION of the finding, not a recurrence of it. Rewording the audit
- * record to satisfy a grep would falsify it. `docs/chat-archive/**` is raw
- * conversation transcript, not instruction. Nothing else is excluded — the
- * cron-written directories (`docs/agent-reports`, `docs/roadmap/_dryrun`,
- * `docs/roadmap/_alerts`) are deliberately IN scope, because a scheduled agent
- * writing the retired claim into the repo is a regression worth failing on.
+ * `docs/chat-archive/**` is raw conversation transcript, not instruction.
+ * Nothing else is excluded — the cron-written directories
+ * (`docs/agent-reports`, `docs/roadmap/_alerts`) are deliberately IN scope,
+ * because a scheduled agent writing the retired claim into the repo is a
+ * regression worth failing on.
  */
 const EXCLUDED = [
-  // The audit ledger's job is to quote defects verbatim (same exclusion, same
-  // reason, as .github/workflows/commitlint.yml).
-  /^docs\/audit\//,
+  // The audit RECORD files only — see AUDIT_RECORDS above for the classification
+  // and for why this is no longer the whole directory.
+  ...AUDIT_RECORDS.map((p) => new RegExp(`^${p.replace(/[.]/g, '\\.')}$`)),
   // Raw conversation transcript, not instruction.
   /^docs\/chat-archive\//,
   // CLAUDE.md declares docs/handoff.md an APPEND-ONLY ARCHIVE. Its June entries
@@ -694,6 +765,26 @@ export function allFollowableDocs(root = '.') {
     if (entry.endsWith('.md')) out.push(entry);
   }
   return out.filter((f) => !EXCLUDED.some((re) => re.test(f)));
+}
+
+/** Every markdown file under docs/audit, excluded or not. */
+export function auditMarkdownFiles(root = '.') {
+  const out = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir)) {
+      const p = join(dir, entry);
+      let st;
+      try {
+        st = statSync(p);
+      } catch {
+        continue;
+      }
+      if (st.isDirectory()) walk(p);
+      else if (entry.endsWith('.md')) out.push(p.split(WINDOWS_SEP).join('/').replace(/^\.\//, ''));
+    }
+  };
+  walk(join(root, 'docs', 'audit'));
+  return out;
 }
 
 /**
@@ -812,7 +903,11 @@ describe('OPS-06 (2026-09-08) — the ban is enumerated by walking, not by listi
       expect(docs, `walker missed ${known}`).toContain(known);
     }
     // And it must NOT sweep the audit ledger, whose job is verbatim quotation.
-    expect(docs.some((f) => f.startsWith('docs/audit/'))).toBe(false);
+    expect(docs).not.toContain('docs/audit/LEDGER.md');
+    // But it MUST sweep the audit directory's instruction pages. Asserting the
+    // whole directory was absent — which is what this line said until
+    // 2026-09-09 — is what let DEPLOY-PLAN.md's dispatch hide in here.
+    expect(docs).toContain('docs/audit/DEPLOY-PLAN.md');
   });
 
   it('NO markdown document in this repository presents a push or a revert as a deploy', () => {
@@ -853,23 +948,134 @@ describe('OPS-06 (2026-09-08) — the deprecated `-f branch=` input', () => {
   // person's memory, is what noticed the debt was paid.
   const OUT_OF_LANE = [];
 
-  it('no document hands an operator a render-diag dispatch carrying -f branch=', () => {
+  it('no document hands an operator a render-diag dispatch carrying the branch input', () => {
     const offenders = [];
     for (const file of allFollowableDocs().filter((f) => !OUT_OF_LANE.includes(f))) {
-      read(file)
-        .split('\n')
-        .forEach((line, i) => {
-          if (!line.includes('render-diag.yml')) return;
-          if (/-f\s+branch=/.test(line)) offenders.push(`${file}:${i + 1} ${line.trim()}`);
-        });
+      offenders.push(...branchFlagLines(read(file), file));
     }
     expect(offenders, `\n${offenders.join('\n')}\n`).toEqual([]);
   });
 
-  it('the rule is capable of failing — the exact line seven docs carried', () => {
-    const retired =
-      'gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d970l2ks728c738fc33g -f branch=main';
-    expect(retired.includes('render-diag.yml') && /-f\s+branch=/.test(retired)).toBe(true);
+  it('the rule is capable of failing — the exact line DEPLOY-PLAN.md carried', () => {
+    // Verbatim from docs/audit/DEPLOY-PLAN.md:85 on the morning of 2026-09-09,
+    // step 4 of the deploy sequence. It was invisible to the sweep above
+    // because `docs/audit/**` was excluded as a directory — see AUDIT_RECORDS.
+    const retired = [
+      '| Step | Command / action |',
+      '|---|---|',
+      '| 4 | Deploy API: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g -f branch=main` |',
+    ].join('\n');
+    expect(branchFlagLines(retired, 'docs/audit/DEPLOY-PLAN.md')).toEqual([
+      'docs/audit/DEPLOY-PLAN.md:3 | 4 | Deploy API: `gh workflow run render-diag.yml -f mode=deploy -f sid=srv-d7mc2n8sfn5c73dfce0g -f branch=main` |',
+    ]);
+    // And the correction that replaced it must NOT be flagged — the command
+    // line no longer carries the input, and the sentence that explains why is
+    // a separate line, so the sweep never sees both on one line.
+    expect(branchFlagLines(read('docs/audit/DEPLOY-PLAN.md'))).toEqual([]);
+  });
+});
+
+describe('OPS-15 (2026-09-09) — the audit exclusion is scoped by kind, not by directory', () => {
+  // The exclusion above this line read `/^docs\/audit\//` while its comment
+  // justified it by DOCUMENT KIND: "that directory's job is to quote defects
+  // verbatim". Both halves are defensible; together they are the OPS-06 shape
+  // one level up. A wrong, load-bearing instruction (DEPLOY-PLAN.md step 4)
+  // sat where an operator would act on it, and the guard written to forbid
+  // exactly that could not structurally reach it — 108/108 green throughout.
+  //
+  // These tests lock the two properties the narrowing has to have at once:
+  // it still cannot punish a record for quoting, and it CAN reach an
+  // instruction page.
+
+  it('every excluded audit path exists — the list cannot rot into a silent no-op', () => {
+    // An exact-path exclusion naming a file that has been renamed or deleted
+    // stops excluding anything and nobody notices. Worse, it reads like a
+    // justification for a directory-wide hole that is no longer there.
+    for (const p of AUDIT_RECORDS) {
+      expect(existsSync(p), `AUDIT_RECORDS names a file that does not exist: ${p}`).toBe(true);
+    }
+  });
+
+  it('the records stay out of the walk and the instructions come into it', () => {
+    const docs = allFollowableDocs();
+    for (const p of AUDIT_RECORDS) {
+      expect(docs, `record swept: ${p}`).not.toContain(p);
+    }
+    // Everything an operator or an agent is told to follow, by exact path.
+    for (const p of [
+      'docs/audit/DEPLOY-PLAN.md',
+      'docs/audit/OWNER-ACTIONS.md',
+      'docs/audit/RESUME.md',
+      'docs/audit/SESSION-STATE.md',
+      'docs/audit/customer-test/AGENT-BRIEF.md',
+      'docs/audit/customer-test/FIX-BRIEF.md',
+      'docs/audit/customer-test/RESUME.md',
+      'docs/audit/customer-test/MAIN-RED-8-FAILURES.md',
+    ]) {
+      expect(docs, `instruction page not swept: ${p}`).toContain(p);
+    }
+  });
+
+  it('no markdown file under docs/audit is silently unclassified', () => {
+    // A file dropped into docs/audit is scanned unless someone adds it to
+    // AUDIT_RECORDS with a reason. This asserts the partition is total, so the
+    // next file cannot land in the gap the old pattern created.
+    const swept = new Set(allFollowableDocs());
+    const excluded = new Set(AUDIT_RECORDS);
+    for (const p of auditMarkdownFiles()) {
+      expect(
+        swept.has(p) || excluded.has(p),
+        `${p} is neither swept nor listed in AUDIT_RECORDS`,
+      ).toBe(true);
+    }
+  });
+
+  it('the ledger’s verbatim OPS-06 row still does not trip the ban', () => {
+    // The row, exactly as `docs/audit/LEDGER.json` records it. This is the
+    // sentence the whole exclusion exists to protect, and it must survive the
+    // ban on its own merits — via the denial exemption, not via the exclusion.
+    const row =
+      'The written rollback procedure cannot work — it says push a revert, ' +
+      'but both services are autoDeploy:false and no workflow deploys from main';
+    expect(pushAsDeployAssertions(row)).toHaveLength(0);
+    // Non-vacuous: the ban DOES fire on the same sentence once the denial is
+    // negated, so the zero above is the exemption working and not the ban
+    // simply failing to see the sentence.
+    //
+    // The mutation flips `false` to `enabled` rather than deleting the phrase.
+    // Deleting it was the first attempt and it proved nothing: `autoDeploy` is
+    // ALSO what the ban matches on (`auto-?deploys?`), so removing the words
+    // removed the trigger along with the exemption and the count went to zero
+    // for the wrong reason.
+    expect(pushAsDeployAssertions(row.replace('autoDeploy:false', 'autoDeploy enabled'))).toHaveLength(
+      1,
+    );
+  });
+
+  it('the ledger row is present in LEDGER.json, so the test above is not a museum piece', () => {
+    // If the ledger is ever reworded, this fails and whoever reworded it has to
+    // decide deliberately whether the exclusion is still earning its place.
+    expect(read('docs/audit/LEDGER.json')).toContain(
+      'it says push a revert, but both services are autoDeploy:false',
+    );
+  });
+
+  it('DEPLOY-PLAN.md, now in scope, is clean under both bans', () => {
+    // The other half of this change. Narrowing the exclusion without fixing the
+    // page reds CI; fixing the page without narrowing leaves the hole open for
+    // the next file added to that directory.
+    const plan = read('docs/audit/DEPLOY-PLAN.md');
+    expect(pushAsDeployAssertions(plan)).toEqual([]);
+    expect(branchFlagLines(plan)).toEqual([]);
+  });
+
+  it('DEPLOY-PLAN.md states the lever that actually selects what ships', () => {
+    // Removing the wrong flag and leaving nothing is how the wrong flag came
+    // back the first time. The page must name `-f commit=<SHA>`, which is both
+    // the pin and the rollback, and cite the runbook that owns it.
+    const plan = read('docs/audit/DEPLOY-PLAN.md');
+    expect(plan).toMatch(/-f commit=/);
+    expect(plan).toContain('docs/runbooks/prod-rollback.md');
   });
 });
 
@@ -1025,5 +1231,282 @@ describe('OPS-10 (2026-09-08) — the signable instruments carry an owner gate',
   it('the gate is capable of failing — an instrument without it', () => {
     const ungated = '# Privacy Policy\n\nData residency: Mumbai primary, Singapore standby.\n';
     expect(ungated.includes('PENDING OWNER SIGN-OFF')).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OPS-17 (2026-09-09) — the migration claim, `apps/api/package.json` and
+// `render.yaml` are locked together.
+//
+// TASKS.md:119 said, in bold, "**Migrations DO auto-apply — on API START, not
+// build.**", and drew the operational conclusion "**Consequence: a failing
+// migration is a CRASH-LOOP, not a failed build** — the API never comes up."
+// It cited two real files to prove it, and both citations describe real text:
+// the API's `start` script IS `prisma migrate deploy && node dist/server.js`,
+// and `render.yaml`'s `startCommand` DOES invoke it.
+//
+// The deployed service does not behave that way. Measured 2026-09-08 (twice —
+// the second run pinned with `-f commit=<SHA>` to rule out a branch mismatch)
+// and re-measured from `_prisma_migrations` on 2026-09-09: a deploy reports
+// live and healthy while the pending migrations stay pending, and every
+// applied migration's `finished_at` falls inside a manual `migrate deploy`
+// burst. The real hazard is therefore the OPPOSITE of the one the page warned
+// about — not a loud crash-loop, but a silent no-op: a green deploy over a
+// schema that never moved. TASKS.md is `@`-imported by CLAUDE.md, so every
+// session in this repository read the wrong sentence and reasoned about
+// deploys from it. Same class as OPS-06.
+//
+// Three checks, because the failure had three independent parts:
+//
+//   1. A CITATION pointing at the wrong line. The retired text said
+//      `render.yaml:20`; line 20 is a comment and `startCommand` is on 21. A
+//      line number nobody opens is exactly the detail that rots, so the quoted
+//      command must actually BE on the line it names.
+//   2. A CLAIM that measurement contradicts — swept by WALKING every
+//      followable document rather than from a hand-kept list, which is the
+//      mistake OPS-06 made twice.
+//   3. A PRE-FLIGHT that does not check what it says it checks.
+//      `verify-migration-objects.mjs --unexecuted` selects ledger rows with
+//      `applied_steps_count = 0`. Measured 2026-09-09 against production it
+//      named 6 migrations and exited 1 while the number genuinely pending was
+//      0. It is an object-existence probe, not a pending check.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Documents that still carry the retired auto-apply claim and were OUT OF LANE
+ * for the OPS-17 pass (scoped to TASKS.md, CLAUDE.md and this file).
+ *
+ * Enumerated rather than excluded, so the sweep below still runs over them and
+ * a reader can see exactly what is left. This array must shrink to `[]` as the
+ * runbooks are corrected; anything the sweep finds that is NOT listed here is a
+ * new regression and fails immediately.
+ *
+ * MEASURED 2026-09-09 — these two are what the ban actually reaches:
+ *   docs/runbooks/prod-rollback.md:113  "Migrations apply automatically on
+ *                                        every boot, including the boot that
+ *                                        follows a rollback."
+ *   docs/runbooks/disaster-recovery.md:108  "The API start command runs
+ *                                        `prisma migrate deploy` before serving."
+ *
+ * ONE PAGE THE SWEEP DOES NOT REACH, stated here rather than left to be
+ * discovered: `docs/runbooks/schema-authority.md` is built end to end on the
+ * same false premise ("Nothing else applies schema. There is no manual step and
+ * no dashboard override; do not add one.", and a crash-loop-vs-stale-serving
+ * table). It escapes because it never uses any of the banned phrasings in its
+ * own voice — its numbered boot sequence puts the verb before `migrate deploy`
+ * and splits the claim across sentences, and its consequence table is a table
+ * row, which `documentVoice()` strips by design. Widening the ban far enough to
+ * catch it without also catching correct prose is not something this pass could
+ * do honestly, so it is named instead. That page needs a rewrite, not a regex.
+ */
+const OPS17_KNOWN_UNFIXED = ['docs/runbooks/disaster-recovery.md', 'docs/runbooks/prod-rollback.md'];
+
+/**
+ * Every `` `path:N` → `command` `` citation in a document, as
+ * `{ file, line, quoted }`. This is the shape TASKS.md uses to prove a claim
+ * about the deploy chain, and the shape that rots without anyone noticing.
+ */
+export function lineCitations(md) {
+  const out = [];
+  const re = /`([A-Za-z0-9._/-]+\.(?:ya?ml|json|mjs|ts|js)):(\d+)`\s*(?:→|->)\s*`([^`]+)`/g;
+  let m;
+  while ((m = re.exec(String(md ?? ''))) !== null) {
+    out.push({ file: m[1], line: Number(m[2]), quoted: m[3] });
+  }
+  return out;
+}
+
+/** Citations whose quoted text is not actually on the line they name. */
+export function brokenLineCitations(md, root = '.') {
+  return lineCitations(md).filter(({ file, line, quoted }) => {
+    let text;
+    try {
+      text = readFileSync(join(root, file), 'utf8');
+    } catch {
+      return true; // a citation to a file that does not exist is broken too
+    }
+    const target = text.split(/\r?\n/)[line - 1];
+    return target === undefined || !target.includes(quoted);
+  });
+}
+
+/** Prose asserting that migrations apply themselves on a deploy or a boot. */
+const MIGRATIONS_AUTOAPPLY_BAN = [
+  /migrations? (?:do |does |will )?(?:auto-?appl|automatically appl)/i,
+  /migrations? appl(?:y|ies) automatically/i,
+  /(?:apply|applied|applies)[^.]{0,40}\bon every boot\b/i,
+  /\bmigrate deploy\b[^.]{0,90}\b(?:runs?|applies|applied)\b[^.]{0,40}\b(?:on|at|before) (?:every |each )?(?:boot|start|deploy)/i,
+  /\bstart command\b[^.]{0,80}\b(?:runs?|applies|will apply)\b[^.]{0,60}migrate deploy/i,
+  /\bmigrate deploy\b[^.]{0,80}\bbefore serving\b/i,
+  /a failing migration is a crash-?loop/i,
+  /\bcrash-?loop\b[^.]{0,60}\bnot a failed build\b/i,
+];
+
+/**
+ * An explicit statement, in the same paragraph, that the claim is retired or
+ * that measurement contradicts it. Deliberately narrow: a bare "not" must not
+ * buy an exemption, which is the rule OPS-06 arrived at the hard way.
+ *
+ * `this line said the opposite` was in this list for one run and had to come
+ * out. The retired TASKS.md:119 paragraph contained that exact phrase — it was
+ * announcing a PREVIOUS correction — so the sentence exempted itself from the
+ * ban while still asserting the wrong thing, and the file-level regression
+ * below passed 1 assertion it should have failed. A marker that a page has been
+ * corrected before is not a denial of what it says now.
+ */
+const MIGRATIONS_AUTOAPPLY_DENIAL =
+  /do(?:es)? not apply on deploy|migrations do not apply|silent no-?op|still pending afterwards|apply them by hand|used to (?:say|claim|read)|previously (?:said|read|claimed)|measurement contradicts/i;
+
+/** Paragraphs where a document says, in its own voice, that migrations self-apply. */
+export function migrationAutoApplyAssertions(md) {
+  return ownVoiceParagraphs(md).filter(
+    (para) =>
+      !MIGRATIONS_AUTOAPPLY_DENIAL.test(para) &&
+      MIGRATIONS_AUTOAPPLY_BAN.some((re) => re.test(para)),
+  );
+}
+
+describe('OPS-17 (2026-09-09) — TASKS.md, package.json and render.yaml are locked together', () => {
+  const TASKS = 'TASKS.md';
+  const API_PKG = 'apps/api/package.json';
+  const RENDER = 'render.yaml';
+
+  it('the API start script still is what TASKS.md quotes', () => {
+    // Drop `prisma migrate deploy` from the start script — or add it back —
+    // and the sentence in TASKS.md describing the boot chain is stale the
+    // moment the file is saved. This is the lock that makes that a CI failure
+    // instead of a discovery three weeks later.
+    const start = JSON.parse(read(API_PKG)).scripts.start;
+    expect(start).toBe('prisma migrate deploy && node dist/server.js');
+    expect(read(TASKS), 'TASKS.md no longer quotes the API start script verbatim').toContain(
+      '`' + start + '`',
+    );
+  });
+
+  it('the render.yaml startCommand still is what TASKS.md quotes', () => {
+    const blueprint = yaml.load(read(RENDER));
+    const api = blueprint.services.find((s) => s.name === 'bhaktisetu');
+    expect(api, 'the API service disappeared from render.yaml').toBeTruthy();
+    expect(api.startCommand).toBe('pnpm --filter @poojly/api start');
+    expect(read(TASKS), 'TASKS.md no longer quotes the startCommand verbatim').toContain(
+      '`' + api.startCommand + '`',
+    );
+  });
+
+  it('every `file:line` → `command` citation in TASKS.md lands on that line', () => {
+    const broken = brokenLineCitations(read(TASKS));
+    expect(broken, 'citation(s) point at the wrong line: ' + JSON.stringify(broken)).toHaveLength(
+      0,
+    );
+    // And the check must be looking at something.
+    expect(lineCitations(read(TASKS)).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('the citation check fires on the exact line number that was live this morning', () => {
+    // VERBATIM from TASKS.md:119 before this pass. `render.yaml:20` is the
+    // comment "# the local prisma binary resolve correctly."; the startCommand
+    // is on line 21. This is the regression the check exists for.
+    const retired =
+      '3. **Migrations DO auto-apply — on API START, not build.** `render.yaml:20` → ' +
+      '`pnpm --filter @poojly/api start`; `apps/api/package.json:10` → ' +
+      '`prisma migrate deploy && node dist/server.js`.';
+    const broken = brokenLineCitations(retired);
+    expect(broken).toHaveLength(1);
+    expect(broken[0]).toMatchObject({ file: 'render.yaml', line: 20 });
+
+    // The corrected form must pass, or the guard would fail the commit that
+    // fixes the defect.
+    expect(brokenLineCitations(retired.replace('render.yaml:20', 'render.yaml:21'))).toHaveLength(
+      0,
+    );
+  });
+
+  it('the auto-apply ban fires on the sentences that were live this morning', () => {
+    const LIVE_ON_2026_09_09 = [
+      // TASKS.md:119 — the whole reason this finding exists
+      '**Migrations DO auto-apply — on API START, not build.**',
+      '**Consequence: a failing migration is a CRASH-LOOP, not a failed build** — the API never comes up.',
+      // docs/runbooks/prod-rollback.md:113
+      'Migrations apply automatically on every boot, including the boot that follows a rollback.',
+      // The retired TASKS.md:119 paragraph in full-ish: it announces a PRIOR
+      // correction, which must not exempt the claim it is still making.
+      '**Migrations DO auto-apply — on API START, not build.** This line said the opposite until 2026-09-08.',
+      // the shape a future page would most naturally use
+      'prisma migrate deploy runs at every boot, before the Node process exists.',
+    ];
+    for (const prose of LIVE_ON_2026_09_09) {
+      expect(migrationAutoApplyAssertions(prose), 'ban missed: ' + prose).toHaveLength(1);
+    }
+  });
+
+  it('the ban does not fire on the corrections that replaced them', () => {
+    const corrections = [
+      'Migrations do NOT apply on deploy — MEASURED. The repo config says they should: `render.yaml:21` → `pnpm --filter @poojly/api start`.',
+      'A deploy reports green and the schema never moves: a silent no-op, not a crash-loop.',
+      'The page used to say migrations auto-apply on API start; measurement contradicts it.',
+    ];
+    for (const prose of corrections) {
+      expect(migrationAutoApplyAssertions(prose), 'false positive on: ' + prose).toHaveLength(0);
+    }
+    // A bare negation elsewhere in the paragraph must NOT buy an exemption.
+    expect(
+      migrationAutoApplyAssertions(
+        'This is not complicated: migrations apply automatically on every boot.',
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('TASKS.md and CLAUDE.md are clean, and the sweep names every page that is not', () => {
+    // Walked, not listed — a NEW page carrying the claim fails here.
+    const offenders = allFollowableDocs()
+      .filter((f) => migrationAutoApplyAssertions(read(f)).length > 0)
+      .sort();
+
+    // The two `@`-imported files are the point of the finding: they are loaded
+    // into every session in this repository.
+    expect(offenders, 'TASKS.md still asserts migrations self-apply').not.toContain('TASKS.md');
+    expect(offenders, 'CLAUDE.md still asserts migrations self-apply').not.toContain('CLAUDE.md');
+
+    expect(offenders).toEqual(OPS17_KNOWN_UNFIXED);
+  });
+
+  it('--unexecuted is never presented as a check for pending migrations', () => {
+    // Measured 2026-09-09 against production: `--unexecuted` named 6
+    // migrations and exited 1, while `_prisma_migrations` had 0 genuinely
+    // pending. Any page that offers it as the pre-flight must say what it
+    // really is and name `migrate status` as the authority.
+    const md = read(TASKS);
+    expect(md).toMatch(/--unexecuted/);
+    const voice = flatten(documentVoice(md));
+    expect(/migrate status/.test(voice), 'TASKS.md does not name `prisma migrate status`').toBe(
+      true,
+    );
+    expect(
+      /not\*{0,2} a pending check|applied_steps_count = 0/i.test(voice),
+      'TASKS.md presents --unexecuted as a pending check',
+    ).toBe(true);
+  });
+
+  it('every script path TASKS.md hands an operator exists', () => {
+    // The retired step told the reader to run `scripts/verify-migration-objects.mjs`.
+    // That path has never existed; the script lives under `apps/api/scripts/`.
+    // Paths are handed over inside a backtick span, but not always alone in it
+    // — `node scripts/agents/roadmap/orchestrator-pause.mjs false` is the same
+    // promise to the reader as a bare path, so scan inside each span.
+    const cited = [
+      ...read(TASKS).matchAll(/`([^`\n]+)`/g),
+    ].flatMap((m) => [
+      ...m[1].matchAll(/(?:^|\s)((?:apps\/[a-z-]+\/)?scripts\/[\w./-]+\.(?:mjs|ts|js|sh))/g),
+    ].map((x) => x[1]));
+    expect(cited.length).toBeGreaterThanOrEqual(3);
+    const missing = cited.filter((p) => !existsSync(join('.', p)));
+    expect(
+      missing,
+      'TASKS.md cites script(s) that do not exist: ' + JSON.stringify(missing),
+    ).toEqual([]);
+
+    // Non-vacuity: the retired path must still read as missing.
+    expect(existsSync(join('.', 'scripts/verify-migration-objects.mjs'))).toBe(false);
+    expect(existsSync(join('.', 'apps/api/scripts/verify-migration-objects.mjs'))).toBe(true);
   });
 });
