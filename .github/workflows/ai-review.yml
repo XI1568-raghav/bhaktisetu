@@ -9,13 +9,18 @@ name: AI Code Review
 # Free-tier budget: ~2 min/run × ~15 PRs/mo = 30 min/mo. Well under 5% of the
 # 2000 min/mo GH Actions budget. See darshya-free-tier-check skill.
 #
-# Anthropic API usage is PAID — it is not part of any free tier. One review is
-# one request of at most ~30k input tokens on the cheapest Claude model. Until
-# the secret below is set the script reviews nothing and says so in the PR.
-#
-# Required GH repo secret:
-#   ANTHROPIC_API_KEY   Anthropic API key
+# Credentials — set ONE repo secret. Until one is set the script reviews
+# nothing and says so in the PR.
+#   CLAUDE_CODE_OAUTH_TOKEN  a Claude subscription (preferred: no per-token
+#                            bill, it counts against the subscription's usage).
+#                            Create it with `claude setup-token`, then
+#                            `gh secret set CLAUDE_CODE_OAUTH_TOKEN`.
+#   ANTHROPIC_API_KEY        the Anthropic API, billed per token. Used only
+#                            when the subscription token is absent.
 #   (GITHUB_TOKEN auto-provided, has comment permission on PRs)
+#
+# One review is one request of at most ~30k input tokens on the cheapest
+# Claude model.
 #
 # Optional repo VARIABLES (not secrets):
 #   PR_REVIEW_MODELS    comma-separated Claude model ids, tried in order
@@ -53,7 +58,11 @@ jobs:
   review:
     name: Review diff
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    # A large PR is reviewed in up to 8 sequential requests of up to 150 s each.
+    timeout-minutes: 25
+    env:
+      # Secrets cannot be read in a step's `if`, so expose only whether it exists.
+      HAS_SUBSCRIPTION_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,8 +72,18 @@ jobs:
         with:
           node-version: '22'
 
+      # Only needed for the subscription path. Pinned so a CLI release cannot
+      # change the reviewer's behaviour unreviewed; continue-on-error because a
+      # registry hiccup must not fail an advisory check — the script reports a
+      # missing CLI in the PR comment instead.
+      - name: Install Claude Code CLI
+        if: env.HAS_SUBSCRIPTION_TOKEN == 'true'
+        continue-on-error: true
+        run: npm install -g @anthropic-ai/claude-code@2.1.289
+
       - name: Run AI review
         env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
