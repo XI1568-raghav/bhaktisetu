@@ -25,11 +25,13 @@ import {
   fetchDiffFiles,
   formatComment,
   reviewPullRequest,
+  baseCandidates,
   ENDPOINTS,
   DEFAULT_MODELS,
 } from './pr-review.mjs';
 
 const BASE = 'https://gateway.test';
+const BASES = [{ label: 'configured base', url: BASE }];
 
 function res(status, body, { json = true } = {}) {
   const text = typeof body === 'string' ? body : JSON.stringify(body ?? '');
@@ -69,6 +71,26 @@ describe('normalizeBase', () => {
   });
 });
 
+describe('baseCandidates — the retired-host fallback', () => {
+  it('adds the provider\'s current host when the configured one is retired', () => {
+    expect(baseCandidates('https://api.blackbox.ai/v1/')).toEqual([
+      { label: 'configured base', url: 'https://api.blackbox.ai' },
+      { label: 'enterprise.blackbox.ai', url: 'https://enterprise.blackbox.ai' },
+    ]);
+  });
+
+  it('never sends the key anywhere else when the base is another domain', () => {
+    expect(baseCandidates('https://gateway.test')).toEqual([{ label: 'configured base', url: BASE }]);
+    expect(baseCandidates('https://api.blackbox.ai.evil.test')).toHaveLength(1);
+    expect(baseCandidates('https://evil.test/api.blackbox.ai')).toHaveLength(1);
+    expect(baseCandidates('not a url')).toHaveLength(1);
+  });
+
+  it('never puts the configured URL in a label, since labels are logged', () => {
+    for (const b of baseCandidates('https://api.blackbox.ai')) expect(b.label).not.toContain('api.blackbox.ai');
+  });
+});
+
 describe('modelCandidates', () => {
   it('puts PR_REVIEW_MODELS first and de-duplicates', () => {
     expect(modelCandidates('b, a', ['a', 'c'])).toEqual(['b', 'a', 'c']);
@@ -90,15 +112,15 @@ describe('responseText', () => {
 describe('findRoutes', () => {
   it('skips a dead model and uses the next one — the 2026-08-14 failure', async () => {
     const { fetchImpl } = gateway(['/v1/messages m2']);
-    const { routes, attempts } = await findRoutes({ fetchImpl, base: BASE, apiKey: 'k', models: ['m1', 'm2'] });
-    expect(routes).toEqual([{ endpoint: ENDPOINTS[0], model: 'm2' }]);
+    const { routes, attempts } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2'] });
+    expect(routes).toEqual([{ base: BASES[0], endpoint: ENDPOINTS[0], model: 'm2' }]);
     expect(attempts.map((a) => `${a.model}:${a.status}`)).toEqual(['m1:404', 'm2:200']);
   });
 
   it('moves to the next endpoint when the path itself is gone', async () => {
     const { fetchImpl, calls } = gateway(['/chat/completions m3']);
-    const { routes } = await findRoutes({ fetchImpl, base: BASE, apiKey: 'k', models: ['m1', 'm2', 'm3'] });
-    expect(routes).toEqual([{ endpoint: ENDPOINTS[1], model: 'm3' }]);
+    const { routes } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2', 'm3'] });
+    expect(routes).toEqual([{ base: BASES[0], endpoint: ENDPOINTS[1], model: 'm3' }]);
     // An empty 404 cannot be told apart from a dropped model, so every model
     // is tried on a path before it is abandoned.
     expect(calls.filter((c) => c.path === '/v1/messages').map((c) => c.model)).toEqual(['m1', 'm2', 'm3']);
@@ -106,21 +128,40 @@ describe('findRoutes', () => {
 
   it('reaches a live model that sits behind several dropped ones on the same path', async () => {
     const { fetchImpl } = gateway(['/v1/messages m5']);
-    const { routes } = await findRoutes({ fetchImpl, base: BASE, apiKey: 'k', models: ['m1', 'm2', 'm3', 'm4', 'm5'] });
-    expect(routes).toEqual([{ endpoint: ENDPOINTS[0], model: 'm5' }]);
+    const { routes } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2', 'm3', 'm4', 'm5'] });
+    expect(routes).toEqual([{ base: BASES[0], endpoint: ENDPOINTS[0], model: 'm5' }]);
   });
 
   it('stops at the first endpoint that answers and at the wanted number of routes', async () => {
     const { fetchImpl, calls } = gateway(['/v1/messages m1', '/v1/messages m2', '/v1/messages m3', '/chat/completions m1']);
-    const { routes } = await findRoutes({ fetchImpl, base: BASE, apiKey: 'k', models: ['m1', 'm2', 'm3'], wanted: 2 });
+    const { routes } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2', 'm3'], wanted: 2 });
     expect(routes.map((r) => r.model)).toEqual(['m1', 'm2']);
     expect(calls.some((c) => c.path === '/chat/completions')).toBe(false);
     expect(calls).toHaveLength(2);
   });
 
+  it('walks to the second host only after the first answers nothing — the 2026-10-04 finding', async () => {
+    const dead = 'https://api.blackbox.ai';
+    const live = 'https://enterprise.blackbox.ai';
+    const calls = [];
+    const fetchImpl = async (url, init) => {
+      const u = String(url);
+      calls.push(u);
+      if (u === `${live}/v1/messages` && JSON.parse(init.body).model === 'm2') return anthropicReply('OK');
+      return res(404, undefined);
+    };
+    const { routes, attempts } = await findRoutes({ fetchImpl, bases: baseCandidates(dead), apiKey: 'k', models: ['m1', 'm2'] });
+    expect(routes).toHaveLength(1);
+    expect(routes[0].base.url).toBe(live);
+    expect(routes[0].model).toBe('m2');
+    // All three endpoints x two models on the dead host first, then the live one.
+    expect(calls.filter((u) => u.startsWith(dead))).toHaveLength(6);
+    expect(attempts.at(-1)).toEqual({ base: 'enterprise.blackbox.ai', path: '/v1/messages', model: 'm2', status: 200, detail: '' });
+  });
+
   it('sends the chat-completions envelope on a chat-completions path', async () => {
     const { fetchImpl, calls } = gateway(['/chat/completions m1']);
-    await findRoutes({ fetchImpl, base: BASE, apiKey: 'k', models: ['m1'] });
+    await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1'] });
     const openaiCall = calls.find((c) => c.path === '/chat/completions');
     expect(openaiCall.body.messages[0].role).toBe('system');
     expect(openaiCall.body.system).toBeUndefined();
@@ -130,22 +171,22 @@ describe('findRoutes', () => {
 
   it('does not treat a 200 with no assistant text as a working route', async () => {
     const fetchImpl = async () => res(200, { status: 'ok' });
-    const { routes, attempts } = await findRoutes({ fetchImpl, base: BASE, apiKey: 'k', models: ['m1'] });
+    const { routes, attempts } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1'] });
     expect(routes).toEqual([]);
     expect(attempts[0].detail).toMatch(/no assistant text/);
   });
 
   it('survives a thrown fetch and records it', async () => {
     const fetchImpl = async () => { throw new Error('ECONNRESET'); };
-    const { routes, attempts } = await findRoutes({ fetchImpl, base: BASE, apiKey: 'k', models: ['m1'], endpoints: [ENDPOINTS[0]] });
+    const { routes, attempts } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1'], endpoints: [ENDPOINTS[0]] });
     expect(routes).toEqual([]);
-    expect(attempts).toEqual([{ path: '/v1/messages', model: 'm1', status: 0, detail: 'network error' }]);
+    expect(attempts).toEqual([{ base: 'configured base', path: '/v1/messages', model: 'm1', status: 0, detail: 'network error' }]);
   });
 
   it('stops when the time budget is spent', async () => {
     let t = 0;
     const { fetchImpl } = gateway([]);
-    const { attempts } = await findRoutes({ fetchImpl, base: BASE, apiKey: 'k', models: ['m1', 'm2', 'm3'], budgetMs: 10, now: () => (t += 8) });
+    const { attempts } = await findRoutes({ fetchImpl, bases: BASES, apiKey: 'k', models: ['m1', 'm2', 'm3'], budgetMs: 10, now: () => (t += 8) });
     expect(attempts.at(-1).detail).toBe('probe time budget exhausted');
     expect(attempts.length).toBeLessThan(9);
   });
@@ -247,13 +288,13 @@ describe('formatComment', () => {
   const diff = { text: 'x'.repeat(10), totalChars: 10, fileCount: 2, omitted: [] };
 
   it('names the model and endpoint that produced the review', () => {
-    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { route: { endpoint: ENDPOINTS[1], model: 'm9' }, diff });
-    expect(body).toContain('`m9` via `/chat/completions`');
+    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { route: { base: BASES[0], endpoint: ENDPOINTS[1], model: 'm9' }, diff });
+    expect(body).toContain('`m9` via `/chat/completions` on configured base');
     expect(body).toContain('Read all 2 files in the diff.');
   });
 
   it('says a review was partial and lists the files it did not read', () => {
-    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { route: { endpoint: ENDPOINTS[0], model: 'm' }, diff: { ...diff, totalChars: 50, omitted: ['docs/x.md'] } });
+    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { route: { base: BASES[0], endpoint: ENDPOINTS[0], model: 'm' }, diff: { ...diff, totalChars: 50, omitted: ['docs/x.md'] } });
     expect(body).toContain('**Partial review:** read 10 of 50 diff characters. 1 of 2 files were not read');
     expect(body).toContain('- `docs/x.md`');
     expect(body).not.toContain('Read all');
@@ -262,10 +303,10 @@ describe('formatComment', () => {
   it('lists every attempt when no route worked', () => {
     const body = formatComment(
       { verdict: 'UNVERIFIED', summary: 's', error: 'no working model route', items: [], blockingIssues: [] },
-      { attempts: [{ path: '/v1/messages', model: 'm1', status: 404, detail: '' }, { path: '/chat/completions', model: 'm1', status: 401, detail: 'bad | key' }], diff },
+      { attempts: [{ base: 'configured base', path: '/v1/messages', model: 'm1', status: 404, detail: '' }, { base: 'enterprise.blackbox.ai', path: '/chat/completions', model: 'm1', status: 401, detail: 'bad | key' }], diff },
     );
-    expect(body).toContain('| `/v1/messages` | `m1` | 404 |');
-    expect(body).toContain('| `/chat/completions` | `m1` | 401 bad \\| key |');
+    expect(body).toContain('| configured base | `/v1/messages` | `m1` | 404 |');
+    expect(body).toContain('| enterprise.blackbox.ai | `/chat/completions` | `m1` | 401 bad \\| key |');
     expect(body).toContain('no working model route');
   });
 
