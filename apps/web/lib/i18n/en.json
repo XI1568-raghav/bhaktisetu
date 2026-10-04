@@ -174,7 +174,7 @@
   },
   "pujas": {
     "pageTitle": "Book a Puja",
-    "pageSubtitle": "Authentic pujas at renowned temples across India. Pandits, live streaming, prasad delivery. Choose from a curated catalogue of sacred rituals.",
+    "pageSubtitle": "Authentic pujas at renowned temples across India, performed by pandits, with video proof of every ceremony and optional prasad delivery. Choose from a curated catalogue of sacred rituals.",
     "category": "Category",
     "deity": "Deity",
     "occasion": "Occasion",
@@ -186,7 +186,6 @@
     "filters": "Filters",
     "searchPlaceholder": "Search pujas...",
     "verifiedPandits": "Pandits",
-    "liveStreaming": "Live Streaming",
     "videoProof": "Video Proof",
     "prasadDelivery": "Prasad Delivery",
     "duration": "Duration",
