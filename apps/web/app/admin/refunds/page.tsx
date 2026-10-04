@@ -151,7 +151,8 @@ export default function AdminRefundsPage() {
 
   const openDialog = useCallback((mode: DialogMode, target: RefundBooking) => {
     setDialog({ mode, target });
-    setRefundType('full');
+    // Default to what the devotee was quoted; a blind "Full" over-refunds.
+    setRefundType(target.policyQuote && target.policyQuote.refundAmountInr > 0 ? 'policy' : 'full');
     setAmount('');
     setReason('');
     setActionError(null);
@@ -244,7 +245,7 @@ export default function AdminRefundsPage() {
           `${paid} refunded for booking ${target.bookingNumber}${
             result.refundId ? ` — gateway refund id ${result.refundId}` : ''
           }. ${
-            refundType === 'full'
+            refundType === 'full' || (refundType === 'policy' && (target.policyQuote?.refundFraction ?? 0) >= 1)
               ? 'The commission ledger for this booking was reversed.'
               : 'The commission ledger was NOT reversed — the provider keeps their full earning on this booking.'
           }${caveat}`,
@@ -567,6 +568,20 @@ export default function AdminRefundsPage() {
                 <fieldset className="mt-4">
                   <legend className="text-sm font-medium text-surface-700">Refund amount</legend>
                   <div className="mt-2 space-y-1.5">
+                    {dialog.target.policyQuote && dialog.target.policyQuote.refundAmountInr > 0 && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="refund-type-policy"
+                          type="radio"
+                          name="refund-type"
+                          checked={refundType === 'policy'}
+                          onChange={() => setRefundType('policy')}
+                        />
+                        <label htmlFor="refund-type-policy" className="text-sm text-surface-700">
+                          Per cancellation policy: {formatInrExact(dialog.target.policyQuote.refundAmountInr)} ({dialog.target.policyQuote.tierLabel})
+                        </label>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <input
                         id="refund-type-full"
@@ -602,7 +617,7 @@ export default function AdminRefundsPage() {
                   going back. Saying nothing here is how an operator refunds half
                   a booking believing the provider's share came back with it.
                 */}
-                {refundType === 'full' ? (
+                {refundType === 'full' || (refundType === 'policy' && (dialog.target.policyQuote?.refundFraction ?? 0) >= 1) ? (
                   <p className="mt-3 rounded-lg border border-[var(--color-border)] bg-surface-50 px-3 py-2 text-xs text-surface-600">
                     A full refund reverses the commission ledger for this booking — the provider’s
                     earning and any temple share are reversed with it. Anything already paid out is
