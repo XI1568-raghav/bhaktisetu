@@ -58,7 +58,8 @@ jobs:
   review:
     name: Review diff
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    # A large PR is reviewed in up to 8 sequential requests of up to 150 s each.
+    timeout-minutes: 25
     env:
       # Secrets cannot be read in a step's `if`, so expose only whether it exists.
       HAS_SUBSCRIPTION_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}

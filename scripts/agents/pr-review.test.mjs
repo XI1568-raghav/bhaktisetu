@@ -25,8 +25,10 @@ import {
   extractVerdict,
   filePriority,
   splitDiff,
-  prepareDiff,
+  planDiff,
+  mergeResults,
   buildUserPrompt,
+  MAX_PARTS,
   SYSTEM_PROMPT,
   MAX_DIFF_CHARS,
   fetchDiffFiles,
@@ -241,50 +243,81 @@ describe('diff preparation', () => {
     expect(files[1].text).toBe('diff --git a/old.ts b/new.ts\n+2\n');
   });
 
-  it('drops the least risky files first and names every file it dropped', () => {
+  it('packs a PR into as many parts as it needs, riskiest files first, nothing left out', () => {
     const files = [chunk('pnpm-lock.yaml', 500), chunk('docs/x.md', 300), chunk('apps/api/src/a.ts', 300), chunk('apps/api/prisma/migrations/1/migration.sql', 300)];
-    const out = prepareDiff(files, 800);
-    expect(out.text).toContain('migration.sql');
-    expect(out.text).toContain('apps/api/src/a.ts');
-    expect(out.omitted).toEqual(['docs/x.md', 'pnpm-lock.yaml']);
-    expect(out.fileCount).toBe(4);
-    expect(out.totalChars).toBe(files.reduce((n, f) => n + f.text.length, 0));
+    const plan = planDiff(files, 800);
+    expect(plan.parts.map((p) => p.paths)).toEqual([
+      ['apps/api/prisma/migrations/1/migration.sql', 'apps/api/src/a.ts'],
+      ['docs/x.md'],
+      ['pnpm-lock.yaml'],
+    ]);
+    expect(plan.omitted).toEqual([]);
+    expect(plan.fileCount).toBe(4);
+    expect(plan.totalChars).toBe(files.reduce((n, f) => n + f.text.length, 0));
+    // Every character of the diff is in exactly one part.
+    expect(plan.parts.reduce((n, p) => n + p.text.length, 0)).toBe(plan.totalChars);
+    for (const p of plan.parts) expect(p.text.length).toBeLessThanOrEqual(800);
   });
 
-  it('reads everything and omits nothing when the diff fits', () => {
-    const out = prepareDiff([chunk('a.ts', 10), chunk('b.ts', 10)], 1000);
-    expect(out.omitted).toEqual([]);
+  it('uses one part when the diff fits', () => {
+    const plan = planDiff([chunk('a.ts', 10), chunk('b.ts', 10)], 1000);
+    expect(plan.parts).toHaveLength(1);
+    expect(plan.omitted).toEqual([]);
   });
 
-  it('takes the head of a single file larger than the whole budget, and says so', () => {
-    const out = prepareDiff([chunk('big.ts', 5000)], 100);
-    expect(out.text.length).toBe(100);
-    expect(out.omitted).toEqual(['big.ts (truncated)']);
+  it('gives a file larger than a whole request its own part, cut to the budget and flagged', () => {
+    const plan = planDiff([chunk('a.ts', 10), chunk('big.ts', 5000), chunk('b.ts', 10)], 100);
+    const big = plan.parts.find((p) => p.paths.includes('big.ts'));
+    expect(big.paths).toEqual(['big.ts']);
+    expect(big.text.length).toBe(100);
+    expect(big.truncated).toEqual(['big.ts']);
+    // The small files on either side are still reviewed, in parts of their own.
+    expect(plan.parts.flatMap((p) => p.paths).sort()).toEqual(['a.ts', 'b.ts', 'big.ts']);
+  });
+
+  it('lists what falls past the part limit instead of dropping it silently', () => {
+    const files = Array.from({ length: 5 }, (_, i) => chunk(`f${i}.ts`, 90));
+    const plan = planDiff(files, 150, 3);
+    expect(plan.parts).toHaveLength(3);
+    expect(plan.omitted).toEqual(['f3.ts', 'f4.ts']);
+  });
+
+  it('the default limits cover a 3-million-character PR', () => {
+    expect(MAX_DIFF_CHARS * MAX_PARTS).toBeGreaterThanOrEqual(3_000_000);
   });
 });
 
 describe('buildUserPrompt — the model is told what it was not shown', () => {
   const chunk = (path, size) => ({ path, text: `diff --git a/${path} b/${path}\n${'x'.repeat(size)}\n` });
 
-  it('lists every file and marks the ones past the budget — the 2026-10-04 false FAILs', () => {
-    const files = [chunk('apps/web/lib/support-api.ts', 300), chunk('apps/web/app/page.tsx', 300), chunk('apps/web/__tests__/support.test.ts', 300), chunk('big.ts', 9000)];
-    const diff = prepareDiff(files, 800);
-    const prompt = buildUserPrompt({ prNumber: '7', title: 't', diff });
-    expect(prompt).toContain('Files changed (4):');
-    expect(prompt).toContain('- apps/web/lib/support-api.ts\n');
-    expect(prompt).toContain('- apps/web/app/page.tsx\n');
-    expect(prompt).toContain('- big.ts [contents not shown]');
-    expect(prompt).toContain('- apps/web/__tests__/support.test.ts [contents not shown]');
-    expect(prompt).toContain('2 of 4 files are marked as not shown. They exist and are part of this PR.');
+  it('lists every file in every part and marks the ones reviewed elsewhere — the 2026-10-04 false FAILs', () => {
+    const files = [chunk('apps/web/lib/support-api.ts', 300), chunk('apps/web/app/page.tsx', 300), chunk('apps/web/__tests__/support.test.ts', 300)];
+    const plan = planDiff(files, 800);
+    expect(plan.parts).toHaveLength(2);
+    const first = buildUserPrompt({ prNumber: '7', title: 't', plan, index: 0 });
+    expect(first).toContain('Files changed (3):');
+    expect(first).toContain('- apps/web/lib/support-api.ts\n');
+    expect(first).toContain('- apps/web/app/page.tsx\n');
+    expect(first).toContain('- apps/web/__tests__/support.test.ts [contents not shown here — reviewed separately]');
+    expect(first).toContain('This is part 1 of 2: 1 of 3 files are marked as not shown. They exist and are part of this PR.');
+    const second = buildUserPrompt({ prNumber: '7', title: 't', plan, index: 1 });
+    expect(second).toContain('- apps/web/lib/support-api.ts [contents not shown here — reviewed separately]');
+    expect(second).toContain('- apps/web/__tests__/support.test.ts\n');
+    expect(second).toContain('This is part 2 of 2');
+    // Each part carries only its own diff.
+    expect(first).not.toContain('diff --git a/apps/web/__tests__/support.test.ts');
+    expect(second).toContain('diff --git a/apps/web/__tests__/support.test.ts');
   });
 
-  it('marks a file cut mid-way differently from one not shown at all', () => {
-    const prompt = buildUserPrompt({ prNumber: '7', title: 't', diff: prepareDiff([chunk('huge.ts', 5000)], 100) });
+  it('marks a file past the part limit and a file cut mid-way differently', () => {
+    const plan = planDiff([chunk('huge.ts', 5000), chunk('late.md', 50)], 100, 1);
+    const prompt = buildUserPrompt({ prNumber: '7', title: 't', plan, index: 0 });
     expect(prompt).toContain('- huge.ts [only the start shown]');
+    expect(prompt).toContain('- late.md [contents not shown]');
   });
 
   it('says the whole diff is present when nothing was dropped', () => {
-    const prompt = buildUserPrompt({ prNumber: '7', title: 't', diff: prepareDiff([chunk('a.ts', 10)], 1000) });
+    const prompt = buildUserPrompt({ prNumber: '7', title: 't', plan: planDiff([chunk('a.ts', 10)], 1000) });
     expect(prompt).toContain('The whole diff is below.');
     expect(prompt).not.toContain('not shown');
   });
@@ -296,6 +329,47 @@ describe('buildUserPrompt — the model is told what it was not shown', () => {
 
   it('reads enough of a large PR to be useful', () => {
     expect(MAX_DIFF_CHARS).toBeGreaterThanOrEqual(400_000);
+  });
+});
+
+describe('mergeResults — combining a multi-part review', () => {
+  const part = (verdict, items, blockingIssues = [], summary = '') => ({ verdict, summary, items, blockingIssues });
+
+  it('returns a single result untouched', () => {
+    const one = part('PASS', [{ check: 'tests', status: 'PASS', reason: 'r' }], [], 's');
+    expect(mergeResults([one])).toBe(one);
+  });
+
+  it('fails the PR if any part fails, and keeps every blocking issue', () => {
+    const out = mergeResults([
+      part('PASS', [{ check: 'secret-egress', status: 'PASS', reason: 'clean' }], [], 'First half fine.'),
+      part('FAIL', [{ check: 'secret-egress', status: 'FAIL', reason: 'key in b.ts' }], [{ file: 'b.ts', issue: 'key' }], 'Second half leaks.'),
+    ]);
+    expect(out.verdict).toBe('FAIL');
+    expect(out.items).toEqual([{ check: 'secret-egress', status: 'FAIL', reason: 'key in b.ts' }]);
+    expect(out.blockingIssues).toEqual([{ file: 'b.ts', issue: 'key' }]);
+    expect(out.summary).toBe('Reviewed in 2 parts. First half fine. Second half leaks.');
+  });
+
+  it('a check is PASS when one part passed it and the others could not judge it', () => {
+    const out = mergeResults([
+      part('PASS', [{ check: 'tests', status: 'N/A', reason: 'no tests in this part' }, { check: 'prisma-footguns', status: 'N/A', reason: 'none' }]),
+      part('PASS', [{ check: 'tests', status: 'PASS', reason: '13 test files' }, { check: 'prisma-footguns', status: 'N/A', reason: 'none' }]),
+    ]);
+    expect(out.verdict).toBe('PASS');
+    expect(out.items).toEqual([
+      { check: 'tests', status: 'PASS', reason: '13 test files' },
+      { check: 'prisma-footguns', status: 'N/A', reason: 'none' },
+    ]);
+  });
+
+  it('joins distinct reasons from the parts that decided the status', () => {
+    const out = mergeResults([
+      part('PASS', [{ check: 'tests', status: 'PASS', reason: 'api covered' }]),
+      part('PASS', [{ check: 'tests', status: 'PASS', reason: 'web covered' }]),
+      part('PASS', [{ check: 'tests', status: 'PASS', reason: 'api covered' }]),
+    ]);
+    expect(out.items[0].reason).toBe('api covered · web covered');
   });
 });
 
@@ -332,7 +406,7 @@ describe('fetchDiffFiles', () => {
 });
 
 describe('formatComment', () => {
-  const diff = { text: 'x'.repeat(10), totalChars: 10, fileCount: 2, omitted: [] };
+  const diff = { readChars: 10, totalChars: 10, fileCount: 2, omitted: [], parts: 1 };
 
   it('names the model and the backend that produced the review', () => {
     const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { model: 'claude-x', backend: 'Claude subscription', diff });
@@ -342,9 +416,14 @@ describe('formatComment', () => {
 
   it('says a review was partial and lists the files it did not read', () => {
     const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { model: 'claude-x', diff: { ...diff, totalChars: 50, omitted: ['docs/x.md'] } });
-    expect(body).toContain('**Partial review:** read 10 of 50 diff characters. 1 of 2 files were not read');
+    expect(body).toContain('**Partial review:** read 10 of 50 diff characters. 1 of 2 files were not fully read');
     expect(body).toContain('- `docs/x.md`');
     expect(body).not.toContain('Read all');
+  });
+
+  it('says how many parts a full multi-part review took', () => {
+    const body = formatComment({ verdict: 'PASS', summary: 'ok', items: [], blockingIssues: [] }, { model: 'claude-x', diff: { ...diff, parts: 3 } });
+    expect(body).toContain('Read all 2 files in the diff in 3 parts.');
   });
 
   it('lists every attempt when no model produced a verdict', () => {
@@ -450,6 +529,62 @@ describe('reviewPullRequest — end to end against fakes', () => {
     expect(out.result.error).toMatch(/^claude-b → 401/);
     expect(out.meta.attempts.map((a) => `${a.model}:${a.status}`)).toEqual(['claude-a:401', 'claude-b:401']);
     expect(formatComment(out.result, out.meta)).toContain('What was tried');
+  });
+
+  describe('a PR too large for one request', () => {
+    const big = (n) => `diff --git a/apps/api/src/f${n}.ts b/apps/api/src/f${n}.ts\n+${'x'.repeat(200)} marker-${n}\n`;
+    function bigWorld(answerFor) {
+      const calls = [];
+      const fetchImpl = async (url, init) => {
+        const u = String(url);
+        if (u.startsWith('https://api.github.com')) {
+          if (init.headers.Accept.includes('diff')) return res(200, [1, 2, 3].map(big).join(''), { json: false });
+          return res(200, { title: 'a big change' });
+        }
+        const body = JSON.parse(init.body);
+        calls.push(body);
+        return answerFor(body.messages[0].content, calls.length);
+      };
+      return { fetchImpl, calls };
+    }
+    const pass = (summary) => reply(JSON.stringify({ verdict: 'PASS', summary, items: [{ check: 'tests', status: 'PASS', reason: summary }], blockingIssues: [] }));
+
+    it('reviews every part, shows each part only its own diff, and reads the whole PR', async () => {
+      const { fetchImpl, calls } = bigWorld((_, n) => pass(`part ${n} ok.`));
+      const out = await reviewPullRequest({ ...args, fetchImpl, maxChars: 300 });
+      expect(calls).toHaveLength(3);
+      calls.forEach((c, i) => {
+        const prompt = c.messages[0].content;
+        expect(prompt).toContain(`This is part ${i + 1} of 3`);
+        expect(prompt).toContain(`marker-${i + 1}`);
+        expect(prompt).not.toContain(`marker-${((i + 1) % 3) + 1}`);
+      });
+      expect(out.result.verdict).toBe('PASS');
+      expect(out.result.summary).toBe('Reviewed in 3 parts. part 1 ok. part 2 ok. part 3 ok.');
+      expect(out.meta.diff.omitted).toEqual([]);
+      expect(out.meta.diff.readChars).toBe(out.meta.diff.totalChars);
+      expect(formatComment(out.result, out.meta)).toContain('Read all 3 files in the diff in 3 parts.');
+    });
+
+    it('fails the PR when any one part fails', async () => {
+      const { fetchImpl } = bigWorld((_, n) => (n === 2
+        ? reply(JSON.stringify({ verdict: 'FAIL', summary: 'leak.', items: [{ check: 'secret-egress', status: 'FAIL', reason: 'key' }], blockingIssues: [{ file: 'apps/api/src/f2.ts', issue: 'key' }] }))
+        : pass(`part ${n} ok.`)));
+      const out = await reviewPullRequest({ ...args, fetchImpl, maxChars: 300 });
+      expect(out.result.verdict).toBe('FAIL');
+      expect(out.result.blockingIssues).toEqual([{ file: 'apps/api/src/f2.ts', issue: 'key' }]);
+    });
+
+    it('reports a part no model could review as unread instead of passing the PR as if it were read', async () => {
+      const { fetchImpl } = bigWorld((_, n) => (n === 2 ? res(529, 'overloaded', { json: false }) : pass(`part ${n} ok.`)));
+      const out = await reviewPullRequest({ ...args, fetchImpl, maxChars: 300 });
+      expect(out.result.verdict).toBe('PASS');
+      expect(out.meta.diff.omitted).toEqual(['apps/api/src/f2.ts']);
+      expect(out.meta.diff.readChars).toBeLessThan(out.meta.diff.totalChars);
+      const body = formatComment(out.result, out.meta);
+      expect(body).toContain('**Partial review:**');
+      expect(body).toContain('- `apps/api/src/f2.ts`');
+    });
   });
 
   it('honours a configured base URL instead of the default', async () => {

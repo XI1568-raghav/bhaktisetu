@@ -43,10 +43,13 @@ export const DEFAULT_BASE_URL = 'https://api.anthropic.com';
 export const DEFAULT_MODELS = ['claude-haiku-4-5-20251001'];
 const MESSAGES_PATH = '/v1/messages';
 
-// ~100k tokens of diff: well inside a 200k-token Claude context with room for
-// the reply. The old 120,000 was sized for a smaller model and left most of any
-// large PR unread.
+// Per request. ~100k tokens of diff: well inside a 200k-token Claude context
+// with room for the reply. A PR larger than this is reviewed in several parts
+// (see planDiff) rather than cut off — one request cannot hold a 700k-character
+// diff, and a review of the first half of a PR is not a review of the PR.
 export const MAX_DIFF_CHARS = 400_000;
+/** 8 x 400k = 3.2M characters. Past that the remainder is listed as not read. */
+export const MAX_PARTS = 8;
 const REVIEW_TIMEOUT_MS = 150_000;
 
 // ---- The darshya-code-review checklist as the system prompt ----
@@ -248,61 +251,122 @@ export function splitDiff(diff) {
 }
 
 /**
- * Order files by risk and cut to the character budget on a file boundary where
- * possible. Reports what was left out so the comment can say so — a review that
- * silently read a third of the diff is worse than no review.
+ * Order files by risk and pack them into as many requests as the PR needs,
+ * each within the character budget and cut on file boundaries.
+ *
+ * Returns `{ parts: [{ text, paths, truncated }], omitted, totalChars,
+ * fileCount, paths }`. `omitted` is only non-empty past MAX_PARTS — it is what
+ * the comment reports as not read, because a review that silently skipped part
+ * of the diff is worse than no review.
  */
-export function prepareDiff(files, maxChars = MAX_DIFF_CHARS) {
+export function planDiff(files, maxChars = MAX_DIFF_CHARS, maxParts = MAX_PARTS) {
   const ordered = files
     .map((f, i) => ({ ...f, i, p: filePriority(f.path) }))
     .sort((a, b) => a.p - b.p || a.i - b.i);
   const totalChars = ordered.reduce((n, f) => n + f.text.length, 0);
-  let text = '';
+  const parts = [];
   const omitted = [];
+  let current = null;
+  const open = () => {
+    if (parts.length >= maxParts) return null;
+    current = { text: '', paths: [], truncated: [] };
+    parts.push(current);
+    return current;
+  };
   for (const f of ordered) {
-    if (text.length + f.text.length <= maxChars) {
-      text += f.text;
-    } else if (!text) {
-      // A single file larger than the whole budget: take its head rather than nothing.
-      text = f.text.slice(0, maxChars);
-      omitted.push(`${f.path} (truncated)`);
-    } else {
-      omitted.push(f.path);
+    if (f.text.length > maxChars) {
+      // One file bigger than a whole request: give it a part of its own and take
+      // its head rather than nothing. Its tail is the only thing ever cut mid-file.
+      const part = open();
+      if (!part) { omitted.push(f.path); continue; }
+      part.text = f.text.slice(0, maxChars);
+      part.paths.push(f.path);
+      part.truncated.push(f.path);
+      current = null;
+      continue;
     }
+    if (!current || current.text.length + f.text.length > maxChars) {
+      if (!open()) { omitted.push(f.path); continue; }
+    }
+    current.text += f.text;
+    current.paths.push(f.path);
   }
-  return { text, totalChars, fileCount: files.length, omitted, paths: ordered.map((f) => f.path) };
+  return { parts, omitted, totalChars, fileCount: files.length, paths: ordered.map((f) => f.path) };
 }
 
 /**
- * The user message. It carries the whole file list, not just the diff that
- * fitted: on 2026-10-04 the first real reviews FAILED two PRs for "missing"
- * files and "zero tests" that were simply past the character budget — the model
- * had no way to know what it had not been shown.
+ * The user message for one part. It carries the whole file list, not just the
+ * diff in this request: on 2026-10-04 the first real reviews FAILED two PRs for
+ * "missing" files and "zero tests" that were simply outside what the model had
+ * been handed — it had no way to know what it had not been shown.
  */
-export function buildUserPrompt({ prNumber, title, diff }) {
-  const notShown = new Set(diff.omitted.map((p) => p.replace(/ \(truncated\)$/, '')));
-  const truncated = new Set(diff.omitted.filter((p) => p.endsWith(' (truncated)')).map((p) => p.replace(/ \(truncated\)$/, '')));
-  const list = (diff.paths ?? []).map((p) => `- ${p}${truncated.has(p) ? ' [only the start shown]' : notShown.has(p) ? ' [contents not shown]' : ''}`);
-  const partial = diff.omitted.length
-    ? `Only part of the diff fits below: ${diff.omitted.length} of ${diff.fileCount} files are marked as not shown. They exist and are part of this PR.`
-    : 'The whole diff is below.';
+export function buildUserPrompt({ prNumber, title, plan, index = 0 }) {
+  const part = plan.parts[index];
+  const here = new Set(part.paths);
+  const truncated = new Set(part.truncated);
+  const omitted = new Set(plan.omitted);
+  const list = plan.paths.map((p) => {
+    if (truncated.has(p)) return `- ${p} [only the start shown]`;
+    if (here.has(p)) return `- ${p}`;
+    return `- ${p} [${omitted.has(p) ? 'contents not shown' : 'contents not shown here — reviewed separately'}]`;
+  });
+  const notHere = plan.fileCount - part.paths.length;
+  const scope = plan.parts.length > 1
+    ? `This PR is too large for one request. This is part ${index + 1} of ${plan.parts.length}: ${notHere} of ${plan.fileCount} files are marked as not shown. They exist and are part of this PR. Judge only the code in this part; set a check to N/A when this part gives you nothing to judge it on.`
+    : notHere
+      ? `Only part of the diff fits below: ${notHere} of ${plan.fileCount} files are marked as not shown. They exist and are part of this PR.`
+      : 'The whole diff is below.';
   return [
     `Review this PR.`,
     ``,
     `PR #${prNumber}: ${title}`,
     ``,
-    `Files changed (${diff.fileCount}):`,
+    `Files changed (${plan.fileCount}):`,
     ...list,
     ``,
-    partial,
+    scope,
     ``,
     `Diff:`,
     '```diff',
-    diff.text,
+    part.text,
     '```',
     ``,
     `Return the JSON verdict.`,
   ].join('\n');
+}
+
+const STATUS_RANK = { FAIL: 2, PASS: 1 };
+
+/**
+ * Combine the verdicts of a multi-part review. Any FAIL fails the PR; a check
+ * is PASS if some part passed it and none failed it, N/A only if no part could
+ * judge it. Reasons are kept from the parts that decided the status.
+ */
+export function mergeResults(results) {
+  if (results.length === 1) return results[0];
+  const order = [];
+  const byCheck = new Map();
+  for (const r of results) {
+    for (const it of r.items ?? []) {
+      const key = String(it.check ?? '');
+      if (!byCheck.has(key)) { byCheck.set(key, []); order.push(key); }
+      byCheck.get(key).push(it);
+    }
+  }
+  const items = order.map((check) => {
+    const all = byCheck.get(check);
+    const top = Math.max(...all.map((it) => STATUS_RANK[it.status] ?? 0));
+    const status = top === 2 ? 'FAIL' : top === 1 ? 'PASS' : 'N/A';
+    const reasons = [...new Set(all.filter((it) => (STATUS_RANK[it.status] ?? 0) === top).map((it) => String(it.reason ?? '').trim()).filter(Boolean))];
+    return { check, status, reason: reasons.join(' · ') };
+  });
+  const failed = results.some((r) => r.verdict === 'FAIL');
+  return {
+    verdict: failed ? 'FAIL' : 'PASS',
+    summary: `Reviewed in ${results.length} parts. ${results.map((r) => String(r.summary ?? '').trim()).filter(Boolean).join(' ')}`.trim(),
+    items,
+    blockingIssues: results.flatMap((r) => r.blockingIssues ?? []),
+  };
 }
 
 async function gh(fetchImpl, ghToken, path, { accept = 'application/vnd.github+json', method = 'GET', body } = {}) {
@@ -380,11 +444,12 @@ export function formatComment(result, meta = {}) {
     }
   }
   if (meta.diff) {
-    const { fileCount, totalChars, omitted, text } = meta.diff;
+    const { fileCount, totalChars, omitted, readChars, parts = 1 } = meta.diff;
+    const inParts = parts > 1 ? ` in ${parts} parts` : '';
     if (omitted.length) {
       lines.push(
-        `**Partial review:** read ${text.length.toLocaleString('en-US')} of ${totalChars.toLocaleString('en-US')} diff characters. ` +
-          `${omitted.length} of ${fileCount} files were not read (lockfiles, docs and tests are dropped first):`,
+        `**Partial review:** read ${readChars.toLocaleString('en-US')} of ${totalChars.toLocaleString('en-US')} diff characters${inParts}. ` +
+          `${omitted.length} of ${fileCount} files were not fully read:`,
         '',
         `<details><summary>Files not read</summary>`,
         '',
@@ -394,7 +459,7 @@ export function formatComment(result, meta = {}) {
         '',
       );
     } else {
-      lines.push(`Read all ${fileCount} files in the diff.`, '');
+      lines.push(`Read all ${fileCount} files in the diff${inParts}.`, '');
     }
   }
   const via = meta.model ? `\`${meta.model}\`${meta.backend ? ` (${meta.backend})` : ''}` : 'no model answered';
@@ -410,49 +475,71 @@ export function describeAttempt(a) {
 }
 
 /** Everything except reading env and exiting, so a test can drive it with a fake fetch. */
-export async function reviewPullRequest({ fetchImpl = fetch, runCli = runCommand, oauthToken, apiKey, baseURL, ghToken, repo, prNumber, modelsEnv, log = console.log }) {
+export async function reviewPullRequest({ fetchImpl = fetch, runCli = runCommand, oauthToken, apiKey, baseURL, ghToken, repo, prNumber, modelsEnv, maxChars = MAX_DIFF_CHARS, maxParts = MAX_PARTS, log = console.log }) {
   const prRes = await gh(fetchImpl, ghToken, `/repos/${repo}/pulls/${prNumber}`);
   if (!prRes.ok) throw new Error(`GitHub PR ${prNumber} → ${prRes.status}`);
   const prMeta = await prRes.json();
 
   const { files, source } = await fetchDiffFiles({ fetchImpl, ghToken, repo, prNumber });
   if (!files.length) return { skipped: true };
-  const diff = prepareDiff(files);
-  log(`Reviewing PR #${prNumber}: ${prMeta.title} — ${diff.fileCount} files, ${diff.totalChars} chars (${source} API), ${diff.omitted.length} not read`);
+  const plan = planDiff(files, maxChars, maxParts);
+  log(`Reviewing PR #${prNumber}: ${prMeta.title} — ${plan.fileCount} files, ${plan.totalChars} chars (${source} API), ${plan.parts.length} part(s), ${plan.omitted.length} beyond the limit`);
+  const summarise = (unread, readChars) => ({ fileCount: plan.fileCount, totalChars: plan.totalChars, omitted: unread, readChars, parts: plan.parts.length });
 
   // Say so in the PR rather than exiting quietly: a reviewer that is switched
   // off and looks switched on is the failure this file was rewritten to end.
   if (!oauthToken && !apiKey) {
     return {
       result: { verdict: 'UNVERIFIED', summary: 'AI review is not configured.', error: 'neither the CLAUDE_CODE_OAUTH_TOKEN nor the ANTHROPIC_API_KEY repository secret is set', items: [], blockingIssues: [] },
-      meta: { attempts: [], diff },
+      meta: { attempts: [], diff: summarise(plan.paths, 0) },
     };
   }
 
   // The subscription wins when both are set: it is the one that costs nothing extra.
   const backend = oauthToken ? 'Claude subscription' : 'Anthropic API';
   const base = normalizeBase(baseURL);
-  const user = buildUserPrompt({ prNumber, title: prMeta.title, diff });
+  const models = modelCandidates(modelsEnv);
   const attempts = [];
-  for (const model of modelCandidates(modelsEnv)) {
-    const res = oauthToken
-      ? await callClaudeCode({ runCli, token: oauthToken, model, system: SYSTEM_PROMPT, user })
-      : await callModel({ fetchImpl, base, apiKey, model, system: SYSTEM_PROMPT, user, maxTokens: 4096 });
-    if (!res.ok) {
-      attempts.push({ model, status: res.status, detail: res.detail });
-      log(`  ${model} → ${describeAttempt(res)}`);
-      continue;
+  const results = [];
+  const unread = [...plan.omitted];
+  let readChars = 0;
+  let usedModel = null;
+
+  for (let index = 0; index < plan.parts.length; index += 1) {
+    const part = plan.parts[index];
+    const user = buildUserPrompt({ prNumber, title: prMeta.title, plan, index });
+    const label = plan.parts.length > 1 ? `part ${index + 1}/${plan.parts.length}: ` : '';
+    let done = false;
+    for (const model of models) {
+      const res = oauthToken
+        ? await callClaudeCode({ runCli, token: oauthToken, model, system: SYSTEM_PROMPT, user })
+        : await callModel({ fetchImpl, base, apiKey, model, system: SYSTEM_PROMPT, user, maxTokens: 4096 });
+      const verdict = res.ok ? extractVerdict(res.text) : null;
+      if (verdict?.ok) {
+        results.push(verdict.result);
+        readChars += part.text.length;
+        unread.push(...part.truncated.map((p) => `${p} (truncated)`));
+        usedModel = model;
+        log(`  ${label}${model} → ${verdict.result.verdict}`);
+        done = true;
+        break;
+      }
+      const failure = res.ok ? { status: res.status, detail: verdict.error } : { status: res.status, detail: res.detail };
+      attempts.push({ model, status: failure.status, detail: `${label}${failure.detail}` });
+      log(`  ${label}${model} → ${describeAttempt(failure)}`);
     }
-    const verdict = extractVerdict(res.text);
-    if (verdict.ok) return { result: verdict.result, meta: { model, backend, diff } };
-    attempts.push({ model, status: res.status, detail: verdict.error });
-    log(`  ${model} → ${verdict.error}`);
+    // A part no model could review is reported as unread, never dropped quietly.
+    if (!done) unread.push(...part.paths);
   }
-  const last = attempts.at(-1);
-  return {
-    result: { verdict: 'UNVERIFIED', summary: 'AI review returned no usable verdict.', error: last ? `${last.model} → ${describeAttempt(last)}` : 'no model configured', items: [], blockingIssues: [] },
-    meta: { attempts, diff },
-  };
+
+  if (!results.length) {
+    const last = attempts.at(-1);
+    return {
+      result: { verdict: 'UNVERIFIED', summary: 'AI review returned no usable verdict.', error: last ? `${last.model} → ${describeAttempt(last)}` : 'no model configured', items: [], blockingIssues: [] },
+      meta: { attempts, diff: summarise(unread, readChars) },
+    };
+  }
+  return { result: mergeResults(results), meta: { model: usedModel, backend, diff: summarise(unread, readChars) } };
 }
 
 export async function postComment({ fetchImpl = fetch, ghToken, repo, prNumber, body }) {
