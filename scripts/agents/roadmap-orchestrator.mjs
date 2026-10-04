@@ -323,7 +323,7 @@ async function main() {
     console.log(`[orchestrator] decision saved to resume state (Render-kill survival).`);
   }
 
-  // 2026-07-10: glm-5.2 (unlike opus) does not reliably call the mandatory
+  // 2026-07-10: the model does not always call the mandatory
   // write_decision_note tool — it completes spawn/defer/kill but stops before
   // the final note. Without this guard the artifact + dashboard get
   // `Decision note: undefined` (observed on live cron C-20260710T1306 + local
@@ -340,7 +340,7 @@ async function main() {
       nextCycleHypothesis: '(not provided by agent this cycle)',
     };
     console.log(
-      `[orchestrator] WARNING: write_decision_note not called — synthesized default note (glm-5.2 tool-sequence gap)`,
+      `[orchestrator] WARNING: write_decision_note not called — synthesized default note (model tool-sequence gap)`,
     );
   }
 
@@ -359,7 +359,7 @@ async function main() {
     `[orchestrator] decision: spawn ${spawnPlan.length}, defer ${deferrals.length}, kill ${kills.length}`,
   );
 
-  // 2026-07-13: F2 empty-spawn guard. The Decision Agent (glm-5.2) sometimes
+  // 2026-07-13: F2 empty-spawn guard. The Decision Agent sometimes
   // emits ZERO spawn_subagent tool calls in a cycle (observed C-20260710T1339:
   // Spawn plan []). When that coincides with zero defers + zero kills too, the
   // cycle did nothing at all — no queue items, no deferral, no kill — yet exits
@@ -370,11 +370,11 @@ async function main() {
   // free-tier minutes on low-quality queue files).
   if (spawnPlan.length === 0 && deferrals.length === 0 && kills.length === 0) {
     console.warn(
-      `[orchestrator] WARNING: cycle produced 0 spawn + 0 defer + 0 kill — Decision Agent under-spawned (glm-5.2 tool-call gap). No work emitted this cycle.`,
+      `[orchestrator] WARNING: cycle produced 0 spawn + 0 defer + 0 kill — Decision Agent under-spawned (model tool-call gap). No work emitted this cycle.`,
     );
     writeAlert(
       `decision-under-spawn-${cycleId}.md`,
-      `# Decision Agent emitted no work\n\nCycle ${cycleId}: 0 spawn, 0 defer, 0 kill. The Decision Agent (glm-5.2) returned no spawn_subagent / defer_to_founder / kill_item tool calls.\n\n## Fired tripwires\n\n${JSON.stringify(firedTripwires, null, 2)}\n\n## Diagnosis\n\nThis is the dominant 0-queue-output failure mode (F2). Unlike the sub-agent 403/timeout case (F3, see subagent-zero-output-* alerts), here the Decision Agent itself produced no spawn plan, so no sub-agent was ever called. Likely causes:\n- glm-5.2 under-spawns despite the prompt instructing 3-7 (capped 2-4) spawn_subagent calls per cycle.\n- All candidate items were filtered out (already-shipped, already-in-queue, founder-blocked) leaving nothing the agent judged spawnable.\n- A tripwire (e.g. T-010 queue-stale) caused a defer-only cycle — but that path records a deferral, so it would NOT trigger this alert.\n\n## Action\n\nReview _decision-prompt.mjs spawn instructions for glm-5.2 tool-calling reliability. If this fires repeatedly across cycles, the prompt needs tightening or a floor (>=1 spawn unless an explicit defer/kill tripwire fired).\n`,
+      `# Decision Agent emitted no work\n\nCycle ${cycleId}: 0 spawn, 0 defer, 0 kill. The Decision Agent returned no spawn_subagent / defer_to_founder / kill_item tool calls.\n\n## Fired tripwires\n\n${JSON.stringify(firedTripwires, null, 2)}\n\n## Diagnosis\n\nThis is the dominant 0-queue-output failure mode (F2). Unlike the sub-agent 403/timeout case (F3, see subagent-zero-output-* alerts), here the Decision Agent itself produced no spawn plan, so no sub-agent was ever called. Likely causes:\n- The model under-spawns despite the prompt instructing 3-7 (capped 2-4) spawn_subagent calls per cycle.\n- All candidate items were filtered out (already-shipped, already-in-queue, founder-blocked) leaving nothing the agent judged spawnable.\n- A tripwire (e.g. T-010 queue-stale) caused a defer-only cycle — but that path records a deferral, so it would NOT trigger this alert.\n\n## Action\n\nReview _decision-prompt.mjs spawn instructions for tool-calling reliability. If this fires repeatedly across cycles, the prompt needs tightening or a floor (>=1 spawn unless an explicit defer/kill tripwire fired).\n`,
     );
   }
 
@@ -417,7 +417,7 @@ async function main() {
         }
       }
       // Empty-but-no-error = the LLM returned text that didn't parse into the
-      // ---END-QUEUE-FILE--- frontmatter format (glm-5.2 often does this).
+      // ---END-QUEUE-FILE--- frontmatter format (models often do this).
       // Flag it so "0 files" is never silent again.
       if (!queueFiles?.length && !errors?.length) {
         const msg = `subagent ${plan?.role} (${plan?.itemIds?.join(',')}) returned 0 queue files + 0 errors (LLM output did not match the queue-file format)`;
@@ -431,7 +431,7 @@ async function main() {
   if (subagentErrors.length && !allQueueFiles.length) {
     writeAlert(
       `subagent-zero-output-${cycleId}.md`,
-      `# Sub-agent fan-out produced 0 queue files\n\nCycle ${cycleId} decided spawn ${spawnPlan.length} / defer ${deferrals.length} / kill ${kills.length} but wrote 0 queue files.\n\n## Failure modes this cycle\n\n${subagentErrors.map((e) => `- ${e}`).join('\n')}\n\n## Spawn plan (briefings that evaporated)\n\n${JSON.stringify(spawnPlan, null, 2)}\n\n## Root cause checklist\n\n- runSubagent calls callOpus47 → glm-5.2 on Blackbox. Confirm the proxy returned text.\n- glm-5.2 may not reliably emit the ---END-QUEUE-FILE--- + YAML frontmatter format. If errors are all "returned 0 + 0", the format contract is the blocker — switch the sub-agent output to tool_use (like the Decision Agent) or relax the parser.\n- A 403/ModelRejected error means the model guard or proxy rejected — check _anthropic-client.mjs VERIFIED set.\n`,
+      `# Sub-agent fan-out produced 0 queue files\n\nCycle ${cycleId} decided spawn ${spawnPlan.length} / defer ${deferrals.length} / kill ${kills.length} but wrote 0 queue files.\n\n## Failure modes this cycle\n\n${subagentErrors.map((e) => `- ${e}`).join('\n')}\n\n## Spawn plan (briefings that evaporated)\n\n${JSON.stringify(spawnPlan, null, 2)}\n\n## Root cause checklist\n\n- runSubagent calls callOpus47. Confirm the API returned text.\n- The model may not reliably emit the ---END-QUEUE-FILE--- + YAML frontmatter format. If errors are all "returned 0 + 0", the format contract is the blocker — switch the sub-agent output to tool_use (like the Decision Agent) or relax the parser.\n- A 403/ModelRejected error means the model guard or proxy rejected — check _anthropic-client.mjs VERIFIED set.\n`,
     );
   }
 
