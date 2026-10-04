@@ -49,18 +49,50 @@ export function useCreateStoreOrder() {
   });
 }
 
+/**
+ * The exact `z.enum` `PATCH /store/orders/:id/status` validates against —
+ * apps/api/src/routes/store-orders.ts:53-63. Uppercase; lowercase 400s.
+ */
+export type StoreOrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "REFUNDED";
+
+/**
+ * PATCH /api/v1/store/orders/:id/status
+ *
+ * `status` was typed `string`, so a value outside the enum type-checked and
+ * then 400'd at runtime — a bug tsc could have caught at the call site and did
+ * not. `trackingNumber` is parsed by the same schema and was missing here, so
+ * the only way a merchant could attach one was to bypass this hook.
+ *
+ * The route ALSO enforces a transition table (store-orders.ts:418-433) and
+ * answers 409 `{ error: "Cannot transition order from X to Y." }` on a bad
+ * move. Being in the enum is necessary, not sufficient.
+ */
 export function useUpdateStoreOrderStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
       id,
       status,
+      trackingNumber,
       note,
     }: {
       id: string;
-      status: string;
+      status: StoreOrderStatus;
+      trackingNumber?: string;
       note?: string;
-    }) => api.patch(`/api/v1/store/orders/${id}/status`, { status, note }),
+    }) =>
+      api.patch(`/api/v1/store/orders/${id}/status`, {
+        status,
+        trackingNumber,
+        note,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["storeOrders"] }),
   });
 }
@@ -191,46 +223,51 @@ export function useSetWellnessRoom() {
   });
 }
 
-// ─── Astrology Consultations ──────────────────────────────
-
-export function useAstrologyConsultations(params?: { role?: string }) {
-  const qs = params?.role ? `?role=${encodeURIComponent(params.role)}` : "";
-  return useQuery({
-    queryKey: ["astrologyConsultations", "list", params],
-    queryFn: () =>
-      api.get<{ consultations: unknown[] }>(
-        `/api/v1/astrology/consultations${qs}`,
-      ),
-  });
-}
-
-export function useUpdateConsultation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      id,
-      status,
-    }: {
-      id: string;
-      status: "COMPLETED" | "CANCELLED";
-    }) => api.patch(`/api/v1/astrology/consultations/${id}`, { status }),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["astrologyConsultations"] }),
-  });
-}
-
-export function useStartConsultationCall() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) =>
-      api.post<{ roomUrl: string }>(
-        `/api/v1/astrology/consultations/${id}/start-call`,
-        {},
-      ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["astrologyConsultations"] }),
-  });
-}
+// ─── Astrology Consultations — REMOVED, and why ────────────────────────────
+//
+// `useAstrologyConsultations`, `useUpdateConsultation` and
+// `useStartConsultationCall` used to live here, wrapping
+// `GET|PATCH /api/v1/astrology/consultations[/:id][/start-call]`.
+//
+// THOSE THREE ENDPOINTS ANSWER FROM A PRIVATE IN-MEMORY MAP.
+// apps/api/src/services/astrology.service.ts:373 —
+//
+//     private sessions: Map<string, PortalConsultation> = new Map();
+//
+// Nothing writes to it but `startConsultation()` inside the same process. It is
+// empty on every boot, is not shared between Render instances, and holds no row
+// that survives a redeploy. Paid consultations live in the
+// `astrologer_consultations` table — what `GET /astrologer-portal/dashboard`
+// counts, what the Commission ledger is keyed to, and what routes/consultation.ts
+// reads. So the astrologer's Sessions tab showed an empty list while the
+// dashboard on the previous tab counted real consultations, and each card's
+// three buttons addressed the volatile Map. Mobile stopped calling all three
+// (apps/mobile/lib/astrologer-consultations.ts) and a guard test now asserts no
+// screen re-imports them.
+//
+// DELETED RATHER THAN REPOINTED. There is no honest 1:1 mapping onto the real
+// rail, and inventing one would be a fresh lie of exactly the kind this package
+// is being cleaned of:
+//
+//   · The list splits in two. Devotee history is `GET /consultation/mine`;
+//     the astrologer's own book is `GET /consultation/astrologer/mine`
+//     (consultation.ts:724 and :1048). Different shapes, different auth, and a
+//     `role` query parameter that neither accepts. `useMyConsultations()` in
+//     hooks/consultations.js already covers the devotee side.
+//   · `status: 'COMPLETED' | 'CANCELLED'` maps onto nothing. Completion is
+//     `PATCH /consultation/:id/complete` (:936) — BODYLESS, no status field.
+//   · The astrologer-side cancel DOES NOT EXIST. `POST /consultation/:id/cancel`
+//     (:758) is devotee-only and 403s the astrologer. A hook cannot be pointed
+//     at an endpoint the API declines to provide.
+//   · There is no start-call endpoint on the real rail. The Jitsi room is minted
+//     at verify-payment and surfaced as `jitsiUrl` on the row itself.
+//   · The status vocabulary differs too: the Map stores 'scheduled', the table
+//     stores pending_payment | payment_review | confirmed | completed |
+//     cancelled.
+//
+// Use hooks/consultations.js (`useMyConsultations`, `useCancelConsultation`) for
+// the devotee side. The astrologer side needs `GET /consultation/astrologer/mine`
+// and `PATCH /consultation/:id/complete`; mobile owns that today.
 
 // ─── Admin Commissions ──────────────────────────────
 

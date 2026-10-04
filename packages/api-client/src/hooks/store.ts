@@ -14,20 +14,37 @@ import { api } from "../client.js";
 
 // ─── Types ───────────────────────────────────
 
+/**
+ * One row of the PUBLIC storefront catalogue, `GET /api/v1/store/products` —
+ * `storeService.getProducts()` in apps/api/src/services/store.service.ts:696,
+ * whose row type is declared at :6.
+ *
+ * `name`, `imageUrl` and `thumbnail` are NOT sent — the wire has `title` and
+ * `images: { url, alt }[]`. `name` was even declared REQUIRED, so
+ * `product.name` type-checked everywhere and was `undefined` everywhere.
+ */
 export interface Product {
   id: string;
   handle: string;
-  name: string;
-  title?: string;
+  /** The display name. There is no `name` field. */
+  title: string;
   description: string;
+  features: string[];
   price: number;
+  compareAtPrice: number | null;
+  discount: number;
+  currency: string;
+  /** There is no `imageUrl` / `thumbnail`; use `images[0]?.url`. */
+  images: Array<{ url: string; alt: string }>;
   category: string;
-  collection?: string;
-  imageUrl?: string;
-  thumbnail?: string;
-  rating?: number;
-  reviewCount?: number;
-  inStock?: boolean;
+  collection: string;
+  tag: string | null;
+  inStock: boolean;
+  freeDelivery: boolean;
+  rating: number;
+  reviewCount: number;
+  weight: string | null;
+  sku: string;
 }
 
 export interface Collection {
@@ -85,6 +102,26 @@ export const storeQueryKeys = {
 
 // ─── Hooks ───────────────────────────────────
 
+/**
+ * The PUBLIC storefront catalogue — `GET /api/v1/store/products`, the
+ * unauthenticated, edge-cached list every shopper sees.
+ *
+ * ⚠ NOT A MERCHANT'S OWN CATALOGUE. The name says "products" and says nothing
+ * about WHOSE, and that ambiguity is what put seed data on a store owner's own
+ * screen: `(store-admin)/products.tsx` and `(store-admin)/dashboard.tsx` both
+ * called this hook and listed the platform's demo catalogue as the owner's
+ * inventory (PAR-24; guarded now by apps/mobile/lib/__tests__/
+ * store-and-gaushala-contracts.par24.test.ts, which fails if either screen
+ * mentions `useProducts` again).
+ *
+ * A merchant's real inventory is `GET /api/v1/store-admin/products`, which is
+ * role-gated on STORE_OWNER, scoped to that user's `StoreProfile`, and answers
+ * `{ products, storeProfileMissing? }` — a different endpoint with a different
+ * shape. See apps/mobile/lib/store-admin-catalogue.ts.
+ *
+ * `usePublicStoreProducts` is the same hook under the unambiguous name; prefer
+ * it in new code.
+ */
 export function useProducts(
   params?: {
     collection?: string;
@@ -105,6 +142,9 @@ export function useProducts(
     ...options,
   });
 }
+
+/** `useProducts` under a name that says which catalogue it reads. */
+export const usePublicStoreProducts = useProducts;
 
 export function useProduct(
   handle: string,

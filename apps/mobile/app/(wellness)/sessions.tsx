@@ -11,20 +11,21 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  useWellnessSessions,
-  useCreateWellnessSession,
-  useSetWellnessRoom,
-} from '@poojly/api-client';
+import { useCreateWellnessSession, useSetWellnessRoom } from '@poojly/api-client';
 import { PortalScreen, Section, EmptyHint } from '../../lib/portal-screen';
 import {
-  selectWellnessSessions,
+  useInstructorSessions,
+  providerQueryKeys,
+} from '../../lib/provider-queries';
+import {
+  selectInstructorSessions,
+  type InstructorSessionVM,
+} from '../../lib/instructor-sessions';
+import {
   buildWellnessSessionInput,
   WellnessSessionInputError,
-  type WellnessSessionVM,
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
-import { useAuth } from '../../lib/auth-context';
 import { wellnessSessionStatusLabel, wellnessSessionTypeLabel } from '../../lib/enum-labels';
 
 /**
@@ -41,9 +42,23 @@ import { wellnessSessionStatusLabel, wellnessSessionTypeLabel } from '../../lib/
  * had no inputs. buildWellnessSessionInput now mirrors the server schema and
  * the modal collects the missing fields.
  *
+ * WHICH ENDPOINT (the part PAR-10 did not fix). Even with the envelope right,
+ * this screen was reading `GET /wellness/sessions` — the DEVOTEE catalogue,
+ * filtered to `scheduledAt >= now AND status IN ('SCHEDULED','LIVE')` across
+ * every instructor — and narrowing it with
+ * `!s.instructorId || s.instructorId === user.id`, whose first clause keeps
+ * other people's classes. So "My Sessions" listed classes this instructor does
+ * not teach and hid every class they had already taught: a session created for
+ * a date now past disappeared from its own author's screen, with a Set Room URL
+ * button beside it that could not say whether a link was already set, because
+ * the public handler strips `roomUrl` before answering.
+ *
+ * `GET /wellness/sessions/mine` is role-gated and instructor-scoped, so there
+ * is no client-side ownership filter here at all — see lib/instructor-sessions.ts.
+ *
  * The list is also invalidated by hand: useCreateWellnessSession invalidates
- * ['wellnessSessions'] while useWellnessSessions is keyed ['wellness',
- * 'sessions'], so a successful create never refreshed this screen.
+ * ['wellnessSessions'], which is nobody's query key on this screen, so a
+ * successful create never refreshed it.
  */
 const EMPTY_FORM = {
   title: '',
@@ -56,20 +71,26 @@ const EMPTY_FORM = {
 };
 
 export default function WellnessSessionsScreen() {
-  const sessionsQuery = useWellnessSessions();
+  const sessionsQuery = useInstructorSessions();
   const createSession = useCreateWellnessSession();
   const setRoom = useSetWellnessRoom();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const allSessions = selectWellnessSessions(sessionsQuery.data);
-  const mySessions = user?.id
-    ? allSessions.filter((s) => !s.instructorId || s.instructorId === user.id)
-    : allSessions;
+  // Server-scoped to this instructor. `null` means the read failed — which is
+  // not the same statement as "you teach nothing" and must not render as one.
+  const mySessions = selectInstructorSessions(sessionsQuery.data);
+
+  const loadError = sessionsQuery.isError
+    ? sessionsQuery.error instanceof Error
+      ? sessionsQuery.error.message
+      : 'Unknown error'
+    : !sessionsQuery.isLoading && mySessions === null
+      ? 'The server returned an unexpected response.'
+      : null;
 
   async function onRefresh() {
     setRefreshing(true);
@@ -77,13 +98,13 @@ export default function WellnessSessionsScreen() {
     setRefreshing(false);
   }
 
-  function handleSetRoom(s: WellnessSessionVM) {
+  function handleSetRoom(s: InstructorSessionVM) {
     if (!Alert.prompt) {
       Alert.alert('Set Room URL', 'Use the desktop app or web portal to set room URLs.');
       return;
     }
     Alert.prompt(
-      'Set Room URL',
+      s.roomUrl ? 'Update room URL' : 'Set room URL',
       `Jitsi/Zoom link for "${s.title}"`,
       async (input?: string) => {
         const roomUrl = (input ?? '').trim();
@@ -96,14 +117,16 @@ export default function WellnessSessionsScreen() {
         }
         try {
           await setRoom.mutateAsync({ sessionId: s.id, roomUrl });
-          await queryClient.invalidateQueries({ queryKey: ['wellness', 'sessions'] });
+          await queryClient.invalidateQueries({
+            queryKey: providerQueryKeys.instructorSessions,
+          });
           Alert.alert('Saved', 'Room URL updated.');
         } catch (err) {
           Alert.alert('Error', err instanceof Error ? err.message : 'Failed');
         }
       },
       'plain-text',
-      '',
+      s.roomUrl ?? '',
     );
   }
 
@@ -120,7 +143,9 @@ export default function WellnessSessionsScreen() {
     }
     try {
       await createSession.mutateAsync(body);
-      await queryClient.invalidateQueries({ queryKey: ['wellness', 'sessions'] });
+      await queryClient.invalidateQueries({
+        queryKey: providerQueryKeys.instructorSessions,
+      });
       setCreateOpen(false);
       setForm(EMPTY_FORM);
     } catch (err) {
@@ -131,15 +156,22 @@ export default function WellnessSessionsScreen() {
   return (
     <PortalScreen
       title="Sessions"
-      subtitle={`${mySessions.length} of yours`}
+      subtitle={
+        sessionsQuery.isLoading && mySessions === null
+          ? 'Loading…'
+          : mySessions === null
+            ? 'Unavailable'
+            : `${mySessions.length} ${mySessions.length === 1 ? 'class' : 'classes'} you teach`
+      }
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
-      {sessionsQuery.isError ? (
+      {loadError ? (
         <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>
-            Could not load sessions:{' '}
-            {sessionsQuery.error instanceof Error ? sessionsQuery.error.message : 'Unknown error'}
+          <Text style={styles.errorText}>Could not load your sessions: {loadError}</Text>
+          <Text style={styles.errorHint}>
+            Nothing is listed below. That is not a report that you teach no
+            classes. Pull down to retry.
           </Text>
         </View>
       ) : null}
@@ -154,8 +186,10 @@ export default function WellnessSessionsScreen() {
       </TouchableOpacity>
 
       <Section title="My Sessions">
-        {sessionsQuery.isLoading ? (
+        {sessionsQuery.isLoading && mySessions === null ? (
           <Text style={styles.loading}>Loading...</Text>
+        ) : mySessions === null ? (
+          <EmptyHint text="Your sessions could not be loaded." />
         ) : mySessions.length === 0 ? (
           <EmptyHint text="No sessions yet — schedule one to get started." />
         ) : (
@@ -166,7 +200,11 @@ export default function WellnessSessionsScreen() {
                 {[
                   wellnessSessionTypeLabel(s.type),
                   s.durationMinutes !== null ? `${s.durationMinutes} min` : null,
-                  s.capacity !== null ? `${s.capacity} seats` : null,
+                  s.capacity !== null && s.enrolled !== null
+                    ? `${s.enrolled}/${s.capacity} seats sold`
+                    : s.capacity !== null
+                      ? `${s.capacity} seats`
+                      : null,
                   s.priceInr === null
                     ? null
                     : s.priceInr === 0
@@ -194,9 +232,12 @@ export default function WellnessSessionsScreen() {
                   activeOpacity={0.8}
                   disabled={setRoom.isPending}
                 >
-                  {/* The list payload carries no roomUrl, so this button cannot
-                      truthfully say "Update" vs "Set". */}
-                  <Text style={styles.actionPrimaryText}>Set Room URL</Text>
+                  {/* /sessions/mine keeps roomUrl (the public catalogue strips
+                      it), so this button can finally tell the truth about
+                      whether a link is already set. */}
+                  <Text style={styles.actionPrimaryText}>
+                    {s.roomUrl ? 'Update room URL' : 'Set room URL'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -314,7 +355,8 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     marginBottom: spacing.sm,
   },
-  errorText: { color: colors.red[600], fontSize: fontSize.sm },
+  errorText: { color: colors.red[600], fontSize: fontSize.sm, fontWeight: '600' },
+  errorHint: { color: colors.red[600], fontSize: fontSize.xs, marginTop: 2, lineHeight: 16 },
   card: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.md,

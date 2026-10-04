@@ -8,9 +8,9 @@ import {
   ListRow,
   EmptyHint,
 } from '../../lib/portal-screen';
-import { selectAdminDashboard, formatInr } from '../../lib/api-contracts';
+import { selectAdminDashboard, selectPendingApprovals, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
-import { approvalStatusLabel, transactionStatusLabel, transactionTypeLabel, userRoleLabel } from '../../lib/enum-labels';
+import { transactionStatusLabel, transactionTypeLabel, userRoleLabel } from '../../lib/enum-labels';
 
 import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
@@ -37,7 +37,12 @@ export default function AdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   const data = selectAdminDashboard(dashboardQuery.data);
-  const approvals = approvalsQuery.data?.approvals ?? [];
+  // Same defect as (admin)/approvals.tsx: `/admin/pending-approvals` returns
+  // `{ id, userId, role, profileName, city, createdAt }`, never `fullName`,
+  // `email`, `phone` or `status` — so this list rendered blank names under a
+  // hardcoded "Pending" badge. `useAdminPendingApprovals` types the rows as
+  // `AdminUser[]`, which is a fabricated interface, so nothing complained.
+  const approvals = selectPendingApprovals(approvalsQuery.data);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -148,9 +153,15 @@ export default function AdminDashboard() {
           approvals.slice(0, 5).map((u) => (
             <ListRow
               key={u.id}
-              primary={u.fullName}
-              secondary={`${userRoleLabel(u.role)} • ${u.email ?? u.phone}`}
-              status={{ label: approvalStatusLabel(u.status) || 'Pending', color: colors.amber[600] }}
+              primary={u.profileName}
+              secondary={
+                u.city ? `${userRoleLabel(u.role)} • ${u.city}` : userRoleLabel(u.role)
+              }
+              // Every row on this endpoint is by definition `approved: false`.
+              // The badge is the query's own meaning, not a column that was
+              // read — which is why it is a literal and not a lookup on a
+              // `status` field that does not exist.
+              status={{ label: 'Pending', color: colors.amber[600] }}
             />
           ))
         )}

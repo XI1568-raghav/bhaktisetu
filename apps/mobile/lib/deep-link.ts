@@ -16,6 +16,8 @@ import { useRouter } from 'expo-router';
 //   darshya://chat/{threadId}          → (devotee)/inbox?thread=…
 //   darshya://order/{orderId}          → (devotee)/order-detail?id=…
 //   darshya://today                    → (devotee)/today
+//   darshya://reset-password/{token}   → (auth)/reset-password?token=…
+//   https://darshya.online/auth/reset-password → (auth)/reset-password
 //   https://darshya.online/{any}       → mirrors darshya:// scheme (Universal Link)
 //   (unknown)                          → (devotee)/home  (never crash, never freeze)
 //
@@ -89,6 +91,48 @@ export function parseDeepLink(rawUrl: string | null | undefined): DeepLinkRoute 
       return fallback;
     case 'today':
       return fallback;
+
+    // A password-reset link opened on the phone.
+    //
+    // `app/(auth)/reset-password.tsx` exists and had NO in-app entry point at
+    // all: nothing pushes it, and this table did not name it, so a devotee who
+    // tapped the reset link in their email landed on `/(devotee)` — which the
+    // RoleGuard then bounced to the login screen, with no explanation of what
+    // happened to their link. That is a dead end, and it is the worst place in
+    // the product to have one.
+    //
+    // The screen it now reaches cannot set a password and does not pretend to:
+    // Supabase carries the recovery credential in the URL FRAGMENT, which
+    // `url.pathname` never sees and which no client in this app could consume
+    // anyway (apps/mobile has no @supabase/supabase-js). What the screen does
+    // is say so and open the system browser on the page that really performs
+    // the reset. Landing there beats landing on a login form.
+    //
+    // The token is passed through only so the screen can tell "arrived from a
+    // real link" from "opened cold". It is never rendered, logged or put in a
+    // URL — see the screen's own note. It is a credential.
+    //
+    // ⚠️ WHEN UNIVERSAL LINKS ARE ACTIVATED: the reset flow completes in the
+    // BROWSER, not here. If `ios.associatedDomains` / the Android intent
+    // filters claim `darshya.online/auth/*`, the OS hands the link to the app
+    // and the fragment is lost, so the user needs a second email. Scope the
+    // domain patterns to exclude `/auth/*` and this case only ever serves the
+    // custom scheme.
+    case 'reset-password':
+      return decoded
+        ? { pathname: '/(auth)/reset-password', params: { token: decoded } }
+        : { pathname: '/(auth)/reset-password' };
+
+    // The web path is /auth/reset-password, so the head is `auth`.
+    case 'auth':
+      if (decoded === 'reset-password') {
+        const token = decodeURIComponent(rest[1] ?? '').slice(0, MAX_SLUG_LEN);
+        return token
+          ? { pathname: '/(auth)/reset-password', params: { token } }
+          : { pathname: '/(auth)/reset-password' };
+      }
+      return fallback;
+
     default:
       return fallback;
   }

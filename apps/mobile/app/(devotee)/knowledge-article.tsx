@@ -68,7 +68,7 @@ export default function KnowledgeArticleScreen() {
   }, [category, slug]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.stone[900]} />
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm,
     backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.stone[100],
   },
-  backBtn: { padding: spacing.xs },
+  backBtn: { width: 44, height: 44, marginLeft: -spacing.xs, alignItems: 'center', justifyContent: 'center' },
   headerLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.saffron[700], textTransform: 'uppercase' },
   scroll: { padding: spacing.md, paddingBottom: spacing.xl },
   title: { fontSize: fontSize['3xl'], fontWeight: '800', color: colors.stone[900] },
