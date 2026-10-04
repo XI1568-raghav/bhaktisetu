@@ -15,7 +15,7 @@ Repo `E:\NewClaude\bhaktisetu` (folder legacy; `poojly_*` storage retained — n
 - Treat 3 files as shared memory across agents + sessions.
 - Verify "memory says X" by reading current source before acting.
 - **Web deploy = Render (NOT Cloudflare Pages).** `darshya.online` + `www` CNAME → `darshya-web.onrender.com` (Render docker, Next standalone `apps/web/Dockerfile`, Node runtime). Cloudflare is DNS + edge proxy only. Runbook: `docs/render-web-cutover-runbook.md`. Workflows: `render-cutover.yml` (`workflow_dispatch`), `deploy-web-render.yml` (docker smoke), `render-diag.yml` (deploy/diagnose).
-- **A push builds NOTHING. Both Render services are `autoDeploy: false`** (`render.yaml:28` API, `:60` web), so merging to `main` costs zero build minutes and changes nothing in production until a deploy is dispatched by hand:
+- **A push builds NOTHING. Both Render services are `autoDeploy: false`** (`render.yaml:28` API, `:60` web), so merging to `main` costs zero build minutes and changes nothing in production until a deploy is dispatched by hand (verified 2026-10-04: Render's API reads `autoDeploy: "no"` for the API service, switched off by the owner at 06:36Z that day; it had read `yes` from at least 2026-09-09, so a doc dated in between that says the API deploys on push describes that window, and the dashboard can be flipped back, so re-check with `render-diag.yml -f mode=detail` before relying on this):
   `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID>`
   The old `branch` input is DEPRECATED and IGNORED by Render — the workflow says so in its own
   input description. Render deploys the branch the service tracks. The lever that selects what
