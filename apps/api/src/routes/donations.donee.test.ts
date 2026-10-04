@@ -33,6 +33,8 @@ const PROFILE = {
   id: PROFILE_ID,
   userId: OWNER_ID,
   gaushalaName: 'Shri Krishna Gaushala',
+  description: 'ISKCON-affiliated cow shelter.',
+  address: 'Raman Reti, Vrindavan',
   approved: true,
 };
 

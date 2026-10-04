@@ -1,4 +1,8 @@
 import { prisma } from '../lib/prisma.js';
+import { gaushalaQuality, templeQuality } from '../lib/cause-quality.js';
+
+/** Upper bound on approved cause profiles scanned per list call (quality filter runs in memory). */
+const CAUSE_LIST_CAP = 500;
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -456,11 +460,13 @@ export class ProviderService {
             { description: { contains: filters.q, mode: 'insensitive' } },
           ];
         }
-        const [providers, total] = await Promise.all([
-          prisma.gaushalaProfile.findMany({ where, skip, take: limit, orderBy: { totalCows: 'desc' } }),
-          prisma.gaushalaProfile.count({ where }),
-        ]);
-        return { providers, total, page, limit };
+        // Quality filter (lib/cause-quality.ts): approved-but-junk causes are
+        // hidden from the public list without deleting them. The bar is
+        // word/length based so it cannot be expressed in `where`; the approved
+        // set is small, so filter in memory and paginate after.
+        const all = await prisma.gaushalaProfile.findMany({ where, orderBy: { totalCows: 'desc' }, take: CAUSE_LIST_CAP });
+        const passing = all.filter((p) => gaushalaQuality(p).ok);
+        return { providers: passing.slice(skip, skip + limit), total: passing.length, page, limit };
       }
       case 'temple': {
         if (filters.q) {
@@ -469,11 +475,9 @@ export class ProviderService {
             { deity: { contains: filters.q, mode: 'insensitive' } },
           ];
         }
-        const [providers, total] = await Promise.all([
-          prisma.templeProfile.findMany({ where, skip, take: limit, orderBy: { totalStreams: 'desc' } }),
-          prisma.templeProfile.count({ where }),
-        ]);
-        return { providers, total, page, limit };
+        const all = await prisma.templeProfile.findMany({ where, orderBy: { totalStreams: 'desc' }, take: CAUSE_LIST_CAP });
+        const passing = all.filter((p) => templeQuality(p).ok);
+        return { providers: passing.slice(skip, skip + limit), total: passing.length, page, limit };
       }
       default:
         return { providers: [], total: 0, page, limit };
@@ -494,10 +498,14 @@ export class ProviderService {
         return (await prisma.astrologerProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
       case 'wellness':
         return (await prisma.wellnessProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
-      case 'gaushala':
-        return (await prisma.gaushalaProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
-      case 'temple':
-        return (await prisma.templeProfile.findFirst({ where: { id, approved: true } })) as unknown as Record<string, unknown> | null;
+      case 'gaushala': {
+        const p = await prisma.gaushalaProfile.findFirst({ where: { id, approved: true } });
+        return p && gaushalaQuality(p).ok ? (p as unknown as Record<string, unknown>) : null;
+      }
+      case 'temple': {
+        const p = await prisma.templeProfile.findFirst({ where: { id, approved: true } });
+        return p && templeQuality(p).ok ? (p as unknown as Record<string, unknown>) : null;
+      }
       default:
         return null;
     }
