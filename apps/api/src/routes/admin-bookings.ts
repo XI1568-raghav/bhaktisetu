@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { BookingStatus, Prisma } from '@prisma/client';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
-import { processRefund } from '../services/refund.service.js';
+import { processRefund, computePolicyRefund } from '../services/refund.service.js';
 import {
   listPayoutRequests,
   processPayout,
@@ -550,8 +550,20 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       const pending = bookings.filter((b) =>
         b.payments.some((p) => p.status === 'captured' || p.status === 'authorized')
       );
+      // What the cancellation policy owes each one, so the admin screen can default
+      // to the amount the devotee was quoted instead of a blind "Full refund".
+      const withQuote = await Promise.all(
+        pending.map(async (b) => {
+          try {
+            return { ...b, policyQuote: await computePolicyRefund(b) };
+          } catch (err) {
+            request.log.warn({ err, bookingId: b.id }, 'policy quote failed');
+            return { ...b, policyQuote: null };
+          }
+        })
+      );
       return {
-        bookings: pending,
+        bookings: withQuote,
         schemaNote: 'REFUND_REQUESTED status missing — using cancelled bookings with un-refunded captures.',
       };
     } catch (err) {
@@ -572,7 +584,7 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       const { bookingId } = request.params;
       const approveBodySchema = z.object({
         reason: z.string().max(500).optional(),
-        refundType: z.enum(['full', 'partial']).optional(),
+        refundType: z.enum(['full', 'partial', 'policy']).optional(),
         amountInr: z.number().positive().optional(),
       });
       const parsed = approveBodySchema.safeParse(request.body ?? {});
@@ -582,15 +594,33 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       try {
         const exists = await prisma.pujaBooking.findUnique({
           where: { id: bookingId },
-          select: { id: true },
+          select: { id: true, scheduledDate: true, scheduledTimeSlot: true, priceAmount: true, cancelledAt: true },
         });
         if (!exists) return reply.code(404).send({ error: 'Booking not found' });
 
+        let refundType: 'full' | 'partial' = parsed.data.refundType === 'partial' ? 'partial' : 'full';
+        let amountInr = parsed.data.refundType === 'partial' ? parsed.data.amountInr : undefined;
+        let reason = parsed.data.reason ?? 'Admin-approved refund';
+        if (parsed.data.refundType === 'policy') {
+          // The amount is computed here, never taken from the page.
+          const quote = await computePolicyRefund(exists);
+          if (quote.refundAmountInr <= 0) {
+            return reply.code(400).send({ error: 'The cancellation policy owes nothing for this booking (no refund tier applies).' });
+          }
+          reason = `${reason} [${quote.tierLabel}]`.slice(0, 250);
+          if (quote.refundFraction >= 1) {
+            refundType = 'full';
+          } else {
+            refundType = 'partial';
+            amountInr = quote.refundAmountInr;
+          }
+        }
+
         const result = await processRefund({
           bookingId,
-          reason: parsed.data.reason ?? 'Admin-approved refund',
-          refundType: parsed.data.refundType ?? 'full',
-          amountInr: parsed.data.amountInr,
+          reason,
+          refundType,
+          amountInr,
           initiatedBy: request.currentUser?.id ?? 'admin',
         });
 
