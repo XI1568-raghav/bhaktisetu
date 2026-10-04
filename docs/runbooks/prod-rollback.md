@@ -33,6 +33,18 @@ gh run watch                                   # polls to live, then curls the s
 
 ---
 
+> **Revised 2026-10-04 (`OPS-10`/`OPS-18`/`OPS-19`).** `render.yaml` sets
+> `autoDeploy: false` on both services. The Render **dashboard** disagreed for the
+> API until the owner switched its Auto-Deploy off on 2026-10-04 (measured before:
+> 2026-09-09/12 `yes`; after: `no`, updated 2026-10-04T06:36Z), so today a push to
+> `main` deploys neither service. Before that, a push redeployed the API within
+> seconds as an unpinned forward deploy of `main` HEAD with no migration step.
+> In every case the pinned `-f commit=<SHA>` dispatch below is the controlled
+> rollback, because it names the exact commit. Section 4 was
+> also wrong about migrations and has been rewritten. When `render.yaml` and the
+> dashboard disagree, the dashboard wins:
+> `gh workflow run render-diag.yml -f mode=detail -f sid=<SID>`.
+
 ## Why the old procedure cannot work
 
 `render.yaml` sets `autoDeploy: false` on **both** services (`:28` for the API,
@@ -108,23 +120,29 @@ parse; Render's API has no branch parameter on a deploy.
 
 ## 4. ⚠ Rolling back code does NOT roll back the database
 
-The API's start command is
-`prisma migrate deploy && node dist/server.js` (`apps/api/package.json`), run by
-`render.yaml`'s `startCommand`. Migrations apply automatically on every boot,
-including the boot that follows a rollback.
+The repo's start script is `prisma migrate deploy && node dist/server.js`, but
+production does not use it: the dashboard Start Command is
+`pnpm --filter @poojly/api exec tsx src/server.ts` (`OPS-19`). **No migration
+step is part of any deploy, including the deploy that performs a rollback.** The
+schema stays exactly as it is now, and only a human changes it.
 
 That means:
 
-- **Forward-only.** `migrate deploy` applies pending migrations; it never
-  un-applies one. A schema change shipped by the bad deploy is still there after
-  you roll the code back.
+- **Code rolls back; the schema does not.** A schema change applied by hand
+  stays after you roll the code back, and `migrate deploy` never un-applies one.
 - **So roll back to a commit whose code tolerates the current schema.** Additive
   migrations (new nullable column, new table) are safe to roll code back across.
   A destructive one (dropped/renamed column, tightened NOT NULL) is not — the old
   code will query something that no longer exists.
-- If the bad deploy included a destructive migration, a code rollback is not
-  enough. Write a forward migration that restores the shape, and deploy forward.
-  Do **not** hand-edit `_prisma_migrations`.
+- If the bad deploy was paired with a destructive migration, a code rollback is
+  not enough. Write a forward migration that restores the shape, apply it by hand
+  (`DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy` from `apps/api`),
+  confirm with `prisma migrate status`, and deploy forward. Do **not** hand-edit
+  `_prisma_migrations`.
+- The opposite mistake is also silent: a rollback to an OLDER commit does not
+  un-apply anything, and a forward deploy of NEWER code onto an unmigrated schema
+  returns 500s while `/health` stays green. See
+  `docs/runbooks/disaster-recovery.md` scenario 3b.
 - **Never** add `CREATE INDEX CONCURRENTLY` to a migration. Prisma wraps each
   migration in a transaction; it fails with `25001` and then blocks every later
   migration. Plain `CREATE INDEX IF NOT EXISTS` only.

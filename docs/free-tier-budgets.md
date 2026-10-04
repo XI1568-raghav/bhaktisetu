@@ -186,7 +186,7 @@ Cap = 2000 min/mo. **Headroom: +819 min/mo.** Fleet is comfortably under cap.
 >
 > No cron was added, removed or re-timed. The only new *scheduled* workflow in
 > this repository remains `render-hours-guard.yml`, which is counted above and
-> which does not fire at all until the branch merges — see the next section.
+> which did not fire until its branch merged (it is on `main` now) — see the next section.
 
 > **Reconciled 2026-08-20.** `render-hours-guard.yml` (30 min/mo) was added on
 > `feat/recurring-razorpay-planid` and had never been counted, so the "~1800 /
@@ -266,51 +266,32 @@ of knowing whether the product is up.
 
 ## Scheduled workflows only run from the default branch (`OPS-08`)
 
-GitHub honours `schedule:` **only** on the repository's default branch. A cron
-added on a feature branch is inert until the branch merges — it is written, not
-installed, and there is no warning anywhere in the UI that says so.
-
-This currently applies to `render-hours-guard.yml`, which arrived in commit
-`853b4cbc` on `feat/recurring-razorpay-planid`. Until that merges:
-
-- its daily cron has never fired and will not fire;
-- Render-suspension detection is exactly what it was during the 2026-08-17
-  outage, i.e. nothing;
-- there is **no way to run it at all** — not on a schedule, and not by hand.
-
-That last point corrects this page. It previously said the guard could still be
-dispatched with `--ref`, and that is wrong in the direction that matters. GitHub
+GitHub honours `schedule:` **only** on the repository's default branch, and
 registers a `workflow_dispatch` trigger only for a workflow file that exists on
-the **default branch**; `--ref` chooses *which copy of an already-registered
-workflow* to execute, and cannot conjure a trigger for a file `main` has never
-seen. The command this page used to recommend —
+the **default branch**. `--ref` chooses *which copy of an already-registered
+workflow* to execute; it cannot conjure a trigger for a file `main` has never
+seen. A cron added on a feature branch is inert until the branch merges.
+
+**Status as of 2026-10-04: no longer an open problem for the three workflows
+this page used to track.** `render-hours-guard.yml` and `db-backup.yml` are both
+in `main`'s tree (`git ls-tree origin/main .github/workflows/`), so their crons
+register and both are dispatchable with **no `--ref`**:
 
 ```bash
-# DOES NOT WORK while the file is absent from main. Kept only so a reader who
-# remembers it from an earlier revision of this page is corrected, not left to
-# re-derive the failure.
-gh workflow run render-hours-guard.yml --ref feat/recurring-razorpay-planid
-#   could not find any workflows named render-hours-guard.yml
+gh workflow run render-hours-guard.yml
+gh workflow run db-backup.yml
 ```
 
-Verified 2026-08-28: `git cat-file -e main:.github/workflows/render-hours-guard.yml`
-still fails, so the file is not on `main`. The workflow's own header was corrected
-on 2026-08-21 and this page was not; they agree from today.
-**Merging to `main` is therefore not a nice-to-have that "installs the cron" —
-it is the only action that makes the file do anything.**
-
-The same is true of every workflow *correction* made on a branch: the fixed
-behaviour of `agents-health.yml`, `e2e.yml` and `db-backup.yml` starts at the
-merge, not at the commit. `db-backup.yml` differs from the other three in one
-useful way — it already exists on `main`, so it *is* dispatchable, and `--ref`
-genuinely does select this branch's guarded copy. `main` still carries the
-72-line pre-guard version with no skip check and no `restore_drill` input, so
-dispatch it as `gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid`
-until the merge. After merging, verify rather than assume:
+Earlier revisions of this page said the guard had "no way to run" and told the
+reader to dispatch `db-backup.yml` against the old feature branch. Both are
+retired: the guards merged (#249, extended 2026-09-04), and that branch is now an
+older, weaker copy than `main`. The general rule above still holds for any NEW
+workflow: it starts at the merge, not at the commit. After merging one, verify
+rather than assume:
 
 ```bash
-gh workflow list --all | grep render-hours-guard
-gh run list --workflow=render-hours-guard.yml --limit 5   # a scheduled run within ~24h
+gh workflow list --all | grep <workflow-file>
+gh run list --workflow=<workflow-file> --limit 5   # a scheduled run within ~24h
 ```
 
 Also note GitHub disables scheduled workflows in a repository with 60 days of no
