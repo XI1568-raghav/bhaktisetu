@@ -9,21 +9,17 @@ import { existsSync, readFileSync } from 'node:fs';
 const CHECKS = [
   {
     id: 'ANTHROPIC_API_KEY',
-    name: 'Anthropic API key + base URL',
-    required_env: ['ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL'],
+    name: 'Anthropic API key',
+    required_env: ['ANTHROPIC_API_KEY'],
     test: async () => {
       const Anthropic = (await import('@anthropic-ai/sdk')).default;
       const c = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
-        baseURL: process.env.ANTHROPIC_BASE_URL,
+        baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
       });
-      // 2026-07-10: Blackbox proxy is open-source-only — claude-opus-* returns 403.
-      // Mirror _anthropic-client.mjs model selection so preflight doesn't 403 on local runs.
-      const _pfBaseUrl = (process.env.ANTHROPIC_BASE_URL || '').toLowerCase();
-      const _pfIsBlackbox = /blackbox/.test(_pfBaseUrl);
+      // Mirror _anthropic-client.mjs model selection so preflight tests the same call.
       const r = await c.messages.create({
-        model: process.env.ANTHROPIC_MODEL ||
-          (_pfIsBlackbox ? 'blackboxai/z-ai/glm-5.2' : 'claude-opus-4-7'),
+        model: process.env.ANTHROPIC_MODEL || 'claude-opus-4-7',
         max_tokens: 50,
         messages: [{ role: 'user', content: 'Reply OK only.' }],
       });

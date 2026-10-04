@@ -1,8 +1,6 @@
 // Anthropic client w/ no-silent-swap guarantee.
-// - ALWAYS a verified-working model: blackboxai/z-ai/glm-5.2 on the Blackbox
-//   proxy (the open-source-only endpoint 403-rejects closed models opus/sonnet/
-//   haiku — verified 2026-07; the orchestrator was failing CI on opus-4.7 403s).
-//   Direct (non-proxy) base URL → claude-opus-4-7 (local dev / non-Blackbox).
+// - Talks to the Anthropic API with a Claude model: claude-opus-4-7 unless
+//   ANTHROPIC_MODEL names another Claude model. Anything else is refused.
 // - ModelRejectedError on 403 reject — workflow MUST halt (no fallback)
 // - 3x exponential retry on 5xx + 429
 // - 4xx (non-429) throws immediately
@@ -12,9 +10,8 @@
 //   at 32k tokens on Render bg-worker, observed 2026-06-11)
 // Usage: callOpus47({ system?, messages, maxTokens, temperature, tools, client?, retryDelayMs?, stream? })
 //
-// NOTE on naming: the function keeps the historical name callOpus47 for callers,
-// but on the Blackbox proxy it now resolves to GLM-5.2 (the only model the
-// endpoint serves). See reference_roadmap_orchestrator_opus_lock_403 memory.
+// NOTE on naming: the function keeps the historical name callOpus47 for callers;
+// the model it calls is whatever the rule above resolves to.
 import Anthropic from '@anthropic-ai/sdk';
 
 const RETRY_DELAYS = [2000, 8000, 30000];
@@ -109,11 +106,10 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature, tool
   // if found via any common alternate name. Don't pre-throw if missing; let SDK
   // raise its own (more diagnostic) error, AND ensure SDK can read ANTHROPIC_API_KEY
   // by side-mirroring from alternate names.
-  // Common alternate names observed: ANTHROPIC_API_KEY_BLACKBOX_PROXY (this project,
-  // Render env), ANTHROPIC_AUTH_TOKEN (some SDK examples), CLAUDE_API_KEY.
+  // Common alternate names observed: ANTHROPIC_AUTH_TOKEN (some SDK examples),
+  // CLAUDE_API_KEY.
   const resolvedKey =
     process.env.ANTHROPIC_API_KEY ||
-    process.env.ANTHROPIC_API_KEY_BLACKBOX_PROXY ||
     process.env.ANTHROPIC_AUTH_TOKEN ||
     process.env.CLAUDE_API_KEY;
   // Side-mirror so SDK's internal env read also resolves. Idempotent.
@@ -122,28 +118,24 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature, tool
   }
   const c = client || new Anthropic({
     apiKey: resolvedKey,
-    baseURL: process.env.ANTHROPIC_BASE_URL,
+    // Empty or unset → the SDK's default, the Anthropic API. An empty string
+    // must not reach the SDK: an unset repo variable arrives as ''.
+    baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
   });
   const delays = retryDelayMs !== undefined ? [retryDelayMs, retryDelayMs, retryDelayMs] : RETRY_DELAYS;
 
-  // No-silent-swap guard: resolve a VERIFIED-WORKING model. The Blackbox proxy
-  // is open-source-only (2026) — closed models (opus/sonnet/haiku) 403-reject.
-  // The only confirmed-working model on that endpoint is blackboxai/z-ai/glm-5.2.
-  // A direct (non-Blackbox) base URL → claude-opus-4-7 (local dev / direct API).
-  // ANTHROPIC_MODEL env wins if it names a verified-working model; an env value
-  // naming an unknown model is REJECTED (preserves the original "no silent swap
-  // to an arbitrary model" intent — we just point the default at the right model).
+  // No-silent-swap guard: the model is the default, or exactly what
+  // ANTHROPIC_MODEL names — and that must be a Claude model id. An env value
+  // naming anything else is REJECTED before any request is made, so a stray
+  // variable can never point the orchestrator at some other provider's model.
   // Read env at call-time (not module-load) so tests + runtime overrides both work.
-  const baseUrl = (process.env.ANTHROPIC_BASE_URL || '').toLowerCase();
-  const isBlackbox = /blackbox/.test(baseUrl);
-  const DEFAULT_MODEL = isBlackbox ? 'blackboxai/z-ai/glm-5.2' : 'claude-opus-4-7';
+  const DEFAULT_MODEL = 'claude-opus-4-7';
   const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
-  // Verified-working model set. glm-5.2 variants on Blackbox; opus-4-7 on direct.
-  const VERIFIED = /^(blackboxai\/z-ai\/glm-5\.2|claude-opus-4-7|claude-opus-4\.7)$/;
-  if (!VERIFIED.test(model)) {
+  const CLAUDE_MODEL = /^claude-[a-z0-9][a-z0-9.-]*$/;
+  if (!CLAUDE_MODEL.test(model)) {
     throw new ModelRejectedError(
-      `Refusing to call unverified model: ${model}. Blackbox proxy is open-source-only (opus/sonnet/haiku 403-reject). ` +
-      `Set ANTHROPIC_MODEL to blackboxai/z-ai/glm-5.2 (Blackbox) or claude-opus-4-7 (direct), or unset it for the default.`,
+      `Refusing to call non-Claude model: ${model}. ` +
+      `Set ANTHROPIC_MODEL to a Claude model id (e.g. ${DEFAULT_MODEL}), or unset it for the default.`,
       null,
     );
   }
@@ -170,10 +162,8 @@ export async function callOpus47({ messages, maxTokens = 8000, temperature, tool
       return await c.messages.create(baseParams);
     } catch (e) {
       // 403 + model-access rejection → ModelRejectedError, NO retry, NO swap.
-      // Matches both the old "Free tier/forbidden/access" phrasing and the
-      // Blackbox open-source-only message "Only open-source models are supported".
       if (e.status === 403 && /Free tier|forbidden|access|open-source models/i.test(e.message)) {
-        throw new ModelRejectedError(`Blackbox proxy rejected ${model}: ${e.message}`, 403);
+        throw new ModelRejectedError(`API rejected ${model}: ${e.message}`, 403);
       }
       // 4xx other than 429 → throw immediately
       if (e.status >= 400 && e.status < 500 && e.status !== 429) throw e;
