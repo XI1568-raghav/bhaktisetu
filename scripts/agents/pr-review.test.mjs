@@ -26,6 +26,7 @@ import {
   filePriority,
   splitDiff,
   planDiff,
+  isGeneratedFile,
   mergeResults,
   buildUserPrompt,
   MAX_PARTS,
@@ -244,13 +245,11 @@ describe('diff preparation', () => {
   });
 
   it('packs a PR into as many parts as it needs, riskiest files first, nothing left out', () => {
-    const files = [chunk('pnpm-lock.yaml', 500), chunk('docs/x.md', 300), chunk('apps/api/src/a.ts', 300), chunk('apps/api/prisma/migrations/1/migration.sql', 300)];
+    const files = [chunk('notes/z.txt', 500), chunk('docs/x.md', 300), chunk('apps/api/src/a.ts', 300), chunk('apps/api/prisma/migrations/1/migration.sql', 300)];
     const plan = planDiff(files, 800);
-    expect(plan.parts.map((p) => p.paths)).toEqual([
-      ['apps/api/prisma/migrations/1/migration.sql', 'apps/api/src/a.ts'],
-      ['docs/x.md'],
-      ['pnpm-lock.yaml'],
-    ]);
+    // Riskiest first: migration, then source, then docs and text (ties keep PR order).
+    expect(plan.parts.flatMap((p) => p.paths)).toEqual(['apps/api/prisma/migrations/1/migration.sql', 'apps/api/src/a.ts', 'notes/z.txt', 'docs/x.md']);
+    expect(plan.parts.length).toBeGreaterThan(1);
     expect(plan.omitted).toEqual([]);
     expect(plan.fileCount).toBe(4);
     expect(plan.totalChars).toBe(files.reduce((n, f) => n + f.text.length, 0));
@@ -329,6 +328,59 @@ describe('buildUserPrompt — the model is told what it was not shown', () => {
 
   it('reads enough of a large PR to be useful', () => {
     expect(MAX_DIFF_CHARS).toBeGreaterThanOrEqual(400_000);
+  });
+});
+
+describe('generated files are listed but never sent', () => {
+  const chunk = (path, size) => ({ path, text: `diff --git a/${path} b/${path}\n${'x'.repeat(size)}\n` });
+
+  it('recognises caches, lockfiles and build output, and nothing that is source', () => {
+    for (const p of ['graft/apps/web/x.md', 'pnpm-lock.yaml', 'apps/web/package-lock.json', 'playwright-report/index.html', 'apps/web/.next/server/a.js', 'public/app.min.js']) expect(isGeneratedFile(p), p).toBe(true);
+    for (const p of ['apps/api/src/graft.ts', 'apps/web/lib/lockfile.ts', 'packages/shared/package.json', 'docs/graft/notes.md', 'apps/web/app/page.tsx']) expect(isGeneratedFile(p), p).toBe(false);
+  });
+
+  it('keeps generated files out of every part and out of the character totals', () => {
+    const plan = planDiff([chunk('graft/a.md', 5000), chunk('pnpm-lock.yaml', 5000), chunk('apps/api/src/a.ts', 100)], 1000);
+    expect(plan.parts).toHaveLength(1);
+    expect(plan.parts[0].paths).toEqual(['apps/api/src/a.ts']);
+    expect(plan.generated.sort()).toEqual(['graft/a.md', 'pnpm-lock.yaml']);
+    expect(plan.totalChars).toBe(chunk('apps/api/src/a.ts', 100).text.length);
+    expect(plan.fileCount).toBe(3);
+    expect(plan.omitted).toEqual([]);
+  });
+
+  it('still lists them in the prompt, marked, so the model knows they exist', () => {
+    const plan = planDiff([chunk('graft/a.md', 50), chunk('apps/api/src/a.ts', 100)], 1000);
+    const prompt = buildUserPrompt({ prNumber: '7', title: 't', plan });
+    expect(prompt).toContain('- graft/a.md [generated file — not sent for review]');
+    expect(prompt).toContain('1 generated files (lockfiles, caches) are listed but intentionally not shown');
+    expect(prompt).not.toContain('diff --git a/graft/a.md');
+    expect(prompt).toContain('The whole diff is below.');
+  });
+
+  it('reports the skip in the comment, and counts only reviewable files as read', () => {
+    const body = formatComment({ verdict: 'PASS', summary: 's', items: [], blockingIssues: [] }, { model: 'm', diff: { fileCount: 5, totalChars: 10, readChars: 10, omitted: [], parts: 1, generated: 3 } });
+    expect(body).toContain('Read all 2 files in the diff.');
+    expect(body).toContain('Skipped 3 generated files');
+  });
+
+  it('answers a PR of only generated files without calling any model', async () => {
+    const calls = [];
+    const fetchImpl = async (url, init) => {
+      const u = String(url);
+      if (u.startsWith('https://api.github.com')) {
+        if (init.headers.Accept.includes('diff')) return res(200, chunk('pnpm-lock.yaml', 300).text + chunk('graft/a.md', 300).text, { json: false });
+        return res(200, { title: 'bump lockfile' });
+      }
+      calls.push(u);
+      return reply(VERDICT);
+    };
+    const runCli = async () => { calls.push('cli'); return { code: 0, stdout: '{}', stderr: '' }; };
+    const out = await reviewPullRequest({ apiKey: 'k', oauthToken: 'tok', ghToken: 't', repo: 'o/r', prNumber: '7', fetchImpl, runCli, log: () => {} });
+    expect(calls).toEqual([]);
+    expect(out.result.verdict).toBe('PASS');
+    expect(out.result.summary).toMatch(/nothing to review/);
+    expect(out.meta.diff.generated).toBe(2);
   });
 });
 
