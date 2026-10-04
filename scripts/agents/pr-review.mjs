@@ -239,6 +239,18 @@ export function filePriority(path) {
   return 1;
 }
 
+/**
+ * Generated or vendored output. It is large, mechanical and a review of it finds
+ * nothing, so it is listed in the prompt but never sent. Without this a PR that
+ * untracks a 46 MB cache would spend eight model requests reading deleted files.
+ */
+export function isGeneratedFile(path) {
+  return /^graft\//.test(path)
+    || /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock)$/.test(path)
+    || /(^|\/)(playwright-report|\.next|coverage)\//.test(path)
+    || /\.min\.(js|css)$/.test(path);
+}
+
 /** Split a unified diff into per-file chunks keyed by the b/ path. */
 export function splitDiff(diff) {
   return diff
@@ -260,9 +272,9 @@ export function splitDiff(diff) {
  * of the diff is worse than no review.
  */
 export function planDiff(files, maxChars = MAX_DIFF_CHARS, maxParts = MAX_PARTS) {
-  const ordered = files
-    .map((f, i) => ({ ...f, i, p: filePriority(f.path) }))
-    .sort((a, b) => a.p - b.p || a.i - b.i);
+  const all = files.map((f, i) => ({ ...f, i, p: filePriority(f.path) }));
+  const generated = all.filter((f) => isGeneratedFile(f.path)).map((f) => f.path);
+  const ordered = all.filter((f) => !isGeneratedFile(f.path)).sort((a, b) => a.p - b.p || a.i - b.i);
   const totalChars = ordered.reduce((n, f) => n + f.text.length, 0);
   const parts = [];
   const omitted = [];
@@ -291,7 +303,7 @@ export function planDiff(files, maxChars = MAX_DIFF_CHARS, maxParts = MAX_PARTS)
     current.text += f.text;
     current.paths.push(f.path);
   }
-  return { parts, omitted, totalChars, fileCount: files.length, paths: ordered.map((f) => f.path) };
+  return { parts, omitted, generated, totalChars, fileCount: files.length, paths: [...ordered.map((f) => f.path), ...generated] };
 }
 
 /**
@@ -305,16 +317,20 @@ export function buildUserPrompt({ prNumber, title, plan, index = 0 }) {
   const here = new Set(part.paths);
   const truncated = new Set(part.truncated);
   const omitted = new Set(plan.omitted);
+  const generated = new Set(plan.generated ?? []);
   const list = plan.paths.map((p) => {
+    if (generated.has(p)) return `- ${p} [generated file — not sent for review]`;
     if (truncated.has(p)) return `- ${p} [only the start shown]`;
     if (here.has(p)) return `- ${p}`;
     return `- ${p} [${omitted.has(p) ? 'contents not shown' : 'contents not shown here — reviewed separately'}]`;
   });
-  const notHere = plan.fileCount - part.paths.length;
+  const reviewable = plan.fileCount - generated.size;
+  const notHere = reviewable - part.paths.length;
+  const genNote = generated.size ? ` ${generated.size} generated files (lockfiles, caches) are listed but intentionally not shown; there is nothing to review in them.` : '';
   const scope = plan.parts.length > 1
-    ? `This PR is too large for one request. This is part ${index + 1} of ${plan.parts.length}: ${notHere} of ${plan.fileCount} files are marked as not shown. They exist and are part of this PR. Judge only the code in this part; set a check to N/A when this part gives you nothing to judge it on.`
+    ? `This PR is too large for one request. This is part ${index + 1} of ${plan.parts.length}: ${notHere} of ${reviewable} files are marked as not shown. They exist and are part of this PR. Judge only the code in this part; set a check to N/A when this part gives you nothing to judge it on.`
     : notHere
-      ? `Only part of the diff fits below: ${notHere} of ${plan.fileCount} files are marked as not shown. They exist and are part of this PR.`
+      ? `Only part of the diff fits below: ${notHere} of ${reviewable} files are marked as not shown. They exist and are part of this PR.`
       : 'The whole diff is below.';
   return [
     `Review this PR.`,
@@ -324,7 +340,7 @@ export function buildUserPrompt({ prNumber, title, plan, index = 0 }) {
     `Files changed (${plan.fileCount}):`,
     ...list,
     ``,
-    scope,
+    scope + genNote,
     ``,
     `Diff:`,
     '```diff',
@@ -444,12 +460,13 @@ export function formatComment(result, meta = {}) {
     }
   }
   if (meta.diff) {
-    const { fileCount, totalChars, omitted, readChars, parts = 1 } = meta.diff;
+    const { fileCount, totalChars, omitted, readChars, parts = 1, generated = 0 } = meta.diff;
+    const reviewable = fileCount - generated;
     const inParts = parts > 1 ? ` in ${parts} parts` : '';
     if (omitted.length) {
       lines.push(
         `**Partial review:** read ${readChars.toLocaleString('en-US')} of ${totalChars.toLocaleString('en-US')} diff characters${inParts}. ` +
-          `${omitted.length} of ${fileCount} files were not fully read:`,
+          `${omitted.length} of ${reviewable} files were not fully read:`,
         '',
         `<details><summary>Files not read</summary>`,
         '',
@@ -459,8 +476,9 @@ export function formatComment(result, meta = {}) {
         '',
       );
     } else {
-      lines.push(`Read all ${fileCount} files in the diff${inParts}.`, '');
+      lines.push(`Read all ${reviewable} files in the diff${inParts}.`, '');
     }
+    if (generated) lines.push(`Skipped ${generated} generated files (lockfiles, graft cache, build output): listed, not reviewed.`, '');
   }
   const via = meta.model ? `\`${meta.model}\`${meta.backend ? ` (${meta.backend})` : ''}` : 'no model answered';
   lines.push('---', `_Automated review by \`scripts/agents/pr-review.mjs\` — ${via}. Advisory: it never blocks a PR._`);
@@ -484,7 +502,16 @@ export async function reviewPullRequest({ fetchImpl = fetch, runCli = runCommand
   if (!files.length) return { skipped: true };
   const plan = planDiff(files, maxChars, maxParts);
   log(`Reviewing PR #${prNumber}: ${prMeta.title} — ${plan.fileCount} files, ${plan.totalChars} chars (${source} API), ${plan.parts.length} part(s), ${plan.omitted.length} beyond the limit`);
-  const summarise = (unread, readChars) => ({ fileCount: plan.fileCount, totalChars: plan.totalChars, omitted: unread, readChars, parts: plan.parts.length });
+  const summarise = (unread, readChars) => ({ fileCount: plan.fileCount, totalChars: plan.totalChars, omitted: unread, readChars, parts: plan.parts.length, generated: plan.generated.length });
+
+  // A PR of nothing but generated files (a lockfile bump, a cache untrack) has
+  // nothing to review. Say that outright rather than asking a model for a verdict.
+  if (!plan.parts.length) {
+    return {
+      result: { verdict: 'PASS', summary: 'Only generated files changed (lockfiles, caches, build output); there is nothing to review.', items: [], blockingIssues: [] },
+      meta: { diff: summarise([], 0) },
+    };
+  }
 
   // Say so in the PR rather than exiting quietly: a reviewer that is switched
   // off and looks switched on is the failure this file was rewritten to end.
