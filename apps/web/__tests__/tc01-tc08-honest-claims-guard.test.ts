@@ -22,7 +22,9 @@ import path from 'node:path';
  * phrase neither trip nor satisfy the guard.
  */
 const WEB = path.resolve(__dirname, '..');
-const SKIP = new Set(['node_modules', '.next', '.turbo', 'coverage', 'playwright-report', 'test-results', '__tests__', 'e2e']);
+// `.vercel` is build output from a retired deploy target; it is git-ignored, so CI never has it, but a
+// developer machine can, and the scan then "finds" claims in generated prerender JSON.
+const SKIP = new Set(['node_modules', '.next', '.turbo', '.vercel', 'coverage', 'playwright-report', 'test-results', '__tests__', 'e2e']);
 
 function files(): string[] {
   const out: string[] = [];

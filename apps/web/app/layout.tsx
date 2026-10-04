@@ -703,7 +703,7 @@ export default function RootLayout({
  <ul className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
  {[
  { Icon: Video, label: 'Video proof on every puja', sub: 'A booking cannot be marked delivered without one' },
- { Icon: Sparkles, label: 'Free cancellation to 24h', sub: 'Full refund before the pandit is assigned' },
+ { Icon: Sparkles, label: 'Free cancellation up to 48h before', sub: '75% back from 24 to 48h; not possible inside 24h' },
  { Icon: Heart, label: 'One price, shown first', sub: 'The platform fee is inside the total, not added later' },
  { Icon: Flame, label: 'Pandits paid against ID', sub: 'Aadhaar KYC on file before any payout' },
  ].map((item) => (
