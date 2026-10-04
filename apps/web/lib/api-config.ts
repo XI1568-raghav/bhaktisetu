@@ -284,9 +284,135 @@ function loadErrorStatus(cause: unknown): number {
  *
  * Both this and the sentence read one classification, so they cannot drift
  * into disagreeing about the same cause.
+ *
+ * AUTH-07 (F454, 2026-09-08): a 401 is not one thing, and this treated it as
+ * one. See `loadErrorAuthReason` below — two of the six reasons the API can now
+ * give are NOT "sign in again", and one of them is a database outage.
  */
 export function loadErrorIsReauth(cause: unknown): boolean {
- return loadErrorStatus(cause) === 401;
+ if (loadErrorStatus(cause) !== 401) return false;
+ const reason = loadErrorAuthReason(cause);
+ // No reason: an API that has not shipped the header yet, a header CORS did not
+ // expose, or any 401 raised outside the auth middleware. Answer exactly as this
+ // function did before AUTH-07 — the default must be the old behaviour, not a
+ // new one, or upgrading the web ahead of the API changes ten pages silently.
+ if (reason === null) return true;
+ return !NOT_REAUTH_REASONS.has(reason);
+}
+
+/**
+ * AUTH-07 (F454, 2026-09-08) — WHY the API said 401.
+ *
+ * THE FINDING. `loadErrorIsReauth` was `loadErrorStatus(cause) === 401` and
+ * `loadErrorMessage` answered every 401 with "Your session has expired — sign
+ * in again to see your live figures." The API answers 401 in at least three
+ * cases where that is false, all three read out of the source and two of them
+ * verified against api.darshya.online on 2026-09-08:
+ *
+ *   - apps/api/src/middlewares/auth.ts:110 — no token was ever sent. Probed:
+ *     {"error":"Unauthorized","message":"Missing or invalid Authorization
+ *     header. Expected: Bearer <token>"}. Nothing expired.
+ *   - apps/api/src/middlewares/auth.ts:341 — the credential verified and there
+ *     is no `User` row behind it. Signing in again SUCCEEDS and lands back on
+ *     the same 401: it is the AUTH-06 loop, not a remedy.
+ *   - apps/api/src/middlewares/auth.ts:228 — a DATABASE OUTAGE. The
+ *     `email_sessions` lookup THREW and the middleware answers 401. Telling a
+ *     user their session expired here sends them to re-authenticate against the
+ *     thing that is down. They try, they fail, and they conclude their account
+ *     is broken.
+ *
+ * A FOURTH SITE IS NOT FIXED HERE, DELIBERATELY. apps/api/src/routes/auth.ts:1136
+ * is the same database outage on POST /auth/login and it answers 401 "Invalid
+ * credentials." — but that response never reaches this function. Sign-in goes
+ * through lib/auth-context.tsx:939, which prefers the server's own `message`, so
+ * an outage there renders as "Invalid credentials." — a different lie, and the
+ * one AUTH-02 was written to stop ("a 5xx is our failure, not the user's
+ * credential"). It defeats AUTH-02 by answering 401 instead of 5xx. The same
+ * handler already gets this right 110 lines earlier — routes/auth.ts:1024 answers
+ * an unreachable database with 503 "Sign-in is temporarily unavailable." The fix
+ * is at that site, not in this file's copy; see the AUTH-07 report.
+ *
+ * WHY A HEADER. The obvious discriminator is a field in the 401 body, and the
+ * API sends one too (`authReason`) for clients that parse JSON. It could not be
+ * the only carrier for THIS bug: all ten callers hand a bare `Response` to a
+ * SYNCHRONOUS classifier and never read the body of a failed load —
+ * app/dashboard/page.tsx:116, app/payouts/page.tsx:103, app/profile/page.tsx:163
+ * and seven more. Reading a body is a promise; reading a header is a property.
+ * `X-Auth-Reason` is the shape that reaches the code with the defect without
+ * touching ten pages that other lanes own, and it leaves `res.json()` intact for
+ * the caller — this function never consumes the body.
+ *
+ * 401 ONLY, STRUCTURALLY. A reason on any other status is ignored and returns
+ * null, so nothing here can promote a 403 into "sign in again". That is not
+ * politeness: an earlier pass of AUTH-06 made `loadErrorIsReauth` true for 401
+ * OR 403 and answered both with the expiry line, and because <ReauthPrompt>
+ * renders INSTEAD of Retry, a suspended provider got exactly one control, it
+ * took her to a sign-in that succeeded, the redirect returned her to the same
+ * refusal, and the loop closed. The reason field is precisely the mechanism
+ * that could undo that fix, so the 401 check is the first line.
+ *
+ * An unrecognised value returns null rather than being passed through, so a
+ * newer API cannot make an older web build invent copy for a reason it has
+ * never heard of.
+ */
+export const AUTH_REASON_HEADER = 'x-auth-reason';
+
+/** Mirrors apps/api/src/lib/auth-reason.ts. */
+export type AuthFailureReason =
+ | 'no_credentials'
+ | 'session_expired'
+ | 'session_revoked'
+ | 'invalid_credential'
+ | 'registration_incomplete'
+ | 'verify_unavailable';
+
+const AUTH_FAILURE_REASONS: ReadonlySet<string> = new Set<AuthFailureReason>([
+ 'no_credentials',
+ 'session_expired',
+ 'session_revoked',
+ 'invalid_credential',
+ 'registration_incomplete',
+ 'verify_unavailable',
+]);
+
+/**
+ * The two reasons for which signing in again is NOT the remedy — and for which
+ * offering it as the ONLY control (which is what `reauth: true` does, see
+ * components/LoadErrorBanner.tsx) is the defect, not the fix.
+ *
+ * `verify_unavailable` is the outage. Re-authenticating during a database
+ * outage aims the user at the thing that is down; Retry is the correct control
+ * and it must survive.
+ *
+ * `registration_incomplete` is the loop. The Supabase credential is fine, so
+ * the sign-in succeeds and returns the user to the identical 401 — the exact
+ * pathology AUTH-06's second pass removed for 403, reproduced under 401.
+ */
+const NOT_REAUTH_REASONS: ReadonlySet<AuthFailureReason> = new Set<AuthFailureReason>([
+ 'verify_unavailable',
+ 'registration_incomplete',
+]);
+
+export function loadErrorAuthReason(cause: unknown): AuthFailureReason | null {
+ if (loadErrorStatus(cause) !== 401) return null;
+ if (typeof cause !== 'object' || cause === null) return null;
+
+ // A `Response`. `headers.get` is case-insensitive and returns null for a
+ // header the browser did not expose, which is exactly the un-widened API.
+ const headers = (cause as { headers?: unknown }).headers;
+ if (headers && typeof (headers as Headers).get === 'function') {
+  const fromHeader = (headers as Headers).get(AUTH_REASON_HEADER);
+  if (AUTH_FAILURE_REASONS.has(fromHeader ?? '')) return fromHeader as AuthFailureReason;
+ }
+
+ // A body a caller already parsed, or a test fixture. Same vocabulary, so a
+ // client that reads JSON instead of headers classifies identically.
+ const fromBody = (cause as { authReason?: unknown }).authReason;
+ if (typeof fromBody === 'string' && AUTH_FAILURE_REASONS.has(fromBody)) {
+  return fromBody as AuthFailureReason;
+ }
+
+ return null;
 }
 
 /**
@@ -313,6 +439,59 @@ export function loadErrorIsForbidden(cause: unknown): boolean {
 }
 
 /**
+ * AUTH-07 (F454) — one sentence per reason, each naming what happened AND the
+ * exit that actually works.
+ *
+ * The rule these are written to: the message must be true, and the control the
+ * screen puts beside it (components/LoadErrorBanner.tsx renders <ReauthPrompt>
+ * when `loadErrorIsReauth`, Retry otherwise) must be a control that can end the
+ * problem. The old copy failed both halves for five of these six.
+ *
+ * RES-02's clause is preserved throughout: a zero the server never sent is a
+ * fabricated number and must always carry the banner saying so. The reauth
+ * sentences say it as "to see your live figures" — the wording the ten portals
+ * have shipped since 2026-08-12 — and the two non-reauth ones say it outright,
+ * because their user is going to sit and look at those zeros for a while.
+ */
+const AUTH_REASON_MESSAGES: Record<AuthFailureReason, string> = {
+ // UNCHANGED from the pre-AUTH-07 sentence. This is the one case it was right
+ // about, and there is no reason to churn copy that was already true.
+ session_expired: 'Your session has expired — sign in again to see your live figures.',
+
+ // Nothing expired: no credential ever reached the API
+ // (apps/api/src/middlewares/auth.ts:110). "Expired" would tell someone who has
+ // never signed in on this device that something of theirs ran out.
+ no_credentials: 'You are not signed in — sign in to see your live figures.',
+
+ // apps/api/src/middlewares/auth.ts, email-session path: `revoked_at` is set.
+ // Signing in again is right; "expired" is a lie about why, and the difference
+ // matters to someone who revokes sessions after losing a phone.
+ session_revoked: 'You were signed out of this session — sign in again to see your live figures.',
+
+ // We refused the credential and genuinely cannot say more: a forgery, a demo
+ // token in production, a token minted for another project. Claiming an expiry
+ // here asserts knowledge the API does not have.
+ invalid_credential: 'We could not verify your sign-in — sign in again to see your live figures.',
+
+ // The credential VERIFIED; there is no Darshya account behind it
+ // (apps/api/src/middlewares/auth.ts:341). Not reauth: the sign-in succeeds and
+ // returns the user to this identical 401. The exit is finishing signup or
+ // support, so the sentence has to carry it — the screen shows Retry, and Retry
+ // cannot end this either.
+ registration_incomplete:
+  'Your sign-in worked, but there is no Darshya account attached to it yet — finish creating your account, or contact support@darshya.online if you already have one. The figures below are placeholders, not your real numbers.',
+
+ // The outage. apps/api/src/middlewares/auth.ts:228 (the email_sessions lookup
+ // threw) and apps/api/src/routes/auth.ts:1136 ("DB/Supabase unavailable").
+ // Not reauth, and the sentence says so explicitly: the failure mode this whole
+ // finding is about is a user being sent to re-authenticate against a database
+ // that is down, trying, failing, and concluding their account is broken. Retry
+ // is the correct control and it is the one the banner will show.
+ verify_unavailable:
+  'We could not check your sign-in just now — that is a problem on our side, not with your account, so signing in again will not help. The figures below are placeholders, not your real numbers — retry in a moment.',
+};
+
+/**
  * The one honest sentence to render when a data load fails.
  *
  * RES-02 (2026-08-12): 7 of 10 authenticated pages answered an HTTP 500 by
@@ -329,6 +508,13 @@ export function loadErrorIsForbidden(cause: unknown): boolean {
 export function loadErrorMessage(cause: unknown): string {
  const status = loadErrorStatus(cause);
  if (Number.isFinite(status)) {
+  // AUTH-07 (F454): the 401 branch used to be one sentence for six different
+  // things. An error must say what happened and what to do next, and "Your
+  // session has expired" during a database outage is neither. Ordered before
+  // the reauth branch because two of these reasons are deliberately NOT reauth
+  // and would otherwise fall through to the generic HTTP line.
+  const reason = loadErrorAuthReason(cause);
+  if (reason !== null) return AUTH_REASON_MESSAGES[reason];
   if (loadErrorIsReauth(cause)) {
    return 'Your session has expired — sign in again to see your live figures.';
   }

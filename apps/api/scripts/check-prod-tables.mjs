@@ -1,12 +1,20 @@
 import { PrismaClient } from '@prisma/client';
-import { readFileSync } from 'node:fs';
-const envText = readFileSync('.env.production', 'utf8');
-for (const line of envText.split(/\r?\n/)) {
-  const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-  if (m) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-}
+import { resolveDbTargetOrExit } from './lib/resolve-db-target.mjs';
 
-const prisma = new PrismaClient({ datasourceUrl: process.env.DIRECT_URL });
+// OPS-14 (F456). This read `.env.production` into process.env and then took
+// `process.env.DIRECT_URL` — which the hoisted `@prisma/client` import had
+// already filled from apps/api/.env. If `.env.production` ever lost its
+// DIRECT_URL line the ambient value would have won silently, with nothing in
+// the output saying which database answered. Defaults to `.env.production`
+// because this script exists to inspect production; `--env-file <path>` points
+// it elsewhere and the banner always names the host it resolved.
+const { url } = resolveDbTargetOrExit({
+  argv: process.argv.slice(2).includes('--env-file')
+    ? process.argv.slice(2)
+    : ['--env-file', '.env.production', ...process.argv.slice(2)],
+});
+
+const prisma = new PrismaClient({ datasourceUrl: url });
 
 const tables = [
   'cows', 'cow_health_records', 'volunteers',

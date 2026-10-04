@@ -45,8 +45,8 @@ const CONTAINER = /(?:mx-auto[^"'`]{0,40}max-w-[a-z0-9]+|max-w-[a-z0-9]+[^"'`]{0
 /** Routes this wave migrated. The rest of DU-14 is explicitly still open. */
 const MIGRATED = [
   'app/page.tsx',
-  'app/pujas/page.tsx',
-  'app/temples/page.tsx',
+  'app/pujas/(index)/page.tsx',
+  'app/temples/(index)/page.tsx',
   'app/store/page.tsx',
 ];
 

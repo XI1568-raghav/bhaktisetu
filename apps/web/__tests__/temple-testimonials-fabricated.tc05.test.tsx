@@ -116,7 +116,7 @@ describe('TC-05 — /temples/[slug] publishes no invented review', () => {
 describe('TC-05 — no temple surface reads the testimonial fixture', () => {
   const RENDERERS = [
     'app/temples/[slug]/page.tsx',
-    'app/temples/page.tsx',
+    'app/temples/(index)/page.tsx',
     'app/temples/[slug]/pujas/page.tsx',
     'components/temple/TempleBookPujaCta.tsx',
   ];

@@ -10,9 +10,9 @@ import { COMMONS_CREDITS, commonsFileFromUrl } from '../lib/image-credits';
  * `__tests__/cm08-commons-attribution.test.ts` joins the attribution register
  * against `lib/images.ts` and fails when a hardcoded URL has no credit row.
  * That join has a hole the size of the catalogue: the temple grid does not read
- * `lib/images.ts` at all for its photographs. `app/temples/page.tsx:43-51,86`
+ * `lib/images.ts` at all for its photographs. `app/temples/(index)/page.tsx:43-51,86`
  * defines `firstImageUrl(images)` and paints `imageUrl: firstImageUrl(t.images)`
- * straight from the API's temple rows, and `app/temples/page.tsx:169` merges the
+ * straight from the API's temple rows, and `app/temples/(index)/page.tsx:169` merges the
  * same API value into the rich cards. Those `images` arrays are seeded by
  * `apps/api/prisma/seed.ts`, and they are Wikimedia Commons hotlinks.
  *
@@ -76,7 +76,7 @@ describe('CM-08 — Commons files the database puts on screen are credited too',
     expect(
       uncredited,
       'these Wikimedia Commons files are seeded into the temples/puja_types tables and ' +
-        'painted by app/temples/page.tsx, but no row in lib/image-credits.ts names their ' +
+        'painted by app/temples/(index)/page.tsx, but no row in lib/image-credits.ts names their ' +
         'author or licence. Read each one from the Commons imageinfo/extmetadata API ' +
         '(see the header of lib/image-credits.ts) and add a row — do not guess a name.\n' +
         uncredited.join('\n'),

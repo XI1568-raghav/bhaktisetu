@@ -30,24 +30,12 @@
 import { PrismaClient } from '@prisma/client';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveDbTargetOrExit } from './lib/resolve-db-target.mjs';
 
 const MIGRATIONS_DIR = 'prisma/migrations';
 
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
-
-const envIdx = args.indexOf('--env-file');
-if (envIdx !== -1) {
-  const path = args[envIdx + 1];
-  if (!path) {
-    console.error('--env-file needs a path');
-    process.exit(2);
-  }
-  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
-    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-    if (m) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-}
 
 const wantUnexecuted = has('--unexecuted') || has('--all-resolved');
 const named = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--env-file');
@@ -63,11 +51,11 @@ if (!wantUnexecuted && named.length === 0) {
 // DIRECT_URL, not the pooled URL: catalog reads are fine either way, but the
 // pooler rewrites search_path in transaction mode and this should see exactly
 // what `migrate deploy` would.
-const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
-if (!url) {
-  console.error('No DIRECT_URL or DATABASE_URL in the environment.');
-  process.exit(2);
-}
+//
+// OPS-14 (F456). Resolved from the env file the operator NAMED, never from
+// process.env — the hoisted `@prisma/client` import has already loaded
+// apps/api/.env (production) by this line.
+const { url } = resolveDbTargetOrExit({ argv: args });
 
 /**
  * Objects a migration's SQL declares. Deliberately conservative: it recognises

@@ -212,7 +212,7 @@ describe('source guards', () => {
   });
 
   it('API-supplied puja images are routed through the resize helper', () => {
-    const src = readFileSync(path.join(WEB_ROOT, 'app', 'pujas', 'page.tsx'), 'utf8');
+    const src = readFileSync(path.join(WEB_ROOT, 'app', 'pujas', '(index)', 'page.tsx'), 'utf8');
     // The card <img> must not bind a raw API URL straight to src.
     expect(src).not.toMatch(/src=\{\s*puja\.imageUrl\s*\?\?/);
     expect(src).toContain('remoteImage');
@@ -221,7 +221,7 @@ describe('source guards', () => {
   it('the four heaviest pages give every <img> explicit width, height and loading', () => {
     const heavy = [
       ['app', 'store', 'page.tsx'],
-      ['app', 'pujas', 'page.tsx'],
+      ['app', 'pujas', '(index)', 'page.tsx'],
       ['app', 'gaushala', 'page.tsx'],
       ['app', 'donations', 'page.tsx'],
     ];

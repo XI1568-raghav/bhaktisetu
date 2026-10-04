@@ -49,7 +49,7 @@ const UNBACKED_CLAIMS: RegExp[] = [
 ];
 
 const TEMPLE_SURFACES = [
-  'app/temples/page.tsx',
+  'app/temples/(index)/page.tsx',
   'app/temples/[slug]/page.tsx',
   'app/temples/[slug]/pujas/page.tsx',
   'components/temple/TempleBookPujaCta.tsx',
