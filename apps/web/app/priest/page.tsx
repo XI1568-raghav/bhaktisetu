@@ -496,7 +496,7 @@ export default function PriestDashboard() {
  {/* Quick Actions */}
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  <Link
- href="/priest/bookings?status=confirmed"
+ href="/priest/offers"
  className="flex items-center gap-4 bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow group"
  >
  <div className="w-12 h-12 bg-saffron-50 rounded-xl flex items-center justify-center group-hover:bg-saffron-100 transition-colors">
