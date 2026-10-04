@@ -89,7 +89,8 @@ function armMintGuardsAndLookup() {
     } as never);
   prismaMock.priestPayout.findFirst.mockResolvedValue(null as never);
   prismaMock.payment.count.mockResolvedValue(1 as never);
-  prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1' } as never);
+  // userId is for the earning mint; isVerified/status are for the self-pick approval check.
+  prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1', isVerified: true, status: 'active' } as never);
   prismaMock.commission.create.mockResolvedValue({ id: 'cm-new' } as never);
   // DI-06 (F367): the mint inserts through createMany({ skipDuplicates }) —
   // ON CONFLICT DO NOTHING against the UNIQUE index on commissions.booking_id,

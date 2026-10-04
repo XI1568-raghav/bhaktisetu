@@ -81,7 +81,8 @@ function armMintGuards() {
   prismaMock.commission.findFirst.mockResolvedValue(null as never);
   prismaMock.priestPayout.findFirst.mockResolvedValue(null as never);
   prismaMock.payment.count.mockResolvedValue(1 as never);
-  prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1' } as never);
+  // userId is for the earning mint; isVerified/status are for the self-pick approval check.
+  prismaMock.priest.findUnique.mockResolvedValue({ userId: 'user-pandit-1', isVerified: true, status: 'active' } as never);
   prismaMock.commission.create.mockResolvedValue({ id: 'cm-new' } as never);
   prismaMock.commission.createMany.mockResolvedValue({ count: 1 } as never);
 }
@@ -215,7 +216,7 @@ describe('DI-05 — PriestService.acceptBooking mints the pandit his earning', (
   });
 
   it('never mints an orphan when the Priest has no linked User', async () => {
-    prismaMock.priest.findUnique.mockResolvedValue({ userId: null } as never);
+    prismaMock.priest.findUnique.mockResolvedValue({ userId: null, isVerified: true, status: 'active' } as never);
     await service.acceptBooking('booking-1', 'priest-1');
     expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
   });

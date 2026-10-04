@@ -41,6 +41,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import OpenRequests from '../../../components/priest/OpenRequests';
 import { UserFacingError, serverErrorText, userFacingMessage, serverErrorMessage } from '../../../lib/friendly-error';
 
 interface OfferBooking {
@@ -190,9 +191,11 @@ function PriestOffersInner() {
       <div>
         <h1 className={H1.portal}>Puja Offers</h1>
         <p className="text-surface-500 mt-1 text-sm">
-          Requests sent to you by the dispatch engine. Accept one and the booking becomes yours.
+          Paid bookings waiting for a pandit, and requests sent to you directly. Accept one and the booking becomes yours.
         </p>
       </div>
+
+      <OpenRequests />
 
       {confirmed && (
         <div className="rounded-lg border border-tulsi-green-light bg-tulsi-green-light/20 px-4 py-3 text-sm text-tulsi-green flex items-start gap-2">
