@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MapPin, Globe, Home, CheckCircle2 } from 'lucide-react';
+import { userFacingMessage } from '../../lib/friendly-error';
 
 interface Gurukul {
   id: string; slug: string; name: string; description: string;
@@ -32,7 +33,7 @@ export default function GurukulsListClient() {
     fetch(`${apiBase()}/api/v1/gurukuls?${params.toString()}`)
       .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then((data) => { setItems(data.gurukuls ?? []); setError(null); })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+      .catch((e) => setError(userFacingMessage(e, 'Failed to load')))
       .finally(() => setLoading(false));
   }, [filters]);
 

@@ -23,6 +23,7 @@ import {
  type MarketplaceSubscription,
  type ProviderRole,
 } from '../lib/subscription-api';
+import { userFacingMessage } from '../lib/friendly-error';
 
 interface Props {
  role: ProviderRole;
@@ -72,7 +73,7 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  setCurrent(mine);
  }
  } catch (err) {
- if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load plans');
+ if (!cancelled) setError(userFacingMessage(err, 'Failed to load plans'));
  } finally {
  if (!cancelled) setLoading(false);
  }
@@ -168,7 +169,7 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  }
  setPendingPayment(plan.name);
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not start subscription');
+ setActionError(userFacingMessage(err, 'Could not start subscription'));
  } finally {
  setActionPlanId(null);
  }
@@ -181,7 +182,7 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  const updated = await cancelMySubscription(session?.accessToken);
  setCurrent(updated);
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Could not cancel subscription');
+ setActionError(userFacingMessage(err, 'Could not cancel subscription'));
  } finally {
  setCancelling(false);
  }

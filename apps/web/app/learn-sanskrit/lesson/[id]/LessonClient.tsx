@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Quiz from '../../../../components/Quiz';
 import StreakBadge from '../../../../components/StreakBadge';
 import { useAuth } from '../../../../lib/auth-context';
+import { userFacingMessage } from '../../../../lib/friendly-error';
 
 interface Props {
   lessonId: string;
@@ -39,7 +40,7 @@ export default function LessonClient({ lessonId, quiz }: Props) {
       const data: CompleteResult = await res.json();
       setResult(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save progress');
+      setError(userFacingMessage(e, 'Failed to save progress'));
     }
   }
 

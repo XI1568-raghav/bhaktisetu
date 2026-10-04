@@ -1,4 +1,5 @@
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
+import { UserFacingError, serverErrorMessage, userFacingMessage } from './friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -53,12 +54,13 @@ function authHeaders(token: string | undefined): Record<string, string> {
 }
 
 async function describeFailure(res: Response, fallback: string): Promise<string> {
+  // RES-09: the server's own sentence when it wrote one worth reading, else
+  // friendly copy for the status. Never `fallback (HTTP status): raw detail`.
+  const friendly = userFacingMessage(new Error(`HTTP ${res.status}`), fallback);
   try {
-    const body = (await res.json()) as { message?: string; error?: string };
-    const detail = body.message ?? body.error;
-    return detail ? `${fallback} (${res.status}): ${detail}` : `${fallback} (${res.status})`;
+    return serverErrorMessage(await res.json(), friendly);
   } catch {
-    return `${fallback} (${res.status})`;
+    return friendly;
   }
 }
 
@@ -68,7 +70,7 @@ export async function listMyOfferings(token: string | undefined): Promise<Offeri
   const res = await fetchWithTimeout(`${API_BASE_URL}/priest/pujas`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load pujas'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load pujas'), res.status);
   const data = (await res.json()) as { offerings: Offering[] };
   return data.offerings;
 }
@@ -85,7 +87,7 @@ export async function createOffering(
     },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create puja'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to create puja'), res.status);
   const data = (await res.json()) as { offering: Offering };
   return data.offering;
 }
@@ -103,7 +105,7 @@ export async function updateOffering(
     },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update puja'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to update puja'), res.status);
   const data = (await res.json()) as { offering: Offering };
   return data.offering;
 }
@@ -116,7 +118,7 @@ export async function deleteOffering(
     method: 'DELETE',
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete puja'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to delete puja'), res.status);
 }
 
 export async function toggleOfferingActive(
@@ -127,7 +129,7 @@ export async function toggleOfferingActive(
     method: 'PATCH',
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to toggle puja'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to toggle puja'), res.status);
   const data = (await res.json()) as { offering: Offering };
   return data.offering;
 }
@@ -151,7 +153,7 @@ export async function getMyReviews(token: string | undefined): Promise<PriestRev
   const res = await fetchWithTimeout(`${API_BASE_URL}/priest/reviews`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load reviews'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load reviews'), res.status);
   const data = (await res.json()) as { reviews: PriestReview[] };
   return data.reviews ?? [];
 }

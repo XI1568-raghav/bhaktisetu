@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth, getRoleDashboardPath } from '../../../lib/auth-context';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 // P0-1 (2026-07-17): open-redirect guard. /auth/callback already validated
 // ?redirect= (root-relative or same-origin only) but /auth/login did not — a
@@ -467,7 +468,7 @@ export default function LoginPage() {
                   });
                   if (oauthError) setError(oauthError.message || 'Could not start Google sign-in');
                 } catch (err) {
-                  setError(err instanceof Error ? err.message : 'Could not start Google sign-in');
+                  setError(userFacingMessage(err, 'Could not start Google sign-in'));
                 }
               }}
               className="border-surface-200 text-surface-700 hover:bg-surface-50 flex w-full items-center justify-center gap-3 rounded-lg border bg-white px-4 py-3 text-sm font-medium transition-all hover:-translate-y-0.5 hover:shadow-md"

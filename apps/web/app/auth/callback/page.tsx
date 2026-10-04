@@ -22,6 +22,7 @@ import {
  type AuthSession,
  type AuthUser,
 } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 /**
  * AUTH-13 — read the OAuth failure the provider actually reported.
@@ -167,9 +168,7 @@ export default function AuthCallbackPage() {
  setErrorMessage(
  isNetworkFailure(err)
  ? NETWORK_ERROR_MESSAGE
- : err instanceof Error
- ? err.message
- : 'Unexpected error completing sign-in.',
+ : userFacingMessage(err, 'Unexpected error completing sign-in.'),
  );
  }
  })();

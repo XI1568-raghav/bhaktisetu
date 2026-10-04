@@ -15,6 +15,7 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, serverErrorText } from '../../../lib/friendly-error';
 
 // Provider roles allowed to access KYC. Devotees redirected to their
 // dashboard — they do not collect payouts and have no business submitting
@@ -86,7 +87,7 @@ function ProviderKycContent() {
  if (data.kyc?.bankHolderName) setBankHolderName(data.kyc.bankHolderName);
  if (data.kyc?.bankIfsc) setBankIfsc(data.kyc.bankIfsc);
  } catch (err) {
- setError(err instanceof Error ? err.message : 'Failed to load KYC');
+ setError(userFacingMessage(err, 'Failed to load KYC'));
  } finally {
  setLoading(false);
  }
@@ -131,7 +132,7 @@ function ProviderKycContent() {
  });
  if (!res.ok) {
  const txt = await res.text().catch(() => '');
- throw new Error(`Submission failed (${res.status}). ${txt}`);
+ throw new UserFacingError(serverErrorText(txt, 'Submission failed. Please try again.'), res.status);
  }
  const data = await res.json();
  setSuccess(data.message ?? 'KYC submitted.');
@@ -145,7 +146,7 @@ function ProviderKycContent() {
  setKyc(d2.kyc ?? null);
  }
  } catch (err) {
- setError(err instanceof Error ? err.message : 'Submission failed');
+ setError(userFacingMessage(err, 'Submission failed'));
  } finally {
  setSubmitting(false);
  }

@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { buttonClass } from '../../components/ui/button-recipe';
+import { userFacingMessage, serverErrorMessage } from '../../lib/friendly-error';
 interface WaitlistFormProps {
   initialRef: string;
   cities: string[];
@@ -44,7 +45,7 @@ export default function WaitlistForm({ initialRef, cities, deities }: WaitlistFo
       });
       const json = (await res.json()) as { referralCode?: string; error?: string };
       if (!res.ok) {
-        setError(json.error ?? 'Something went wrong. Try again.');
+        setError(serverErrorMessage(json, 'Something went wrong. Try again.'));
         setSubmitting(false);
         return;
       }
@@ -54,7 +55,7 @@ export default function WaitlistForm({ initialRef, cities, deities }: WaitlistFo
       }
       setError('Unexpected response from server.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error.');
+      setError(userFacingMessage(err, 'Network error.'));
     }
     setSubmitting(false);
   }
@@ -199,7 +200,8 @@ export default function WaitlistForm({ initialRef, cities, deities }: WaitlistFo
       <button
         type="submit"
         disabled={submitting}
-        className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
+        className={buttonClass('primary', 'md', 'w-full disabled:cursor-not-allowed')}
+
       >
         {submitting ? 'Reserving your spot…' : 'Reserve my spot'}
       </button>

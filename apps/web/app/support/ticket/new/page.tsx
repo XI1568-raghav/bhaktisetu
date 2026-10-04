@@ -24,6 +24,7 @@ import { createTicket, newTicketSchema } from '../../../../lib/support-api';
 import { useAuth } from '../../../../lib/auth-context';
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../../lib/friendly-error';
 
 export default function NewTicketPage() {
  const router = useRouter();
@@ -120,7 +121,7 @@ export default function NewTicketPage() {
  };
  addUserTicket(ticket);
  setError(
- (err instanceof Error ? err.message : 'Could not reach server') +
+ (userFacingMessage(err, 'Could not reach server')) +
  ' — saved locally.',
  );
  setSubmitting(false);

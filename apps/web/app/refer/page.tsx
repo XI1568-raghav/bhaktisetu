@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../../lib/api-config';
 import { useAuth } from '../../lib/auth-context';
 import EmailCapture from '../../components/EmailCapture';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { serverErrorMessage } from '../../lib/friendly-error';
 
 
 interface ReferralMeResponse {
@@ -42,7 +43,7 @@ export default function ReferPage() {
         if (res.status === 503) {
           setError('Referrals are being prepared. Please check back soon.');
         } else if (!res.ok) {
-          setError(json.message || 'Could not load your referral code.');
+          setError(serverErrorMessage(json, 'Could not load your referral code.'));
         } else {
           setData(json);
         }

@@ -6,6 +6,7 @@ import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
 import { useAuth } from "../../lib/auth-context";
 import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../lib/api-config";
+import { userFacingMessage, UserFacingError, serverErrorMessage } from '../../lib/friendly-error';
 
 interface Org {
   id: string;
@@ -67,7 +68,7 @@ export default function OrgHubPage() {
       const j = await r.json();
       setOrgs(j.orgs ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+      setError(userFacingMessage(e, "Could not load your organisations. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -95,12 +96,12 @@ export default function OrgHubPage() {
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error(j.error || "Failed to create org");
+        throw new UserFacingError(serverErrorMessage(j, "Could not create the organisation. Please try again."), r.status);
       }
       setName("");
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed");
+      setError(userFacingMessage(e, "That did not work. Please try again."));
     } finally {
       setCreating(false);
     }

@@ -28,6 +28,7 @@ import {
   // same refusal — see loadErrorIsForbidden in lib/api-config.ts.
   loadErrorIsReauth,
 } from '../../lib/api-config';
+import { serverErrorMessage } from '../../lib/friendly-error';
 
 interface Balance {
   availableInr: number;
@@ -147,7 +148,7 @@ function PayoutsContent() {
         setNotice('Payout requested. It will be processed to your bank/UPI.');
         await load();
       } else {
-        setError(j?.error ?? 'Could not request payout.');
+        setError(serverErrorMessage(j, 'Could not request payout.'));
       }
     } catch (err) {
       setError(loadErrorMessage(err));

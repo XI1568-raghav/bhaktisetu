@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { DateInput } from '../../../components/ui/DateInput';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, serverErrorMessage } from '../../../lib/friendly-error';
 
 // Layer AT — booking flow. Single-page form, no multi-step wizard.
 // Defaults preferredDate to today since most rites are needed same-day.
@@ -92,12 +93,12 @@ export default function AntimSanskarBookPage() {
       });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j.error ?? 'Could not submit. Please try the call line.');
+        throw new UserFacingError(serverErrorMessage(j, 'Could not submit. Please try the call line.'), res.status);
       }
       const data = (await res.json()) as SubmitOk;
       setConfirmation(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission failed.');
+      setError(userFacingMessage(err, 'Submission failed.'));
     } finally {
       setSubmitting(false);
     }
@@ -112,7 +113,8 @@ export default function AntimSanskarBookPage() {
       >
         <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
           <h1
-            className={`${H1.catalogue} mb-4`}
+            className={`${H1.catalogue} mb-4`}
+
           >
             We have received your request.
           </h1>
@@ -179,7 +181,8 @@ export default function AntimSanskarBookPage() {
           Antim Sanskar — Talk to Coordinator
         </p>
         <h1
-          className={`${H1.catalogue} mb-3`}
+          className={`${H1.catalogue} mb-3`}
+
         >
           Share a few details. We will call you back within 30 minutes.
         </h1>

@@ -1,4 +1,5 @@
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-config';
+import { UserFacingError, serverErrorMessage, userFacingMessage } from './friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 // Mirrors the /store/reviews response (mounted under /api/v1/store, not
@@ -23,12 +24,13 @@ function authHeaders(token: string | undefined): Record<string, string> {
 }
 
 async function describeFailure(res: Response, fallback: string): Promise<string> {
+  // RES-09: the server's own sentence when it wrote one worth reading, else
+  // friendly copy for the status. Never `fallback (HTTP status): raw detail`.
+  const friendly = userFacingMessage(new Error(`HTTP ${res.status}`), fallback);
   try {
-    const body = (await res.json()) as { message?: string; error?: string };
-    const detail = body.message ?? body.error;
-    return detail ? `${fallback} (${res.status}): ${detail}` : `${fallback} (${res.status})`;
+    return serverErrorMessage(await res.json(), friendly);
   } catch {
-    return `${fallback} (${res.status})`;
+    return friendly;
   }
 }
 
@@ -40,7 +42,7 @@ export async function getMyReviews(
   const res = await fetchWithTimeout(`${API_BASE_URL}/store/reviews`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load reviews'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load reviews'), res.status);
   const data = (await res.json()) as { reviews: StoreReview[]; total: number };
   return data.reviews ?? [];
 }
@@ -90,7 +92,7 @@ export async function listStoreProductsWithSetupState(
   const res = await fetchWithTimeout(`${API_BASE_URL}/store-admin/products`, {
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to load products'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load products'), res.status);
   const body = (await res.json()) as {
     products: StoreProduct[];
     storeProfileMissing?: boolean;
@@ -119,7 +121,7 @@ export async function saveStoreProfile(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Could not save your store details'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Could not save your store details'), res.status);
   const body = (await res.json()) as { profile: StoreProfile };
   return body.profile;
 }
@@ -133,7 +135,7 @@ export async function createStoreProduct(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to create product'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to create product'), res.status);
   const body = (await res.json()) as { product: StoreProduct };
   return body.product;
 }
@@ -148,7 +150,7 @@ export async function updateStoreProduct(
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(input),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to update product'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to update product'), res.status);
   const body = (await res.json()) as { product: StoreProduct };
   return body.product;
 }
@@ -161,5 +163,5 @@ export async function deleteStoreProduct(
     method: 'DELETE',
     headers: authHeaders(token),
   }, DATA_FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await describeFailure(res, 'Failed to delete product'));
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to delete product'), res.status);
 }

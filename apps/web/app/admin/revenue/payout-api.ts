@@ -30,6 +30,7 @@ import {
   isNetworkFailure,
   NETWORK_ERROR_MESSAGE,
 } from '../../../lib/api-config';
+import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 
 /** PayoutRequestStatus in prisma/schema.prisma — lowercase, and no 'reversed'. */
 export type PayoutRequestStatus =
@@ -74,23 +75,21 @@ function authHeaders(token: string | undefined): Record<string, string> {
 async function asJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      const parsed = text ? (JSON.parse(text) as { error?: string; message?: string }) : null;
-      if (parsed && typeof parsed.error === 'string') message = parsed.error;
-      else if (parsed && typeof parsed.message === 'string') message = parsed.message;
-    } catch {
-      /* keep the default */
-    }
-    throw new Error(message);
+    // RES-09: the server's own sentence when it wrote one worth reading (the
+    // API localises its validation and guard messages); otherwise friendly copy.
+    // The status is carried so the page can still tell a dead session apart.
+    throw new UserFacingError(
+      serverErrorText(text, userFacingMessage(new Error(`HTTP ${res.status}`), 'Request failed. Please try again.')),
+      res.status,
+    );
   }
   return (text ? JSON.parse(text) : {}) as T;
 }
 
 /** Turns a stalled/unreachable call into a message an operator can act on. */
 function rethrow(err: unknown): never {
-  if (isNetworkFailure(err)) throw new Error(NETWORK_ERROR_MESSAGE);
-  throw err instanceof Error ? err : new Error('Payout request failed.');
+  if (isNetworkFailure(err)) throw new UserFacingError(NETWORK_ERROR_MESSAGE);
+  throw err instanceof UserFacingError ? err : new UserFacingError(userFacingMessage(err, 'Payout request failed.'));
 }
 
 /** The admin payout queue. Defaults to the settleable (pending) slice. */
@@ -201,7 +200,7 @@ export async function processPayoutRequest(
     );
     const body = await asJson<{ ok?: boolean; payout?: ProcessedPayout }>(res);
     if (!body.payout || typeof body.payout.status !== 'string') {
-      throw new Error(
+      throw new UserFacingError(
         'The server accepted the request but did not confirm the payout status. Check the payout queue before transferring again.',
       );
     }

@@ -55,6 +55,7 @@ import {
   type AdminUserProfiles,
 } from '../users-api';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../../lib/friendly-error';
 
 const roleLabels: Record<string, string> = {
   DEVOTEE: 'Devotee',
@@ -220,7 +221,7 @@ function AdminUserDetailContent() {
         if (cancelled) return;
         setUser(null);
         if (err instanceof AdminUserNotFoundError) setMissing(true);
-        else setLoadError(err instanceof Error ? err.message : 'Failed to load this user.');
+        else setLoadError(userFacingMessage(err, 'Failed to load this user.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -255,7 +256,7 @@ function AdminUserDetailContent() {
         }
         setSuccessMessage(succeeded);
       } catch (err) {
-        setActionError(err instanceof Error ? err.message : 'The action could not be completed.');
+        setActionError(userFacingMessage(err, 'The action could not be completed.'));
       } finally {
         setBusy(null);
       }

@@ -12,6 +12,7 @@ import { MapPin, Plus, Trash2, Star, Loader2, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL } from '../../lib/api-config';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { serverErrorMessage } from '../../lib/friendly-error';
 
 interface Address {
   id: string;
@@ -75,7 +76,7 @@ export default function AddressManager() {
         await load();
       } else {
         const j = await res.json().catch(() => ({}));
-        setError(j?.message ?? j?.error ?? 'Could not save address.');
+        setError(serverErrorMessage(j, 'Could not save address.'));
       }
     } catch {
       setError('Network error. Please try again.');

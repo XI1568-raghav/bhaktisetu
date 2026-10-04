@@ -27,6 +27,7 @@ import {
  type UsersResponse,
  type UiRole,
 } from '../../lib/admin-api';
+import { userFacingMessage } from '../../lib/friendly-error';
 
 // ── Static label/colour maps (visual chrome — unchanged) ─────────────────────
 
@@ -156,7 +157,7 @@ export default function AdminDashboardPage() {
  if (dashRes.status === 'fulfilled') {
  setDashboard(dashRes.value);
  } else {
- setError(dashRes.reason instanceof Error ? dashRes.reason.message : 'Failed to load stats');
+ setError(userFacingMessage(dashRes.reason, 'Failed to load stats'));
  }
 
  if (approvalRes.status === 'fulfilled') {
@@ -170,7 +171,7 @@ export default function AdminDashboardPage() {
  const rows = (usersRes.value as UsersResponse).users.map(mapUserToSignup);
  setSignups(rows);
  } else {
- setSignupsError(usersRes.reason instanceof Error ? usersRes.reason.message : 'Failed to load recent signups');
+ setSignupsError(userFacingMessage(usersRes.reason, 'Failed to load recent signups'));
  }
 
  setLoading(false);

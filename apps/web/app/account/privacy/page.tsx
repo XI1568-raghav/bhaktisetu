@@ -122,7 +122,7 @@ function AccountPrivacyInner() {
         setLoadError(
           res.status === 401 || res.status === 403
             ? 'Your session has expired — sign in again to see your requests.'
-            : `We could not load your requests (HTTP ${res.status}). This is a display problem on our side; any request you have filed still stands.`,
+            : `We could not load your requests. This is a display problem on our side; any request you have filed still stands.`,
         );
         return;
       }
@@ -165,7 +165,7 @@ function AccountPrivacyInner() {
       );
       if (!res.ok) {
         setSubmitError(
-          `We could not file that request (HTTP ${res.status}). Nothing has been submitted — try again, or email ${rightsContactEmail()}.`,
+          `We could not file that request. Nothing has been submitted — try again, or email ${rightsContactEmail()}.`,
         );
         return;
       }

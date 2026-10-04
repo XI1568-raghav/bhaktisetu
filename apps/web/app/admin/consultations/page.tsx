@@ -15,6 +15,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, FORBIDDEN_ERROR_MESSAGE, serverErrorText } from '../../../lib/friendly-error';
 
 type AdminConsultation = {
   id: string;
@@ -101,14 +102,14 @@ function ListContent() {
         credentials: 'include',
         cache: 'no-store',
       });
-      if (res.status === 401) throw new Error('Sign in required');
-      if (res.status === 403) throw new Error('Admin role required');
+      if (res.status === 401) throw new UserFacingError('Your session has expired. Please sign in again to continue.', 401);
+      if (res.status === 403) throw new UserFacingError(FORBIDDEN_ERROR_MESSAGE, 403);
       if (!res.ok) throw new Error(`API ${res.status}`);
       const data = await res.json();
       setItems(data.consultations ?? []);
       setTotal(data.total ?? 0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Network error');
+      setError(userFacingMessage(e, 'Could not load consultations. Please try again.'));
       setItems([]);
     } finally {
       setLoading(false);
@@ -131,11 +132,11 @@ function ListContent() {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
-        throw new Error(`${res.status}${body ? `: ${body.slice(0, 120)}` : ''}`);
+        throw new UserFacingError(serverErrorText(body, 'Could not mark this consultation complete.'), res.status);
       }
       await load();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Could not mark complete');
+      setActionError(userFacingMessage(e, 'Could not mark complete'));
     } finally {
       setActionId(null);
     }

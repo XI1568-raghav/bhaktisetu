@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Globe, Phone, Mail, CheckCircle2, Home, Users } from 'lucide-react';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 interface Program {
   id: string; name: string; durationMonths: number; modeOfStudy: string;
@@ -34,7 +35,7 @@ export default function GurukulDetailClient({ slug }: { slug: string }) {
     fetch(`${apiBase()}/api/v1/gurukuls/${encodeURIComponent(slug)}`)
       .then((r) => r.ok ? r.json() : Promise.reject(new Error(r.status === 404 ? 'Not found' : `HTTP ${r.status}`)))
       .then(setG)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'));
+      .catch((e) => setError(userFacingMessage(e, 'Failed to load')));
   }, [slug]);
 
   if (error) return <main className="max-w-4xl mx-auto px-4 py-8"><p className="text-red-600">{error}</p></main>;

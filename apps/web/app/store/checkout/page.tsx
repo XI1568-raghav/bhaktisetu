@@ -21,7 +21,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
-import { friendlyApiError } from '../../../lib/friendly-error';
+import { friendlyApiError, userFacingMessage, UserFacingError, classifyUserFacing } from '../../../lib/friendly-error';
 import { isOrderableProductId, BROWSE_ONLY_REASON } from '../../../lib/store-buyability';
 import ReauthPrompt from '../../../components/ReauthPrompt';
 import { buttonClass } from '../../../components/ui/button-recipe';
@@ -214,7 +214,7 @@ function CheckoutContent() {
  }
  try {
  const addr = addresses.find((a) => a.id === selectedAddress);
- if (!addr) throw new Error('Select a delivery address');
+ if (!addr) throw new UserFacingError('Select a delivery address');
  // P1#4: HttpOnly cookie `darshya_session` is canonical. Bearer header
  // retained as additive transition fallback (in-memory session — no
  // localStorage read). All fetches below pass `credentials: 'include'`
@@ -270,14 +270,14 @@ function CheckoutContent() {
  parsed?.message &&
  (parsed.code === 'product_not_orderable' || parsed.code === 'product_not_found')
  ) {
- throw new Error(parsed.message);
+ throw new UserFacingError(parsed.message);
  }
  }
  if (res.status === 409) {
  // COM-06: the API refuses when our displayed total disagrees with its
  // own. Tell the customer to re-check rather than silently charging a
  // different number.
- throw new Error(
+ throw new UserFacingError(
  'PRICE_CHANGED: Prices in your cart have changed. Please review your order total and try again.',
  );
  }
@@ -303,7 +303,7 @@ function CheckoutContent() {
  // now create a matching Razorpay order, launch checkout, and only
  // mark the cart cleared after the verify call confirms capture.
  if (!storeOrderId) {
- throw new Error('Order created but id missing — cannot start payment');
+ throw new UserFacingError('Order created but id missing — cannot start payment');
  }
  const rzpRes = await fetch(
  `${API_BASE_URL}/payments/store-orders/${storeOrderId}/razorpay`,
@@ -359,7 +359,7 @@ function CheckoutContent() {
  },
  theme: { color: '#9e6229' },
  modal: {
- ondismiss: () => reject(new Error('Payment cancelled')),
+ ondismiss: () => reject(new UserFacingError('Payment cancelled')),
  },
  handler: async (response: {
  razorpay_order_id: string;
@@ -389,7 +389,7 @@ function CheckoutContent() {
  // customer-ready — the price-change notice and an explicit cancellation —
  // everything else goes through the shared friendly-error mapper so no
  // status code or backend string ever reaches the screen.
- const raw = err instanceof Error ? err.message : '';
+ const raw = userFacingMessage(err, '');
  if (raw.startsWith('PRICE_CHANGED: ')) {
  setPlaceError(raw.slice('PRICE_CHANGED: '.length));
  } else if (/payment cancelled/i.test(raw)) {
@@ -399,7 +399,7 @@ function CheckoutContent() {
  // -intent moment in the funnel. A session that died between opening the
  // cart and pressing Place Order left one line of red text saying "sign in
  // again" with no way to do it — and the cart, correctly, still full.
- const { message, reauth: needsReauth } = friendlyApiError(err);
+ const { message, reauth: needsReauth } = classifyUserFacing(err);
  setPlaceError(message);
  setPlaceReauth(needsReauth);
  }

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { buttonClass } from './ui/button-recipe';
 import { API_BASE_URL } from '../lib/api-config';
+import { serverErrorMessage } from '../lib/friendly-error';
 
 interface Props {
   source: string;                // e.g. "home-hero", "nri", "upgrade-paywall"
@@ -58,7 +59,7 @@ export default function EmailCapture({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.message || 'Could not save your email. Please try again.');
+        setError(serverErrorMessage(json, 'Could not save your email. Please try again.'));
       } else {
         setDone(true);
         // Best-effort PostHog event for funnel measurement.
