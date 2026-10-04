@@ -36,7 +36,7 @@ const DETAIL_PATH: Record<ProviderListingType, (id: string) => string> = {
 
 function getDisplayName(type: ProviderListingType, p: ApprovedProvider): string {
  switch (type) {
- case 'pandit': return p.templeName || 'Verified Pandit';
+ case 'pandit': return p.templeName || 'Pandit';
  case 'store': return p.storeName || 'Verified Store';
  case 'astrologer': return p.displayName || 'Astrologer';
  case 'wellness': return p.displayName || 'Wellness Instructor';

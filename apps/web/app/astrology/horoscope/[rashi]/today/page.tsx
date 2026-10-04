@@ -277,7 +277,7 @@ export default async function RashiTodayPage({ params }: Params) {
         >
           <div>
             <p className="font-semibold text-emerald-900">Free Pandit Advice</p>
-            <p className="text-xs text-emerald-700">Verified Vedic pandit, no cost</p>
+            <p className="text-xs text-emerald-700">Vedic pandit, no cost</p>
           </div>
           <ArrowRight className="w-4 h-4 text-emerald-700 flex-shrink-0" />
         </Link>

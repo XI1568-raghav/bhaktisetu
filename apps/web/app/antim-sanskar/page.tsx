@@ -76,7 +76,7 @@ const PROCESS = [
   {
     n: '3',
     title: 'Pandit ji arrives at the ghat',
-    body: 'Our verified pandit reaches the cremation ground or your home with all required samagri. The rites begin without delay.',
+    body: 'Our pandit reaches the cremation ground or your home with all required samagri. The rites begin without delay.',
   },
   {
     n: '4',
@@ -162,7 +162,7 @@ export default function AntimSanskarPage() {
         </h2>
         <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-4 text-sm leading-relaxed">
           {[
-            'A verified pandit ji reaching the ghat or home, on time',
+            'A pandit ji reaching the ghat or home, on time',
             'Mukhagni, antyeshti, and the 13-day rites in your tradition',
             'Cremation ground coordination — paperwork and timing',
             'Asthi visarjan at Ganga, Godavari, Yamuna, or Narmada',

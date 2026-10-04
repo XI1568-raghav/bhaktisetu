@@ -505,7 +505,7 @@ export default function SanatanPillarPage() {
             do not have an extended family on hand; how do I make sure the next generation can read a basic
             Sanskrit shloka and recognise the basic stories. Each of these has working answers. Books, online
             classes, weekend balavihar groups, regional temples, and increasingly platforms that connect families
-            with verified pandits in India have made it possible to live a recognisably traditional life almost
+            with pandits in India have made it possible to live a recognisably traditional life almost
             anywhere on earth.
           </p>
         </section>
@@ -579,7 +579,7 @@ export default function SanatanPillarPage() {
             <li>· <Link href="/puranas" className="text-indigo-700 underline hover:text-indigo-900">The Puranas</Link></li>
             <li>· <Link href="/jyotirlinga" className="text-indigo-700 underline hover:text-indigo-900">Twelve Jyotirlingas</Link></li>
             <li>· <Link href="/shakti-peeth" className="text-indigo-700 underline hover:text-indigo-900">Shakta Peethas</Link></li>
-            <li>· <Link href="/pujas" className="text-indigo-700 underline hover:text-indigo-900">Book a puja</Link> with a verified pandit</li>
+            <li>· <Link href="/pujas" className="text-indigo-700 underline hover:text-indigo-900">Book a puja</Link> with a pandit</li>
             <li>· <Link href="/today" className="text-indigo-700 underline hover:text-indigo-900">Today's panchang and observances</Link></li>
           </ul>
           <p className="mt-6 text-xs text-surface-500">

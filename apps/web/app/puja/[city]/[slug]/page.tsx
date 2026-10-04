@@ -111,10 +111,10 @@ export default async function CityPujaPage({ params }: Params) {
 
       <header className="mb-6">
         <h1 className={`${H1.catalogue} mb-3`}>
-          {cp.pujadisplay} in {cp.citydisplay} — Book Verified Pandits | Darshya
+          {cp.pujadisplay} in {cp.citydisplay} — Book Pandits | Darshya
         </h1>
         <p className="text-base text-surface-700">
-          Authentic {cp.deity} worship performed in {cp.citydisplay} by verified Vedic pandits.
+          Authentic {cp.deity} worship performed in {cp.citydisplay} by Vedic pandits.
           Live video proof, samagri included, prasad delivered.
         </p>
       </header>
@@ -163,7 +163,7 @@ export default async function CityPujaPage({ params }: Params) {
           What\'s included in Darshya booking
         </h2>
         <ul className="list-disc pl-6 text-surface-700 space-y-1">
-          <li>Verified Vedic pandit with authentic Sanskrit chanting</li>
+          <li>Vedic pandit with authentic Sanskrit chanting</li>
           <li>All samagri (offerings) — no extra shopping required</li>
           <li>Live video recording of the puja shared within 24 hours</li>
           <li>Prasad parcel shipped to your address within 5 working days</li>

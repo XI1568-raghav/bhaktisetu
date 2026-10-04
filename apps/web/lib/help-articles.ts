@@ -115,7 +115,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
  category: "puja-bookings",
  title: "How do I book a puja?",
  summary:
- "Open the puja page, pick a temple and date, fill in the sankalp form (your name, gotra, and intent), and pay. You'll receive a booking confirmation, and a verified pandit performs the ritual with video proof shared within " +
+ "Open the puja page, pick a temple and date, fill in the sankalp form (your name, gotra, and intent), and pay. You'll receive a booking confirmation, and a pandit performs the ritual with video proof shared within " +
  COMPANY.refunds.videoProofTargetLabel +
  ".",
  body: `## Steps
@@ -130,7 +130,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
 ## What's included
 
-- Verified pandit performance
+- Pandit performance
 - Full ritual recording (video proof)
 - Prasad delivery (where temple offers it)
 

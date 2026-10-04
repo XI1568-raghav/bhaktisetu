@@ -931,7 +931,7 @@ export default async function DarshanDetailPage({
  <h3 className="font-bold text-lg mb-2">Book a Puja</h3>
  <p className="text-sm text-saffron-100 mb-4">
  Book a special puja at {stream.temple.name} performed by
- verified pandits with video proof.
+ pandits with video proof.
  </p>
  <a
  href={`/temples/${stream.temple.slug}`}

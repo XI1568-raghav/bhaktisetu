@@ -67,7 +67,7 @@ const STEPS = [
 ];
 
 const TRUST = [
-  { icon: ShieldCheck, label: 'Verified temples', body: 'Every puja performed by a verified pandit at a real temple.' },
+  { icon: ShieldCheck, label: 'Verified temples', body: 'Every puja performed by a pandit at a real temple.' },
   { icon: Video, label: 'Video proof mandatory', body: 'Full recording of the ceremony — no exceptions.' },
   { icon: MessageCircle, label: 'WhatsApp updates', body: 'Recipient notified before, during, and after the puja.' },
   { icon: Globe, label: 'NRI-friendly', body: 'Book from anywhere in the world. Billing is in INR; international cards are accepted.' },

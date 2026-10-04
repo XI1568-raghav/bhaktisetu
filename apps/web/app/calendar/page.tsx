@@ -302,7 +302,7 @@ export default async function CalendarPage() {
           </Link>
           <Link href="/pujas" className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 hover:bg-indigo-100">
             <div className="text-sm font-semibold text-indigo-900">Book a Puja</div>
-            <div className="text-xs text-indigo-700">Verified pandits with video proof</div>
+            <div className="text-xs text-indigo-700">Pandits with video proof</div>
           </Link>
         </div>
       </section>

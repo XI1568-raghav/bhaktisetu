@@ -69,7 +69,7 @@ const BOOKED_LANES: Lane[] = [
     icon: Flame,
     accent: 'saffron',
     title: 'Book a pandit for your home',
-    blurb: 'A verified pandit performs the ritual at your address — griha pravesh, satyanarayan, havan.',
+    blurb: 'A pandit performs the ritual at your address — griha pravesh, satyanarayan, havan.',
     meta: 'At your address',
     href: '/pujas',
   },

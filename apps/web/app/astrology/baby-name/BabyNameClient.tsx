@@ -126,7 +126,7 @@ export default function BabyNameClient({ options }: { options: Opt[] }) {
      <div className="rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
       <p className="font-serif text-lg text-gray-900">Want a custom name shortlist with full kundli match?</p>
       <p className="mt-2 text-sm text-gray-700">
-       A verified pandit-numerologist will match nakshatra-pada syllable + name-number vibration +
+       A pandit-numerologist will match nakshatra-pada syllable + name-number vibration +
        graha balance + family deity tradition before finalizing the namakaran.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">

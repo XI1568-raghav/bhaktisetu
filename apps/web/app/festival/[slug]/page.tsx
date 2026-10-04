@@ -61,7 +61,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const year = festivalYear(f.date2026);
   return {
     title: `${f.name} ${year} — ${fmtDate(f.date2026)}, rituals, pujas online`,
-    description: `${f.name} ${year} on ${fmtDate(f.date2026)}. ${f.description.slice(0, 120)} Book ${f.deity} pujas with verified pandits + video proof.`,
+    description: `${f.name} ${year} on ${fmtDate(f.date2026)}. ${f.description.slice(0, 120)} Book ${f.deity} pujas with pandits + video proof.`,
     alternates: { canonical: `https://darshya.online/festival/${f.slug}` },
     openGraph: {
       title: `${f.name} ${year} — ${fmtDate(f.date2026)}`,
@@ -184,7 +184,7 @@ export default async function FestivalPage({ params }: Params) {
       {/* DF-02 (prod sweep 2026-08-12): this block used to render every entry of
           the hand-written `pujasAvailable` as a booking link. 84 of the 87 slugs
           the calendar names are not in the catalogue, so 81% of the orange
-          "Book with verified pandit" CTAs 404'd. Links are now the intersection
+          "Book with pandit" CTAs 404'd. Links are now the intersection
           with the live catalogue; when that intersection is empty the section
           says so and routes to the catalogue instead of pretending. */}
       {bookable.length > 0 ? (
@@ -202,7 +202,7 @@ export default async function FestivalPage({ params }: Params) {
                 <p className="text-sm font-semibold text-surface-900 capitalize">
                   {slug.replace(/-/g, ' ')}
                 </p>
-                <p className="text-xs text-saffron-700 mt-1">Book with verified pandit →</p>
+                <p className="text-xs text-saffron-700 mt-1">Book with pandit →</p>
               </Link>
             ))}
           </div>
@@ -214,7 +214,7 @@ export default async function FestivalPage({ params }: Params) {
           </h2>
           <p className="text-sm text-surface-700">
             No {f.deity} puja is bookable on Darshya for this festival yet. Browse the full
-            catalogue — every listing there has a verified pandit and a confirmed price.
+            catalogue — every listing there has a pandit and a confirmed price.
           </p>
           <Link
             href="/pujas"

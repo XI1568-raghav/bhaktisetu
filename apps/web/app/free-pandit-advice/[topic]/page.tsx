@@ -83,7 +83,7 @@ export default async function FreePanditTopicPage({ params }: PageProps) {
    </nav>
 
    <header className="mb-8">
-    <p className="text-xs uppercase tracking-wider text-saffron-600">Free advice · verified pandits</p>
+    <p className="text-xs uppercase tracking-wider text-saffron-600">Free advice · pandits</p>
     <h1 className={`${H1.catalogue} mt-1`}>{t.title}</h1>
     <p className="mt-2 text-base text-saffron-700">{t.hindiTitle}</p>
    </header>
@@ -140,7 +140,7 @@ export default async function FreePanditTopicPage({ params }: PageProps) {
    <section className="mb-8 rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
     <h2 className="font-serif text-xl text-gray-900">{t.cta}</h2>
     <p className="mt-2 text-sm text-gray-700">
-     Go deeper than free advice. Generate your full chart or speak to a verified pandit
+     Go deeper than free advice. Generate your full chart or speak to a pandit
      who specialises in this area.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">

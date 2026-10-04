@@ -267,7 +267,7 @@ export const CITIES: CityInfo[] = [
     hindi: 'बेंगलुरु',
     population: '13M',
     description:
-      'Tech capital with deep devotional roots. ISKCON Bangalore is one of the largest Krishna temples globally; home of Bull Temple, Banashankari, Dodda Ganesha, Gavi Gangadhareshwara, and Chamundeshwari (Mysore) nearby. First Darshya market city — verified pandits onboarding from Banashankari, Malleshwaram, Jayanagar and ISKCON belt.',
+      'Tech capital with deep devotional roots. ISKCON Bangalore is one of the largest Krishna temples globally; home of Bull Temple, Banashankari, Dodda Ganesha, Gavi Gangadhareshwara, and Chamundeshwari (Mysore) nearby. First Darshya market city — pandits onboarding from Banashankari, Malleshwaram, Jayanagar and ISKCON belt.',
     famousTemples: [
       'ISKCON Bangalore',
       'Bull Temple (Dodda Basavana Gudi)',

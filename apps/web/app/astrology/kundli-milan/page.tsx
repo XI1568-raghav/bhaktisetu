@@ -150,7 +150,7 @@ export default function KundliMilanPage() {
     <h2 className="font-serif text-xl text-gray-900">Want a deeper compatibility report?</h2>
     <p className="mt-2 text-sm text-gray-700">
      Ashtakoot is the foundation. Navamsa (D9), Manglik analysis, dasha-bhukti timing, and
-     7th-house lord placement give the full picture. Talk to a verified Vedic pandit.
+     7th-house lord placement give the full picture. Talk to a Vedic pandit.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
      <Link href="/ask-pandit" className={buttonClass('primary', 'md')}>

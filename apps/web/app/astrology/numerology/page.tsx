@@ -145,7 +145,7 @@ export default function NumerologyPage() {
     <h2 className="font-serif text-xl text-gray-900">Want a custom name + business numerology consult?</h2>
     <p className="mt-2 text-sm text-gray-700">
      Compatibility of life-path with name, business-name shortlist, baby-name selection,
-     muhurat for signing contracts — all need a verified pandit-numerologist who maps the
+     muhurat for signing contracts — all need a pandit-numerologist who maps the
      numbers to your specific kundli.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">

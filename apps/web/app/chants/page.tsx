@@ -196,7 +196,7 @@ export default function ChantsIndex() {
         <h2 className="text-xl font-bold text-surface-900 mb-2">Need a pandit to chant for you?</h2>
         <p className="text-surface-700 text-sm mb-4">
           For major sankalp (vow) — like 1.25 lakh Mahamrityunjaya jaap or full Vishnu Sahasranama
-          recitation — verified pandits can perform on your behalf with video proof.
+          recitation — pandits can perform on your behalf with video proof.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           <Link

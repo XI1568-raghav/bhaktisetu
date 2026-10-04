@@ -33,7 +33,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Satyanarayan Puja',
     metaTitle: 'Satyanarayan Puja in Bengaluru — Pandit Booking | Darshya',
     metaDescription:
-      'Book verified pandits for Satyanarayan Puja in Bengaluru. Authentic Vedic ritual with samagri, video proof, prasad delivery. Trusted across Karnataka.',
+      'Book pandits for Satyanarayan Puja in Bengaluru. Authentic Vedic ritual with samagri, video proof, prasad delivery. Trusted across Karnataka.',
     deity: 'Lord Vishnu (as Satyanarayan)',
     templeName: 'ISKCON Sri Radha Krishna Temple, Rajajinagar',
     templeContext:
@@ -79,7 +79,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Griha Pravesh',
     metaTitle: 'Griha Pravesh in Mumbai — Pandit Booking | Darshya',
     metaDescription:
-      'Book Griha Pravesh puja in Mumbai with verified Vedic pandits. Vastu shanti, navagraha, agni hotra. Authentic ritual with video proof.',
+      'Book Griha Pravesh puja in Mumbai with Vedic pandits. Vastu shanti, navagraha, agni hotra. Authentic ritual with video proof.',
     deity: 'Ganesha, Vastu Purusha, Navagraha',
     templeName: 'Siddhivinayak Mandir, Prabhadevi',
     templeContext:
@@ -125,7 +125,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Satyanarayan Puja',
     metaTitle: 'Satyanarayan Puja in Delhi — Pandit Booking | Darshya',
     metaDescription:
-      'Book verified pandits for Satyanarayan Puja in Delhi NCR. Sanskrit-trained Vedic priests, samagri included, live video proof, prasad delivered.',
+      'Book pandits for Satyanarayan Puja in Delhi NCR. Sanskrit-trained Vedic priests, samagri included, live video proof, prasad delivered.',
     deity: 'Lord Vishnu (as Satyanarayan)',
     templeName: 'Akshardham / Birla Mandir',
     templeContext:
@@ -171,7 +171,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Rudrabhishek',
     metaTitle: 'Rudrabhishek in Varanasi — Pandit Booking | Darshya',
     metaDescription:
-      'Book Rudrabhishek at Kashi Vishwanath, Varanasi. Verified Vedic pandits chant Rudra Suktam with abhishek of panchamrit on the Shivling. Video proof.',
+      'Book Rudrabhishek at Kashi Vishwanath, Varanasi. Vedic pandits chant Rudra Suktam with abhishek of panchamrit on the Shivling. Video proof.',
     deity: 'Lord Shiva (as Rudra)',
     templeName: 'Kashi Vishwanath Mandir',
     templeContext:
@@ -263,7 +263,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Ganga Aarti',
     metaTitle: 'Ganga Aarti in Haridwar — Pandit Sponsorship | Darshya',
     metaDescription:
-      'Sponsor Ganga Aarti at Har-ki-Pauri, Haridwar. Verified pandit chants Ganga Stotram, performs diya offering on your behalf. Live video proof.',
+      'Sponsor Ganga Aarti at Har-ki-Pauri, Haridwar. Pandit chants Ganga Stotram, performs diya offering on your behalf. Live video proof.',
     deity: 'Ganga Mata',
     templeName: 'Har-ki-Pauri Ghat',
     templeContext:
@@ -309,7 +309,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Mahakaleshwar Bhasma Aarti',
     metaTitle: 'Mahakaleshwar Bhasma Aarti, Ujjain — Booking | Darshya',
     metaDescription:
-      'Book Mahakaleshwar Bhasma Aarti seva in Ujjain. The pre-dawn 4 AM ritual where sacred ash is offered to the Jyotirlinga. Verified pandit coordination.',
+      'Book Mahakaleshwar Bhasma Aarti seva in Ujjain. The pre-dawn 4 AM ritual where sacred ash is offered to the Jyotirlinga. Pandit coordination.',
     deity: 'Lord Mahakaleshwar (Shiva, Lord of Time)',
     templeName: 'Shri Mahakaleshwar Jyotirlinga',
     templeContext:
@@ -355,7 +355,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Ram Puja',
     metaTitle: 'Ram Puja in Ayodhya — Pandit Booking | Darshya',
     metaDescription:
-      'Book Ram Puja at Ayodhya Ram Janmabhoomi with verified Vedic pandits. Sundarkand path, Ramraksha stotra, archana at Sri Ram Mandir. Video proof.',
+      'Book Ram Puja at Ayodhya Ram Janmabhoomi with Vedic pandits. Sundarkand path, Ramraksha stotra, archana at Sri Ram Mandir. Video proof.',
     deity: 'Lord Sri Ram, Sita, Lakshman, Hanuman',
     templeName: 'Sri Ram Janmabhoomi Mandir',
     templeContext:
@@ -401,7 +401,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Krishna Puja',
     metaTitle: 'Krishna Puja in Vrindavan — Pandit Booking | Darshya',
     metaDescription:
-      'Book Krishna puja in Vrindavan at Banke Bihari, ISKCON, or Radha Raman. Verified pandits, abhishek with panchamrit, makhan-mishri prasad. Video proof.',
+      'Book Krishna puja in Vrindavan at Banke Bihari, ISKCON, or Radha Raman. Pandits, abhishek with panchamrit, makhan-mishri prasad. Video proof.',
     deity: 'Lord Krishna (as Banke Bihari/Radha-Krishna)',
     templeName: 'Sri Banke Bihari Mandir',
     templeContext:
@@ -447,7 +447,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Maha Mrityunjaya Japa',
     metaTitle: 'Maha Mrityunjaya in Kashi — Pandit Booking | Darshya',
     metaDescription:
-      'Book Maha Mrityunjaya Mantra japa in Kashi. 1.25 lakh chants by verified Vedic pandits at Kashi Vishwanath. Healing, longevity, liberation. Video proof.',
+      'Book Maha Mrityunjaya Mantra japa in Kashi. 1.25 lakh chants by Vedic pandits at Kashi Vishwanath. Healing, longevity, liberation. Video proof.',
     deity: 'Lord Shiva (as Mrityunjaya — Conqueror of Death)',
     templeName: 'Kashi Vishwanath Mandir',
     templeContext:
