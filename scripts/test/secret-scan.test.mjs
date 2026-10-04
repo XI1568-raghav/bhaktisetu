@@ -22,6 +22,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { RULES, looksPlaceholder, scanDiff, stripShellComments } from '../secret-scan.mjs';
 
 /** Build a `git diff -U0`-shaped patch for one file's added lines. */
@@ -221,6 +222,26 @@ describe('the hook is actually installed, not merely tracked', () => {
 
   it('root `prepare` wires the installer, so pnpm install turns hooks on', () => {
     expect(pkg.scripts?.prepare).toMatch(/scripts\/install-git-hooks\.mjs/);
+  });
+
+  // Git only runs a hook whose file is EXECUTABLE, and which mode a tracked file
+  // has is recorded in the index. `.githooks/pre-commit` was committed as
+  // 100644, so on every fresh clone and every worktree git skipped it with at
+  // most a one-line hint — the scan this file tests never ran, for anyone who
+  // had not happened to `chmod +x` it by hand. (core.filemode=false on some
+  // machines hides the difference locally, which is how it went unseen.)
+  const inGitCheckout = (() => {
+    try {
+      return execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() === 'true';
+    } catch {
+      return false;
+    }
+  })();
+
+  it.skipIf(!inGitCheckout)('.githooks/pre-commit is tracked as executable, or git silently skips it', () => {
+    const entry = execFileSync('git', ['ls-files', '-s', '.githooks/pre-commit'], { encoding: 'utf8' }).trim();
+    expect(entry, 'hook is not tracked at all').not.toBe('');
+    expect(entry.split(/\s+/)[0]).toBe('100755');
   });
 
   it('the installer exists', () => {
