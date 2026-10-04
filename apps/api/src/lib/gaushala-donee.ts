@@ -23,6 +23,7 @@
 
 import { prisma } from './prisma.js';
 import { gaushalaService } from '../services/gaushala.service.js';
+import { gaushalaQuality } from './cause-quality.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -60,9 +61,11 @@ export async function resolveGaushalaDonee(
 
   const profile = await prisma.gaushalaProfile.findFirst({
     where: { approved: true, OR: or },
-    select: { id: true, userId: true, gaushalaName: true },
+    select: { id: true, userId: true, gaushalaName: true, description: true, address: true },
   });
   if (!profile) return { ok: false, reason: 'not_onboarded' };
+  // An approved-but-junk profile must not take money (see lib/cause-quality.ts).
+  if (!gaushalaQuality(profile).ok) return { ok: false, reason: 'not_onboarded' };
 
   return {
     ok: true,
