@@ -27,6 +27,18 @@ export const PRIEST_BOOKING_VIEWS = {
 
 export type PriestBookingView = keyof typeof PRIEST_BOOKING_VIEWS;
 
+/** A paid, unassigned booking as an approved pandit sees it. No devotee identity, no money. */
+export interface OpenRequest {
+  id: string;
+  bookingNumber: string | null;
+  scheduledDate: Date;
+  scheduledTimeSlot: string | null;
+  devoteeCount: number;
+  pujaName: string;
+  templeName: string;
+  city: string;
+}
+
 export interface PriestBookingsFilters {
   status?: BookingStatus;
   view?: PriestBookingView;
@@ -324,6 +336,62 @@ export class PriestService {
   /**
    * Priest accepts a booking — transitions status to priest_assigned.
    */
+  /**
+   * Paid bookings nobody has picked up yet: `confirmed`, no pandit, still ahead.
+   *
+   * The default dispatch tier is "scheduled" (T4), where the booking stays
+   * `confirmed` and pandits self-pick. Until this existed there was nothing to
+   * pick from: getAssignedBookings filters on `{ priestId }`, so an unassigned
+   * booking was invisible to every pandit, and a customer who paid for a puja
+   * waited on a pandit who could not see it.
+   *
+   * Only an approved, active pandit gets a list. It carries the minimum needed
+   * to decide (puja, temple, date, slot, how many devotees) and deliberately
+   * no devotee names, gotras, sankalp, address or money: those are released to
+   * the pandit who accepts, not to every approved pandit on the platform.
+   */
+  async getOpenRequests(priestId: string, limit = 50) {
+    const priest = await prisma.priest.findUnique({
+      where: { id: priestId },
+      select: { isVerified: true, status: true },
+    });
+    if (!priest || !priest.isVerified || priest.status !== 'active') {
+      return { eligible: false as const, requests: [] as OpenRequest[] };
+    }
+
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+
+    const rows = await prisma.pujaBooking.findMany({
+      where: { status: 'confirmed', priestId: null, scheduledDate: { gte: startOfToday } },
+      orderBy: [{ scheduledDate: 'asc' }, { createdAt: 'asc' }],
+      take: Math.min(Math.max(limit, 1), 100),
+      select: {
+        id: true,
+        bookingNumber: true,
+        scheduledDate: true,
+        scheduledTimeSlot: true,
+        devoteeNames: true,
+        pujaType: { select: { name: true } },
+        temple: { select: { name: true, city: true, state: true } },
+      },
+    });
+
+    return {
+      eligible: true as const,
+      requests: rows.map((r): OpenRequest => ({
+        id: r.id,
+        bookingNumber: r.bookingNumber,
+        scheduledDate: r.scheduledDate,
+        scheduledTimeSlot: r.scheduledTimeSlot,
+        devoteeCount: Array.isArray(r.devoteeNames) ? r.devoteeNames.length : 0,
+        pujaName: r.pujaType?.name ?? 'Puja',
+        templeName: r.temple?.name ?? 'Temple',
+        city: r.temple?.city ?? '',
+      })),
+    };
+  }
+
   async acceptBooking(bookingId: string, priestId: string) {
     const booking = await prisma.pujaBooking.findUnique({
       where: { id: bookingId },
@@ -349,6 +417,19 @@ export class PriestService {
       throw new Error(
         `Cannot accept booking in "${booking.status}" status. Booking must be in "confirmed" status.`
       );
+    }
+
+    // Taking an UNASSIGNED booking is a self-pick, so the picker must be an
+    // approved, active pandit. A booking already assigned to this pandit (a
+    // temple pinned them) was vetted when it was assigned and is not re-checked.
+    if (!booking.priestId) {
+      const picker = await prisma.priest.findUnique({
+        where: { id: priestId },
+        select: { isVerified: true, status: true },
+      });
+      if (!picker || !picker.isVerified || picker.status !== 'active') {
+        throw new Error('Your pandit profile is not approved yet, so you cannot take new bookings.');
+      }
     }
 
     // Double-booking guard: a priest can only hold one active booking per
