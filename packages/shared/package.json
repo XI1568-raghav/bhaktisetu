@@ -11,6 +11,7 @@
     "./validators": "./src/validators/index.ts",
     "./constants": "./src/constants/index.ts",
     "./utils": "./src/utils/index.ts",
+    "./astrology": "./src/astrology/index.ts",
     "./delivery-address": "./src/validators/delivery-address.ts"
   },
   "scripts": {

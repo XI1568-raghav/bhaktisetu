@@ -115,6 +115,9 @@ export default function TempleDashboard() {
  const templeName = api?.profile?.templeName ?? 'My Temple';
  const templeCity = api?.profile?.templeCity ?? '';
  const templeState = api?.profile?.templeState ?? '';
+ // CT-UI-1: join only the parts that exist — a bare ", ·" rendered for an
+ // account with no temple profile yet.
+ const templePlace = [templeCity, templeState].filter(Boolean).join(', ');
 
  // Never print a figure the server did not send. On a failed load these are
  // em dashes, not zeros — a fabricated zero revenue is indistinguishable from
@@ -135,7 +138,7 @@ export default function TempleDashboard() {
  {templeName}
  </h1>
  <p className="text-surface-500 mt-1">
- {templeCity}, {templeState} &middot; Temple management dashboard
+ {templePlace ? `${templePlace} · ` : ''}Temple management dashboard
  </p>
  </div>
 
