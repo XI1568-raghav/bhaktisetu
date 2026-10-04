@@ -12,6 +12,7 @@ import { astrologyFetch, isAstrologyNetworkFailure } from '../../../../lib/astro
 import { DateTimeInput } from '../../../../components/ui/DateInput';
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, serverErrorText } from '../../../../lib/friendly-error';
 
 type Astrologer = {
   id: string;
@@ -90,7 +91,7 @@ function BookContent() {
           else setFetchError('Astrologer not found.');
         }
       } catch (err) {
-        if (!cancelled) setFetchError(err instanceof Error ? err.message : 'Could not load astrologer.');
+        if (!cancelled) setFetchError(userFacingMessage(err, 'Could not load astrologer.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -127,14 +128,10 @@ function BookContent() {
         // used to be bookable, so a devotee could be charged for a consultation
         // with someone who does not exist. A stale link to a fixture profile
         // lands here; show the API's own sentence rather than a raw JSON dump.
-        let message = `Booking failed (${res.status}) ${txt.slice(0, 160)}`;
-        try {
-          const parsed = JSON.parse(txt) as { error?: string };
-          if (parsed?.error) message = parsed.error;
-        } catch {
-          /* not JSON — keep the raw fallback */
-        }
-        throw new Error(message);
+        throw new UserFacingError(
+          serverErrorText(txt, 'We could not book this consultation. Please try again.'),
+          res.status,
+        );
       }
       const order = (await res.json()) as {
         consultationId: string;
@@ -162,7 +159,10 @@ function BookContent() {
         });
         if (!verifyRes.ok) {
           const txt = await verifyRes.text().catch(() => '');
-          throw new Error(`Demo verify failed (${verifyRes.status}) ${txt.slice(0, 160)}`);
+          throw new UserFacingError(
+            serverErrorText(txt, 'We could not confirm your payment. If you were charged, contact support@darshya.online.'),
+            verifyRes.status,
+          );
         }
         router.push(`/consultation/${order.consultationId}/success`);
         return;
@@ -170,8 +170,8 @@ function BookContent() {
 
       await loadRazorpayScript();
       const Razorpay = (window as unknown as { Razorpay?: new (opts: Record<string, unknown>) => { open: () => void } }).Razorpay;
-      if (!Razorpay) throw new Error('Razorpay checkout failed to load');
-      if (!order.razorpayKeyId) throw new Error('Payment gateway not configured');
+      if (!Razorpay) throw new UserFacingError('The payment window could not load. Check your connection and try again.');
+      if (!order.razorpayKeyId) throw new UserFacingError('Payments are not available right now. Please try again later.');
 
       await new Promise<void>((resolve, reject) => {
         const rzp = new Razorpay({
@@ -210,7 +210,10 @@ function BookContent() {
               });
               if (!verifyRes.ok) {
                 const txt = await verifyRes.text().catch(() => '');
-                throw new Error(`Verify failed (${verifyRes.status}) ${txt.slice(0, 160)}`);
+                throw new UserFacingError(
+                  serverErrorText(txt, 'We could not confirm your payment. If you were charged, contact support@darshya.online.'),
+                  verifyRes.status,
+                );
               }
               router.push(`/consultation/${order.consultationId}/success`);
               resolve();
@@ -232,7 +235,7 @@ function BookContent() {
             : 'Could not reach Darshya to start the booking. Nothing was charged — check your connection and try again.',
         );
       } else {
-        setPlaceError(err instanceof Error ? err.message : 'Could not start consultation booking');
+        setPlaceError(userFacingMessage(err, 'Could not start consultation booking'));
       }
     } finally {
       setPlacing(false);

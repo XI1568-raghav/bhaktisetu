@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 interface WaitlistStats {
   total: number;
@@ -23,7 +24,7 @@ async function authFetch<T>(token: string | undefined, path: string): Promise<T>
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as T;
 }
 
@@ -44,7 +45,7 @@ export default function AdminWaitlistPage() {
         const s = await authFetch<WaitlistStats>(token, '/admin/waitlist/stats');
         if (!cancelled) setStats(s);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load waitlist stats');
+        if (!cancelled) setError(userFacingMessage(err, 'Failed to load waitlist stats'));
       } finally {
         if (!cancelled) setLoading(false);
       }

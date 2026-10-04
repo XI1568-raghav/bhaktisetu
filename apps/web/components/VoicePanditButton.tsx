@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mic, Square, Loader2, Volume2 } from 'lucide-react';
+import { userFacingMessage } from '../lib/friendly-error';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
 
@@ -89,7 +90,7 @@ export default function VoicePanditButton({ language = 'en' }: { language?: 'en'
       setStatus('recording');
       fireAnalytics('voice_pandit_session_started', { language });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'mic permission denied';
+      const msg = userFacingMessage(e, 'Microphone access was blocked. Allow the microphone in your browser settings and try again.');
       setError(msg);
       setStatus('error');
       fireAnalytics('voice_pandit_session_error', { stage: 'mic', message: msg });
@@ -150,7 +151,7 @@ export default function VoicePanditButton({ language = 'en' }: { language?: 'en'
         setStatus('idle');
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'request failed';
+      const msg = userFacingMessage(e, 'We could not reach the pandit right now. Please try again.');
       setError(msg);
       setStatus('error');
       fireAnalytics('voice_pandit_session_error', { stage: 'upload', message: msg });

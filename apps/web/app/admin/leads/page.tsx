@@ -87,7 +87,7 @@ async function authFetch<T>(token: string | undefined, path: string, init?: Requ
       ...(init?.headers ?? {}),
     },
   });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as T;
 }
 
@@ -257,7 +257,7 @@ export default function AdminLeadsPage() {
     } catch (err) {
       setReauth(false);
       setError(
-        `That could not be read as JSON: ${err instanceof Error ? err.message : 'invalid input'}`,
+        'That could not be read as JSON. Check the pasted text and try again.',
       );
       setImportBusy(false);
       return;

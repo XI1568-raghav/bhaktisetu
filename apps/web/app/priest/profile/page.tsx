@@ -137,9 +137,7 @@ function PriestProfilePageContent() {
  setLoadError(
  err instanceof TypeError
  ? 'Could not reach Darshya. Check your connection and try again.'
- : err instanceof Error && err.message
- ? err.message
- : 'Could not load your profile. Please try again.',
+ : userFacingMessage(err, 'Could not load your profile. Please try again.'),
  );
  } finally {
  setLoading(false);

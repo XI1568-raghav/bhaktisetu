@@ -34,6 +34,7 @@ import { listCommissions, type Commission } from '../../../lib/commission-api';
 import { listPlans, type SubscriptionPlan } from '../../../lib/subscription-api';
 import { fetchAllAdminUsers, type AdminUserRecord } from '../users/users-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 /**
  * The DEFAULT platform take: `DEFAULT_PRIEST_SHARE = 0.8` in
@@ -148,7 +149,7 @@ function AdminSettingsContent() {
       } catch (err) {
         if (!cancelled) {
           setLedger([]);
-          setLedgerError(err instanceof Error ? err.message : 'Could not load the commission ledger.');
+          setLedgerError(userFacingMessage(err, 'Could not load the commission ledger.'));
         }
       } finally {
         if (!cancelled) setLedgerLoading(false);
@@ -162,7 +163,7 @@ function AdminSettingsContent() {
       } catch (err) {
         if (!cancelled) {
           setPlans([]);
-          setPlansError(err instanceof Error ? err.message : 'Could not load subscription plans.');
+          setPlansError(userFacingMessage(err, 'Could not load subscription plans.'));
         }
       } finally {
         if (!cancelled) setPlansLoading(false);
@@ -177,7 +178,7 @@ function AdminSettingsContent() {
       } catch (err) {
         if (!cancelled) {
           setAdmins([]);
-          setAdminsError(err instanceof Error ? err.message : 'Could not load admin accounts.');
+          setAdminsError(userFacingMessage(err, 'Could not load admin accounts.'));
         }
       } finally {
         if (!cancelled) setAdminsLoading(false);

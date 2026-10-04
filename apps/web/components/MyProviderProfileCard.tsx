@@ -16,6 +16,7 @@ import {
  // sending her to sign in again returns her to the same refusal.
  loadErrorIsReauth,
 } from '../lib/api-config';
+import { userFacingMessage } from '../lib/friendly-error';
 
 interface Props {
  // Backend MarketplaceRole enum string. The dashboard hosting this card
@@ -112,7 +113,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  if (!cancelled) {
  setLoadFailed(loadErrorMessage(err));
  setLoadReauth(loadErrorIsReauth(err));
- setError(err instanceof Error ? err.message : 'Failed to load');
+ setError(userFacingMessage(err, 'Failed to load'));
  }
  } finally {
  if (!cancelled) setLoading(false);

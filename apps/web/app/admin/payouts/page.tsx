@@ -41,6 +41,7 @@ import {
   type PayoutRequestStatus,
 } from '../revenue/payout-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError } from '../../../lib/friendly-error';
 
 const roleBadgeColors: Record<string, string> = {
   PANDIT: 'bg-saffron-50 text-saffron-700',
@@ -135,7 +136,7 @@ export default function AdminPayoutsPage() {
       } catch (err) {
         if (!cancelled) {
           setRequests([]);
-          setQueueError(err instanceof Error ? err.message : 'Could not load the payout queue.');
+          setQueueError(userFacingMessage(err, 'Could not load the payout queue.'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -159,7 +160,7 @@ export default function AdminPayoutsPage() {
       } catch (err) {
         if (!cancelled) {
           setAccrual(null);
-          setAccrualError(err instanceof Error ? err.message : 'Could not load provider balances.');
+          setAccrualError(userFacingMessage(err, 'Could not load provider balances.'));
         }
       }
     })();
@@ -202,7 +203,7 @@ export default function AdminPayoutsPage() {
       setRequests(refreshed);
       const still = refreshed.find((r) => r.id === id);
       if (still && OPEN_STATUSES.includes(still.status)) {
-        throw new Error(
+        throw new UserFacingError(
           `The server accepted the decision, but this request is still pending in the queue. ` +
             'Do not act on it again — reconcile the ledger first.',
         );
@@ -244,7 +245,7 @@ export default function AdminPayoutsPage() {
         mode === 'pay' ? { reference: ref } : { failureReason: why },
       );
       if (result.status !== expected) {
-        throw new Error(
+        throw new UserFacingError(
           `The request was left in "${result.status}" status, so nothing was ${
             mode === 'pay' ? 'marked paid' : 'released'
           }. Check the queue before acting again.`,
@@ -265,7 +266,7 @@ export default function AdminPayoutsPage() {
       setReference('');
       setReason('');
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not process this payout request.');
+      setActionError(userFacingMessage(err, 'Could not process this payout request.'));
     } finally {
       inFlight.current = false;
       setSubmitting(false);

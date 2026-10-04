@@ -28,6 +28,7 @@ import {
 } from './payout-api';
 import { listCommissions, type Commission } from '../../../lib/commission-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError } from '../../../lib/friendly-error';
 
 const roleBadgeColors: Record<string, string> = {
  PANDIT: 'bg-saffron-50 text-saffron-700',
@@ -132,7 +133,7 @@ export default function AdminRevenuePage() {
         setRevenue(rev);
         setDashboard(dash);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load revenue');
+        if (!cancelled) setError(userFacingMessage(err, 'Failed to load revenue'));
         if (!cancelled) setLoading(false);
         return;
       }
@@ -152,9 +153,7 @@ export default function AdminRevenuePage() {
       } else {
         setPayoutRequests([]);
         setQueueError(
-          queueResult.reason instanceof Error
-            ? queueResult.reason.message
-            : 'Could not load the payout queue.',
+          userFacingMessage(queueResult.reason, 'Could not load the payout queue.'),
         );
       }
 
@@ -163,9 +162,7 @@ export default function AdminRevenuePage() {
       } else {
         setAccrual(null);
         setAccrualError(
-          accrualResult.reason instanceof Error
-            ? accrualResult.reason.message
-            : 'Could not load provider balances.',
+          userFacingMessage(accrualResult.reason, 'Could not load provider balances.'),
         );
       }
 
@@ -174,9 +171,7 @@ export default function AdminRevenuePage() {
       } else {
         setLedger([]);
         setLedgerError(
-          ledgerResult.reason instanceof Error
-            ? ledgerResult.reason.message
-            : 'Could not load the commission ledger.',
+          userFacingMessage(ledgerResult.reason, 'Could not load the commission ledger.'),
         );
       }
 
@@ -228,7 +223,7 @@ export default function AdminRevenuePage() {
     try {
       const result = await completePayoutRequest(token, payTarget.id, ref);
       if (result.status !== 'completed') {
-        throw new Error(
+        throw new UserFacingError(
           `The payout was left in "${result.status}" status, so nothing has been marked paid. ` +
             'Check the payout queue before transferring again.',
         );
@@ -244,7 +239,7 @@ export default function AdminRevenuePage() {
       if (refreshed) {
         setPayoutRequests(refreshed);
         if (refreshed.some((r) => r.id === payTarget.id)) {
-          throw new Error(
+          throw new UserFacingError(
             'The server reported this payout complete, but it is still pending in the queue. ' +
               'Do not transfer again — reconcile the ledger first.',
           );
@@ -258,7 +253,7 @@ export default function AdminRevenuePage() {
       setPayTarget(null);
       setReference('');
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not process this payout.');
+      setActionError(userFacingMessage(err, 'Could not process this payout.'));
     } finally {
       inFlight.current = false;
       setSubmitting(false);

@@ -6,6 +6,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 interface OutreachStats {
   daily: Array<{ date: string; sent: number; replied: number; bounced: number }>;
@@ -30,7 +31,7 @@ async function authFetch<T>(token: string | undefined, path: string, init?: Requ
       ...(init?.headers ?? {}),
     },
   });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as T;
 }
 
@@ -59,7 +60,7 @@ export default function AdminOutreachPage() {
         setOutreach(a);
         setLeads(b);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load stats');
+        if (!cancelled) setError(userFacingMessage(err, 'Failed to load stats'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,7 +83,7 @@ export default function AdminOutreachPage() {
       const a = await authFetch<OutreachStats>(token, '/admin/outreach/stats');
       setOutreach(a);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Run failed');
+      setError(userFacingMessage(err, 'Run failed'));
     } finally {
       setRunning(false);
     }

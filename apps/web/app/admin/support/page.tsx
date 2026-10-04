@@ -33,6 +33,7 @@ import {
  timeAgo,
 } from '../../../components/support/badges';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 export default function AdminSupportPage() {
  const { session } = useAuth();
@@ -53,7 +54,7 @@ export default function AdminSupportPage() {
  } catch (err) {
  if (!cancelled) {
  setTickets(SAMPLE_ADMIN_TICKETS);
- setError(err instanceof Error ? err.message : 'Failed to load tickets');
+ setError(userFacingMessage(err, 'Failed to load tickets'));
  }
  } finally {
  if (!cancelled) setLoading(false);

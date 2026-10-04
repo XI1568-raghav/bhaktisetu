@@ -18,6 +18,7 @@ import { useAuth } from '../lib/auth-context';
 import { API_BASE_URL } from '../lib/api-config';
 import { COMPANY } from '../lib/company';
 import { buttonClass } from '../components/ui/button-recipe';
+import { userFacingMessage } from '../lib/friendly-error';
 
 /**
  * COM-02 (prod sweep 2026-08-12): this form asserted Section 80G eligibility in
@@ -365,7 +366,7 @@ export default function DonationForm({
       });
       rzp.open();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      const msg = userFacingMessage(err, 'Something went wrong. Please try again.');
       setTopError(msg);
       setSubmitting(false);
     }

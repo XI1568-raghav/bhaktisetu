@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api-config';
+import { userFacingMessage } from '../../lib/friendly-error';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -129,7 +130,7 @@ export function GiftPujaForm() {
       setReferenceId('GIFT-MAILTO');
       setStatus('success');
     } catch (e: unknown) {
-      setErr((e as Error)?.message ?? 'Could not submit. Please email gift@darshya.online directly.');
+      setErr(userFacingMessage(e, 'Could not submit. Please email gift@darshya.online directly.'));
       setStatus('error');
     }
   };

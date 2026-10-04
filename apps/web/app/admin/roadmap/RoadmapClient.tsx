@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import OrchestratorProgress from './OrchestratorProgress';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { formatDateTime } from '../../../lib/format-locale';
@@ -78,7 +79,7 @@ export default function RoadmapClient() {
           headers: { authorization: `Bearer ${token}` },
         });
         if (!r.ok) {
-          throw new Error(`HTTP ${r.status} ${r.statusText}`);
+          throw new Error(`HTTP ${r.status}`);
         }
         const json = (await r.json()) as RoadmapData;
         if (!cancelled) {
@@ -86,7 +87,7 @@ export default function RoadmapClient() {
           setErr(null);
         }
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : String(e));
+        if (!cancelled) setErr(userFacingMessage(e, 'Could not load the roadmap.'));
       } finally {
         if (!cancelled) setLoading(false);
       }

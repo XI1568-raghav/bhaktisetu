@@ -37,6 +37,7 @@ import { formatClassPrice, formatClassWhen, type WellnessClass } from '../Wellne
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { userFacingMessage, UserFacingError, serverErrorMessage } from '../../../../lib/friendly-error';
 type ClassDetail = WellnessClass & { roomUrl?: string | null };
 
 let razorpayScriptPromise: Promise<void> | null = null;
@@ -72,7 +73,7 @@ function loadRazorpayScript(): Promise<void> {
 async function messageFrom(res: Response, fallback: string): Promise<string> {
   try {
     const body = (await res.json()) as { error?: string; message?: string };
-    return body?.error || body?.message || fallback;
+    return serverErrorMessage(body, fallback);
   } catch {
     return fallback;
   }
@@ -105,7 +106,7 @@ export default function ClassDetailClient() {
       credentials: 'include',
       cache: 'no-store',
     });
-    if (!res.ok) throw new Error(await messageFrom(res, `Class fetch failed (${res.status})`));
+    if (!res.ok) throw new UserFacingError(await messageFrom(res, 'This class could not be loaded.'));
     const json = (await res.json()) as { data?: ClassDetail };
     return json.data ?? null;
   }, [sessionId, authHeaders]);
@@ -120,7 +121,7 @@ export default function ClassDetailClient() {
         else setLoadError('This class could not be found.');
       } catch (err) {
         if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : 'This class could not be loaded.');
+          setLoadError(userFacingMessage(err, 'This class could not be loaded.'));
         }
       }
     })();
@@ -156,7 +157,7 @@ export default function ClassDetailClient() {
       }
       if (!res.ok) {
         // 409 full / cancelled / already enrolled, 403 wrong role.
-        throw new Error(await messageFrom(res, `Enrolment failed (${res.status})`));
+        throw new UserFacingError(await messageFrom(res, 'Could not complete enrolment.'));
       }
       const order = ((await res.json()) as {
         data?: {
@@ -169,7 +170,7 @@ export default function ClassDetailClient() {
           isDemoPayment?: boolean;
         };
       }).data;
-      if (!order?.enrollmentId) throw new Error('Enrolment failed — no enrolment was created.');
+      if (!order?.enrollmentId) throw new UserFacingError('Enrolment failed — no enrolment was created.');
 
       // Free satsang: the API already returns the enrolment as PAID.
       if (order.free) {
@@ -193,7 +194,7 @@ export default function ClassDetailClient() {
           },
         );
         if (!verifyRes.ok) {
-          throw new Error(await messageFrom(verifyRes, `Payment verification failed (${verifyRes.status})`));
+          throw new UserFacingError(await messageFrom(verifyRes, 'We could not confirm your payment. If you were charged, contact support@darshya.online.'));
         }
         setEnrolled(true);
         setDetail(await load());
@@ -206,8 +207,8 @@ export default function ClassDetailClient() {
           Razorpay?: new (opts: Record<string, unknown>) => { open: () => void };
         }
       ).Razorpay;
-      if (!Razorpay) throw new Error('Razorpay checkout failed to load');
-      if (!order.keyId) throw new Error('Payment gateway not configured');
+      if (!Razorpay) throw new UserFacingError('The payment window could not load. Check your connection and try again.');
+      if (!order.keyId) throw new UserFacingError('Payments are not available right now. Please try again later.');
 
       await new Promise<void>((resolve, reject) => {
         const rzp = new Razorpay({
@@ -240,8 +241,8 @@ export default function ClassDetailClient() {
                 },
               );
               if (!verifyRes.ok) {
-                throw new Error(
-                  await messageFrom(verifyRes, `Payment verification failed (${verifyRes.status})`),
+                throw new UserFacingError(
+                  await messageFrom(verifyRes, 'We could not confirm your payment. If you were charged, contact support@darshya.online.'),
                 );
               }
               setEnrolled(true);
@@ -255,7 +256,7 @@ export default function ClassDetailClient() {
         rzp.open();
       });
     } catch (err) {
-      setEnrolError(err instanceof Error ? err.message : 'Could not complete enrolment.');
+      setEnrolError(userFacingMessage(err, 'Could not complete enrolment.'));
     } finally {
       setEnrolling(false);
     }

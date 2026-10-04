@@ -34,6 +34,7 @@ import {
   type SubscriptionTotals,
 } from './subscriptions-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 const STATUSES = [
   { id: 'all', label: 'All' },
@@ -124,9 +125,7 @@ function AdminSubscriptionsContent() {
       } else {
         setSubs([]);
         setListError(
-          listResult.reason instanceof Error
-            ? listResult.reason.message
-            : 'Failed to load subscriptions',
+          userFacingMessage(listResult.reason, 'Failed to load subscriptions'),
         );
       }
 
@@ -135,9 +134,7 @@ function AdminSubscriptionsContent() {
       } else {
         setTotals(null);
         setTotalsError(
-          totalsResult.reason instanceof Error
-            ? totalsResult.reason.message
-            : 'Failed to load subscription totals',
+          userFacingMessage(totalsResult.reason, 'Failed to load subscription totals'),
         );
       }
 

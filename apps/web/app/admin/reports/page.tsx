@@ -26,6 +26,7 @@ import {
 import { fetchAllUsersForExport } from './export-users';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
 
 type ExportType = 'users' | 'revenue' | 'all';
 
@@ -84,7 +85,7 @@ export default function AdminReportsPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setReportsError(err instanceof Error ? err.message : 'Failed to load reports');
+          setReportsError(userFacingMessage(err, 'Failed to load reports'));
         }
       })
       .finally(() => {
@@ -190,7 +191,7 @@ export default function AdminReportsPage() {
       // throws rather than handing back what it managed to read, so nothing is
       // downloaded here — say so instead of leaving a stale success note up.
       setExportNote(null);
-      setExportError(err instanceof Error ? err.message : 'Export failed');
+      setExportError(userFacingMessage(err, 'Export failed'));
     } finally {
       setExportLoading(null);
     }

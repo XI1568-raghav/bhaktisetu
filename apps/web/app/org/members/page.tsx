@@ -6,6 +6,7 @@ import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { useAuth } from "../../../lib/auth-context";
 import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
+import { serverErrorMessage } from '../../../lib/friendly-error';
 
 interface Member {
   id: string;
@@ -98,7 +99,7 @@ function OrgMembersContent() {
       setEmail("");
       setMsg(`Invite sent to ${email}.`);
     } else {
-      setMsg(j.error || "Failed");
+      setMsg(serverErrorMessage(j, "That did not work. Please try again."));
     }
   }
 

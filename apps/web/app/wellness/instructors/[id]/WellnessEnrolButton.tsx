@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { API_BASE_URL } from '../../../../lib/api-config';
 
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { serverErrorMessage } from '../../../../lib/friendly-error';
 // Honest-fallback enrol CTA — captures intent + email via /api/v1/waitlist
 // with a deterministic source tag (`wellness-enrol-{instructorId}-{plan}`).
 // Real Razorpay enrol flow lives in wellness-sessions.ts but requires a
@@ -69,7 +70,7 @@ export default function WellnessEnrolButton({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.message || 'Could not save your interest. Please try again.');
+        setError(serverErrorMessage(json, 'Could not save your interest. Please try again.'));
       } else {
         setDone(true);
         import('../../../../lib/posthog')
