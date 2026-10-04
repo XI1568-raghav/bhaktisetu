@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useCart, type CartProduct } from '../CartContext';
 import { PRODUCTS, type Product } from '../../lib/products';
+import { isOrderableProductId, BROWSE_ONLY_REASON_LONG } from '../../lib/store-buyability';
 import { getProductImage, remoteSrcSet, IMG_W } from '../../lib/images';
 import { H1 } from '../../components/ui/heading-recipe';
 
@@ -61,6 +62,20 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
 
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+
+  /**
+   * COM-01: can this page's product actually be bought?
+   *
+   * `POST /api/v1/store/orders` resolves line items against `StoreProduct` by
+   * uuid. The 24 rows in lib/products.ts carry `prod_NNN` ids and have no row
+   * in that table — no seller stocks them (prod: 0 store_products, 0
+   * store_profiles, 0 store_orders, verified 2026-09-08) — so this page's
+   * "Add to Cart" and "Buy Now" led a devotee through the whole checkout to a
+   * bare "Order failed (400)". Seeding them as real rows would mean taking
+   * money for goods nobody can ship, so they are browse-only and say so here,
+   * at the control, instead of failing at the payment step.
+   */
+  const orderable = isOrderableProductId(product.id);
 
   function handleAddToCart() {
     const cartProduct: CartProduct = {
@@ -272,7 +287,30 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Buttons.
+
+                  COM-01: both CTAs are inert for a browse-only product — see
+                  the block above. "Buy Now" in particular went straight to
+                  /store/checkout, so it walked a devotee through address and
+                  payment selection before the API refused the basket. */}
+              {!orderable ? (
+                <div
+                  className="rounded-xl border border-surface-200 bg-surface-50 p-4"
+                  data-testid="pdp-browse-only"
+                >
+                  <p className="text-sm font-semibold text-surface-700">
+                    Not available to order
+                  </p>
+                  <p className="mt-1 text-sm text-surface-500">{BROWSE_ONLY_REASON_LONG}</p>
+                  <Link
+                    href="/store/products/live"
+                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-saffron-600 hover:text-saffron-700"
+                  >
+                    See what sellers have listed
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ) : (
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -305,6 +343,7 @@ export default function ProductDetail({ product }: { product: DetailProduct }) {
                   Buy Now
                 </button>
               </div>
+              )}
             </div>
 
             {/* Trust badges */}

@@ -35,10 +35,10 @@ reject and add 1-3 days to the timeline.
 
 | Page | URL | Must contain |
 |---|---|---|
-| Privacy Policy | https://darshya.online/legal/privacy | Data collected, retention, third-party shares (Razorpay, Resend, Supabase, Cloudflare), user rights, contact email |
-| Terms of Service | https://darshya.online/legal/terms | Service description, pricing, user obligations, dispute resolution, governing law (India) |
-| Refund / Cancellation | https://darshya.online/legal/refund | 24-hour cancellation window, refund timeline (5-7 business days), no-refund cases (puja already performed) |
-| Shipping / Delivery | https://darshya.online/legal/shipping | Digital delivery (video proof) timeline, prasad shipping window, courier partners |
+| Privacy Policy | https://darshya.online/privacy | Data collected, retention, third-party shares (Razorpay, Resend, Supabase, Cloudflare), user rights, contact email |
+| Terms of Service | https://darshya.online/terms | Service description, pricing, user obligations, dispute resolution, governing law (India) |
+| Refund / Cancellation | https://darshya.online/refund | 24-hour cancellation window, refund timeline (5-7 business days), no-refund cases (puja already performed) |
+| Shipping / Delivery | https://darshya.online/shipping | Digital delivery (video proof) timeline, prasad shipping window, courier partners |
 | Contact Us | https://darshya.online/contact | Physical address, email, phone (Razorpay sometimes opens this too) |
 
 **Block live activation until Layer L is shipped.** Do not proceed.

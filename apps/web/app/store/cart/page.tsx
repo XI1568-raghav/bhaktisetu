@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../../../components/CartContext';
 import { useAuth } from '../../../lib/auth-context';
+import { isOrderableProductId, BROWSE_ONLY_REASON } from '../../../lib/store-buyability';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -110,6 +111,15 @@ export default function CartPage() {
  {item.product.title}
  </Link>
  <p className="text-xs text-surface-400 mt-0.5">{item.product.category}</p>
+ {/* COM-01: a basket saved to localStorage (poojly_cart) before the
+     browse-only guard shipped can still hold a seed product that
+     POST /store/orders refuses by uuid lookup. Name it here, where
+     the Remove button is, rather than letting it fail at payment. */}
+ {!isOrderableProductId(item.product.id) && (
+ <p className="text-xs text-amber-700 mt-1" data-testid="cart-browse-only">
+ {BROWSE_ONLY_REASON} Remove it to check out.
+ </p>
+ )}
  </div>
  <button
  onClick={() => removeItem(item.id)}

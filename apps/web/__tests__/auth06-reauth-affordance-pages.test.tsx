@@ -56,8 +56,22 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(search),
 }));
 
+/**
+ * COM-01: this id used to be `'p1'`.
+ *
+ * /store/checkout now disables Place Order when the basket holds anything
+ * `POST /api/v1/store/orders` cannot resolve — it resolves line items against
+ * `StoreProduct` BY UUID, so a `p1` (or a `prod_015` seed row) never could be
+ * ordered and the button was a promise the API refuses. With a non-uuid here
+ * these two tests could not click Place Order at all, so they would assert
+ * nothing about the 401 path.
+ *
+ * A uuid is a product a seller has actually listed — the only basket in which
+ * "the order 401'd" is a thing that can happen, which is precisely the case
+ * AUTH-06 is about.
+ */
 const CART_PRODUCT = {
-  id: 'p1',
+  id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
   handle: 'rudraksha-mala',
   title: 'Rudraksha Mala',
   price: 999,

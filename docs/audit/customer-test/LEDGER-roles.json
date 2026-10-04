@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T15:54:28.235Z",
+  "generatedAt": "2026-09-09T09:26:55.986Z",
   "api": "https://api.darshya.online/api/v1",
   "findings": [],
   "rows": [
@@ -32,7 +32,7 @@
       "role": "ADMIN",
       "path": "/admin/pending-approvals",
       "status": 200,
-      "bytes": 42,
+      "bytes": 242,
       "snippet": null
     },
     {
@@ -120,7 +120,7 @@
       "role": "STORE_OWNER",
       "path": "/store-admin/products",
       "status": 200,
-      "bytes": 42,
+      "bytes": 46,
       "snippet": null
     },
     {
@@ -128,7 +128,7 @@
       "role": "STORE_OWNER",
       "path": "/store-admin/profile",
       "status": 200,
-      "bytes": 16,
+      "bytes": 370,
       "snippet": null
     },
     {

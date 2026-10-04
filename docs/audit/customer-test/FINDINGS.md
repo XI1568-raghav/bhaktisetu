@@ -1,5 +1,42 @@
 # Customer Test — Findings
 
+## STATUS 2026-09-09 — closed and verified on production
+
+| # | Finding | State |
+|---|---|---|
+| CT-MONEY-1 | `ALLOW_DEMO_PAYMENTS=true` on prod | **CLOSED** — flag deleted (Render API `204`), guard verified firing: `payment-confirm` now answers **403** |
+| CT-SUPPLY-1 | Approved pandit never became bookable | **FIXED + DEPLOYED** (PR #254) |
+| Rate limits | Every per-prefix policy dead | **FIXED + VERIFIED LIVE** — `/admin` 60, `/digest` 10, others on the 100 global |
+| CT-API-1 | Malformed ids 500 (gaushala, cows, admin, store-admin) | **FIXED + DEPLOYED** (PR #255) |
+| CT-CONSENT-1 | Digest opt-out unsigned + irreversible | **FIXED + DEPLOYED** — ⚠️ unsigned links expire **2026-10-21** |
+| astro-portal | `/online` no role gate + 500 on bad input | **FIXED + DEPLOYED** |
+| store-admin | Soft-deleted product resurrectable; lowStock miscount | **FIXED + DEPLOYED** |
+| CT-ADMIN-2 | Uncollected money labelled revenue | **FIXED + DEPLOYED** — split by captured-payment evidence |
+| wellness | Two pages published fabricated supply + dead CTAs | **FIXED + DEPLOYED** |
+| CT-SEO-1 | Soft-404 on 7 dynamic patterns | fixed by a concurrent agent, on main |
+| CT-TRUST-1 | Junk cause on `/donations` under a "verified" badge | **OPEN — owner decision.** Record belongs to a real user; unapproving is moderation, not a code fix |
+| CT-DOC-1 | Razorpay doc points KYC at four 404 URLs | **FIXED 2026-10-04** (uncommitted) — doc now lists `/privacy` `/terms` `/refund` `/shipping`, each re-probed 200 |
+| CT-UI-1 | `, · Temple management dashboard` empty interpolation | **FIXED 2026-10-04** (uncommitted, not deployed) — `ct-ui1-temple-portal-empty-place.test.tsx`, red before the change |
+
+### The money path — exercised end to end against prod, 11/11
+
+Ran with `RAZORPAY_KEY_ID` swapped to the test key, then restored. Live key is back:
+`/payments/config` → `rzp_live_*` re-verified.
+
+- past date **400** · invalid slot **409** · anonymous **401**
+- booking created **201** `BS-20260909-YLZM7`
+- **real Razorpay order minted: `order_TZtAYjsxQf74nr`**
+- **a FORGED signature was REFUSED (400)** — the single most important assertion on this
+  surface: money cannot be confirmed without a valid signature
+- owner sees the booking; another role **403**
+- cancel-quote correct · cancel **200** · double cancel **409**
+
+### Regression check after all seven fixes
+
+Role matrix re-run on prod: **53 x 200 own-surface, 51 x 403 cross-role, 7 x 401 anonymous,
+0 findings.** API 3134/3134 · web 4276/4276.
+
+
 Base: `https://darshya.online` · Deployed commit at test time: web `fc84b155`, API `cd9d0b1a`.
 Phase: deterministic coverage floor complete. Interactive (CTA/form/role) testing pending on blockers.
 
