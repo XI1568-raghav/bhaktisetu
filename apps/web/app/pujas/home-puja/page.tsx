@@ -23,7 +23,7 @@ export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/pujas/home-puja' },
  title: 'Home Puja — Book a Pandit at Your Residence',
  description:
- 'Book verified, Aadhaar-authenticated pandits to perform pujas at your home. Griha Pravesh, Satyanarayan Katha, Navratri, Rudrabhishek, and more. Starting ₹1,100.',
+ 'Book pandits to perform pujas at your home. Griha Pravesh, Satyanarayan Katha, Navratri, Rudrabhishek, and more. Starting ₹1,100.',
 };
 
 const iconMap = {
@@ -65,7 +65,7 @@ export default function HomePujaHubPage() {
  Book a Pandit at Your Home
  </h1>
  <p className="prose-lead mt-5 text-surface-500 max-w-xl leading-relaxed">
- Verified pandits, Aadhaar-authenticated, who conduct pujas at your
+ Pandits who conduct pujas at your
  residence for any occasion — Griha Pravesh, Satyanarayan, Navratri,
  weddings, and life events. They arrive with all samagri, prasadam,
  and centuries of tradition.
@@ -90,7 +90,7 @@ export default function HomePujaHubPage() {
  {/* ── Trust callout card ───────────────────────────────────── */}
  <div className="relative bg-white rounded-2xl border border-[var(--color-border)] shadow-warm-sm p-6 md:p-8">
  <div className="absolute -top-3 -right-3 bg-saffron-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
- Verified pandits & video proof
+ Pandits & video proof
  </div>
  <h3 className="text-xl font-bold text-surface-800 mb-5">Why Darshya Home Puja</h3>
  <ul className="space-y-4">
@@ -99,8 +99,8 @@ export default function HomePujaHubPage() {
  <Shield className="w-4.5 h-4.5 text-tulsi-green" />
  </div>
  <div>
- <div className="font-semibold text-surface-800 text-sm">Aadhaar Verified</div>
- <div className="text-xs text-surface-500">Every pandit identity-checked and background-verified</div>
+ <div className="font-semibold text-surface-800 text-sm">Aadhaar KYC before payout</div>
+ <div className="text-xs text-surface-500">A pandit is paid only once Aadhaar-based KYC is on file</div>
  </div>
  </li>
  <li className="flex gap-3">
@@ -214,7 +214,7 @@ export default function HomePujaHubPage() {
  {
  n: '02',
  title: 'Select date & pandit',
- desc: 'Pick an auspicious muhurat and browse verified pandits. See ratings, languages, and pricing.',
+ desc: 'Pick an auspicious muhurat and browse pandits. See ratings, languages, and pricing.',
  icon: Calendar,
  color: 'var(--color-vermillion-500)',
  },

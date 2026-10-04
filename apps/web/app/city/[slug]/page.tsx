@@ -27,8 +27,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const c = getCity(slug);
   if (!c) return { title: 'City' };
   return {
-    title: `Pujas and temples in ${c.name} — verified pandits, video proof`,
-    description: `Book online pujas in ${c.name}, ${c.state}. Famous temples: ${c.famousTemples.slice(0, 3).join(', ')}. ${c.popularPujas.length} pujas, verified pandits, video proof.`,
+    title: `Pujas and temples in ${c.name} — pandits, video proof`,
+    description: `Book online pujas in ${c.name}, ${c.state}. Famous temples: ${c.famousTemples.slice(0, 3).join(', ')}. ${c.popularPujas.length} pujas, pandits, video proof.`,
     alternates: { canonical: `https://darshya.online/city/${c.slug}` },
     openGraph: {
       title: `${c.name} — pujas, temples, online booking`,

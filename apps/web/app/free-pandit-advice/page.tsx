@@ -13,13 +13,13 @@ const BASE_URL = 'https://darshya.online';
 const TOTAL = FREE_PANDIT_TOPICS.length;
 
 export const metadata: Metadata = {
- title: `Free Pandit Kundli Astrology Advice — ${TOTAL} Topics Answered by Verified Pandits`,
+ title: `Free Pandit Kundli Astrology Advice — ${TOTAL} Topics Answered by Pandits`,
  description: `Free pandit kundli astrology advice across ${TOTAL} life areas — marriage, career, health, finance, education, manglik dosh, kundli milan and more. Authentic Vedic guidance, no credit card required.`,
  alternates: { canonical: `${BASE_URL}/free-pandit-advice` },
  openGraph: {
   images: ['/images/golden-temple-og.jpg'],
   title: 'Free Pandit Kundli Astrology Advice — Darshya',
-  description: `${TOTAL} curated free advice topics from verified Vedic pandits — marriage, career, health, dosh remedies and more.`,
+  description: `${TOTAL} curated free advice topics from Vedic pandits — marriage, career, health, dosh remedies and more.`,
   url: `${BASE_URL}/free-pandit-advice`,
   type: 'website',
  },
@@ -52,7 +52,7 @@ export default function FreePanditAdviceHub() {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
   name: 'Free Pandit Kundli Astrology Advice',
-  description: `Index of ${TOTAL} free advice topics from verified Vedic pandits — covering marriage, career, health, finance, education, dosh remedies and more.`,
+  description: `Index of ${TOTAL} free advice topics from Vedic pandits — covering marriage, career, health, finance, education, dosh remedies and more.`,
   url: `${BASE_URL}/free-pandit-advice`,
  };
 
@@ -67,10 +67,10 @@ export default function FreePanditAdviceHub() {
    </nav>
 
    <header className="mb-10 max-w-3xl">
-    <p className="text-xs uppercase tracking-wider text-saffron-600">{TOTAL} topics · 100% free · verified pandits</p>
+    <p className="text-xs uppercase tracking-wider text-saffron-600">{TOTAL} topics · 100% free · pandits</p>
     <h1 className={`${H1.catalogue} mt-1`}>Free Pandit Kundli Astrology Advice</h1>
     <p className="mt-3 text-base text-gray-700">
-     Authentic Vedic guidance from verified pandits — no credit card, no signup wall.
+     Authentic Vedic guidance from pandits — no credit card, no signup wall.
      Each topic below answers the most common questions Indians ask before paying for a
      consultation. Read first; book a live session only if you need a tailored remedy.
     </p>

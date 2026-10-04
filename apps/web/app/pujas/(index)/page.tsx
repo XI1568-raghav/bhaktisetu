@@ -452,7 +452,7 @@ export default async function PujasPage({
  <div className="mt-6 flex items-center gap-4 text-xs text-surface-600">
  <span className="flex items-center gap-1.5">
  <Shield className="w-3.5 h-3.5 text-tulsi-green" />
- Aadhaar verified
+ Pandit paid after Aadhaar KYC
  </span>
  <span className="flex items-center gap-1.5">
  <Sparkles className="w-3.5 h-3.5 text-saffron-600" />

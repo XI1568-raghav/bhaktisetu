@@ -11,12 +11,12 @@ const BASE_URL = 'https://darshya.online';
 
 export const metadata: Metadata = {
  title: 'Kundli Matching Online — Free Ashtakoot 36-Point Guna Milan + Pandit',
- description: 'Free Vedic kundli matching for marriage. Ashtakoot 36-point Guna Milan across 8 kootas (Varna, Vashya, Tara, Yoni, Graha, Gana, Bhakoot, Nadi). Manglik dosh check. Plus verified pandits for full reading.',
+ description: 'Free Vedic kundli matching for marriage. Ashtakoot 36-point Guna Milan across 8 kootas (Varna, Vashya, Tara, Yoni, Graha, Gana, Bhakoot, Nadi). Manglik dosh check. Plus pandits for full reading.',
  alternates: { canonical: `${BASE_URL}/matchmaking` },
  openGraph: {
   images: ['/images/golden-temple-og.jpg'],
   title: 'Free Kundli Matching — Ashtakoot Guna Milan + Pandit Consult',
-  description: 'Free Vedic horoscope matching for marriage. 36-point Ashtakoot calculator + verified pandit consults.',
+  description: 'Free Vedic horoscope matching for marriage. 36-point Ashtakoot calculator + pandit consults.',
   url: `${BASE_URL}/matchmaking`,
   type: 'website',
  },
@@ -102,7 +102,7 @@ export default function MatchmakingPage() {
    </nav>
 
    <header className="mb-10 text-center">
-    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool + verified pandits</p>
+    <p className="text-xs uppercase tracking-wider text-saffron-600">Free Vedic tool + pandits</p>
     <h1 className={`${H1.marketing} mt-2`}>Kundli Matching for Marriage</h1>
     <p className="mt-3 text-saffron-700">गुण मिलान · Ashtakoot Guna Milan</p>
     <p className="mx-auto mt-5 max-w-2xl text-base text-gray-700">

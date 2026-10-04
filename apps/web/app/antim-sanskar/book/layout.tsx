@@ -21,7 +21,7 @@ import type { ReactNode } from 'react';
 export const metadata: Metadata = {
   title: 'Book Antim Sanskar & Asthi Visarjan',
   description:
-    'Arrange antyeshti, asthi visarjan at the Ganga, Godavari, Yamuna or Narmada, and shradh rites with a verified pandit. Same-day requests accepted.',
+    'Arrange antyeshti, asthi visarjan at the Ganga, Godavari, Yamuna or Narmada, and shradh rites with a pandit. Same-day requests accepted.',
   robots: { index: false, follow: true },
 };
 

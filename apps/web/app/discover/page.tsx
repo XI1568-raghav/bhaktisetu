@@ -134,7 +134,7 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Why Darshya', href: '/why-darshya', description: '14-row honest comparison vs Sri Mandir, Utsav and AstroSage.' },
       { label: 'Kundli Matchmaking', href: '/matchmaking', description: 'Free Ashtakoot 36-point Guna Milan with optional pandit consult.' },
       { label: 'Pujas by City', href: '/city', description: 'Pujas and temples city by city — Varanasi, Mumbai, Tirupati and more.' },
-      { label: 'Free Pandit Advice', href: '/free-pandit-advice', description: 'Kundli and astrology questions answered by verified pandits.' },
+      { label: 'Free Pandit Advice', href: '/free-pandit-advice', description: 'Kundli and astrology questions answered by pandits.' },
     ],
   },
 ];

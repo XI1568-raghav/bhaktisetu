@@ -141,7 +141,7 @@ const founderFaqs = [
   },
   {
     q: 'Are these temples real?',
-    a: 'Yes. Every temple in the catalog is verified by founder before going live — temple board MoU, government registration check (12A/80G), site visit or video call with priest-in-charge.',
+    a: 'Temples are listed by the Darshya team before they go live. We do not yet publish a per-temple registration or site-visit check, so confirm the details with the temple if it matters to you.',
   },
   {
     q: 'What about Canadian tax?',
@@ -232,7 +232,7 @@ export default function CanadaNriLanding() {
             What you get
           </h2>
           <p className="text-surface-600 text-center mb-12 max-w-2xl mx-auto">
-            Live India temple access, video proof, AI pandit, and tax-aware receipts — designed for diaspora reality.
+            Live India temple access, video proof, AI pandit, and {HAS_80G ? 'tax-aware receipts' : 'numbered donation receipts'} — designed for diaspora reality.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {benefits.map((b) => (

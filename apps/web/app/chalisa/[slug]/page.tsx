@@ -189,7 +189,7 @@ export default async function ChalisaPage({ params }: Params) {
           <h2 className="text-2xl font-bold text-surface-900 mb-2">Book a puja for {c.deity}</h2>
           <p className="text-sm text-surface-700 mb-4">
             No puja tied to this chalisa is bookable on Darshya yet. Browse the full catalogue —
-            every listing there has a verified pandit and a confirmed price.
+            every listing there has a pandit and a confirmed price.
           </p>
           <Link href={BROWSE_PUJAS_HREF} className={buttonClass('primary', 'md')}>
             Browse all pujas <ArrowRight className="w-4 h-4" />

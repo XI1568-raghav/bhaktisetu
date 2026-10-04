@@ -150,18 +150,18 @@ const LANE_COPY: Readonly<Record<DetailCtaLane, LaneCopy>> = {
   puja: {
     bookableHeading: (s) => `Book a puja connected to ${s}`,
     bookableBlurb: () =>
-      'Each of these is live on Darshya right now, with a verified pandit and a confirmed price.',
+      'Each of these is live on Darshya right now, with a pandit and a confirmed price.',
     browseHeading: (s) => `Have a puja performed for ${s}`,
     browseBlurb: () =>
       'No ritual named on this page is bookable on Darshya yet. Browse the catalogue — every ' +
-      'listing there has a verified pandit, a confirmed price and video proof of the ceremony.',
+      'listing there has a pandit, a confirmed price and video proof of the ceremony.',
     primary: { label: 'Browse all pujas', href: BROWSE_PUJAS_HREF },
     secondary: { label: 'Ask a pandit first', href: ASK_PANDIT_HREF },
   },
   guidance: {
     bookableHeading: (s) => `Book a puja connected to ${s}`,
     bookableBlurb: () =>
-      'Each of these is live on Darshya right now, with a verified pandit and a confirmed price.',
+      'Each of these is live on Darshya right now, with a pandit and a confirmed price.',
     browseHeading: (s) => `Ask a pandit about ${s}`,
     browseBlurb: () =>
       'This is a subject to study rather than a ritual to book. Put the question to a verified ' +
@@ -172,7 +172,7 @@ const LANE_COPY: Readonly<Record<DetailCtaLane, LaneCopy>> = {
   muhurat: {
     bookableHeading: (s) => `Book a puja for ${s}`,
     bookableBlurb: () =>
-      'Each of these is live on Darshya right now, with a verified pandit and a confirmed price.',
+      'Each of these is live on Darshya right now, with a pandit and a confirmed price.',
     browseHeading: (s) => `Plan something around ${s}`,
     browseBlurb: () =>
       'A pandit can confirm whether this window suits your ceremony and your birth chart before ' +
@@ -183,7 +183,7 @@ const LANE_COPY: Readonly<Record<DetailCtaLane, LaneCopy>> = {
   yatra: {
     bookableHeading: (s) => `Book a puja connected to ${s}`,
     bookableBlurb: () =>
-      'Each of these is live on Darshya right now, with a verified pandit and a confirmed price.',
+      'Each of these is live on Darshya right now, with a pandit and a confirmed price.',
     browseHeading: (s) => `Travel to ${s}`,
     browseBlurb: () =>
       'Darshya runs guided yatra packages with darshan, stay and local pandits arranged. ' +

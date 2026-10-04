@@ -66,7 +66,7 @@ const FEATURES: { title: string; body: string; href: string }[] = [
   },
   {
     title: 'Puja booking with video proof',
-    body: 'Book a verified pandit, get a recording of your sankalp + entire ritual delivered to your inbox. Money back if no proof.',
+    body: 'Book a pandit, get a recording of your sankalp + entire ritual delivered to your inbox. Money back if no proof.',
     href: '/pujas',
   },
   {

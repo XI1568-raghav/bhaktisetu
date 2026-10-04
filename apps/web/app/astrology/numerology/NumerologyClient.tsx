@@ -108,7 +108,7 @@ export default function NumerologyClient() {
      <div className="rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
       <p className="font-serif text-lg text-gray-900">Want a name-tweak or business-name consult?</p>
       <p className="mt-2 text-sm text-gray-700">
-       Self-prescribing name changes is risky. A verified pandit-numerologist will compare these
+       Self-prescribing name changes is risky. A pandit-numerologist will compare these
        numbers with your kundli&rsquo;s graha balance before recommending any spelling tweak.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/become-priest' },
   title: 'Become a Darshya pandit',
   description:
-    'Perform online pujas and ask-pandit consultations, and keep 80% of every booking. Verified pandits only.',
+    'Perform online pujas and ask-pandit consultations, and keep 80% of every booking. Pandits only.',
 };
 
 // PJ-02 (P0, trust). This page carried three claims the product cannot honour.

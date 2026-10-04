@@ -127,7 +127,7 @@ export default function VratIndex() {
         <h2 className="text-xl font-bold text-surface-900 mb-2">Need vrat udyapan or katha pandit?</h2>
         <p className="text-surface-700 text-sm mb-4">
           Many vrats culminate in a udyapan (concluding ceremony) with a pandit reading the katha.
-          Book a verified pandit for in-person or remote katha + havan.
+          Book a pandit for in-person or remote katha + havan.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
