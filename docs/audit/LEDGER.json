@@ -2727,7 +2727,7 @@
   "title": "The h1 is a different thing on every screen: 7 treatments, 18px to 70.4px, two typefaces — and two of the ten screens have no h1 at all",
   "state": "partial",
   "commit": "",
-  "note": "SUBSTANTIALLY CLOSED 2026-09-08; stays partial ONLY because two screens cannot be measured. The finding's \"349 h1 across 45 recipes, not swept\" is an ARTIFACT: measured with comments stripped, 408 non-test h1 across 864 files, 406 already on a named recipe, 2 genuinely hand-rolled. An intermediate estimate of 38 decomposed as 32 where <h1 and H1.<archetype> sit on different LINES (invisible to a per-line grep), 1 using h1Class(), and 3 inside COMMENTS — this repo documents h1 decisions in prose at the call site, so an unstripped scan invents a backlog. The real open half was the OTHER clause: /auth/signup shipped with NO h1 at all (1,198 lines, four h2s, title a span carrying H1.portal's four utilities by hand) — byte-for-byte the shape /auth/login had before its fix. Now H1.portal, computed size unchanged. Two migrations refused on purpose: app/pitch (.pitch-h1 is clamp(48px,8vw,120px); migrating shrinks the investor deck hook by up to 72px) and app/global-error.tsx (renders INSTEAD of the root layout, so globals.css never loads and no class can reach it). RESIDUAL: /priest and /admin both 307 to auth and are LIVE-UNVERIFIED. Source shows one h1 each on H1.portal and no h1 in either layout; the new rule test pins both by name."
+  "note": "[2026-10-04] Triage: closeable on source evidence (the /priest and /admin h1 rule is pinned by test, 35/35). Only a live h1 count behind login remains, which needs an authenticated priest and admin session.\n\nSUBSTANTIALLY CLOSED 2026-09-08; stays partial ONLY because two screens cannot be measured. The finding's \"349 h1 across 45 recipes, not swept\" is an ARTIFACT: measured with comments stripped, 408 non-test h1 across 864 files, 406 already on a named recipe, 2 genuinely hand-rolled. An intermediate estimate of 38 decomposed as 32 where <h1 and H1.<archetype> sit on different LINES (invisible to a per-line grep), 1 using h1Class(), and 3 inside COMMENTS — this repo documents h1 decisions in prose at the call site, so an unstripped scan invents a backlog. The real open half was the OTHER clause: /auth/signup shipped with NO h1 at all (1,198 lines, four h2s, title a span carrying H1.portal's four utilities by hand) — byte-for-byte the shape /auth/login had before its fix. Now H1.portal, computed size unchanged. Two migrations refused on purpose: app/pitch (.pitch-h1 is clamp(48px,8vw,120px); migrating shrinks the investor deck hook by up to 72px) and app/global-error.tsx (renders INSTEAD of the root layout, so globals.css never loads and no class can reach it). RESIDUAL: /priest and /admin both 307 to auth and are LIVE-UNVERIFIED. Source shows one h1 each on H1.portal and no h1 in either layout; the new rule test pins both by name."
  },
  {
   "key": "F196",
@@ -3049,7 +3049,7 @@
   "title": "Auth access token persisted in localStorage (poojly_session/poojly_user) — any XSS yields full account + API takeover as that user",
   "state": "partial",
   "commit": "",
-  "note": "MIGRATION PLAN for the remaining work, in order, none of it in this lane: (1) with the cookie now settable locally, verify end-to-end that authenticateUser's ex"
+  "note": "[2026-10-04] Triage: not a small fix. 99 web files send Bearer from the stored token, 9 touch poojly_session, 21 use credentials:include. The API already sets the httpOnly cookie, so this is the large auth-context migration in the ledger plan.\n\nMIGRATION PLAN for the remaining work, in order, none of it in this lane: (1) with the cookie now settable locally, verify end-to-end that authenticateUser's ex"
  },
  {
   "key": "F219",
@@ -3763,7 +3763,7 @@
   "title": "Product cards ship 5.58 MB of unoptimised hotlinked Wikimedia images, using 19th-century paintings as product photography",
   "state": "partial",
   "commit": "",
-  "note": "LANE plus OWNER. lib/images.ts and next.config.* are both on this wave's do-not-touch list, and the self-host-vs-CDN choice is TASKS.md #203/#204 awaiting the o"
+  "note": "[2026-10-04] Triage: srcSet, width/height, lazy loading, the Wikimedia thumbnail rewrite and the onError fallback (components/RemoteImage.tsx) are in. Open: self-host vs CDN (TASKS #203/#204, touches next.config and lib/images) and real photography. Owner decision.\n\nLANE plus OWNER. lib/images.ts and next.config.* are both on this wave's do-not-touch list, and the self-host-vs-CDN choice is TASKS.md #203/#204 awaiting the o"
  },
  {
   "key": "F270",
@@ -4993,9 +4993,9 @@
   "workflow": "scale-mindset",
   "line": 3509,
   "title": "Raw developer error text is rendered to users; the friendly-error helper exists but is wired into only 2 surfaces",
-  "state": "partial",
-  "commit": "wave-45-final",
-  "note": "apps/web/app is outside this lane. lib/friendly-error.ts already exists and is tested; this is a call-site change on that page plus suppressing the empty-state "
+  "state": "fixed",
+  "commit": "d659e9c1",
+  "note": "[2026-10-04] Web closed in #272: 104 raw-error sites routed through the existing friendly-error helpers; source-scan guard went 196 hits -> 0 (res09-raw-error-sweep.test.tsx) and fake-fetch behaviour tests pin the rest. Left on purpose: admin/roadmap OrchestratorProgress (internal), auth login/signup result.message (auth-context prefers the server sentence).\n\napps/web/app is outside this lane. lib/friendly-error.ts already exists and is tested; this is a call-site change on that page plus suppressing the empty-state "
  },
  {
   "key": "F358",
@@ -5357,9 +5357,9 @@
   "workflow": "scale-mindset",
   "line": 3669,
   "title": "Images ship without width/height and the 404 page weighs 200-260 KB",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-2026-08-15",
-  "note": "BOTH TITLE CLAUSES CLOSED, evidence clause partly closed. Verified on production 2026-09-08: width/height present on / (0 of 8 missing, was 11 of 15), /pujas (0 of 10, was 10 of 10) and /temples/[slug] (0 of 10); the 404 is 116,976 B raw / 18,194 wire against the title's 200 KB floor. The heavy-HTML clause buried in the evidence had got WORSE and is now cut: /aarti 616,628 B with 326 inline <svg> (117,569 B of literal SVG, roughly double in the RSC payload where every quote escapes to four bytes) -> <symbol> sprite plus <use>; /chants 419,824 B and the WORST-compressing page on the site at 66,955 gzip, because its weight is unique prose that does not compress while /aarti's is 300 near-identical icons that gzip to nearly nothing -> bounded in code, since line-clamp is a PAINT instruction and hides bytes already on the wire; /calendar 382,166 B -> description bounded in both places it appears. Guarded structurally by __tests__/perf04-heavy-document-guards.test.ts. RESIDUAL: the 404 still renders <nav>, <footer> and 41 RSC flight pushes — the prescribed minimal standalone page is only part done (inline <svg> 100+ -> 26)."
+  "note": "[2026-10-04] Both title clauses verified on production 2026-09-08 (width/height present; the 404 is 116,976 B raw / 18,194 B wire) and the guard tests pass. The nav/footer on the 404 come from the root layout, which is structural.\n\nBOTH TITLE CLAUSES CLOSED, evidence clause partly closed. Verified on production 2026-09-08: width/height present on / (0 of 8 missing, was 11 of 15), /pujas (0 of 10, was 10 of 10) and /temples/[slug] (0 of 10); the 404 is 116,976 B raw / 18,194 wire against the title's 200 KB floor. The heavy-HTML clause buried in the evidence had got WORSE and is now cut: /aarti 616,628 B with 326 inline <svg> (117,569 B of literal SVG, roughly double in the RSC payload where every quote escapes to four bytes) -> <symbol> sprite plus <use>; /chants 419,824 B and the WORST-compressing page on the site at 66,955 gzip, because its weight is unique prose that does not compress while /aarti's is 300 near-identical icons that gzip to nearly nothing -> bounded in code, since line-clamp is a PAINT instruction and hides bytes already on the wire; /calendar 382,166 B -> description bounded in both places it appears. Guarded structurally by __tests__/perf04-heavy-document-guards.test.ts. RESIDUAL: the 404 still renders <nav>, <footer> and 41 RSC flight pushes — the prescribed minimal standalone page is only part done (inline <svg> 100+ -> 26)."
  },
  {
   "key": "F384",
@@ -5401,7 +5401,7 @@
   "title": "Which pages fail Core Web Vitals in production, and why — structurally",
   "state": "partial",
   "commit": "wave-2026-08-15",
-  "note": "Was wontfix. Production is live again, so I measured instead of inferring. Everything below is my own measurement, 2026-09-01, mobile UA (Pixel 7 / Chrome 120), median of 3 for timings.\n\nA. ONE RESIDUAL CLOSED IN CODE. The triage's residual 3 was '/ and /gaushala emit zero srcset across 26 <img> tags'. The / half closed in the 2026-08-23 pass. I closed the /gaushala half: app/gaushala/page.tsx:423"
+  "note": "[2026-10-04] Triage: needs a Lighthouse re-measure against production or field data (CrUX / Search Console) plus the owner decision on images.unoptimized (sharp on a 512 MB container).\n\nWas wontfix. Production is live again, so I measured instead of inferring. Everything below is my own measurement, 2026-09-01, mobile UA (Pixel 7 / Chrome 120), median of 3 for timings.\n\nA. ONE RESIDUAL CLOSED IN CODE. The triage's residual 3 was '/ and /gaushala emit zero srcset across 26 <img> tags'. The / half closed in the 2026-08-23 pass. I closed the /gaushala half: app/gaushala/page.tsx:423"
  },
  {
   "key": "F387",
@@ -5413,9 +5413,9 @@
   "workflow": "scale-mindset",
   "line": 3693,
   "title": "Scroll-to-load on the homepage: ranked deferral list with measured bytes",
-  "state": "partial",
+  "state": "fixed",
   "commit": "wave-2026-08-15",
-  "note": ""
+  "note": "[2026-10-04] Premise inverted by PERF-01: below-fold images 13,886 KB -> 777 KB, all lazy; .defer-paint on 7 sections; home page 12 -> 8 sections; the home-*.home01 guard tests pass. Remaining TBT work belongs to CWV-01."
  },
  {
   "key": "F388",
@@ -5861,9 +5861,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The disaster-recovery runbook describes infrastructure that does not exist — following it at 2am wastes the whole recovery window",
-  "state": "partial",
-  "commit": "wave-45-final",
-  "note": ""
+  "state": "fixed",
+  "commit": "7967edf0",
+  "note": "[2026-10-04] Runbooks rewritten from measured production in #265 (start command, region, rollback lever, migration hazard, stale --ref removed); ops-runbook-honesty test updated where it pinned false text, 124 -> passing. Owner items remain: set the BACKUP_S3_* secrets, prove one restore, verify the database region."
  },
  {
   "key": "F420",
@@ -6114,8 +6114,8 @@
   "line": 0,
   "title": "The 80G tax-deduction promise survives on ~25 surfaces after the honesty gate was wired into only two pages — and no donee can ever qualify, because the columns that would make a receipt 80G-valid have no writer",
   "state": "partial",
-  "commit": "wave-2026-08-21",
-  "note": ""
+  "commit": "4f3e24ca",
+  "note": "[2026-10-04] Web copy closed in #268: the two ungated 80G leftovers (/nri/ca, /for-temple-chains) are gated or removed; guard test pins it. STILL OPEN: API-rendered text is conditional on per-donee 80G data that no route writes, so it never fires today (apps/api/src/lib/email.ts:579-583, pdf-receipt.ts:114 and :190-191; eighty-g.ts:40 has its own HAS_80G = false, keep it in sync with the web flag). Needs the owner: the donee 80G registration number and PAN."
  },
  {
   "key": "F438",
@@ -6211,9 +6211,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The published pandit vetting process — credential verification, two temple references, a 30-day probation and a per-pandit trust score — has no implementation, and a static 'Vedic certified' badge is printed with nothing behind it",
-  "state": "partial",
-  "commit": "wave-2026-08-21",
-  "note": ""
+  "state": "fixed",
+  "commit": "4f3e24ca",
+  "note": "[2026-10-04] Web copy closed in #268: the generic verified/vetted/Aadhaar-verified pandit wording was removed from ~100 lines (pages, metadata, hi/mr/bn/te/ta + city pages, chat replies, home components) and replaced with what exists (Aadhaar-based KYC before payout). The published steps (credential check, references, probation, trust score) were already gone. Guard: tc01-tc08-honest-claims-guard.test.ts. The vetting pipeline itself is still unbuilt, which is a product decision, not a claim."
  },
  {
   "key": "F445",
@@ -6462,10 +6462,10 @@
   "area": "ops-observability",
   "workflow": "tally-2026-09-12",
   "line": 0,
-  "state": "owner",
+  "state": "fixed",
   "commit": "",
   "title": "The API deploys itself on every push to main — CLAUDE.md, render.yaml and the OPS-06 guard all say no push can deploy anything",
-  "note": "MEASURED 2026-09-12 from the Render API, not read from render.yaml. The dashboard reports autoDeploy 'yes' on branch main for the API (sampled 2026-09-09 and 2026-09-12). Its last 20 deploys (2026-09-07 to 2026-09-11) are 13 trigger=new_commit and 7 trigger=api, and every new_commit deploy starts a median 3 s after its commit. Ten of those 13 were scheduled agent-report commits, which touch only docs/agent-reports/ (measured on a health-smoke commit, 166b3868, and a daily-fleet commit, 171e2266). At that cadence — health smoke twice a day, daily fleet run once — production is rebuilt ~90 times a month for markdown: at the measured 3.5 min median that is ~315 deploy-minutes, 63% of the 500 build-minute budget in docs/free-tier-budgets.md, before any real deploy (deploy wall time includes non-build phases, so these are upper bounds on build minutes). WHAT IT BREAKS: (1) CLAUDE.md's 'A push builds NOTHING', repeated in ~45 files, is false for the API, so merging a PR ships API code within seconds — and per OPS-19 no migration runs, so code can land ahead of its schema. (2) The OPS-06 correction (F415) deleted a TRUE sentence: render-build-filter-setup.md's 'Render auto-deploys bhaktisetu-api on every push to main'. ops-runbook-honesty.test.mjs keeps it as PRE_FIX_BUILD_FILTER and bans the claim, so the accurate statement cannot be written back without redding CI. (3) The rollback doctrine is half wrong in the opposite direction: for the API, a revert pushed to main DOES redeploy. The web service reports autoDeploy 'no' and is unaffected. THE FIX IS A DECISION: turn Auto-Deploy off for the API in the Render dashboard, which makes every doc and the guard true again (recommended), or keep it and rewrite the docs and the guard together. Owner: it is a dashboard setting."
+  "note": "[2026-10-04] Owner switched the API service Auto-Deploy off in the Render dashboard. Verified from Render itself (render-diag.yml mode=detail): autoDeploy \"no\", updatedAt 2026-10-04T06:36Z; it read \"yes\" on 2026-09-09, 09-12 and 2026-10-04T06:31Z. CLAUDE.md now says so with the date. The setting lives outside the repo and can be flipped back, so re-check before relying on it.\n\nMEASURED 2026-09-12 from the Render API, not read from render.yaml. The dashboard reports autoDeploy 'yes' on branch main for the API (sampled 2026-09-09 and 2026-09-12). Its last 20 deploys (2026-09-07 to 2026-09-11) are 13 trigger=new_commit and 7 trigger=api, and every new_commit deploy starts a median 3 s after its commit. Ten of those 13 were scheduled agent-report commits, which touch only docs/agent-reports/ (measured on a health-smoke commit, 166b3868, and a daily-fleet commit, 171e2266). At that cadence — health smoke twice a day, daily fleet run once — production is rebuilt ~90 times a month for markdown: at the measured 3.5 min median that is ~315 deploy-minutes, 63% of the 500 build-minute budget in docs/free-tier-budgets.md, before any real deploy (deploy wall time includes non-build phases, so these are upper bounds on build minutes). WHAT IT BREAKS: (1) CLAUDE.md's 'A push builds NOTHING', repeated in ~45 files, is false for the API, so merging a PR ships API code within seconds — and per OPS-19 no migration runs, so code can land ahead of its schema. (2) The OPS-06 correction (F415) deleted a TRUE sentence: render-build-filter-setup.md's 'Render auto-deploys bhaktisetu-api on every push to main'. ops-runbook-honesty.test.mjs keeps it as PRE_FIX_BUILD_FILTER and bans the claim, so the accurate statement cannot be written back without redding CI. (3) The rollback doctrine is half wrong in the opposite direction: for the API, a revert pushed to main DOES redeploy. The web service reports autoDeploy 'no' and is unaffected. THE FIX IS A DECISION: turn Auto-Deploy off for the API in the Render dashboard, which makes every doc and the guard true again (recommended), or keep it and rewrite the docs and the guard together. Owner: it is a dashboard setting."
  },
  {
   "key": "F463",
