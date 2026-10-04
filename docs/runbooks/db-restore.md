@@ -59,16 +59,15 @@ happened to this product.
 ### 0b. Take one backup by hand and read the output
 
 ```bash
-gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid
+gh workflow run db-backup.yml
 gh run watch
 ```
 
-**The `--ref` is load-bearing, not decoration.** `db-backup.yml` exists on `main`,
-so it is dispatchable — but a dispatch runs whichever copy lives on the ref you
-pick, and `main` still carries the 72-line pre-guard version: no skip check, no
-size check, no `restore_drill` input. Dispatching without the `--ref` therefore
-runs exactly the version whose silent zero-byte "success" is the finding, and it
-reports green. Drop the `--ref` only once this branch has merged.
+Dispatch `main`'s copy; do **not** pass a `--ref` naming the old feature branch.
+The guards (skip check, size and read-back checks, the `restore_drill` input)
+merged to `main` in #249 and were extended on 2026-09-04, so that branch is now an
+*older, weaker* copy of the workflow. Earlier revisions of this page told you to
+use it; they are retired.
 
 ### 0c. Confirm the backup is real
 
@@ -95,7 +94,7 @@ error names which ones are missing.
 ### 0d. Then prove the restore, which has never been done
 
 ```bash
-gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid -f restore_drill=true
+gh workflow run db-backup.yml -f restore_drill=true
 gh run watch
 ```
 
@@ -295,7 +294,7 @@ The last query should return a timestamp close to the backup date.
 One command, ~6 minutes, zero scheduled CI cost:
 
 ```bash
-gh workflow run db-backup.yml --ref feat/recurring-razorpay-planid -f restore_drill=true
+gh workflow run db-backup.yml -f restore_drill=true
 gh run watch
 ```
 
@@ -355,7 +354,7 @@ real RTO figure.
 | `FATAL: too many connections` | Pool exhausted | Use DIRECT_URL, not pooled; restart Render service |
 | Restore hangs >2h | Parallel jobs deadlock | Re-run with `--jobs 1` |
 | No backups in bucket | Workflow never ran with creds | The three secrets in **step 0a** are unset — `SUPABASE_DB_URL` (direct, 5432), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Set them, then re-run per step 0b. |
-| Backup run green but bucket empty | Ran `main`'s pre-guard copy of the workflow | Re-dispatch with `--ref feat/recurring-razorpay-planid` (step 0b) |
+| Backup run green but bucket empty | Should be impossible on `main`'s copy (a zero-byte or skipped run now fails). If you see it, you dispatched a stale ref | Re-dispatch with no `--ref` (step 0b) and read the JSON line |
 | Supabase project gone, no dump reachable | Steps 1–2 read from the project that was lost | Use *Steps 1–2, ALTERNATE* above. If `BACKUP_S3_*` was never configured there is no second copy — `OPS-03` |
 | `SignatureDoesNotMatch` (403) from R2/S3 | `content-length` is a signed header; a Node release overriding it breaks the signature | Drop `'content-length'` from the signed set in `buildS3Authorization` (`scripts/backup/supabase-backup.mjs`) and from the test's `SignedHeaders` assertion. A comment sits at that exact line. |
 
