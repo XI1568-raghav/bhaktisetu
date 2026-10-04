@@ -169,6 +169,19 @@ describe('SEC-01 — the CSP must not break the app it protects', () => {
     expect(d.get('frame-src')).toContain('https://checkout.razorpay.com');
   });
 
+  // Found by opening Razorpay checkout in a browser (customer test 2026-10-05):
+  // the console logged one CSP violation for each of these, and card
+  // authentication (3-D Secure) and Razorpay's risk check run through them. The
+  // test above only covered checkout.razorpay.com, so the policy looked
+  // complete while a real payment would hit these blocks.
+  it('lets Razorpay checkout load its risk script, its authentication frame and its logger', async () => {
+    const d = directives((await globalHeaders()).get('content-security-policy')!);
+
+    expect(d.get('script-src')).toContain('https://cdn.razorpay.com');
+    expect(d.get('frame-src')).toContain('https://api.razorpay.com');
+    expect(d.get('connect-src')).toContain('https://lumberjack.razorpay.com');
+  });
+
   it('still closes the directives that make a CSP worth having', async () => {
     const csp = (await globalHeaders()).get('content-security-policy')!;
     const d = directives(csp);
