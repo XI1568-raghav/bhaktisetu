@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 import {
  SAMPLE_ADMIN_TICKETS,
- CATEGORY_MAP,
+ ticketCategoryEmoji,
+ ticketCategoryLabel,
  PRIORITIES,
  STATUSES,
  type Ticket,
@@ -30,8 +31,10 @@ import {
 } from '../../../../lib/support';
 import {
  getTicketById,
+ listSupportAgents,
  patchTicket,
  postMessage,
+ type SupportAgent,
 } from '../../../../lib/support-api';
 import { useAuth } from '../../../../lib/auth-context';
 import {
@@ -44,7 +47,20 @@ import {
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../../components/ui/button-recipe';
 
-const AGENT_OPTIONS = ['Priya S.', 'Arjun K.', 'Neha R.', 'Rahul M.', 'Kavita B.'];
+/**
+ * WHY THERE IS NO HARDCODED AGENT LIST HERE ANY MORE
+ * --------------------------------------------------
+ * This screen used to offer five invented display names — 'Priya S.',
+ * 'Arjun K.', … — and send the chosen NAME as the assignee. The route parses
+ * `assignedToId: z.string().uuid()` (support.ts, updateTicketSchema), so a name
+ * failed that schema and EVERY assignment came back 400. Nobody was ever
+ * assigned to anything.
+ *
+ * Options now come from GET /support/agents: real admin accounts (role
+ * assignment ADMIN, or the ADMIN_EMAILS allow-list), id + display name only,
+ * admin-gated. The option's value is the User id that goes on the wire; the
+ * name is only ever the label.
+ */
 
 function AdminTicketDetailInner() {
  const sp = useSearchParams();
@@ -58,6 +74,8 @@ function AdminTicketDetailInner() {
  const [note, setNote] = useState('');
  const [sendingReply, setSendingReply] = useState(false);
  const [savingNote, setSavingNote] = useState(false);
+ const [agents, setAgents] = useState<SupportAgent[]>([]);
+ const [agentsError, setAgentsError] = useState<string | null>(null);
 
  useEffect(() => {
  let cancelled = false;
@@ -80,17 +98,40 @@ function AdminTicketDetailInner() {
  };
  }, [id, session?.accessToken]);
 
-
+ // The assignee picker's options. Admin-only endpoint; a failure leaves the
+ // list empty and says so rather than falling back to invented names — an
+ // option that cannot be assigned is what this screen is being fixed for.
+ useEffect(() => {
+ let cancelled = false;
+ (async () => {
+ try {
+ const list = await listSupportAgents(session?.accessToken);
+ if (!cancelled) setAgents(list);
+ } catch (err) {
+ if (!cancelled) {
+ setAgentsError(err instanceof Error ? err.message : 'Could not load support agents');
+ }
+ }
+ })();
+ return () => {
+ cancelled = true;
+ };
+ }, [session?.accessToken]);
 
  const sendReply = async () => {
  if (!ticket || !reply.trim()) return;
  setSendingReply(true);
  setActionError(null);
  try {
- const updated = await postMessage(session?.accessToken, ticket.id, {
- body: reply.trim(),
- });
- setTicket(updated);
+ // POST …/messages replies with the MESSAGE, not the ticket (support.ts:600).
+ // This used to `setTicket(message)`, which blanked the conversation out.
+ const created = await postMessage(
+ session?.accessToken,
+ ticket.id,
+ { body: reply.trim() },
+ { author: 'agent', authorName: 'Darshya Support' },
+ );
+ setTicket({ ...ticket, messages: [...ticket.messages, created] });
  setReply('');
  } catch (err) {
  setActionError(err instanceof Error ? err.message : 'Could not send reply');
@@ -104,11 +145,16 @@ function AdminTicketDetailInner() {
  setSavingNote(true);
  setActionError(null);
  try {
- const updated = await postMessage(session?.accessToken, ticket.id, {
- body: note.trim(),
- internal: true,
- });
- setTicket(updated);
+ // `internal` is translated to the route's `isInternal` in support-api.ts —
+ // it used to go out under the wrong key, so `z.object` stripped it and the
+ // private note was stored as a reply the devotee could read.
+ const created = await postMessage(
+ session?.accessToken,
+ ticket.id,
+ { body: note.trim(), internal: true },
+ { author: 'agent', authorName: 'Darshya Support' },
+ );
+ setTicket({ ...ticket, messages: [...ticket.messages, created] });
  setNote('');
  } catch (err) {
  setActionError(err instanceof Error ? err.message : 'Could not save note');
@@ -139,12 +185,18 @@ function AdminTicketDetailInner() {
  }
  };
 
- const assignAgent = async (name: string) => {
+ /**
+  * `agentId` is a User id from GET /support/agents, never a display name —
+  * `assignedToId` parses `z.string().uuid()`, so a name is a 400 and that is
+  * exactly what this screen used to send. Empty string = the "Unassigned"
+  * option, which goes out as an explicit null.
+  */
+ const assignAgent = async (agentId: string) => {
  if (!ticket) return;
  setActionError(null);
  try {
  const updated = await patchTicket(session?.accessToken, ticket.id, {
- assignedTo: name || null,
+ assignedTo: agentId || null,
  });
  setTicket(updated);
  } catch (err) {
@@ -173,8 +225,6 @@ function AdminTicketDetailInner() {
  );
  }
 
- const cat = CATEGORY_MAP[ticket.category];
-
  return (
  <div>
  <Link
@@ -192,7 +242,7 @@ function AdminTicketDetailInner() {
  <span className="font-mono text-xs text-saffron-700">{ticket.id}</span>
  <span className="text-surface-300">·</span>
  <span className="text-xs text-surface-500">
- {cat?.emoji} {cat?.name ?? ticket.category}
+ {ticketCategoryEmoji(ticket.category)} {ticketCategoryLabel(ticket.category)}
  </span>
  </div>
  <h1 className={`${H1.portal} break-words`}>
@@ -233,12 +283,19 @@ function AdminTicketDetailInner() {
  <select
  value={ticket.assignedTo ?? ''}
  onChange={(e) => assignAgent(e.target.value)}
+ title={agentsError ?? undefined}
  className="px-3 py-2 rounded-lg border border-surface-200 text-sm bg-white"
  >
- <option value="">Unassigned</option>
- {AGENT_OPTIONS.map((n) => (
- <option key={n} value={n}>
- {n}
+ <option value="">{agentsError ? 'Agents unavailable' : 'Unassigned'}</option>
+ {/* The stored assignee may be an account the list no longer offers (role
+ removed, blocked). Showing the id keeps the select honest instead of
+ silently rendering the ticket as unassigned. */}
+ {ticket.assignedTo && !agents.some((a) => a.id === ticket.assignedTo) && (
+ <option value={ticket.assignedTo}>Assigned: {ticket.assignedTo.slice(0, 8)}…</option>
+ )}
+ {agents.map((a) => (
+ <option key={a.id} value={a.id}>
+ {a.name}
  </option>
  ))}
  </select>

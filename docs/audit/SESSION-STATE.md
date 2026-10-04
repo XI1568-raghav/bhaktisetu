@@ -10,6 +10,75 @@
 
 ---
 
+## ▶ CURRENT STATE 2026-10-04 — read this block, everything below is history
+
+Everything under this block was written 2026-08-13 → 08-16 and is stale. The
+newer records are `customer-test/FINDINGS.md` (2026-09-09) and the ledger on
+`origin/wave/partials-2026-09-08`.
+
+**Ledger on the wave branch: 463 findings — 415 fixed · 10 partial · 38 owner · 0 open.**
+(The LEDGER.json in this working tree is the older 456-row copy.)
+
+**Measured against production today:**
+
+| Probe | Result | Meaning |
+|---|---|---|
+| `api /health` | 200, `db: ok` | up |
+| `GET /api/v1/gaushala/not-a-uuid` | 404 | PR #255 (customer-test fixes) is live |
+| `Accept-Language: hi` on a missing temple | Hindi message | I-04 live-probe, outstanding since 08-16, passes |
+| `GET /api/v1/bookings/my` anonymous | 401, no `X-Auth-Reason` header | **wave branch (PR #256) is NOT live** |
+| `/temples/<bogus>` and `/pujas/<bogus>` | 200 | soft-404 fix (`5e72b45a`, wave) is NOT live |
+
+**UPDATE, later on 2026-10-04 — the table above and the list below are now superseded:**
+PR #256 merged as `707b49d4` (CI green; `migrate status` against prod said up to
+date before the merge). API auto-deployed it: anonymous 401 now carries
+`x-auth-reason: no_credentials`. Web image smoke passed on `707b49d4`, web
+deployed pinned to it: `/temples/<bogus>`, `/pujas/<bogus>`,
+`/temples/<bogus>/pujas`, `/astrology/pancha-pakshi/<bogus>` all answer 404 with
+title "Page not found | Darshya". The uncommitted work is committed on
+`feat/carryover-wip-2026-10-04` (merged with main; api 3244 · web 4317 ·
+mobile 948 · api-client 56 · shared 255 · ops guards 150, tsc clean) —
+NOT pushed, no PR. Remaining: push + PR that branch, then the owner items.
+
+**Three places work lives, none merged into the others:**
+
+1. `origin/wave/partials-2026-09-08` @ `83908986` — PR #256, 15 commits ahead of
+   main. Carries AUTH-07/AUTH-08, soft-404, DI-08/DI-09, OPS-15/17. Last three
+   commits were CI repairs; the result of that CI run was never recorded.
+2. `fix/customer-test-findings` @ `33d6d62d` (checked out) — code already on main
+   via #255; only the docs commit is extra.
+3. **Uncommitted in this working tree, on neither branch:** ~109 tracked + ~45
+   untracked source files — mobile parity (~85 files), store catalogue/order
+   parity (COM-01), support-ticket wire contract, shared astrology lib,
+   api-client error shapes, knowledge discovery. Verified 2026-10-04: tsc clean
+   on api/web/mobile; api 3134 · web 4279 · mobile 948 · api-client 56 ·
+   shared 255, all green. Plus CT-DOC-1 and CT-UI-1, closed 2026-10-04.
+
+**Next steps, in order:**
+
+1. `gh auth login` on this machine (owner) — no GitHub credential exists here, so
+   nothing can be fetched, pushed or dispatched. `origin/*` refs are frozen at
+   2026-09-12.
+2. Read PR #256's CI; fix if red. Before merging: `prisma migrate status` with
+   `DIRECT_URL` — the API auto-deploys on merge and never runs migrations
+   (OPS-18/19), so the schema must already be there.
+3. Merge #256, confirm the `X-Auth-Reason` probe above flips, then dispatch the
+   web deploy and confirm the soft-404 probe flips to 404.
+4. Decide what to do with item 3 above — it has been uncommitted since
+   2026-09-09 and has no backup other than this disk.
+5. Owner decisions still open: OPS-18 (API auto-deploy on), OPS-19 (prod runs
+   `tsx` from source), CT-TRUST-1 (junk "saharanpur" gaushala on `/donations`),
+   and the 38 owner-gated ledger rows.
+
+**This machine (macOS, moved from Windows):** `node`, `pnpm`, `gh` are in
+`/opt/homebrew/bin`, which is not on the agent shell's PATH — prefix commands
+with `PATH=/opt/homebrew/bin:$PATH`. Node here is 26, CI is 20: web vitest needs
+`NODE_OPTIONS=--no-experimental-webstorage` or 335 tests fail on an undefined
+`localStorage` (environment artifact, not a regression). The local
+Postgres/API/web stack described below does not exist on this machine.
+
+---
+
 ## Where the numbers came from
 
 Four workflows, 38 agents dispatched, 32 reported. Real logged-in browser

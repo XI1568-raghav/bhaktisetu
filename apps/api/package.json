@@ -23,6 +23,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "preseed:darshan": "tsx scripts/guard-db-target.ts",
     "seed:darshan": "tsx prisma/seed/darshan-streams.ts",
+    "preseed:store-demo": "tsx scripts/guard-db-target.ts",
+    "seed:store-demo": "tsx prisma/seed-store-demo-seller.ts",
     "test": "vitest run",
     "leads:scrape-temples": "tsx scripts/leads/scrape-temples.ts",
     "leads:scrape-priests": "tsx scripts/leads/scrape-priests.ts",

@@ -46,3 +46,48 @@ describe('yatra booking form copy (COM-08)', () => {
     expect(page).toMatch(/Request booking/);
   });
 });
+
+/**
+ * The yatra quote carried the identical `Math.round(subtotal * 0.05)` "GST (5%)"
+ * line that COM-06 / S-09 deleted from the store — in
+ * apps/api/src/lib/store-pricing.ts, apps/web/lib/store-pricing.ts and the
+ * cart/checkout surfaces above. It was wrong here for two independent reasons:
+ *
+ *   1. The business is not GST-registered — lib/company.ts records
+ *      COMPANY.tax.HAS_GST_REGISTRATION_VERIFIED = false, and /pricing already
+ *      says so in words. A tax line quoted by a business that cannot remit it
+ *      is a number that goes nowhere.
+ *   2. One flat 5% is wrong across what this page quotes anyway: a tour
+ *      package, a helicopter seat, travel insurance and a temple puja do not
+ *      share a rate. Even with a GSTIN the arithmetic would still be incorrect.
+ *
+ * And this page charges nothing — `handlePay` POSTs to /yatra-inquiry, a lead
+ * form — so the figure is a QUOTE, and an inflated quote is one the operator
+ * then has to walk back with the pilgrim.
+ *
+ * Comments are stripped before matching: the removal is documented in prose at
+ * the site, and a test that forbade the WORD would forbid explaining why.
+ */
+describe('yatra quote carries no invented tax line (COM-06 parity)', () => {
+  const code = readFileSync(resolve(__dirname, '..', 'app/yatra/book/page.tsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+  it('computes no 5% anything', () => {
+    expect(code).not.toMatch(/subtotal\s*\*\s*0\.05/);
+    expect(code).not.toMatch(/0\.05/);
+  });
+
+  it('pushes no GST row into the price breakdown', () => {
+    expect(code).not.toMatch(/GST/);
+  });
+
+  it('totals exactly the sum of the quoted lines', () => {
+    expect(code).toMatch(/return\s*\{\s*lines,\s*total:\s*subtotal\s*\}/);
+  });
+
+  it('no longer claims a tax is included in the sidebar figure', () => {
+    expect(code).not.toMatch(/incl\.\s*GST/i);
+  });
+});

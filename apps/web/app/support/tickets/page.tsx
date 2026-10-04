@@ -13,7 +13,8 @@ import {
 import {
  SUPPORT_CATEGORIES,
  STATUSES,
- CATEGORY_MAP,
+ ticketCategoryEmoji,
+ ticketCategoryLabel,
  loadUserTickets,
  type Ticket,
  type TicketStatus,
@@ -167,7 +168,7 @@ export default function MyTicketsPage() {
  </td>
  <td className="px-4 py-3.5 hidden md:table-cell">
  <span className="text-xs text-surface-600">
- {CATEGORY_MAP[t.category]?.emoji} {CATEGORY_MAP[t.category]?.name ?? t.category}
+ {ticketCategoryEmoji(t.category)} {ticketCategoryLabel(t.category)}
  </span>
  </td>
  <td className="px-4 py-3.5">

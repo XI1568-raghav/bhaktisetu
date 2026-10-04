@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { StoreService } from './store.service.js';
+import { computeStoreOrderTotals } from '../lib/store-pricing.js';
 
 // StoreService uses hardcoded in-memory data — no mocks needed.
 let service: StoreService;
@@ -102,9 +103,14 @@ describe('StoreService.getProducts', () => {
 
   it('sorts by rating', () => {
     const result = service.getProducts({ sort: 'rating' });
+    // COM-01 widened `Product.rating` to `number | null` so a seller listing
+    // with no reviews reports "not rated" rather than a fabricated 0 (apps/
+    // mobile renders the badge on `rating !== null`). Unrated sorts last, which
+    // is what `?? -1` encodes; every fixture below carries a real number, so
+    // this loop still walks a strictly non-increasing sequence.
     for (let i = 1; i < result.products.length; i++) {
-      expect(result.products[i]!.rating).toBeLessThanOrEqual(
-        result.products[i - 1]!.rating
+      expect(result.products[i]!.rating ?? -1).toBeLessThanOrEqual(
+        result.products[i - 1]!.rating ?? -1
       );
     }
   });
@@ -287,15 +293,53 @@ describe('StoreService cart operations', () => {
     expect(cart.deliveryFee).toBe(49);
   });
 
-  it('calculates 5% GST', () => {
+  // ─── COM-06 / S-09 regression: the cart total is the ORDER total ──────────
+  //
+  // These two tests used to read:
+  //
+  //   it('calculates 5% GST', () => expect(cart.tax).toBe(Math.round(1299 * 0.05)))
+  //   it('calculates total = subtotal + delivery + tax', ...)
+  //
+  // i.e. they PINNED the bug. `buildCart` added `Math.round(subtotal * 0.05)`
+  // as a "5% GST estimate" while POST /store/orders recomputes
+  // `subtotal + delivery` and answers 409 `price_mismatch` on any
+  // disagreement (store-orders.ts:243-255) — so a client that posted
+  // `cart.total` could never check out. The assertions below are written
+  // against lib/store-pricing.ts, the module the order route itself uses, so
+  // a change to the pricing contract moves both endpoints or fails here.
+
+  it('adds no tax line — the business has no GSTIN and prices are tax-inclusive', () => {
     const cart = service.createCartItem(userId, 'prod_001', 1);
-    expect(cart.tax).toBe(Math.round(1299 * 0.05));
+    expect(cart.tax).toBe(0);
   });
 
-  it('calculates total = subtotal + delivery + tax', () => {
+  it('total is subtotal + delivery, the exact number POST /store/orders accepts', () => {
     const cart = service.createCartItem(userId, 'prod_001', 1);
-    const expectedTotal = cart.subtotal + cart.deliveryFee + cart.tax;
-    expect(cart.total).toBe(expectedTotal);
+    expect(cart.total).toBe(cart.subtotal + cart.deliveryFee);
+    expect(cart.total).toBe(1299); // 1299 >= 499 → free delivery, no tax
+  });
+
+  it('agrees with computeStoreOrderTotals for a below-threshold basket too', () => {
+    const cart = service.createCartItem(userId, 'prod_007', 2);
+    const authoritative = computeStoreOrderTotals(
+      cart.items.map((i) => ({ qty: i.quantity, unitPriceInr: i.product.price })),
+    );
+    expect(cart.subtotal).toBe(authoritative.subtotalInr);
+    expect(cart.deliveryFee).toBe(authoritative.deliveryFeeInr);
+    expect(cart.total).toBe(authoritative.totalInr);
+    expect(cart.total).toBe(cart.subtotal + cart.deliveryFee);
+  });
+
+  // An empty cart still quotes the ₹49 delivery fee (0 < 499), which is what
+  // the live-API fixture apps/mobile/lib/__tests__/fixtures records and what
+  // the order route would compute. Pinned so the two stay identical.
+  it('an empty cart quotes the same delivery fee the order route would', () => {
+    const cart = service.getCart(userId);
+    const authoritative = computeStoreOrderTotals([]);
+    expect(cart.subtotal).toBe(0);
+    expect(cart.tax).toBe(0);
+    expect(cart.deliveryFee).toBe(authoritative.deliveryFeeInr);
+    expect(cart.total).toBe(authoritative.totalInr);
   });
 });
 
