@@ -316,6 +316,13 @@ function BookContent() {
             </div>
           </div>
 
+          {!astrologer.isOnline && (
+            <div className="mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
+              {astrologer.name} is offline right now. Your booking is saved to their dashboard and they will see it when
+              they next sign in. Pick a preferred slot below to agree a time, or book someone who is online.
+            </div>
+          )}
+
           {/* Optional schedule */}
           <div className="mb-6">
             <label className="block text-sm font-semibold text-surface-700 mb-2" htmlFor="when">

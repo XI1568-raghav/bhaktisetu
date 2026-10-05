@@ -167,7 +167,7 @@ function SuccessContent() {
             </h1>
             <p className="text-sm text-surface-500">
               {confirmed
-                ? 'Your astrologer has been notified. Join the room when ready.'
+                ? 'Your booking is confirmed and is on your astrologer’s dashboard. Join the room below when they are online.'
                 : 'Status is still being updated. Refresh in a moment.'}
             </p>
           </div>
@@ -219,7 +219,7 @@ function SuccessContent() {
           )}
 
           <p className="text-xs text-surface-400 text-center mt-4">
-            Room link also emailed to you. Refund if astrologer doesn't join within 10 min.
+            The room link is always on this page. If your astrologer does not join, cancel below for a refund, available within 24 hours of paying.
           </p>
 
           {consultation.status !== 'cancelled' && consultation.status !== 'completed' && (
