@@ -180,3 +180,20 @@ describe('AW-04 — astrologer dashboard money cards', () => {
     expect(card.getAttribute('data-pending')).toBe('null');
   });
 });
+
+describe('astrologer dashboard: upcoming consultations are not pending payout', () => {
+  it('states upcoming earnings separately when the API reports them', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        ...DASHBOARD_PAYLOAD,
+        stats: { ...DASHBOARD_PAYLOAD.stats, upcomingInr: 400 },
+      }),
+    );
+    render(<AstrologerDashboard />);
+    await settled();
+    const note = await screen.findByTestId('astro-upcoming-inr');
+    expect(note.textContent).toMatch(/400/);
+    expect(note.textContent).toMatch(/after the consultation is completed/i);
+  });
+});

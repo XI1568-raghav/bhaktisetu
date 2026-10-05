@@ -255,7 +255,7 @@ async function unperformedPujaBookingIds(
  * commission's bare `bookingId` is the consultation id. A missing table (it is
  * created lazily) means no consultations, so nothing is held.
  */
-async function unfinishedConsultationIds(
+export async function unfinishedConsultationIds(
   db: Pick<typeof prisma, '$queryRawUnsafe'>,
   providerId: string,
 ): Promise<string[]> {
@@ -277,6 +277,41 @@ async function unfinishedConsultationIds(
 /** Excludes held puja rows; an explicit null branch because NOT IN drops NULLs in SQL. */
 function notHeldPuja(heldIds: string[]): Prisma.CommissionWhereInput {
   return heldIds.length ? { AND: [{ OR: [{ bookingId: null }, { bookingId: { notIn: heldIds } }] }] } : {};
+}
+
+/** Keys of the earnings still held (session/puja/consultation not yet done). */
+export interface HeldEarningKeys {
+  wellnessEnrollmentIds: Set<string>;
+  bookingIds: Set<string>;
+}
+
+/** The same held sets getPayoutBalance uses, for per-row payable/upcoming flags. */
+export async function heldEarningKeys(providerId: string): Promise<HeldEarningKeys> {
+  const wellness = await upcomingWellnessEnrollmentIds(prisma, providerId);
+  const bookings = [
+    ...(await unperformedPujaBookingIds(prisma, providerId)),
+    ...(await unfinishedConsultationIds(prisma, providerId)),
+  ];
+  return { wellnessEnrollmentIds: new Set(wellness), bookingIds: new Set(bookings) };
+}
+
+/**
+ * True when getPayoutBalance would count this row in `upcomingInr`: PENDING,
+ * not yet inside a payout request, and keyed on a held session / puja /
+ * consultation.
+ */
+export function isUpcomingCommission(
+  c: {
+    status: string;
+    payoutRequestId: string | null;
+    bookingId: string | null;
+    wellnessEnrollmentId?: string | null;
+  },
+  keys: HeldEarningKeys,
+): boolean {
+  if (c.status !== 'PENDING' || c.payoutRequestId) return false;
+  if (c.wellnessEnrollmentId && keys.wellnessEnrollmentIds.has(c.wellnessEnrollmentId)) return true;
+  return !!c.bookingId && keys.bookingIds.has(c.bookingId);
 }
 
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */

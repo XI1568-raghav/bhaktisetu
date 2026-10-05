@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { BookingStatus, StreamStatus, StreamProvider } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { provedBookingIds, shareRelease } from '../lib/temple-share-release.js';
 import { cancelInvite, createInvite, listInvitesForTemple } from '../services/temple-priest-invite.service.js';
 
 /**
@@ -174,6 +175,9 @@ function notLinked(reply: FastifyReply, reason: TempleLinkReason) {
   });
 }
 
+/** Upper bound on TemplePayout rows read for the dashboard's released/upcoming split. */
+const DASHBOARD_SHARE_SCAN_CAP = 5000;
+
 export async function templePortalRoutes(server: FastifyInstance) {
   // GET /dashboard — TempleProfile + booking/donation aggregates when the
   // marketplace temple-profile is linkable to a real Temple row by name match
@@ -190,7 +194,10 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!profile) {
       return reply.send({
         profile: null,
-        stats: { totalBookings: 0, monthBookings: 0, totalRevenueInr: 0, monthRevenueInr: 0, totalStreams: 0 },
+        stats: {
+          totalBookings: 0, monthBookings: 0, totalRevenueInr: 0, monthRevenueInr: 0,
+          releasedInr: 0, monthReleasedInr: 0, upcomingInr: 0, monthUpcomingInr: 0, totalStreams: 0,
+        },
         recentBookings: [],
       });
     }
@@ -207,6 +214,7 @@ export async function templePortalRoutes(server: FastifyInstance) {
         stats: {
           totalBookings: 0, monthBookings: 0,
           totalRevenueInr: 0, monthRevenueInr: 0,
+          releasedInr: 0, monthReleasedInr: 0, upcomingInr: 0, monthUpcomingInr: 0,
           totalStreams: profile.totalStreams,
         },
         recentBookings: [],
@@ -230,13 +238,14 @@ export async function templePortalRoutes(server: FastifyInstance) {
       status: { in: ['pending', 'completed'] as ('pending' | 'completed')[] },
     };
 
-    const [totalCount, monthCount, totalSum, monthSum, recent] = await Promise.all([
+    const [totalCount, monthCount, shareRows, recent] = await Promise.all([
       prisma.pujaBooking.count({ where: baseWhere }),
       prisma.pujaBooking.count({ where: { ...baseWhere, createdAt: { gte: monthStart } } }),
-      prisma.templePayout.aggregate({ where: shareWhere, _sum: { amount: true } }),
-      prisma.templePayout.aggregate({
-        where: { ...shareWhere, createdAt: { gte: monthStart } },
-        _sum: { amount: true },
+      prisma.templePayout.findMany({
+        where: shareWhere,
+        select: { bookingId: true, amount: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: DASHBOARD_SHARE_SCAN_CAP,
       }),
       prisma.pujaBooking.findMany({
         where: { templeId },
@@ -249,13 +258,39 @@ export async function templePortalRoutes(server: FastifyInstance) {
       }),
     ]);
 
+    // Released = paid or payable (puja performed AND proved); Upcoming = share
+    // minted at confirmation but still held. The same rule as GET /payouts.
+    const proved = await provedBookingIds(prisma, shareRows);
+    let releasedTotal = 0;
+    let releasedMonth = 0;
+    let upcomingTotal = 0;
+    let upcomingMonth = 0;
+    for (const r of shareRows) {
+      const amt = Number(r.amount);
+      const inMonth = r.createdAt >= monthStart;
+      if (shareRelease(r, proved) === 'upcoming') {
+        upcomingTotal += amt;
+        if (inMonth) upcomingMonth += amt;
+      } else {
+        releasedTotal += amt;
+        if (inMonth) releasedMonth += amt;
+      }
+    }
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+
     return reply.send({
       profile,
       stats: {
         totalBookings: totalCount,
         monthBookings: monthCount,
-        totalRevenueInr: Number(totalSum._sum?.amount ?? 0),
-        monthRevenueInr: Number(monthSum._sum?.amount ?? 0),
+        // Released share only. totalRevenueInr / monthRevenueInr are kept for
+        // older clients and now mean the same as releasedInr / monthReleasedInr.
+        totalRevenueInr: r2(releasedTotal),
+        monthRevenueInr: r2(releasedMonth),
+        releasedInr: r2(releasedTotal),
+        monthReleasedInr: r2(releasedMonth),
+        upcomingInr: r2(upcomingTotal),
+        monthUpcomingInr: r2(upcomingMonth),
         totalStreams: profile.totalStreams,
       },
       recentBookings: recent.map((b) => ({
@@ -400,25 +435,8 @@ export async function templePortalRoutes(server: FastifyInstance) {
     // The share is written when the booking is confirmed but is only payable
     // once the puja is performed AND proved (video_uploaded / delivered), the
     // same hold the pandit's earning has. Until then it is 'upcoming'.
-    const bookingIds = [...new Set(rows.map((r) => r.bookingId).filter((v): v is string => !!v))];
-    const bookings = bookingIds.length
-      ? await prisma.pujaBooking.findMany({
-          where: { id: { in: bookingIds } },
-          select: { id: true, status: true },
-          take: 200,
-        })
-      : [];
-    const proved = new Set(
-      bookings.filter((b) => b.status === 'video_uploaded' || b.status === 'delivered').map((b) => b.id),
-    );
-    const releaseOf = (r: { status: string; bookingId: string | null }) =>
-      r.status === 'completed'
-        ? 'paid'
-        : r.status === 'pending'
-          ? r.bookingId && proved.has(r.bookingId)
-            ? 'payable'
-            : 'upcoming'
-          : r.status;
+    const proved = await provedBookingIds(prisma, rows);
+    const releaseOf = (r: { status: string; bookingId: string | null }) => shareRelease(r, proved);
     const sumWhere = (kind: string) =>
       rows.filter((r) => releaseOf(r) === kind).reduce((s, r) => s + Number(r.amount), 0);
     const payable = sumWhere('payable');

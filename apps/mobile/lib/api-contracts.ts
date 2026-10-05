@@ -789,6 +789,11 @@ export interface TemplePortalStats {
   monthBookings: number;
   totalRevenueInr: number;
   monthRevenueInr: number;
+  /** Share already releasable or paid. null when an older server omits it. */
+  releasedInr: number | null;
+  monthReleasedInr: number | null;
+  /** Share minted at confirmation, held until the puja is proved. */
+  upcomingInr: number | null;
   totalStreams: number;
 }
 
@@ -822,6 +827,9 @@ export function selectTemplePortalDashboard(payload: unknown): TemplePortalDashb
       monthBookings: toNumberOr(stats.monthBookings, 0),
       totalRevenueInr: toNumberOr(stats.totalRevenueInr, 0),
       monthRevenueInr: toNumberOr(stats.monthRevenueInr, 0),
+      releasedInr: money(stats.releasedInr),
+      monthReleasedInr: money(stats.monthReleasedInr),
+      upcomingInr: money(stats.upcomingInr),
       totalStreams: toNumberOr(stats.totalStreams, 0),
     },
     recentBookings: arrayAt(payload, 'recentBookings')
@@ -1492,6 +1500,8 @@ export interface TemplePayoutRow {
   bookingId: string | null;
   amountInr: number | null;
   status: string;
+  /** paid | payable | upcoming. null when an older server omits it. */
+  releaseStatus: string | null;
   reference: string | null;
   processedAt: string | null;
   createdAt: string | null;
@@ -1500,7 +1510,12 @@ export interface TemplePayoutRow {
 export interface TemplePayoutsVM {
   rows: TemplePayoutRow[];
   total: number;
+  /** Payable + upcoming, kept for older servers. */
   pendingInr: number | null;
+  /** Releasable now (puja performed and proved). null from an older server. */
+  payableInr: number | null;
+  /** Held until the puja is proved. null from an older server. */
+  upcomingInr: number | null;
   paidInr: number | null;
 }
 
@@ -1519,6 +1534,7 @@ export function selectTemplePayouts(payload: unknown): TemplePayoutsVM | null {
         bookingId: str(r.bookingId) ?? null,
         amountInr: money(r.amount),
         status: str(r.status) ?? 'unknown',
+        releaseStatus: str(r.releaseStatus) ?? null,
         reference: str(r.reference) ?? null,
         processedAt: str(r.processedAt) ?? null,
         createdAt: str(r.createdAt) ?? null,
@@ -1529,6 +1545,8 @@ export function selectTemplePayouts(payload: unknown): TemplePayoutsVM | null {
     rows,
     total: toNumberOr(payload.total, rows.length),
     pendingInr: money(payload.pendingInr),
+    payableInr: money(payload.payableInr),
+    upcomingInr: money(payload.upcomingInr),
     paidInr: money(payload.paidInr),
   };
 }
@@ -1578,6 +1596,8 @@ export interface AstrologerEarningRow {
   bookingId: string | null;
   status: string;
   createdAt: string | null;
+  /** payable | upcoming | paid | reversed. null from an older server. */
+  releaseStatus: string | null;
   grossInr: number | null;
   platformCutInr: number | null;
   earningsInr: number | null;
@@ -1586,7 +1606,10 @@ export interface AstrologerEarningRow {
 export interface AstrologerEarningsVM {
   rows: AstrologerEarningRow[];
   totalEarningsInr: number | null;
+  /** Payable pending, EXCLUDING upcoming consultations. */
   pendingInr: number | null;
+  /** Consultations not yet completed. null from an older server. */
+  upcomingInr: number | null;
   paidInr: number | null;
   /** 0.8 — the astrologer share, sent as a fraction, not a percentage. */
   astrologerShare: number | null;
@@ -1606,6 +1629,7 @@ export function selectAstrologerEarnings(payload: unknown): AstrologerEarningsVM
         bookingId: str(r.bookingId) ?? null,
         status: str(r.status) ?? 'unknown',
         createdAt: str(r.createdAt) ?? null,
+        releaseStatus: str(r.releaseStatus) ?? null,
         grossInr: money(r.grossAmountInr),
         platformCutInr: money(r.platformCutInr),
         // `earningsInr` is the astrologer own take. Never render grossAmountInr
@@ -1618,6 +1642,7 @@ export function selectAstrologerEarnings(payload: unknown): AstrologerEarningsVM
     rows,
     totalEarningsInr: money(summary.totalEarningsInr),
     pendingInr: money(summary.pendingInr),
+    upcomingInr: money(summary.upcomingInr),
     paidInr: money(summary.paidInr),
     astrologerShare: money(summary.astrologerShare),
   };
@@ -1676,6 +1701,8 @@ export function selectProviderCommissions(payload: unknown): ProviderCommissions
 // apps/api/src/routes/payout-requests.ts:50, spreading payout.service:216-220.
 export interface PayoutBalanceVM {
   availableInr: number | null;
+  /** Earned but held until the session is held / puja proved. null from an older server. */
+  upcomingInr: number | null;
   /** Money already inside an in-flight PayoutRequest. Disjoint from available. */
   pendingInr: number | null;
   paidOutInr: number | null;
@@ -1689,6 +1716,7 @@ export function selectPayoutBalance(payload: unknown): PayoutBalanceVM | null {
   if (payload.availableInr === undefined) return null;
   return {
     availableInr: money(payload.availableInr),
+    upcomingInr: money(payload.upcomingInr),
     pendingInr: money(payload.pendingInr),
     paidOutInr: money(payload.paidOutInr),
     kycVerified: payload.kycVerified === true,

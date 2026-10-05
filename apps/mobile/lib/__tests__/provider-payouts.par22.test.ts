@@ -40,6 +40,7 @@ import type { PayoutBalanceVM } from '../api-contracts';
 
 const READY: PayoutBalanceVM = {
   availableInr: 1260,
+  upcomingInr: null,
   pendingInr: 0,
   paidOutInr: 4200,
   kycVerified: true,
