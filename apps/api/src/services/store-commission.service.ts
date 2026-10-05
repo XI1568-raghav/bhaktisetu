@@ -23,6 +23,7 @@ type TxClient = Prisma.TransactionClient | typeof prisma;
 export async function writeStoreOrderCommission(
   storeOrderId: string,
   tx: TxClient = prisma,
+  opts: { requirePayment?: boolean } = {},
 ): Promise<void> {
   const existing = await tx.commission.findFirst({
     where: { storeOrderId },
@@ -32,9 +33,14 @@ export async function writeStoreOrderCommission(
 
   const order = await tx.storeOrder.findUnique({
     where: { id: storeOrderId },
-    select: { id: true, totalAmountInr: true, items: true, storeProfileId: true },
+    select: { id: true, paymentId: true, totalAmountInr: true, items: true, storeProfileId: true },
   });
   if (!order) return;
+
+  // Manual/COD confirm: the buyer paid the seller in cash, so crediting 80% here
+  // would make the platform pay out money it never received. Payment paths
+  // (Razorpay verify/webhook) do not set this; the capture is the payment.
+  if (opts.requirePayment && !order.paymentId) return;
 
   // Attribution comes off the order itself. P0 #S-11 (migration
   // 20260709020000) added `store_orders.store_profile_id` for exactly this, and

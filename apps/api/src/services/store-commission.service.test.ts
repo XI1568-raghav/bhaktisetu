@@ -182,3 +182,40 @@ describe('writeStoreOrderCommission', () => {
     expect(new Prisma.Decimal(row.percentage).toString()).toBe('0');
   });
 });
+
+/**
+ * Customer test 2026-10-05 (store owner). A cash-on-delivery order has no
+ * payment: the seller collects the cash. Confirming it from the seller's status
+ * screen still wrote an 80% Commission the platform would then pay out, so a COD
+ * order for Rs 289 made the platform owe Rs 231.20 it never received (and a store
+ * owner could place and confirm COD orders to themselves, then request payouts).
+ * The manual-confirm path now asks for `requirePayment`; the Razorpay paths,
+ * where the capture is the payment, are unchanged.
+ */
+describe('writeStoreOrderCommission with requirePayment (manual/COD confirm)', () => {
+  const order = (paymentId: string | null) => ({
+    id: ORDER_ID,
+    paymentId,
+    totalAmountInr: new Prisma.Decimal(289),
+    storeProfileId: STORE_ID,
+    items: [],
+  });
+
+  it('writes nothing when the order has no payment', async () => {
+    prismaMock.storeOrder.findUnique.mockResolvedValue(order(null));
+    await writeStoreOrderCommission(ORDER_ID, prismaMock as never, { requirePayment: true });
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
+  });
+
+  it('still writes when the order carries a payment', async () => {
+    prismaMock.storeOrder.findUnique.mockResolvedValue(order('pay-1'));
+    await writeStoreOrderCommission(ORDER_ID, prismaMock as never, { requirePayment: true });
+    expect(prismaMock.commission.createMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('without the option, behaviour is unchanged (payment paths)', async () => {
+    prismaMock.storeOrder.findUnique.mockResolvedValue(order(null));
+    await writeStoreOrderCommission(ORDER_ID);
+    expect(prismaMock.commission.createMany).toHaveBeenCalledTimes(1);
+  });
+});
