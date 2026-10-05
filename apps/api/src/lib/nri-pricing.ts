@@ -55,3 +55,13 @@ export function nriPujaPriceInr(domesticPujaPrice: DecimalLike): Prisma.Decimal 
 export function usdDisplayFromInr(inr: number): number {
   return Math.round(inr / USD_INR_RATE);
 }
+
+/**
+ * The puja price actually charged: the domestic price, or the NRI price when
+ * the request carries the explicit `nriPricing` flag. Shared by every create
+ * path (temple wizard, pandit-direct /from-offering) so shown === charged.
+ */
+export function chargedPujaPriceInr(domesticPujaPrice: DecimalLike, nriPricing: boolean): Prisma.Decimal {
+  const domestic = new Prisma.Decimal(domesticPujaPrice.toString());
+  return nriPricing ? nriPujaPriceInr(domestic) : domestic;
+}
