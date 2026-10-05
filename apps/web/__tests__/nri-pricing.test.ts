@@ -19,9 +19,10 @@ import {
   resolveDisplayCurrency,
   isIndiaTimeZone,
 } from '../lib/nri-pricing';
-import { PLATFORM_FEE_INR, PRASAD_DELIVERY_FEE_INR } from '../lib/puja-pricing';
+import { PLATFORM_FEE_INR, PRASAD_DELIVERY_FEE_INR, pujaTotalInr } from '../lib/puja-pricing';
 import {
   nriPujaPriceInr as apiNriPujaPriceInr,
+  chargedPujaPriceInr as apiChargedPujaPriceInr,
   NRI_PREMIUM_MULTIPLIER as API_MULT,
   NRI_ROUND_STEP_INR as API_STEP,
   USD_INR_RATE as API_RATE,
@@ -88,5 +89,28 @@ describe('which currency is shown', () => {
   });
   it('ignores a junk stored value', () => {
     expect(resolveDisplayCurrency({ stored: 'EUR', timeZone: 'Asia/Kolkata' })).toBe('INR');
+  });
+});
+
+describe('pandit-direct checkout (/from-offering) shows what the API charges', () => {
+  it('USD view total == API NRI puja price + the flat platform fee, for every price up to 50,000', () => {
+    for (let p = 1; p <= 50000; p += 7) {
+      const apiCharged = Number(apiChargedPujaPriceInr(p, true)) + PLATFORM_FEE_INR;
+      expect(nriTotalInr(p, false), `price ${p}`).toBe(apiCharged);
+    }
+  });
+  it('INR view total == API domestic puja price + the flat platform fee', () => {
+    for (const p of [1, 751.5, 1100, 5100, 50000]) {
+      expect(Number(apiChargedPujaPriceInr(p, false)) + PLATFORM_FEE_INR).toBe(pujaTotalInr(p, false));
+    }
+  });
+  const page = readRepo('apps/web/app/checkout/offering/page.tsx');
+  it('the page sends the explicit flag and prices from the same helpers as the wizard', () => {
+    expect(page).toMatch(/nriPricing:\s*isNriPricing/);
+    expect(page).toMatch(/nriTotalInr\(priceInr, false\)/);
+    expect(page).toMatch(/useDisplayCurrency\(\)/);
+  });
+  it('refuses to open Razorpay when the order amount is not the amount shown', () => {
+    expect(page).toMatch(/Number\(data\.amount\) !== Math\.round\(totalPayableInr \* 100\)/);
   });
 });
