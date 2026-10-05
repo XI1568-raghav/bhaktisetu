@@ -28,6 +28,7 @@ import {
 import EarningsCard from '../../components/provider/EarningsCard';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 import LoadErrorBanner from '../../components/LoadErrorBanner';
+import TempleInvitesCard from '../../components/priest/TempleInvitesCard';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -338,6 +339,8 @@ export default function PriestDashboard() {
  <KycStatusBadge state={kycState} reason={kycReason} />
  </div>
  </div>
+
+ <TempleInvitesCard />
 
  {/* T1 instant-pool on-duty toggle */}
  <div className={`rounded-xl border p-4 ${onDuty ? 'border-tulsi-green-light bg-tulsi-green-light/10' : 'border-surface-100 bg-white'}`}>
