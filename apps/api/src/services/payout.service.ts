@@ -227,17 +227,45 @@ function notHeldWellness(heldIds: string[]): Prisma.CommissionWhereInput {
     : {};
 }
 
+/**
+ * Puja earnings are written PENDING when the pandit ACCEPTS, before anything has
+ * been performed: accepting a booking six days out made its earning withdrawable
+ * at once. Hold every commission whose booking has not reached `video_uploaded` or `delivered`: video proof is mandatory, so `completed` alone does not release it (the legacy pandit rail already waits for the same statuses).
+ * `bookingId` is a bare string (polymorphic with consultations), so the held set
+ * is read from the pandit's own open bookings rather than joined.
+ */
+const PUJA_NOT_YET_PERFORMED = ['pending_payment', 'confirmed', 'priest_assigned', 'in_progress', 'completed'] as const;
+
+async function unperformedPujaBookingIds(
+  db: Pick<typeof prisma, 'pujaBooking'>,
+  providerId: string,
+): Promise<string[]> {
+  const rows = await db.pujaBooking.findMany({
+    where: { status: { in: [...PUJA_NOT_YET_PERFORMED] }, priest: { userId: providerId } },
+    select: { id: true },
+    take: UPCOMING_WELLNESS_SCAN_CAP,
+  });
+  return rows.map((r) => r.id);
+}
+
+/** Excludes held puja rows; an explicit null branch because NOT IN drops NULLs in SQL. */
+function notHeldPuja(heldIds: string[]): Prisma.CommissionWhereInput {
+  return heldIds.length ? { AND: [{ OR: [{ bookingId: null }, { bookingId: { notIn: heldIds } }] }] } : {};
+}
+
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */
 export async function getPayoutBalance(providerId: string) {
   const heldIds = await upcomingWellnessEnrollmentIds(prisma, providerId);
+  const heldPujaIds = await unperformedPujaBookingIds(prisma, providerId);
   const pending = await sumCommissionAmounts({
     providerId,
     status: 'PENDING',
     payoutRequestId: null,
     ...notHeldWellness(heldIds),
+    ...notHeldPuja(heldPujaIds),
   });
-  // Earned but not yet withdrawable: wellness sessions that have not been held.
-  const upcoming = heldIds.length
+  // Earned but not yet withdrawable: wellness sessions and pujas not yet held.
+  const upcomingWellness = heldIds.length
     ? await sumCommissionAmounts({
         providerId,
         status: 'PENDING',
@@ -245,6 +273,15 @@ export async function getPayoutBalance(providerId: string) {
         wellnessEnrollmentId: { in: heldIds },
       })
     : new Prisma.Decimal(0);
+  const upcomingPuja = heldPujaIds.length
+    ? await sumCommissionAmounts({
+        providerId,
+        status: 'PENDING',
+        payoutRequestId: null,
+        bookingId: { in: heldPujaIds },
+      })
+    : new Prisma.Decimal(0);
+  const upcoming = upcomingWellness.add(upcomingPuja);
 
   const paid = await sumCommissionAmounts({ providerId, status: 'PAID' });
 
@@ -433,8 +470,15 @@ export async function requestPayout(
     // the winner's row locks, re-evaluates the predicate, matches fewer rows
     // than it selected, and throws — rolling back its own PayoutRequest.
     const heldIds = await upcomingWellnessEnrollmentIds(tx, providerId);
+    const heldPujaIds = await unperformedPujaBookingIds(tx, providerId);
     const rows = await tx.commission.findMany({
-      where: { providerId, status: 'PENDING', payoutRequestId: null, ...notHeldWellness(heldIds) },
+      where: {
+        providerId,
+        status: 'PENDING',
+        payoutRequestId: null,
+        ...notHeldWellness(heldIds),
+        ...notHeldPuja(heldPujaIds),
+      },
       select: { id: true, amount: true },
     });
     if (!rows.length) throw new Error('No withdrawable balance.');
