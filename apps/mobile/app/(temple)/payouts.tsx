@@ -11,6 +11,7 @@ import { useTemplePortalPayouts } from '../../lib/portal-queries';
 import { selectTemplePayouts, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { payoutStatusLabel } from '../../lib/enum-labels';
+import { UPCOMING_LABEL, UPCOMING_HINT, upcomingShown } from '../../lib/earnings-copy';
 
 /**
  * PAR-22. Temple payouts existed on the web (/temple-portal/payouts) and had no
@@ -24,7 +25,7 @@ import { payoutStatusLabel } from '../../lib/enum-labels';
  *     array. selectTemplePayouts returns null for it, and the screen says the
  *     ledger is unavailable. Rendering "₹0 received" to a manager who was
  *     refused is a false financial statement, not an empty state.
- *   • `pendingInr` / `paidInr` are read from the server, never re-derived here.
+ *   • `payableInr` / `upcomingInr` / `paidInr` are read from the server, never re-derived here.
  *     The route computes them off `status === 'pending'` / `'completed'`
  *     (temple-portal.ts:358-359); a second local sum would silently disagree
  *     the day a third status appears.
@@ -73,13 +74,33 @@ export default function TemplePayouts() {
               hint="Settled to your account"
             />
             <View style={{ width: spacing.sm }} />
-            <StatCard
-              label="Pending"
-              value={vm.pendingInr === null ? '—' : formatInr(vm.pendingInr)}
-              accent={colors.amber[600]}
-              hint="Awaiting settlement"
-            />
+            {vm.payableInr !== null ? (
+              <StatCard
+                label="Payable"
+                value={formatInr(vm.payableInr)}
+                accent={colors.amber[600]}
+                hint="Puja performed and proved; awaiting settlement"
+              />
+            ) : (
+              // Older server without the split: one honest, unsplit figure.
+              <StatCard
+                label="Pending"
+                value={vm.pendingInr === null ? '—' : formatInr(vm.pendingInr)}
+                accent={colors.amber[600]}
+                hint="Awaiting settlement"
+              />
+            )}
           </View>
+          {upcomingShown(vm.upcomingInr) ? (
+            <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+              <StatCard
+                label={UPCOMING_LABEL}
+                value={formatInr(vm.upcomingInr as number)}
+                accent={colors.stone[500]}
+                hint={UPCOMING_HINT}
+              />
+            </View>
+          ) : null}
 
           <Section title="Payout history">
             {vm.rows.length === 0 ? (
@@ -101,7 +122,12 @@ export default function TemplePayouts() {
                   trailing={p.amountInr === null ? '—' : formatInr(p.amountInr)}
                   trailingHint={formatDay(p.processedAt ?? p.createdAt)}
                   status={{
-                    label: payoutStatusLabel(p.status),
+                    label:
+                      p.releaseStatus === 'upcoming'
+                        ? UPCOMING_LABEL
+                        : p.releaseStatus === 'payable'
+                          ? 'Payable'
+                          : payoutStatusLabel(p.status),
                     color:
                       p.status === 'completed'
                         ? colors.green[600]

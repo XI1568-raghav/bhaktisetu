@@ -19,6 +19,8 @@ import { authenticateUser } from '../middlewares/auth.js';
 import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
 import {
   getPayoutBalance,
+  heldEarningKeys,
+  isUpcomingCommission,
   getKycStatus,
   requestPayout,
   listMyPayouts,
@@ -131,6 +133,10 @@ export async function payoutRequestRoutes(server: FastifyInstance) {
       }),
     ]);
 
+    // Same held sets getPayoutBalance uses, so a row's flag agrees with the
+    // balance's upcomingInr.
+    const held = await heldEarningKeys(userId);
+
     return reply.send({
       data: rows.map((c) => {
         // `amount` is authoritative — it is what getPayoutBalance pays out, so
@@ -152,6 +158,15 @@ export async function payoutRequestRoutes(server: FastifyInstance) {
           platformCut: derivable ? commissionPlatformCut(c.amount, c.percentage).toString() : null,
           ratePercent: derivable ? new Prisma.Decimal(c.percentage).mul(100).toNumber() : null,
           status: c.status,
+          // upcoming = earned but held until the session is held / puja proved;
+          // payable = pending and releasable; in_payout = already requested.
+          releaseStatus: isUpcomingCommission(c, held)
+            ? 'upcoming'
+            : c.status === 'PENDING'
+              ? c.payoutRequestId
+                ? 'in_payout'
+                : 'payable'
+              : c.status.toLowerCase(),
           createdAt: c.createdAt,
         };
       }),

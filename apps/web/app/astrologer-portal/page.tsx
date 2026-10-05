@@ -79,6 +79,8 @@ type ApiAstroDashboard = {
   // they are missing the cards must render an em dash, never an invented ₹0.
   paidOutInr?: number | null;
   pendingPayoutInr?: number | null;
+  // Earned from consultations not yet completed; NOT part of pendingPayoutInr.
+  upcomingInr?: number | null;
   astrologerShare?: number | null;
   activeClients: number;
  };
@@ -319,6 +321,13 @@ export default function AstrologerDashboard() {
  pending={liveStats?.pendingPayoutInr ?? null}
  thisMonth={liveStats?.earningsMonthInr ?? ZERO_STATS.earningsThisMonth}
  />
+ {(liveStats?.upcomingInr ?? 0) > 0 && (
+ <p data-testid="astro-upcoming-inr" className="text-xs text-surface-500 -mt-2">
+ {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(liveStats!.upcomingInr!)}{' '}
+ earned from upcoming consultations. It becomes payable after the consultation is completed and is not
+ included in Pending payout.
+ </p>
+ )}
 
  {/* Quick Stats */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

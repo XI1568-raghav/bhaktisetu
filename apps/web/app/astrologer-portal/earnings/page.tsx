@@ -29,6 +29,8 @@ interface EarningRow {
 interface Summary {
   totalEarningsInr: number;
   pendingInr: number;
+  /** Consultations not yet completed; excluded from pendingInr. */
+  upcomingInr?: number;
   paidInr: number;
   astrologerShare: number;
 }
@@ -75,7 +77,7 @@ export default function AstrologerEarningsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${(summary?.upcomingInr ?? 0) > 0 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
         <div className="bg-white rounded-xl border border-surface-100 p-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
@@ -89,7 +91,7 @@ export default function AstrologerEarningsPage() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-surface-100 p-5">
+        <div data-testid="earnings-pending" className="bg-white rounded-xl border border-surface-100 p-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-amber-600" />
@@ -102,6 +104,22 @@ export default function AstrologerEarningsPage() {
             </div>
           </div>
         </div>
+        {!loading && (summary?.upcomingInr ?? 0) > 0 && (
+          <div data-testid="earnings-upcoming" className="bg-white rounded-xl border border-surface-100 p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-surface-100 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-surface-600" />
+              </div>
+              <div>
+                <p className="text-xs text-surface-500">Upcoming (after the consultation)</p>
+                <p className="text-lg font-bold text-surface-800">{formatINR(summary?.upcomingInr ?? 0)}</p>
+                <p className="text-xs text-surface-400 mt-0.5">
+                  Earned. Becomes payable after the consultation is completed.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="bg-white rounded-xl border border-surface-100 p-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
