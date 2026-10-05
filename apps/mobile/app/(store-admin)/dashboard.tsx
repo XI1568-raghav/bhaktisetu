@@ -71,7 +71,15 @@ export default function StoreDashboard() {
         <StatCard label="Orders" value={stats.todayOrders ?? 0} hint="today" />
       </View>
       <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
-        <StatCard label="This Month" value={inr(stats.monthSales)} />
+        <StatCard
+          label="This Month"
+          value={inr(stats.monthSales)}
+          hint={
+            stats.monthOnlineSales !== undefined && stats.monthCodSales !== undefined
+              ? `Online ${inr(stats.monthOnlineSales)} · Cash on delivery (yours) ${inr(stats.monthCodSales)}`
+              : undefined
+          }
+        />
         <View style={{ width: spacing.sm }} />
         <StatCard
           label="Low Stock"

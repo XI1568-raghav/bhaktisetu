@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { gaushalaQuality, templeQuality } from '../lib/cause-quality.js';
+import { CauseQualityError, gaushalaQuality, qualityReasonsForEdit, templeQuality } from '../lib/cause-quality.js';
 
 /** Upper bound on approved cause profiles scanned per list call (quality filter runs in memory). */
 const CAUSE_LIST_CAP = 500;
@@ -307,7 +307,9 @@ export class ProviderService {
     try {
       const updated = await this.updateProviderProfile(type, id, userId, updates);
       return updated;
-    } catch {
+    } catch (err) {
+      // A quality refusal is a real answer, not a DB outage: never fall back to the mock.
+      if (err instanceof CauseQualityError) throw err;
       // Mock: return merged result
       const mockList = MOCK_MAP[type] ?? [];
       const provider = mockList.find((p) => p.id === id);
@@ -543,12 +545,16 @@ export class ProviderService {
       case 'gaushala': {
         const existing = await prisma.gaushalaProfile.findUnique({ where: { id } });
         if (!existing || existing.userId !== userId) return null;
+        const failing = qualityReasonsForEdit('gaushala', existing, safeUpdates);
+        if (failing) throw new CauseQualityError('GAUSHALA_MANAGER', failing);
         const updated = await prisma.gaushalaProfile.update({ where: { id }, data: safeUpdates as Record<string, unknown> });
         return updated as unknown as Record<string, unknown>;
       }
       case 'temple': {
         const existing = await prisma.templeProfile.findUnique({ where: { id } });
         if (!existing || existing.userId !== userId) return null;
+        const failing = qualityReasonsForEdit('temple', existing, safeUpdates);
+        if (failing) throw new CauseQualityError('TEMPLE_MANAGER', failing);
         const updated = await prisma.templeProfile.update({ where: { id }, data: safeUpdates as Record<string, unknown> });
         return updated as unknown as Record<string, unknown>;
       }
