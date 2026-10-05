@@ -129,7 +129,7 @@ export default function TempleDashboard() {
    ? api.reason === 'not_approved'
     ? 'Your temple profile is awaiting approval by the Darshya team. Bookings, donations and payouts appear here once it is approved and linked to your temple.'
     : api.reason === 'no_matching_temple'
-     ? 'Your temple profile name does not match any temple listed on Darshya, so no bookings can be shown. Check the spelling on your profile or contact support.'
+     ? 'Your temple profile is not connected to a public temple page on Darshya yet; the Darshya team connects it by hand, and your bookings and offerings will appear here once that is done.'
      : 'Complete your temple profile to start receiving bookings and donations.'
    : null;
  // CT-UI-1: join only the parts that exist — a bare ", ·" rendered for an
