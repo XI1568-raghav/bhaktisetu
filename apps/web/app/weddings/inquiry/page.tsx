@@ -72,8 +72,8 @@ function InquiryForm() {
       <div className="max-w-xl mx-auto bg-white rounded-xl p-8 border border-amber-100 text-center">
         <h2 className="font-serif text-2xl text-amber-900">Thank you</h2>
         <p className="mt-2 text-stone-700">
-          A Darshya wedding concierge will reach out within 24 hours. Please check your email for a
-          confirmation.
+          Our team will reach out about your inquiry. We do not promise a reply time and an email
+          confirmation is not guaranteed.
         </p>
       </div>
     );
@@ -200,7 +200,7 @@ export default function InquiryPage() {
     <main className="min-h-[100dvh] bg-amber-50/40 py-12 px-4">
       <h1 className={`${H1.catalogue} text-center`}>Wedding inquiry</h1>
       <p className="mt-2 text-stone-700 text-center max-w-2xl mx-auto">
-        Tell us a little about your wedding. A Darshya concierge will respond within 24 hours.
+        Tell us a little about your wedding. Our team will reply; we do not promise a reply time.
       </p>
       <div className="mt-8">
         <Suspense fallback={<div className="text-center text-stone-600">Loading…</div>}>

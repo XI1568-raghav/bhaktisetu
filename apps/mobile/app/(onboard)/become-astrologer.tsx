@@ -26,7 +26,7 @@ import { verifiedNoun } from '../../lib/pandit-vetting';
  *     from apps/api and pinned by a test). Aadhaar is read as a PAYOUT gate,
  *     not published as a credential.
  *
- *   "Devotees pay 2-3× more for verified astrologers."
+ *   "Devotees pay 2-3× more for approved astrologers."
  *     A measurement no funnel in this product has ever taken — the same
  *     sentence shape as the "boosts donor conversion 3-4x" already removed
  *     from list-gaushala.tsx. Deleted rather than softened.

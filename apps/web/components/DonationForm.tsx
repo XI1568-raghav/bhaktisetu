@@ -440,8 +440,8 @@ export default function DonationForm({
           <h2 className="text-lg font-bold text-surface-800">Donate to {causeName}</h2>
           <p className="text-xs text-surface-500">
             {HAS_80G
-              ? 'Secure payment via Razorpay · 80G tax-deductible · Receipt emailed instantly'
-              : 'Secure payment via Razorpay · Receipt emailed instantly'}
+              ? 'Secure payment via Razorpay · 80G tax-deductible · Numbered receipt'
+              : 'Secure payment via Razorpay · Numbered receipt'}
           </p>
         </div>
       </div>
@@ -637,7 +637,7 @@ export default function DonationForm({
         </span>
         <span className="flex items-center gap-1">
           <FileText className="h-3.5 w-3.5 text-saffron-600" />{' '}
-          {HAS_80G ? '80G receipt' : 'Receipt emailed'}
+          {HAS_80G ? '80G receipt' : 'Numbered receipt'}
         </span>
       </div>
 

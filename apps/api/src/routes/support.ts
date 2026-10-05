@@ -11,6 +11,7 @@ import {
   supportTicketReplyEmail,
 } from '../lib/email.js';
 import { summarizeSla, type SlaTicketInput } from '../lib/support-sla.js';
+import { REFUND_DAYS_LABEL, REFUND_INTERNATIONAL_CARD_LABEL } from '../lib/refund-timing.js';
 import {
   PANDIT_ONBOARDING_ANSWER,
   PLATFORM_SUMMARY_TRUST_CLAUSE,
@@ -42,17 +43,19 @@ const SUPPORT_SYSTEM_PROMPT = `You are Asha, Darshya's AI customer support assis
 - When you CAN'T help (complex refunds >₹5000, account deletion, disputes, legal, medical, bugs, payment failures needing investigation) → explicitly set escalate=true
 
 ## Platform knowledge
-**Features:** Temples (200+), Pujas (home + temple), Live Darshan (HD streams), AI Pandit (Gita Q&A), Astrology (kundli/horoscope), Wellness (yoga/meditation/vipassana), Store, Gaushala (cow adoption), Panchang, Dharmic Yatra (Char Dham, 12 Jyotirlingas with verified companions).
+**Features:** Temples, Pujas (home + temple), Live Darshan (temple streams that follow each temple's own schedule), AI Pandit (Gita Q&A), Astrology (kundli/horoscope), Wellness (yoga/meditation/vipassana), Store (India delivery only), Gaushala (cow adoption), Panchang, Dharmic Yatra.
 
-**Booking:** Pujas bookable via /pujas. Home pujas at /pujas/home-puja. Marriage at /pujas/marriage. Yatra at /yatra. All pandits Aadhaar-verified.
+**Booking:** Pujas bookable via /pujas. Home pujas at /pujas/home-puja. Marriage at /pujas/marriage. Yatra at /yatra. Never say pandits are verified or Aadhaar-verified: a pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate and not a public credential check.
 
 **Pricing:** Pujas from ₹501, Home pujas from ₹1,100, Marriage from ₹11,000, Yatra from ₹15,000, Wellness from ₹299, Store free delivery above ₹499, Astrology from ₹15/min.
 
-**Cancellation:** Free up to 24 hrs before scheduled time. Refunds in 3-5 business days.
+**Cancellation:** 100% refund at 48 hours or more before the scheduled time, 75% between 24 and 48 hours; no cancellation inside 24 hours. Refunds reach the account in ${REFUND_DAYS_LABEL}; international cards can take ${REFUND_INTERNATIONAL_CARD_LABEL}, which is the card issuer's timing and not a Darshya promise.
 
 **Payments:** Razorpay only, INR only — for domestic and international devotees alike. (The Stripe/USD rail was removed 2026-08-11; do not tell users they can pay in USD.)
 
-**Video proof:** Every puja booking gets video proof from the priest before payout.
+**Video proof:** Every puja booking gets video proof from the priest before payout. Never promise a delivery time or notification: the booking page always shows the current status.
+
+**Delivery:** Store orders are delivered within India only. Prasad delivery is an optional flat ₹150 add-on chosen at booking; the booking page shows a tracking ID once one is recorded. Do not quote delivery timelines, couriers or countries served.
 
 ## Response format
 Respond with ONLY valid JSON:
@@ -114,37 +117,37 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['book puja', 'book a puja', 'puja booking'],
-    message: 'You can book any puja in 3 steps: pick a temple, choose the ritual, and pay. All pandits are Aadhaar-verified and you get video proof after completion.',
+    message: 'You can book any puja in 3 steps: pick a temple, choose the ritual, and pay. Every booking includes video proof of the puja, shown on your booking page.',
     actions: [{ label: 'Browse Pujas', href: '/pujas' }, { label: 'Home Puja', href: '/pujas/home-puja' }],
   },
   {
     keywords: ['home puja', 'pandit at home', 'home visit'],
-    message: 'We offer Griha Pravesh, Satyanarayan, Ganesh, Lakshmi, Rudrabhishek and more. Pandits bring all samagri and arrive on time.',
+    message: 'Home pujas such as Griha Pravesh, Satyanarayan, Ganesh, Lakshmi and Rudrabhishek are listed on the Home Puja page, with what is included on each.',
     actions: [{ label: 'Book Home Puja', href: '/pujas/home-puja' }],
   },
   {
     keywords: ['marriage', 'wedding', 'vivah'],
-    message: 'Wedding packages start at ₹11,000. Vedic, Arya Samaj, South Indian, Punjabi/Sikh blended ceremonies all supported.',
+    message: 'Wedding packages start at ₹11,000. Each package page lists the ceremony styles it covers.',
     actions: [{ label: 'Book Wedding', href: '/pujas/marriage' }],
   },
   {
     keywords: ['yatra', 'pilgrimage', 'char dham', 'jyotirlinga'],
-    message: 'Our Dharmic Yatra covers 9 pilgrimages with 3 package tiers plus verified travel companions for elderly devotees.',
+    message: 'Our Dharmic Yatra page lists the pilgrimages and package tiers on offer, and the Travel Companion page lists companions for elderly devotees.',
     actions: [{ label: 'Explore Yatra', href: '/yatra' }, { label: 'Travel Companion', href: '/yatra/companion' }],
   },
   {
     keywords: ['darshan', 'live stream', 'buffering'],
-    message: 'HD darshan streams are available 24/7 from 200+ temples. For buffering, try switching to a lower quality in the player or check your connection.',
+    message: 'Live darshan follows each temple\'s own schedule, and the darshan page shows which streams are live now. For buffering, try switching to a lower quality in the player or check your connection.',
     actions: [{ label: 'Watch Live', href: '/darshan' }],
   },
   {
     keywords: ['astrology', 'kundli', 'horoscope'],
-    message: 'Free kundli generation, daily horoscope for 12 rashis, or consult verified astrologers from ₹15/min.',
+    message: 'Free kundli generation, daily horoscope for 12 rashis, or consult an astrologer from ₹15/min.',
     actions: [{ label: 'Astrology', href: '/astrology' }],
   },
   {
     keywords: ['refund', 'cancel', 'cancellation'],
-    message: 'Cancellation is free up to 24 hours before scheduled time. Refunds reach your account in 3-5 business days.',
+    message: `Cancelling 48 hours or more before the scheduled time refunds 100%; between 24 and 48 hours refunds 75%; inside 24 hours a booking cannot be cancelled. Refunds reach your account in ${REFUND_DAYS_LABEL}; international cards can take ${REFUND_INTERNATIONAL_CARD_LABEL}, which is your card issuer's timing, not ours.`,
     actions: [{ label: 'My Bookings', href: '/bookings' }],
     escalate: true,
   },
@@ -152,31 +155,31 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
     // Trust/security questions — must appear before the "payment failed" entry
     // so a benign "Is payment secure?" doesn't get routed to escalation.
     keywords: ['payment secure', 'is it safe', 'safe to pay', 'payment safe', 'is payment secure', 'secure payment'],
-    message: 'Yes — payments go through Razorpay, which is PCI-DSS Level 1 certified. We never store card details. All pandits are Aadhaar-verified.',
+    message: 'Yes — payments go through Razorpay, which is PCI-DSS Level 1 certified. We never store card details.',
   },
   {
     keywords: ['payment failed', 'payment didn\'t', 'payment didnt', 'razorpay failed', 'card declined', 'money deducted'],
-    message: 'If payment was deducted but booking didn\'t appear, we\'ll investigate immediately. Please share your transaction ID.',
+    message: 'If payment was deducted but the booking did not appear, please share your transaction ID so our team can look into it.',
     escalate: true,
   },
   {
     keywords: ['human', 'agent', 'real person', 'supervisor', 'manager'],
-    message: 'Sure! I\'m connecting you with a human support agent. They\'ll reply in under 4 hours.',
+    message: 'Sure. I\'m passing this to our support team. You can also email support@darshya.online; we aim to reply within 24 hours, Monday to Saturday.',
     escalate: true,
   },
   {
     keywords: ['wellness', 'yoga', 'meditation', 'vipassana'],
-    message: 'Book certified instructors for Yoga, Meditation, or 10-day Vipassana retreats. Sessions start at ₹299.',
+    message: 'Book instructors for Yoga, Meditation, or Vipassana retreats. Sessions start at ₹299.',
     actions: [{ label: 'Wellness', href: '/wellness' }],
   },
   {
     keywords: ['store', 'order', 'shipping'],
-    message: 'Puja thalis, rudraksha, idols, incense delivered in 3-5 days. Free shipping above ₹499.',
+    message: 'The store delivers within India only. Free delivery above ₹499, otherwise a flat ₹49. The order page shows its status and a tracking number once the courier assigns one.',
     actions: [{ label: 'Store', href: '/store' }],
   },
   {
     keywords: ['gaushala', 'cow', 'adopt'],
-    message: 'Adopt a cow from ₹51/day. Monthly photo updates, visit anytime. 12 cows across 3 verified gaushalas.',
+    message: 'Browse the gaushalas on the Gau Seva page; each listing shows the cows and what an adoption includes.',
     actions: [{ label: 'Gau Seva', href: '/gaushala' }],
   },
   {
@@ -185,7 +188,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
     // Priest.aadhaarVerified has no writer outside prisma/seed.ts and
     // scripts/seed-demo-users.ts, so that was a claim about seed rows. See
     // lib/pandit-vetting.ts — gated, not deleted.
-    message: `Darshya is India's devotional super-app — live darshan from 200+ temples, puja bookings with video proof, astrology, wellness, pilgrimages, and a store for religious items. ${PLATFORM_SUMMARY_TRUST_CLAUSE}`,
+    message: `Darshya is India's devotional super-app — live darshan, puja bookings with video proof, astrology, wellness, pilgrimages, and a store for religious items. ${PLATFORM_SUMMARY_TRUST_CLAUSE}`,
     actions: [
       { label: 'Browse Pujas', href: '/pujas' },
       { label: 'Live Darshan', href: '/darshan' },
@@ -193,7 +196,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['24/7', '24 7', 'always live', 'anytime darshan'],
-    message: 'Most darshan streams run 4am–10pm IST as per temple timings. A few major temples stream 24/7. Each temple page shows its exact schedule.',
+    message: 'Each darshan stream follows its own temple\'s timings, so none is guaranteed to be live around the clock. The darshan page shows what is live now.',
     actions: [{ label: 'Watch Live', href: '/darshan' }],
   },
   {
@@ -203,21 +206,21 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['prasad arrive', 'prasad delivery', 'when prasad', 'prasad ship'],
-    message: 'Prasad ships within 24 hours of puja completion. India: 3–5 days. NRI: 7–14 days depending on country. Tracking is emailed automatically.',
+    message: 'Prasad delivery is an optional flat ₹150 add-on chosen when you book. We do not promise a delivery date; your booking page shows a tracking ID once one is recorded.',
     actions: [{ label: 'My Bookings', href: '/bookings' }],
   },
   {
     keywords: ['cancel booking', 'cancel my', 'cancel puja', 'cancel yatra'],
-    message: 'You can cancel any booking up to 24 hours before scheduled time for a full refund. Go to My Bookings, tap the booking, and choose Cancel.',
+    message: 'You can cancel up to 24 hours before the scheduled time: 100% refund at 48 hours or more, 75% between 24 and 48 hours. Go to My Bookings, open the booking, and choose Cancel; the page shows your exact refund first.',
     actions: [{ label: 'My Bookings', href: '/bookings' }],
   },
   {
     keywords: ['language', 'hindi', 'tamil', 'telugu', 'marathi', 'bengali'],
-    message: 'Darshya supports English, Hindi, Tamil, Telugu, Kannada, Marathi, and Bengali. Switch from the language selector in the footer.',
+    message: 'Darshya is available in English, Hindi, Tamil, Telugu, Bengali and Marathi. Switch from the language selector in the footer; most of the product is in English and each language page says how much is translated.',
   },
   {
     keywords: ['nri', 'abroad', 'from usa', 'from uk', 'international user', 'outside india'],
-    message: 'Absolutely. NRI devotees can book every puja, darshan, yatra and store item from 40+ countries. Payment is in INR through Razorpay, which accepts international cards. Prasad ships worldwide in 7–14 days.',
+    message: 'NRI devotees can book pujas from abroad. NRI pricing is 2.5x the domestic price, shown in USD and charged in INR through Razorpay; an international card works where your card issuer allows international payments. Store orders are delivered within India only, and we do not promise prasad delivery dates.',
     actions: [
       { label: 'Browse Pujas', href: '/pujas' },
       { label: 'NRI Gifting', href: '/nri' },
@@ -225,7 +228,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['temple in', 'temples in', 'do you have temple'],
-    message: 'We partner with 200+ temples across India — Kashi Vishwanath, Tirumala, Somnath, Vaishno Devi, Shirdi, Siddhivinayak and more. Browse the full list.',
+    message: 'Browse the temples we list on the Temples page, with the pujas offered at each.',
     actions: [{ label: 'All Temples', href: '/temples' }],
   },
   {
@@ -241,7 +244,7 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; message: string; actions?:
   },
   {
     keywords: ['video proof', 'proof of puja', 'how will i know'],
-    message: 'Every puja booking gets HD video proof from the priest within 2–4 hours of completion. Saved in My Bookings forever. Priests are paid only after upload.',
+    message: 'Every puja booking gets video proof from the priest. We aim to upload it within 24-48 hours of the ceremony; it appears on your booking page, and videos are kept for 90 days. Priests are paid only after upload.',
     actions: [{ label: 'My Bookings', href: '/bookings' }],
   },
   {
@@ -302,7 +305,7 @@ export async function supportRoutes(server: FastifyInstance) {
     const mentionsRefund = /refund|money back/.test(lowerMsg);
     if (mentionsRefund && refundAmount > 5000) {
       return reply.send({
-        message: `I see you're asking about a refund of ₹${refundAmount.toLocaleString('en-IN')}. Because it's above ₹5,000, I'm connecting you with a human agent who'll resolve it within 4 hours. Please keep your transaction ID handy.`,
+        message: `I see you're asking about a refund of ₹${refundAmount.toLocaleString('en-IN')}. Because it's above ₹5,000, I'm passing it to our support team. Please create a ticket and keep your transaction ID handy; we aim to reply within 24 hours, Monday to Saturday.`,
         confidence: 'high',
         escalate: true,
         suggestedActions: [{ label: 'Create Support Ticket', href: '/support/ticket/new' }],
@@ -323,7 +326,7 @@ export async function supportRoutes(server: FastifyInstance) {
     if (humanRequestPatterns.some((p) => p.test(lowerMsg))) {
       return reply.send({
         message:
-          "Of course — I'm connecting you with a human support agent. They'll reply within 4 hours. You can also create a ticket now and we'll pick it up immediately.",
+          "Of course. Please create a ticket so our support team can pick it up; we aim to reply within 24 hours, Monday to Saturday.",
         confidence: 'high',
         escalate: true,
         suggestedActions: [{ label: 'Create Support Ticket', href: '/support/ticket/new' }],

@@ -21,7 +21,7 @@ const BENEFITS = [
   },
   {
     title: 'Built-in audience',
-    body: 'Listed on /wellness next to verified astrologers and pandits. Curated audience that already pays.',
+    body: 'Listed on /wellness next to approved astrologers and pandits. Curated audience that already pays.',
   },
   {
     title: 'Recordings + reviews',

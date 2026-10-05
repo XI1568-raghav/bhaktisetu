@@ -138,7 +138,7 @@ const roadmap: Milestone[] = [
     // above now reads the live count, so restating 200 here would put the same
     // 10x overstatement back on the page in prose.
     title: 'The first temples opened their doors.',
-    body: 'We sat with temple administrators and priests across India. By the end of the month the first temples were listed, every priest was verified by name and photograph, and the very first video-proof puja went out to a devotee in Toronto. The live count is in the strip above — it is read from our catalogue, not typed into this page.',
+    body: 'We sat with temple administrators and priests across India. By the end of the month the first temples were listed. The live count is in the strip above — it is read from our catalogue, not typed into this page.',
     status: 'shipped',
     icon: 'building',
     accent: '#c4814a',

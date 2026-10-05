@@ -17,6 +17,7 @@ import {
   type PartialLedgerResult,
 } from './ledger-reversal.service.js';
 import { cancellationService } from './cancellation.service.js';
+import { REFUND_DAYS_LABEL, REFUND_INTERNATIONAL_CARD_LABEL } from '../lib/refund-timing.js';
 // OPS-05: durable money trail. Never throws, never joins the caller's
 // transaction — see lib/audit-money.ts. Refunds are the single most disputed
 // money event on this platform and the one the product stored least about:
@@ -159,10 +160,10 @@ function refundSuccessEmail(params: {
 <p>${label} of <strong>${amount}</strong> for your <strong>${pujaName}</strong> booking at <strong>${templeName}</strong> has been processed.</p>
 <p><strong>Booking #:</strong> ${bookingNumber}<br>
 <strong>Refund reference:</strong> ${refundId}</p>
-<p>The amount will appear on your original payment method within 5-7 business days. If you don't see it, please reply to this email.</p>
+<p>The amount will appear on your original payment method in ${REFUND_DAYS_LABEL}. International cards can take ${REFUND_INTERNATIONAL_CARD_LABEL}, which is set by your card issuer and not by Darshya. If you don't see it after that, please reply to this email.</p>
 <p style="font-size:11px;color:#999;margin-top:24px;">Darshya · darshya.online</p>
 </div></body></html>`,
-    text: `Namaste ${devoteeName},\n\n${label} of ${amount} for booking ${bookingNumber} (${pujaName} at ${templeName}) has been processed.\nRefund reference: ${refundId}\n\nThe amount will appear on your original payment method within 5-7 business days.`,
+    text: `Namaste ${devoteeName},\n\n${label} of ${amount} for booking ${bookingNumber} (${pujaName} at ${templeName}) has been processed.\nRefund reference: ${refundId}\n\nThe amount will appear on your original payment method in ${REFUND_DAYS_LABEL}. International cards can take ${REFUND_INTERNATIONAL_CARD_LABEL}, which is set by your card issuer and not by Darshya.`,
   };
 }
 

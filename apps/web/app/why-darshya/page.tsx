@@ -88,7 +88,7 @@ const ROWS: Row[] = [
   {
     feature: 'Live darshan (free)',
     darshya: '✓ Free for everyone, no signup',
-    sriMandir: '✓ 30+ temples',
+    sriMandir: '✓ Yes',
     utsav: '~ Limited',
     astrosage: '✗',
     detail: 'Major temples include Kashi Vishwanath, Tirupati, Siddhivinayak, Somnath and Jagannath Puri. The list that is live right now is on /darshan. There is no paid darshan tier — every stream is free.',
@@ -180,11 +180,11 @@ const ROWS: Row[] = [
 const PILLARS = [
   {
     title: 'Devotee-first, not aggregator-first',
-    body: 'We refuse partnerships that compromise temple authenticity or pandit livelihoods. 20-40% platform commission funds infrastructure, not VC quarterly targets.',
+    body: 'We refuse partnerships that compromise temple authenticity or pandit livelihoods. A uniform 20% platform commission funds infrastructure, not VC quarterly targets.',
   },
   {
     title: 'Built by one founder',
-    body: 'No layer of middle management to dilute decisions. When you message support, the person who can fix it sees your message within hours.',
+    body: 'No layer of middle management to dilute decisions. When you message support, your message goes to the person who can fix it.',
   },
   {
     title: 'NRI is a first-class customer',

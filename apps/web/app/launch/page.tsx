@@ -61,7 +61,7 @@ export const metadata: Metadata = {
 const FEATURES: { title: string; body: string; href: string }[] = [
   {
     title: 'Live Darshan from sacred temples',
-    body: 'Watch HD aarti streams from Tirupati, Kashi Vishwanath, Vrindavan, Golden Temple and 100+ verified shrines — for free.',
+    body: 'Watch aarti streams from the temples listed on the darshan page — for free. Which streams are live changes with each temple\'s schedule.',
     href: '/darshan',
   },
   {
@@ -93,8 +93,8 @@ const FEATURES: { title: string; body: string; href: string }[] = [
     // all branch on the same constant; this card was the outlier.
     title: HAS_80G ? 'Gaushala seva + 80G receipts' : 'Gaushala seva, with proof',
     body: HAS_80G
-      ? 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Verified gaushalas, real photos, 80G tax receipt emailed to you.'
-      : 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Verified gaushalas, real photos, and a donation receipt PDF emailed for every contribution.',
+      ? 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Gaushalas listed by the Darshya team, with an 80G tax receipt.'
+      : 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Gaushalas listed by the Darshya team, and a numbered donation receipt PDF for every contribution.',
     href: '/gaushala',
   },
 ];

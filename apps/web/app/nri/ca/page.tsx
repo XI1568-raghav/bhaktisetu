@@ -31,7 +31,7 @@ const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 export const metadata: Metadata = {
   title: 'Canada NRI — Live Puja Booking & Darshan from India',
   description:
-    'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at verified temples in India. Live darshan, donation receipts, weekly 1:1 priest call. CAD checkout, transparent pricing.',
+    'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at temples in India. Live darshan, donation receipts. Canadian cards are accepted and billed in INR; NRI pricing is 2.5x the domestic price.',
   alternates: {
     canonical: 'https://darshya.online/nri/ca',
     languages: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Canada NRI — Darshya',
     description:
-      'Indo-Canadian devotional super-app. Pujas at verified India temples, live darshan, AI Pandit. CAD checkout.',
+      'Indo-Canadian devotional super-app. Pujas at India temples, live darshan, AI Pandit. Canadian cards billed in INR.',
     url: 'https://darshya.online/nri/ca',
     type: 'website',
     locale: 'en_CA',
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Darshya — Canada NRI',
-    description: 'India temples + live darshan + CAD checkout for Toronto, Vancouver, Brampton.',
+    description: 'India temples + live darshan, paid by Canadian card in INR.',
   },
 };
 
@@ -92,8 +92,8 @@ const canadaMetros = [
 const benefits = [
   {
     icon: Globe2,
-    title: 'Book pujas at verified India temples',
-    body: 'Rudrabhishek at Kashi Vishwanath, Satyanarayan at Tirupati, Lakshmi puja at Ujjain Mahakaleshwar. Every temple manually verified by founder — no fake listings.',
+    title: 'Book pujas at India temples',
+    body: 'Rudrabhishek at Kashi Vishwanath, Satyanarayan at Tirupati, Lakshmi puja at Ujjain Mahakaleshwar.',
   },
   {
     icon: Phone,
@@ -102,10 +102,10 @@ const benefits = [
   },
   {
     icon: FileText,
-    title: HAS_80G ? '80G receipts (India tax-deductible)' : 'Donation receipts, emailed instantly',
+    title: HAS_80G ? '80G receipts (India tax-deductible)' : 'Numbered donation receipts',
     body: HAS_80G
       ? 'Donations to registered Indian temples auto-generate 80G receipts. Useful for India-tax filers; documentation for CRA charitable contribution claims.'
-      : 'Every donation auto-generates a receipt PDF with its own receipt number. It is proof of payment, not a tax-exemption certificate: Darshya holds no Section 80G registration yet, so a donation made today is not deductible in India, and it is not deductible in Canada either.',
+      : 'Every donation gets a receipt PDF with its own receipt number. It is proof of payment, not a tax-exemption certificate: Darshya holds no Section 80G registration yet, so a donation made today is not deductible in India, and it is not deductible in Canada either.',
   },
   {
     icon: Calendar,
@@ -114,19 +114,19 @@ const benefits = [
   },
   {
     icon: ShieldCheck,
-    title: 'Pandit-verified, video proof mandatory',
-    body: `Every booking ships a video of your puja being performed. If none has arrived ${COMPANY.refunds.missingVideoEscalationHours}h after your slot, a sweep cancels a booking still waiting on its assigned pandit and sends it for manual refund review; any other status is reviewed when you write in. Where the pandit is at fault the refund is 100%. Pandits Aadhaar-verified before payout.`,
+    title: 'Video proof mandatory',
+    body: `Every booking ships a video of your puja being performed. If none has arrived ${COMPANY.refunds.missingVideoEscalationHours}h after your slot, a sweep cancels a booking still waiting on its assigned pandit and sends it for manual refund review; any other status is reviewed when you write in. Where the pandit is at fault the refund is 100%. A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a credential check.`,
   },
   {
     icon: Sparkles,
-    title: 'AI Pandit in your language',
+    title: 'AI Pandit in English and Hindi',
     // TC-04: this used to end "…; unlimited on NRI Premium." That tier is
     // withdrawn from sale — both activation rails answer 400 — so the sentence
     // upsold a plan that cannot be bought. Gated on the same constant /nri
     // uses, so the upsell returns with the plan rather than being rewritten.
     body: NRI_PREMIUM_IS_SELLABLE
-      ? 'Ask scripture, panchang, muhurat, gotra questions in English, Hindi, Punjabi, Tamil, Gujarati. Daily 5 free questions; unlimited on NRI Premium.'
-      : 'Ask scripture, panchang, muhurat, gotra questions in English, Hindi, Punjabi, Tamil, Gujarati. 5 free questions a month.',
+      ? 'Ask scripture, panchang, muhurat, gotra questions in English and Hindi. Daily 5 free questions; unlimited on NRI Premium.'
+      : 'Ask scripture, panchang, muhurat, gotra questions in English and Hindi. 5 free questions a month.',
   },
 ];
 
@@ -175,7 +175,7 @@ export default function CanadaNriLanding() {
               <span className="text-saffron-700">your Canada home.</span>
             </h1>
             <p className="prose-lead text-surface-600 mb-8 leading-relaxed">
-              Book pujas at verified India temples. Watch live aarti. Get video proof of every booking. Built for the Canadian Hindu, Punjabi, Tamil, and Gujarati diaspora — from morning Kashi sandhya to evening Tirupati suprabhatam, on your timezone.
+              Book pujas at India temples. Watch live aarti. Get video proof of every booking. Built for the Canadian Hindu, Punjabi, Tamil, and Gujarati diaspora — from morning Kashi sandhya to evening Tirupati suprabhatam, on your timezone.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
               <Link
@@ -193,7 +193,7 @@ export default function CanadaNriLanding() {
               </Link>
             </div>
             <p className="text-xs text-surface-500 mt-4">
-              CAD checkout activation in progress · Toronto + Vancouver + Brampton priority metros · video proof on every puja
+              Pay by Canadian card, billed in INR · video proof on every puja
             </p>
           </div>
         </div>
@@ -275,7 +275,7 @@ export default function CanadaNriLanding() {
             Be first when CAD checkout goes live
           </h2>
           <p className="text-surface-700 mb-6 max-w-xl mx-auto">
-            Join the Canada waitlist. We email Toronto, Vancouver, and Brampton subscribers first when CAD pricing goes live.
+            Join the Canada waitlist. Your email is stored as a waitlist entry; there is no date for a CAD payment rail.
           </p>
           {/* TC-04: this CTA read "See NRI Premium tier" and sent a Canadian
               visitor to a plan that cannot be bought — both activation rails
@@ -286,7 +286,7 @@ export default function CanadaNriLanding() {
             href={NRI_PREMIUM_IS_SELLABLE ? '/nri' : '/temples'}
             className={buttonClass('primary', 'md', 'shadow-md shadow-saffron-600/20')}
           >
-            {NRI_PREMIUM_IS_SELLABLE ? 'See NRI Premium tier' : 'Browse verified temples'}
+            {NRI_PREMIUM_IS_SELLABLE ? 'See NRI Premium tier' : 'Browse temples'}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -300,7 +300,7 @@ export default function CanadaNriLanding() {
             '@type': 'Service',
             name: 'Darshya — Canada NRI Devotional Platform',
             description:
-              'Live darshan, puja booking at verified India temples, and AI Pandit guidance built for the Indo-Canadian diaspora across Toronto, Vancouver, Brampton, Mississauga, Calgary, Edmonton, Montreal, and Ottawa.',
+              'Live darshan, puja booking at India temples, and AI Pandit guidance built for the Indo-Canadian diaspora across Toronto, Vancouver, Brampton, Mississauga, Calgary, Edmonton, Montreal, and Ottawa.',
             provider: {
               '@type': 'Organization',
               name: 'Darshya',

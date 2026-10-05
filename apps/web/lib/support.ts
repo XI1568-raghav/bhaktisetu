@@ -27,6 +27,7 @@ import {
  CANCELLATION_CUTOFF_HOURS,
  PARTIAL_REFUND_PERCENT,
  REFUND_SETTLEMENT_SENTENCE,
+ REFUND_DAYS_LABEL,
 } from './cancellation-policy';
 
 const FREE_DELIVERY_ABOVE = `₹${COMPANY.store.freeDeliveryAboveInr.toLocaleString('en-IN')}`;
@@ -559,7 +560,7 @@ export const SAMPLE_ADMIN_TICKETS: Ticket[] = [
  id: 'm2',
  author: 'agent',
  authorName: 'Priya S.',
- body: 'Confirmed duplicate auth on Razorpay. Refund of ₹1,100 initiated — will reflect in 3-5 business days.',
+ body: 'Confirmed duplicate auth on Razorpay. Refund of ₹1,100 initiated — will reflect in 5-7 business days.',
  createdAt: hoursAgo(2),
  },
  ],
@@ -628,7 +629,7 @@ export function generateAgentReply(category: TicketCategory, subject: string): s
  store:
  'Sorry about the issue. I\'ve created a return pickup request — a delivery partner will collect the item within 48 hours. Replacement will be dispatched the moment pickup is scanned. No charges for the return.',
  astrology:
- 'I checked with the astrologer and there was a genuine scheduling conflict. We\'re offering two options: (1) full refund credited in 3-5 days, or (2) priority reschedule with a senior astrologer at no extra cost — plus a 15% credit for the inconvenience. Let me know which you prefer.',
+ 'I checked with the astrologer and there was a genuine scheduling conflict. We\'re offering two options: (1) full refund credited in 5-7 business days, or (2) priority reschedule with a senior astrologer at no extra cost — plus a 15% credit for the inconvenience. Let me know which you prefer.',
  wellness:
  'Apologies for the confusion. I\'ve resent the correct session link and added 1 complimentary session to your account as a goodwill gesture. The teacher has also been notified to double-check links ahead of time.',
  yatra:
@@ -668,7 +669,7 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  {
  keywords: ['book', 'puja', 'pooja'],
  reply:
- 'I can help you book a puja. Browse 40+ options at /pujas — Rudrabhishek, Mahamrityunjay, Satyanarayan and more. Every booking includes video proof and prasad delivery. Would you like me to share the most popular ones?',
+ 'I can help you book a puja. Browse the pujas at /pujas. Every booking includes video proof; prasad delivery is an optional flat ₹150 add-on. What would you like to know?',
  },
  {
  keywords: ['refund', 'cancel', 'money back'],
@@ -680,12 +681,12 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  {
  keywords: ['darshan', 'stream', 'buffer', 'live'],
  reply:
- 'Live darshan streams run 4am-10pm IST from 50+ temples. If you see buffering: switch to 480p via the gear icon, or try the mobile app. Which temple stream is having trouble?',
+ 'Each darshan stream follows its own temple\'s schedule; /darshan shows what is live now. If you see buffering: switch to 480p via the gear icon, or try the mobile app. Which temple stream is having trouble?',
  },
  {
  keywords: ['prasad', 'delivery', 'courier'],
  reply:
- 'Prasad ships within 24 hours of puja completion — usually reaches India in 3-5 days, international in 7-14 days. Tracking is emailed automatically. Want me to pull the status for your order?',
+ 'Prasad delivery is an optional flat ₹150 add-on chosen when you book. We do not promise a delivery date; your booking page shows a tracking ID once one is recorded. Share your booking number and I can check what it shows.',
  },
  {
  keywords: ['login', 'otp', 'password', 'sign in'],
@@ -695,7 +696,7 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  {
  keywords: ['astrologer', 'kundli', 'horoscope', 'astrology'],
  reply:
- 'We have 30+ verified astrologers for chat, call, and report services. Starting ₹99 for a 10-min intro call. Browse at /astrology. Looking for a specific service?',
+ 'You can browse astrologers for chat, call, and report services at /astrology; the price is shown on each profile. Looking for a specific service?',
  },
  {
  keywords: ['store', 'order', 'shipping', 'product'],
@@ -704,12 +705,12 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  // `subtotal >= 499 ? 0 : 49` (lib/store-pricing.ts, mirrored and enforced
  // by apps/api/src/lib/store-pricing.ts), so support was quoting a
  // threshold no basket has ever been measured against.
- `Store orders ship within 24-48 hours. Standard delivery: 3-5 days pan-India, 7-14 days international. Free delivery on domestic orders of ${FREE_DELIVERY_ABOVE} and above; below that a flat ${FLAT_DELIVERY_FEE}. Share your order ID for status.`,
+ `Store orders are delivered within India only, and we do not promise delivery times. Free delivery on orders of ${FREE_DELIVERY_ABOVE} and above; below that a flat ${FLAT_DELIVERY_FEE}. Your order page shows the status and a tracking number once the courier assigns one.`,
  },
  {
  keywords: ['price', 'cost', 'how much', 'fee'],
  reply:
- 'Puja prices range from ₹501 (simple aarti) to ₹25,000 (full yagya). Astrology starts at ₹99. Store items from ₹199. NRI pricing is shown in USD at 2.5x the domestic price and charged in INR. Want me to show a specific category?',
+ 'Every puja, astrologer and store item shows its price before you pay. NRI pricing is shown in USD at 2.5x the domestic price and charged in INR. Want me to point you to a specific category?',
  },
  {
  keywords: ['contact', 'phone', 'call'],
@@ -719,7 +720,7 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  {
  keywords: ['temple', 'which temple', 'temples'],
  reply:
- 'We partner with 50+ temples across India — Kashi Vishwanath, Tirumala, Somnath, Vaishno Devi, Shirdi Sai Baba, and more. Browse all at /temples.',
+ 'Browse the temples listed on Darshya at /temples, with the pujas offered at each.',
  },
 ];
 
@@ -747,7 +748,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Getting Started',
  question: 'What is Darshya?',
  answer:
- 'Darshya is India\'s devotional super-app — live darshan from 50+ temples, online puja booking with video proof, panchang, spiritual content, e-commerce for religious items, astrology consultations, wellness sessions, and yatra tours. All in one place.',
+ 'Darshya is India\'s devotional super-app — live darshan, online puja booking with video proof, panchang, spiritual content, e-commerce for religious items, astrology consultations, wellness sessions, and yatra tours. All in one place.',
  },
  {
  id: 'gs-2',
@@ -768,7 +769,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Getting Started',
  question: 'Does Darshya work outside India?',
  answer:
- 'Yes. NRI users pay in USD and get access to all pujas, darshan, store, and yatra bookings. Prasad and physical goods ship internationally — delivery 7-14 days depending on country.',
+ 'Yes, you can book pujas from abroad. NRI pricing is 2.5x the domestic price, shown in USD and charged in INR through Razorpay; an international card works where your card issuer allows international payments. Store orders are delivered within India only, and we do not promise prasad delivery dates.',
  },
  {
  id: 'gs-5',
@@ -788,7 +789,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Bookings & Payments',
  question: 'How do I book a puja?',
  answer:
- 'Go to /pujas, pick a puja (e.g. Rudrabhishek, Satyanarayan), choose a temple and date, enter your sankalp details (name, gotra, nakshatra), and pay. You\'ll get a booking confirmation instantly, video proof after the puja, and prasad by post.',
+ 'Go to /pujas, pick a puja (e.g. Rudrabhishek, Satyanarayan), choose a temple and date, enter your sankalp details (name, gotra, nakshatra), and pay. Your booking page shows its status, and video proof appears there after the puja. Prasad delivery is an optional add-on.',
  },
  {
  id: 'bp-2',
@@ -811,21 +812,21 @@ export const FAQ_ITEMS: FaqItem[] = [
  // figure /refunds and /terms publish, and the only one the escalation sweep
  // is built around — is an order of magnitude wider, so support was setting an
  // expectation the delivery path was never designed to meet.
- answer: `The delivery target is ${COMPANY.refunds.videoProofTargetLabel} after the scheduled time. You'll get a push notification and email with the video link, and it stays on the booking at /bookings. If ${COMPANY.refunds.missingVideoEscalationHours} hours pass with no video and the booking is still waiting on its pandit, it is cancelled and sent to our team for review.`,
+ answer: `The delivery target is ${COMPANY.refunds.videoProofTargetLabel} after the scheduled time. It appears on the booking at /bookings. If ${COMPANY.refunds.missingVideoEscalationHours} hours pass with no video and the booking is still waiting on its pandit, it is cancelled and sent to our team for review.`,
  },
  {
  id: 'bp-5',
  section: 'Bookings & Payments',
  question: 'When will the prasad arrive?',
  answer:
- 'Prasad ships within 24 hours of puja. Within India: 3-5 days. NRI users: 7-14 days depending on country. Tracking link is emailed automatically.',
+ 'Prasad delivery is an optional flat ₹150 add-on chosen at booking. We do not promise a delivery date; your booking page shows a tracking ID once one is recorded.',
  },
  {
  id: 'bp-6',
  section: 'Bookings & Payments',
  question: 'Why did my payment fail?',
  answer:
- 'Most common reasons: bank blocked the transaction, 2FA timeout, insufficient balance, or expired card. Try again with a different method. If money was deducted but booking didn\'t confirm, it auto-refunds within 5 business days.',
+ `Most common reasons: bank blocked the transaction, 2FA timeout, insufficient balance, or expired card. Try again with a different method. If money was deducted but no booking appears, it is usually an authorisation your bank releases on its own, typically within ${REFUND_DAYS_LABEL}; email support@darshya.online with the transaction ID if it does not.`,
  },
  {
  id: 'bp-7',
@@ -864,7 +865,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Live Darshan',
  question: 'Is live darshan really live?',
  answer:
- 'Yes — our streams use AWS IVS with ~3 second latency. You\'re watching the sanctum sanctorum in near-real-time. Schedule for each temple is shown on the darshan page.',
+ 'Yes. Streams that are on come from the temple\'s own camera feed. Which streams are live now, and their schedule, is shown on the darshan page.',
  },
  {
  id: 'ld-2',
@@ -885,7 +886,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Live Darshan',
  question: 'Can I watch past aarti recordings?',
  answer:
- 'Yes. Each temple page has a "Recent Aartis" section with recordings from the last 7 days. Favorites can be saved to your account for offline viewing (Plus subscribers).',
+ 'Where a recording is available, the temple\'s darshan page shows it. There is no offline download.',
  },
 
  // Store & Delivery (5)
@@ -894,7 +895,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Store & Delivery',
  question: 'What can I buy on the Darshya store?',
  answer:
- 'Idols, puja samagri, rudraksha, yantras, incense, lamps, religious books, temple bells, and prasad variety packs. All items are sourced from verified spiritual retailers.',
+ 'Idols, puja samagri, rudraksha, yantras, incense, lamps, religious books, temple bells, and prasad variety packs. Items are listed by the store owners on Darshya.',
  },
  {
  id: 'sd-2',
@@ -902,7 +903,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  question: 'What are the shipping timelines?',
  // LEG-12: "free over ₹999, else ₹49" — the ₹999 half was never charged.
  answer:
- `India: 3-5 business days (free on orders of ${FREE_DELIVERY_ABOVE} and above, otherwise a flat ${FLAT_DELIVERY_FEE} whatever the weight or destination). International: 7-14 business days. Prasad parcels ship same-day from the temple city.`,
+ `Store orders are delivered within India only, and we do not publish delivery timelines. Delivery is free on orders of ${FREE_DELIVERY_ABOVE} and above, otherwise a flat ${FLAT_DELIVERY_FEE} whatever the weight or destination. Your order page shows the status and a tracking number once the courier assigns one.`,
  },
  {
  id: 'sd-3',
@@ -914,7 +915,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  {
  id: 'sd-4',
  section: 'Store & Delivery',
- question: 'Do you ship to the US, UK, and Middle East?',
+ question: 'Do you deliver store orders outside India?',
  // LEG-10: this used to end "Duties and taxes are calculated at checkout for
  // transparency." Nothing calculates them. computeStoreOrderTotals() is
  // `Σ(unitPrice × qty) + deliveryFee` — it takes no destination, no weight
@@ -922,14 +923,14 @@ export const FAQ_ITEMS: FaqItem[] = [
  // overseas buyer was told the landed cost was settled and then met a bill
  // from the carrier at the door.
  answer:
- 'Yes — we deliver to 40+ countries including US, UK, Canada, Australia, UAE, Singapore. Import duty and local sales tax are NOT included in the price you pay us and are not calculated at checkout: your country levies them on arrival, and the carrier collects them from you before delivery. What you pay Darshya is the goods plus shipping only.',
+ 'No. Store orders are delivered within India only; the store checkout takes an Indian address. Prasad delivery on a puja booking is separate: an optional flat ₹150 add-on, with no promised destination country or delivery date. If you want prasad sent abroad, write to support@darshya.online first; customs duties and import rules are the recipient\'s responsibility.',
  },
  {
  id: 'sd-5',
  section: 'Store & Delivery',
  question: 'Is the product genuinely blessed/consecrated?',
  answer:
- 'Rudraksha, yantras, and idols are pre-consecrated at partner temples before shipping — video proof of consecration is available on request. Regular samagri is sourced but not consecrated.',
+ 'Whether an item is consecrated is stated on its product page. We do not promise consecration, or video proof of it, unless the listing says so.',
  },
 
  // Astrology & Wellness (3)
@@ -943,16 +944,16 @@ export const FAQ_ITEMS: FaqItem[] = [
  {
  id: 'aw-2',
  section: 'Astrology & Wellness',
- question: 'Are the astrologers verified?',
+ question: 'How are astrologers vetted?',
  answer:
- 'Yes — every astrologer goes through a 5-step verification: ID, educational credentials, 2 expert interviews, test readings, and ongoing user rating monitoring. Average 10+ years experience.',
+ 'Astrologers are listed by Darshya, but we do not run a published credential-verification process, so please read each profile before you book.',
  },
  {
  id: 'aw-3',
  section: 'Astrology & Wellness',
  question: 'What wellness sessions are available?',
  answer:
- 'Live yoga (daily 6am & 6pm IST), guided meditation, pranayama, ayurveda consultations, and chakra healing. Group sessions from ₹99, 1-on-1 from ₹499.',
+ 'The sessions on offer, with their timings and prices, are listed at /wellness. The price is shown on each listing before you pay.',
  },
 
  // Yatra & Travel (3)
@@ -968,14 +969,14 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Yatra & Travel',
  question: 'What is included in the yatra package?',
  answer:
- 'AC transport, vetted hotels, all temple darshan bookings (including VIP where available), vegetarian meals, English/Hindi speaking guide, and 24/7 coordinator support. Flights not included unless specified.',
+ 'AC transport, hotels, temple darshan bookings (including VIP where available), vegetarian meals, English/Hindi speaking guide, and a coordinator reached by email. Flights not included unless specified.',
  },
  {
  id: 'yt-3',
  section: 'Yatra & Travel',
  question: 'Can seniors and disabled devotees join?',
  answer:
- 'Yes. We offer senior-friendly yatras with shorter walks, wheelchair assistance, and medical tie-ups. Mention requirements during booking — we customize the itinerary.',
+ 'Tell us your requirements when you enquire. We cannot promise specific accommodations such as wheelchair assistance until they are confirmed to you in writing.',
  },
 
  // Account & Security (4)

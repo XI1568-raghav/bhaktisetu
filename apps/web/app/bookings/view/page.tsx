@@ -47,6 +47,8 @@ import {
  CANCELLATION_CUTOFF_HOURS,
  PARTIAL_REFUND_PERCENT,
  FULL_REFUND_HOURS_BEFORE,
+ REFUND_DAYS_LABEL,
+ REFUND_INTERNATIONAL_NOTE,
 } from '../../../lib/cancellation-policy';
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -965,9 +967,9 @@ function BookingDetailContent() {
  {/* S2C-03: only state a refund when the payment record shows one. */}
  <p className="text-sm text-red-600">
  {booking.amountRefunded > 0
- ? `This booking has been cancelled. ₹${booking.amountRefunded.toLocaleString('en-IN')} has been refunded and will reach your account within 5-7 business days.`
+ ? `This booking has been cancelled. ₹${booking.amountRefunded.toLocaleString('en-IN')} has been refunded and will reach your account in ${REFUND_DAYS_LABEL}. ${REFUND_INTERNATIONAL_NOTE}`
  : booking.amountPaid > 0
- ? 'This booking has been cancelled. Any refund due will be processed within 5-7 business days — contact support if you do not see it.'
+ ? `This booking has been cancelled. Any refund due reaches your account in ${REFUND_DAYS_LABEL}. ${REFUND_INTERNATIONAL_NOTE} Contact support if you do not see it after that.`
  : 'This booking has been cancelled. No payment was taken for it.'}
  </p>
  </div>
@@ -1202,8 +1204,8 @@ function BookingDetailContent() {
  </div>
  ) : (
  <p className="text-sm text-surface-600">
- Prasad delivery is included in this booking. Your tracking ID will appear
- here once the parcel is dispatched.
+ Prasad delivery was added to this booking. Your tracking ID will appear
+ here once one is recorded; we do not promise a delivery date.
  </p>
  )}
  </div>
@@ -1457,7 +1459,7 @@ function BookingDetailContent() {
  cancelQuote.feeAmountInr > 0
  ? `, and ${formatInrExact(cancelQuote.feeAmountInr)} is retained under the cancellation policy`
  : ''
- }${cancelQuote.tierLabel ? ` (${cancelQuote.tierLabel})` : ''}. Refunds reach your account in ${cancelQuote.refundDaysLabel ?? '5-7 business days'}.`
+ }${cancelQuote.tierLabel ? ` (${cancelQuote.tierLabel})` : ''}. Refunds reach your account in ${cancelQuote.refundDaysLabel ?? REFUND_DAYS_LABEL}. ${REFUND_INTERNATIONAL_NOTE}`
  : 'Cancel this booking? We could not work out your exact refund just now — how much comes back depends on how close the slot is.'}
  </p>
  {booking.amountPaid > 0 && quoteFailed && (
@@ -1538,7 +1540,7 @@ function BookingDetailContent() {
  )} you paid is retained under the cancellation policy. `
  : 'Nothing is retained. '}
  The refund reaches your account in{' '}
- {cancelQuote.refundDaysLabel ?? '5-7 business days'}.
+ {cancelQuote.refundDaysLabel ?? REFUND_DAYS_LABEL}. {REFUND_INTERNATIONAL_NOTE}
  </p>
  </>
  ) : (
@@ -1612,8 +1614,8 @@ function BookingDetailContent() {
      and the confirmation email (refund.service.refundSuccessEmail) was
      the first place a number appeared. */}
  {refundedAmountInr !== null
- ? `Refund of ${inr(refundedAmountInr)} requested. It will be processed within 1 hour and credited within 5-7 business days.`
- : 'Refund requested. It will be processed within 1 hour and credited within 5-7 business days.'}
+ ? `Refund of ${inr(refundedAmountInr)} requested. Your booking page shows its status. A refund reaches your account in ${REFUND_DAYS_LABEL}; ${REFUND_INTERNATIONAL_NOTE}`
+ : `Refund requested. Your booking page shows its status. A refund reaches your account in ${REFUND_DAYS_LABEL}; ${REFUND_INTERNATIONAL_NOTE}`}
  </div>
  )}
 

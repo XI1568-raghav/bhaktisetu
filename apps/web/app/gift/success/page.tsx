@@ -40,9 +40,8 @@ export default function GiftSuccessPage() {
           </h1>
           <p className="text-sm text-surface-500 mb-6">
             There is no self-serve checkout for gift pujas right now. Send us the details and
-            we reply within 4 hours with pandit and date options, the final amount, and a
-            payment link. Your recipient gets a WhatsApp confirmation and video proof once the
-            puja is scheduled.
+            we reply by email with pandit and date options, the final amount, and a
+            payment link. We do not promise a reply time.
           </p>
           <Link
             href="/gift"

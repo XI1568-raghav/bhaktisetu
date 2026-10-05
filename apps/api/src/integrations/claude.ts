@@ -251,7 +251,7 @@ The Gita teaches that the soul is eternal, indestructible, and transcendent. You
 - Friday: Lakshmi/Santoshi Maa Puja
 - Saturday: Shani Dev Puja, help the needy
 
- **On Darshya:** Explore our **Content** section for mantras, aartis, and chalisa. Watch **Live Darshan** from 50+ temples daily.`,
+ **On Darshya:** Explore our **Content** section for mantras, aartis, and chalisa. Watch **Live Darshan** from the temple streams listed on the darshan page.`,
  },
 
  // ─── Meditation & Yoga ────────────────────────────────────────────────
@@ -408,7 +408,7 @@ Dreams from the Brahma Muhurta period (4-6 AM) are considered most significant a
 
 **Important:** Never wear a gemstone without consulting your birth chart. A wrongly chosen gem can have adverse effects.
 
- **On Darshya:** Get a **personalized gemstone recommendation** from our verified astrologers. Each gem is energized with proper Vedic mantras before delivery.`,
+ **On Darshya:** Get a **personalized gemstone recommendation** from our approved astrologers. Each gem is energized with proper Vedic mantras before delivery.`,
  },
 
  // ─── Pilgrimage / Yatra ───────────────────────────────────────────────
@@ -609,7 +609,7 @@ This reminds us that divine guidance is always available to those who seek it si
 
 *"श्रद्धावान् लभते ज्ञानम्"* — "One who has faith attains wisdom." (Gita 4.39)
 
- **On Darshya:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a ${verifiedNoun('priest')} for specific spiritual needs. Watch **Live Darshan** from 50+ temples for daily peace.`;
+ **On Darshya:** Explore our **Content** section for mantras, aartis, and spiritual articles. **Book a Puja** with a ${verifiedNoun('priest')} for specific spiritual needs. Watch **Live Darshan** from the temple streams listed on the darshan page.`;
 }
 
 // ─── Helper: stream-shape adapter ─────────────────────────────────────────

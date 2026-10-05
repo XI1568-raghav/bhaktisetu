@@ -222,7 +222,7 @@ export default function AstrologyScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Astrology</Text>
           <Text style={styles.headerSubtitle}>
-            Verified astrologers, your kundli, and the daily rashifal
+            Approved astrologers, your kundli, and the daily rashifal
           </Text>
         </View>
 
@@ -248,7 +248,7 @@ export default function AstrologyScreen() {
           {astrologersQuery.isLoading ? (
             <View style={styles.supplyBox}>
               <ActivityIndicator color={colors.saffron[600]} />
-              <Text style={styles.supplyText}>Loading verified astrologers…</Text>
+              <Text style={styles.supplyText}>Loading astrologers…</Text>
             </View>
           ) : supplyError ? (
             <View style={styles.supplyBox}>

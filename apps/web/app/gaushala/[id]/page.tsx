@@ -714,18 +714,18 @@ export default async function CowDetailPage({
  Your seva directly provides food, shelter, and medical care at an
  approved gaushala.
  </p>
- {/* TC-11: "Visit your cow anytime", "Monthly photo & video updates" and
+ {/* TC-11: "Visit by arrangement with the gaushala", "Monthly photo & video updates" and
      a "Digital adoption certificate" are per-animal entitlements of an
      adoption that cannot happen — POST /gaushala/adopt was deleted under
      COM-19 and no donation attaches a cow to a donor. The receipt is the
      one item on the list the product actually issues. */}
  <div className="space-y-2 mb-5">
  {(LISTING_IS_SAMPLE
- ? ["Donation receipt PDF, emailed instantly"]
+ ? ["Numbered donation receipt PDF"]
  : [
- "Monthly photo & video updates",
- "Visit your cow anytime",
- "Donation receipt PDF, emailed instantly",
+ "Photo updates when the gaushala posts them",
+ "Visit by arrangement with the gaushala",
+ "Numbered donation receipt PDF",
  "Digital adoption certificate",
  ]
  ).map((item) => (

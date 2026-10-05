@@ -245,7 +245,7 @@ export default async function RashiPage({ params }: Params) {
           Want a detailed personal reading?
         </h2>
         <p className="text-sm text-surface-700 mb-4">
-          Connect with verified Vedic astrologers for kundli analysis, dosh remedies, and personalized guidance.
+          Connect with approved Vedic astrologers for kundli analysis, dosh remedies, and personalized guidance.
         </p>
         <Link
           href="/astrology"

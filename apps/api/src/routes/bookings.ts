@@ -21,6 +21,7 @@ import { authenticateUser } from '../middlewares/auth.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
 import { hoursUntilSlot } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
+import { REFUND_INTERNATIONAL_CARD_LABEL } from '../lib/refund-timing.js';
 import { platformRateOf } from '../lib/commission-math.js';
 // OPS-05: the durable money trail. `recordMoneyEvent` never throws, never
 // rejects and never joins the caller's transaction, so every call is safe to
@@ -1772,7 +1773,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         });
 
         return {
-          message: 'Refund requested. It will be processed within 1 hour.',
+          message: 'Refund requested. Your booking page shows its status; we do not promise a processing time.',
           booking: updated,
           schemaNote:
             'BookingStatus enum has no REFUND_REQUESTED — using cancelled + cancellationReason marker.',
@@ -1900,6 +1901,8 @@ export async function bookingRoutes(server: FastifyInstance) {
             : `Cancellation is not possible within ${DEVOTEE_CANCEL_CUTOFF_HOURS} hours of the scheduled time`,
           hoursUntilSlot: quote.hoursUntilSlot,
           refundDaysLabel: policy.refundDaysLabel,
+          // International cards: a bank/gateway timing, published as such.
+          refundInternationalCardLabel: REFUND_INTERNATIONAL_CARD_LABEL,
         };
       } catch (error: any) {
         if (error.message?.includes('not found')) {

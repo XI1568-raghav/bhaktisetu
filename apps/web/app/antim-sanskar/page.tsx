@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/antim-sanskar' },
   title: 'Antim Sanskar',
   description:
-    'Coordinated last rites support for Hindu families. Pandit, samagri, ghat coordination, and asthi visarjan handled with dignity. Available 24x7.',
+    'Coordinated last rites support for Hindu families. Pandit, samagri, ghat coordination, and asthi visarjan handled with dignity.',
   robots: { index: true, follow: true },
 };
 
@@ -70,8 +70,8 @@ const PROCESS = [
   },
   {
     n: '2',
-    title: 'A coordinator calls within 30 minutes',
-    body: 'A real human, not an automated message. They will gently understand your situation and confirm the package and timing.',
+    title: 'A coordinator calls you back',
+    body: 'A person, not an automated message, will contact you. They will gently understand your situation and confirm the package and timing.',
   },
   {
     n: '3',
@@ -144,7 +144,7 @@ export default function AntimSanskarPage() {
             className="mt-4 text-xs"
             style={{ color: 'var(--color-text-muted)' }}
           >
-            Coordinator responds within 30 minutes, day or night.
+            The founder line is staffed Monday to Saturday, 9:00 AM to 7:00 PM IST. We do not promise a call-back time.
           </p>
         </div>
       </section>

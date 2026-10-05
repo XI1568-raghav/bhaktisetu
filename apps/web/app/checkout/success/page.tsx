@@ -54,9 +54,9 @@ export default async function CheckoutSuccessPage({
             <div className="flex items-start gap-3 rounded-lg bg-surface-50 p-4">
               <Video className="mt-0.5 h-5 w-5 shrink-0 text-saffron-600" />
               <div className="text-sm">
-                <p className="font-semibold text-surface-800">Video proof guaranteed</p>
+                <p className="font-semibold text-surface-800">Video proof included</p>
                 <p className="text-surface-600">
-                  Your puja will be performed on the scheduled date. Video link arrives within 24h of completion.
+                  Your puja is booked for the scheduled date. We aim to put the video on your booking page within 24-48 hours of completion.
                 </p>
               </div>
             </div>

@@ -127,8 +127,8 @@ export default function WeddingsScreen() {
             <Ionicons name="checkmark-circle" size={44} color={colors.green[600]} />
             <Text style={styles.successTitle}>Enquiry received</Text>
             <Text style={styles.successBody}>
-              A Darshya wedding concierge will reach out within 24 hours. A confirmation is on its
-              way to {email.trim()}.
+              Our team will reach out about your enquiry. We do not promise a reply time, and an
+              email confirmation is not guaranteed; keep your reference below.
             </Text>
             <Text style={styles.successRef}>Reference {sentId}</Text>
           </View>

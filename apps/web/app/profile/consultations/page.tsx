@@ -195,7 +195,7 @@ function ListContent() {
             <div className="bg-white rounded-2xl border border-surface-100 p-10 text-center">
               <Sparkles className="w-12 h-12 text-saffron-400 mx-auto mb-3" />
               <h2 className="text-lg font-semibold text-surface-700 mb-1">No consultations yet</h2>
-              <p className="text-sm text-surface-500 mb-6">Book a session with a verified astrologer.</p>
+              <p className="text-sm text-surface-500 mb-6">Book a session with a approved astrologer.</p>
               <Link href="/astrology" className={buttonClass('primary', 'md')}>
                 Browse Astrologers
               </Link>

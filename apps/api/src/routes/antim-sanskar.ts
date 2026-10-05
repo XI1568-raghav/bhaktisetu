@@ -10,7 +10,7 @@ import { authenticateUser } from '../middlewares/auth.js';
  *
  * Sensitive vertical: a family in distress is on the other end. No
  * upselling, no online payment, no marketing copy. Single coordinator
- * promise: confirmation message immediately, human call within 30 min.
+ * promise: a human call-back. No call-back time is published or promised.
  *
  * Payment is collected on-site by the assigned pandit to avoid forcing
  * the bereaved through a payment gateway in a moment of grief.
@@ -176,7 +176,7 @@ function familyEmailHtml(params: {
   return `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#fbf7f1;color:#3d2e1f;margin:0;padding:0;">
 <div style="max-width:560px;margin:24px auto;padding:32px 28px;background:#fff;border-radius:12px;">
 <p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Namaste ${params.contactName},</p>
-<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">We have received your request and our coordinator will call you within the next 30 minutes. There is nothing further you need to do right now.</p>
+<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">We have received your request and our coordinator will call you. We cannot promise a call-back time. There is nothing further you need to do right now.</p>
 <p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Reference number: <strong>${params.bookingNumber}</strong></p>
 <p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Package: ${params.packageName} — to be settled on-site after the rites are complete.</p>
 <p style="font-size:14px;line-height:1.7;margin:0 0 12px;">If you need to reach us before the call, our 24-hour coordinator line is in the WhatsApp message we just sent.</p>
@@ -289,7 +289,7 @@ export async function antimSanskarRoutes(server: FastifyInstance) {
     );
 
     // Best-effort ops alert. Treated as critical — a coordinator must call
-    // back within 30 minutes regardless of time of day.
+    // back as soon as possible.
     void sendOpsAlert({
       severity: 'critical',
       subject: `Antim sanskar request — ${body.city}`,
@@ -303,7 +303,7 @@ export async function antimSanskarRoutes(server: FastifyInstance) {
         body.asthiVisarjanRiver ? `Asthi visarjan: ${body.asthiVisarjanRiver}` : '',
         body.notes ? `Notes: ${body.notes}` : '',
         '',
-        'Coordinator must call within 30 minutes.',
+        'Please call the family as soon as possible.',
       ]
         .filter(Boolean)
         .join('\n'),
@@ -327,9 +327,8 @@ export async function antimSanskarRoutes(server: FastifyInstance) {
       packageName: pkg.name,
       priceInr: pkg.priceInr,
       preferredDate,
-      coordinatorCallEtaMinutes: 30,
       message:
-        'We have received your request. A coordinator will call you within 30 minutes. Payment is collected only on-site after the rites.',
+        'We have received your request. A coordinator will call you; we do not promise a call-back time. Payment is collected only on-site after the rites.',
     });
   });
 }

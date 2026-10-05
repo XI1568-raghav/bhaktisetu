@@ -116,7 +116,8 @@ describe('CM-07 — /gift shows what things cost', () => {
     expect(page()).not.toMatch(/40\+/);
   });
 
-  it('states the timezone the 4-hour SLA is measured in', () => {
-    expect(page()).toMatch(/IST/);
+  it('promises no reply-time SLA it cannot measure (copy-truth sweep)', () => {
+    expect(page()).not.toMatch(/within 4 (working )?hours/i);
+    expect(page()).toMatch(/do not promise a reply time/i);
   });
 });

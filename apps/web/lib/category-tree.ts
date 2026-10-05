@@ -121,7 +121,7 @@ export const CATEGORY_TREE: Category[] = [
         href: '/donations',
         description: HAS_80G
           ? 'Tax-deductible giving with instant 80G receipt.'
-          : 'Give to a verified temple or gaushala, with a numbered receipt emailed instantly.',
+          : 'Give to a temple or gaushala, with a numbered receipt.',
       },
       {
         label: 'Panchang Today',
@@ -228,7 +228,7 @@ export const CATEGORY_TREE: Category[] = [
     label: 'Astrology',
     tagline: 'Free kundli, daily horoscope, doshas, muhurat · talk to an astrologer.',
     accentColor: 'indigo',
-    featured: { label: 'Consult ₹99/min', href: '/astrology', sublabel: 'Verified Vedic astrologers' },
+    featured: { label: 'Consult ₹99/min', href: '/astrology', sublabel: 'Approved Vedic astrologers' },
     items: [
       { label: 'Free Kundli', href: '/astrology/kundli', description: 'Vedic birth chart with D9 Navamsa.' },
       { label: 'Daily Horoscope', href: '/astrology/horoscope', description: 'Rashi-based daily reading.' },

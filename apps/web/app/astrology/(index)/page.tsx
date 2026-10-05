@@ -216,7 +216,7 @@ export default function AstrologyPage() {
   <div className="mt-8 rounded-2xl border border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
    <p className="font-serif text-lg text-gray-900">Want a pandit to interpret the results?</p>
    <p className="mt-2 text-sm text-gray-700">
-    Free calculators give you the raw numbers. A verified Vedic astrologer reads them in
+    Free calculators give you the raw numbers. A approved Vedic astrologer reads them in
     relation to your full kundli, current dasha, and life questions.
    </p>
    <div className="mt-4 flex flex-wrap justify-center gap-3">
@@ -238,7 +238,7 @@ export default function AstrologyPage() {
 
  <ApprovedProvidersStrip
  type="astrologer"
- heading="Verified astrologers on Darshya"
+ heading="Approved astrologers on Darshya"
  subheading="Talk to approved Vedic astrologers. Each profile is reviewed before going live."
  limit={8}
  />
