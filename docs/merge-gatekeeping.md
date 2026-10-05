@@ -14,6 +14,13 @@
 **Do not merge a PR until its CI is green.** No exceptions for "it's just docs."
 The human is the merge gate. A PR with a red check is not mergeable, full stop.
 
+> **CI runs on pull requests only (changed 2026-10-05).** `ci.yml` no longer triggers on
+> `push` to `main`: that run re-tested what the PR run had already passed (37 of 83 runs /
+> ~430 of ~970 min in the first 5 days of October, see `docs/free-tier-budgets.md`). The gate
+> is the PR's green check, which tests the PR merged into `main`. If `main` moved after the
+> PR's last run, re-run the PR's CI before merging; to verify `main` itself run
+> `gh workflow run ci.yml --ref main`.
+
 ## Required checks (standardized job names)
 
 These names are **frozen** so that if/when the repo goes public we can list
