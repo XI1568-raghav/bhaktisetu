@@ -1,6 +1,6 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last trimmed: 2026-10-04.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last trimmed: 2026-10-05.
 
 ## Archived blocks (moved verbatim to `docs/handoff.md` → "Archived from TASKS.md 2026-10-04")
 
@@ -17,13 +17,7 @@
 > Shipped: merged `1715d4d6`, deployed to Render, live-verified. Full detail archived in
 > `docs/handoff.md`; master record is [`AUDIT.md`](AUDIT.md) + `docs/audit/`.
 
-**Result:** 57 of 58 findings fixed (the 58th was deploy-only), plus 14 further defects found by an
-adversarial review of the fixes themselves — including a P0 that the RV-04 fix had *created* (a second
-payout rail live for money the legacy rail already paid) and an ~83x NRI overcharge still live on the
-temple booking path. Stripe removed entirely; password reset shipped.
-
-**Baseline that must not regress:** API/web/mobile/api-client `tsc` clean · 1066/1066 API tests (83 files)
-· 265/265 web tests (35 files).
+**Result and test baseline:** archived (superseded by the 2026-10-05 go-live round below; see `docs/handoff.md`).
 
 **Two load-bearing invariants — do not break:**
 1. `Commission.amount` = the PROVIDER's earning, `Commission.percentage` = the PLATFORM's take rate.
@@ -37,6 +31,25 @@ temple booking path. Stripe removed entirely; password reset shipped.
 - **Supabase → Auth → SMTP**: point at Resend. Built-in mailer is 2 emails/hour project-wide, and sign-in/reset
   emails depend on it.
 - **Stripe dashboard**: delete the webhook endpoint for `/payments/webhook/stripe` (now 404s).
+
+## Go-live 2026-10-05 (read first; full detail in `docs/handoff.md` 2026-10-05 block)
+
+All roles were tested end to end on a local stack and fixed through #279-#312. Prod = both Render services deployed at the latest main (`31f9fe38` at write time; confirm with `render-diag.yml -f mode=detail`).
+`ci.yml` no longer runs on push to main (#308): before any deploy, verify merged main locally across `apps/api`, `apps/web` AND `apps/mobile` (tsc + vitest).
+
+**Owner-only, still open (none are code):**
+- Resend: verify sender domain `send.darshya.online`; Supabase Auth -> SMTP -> Resend; Auth redirect URL `https://darshya.online/auth/reset-password`.
+- Real Rs 101 card payment test; Razorpay International Payments (NRI card acceptance); payout rail (RazorpayX/Cashfree).
+- `BACKUP_S3_*` secrets; 80G registration number + PAN; PostHog key (analytics is dead without it).
+- Render 750 shared free hours (two services share one account budget; Aug 2026 suspension).
+- Decisions: prasad-abroad shipping, store returns policy.
+
+**Agent follow-ups (were running at write time; check the commit history before redoing):**
+- Gate any remaining unbacked claims (shipping, refund, 80G, NRI, trust badges) behind flags instead of deleting.
+- Temple onboarding link for managers (pandit-consent roster is live: #306).
+- Final polish pass on the role portals.
+
+**Invariants added this round:** earnings of pandit/astrologer/wellness/temple stay held until performed/proved (`payout.service.ts`, `upcomingInr`); cash-on-delivery orders create no commission; NRI price = 2.5x puja price charged in INR, shown in USD only when the explicit `nriPricing` flag is set (`apps/api/src/lib/nri-pricing.ts` + web twin); admin refunds default to the cancellation policy amount; referral stays hidden behind `HAS_REFERRAL_CREDIT`.
 
 ## Open owner/runtime items (from the 2026-08-05 launch audit; none are code)
 - **#196 phone-OTP** — Supabase SMS provider unconfigured (MSG91/Twilio) or hide the Mobile tab.
@@ -75,21 +88,9 @@ temple booking path. Stripe removed entirely; password reset shipped.
 - **RazorpayX/Cashfree account + CA** for the payout money rails + TDS.
 
 
-## HANDOFF GTM — Pandit-Booking Marketplace Phase 0 (2026-08-07) — open items
+## GTM Phase-0 -> archived
 
-> Deliverables live outside the repo (`E:\NewClaude\deliverables\`); narrative archived. Muhurat layer code status: verify with `git log -- apps/api/src/lib/puja-muhurat.ts` (it was UNCOMMITTED at 2026-08-07).
-
-### PENDING (next session, in order)
-1. **Founder decision: commit the muhurat layer** → branch + PR (`git checkout -b feat/puja-muhurat-layer`), then merge.
-2. **Web wiring** — `apps/web/app/pujas/book/page.tsx` `DateInput` is muhurat-blind; fetch `/panchang/puja-muhurat?pujaType=…` → badge shubh days green, disable `avoid` days, render `windows[]` as slot chips, grey `rahuKaal`. Also wire WhatsApp flow F2 ("I need muhurat help") to the same endpoint.
-3. **Known gap**: no Adhik Maas/Shraadh (lunar masa not computed) — mitigated by eclipse proxy + month notes + pandit confirms final muhurat. Multi-city persistence blocked by `DailyPanchang.date @unique` (schema change only if persisting per-city).
-4. **Razorpay/PhonePe sandbox** — not started; gates on founder's PG account (founder-owned in split).
-
-### Founder-gated (unchanged — only he can do)
-- Confirm launch micro-zone + approve ~₹3–5L budget.
-- Legal entity / Razorpay PG / GST for the marketplace (gates escrow + WhatsApp BSP + sandbox).
-- Recruit Supply Lead #1 (JD ready at `deliverables/supply-lead-jd-and-pitch.md`).
-- In-person temple/sabha meetings (carry kit ready at `deliverables/temple-sabha-partnership-kit.md`).
+Muhurat layer is wired into the booking date picker (#270). Remaining founder-gated GTM items (launch micro-zone and budget, legal entity/GST, Supply Lead hire, temple meetings) are in `docs/handoff.md` "Archived from TASKS.md 2026-10-05".
 
 ## Standing operator facts (kept live)
 
