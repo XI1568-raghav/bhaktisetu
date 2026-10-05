@@ -17,6 +17,7 @@ import {
  ChevronRight,
  MessageSquare,
  CalendarDays,
+ Clock,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -25,6 +26,7 @@ const sidebarLinks = [
  { href: '/temple-portal', label: 'Dashboard', icon: LayoutDashboard },
  { href: '/temple-portal/messages', label: 'Messages', icon: MessageSquare },
  { href: '/temple-portal/darshan', label: 'Live Darshan', icon: Video },
+ { href: '/temple-portal/schedule', label: 'Schedule', icon: Clock },
  { href: '/temple-portal/pujas', label: 'Pujas', icon: Flame },
  { href: '/temple-portal/bookings', label: 'Bookings', icon: CalendarDays },
  { href: '/temple-portal/donations', label: 'Donations', icon: Heart },
