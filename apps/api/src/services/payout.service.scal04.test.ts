@@ -40,6 +40,7 @@ const { prismaMock } = vi.hoisted(() => ({
     priest: { findUnique: vi.fn() },
     priestPayout: { findMany: vi.fn() },
     wellnessEnrollment: { findMany: vi.fn() },
+    pujaBooking: { findMany: vi.fn() },
     $queryRawUnsafe: vi.fn(),
     $transaction: vi.fn(),
   } as Record<string, any>,
@@ -91,6 +92,7 @@ beforeEach(() => {
   prismaMock.priest.findUnique.mockResolvedValue(null);
   prismaMock.priestPayout.findMany.mockResolvedValue([]);
   prismaMock.wellnessEnrollment.findMany.mockResolvedValue([]);
+  prismaMock.pujaBooking.findMany.mockResolvedValue([]);
 });
 
 describe('SCAL-04 — payout balance is summed in SQL, not in Node', () => {

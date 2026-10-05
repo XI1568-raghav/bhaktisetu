@@ -31,6 +31,9 @@ const { prismaMock } = vi.hoisted(() => {
     // Wellness earnings are held until the session is held: the balance asks
     // which of the provider's enrollments are still upcoming.
     wellnessEnrollment: { findMany: vi.fn() },
+    // Puja earnings are held until the puja is performed: the balance asks which
+    // of the pandit's bookings are still before completion.
+    pujaBooking: { findMany: vi.fn() },
     $queryRawUnsafe: vi.fn(),
     $transaction: vi.fn(),
   };
@@ -116,6 +119,7 @@ beforeEach(() => {
   (prismaMock as any).priestPayout.findMany.mockResolvedValue([]);
   // Default: no upcoming wellness sessions, so every pre-existing case is unchanged.
   (prismaMock as any).wellnessEnrollment.findMany.mockResolvedValue([]);
+  (prismaMock as any).pujaBooking.findMany.mockResolvedValue([]);
 });
 
 describe('payout.service — getPayoutBalance', () => {
@@ -269,7 +273,7 @@ describe('payout.service — wellness earnings are held until the session is hel
     wireLedger([{ amount: 700 }, { amount: 240, wellnessEnrollmentId: 'enr-future' }]);
     commission.findMany.mockResolvedValueOnce([{ id: 'c1', amount: 700 }]);
     $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
-      fn({ payoutRequest, commission, wellnessEnrollment }),
+      fn({ payoutRequest, commission, wellnessEnrollment, pujaBooking: (prismaMock as any).pujaBooking }),
     );
     payoutRequest.create.mockImplementation(async ({ data }: any) => ({ id: 'pr-1', ...data }));
     commission.updateMany.mockResolvedValue({ count: 1 });
@@ -280,6 +284,77 @@ describe('payout.service — wellness earnings are held until the session is hel
     expect(where.OR).toEqual([
       { wellnessEnrollmentId: null },
       { wellnessEnrollmentId: { notIn: ['enr-future'] } },
+    ]);
+  });
+});
+
+describe('payout.service — puja earnings are held until the puja is performed', () => {
+  const pujaBooking = (prismaMock as any).pujaBooking as { findMany: ReturnType<typeof vi.fn> };
+
+  // Customer test 2026-10-05: the pandit's Commission is written PENDING at
+  // ACCEPT, so accepting a booking six days out made its Rs 360.80 withdrawable
+  // at once, and a payout request claimed it before any puja was performed.
+  function wireLedger(rows: Array<{ amount: number; bookingId?: string | null }>) {
+    commission.aggregate.mockImplementation(async (args: any) => {
+      const where = args?.where ?? {};
+      const ands = (where.AND ?? []) as Array<any>;
+      const matched = rows.filter((r) => {
+        const bid = r.bookingId ?? null;
+        if (where.bookingId?.in && !where.bookingId.in.includes(bid)) return false;
+        for (const a of ands) {
+          const or = a.OR as Array<any> | undefined;
+          if (or && !or.some((c) => (c.bookingId === null ? bid === null : bid !== null && !c.bookingId.notIn.includes(bid)))) return false;
+        }
+        return where.status ? where.status === 'PENDING' : true;
+      });
+      const sum = matched.reduce((t, r) => t.add(new Prisma.Decimal(r.amount)), new Prisma.Decimal(0));
+      return { _sum: { amount: matched.length ? sum : null } };
+    });
+  }
+
+  it('Rs 360.80 on an accepted-but-unperformed booking is upcoming, not available', async () => {
+    pujaBooking.findMany.mockResolvedValue([{ id: 'bk-open' }]);
+    wireLedger([{ amount: 360.8, bookingId: 'bk-open' }]);
+    const b = await getPayoutBalance('pandit-user-1');
+    expect(b.availableInr).toBe(0);
+    expect(b.upcomingInr).toBe(360.8);
+  });
+
+  it('performed bookings and other rails stay available', async () => {
+    pujaBooking.findMany.mockResolvedValue([{ id: 'bk-open' }]);
+    wireLedger([
+      { amount: 360.8, bookingId: 'bk-open' },
+      { amount: 200, bookingId: 'bk-done' },
+      { amount: 100, bookingId: null },
+    ]);
+    const b = await getPayoutBalance('pandit-user-1');
+    expect(b.availableInr).toBe(300);
+    expect(b.upcomingInr).toBe(360.8);
+  });
+
+  it('holds only this pandit\'s bookings that are before completion', async () => {
+    await getPayoutBalance('pandit-user-1');
+    const arg = pujaBooking.findMany.mock.calls[0]![0] as any;
+    expect(arg.where.priest).toEqual({ userId: 'pandit-user-1' });
+    // 'completed' is held too: video proof is mandatory, so earnings release at video_uploaded/delivered.
+    expect(arg.where.status.in.sort()).toEqual(['completed', 'confirmed', 'in_progress', 'pending_payment', 'priest_assigned']);
+  });
+
+  it('a payout request does not claim an unperformed booking\'s commission', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+    pujaBooking.findMany.mockResolvedValue([{ id: 'bk-open' }]);
+    commission.findMany.mockResolvedValueOnce([{ id: 'c1', amount: 200 }]);
+    $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
+      fn({ payoutRequest, commission, wellnessEnrollment: (prismaMock as any).wellnessEnrollment, pujaBooking: (prismaMock as any).pujaBooking }),
+    );
+    payoutRequest.create.mockImplementation(async ({ data }: any) => ({ id: 'pr-1', ...data }));
+    commission.updateMany.mockResolvedValue({ count: 1 });
+
+    await requestPayout('pandit-user-1', 'PANDIT');
+
+    const where = (commission.findMany.mock.calls[0]![0] as any).where;
+    expect(where.AND).toEqual([
+      { OR: [{ bookingId: null }, { bookingId: { notIn: ['bk-open'] } }] },
     ]);
   });
 });
@@ -333,7 +408,7 @@ describe('payout.service — requestPayout sizing (RV-05 / RV-06)', () => {
     ]);
     commission.findMany.mockResolvedValueOnce(opts.txRows); // inside the transaction
     $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
-      fn({ payoutRequest, commission, wellnessEnrollment: (prismaMock as any).wellnessEnrollment }),
+      fn({ payoutRequest, commission, wellnessEnrollment: (prismaMock as any).wellnessEnrollment, pujaBooking: (prismaMock as any).pujaBooking }),
     );
   }
 
@@ -499,6 +574,7 @@ describe('payout.service — requestPayout concurrency race (RV-06)', () => {
 
     const txClient = (mine: string[]) => ({
       wellnessEnrollment: { findMany: async () => [] },
+      pujaBooking: { findMany: async () => [] },
       commission: {
         findMany: read,
         updateMany: async ({ where, data }: { where: Record<string, any>; data: Record<string, any> }) => {
@@ -633,7 +709,7 @@ describe('payout.service — runWeeklySettlement', () => {
     userRoleAssignment.findMany.mockResolvedValue([{ role: 'ASTROLOGER' }]);
     payoutRequest.create.mockResolvedValue({ id: 'pr-new', providerId: 'prov-astro', amount: new Prisma.Decimal('9000.00') });
     commission.updateMany.mockResolvedValue({ count: 1 });
-    $transaction.mockImplementation(async (fn: any) => fn({ commission, payoutRequest, wellnessEnrollment: (prismaMock as any).wellnessEnrollment }));
+    $transaction.mockImplementation(async (fn: any) => fn({ commission, payoutRequest, wellnessEnrollment: (prismaMock as any).wellnessEnrollment, pujaBooking: (prismaMock as any).pujaBooking }));
 
     const out = await runWeeklySettlement();
 
