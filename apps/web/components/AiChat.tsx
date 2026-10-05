@@ -278,6 +278,10 @@ Explore Darshya's **Content** section for mantras and spiritual articles, or **B
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+// Shown above the locally generated answer when the AI backend cannot be reached.
+const FALLBACK_NOTICE =
+  '*Our AI guide is unavailable right now, so this is general guidance from our library, not an answer to your exact question. Please try again in a few minutes.*';
+
 export default function AiChat({
  conversationId,
  onConversationCreated,
@@ -573,7 +577,7 @@ export default function AiChat({
  }
  } catch {
  // Network error or auth failure — use LOCAL demo responses
- const demoContent = getLocalDemoResponse(trimmed);
+ const demoContent = `${FALLBACK_NOTICE}\n\n${getLocalDemoResponse(trimmed)}`;
 
  // Simulate typing effect for local demo
  const words = demoContent.split(' ');
@@ -663,7 +667,8 @@ export default function AiChat({
  {showUpgradeNudge && (
  <Link
  href="/upgrade"
- className={buttonClass('primary', 'md', 'shrink-0')}
+ className={buttonClass('primary', 'md', 'shrink-0')}
+
  >
  Upgrade
  </Link>

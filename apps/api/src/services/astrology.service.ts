@@ -774,7 +774,8 @@ Guidelines:
         source: context ? 'llm-grounded' : 'llm',
         ...(context ? { context } : {}),
       };
-    } catch {
+    } catch (err) {
+      console.error(`[astrology] AI answer failed, using canned fallback: ${err instanceof Error ? err.message : 'unknown'}`);
       const fallback = this.getAstrologerFallback(message);
       return {
         response: fallback.text,
