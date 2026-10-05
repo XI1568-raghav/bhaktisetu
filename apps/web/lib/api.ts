@@ -229,6 +229,25 @@ export interface TempleReview {
  pujaType: { name: string };
 }
 
+/**
+ * Temples that can actually receive a donation: verified, with an approved
+ * manager the money can go to. Not the same as every temple in the catalogue.
+ * Throws when the API is unreachable so the caller can say so instead of
+ * claiming there are none.
+ */
+export type DonatableTemple = Pick<
+  TempleListItem,
+  'id' | 'name' | 'city' | 'state' | 'deityPrimary' | 'description' | 'images'
+>;
+
+export async function getDonatableTemples(): Promise<DonatableTemple[]> {
+  const raw = await serverFetch<{ temples?: DonatableTemple[] }>('/donations/temples', {
+    revalidate: 120,
+    tags: ['donation-temples'],
+  });
+  return Array.isArray(raw?.temples) ? raw.temples : [];
+}
+
 export async function getTemples(params?: {
  page?: number;
  limit?: number;
