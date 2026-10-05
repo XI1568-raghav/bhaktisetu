@@ -9,6 +9,7 @@ import { useAuth } from '../../lib/auth-context';
 import EmailCapture from '../../components/EmailCapture';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { serverErrorMessage } from '../../lib/friendly-error';
+import { HAS_REFERRAL_CREDIT } from '../../lib/referral-flag';
 
 
 interface ReferralMeResponse {
@@ -19,7 +20,38 @@ interface ReferralMeResponse {
   createdAt: string;
 }
 
+/**
+ * Referral credit is unusable today (only the referrer is credited and nothing
+ * spends it), so while HAS_REFERRAL_CREDIT is false this page says so plainly
+ * instead of promising a reward. The programme below is kept intact for the day
+ * the flag is flipped.
+ */
+function ReferComingSoon() {
+  return (
+    <main className="max-w-3xl mx-auto px-6 py-16">
+      <h1 className={`${H1.catalogue} mb-4`}>Referrals are coming soon</h1>
+      <p className="text-surface-700 mb-6">
+        Darshya does not have a referral programme yet, and there is no referral reward to claim
+        today. If you would like to share Darshya, you are welcome to send a friend the link to
+        darshya.online.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <Link href="/pujas" className={buttonClass('primary', 'md')}>
+          Browse pujas
+        </Link>
+        <Link href="/" className={buttonClass('secondary', 'md')}>
+          Back to home
+        </Link>
+      </div>
+    </main>
+  );
+}
+
 export default function ReferPage() {
+  return HAS_REFERRAL_CREDIT ? <ReferralProgramme /> : <ReferComingSoon />;
+}
+
+function ReferralProgramme() {
   const { session, isAuthenticated, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<ReferralMeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
