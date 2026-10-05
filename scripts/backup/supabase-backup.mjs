@@ -13,9 +13,11 @@
  *      key: backups/YYYY/MM/DD/bhaktisetu-<ISO>.dump
  *   4. (optional) POST $HEARTBEAT_URL on success — cron healthcheck
  *
- * Env (all optional — script no-ops + exits 0 with structured log when
- * vendor creds are missing, so CI doesn't go red before founder pastes secrets):
+ * Env (only the database URL is required; a missing one FAILS the run, exit 7 —
+ * a skip is never reported as success, see OPS-02). Storage is optional: with no
+ * destination the verified dump is kept for the workflow to upload as an artifact.
  *   SUPABASE_DB_URL                 — postgres URL with sslmode=require
+ *                                     (falls back to SUPABASE_DIRECT_URL)
  *   SUPABASE_URL                    — https://<project>.supabase.co
  *   SUPABASE_SERVICE_ROLE_KEY       — service-role JWT (NEVER ship to client)
  *   SUPABASE_BACKUP_BUCKET          — default "db-backups"
@@ -357,14 +359,21 @@ export function planDestinations(env = process.env) {
   const offsite = hasS3 || (hasSupabase && !sameProject);
 
   if (targets.length === 0) {
+    // 2026-10-06 (OPS-02): no destination used to be fatal, which meant a repo
+    // with only the database secret took NO dump at all. The dump is now still
+    // taken and fully verified, and kept as a workflow artifact (7 days). That
+    // is a restore point of last resort, not insurance: it is reported as
+    // `offsite:false, artifactOnly:true` and the workflow warns on it.
     return {
       targets,
       sameProject,
       offsite: false,
-      fatal: true,
+      artifactOnly: true,
+      fatal: false,
       message:
-        'No backup destination is configured. Set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, ' +
-        'or the four BACKUP_S3_* variables.',
+        'No object-store destination is configured (BACKUP_S3_* or SUPABASE_URL + ' +
+        'SUPABASE_SERVICE_ROLE_KEY). The verified dump is kept only as a 7-day workflow ' +
+        'artifact in this repository. Configure BACKUP_S3_* (Cloudflare R2) for a real offsite copy.',
     };
   }
 
@@ -493,17 +502,19 @@ export function buildS3Authorization({
   };
 }
 
+/**
+ * The database URL, with the fallback chain SUPABASE_DB_URL -> SUPABASE_DIRECT_URL.
+ * The repo only carries SUPABASE_DIRECT_URL (the direct 5432 URI); the original
+ * name was never set, which is why every scheduled run skipped (OPS-02).
+ */
+export function resolveDatabaseUrl(env = process.env) {
+  return env.SUPABASE_DB_URL || env.SUPABASE_DIRECT_URL || '';
+}
+
 function envGate() {
-  const missing = [];
-  if (!process.env.SUPABASE_DB_URL) missing.push('SUPABASE_DB_URL');
-  // A destination is required, but either kind will do. Naming the Supabase
-  // pair keeps the message actionable for the default setup.
-  if (planDestinations(process.env).targets.length === 0) {
-    for (const k of ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']) {
-      if (!process.env[k]) missing.push(k);
-    }
-  }
-  return missing;
+  // Only the database URL is required. A storage destination is optional: with
+  // none configured the verified dump is kept as a workflow artifact.
+  return resolveDatabaseUrl(process.env) ? [] : ['SUPABASE_DB_URL (or SUPABASE_DIRECT_URL)'];
 }
 
 async function runPgDump(databaseUrl, outPath) {
@@ -729,6 +740,11 @@ export async function runBackup({ now = new Date(), deps = {} } = {}) {
     fetch: doFetch = fetch,
   } = deps;
 
+  // Normalise once so every later read (pg_dump, project-ref comparison) sees
+  // the same URL, whichever secret supplied it.
+  const resolvedDbUrl = resolveDatabaseUrl(process.env);
+  if (resolvedDbUrl) process.env.SUPABASE_DB_URL = resolvedDbUrl;
+
   const missing = envGate();
   if (missing.length > 0) {
     // NOT `ok: true`.
@@ -752,7 +768,7 @@ export async function runBackup({ now = new Date(), deps = {} } = {}) {
       skipped: true,
       reason: 'missing-env',
       missing,
-      note: 'Founder must set SUPABASE_DB_URL + SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY GH Actions secrets.',
+      note: 'Set the SUPABASE_DIRECT_URL (or SUPABASE_DB_URL) GH Actions secret.',
       error: `No backup was taken: ${missing.join(', ')} not set. There is no restore point for today.`,
     };
     console.error(JSON.stringify(skipped));
@@ -875,6 +891,9 @@ export async function runBackup({ now = new Date(), deps = {} } = {}) {
 
   const key = buildBackupKey(now);
   const destinations = [];
+  // Artifact-only runs have no store to copy to: the verified file itself is the
+  // deliverable, so it must survive until the workflow uploads it.
+  const keepDump = plan.targets.length === 0;
   try {
     for (const target of plan.targets) {
       if (target.kind === 'supabase') {
@@ -897,7 +916,9 @@ export async function runBackup({ now = new Date(), deps = {} } = {}) {
     process.exitCode = 4;
     return fail;
   } finally {
-    try { unlinkSync(dumpPath); } catch { /* best-effort */ }
+    if (!keepDump) {
+      try { unlinkSync(dumpPath); } catch { /* best-effort */ }
+    }
   }
 
   const elapsedMs = Date.now() - startedAt;
@@ -905,15 +926,18 @@ export async function runBackup({ now = new Date(), deps = {} } = {}) {
     ok: true,
     // Kept for the existing consumers of this JSON; `destinations` is the
     // complete answer once more than one target is configured.
-    bucket: destinations[0].bucket,
+    bucket: destinations[0]?.bucket ?? null,
     key,
+    ...(keepDump ? { artifactOnly: true, artifactPath: dumpPath } : {}),
     destinations,
     offsite: plan.offsite,
     sameProject: plan.sameProject,
     // True only when EVERY destination confirmed the stored byte count. False
     // means the copies were written but at least one store would not tell us
     // what it holds — reported rather than papered over.
-    verified: destinations.every((d) => d.verified === true),
+    // An artifact-only run has no store read-back; its proof is the local
+    // pg_restore listing above, so `verified` is false rather than vacuously true.
+    verified: destinations.length > 0 && destinations.every((d) => d.verified === true),
     sizeBytes,
     tocEntries,
     sha256,

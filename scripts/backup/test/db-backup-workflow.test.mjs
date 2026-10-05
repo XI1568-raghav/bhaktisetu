@@ -219,9 +219,42 @@ describe.skipIf(!hasBash)('db-backup.yml — the step that decides the green tic
     expect(out).toMatch(/::warning::/);
     expect(out).toMatch(/same Supabase project/i);
   });
+
+  it('passes an artifact-only run (no object store) but WARNS that nothing is offsite', async () => {
+    const { code, out } = await runGate(
+      JSON.stringify({
+        ok: true,
+        artifactOnly: true,
+        sizeBytes: BIG,
+        tocEntries: 412,
+        verified: false,
+        offsite: false,
+        sameProject: false,
+      }),
+    );
+    expect(code).toBe(0);
+    expect(out).toMatch(/::warning::No object store is configured/);
+    expect(out).not.toMatch(/::error::/);
+  });
+
+  it('still fails an artifact-only run whose dump is empty', async () => {
+    const { code } = await runGate(
+      JSON.stringify({ ok: true, artifactOnly: true, sizeBytes: 0, tocEntries: 0, offsite: false }),
+    );
+    expect(code).not.toBe(0);
+  });
 });
 
 describe('db-backup.yml — structure', () => {
+  it('falls back from SUPABASE_DB_URL to SUPABASE_DIRECT_URL and keeps the dump 7 days', () => {
+    const doc = yaml.load(readFileSync(WORKFLOW, 'utf8'));
+    const run = doc.jobs.backup.steps.find((s) => s.id === 'backup');
+    expect(run.env.SUPABASE_DB_URL).toMatch(/secrets\.SUPABASE_DB_URL \|\| secrets\.SUPABASE_DIRECT_URL/);
+    const upload = doc.jobs.backup.steps.find((s) => /upload-artifact/.test(s.uses || ''));
+    expect(upload.with['retention-days']).toBe(7);
+    expect(upload.with['if-no-files-found']).toBe('ignore');
+  });
+
   it('parses as YAML and keeps the gate wired into the backup job', () => {
     const doc = yaml.load(readFileSync(WORKFLOW, 'utf8'));
     const names = doc.jobs.backup.steps.map((s) => s.name).filter(Boolean);

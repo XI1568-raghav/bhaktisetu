@@ -190,12 +190,18 @@ describe('OPS-03 — the backup must not live in the account it insures', () => 
     expect(plan.fatal).toBe(false);
   });
 
-  it('is fatal when no destination is configured at all', () => {
+  it('is artifact-only (not fatal, not offsite) when no destination is configured', () => {
+    // 2026-10-06: this used to be fatal, so a repo holding only the database
+    // secret took no dump at all. The dump is now taken, verified and kept as a
+    // workflow artifact; it must never read as offsite.
     const plan = planDestinations({
       SUPABASE_DB_URL: 'postgresql://postgres:***REMOVED***@db.primaryref0000000.supabase.co:5432/postgres',
     });
     expect(plan.targets).toEqual([]);
-    expect(plan.fatal).toBe(true);
+    expect(plan.fatal).toBe(false);
+    expect(plan.offsite).toBe(false);
+    expect(plan.artifactOnly).toBe(true);
+    expect(plan.message).toMatch(/7-day workflow artifact/);
   });
 });
 
