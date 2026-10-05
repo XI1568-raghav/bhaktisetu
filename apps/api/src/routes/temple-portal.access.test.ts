@@ -106,7 +106,7 @@ describe('dashboard', () => {
     } as any);
     prismaMock.pujaBooking.count.mockResolvedValue(3);
     prismaMock.pujaBooking.findMany.mockResolvedValue([]);
-    prismaMock.templePayout.aggregate.mockResolvedValue({ _sum: { amount: null } } as any);
+    prismaMock.templePayout.findMany.mockResolvedValue([]);
   });
 
   it('finds the temple the same tolerant way the other tabs do', async () => {
@@ -116,9 +116,9 @@ describe('dashboard', () => {
   });
 
   it('reports the temple share, not the devotee gross, as revenue', async () => {
-    prismaMock.templePayout.aggregate
-      .mockResolvedValueOnce({ _sum: { amount: '100' } } as any) // total
-      .mockResolvedValueOnce({ _sum: { amount: '100' } } as any); // month
+    prismaMock.templePayout.findMany.mockResolvedValue([
+      { bookingId: 'b1', amount: '100', status: 'completed', createdAt: new Date() },
+    ] as any);
     const res = await get('/dashboard');
     expect(res.statusCode).toBe(200);
     const stats = res.json().stats;
@@ -126,7 +126,7 @@ describe('dashboard', () => {
     expect(stats.monthRevenueInr).toBe(100);
     expect(prismaMock.pujaBooking.aggregate).not.toHaveBeenCalled();
     // A refunded booking's share is reversed and must not be counted.
-    const first = prismaMock.templePayout.aggregate.mock.calls[0]?.[0] as any;
+    const first = prismaMock.templePayout.findMany.mock.calls[0]?.[0] as any;
     expect(first.where.status).toEqual({ in: ['pending', 'completed'] });
   });
 

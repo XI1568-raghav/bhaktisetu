@@ -62,6 +62,12 @@ type ApiDashboard = {
   monthBookings: number;
   totalRevenueInr: number;
   monthRevenueInr: number;
+  /** Share already releasable (puja performed and proved) or paid. */
+  releasedInr?: number;
+  monthReleasedInr?: number;
+  /** Share minted at confirmation but still held until the puja is proved. */
+  upcomingInr?: number;
+  monthUpcomingInr?: number;
   totalStreams: number;
  };
  recentBookings: ApiBooking[];
@@ -134,11 +140,29 @@ export default function TempleDashboard() {
  // em dashes, not zeros — a fabricated zero revenue is indistinguishable from
  // a real one, and it is the number that makes a temple manager churn.
  const unread = !!loadError && !liveStats;
- const statCards = [
+ // Released vs Upcoming, from the same release rule as the Payouts tab: the
+ // temple's share is minted when payment confirms but only releasable once the
+ // puja is performed and proved. Unreleased share is never shown as earned.
+ // Older servers send only totalRevenueInr/monthRevenueInr (which then meant
+ // "all share"), so fall back to em dashes rather than a wrong figure.
+ const hasSplit = liveStats?.releasedInr !== undefined;
+ const statCards: Array<{ label: string; value: string; sub?: string; testId?: string; icon: typeof Flame; color: string; bg: string }> = [
    { label: 'Total Bookings', value: unread ? '—' : (liveStats?.totalBookings ?? 0).toLocaleString('en-IN'), icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
    { label: 'Bookings This Month', value: unread ? '—' : (liveStats?.monthBookings ?? 0).toLocaleString('en-IN'), icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
-   { label: 'Temple share this month', value: unread ? '—' : formatCurrency(liveStats?.monthRevenueInr ?? 0), icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
-   { label: 'Total temple share', value: unread ? '—' : formatCurrency(liveStats?.totalRevenueInr ?? 0), icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50' },
+   {
+     label: 'Released temple share',
+     value: unread || !hasSplit ? '—' : formatCurrency(liveStats?.releasedInr ?? 0),
+     sub: unread || !hasSplit ? undefined : `${formatCurrency(liveStats?.monthReleasedInr ?? 0)} this month`,
+     testId: 'temple-share-released',
+     icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20',
+   },
+   {
+     label: 'Upcoming temple share',
+     value: unread || !hasSplit ? '—' : formatCurrency(liveStats?.upcomingInr ?? 0),
+     sub: 'Released after the puja is performed and proved',
+     testId: 'temple-share-upcoming',
+     icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50',
+   },
  ];
 
  return (
@@ -175,7 +199,7 @@ export default function TempleDashboard() {
  {statCards.map((card) => {
  const Icon = card.icon;
  return (
- <div key={card.label} className="bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow">
+ <div key={card.label} data-testid={card.testId} className="bg-white rounded-xl border border-surface-100 p-5 hover:shadow-md transition-shadow">
  <div className="flex items-center gap-3 mb-3">
  <div className={`w-10 h-10 ${card.bg} rounded-lg flex items-center justify-center`}>
  <Icon className={`w-5 h-5 ${card.color}`} />
@@ -183,6 +207,7 @@ export default function TempleDashboard() {
  </div>
  <p className="text-lg font-semibold text-surface-800">{card.value}</p>
  <p className="text-xs text-surface-500 mt-0.5">{card.label}</p>
+ {card.sub ? <p className="text-xs text-surface-400 mt-0.5">{card.sub}</p> : null}
  </div>
  );
  })}

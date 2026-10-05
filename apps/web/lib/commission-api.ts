@@ -56,6 +56,11 @@ export interface Commission {
   /** The platform's take rate as a percentage, e.g. 20 for 20%. */
   ratePercent?: number | null;
   status: CommissionStatus | string;
+  /**
+   * Provider route only. 'upcoming' = earned but held until the session is held /
+   * puja proved; 'payable' | 'in_payout' | 'paid' | 'reversed' otherwise.
+   */
+  releaseStatus?: string;
   /** Reference of the PayoutRequest that settled this row. */
   payoutReference?: string | null;
   processedAt?: string | null;

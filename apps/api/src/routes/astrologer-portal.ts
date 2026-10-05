@@ -9,6 +9,7 @@ import {
   getAstrologerPresence,
   ASTROLOGER_SHARE,
 } from '../services/astrologer.service.js';
+import { isUpcomingCommission, unfinishedConsultationIds } from '../services/payout.service.js';
 
 /**
  * PAR-13. `AstrologerProfile.userId` and `Commission.providerId` are both
@@ -36,6 +37,7 @@ function emptyAstrologerLedger() {
     summary: {
       totalEarningsInr: 0,
       pendingInr: 0,
+      upcomingInr: 0,
       paidInr: 0,
       monthEarningsInr: 0,
       todayEarningsInr: 0,
@@ -120,6 +122,13 @@ async function loadAstrologerLedger(userId: string) {
   const pujaIds = new Set(pujaRows.map((p) => p.id));
   const rows = allRows.filter((c) => !c.bookingId || !pujaIds.has(c.bookingId));
 
+  // Consultations not yet completed are earned but not yet releasable: the same
+  // hold GET /payouts/balance applies, reported here as `upcoming`.
+  const heldKeys = {
+    wellnessEnrollmentIds: new Set<string>(),
+    bookingIds: new Set(await unfinishedConsultationIds(prisma, userId)),
+  };
+
   const data = rows.map((c) => {
     const earnings = new Prisma.Decimal(c.amount);
     const gross = commissionGross(c.amount, c.percentage);
@@ -128,6 +137,11 @@ async function loadAstrologerLedger(userId: string) {
       id: c.id,
       bookingId: c.bookingId,
       status: c.status,
+      releaseStatus: isUpcomingCommission(c, heldKeys)
+        ? 'upcoming'
+        : c.status === 'PENDING'
+          ? 'payable'
+          : c.status.toLowerCase(),
       createdAt: c.createdAt,
       grossAmountInr: gross.toNumber(),
       platformCutInr: platformCut.toNumber(),
@@ -152,7 +166,10 @@ async function loadAstrologerLedger(userId: string) {
     data,
     summary: {
       totalEarningsInr: sum(live),
-      pendingInr: sum(live.filter((r) => r.status === 'PENDING')),
+      // Pending EXCLUDING upcoming consultations (still held), which are
+      // reported separately so the two never read as one payable figure.
+      pendingInr: sum(live.filter((r) => r.status === 'PENDING' && r.releaseStatus !== 'upcoming')),
+      upcomingInr: sum(live.filter((r) => r.releaseStatus === 'upcoming')),
       paidInr: sum(live.filter((r) => r.status === 'PAID')),
       monthEarningsInr: sum(live.filter((r) => new Date(r.createdAt) >= monthStart)),
       todayEarningsInr: sum(live.filter((r) => new Date(r.createdAt) >= dayStart)),
@@ -281,6 +298,7 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
         // "Pending payout" rendered as an em dash on every astrologer's screen.
         paidOutInr: ledger.summary.paidInr,
         pendingPayoutInr: ledger.summary.pendingInr,
+        upcomingInr: ledger.summary.upcomingInr,
         astrologerShare: ledger.summary.astrologerShare,
         activeClients: upcomingSessions.length,
       },
@@ -446,6 +464,7 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       summary: {
         totalEarningsInr: summary.totalEarningsInr,
         pendingInr: summary.pendingInr,
+        upcomingInr: summary.upcomingInr,
         paidInr: summary.paidInr,
         astrologerShare: summary.astrologerShare,
       },

@@ -202,3 +202,36 @@ describe('AW-04 — astrologer dashboard money comes from the Commission ledger,
     expect(res.json().stats.totalEarningsInr).toBe(300);
   });
 });
+
+describe('astrologer earnings split pending into payable vs upcoming consultations', () => {
+  it('holds unfinished consultations out of pendingInr and reports them as upcomingInr', async () => {
+    prismaMock.commission.findMany.mockResolvedValue([
+      commissionRow({ id: 'c-done', bookingId: 'consult-done', amount: 300 }),
+      commissionRow({ id: 'c-open', bookingId: 'consult-open', amount: 400 }),
+    ]);
+    prismaMock.$queryRawUnsafe.mockImplementation(async (sql: string) => {
+      const s = String(sql);
+      if (s.includes('astrologer_consultations a ON a.id::text = c.booking_id')) {
+        return [{ booking_id: 'consult-open' }];
+      }
+      if (s.includes('COUNT(*)')) return [{ count: '1', sum: '375' }];
+      if (s.includes('SELECT id, reference')) return [];
+      return [{ sum: '375' }];
+    });
+
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/astrologer-portal/earnings',
+      headers: { authorization: 'Bearer demo-astro' },
+    });
+    await app.close();
+
+    const body = res.json();
+    expect(body.summary.pendingInr).toBe(300);
+    expect(body.summary.upcomingInr).toBe(400);
+    expect(body.summary.totalEarningsInr).toBe(700);
+    const by = Object.fromEntries(body.data.map((r: any) => [r.id, r.releaseStatus]));
+    expect(by).toEqual({ 'c-done': 'payable', 'c-open': 'upcoming' });
+  });
+});

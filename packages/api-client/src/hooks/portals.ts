@@ -74,6 +74,8 @@ export interface AstrologerDashboardResponse {
     totalEarningsInr: number;
     paidOutInr: number;
     pendingPayoutInr: number;
+    /** Earned from consultations not yet completed; excluded from pendingPayoutInr. */
+    upcomingInr?: number;
     /** The provider's share as a fraction, e.g. 0.8. */
     astrologerShare: number;
     activeClients: number;
@@ -254,6 +256,12 @@ export interface TempleDashboardResponse {
     todayBookings?: number;
     pendingPriestAssignment?: number;
     monthRevenueInr?: number;
+    /** Temple share already releasable (puja performed and proved) or paid. */
+    releasedInr?: number;
+    monthReleasedInr?: number;
+    /** Temple share minted at confirmation but still held until the puja is proved. */
+    upcomingInr?: number;
+    monthUpcomingInr?: number;
     activeDarshanStreams?: number;
   };
 }

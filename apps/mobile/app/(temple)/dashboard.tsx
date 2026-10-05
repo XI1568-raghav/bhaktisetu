@@ -21,6 +21,7 @@ import {
 } from '../../lib/portal-queries';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { bookingStatusLabel } from '../../lib/enum-labels';
+import { UPCOMING_LABEL, upcomingShown } from '../../lib/earnings-copy';
 
 import { useExitConfirm } from '../../lib/use-exit-confirm';
 /**
@@ -102,12 +103,26 @@ export default function TempleDashboard() {
             />
             <View style={{ width: spacing.sm }} />
             <StatCard
-              label="Revenue"
-              value={formatInr(dash.stats.totalRevenueInr)}
-              hint={`${formatInr(dash.stats.monthRevenueInr)} this month`}
+              label="Released share"
+              value={dash.stats.releasedInr === null ? '—' : formatInr(dash.stats.releasedInr)}
+              hint={
+                dash.stats.monthReleasedInr === null
+                  ? undefined
+                  : `${formatInr(dash.stats.monthReleasedInr)} this month`
+              }
               accent={colors.green[600]}
             />
           </View>
+          {upcomingShown(dash.stats.upcomingInr) ? (
+            <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+              <StatCard
+                label={`${UPCOMING_LABEL} share`}
+                value={formatInr(dash.stats.upcomingInr as number)}
+                hint="Released after the puja is performed and proved"
+                accent={colors.stone[500]}
+              />
+            </View>
+          ) : null}
         </>
       ) : null}
 
