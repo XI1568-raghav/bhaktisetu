@@ -200,7 +200,20 @@ export default function ScrollReveal({ children }: { children: React.ReactNode }
  }
 
  // ─── Wire up ──────────────────────────────────────────────────────
- document.querySelectorAll('[data-reveal]').forEach((el) => revealObserver.observe(el));
+ // CWV-01: elements already in the first viewport are shown immediately (they
+ // were never hidden); only the ones below the fold are marked pending and
+ // revealed on scroll. Reads first, writes second: one layout, not N.
+ const revealEls = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
+ const vh = window.innerHeight;
+ const belowFold = revealEls.map((el) => el.getBoundingClientRect().top >= vh - 40);
+ revealEls.forEach((el, i) => {
+ if (prefersReducedMotion || !belowFold[i]) {
+ el.classList.add('is-visible');
+ return;
+ }
+ el.classList.add('reveal-pending');
+ revealObserver.observe(el);
+ });
  document.querySelectorAll('.text-highlight').forEach((el) => highlightObserver.observe(el));
  document.querySelectorAll('[data-counter]').forEach((el) => counterObserver.observe(el));
 

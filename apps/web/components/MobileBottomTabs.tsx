@@ -54,7 +54,16 @@ export function MobileBottomTabs() {
       // RESP-01: the consent banner is z-[80] and was covering this bar
       // outright. --consent-h is its live height while open, 0px otherwise,
       // so the tabs ride above it instead of underneath.
-      style={{ bottom: 'var(--consent-h, 0px)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      // CWV-01: this was `bottom: var(--consent-h)`, so the bar JUMPED up when the
+      // banner mounted after hydration — a 0.085 layout shift on every mobile
+      // page (Lighthouse, prod, 2026-10-06). A transform moves the same pixels
+      // without being a layout shift.
+      style={{
+        bottom: 0,
+        transform: 'translateY(calc(var(--consent-h, 0px) * -1))',
+        willChange: 'transform',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
     >
       <ul className="grid grid-cols-4 items-stretch h-14">
         {TABS.map((tab) => {

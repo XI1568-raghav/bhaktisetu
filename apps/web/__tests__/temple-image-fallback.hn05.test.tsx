@@ -74,7 +74,7 @@ describe('HN-05 — a throttled temple image falls back to a local placeholder',
   it('swaps to the placeholder when the upstream fetch is dropped', () => {
     render(<TemplesBrowser temples={[TEMPLE] as never} />);
     const img = templeImg();
-    expect(img.getAttribute('src')).toContain('upload.wikimedia.org');
+    expect(img.getAttribute('src')).toContain('/images/temples/kashi-vishwanath');
 
     fireEvent.error(img);
 

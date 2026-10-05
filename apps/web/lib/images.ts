@@ -15,6 +15,8 @@
  * <img src={getTempleHero('kashi-vishwanath')} />
  */
 
+import { selfHostedFor, relativizeOwnImage } from './self-hosted-images';
+
 const UNSPLASH_BASE = 'https://images.unsplash.com';
 
 function qualityFor(w: number, h: number): number {
@@ -261,6 +263,8 @@ function transcodeThumbFile(thumbFile: string): string {
 }
 
 export function wikiThumb(url: string, width: number): string {
+ const local = selfHostedFor(url, width);
+ if (local) return local.url;
  if (!url.includes('upload.wikimedia.org/wikipedia/commons/')) return url;
  if (url.includes('/commons/thumb/')) {
    const thumbFile = /\/commons\/thumb\/[0-9a-f]\/[0-9a-f]{2}\/([^/?#]+)\//.exec(url)?.[1];
@@ -323,6 +327,9 @@ export const IMG_W = {
  */
 export function remoteImage(url: string, width: number): string {
  if (!url) return url;
+ url = relativizeOwnImage(url);
+ const local = selfHostedFor(url, width);
+ if (local) return local.url;
  if (url.includes('upload.wikimedia.org/wikipedia/commons/')) return wikiThumb(url, width);
  if (url.includes('images.unsplash.com')) {
    const currentW = Number(/[?&]w=(\d+)/.exec(url)?.[1] ?? 0);
@@ -348,8 +355,11 @@ export function remoteImage(url: string, width: number): string {
  */
 export function remoteSrcSet(url: string | undefined, widths: number[]): string | undefined {
  if (!url) return undefined;
+ url = relativizeOwnImage(url);
  const resizable =
-   url.includes('upload.wikimedia.org/wikipedia/commons/') || url.includes('images.unsplash.com');
+   url.includes('upload.wikimedia.org/wikipedia/commons/') ||
+   url.includes('images.unsplash.com') ||
+   selfHostedFor(url, widths[0] ?? 500) !== undefined;
  if (!resizable) return undefined;
  const seen = new Set<string>();
  const parts: string[] = [];
@@ -359,7 +369,9 @@ export function remoteSrcSet(url: string | undefined, widths: number[]): string 
    seen.add(candidate);
    // Descriptor must reflect the width actually served, not the width asked
    // for, or the browser picks the wrong candidate.
-   const served = Number(/\/(\d+)px-/.exec(candidate)?.[1] ?? /[?&]w=(\d+)/.exec(candidate)?.[1] ?? w);
+   const served =
+     selfHostedFor(url, w)?.width ??
+     Number(/\/(\d+)px-/.exec(candidate)?.[1] ?? /[?&]w=(\d+)/.exec(candidate)?.[1] ?? w);
    parts.push(`${candidate} ${served}w`);
  }
  return parts.length > 0 ? parts.join(', ') : undefined;
@@ -372,6 +384,8 @@ export function resizeImage(
  url: string,
  preset: 'hero' | 'card' | 'thumb' | 'avatar',
 ): string {
+ const local = selfHostedFor(url, { hero: 1600, card: 800, thumb: 400, avatar: 200 }[preset]);
+ if (local) return local.url;
  if (!url.includes('images.unsplash.com')) {
  // Wikimedia: pick a thumb width matching the preset
  const widths = { hero: 1600, card: 800, thumb: 400, avatar: 200 };
