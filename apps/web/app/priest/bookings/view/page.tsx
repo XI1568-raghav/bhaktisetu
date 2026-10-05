@@ -44,6 +44,9 @@ interface BookingDetail {
  rating: number | null;
  reviewText: string | null;
  createdAt: string;
+ // Sent by the API for the Start time lock; absent means no lock.
+ startUnlocksAt?: string;
+ startLockedMessage?: string | null;
  temple: { id: string; name: string; city: string; state: string };
  pujaType: { id: string; name: string; durationMinutes: number; description: string };
  user: { fullName: string; phone: string };
@@ -148,6 +151,13 @@ function PriestBookingDetailInner() {
  }
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [session, bookingId]);
+
+ // Locked while the server's unlock time is still ahead; a missing time means no lock.
+ const startLocked = Boolean(
+  booking?.startLockedMessage &&
+  booking.startUnlocksAt &&
+  Date.now() < Date.parse(booking.startUnlocksAt),
+ );
 
  async function handleAction(action: string) {
  if (!booking) return;
@@ -402,14 +412,19 @@ function PriestBookingDetailInner() {
  )}
 
  {booking.status === 'priest_assigned' && (
+ <>
+ {startLocked && (
+ <p className="mb-3 text-sm text-surface-600">{booking.startLockedMessage}</p>
+ )}
  <button
  onClick={() => handleAction('start')}
- disabled={actionLoading}
+ disabled={actionLoading || startLocked}
  className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
  >
  {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
  Start Puja
  </button>
+ </>
  )}
 
  {booking.status === 'in_progress' && (
