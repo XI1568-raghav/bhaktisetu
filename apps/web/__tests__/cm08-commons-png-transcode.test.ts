@@ -28,14 +28,14 @@ import { wikiThumb, remoteImage, remoteSrcSet, IMG_W } from '../lib/images';
 
 const RAMCHARIT =
   'https://upload.wikimedia.org/wikipedia/commons/7/7f/R%C4%81macaritam%C4%81nasa_manuscript_%2819th_century%29.png';
-const BIRLA = 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Birla_Mandir%2C_Hyderabad.png';
+const BIRLA = 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Example_Unhosted_Scan.png';
 const KRISHNA =
   'https://upload.wikimedia.org/wikipedia/commons/a/a9/Krishna_Holds_Up_Mount_Govardhan_%28MET_70694%29_cropped.png';
 const OM_SVG = 'https://upload.wikimedia.org/wikipedia/commons/3/30/1_Om.svg';
 const OM_SVG_THUMB =
   'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Om.svg/250px-Om.svg.png';
 const A_JPEG =
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Kedarnath_Temple_in_Rainy_season.jpg/1280px-Kedarnath_Temple_in_Rainy_season.jpg';
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Example_Unhosted_Photo.jpg/1280px-Example_Unhosted_Photo.jpg';
 
 describe('CM-08 — Commons PNG thumbnails are re-encoded by Commons itself', () => {
   it('appends .jpg to a PNG-sourced thumbnail, from the original URL shape', () => {
@@ -73,7 +73,7 @@ describe('CM-08 — Commons PNG thumbnails are re-encoded by Commons itself', ()
   it('leaves an already-JPEG source completely alone', () => {
     const out = wikiThumb(A_JPEG, IMG_W.CARD);
     expect(out).toBe(
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Kedarnath_Temple_in_Rainy_season.jpg/500px-Kedarnath_Temple_in_Rainy_season.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Example_Unhosted_Photo.jpg/500px-Example_Unhosted_Photo.jpg',
     );
   });
 

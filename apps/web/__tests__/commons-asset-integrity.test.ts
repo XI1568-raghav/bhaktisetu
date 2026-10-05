@@ -173,9 +173,9 @@ describe('delisted Commons files', () => {
     // Removing the dead URL by deleting the temple would pass the guards above
     // and silently drop a Jyotirlinga off the site.
     const hero = getTempleHero('mallikarjuna', IMG_W.HERO);
-    expect(hero).toContain('upload.wikimedia.org');
-    expect(hero).toMatch(/Srisailam|Mallikarjuna/i);
-    expect(getTempleThumbnail('mallikarjuna', IMG_W.CARD)).toMatch(/Srisailam|Mallikarjuna/i);
+    // TD-09: self-hosted copy of Night_view_of_Srisailam_Temple_South_Gopuram.jpg.
+    expect(hero).toMatch(/images\/temples\/mallikarjuna/);
+    expect(getTempleThumbnail('mallikarjuna', IMG_W.CARD)).toMatch(/images\/temples\/mallikarjuna/);
     expect(getTempleGallery('mallikarjuna', IMG_W.WIDE).length).toBeGreaterThan(0);
   });
 });
@@ -208,8 +208,8 @@ describe('no request upscales a Commons file', () => {
 
   it('leaves a file wide enough for the request alone', () => {
     // Kedarnath is 4000px+ at source; nothing should be clamped.
-    const url =
-      'https://upload.wikimedia.org/wikipedia/commons/5/56/Kedarnath_Temple_in_Rainy_season.jpg';
+    // (Not a self-hosted file: those return the local WebP and never reach Commons.)
+    const url = 'https://upload.wikimedia.org/wikipedia/commons/5/56/Example_Unhosted_Photo.jpg';
     expect(requestedThumbWidth(wikiThumb(url, IMG_W.HERO))).toBe(1280);
   });
 

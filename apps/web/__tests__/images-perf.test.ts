@@ -47,17 +47,17 @@ function walk(dir: string, out: string[] = []): string[] {
 
 describe('remoteImage', () => {
   it('converts a Commons original to a sized thumbnail', () => {
-    const url = 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Rudraksha_mala.jpg';
+    const url = 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Example_Unhosted_Photo.jpg';
     const out = remoteImage(url, 500);
     expect(out).toBe(
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Rudraksha_mala.jpg/500px-Rudraksha_mala.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Example_Unhosted_Photo.jpg/500px-Example_Unhosted_Photo.jpg',
     );
     expect(isCommonsOriginal(out)).toBe(false);
   });
 
   it('re-sizes an existing Commons thumb down to the requested width', () => {
     const url =
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Kedarnath_Temple_in_Rainy_season.jpg/1920px-Kedarnath_Temple_in_Rainy_season.jpg';
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Example_Unhosted_Photo.jpg/1920px-Example_Unhosted_Photo.jpg';
     expect(remoteImage(url, 500)).toContain('/500px-');
   });
 
@@ -78,12 +78,33 @@ describe('remoteImage', () => {
   });
 });
 
+describe('self-hosted photos (TD-09)', () => {
+  it('serves the local WebP for a hosted Commons file, small variant for phone slots', () => {
+    const url = 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Rudraksha_mala.jpg';
+    expect(remoteImage(url, 500)).toBe('/images/store/prod_006-500.webp');
+    expect(remoteImage(url, 960)).toBe('/images/store/prod_006.webp');
+  });
+
+  it('builds a srcset from the local variants', () => {
+    const url = 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Rudraksha_mala.jpg';
+    const out = remoteSrcSet(url, [250, 500, 960]);
+    expect(out).toBe(
+      '/images/store/prod_006-250.webp 250w, /images/store/prod_006-500.webp 500w, /images/store/prod_006.webp 578w',
+    );
+  });
+
+  it('treats an already-local or own-origin /images path as hosted', () => {
+    expect(remoteImage('https://darshya.online/images/store/prod_006.webp', 500)).toBe('/images/store/prod_006-500.webp');
+    expect(remoteImage('/images/store/prod_006.webp', 960)).toBe('/images/store/prod_006.webp');
+  });
+});
+
 describe('remoteSrcSet', () => {
   it('emits one candidate per width with w descriptors for Commons', () => {
-    const url = 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Rudraksha_mala.jpg';
+    const url = 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Example_Unhosted_Photo.jpg';
     const out = remoteSrcSet(url, [250, 500]);
-    expect(out).toContain('250px-Rudraksha_mala.jpg 250w');
-    expect(out).toContain('500px-Rudraksha_mala.jpg 500w');
+    expect(out).toContain('250px-Example_Unhosted_Photo.jpg 250w');
+    expect(out).toContain('500px-Example_Unhosted_Photo.jpg 500w');
   });
 
   it('returns undefined for hosts that cannot be resized', () => {
@@ -91,7 +112,7 @@ describe('remoteSrcSet', () => {
   });
 
   it('de-duplicates widths that snap to the same Commons ladder step', () => {
-    const url = 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Rudraksha_mala.jpg';
+    const url = 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Example_Unhosted_Photo.jpg';
     // 260 and 300 both snap up to 330 — only one candidate should survive.
     const out = remoteSrcSet(url, [260, 300]);
     expect(out?.split(',').length).toBe(1);
