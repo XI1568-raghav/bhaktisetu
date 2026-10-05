@@ -248,6 +248,32 @@ async function unperformedPujaBookingIds(
   return rows.map((r) => r.id);
 }
 
+/**
+ * Astrologer consultation earnings are written PENDING at payment, before the
+ * session has happened. Hold those whose consultation is not yet completed (or
+ * cancelled: a cancelled one is reversed by the ledger). One joined read: the
+ * commission's bare `bookingId` is the consultation id. A missing table (it is
+ * created lazily) means no consultations, so nothing is held.
+ */
+async function unfinishedConsultationIds(
+  db: Pick<typeof prisma, '$queryRawUnsafe'>,
+  providerId: string,
+): Promise<string[]> {
+  try {
+    const rows = await db.$queryRawUnsafe<Array<{ booking_id?: unknown }>>(
+      `SELECT c.booking_id FROM commissions c
+         JOIN astrologer_consultations a ON a.id::text = c.booking_id
+        WHERE c.provider_id = $1::uuid AND c.status = 'PENDING' AND c.payout_request_id IS NULL
+          AND a.status NOT IN ('completed', 'cancelled')
+        LIMIT 5000`,
+      providerId,
+    );
+    return (Array.isArray(rows) ? rows : []).map((r) => r.booking_id).filter((v): v is string => typeof v === 'string');
+  } catch {
+    return [];
+  }
+}
+
 /** Excludes held puja rows; an explicit null branch because NOT IN drops NULLs in SQL. */
 function notHeldPuja(heldIds: string[]): Prisma.CommissionWhereInput {
   return heldIds.length ? { AND: [{ OR: [{ bookingId: null }, { bookingId: { notIn: heldIds } }] }] } : {};
@@ -256,7 +282,10 @@ function notHeldPuja(heldIds: string[]): Prisma.CommissionWhereInput {
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */
 export async function getPayoutBalance(providerId: string) {
   const heldIds = await upcomingWellnessEnrollmentIds(prisma, providerId);
-  const heldPujaIds = await unperformedPujaBookingIds(prisma, providerId);
+  const heldPujaIds = [
+    ...(await unperformedPujaBookingIds(prisma, providerId)),
+    ...(await unfinishedConsultationIds(prisma, providerId)),
+  ];
   const pending = await sumCommissionAmounts({
     providerId,
     status: 'PENDING',
@@ -470,7 +499,10 @@ export async function requestPayout(
     // the winner's row locks, re-evaluates the predicate, matches fewer rows
     // than it selected, and throws — rolling back its own PayoutRequest.
     const heldIds = await upcomingWellnessEnrollmentIds(tx, providerId);
-    const heldPujaIds = await unperformedPujaBookingIds(tx, providerId);
+    const heldPujaIds = [
+      ...(await unperformedPujaBookingIds(tx, providerId)),
+      ...(await unfinishedConsultationIds(tx, providerId)),
+    ];
     const rows = await tx.commission.findMany({
       where: {
         providerId,
