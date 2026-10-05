@@ -560,6 +560,28 @@ export default function AdminPayoutsPage() {
                   {target.linkedCommissionCount} · {formatInrExact(target.linkedCommissionTotal)}
                 </dd>
               </div>
+              {dialog?.mode === 'pay' && (target.payTo ? (
+                <>
+                  {target.payTo.holderName && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-surface-500">Account holder</dt>
+                      <dd className="text-surface-800 text-right">{target.payTo.holderName}</dd>
+                    </div>
+                  )}
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-surface-500">Account number</dt>
+                    <dd className="font-mono text-surface-800 text-right">{target.payTo.accountNumber}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-surface-500">IFSC</dt>
+                    <dd className="font-mono text-surface-800 text-right">{target.payTo.ifsc}</dd>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  No bank details on file for this provider. Do not mark this paid until you have them.
+                </div>
+              ))}
             </dl>
 
             {/*

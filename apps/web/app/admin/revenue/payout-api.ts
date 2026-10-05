@@ -60,6 +60,8 @@ export interface AdminPayoutRequest {
   /** How many Commission rows this request owns. 0 means a hollow request. */
   linkedCommissionCount: number;
   linkedCommissionTotal: string;
+  /** Where to send the money; only present on pending requests, null when no bank record exists. */
+  payTo?: { holderName: string | null; accountNumber: string; ifsc: string } | null;
 }
 
 function authHeaders(token: string | undefined): Record<string, string> {
