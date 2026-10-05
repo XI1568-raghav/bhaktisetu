@@ -13,6 +13,52 @@
 > a log and are **not** operational instructions — for those use
 > `docs/runbooks/prod-rollback.md` and `docs/operational-context.md`.
 
+## 2026-10-05 - Go-live round: every role tested end to end and fixed (#279-#312)
+
+**Status**: merged to `main` (latest at write time `31f9fe38`, #312). Both Render services were deployed at the latest main. Nothing in this block is uncommitted work.
+
+### What shipped, by area
+
+- **Booking and pandit side**: paid bookings are shown to approved pandits so they can take them (#279); pandit start-time gate and earnings on open requests (#287); video proof is required before a puja can be marked complete (#301); an assigned temple priest routes that offering's paid bookings (#305); slot times are labelled IST and show the devotee's own zone (#290); the muhurat endpoint returns every day so the picker can disable bad ones (#274, #270).
+- **Money**: earnings of pandit (#289), astrologer (#297), wellness (#288) and temple share (#304) are held until the service is performed/proved (`apps/api/src/services/payout.service.ts`, `upcomingInr` vs released; split across portals and apps in #311). Cash-on-delivery orders create no commission and no seller payout (#285, split of COD sales in #310). Admin refunds default to the cancellation-policy amount (#282); the payee's bank details show when an admin settles a payout (#283); requested payouts are labelled (#310).
+- **NRI pricing**: price = 2.5x the puja price, charged as INR, shown in USD only when the explicit `nriPricing` flag is passed (`apps/api/src/lib/nri-pricing.ts`, web twin in `apps/web/components/pricing/useDisplayCurrency.ts`; #300, pandit-direct checkout #312). Unbacked NRI/add-on claims removed (#292, #309).
+- **Temple**: temple portal needs an approved profile, shows the real share and links the schedule editor (#291, #302); donations only for a temple that exists and has an approved manager (#295, #294); the roster needs the pandit's consent via invite and accept (#306); lead conversion names the temple (#293).
+- **Admin**: Bookings screen with a "waiting for a pandit" count (#281); Gaushala funds screen (#286); Temple funds screen (#296); awaiting-refund tile (#298).
+- **Trust copy**: false claims removed or gated (live-stream promises #276, devotee booking screens #278, astrologer booking #284, shipping/refund/NRI/trust #309). Referral is hidden behind `HAS_REFERRAL_CREDIT` (#303). API errors answer in English unless the client asks otherwise (#299; mobile sends accept-language on every request, #307).
+- **Infra**: fonts are self-hosted (`apps/web/app/fonts/*.woff2`, `next/font/local`); `ci.yml` no longer runs on push to main (#308).
+
+### How to deploy and verify
+
+1. CI runs on PRs only (and by hand: `gh workflow run ci.yml --ref main`). A merge to `main` builds nothing and changes nothing in production.
+2. Before any deploy, verify the merged main locally across **all three** apps: `apps/api` (tsc + vitest), `apps/web` (tsc + vitest, plus `next build` for web changes) and `apps/mobile` (tsc + vitest). Local env needs `PATH=/opt/homebrew/bin:$PATH` and, on Node 26, `NODE_OPTIONS=--no-experimental-webstorage`.
+3. Deploy by dispatch, API first: `gh workflow run render-diag.yml -f mode=deploy -f sid=<SID> -f commit=<SHA>` (API `srv-d7mc2n8sfn5c73dfce0g`, web `srv-d970l2ks728c738fc33g`). Apply any Prisma migration by hand before deploying code that needs it (see the procedure in TASKS.md "Role-by-Role Revamp").
+4. Verify live: `/health` returns `{"status":"ok","db":"ok"}`, web pages 200, auth-gated API routes 401 not 404. Rollback is the same dispatch with an older `-f commit=<SHA>`; see `docs/runbooks/prod-rollback.md`.
+
+### Local stack recipe (pointers)
+
+- Local Postgres 17 + pgvector via Homebrew, schema from the Prisma migrations / `prisma/baseline/0_init.sql` (`docs/runbooks/fresh-database-bootstrap.md`).
+- Seed demo users with `apps/api/scripts/seed-demo-users.ts` (one login per role; credentials are in that script). Demo tokens are rejected in production by design (`apps/api/src/middlewares/auth.ts`).
+- `apps/api/.env` points at PROD: always pass a local env explicitly and blank the third-party keys (Razorpay, Resend, WhatsApp) when testing.
+- Customer-test method and findings: `docs/audit/customer-test/` (RESUME.md, FINDINGS.md, AGENT-BRIEF.md).
+
+### Known limits
+
+- No payout rail: admin settles manually and records the transfer (Gaushala/Temple funds screens record transfers, they do not move money).
+- NRI card acceptance depends on Razorpay International Payments being enabled (owner item).
+- Analytics is dead until a PostHog key exists, so all A/B tests serve control.
+- Prasad-abroad and store returns have no policy yet (owner decisions); no claim about them should be added until decided.
+- A semantic conflict between two PRs that were each green is no longer caught on main by CI; merge one PR at a time or dispatch CI on main.
+
+### Owner-only open items (none are code)
+
+Resend sender `send.darshya.online`; Supabase Auth SMTP -> Resend and redirect URL `https://darshya.online/auth/reset-password`; real Rs 101 card test; Razorpay International Payments; `BACKUP_S3_*` secrets; 80G number and PAN; payout rail; PostHog key; Render 750 shared free hours risk (both services share one account budget); decisions on prasad-abroad and store returns.
+
+### Agent follow-ups that were running
+
+Gate remaining unbacked claims, temple onboarding link, polish pass. Check the commit history after #312 before redoing any of them.
+
+---
+
 ## 2026-05-26 — Mobile gurukul owner parity
 
 **Status**: shipped `d170b39`. Closes web↔mobile parity gap for gurukul owner flow.
@@ -3498,3 +3544,34 @@ Top risks:
 1. No Anthropic API key is set, or the API rejects the model (no silent swap = workflow halts until the founder sets a key or approves a model)
 2. Decision Agent emits low-quality prompts (7d soak gate exists to catch + tune)
 3. Supply onboarding can't scale solo (sub-project 4 + first hire trigger)
+
+## Archived from TASKS.md 2026-10-05
+
+### Audit engagement result and baseline (2026-08-11)
+
+**Result:** 57 of 58 findings fixed (the 58th was deploy-only), plus 14 further defects found by an
+adversarial review of the fixes themselves — including a P0 that the RV-04 fix had *created* (a second
+payout rail live for money the legacy rail already paid) and an ~83x NRI overcharge still live on the
+temple booking path. Stripe removed entirely; password reset shipped.
+
+**Baseline that must not regress:** API/web/mobile/api-client `tsc` clean · 1066/1066 API tests (83 files)
+· 265/265 web tests (35 files).
+
+
+## HANDOFF GTM — Pandit-Booking Marketplace Phase 0 (2026-08-07) — open items
+
+> Deliverables live outside the repo (`E:\NewClaude\deliverables\`); narrative archived. Muhurat layer code status: verify with `git log -- apps/api/src/lib/puja-muhurat.ts` (it was UNCOMMITTED at 2026-08-07).
+
+### PENDING (next session, in order)
+1. **Founder decision: commit the muhurat layer** → branch + PR (`git checkout -b feat/puja-muhurat-layer`), then merge.
+2. **Web wiring** — `apps/web/app/pujas/book/page.tsx` `DateInput` is muhurat-blind; fetch `/panchang/puja-muhurat?pujaType=…` → badge shubh days green, disable `avoid` days, render `windows[]` as slot chips, grey `rahuKaal`. Also wire WhatsApp flow F2 ("I need muhurat help") to the same endpoint.
+3. **Known gap**: no Adhik Maas/Shraadh (lunar masa not computed) — mitigated by eclipse proxy + month notes + pandit confirms final muhurat. Multi-city persistence blocked by `DailyPanchang.date @unique` (schema change only if persisting per-city).
+4. **Razorpay/PhonePe sandbox** — not started; gates on founder's PG account (founder-owned in split).
+
+### Founder-gated (unchanged — only he can do)
+- Confirm launch micro-zone + approve ~₹3–5L budget.
+- Legal entity / Razorpay PG / GST for the marketplace (gates escrow + WhatsApp BSP + sandbox).
+- Recruit Supply Lead #1 (JD ready at `deliverables/supply-lead-jd-and-pitch.md`).
+- In-person temple/sabha meetings (carry kit ready at `deliverables/temple-sabha-partnership-kit.md`).
+
+

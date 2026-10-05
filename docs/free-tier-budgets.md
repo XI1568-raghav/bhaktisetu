@@ -53,7 +53,7 @@
 | **FCM** push notifications                   | unlimited                         | n/a                  | n/a                                                      | n/a                                 |
 | **IndexNow**                                 | unlimited                         | n/a                  | n/a                                                      | n/a                                 |
 | **Razorpay test mode**                       | unlimited                         | n/a                  | Test transactions.                                       | razorpay.com                        |
-| **Stripe test mode**                         | unlimited                         | n/a                  | Test transactions.                                       | stripe.com                          |
+| **Stripe**                                   | removed from the product          | n/a                  | Stripe was removed entirely (audit, 2026-08); no usage.  | n/a                                 |
 | **Sentry** (Developer plan)                  | 5k errors / 10k transactions / mo | monthly              | Errors + perf spans.                                     | sentry.io                           |
 | **DuckDuckGo HTML** (used by SERP agents)    | rate-limited soft                 | per IP               | competitor-watch, keyword-rank-tracker.                  | n/a — back off on 429               |
 | **Nitter** mirrors                           | rate-limited soft                 | per mirror           | x-engagement-digest.                                     | rotate 3 mirrors                    |
@@ -104,7 +104,7 @@ against a 2,000 min/month cap, i.e. ~63% of the month gone by the 5th.
 | `render-diag.yml` deploy polling | - | ~109 | wall time spent sleeping while Render builds |
 | everything else (crons, commitlint, ai-review, ...) | - | ~180 | 1,260 - 970 - 109 |
 
-**What changed (PR `ci/cut-actions-minutes`):**
+**What changed (#308):**
 1. `ci.yml` no longer triggers on `push` to main. `pull_request` already tests the PR merged
    into main, so the push run was a duplicate. `workflow_dispatch` added for a manual main run;
    `.claude/**` added to `paths-ignore`. The merge gate (`docs/merge-gatekeeping.md`: PR CI green)
