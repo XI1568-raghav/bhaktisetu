@@ -1,0 +1,491 @@
+[
+ {
+  "dest": "temples/kashi-vishwanath.webp",
+  "kind": "commons",
+  "file": "Kashi_Vishwanath.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/tirumala-tirupati.webp",
+  "kind": "commons",
+  "file": "Tirumala_090615.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/siddhivinayak.webp",
+  "kind": "commons",
+  "file": "Shree_Siddhivinayak_Temple_Mumbai.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/somnath.webp",
+  "kind": "commons",
+  "file": "Somanath_mandir_(cropped).jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/jagannath-puri.webp",
+  "kind": "commons",
+  "file": "Shri_Jagannath_temple.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/golden-temple.webp",
+  "kind": "commons",
+  "file": "The_Golden_Temple_of_Amrithsar_7.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/meenakshi-temple.webp",
+  "kind": "commons",
+  "file": "An_aerial_view_of_Madurai_city_from_atop_of_Meenakshi_Amman_temple.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/kedarnath.webp",
+  "kind": "commons",
+  "file": "Kedarnath_Temple_in_Rainy_season.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/badrinath.webp",
+  "kind": "commons",
+  "file": "Badrinath_Temple_,_Uttarakhand.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/akshardham.webp",
+  "kind": "commons",
+  "file": "Swaminarayan_Akshardham,_Delhi.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/mahakaleshwar.webp",
+  "kind": "commons",
+  "file": "Mahakaleshwar_Temple,_Ujjain.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/iskcon-vrindavan.webp",
+  "kind": "commons",
+  "file": "Vrindavan,_India_(21178969102).jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/dwarkadhish.webp",
+  "kind": "commons",
+  "file": "Dwarakadheesh_Temple,_2014.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/mallikarjuna.webp",
+  "kind": "commons",
+  "file": "Night_view_of_Srisailam_Temple_South_Gopuram.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/omkareshwar.webp",
+  "kind": "commons",
+  "file": "Omkareswar_Jyotirlinga.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/bhimashankar.webp",
+  "kind": "commons",
+  "file": "Bhimashankar.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/trimbakeshwar.webp",
+  "kind": "commons",
+  "file": "Trimbakeshwar_Temple-Nashik-Maharashtra-1.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/vaidyanath.webp",
+  "kind": "commons",
+  "file": "Baidyanath_temple_and_temple_complex,_Deoghar_04.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/nageshwar.webp",
+  "kind": "commons",
+  "file": "Nageshwar.JPG",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/rameshwaram.webp",
+  "kind": "commons",
+  "file": "Ramanathaswamy_temple7.JPG",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/grishneshwar.webp",
+  "kind": "commons",
+  "file": "Grishneshwar_temple_in_Aurangabad_district.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/vaishno-devi.webp",
+  "kind": "commons",
+  "file": "Vaishno_Devi_Bhawan.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/yamunotri.webp",
+  "kind": "commons",
+  "file": "Yamunotri_temple_and_ashram.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/gangotri.webp",
+  "kind": "commons",
+  "file": "Gangotri_Temple_2.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/iskcon-bangalore.webp",
+  "kind": "commons",
+  "file": "ISKCON_Banglaore_Temple.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/kapaleeshwarar-chennai.webp",
+  "kind": "commons",
+  "file": "Kapaleeswarar1.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/dakshineswar-kolkata.webp",
+  "kind": "commons",
+  "file": "Dakhineshwar_Temple_beside_the_Hoogly,_West_Bengal.JPG",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/birla-mandir-hyderabad.webp",
+  "kind": "commons",
+  "file": "Birla_Mandir,_Hyderabad.png",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/dagdusheth-pune.webp",
+  "kind": "commons",
+  "file": "Dagadusheth_Halwai_Ganpati_Temple_illuminated_2.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/akshardham-gandhinagar.webp",
+  "kind": "commons",
+  "file": "Akshardham_Gandhinagar_Gujarat.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/govind-dev-ji-jaipur.webp",
+  "kind": "commons",
+  "file": "Govind_dev_ji.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/vaishno-devi-katra.webp",
+  "kind": "commons",
+  "file": "Vaishno_devi.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/shirdi-sai-baba.webp",
+  "kind": "commons",
+  "file": "Sai_baba_samadhi_mandir_.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/meenakshi-madurai.webp",
+  "kind": "commons",
+  "file": "India_Meenakshi_Temple.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "temples/lingaraj-bhubaneswar.webp",
+  "kind": "commons",
+  "file": "Lingaraj_Temple,_Bhubaneswar.jpg",
+  "maxW": 1200
+ },
+ {
+  "dest": "store/prod_001.webp",
+  "kind": "commons",
+  "file": "Hindu_pooja_thali.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_001"
+  ]
+ },
+ {
+  "dest": "store/prod_002.webp",
+  "kind": "commons",
+  "file": "Indian_Arati_diya.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_002"
+  ]
+ },
+ {
+  "dest": "store/prod_003.webp",
+  "kind": "unsplash",
+  "id": "photo-1541795083-1b160cf4f3d7",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_003"
+  ]
+ },
+ {
+  "dest": "store/prod_004.webp",
+  "kind": "unsplash",
+  "id": "photo-1551690935-a9e6f0a7e788",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_004"
+  ]
+ },
+ {
+  "dest": "store/prod_005.webp",
+  "kind": "unsplash",
+  "id": "photo-1577563717655-919fc57789b4",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_005"
+  ]
+ },
+ {
+  "dest": "store/prod_006.webp",
+  "kind": "commons",
+  "file": "Rudraksha_mala.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_006"
+  ]
+ },
+ {
+  "dest": "store/prod_007.webp",
+  "kind": "commons",
+  "file": "Japa_mala_(prayer_beads)_of_Tulasi_wood_with_108_beads_-_20040101-01.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_007"
+  ]
+ },
+ {
+  "dest": "store/prod_008.webp",
+  "kind": "unsplash",
+  "id": "photo-1601824096525-954268b9eb72",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_008"
+  ]
+ },
+ {
+  "dest": "store/prod_009.webp",
+  "kind": "commons",
+  "file": "Marble_Dagadusheth_Halwai_Ganapati_Statue_from_Maliyas.com_Jaipur_India.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_009"
+  ]
+ },
+ {
+  "dest": "store/prod_010.webp",
+  "kind": "commons",
+  "file": "Brass_standing_figure_of_Krishna_playing_the_flute._Wellcome_M0012566.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_010"
+  ]
+ },
+ {
+  "dest": "store/prod_011.webp",
+  "kind": "commons",
+  "file": "The_Hindu_Goddess_Shri_Lakshmi_LACMA_M.87.210_(1_of_2).jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_011"
+  ]
+ },
+ {
+  "dest": "store/prod_012.webp",
+  "kind": "unsplash",
+  "id": "photo-1605292356183-a77d0a9c9d1d",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_012"
+  ]
+ },
+ {
+  "dest": "store/prod_013.webp",
+  "kind": "unsplash",
+  "id": "photo-1633368516165-f7b04d6428d1",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_013"
+  ]
+ },
+ {
+  "dest": "store/prod_014.webp",
+  "kind": "commons",
+  "file": "Navratri_Kalash_Puja.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_014"
+  ]
+ },
+ {
+  "dest": "store/prod_015.webp",
+  "kind": "commons",
+  "file": "Bhagavad_Gita_book_(small)_01.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_015"
+  ]
+ },
+ {
+  "dest": "store/prod_016.webp",
+  "kind": "commons",
+  "file": "Hanuman_Chalisa_4x3.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_016",
+   "prod_017"
+  ]
+ },
+ {
+  "dest": "store/prod_018.webp",
+  "kind": "unsplash",
+  "id": "photo-1622993361118-b6365d859ab6",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_018"
+  ]
+ },
+ {
+  "dest": "store/prod_019.webp",
+  "kind": "unsplash",
+  "id": "photo-1747576129956-d8124fab8668",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_019"
+  ]
+ },
+ {
+  "dest": "store/prod_020.webp",
+  "kind": "commons",
+  "file": "Pure_Ghee-Homemade-Maharashtra.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_020"
+  ]
+ },
+ {
+  "dest": "store/prod_021.webp",
+  "kind": "commons",
+  "file": "(A)_puja_fire,_Havanam.jpg",
+  "maxW": 800,
+  "storeIds": [
+   "prod_021"
+  ]
+ },
+ {
+  "dest": "store/prod_022.webp",
+  "kind": "unsplash",
+  "id": "photo-1595414902678-862fe51c9f27",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_022"
+  ]
+ },
+ {
+  "dest": "store/prod_023.webp",
+  "kind": "unsplash",
+  "id": "photo-1618897033742-4ad61a660b11",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_023"
+  ]
+ },
+ {
+  "dest": "store/prod_024.webp",
+  "kind": "unsplash",
+  "id": "photo-1513625047154-f390b1b0df20",
+  "maxW": 800,
+  "store": true,
+  "storeIds": [
+   "prod_024"
+  ]
+ },
+ {
+  "dest": "gaushala/gir-cow.webp",
+  "kind": "commons",
+  "file": "Gir_cow.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/sahiwal-cow.webp",
+  "kind": "commons",
+  "file": "Sahiwala_01.JPG",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/tharparkar-cow.webp",
+  "kind": "commons",
+  "file": "Tharparkar_01.JPG",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/red-sindhi-cow.webp",
+  "kind": "commons",
+  "file": "Red_Sindhi_Cow_at_Pakistan.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/cow-feeding.webp",
+  "kind": "commons",
+  "file": "Surabhi_Cow_Vrindavan.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/cow-shelter.webp",
+  "kind": "commons",
+  "file": "Goshala-ISKCON.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/calf.webp",
+  "kind": "commons",
+  "file": "A_beautiful_gaze.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/cow-field.webp",
+  "kind": "commons",
+  "file": "A_beautiful_photo_of_cows_grazing_in_the_field.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/cow-care.webp",
+  "kind": "commons",
+  "file": "ILRI,_Stevie_Mann_-_Women_washing_and_cow_drinking_at_a_river_in_Rajasthan,_India.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "gaushala/photo-1.webp",
+  "kind": "unsplash",
+  "id": "photo-1516467508483-a7212febe31a",
+  "maxW": 960
+ }
+]

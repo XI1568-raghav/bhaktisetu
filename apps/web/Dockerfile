@@ -86,6 +86,8 @@ RUN set -eux; \
     test -f .next/standalone/apps/web/server.js; \
     test -f .next/standalone/apps/web/public/manifest.json; \
     test -f .next/standalone/apps/web/public/sw.js; \
+    test -f .next/standalone/apps/web/public/images/temples/kashi-vishwanath.webp; \
+    test -f .next/standalone/apps/web/public/images/store/prod_001.webp; \
     test ! -e .next/standalone/apps/web/public/public
 
 # Runtime: Render injects PORT (the standalone server binds to it) AND sets

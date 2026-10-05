@@ -216,7 +216,12 @@ describe('DU-01/06/11 — brand font tokens live in the namespace Tailwind reads
           );
         }
       }
-      const parts = value.split(',').map((s) => s.trim());
+      // CWV-01: a local metric-matched '<face> Fallback' may sit between the brand
+      // face and the downloaded one (it only removes the swap layout shift).
+      const parts = value
+        .split(',')
+        .map((s) => s.trim())
+        .filter((p) => !/Fallback['"]?$/.test(p));
       for (const [i, part] of parts.entries()) {
         const face = PLACEHOLDERS.find((f) => part.includes(f));
         if (!face) continue;

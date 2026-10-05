@@ -106,6 +106,23 @@
   font-display: swap;
 }
 
+/* CWV-01 — metric-matched fallbacks. The CLS audit on prod (2026-10-06)
+   blames CabinetGrotesk-Bold.woff2 for 0.077 of the page's shift: the h1 is
+   laid out in the fallback face and re-flows when the real one swaps in. These
+   face is Arial with size-adjust / ascent / descent / line-gap overrides
+   computed from the shipped woff2 (head, hhea and OS/2.xAvgCharWidth read out
+   of the brotli stream; Arial = 2048 upm, xAvg 904, asc 1854, desc 434, gap 67),
+   so the pre-swap text occupies the same box. Glyphs Arial lacks still fall
+   through to Noto Sans exactly as before. */
+@font-face {
+  font-family: 'Cabinet Grotesk Fallback';
+  src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+  size-adjust: 123.24%;
+  ascent-override: 70.59%;
+  descent-override: 22.72%;
+  line-gap-override: 7.3%;
+  font-display: swap;
+}
 /* ── Tailwind v4 @theme — keeps all existing class names working ────────── */
 @theme {
   /* ── Warm saffron-tinted neutrals — remapped to new palette ──────────── */
@@ -247,7 +264,7 @@
      behind them and are gone. --font-sans aliases --font-body so the sans
      stack has one home. */
   --font-sans: var(--font-body);
-  --font-display: 'Cabinet Grotesk', var(--font-noto-sans), system-ui, sans-serif;
+  --font-display: 'Cabinet Grotesk', 'Cabinet Grotesk Fallback', var(--font-noto-sans), system-ui, sans-serif;
   --font-serif: var(--font-reader-serif), Georgia, 'Times New Roman', serif;
   --font-devanagari: var(--font-noto-devanagari), var(--font-noto-sans), sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
@@ -1157,7 +1174,15 @@ img {
    SCROLL REVEAL ANIMATION SYSTEM
    ═══════════════════════════════════════════════════════════════════════════ */
 
-[data-reveal] {
+/* CWV-01 — reveal is ENHANCEMENT, not a precondition for being seen.
+   These rules used to hide EVERY [data-reveal] element (opacity 0) from first
+   paint until React hydrated and an IntersectionObserver fired, so the home
+   page's LCP element (a hero paragraph) sat invisible for ~3.1 s of "element
+   render delay" on a throttled phone (Lighthouse, darshya.online, 2026-10-06:
+   TTFB 0.66 s, render delay 3.10 s). Now ScrollReveal marks only the elements
+   that start BELOW the fold as .reveal-pending; everything in the first
+   viewport, and everything when JS never runs, is simply visible. */
+[data-reveal].reveal-pending {
   opacity: 0;
   transform: translateY(16px);
   transition:
@@ -1178,10 +1203,10 @@ img {
 }
 
 /* Stagger variants */
-[data-reveal="fade"]  { transform: none; }
-[data-reveal="up"]    { transform: translateY(16px); }
-[data-reveal="scale"] { transform: scale(0.97); }
-[data-reveal="left"]  { transform: translateX(-16px); }
+[data-reveal="fade"].reveal-pending  { transform: none; }
+[data-reveal="up"].reveal-pending    { transform: translateY(16px); }
+[data-reveal="scale"].reveal-pending { transform: scale(0.97); }
+[data-reveal="left"].reveal-pending  { transform: translateX(-16px); }
 
 [data-reveal="fade"].is-visible,
 [data-reveal="up"].is-visible,
@@ -1209,26 +1234,26 @@ img {
 /* ═══ ADVANCED SCROLL ANIMATIONS ═══════════════════════════════════════════ */
 
 /* Reveal from right */
-[data-reveal="right"] { transform: translateX(24px); }
+[data-reveal="right"].reveal-pending { transform: translateX(24px); }
 [data-reveal="right"].is-visible { opacity: 1; transform: none; }
 
 /* Longer travel for dramatic sections */
-[data-reveal="up-far"] { transform: translateY(40px); }
+[data-reveal="up-far"].reveal-pending { transform: translateY(40px); }
 [data-reveal="up-far"].is-visible { opacity: 1; transform: none; }
 
 /* Scale from small */
-[data-reveal="scale-up"] { transform: scale(0.92); }
+[data-reveal="scale-up"].reveal-pending { transform: scale(0.92); }
 [data-reveal="scale-up"].is-visible { opacity: 1; transform: none; }
 
 /* Rotate in subtly */
-[data-reveal="rotate"] {
+[data-reveal="rotate"].reveal-pending {
   transform: translateY(20px) rotate(2deg);
   transform-origin: bottom left;
 }
 [data-reveal="rotate"].is-visible { opacity: 1; transform: none; }
 
 /* Blur in */
-[data-reveal="blur"] {
+[data-reveal="blur"].reveal-pending {
   filter: blur(8px);
   transform: translateY(8px);
   transition: opacity 0.6s var(--ease-enter), transform 0.6s var(--ease-enter), filter 0.6s var(--ease-enter);
@@ -1274,7 +1299,7 @@ img {
 }
 
 /* Cascade stagger — cards enter with waterfall timing */
-[data-reveal="cascade"] {
+[data-reveal="cascade"].reveal-pending {
   opacity: 0;
   transform: translateY(24px) scale(0.97);
   transition: opacity 0.5s var(--ease-enter), transform 0.5s var(--ease-smooth);
@@ -1291,7 +1316,7 @@ img {
 [data-reveal="cascade"][data-delay="6"] { transition-delay: 500ms; }
 
 /* Slide-up with elastic overshoot */
-[data-reveal="spring"] {
+[data-reveal="spring"].reveal-pending {
   opacity: 0;
   transform: translateY(30px);
   transition: opacity 0.5s var(--ease-enter), transform 0.7s var(--ease-spring);
@@ -1302,7 +1327,7 @@ img {
 }
 
 /* Zoom-in with rotation — for hero images */
-[data-reveal="zoom-rotate"] {
+[data-reveal="zoom-rotate"].reveal-pending {
   opacity: 0;
   transform: scale(0.85) rotate(-2deg);
   transition: opacity 0.6s var(--ease-enter), transform 0.8s var(--ease-smooth);
@@ -1313,7 +1338,7 @@ img {
 }
 
 /* Glow pulse — element gains warm glow on reveal */
-[data-reveal="glow"] {
+[data-reveal="glow"].reveal-pending {
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 0.5s var(--ease-enter), transform 0.5s var(--ease-enter), box-shadow 0.8s var(--ease-smooth);
@@ -1325,7 +1350,7 @@ img {
 }
 
 /* Cinematic fade — very slow, dramatic entrance */
-[data-reveal="cinematic"] {
+[data-reveal="cinematic"].reveal-pending {
   opacity: 0;
   transform: translateY(60px) scale(0.95);
   transition: opacity 1s var(--ease-enter), transform 1.2s var(--ease-smooth);

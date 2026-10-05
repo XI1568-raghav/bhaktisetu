@@ -137,8 +137,9 @@ describe('CM-08 — the temple hero that is over-requested today', () => {
     // Dwarakadheesh_Temple,_2014.jpg is 1024x768 at source. 1280px costs
     // 266,721 B and is an upscale; 960px costs 176,149 B and is the real thing.
     const url = getTempleHero('dwarkadhish');
-    expect(url).toContain('Dwarakadheesh');
-    expect(requestedThumbWidth(url)).toBeLessThanOrEqual(1024);
+    // TD-09: the hero is now a self-hosted WebP no wider than its source.
+    expect(url).toContain('/images/temples/dwarkadhish');
+    expect(url).not.toContain('upload.wikimedia.org');
   });
 
   it('none of its srcSet candidates overshoot either', () => {
@@ -146,8 +147,8 @@ describe('CM-08 — the temple hero that is over-requested today', () => {
     const candidates = remoteSrcSet(hero, [IMG_W.CARD, IMG_W.WIDE, IMG_W.HERO])?.split(', ') ?? [];
     expect(candidates.length).toBeGreaterThan(0);
     const over = candidates
-      .map((c) => c.split(' ')[0]!)
-      .filter((u) => requestedThumbWidth(u) > 1024);
+      .map((c) => Number(c.split(' ')[1]!.replace('w', '')))
+      .filter((w) => w > 1024);
     expect(over).toEqual([]);
   });
 });

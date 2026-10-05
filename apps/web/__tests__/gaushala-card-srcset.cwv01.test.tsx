@@ -85,18 +85,21 @@ describe('[CWV-01] /gaushala cow cards offer a phone-sized candidate', () => {
           '(remoteSrcSet returns undefined for hosts it cannot resize, and React ' +
           'then drops the attribute silently)',
       ).toBeTruthy();
-      expect(candidates(srcset!).length, 'the candidate list collapsed to one entry').toBe(3);
+      // TD-09: self-hosted photos offer 250/500 (330 snaps up to 500 and dedupes).
+      expect(candidates(srcset!).length, 'the candidate list collapsed to one entry').toBeGreaterThanOrEqual(2);
     }
   });
 
-  it('the candidates are 250/330/500 and each URL matches its own descriptor', async () => {
+  it('the candidates are 250 and 500 and each URL matches its own descriptor', async () => {
     for (const img of await cowImages()) {
       const cands = candidates(img.getAttribute('srcset')!);
-      expect(cands.map((c) => c.w)).toEqual([250, 330, 500]);
+      expect(cands.map((c) => c.w)).toEqual([250, 500]);
       for (const c of cands) {
         /* The descriptor must be the width Commons actually serves, not the
          * width that was asked for, or the browser picks the wrong candidate. */
-        expect(c.url, `${c.w}w descriptor points at a different thumb`).toContain(`/${c.w}px-`);
+        expect(c.url, `${c.w}w descriptor points at a different file`).toMatch(
+          new RegExp(`(-${c.w}\\.webp|/${c.w}px-)`),
+        );
       }
     }
   });
