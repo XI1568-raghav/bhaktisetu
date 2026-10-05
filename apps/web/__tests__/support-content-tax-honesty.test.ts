@@ -82,10 +82,10 @@ describe('LEG-10 — support copy does not promise a duty calculation that does 
     expect(faq('sd-4').answer).toMatch(/within India only/i);
   });
 
-  it('it states plainly who pays customs duty on prasad sent abroad', () => {
+  it('it states plainly that prasad is delivered within India only', () => {
     const answer = faq('sd-4').answer;
-    expect(answer).toMatch(/customs duties/i);
-    expect(answer).toMatch(/recipient/i);
+    expect(answer).toMatch(/prasad[^.]*within India only/i);
+    expect(answer).not.toMatch(/write to support/i);
   });
 
   it('no answer anywhere in the FAQ claims a checkout-time duty or tax calculation', () => {

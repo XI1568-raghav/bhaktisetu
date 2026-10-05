@@ -794,11 +794,30 @@ export function homePujaFaq(cat: HomePujaCategory): { q: string; a: string }[] {
     : cat.faq.filter((f) => !HOME_PUJA_MATERIALS_RE.test(`${f.q} ${f.a}`));
 }
 
-/** Marriage tier lists, minus any samagri promise, while the gate is closed. */
+/**
+ * Marriage lines that are services, not rites, and that no booking records:
+ * live chanting, photography, guest narration, consultation sessions,
+ * coordination, and the extra ceremonies. The marriage wizard is a callback
+ * request, so while the gate is closed only the pandit count and the rites
+ * themselves are listed; the coordinator confirms the rest on the call.
+ */
+export const MARRIAGE_UNBACKED_SERVICE_RE =
+  /\blive\b|photograph|narration|multilingual|consultation|coordinat|satyanarayan|engagement|mehendi|roka|griha pravesh|ganesh puja/i;
+
+/** Marriage tier lists, minus any samagri or service promise, while the gate is closed. */
 export function marriageTierIncludes(tier: { includes: string[] }): string[] {
   return HAS_HOME_PUJA_INCLUSIONS
     ? tier.includes
-    : tier.includes.filter((item) => !HOME_PUJA_MATERIALS_RE.test(item));
+    : tier.includes.filter(
+        (item) => !HOME_PUJA_MATERIALS_RE.test(item) && !MARRIAGE_UNBACKED_SERVICE_RE.test(item),
+      );
+}
+
+/** Marriage add-ons, minus unbacked services, while the gate is closed. */
+export function marriageAddOnList(): string[] {
+  return HAS_HOME_PUJA_INCLUSIONS
+    ? marriageAddOns
+    : marriageAddOns.filter((a) => !MARRIAGE_UNBACKED_SERVICE_RE.test(a));
 }
 
 /** One line for every place that used to say "samagri + prasadam included". */

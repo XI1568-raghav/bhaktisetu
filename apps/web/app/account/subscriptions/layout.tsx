@@ -19,7 +19,7 @@ import type { ReactNode } from 'react';
 export const metadata: Metadata = {
   title: 'My Subscriptions',
   description:
-    'Every recurring plan on your account — Bhakti Pass, monthly seva and gaushala adoption — with its next debit date, amount and how to cancel.',
+    'Every recurring plan on your account — Bhakti Pass, monthly seva and gaushala seva — with its next debit date, amount and how to cancel.',
   robots: { index: false, follow: false },
 };
 

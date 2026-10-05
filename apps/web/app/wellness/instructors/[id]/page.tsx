@@ -18,6 +18,7 @@ import WellnessEnrolButton from './WellnessEnrolButton';
 // bare /wellness.
 import InstructorClasses from './InstructorClasses';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { HAS_VERIFIED_INSTRUCTORS, SAMPLE_INSTRUCTOR_NOTE } from '../../../../lib/launch-gates';
 
 // ─── Static instructor data (mirrors API) ──────────────────────────────────
 
@@ -167,7 +168,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
  return {
  title: `${inst.name} — ${inst.specialty.join(', ')}`,
  alternates: { canonical: `https://darshya.online/wellness/instructors/${id}` },
- description: inst.bio.slice(0, 160),
+ description: HAS_VERIFIED_INSTRUCTORS
+ ? inst.bio.slice(0, 160)
+ : `Sample ${inst.category} instructor profile: ${inst.specialty.join(', ')}.`,
  };
 }
 
@@ -223,17 +226,25 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </p>
 
  <div className="flex flex-wrap items-center gap-4 mt-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+ {HAS_VERIFIED_INSTRUCTORS && (
  <span className="flex items-center gap-1">
  <Star className="w-3.5 h-3.5 fill-current" style={{ color: '#D4A438' }} />
  <strong style={{ color: 'var(--color-text)' }}>{inst.rating}</strong> ({inst.reviewCount} reviews)
  </span>
+ )}
+ {HAS_VERIFIED_INSTRUCTORS && (
  <span className="flex items-center gap-1">
  <Award className="w-3.5 h-3.5" /> {inst.experience} years experience
  </span>
+ )}
  <span className="flex items-center gap-1">
  <Globe className="w-3.5 h-3.5" /> {inst.languages.join(', ')}
  </span>
  </div>
+
+ {!HAS_VERIFIED_INSTRUCTORS && (
+ <p className="mt-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>{SAMPLE_INSTRUCTOR_NOTE}</p>
+ )}
 
  <div className="flex items-center gap-3 mt-5">
  <span className="text-lg font-semibold" style={{ color: 'var(--color-primary)' }}>
@@ -253,10 +264,13 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  About
  </h2>
  <p data-reveal="up" className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
- {inst.bio}
+ {HAS_VERIFIED_INSTRUCTORS
+ ? inst.bio
+ : `Sample listing for a ${categoryLabel} instructor teaching ${inst.specialty.join(' and ')}. A real profile shows the teacher's own description once verified.`}
  </p>
 
  {/* Certifications */}
+ {HAS_VERIFIED_INSTRUCTORS && (
  <div className="mt-6">
  <h3 data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
  Certifications
@@ -274,6 +288,7 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  ))}
  </div>
  </div>
+ )}
  </div>
  </section>
 
@@ -316,6 +331,8 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
  </section>
 
+ {HAS_VERIFIED_INSTRUCTORS && (
+ <>
  {/* ═══ REVIEWS ════════════════════════════════════════════════════════ */}
  <section className="py-14 md:py-16" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -371,6 +388,8 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  </div>
  </div>
  </section>
+ </>
+ )}
 
  {/* ═══ SESSION PRICING ════════════════════════════════════════════════ */}
  <section className="py-14 md:py-16">

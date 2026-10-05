@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { usePriestDashboard } from '@poojly/api-client';
+import { usePayoutBalance } from '../../lib/portal-queries';
+import { READY_LABEL, REQUESTED_LABEL, UPCOMING_LABEL, upcomingShown } from '../../lib/earnings-copy';
 import {
   PortalScreen,
   Section,
@@ -11,6 +13,7 @@ import {
 import {
   selectPriestDashboard,
   selectPriestUpcoming,
+  selectPayoutBalance,
   formatInr,
 } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
@@ -34,6 +37,11 @@ export default function PriestDashboard() {
 
   const dashboardQuery = usePriestDashboard();
   const [refreshing, setRefreshing] = useState(false);
+  // GET /payouts/balance: ready / upcoming / requested. Null (older server or a
+  // failed read) keeps the single "Pending payout" card below.
+  const balanceQuery = usePayoutBalance();
+  const balance = selectPayoutBalance(balanceQuery.data);
+  const hasSplit = balance !== null && balance.availableInr !== null && balance.pendingInr !== null;
 
   const data = selectPriestDashboard(dashboardQuery.data);
   const upcoming = selectPriestUpcoming(dashboardQuery.data).slice(0, 5);
@@ -94,12 +102,35 @@ export default function PriestDashboard() {
               accent={colors.green[600]}
             />
             <View style={{ width: spacing.sm }} />
-            <StatCard
-              label="Pending payout"
-              value={formatInr(data.earningsPending)}
-              accent={colors.amber[600]}
-            />
+            {hasSplit && balance ? (
+              <StatCard
+                label={READY_LABEL}
+                value={formatInr(balance.availableInr as number)}
+                accent={colors.amber[600]}
+              />
+            ) : (
+              <StatCard
+                label="Pending payout"
+                value={formatInr(data.earningsPending)}
+                accent={colors.amber[600]}
+              />
+            )}
           </View>
+          {hasSplit && balance ? (
+            <View style={[styles.statRow, { marginTop: spacing.sm }]}>
+              <StatCard
+                label={REQUESTED_LABEL}
+                value={formatInr(balance.pendingInr as number)}
+                accent={colors.amber[600]}
+              />
+              <View style={{ width: spacing.sm }} />
+              <StatCard
+                label={UPCOMING_LABEL}
+                value={upcomingShown(balance.upcomingInr) ? formatInr(balance.upcomingInr as number) : formatInr(0)}
+                accent={colors.stone[500]}
+              />
+            </View>
+          ) : null}
           <View style={[styles.statRow, { marginTop: spacing.sm }]}>
             <StatCard
               label="This Month"

@@ -923,7 +923,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  // overseas buyer was told the landed cost was settled and then met a bill
  // from the carrier at the door.
  answer:
- 'No. Store orders are delivered within India only; the store checkout takes an Indian address. Prasad delivery on a puja booking is separate: an optional flat ₹150 add-on, with no promised destination country or delivery date. If you want prasad sent abroad, write to support@darshya.online first; customs duties and import rules are the recipient\'s responsibility.',
+ 'No. Store orders are delivered within India only; the store checkout takes an Indian address. Prasad delivery on a puja booking is separate: an optional flat ₹150 add-on, delivered within India only, with no promised delivery date. Booking a puja without prasad is open to devotees anywhere.',
  },
  {
  id: 'sd-5',

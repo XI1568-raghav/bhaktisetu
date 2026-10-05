@@ -171,7 +171,7 @@ describe('BookingService.createBooking', () => {
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
     prismaMock.pujaBooking.count.mockResolvedValue(0);
     prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
-    prismaMock.userAddress.findFirst.mockResolvedValue({ id: 'addr-1' });
+    prismaMock.userAddress.findFirst.mockResolvedValue({ id: 'addr-1', country: 'India', pincode: '221001' });
     prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
     prismaMock.pujaBooking.create.mockResolvedValue({
       id: 'booking-1',
@@ -328,7 +328,7 @@ describe('BookingService.createBooking', () => {
       prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
       prismaMock.pujaBooking.count.mockResolvedValue(0);
       prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1' });
-      prismaMock.userAddress.findFirst.mockResolvedValue({ id: 'addr-1' });
+      prismaMock.userAddress.findFirst.mockResolvedValue({ id: 'addr-1', country: 'India', pincode: '221001' });
       prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
       prismaMock.pujaBooking.create.mockResolvedValue({ id: 'booking-1', status: 'pending_payment' });
     }
@@ -451,6 +451,46 @@ describe('BookingService.createBooking', () => {
         prasadDeliveryAddressId: 'addr-1',
       }),
     ).rejects.toThrow('Prasad delivery address not found');
+  });
+
+  it('rejects prasad to a saved address outside India (India-only delivery)', async () => {
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
+    prismaMock.pujaBooking.count.mockResolvedValue(0);
+    prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
+    prismaMock.userAddress.findFirst.mockResolvedValue({
+      id: 'addr-1',
+      country: 'United Kingdom',
+      pincode: 'SW1A 1AA',
+    });
+
+    await expect(
+      service.createBooking({
+        ...validInput,
+        prasadDeliveryRequested: true,
+        prasadDeliveryAddressId: 'addr-1',
+      }),
+    ).rejects.toThrow('Prasad is delivered within India only');
+  });
+
+  it('rejects prasad to a saved Indian address whose pincode is not 6 digits', async () => {
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
+    prismaMock.pujaBooking.count.mockResolvedValue(0);
+    prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: false });
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
+    prismaMock.userAddress.findFirst.mockResolvedValue({
+      id: 'addr-1',
+      country: 'India',
+      pincode: '1100',
+    });
+
+    await expect(
+      service.createBooking({
+        ...validInput,
+        prasadDeliveryRequested: true,
+        prasadDeliveryAddressId: 'addr-1',
+      }),
+    ).rejects.toThrow('Prasad is delivered within India only');
   });
 
   // ── RV-09 (2026-08-10): business rule 6 — temples must be verified ─────────
