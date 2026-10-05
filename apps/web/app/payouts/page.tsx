@@ -201,7 +201,7 @@ function PayoutsContent() {
                 <Clock className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-xs text-surface-500">Processing</p>
+                <p className="text-xs text-surface-500">Requested, awaiting payout</p>
                 <p className="text-xl font-bold text-surface-800">{money(balance?.pendingInr)}</p>
               </div>
             </div>

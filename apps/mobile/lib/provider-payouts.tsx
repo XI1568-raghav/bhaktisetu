@@ -161,7 +161,7 @@ export function ProviderPayouts({
             />
             <View style={{ width: spacing.sm }} />
             <StatCard
-              label="In payout"
+              label="Requested, awaiting payout"
               value={balance.pendingInr === null ? '—' : formatInr(balance.pendingInr)}
               accent={colors.amber[600]}
               hint={

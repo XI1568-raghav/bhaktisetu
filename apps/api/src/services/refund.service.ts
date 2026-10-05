@@ -115,14 +115,54 @@ function razorpayAuthHeader(): string | null {
   return `Basic ${Buffer.from(`${key}:${secret}`).toString('base64')}`;
 }
 
+/**
+ * Demo/QA stacks have no real gateway. A refund is handled locally (no HTTP
+ * call) only when NODE_ENV is NOT production AND either the key id is the demo
+ * key or the payment id is a demo/QA id. Production can never match: the
+ * NODE_ENV check comes first and is the only thing that matters there.
+ */
+function isDemoRefund(gatewayPaymentId: string): boolean {
+  if (process.env.NODE_ENV === 'production') return false;
+  if (process.env.RAZORPAY_KEY_ID === 'rzp_test_demo') return true;
+  return /^(pay_demo|order_demo|pay_qa)/.test(gatewayPaymentId);
+}
+
+/**
+ * What the admin is told when the gateway call fails. Plain English only: the
+ * upstream status, body and network error text stay in server logs and never
+ * reach the API response (they can carry account detail and read as a crash).
+ */
+const GATEWAY_NOT_CONFIGURED =
+  'The payment gateway is not set up on this server, so the refund could not be sent. Contact the platform operator.';
+const GATEWAY_NOT_FOUND =
+  'The payment gateway could not process this refund (payment not found there). Check the payment in the Razorpay dashboard before retrying.';
+const GATEWAY_REJECTED =
+  'The payment gateway rejected this refund. Check the payment in the Razorpay dashboard before retrying.';
+const GATEWAY_AUTH =
+  'The payment gateway did not accept our credentials, so the refund could not be sent. Contact the platform operator.';
+const GATEWAY_UNAVAILABLE =
+  'The payment gateway is temporarily unavailable. Please try again in a few minutes.';
+
+function gatewayFailureMessage(status: number | null): string {
+  if (status === null) return GATEWAY_UNAVAILABLE;
+  if (status === 404) return GATEWAY_NOT_FOUND;
+  if (status === 401 || status === 403) return GATEWAY_AUTH;
+  if (status === 429 || status >= 500) return GATEWAY_UNAVAILABLE;
+  return GATEWAY_REJECTED;
+}
+
 async function callRazorpayRefund(
   paymentId: string,
   amountInPaise: number,
   notes: Record<string, string>
 ): Promise<RazorpayRefundResponse> {
+  if (isDemoRefund(paymentId)) {
+    return { id: `rfnd_demo_${Date.now().toString(36)}`, amount: amountInPaise, status: 'processed' };
+  }
   const auth = razorpayAuthHeader();
   if (!auth) {
-    return { error: { description: 'razorpay env vars not configured' } };
+    console.error('[refund.service] razorpay env vars not configured');
+    return { error: { description: GATEWAY_NOT_CONFIGURED } };
   }
   try {
     const res = await fetch(`${RAZORPAY_BASE}/payments/${paymentId}/refund`, {
@@ -132,11 +172,21 @@ async function callRazorpayRefund(
     });
     const json = (await res.json().catch(() => ({}))) as RazorpayRefundResponse;
     if (!res.ok) {
-      return { error: { description: json.error?.description ?? `HTTP ${res.status}` } };
+      console.error('[refund.service] gateway refund failed', {
+        paymentId,
+        status: res.status,
+        code: json.error?.code,
+        description: json.error?.description,
+      });
+      return { error: { description: gatewayFailureMessage(res.status) } };
     }
     return json;
   } catch (err) {
-    return { error: { description: err instanceof Error ? err.message : String(err) } };
+    console.error('[refund.service] gateway refund request errored', {
+      paymentId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return { error: { description: gatewayFailureMessage(null) } };
   }
 }
 
@@ -276,7 +326,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   });
 
   if (refund.error || !refund.id) {
-    const failureReason = refund.error?.description ?? 'unknown razorpay error';
+    const failureReason = refund.error?.description ?? GATEWAY_REJECTED;
     // Store failure reason in Payment.metadata for audit; leave booking
     // status as-is (typically 'cancelled' or post-paid) so admin can retry.
     try {
