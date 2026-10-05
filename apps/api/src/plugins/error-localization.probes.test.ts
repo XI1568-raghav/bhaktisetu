@@ -289,11 +289,11 @@ describe('what localization must NOT take away', () => {
     app.get('/generic', async (_req, reply) => reply.code(400).send({ error: 'Invalid input' }));
     await app.ready();
 
-    await app.inject({ method: 'GET', url: '/bespoke' });
+    await app.inject({ method: 'GET', url: '/bespoke', headers: { 'accept-language': 'en' } });
     expect(loadPreferredLanguage).not.toHaveBeenCalled();
 
     // …but a body that IS rewritten still gets the stored preference.
-    const res = await app.inject({ method: 'GET', url: '/generic' });
+    const res = await app.inject({ method: 'GET', url: '/generic', headers: { 'accept-language': 'en' } });
     expect(loadPreferredLanguage).toHaveBeenCalledTimes(1);
     expect(res.json().message).toBe(localizedError('INVALID_BODY', HI));
   });
