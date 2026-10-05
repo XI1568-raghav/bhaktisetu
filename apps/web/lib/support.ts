@@ -709,7 +709,7 @@ export const AUTO_REPLY_RULES: AutoReplyRule[] = [
  {
  keywords: ['price', 'cost', 'how much', 'fee'],
  reply:
- 'Puja prices range from ₹501 (simple aarti) to ₹25,000 (full yagya). Astrology starts at ₹99. Store items from ₹199. NRI pricing available in USD. Want me to show a specific category?',
+ 'Puja prices range from ₹501 (simple aarti) to ₹25,000 (full yagya). Astrology starts at ₹99. Store items from ₹199. NRI pricing is shown in USD at 2.5x the domestic price and charged in INR. Want me to show a specific category?',
  },
  {
  keywords: ['contact', 'phone', 'call'],

@@ -101,7 +101,7 @@ const principles = [
   },
   {
     icon: Compass,
-    title: 'One price, wherever you live',
+    title: 'A clear NRI price, wherever you live',
     // LEG-13 neighbour: this claimed "NRI pricing is higher than domestic —
     // the multiplier is documented (9–10×)". No such premium is charged.
     // booking.service.ts:482-506 records that the `isNri ? nriPrice : basePrice`
@@ -109,7 +109,7 @@ const principles = [
     // /users/me, and it discarded the temple-level override), and the puja
     // pages' NRI price lines were deleted with it. A page cannot advertise a
     // premium the gateway is never asked for.
-    body: 'A devotee in San Jose is charged the same rupee amount for the same puja as a devotee in Varanasi — there is no diaspora multiplier on a booking. If a diaspora tier ever returns it will be quoted by the server before you pay, not implied by a page.',
+    body: 'A devotee in San Jose pays 2.5 times the domestic price for the same puja. It is shown in US dollars next to the exact rupee amount we charge, and the amount shown is the amount the order is created for — the server computes it, not the page.',
   },
   {
     icon: Globe2,

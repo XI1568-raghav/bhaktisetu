@@ -118,8 +118,8 @@ export const metadata: Metadata = {
 const benefits = [
   {
     icon: Globe2,
-    title: 'One price, in INR',
-    body: 'Everyone pays the listed INR price, from any country; there is no NRI surcharge on bookings today, with or without this tier. Your bank converts at its own rate.',
+    title: 'NRI price: shown in USD, billed in INR',
+    body: 'Booking as an NRI costs 2.5 times the domestic price of the same puja, with or without this tier. The price is shown in US dollars next to the exact rupee amount; the order itself is charged in rupees and your bank converts at its own rate.',
   },
   {
     icon: Calendar,
@@ -152,7 +152,7 @@ const benefits = [
 
 const comparison = [
   { feature: 'AI Pandit messages', free: '5 / month', perPuja: '5 / month', nri: 'Unlimited' },
-  { feature: 'Booking price', free: 'Listed INR price', perPuja: 'Listed INR price', nri: 'Listed INR price' },
+  { feature: 'Booking price', free: 'NRI price: 2.5x domestic', perPuja: 'NRI price: 2.5x domestic', nri: 'NRI price: 2.5x domestic' },
   { feature: 'Priority booking window', free: 'No', perPuja: 'No', nri: '7 days early' },
   { feature: 'Weekly priest video call', free: 'No', perPuja: 'No', nri: 'Free, 30 min' },
   { feature: 'Ads', free: 'Yes', perPuja: 'Yes', nri: 'None' },

@@ -170,7 +170,7 @@ export default function PitchPage() {
           </Card>
           <Card title={HAS_80G ? '80G + INR priced' : 'Receipted + INR priced'}>
             Auto-generated numbered donation receipts (DR-YYYYMMDD-XXXX){HAS_80G ? ', 80G-valid' : ' — proof of payment, not yet an 80G certificate'}. Native Razorpay, billed in INR (international cards accepted
-            where Razorpay enables them). NRI premium pricing is a planned tier, not live.
+            where Razorpay enables them). NRI bookings are priced at 2.5x domestic, shown in USD and charged in INR.
             Built for Indian + diaspora from day zero.
           </Card>
         </div>

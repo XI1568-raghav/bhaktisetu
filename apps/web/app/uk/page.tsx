@@ -271,9 +271,10 @@ export default async function UkLaunchPage() {
             Sample pujas in £
           </h2>
           <p className="mt-3 max-w-3xl text-surface-700">
-            These are our live catalogue prices — the same amount a devotee booking from India
-            pays. There is no NRI surcharge and no separate diaspora tier. The £ figures are a
-            reference conversion of that exact price, not a quote in £.
+            These are our live catalogue prices — the amount a devotee booking from India pays.
+            A devotee booking as an NRI pays 2.5 times that amount, in rupees, shown in US
+            dollars on the puja and booking pages. The £ figures here are a reference
+            conversion of the domestic price, not a quote in £.
           </p>
           {samplePujas.length === 0 ? (
             <div

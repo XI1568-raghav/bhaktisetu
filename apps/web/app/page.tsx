@@ -304,7 +304,7 @@ export default async function HomePage() {
      with no heading. */}
  <ServiceLanes />
 
- {/* HOME-IA (2026-09-08): NRI pricing is 9-10x domestic (PROJECT_CONTEXT rule 2),
+ {/* HOME-IA (2026-09-08): NRI pricing is 2.5x domestic (PROJECT_CONTEXT rule 2),
      so this is the highest-margin lane in the product — and the only one whose
      objection is distance rather than trust. It gets a band, not a card. */}
  <NriLane />

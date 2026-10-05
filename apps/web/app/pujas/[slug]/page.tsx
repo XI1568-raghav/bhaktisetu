@@ -43,7 +43,9 @@ import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-
 // three places while checkout charges it plus a ₹51 platform fee. The fee is
 // real (apps/api booking.service folds it into the amount Razorpay is asked
 // for), so every advertised price here now carries it.
-import { PLATFORM_FEE_INR, formatInr, pujaTotalInr } from '../../../lib/puja-pricing';
+import { PLATFORM_FEE_INR, formatInr } from '../../../lib/puja-pricing';
+import { PujaPrice } from '../../../components/pricing/PujaPrice';
+import { CurrencyToggle } from '../../../components/pricing/CurrencyToggle';
 // CM-05 (prod sweep 2026-08-12): this page asserted trust ("verified", "video
 // proof") repeatedly and demonstrated it zero times, while completed bookings
 // sat unused in Postgres. This is the one honest, database-derived proof point.
@@ -89,7 +91,7 @@ interface PujaDetail {
  deity: string;
  durationMinutes: number;
  basePrice: string;
- /** INR, not USD (business rule 2: 9-10x domestic). Not rendered — see the
+ /** Legacy INR column (unused for pricing; NRI price is domestic x 2.5, see lib/nri-pricing.ts). Not rendered — see the
   * note in the hero block. Kept on the type because the API still returns it. */
  nriPrice: string;
  samagriIncluded: boolean;
@@ -366,30 +368,24 @@ export default async function PujaDetailPage({
  <p className="mb-1 text-sm font-medium text-white/70">Starting from</p>
  <div className="flex items-baseline gap-3">
  <div className="flex items-center gap-1">
- <IndianRupee className="h-6 w-6 text-white" />
- <span className="text-xl font-semibold text-white">
- {Number(puja.basePrice).toLocaleString('en-IN')}
+ <span className="text-2xl font-semibold text-white">
+ <PujaPrice domesticPuja={Number(puja.basePrice)} part="main" />
  </span>
  </div>
  </div>
  {/* CM-03: the fee travels with the price, so the number never changes
    between here and the Pay button. */}
  <p className="mt-1 text-xs text-white/70">
- + ₹{formatInr(PLATFORM_FEE_INR)} platform fee · ₹
- {formatInr(pujaTotalInr(Number(puja.basePrice), false))} total
+ <PujaPrice domesticPuja={Number(puja.basePrice)} part="note" />
  </p>
- {/* NRI PRICE REMOVED 2026-08-12 (P0).
-     This rendered `puja.nriPrice` — an INR column, per business rule 2's
-     "NRI pricing 9-10x domestic" — behind a `$` and a dollar icon. On
-     /pujas/ram-charit-manas-path that read "$31,999" (about Rs 27.5 lakh) for a
-     puja the platform actually charges Rs 3,501 for. The highest-ARPU cohort in
-     the category was being quoted a number that reads as fraud.
-     Deleting rather than re-glyphing to Rs: /bookings/from-offering charges
-     basePrice to EVERYONE (the USD rail went with Stripe), so an "NRI Price
-     Rs 13,999" line advertises a premium that is never collected — still a
-     displayed-price != charged-price violation, just quieter.
-     This returns when a server-QUOTED NRI amount exists, rendered from the same
-     value the gateway is asked for. */}
+ {/* NRI PRICE (2026-10-05, owner: 2-3x). The USD view is the NRI price:
+     domestic x 2.5, rounded to Rs 10, STILL an INR order at Razorpay (an
+     international card pays an INR order). The dollar figure is a display
+     conversion of that exact INR amount, and the wizard sends `nriPricing`
+     so the server charges the same INR amount it displayed. Earlier versions
+     of this block printed puja.nriPrice behind a "$" (a Rs 31,999 puja read
+     "$31,999"); that column is not used for pricing. */}
+ <CurrencyToggle className="mt-3" />
  </div>
 
  <Link
@@ -571,12 +567,11 @@ export default async function PujaDetailPage({
  <div className="flex items-center gap-3 sm:flex-col sm:items-end">
  <div className="sm:text-right">
  <div className="text-xl font-bold text-saffron-600">
- ₹{Number(price).toLocaleString('en-IN')}
+ <PujaPrice domesticPuja={Number(price)} part="main" />
  </div>
  {/* CM-03 */}
  <div className="text-xs text-surface-400">
- + ₹{formatInr(PLATFORM_FEE_INR)} fee · ₹
- {formatInr(pujaTotalInr(Number(price), false))} total
+ <PujaPrice domesticPuja={Number(price)} part="note" />
  </div>
  </div>
  <Link
@@ -605,7 +600,7 @@ export default async function PujaDetailPage({
  <SidebarRow icon={Clock} label="Duration" value={`${puja.durationMinutes} minutes`} />
  <SidebarRow
  icon={IndianRupee}
- label="Price (INR)"
+ label="Domestic price (INR)"
  value={`₹${Number(puja.basePrice).toLocaleString('en-IN')} onwards + ₹${formatInr(
  PLATFORM_FEE_INR,
  )} platform fee`}
