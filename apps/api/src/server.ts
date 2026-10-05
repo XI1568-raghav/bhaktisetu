@@ -90,6 +90,7 @@ import adminSubscriptionsRoutes from './routes/admin-subscriptions.js';
 import { adminTemplesRoutes } from './routes/admin-temples.js';
 import { adminBookingsRoutes } from './routes/admin-bookings.js';
 import { adminGaushalaDisbursementRoutes } from './routes/admin-gaushala-disbursements.js';
+import { adminTempleSettlementRoutes } from './routes/admin-temple-settlements.js';
 import { adminLeadConversionRoutes } from './routes/admin-lead-conversion.js';
 import { waitlistRoutes } from './routes/waitlist.js';
 import { leadsSelfOnboardRoutes } from './routes/leads-self-onboard.js';
@@ -468,6 +469,7 @@ async function bootstrap() {
   await server.register(adminTemplesRoutes, { prefix: '/api/v1/admin/temple-timings' });
   await server.register(adminBookingsRoutes, { prefix: '/api/v1/admin/bookings' });
   await server.register(adminGaushalaDisbursementRoutes, { prefix: '/api/v1/admin/gaushala-disbursements' });
+  await server.register(adminTempleSettlementRoutes, { prefix: '/api/v1/admin/temple-settlements' });
   await server.register(adminLeadConversionRoutes, { prefix: '/api/v1/admin/leads' });
   await server.register(waitlistRoutes, { prefix: '/api/v1/waitlist' });
   await server.register(leadsSelfOnboardRoutes, { prefix: '/api/v1/leads' });
