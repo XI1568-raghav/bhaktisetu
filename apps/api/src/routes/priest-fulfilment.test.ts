@@ -315,7 +315,7 @@ describe('PF-06 — a bad proof can be replaced while the booking is video_uploa
       { id: BOOKING_ID, status: 'priest_assigned', priestId: PRIEST_ID } as never,
     );
     uploadVideoProofMock.mockRejectedValue(
-      new Error('Video proof can only be uploaded for bookings in "completed" status.'),
+      new Error('Video proof can only be uploaded for once the puja has been started.'),
     );
     const res = await call('POST', `/bookings/${BOOKING_ID}/video`, {
       videoUrl: 'https://cdn.darshya.online/real.mp4',

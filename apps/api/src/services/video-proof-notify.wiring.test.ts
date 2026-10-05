@@ -109,13 +109,13 @@ describe('NOTIF-05 — uploadVideoProof announces the video', () => {
   it('does not announce when the upload was rejected', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
       id: 'booking-1',
-      status: 'confirmed', // not 'completed' — upload refused
+      status: 'confirmed', // not started — upload refused
       priestId: 'pr-1',
     } as never);
 
     await expect(
       service.uploadVideoProof('booking-1', 'pr-1', 'https://r2.example.com/proof.mp4'),
-    ).rejects.toThrow(/completed/);
+    ).rejects.toThrow(/puja has been started/);
     await flush();
 
     expect(notifyVideoReadyMock).not.toHaveBeenCalled();

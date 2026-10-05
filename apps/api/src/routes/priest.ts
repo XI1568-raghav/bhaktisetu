@@ -705,9 +705,9 @@ export async function priestRoutes(server: FastifyInstance) {
             .code(403)
             .send({ error: 'Only the assigned priest can upload video proof for this booking.' });
         }
-        if (booking.status !== 'completed') {
+        if (booking.status !== 'in_progress' && booking.status !== 'completed') {
           return reply.code(409).send({
-            error: `Video proof can only be uploaded for bookings in "completed" status. Current: "${booking.status}".`,
+            error: `Video proof can only be uploaded once the puja has been started. Current: "${booking.status}".`,
           });
         }
 

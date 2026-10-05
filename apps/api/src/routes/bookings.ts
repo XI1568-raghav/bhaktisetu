@@ -302,7 +302,12 @@ function checkVideoProofGate(input: {
     };
   }
 
-  if (!VIDEO_PROOF_REQUIRED_STATUSES.includes(input.newStatus)) {
+  // The pandit's flow is Start -> upload proof -> Complete, so a non-admin may
+  // not mark `completed` without proof either (admins keep it for remediation).
+  const proofRequired =
+    VIDEO_PROOF_REQUIRED_STATUSES.includes(input.newStatus) ||
+    (input.newStatus === 'completed' && !input.isAdmin);
+  if (!proofRequired) {
     return { ok: true };
   }
 
