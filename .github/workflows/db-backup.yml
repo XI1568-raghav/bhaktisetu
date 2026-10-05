@@ -48,21 +48,34 @@ name: db-backup
 # "something broke". Both mean there is no restore point for today.
 #
 # ---------------------------------------------------------------------------
-# OWNER SETUP — three required secrets, and one optional set for offsite.
+# OWNER SETUP - one required secret, plus the offsite set.
 # ---------------------------------------------------------------------------
-# GitHub -> repo Settings -> Secrets and variables -> Actions -> New repository
-# secret. Names must match EXACTLY.
+# GitHub -> repo Settings -> Secrets and variables -> Actions. Names must match
+# EXACTLY.
 #
-#   1. SUPABASE_DB_URL           Supabase -> Project Settings -> Database ->
-#                                Connection string -> URI. Use the DIRECT
-#                                connection (port 5432), NOT the pooled one
-#                                (port 6543) — pg_dump needs a direct session.
-#   2. SUPABASE_URL              Supabase -> Project Settings -> API -> Project
-#                                URL, e.g. https://<ref>.supabase.co
-#   3. SUPABASE_SERVICE_ROLE_KEY Supabase -> Project Settings -> API -> service_role
-#                                key. Server-side only; never ship to a client.
+#   REQUIRED  SUPABASE_DIRECT_URL  (or SUPABASE_DB_URL, which wins if both are
+#             set). The DIRECT Postgres URI, port 5432, NOT the pooled 6543 one -
+#             pg_dump needs a direct session. SUPABASE_DIRECT_URL is already set.
 #
-# Optional but STRONGLY recommended (OPS-03 — otherwise the backup lives in the
+#   OPTIONAL  SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY: also copy into Supabase
+#             Storage. Skipped, with a log line, when either is absent.
+#
+# 2026-10-06 - why the scheduled runs of 2026-09-30 .. 2026-10-04 were all red: the script
+# demanded SUPABASE_DB_URL, SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, none of
+# which exist in this repo ("missing":[...] in the run log, exit 7). Only the
+# database URL is required now, under either name. What happens next depends on
+# the destinations:
+#   - BACKUP_S3_* set (Cloudflare R2): the dump is uploaded, read back and
+#     size-checked. That alone is a valid, offsite configuration.
+#   - nothing set: the dump is still taken and checked (size floor, readable
+#     pg_restore TOC, the five expected tables), kept as a workflow ARTIFACT for
+#     7 days, and the run finishes green WITH a warning that no offsite copy
+#     exists. It is never a silent exit 0 with zero bytes: an unreadable or
+#     undersized dump still fails the run.
+#   - only a same-project Supabase store: still refused (OPS-03) unless
+#     ALLOW_SAME_PROJECT_BACKUP=true.
+#
+# STRONGLY recommended (OPS-03 — otherwise the backup lives in the
 # same account as the database and one suspension takes both):
 #   BACKUP_S3_ENDPOINT           e.g. https://<accountid>.r2.cloudflarestorage.com
 #   BACKUP_S3_BUCKET             e.g. darshya-db-backups
@@ -145,7 +158,9 @@ jobs:
       - name: Run daily backup
         id: backup
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # Fallback chain SUPABASE_DB_URL -> SUPABASE_DIRECT_URL. The repo only
+          # carries the second; the script repeats the same fallback itself.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL || secrets.SUPABASE_DIRECT_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_BACKUP_BUCKET: ${{ secrets.SUPABASE_BACKUP_BUCKET }}
@@ -236,13 +251,20 @@ jobs:
 
           # "verified" is true only when EVERY destination confirmed the stored
           # byte count on read-back. False means the copies were written but a
-          # store would not say what it holds — worth seeing, not worth a red
+          # store would not say what it holds - worth seeing, not worth a red
           # run, since a store that never returns content-length would make this
           # job permanently red and train everyone to ignore it.
-          if grep -q '"verified":[[:space:]]*true' /tmp/backup-out.json; then
+          #
+          # An ARTIFACT-ONLY run (no object store configured) has no read-back to
+          # have; its proof is the local pg_restore listing, already asserted above.
+          artifact_only=no
+          if grep -q '"artifactOnly":[[:space:]]*true' /tmp/backup-out.json; then
+            artifact_only=yes
+            verified="n/a (no object store; dump checked locally with pg_restore --list)"
+          elif grep -q '"verified":[[:space:]]*true' /tmp/backup-out.json; then
             verified="yes (size confirmed by read-back)"
           else
-            verified="**NO — written, but the store did not confirm its size**"
+            verified="**NO - written, but the store did not confirm its size**"
             echo "::warning::At least one destination did not confirm the stored object size on read-back."
           fi
 
@@ -256,6 +278,8 @@ jobs:
             echo "| stored size confirmed | ${verified} |"
             if grep -q '"offsite":[[:space:]]*true' /tmp/backup-out.json; then
               echo "| offsite | yes |"
+            elif [ "$artifact_only" = yes ]; then
+              echo "| offsite | **NO - workflow artifact only, deleted after 7 days** |"
             else
               echo "| offsite | **NO — same account as the database** |"
             fi
@@ -264,10 +288,29 @@ jobs:
             echo "not prove it RESTORES — only the restore drill does that."
           } >> "$GITHUB_STEP_SUMMARY"
 
-          if ! grep -q '"offsite":[[:space:]]*true' /tmp/backup-out.json; then
+          if [ "$artifact_only" = yes ]; then
+            echo "::warning::No object store is configured, so today's verified dump exists ONLY as a 7-day workflow artifact in this repository. Configure BACKUP_S3_* (Cloudflare R2 free tier) for an offsite copy."
+          elif ! grep -q '"offsite":[[:space:]]*true' /tmp/backup-out.json; then
             echo "::warning::This backup is NOT offsite. It lives in the same Supabase project as the database it backs up, so one account action destroys both. Configure BACKUP_S3_* (Cloudflare R2 free tier)."
           fi
 
+      # Artifact-only runs (no object store configured): the script kept the
+      # verified dump instead of deleting it. In every other case the file was
+      # removed after upload, so `ignore` makes this a no-op. The dump holds the
+      # whole database, PII included: private-repo artifacts are visible to
+      # collaborators only, and 7 days is the shortest retention that still
+      # leaves a restore window.
+      - name: Keep the verified dump as a workflow artifact (no object store)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-dump-${{ github.run_id }}
+          path: /tmp/bhaktisetu-backup/backup.dump
+          retention-days: 7
+          if-no-files-found: ignore
+          compression-level: 0
+
+      # Prune is a no-op (exit 0) when SUPABASE_URL / SERVICE_ROLE_KEY are unset.
       - name: Prune backups older than 30 days
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
