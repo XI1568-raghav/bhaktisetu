@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { getTranslations } from '../../lib/t';
 import { getGaushalaImage, IMG_W } from '../../lib/images';
-import { getTemples, getApprovedProviders } from '../../lib/api';
+import { getDonatableTemples, getApprovedProviders } from '../../lib/api';
 import DonationForm from '../../components/DonationForm';
 import { COMPANY } from '../../lib/company';
 import { H1 } from '../../components/ui/heading-recipe';
@@ -110,15 +110,16 @@ export default async function DonationsLandingPage({
     );
   }
 
-  // List view: fetch a few verified temples to show alongside gaushalas.
-  // If the API is offline, fall back to gaushalas only — the page should
-  // never crash because of a degraded backend.
-  let temples: Awaited<ReturnType<typeof getTemples>>['data'] = [];
+  // List view: only temples that can actually receive a donation (verified, with
+  // an approved manager) — not every catalogue temple, most of which have no one
+  // the money could be passed to. If the API is offline, say the list could not be
+  // loaded rather than claiming there are none; the page never crashes on it.
+  let temples: Awaited<ReturnType<typeof getDonatableTemples>> = [];
+  let templesUnavailable = false;
   try {
-    const res = await getTemples({ limit: 6 });
-    temples = res.data ?? [];
+    temples = await getDonatableTemples();
   } catch {
-    temples = [];
+    templesUnavailable = true;
   }
 
   // S-05: real, approved gaushalas only — see the note above the imports.
@@ -257,7 +258,9 @@ export default async function DonationsLandingPage({
           </div>
         ) : (
           <p className="rounded-xl border border-dashed border-surface-200 bg-white p-6 text-center text-sm text-surface-500">
-            Temple donation listings are temporarily unavailable. Please try again shortly.
+            {templesUnavailable
+              ? 'The list of temples could not be loaded. Please try again shortly.'
+              : 'No temples are accepting donations through Darshya yet.'}
           </p>
         )}
       </section>
