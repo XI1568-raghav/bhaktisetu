@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { BookingStatus, StreamStatus, StreamProvider } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { cancelInvite, createInvite, listInvitesForTemple } from '../services/temple-priest-invite.service.js';
 
 /**
  * Temple manager self-service routes. Today scoped via ?slug=<temple-slug>
@@ -597,7 +598,7 @@ export async function templePortalRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
     const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.send({ priests: [] });
+    if (!templeId) return reply.send({ priests: [], invitations: [] });
     const rows = await prisma.templePriest.findMany({
       where: { templeId },
       include: { priest: { select: { id: true, displayName: true, userId: true } } },
@@ -611,6 +612,7 @@ export async function templePortalRoutes(server: FastifyInstance) {
         isPrimary: r.isPrimary,
         joinedAt: r.joinedAt.toISOString(),
       })),
+      invitations: await listInvitesForTemple(templeId),
     });
   });
 
@@ -631,18 +633,38 @@ export async function templePortalRoutes(server: FastifyInstance) {
     }
     const priest = await prisma.priest.findUnique({ where: { id: parsed.data.priestId } });
     if (!priest) return reply.code(404).send({ error: 'Priest not found' });
-    try {
-      const row = await prisma.templePriest.create({
-        data: { templeId, priestId: parsed.data.priestId, isPrimary: parsed.data.isPrimary ?? false },
-      });
-      return reply.code(201).send({ id: row.id, ok: true });
-    } catch (err) {
-      const e = err as { code?: string };
-      if (e.code === 'P2002') {
-        return reply.code(409).send({ error: 'This priest is already on your roster.' });
-      }
-      throw err;
+    // A manager cannot put a pandit on the roster (or make them primary) on
+    // their own: this only records an invitation. The roster row is created
+    // when the pandit accepts (POST /priest/temple-invites/:id/accept).
+    const result = await createInvite({
+      templeId,
+      priestId: parsed.data.priestId,
+      isPrimary: parsed.data.isPrimary ?? false,
+      invitedBy: request.currentUser!.id,
+    });
+    if (result.kind === 'on_roster') {
+      return reply.code(409).send({ error: 'This priest is already on your roster.' });
     }
+    return reply
+      .code(result.created ? 201 : 200)
+      .send({ ok: true, invited: true, id: result.id, status: result.status });
+  });
+
+  // ─── DELETE /priests/invites/:id — withdraw a pending/declined invitation ──
+  server.delete('/priests/invites/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('TEMPLE_MANAGER')) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    if (!link.templeId) return notLinked(reply, link.reason);
+    const { id } = request.params as { id: string };
+    if (!z.string().uuid().safeParse(id).success) {
+      return reply.code(404).send({ error: 'Invitation not found' });
+    }
+    const removed = await cancelInvite(link.templeId, id);
+    if (!removed) return reply.code(404).send({ error: 'Invitation not found' });
+    return reply.send({ ok: true });
   });
 
   // ─── DELETE /priests/:id — remove a roster row (ownership-scoped) ──────────
