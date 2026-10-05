@@ -32,6 +32,7 @@ import { api } from '@poojly/api-client';
 import { useAuth } from './auth-context';
 import { apiBase } from './api';
 import { serverSentence } from './provider-queries';
+import { currentAcceptLanguage } from './language';
 
 export const portalQueryKeys = {
   templeDashboard: ['temple-portal', 'dashboard'] as const,
@@ -221,6 +222,7 @@ export function useRequestPayout() {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
+          'Accept-Language': currentAcceptLanguage(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(vars),

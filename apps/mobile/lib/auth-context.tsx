@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { setCurrentLanguage } from './language';
 import { api, ApiClientError, type AuthSession, type AuthUser, type UserRole } from '@poojly/api-client';
 import { toApiSignupRole } from './signup-contract';
 
@@ -281,6 +282,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Every API request carries Accept-Language from the signed-in profile
+  // (see ./language); signing out resets it to 'en'.
+  useEffect(() => {
+    setCurrentLanguage(user?.preferredLanguage);
+  }, [user?.preferredLanguage]);
 
   const persistSession = useCallback(
     async (sess: AuthSession | null, usr: AuthUser | null) => {
