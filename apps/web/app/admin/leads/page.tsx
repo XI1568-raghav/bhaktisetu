@@ -41,7 +41,16 @@ interface OutreachLog {
 
 interface LeadDetail extends Lead {
   outreachLogs?: OutreachLog[];
+  convertedUserId?: string | null;
 }
+
+interface LinkedTemple { id: string; name: string; slug: string; isVerified: boolean }
+interface TempleLinkState {
+  profile: { templeName: string; city: string | null; state: string | null; approved: boolean } | null;
+  linked: LinkedTemple | null;
+  nameMatch: LinkedTemple | null;
+}
+interface TempleOption { id: string; name: string; city: string | null; state: string | null }
 
 interface StatsResponse {
   byRole: Record<string, Record<string, number>>;
@@ -117,6 +126,11 @@ export default function AdminLeadsPage() {
   const [importBusy, setImportBusy] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [decisionReason, setDecisionReason] = useState('');
+  const [templeLink, setTempleLink] = useState<TempleLinkState | null>(null);
+  const [templeOptions, setTempleOptions] = useState<TempleOption[]>([]);
+  const [templePick, setTemplePick] = useState('');
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkNote, setLinkNote] = useState<string | null>(null);
 
   /**
    * AUTH-06 — the one place that decides both what to say about a failure and
@@ -203,6 +217,53 @@ export default function AdminLeadsPage() {
     }
   };
 
+  // Temple leads that were converted get a manager account; the manager only
+  // sees bookings once that account is tied to a public Temple row.
+  const managerUserId =
+    selected && selected.role === 'TEMPLE' && selected.status === 'CONVERTED' ? selected.convertedUserId ?? null : null;
+
+  useEffect(() => {
+    setTempleLink(null);
+    setLinkNote(null);
+    setTemplePick('');
+    if (!token || !managerUserId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [state, opts] = await Promise.all([
+          authFetch<TempleLinkState>(token, `/admin/temple-links/${managerUserId}`),
+          authFetch<{ temples: TempleOption[] }>(token, '/admin/temple-links/temples'),
+        ]);
+        if (cancelled) return;
+        setTempleLink(state);
+        setTempleOptions(opts.temples);
+      } catch {
+        if (!cancelled) setLinkNote('Could not load the public temple link for this manager.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, managerUserId]);
+
+  const runTempleLink = async (path: string, body?: unknown) => {
+    if (!token || !managerUserId) return;
+    setLinkBusy(true);
+    setLinkNote(null);
+    try {
+      await authFetch(token, `/admin/temple-links/${managerUserId}/${path}`, {
+        method: 'POST',
+        body: JSON.stringify(body ?? {}),
+      });
+      setTempleLink(await authFetch<TempleLinkState>(token, `/admin/temple-links/${managerUserId}`));
+      setLinkNote(path === 'create' ? 'Public temple created (unverified) and linked.' : 'Linked.');
+    } catch (err) {
+      applyError(err, 'Could not link that temple.');
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
   const submitNote = async () => {
     if (!selected || !noteInput.trim() || !token) return;
     try {
@@ -221,7 +282,7 @@ export default function AdminLeadsPage() {
     if (!selected || !token) return;
     setStatusBusy(true);
     try {
-      const r = await authFetch<{ lead: LeadDetail }>(
+      const r = await authFetch<{ lead: LeadDetail; provisionedUserId?: string | null }>(
         token,
         `/admin/leads/${selected.id}/status`,
         {
@@ -229,7 +290,7 @@ export default function AdminLeadsPage() {
           body: JSON.stringify({ status: newStatus, sendEmail, reason: decisionReason.trim() }),
         }
       );
-      setSelected({ ...selected, ...r.lead });
+      setSelected({ ...selected, ...r.lead, convertedUserId: r.lead.convertedUserId ?? r.provisionedUserId ?? selected.convertedUserId });
       setLeads((prev) => prev.map((l) => (l.id === r.lead.id ? { ...l, status: r.lead.status } : l)));
       setDecisionReason('');
     } catch (err) {
@@ -546,6 +607,66 @@ export default function AdminLeadsPage() {
                 Approve transitions status to CONVERTED + emails sign-in link. Reject emails a polite decline. Queue is internal-only (no email).
               </p>
             </div>
+
+            {selected.role === 'TEMPLE' && selected.status === 'CONVERTED' && (
+              <>
+                <h3 className="mt-6 mb-2 text-sm font-semibold text-surface-800">Public temple page</h3>
+                {!managerUserId ? (
+                  <p className="text-xs text-surface-500">No manager account was created for this lead, so there is nothing to link.</p>
+                ) : (
+                  <div className="space-y-2" data-testid="temple-link-panel">
+                    {templeLink?.linked ? (
+                      <p className="text-xs text-green-700">
+                        Linked to {templeLink.linked.name} ({templeLink.linked.isVerified ? 'verified' : 'not verified yet'}).
+                      </p>
+                    ) : templeLink?.nameMatch ? (
+                      <p className="text-xs text-surface-600">
+                        No explicit link. The portal currently matches by name to {templeLink.nameMatch.name}. Link it to make that permanent.
+                      </p>
+                    ) : templeLink ? (
+                      <p className="text-xs text-red-600">
+                        Not linked: no public temple matches &quot;{templeLink.profile?.templeName ?? 'this profile'}&quot;, so the manager sees an empty portal.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-surface-500">Loading...</p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <select
+                        value={templePick}
+                        onChange={(e) => setTemplePick(e.target.value)}
+                        aria-label="Existing public temple"
+                        className="flex-1 min-w-[12rem] px-2 py-1.5 text-xs border border-[var(--color-border)] rounded-lg"
+                      >
+                        <option value="">Choose an existing temple...</option>
+                        {templeOptions.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}{t.city ? `, ${t.city}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => runTempleLink('link', { templeId: templePick })}
+                        disabled={linkBusy || !templePick}
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-100 text-surface-700 disabled:opacity-50"
+                      >
+                        Link
+                      </button>
+                      <button
+                        onClick={() => runTempleLink('create')}
+                        disabled={linkBusy || !!templeLink?.linked}
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg bg-green-600 text-white disabled:opacity-50"
+                      >
+                        Create from profile
+                      </button>
+                    </div>
+                    <p className="text-xs text-surface-500">
+                      Creating makes an unverified public temple from the profile; it stays hidden from devotees until you verify it.
+                    </p>
+                    {linkNote && <p className="text-xs text-surface-700">{linkNote}</p>}
+                  </div>
+                )}
+              </>
+            )}
 
             <h3 className="mt-6 mb-2 text-sm font-semibold text-surface-800">Notes</h3>
             <pre className="text-xs whitespace-pre-wrap bg-surface-50 border border-[var(--color-border)] rounded p-2 max-h-48 overflow-y-auto">
