@@ -14,6 +14,8 @@ import {
   HAS_HOME_PUJA_INCLUSIONS,
   HAS_PACKAGE_INCLUSIONS,
   HAS_PUJA_MATERIALS_PROMISE,
+  HAS_VERIFIED_INSTRUCTORS,
+  HAS_VERIFIED_TESTIMONIALS,
 } from '../lib/launch-gates';
 import {
   HOME_PUJA_MATERIALS_RE,
@@ -22,6 +24,7 @@ import {
   homePujaIncluded,
   homePujaTierDetails,
   marriagePricingTiers,
+  marriageAddOnList,
   marriageTierIncludes,
 } from '../lib/home-pujas';
 
@@ -188,7 +191,8 @@ describe('3. /nri-pujas and /nri promise only what the code can deliver', () => 
   });
 
   it('does not claim prasad reaches every country or a delivery window', () => {
-    expect(nriPujas).toMatch(/do not promise delivery to any particular country/i);
+    expect(nriPujas).toMatch(/Prasad is delivered within India only/i);
+    expect(nriPujas).not.toMatch(/write to us first/i);
   });
 });
 
@@ -272,14 +276,16 @@ describe('4. repo-wide unbacked-claim ban list (web + mobile + api user strings)
  * every ungated occurrence of the claim is gone from the source.
  */
 describe('5. launch gates are closed until the feature behind each exists', () => {
-  it('all five gates are false', () => {
+  it('all seven gates are false', () => {
     expect([
       HAS_ADOPTION_EXTRAS,
       HAS_HOME_PUJA_INCLUSIONS,
       HAS_PUJA_MATERIALS_PROMISE,
       HAS_PACKAGE_INCLUSIONS,
       HAS_COMPANION_VETTING,
-    ]).toEqual([false, false, false, false, false]);
+      HAS_VERIFIED_TESTIMONIALS,
+      HAS_VERIFIED_INSTRUCTORS,
+    ]).toEqual([false, false, false, false, false, false, false]);
   });
 
   it('the API mirror of the gates is closed too', () => {
@@ -424,7 +430,7 @@ describe('7. puja inclusions (home puja samagri / prasadam, temple puja material
 describe('8. yatra / wellness / yatra-packages inclusions and companions', () => {
   it('/yatra-packages: no all-inclusive promise, seed-script text or ungated /book link', () => {
     const list = web('app/yatra-packages/page.tsx');
-    expect(list).toMatch(/HAS_PACKAGE_INCLUSIONS/);
+    expect(list).toMatch(/HAS_PACKAGE_INCLUSIONS|HAS_VERIFIED_TESTIMONIALS/);
     expect(list).not.toMatch(/Run the seed script/);
     const detail = web('app/yatra-packages/[slug]/page.tsx');
     expect(detail).toMatch(/INCLUSIONS_ON_ENQUIRY/);
@@ -459,7 +465,7 @@ describe('8. yatra / wellness / yatra-packages inclusions and companions', () =>
     let hits = 0;
     for (const m of src.matchAll(re)) {
       hits += 1;
-      expect(src.slice(Math.max(0, m.index! - 300), m.index!), m[0]).toMatch(/HAS_PACKAGE_INCLUSIONS/);
+      expect(src.slice(Math.max(0, m.index! - 300), m.index!), m[0]).toMatch(/HAS_PACKAGE_INCLUSIONS|HAS_VERIFIED_TESTIMONIALS/);
     }
     expect(hits).toBeGreaterThan(0);
   });
@@ -518,5 +524,72 @@ describe('9. store returns', () => {
   it('store pages no longer badge "Easy Returns"', () => {
     expect(web('components/store/ProductDetail.tsx')).not.toMatch(/Easy Returns/);
     expect(web('app/store/seller/[id]/page.tsx')).not.toMatch(/Easy Returns/);
+  });
+});
+
+describe('10. weddings, marriage tiers, sample instructors, gated adoption (2026-10-06)', () => {
+  const SERVICE_RE = /\blive\b|photograph|narration|multilingual|consultation|coordinat|satyanarayan/i;
+
+  it('/weddings and /weddings/packages do not promise a shipped samagri kit', () => {
+    for (const rel of ['app/weddings/page.tsx', 'app/weddings/packages/page.tsx']) {
+      const src = web(rel);
+      for (const m of src.matchAll(/shipped/gi)) {
+        const before = src.slice(Math.max(0, m.index! - 900), m.index!);
+        expect(before, `${rel}: ungated "shipped"`).toMatch(/HAS_PACKAGE_INCLUSIONS|HAS_VERIFIED_TESTIMONIALS/);
+      }
+      expect(src, rel).toMatch(/HAS_PACKAGE_INCLUSIONS|HAS_VERIFIED_TESTIMONIALS/);
+    }
+    const packages = web('app/weddings/packages/page.tsx');
+    expect(packages).toMatch(/HAS_PACKAGE_INCLUSIONS\s*\?\s*\['Full samagri kit shipped/);
+    expect(packages).not.toMatch(/Photographer co-ordination'\s*,\s*\n\s*\],/);
+  });
+
+  it('/weddings keeps the sourceless couple quotes behind HAS_VERIFIED_TESTIMONIALS', () => {
+    expect(HAS_VERIFIED_TESTIMONIALS).toBe(false);
+    const src = web('app/weddings/page.tsx');
+    const idx = src.indexOf('From recent couples');
+    expect(idx).toBeGreaterThan(0);
+    expect(src.slice(0, idx)).toMatch(/\{HAS_VERIFIED_TESTIMONIALS && \(\s*<section[^>]*>\s*<h2[^>]*>$/);
+  });
+
+  it('wedding metadata and structured data do not advertise a samagri kit', () => {
+    const src = web('app/weddings/page.tsx');
+    const head = src.slice(0, src.indexOf('export default'));
+    expect(head).not.toMatch(/samagri kit|full samagri|shipped/i);
+  });
+
+  it('/wellness/instructors/[id]: fixture credentials, years, ratings and reviews sit behind HAS_VERIFIED_INSTRUCTORS', () => {
+    expect(HAS_VERIFIED_INSTRUCTORS).toBe(false);
+    const src = web('app/wellness/instructors/[id]/page.tsx');
+    expect(src).toMatch(/SAMPLE_INSTRUCTOR_NOTE/);
+    expect(src).toMatch(/HAS_VERIFIED_INSTRUCTORS &&[\s\S]{0,200}years experience/);
+    expect(src).toMatch(/HAS_VERIFIED_INSTRUCTORS && \(\s*<div className="mt-6">\s*<h3[^>]*>\s*Certifications/);
+    expect(src).toMatch(/HAS_VERIFIED_INSTRUCTORS && \(\s*<>\s*\{\}\s*<section/);
+    expect(src).toMatch(/HAS_VERIFIED_INSTRUCTORS\s*\?\s*inst\.bio/);
+    expect(src).toMatch(/HAS_VERIFIED_INSTRUCTORS\s*\?\s*inst\.bio\.slice/);
+  });
+
+  it('no visible title, heading, button, card or sitemap text says "Adopt a Cow" while the programme is gated', () => {
+    expect(HAS_ADOPTION_EXTRAS).toBe(false);
+    for (const abs of [...walk(join(webRoot, 'app')), ...walk(join(webRoot, 'components')), ...walk(join(webRoot, 'lib'))]) {
+      if (!/\.(tsx?|json)$/.test(abs)) continue;
+      const src = abs.endsWith('.json') ? read(abs) : stripComments(read(abs));
+      expect(src, relative(webRoot, abs)).not.toMatch(/adopt[ -]a[ -]cow/i);
+    }
+    expect(web('app/gaushala/page.tsx')).toMatch(/title: "Gau Seva — Support a Gaushala"/);
+  });
+
+  it('/pujas/marriage tiers list rites and pandit count only: no live chanting, photography, narration or consultations', () => {
+    expect(HAS_HOME_PUJA_INCLUSIONS).toBe(false);
+    for (const tier of marriagePricingTiers) {
+      const items = marriageTierIncludes(tier);
+      expect(items.length, tier.slug).toBeGreaterThan(0);
+      for (const item of items) expect(item, `${tier.slug}: ${item}`).not.toMatch(SERVICE_RE);
+    }
+    for (const a of marriageAddOnList()) expect(a).not.toMatch(SERVICE_RE);
+    const src = web('app/pujas/marriage/page.tsx');
+    expect(src).toMatch(/marriageAddOnList\(\)\.map/);
+    expect(src).not.toMatch(/marriageAddOns\.map/);
+    expect(src).not.toMatch(/: 'Yes\. Traditional and Grand tiers include English narration/);
   });
 });

@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { HAS_PACKAGE_INCLUSIONS } from '../../../lib/launch-gates';
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/weddings/packages' },
   title: 'Wedding Packages — Basic, Premium, Royal',
   description:
-    'Three Vedic Hindu wedding packages: Basic (₹15,000) pandit-only, Premium (₹50,000) with samagri & muhurat consultation, Royal (₹2,00,000) full 4-day ceremony.',
+    'Three Vedic Hindu wedding packages: Basic (₹15,000) pandit-only, Premium (₹50,000) with muhurat consultation, Royal (₹2,00,000) full 4-day ceremony.',
 };
 
 interface Package {
@@ -36,15 +37,15 @@ const PACKAGES: Package[] = [
     tier: 'premium',
     name: 'Premium',
     price: '₹50,000',
-    tagline: 'Pandit + samagri + muhurat consultation.',
+    tagline: 'Pandit + muhurat consultation.',
     popular: true,
     features: [
       'Everything in Basic',
       'Free kundli matching (Ashtakoota / Guna milan)',
       'Personalised muhurat consultation',
-      'Full samagri kit shipped (mandap, kalash, havan)',
-      'Pre-wedding briefing call',
-      'Photographer co-ordination',
+      ...(HAS_PACKAGE_INCLUSIONS
+        ? ['Full samagri kit shipped (mandap, kalash, havan)', 'Pre-wedding briefing call', 'Photographer co-ordination']
+        : ['Samagri and other inclusions confirmed in your quote']),
     ],
   },
   {
@@ -58,9 +59,9 @@ const PACKAGES: Package[] = [
       'Haldi + Mehendi (Day 2)',
       'Vivah sanskar with full mandap (Day 3)',
       'Grihapravesh + Satyanarayan puja (Day 4)',
-      'Dedicated wedding concierge',
-      'NRI co-ordination',
-      'On-call Vedic scholar',
+      ...(HAS_PACKAGE_INCLUSIONS
+        ? ['Dedicated wedding concierge', 'NRI co-ordination', 'On-call Vedic scholar']
+        : []),
     ],
   },
 ];
@@ -72,8 +73,8 @@ export default function PackagesPage() {
         <header className="text-center">
           <h1 className={H1.catalogue}>Wedding packages</h1>
           <p className="mt-2 text-stone-700 max-w-2xl mx-auto">
-            All packages are end-to-end. Pricing is for ceremonies in India; NRI weddings carry a
-            travel and consultation surcharge.
+            Packages are enquiry-only: a planner confirms exactly what is included before anything is charged. Pricing is for ceremonies in India; any travel or
+            other surcharge is stated in your quote.
           </p>
         </header>
 

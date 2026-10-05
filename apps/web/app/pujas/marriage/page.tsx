@@ -20,7 +20,7 @@ import {
  marriageTypes,
  marriagePricingTiers,
  marriageCoreRites,
- marriageAddOns,
+ marriageAddOnList,
   marriageTierIncludes,
 } from '../../../lib/home-pujas';
 import { HAS_HOME_PUJA_INCLUSIONS } from '../../../lib/launch-gates';
@@ -250,7 +250,7 @@ export default async function MarriagePage() {
  <p className="mt-2 text-surface-500">Personalize your ceremony. Add what matters to your family.</p>
  </div>
  <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
- {marriageAddOns.map((a) => (
+ {marriageAddOnList().map((a) => (
  <div
  key={a}
  className="bg-white border border-[var(--color-border)] rounded-lg p-4 text-sm text-surface-700 flex items-start gap-2"
@@ -405,7 +405,9 @@ export default async function MarriagePage() {
  },
  {
  q: 'Can the ceremony be explained in English for non-Hindi speaking guests?',
- a: 'Yes. Traditional and Grand tiers include English narration. The pandit will explain each ritual\u2019s meaning as he performs it, keeping Sanskrit sacred parts intact.',
+ a: HAS_HOME_PUJA_INCLUSIONS
+ ? 'Yes. Traditional and Grand tiers include English narration. The pandit will explain each ritual\u2019s meaning as he performs it, keeping Sanskrit sacred parts intact.'
+ : 'Language and explanation preferences for guests are confirmed by our team on the call.',
  },
  {
  q: 'Do you handle Arya Samaj / court marriage registration?',

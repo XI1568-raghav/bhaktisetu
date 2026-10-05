@@ -36,7 +36,7 @@ const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/gaushala' },
- title: "Gau Seva — Adopt a Cow",
+ title: "Gau Seva — Support a Gaushala",
  description:
  "Support a gaushala through Darshya. Choose a gau seva plan, get a receipt for every contribution, and help protect India's cows.",
 };
@@ -319,7 +319,7 @@ export default function GaushalaPage() {
  Gau Seva — A Sacred Act of Devotion
  </div>
  <h1 className={`${H1.marketing} mb-6`}>
- Adopt a Cow,{" "}
+ Support a Gaushala,{" "}
  <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron-600 to-amber-600">
  Earn Divine Blessings
  </span>
@@ -334,7 +334,7 @@ export default function GaushalaPage() {
  className={buttonClass('primary', 'md', 'shadow-sm btn-press')}
  >
  <Heart className="w-5 h-5" />
- Adopt a Cow
+ Choose gau seva
  </a>
  <a
  href="#plans"
@@ -721,7 +721,7 @@ export default function GaushalaPage() {
  className="inline-flex items-center gap-2 px-8 py-4 bg-white text-saffron-700 font-medium rounded-lg hover:bg-saffron-50 transition-all shadow-sm btn-press text-lg"
  >
  <Heart className="w-5 h-5" />
- Adopt a Cow Now
+ Choose gau seva
  </a>
  </div>
  </section>
