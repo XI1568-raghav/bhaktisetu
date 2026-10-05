@@ -6,7 +6,7 @@ import { prisma } from '../lib/prisma.js';
 import { runDailyOps } from '../jobs/master-cron.js';
 import { sendEmail } from '../lib/email.js';
 import { onboardingService } from '../services/onboarding.service.js';
-import { mapLeadRoleToOnboarding, isLeadRole } from '../lib/lead-role-mapping.js';
+import { mapLeadRoleToOnboarding, isLeadRole, leadProfileSeed } from '../lib/lead-role-mapping.js';
 import { signToken, ONBOARDING_TOKEN_TTL_MIN } from './magic-link.js';
 
 /**
@@ -557,6 +557,7 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
         // wrapped so a profile-upsert failure logs but does not roll back the
         // status flip or block the email.
         let provisionedUserId: string | null = null;
+        let profileApproved: boolean | null = null;
         if (parsed.data.status === 'CONVERTED' && !(existing as { convertedUserId?: string | null }).convertedUserId) {
           try {
             const leadEmail = (existing as { email?: string | null }).email;
@@ -589,14 +590,15 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
                 update: {},
                 create: { userId: user.id, role: 'DEVOTEE', isPrimary: false },
               }).catch(() => undefined);
-              await onboardingService.upsertProviderProfile(user.id, mappedRole, {
-                templeName: (existing as { name?: string }).name,
-                displayName: (existing as { name?: string }).name,
-                city: (existing as { city?: string | null }).city,
-                state: (existing as { state?: string | null }).state,
-                bio: `Converted from lead pipeline (${(existing as { source?: string }).source ?? 'unknown'}).`,
-              });
-              await onboardingService.approveProviderProfile(user.id, mappedRole);
+              await onboardingService.upsertProviderProfile(
+                user.id,
+                mappedRole,
+                leadProfileSeed(leadRoleRaw, existing as Parameters<typeof leadProfileSeed>[1]),
+              );
+              // approveProviderProfile answers false when the profile is refused
+              // (a temple or gaushala below the quality bar, or no profile row).
+              // The email below must not call that an approval.
+              profileApproved = await onboardingService.approveProviderProfile(user.id, mappedRole);
 
               provisionedUserId = user.id;
               await lead.update({
@@ -627,6 +629,21 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
             const nextStep = signInUrl
               ? `<p>Your Darshya portal is ready. Open it with the link below — it signs you in directly, no password needed, and is valid for 72 hours.</p><p><a href="${signInUrl}">Open your Darshya portal</a></p><p style="font-size:12px;color:#999;word-break:break-all;">${signInUrl}</p>`
               : `<p>Our partnerships team is setting up your portal and will email you the sign-in link shortly. Reply to this email if you do not hear back within two working days.</p>`;
+            // The profile was created but refused by the quality gate (a temple or
+            // gaushala needs a real description and address before it is listed).
+            // Saying "approved" and "ready" here was false: tell them the real
+            // next step instead.
+            if (profileApproved === false) {
+              const gateStep = signInUrl
+                ? `<p>Your Darshya account is created, but your ${roleLabel} profile is not listed yet. Please open it with the link below (it signs you in directly and is valid for 72 hours) and add a description of at least a sentence and the full address. We will review it as soon as those are in.</p><p><a href="${signInUrl}">Open your Darshya account</a></p><p style="font-size:12px;color:#999;word-break:break-all;">${signInUrl}</p>`
+                : `<p>Your ${roleLabel} profile needs a description and a full address before it can be listed. Our partnerships team will be in touch with the sign-in link shortly.</p>`;
+              await sendEmail({
+                to: existing.email,
+                subject: `Next step for your Darshya ${roleLabel} listing`,
+                html: `<p>Namaste ${existing.name},</p><p>Thank you for applying to join Darshya as a <strong>${roleLabel}</strong>.</p>${gateStep}${parsed.data.reason ? `<p>Note from our team: ${parsed.data.reason}</p>` : ''}<p>— Darshya partnerships team</p>`,
+              }).catch(() => null);
+              return { lead: updated, provisionedUserId, profileApproved };
+            }
             await sendEmail({
               to: existing.email,
               subject: `You're verified on Darshya as a ${roleLabel}`,
@@ -640,7 +657,7 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
             }).catch(() => null);
           }
         }
-        return { lead: updated, provisionedUserId };
+        return { lead: updated, provisionedUserId, profileApproved };
       } catch (err) {
         request.log.error({ err }, 'status mutation failed');
         return reply.code(500).send({ error: 'Failed to update status' });
