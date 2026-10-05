@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser } from '../middlewares/auth.js';
 import { aiService } from '../services/ai.service.js';
+import { probeAiProvider } from '../integrations/claude.js';
 import { canSendMessage, recordMessage, getUsageSummary } from '../lib/ai-usage.js';
 
 // AI chat hits Groq (paid). A logged-out attacker hammering this endpoint
@@ -48,7 +49,28 @@ const translateSchema = z.object({
   targetLanguage: z.string().trim().min(2).max(10),
 });
 
+// GET /health probe cache: one provider call per 60s however often it is polled.
+let healthCache: { at: number; body: Record<string, unknown> } | null = null;
+
 export async function aiRoutes(server: FastifyInstance) {
+  // ─── GET /health — what the AI backend is really doing ─────────────────────
+  // Public and deliberately tiny: provider, ok, HTTP status and error code of a
+  // one-token call. Never a key or a response body. Cached so it cannot burn the
+  // provider's free quota.
+  server.get('/health', async () => {
+    if (healthCache && Date.now() - healthCache.at < 60_000) return healthCache.body;
+    const p = await probeAiProvider();
+    const body: Record<string, unknown> = {
+      provider: p.provider,
+      ok: p.ok,
+      ...(p.status !== undefined ? { status: p.status } : {}),
+      ...(p.code ? { code: p.code } : {}),
+      checkedAt: new Date().toISOString(),
+    };
+    healthCache = { at: Date.now(), body };
+    return body;
+  });
+
   // ─── POST /chat — Streaming SSE chat response ──────────────────────────────
   // Auth is optional. Logged-in users get conversation history persisted;
   // anonymous users (Ask Pandit on the public site) still get full streaming
