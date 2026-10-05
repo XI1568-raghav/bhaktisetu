@@ -2,20 +2,19 @@ import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from './api-con
 import { UserFacingError, serverErrorMessage, userFacingMessage } from './friendly-error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-// Donation model is currently gaushala-only (schema.prisma:1080), so the
-// /temple-portal/donations endpoint always returns an empty payload until a
-// TempleDonation model lands. The shape below is forward-compatible with
-// what we expect once the migration ships.
+// Exactly what GET /temple-portal/donations sends (apps/api temple-portal.ts).
+// `status` is the Donation row's: created = checkout opened and not completed,
+// paid = captured, failed = payment failed.
 
 export interface TempleDonation {
   id: string;
-  donorName: string;
-  amount: string; // Decimal(10,2) → string
-  purpose: string;
-  paymentMethod: string;
+  donor: string;
+  email: string | null;
+  amountInr: number;
+  status: 'created' | 'paid' | 'failed';
+  receiptNumber: string | null;
   createdAt: string;
-  isAnonymous: boolean;
-  receipt: string;
+  paidAt: string | null;
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
