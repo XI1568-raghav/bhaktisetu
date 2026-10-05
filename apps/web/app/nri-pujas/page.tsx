@@ -15,6 +15,7 @@ import {
   Star,
 } from 'lucide-react';
 import { fetchPublicStats, type PublicStats } from '../../lib/live-stats';
+import { getPujaTypes } from '../../lib/api';
 import { COMPANY } from '../../lib/company';
 import {
   CANCELLATION_BADGE_LABEL,
@@ -95,14 +96,6 @@ export const metadata: Metadata = {
   },
 };
 
-const popularPujas = [
-  { slug: 'satyanarayan-katha', name: 'Satyanarayan Katha', occasion: 'Housewarming, new beginnings', est: '$45-$120' },
-  { slug: 'rudrabhishek', name: 'Rudrabhishek', occasion: 'Mahashivratri, Mondays', est: '$60-$180' },
-  { slug: 'lakshmi-puja-diwali', name: 'Lakshmi Puja', occasion: 'Diwali, wealth blessings', est: '$50-$160' },
-  { slug: 'shraadh-pitra-paksh', name: 'Shraadh / Pitra Paksh', occasion: 'Ancestor remembrance', est: '$70-$200' },
-  { slug: 'birthday-janmadin-puja', name: 'Birthday Puja', occasion: 'Janmadin blessings', est: '$40-$110' },
-  { slug: 'griha-pravesh', name: 'Griha Pravesh', occasion: 'New home', est: '$80-$220' },
-];
 
 const popularTempleCities = [
   { slug: 'varanasi', name: 'Varanasi', deity: 'Kashi Vishwanath, Annapurna' },
@@ -116,7 +109,7 @@ const popularTempleCities = [
 const faqs: Array<{ q: string; a: string }> = [
   {
     q: 'Can I book a puja from outside India?',
-    a: 'Yes. You can book every puja listing from abroad using an international card. Billing is in Indian Rupees through Razorpay, so your bank applies its own conversion rate. Booking confirmation arrives by email and WhatsApp within minutes.',
+    a: 'Yes. You can book every puja listing from abroad using an international card. Billing is in Indian Rupees through Razorpay, so your bank applies its own conversion rate. Your booking confirmation is emailed to you, and sent on WhatsApp where that is enabled for your number.',
   },
   {
     q: 'Will I receive video proof of my puja?',
@@ -124,7 +117,7 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How does pricing work from abroad?',
-    a: 'Domestic prices are shown in INR. NRI prices are priced separately to cover international payment processing, currency conversion, dedicated WhatsApp coordination and priority slot allocation. Any USD figures on this page are reference prices only — Razorpay charges the full amount in INR, and your bank applies its own conversion rate and any foreign-transaction fee.',
+    a: 'There is one price for everyone: the INR price shown on each puja, plus a flat platform fee, plus a flat prasad-delivery fee if you add it. There is no separate NRI price and no surcharge for booking from abroad. The full total is shown on the booking screen before you pay. Razorpay charges that amount in INR, and your bank applies its own conversion rate and any foreign-transaction fee.',
   },
   {
     q: 'Are the pandits verified?',
@@ -146,15 +139,15 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How long does the full process take?',
-    a: `Booking: 3 minutes online. Pandit confirmation: same day (within 6 hours, often within 1 hour). Puja completion: 30 minutes to 4 hours depending on the ritual. Video proof: we aim for ${COMPANY.refunds.videoProofTargetLabel} after the ceremony. Prasad shipment (if ordered): 7-21 days international.`,
+    a: `Booking: 3 minutes online. Pandit assignment: you are notified when a pandit accepts the booking. Puja completion: 30 minutes to 4 hours depending on the ritual. Video proof: we aim for ${COMPANY.refunds.videoProofTargetLabel} after the ceremony. Prasad shipment (if ordered): 7-21 days to an address abroad.`,
   },
   {
     q: 'Can I watch the puja live?',
-    a: 'For most major pujas you can request a live darshan via WhatsApp video call (₹500 / $8 add-on). Sankashti, Rudrabhishek, Satyanarayan and wedding pujas support full live streaming. Other rituals deliver recorded video proof only.',
+    a: 'Not on a booking. Every puja delivers recorded video proof of the ceremony. Free live darshan streams from select temples are on the Live Darshan page, separate from your booking.',
   },
   {
     q: 'Do you ship prasad internationally?',
-    a: 'Yes. Prasad (laddu, kumkum, chunari, sacred thread, photo) ships via DHL/FedEx to 60+ countries. Shipping fee is shown at checkout based on destination. Customs duties are buyer\'s responsibility — most prasad items are duty-free in most countries.',
+    a: 'Yes, you can add prasad delivery to a puja booking and enter an address abroad. It is a flat ₹150 add-on, the same for every destination, shown on the booking screen before you pay. Customs duties and import rules in your country are your responsibility.',
   },
 ];
 
@@ -176,19 +169,19 @@ const stepsFor = (stats: PublicStats) => [
   },
   {
     n: 4,
-    title: 'Pandit confirms within 6 hours',
-    body: 'You receive a WhatsApp message from the assigned pandit with their photo, lineage, language, and the exact muhurat (auspicious time) for your puja.',
+    title: 'A pandit is assigned',
+    body: 'Once a pandit accepts your booking you are notified by email and, where WhatsApp is enabled for your number, on WhatsApp. Slot times are India Standard Time (IST), the time at the temple.',
   },
   {
     n: 5,
     title: 'Puja happens at the temple',
-    body: 'On the scheduled date, the pandit performs the ritual at the temple sanctum. You can optionally join via WhatsApp video call (add-on).',
+    body: 'On the scheduled date, the pandit performs the ritual at the temple. The ceremony is recorded for your video proof.',
   },
   {
     n: 6,
     title: 'Video proof + prasad',
     body:
-      'Within 24 hours, a 3-7 minute video clip arrives on WhatsApp showing the sankalp, ritual and prasad offering. Prasad ships if ordered.' +
+      `We aim to send your video proof within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony, showing the sankalp, ritual and prasad offering. Prasad ships if ordered.` +
       (HAS_80G ? ' 80G receipt within 7 days.' : ' Any donation you added is receipted by email.'),
   },
 ];
@@ -251,6 +244,14 @@ const pillarPageJsonLdFor = (steps: ReturnType<typeof stepsFor>) => ({
 
 export default async function NRIPujasPillarPage() {
   const stats = await fetchPublicStats();
+  // Real prices from the live catalogue, or no price grid at all.
+  let catalogue: { slug: string; name: string; basePrice: string }[] = [];
+  try {
+    const res = await getPujaTypes({ limit: 50 });
+    catalogue = res.data ?? [];
+  } catch {
+    catalogue = [];
+  }
   const steps = stepsFor(stats);
   const pillarPageJsonLd = pillarPageJsonLdFor(steps);
   return (
@@ -284,8 +285,8 @@ export default async function NRIPujasPillarPage() {
           <p className="prose-lead mt-4 max-w-2xl text-surface-700">
             The complete NRI guide to booking authentic Hindu pujas at India temples — mandatory
             video proof on WhatsApp, international-card checkout billed in INR, and{' '}
-            {HAS_80G ? '80G tax receipts' : 'a numbered receipt for every donation'}. Prasad ships
-            to 60+ countries.
+            {HAS_80G ? '80G tax receipts' : 'a numbered receipt for every donation'}. Prasad can be
+            delivered to an address abroad.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -366,34 +367,38 @@ export default async function NRIPujasPillarPage() {
         </div>
       </section>
 
-      {/* Popular NRI pujas */}
-      <section className="mx-auto max-w-6xl px-6 py-12">
-        <h2 className="font-display text-2xl font-semibold text-surface-900">
-          Pujas most-booked by NRIs
-        </h2>
-        <p className="mt-2 max-w-2xl text-surface-700">
-          Estimated NRI price ranges shown. Final price depends on temple, pandit lineage and
-          add-ons.
-        </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {popularPujas.map((p) => (
-            <Link
-              key={p.slug}
-              href={`/pujas/${p.slug}`}
-              className="group rounded-xl border border-surface-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-saffron-300 hover:shadow-sm"
-            >
-              <h3 className="font-semibold text-surface-900 group-hover:text-saffron-700">
-                {p.name}
-              </h3>
-              <p className="mt-1 text-sm text-surface-600">{p.occasion}</p>
-              <p className="mt-2 text-sm font-medium text-saffron-700">{p.est}</p>
-              <span className="mt-3 inline-flex items-center gap-1 text-xs text-saffron-700">
-                Book this puja
-                <ArrowRight className="h-3 w-3" />
-              </span>
-            </Link>
-          ))}
-        </div>
+      {/* Live catalogue. Real INR prices, real slugs — or nothing. The page used
+          to print invented USD ranges ("$60-$180" for a Rs 1,100 puja that is
+          charged Rs 1,151) and linked four slugs that 404. */}
+      {catalogue.length > 0 && (
+        <section className="mx-auto max-w-6xl px-6 py-12">
+          <h2 className="font-display text-2xl font-semibold text-surface-900">
+            Pujas you can book from abroad
+          </h2>
+          <p className="mt-2 max-w-2xl text-surface-700">
+            The price is the same from any country: the INR price below, plus a flat platform
+            fee shown on the booking screen. Your bank converts it at its own rate.
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {catalogue.slice(0, 6).map((p) => (
+              <Link
+                key={p.slug}
+                href={`/pujas/${p.slug}`}
+                className="group rounded-xl border border-surface-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-saffron-300 hover:shadow-sm"
+              >
+                <h3 className="font-semibold text-surface-900 group-hover:text-saffron-700">
+                  {p.name}
+                </h3>
+                <p className="mt-2 text-sm font-medium text-saffron-700">
+                  from &#8377;{Number(p.basePrice).toLocaleString('en-IN')}
+                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs text-saffron-700">
+                  Book this puja
+                  <ArrowRight className="h-3 w-3" />
+                </span>
+              </Link>
+            ))}
+          </div>
         <div className="mt-6">
           <Link
             href="/pujas"
@@ -403,6 +408,7 @@ export default async function NRIPujasPillarPage() {
           </Link>
         </div>
       </section>
+      )}
 
       {/* Popular temple cities */}
       <section className="bg-surface-50">

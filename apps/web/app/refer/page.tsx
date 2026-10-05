@@ -82,7 +82,7 @@ export default function ReferPage() {
       <main className="max-w-3xl mx-auto px-6 py-16">
         <h1 className={`${H1.catalogue} mb-4`}>Refer & Earn</h1>
         <p className="text-surface-700 mb-6">
-          Sign in to get your personal referral link. Earn ₹100 credit when a friend completes their first puja booking — and they get ₹100 off too.
+          Sign in to get your personal referral link. Earn ₹100 in wallet credit when a friend signs up with your link and completes their first puja booking.
         </p>
         <Link
           href="/auth/login?next=/refer"
@@ -118,7 +118,7 @@ export default function ReferPage() {
   const reward = `₹${data.rewardPerSide.amount}`;
   const shareText =
     `Try Darshya for live darshan, verified puja bookings and daily panchang. ` +
-    `Sign up with my link and we both get ${reward} credit:`;
+    `Sign up with my link:`;
   const waUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${data.shareUrl}`)}`;
   const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(data.shareUrl)}`;
   const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(data.shareUrl)}`;
@@ -137,7 +137,7 @@ export default function ReferPage() {
         Refer & Earn {reward}
       </h1>
       <p className="text-surface-700 mb-8">
-        Share Darshya with friends and family. When they sign up and complete their first puja booking, you both receive {reward} credit — usable on any puja, darshan or store purchase.
+        Share Darshya with friends and family. When a friend signs up with your link and completes their first puja booking, {reward} is added to your Darshya wallet. Your friend does not receive a credit. Wallet credit cannot be spent at checkout yet; we will say so here when it can.
       </p>
 
       <section className="rounded-xl border border-saffron-200 bg-saffron-50 p-6 mb-8">
@@ -200,7 +200,7 @@ export default function ReferPage() {
         <ol className="space-y-2 text-surface-700 text-sm list-decimal list-inside">
           <li>Share your link with friends and family on WhatsApp, social media or email.</li>
           <li>They sign up on Darshya using your link — your code is captured automatically.</li>
-          <li>When they complete their first puja booking, you both get {reward} credit in your wallet.</li>
+          <li>When they complete their first puja booking, {reward} is added to your wallet balance.</li>
         </ol>
       </section>
     </main>
