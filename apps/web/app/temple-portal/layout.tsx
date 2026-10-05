@@ -8,6 +8,7 @@ import {
  Video,
  Flame,
  Heart,
+ Users,
  UserCircle,
  Wallet,
  Sparkles,
@@ -30,6 +31,7 @@ const sidebarLinks = [
  { href: '/temple-portal/pujas', label: 'Pujas', icon: Flame },
  { href: '/temple-portal/bookings', label: 'Bookings', icon: CalendarDays },
  { href: '/temple-portal/donations', label: 'Donations', icon: Heart },
+ { href: '/temple-portal/priests', label: 'Pandits', icon: Users },
  { href: '/temple-portal/payouts', label: 'Payouts', icon: Wallet },
  { href: '/temple-portal/subscription', label: 'Subscription', icon: Sparkles },
 ];
