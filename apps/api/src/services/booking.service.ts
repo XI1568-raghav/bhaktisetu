@@ -18,6 +18,7 @@ import { notifyBookingEvent, notifyVideoReady } from './booking-notify.service.j
 import { ensureConversationForBooking } from './conversation.service.js';
 import { paymentService } from './payment.service.js';
 import { nriPujaPriceInr } from '../lib/nri-pricing.js';
+import { prasadAddressProblem } from '@poojly/shared';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -629,11 +630,15 @@ export class BookingService {
           id: data.prasadDeliveryAddressId,
           userId: data.userId,
         },
-        select: { id: true },
+        select: { id: true, country: true, pincode: true },
       });
       if (!address) {
         throw new Error('Prasad delivery address not found or does not belong to user.');
       }
+      // Prasad is delivered within India only (owner decision 2026-10-06). A
+      // saved address abroad is fine for the account, just not for prasad.
+      const prasadProblem = prasadAddressProblem(address);
+      if (prasadProblem) throw new Error(prasadProblem);
     }
 
     // 7. Create the booking.

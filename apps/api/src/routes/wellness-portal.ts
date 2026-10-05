@@ -49,10 +49,10 @@ export const __testing = { mineQuerySchema, isUuid };
  * wellness earnings.
  */
 async function loadInstructorPayoutSplit(userId: string) {
-  if (!isUuid(userId)) return { paidOutInr: 0, pendingPayoutInr: 0, upcomingInr: 0 };
+  if (!isUuid(userId)) return { paidOutInr: 0, pendingPayoutInr: 0, readyInr: 0, requestedInr: 0, upcomingInr: 0 };
   const rows = await prisma.commission.findMany({
     where: { providerId: userId, wellnessEnrollmentId: { not: null } },
-    select: { amount: true, status: true, wellnessEnrollmentId: true },
+    select: { amount: true, status: true, wellnessEnrollmentId: true, payoutRequestId: true },
     take: 500,
   });
   const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -78,17 +78,27 @@ async function loadInstructorPayoutSplit(userId: string) {
       })
     : [];
   const upcomingSet = new Set(upcoming.map((e) => e.id));
-  const pendingOf = (held: boolean) =>
+  const pendingOf = (held: boolean, requested?: boolean) =>
     round2(
       live
         .filter(
           (r) =>
             r.status === 'PENDING' &&
-            upcomingSet.has(r.wellnessEnrollmentId as string) === held,
+            upcomingSet.has(r.wellnessEnrollmentId as string) === held &&
+            (requested === undefined || !!r.payoutRequestId === requested),
         )
         .reduce((s, r) => s + Number(r.amount), 0),
     );
-  return { paidOutInr: sumOf('PAID'), pendingPayoutInr: pendingOf(false), upcomingInr: pendingOf(true) };
+  return {
+    paidOutInr: sumOf('PAID'),
+    // Legacy mixed figure (ready + requested). Screens now show the two halves.
+    pendingPayoutInr: pendingOf(false),
+    // Same definitions as GET /payouts/balance: availableInr = PENDING, released,
+    // not yet in a payout request; pendingInr = PENDING and already requested.
+    readyInr: pendingOf(false, false),
+    requestedInr: pendingOf(false, true),
+    upcomingInr: pendingOf(true),
+  };
 }
 
 type WellnessSessionRow = {
@@ -186,6 +196,8 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
         // "Paid out" — only `paidOutInr` describes money that actually moved.
         paidOutInr: payoutSplit.paidOutInr,
         pendingPayoutInr: payoutSplit.pendingPayoutInr,
+        readyInr: payoutSplit.readyInr,
+        requestedInr: payoutSplit.requestedInr,
         // Earned from sessions that have not been held yet: not withdrawable.
         upcomingInr: payoutSplit.upcomingInr,
         instructorShare: share,

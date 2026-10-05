@@ -26,6 +26,12 @@ import {
  loadErrorIsReauth,
 } from '../../lib/api-config';
 import EarningsCard from '../../components/provider/EarningsCard';
+import {
+ balanceSplitCards,
+ hasBalanceSplit,
+ READY_TO_WITHDRAW_LABEL,
+ type BalanceSplit,
+} from '../../lib/payout-balance-labels';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 import LoadErrorBanner from '../../components/LoadErrorBanner';
 import TempleInvitesCard from '../../components/priest/TempleInvitesCard';
@@ -140,6 +146,7 @@ export default function PriestDashboard() {
  // — the most alarming sentence we can put in front of a provider, produced
  // by a transient 500. priests.is_verified was true for all seeded priests
  // while the badge said otherwise.
+ const [balance, setBalance] = useState<BalanceSplit | null>(null);
  const [kycState, setKycState] = useState<'verified' | 'pending' | 'unsubmitted' | 'rejected' | 'unknown'>('unknown');
  const [kycReason, setKycReason] = useState<string | null>(null);
 
@@ -255,7 +262,22 @@ export default function PriestDashboard() {
  // graceful fallback
  }
  }
- await Promise.all([fetchDashboard(), fetchKyc()]);
+ async function fetchBalance() {
+ // GET /payouts/balance: ready / upcoming / requested. Silent on any
+ // failure: the card then keeps the single "Pending payout" label.
+ if (!session?.accessToken) return;
+ try {
+ const r = await fetchWithTimeout(`${API_BASE_URL}/payouts/balance`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ }, DATA_FETCH_TIMEOUT_MS);
+ if (!r.ok) return;
+ const j = await r.json();
+ setBalance(j && typeof j === 'object' ? j : null);
+ } catch {
+ // graceful fallback
+ }
+ }
+ await Promise.all([fetchDashboard(), fetchKyc(), fetchBalance()]);
  }, [session, user?.fullName, user?.email]);
 
  useEffect(() => { void loadAll(); }, [loadAll]);
@@ -396,9 +418,15 @@ export default function PriestDashboard() {
 
  <EarningsCard
  totalPaid={data.earnings.total}
- pending={data.earnings.pending}
+ pending={hasBalanceSplit(balance) ? (balance.availableInr as number) : data.earnings.pending}
+ pendingLabel={hasBalanceSplit(balance) ? READY_TO_WITHDRAW_LABEL : undefined}
  thisMonth={data.earnings.thisMonth}
  />
+ {hasBalanceSplit(balance) && (
+ <p data-testid="priest-balance-split" className="text-xs text-surface-500 -mt-2">
+ {balanceSplitCards(balance).slice(1).map((c) => `${c.label}: ${formatCurrency(c.amount)}`).join(' · ')}
+ </p>
+ )}
 
  {fetchError && (
  <LoadErrorBanner

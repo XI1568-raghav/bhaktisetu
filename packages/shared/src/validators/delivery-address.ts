@@ -394,3 +394,38 @@ export const deliveryAddressSchema = z
 
 export type DeliveryAddressInput = z.input<typeof deliveryAddressSchema>;
 export type DeliveryAddress = z.output<typeof deliveryAddressSchema>;
+
+// ─── Prasad delivery is India-only (owner decision, 2026-10-06) ───────────
+//
+// The generic delivery contract above stays country-aware (it is also the
+// address shape for billing/contact data), but PRASAD DELIVERY is shipped
+// within India only. A booking without prasad stays open to NRIs anywhere:
+// they simply do not tick the prasad box. Every prasad entry point (web wizard,
+// mobile wizard, POST /bookings/create-order, /from-offering, /book) uses the
+// helpers below so the rule cannot be relaxed on one side only.
+
+/** The one sentence shown to devotees, and returned in the API's 400 body. */
+export const PRASAD_INDIA_ONLY_NOTE = "Prasad is delivered within India only.";
+
+export const PRASAD_INDIA_ONLY_MESSAGE =
+  "Prasad is delivered within India only. Use an Indian delivery address with a 6-digit pincode, or book without prasad delivery.";
+
+const INDIAN_PINCODE = /^\d{6}$/;
+
+function isIndiaCountry(raw: unknown): boolean {
+  if (raw == null) return true; // the schema default is India
+  if (typeof raw !== "string") return false;
+  const c = raw.trim().toUpperCase();
+  return c === "" || c === "IN" || c === "INDIA";
+}
+
+/** Returns PRASAD_INDIA_ONLY_MESSAGE when the address cannot take prasad, else null. */
+export function prasadAddressProblem(
+  addr: { country?: unknown; pincode?: unknown } | null | undefined,
+): string | null {
+  if (!addr) return null;
+  if (!isIndiaCountry(addr.country)) return PRASAD_INDIA_ONLY_MESSAGE;
+  const pin = typeof addr.pincode === "string" ? addr.pincode.trim() : "";
+  if (!INDIAN_PINCODE.test(pin)) return PRASAD_INDIA_ONLY_MESSAGE;
+  return null;
+}

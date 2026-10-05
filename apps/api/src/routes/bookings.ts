@@ -33,6 +33,8 @@ import { localizedError, pickLang } from '../lib/error-i18n.js';
 import {
   deliveryAddressSchema,
   deliveryCountryName,
+  prasadAddressProblem,
+  PRASAD_INDIA_ONLY_MESSAGE,
   type DeliveryAddress,
 } from '@poojly/shared';
 
@@ -893,7 +895,27 @@ function requirePrasadDeliveryAddress(
       path: ['deliveryAddress'],
       message: 'A delivery address is required when prasad delivery is selected.',
     });
+    return;
   }
+  // Owner decision 2026-10-06: prasad is delivered within India only. Checked
+  // on the PARSED address (country is an upper-cased ISO code by now). A
+  // booking without prasad is untouched, so an NRI anywhere can still book.
+  if (body.prasadDelivery && body.deliveryAddress != null) {
+    const problem = prasadAddressProblem(body.deliveryAddress as { country?: unknown; pincode?: unknown });
+    if (problem) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['deliveryAddress', 'country'], message: problem });
+    }
+  }
+}
+
+/**
+ * 400 body for a ZodError. The India-only prasad rule is a sentence a devotee
+ * must be able to read, so it is lifted into `error`; every other validation
+ * failure keeps the legacy 'Validation Error' string + details.
+ */
+function zodErrorBody(error: z.ZodError): { error: string; details: z.ZodIssue[] } {
+  const prasad = error.errors.find((i) => i.message === PRASAD_INDIA_ONLY_MESSAGE);
+  return { error: prasad ? prasad.message : 'Validation Error', details: error.errors };
 }
 
 // POST /create-order - Used by the web booking wizard
@@ -915,7 +937,8 @@ const createOrderBodySchema = z
     // dollar price. The charge is then puja x 2.5 (+ flat fees) in INR — see
     // lib/nri-pricing.ts. Never inferred from the self-settable users.isNri.
     nriPricing: z.boolean().optional().default(false),
-    // CM-06: country-aware, shared with the web form. Was India-only.
+    // CM-06: country-aware, shared with the web form. Prasad itself is
+    // India-only again (requirePrasadDeliveryAddress), as of 2026-10-06.
     deliveryAddress: deliveryAddressSchema.optional(),
   })
   .superRefine(requirePrasadDeliveryAddress);
@@ -947,7 +970,8 @@ const fromOfferingBodySchema = z
     // puja x 2.5 (+ flat fees) in INR. Never inferred from users.isNri, and
     // never from the legacy `currency` hint above.
     nriPricing: z.boolean().optional().default(false),
-    // CM-06: country-aware, shared with the web form. Was India-only.
+    // CM-06: country-aware, shared with the web form. Prasad itself is
+    // India-only again (requirePrasadDeliveryAddress), as of 2026-10-06.
     deliveryAddress: deliveryAddressSchema.optional(),
   })
   .superRefine(requirePrasadDeliveryAddress);
@@ -975,10 +999,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         return reply.status(201).send({ booking });
       } catch (error: any) {
         if (error instanceof z.ZodError) {
-          return reply.status(400).send({
-            error: 'Validation Error',
-            details: error.errors,
-          });
+          return reply.status(400).send(zodErrorBody(error));
         }
         // A lost slot race is a 409 the wizard can recover from in-page; a
         // malformed body is a 400 it cannot. See classifyCreateBookingError.
@@ -2113,10 +2134,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         });
       } catch (error: any) {
         if (error instanceof z.ZodError) {
-          return reply.status(400).send({
-            error: 'Validation Error',
-            details: error.errors,
-          });
+          return reply.status(400).send(zodErrorBody(error));
         }
         // Same classification as POST /book — this is the path the web wizard
         // actually uses, so it is the one that most needs a distinguishable 409.
@@ -2531,10 +2549,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         });
       } catch (error: any) {
         if (error instanceof z.ZodError) {
-          return reply.status(400).send({
-            error: 'Validation Error',
-            details: error.errors,
-          });
+          return reply.status(400).send(zodErrorBody(error));
         }
         // S2C-13: the pandit is already taken for this date+slot, or the slot
         // is at capacity. A conflict, not a malformed request.
@@ -2685,6 +2700,7 @@ export const __testing = {
   // prasadDelivery/deliveryAddress pairing is pinned without booting Fastify.
   createOrderBodySchema,
   fromOfferingBodySchema,
+  zodErrorBody,
   // DB-07 — the server-side booking horizon, so a test can assert the bound
   // rather than a magic date.
   MAX_BOOKING_HORIZON_DAYS,

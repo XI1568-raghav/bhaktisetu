@@ -155,10 +155,10 @@ export function ProviderPayouts({
         <>
           <View style={{ flexDirection: 'row' }}>
             <StatCard
-              label="Available"
+              label="Ready to withdraw"
               value={balance.availableInr === null ? '—' : formatInr(balance.availableInr)}
               accent={colors.green[600]}
-              hint="Ready to withdraw"
+              hint="Not yet requested"
             />
             <View style={{ width: spacing.sm }} />
             <StatCard
