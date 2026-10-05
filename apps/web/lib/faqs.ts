@@ -127,8 +127,8 @@ export const FAQ_GROUPS: FaqGroup[] = [
       : 'Costs, NRI pricing, payment methods, donation receipts.',
     faqs: [
       {
-        q: 'Why is NRI pricing higher than Indian pricing?',
-        a: "NRI pricing is roughly 9-10× domestic for parity reasons — currency conversion, international payment processing fees (3-4% higher than domestic UPI), USD-denominated infrastructure costs, and a small donation to the temple's gaushala or annadanam. The exact breakdown is shown at checkout.",
+        q: 'Is NRI pricing different from Indian pricing?',
+        a: "No. Devotees booking from abroad pay the same INR price as devotees in India — the listed puja price plus a flat platform fee, and a flat prasad-delivery fee if you add it. The full total is shown on the booking screen before you pay. Razorpay charges in INR, so your bank applies its own conversion rate and any foreign-transaction fee.",
       },
       // TC-01 — gated on the same owner flag as every other 80G surface.
       HAS_80G
