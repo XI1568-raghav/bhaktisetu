@@ -30,6 +30,13 @@
  *                            wellness pages. No stock or supplier confirmation
  *                            exists behind them. Flip when a package is backed by
  *                            confirmed inventory and an online booking.
+ *   HAS_VERIFIED_TESTIMONIALS  customer quotes on /weddings. No wedding has been booked and
+ *                            rated through the product, so no quote has a source.
+ *                            Flip when quotes come from recorded, consented reviews.
+ *   HAS_VERIFIED_INSTRUCTORS  years of experience, certifications, ratings and reviews on
+ *                            /wellness/instructors/[id]. The profiles are fixtures, not
+ *                            real instructors. Flip when profiles come from verified
+ *                            instructor records.
  *   HAS_COMPANION_VETTING    ID, police-verification and first-aid checks for
  *                            yatra companions. No such process exists and no
  *                            companion is listed. Flip when one does.
@@ -39,6 +46,12 @@ export const HAS_HOME_PUJA_INCLUSIONS = false;
 export const HAS_PUJA_MATERIALS_PROMISE = false;
 export const HAS_PACKAGE_INCLUSIONS = false;
 export const HAS_COMPANION_VETTING = false;
+export const HAS_VERIFIED_TESTIMONIALS = false;
+export const HAS_VERIFIED_INSTRUCTORS = false;
+
+/** Shown on fixture instructor profiles while HAS_VERIFIED_INSTRUCTORS is false. */
+export const SAMPLE_INSTRUCTOR_NOTE =
+  'Sample profile: this page illustrates how an instructor listing will look. It is not a verified instructor, and no credentials, ratings or reviews are claimed.';
 
 /** Shown wherever an inclusions list is held back by one of the gates above. */
 export const INCLUSIONS_ON_ENQUIRY =

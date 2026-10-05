@@ -59,15 +59,13 @@ export const WEDDING_PACKAGES: readonly WeddingPackage[] = [
     tier: 'premium',
     name: 'Premium',
     priceInr: 50000,
-    tagline: 'Pandit + samagri + muhurat consultation.',
+    tagline: 'Pandit + muhurat consultation.',
     popular: true,
     features: [
       'Everything in Basic',
       'Free kundli matching (Ashtakoota / Guna milan)',
       'Personalised muhurat consultation',
-      'Full samagri kit shipped (mandap, kalash, havan)',
-      'Pre-wedding briefing call',
-      'Photographer co-ordination',
+      'Samagri and other inclusions confirmed in your quote',
     ],
   },
   {
@@ -81,9 +79,6 @@ export const WEDDING_PACKAGES: readonly WeddingPackage[] = [
       'Haldi + Mehendi (Day 2)',
       'Vivah sanskar with full mandap (Day 3)',
       'Grihapravesh + Satyanarayan puja (Day 4)',
-      'Dedicated wedding concierge',
-      'NRI co-ordination',
-      'On-call Vedic scholar',
     ],
   },
 ] as const;

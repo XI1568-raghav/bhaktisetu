@@ -45,7 +45,7 @@ const cards = (liveDarshanTemples: number | null): WorshipCard[] => [
   {
     href: '/gaushala',
     label: 'Gaushala Seva',
-    body: `Adopt a cow ${GAUSHALA_ENTRY_CLAIM}`,
+    body: `Gau seva ${GAUSHALA_ENTRY_CLAIM}`,
     cta: 'Sponsor seva',
     Icon: Heart,
     image: getDeityImage('krishna', 'portrait', IMG_W.CARD),

@@ -109,6 +109,20 @@ describe('AW-10 — wellness dashboard reports a real settled / unsettled split'
     await app.close();
   });
 
+  it('splits released money into readyInr (not requested) and requestedInr (inside a payout request)', async () => {
+    prismaMock.commission.findMany.mockResolvedValue([
+      commissionRow({ id: 'wc-1', amount: 300, payoutRequestId: null }),
+      commissionRow({ id: 'wc-2', amount: 500, payoutRequestId: 'pr-1' }),
+    ]);
+    const app = await buildApp();
+    const stats = (await dashboard(app)).json().stats;
+    expect(stats.readyInr).toBe(300);
+    expect(stats.requestedInr).toBe(500);
+    // legacy mixed figure is the sum of the two halves
+    expect(stats.pendingPayoutInr).toBe(800);
+    await app.close();
+  });
+
   it('reads only wellness commissions — a dual-role provider\'s other earnings never leak in', async () => {
     const app = await buildApp();
     await dashboard(app);

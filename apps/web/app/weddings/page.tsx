@@ -1,17 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_PACKAGE_INCLUSIONS, HAS_VERIFIED_TESTIMONIALS } from '../../lib/launch-gates';
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/weddings' },
   title: 'Hindu Wedding Planning — Muhurat, Pandit, Samagri',
   description:
-    'Plan your Vedic Hindu wedding end-to-end on Darshya. Find an auspicious muhurat from your kundli, book a pandit, and get the full samagri kit shipped. Three packages from ₹15,000.',
+    'Plan your Vedic Hindu wedding end-to-end on Darshya. Find an auspicious muhurat from your kundli, book a pandit, and talk to a planner about samagri. Three packages from ₹15,000, confirmed by quote.',
   openGraph: {
     images: ['/images/golden-temple-og.jpg'],
     title: 'Darshya Weddings — Muhurat, Pandit, Samagri',
     description:
-      'Auspicious muhurat finder, pandits, full samagri. Three Vedic wedding packages from ₹15,000.',
+      'Auspicious muhurat finder, pandits, and a planner to talk to. Three Vedic wedding packages from ₹15,000.',
     type: 'website',
     url: 'https://darshya.online/weddings',
   },
@@ -24,12 +25,12 @@ const jsonLd = {
   provider: { '@type': 'Organization', name: 'Darshya', url: 'https://darshya.online' },
   areaServed: { '@type': 'Country', name: 'India' },
   description:
-    'Vedic Hindu wedding muhurat finder, pandit booking, samagri kit, and 4-day Royal ceremony packages.',
+    'Vedic Hindu wedding muhurat finder, pandit enquiry, and 4-day Royal ceremony packages.',
   offers: [
     { '@type': 'Offer', name: 'Basic — Pandit only', price: '15000', priceCurrency: 'INR' },
     {
       '@type': 'Offer',
-      name: 'Premium — Pandit + Samagri + Muhurat',
+      name: 'Premium — Pandit + Muhurat consultation',
       price: '50000',
       priceCurrency: 'INR',
     },
@@ -58,8 +59,9 @@ export default function WeddingsPage() {
             One muhurat. One pandit. One unforgettable wedding.
           </h1>
           <p className="prose-lead mt-5 text-stone-700 max-w-2xl mx-auto">
-            From kundli matching to samagri to the seven pheras, Darshya assembles every part of
-            your Vedic wedding around an auspicious muhurat picked from your nakshatras.
+            From kundli matching to the seven pheras, Darshya helps you plan your Vedic wedding
+            around an auspicious muhurat picked from your nakshatras. Packages are confirmed by a
+            planner after you enquire.
           </p>
           <div className="mt-8 flex flex-wrap gap-3 justify-center">
             <Link
@@ -94,8 +96,10 @@ export default function WeddingsPage() {
               d: 'Pandits for classical Vedic rites — Hindi, Sanskrit, regional languages. A pandit is paid only once Aadhaar-based KYC is on file.',
             },
             {
-              t: 'End-to-end samagri',
-              d: 'Mandap, kalash, panchamrit, havan kit, and sankalp materials shipped before your ceremony date.',
+              t: 'Samagri guidance',
+              d: HAS_PACKAGE_INCLUSIONS
+                ? 'Mandap, kalash, panchamrit, havan kit, and sankalp materials shipped before your ceremony date.'
+                : 'Your planner tells you what the ceremony needs. What is supplied and by whom is confirmed in your quote.',
             },
           ].map((b) => (
             <div key={b.t} className="bg-white rounded-xl p-6 shadow-sm border border-amber-100">
@@ -113,7 +117,7 @@ export default function WeddingsPage() {
               {
                 t: 'Premium',
                 p: '₹50,000',
-                d: 'Pandit + samagri + muhurat consultation + kundli matching.',
+                d: 'Pandit + muhurat consultation + kundli matching. Samagri confirmed in your quote.',
               },
               {
                 t: 'Royal',
@@ -139,6 +143,7 @@ export default function WeddingsPage() {
           </div>
         </section>
 
+        {HAS_VERIFIED_TESTIMONIALS && (
         <section className="px-4 sm:px-8 py-12 max-w-4xl mx-auto">
           <h2 className="font-serif text-3xl text-amber-900 text-center">From recent couples</h2>
           <div className="mt-8 grid sm:grid-cols-2 gap-6">
@@ -162,6 +167,7 @@ export default function WeddingsPage() {
             ))}
           </div>
         </section>
+        )}
 
         <section className="px-4 sm:px-8 py-12 max-w-4xl mx-auto">
           <h2 className="font-serif text-3xl text-amber-900 text-center">10-step planner</h2>

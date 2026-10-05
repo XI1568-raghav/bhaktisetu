@@ -93,8 +93,8 @@ const FEATURES: { title: string; body: string; href: string }[] = [
     // all branch on the same constant; this card was the outlier.
     title: HAS_80G ? 'Gaushala seva + 80G receipts' : 'Gaushala seva, with proof',
     body: HAS_80G
-      ? 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Gaushalas listed by the Darshya team, with an 80G tax receipt.'
-      : 'Adopt a cow, sponsor a feeding, sponsor a vet visit. Gaushalas listed by the Darshya team, and a numbered donation receipt PDF for every contribution.',
+      ? 'Sponsor a feeding or a vet visit. Gaushalas listed by the Darshya team, with an 80G tax receipt.'
+      : 'Sponsor a feeding or a vet visit. Gaushalas listed by the Darshya team, and a numbered donation receipt PDF for every contribution.',
     href: '/gaushala',
   },
 ];

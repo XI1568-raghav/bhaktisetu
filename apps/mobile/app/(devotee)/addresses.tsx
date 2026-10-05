@@ -227,7 +227,7 @@ export default function AddressesScreen() {
           <Ionicons name="location-outline" size={36} color={colors.stone[300]} />
           <Text style={styles.emptyTitle}>No saved addresses yet</Text>
           <Text style={styles.emptyText}>
-            Add one here and it becomes selectable at checkout for prasad and store deliveries.
+            Add one here and it becomes selectable at checkout for store deliveries. Prasad is delivered within India only.
           </Text>
         </View>
       );
@@ -318,7 +318,7 @@ export default function AddressesScreen() {
               ? 'Loading…'
               : addressesQuery.isError
                 ? 'Could not load addresses'
-                : `${addresses.length} saved · used for prasad and store delivery`}
+                : `${addresses.length} saved · used for store delivery · prasad is delivered within India only`}
           </Text>
         </View>
       </View>
