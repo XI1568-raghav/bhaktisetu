@@ -96,6 +96,19 @@ describe('RV-08 — video proof gate on PATCH /bookings/:id', () => {
     expect(r.ok).toBe(false);
   });
 
+  it('blocks the assigned pandit from PATCHing completed without proof (Start -> proof -> Complete)', () => {
+    const r = checkVideoProofGate({ newStatus: 'completed', existingVideoProofUrl: null, ...priest });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.status).toBe(409);
+  });
+
+  it('allows the pandit to PATCH completed once proof is on file; admin may complete for ops remediation', () => {
+    expect(
+      checkVideoProofGate({ newStatus: 'completed', existingVideoProofUrl: 'https://x.test/a.mp4', ...priest }).ok,
+    ).toBe(true);
+    expect(checkVideoProofGate({ newStatus: 'completed', existingVideoProofUrl: null, ...admin }).ok).toBe(true);
+  });
+
   it('allows the flip when the booking already carries proof (uploadVideoProof path)', () => {
     const r = checkVideoProofGate({
       newStatus: 'video_uploaded',
@@ -145,8 +158,8 @@ describe('RV-08 — video proof gate on PATCH /bookings/:id', () => {
     expect(r.ok).toBe(true);
   });
 
-  it('leaves non-proof transitions alone (confirmed, priest_assigned, completed, refunded)', () => {
-    for (const status of ['confirmed', 'priest_assigned', 'in_progress', 'completed', 'cancelled', 'refunded'] as const) {
+  it('leaves non-proof transitions alone (confirmed, priest_assigned, refunded)', () => {
+    for (const status of ['confirmed', 'priest_assigned', 'in_progress', 'cancelled', 'refunded'] as const) {
       expect(
         checkVideoProofGate({
           newStatus: status,

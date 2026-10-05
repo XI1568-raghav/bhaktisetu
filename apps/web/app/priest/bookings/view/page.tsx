@@ -89,7 +89,7 @@ function getStatusConfig(status: string) {
  const map: Record<string, { label: string; cls: string; description: string }> = {
  confirmed: { label: 'Pending Accept', cls: 'bg-amber-100 text-amber-700', description: 'Waiting for you to accept this booking.' },
  priest_assigned: { label: 'Accepted', cls: 'bg-blue-100 text-blue-700', description: 'You have accepted. Start the puja at the scheduled time.' },
- in_progress: { label: 'In Progress', cls: 'bg-saffron-100 text-saffron-700', description: 'Puja is underway. Mark as complete when done.' },
+ in_progress: { label: 'In Progress', cls: 'bg-saffron-100 text-saffron-700', description: 'Puja is underway. Upload the video proof, then mark it complete.' },
  completed: { label: 'Completed', cls: 'bg-tulsi-green-light/30 text-tulsi-green', description: 'Puja is complete. Please upload video proof.' },
  video_uploaded: { label: 'Video Uploaded', cls: 'bg-purple-100 text-purple-700', description: 'Video proof has been submitted. Awaiting delivery confirmation.' },
  delivered: { label: 'Delivered', cls: 'bg-green-100 text-green-700', description: 'Booking fully completed and delivered to the devotee.' },
@@ -428,14 +428,54 @@ function PriestBookingDetailInner() {
  )}
 
  {booking.status === 'in_progress' && (
+ <div className="space-y-3">
+ <p className="text-sm text-surface-600">
+ {booking.videoProofUrl?.trim()
+  ? 'Video proof is saved. You can now mark the puja complete.'
+  : 'Step 1: upload the video proof of the puja. Step 2: mark the puja complete.'}
+ </p>
+ {booking.videoProofUrl?.trim() && (
+ <a
+ href={booking.videoProofUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="flex items-center gap-2 text-sm text-saffron-600 hover:text-saffron-700"
+ >
+ <ExternalLink className="w-4 h-4" />
+ View uploaded video
+ </a>
+ )}
+ {replacingProof || !booking.videoProofUrl?.trim() ? (
+ <VideoProofUpload
+ bookingId={booking.id}
+ onUploaded={async (url) => {
+ await submitProof(url);
+ setReplacingProof(false);
+ }}
+ />
+ ) : (
+ <button
+ type="button"
+ onClick={() => setReplacingProof(true)}
+ className="text-sm font-medium text-saffron-600 hover:text-saffron-700"
+ >
+ Wrong link? Replace video proof
+ </button>
+ )}
  <button
  onClick={() => handleAction('complete')}
- disabled={actionLoading}
+ disabled={actionLoading || !booking.videoProofUrl?.trim()}
  className="w-full flex items-center justify-center gap-2 py-3 bg-tulsi-green-dark text-white font-semibold rounded-xl hover:opacity-90 transition-colors disabled:opacity-50"
  >
  {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
  Mark Puja Complete
  </button>
+ {!booking.videoProofUrl?.trim() && (
+ <p className="text-xs text-surface-400 text-center">
+ Upload the video proof first. The puja cannot be marked complete without it.
+ </p>
+ )}
+ </div>
  )}
 
  {booking.status === 'completed' && (

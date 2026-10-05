@@ -1699,9 +1699,27 @@ export class BookingService {
       throw new Error('Only the assigned priest can upload video proof for this booking.');
     }
 
+    // Flow is Start -> upload proof -> Complete. While the puja is in progress
+    // the link is only stored (status unchanged, nothing paid, devotee not yet
+    // notified); completePuja then moves the booking on. `completed` is kept
+    // for bookings that reached it before proof became a prerequisite.
+    if (booking.status === 'in_progress') {
+      return prisma.pujaBooking.update({
+        where: { id: bookingId },
+        data: { videoProofUrl: videoUrl, videoUploadedAt: new Date() },
+        select: {
+          id: true,
+          bookingNumber: true,
+          status: true,
+          videoProofUrl: true,
+          videoUploadedAt: true,
+        },
+      });
+    }
+
     if (booking.status !== 'completed') {
       throw new Error(
-        `Video proof can only be uploaded for bookings in "completed" status. Current: "${booking.status}".`,
+        `Video proof can only be uploaded once the puja has been started. Current: "${booking.status}".`,
       );
     }
 

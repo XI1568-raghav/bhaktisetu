@@ -706,7 +706,7 @@ export class PriestService {
   async completePuja(bookingId: string, priestId: string) {
     const booking = await prisma.pujaBooking.findUnique({
       where: { id: bookingId },
-      select: { id: true, status: true, priestId: true },
+      select: { id: true, status: true, priestId: true, videoProofUrl: true },
     });
 
     if (!booking) {
@@ -717,11 +717,24 @@ export class PriestService {
       throw new Error('You are not assigned to this booking.');
     }
 
-    if (booking.status !== 'in_progress') {
+    // `completed` with proof already on file is a booking whose second hop
+    // below never landed (or a legacy row): finish it rather than strand it.
+    if (booking.status !== 'in_progress' && booking.status !== 'completed') {
       throw new PujaStateConflictError('Start the puja before marking it complete.');
     }
 
-    return this.bookingService.updateBookingStatus(bookingId, 'completed');
+    // Video proof is mandatory: Start -> upload proof -> Complete.
+    if (!booking.videoProofUrl?.trim()) {
+      throw new PujaStateConflictError('Upload the video proof before marking this puja complete.');
+    }
+
+    // Complete means "performed AND proved". The proof is already on file, so
+    // the booking goes on to video_uploaded, the state that releases the
+    // earnings and tells the devotee their video is ready.
+    if (booking.status === 'in_progress') {
+      await this.bookingService.updateBookingStatus(bookingId, 'completed');
+    }
+    return this.bookingService.updateBookingStatus(bookingId, 'video_uploaded');
   }
 
   /**

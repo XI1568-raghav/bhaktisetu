@@ -2014,7 +2014,27 @@ describe('BookingService.uploadVideoProof', () => {
 
     await expect(
       service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url'),
-    ).rejects.toThrow('can only be uploaded for bookings in "completed" status');
+    ).rejects.toThrow('can only be uploaded once the puja has been started');
+  });
+
+  it('while the puja is in_progress: stores the proof link only, status unchanged, no payout', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      priestId: 'priest-1',
+      status: 'in_progress',
+    });
+    prismaMock.pujaBooking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'in_progress',
+      videoProofUrl: 'https://video.url',
+    });
+
+    await service.uploadVideoProof('booking-1', 'priest-1', 'https://video.url');
+
+    const data = prismaMock.pujaBooking.update.mock.calls[0]![0].data;
+    expect(data.videoProofUrl).toBe('https://video.url');
+    expect(data.videoUploadedAt).toBeInstanceOf(Date);
+    expect(data).not.toHaveProperty('status');
   });
 
   it('uploads video proof and transitions to video_uploaded', async () => {
