@@ -71,7 +71,7 @@ const ROWS: Row[] = [
   },
   {
     feature: 'NRI-fair pricing',
-    darshya: '✓ 9-10× domestic, transparent breakdown',
+    darshya: '✓ One INR price for everyone, total shown first',
     sriMandir: '~ Some USD pricing, opaque',
     utsav: '~ Single global price',
     astrosage: '~ INR only (devotee converts)',
@@ -173,7 +173,7 @@ const ROWS: Row[] = [
     sriMandir: '~ Some upsells',
     utsav: '~ Add-ons during',
     astrosage: '~ Pay-per-question',
-    detail: 'No phantom charges. Domestic UPI = listed price. NRI = listed price + fixed processing in USD.',
+    detail: 'No phantom charges. The total (listed price + flat platform fee) is shown before you pay, and it is the same from any country. Billing is in INR.',
   },
 ];
 

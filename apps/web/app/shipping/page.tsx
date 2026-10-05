@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { H1 } from '../../components/ui/heading-recipe';
+import { PRASAD_DELIVERY_FEE_INR } from '../../lib/puja-pricing';
 import {
  COMPANY,
  deliveryFeeLine,
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
  images: ['/images/golden-temple-og.jpg'],
  title: "Shipping & Delivery Policy | Darshya",
  description:
- "Prasad and store delivery timelines: 3-7 days within India, 7-15 days for NRI orders. Tracked via India Post / Delhivery.",
+ "Prasad and store delivery timelines: 3-7 days within India, 7-15 days for prasad sent abroad. Tracked via India Post / Delhivery.",
  url: "https://darshya.online/shipping",
  type: "website",
  },
@@ -53,8 +54,8 @@ export default function ShippingPage() {
  <ShippingSection title="1. Overview">
  <p>
  Darshya ships sacred prasad, puja items, books, idols, and
- wellness products across India and to NRI devotees in select
- international markets. This Shipping Policy explains delivery
+ wellness products across India, and puja prasad to addresses
+ abroad. This Shipping Policy explains delivery
  timelines, shipping charges, tracking, and our handling of
  lost or damaged consignments.
  </p>
@@ -79,17 +80,12 @@ export default function ShippingPage() {
  </li>
  </ul>
 
- <h4>2.2 International (NRI) Orders</h4>
+ <h4>2.2 International (puja prasad)</h4>
  <ul>
  <li>
  <strong>Prasad &amp; small parcels:</strong> 7&ndash;15
  business days, depending on destination country and customs
  clearance.
- </li>
- <li>
- <strong>Larger consignments (idols, decor):</strong>{" "}
- 10&ndash;21 business days. Shipped via DHL or India Post
- international tracked service.
  </li>
  <li>
  Customs duties, taxes, and import fees in the destination
@@ -106,14 +102,15 @@ export default function ShippingPage() {
  </li>
  <li>
  <strong>Prasad delivery</strong> as part of a puja booking
- is included in the puja fee for domestic addresses; NRI
- addresses incur an international shipping surcharge shown
- transparently at checkout.
+ is an optional flat &#8377;{PRASAD_DELIVERY_FEE_INR} add-on. It is the same
+ for every address, in India or abroad, and is shown on the
+ booking screen before you pay.
  </li>
  <li>
- <strong>International shipping</strong> is calculated by
- destination, weight, and dimensions at checkout. We do not
- offer free international shipping.
+ <strong>International delivery</strong> is available for puja
+ prasad only, at the flat fee above. Our store checkout
+ currently delivers within India only; we do not ship store
+ products abroad yet.
  </li>
  <li>
  <strong>Cash on Delivery (COD)</strong> is available on
