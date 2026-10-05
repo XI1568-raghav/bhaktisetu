@@ -214,25 +214,9 @@ export function partitionOfferings(offerings: TempleOfferingOption[]): OfferingP
  * nothing when it is absent is correct: `pickLang` then defaults to English,
  * exactly as today.
  */
-const LANGUAGE_TAG_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
-
-/**
- * A header-safe Accept-Language value, or null when there is nothing to send.
- *
- * The validation is not decoration. React Native's fetch does not reject a
- * header value containing CR or LF, and `preferredLanguage` is a field the
- * profile screen writes; the day it becomes free text, an unvalidated value
- * here is request splitting. The tag is passed through rather than mapped to
- * the five translated languages on purpose — `pickLang` already splits the
- * primary subtag and falls back to English for anything it has no catalogue
- * for, and duplicating that table here is how the two drift.
- */
-export function acceptLanguageFor(preferredLanguage: string | null | undefined): string | null {
-  if (typeof preferredLanguage !== 'string') return null;
-  const tag = preferredLanguage.trim();
-  if (tag.length === 0 || tag.length > 35) return null;
-  return LANGUAGE_TAG_RE.test(tag) ? tag : null;
-}
+// `acceptLanguageFor` lives in ./language (shared with every other request).
+import { acceptLanguageFor } from './language';
+export { acceptLanguageFor };
 
 /**
  * Headers for POST /api/v1/bookings/book.

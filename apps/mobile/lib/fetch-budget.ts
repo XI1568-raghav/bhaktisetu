@@ -32,6 +32,8 @@
  * alone can leave the promise pending; together they cannot.
  */
 
+import { currentAcceptLanguage } from './language';
+
 /** Matches `API_TIMEOUT_MS` in lib/api.ts and `ACCOUNT_REQUEST_TIMEOUT_MS`. */
 export const FETCH_BUDGET_MS = 20_000;
 
@@ -92,7 +94,10 @@ export async function fetchWithBudget(
 
   const attempt = (async () => {
     try {
-      return await fetch(url, controller ? { ...init, signal: controller.signal } : init);
+      const headers = new Headers(init.headers as HeadersInit | undefined);
+      if (!headers.has('Accept-Language')) headers.set('Accept-Language', currentAcceptLanguage());
+      const withLang = { ...init, headers };
+      return await fetch(url, controller ? { ...withLang, signal: controller.signal } : withLang);
     } catch (err) {
       throw new FetchBudgetError(isAbort(err));
     }

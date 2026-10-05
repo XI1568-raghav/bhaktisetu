@@ -25,6 +25,13 @@ export interface ApiClientConfig {
   baseUrl: string;
   /** Function that returns the current auth token, or undefined if not logged in */
   getAuthToken?: () => string | undefined | Promise<string | undefined>;
+  /**
+   * Returns the Accept-Language value to send on every request, or undefined
+   * to send none. The API answers in English unless this header is present
+   * (apps/api/src/lib/i18n.ts). A per-request `headers['Accept-Language']`
+   * overrides it.
+   */
+  getAcceptLanguage?: () => string | undefined;
   /** Default timeout in milliseconds */
   timeout?: number;
   /** Custom headers to include in every request */
@@ -176,6 +183,9 @@ async function request<T>(
       headers.set("Authorization", `Bearer ${token}`);
     }
   }
+
+  const acceptLanguage = config.getAcceptLanguage?.();
+  if (acceptLanguage) headers.set("Accept-Language", acceptLanguage);
 
   // Merge extra headers
   if (extraHeaders) {
