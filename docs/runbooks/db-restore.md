@@ -11,85 +11,64 @@
 
 ---
 
-## STEP 0 — OWNER: there is nothing to restore until you do this (`OPS-02`)
+## STEP 0 — what the daily backup needs, and what it does today (`OPS-02`)
 
-**~10 minutes, once, and every other section of this runbook is inert until it
-is done.** The daily backup has never produced an object, because the three
-secrets it needs have never been set. It used to answer
-`{"ok":true,"skipped":true}` and show a green tick; since 2026-08-21 a skip fails
-the run instead, but a failing job is still not a backup.
+**State as of 2026-10-06.** The repo holds exactly one of the secrets the backup
+needs: `SUPABASE_DIRECT_URL` (the direct Postgres URI, port 5432). The workflow
+used to demand `SUPABASE_DB_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`,
+none of which exist here, so the scheduled runs of 2026-09-30 through 2026-10-04
+all failed in about 40 seconds with `"missing":["SUPABASE_DB_URL","SUPABASE_URL",
+"SUPABASE_SERVICE_ROLE_KEY"]` and exit code 7. No backup was taken on any of those
+nights; the red tick was telling the truth.
 
-### 0a. Set exactly three GitHub Actions secrets
+### 0a. What the workflow accepts now
 
-GitHub → repo **Settings** → **Secrets and variables** → **Actions** →
-**New repository secret**. The names must match **exactly**:
-
-| Secret | Where to get it | Trap |
+| Secret | Required? | Notes |
 |---|---|---|
-| `SUPABASE_DB_URL` | Supabase → Project Settings → **Database** → Connection string → **URI** | Take the **DIRECT** connection on port **5432**. NOT the pooled one on **6543** — `pg_dump` needs a direct session and fails against the transaction pooler. This is the most likely way for a first attempt to fail. |
-| `SUPABASE_URL` | Supabase → Project Settings → **API** → Project URL | Shape is `https://<ref>.supabase.co`. No trailing slash. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → **API** → `service_role` key | Server-side only. Never ship it to a client, never paste it into a PR. |
+| `SUPABASE_DB_URL`, else `SUPABASE_DIRECT_URL` | **one of the two** | Fallback chain in that order. Must be the **DIRECT** connection, port **5432**; the pooled one on 6543 fails in `pg_dump`. `SUPABASE_DIRECT_URL` is already set, so nothing needs adding for a dump to be taken. |
+| `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` (`BACKUP_S3_REGION` optional, defaults to `auto`) | recommended | Cloudflare R2 free tier. **On its own this is a complete, offsite configuration**; the Supabase Storage secrets are not needed. |
+| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | optional | Adds a Supabase Storage copy. If either is missing the Storage upload and prune are skipped with a log line. |
+| `ALLOW_SAME_PROJECT_BACKUP=true` | optional | Only accepts a Storage-only copy in the SAME project as the database (`OPS-03` still refuses it otherwise). |
 
-### 0a-ii. Those three are necessary and NOT sufficient — read this before dispatching
+### 0b. What a run does in each configuration
 
-**With only the three secrets above, the run goes RED and takes no backup.** That
-is deliberate, and it is not a misconfiguration on your part. Since the `OPS-03`
-change, `planDestinations()` in `scripts/backup/supabase-backup.mjs` refuses to
-run when the only destination is the *same Supabase project* named in
-`SUPABASE_DB_URL` — because a copy inside the account it insures is a second
-copy, not a backup, and one suspension takes both. (Exactly what Render did to
-this product's two services on 2026-08-17.) The failure message says so.
+Every run takes a `pg_dump`, then checks it: at least 64 KiB, a readable
+`pg_restore --list` table of contents (50+ entries), and the five tables a
+Darshya dump must contain. A dump failing any check fails the run and is deleted;
+an empty or unreadable file can no longer produce a green tick.
 
-Pick one before you dispatch:
+- **`BACKUP_S3_*` configured** — uploaded, read back from the store and compared
+  byte for byte. Green, `"offsite":true`.
+- **Nothing configured (today's state)** — the verified dump is kept as a
+  **workflow artifact named `db-dump-<run id>`, retained 7 days**, and the run
+  ends green **with a warning** that no offsite copy exists. `"offsite":false`,
+  `"artifactOnly":true`. This is a last-resort restore point, not insurance: it
+  lives in the same GitHub account as the code and expires in a week.
+- **Only a same-project Supabase store** — refused (exit 5), unchanged.
 
-**Recommended — a real second destination.** Add four more secrets, same place,
-~15 minutes, free: `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`,
-`BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`. Leave
-`BACKUP_S3_REGION` unset — it defaults to `auto`, which is what Cloudflare R2
-wants. Bucket and token steps are in `docs/runbooks/disaster-recovery.md` →
-*What is missing* → item 2. This is the only path that produces `"offsite":true`.
+The artifact is the whole database, personal data included. Only repository
+collaborators can download it; do not re-share it, and delete it from the run page
+once you no longer need it.
 
-**Stopgap — accept the risk knowingly.** Set `ALLOW_SAME_PROJECT_BACKUP` to the
-literal string `true`. The run then succeeds with a loud warning and
-`"offsite":false`. Use this only to get *some* restore point today while the R2
-bucket is being created, and do not let it become the permanent state: a backup
-in the same account is not a backup against the failure that has actually
-happened to this product.
-
-### 0b. Take one backup by hand and read the output
+### 0c. Take one backup by hand and read the output
 
 ```bash
 gh workflow run db-backup.yml
 gh run watch
 ```
 
-Dispatch `main`'s copy; do **not** pass a `--ref` naming the old feature branch.
-The guards (skip check, size and read-back checks, the `restore_drill` input)
-merged to `main` in #249 and were extended on 2026-09-04, so that branch is now an
-*older, weaker* copy of the workflow. Earlier revisions of this page told you to
-use it; they are retired.
+Dispatch `main`'s copy. The run must be **green**, and the `Run daily backup` step
+must print one JSON line containing `"ok":true`, no `"skipped"`, `sizeBytes` in the
+millions and `tocEntries` in the hundreds. Then:
 
-### 0c. Confirm the backup is real
+- artifact-only: the run page lists the `db-dump-<run id>` artifact at a non-zero
+  size matching `sizeBytes`, and the summary shows the "workflow artifact only"
+  warning;
+- `BACKUP_S3_*`: `"offsite":true`, `"verified":true`, and the object is listed in
+  the R2 bucket under `backups/YYYY/MM/DD/` at the size in `sizeBytes`.
 
-The run must be **green**, and the `Run daily backup` step must print a single
-JSON line containing all of:
-
-- `"ok":true`
-- **no** `"skipped"`
-- `sizeBytes` in the **millions**
-- `tocEntries` in the **hundreds**
-- `"offsite":true` — **or** `"offsite":false` plus the same-project warning, if
-  you took the `ALLOW_SAME_PROJECT_BACKUP` stopgap in 0a-ii. `false` is not a
-  pass; it is a restore point that dies with the account.
-
-The job summary repeats `sizeBytes` and `tocEntries` as a table. Then open
-Supabase → **Storage** → bucket `db-backups` → `backups/YYYY/MM/DD/` and confirm
-the object is listed at a **non-zero size matching `sizeBytes`**. A green tick
-with `sizeBytes` 0 is now impossible — but check the object anyway, because it is
-the only evidence that does not come from the thing being tested.
-
-If the run is red with `NO BACKUP WAS TAKEN`, the secrets are still unset. The
-error names which ones are missing.
+If the run is red with `NO BACKUP WAS TAKEN`, no database URL is available to the
+workflow. Any other red run names the failing stage in the summary.
 
 ### 0d. Then prove the restore, which has never been done
 
@@ -98,9 +77,26 @@ gh workflow run db-backup.yml -f restore_drill=true
 gh run watch
 ```
 
-Record the printed numbers in *DR drill history* at the bottom of this file.
-Until that table has a row, RPO 24h / RTO 4h at the top of this page are targets
-and **must not be quoted to a counterparty, an investor, an insurer or a user.**
+**Known limit:** the drill job downloads the newest dump from Supabase Storage
+(`fetch-latest-backup.mjs`). It cannot read a workflow artifact or an R2 bucket, so
+it fails loudly with `missing SUPABASE_URL` in those configurations. Until it gets
+an S3/artifact reader, restore the artifact or R2 object by hand with the steps
+below into a throwaway database and record the row counts.
+
+Record the result in *DR drill history* at the bottom of this file. Until that
+table has a row, RPO 24h / RTO 4h at the top of this page are targets and **must
+not be quoted to a counterparty, an investor, an insurer or a user.**
+
+### 0e. Getting the dump when it is an artifact
+
+```bash
+gh run list --workflow db-backup.yml --limit 3          # pick a green run id
+gh run download <run id> --name db-dump-<run id> --dir /tmp/dr
+ls -lh /tmp/dr/backup.dump                              # MB scale, not bytes
+pg_restore --list /tmp/dr/backup.dump | head            # must list tables
+```
+
+Then continue at "Step 3" below with `/tmp/dr/backup.dump` as the dump.
 
 ---
 
