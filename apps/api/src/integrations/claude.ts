@@ -672,6 +672,103 @@ async function* groqStreamToEvents(res: Response): AsyncIterable<StreamEvent> {
  yield { type: 'message_stop', delta: undefined };
 }
 
+// ─── Provider calls: failover + honest logging ────────────────────────────────
+// A bare `catch {}` upstream used to swallow every provider failure, so a bad
+// key, a retired model or a rate limit all looked like "the AI answers from the
+// canned fallback" with no trace of why. Failures are now logged with provider,
+// model, HTTP status and error code (never the key), a second Groq model is
+// tried when the first is refused for model/limit reasons, and Anthropic takes
+// over when its key is also configured.
+
+export class AiProviderError extends Error {
+ constructor(
+ public provider: 'groq' | 'anthropic',
+ public status: number,
+ public code: string,
+ ) {
+ super(`${provider} error ${status}${code ? `: ${code}` : ''}`);
+ }
+}
+
+const GROQ_MODEL_ORDER = [GROQ_SONNET_MODEL, GROQ_HAIKU_MODEL];
+
+async function groqRequest(body: Record<string, unknown>): Promise<Response> {
+ const requested = String(body.model ?? GROQ_SONNET_MODEL);
+ const order = [requested, ...GROQ_MODEL_ORDER.filter((m) => m !== requested)].slice(0, 2);
+ let status = 0;
+ let code = '';
+ for (const model of order) {
+ let res: Response;
+ try {
+ res = await fetch(`${GROQ_BASE}/chat/completions`, {
+ method: 'POST',
+ headers: {
+ Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+ 'Content-Type': 'application/json',
+ },
+ body: JSON.stringify({ ...body, model }),
+ });
+ } catch (err) {
+ console.error(`[ai] groq network error model=${model}: ${err instanceof Error ? err.name : 'unknown'}`);
+ status = 0;
+ code = 'network';
+ continue;
+ }
+ if (res.ok) return res;
+ status = res.status;
+ code = '';
+ try {
+ const j = (await res.json()) as { error?: { code?: string; type?: string } };
+ code = String(j.error?.code ?? j.error?.type ?? '').slice(0, 60);
+ } catch {
+ /* body was not JSON */
+ }
+ console.error(`[ai] groq refused model=${model} status=${status} code=${code || 'n/a'}`);
+ // A rejected key is not fixed by another model.
+ if (status === 401 || status === 403) break;
+ }
+ throw new AiProviderError('groq', status, code);
+}
+
+/** Anthropic equivalent of a tier name, used when Groq has failed. */
+function anthropicModelFor(model: string): string {
+ return model === GROQ_SONNET_MODEL || model === ANTHROPIC_SONNET_MODEL ? ANTHROPIC_SONNET_MODEL : ANTHROPIC_HAIKU_MODEL;
+}
+
+/** One-token call that says what the AI backend is really doing right now. */
+export async function probeAiProvider(): Promise<{
+ provider: 'groq' | 'anthropic' | 'none';
+ ok: boolean;
+ status?: number;
+ code?: string;
+}> {
+ if (HAS_GROQ) {
+ try {
+ await groqRequest({ model: GROQ_HAIKU_MODEL, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] });
+ return { provider: 'groq', ok: true };
+ } catch (err) {
+ const e = err as Partial<AiProviderError>;
+ if (!HAS_ANTHROPIC) return { provider: 'groq', ok: false, status: e.status ?? 0, code: e.code ?? 'error' };
+ // Groq is down but Anthropic is configured: report the provider that will answer.
+ }
+ }
+ if (HAS_ANTHROPIC) {
+ try {
+ await anthropic.messages.create({
+ model: ANTHROPIC_HAIKU_MODEL,
+ max_tokens: 1,
+ messages: [{ role: 'user', content: 'ping' }],
+ });
+ return { provider: 'anthropic', ok: true };
+ } catch (err) {
+ const status = (err as { status?: number }).status ?? 0;
+ console.error(`[ai] anthropic probe failed status=${status}`);
+ return { provider: 'anthropic', ok: false, status, code: 'error' };
+ }
+ }
+ return { provider: 'none', ok: false };
+}
+
 // ─── Streaming Chat ────────────────────────────────────────────────────────────
 
 export async function streamChat(params: {
@@ -688,13 +785,8 @@ export async function streamChat(params: {
  }
 
  if (HAS_GROQ) {
- const res = await fetch(`${GROQ_BASE}/chat/completions`, {
- method: 'POST',
- headers: {
- Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
- 'Content-Type': 'application/json',
- },
- body: JSON.stringify({
+ try {
+ const res = await groqRequest({
  model,
  max_tokens: maxTokens,
  stream: true,
@@ -702,18 +794,17 @@ export async function streamChat(params: {
  { role: 'system', content: systemPrompt },
  ...messages.map((m) => ({ role: m.role, content: m.content })),
  ],
- }),
  });
- if (!res.ok) {
- const errText = await res.text().catch(() => '');
- throw new Error(`Groq error ${res.status}: ${errText.slice(0, 200)}`);
- }
  return { [Symbol.asyncIterator]: () => groqStreamToEvents(res)[Symbol.asyncIterator]() };
+ } catch (err) {
+ if (!HAS_ANTHROPIC) throw err;
+ console.error('[ai] groq failed, answering with anthropic');
+ }
  }
 
- // Anthropic fallback
+ // Anthropic (primary when no Groq key, failover when Groq is refused)
  const stream = anthropic.messages.stream({
- model,
+ model: HAS_GROQ ? anthropicModelFor(model) : model,
  max_tokens: maxTokens,
  system: systemPrompt,
  messages: messages.map((m) => ({ role: m.role, content: m.content })),
@@ -736,33 +827,27 @@ export async function generateText(params: {
  }
 
  if (HAS_GROQ) {
- const res = await fetch(`${GROQ_BASE}/chat/completions`, {
- method: 'POST',
- headers: {
- Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
- 'Content-Type': 'application/json',
- },
- body: JSON.stringify({
+ try {
+ const res = await groqRequest({
  model,
  max_tokens: maxTokens,
  messages: [
  { role: 'system', content: systemPrompt },
  { role: 'user', content: userMessage },
  ],
- }),
  });
- if (!res.ok) {
- const errText = await res.text().catch(() => '');
- throw new Error(`Groq error ${res.status}: ${errText.slice(0, 200)}`);
- }
  const j = (await res.json()) as {
  choices?: { message?: { content?: string } }[];
  };
  return j.choices?.[0]?.message?.content ?? '';
+ } catch (err) {
+ if (!HAS_ANTHROPIC) throw err;
+ console.error('[ai] groq failed, answering with anthropic');
+ }
  }
 
  const response = await anthropic.messages.create({
- model,
+ model: HAS_GROQ ? anthropicModelFor(model) : model,
  max_tokens: maxTokens,
  system: systemPrompt,
  messages: [{ role: 'user', content: userMessage }],
