@@ -1,0 +1,191 @@
+'use client';
+
+/**
+ * Gaushala donations are collected by Darshya and sent on by hand. This screen
+ * shows what each gaushala is owed and where to send it, and records the transfer
+ * once the admin has made it. It moves no money itself.
+ */
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { useAuth } from '../../../lib/auth-context';
+import { H1 } from '../../../components/ui/heading-recipe';
+import { userFacingMessage } from '../../../lib/friendly-error';
+import {
+  listGaushalaBalances,
+  recordGaushalaDisbursement,
+  type GaushalaBalance,
+} from './disbursement-api';
+
+const inr = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export default function AdminGaushalaDisbursementsPage() {
+  const { session } = useAuth();
+  const token = session?.accessToken;
+
+  const [rows, setRows] = useState<GaushalaBalance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [target, setTarget] = useState<GaushalaBalance | null>(null);
+  const [amount, setAmount] = useState('');
+  const [reference, setReference] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  // State is stale inside the handler's closure; the latch that stops a
+  // double-click recording twice has to be a ref.
+  const inFlight = useRef(false);
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    try {
+      setLoadError(null);
+      setRows(await listGaushalaBalances(token));
+    } catch (err) {
+      setLoadError(userFacingMessage(err, 'Could not load gaushala balances.'));
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  function open(row: GaushalaBalance) {
+    setTarget(row);
+    setAmount(String(row.owedInr));
+    setReference('');
+    setActionError(null);
+    setSuccess(null);
+  }
+
+  async function confirm() {
+    if (!target || inFlight.current) return;
+    const ref = reference.trim();
+    const amt = Number(amount);
+    if (ref.length < 3) {
+      setActionError('Enter the transfer reference (UTR / UPI ref), so this can be matched to the bank statement later.');
+      return;
+    }
+    if (!Number.isFinite(amt) || amt <= 0) {
+      setActionError('Enter the amount you transferred, in rupees.');
+      return;
+    }
+    inFlight.current = true;
+    setSubmitting(true);
+    setActionError(null);
+    try {
+      await recordGaushalaDisbursement(token, { gaushalaUserId: target.gaushalaUserId, amountInr: amt, reference: ref });
+      setSuccess(`${inr(amt)} to ${target.name} recorded (ref ${ref}).`);
+      setTarget(null);
+      await load();
+    } catch (err) {
+      setActionError(userFacingMessage(err, 'Could not record this transfer.'));
+    } finally {
+      inFlight.current = false;
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div>
+      <h1 className={`${H1.portal} mb-1`}>Gaushala disbursements</h1>
+      <p className="text-sm text-surface-500 mb-6">
+        Donations to a gaushala are collected by Darshya. Send the money to the gaushala by bank transfer, then record
+        the transfer here. Recording does not move money by itself.
+      </p>
+
+      {success && (
+        <div role="status" className="mb-4 flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+          <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{success}</span>
+        </div>
+      )}
+      {loadError && (
+        <div role="alert" className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{loadError}</span>
+        </div>
+      )}
+
+      {loading ? (
+        <p className="text-sm text-surface-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+      ) : rows.length === 0 && !loadError ? (
+        <p className="text-sm text-surface-500">No gaushala donations yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((r) => (
+            <div key={r.gaushalaUserId} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-surface-800">{r.name}</p>
+                  <p className="text-xs text-surface-500">
+                    {r.donationsCount} donation{r.donationsCount === 1 ? '' : 's'} · received {inr(r.paidInr)} · sent {inr(r.disbursedInr)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-surface-500">Owed</p>
+                  <p className="text-lg font-semibold text-surface-800">{inr(r.owedInr)}</p>
+                </div>
+              </div>
+              <div className="mt-3 text-sm">
+                {r.payTo ? (
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                    {r.payTo.holderName && (<><dt className="text-surface-500">Account holder</dt><dd className="text-surface-800">{r.payTo.holderName}</dd></>)}
+                    <dt className="text-surface-500">Account number</dt><dd className="font-mono text-surface-800">{r.payTo.accountNumber}</dd>
+                    <dt className="text-surface-500">IFSC</dt><dd className="font-mono text-surface-800">{r.payTo.ifsc}</dd>
+                  </dl>
+                ) : (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    No bank details on file for this gaushala. Ask them to add them in their KYC before you send money.
+                  </p>
+                )}
+              </div>
+              {r.owedInr > 0 && (
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => open(r)}
+                    className="px-3 py-1.5 text-sm font-medium rounded-md bg-green-600 text-white hover:bg-green-700"
+                  >
+                    Record transfer
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {target && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="disb-title" className="w-full max-w-md rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-5 shadow-xl">
+            <h2 id="disb-title" className="text-base font-semibold text-surface-800">Record transfer to {target.name}</h2>
+            <p className="text-sm text-surface-500 mt-1">Owed {inr(target.owedInr)}. Record a transfer you have already made.</p>
+            <label htmlFor="disb-amount" className="mt-4 block text-sm font-medium text-surface-700">Amount transferred (₹)</label>
+            <input id="disb-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)}
+              className="mt-1 w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-sm" />
+            <label htmlFor="disb-ref" className="mt-3 block text-sm font-medium text-surface-700">Transfer reference (UTR / UPI ref)</label>
+            <input id="disb-ref" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="e.g. 418923456789"
+              className="mt-1 w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-sm" />
+            {actionError && (
+              <div role="alert" className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{actionError}</span>
+              </div>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setTarget(null)} disabled={submitting}
+                className="px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-surface-600 disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={confirm} disabled={submitting}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-white text-sm font-medium rounded-md bg-green-600 hover:bg-green-700 disabled:opacity-60">
+                {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                Confirm transfer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

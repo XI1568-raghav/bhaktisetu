@@ -47,6 +47,7 @@ const sidebarLinks = [
   // same defect as a screen that 404s.
   { href: '/admin/payouts', label: 'Payouts', icon: Banknote },
   { href: '/admin/refunds', label: 'Refunds', icon: RotateCcw },
+  { href: '/admin/gaushala-disbursements', label: 'Gaushala funds', icon: Banknote },
   { href: '/admin/kyc', label: 'Provider KYC', icon: BadgeCheck },
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: Sparkles },
   { href: '/admin/revenue', label: 'Revenue', icon: IndianRupee },
