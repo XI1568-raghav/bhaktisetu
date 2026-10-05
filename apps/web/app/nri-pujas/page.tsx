@@ -149,7 +149,7 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Can prasad be sent to an address abroad?',
-    a: 'Prasad delivery is an optional flat ₹150 add-on to a puja booking, the same for every address, shown on the booking screen before you pay. We do not promise delivery to any particular country or by any date, so if you want prasad sent outside India, write to us first. Customs duties and import rules at the destination are the recipient\'s responsibility. Store orders are delivered within India only.',
+    a: 'No. Prasad is delivered within India only, so the booking screen takes an Indian address (with a 6-digit pincode) when you choose prasad delivery. You can still book any puja from anywhere in the world without prasad; the ceremony and its video proof do not depend on a delivery address. Store orders are also delivered within India only.',
   },
 ];
 

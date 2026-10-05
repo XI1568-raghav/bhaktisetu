@@ -18,6 +18,7 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { UserFacingError, classifyUserFacing, serverErrorText } from '../../../lib/friendly-error';
 import ReauthPrompt from '../../../components/ReauthPrompt';
+import { balanceSplitCards, type BalanceSplit } from '../../../lib/payout-balance-labels';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -86,6 +87,9 @@ export default function PriestPayoutsPage() {
  const { session } = useAuth();
  const [payouts, setPayouts] = useState<PayoutItem[]>([]);
  const [summary, setSummary] = useState<PayoutSummary | null>(null);
+ // GET /payouts/balance: available / upcoming / requested. Optional: when it
+ // cannot be read the cards fall back to the old single "Pending Payout" label.
+ const [balance, setBalance] = useState<BalanceSplit | null>(null);
  const [loading, setLoading] = useState(true);
  const [filter, setFilter] = useState<PayoutStatusFilter>('all');
  // PF-18: server-side paging. Matches the pager already on /priest/bookings.
@@ -158,6 +162,18 @@ export default function PriestPayoutsPage() {
  void fetchPayouts();
  }, [fetchPayouts]);
 
+ useEffect(() => {
+ if (!session?.accessToken) return;
+ let cancelled = false;
+ fetch(`${API_BASE_URL}/payouts/balance`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ })
+ .then((r) => (r.ok ? r.json() : null))
+ .then((d) => { if (!cancelled) setBalance(d && typeof d === 'object' ? d : null); })
+ .catch(() => { if (!cancelled) setBalance(null); });
+ return () => { cancelled = true; };
+ }, [session?.accessToken]);
+
  // PF-18: the server already applied the status filter, so the page IS the
  // filtered set. Re-filtering here would drop rows the server deliberately
  // returned and reintroduce the "chip matches nothing on this page" bug.
@@ -181,6 +197,18 @@ export default function PriestPayoutsPage() {
  color: 'text-tulsi-green',
  bg: 'bg-tulsi-green-light/20',
  },
+ // One mixed number is gone: Ready to withdraw / Upcoming / Requested come
+ // from GET /payouts/balance. The old label is only the fallback when the
+ // server did not send those fields.
+ ...(balanceSplitCards(balance).length > 0
+ ? balanceSplitCards(balance).map((c) => ({
+ label: c.label,
+ value: formatCurrency(c.amount),
+ icon: Clock,
+ color: 'text-amber-600',
+ bg: 'bg-amber-50',
+ }))
+ : [
  {
  label: 'Pending Payout',
  value: formatCurrency(summary?.pending ?? 0),
@@ -188,6 +216,7 @@ export default function PriestPayoutsPage() {
  color: 'text-amber-600',
  bg: 'bg-amber-50',
  },
+ ]),
  {
  label: 'Last Payout',
  value: summary?.lastPayout ? formatCurrency(summary.lastPayout.amount) : 'N/A',

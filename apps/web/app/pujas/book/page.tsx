@@ -77,16 +77,15 @@ import {
  saveBookingDraft,
  type BookingDraft,
 } from '../../../lib/booking-draft';
-// CM-06: prasad delivery used to be India-only (6-digit pincode + [6-9]\d{9}
-// phone, no country field anywhere on this page), so an NRI — the cohort the
-// whole pricing doctrine is built on — could not finish checkout. The rules
-// now live in @poojly/shared and the API's Zod schema parses with the SAME
-// module, so the form and the wire contract cannot drift apart.
+// Prasad is delivered within India only (owner decision 2026-10-06): the
+// address country is fixed to India and the API rejects anything else. An NRI
+// can still book the puja itself; they simply do not choose prasad delivery.
 // Billing is unchanged: INR via Razorpay for every country.
 import {
- DELIVERY_COUNTRY_OPTIONS,
+ PRASAD_INDIA_ONLY_LINE,
  deliveryFieldHints,
  emptyDeliveryAddress,
+ prasadAddressForApi,
  validateDeliveryAddress,
 } from '../../../lib/delivery-address';
 import { buttonClass } from '../../../components/ui/button-recipe';
@@ -530,11 +529,9 @@ function PujaBookingInner() {
 
  // Step 3
  const [wantsPrasad, setWantsPrasad] = useState(false);
- // Defaults to India (CM-06) — the country only widens what validates.
+ // Prasad is delivered within India only: the country is fixed to India.
  const [address, setAddress] = useState(emptyDeliveryAddress);
- // Labels/placeholders follow the selected country: "Pincode / 110001" for
- // India, "ZIP code / 07030" for the US, and no postcode at all for the UAE.
- const addrHints = deliveryFieldHints(address.country);
+ const addrHints = deliveryFieldHints();
  const [agreedTerms, setAgreedTerms] = useState(false);
 
  // Step 4 / Success
@@ -788,7 +785,7 @@ function PujaBookingInner() {
  setSankalp(d.sankalp);
  setSpecialInstructions(d.specialInstructions);
  setWantsPrasad(d.wantsPrasad);
- setAddress(d.address);
+ setAddress(prasadAddressForApi(d.address));
  setAgreedTerms(d.agreedTerms);
  setCurrentStep(d.currentStep);
  }, [slug, idBase]);
@@ -943,7 +940,7 @@ function PujaBookingInner() {
  sankalp: sankalp || undefined,
  specialInstructions: specialInstructions || undefined,
  prasadDelivery: wantsPrasad,
- deliveryAddress: wantsPrasad ? address : undefined,
+ deliveryAddress: wantsPrasad ? prasadAddressForApi(address) : undefined,
  nriPricing: isNriPricing,
  }),
  }).catch(() => null);
@@ -1733,7 +1730,7 @@ function PujaBookingInner() {
  <p className="mt-3 text-xs leading-relaxed text-surface-500">
  Prasad delivered to your home is optional and adds ₹
  {formatInr(PRASAD_DELIVERY_FEE_INR)} — {isNriPricing ? usdPriceLine(totalWithPrasad) : `₹${formatInr(totalWithPrasad)}`} in total.
- You choose at Review &amp; Prasad. Nothing else is added at checkout.
+ {PRASAD_INDIA_ONLY_LINE} You choose at Review &amp; Prasad. Nothing else is added at checkout.
  </p>
  </div>
  )}
@@ -2220,6 +2217,7 @@ function PujaBookingInner() {
  <div className="h-6 w-11 rounded-full bg-surface-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-all after:content-[''] peer-checked:bg-saffron-600 peer-checked:after:translate-x-full peer-focus:ring-2 peer-focus:ring-saffron-200" />
  </label>
  </div>
+ <p className="-mt-2 mb-4 text-xs text-surface-500">{PRASAD_INDIA_ONLY_LINE}</p>
 
  {wantsPrasad ? (
  <div>
@@ -2231,36 +2229,10 @@ function PujaBookingInner() {
  </p>
 
  <div className="grid gap-3 sm:grid-cols-2">
- {/* CM-06: country first — it decides what a valid postcode, state
- and phone number look like for every field below. */}
  <div className="sm:col-span-2">
- <label
- htmlFor="addr-country"
- className="mb-1 block text-xs font-medium text-surface-600"
- >
- Country <span className="text-red-400">*</span>
- </label>
- <select
- id="addr-country"
- value={address.country}
- onChange={(e) => setAddress({ ...address, country: e.target.value })}
- className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
- errors.addr_country ? 'border-red-300 bg-red-50' : 'border-surface-200'
- }`}
- >
- {DELIVERY_COUNTRY_OPTIONS.map((c) => (
- <option key={c.code} value={c.code}>
- {c.name}
- </option>
- ))}
- </select>
- {errors.addr_country ? (
- <p className="mt-1 text-xs text-red-500">{errors.addr_country}</p>
- ) : (
- <p className="mt-1 text-xs text-surface-400">
- Payment is always taken in INR — your bank applies its own conversion rate. We do not promise prasad delivery to every country; for an address outside India, write to support first.
- </p>
- )}
+ <p className="text-xs font-medium text-surface-600">Country</p>
+ <p className="mt-1 text-sm text-surface-800">India</p>
+ <p className="mt-1 text-xs text-surface-500">{PRASAD_INDIA_ONLY_LINE}</p>
  </div>
  <div>
  <label className="mb-1 block text-xs font-medium text-surface-600">
@@ -2370,9 +2342,8 @@ function PujaBookingInner() {
  value={address.pincode}
  onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
  placeholder={addrHints.postalPlaceholder}
- // CM-06: was maxLength={6}, which physically truncated a
- // "07030-1234" ZIP+4 before validation ever saw it.
- maxLength={16}
+ maxLength={6}
+ inputMode="numeric"
  className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
  errors.addr_pincode ? 'border-red-300 bg-red-50' : 'border-surface-200'
  }`}

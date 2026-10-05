@@ -84,7 +84,7 @@ describe('provider balance and astrologer earnings carry upcomingInr', () => {
 
 describe('copy', () => {
   it('names upcoming honestly and only shows it when there is something upcoming', () => {
-    expect(UPCOMING_LABEL).toBe('Upcoming');
+    expect(UPCOMING_LABEL).toBe('Upcoming (after the puja/session)');
     expect(UPCOMING_HINT).toMatch(/session is held or the puja is performed and proved/i);
     expect(upcomingShown(null)).toBe(false);
     expect(upcomingShown(0)).toBe(false);

@@ -1,5 +1,6 @@
 'use client';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
+import { READY_TO_WITHDRAW_LABEL, REQUESTED_LABEL, UPCOMING_LABEL } from '../../lib/payout-balance-labels';
 import EarningsCard from '../../components/provider/EarningsCard';
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 
@@ -68,6 +69,9 @@ type ApiWellnessDashboard = {
   // a blank rather than invent a 0. See the EarningsCard block below.
   paidOutInr?: number | null;
   pendingPayoutInr?: number | null;
+  // The two halves of pendingPayoutInr (same definitions as GET /payouts/balance).
+  readyInr?: number | null;
+  requestedInr?: number | null;
   // Earned from sessions not yet held: not withdrawable until they run.
   upcomingInr?: number | null;
   instructorShare?: number;
@@ -188,12 +192,18 @@ export default function WellnessDashboard() {
  */}
  <EarningsCard
  totalPaid={unread ? null : liveStats?.paidOutInr ?? null}
- pending={unread ? null : liveStats?.pendingPayoutInr ?? null}
+ pending={unread ? null : typeof liveStats?.readyInr === 'number' ? liveStats.readyInr : liveStats?.pendingPayoutInr ?? null}
+ pendingLabel={typeof liveStats?.readyInr === 'number' ? READY_TO_WITHDRAW_LABEL : undefined}
  thisMonth={unread ? null : liveStats?.monthEarningsInr ?? 0}
  />
+ {!unread && typeof liveStats?.readyInr === 'number' && (liveStats?.requestedInr ?? 0) > 0 && (
+ <p data-testid="requested-earnings" className="text-xs text-surface-500 -mt-2">
+ {REQUESTED_LABEL}: {formatCurrency(liveStats!.requestedInr!)}
+ </p>
+ )}
  {!unread && (liveStats?.upcomingInr ?? 0) > 0 && (
  <p data-testid="upcoming-earnings" className="text-xs text-surface-500 -mt-2">
- {formatCurrency(liveStats!.upcomingInr!)} earned from upcoming sessions — it becomes
+ {UPCOMING_LABEL}: {formatCurrency(liveStats!.upcomingInr!)} — earned from upcoming sessions, it becomes
  withdrawable after the session has been held.
  </p>
  )}

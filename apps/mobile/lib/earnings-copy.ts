@@ -6,7 +6,7 @@
  * it as `upcomingInr` apart from what can be acted on. Screens show it on its
  * own card rather than inside one mixed "Pending" figure.
  */
-export const UPCOMING_LABEL = 'Upcoming';
+export const UPCOMING_LABEL = 'Upcoming (after the puja/session)';
 
 export const UPCOMING_HINT =
   'Earned. Becomes payable once the session is held or the puja is performed and proved.';

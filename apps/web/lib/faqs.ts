@@ -70,7 +70,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'Will I receive prasad at my home address?',
-        a: 'Prasad delivery is an optional flat ₹150 add-on that you switch on while booking, with the address you enter there. It is not included in the puja price, and we do not promise a delivery date, courier or destination country. Your booking page shows a tracking ID once one is recorded.',
+        a: 'Prasad delivery is an optional flat ₹150 add-on that you switch on while booking, with the address you enter there. It is not included in the puja price, and it is delivered within India only, and we do not promise a delivery date or courier. Your booking page shows a tracking ID once one is recorded.',
       },
       {
         // TC-08 — the previous answer published a four-step vetting process
