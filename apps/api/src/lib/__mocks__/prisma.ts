@@ -276,6 +276,11 @@ export const prismaMock = {
     aggregate: vi.fn(),
   },
   // RV-02: the temple's 5% share is reversed alongside the provider commission.
+  donation: {
+    findMany: vi.fn(),
+    findFirst: vi.fn(),
+    count: vi.fn(),
+  },
   templePayout: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
