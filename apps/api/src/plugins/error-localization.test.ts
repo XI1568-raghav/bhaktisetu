@@ -347,7 +347,7 @@ describe('I18N-07 — the stored preferredLanguage actually selects the language
   it('reads the profile once per user, not once per error', async () => {
     const { app, load } = await buildAuthedApp('ta');
     for (let i = 0; i < 3; i += 1) {
-      await app.inject({ method: 'GET', url: '/api/v1/boom' });
+      await app.inject({ method: 'GET', url: '/api/v1/boom', headers: { 'accept-language': 'en' } });
     }
     await app.close();
 
