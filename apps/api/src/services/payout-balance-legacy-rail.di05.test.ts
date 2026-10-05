@@ -7,6 +7,7 @@ const { prismaMock } = vi.hoisted(() => ({
     priest: { findUnique: vi.fn() },
     priestPayout: { findMany: vi.fn() },
     wellnessEnrollment: { findMany: vi.fn() },
+    pujaBooking: { findMany: vi.fn() },
   },
 }));
 
@@ -56,6 +57,7 @@ beforeEach(() => {
   prismaMock.priest.findUnique.mockResolvedValue(null);
   prismaMock.priestPayout.findMany.mockResolvedValue([]);
   prismaMock.wellnessEnrollment.findMany.mockResolvedValue([]);
+  prismaMock.pujaBooking.findMany.mockResolvedValue([]);
 });
 
 describe('DI-05 — getPayoutBalance reports the legacy pandit rail', () => {
