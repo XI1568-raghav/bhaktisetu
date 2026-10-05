@@ -14,13 +14,17 @@ import { prisma } from '../lib/prisma.js';
  * admin what is owed and where to send it, take the transfer's reference, and
  * never let more be recorded than is owed. It moves no money.
  *
- * A puja share is payable only once the puja has been performed. The row is
+ * A puja share is payable only once the puja has been performed and proved. The row is
  * minted when the booking is CONFIRMED; paying it then would hand a temple 5% of
  * a booking that is still free to be cancelled and refunded.
  */
 
-/** Booking states in which the puja has been performed. */
-const PERFORMED = `('completed','video_uploaded','delivered')`;
+/**
+ * Booking states in which the puja has been performed AND proved. Video proof
+ * is mandatory, so `completed` alone does not release the share (the pandit's
+ * earning is held on the same statuses).
+ */
+const PERFORMED = `('video_uploaded','delivered')`;
 
 let tableReady: Promise<void> | null = null;
 

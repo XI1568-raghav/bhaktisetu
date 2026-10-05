@@ -382,26 +382,55 @@ export async function templePortalRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
     const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.send({ payouts: [], total: 0, pendingInr: 0, paidInr: 0 });
+    if (!templeId) return reply.send({ payouts: [], total: 0, payableInr: 0, upcomingInr: 0, pendingInr: 0, paidInr: 0 });
     const rows = await prisma.templePayout.findMany({
       where: { templeId },
       orderBy: { createdAt: 'desc' },
       take: 200,
     });
-    const pending = rows.filter((r) => r.status === 'pending').reduce((s, r) => s + Number(r.amount), 0);
-    const paid = rows.filter((r) => r.status === 'completed').reduce((s, r) => s + Number(r.amount), 0);
+    // The share is written when the booking is confirmed but is only payable
+    // once the puja is performed AND proved (video_uploaded / delivered), the
+    // same hold the pandit's earning has. Until then it is 'upcoming'.
+    const bookingIds = [...new Set(rows.map((r) => r.bookingId).filter((v): v is string => !!v))];
+    const bookings = bookingIds.length
+      ? await prisma.pujaBooking.findMany({
+          where: { id: { in: bookingIds } },
+          select: { id: true, status: true },
+          take: 200,
+        })
+      : [];
+    const proved = new Set(
+      bookings.filter((b) => b.status === 'video_uploaded' || b.status === 'delivered').map((b) => b.id),
+    );
+    const releaseOf = (r: { status: string; bookingId: string | null }) =>
+      r.status === 'completed'
+        ? 'paid'
+        : r.status === 'pending'
+          ? r.bookingId && proved.has(r.bookingId)
+            ? 'payable'
+            : 'upcoming'
+          : r.status;
+    const sumWhere = (kind: string) =>
+      rows.filter((r) => releaseOf(r) === kind).reduce((s, r) => s + Number(r.amount), 0);
+    const payable = sumWhere('payable');
+    const upcoming = sumWhere('upcoming');
+    const paid = sumWhere('paid');
     return reply.send({
       payouts: rows.map((r) => ({
         id: r.id,
         bookingId: r.bookingId,
         amount: r.amount.toString(),
         status: r.status,
+        releaseStatus: releaseOf(r),
         reference: r.reference,
         processedAt: r.processedAt,
         createdAt: r.createdAt,
       })),
       total: rows.length,
-      pendingInr: Math.round(pending * 100) / 100,
+      payableInr: Math.round(payable * 100) / 100,
+      upcomingInr: Math.round(upcoming * 100) / 100,
+      // Everything not yet sent (payable + upcoming), kept for older clients.
+      pendingInr: Math.round((payable + upcoming) * 100) / 100,
       paidInr: Math.round(paid * 100) / 100,
     });
   });
