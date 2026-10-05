@@ -476,7 +476,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       // confirmed (the Razorpay-verify path wrote it; COD/manual leaked).
       // Fire-and-forget + idempotent — never blocks the status flip.
       if (body.data.status === 'CONFIRMED') {
-        void writeStoreOrderCommission(order.id).catch((err) =>
+        void writeStoreOrderCommission(order.id, undefined, { requirePayment: true }).catch((err) =>
           request.log.warn({ err }, '[store-orders] commission write failed'),
         );
       }
