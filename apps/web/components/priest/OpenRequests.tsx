@@ -29,6 +29,7 @@ interface OpenRequestRow {
   scheduledDate: string | null;
   scheduledTimeSlot: string | null;
   devoteeCount: number;
+  priestEarningInr: number;
   pujaName: string;
   templeName: string;
   city: string;
@@ -39,6 +40,12 @@ function formatDate(value: string | null): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return 'Date to be confirmed';
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+// What the pandit is paid, as the server computed it; nothing is printed for a missing figure.
+function formatEarning(value: number | null | undefined): string | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
 export default function OpenRequests() {
@@ -193,6 +200,9 @@ export default function OpenRequests() {
                   {r.devoteeCount} {r.devoteeCount === 1 ? 'devotee' : 'devotees'}
                   {r.bookingNumber ? ` · ${r.bookingNumber}` : ''}
                 </p>
+                {formatEarning(r.priestEarningInr) && (
+                  <p className="text-sm font-medium text-tulsi-green">You earn {formatEarning(r.priestEarningInr)}</p>
+                )}
               </div>
               <button
                 type="button"

@@ -22,7 +22,7 @@ const json = (status: number, body: unknown) =>
 
 const request = {
   id: 'bk-1', bookingNumber: 'BS-20261008-AAAAA', scheduledDate: '2026-10-08T00:00:00.000Z', scheduledTimeSlot: '07:00',
-  devoteeCount: 2, pujaName: 'Hanuman Chalisa Path', templeName: 'Kashi Vishwanath Temple', city: 'Varanasi',
+  devoteeCount: 2, priestEarningInr: 2400, pujaName: 'Hanuman Chalisa Path', templeName: 'Kashi Vishwanath Temple', city: 'Varanasi',
 };
 
 function route(map: Record<string, () => Response>) {
@@ -51,6 +51,7 @@ describe('<OpenRequests />', () => {
     expect(screen.getByText(/2 devotees/)).toBeInTheDocument();
     expect(screen.getByText(/07:00/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /accept/i })).toBeInTheDocument();
+    expect(screen.getByText(/You earn ₹2,400/)).toBeInTheDocument();
   });
 
   it('tells a pandit who is not approved why the list is empty, instead of a bare empty state', async () => {

@@ -113,12 +113,28 @@ describe('PriestService.startPuja', () => {
       id: 'bk-1',
       status: 'priest_assigned',
       priestId: 'priest-1',
+      scheduledDate: new Date('2020-01-01'),
+      scheduledTimeSlot: '10:00',
     });
     updateBookingStatusMock.mockResolvedValue({ id: 'bk-1', status: 'in_progress' });
 
     await service.startPuja('bk-1', 'priest-1');
 
     expect(updateBookingStatusMock).toHaveBeenCalledWith('bk-1', 'in_progress');
+  });
+
+  it('refuses to start days before the scheduled date, with a 409 naming when it unlocks', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'bk-1',
+      status: 'priest_assigned',
+      priestId: 'priest-1',
+      scheduledDate: new Date('2999-01-01'),
+      scheduledTimeSlot: '18:00',
+    });
+    const err = await service.startPuja('bk-1', 'priest-1').catch((e) => e);
+    expect(err.statusCode).toBe(409);
+    expect(err.message).toMatch(/can start this puja from 4:00 PM IST on 1 Jan 2999/);
+    expect(updateBookingStatusMock).not.toHaveBeenCalled();
   });
 });
 
@@ -130,6 +146,18 @@ describe('PriestService.completePuja', () => {
       priestId: 'priest-other',
     });
     await expect(service.completePuja('bk-1', 'priest-1')).rejects.toThrow(/not assigned/);
+  });
+
+  it('refuses to complete a puja that was never started, with a 409', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'bk-1',
+      status: 'priest_assigned',
+      priestId: 'priest-1',
+    });
+    const err = await service.completePuja('bk-1', 'priest-1').catch((e) => e);
+    expect(err.statusCode).toBe(409);
+    expect(err.message).toMatch(/start the puja before marking it complete/i);
+    expect(updateBookingStatusMock).not.toHaveBeenCalled();
   });
 
   it('delegates to BookingService.updateBookingStatus(completed)', async () => {
