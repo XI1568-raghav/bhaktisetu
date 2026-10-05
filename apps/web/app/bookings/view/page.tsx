@@ -42,6 +42,7 @@ import BookingStatusTracker, { type BookingStatus } from '../../../components/Bo
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { formatInrExact } from '../../../lib/format-money';
+import { withIst } from '../../../lib/slot-zone';
 import {
  CANCELLATION_CUTOFF_HOURS,
  PARTIAL_REFUND_PERCENT,
@@ -235,12 +236,12 @@ function formatDate(dateStr: string): string {
 // labelled slot into "12:NaN AM"; an unparseable slot now shows verbatim.
 function formatTime(time: string): string {
  const m24 = /^\s*([01]?\d|2[0-3]):([0-5]\d)/.exec(time);
- if (!m24) return time.trim();
+ if (!m24) return withIst(time.trim());
  const h = Number(m24[1]);
  const m = Number(m24[2]);
  const ampm = h >= 12 ? 'PM' : 'AM';
  const h12 = h % 12 || 12;
- return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+ return `${h12}:${String(m).padStart(2, '0')} ${ampm} IST`;
 }
 
 function getStatusBadge(status: BookingDetail['status']) {

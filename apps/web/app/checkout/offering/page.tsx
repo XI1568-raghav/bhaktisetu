@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState, useEffect, useCallback } from 'react';
+import { IST_TIME_NOTE, withIst } from '../../../lib/slot-zone';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -542,10 +543,11 @@ function OfferingCheckoutInner() {
             >
               {DEFAULT_SLOTS.map((s) => (
                 <option key={s.value} value={s.value}>
-                  {s.label}
+                  {withIst(s.label)}
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-surface-500">{IST_TIME_NOTE}</p>
           </div>
 
           <div>
