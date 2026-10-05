@@ -461,7 +461,7 @@ describe('PAR-15 — the assumption about NRI pricing is still true', () => {
               ? [path.join(dir, e.name)]
               : [],
       );
-    const offenders = [...walk(path.join(MOBILE, 'lib')), ...walk(path.join(MOBILE, 'app'))].filter((f) =>
+    const offenders = [...walk(MOBILE), ...walk(path.resolve(MOBILE, '../app'))].filter((f) =>
       /nriPricing/.test(readFileSync(f, 'utf8')),
     );
     expect(offenders).toEqual([]);
