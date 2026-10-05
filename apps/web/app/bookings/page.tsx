@@ -35,6 +35,7 @@ import { videoProofState } from './video-proof';
 import AuthGuard from '../../components/AuthGuard';
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
+import { withIst } from '../../lib/slot-zone';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -148,12 +149,12 @@ function formatDate(dateStr: string): string {
 // labelled slot into "12:NaN AM"; an unparseable slot now shows verbatim.
 function formatTime(time: string): string {
  const m24 = /^\s*([01]?\d|2[0-3]):([0-5]\d)/.exec(time);
- if (!m24) return time.trim();
+ if (!m24) return withIst(time.trim());
  const h = Number(m24[1]);
  const m = Number(m24[2]);
  const ampm = h >= 12 ? 'PM' : 'AM';
  const h12 = h % 12 || 12;
- return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+ return `${h12}:${String(m).padStart(2, '0')} ${ampm} IST`;
 }
 
 // Which tab a booking belongs to is decided by the API now (DB-01) — this
