@@ -112,6 +112,11 @@ export interface StoreAdminDashboardResponse {
     todaySales?: number;
     todayOrders?: number;
     monthSales?: number;
+    // Additive split of today/month sales (older API versions omit these).
+    todayOnlineSales?: number;
+    todayCodSales?: number;
+    monthOnlineSales?: number;
+    monthCodSales?: number;
     lowStock?: number;
     pendingShipments?: number;
   };
@@ -164,6 +169,10 @@ export interface StoreAdminRevenueResponse {
     monthInr?: number;
     yearInr?: number;
   };
+  // Additive split of `totals`: online-paid sales earn a commission row and are
+  // payable by the platform; cash-on-delivery sales are collected by the owner.
+  onlinePaid?: { todayInr?: number; monthInr?: number; yearInr?: number };
+  cashOnDelivery?: { todayInr?: number; monthInr?: number; yearInr?: number };
 }
 
 export function useStoreAdminRevenue() {

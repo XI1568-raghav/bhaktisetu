@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser, requireAnyRole } from '../middlewares/auth.js';
 import { providerService } from '../services/provider.service.js';
+import { CauseQualityError, describeQualityEditFailure } from '../lib/cause-quality.js';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
 
@@ -267,7 +268,20 @@ export async function providerRoutes(server: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid profile update', message: 'No updatable fields supplied.' });
       }
 
-      const result = await providerService.updateProvider(canonicalType, id, userId, body);
+      let result;
+      try {
+        result = await providerService.updateProvider(canonicalType, id, userId, body);
+      } catch (err) {
+        if (err instanceof CauseQualityError) {
+          return reply.code(400).send({
+            code: 'cause_quality_failed',
+            error: 'Profile edit rejected',
+            message: describeQualityEditFailure(err.reasons),
+            reasons: err.reasons,
+          });
+        }
+        throw err;
+      }
 
       if (!result) {
         return reply.code(404).send({ error: 'Provider not found or you do not own this profile' });

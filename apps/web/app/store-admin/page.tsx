@@ -44,7 +44,7 @@ interface StoreOrderApi {
 }
 
 interface DashboardData {
- revenue: { total: number; thisMonth: number; pending: number };
+ revenue: { total: number; thisMonth: number; pending: number; onlineYear?: number; codYear?: number };
  products: { total: number; active: number; outOfStock: number };
  orders: {
    total: number;
@@ -196,6 +196,8 @@ export default function StoreAdminDashboard() {
                total: Number(j.totals.yearInr) || 0,
                thisMonth: Number(j.totals.monthInr) || 0,
                pending: 0,
+               onlineYear: j.onlinePaid ? Number(j.onlinePaid.yearInr) || 0 : undefined,
+               codYear: j.cashOnDelivery ? Number(j.cashOnDelivery.yearInr) || 0 : undefined,
              };
            }
            if (Array.isArray(j?.topProducts)) {
@@ -320,7 +322,11 @@ export default function StoreAdminDashboard() {
 
  const revenueCards = [
    {
-     label: 'Total Revenue',
+     label: 'Total Sales (this year)',
+     sub:
+       data.revenue.onlineYear !== undefined && data.revenue.codYear !== undefined
+         ? `Online-paid ${formatCurrency(data.revenue.onlineYear)} · Cash on delivery (collected by you) ${formatCurrency(data.revenue.codYear)}`
+         : undefined,
      value: formatCurrency(data.revenue.total),
      icon: IndianRupee,
      color: 'text-emerald-600',
@@ -385,6 +391,7 @@ export default function StoreAdminDashboard() {
                <span className="text-sm text-surface-500">{card.label}</span>
              </div>
              <p className="text-lg font-semibold text-surface-800">{card.value}</p>
+             {'sub' in card && card.sub && <p className="text-xs text-surface-500 mt-1">{card.sub}</p>}
            </div>
          );
        })}

@@ -24,7 +24,7 @@ export default function StoreRevenue() {
   return (
     <PortalScreen
       title="Revenue"
-      subtitle="Lifetime aggregates"
+      subtitle="Online and cash-on-delivery sales combined"
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
@@ -36,6 +36,25 @@ export default function StoreRevenue() {
       <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
         <StatCard label="This Year" value={inr(totals.yearInr)} accent={colors.saffron[600]} />
       </View>
+
+      {revenueQuery.data?.onlinePaid && revenueQuery.data?.cashOnDelivery ? (
+        <Section title="Where the money is">
+          <View style={{ flexDirection: 'row' }}>
+            <StatCard
+              label="Online-paid sales"
+              value={inr(revenueQuery.data.onlinePaid.yearInr)}
+              hint="this year, paid out by Darshya"
+              accent={colors.green[600]}
+            />
+            <View style={{ width: spacing.sm }} />
+            <StatCard
+              label="Cash-on-delivery sales (collected by you)"
+              value={inr(revenueQuery.data.cashOnDelivery.yearInr)}
+              hint="this year, not in payouts"
+            />
+          </View>
+        </Section>
+      ) : null}
 
       <Section title="Top Products">
         {revenueQuery.isLoading ? (
