@@ -87,7 +87,7 @@ describe('[PERF-03] no bytes are spent on the dead Fontshare stylesheet', () => 
 });
 
 describe('[PERF-03] the fonts the site downloads are the fonts the site renders', () => {
-  // next/font/google exposes each family as a CSS variable. If --font-body and
+  // next/font/local exposes each family as a CSS variable. If --font-body and
   // --font-display never name one of those variables, the 201.9 KB of woff2 the
   // <html> className pulls in paints nothing and the page falls back to Arial.
   const declaredFontVars = Array.from(layoutSrc.matchAll(/variable:\s*["'](--[\w-]+)["']/g)).map(
@@ -120,7 +120,7 @@ describe('[PERF-03] the fonts the site downloads are the fonts the site renders'
   it('keeps the brand faces first in the stack so self-hosting them takes over automatically', () => {
     // The fix must not quietly become "the brand is Noto Sans now". Satoshi /
     // Cabinet Grotesk stay ahead of the fallback, so dropping the licensed
-    // woff2 into public/fonts via next/font/local is the only change needed.
+    // woff2 into public/fonts via @font-face is the only change needed.
     expect(stackFor('--font-body')).toMatch(/^\s*'Satoshi'/);
     expect(stackFor('--font-display')).toMatch(/^\s*'Cabinet Grotesk'/);
   });

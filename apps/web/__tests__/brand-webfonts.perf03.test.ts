@@ -466,10 +466,10 @@ describe('[PERF-03] the fallback behind Satoshi is load-bearing, and measured', 
   });
 
   it('Noto Sans stays preloaded, because it draws every ₹ on the site', () => {
-    // Match the Noto_Sans({...}) call only — `Noto_Sans(` cannot match
-    // `Noto_Sans_Devanagari(`, which is preload:false on purpose.
-    const call = /\bNoto_Sans\(\{([\s\S]*?)\n\}\)/.exec(layoutSrc);
-    expect(call, 'the Noto_Sans() loader call moved or was renamed').toBeTruthy();
+    // Match the `const notoSans = localFont({...})` call only — the `\s*=`
+    // anchor cannot match `notoSansDevanagari`, which is preload:false on purpose.
+    const call = /\bconst notoSans\s*=\s*localFont\(\{([\s\S]*?)\n\}\)/.exec(layoutSrc);
+    expect(call, 'the notoSans localFont() loader call moved or was renamed').toBeTruthy();
     expect(
       /preload\s*:\s*false/.test(call![1]),
       'Demoting Noto Sans to on-demand looks free now that Satoshi leads the ' +

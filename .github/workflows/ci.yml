@@ -1,7 +1,7 @@
 name: CI
 
 # Single-job CI. Free-tier budget: ~4 min/run (was ~11 min as 3 jobs × pnpm install).
-# Path-filtered so docs-only commits don't burn minutes. See docs/free-tier-budgets.md.
+# Path-filtered so docs-only PRs don't burn minutes. See docs/free-tier-budgets.md.
 
 on:
   pull_request:
@@ -12,14 +12,23 @@ on:
       - 'TASKS.md'
       - 'ROADMAP.md'
       - 'PROJECT_CONTEXT.md'
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
-      - 'TASKS.md'
-      - 'ROADMAP.md'
-      - 'PROJECT_CONTEXT.md'
+      - '.claude/**'
+  # Manual run, e.g. to re-verify main by hand: `gh workflow run ci.yml --ref main`.
+  workflow_dispatch:
+
+# NO `push: branches: [main]` trigger (removed 2026-10-05). MEASURED from the
+# Actions API in the first 5 days of October: 83 CI runs / ~970 billed min, of
+# which 37 were `push` to main re-running exactly what the pull_request run had
+# just passed. GitHub's pull_request event checks out the PR merged into the
+# base, so a green PR run already IS a run of what main will contain; the push
+# run only re-verified it (and re-rolled the dice on flakes) at ~10-15 min each.
+# The merge gate (docs/merge-gatekeeping.md) is "PR CI green before merge", and
+# it is unchanged -- nothing required a main-push run. Trade-off, stated: a
+# semantic conflict between two PRs that were each green against an older main
+# is no longer caught on main automatically. Merge PRs one at a time
+# (a PR run only re-tests against the base as of its last run, so re-run the
+# PR's CI if main moved under it), or dispatch this workflow on main when in
+# doubt.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
