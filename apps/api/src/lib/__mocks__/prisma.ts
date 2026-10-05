@@ -34,6 +34,8 @@ export const prismaMock = {
     count: vi.fn(),
   },
   templePujaOffering: {
+    // Additive: standard-offerings service inserts missing rows in one call.
+    createMany: vi.fn(),
     findUnique: vi.fn(),
     findFirst: vi.fn(),
     findMany: vi.fn(),
