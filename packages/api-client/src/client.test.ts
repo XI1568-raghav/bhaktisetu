@@ -390,3 +390,30 @@ describe('request — Content-Type only when there is a body', () => {
     expect((nthCallInit(1).headers as Headers).get('Content-Type')).toBeNull();
   });
 });
+
+// ─── Accept-Language ─────────────────────────────────────────────────────────
+
+describe('request — Accept-Language', () => {
+  it('sends the header returned by getAcceptLanguage', async () => {
+    initApiClient({ baseUrl: BASE_URL, getAcceptLanguage: () => 'hi' });
+    mockFetch(async () => jsonResponse(200, {}));
+    await api.get('/api/v1/x');
+    expect((nthCallInit(1).headers as Headers).get('Accept-Language')).toBe('hi');
+  });
+
+  it('omits the header when not configured or when it returns nothing', async () => {
+    mockFetch(async () => jsonResponse(200, {}));
+    await api.get('/api/v1/x');
+    expect((nthCallInit(1).headers as Headers).has('Accept-Language')).toBe(false);
+    initApiClient({ baseUrl: BASE_URL, getAcceptLanguage: () => undefined });
+    await api.get('/api/v1/x');
+    expect((nthCallInit(2).headers as Headers).has('Accept-Language')).toBe(false);
+  });
+
+  it('lets a per-request Accept-Language win over the configured one', async () => {
+    initApiClient({ baseUrl: BASE_URL, getAcceptLanguage: () => 'hi' });
+    mockFetch(async () => jsonResponse(200, {}));
+    await api.get('/api/v1/x', { headers: { 'Accept-Language': 'ta' } });
+    expect((nthCallInit(1).headers as Headers).get('Accept-Language')).toBe('ta');
+  });
+});

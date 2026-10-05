@@ -33,6 +33,7 @@ import {
 } from '@tanstack/react-query';
 import { useAuth } from './auth-context';
 import { apiBase } from './api';
+import { currentAcceptLanguage } from './language';
 
 /** Fastify's error envelope on every route below is `{ error: "<sentence>" }`. */
 export function serverSentence(payload: unknown): string {
@@ -54,7 +55,11 @@ async function authedJson(
 ): Promise<unknown> {
   const res = await fetch(`${apiBase()}${path}`, {
     ...init,
-    headers: { Authorization: `Bearer ${token}`, ...(init?.headers ?? {}) },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Accept-Language': currentAcceptLanguage(),
+      ...(init?.headers ?? {}),
+    },
   });
   const payload = await res.json().catch(() => null);
   if (!res.ok) {

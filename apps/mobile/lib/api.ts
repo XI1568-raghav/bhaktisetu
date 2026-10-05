@@ -4,6 +4,8 @@
 // localhost:4000 — which is unreachable from physical devices and looks like a
 // generic network error to users. __DEV__ allows the simulator/local Expo Go
 // flow to keep using a localhost dev server when no env is configured.
+import { currentAcceptLanguage } from './language';
+
 declare const __DEV__: boolean;
 
 function resolveApiBase(): string {
@@ -199,6 +201,10 @@ async function send<T>(
  */
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
+  // The API answers in English unless told otherwise; see ./language.
+  const headers = new Headers(init.headers as HeadersInit | undefined);
+  if (!headers.has('Accept-Language')) headers.set('Accept-Language', currentAcceptLanguage());
+  init = { ...init, headers };
   const controller =
     typeof AbortController !== 'undefined' ? new AbortController() : undefined;
 
