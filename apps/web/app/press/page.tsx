@@ -29,7 +29,7 @@ const FACTS = [
   { label: 'Stack', value: 'Next 15, Fastify 5, Prisma, Supabase, Cloudflare Pages, Render' },
   { label: 'Surfaces', value: 'Web, API, Admin, Android (EAS), iOS (pending)' },
   { label: 'Verticals', value: 'Darshan, Pujas, Donations, Store, Astrology, Wellness, Yatra, Weddings, Gurukul, Gaushala' },
-  { label: 'Pricing', value: 'Domestic per-puja commission 20-40% · NRI premium ₹5000/yr ($60)' },
+  { label: 'Pricing', value: 'Uniform 20% platform commission (provider keeps 80%) · NRI puja price 2.5x domestic, shown in USD and charged in INR' },
   { label: 'Compliance', value: `${withEightyG('80G receipts, ')}Aadhaar-gated priest payouts, mandatory video proof, GDPR-friendly EU PostHog region` },
   { label: 'Team', value: 'Solo founder + autonomous agent fleet (15 cron-scheduled scripts)' },
   { label: 'Stage', value: 'Pre-launch, build-in-public' },

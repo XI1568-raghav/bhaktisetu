@@ -592,7 +592,7 @@ export const yatras: Yatra[] = [
  tags: ['Balaji', 'Meenakshi', 'South India', '9 days'],
  reviews: [],
  faqs: [
- { q: 'Is Tirupati darshan guaranteed?', a: 'Yes, we pre-book TTD Seeghra Darshan quota (₹300 slot) included in Standard/Premium. Economy gets regular darshan.' },
+ { q: 'Is Tirupati darshan guaranteed?', a: 'No darshan slot is guaranteed. Whether a TTD Seeghra Darshan (₹300) slot is part of a tier is listed in that package\'s inclusions, and slots depend on TTD availability.' },
  { q: 'Dress code at Padmanabhaswamy?', a: 'Strict: Men — dhoti (veshti), no shirt. Women — saree/mundu. Our team provides dhotis at entry.' },
  { q: 'Can Kanyakumari + Madurai swap?', a: 'Yes, the itinerary is flexible based on flight availability. We confirm 7 days before travel.' },
  ],

@@ -470,7 +470,7 @@ export const CIRCUITS: PilgrimageCircuit[] = [
       'Kumbh Mela 2027 Nashik (Simhastha) is the next major event — book accommodations 12+ months ahead',
       'Stay in registered yatra camps; avoid unverified accommodations during peak Kumbh days',
       'Shahi Snan dates: Mauni Amavasya, Basant Panchami, Maha Shivaratri are most auspicious',
-      'NRI families: 24hr live-stream available via Darshya for major snan windows',
+      'NRI families: book a puja on your behalf; a recording follows the ceremony',
       'Carry minimal essentials: ID, bottled water, snacks, basic medicines',
       'For Maha Kumbh: government registers all pilgrims; pre-registration mandatory'
     ],

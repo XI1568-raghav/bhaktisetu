@@ -48,7 +48,7 @@ const TIERS = [
       'Recurring donor management + retention reports',
       'Custom subdomain + branding (your-chain.darshya.online)',
       'Founder-led 4-hour onboarding workshop',
-      '24/7 WA support during 90-day pilot',
+      'WhatsApp support during the 90-day pilot',
     ],
     recommended: true,
   },
@@ -268,7 +268,7 @@ export default function ForTempleChainsPage() {
             </a>
           </div>
           <p className="mt-3 text-xs text-surface-600">
-            Founder replies to all pilot inquiries within 24 hours.
+            The founder replies to pilot inquiries personally.
           </p>
         </div>
       </section>

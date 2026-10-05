@@ -54,7 +54,7 @@ describe('LEG-19 — the settlement table renders once and is quoted everywhere'
   it('the FAQ answer quotes the same bands rather than its own', () => {
     const answers = FAQ_GROUPS.flatMap((g) => g.faqs.map((f) => f.a)).join(' ');
     for (const band of REFUND_SETTLEMENT_BANDS) {
-      expect(answers).toContain(`${band.method} ${band.label}`);
+      expect(answers).toContain(`${band.method}: ${band.label}`);
     }
     expect(answers).not.toContain('usually instant');
     expect(answers).not.toContain('3-7 working days');
@@ -63,7 +63,7 @@ describe('LEG-19 — the settlement table renders once and is quoted everywhere'
   it('/nri-pujas quotes the same bands', async () => {
     const t = await textOfAsync(NRIPujasPillarPage());
     for (const band of REFUND_SETTLEMENT_BANDS) {
-      expect(t).toContain(`${band.method} ${band.label}`);
+      expect(t).toContain(`${band.method}: ${band.label}`);
     }
   });
 
@@ -103,7 +103,7 @@ describe('LEG-13 — /nri-pujas prints counted numbers', () => {
     const t = await textOfAsync(NRIPujasPillarPage());
     expect(t).not.toContain('50+');
     expect(t).not.toContain('30+ temple cities');
-    expect(t).toContain('10 verified pujas');
+    expect(t).toContain('10 pujas');
     expect(t).toContain('20 listed temples');
   });
 
@@ -111,9 +111,9 @@ describe('LEG-13 — /nri-pujas prints counted numbers', () => {
     stats.value = { templeCount: null, pujaTypeCount: null };
     const t = await textOfAsync(NRIPujasPillarPage());
     expect(t).not.toContain('50+');
-    expect(t).not.toMatch(/\d+\s+verified pujas/);
+    expect(t).not.toMatch(/\d+\s+pujas at/);
     expect(t).not.toMatch(/\d+\s+listed temples/);
-    expect(t).toContain('Pick from verified pujas at listed temples');
+    expect(t).toContain('Pick from pujas at listed temples');
   });
 });
 

@@ -223,12 +223,12 @@ export default function HoroscopeScreen() {
           onPress={() => router.push('/(devotee)/astrologers' as never)}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel="Talk to a verified astrologer"
+          accessibilityLabel="Talk to an astrologer"
           accessibilityHint="Opens the astrologer directory in the app"
         >
           <Ionicons name="chatbubbles" size={22} color={colors.saffron[700]} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.kundliTitle}>Talk to a verified astrologer</Text>
+            <Text style={styles.kundliTitle}>Talk to an astrologer</Text>
             <Text style={styles.kundliSub}>A reading of your own chart, not the whole rashi</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.saffron[700]} />

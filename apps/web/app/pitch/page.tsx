@@ -124,7 +124,7 @@ export default function PitchPage() {
           />
           <MediaCard
             src="/pitch/img/02-temples-grid.png"
-            caption="20+ verified temples, JSON-LD SEO"
+            caption="Temple directory, JSON-LD SEO"
             href="https://darshya.online/temples"
           />
           <MediaCard
@@ -313,7 +313,7 @@ export default function PitchPage() {
                 </tr>
                 <tr>
                   <td>Platform commission</td>
-                  <td style={{ textAlign: 'right' }}>20–40%</td>
+                  <td style={{ textAlign: 'right' }}>20%</td>
                 </tr>
                 <tr>
                   <td>Payment fee</td>
@@ -324,7 +324,7 @@ export default function PitchPage() {
                     <strong>Net contribution</strong>
                   </td>
                   <td style={{ textAlign: 'right', color: 'var(--saffron-deep)' }}>
-                    <strong>₹420</strong>
+                    <strong>₹270</strong>
                   </td>
                 </tr>
               </tbody>
@@ -339,7 +339,7 @@ export default function PitchPage() {
                 </tr>
                 <tr>
                   <td>Platform commission</td>
-                  <td style={{ textAlign: 'right' }}>30–45%</td>
+                  <td style={{ textAlign: 'right' }}>20%</td>
                 </tr>
                 <tr>
                   <td>Payment fee</td>
@@ -350,7 +350,7 @@ export default function PitchPage() {
                     <strong>Net contribution</strong>
                   </td>
                   <td style={{ textAlign: 'right', color: 'var(--saffron-deep)' }}>
-                    <strong>₹4,800</strong>
+                    <strong>₹2,295</strong>
                   </td>
                 </tr>
               </tbody>

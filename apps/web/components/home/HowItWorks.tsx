@@ -36,12 +36,12 @@ const STEPS = [
   {
     Icon: UserCheck,
     title: 'A pandit is assigned',
-    body: 'Every pandit on Darshya is Aadhaar-verified. You get their name and the confirmed time before the day of the puja.',
+    body: 'A pandit accepts your booking, and your booking page shows the confirmed time. A pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a credential check.',
   },
   {
     Icon: Video,
     title: 'You receive the video proof',
-    body: 'The ceremony is recorded and sent to you — this is mandatory on every booking, not an add-on. Prasad follows by post.',
+    body: 'The ceremony is recorded and sent to you — this is mandatory on every booking, not an add-on. Prasad delivery is an optional extra.',
   },
 ];
 

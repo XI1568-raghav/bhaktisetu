@@ -91,7 +91,7 @@ export default function FaqsHub() {
 
       <section className="mt-12 rounded-xl border border-saffron-200 bg-saffron-50 p-6 text-center">
         <h2 className="text-xl font-bold text-surface-900 mb-2">Still have questions?</h2>
-        <p className="text-surface-700 text-sm mb-4">We respond within 24 hours on weekdays.</p>
+        <p className="text-surface-700 text-sm mb-4">We aim to respond within 24 hours, Monday to Saturday.</p>
         <div className="flex flex-wrap gap-3 justify-center">
           <Link href="/contact" className={buttonClass('primary', 'md')}>
             Contact us

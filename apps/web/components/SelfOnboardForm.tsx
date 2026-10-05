@@ -62,7 +62,7 @@ export default function SelfOnboardForm({ role, ctaLabel, extraFields }: SelfOnb
         return;
       }
       setSuccess(
-        "Thanks — we have received your application. Our team will review and reach out within 48 hours.",
+        "Thanks — we have received your application. Our team will review it and reach out; we do not promise a reply time.",
       );
       (event.target as HTMLFormElement).reset();
     } catch (err) {

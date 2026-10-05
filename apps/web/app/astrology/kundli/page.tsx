@@ -666,7 +666,7 @@ export default function KundliPage() {
  Want a Detailed Analysis?
  </h3>
  <p className="text-surface-400 max-w-md mx-auto mb-5">
- Connect with a verified astrologer for personalized interpretation, remedies, and life predictions.
+ Connect with a approved astrologer for personalized interpretation, remedies, and life predictions.
  </p>
  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
  <Link

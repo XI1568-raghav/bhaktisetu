@@ -325,7 +325,7 @@ export default function PujaDetailScreen() {
           <Text style={styles.cardHeading}>What you get</Text>
           <TrustRow
             icon="videocam-outline"
-            label="Live video proof"
+            label="Video proof"
             desc="The ceremony is recorded and shared with you."
           />
           <TrustRow icon="shield-outline" label="Pandit payout gate" desc={`${PANDIT_VETTING_CLAUSE}.`} />

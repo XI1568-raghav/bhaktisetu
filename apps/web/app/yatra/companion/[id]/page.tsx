@@ -236,7 +236,7 @@ export default async function CompanionDetailPage({ params }: { params: Promise<
  Book {c.name.split(' ')[0]} for your yatra
  </h2>
  <p className="text-sm mb-5" style={{ color: 'var(--color-text-muted)' }}>
- Select your yatra first — we&apos;ll attach {c.name.split(' ')[0]} to your booking and confirm within 2 hours.
+ Select your yatra first — we&apos;ll attach {c.name.split(' ')[0]} to your booking and confirm with you.
  </p>
  <Link href="/yatra" className={buttonClass('primary', 'md', 'btn-press')}>
  Choose Your Yatra <ArrowRight className="w-3.5 h-3.5" />

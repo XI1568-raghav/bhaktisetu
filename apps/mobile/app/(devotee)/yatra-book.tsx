@@ -318,8 +318,8 @@ export default function YatraBookScreen() {
             <Ionicons name="checkmark-circle" size={44} color={colors.green[600]} />
             <Text style={styles.successTitle}>Request received</Text>
             <Text style={styles.successBody}>
-              Our yatra desk will confirm hotel and transport availability for {title} and email
-              your final invoice to {buyerEmail.trim()} within 24 hours.
+              Our yatra desk will confirm hotel and transport availability for {title} and send
+              your final invoice to {buyerEmail.trim()}. We do not promise a reply time.
             </Text>
             <Text style={styles.refLabel}>Reference</Text>
             <Text style={styles.refValue}>{referenceId}</Text>
@@ -669,8 +669,8 @@ export default function YatraBookScreen() {
                   />
                 </Field>
                 <Text style={styles.disclosure}>
-                  Sending this does not charge you. The yatra desk confirms availability and emails
-                  your invoice within 24 hours.
+                  Sending this does not charge you. The yatra desk confirms availability and sends
+                  your invoice; no reply time is promised.
                 </Text>
               </View>
             </>

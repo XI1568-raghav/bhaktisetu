@@ -302,7 +302,7 @@ export const brandFaqJsonLd = {
       name: 'What is Darshya?',
       acceptedAnswer: {
         '@type': 'Answer',
-        // TC-01 (2026-08-28): "verified astrologers" was a vetting claim the
+        // TC-01 (2026-08-28): "approved astrologers" was a vetting claim the
         // data model cannot record. AstrologerProfile (apps/api/prisma/schema
         // .prisma) carries ONLY `approved` — no isVerified, no aadhaarVerified,
         // no verificationStatus — while Priest has all three and Temple has

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/darshan' },
  title: 'Live Darshan',
  description:
- 'Watch live darshan from India’s most sacred temples. Real-time temple ceremonies, aarti, and abhishekam streams from 100+ temples.',
+ 'Watch live darshan from India’s most sacred temples. Temple aarti and ceremony streams, free, following each temple’s own schedule.',
 };
 
 // Day-sync ISR: regenerate every 5 min so the live-now list reflects current

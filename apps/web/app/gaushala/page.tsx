@@ -150,7 +150,7 @@ const adoptionPlans = [
  popular: false,
  features: [
  "Daily feeding of one cow",
- "Monthly photo update via WhatsApp",
+ "Photo updates from the gaushala when available",
  "Name on gaushala donor wall",
  "Digital seva certificate",
  ],
@@ -214,7 +214,7 @@ const faqs = [
  // product — GaushalaProfile.verified is never written, the admin path sets
  // `approved`, and no endpoint publishes a gaushala's finances. What IS true
  // is that a gaushala is reviewed by hand before it appears in the listing.
- a: "Every adopter receives monthly photo and video updates of their cow via WhatsApp and email. You can also visit the gaushala anytime during visiting hours to see your cow in person. Each gaushala listed on Darshya is reviewed and approved by us before it goes live; we do not audit their books, so treat the updates and your own visit as the evidence.",
+ a: "Photo updates of your cow are posted on the cow\'s page when the gaushala provides them; we do not promise a monthly schedule or delivery by WhatsApp or email. You can also visit the gaushala anytime during visiting hours to see your cow in person. Each gaushala listed on Darshya is reviewed and approved by us before it goes live; we do not audit their books, so treat the updates and your own visit as the evidence.",
  },
  {
  q: "Can I visit the cow I have adopted?",
@@ -297,8 +297,8 @@ export default function GaushalaPage() {
  </span>
  </h1>
  <p className="prose-lead text-surface-500 leading-relaxed mb-8 max-w-2xl mx-auto">
- Support gaushalas across India. Receive monthly photo
- updates of your adopted cow, visit anytime, and contribute to the
+ Support gaushalas across India. See photo
+ updates of your adopted cow where the gaushala posts them, visit by arrangement, and contribute to the
  protection of India's sacred cows.
  </p>
  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -337,8 +337,8 @@ export default function GaushalaPage() {
  },
  {
  icon: Camera,
- label: "Monthly Photo Updates",
- sub: "See your cow thrive",
+ label: "Photo Updates",
+ sub: "Posted by the gaushala when available",
  },
  {
  icon: MapPin,
@@ -348,7 +348,7 @@ export default function GaushalaPage() {
  {
  icon: FileText,
  label: HAS_80G ? "Tax Receipt (80G)" : "Donation Receipt",
- sub: HAS_80G ? "Save on income tax" : "Emailed instantly as a PDF",
+ sub: HAS_80G ? "Save on income tax" : "A numbered PDF receipt",
  },
  ].map((badge) => (
  <div
@@ -621,7 +621,7 @@ export default function GaushalaPage() {
  value: HAS_80G ? "80G" : "Receipt",
  label: HAS_80G
  ? "Tax-deductible receipt on eligible donations"
- : "A PDF receipt for every contribution, emailed instantly",
+ : "A numbered PDF receipt for every contribution",
  icon: IndianRupee,
  },
  ].map((stat) => (

@@ -344,7 +344,7 @@ export default function LiveAstrologersClient() {
         <div className="mt-8">
           <p className="flex items-center gap-2 text-sm text-surface-500">
             <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-            Loading verified astrologers…
+            Loading approved astrologers…
           </p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[0, 1, 2].map((i) => (

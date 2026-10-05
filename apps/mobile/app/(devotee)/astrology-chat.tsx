@@ -334,12 +334,12 @@ export default function AstrologyChatScreen() {
               style={styles.escalate}
               activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityLabel="Talk to a verified astrologer"
+              accessibilityLabel="Talk to an astrologer"
               accessibilityHint="Opens the astrologer directory in the app"
               onPress={() => router.push('/(devotee)/astrologers' as never)}
             >
               <Ionicons name="person-outline" size={16} color={colors.saffron[700]} />
-              <Text style={styles.escalateText}>Talk to a verified astrologer instead</Text>
+              <Text style={styles.escalateText}>Talk to an astrologer instead</Text>
             </TouchableOpacity>
           ) : null}
         </ScrollView>

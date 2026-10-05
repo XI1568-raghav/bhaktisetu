@@ -95,7 +95,7 @@ export const metadata: Metadata = {
   title: 'NRI Premium — Stay Connected to India',
   description: NRI_PREMIUM_IS_SELLABLE
     ? 'Annual all-access for the Indian diaspora. No NRI surcharge on bookings, weekly 1:1 priest call, priority booking, free donation receipt PDFs, unlimited AI Pandit. ₹5,000 per year, charged in INR (about $60).'
-    : 'Book pujas at Indian temples from abroad, watch live darshan in your timezone, and donate to temples and gaushalas with a receipt emailed to you. Built for the Indian diaspora. The NRI Premium membership is not currently sold.',
+    : 'Book pujas at Indian temples from abroad, watch live darshan in your timezone, and donate to temples and gaushalas with a numbered receipt. Built for the Indian diaspora. The NRI Premium membership is not currently sold.',
   alternates: { canonical: 'https://darshya.online/nri' },
   openGraph: {
     title: 'NRI Premium — Darshya',
@@ -141,7 +141,7 @@ const benefits = [
     title: HAS_80G ? 'Free 80G receipt PDFs' : 'Free donation receipt PDFs',
     body: HAS_80G
       ? 'Every donation auto-generates a tax-compliant 80G receipt. India-tax filers get the deduction; US/UK/CA filers get proof for charitable contribution claims.'
-      : 'Every donation auto-generates a receipt PDF, emailed to you with its own receipt number. It is proof of payment, not a tax-exemption certificate — Darshya does not hold a Section 80G registration yet, so no donation made today can be claimed as a deduction.',
+      : 'Every donation gets a receipt PDF with its own receipt number. It is proof of payment, not a tax-exemption certificate — Darshya does not hold a Section 80G registration yet, so no donation made today can be claimed as a deduction.',
   },
   {
     icon: MessageCircle,
@@ -251,7 +251,7 @@ const faqs = [
   },
   {
     q: 'What languages are supported?',
-    a: 'Hindi, Tamil, Telugu, Kannada, Bengali, Marathi, English. AI Pandit detects your language; live calls let you pick from priest profiles.',
+    a: 'The site is available in English, Hindi, Tamil, Telugu, Bengali and Marathi; most of it is in English and each language page says how much is translated.',
   },
 ];
 
@@ -466,7 +466,7 @@ export default function NriPremiumLanding() {
         <EmailCapture
           source="nri-landing"
           title={NRI_PREMIUM_IS_SELLABLE ? 'Not ready to subscribe yet?' : 'Want to know when the tier is back?'}
-          subtitle="Leave your email and we will write to you when there is something to buy. It is stored as a waitlist entry and used for nothing else."
+          subtitle="Leave your email to join the waitlist for when there is something to buy. It is stored as a waitlist entry and used for nothing else, and we cannot promise when a message will be sent."
           cta="Notify me"
         />
       </section>

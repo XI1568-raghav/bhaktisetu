@@ -193,7 +193,7 @@ export default function HoroscopeRashiScreen() {
           style={styles.ctaCard}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel="Talk to a verified astrologer"
+          accessibilityLabel="Talk to an astrologer"
           accessibilityHint="Opens the astrologer directory in the app"
           onPress={() => router.push('/(devotee)/astrologers' as never)}
         >
@@ -201,7 +201,7 @@ export default function HoroscopeRashiScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.ctaTitle}>Want more than a daily reading?</Text>
             <Text style={styles.ctaSub}>
-              Talk to a verified astrologer about your own chart.
+              Talk to an astrologer about your own chart.
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.saffron[700]} />

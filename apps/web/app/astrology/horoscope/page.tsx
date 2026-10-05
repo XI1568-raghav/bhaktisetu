@@ -301,7 +301,7 @@ export default function HoroscopePage() {
  Get Personalized Predictions
  </h3>
  <p className="text-surface-400 max-w-md mx-auto mb-5">
- Daily horoscopes are general. For predictions tailored to your birth chart, try our AI Astrologer or consult a verified astrologer.
+ Daily horoscopes are general. For predictions tailored to your birth chart, try our AI Astrologer or consult a approved astrologer.
  </p>
  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
  <Link
