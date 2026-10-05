@@ -379,10 +379,52 @@ const verifyDonationSchema = z.object({
   razorpay_signature: z.string().optional(),
 });
 
+/**
+ * A temple can take a donation only if an admin has approved a manager profile
+ * for it. TempleProfile has no FK to Temple; the portal links them by name
+ * (case- and whitespace-tolerant), so this does too.
+ */
+async function templeHasApprovedManager(templeName: string): Promise<boolean> {
+  const profile = await prisma.templeProfile.findFirst({
+    where: { approved: true, templeName: { equals: templeName.trim(), mode: 'insensitive' } },
+    select: { userId: true },
+  });
+  return !!profile;
+}
+
 export async function donationRoutes(server: FastifyInstance) {
   await ensureGaushalaTaxFields().catch((err) =>
     server.log.warn({ err }, 'gaushala_profiles tax-field add failed'),
   );
+
+  // ── Temples that can receive a donation ──────────────────────────────
+  // The donations page listed every verified catalogue temple, including ones
+  // with no manager and so no way to be paid. This is the list the form may
+  // offer: verified temples with an approved manager profile.
+  server.get('/temples', async (request, reply) => {
+    try {
+      const profiles = await prisma.templeProfile.findMany({
+        where: { approved: true },
+        select: { templeName: true },
+        take: 500,
+      });
+      const names = [...new Set(profiles.map((p) => (p.templeName ?? '').trim()).filter(Boolean))];
+      if (names.length === 0) return { temples: [] };
+      const temples = await prisma.temple.findMany({
+        where: {
+          isVerified: true,
+          OR: names.map((name) => ({ name: { equals: name, mode: 'insensitive' as const } })),
+        },
+        select: { id: true, name: true, city: true, state: true, deityPrimary: true, description: true, images: true },
+        orderBy: { name: 'asc' },
+        take: 100,
+      });
+      return { temples };
+    } catch (err) {
+      request.log.error({ err }, 'donatable temples failed');
+      return reply.code(500).send({ error: 'Could not load temples.' });
+    }
+  });
 
   // ── Create order ─────────────────────────────────────────────────────
   server.post('/create-order', { preHandler: [authenticateUser] }, async (request, reply) => {
@@ -417,6 +459,34 @@ export async function donationRoutes(server: FastifyInstance) {
         });
       }
       doneeGaushalaId = resolved.donee.doneeUserId;
+    }
+
+    // The temple path got none of the S-05 checks. A catalogue temple with no
+    // manager (Kashi, Tirupati ...) was accepted and the money banked for a donee
+    // that cannot be paid, and an unknown id opened a Razorpay order and then
+    // failed on the INSERT with a 500. Same rule as the gaushala: the donee must
+    // exist, be verified, and have an approved manager the money can go to.
+    if (kind === 'temple') {
+      const temple = await prisma.temple.findUnique({
+        where: { id: templeId! },
+        select: { id: true, name: true, isVerified: true },
+      });
+      if (!temple) {
+        return reply.code(404).send({
+          code: 'temple_not_found',
+          error: 'Temple not found',
+          message: 'We could not find that temple. Please choose a temple from the list.',
+        });
+      }
+      const manager = temple.isVerified ? await templeHasApprovedManager(temple.name) : false;
+      if (!manager) {
+        return reply.code(400).send({
+          code: 'temple_not_onboarded',
+          error: 'Temple not available for donations',
+          message:
+            'This temple is not yet onboarded to receive donations through Darshya. Please choose a temple that is listed on the donations page.',
+        });
+      }
     }
 
     const donationId = `don_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
