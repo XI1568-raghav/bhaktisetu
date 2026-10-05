@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
+import { REVENUE_PAYMENT_WHERE } from '../lib/revenue-where.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
 /**
@@ -192,13 +193,13 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
 
     // MRR — last-30d successful Payments
     const mrr = await prisma.payment.aggregate({
-      where: { status: 'captured', createdAt: { gte: since30 } },
+      where: { ...REVENUE_PAYMENT_WHERE, createdAt: { gte: since30 } },
       _sum: { amount: true },
     }).catch(() => null);
 
     // GMV cumulative — all-time successful Payments
     const gmv = await prisma.payment.aggregate({
-      where: { status: 'captured' },
+      where: REVENUE_PAYMENT_WHERE,
       _sum: { amount: true },
     }).catch(() => null);
 
@@ -329,17 +330,17 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
       prisma.payment.aggregate({
         _count: { _all: true },
         _sum: { amount: true },
-        where: { status: 'captured', createdAt: { gte: sinceToday } },
+        where: { ...REVENUE_PAYMENT_WHERE, createdAt: { gte: sinceToday } },
       }).catch(() => null),
       prisma.pujaBooking.count({ where: { createdAt: { gte: sinceToday } } }).catch(() => 0),
       prisma.user.count({ where: { createdAt: { gte: sinceToday } } }).catch(() => 0),
       prisma.payment.aggregate({
         _sum: { amount: true },
-        where: { status: 'captured', createdAt: { gte: since30 } },
+        where: { ...REVENUE_PAYMENT_WHERE, createdAt: { gte: since30 } },
       }).catch(() => null),
       prisma.payment.aggregate({
         _sum: { amount: true },
-        where: { status: 'captured' },
+        where: REVENUE_PAYMENT_WHERE,
       }).catch(() => null),
     ]);
 
