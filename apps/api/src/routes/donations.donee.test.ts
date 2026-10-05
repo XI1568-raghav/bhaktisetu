@@ -146,9 +146,13 @@ describe('donations — gaushala donee resolution (S-05)', () => {
     expect(donationInsert()).toBeUndefined();
   });
 
-  it('leaves the temple path untouched', async () => {
+  it('leaves the temple path untouched (the gaushala resolver is never consulted)', async () => {
     const app = makeApp();
     const templeId = '11111111-1111-4111-8111-111111111111';
+    // The temple donee gate (donations.temple-donee.test.ts) needs a verified
+    // temple with an approved manager; this test is about the gaushala resolver.
+    prismaMock.temple.findUnique.mockResolvedValue({ id: templeId, name: 'Somnath', isVerified: true } as any);
+    prismaMock.templeProfile.findFirst.mockResolvedValue({ userId: 'mgr-1' } as any);
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/donations/create-order',
