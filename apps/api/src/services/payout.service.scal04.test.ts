@@ -39,6 +39,7 @@ const { prismaMock } = vi.hoisted(() => ({
     // about the unified rail's SQL aggregates and must stay that way.
     priest: { findUnique: vi.fn() },
     priestPayout: { findMany: vi.fn() },
+    wellnessEnrollment: { findMany: vi.fn() },
     $queryRawUnsafe: vi.fn(),
     $transaction: vi.fn(),
   } as Record<string, any>,
@@ -89,6 +90,7 @@ beforeEach(() => {
   // assertions below still describe only the unified rail's SQL aggregates.
   prismaMock.priest.findUnique.mockResolvedValue(null);
   prismaMock.priestPayout.findMany.mockResolvedValue([]);
+  prismaMock.wellnessEnrollment.findMany.mockResolvedValue([]);
 });
 
 describe('SCAL-04 — payout balance is summed in SQL, not in Node', () => {
@@ -111,6 +113,7 @@ describe('SCAL-04 — payout balance is summed in SQL, not in Node', () => {
     // pandit, so it is all zeros and the unified figures are untouched.
     expect(b).toEqual({
       availableInr: 9000,
+      upcomingInr: 0,
       pendingInr: 5000,
       paidOutInr: 4000,
       legacyPandit: { hasLegacyRail: false, pendingInr: 0, paidOutInr: 0 },
@@ -136,6 +139,7 @@ describe('SCAL-04 — payout balance is summed in SQL, not in Node', () => {
 
     expect(b).toEqual({
       availableInr: 0,
+      upcomingInr: 0,
       pendingInr: 0,
       paidOutInr: 0,
       legacyPandit: { hasLegacyRail: false, pendingInr: 0, paidOutInr: 0 },
