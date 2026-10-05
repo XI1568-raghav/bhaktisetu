@@ -13,6 +13,7 @@ import { useAstrologerEarnings } from '../../lib/portal-queries';
 import { selectAstrologerEarnings, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { commissionStatusLabel } from '../../lib/enum-labels';
+import { UPCOMING_LABEL, upcomingShown } from '../../lib/earnings-copy';
 
 /**
  * PAR-22. The astrologer earnings page exists on the web
@@ -116,6 +117,16 @@ export default function AstrologerEarnings() {
               hint={vm.paidInr === null ? undefined : `${formatInr(vm.paidInr)} paid`}
             />
           </View>
+          {upcomingShown(vm.upcomingInr) ? (
+            <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+              <StatCard
+                label={UPCOMING_LABEL}
+                value={formatInr(vm.upcomingInr as number)}
+                accent={colors.stone[500]}
+                hint="Earned. Becomes payable after the consultation is completed."
+              />
+            </View>
+          ) : null}
 
           {reversed > 0 ? (
             <Text style={styles.note}>

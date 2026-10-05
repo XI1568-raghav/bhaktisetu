@@ -159,9 +159,14 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
   const totalEarned = items
    .filter((c) => c.status === 'PAID')
    .reduce((sum, c) => sum + value(c), 0);
+  // `releaseStatus: 'upcoming'` rows are earned but held until the session is
+  // held / puja proved; they are shown in their own card, never in Pending.
+  const isUpcoming = (c: Commission) => c.status === 'PENDING' && c.releaseStatus === 'upcoming';
   const pending = items
-   .filter((c) => c.status === 'PENDING')
+   .filter((c) => c.status === 'PENDING' && !isUpcoming(c))
    .reduce((sum, c) => sum + value(c), 0);
+  const upcoming = items.filter(isUpcoming).reduce((sum, c) => sum + value(c), 0);
+  const hasUpcoming = items.some(isUpcoming);
   // DI-08. The three halves of the same rows, so nobody has to infer which one
   // the single figure above was. Summed from the per-row `grossAmount` /
   // `platformCut` the API already derives through lib/commission-math.ts —
@@ -196,6 +201,8 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
   return {
    totalEarned,
    pending,
+   upcoming,
+   hasUpcoming,
    lastPaid,
    providerEarnings,
    platformTake,
@@ -240,7 +247,7 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  {!loading && !error && (
  <div className="space-y-2">
  {mode === 'me' && (
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+ <div className={`grid grid-cols-1 gap-4 ${summary.hasUpcoming ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
  {/* DI-08: was "Total earned (paid)". `amount` is the PROVIDER's earning
      and this card sums only the rows on the current page — two facts the
      old label carried neither of, while /admin/revenue put the PLATFORM's
@@ -253,12 +260,24 @@ export function CommissionsPanel({ mode = 'me', title, description }: Props) {
  bg="bg-green-50"
  />
  <SummaryCard
+ testId="summary-pending"
  label="Pending"
  value={formatINR(summary.pending)}
  icon={Clock}
  color="text-amber-700"
  bg="bg-amber-50"
  />
+ {summary.hasUpcoming && (
+ <SummaryCard
+ testId="summary-upcoming"
+ label="Upcoming"
+ value={formatINR(summary.upcoming)}
+ subtitle="Earned. Becomes payable once the session is held or the puja is performed and proved."
+ icon={Clock}
+ color="text-surface-600"
+ bg="bg-surface-100"
+ />
+ )}
  <SummaryCard
  label="Last payout"
  value={summary.lastPaid ? formatINR(summary.lastPaid.amount) : '—'}
@@ -509,7 +528,9 @@ function SummaryCard({
  icon: Icon,
  color,
  bg,
+ testId,
 }: {
+ testId?: string;
  label: string;
  value: string;
  subtitle?: string;
@@ -518,7 +539,7 @@ function SummaryCard({
  bg: string;
 }) {
  return (
- <div className="bg-white rounded-xl border border-surface-100 p-5">
+ <div data-testid={testId} className="bg-white rounded-xl border border-surface-100 p-5">
  <div className="flex items-center gap-3 mb-3">
  <div className={`w-10 h-10 ${bg} rounded-lg flex items-center justify-center`}>
  <Icon className={`w-5 h-5 ${color}`} />

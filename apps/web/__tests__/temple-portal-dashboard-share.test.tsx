@@ -48,10 +48,30 @@ describe('temple portal dashboard', () => {
       recentBookings: [],
     });
     render(<TempleDashboard />);
-    await waitFor(() => expect(screen.getByText('Temple share this month')).toBeTruthy());
-    expect(screen.getByText('Total temple share')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('Released temple share')).toBeTruthy());
+    expect(screen.getByText('Upcoming temple share')).toBeTruthy();
     expect(screen.queryByText('Total Revenue')).toBeNull();
     expect(screen.getByText(/Gurugram, Haryana/)).toBeTruthy();
+  });
+
+  it('shows released and upcoming share separately and never calls unreleased share earned', async () => {
+    respondWith({
+      profile: { templeName: 'QA Sheetla Mata Mandir', city: 'Gurugram', state: 'Haryana' },
+      stats: {
+        totalBookings: 3, monthBookings: 3,
+        totalRevenueInr: 60, monthRevenueInr: 50,
+        releasedInr: 60, monthReleasedInr: 50, upcomingInr: 1234, monthUpcomingInr: 30,
+        totalStreams: 0,
+      },
+      recentBookings: [],
+    });
+    render(<TempleDashboard />);
+    const released = await screen.findByTestId('temple-share-released');
+    const upcoming = screen.getByTestId('temple-share-upcoming');
+    expect(released.textContent).toMatch(/60/);
+    expect(released.textContent).not.toMatch(/1,234/);
+    expect(upcoming.textContent).toMatch(/1,234/);
+    expect(upcoming.textContent).toMatch(/after the puja is performed and proved/i);
   });
 
   it('says why a temple is not linked instead of showing silent zeros', async () => {

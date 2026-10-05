@@ -4,6 +4,7 @@ import { PortalScreen, Section, StatCard, ListRow, EmptyHint } from './portal-sc
 import { usePayoutBalance, useProviderCommissions, useRequestPayout } from './portal-queries';
 import { selectPayoutBalance, selectProviderCommissions, formatInr } from './api-contracts';
 import { payoutGate } from './payout-gate';
+import { UPCOMING_LABEL, UPCOMING_HINT, upcomingShown } from './earnings-copy';
 import { colors, spacing, fontSize, borderRadius } from './theme';
 
 /**
@@ -171,6 +172,16 @@ export function ProviderPayouts({
               }
             />
           </View>
+          {upcomingShown(balance.upcomingInr) ? (
+            <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+              <StatCard
+                label={UPCOMING_LABEL}
+                value={formatInr(balance.upcomingInr as number)}
+                accent={colors.stone[500]}
+                hint={UPCOMING_HINT}
+              />
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={[styles.payoutBtn, !gate.canRequest && styles.payoutBtnDisabled]}
