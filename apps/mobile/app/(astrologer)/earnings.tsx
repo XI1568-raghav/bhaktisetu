@@ -13,7 +13,7 @@ import { useAstrologerEarnings } from '../../lib/portal-queries';
 import { selectAstrologerEarnings, formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { commissionStatusLabel } from '../../lib/enum-labels';
-import { UPCOMING_LABEL, upcomingShown } from '../../lib/earnings-copy';
+import { READY_LABEL, REQUESTED_LABEL, UPCOMING_LABEL, requestedShown, upcomingShown } from '../../lib/earnings-copy';
 
 /**
  * PAR-22. The astrologer earnings page exists on the web
@@ -110,13 +110,33 @@ export default function AstrologerEarnings() {
               hint="Your share, not the price"
             />
             <View style={{ width: spacing.sm }} />
-            <StatCard
-              label="Pending"
-              value={vm.pendingInr === null ? '—' : formatInr(vm.pendingInr)}
-              accent={colors.amber[600]}
-              hint={vm.paidInr === null ? undefined : `${formatInr(vm.paidInr)} paid`}
-            />
+            {vm.readyInr !== null ? (
+              <StatCard
+                label={READY_LABEL}
+                value={formatInr(vm.readyInr)}
+                accent={colors.amber[600]}
+                hint={vm.paidInr === null ? undefined : `${formatInr(vm.paidInr)} paid`}
+              />
+            ) : (
+              // Older server without the split: one honest, unsplit figure.
+              <StatCard
+                label="Pending"
+                value={vm.pendingInr === null ? '—' : formatInr(vm.pendingInr)}
+                accent={colors.amber[600]}
+                hint={vm.paidInr === null ? undefined : `${formatInr(vm.paidInr)} paid`}
+              />
+            )}
           </View>
+          {vm.readyInr !== null && requestedShown(vm.requestedInr) ? (
+            <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+              <StatCard
+                label={REQUESTED_LABEL}
+                value={formatInr(vm.requestedInr as number)}
+                accent={colors.amber[600]}
+                hint="Already in a payout request."
+              />
+            </View>
+          ) : null}
           {upcomingShown(vm.upcomingInr) ? (
             <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
               <StatCard

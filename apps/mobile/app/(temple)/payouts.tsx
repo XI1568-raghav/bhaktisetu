@@ -84,10 +84,10 @@ export default function TemplePayouts() {
             ) : (
               // Older server without the split: one honest, unsplit figure.
               <StatCard
-                label="Pending"
+                label="Pending (incl. upcoming)"
                 value={vm.pendingInr === null ? '—' : formatInr(vm.pendingInr)}
                 accent={colors.amber[600]}
-                hint="Awaiting settlement"
+                hint="Not yet settled; includes share still held until the puja is proved"
               />
             )}
           </View>

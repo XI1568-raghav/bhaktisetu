@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 /**
  * Service ratings — 1..5 stars + optional text, written by the devotee
@@ -63,10 +64,10 @@ export async function ratingRoutes(server: FastifyInstance) {
     }
 
     await prisma.$executeRawUnsafe(
-      `INSERT INTO service_ratings (conversation_id, devotee_id, provider_id, stars, body)
-       VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5)
+      `INSERT INTO service_ratings (conversation_id, devotee_id, provider_id, stars, body, created_at)
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, ${SQL_UTC_NOW})
        ON CONFLICT (conversation_id, devotee_id)
-       DO UPDATE SET stars = EXCLUDED.stars, body = EXCLUDED.body, created_at = now()`,
+       DO UPDATE SET stars = EXCLUDED.stars, body = EXCLUDED.body, created_at = ${SQL_UTC_NOW}`,
       conversationId,
       userId,
       conv.providerId,

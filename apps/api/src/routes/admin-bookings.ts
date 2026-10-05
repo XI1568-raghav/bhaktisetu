@@ -9,6 +9,7 @@ import {
   processPayout,
   resolveProviderRole,
 } from '../services/payout.service.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 // Admin bookings + payouts + refunds ops dashboards.
 //
@@ -829,14 +830,14 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
           }
           await prisma.$executeRawUnsafe(
             `UPDATE provider_kyc
-                SET verified = true, verified_at = now(), rejection_reason = NULL, updated_at = now()
+                SET verified = true, verified_at = ${SQL_UTC_NOW}, rejection_reason = NULL, updated_at = ${SQL_UTC_NOW}
               WHERE user_id = $1::uuid`,
             userId,
           );
         } else {
           await prisma.$executeRawUnsafe(
             `UPDATE provider_kyc
-                SET verified = false, verified_at = NULL, rejection_reason = $2, updated_at = now()
+                SET verified = false, verified_at = NULL, rejection_reason = $2, updated_at = ${SQL_UTC_NOW}
               WHERE user_id = $1::uuid`,
             userId,
             reason,
