@@ -28,8 +28,10 @@ const GROQ_BASE = 'https://api.groq.com/openai/v1';
 //
 // Llama 3.3 70B (Groq) is the closest free analogue to Sonnet quality;
 // Llama 3.1 8B Instant is the fast/cheap tier.
-const GROQ_SONNET_MODEL = 'llama-3.3-70b-versatile';
-const GROQ_HAIKU_MODEL = 'llama-3.1-8b-instant';
+// llama-3.3-70b-versatile and llama-3.1-8b-instant were deprecated by Groq on
+// 2026-08-16 (404 model_not_found since); these are their listed replacements.
+const GROQ_SONNET_MODEL = 'openai/gpt-oss-120b';
+const GROQ_HAIKU_MODEL = 'openai/gpt-oss-20b';
 const ANTHROPIC_SONNET_MODEL = 'claude-sonnet-4-20250514';
 const ANTHROPIC_HAIKU_MODEL = 'claude-haiku-4-5-20251001';
 
@@ -692,6 +694,22 @@ export class AiProviderError extends Error {
 
 const GROQ_MODEL_ORDER = [GROQ_SONNET_MODEL, GROQ_HAIKU_MODEL];
 
+/**
+ * gpt-oss models reason before answering and reasoning tokens count against
+ * max_tokens, so a small limit can return an empty answer. Ask for low effort
+ * and leave room; tiny probe calls are left alone.
+ */
+function groqPayload(body: Record<string, unknown>, model: string): Record<string, unknown> {
+ const reasoning = model.startsWith('openai/gpt-oss');
+ const max = typeof body.max_tokens === 'number' ? body.max_tokens : undefined;
+ return {
+ ...body,
+ model,
+ ...(reasoning ? { reasoning_effort: 'low' } : {}),
+ ...(reasoning && max !== undefined && max > 64 ? { max_tokens: Math.max(max, 1024) } : {}),
+ };
+}
+
 async function groqRequest(body: Record<string, unknown>): Promise<Response> {
  const requested = String(body.model ?? GROQ_SONNET_MODEL);
  const order = [requested, ...GROQ_MODEL_ORDER.filter((m) => m !== requested)].slice(0, 2);
@@ -706,7 +724,7 @@ async function groqRequest(body: Record<string, unknown>): Promise<Response> {
  Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
  'Content-Type': 'application/json',
  },
- body: JSON.stringify({ ...body, model }),
+ body: JSON.stringify(groqPayload(body, model)),
  });
  } catch (err) {
  console.error(`[ai] groq network error model=${model}: ${err instanceof Error ? err.name : 'unknown'}`);
@@ -744,7 +762,7 @@ export async function probeAiProvider(): Promise<{
 }> {
  if (HAS_GROQ) {
  try {
- await groqRequest({ model: GROQ_HAIKU_MODEL, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] });
+ await groqRequest({ model: GROQ_HAIKU_MODEL, max_tokens: 16, messages: [{ role: 'user', content: 'ping' }] });
  return { provider: 'groq', ok: true };
  } catch (err) {
  const e = err as Partial<AiProviderError>;
