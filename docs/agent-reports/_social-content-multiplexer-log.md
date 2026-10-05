@@ -1,6 +1,8 @@
 # social-content-multiplexer log
 
 
+- 2026-10-05T10:49:10.839Z — festival=Navratri (start) d=6 x=4 li=2 ig=3
+
 - 2026-10-01T10:25:47.796Z — festival=Navratri (start) d=10 x=5 li=3 ig=3
 
 - 2026-09-30T09:56:07.949Z — festival=Navratri (start) d=11 x=5 li=3 ig=3
