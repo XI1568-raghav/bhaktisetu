@@ -3575,3 +3575,16 @@ temple booking path. Stripe removed entirely; password reset shipped.
 - In-person temple/sabha meetings (carry kit ready at `deliverables/temple-sabha-partnership-kit.md`).
 
 
+
+
+## HANDOFF 2026-10-06 — where everything stands (written for a fresh or cloud session)
+
+**Read first:** `TASKS.md` "STATE AT 2026-10-06", `docs/runbooks/local-e2e-stack.md`, `docs/runbooks/prod-db-task.md`.
+
+- `main` = `d818f153`; everything built so far is merged and pushed to GitHub. Production still runs `31f9fe38`.
+- Blocker: GitHub Actions has no free minutes left and no budget, so deploys, PR checks, the prod-db-task workflow and the nightly backup cannot start. Owner action: github.com/settings/billing -> Budgets -> Actions budget (or a manual deploy in the Render dashboard, web first then API).
+- Merged but undeployed: #318 (prod-db-task workflow + backup fix + ledger), #319 (Groq model fix: AI chats), #320 (prasad India-only, wording, labels), #321 (every temple bookable + admin temple editor), #322 (self-hosted photos + paint/CLS fixes).
+- Prod DB changes waiting: `ops/sql/commission-default-80.sql`, `ops/sql/seed-default-temple-offerings.sql` (dry-run first).
+- After deploy, verify: `/api/v1/ai/health` ok; AI chats answer with `source` llm; temple pages show five offerings; `/admin/temples` loads for an admin; images come from `/images/...`.
+- Working rules that matter: merged main is verified locally in api, web AND mobile before any deploy (CI no longer runs on push to main); one commit and one push per PR to save Actions minutes; no schema changes (prod migrations are manual); no secrets in chat or docs.
+- Owner-only items are listed in TASKS.md; none can be done from code.
