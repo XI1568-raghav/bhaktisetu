@@ -15,6 +15,8 @@
  *     and a browser header is ambient.
  *
  *     Precedence: ?lang= → User.preferredLanguage → Accept-Language → "en".
+ *     The stored preference is consulted only when the request carries an
+ *     Accept-Language header; with neither that nor ?lang= the answer is "en".
  *
  * The preferred-language lookup is deliberately lazy and cached. It runs only
  * when there is an authenticated user and only when something actually needs a
@@ -174,6 +176,12 @@ export function readAcceptLanguage(
   return request.headers?.['accept-language'];
 }
 
+function hasAcceptLanguage(request: Pick<FastifyRequest, 'headers'>): boolean {
+  const raw = readAcceptLanguage(request);
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === 'string' && value.trim() !== '';
+}
+
 /**
  * The stored preference, if the auth layer already put it on the request.
  *
@@ -183,6 +191,11 @@ export function readAcceptLanguage(
  * change needed here.
  */
 export function readCurrentUserLanguage(request: FastifyRequest): string | null {
+  // English by default: a stored preference only counts when the client also
+  // sent an Accept-Language header (every browser does). `User.preferredLanguage`
+  // defaults to 'hi' at signup, so without this a bare API call from an
+  // authenticated user came back in Hindi although nobody asked for it.
+  if (!hasAcceptLanguage(request)) return null;
   const user = request.currentUser as
     | { id?: string; preferredLanguage?: string | null }
     | undefined;
@@ -218,6 +231,9 @@ export async function resolveRequestLanguage(
   if (fromRequest) return fromRequest;
 
   const acceptLanguage = readAcceptLanguage(request);
+  // No header and no ?lang= -> the client asked for nothing -> English, and no
+  // preferred-language lookup (see readCurrentUserLanguage).
+  if (!hasAcceptLanguage(request)) return DEFAULT_LANGUAGE;
   const userId = (request.currentUser as { id?: string } | undefined)?.id;
   if (!userId) {
     return resolveLanguage({ acceptLanguage });

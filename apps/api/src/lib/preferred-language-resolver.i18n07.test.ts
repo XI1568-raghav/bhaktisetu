@@ -116,7 +116,7 @@ describe('I18N-07 — the preferred-language cache is bounded', () => {
 
     const base = Date.now();
     for (let i = 0; i < 12_000; i++) {
-      await resolveRequestLanguage(request({ userId: `user-${i}` }), {
+      await resolveRequestLanguage(request({ userId: `user-${i}`, acceptLanguage: 'en' }), {
         // Every user is a fresh request well after the previous entry expired.
         now: base + i * (PREFERRED_LANGUAGE_TTL_MS + 1),
       });
@@ -129,8 +129,8 @@ describe('I18N-07 — the preferred-language cache is bounded', () => {
     prismaMock.user.findUnique.mockResolvedValue({ preferredLanguage: 'hi' });
     const now = Date.now();
 
-    await resolveRequestLanguage(request({ userId: 'user-1' }), { now });
-    await resolveRequestLanguage(request({ userId: 'user-1' }), { now: now + 1000 });
+    await resolveRequestLanguage(request({ userId: 'user-1', acceptLanguage: 'en' }), { now });
+    await resolveRequestLanguage(request({ userId: 'user-1', acceptLanguage: 'en' }), { now: now + 1000 });
 
     expect(prismaMock.user.findUnique).toHaveBeenCalledTimes(1);
   });
@@ -139,8 +139,8 @@ describe('I18N-07 — the preferred-language cache is bounded', () => {
     prismaMock.user.findUnique.mockResolvedValue({ preferredLanguage: 'hi' });
     const now = Date.now();
 
-    await resolveRequestLanguage(request({ userId: 'user-1' }), { now });
-    await resolveRequestLanguage(request({ userId: 'user-1' }), {
+    await resolveRequestLanguage(request({ userId: 'user-1', acceptLanguage: 'en' }), { now });
+    await resolveRequestLanguage(request({ userId: 'user-1', acceptLanguage: 'en' }), {
       now: now + PREFERRED_LANGUAGE_TTL_MS + 1,
     });
 
@@ -151,9 +151,9 @@ describe('I18N-07 — the preferred-language cache is bounded', () => {
     prismaMock.user.findUnique.mockResolvedValue({ preferredLanguage: 'hi' });
     const now = Date.now();
 
-    await resolveRequestLanguage(request({ userId: 'user-1' }), { now });
+    await resolveRequestLanguage(request({ userId: 'user-1', acceptLanguage: 'en' }), { now });
     clearPreferredLanguageCache('user-1');
-    await resolveRequestLanguage(request({ userId: 'user-1' }), { now: now + 1 });
+    await resolveRequestLanguage(request({ userId: 'user-1', acceptLanguage: 'en' }), { now: now + 1 });
 
     expect(prismaMock.user.findUnique).toHaveBeenCalledTimes(2);
   });
