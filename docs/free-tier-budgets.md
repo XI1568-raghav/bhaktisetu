@@ -67,7 +67,7 @@
 
 | Workflow                                                        | Trigger                                                                        | Min/run            | Runs/mo           | Min/mo           |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------ | ----------------- | ---------------- |
-| `ci.yml`                                                        | PR + push to main (paths-filtered, no docs). **MEASURED 2026-09-04 from the Actions API, not estimated:** August = 70 runs / 530 min / **7.6 min per run**, 61 of them green. The ~5.25 and ~80 below were an estimate and both were wrong — the rate was low and the run count high. Timeout raised 12→25 the same day (see note) | **7.6 measured, ~15-18 expected once web completes** | **70 measured** | **~530 actual Aug; ~1050 projected** |
+| `ci.yml`                                                        | **PR only + manual since 2026-10-05 (push-to-main trigger removed, see the 2026-10-05 section)** (paths-filtered, no docs/.claude). **MEASURED 2026-09-04 from the Actions API, not estimated:** August = 70 runs / 530 min / **7.6 min per run**, 61 of them green. The ~5.25 and ~80 below were an estimate and both were wrong — the rate was low and the run count high. Timeout raised 12→25 the same day (see note) | **7.6 measured, ~15-18 expected once web completes** | **70 measured** | **~530 actual Aug; ~1050 projected** |
 | `commitlint.yml`                                                | **every PR, no paths filter** (the one gate never skipped). +~5s/run 2026-08-21 for the OPS-11 secret scan | ~0.6               | ~20               | ~12              |
 | `ai-review.yml`                                                 | PR, paths-filtered (`apps/**`, `packages/**`, `.github/workflows/**`, `scripts/agents/**`) | ~2                 | ~15               | ~30              |
 | `e2e.yml`                                                       | **Sun weekly + manual only** (PR trigger removed 2026-07-10)                   | ~15                | 4                 | ~60              |
@@ -89,6 +89,64 @@
 | **Total estimate**                                              |                                                                                |                    |                   | **~1181 min/mo** |
 
 Cap = 2000 min/mo. **Headroom: +819 min/mo.** Fleet is comfortably under cap.
+
+## 2026-10-05 - Actions burn measured, and what was cut
+
+**Measured (Actions API + run logs, 2026-10-01 to 2026-10-05):** ~1,260 wall-minutes in 5 days
+against a 2,000 min/month cap, i.e. ~63% of the month gone by the 5th.
+
+| Line | Runs | Billed min | Why |
+|---|---:|---:|---|
+| `ci.yml` total | 83 | ~970 | ~11.7 min/run |
+| of which `push` to main | 37 | ~430 (37 x ~11.7) | re-ran exactly what the PR run had just passed |
+| of which `pull_request` | 46 | ~540 | the real gate |
+| `next build` font flake reruns | several | ~8 each | `TypeError: Cannot read properties of null (reading '1')` in `next/font/google`, all tests green |
+| `render-diag.yml` deploy polling | - | ~109 | wall time spent sleeping while Render builds |
+| everything else (crons, commitlint, ai-review, ...) | - | ~180 | 1,260 - 970 - 109 |
+
+**What changed (PR `ci/cut-actions-minutes`):**
+1. `ci.yml` no longer triggers on `push` to main. `pull_request` already tests the PR merged
+   into main, so the push run was a duplicate. `workflow_dispatch` added for a manual main run;
+   `.claude/**` added to `paths-ignore`. The merge gate (`docs/merge-gatekeeping.md`: PR CI green)
+   is unchanged. Saves the ~37-push share: **~430 min per 5 days at the October pace**.
+2. Fonts are self-hosted (`apps/web/app/fonts/*.woff2`, SIL OFL, loaded via `next/font/local`).
+   `next build` no longer touches fonts.googleapis.com, so the flake that forced ~8-12 min
+   reruns is gone by construction.
+3. `render-diag.yml` deploy poll: 10s interval, 14 min cap that now FAILS on timeout (it used
+   to fall through silently), warm-up loop cut from up to ~8 min to ~1.5 min.
+
+**Expected burn after the change (estimate, not measured - verify on 2026-11-01):**
+
+| Item | Math | Min/mo |
+|---|---|---:|
+| `ci.yml` PR runs | ~46 PR runs per 5 days is the October pace; assume ~25 PR runs/mo once batching holds x ~11 min | ~275 (range 200-550) |
+| flake reruns | ~0 (cause removed); allow 2 x ~11 | ~22 |
+| Other workflows (unchanged) | sum of the table's Min/mo column excluding ci.yml: 12+30+60+180+60+40+3+10+30+48+90+150+12+10+30 | ~765 |
+| `render-diag.yml` deploys | ~4 deploys x ~12 min of polling | ~50 |
+| **Total** | 275 + 22 + 765 + 50 | **~1,110 (range ~1,000-1,450)** |
+
+Caveat: the measured non-CI, non-deploy remainder was ~180 min in 5 days (~1,080/mo pace), well above this table's ~765, so the other workflows may be under-modelled; the high end of the range allows for that.
+
+At the October pace without any change the month projects to ~7,500 min (1,260 / 5 x 30),
+which is why the free allowance ran out. The estimate above only holds if PR count also drops:
+the biggest remaining lever is still pushes per PR.
+
+## How to stay under 2,000 min/month
+
+1. **Batch commits; one push per PR.** Every push to an open PR re-runs the full ~11 min CI
+   (cancel-in-progress only saves you when the previous run was still going). No push-per-fix.
+2. **Run the checks locally first** (`pnpm exec vitest run`, `pnpm exec tsc --noEmit`, and
+   `next build` for web changes) so CI is confirmation, not the debugger.
+3. **Re-run only failed jobs** (`gh run rerun <id> --failed`) and only after reading the log:
+   a flake is not a reason to push an empty commit.
+4. **Docs-only and `.claude/**` changes** skip `ci.yml` by path filter. Keep them in separate
+   PRs from code only if the code PR would otherwise be mid-flight.
+5. **Do not add push triggers** to workflows; use `pull_request` with a paths filter or
+   `workflow_dispatch`. Run `darshya-free-tier-check` before adding any workflow.
+6. **Deploys are by dispatch** (`render-diag.yml -f mode=deploy`) and cost ~12 min of polling each;
+   batch merges first, deploy once.
+7. Check usage mid-month at https://github.com/settings/billing; if over ~1,000 by the 15th,
+   stop non-essential PRs.
 
 > **RECONCILED 2026-09-04 — the CI line was wrong in both directions, and the
 > error was hiding a dead gate.**
