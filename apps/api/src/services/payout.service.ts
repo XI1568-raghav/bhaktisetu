@@ -888,10 +888,30 @@ export async function listPayoutRequests(status?: string) {
     linkedCounts.map((g) => [g.payoutRequestId, g] as const),
   );
 
+  // The transfer happens outside this system, so the admin needs the payee's
+  // bank details in front of them. Only for requests still awaiting transfer:
+  // a settled request has no use for an account number in a list view.
+  const pendingProviderIds = [...new Set(requests.filter((r) => r.status === 'pending').map((r) => r.providerId))];
+  const payToById = new Map<string, { holderName: string | null; accountNumber: string; ifsc: string }>();
+  if (pendingProviderIds.length) {
+    const kyc = await prisma.$queryRawUnsafe<
+      Array<{ user_id: string; bank_account_number: string | null; bank_ifsc: string | null; bank_holder_name: string | null }>
+    >(
+      `SELECT user_id, bank_account_number, bank_ifsc, bank_holder_name FROM provider_kyc WHERE user_id = ANY($1::uuid[])`,
+      pendingProviderIds,
+    );
+    for (const k of kyc) {
+      if (k.bank_account_number && k.bank_ifsc) {
+        payToById.set(k.user_id, { holderName: k.bank_holder_name, accountNumber: k.bank_account_number, ifsc: k.bank_ifsc });
+      }
+    }
+  }
+
   return requests.map((r) => {
     const linked = linkedById.get(r.id);
     return {
       ...r,
+      payTo: r.status === 'pending' ? (payToById.get(r.providerId) ?? null) : null,
       amount: r.amount.toString(),
       providerName: byId.get(r.providerId)?.fullName ?? 'Unknown',
       providerEmail: byId.get(r.providerId)?.email ?? null,
