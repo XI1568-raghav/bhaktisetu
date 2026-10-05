@@ -15,3 +15,12 @@ export const UPCOMING_HINT =
 export function upcomingShown(upcomingInr: number | null | undefined): boolean {
   return typeof upcomingInr === 'number' && upcomingInr > 0;
 }
+
+/** Labels for the two halves of a provider's not-yet-paid money. */
+export const READY_LABEL = 'Ready to withdraw';
+export const REQUESTED_LABEL = 'Requested, awaiting payout';
+
+/** Show the Requested card only when the server sent a positive figure. */
+export function requestedShown(requestedInr: number | null | undefined): boolean {
+  return typeof requestedInr === 'number' && requestedInr > 0;
+}

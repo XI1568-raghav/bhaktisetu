@@ -19,6 +19,7 @@ import { resolveGaushalaDonee } from '../lib/gaushala-donee.js';
 // (raw INSERT, no Payment), so NOTHING in the payment-side wiring reached them.
 import { MONEY_EVENTS, recordMoneyEvent, type MoneyActorType } from '../lib/audit-money.js';
 import Razorpay from 'razorpay';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 assertNotProductionDemo('routes/donations');
 
@@ -198,7 +199,7 @@ export async function finalizeDonationReceipt(
   const claimed = await prisma.$executeRawUnsafe(
     `UPDATE donations
         SET status = 'paid',
-            paid_at = now(),
+            paid_at = ${SQL_UTC_NOW},
             razorpay_payment_id = $2,
             receipt_number = $3
       WHERE id = $1 AND status <> 'paid'`,
@@ -515,8 +516,8 @@ export async function donationRoutes(server: FastifyInstance) {
     // invariant (exactly one non-null) is upheld by the schema refine above.
     if (kind === 'temple') {
       await prisma.$executeRawUnsafe(
-        `INSERT INTO donations (id, user_id, temple_id, amount_inr, razorpay_order_id, status, donor_pan, dedication)
-         VALUES ($1, $2::uuid, $3::uuid, $4, $5, 'created', $6, $7)`,
+        `INSERT INTO donations (id, user_id, temple_id, amount_inr, razorpay_order_id, status, donor_pan, dedication, created_at)
+         VALUES ($1, $2::uuid, $3::uuid, $4, $5, 'created', $6, $7, ${SQL_UTC_NOW})`,
         donationId,
         userId,
         templeId,
@@ -527,8 +528,8 @@ export async function donationRoutes(server: FastifyInstance) {
       );
     } else {
       await prisma.$executeRawUnsafe(
-        `INSERT INTO donations (id, user_id, gaushala_id, amount_inr, razorpay_order_id, status, donor_pan, dedication)
-         VALUES ($1, $2::uuid, $3, $4, $5, 'created', $6, $7)`,
+        `INSERT INTO donations (id, user_id, gaushala_id, amount_inr, razorpay_order_id, status, donor_pan, dedication, created_at)
+         VALUES ($1, $2::uuid, $3, $4, $5, 'created', $6, $7, ${SQL_UTC_NOW})`,
         donationId,
         userId,
         doneeGaushalaId,

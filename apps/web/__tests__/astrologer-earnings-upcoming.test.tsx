@@ -47,3 +47,28 @@ describe('astrologer earnings: pending vs upcoming', () => {
     expect(screen.queryByTestId('earnings-upcoming')).toBeNull();
   });
 });
+
+describe('astrologer earnings: ready vs requested labels', () => {
+  it('labels the split truthfully when the API sends readyInr/requestedInr', async () => {
+    respond({
+      totalEarningsInr: 1000, pendingInr: 800, readyInr: 300, requestedInr: 500,
+      upcomingInr: 0, paidInr: 200, astrologerShare: 0.8,
+    });
+    render(<AstrologerEarningsPage />);
+    const ready = await screen.findByTestId('earnings-pending');
+    expect(ready.textContent).toMatch(/Ready to withdraw/);
+    expect(ready.textContent).toMatch(/300/);
+    expect(ready.textContent).not.toMatch(/Pending payout/);
+    const requested = await screen.findByTestId('earnings-requested');
+    expect(requested.textContent).toMatch(/Requested, awaiting payout/);
+    expect(requested.textContent).toMatch(/500/);
+  });
+
+  it('keeps the old single "Pending payout" figure for an older server', async () => {
+    respond({ totalEarningsInr: 300, pendingInr: 300, upcomingInr: 0, paidInr: 0, astrologerShare: 0.8 });
+    render(<AstrologerEarningsPage />);
+    const pending = await screen.findByTestId('earnings-pending');
+    expect(pending.textContent).toMatch(/Pending payout/);
+    expect(screen.queryByTestId('earnings-requested')).toBeNull();
+  });
+});

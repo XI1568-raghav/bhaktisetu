@@ -50,6 +50,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 /**
  * Links already sitting in inboxes carry a bare uuid, and refusing them would
@@ -194,8 +195,8 @@ export async function digestRoutes(server: FastifyInstance) {
       // recorded. Do not remove the cast.
       const rowsAffected = await prisma.$executeRawUnsafe(
         `INSERT INTO "WeeklyDigestOptOut" (user_id, opted_out_at, reason)
-         VALUES ($1::uuid, NOW(), $2)
-         ON CONFLICT (user_id) DO UPDATE SET opted_out_at = NOW(), reason = EXCLUDED.reason`,
+         VALUES ($1::uuid, ${SQL_UTC_NOW}, $2)
+         ON CONFLICT (user_id) DO UPDATE SET opted_out_at = ${SQL_UTC_NOW}, reason = EXCLUDED.reason`,
         userId,
         reason ?? null,
       );

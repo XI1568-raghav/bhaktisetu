@@ -1606,8 +1606,12 @@ export interface AstrologerEarningRow {
 export interface AstrologerEarningsVM {
   rows: AstrologerEarningRow[];
   totalEarningsInr: number | null;
-  /** Payable pending, EXCLUDING upcoming consultations. */
+  /** Payable pending, EXCLUDING upcoming consultations. Mixes ready + requested. */
   pendingInr: number | null;
+  /** Ready to withdraw (not yet requested). Part of pendingInr. null from an older server. */
+  readyInr: number | null;
+  /** Requested, awaiting payout (already in a payout request). Part of pendingInr. null from an older server. */
+  requestedInr: number | null;
   /** Consultations not yet completed. null from an older server. */
   upcomingInr: number | null;
   paidInr: number | null;
@@ -1642,6 +1646,8 @@ export function selectAstrologerEarnings(payload: unknown): AstrologerEarningsVM
     rows,
     totalEarningsInr: money(summary.totalEarningsInr),
     pendingInr: money(summary.pendingInr),
+    readyInr: money(summary.readyInr),
+    requestedInr: money(summary.requestedInr),
     upcomingInr: money(summary.upcomingInr),
     paidInr: money(summary.paidInr),
     astrologerShare: money(summary.astrologerShare),

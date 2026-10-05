@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 /**
  * 80G donation receipt batch export. Streams CSV of paid donations in a
@@ -137,7 +138,7 @@ export async function adminDonationsExportRoutes(server: FastifyInstance) {
         if (exporterId) {
           await prisma.$executeRawUnsafe(
             `INSERT INTO "DonationExportAuditLog" (id, exported_by, from_date, to_date, row_count, ip_address, created_at)
-             VALUES (gen_random_uuid(), $1::uuid, $2::date, $3::date, $4, $5, NOW())`,
+             VALUES (gen_random_uuid(), $1::uuid, $2::date, $3::date, $4, $5, ${SQL_UTC_NOW})`,
             exporterId,
             fromDate.toISOString().slice(0, 10),
             toDate.toISOString().slice(0, 10),
