@@ -44,6 +44,7 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import { apiErrorCode, serverErrorMessage } from '../../../lib/friendly-error';
 import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { DateInput } from '../../../components/ui/DateInput';
+import { IST_TIME_NOTE, localEquivalent, withIst } from '../../../lib/slot-zone';
 import { MuhuratGuidance, useMuhuratGuidance } from '../../../components/booking/MuhuratGuidance';
 import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-score';
 // CM-10: this subtitle used to interpolate puja.category, i.e. the raw Prisma
@@ -632,6 +633,16 @@ function PujaBookingInner() {
  if (!puja || !selectedTemple) return 0;
  return Number(selectedTemple.priceOverride || puja.basePrice);
  }, [puja, selectedTemple]);
+
+ // The slot as the devotee should read it: always labelled IST, plus the same
+ // instant in the browser's own zone when that is not India (NRI devotees).
+ const selectedSlotText = useMemo(() => {
+ const label = withIst(
+ slotAvailability.find((s) => s.time === selectedSlot)?.label || selectedSlot,
+ );
+ const local = localEquivalent(selectedDate, selectedSlot);
+ return local ? `${label} (${local} your time)` : label;
+ }, [slotAvailability, selectedSlot, selectedDate]);
 
  const totalPrice = useMemo(
  () => pujaTotalInr(basePrice, wantsPrasad),
@@ -1381,7 +1392,7 @@ function PujaBookingInner() {
  <div className="flex justify-between text-sm">
  <span className="text-surface-500">Time</span>
  <span className="font-medium text-surface-700">
- {slotAvailability.find((s) => s.time === selectedSlot)?.label || selectedSlot}
+ {selectedSlotText}
  </span>
  </div>
  <div className="flex justify-between text-sm">
@@ -1753,6 +1764,7 @@ function PujaBookingInner() {
  <Clock className="h-5 w-5 text-saffron-500" />
  Select Time Slot
  </h2>
+ <p className="-mt-2 mb-4 text-xs text-surface-500">{IST_TIME_NOTE}</p>
  {errors.slot && (
  <p className="mb-3 flex items-center gap-1 text-sm text-red-500">
  <AlertCircle className="h-4 w-4" /> {errors.slot}
@@ -1812,7 +1824,7 @@ function PujaBookingInner() {
  }`}
  >
  <p className="text-sm font-semibold text-surface-700">
- {slot.label}
+ {withIst(slot.label)}
  </p>
  <p
  className={`mt-1 text-xs ${
@@ -2155,9 +2167,7 @@ function PujaBookingInner() {
  <SummaryRow label="Date" value={formatDate(selectedDate)} />
  <SummaryRow
  label="Time"
- value={
- slotAvailability.find((s) => s.time === selectedSlot)?.label || selectedSlot
- }
+ value={selectedSlotText}
  />
  <SummaryRow
  label="Devotees"
@@ -2470,7 +2480,7 @@ function PujaBookingInner() {
  <p className="font-semibold text-surface-700">
  {formatDate(selectedDate)}
  <br />
- {slotAvailability.find((s) => s.time === selectedSlot)?.label || selectedSlot}
+ {selectedSlotText}
  </p>
  </div>
  <div className="rounded-lg bg-white/80 p-3">
