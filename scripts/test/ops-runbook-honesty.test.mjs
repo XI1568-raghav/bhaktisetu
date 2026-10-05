@@ -176,7 +176,7 @@ describe('the stripper itself (guard of the guard)', () => {
 describe('OPS-02 — db-restore.md must be followable by the owner, blind', () => {
   const text = read(DB_RESTORE);
 
-  it('names all three required GitHub Actions secrets exactly', () => {
+  it('names the secrets the backup workflow reads, exactly', () => {
     // "check secrets.SUPABASE_* in GH Actions" is not an instruction anyone can
     // follow: it does not say which three, or where in Supabase each is found.
     for (const secret of ['SUPABASE_DB_URL', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']) {

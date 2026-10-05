@@ -319,7 +319,7 @@
   "title": "Store checkout dead-ends — not one of the 24 catalogue products can actually be ordered",
   "state": "owner",
   "commit": "1645e4da",
-  "note": "Owner decision on the single catalogue + keyspace: either seed the 24 SKUs as real StoreProduct rows under a Darshya house StoreProfile, or add a `han"
+  "note": "[2026-10-06 status] COM-01: owner decision on the single catalogue still pending; not re-verified in this pass. | Owner decision on the single catalogue + keyspace: either seed the 24 SKUs as real StoreProduct rows under a Darshya house StoreProfile, or add a `han"
  },
  {
   "key": "F024",
@@ -333,7 +333,7 @@
   "title": "Every 80G receipt Darshya issues is legally invalid — it asserts Section 80G eligibility with no registration number and no donee PAN",
   "state": "owner",
   "commit": "wave-2026-08-15",
-  "note": "OWNER, outside the repo: obtain the Section 80G(5) registration and the donee PAN, then set COMPANY.donationLegal.HAS_80G_VERIFIED/eightyGNumber/pan in apps/web"
+  "note": "[2026-10-06 status] COM-02: unchanged, blocked on the 80G(5) registration number and donee PAN (owner-only, listed in TASKS.md). | OWNER, outside the repo: obtain the Section 80G(5) registration and the donee PAN, then set COMPANY.donationLegal.HAS_80G_VERIFIED/eightyGNumber/pan in apps/web"
  },
  {
   "key": "F025",
@@ -473,7 +473,7 @@
   "title": "15 of 20 temples advertise \"Book Puja via Darshya\" with zero bookable offerings behind the CTA",
   "state": "owner",
   "commit": "",
-  "note": "OWNER, business content not code: 15 of the 20 seeded temples still return {\"pujas\":[]} — akshardham-delhi, badrinath-uttarakhand, dagdusheth-pune, meenakshi-ma"
+  "note": "[2026-10-06 status] COM-12: left open on purpose until the temples PR lands; re-check the 15 empty temples afterwards. | OWNER, business content not code: 15 of the 20 seeded temples still return {\"pujas\":[]} — akshardham-delhi, badrinath-uttarakhand, dagdusheth-pune, meenakshi-ma"
  },
  {
   "key": "F035",
@@ -613,7 +613,7 @@
   "title": "The live default platform take is 30%, not the 20% the whole business is built on",
   "state": "owner",
   "commit": "1645e4da",
-  "note": "DEPLOY/OPS: run `prisma migrate deploy` against local and prod (per docs/handoff, migrations do not auto-apply on Render deploy), then redeploy the API so Prism"
+  "note": "[2026-10-06 status] PM-03: repo fix and schema default are already 0.80 (seed fixed too); prod default/rows are applied by ops/sql/commission-default-80.sql through the prod-db-task workflow (this PR) once merged: dry-run, then apply, then verify-commission-state.sql. Stays owner until that apply is confirmed. | DEPLOY/OPS: run `prisma migrate deploy` against local and prod (per docs/handoff, migrations do not auto-apply on Render deploy), then redeploy the API so Prism"
  },
  {
   "key": "F045",
@@ -669,7 +669,7 @@
   "title": "The two SKUs and three-tier structure the entire GTM plan depends on do not exist in the product",
   "state": "owner",
   "commit": "",
-  "note": "Identical to PM-03: apply migration 20260812000000 to the running databases in the documented order, redeploy the API, then verify a new Priest row defaults to "
+  "note": "[2026-10-06 status] PM-07: same prod step as PM-03 (commission-default-80.sql); the 2-SKU catalogue question is still an owner decision. | Identical to PM-03: apply migration 20260812000000 to the running databases in the documented order, redeploy the API, then verify a new Priest row defaults to "
  },
  {
   "key": "F049",
@@ -683,7 +683,7 @@
   "title": "Four different platform take rates are simultaneously authoritative; nothing reconciles them",
   "state": "owner",
   "commit": "",
-  "note": "OWNER, one decision governing three prose authorities and one deletion, none of which is a code change I may make unilaterally: publish the number, then amend P"
+  "note": "[2026-10-06 status] PM-08: owner reconciliation of the prose authorities still pending; code is uniform 20/80 (commission-math.ts). | OWNER, one decision governing three prose authorities and one deletion, none of which is a code change I may make unilaterally: publish the number, then amend P"
  },
  {
   "key": "F050",
@@ -697,7 +697,7 @@
   "title": "No GST treatment anywhere in the pricing model",
   "state": "owner",
   "commit": "",
-  "note": "OWNER + apps/api, both out of lane. The founder sign-off line on E:/NewClaude/deliverables/launch-catalog-2sku-pricing.md is still blank, so the price architect"
+  "note": "[2026-10-06 status] PM-09: GST treatment still an owner/CA decision (entity and GSTIN not yet held). | OWNER + apps/api, both out of lane. The founder sign-off line on E:/NewClaude/deliverables/launch-catalog-2sku-pricing.md is still blank, so the price architect"
  },
  {
   "key": "F051",
@@ -711,7 +711,7 @@
   "title": "Astrologer per-minute rates render with no currency symbol at all",
   "state": "owner",
   "commit": "",
-  "note": "OWNER: setting a price band for a marketplace's highest-margin repeat line is a pricing decision, not a fix -- and raising a live per-minute rate on existing as"
+  "note": "[2026-10-06 status] PM-10: owner pricing decision, unchanged. | OWNER: setting a price band for a marketplace's highest-margin repeat line is a pricing decision, not a fix -- and raising a live per-minute rate on existing as"
  },
  {
   "key": "F052",
@@ -851,7 +851,7 @@
   "title": "The live catalogue is not the GTM catalogue — no tiered SKUs, no samagri attach, Satyanarayan at 36% of planned price",
   "state": "owner",
   "commit": "wave-2026-08-15",
-  "note": ""
+  "note": "[2026-10-06 status] PM-09: live catalogue vs GTM catalogue is still an owner content decision, unchanged. | "
  },
  {
   "key": "F062",
@@ -865,7 +865,7 @@
   "title": "Senior astrologers are priced 2-4x below the market ceiling, capping the highest-margin repeat revenue line",
   "state": "owner",
   "commit": "wave-45-2026-08-31",
-  "note": "THE HEADLINE IS NOT CLOSED AND CANNOT BE BY ME. \"Senior astrologers are priced 2-4x below the market ceiling\" is a pricing decision. MEASURED on live prod today: GET https://api.darshya.online/api/v1/astrology/astrologers/live -> 200, source \"live\", 3 astrologers — Acharya Vinod Sharma (22 yrs) ₹25/min, Dr. Mahesh Iyer (15 yrs) ₹20/min, Ritika Menon (9 yrs) ₹18/min. Nothing in code caps any of the"
+  "note": "[2026-10-06 status] PM-10: astrologer price bands are an owner decision, unchanged. | THE HEADLINE IS NOT CLOSED AND CANNOT BE BY ME. \"Senior astrologers are priced 2-4x below the market ceiling\" is a pricing decision. MEASURED on live prod today: GET https://api.darshya.online/api/v1/astrology/astrologers/live -> 200, source \"live\", 3 astrologers — Acharya Vinod Sharma (22 yrs) ₹25/min, Dr. Mahesh Iyer (15 yrs) ₹20/min, Ritika Menon (9 yrs) ₹18/min. Nothing in code caps any of the"
  },
  {
   "key": "F063",
@@ -1171,9 +1171,9 @@
   "workflow": "prod-clickthrough",
   "line": 524,
   "title": "/blog is an empty shell linked from the global footer",
-  "state": "owner",
-  "commit": "",
-  "note": "OWNER DECISION, exactly the two the finding offers: approve 3-5 drafts (flip a status and append to content/blog/published.ts — one commit each), or remove 'Blo"
+  "state": "fixed",
+  "commit": "ops/prod-db-task-and-backup-fix",
+  "note": "Verified 2026-10-06 against production: curl -s https://darshya.online/ | grep -c 'href=\"/blog\"' = 0 (footer present: /privacy link count 1), /blog is not in sitemap.xml (0 hits). The link is gated by apps/web/lib/footer-blog-link.ts. /blog itself still answers 200 with an honest \"First essays loading\" waitlist stub, so nothing advertises an empty shell any more."
  },
  {
   "key": "F085",
@@ -1215,7 +1215,7 @@
   "title": "/temples takes ~37s to settle — the flagship browse page is effectively unusable on a first visit",
   "state": "owner",
   "commit": "",
-  "note": "OWNER COST DECISION, unchanged. The larger part of the measured 37.5s is Render free-tier cold start on BOTH the web and API services — the audit itse"
+  "note": "[2026-10-06 status] TD-01: dominated by Render free-tier cold start; owner cost decision, unchanged. | OWNER COST DECISION, unchanged. The larger part of the measured 37.5s is Render free-tier cold start on BOTH the web and API services — the audit itse"
  },
  {
   "key": "F088",
@@ -1327,7 +1327,7 @@
   "title": "Temple photography is hotlinked from upload.wikimedia.org rather than self-hosted",
   "state": "owner",
   "commit": "",
-  "note": "OWNER: mirroring ~30 temple photographs into Supabase storage or an image CDN. Same block as COM-18 — downloading and redistributing third-party binaries, a CC-"
+  "note": "[2026-10-06 status] TD-09: image self-hosting still an owner cost decision, unchanged. | OWNER: mirroring ~30 temple photographs into Supabase storage or an image CDN. Same block as COM-18 — downloading and redistributing third-party binaries, a CC-"
  },
  {
   "key": "F096",
@@ -1551,7 +1551,7 @@
   "title": "Pandit is paid 70%, not the 80% the product promises",
   "state": "owner",
   "commit": "",
-  "note": "(1) apps/api/prisma/seed.ts:934 still hardcodes `commissionRate: 0.70` on every seeded priest — so running db:seed after the migration silently re-cre"
+  "note": "[2026-10-06 status] PF-16: schema default and seed.ts are 0.80 in the repo; prod rows still on 0.70 are fixed by ops/sql/commission-default-80.sql (this PR), pending a maintainer dry-run and apply. | (1) apps/api/prisma/seed.ts:934 still hardcodes `commissionRate: 0.70` on every seeded priest — so running db:seed after the migration silently re-cre"
  },
  {
   "key": "F112",
@@ -2111,7 +2111,7 @@
   "title": "apps/api/.env points at the PRODUCTION Supabase database with NODE_ENV=production — any Prisma CLI or script run from apps/api hits prod, not the local dev DB",
   "state": "owner",
   "commit": "",
-  "note": "UNCHANGED AND OWNER-ONLY: apps/api/.env must be edited by hand — Write and Edit to that path are refused by the machine's credential-store policy. Exa"
+  "note": "[2026-10-06 status] AW-09: still owner-only (apps/api/.env must be edited by hand). | UNCHANGED AND OWNER-ONLY: apps/api/.env must be edited by hand — Write and Edit to that path are refused by the machine's credential-store policy. Exa"
  },
  {
   "key": "F152",
@@ -2405,7 +2405,7 @@
   "title": "apps/api/.env in the working tree holds live production Supabase service-role credentials",
   "state": "owner",
   "commit": "",
-  "note": "Owner-only, two parts. (1) ROTATE the exposed credentials — Supabase service-role key, the production JWT_SECRET, the Groq key and the Cohere key — si"
+  "note": "[2026-10-06 status] S-12: credential rotation still owner-only; not done as far as this repo can tell. | Owner-only, two parts. (1) ROTATE the exposed credentials — Supabase service-role key, the production JWT_SECRET, the Groq key and the Cohere key — si"
  },
  {
   "key": "F173",
@@ -2613,9 +2613,9 @@
   "workflow": "authenticated-deep",
   "line": 1520,
   "title": "/blog index renders zero posts",
-  "state": "owner",
-  "commit": "",
-  "note": "OWNER, editorial: PUBLISHED_POSTS is deliberately empty. All 30 existing drafts under docs/agent-reports/blog-drafts are status draft or ready-for-founder-revie"
+  "state": "fixed",
+  "commit": "ops/prod-db-task-and-backup-fix",
+  "note": "Verified 2026-10-06: /blog no longer reachable from the global footer or the sitemap, and the index renders an explicit \"First essays loading, join the waitlist\" state rather than a bare empty list. Zero published posts is an editorial choice (PUBLISHED_POSTS empty by design); publishing the drafts is optional content work, not a defect."
  },
  {
   "key": "F188",
@@ -2725,9 +2725,9 @@
   "workflow": "authenticated-deep",
   "line": 1608,
   "title": "The h1 is a different thing on every screen: 7 treatments, 18px to 70.4px, two typefaces — and two of the ten screens have no h1 at all",
-  "state": "partial",
-  "commit": "",
-  "note": "[2026-10-04] Triage: closeable on source evidence (the /priest and /admin h1 rule is pinned by test, 35/35). Only a live h1 count behind login remains, which needs an authenticated priest and admin session.\n\nSUBSTANTIALLY CLOSED 2026-09-08; stays partial ONLY because two screens cannot be measured. The finding's \"349 h1 across 45 recipes, not swept\" is an ARTIFACT: measured with comments stripped, 408 non-test h1 across 864 files, 406 already on a named recipe, 2 genuinely hand-rolled. An intermediate estimate of 38 decomposed as 32 where <h1 and H1.<archetype> sit on different LINES (invisible to a per-line grep), 1 using h1Class(), and 3 inside COMMENTS — this repo documents h1 decisions in prose at the call site, so an unstripped scan invents a backlog. The real open half was the OTHER clause: /auth/signup shipped with NO h1 at all (1,198 lines, four h2s, title a span carrying H1.portal's four utilities by hand) — byte-for-byte the shape /auth/login had before its fix. Now H1.portal, computed size unchanged. Two migrations refused on purpose: app/pitch (.pitch-h1 is clamp(48px,8vw,120px); migrating shrinks the investor deck hook by up to 72px) and app/global-error.tsx (renders INSTEAD of the root layout, so globals.css never loads and no class can reach it). RESIDUAL: /priest and /admin both 307 to auth and are LIVE-UNVERIFIED. Source shows one h1 each on H1.portal and no h1 in either layout; the new rule test pins both by name."
+  "state": "fixed",
+  "commit": "ops/prod-db-task-and-backup-fix",
+  "note": "Verified 2026-10-06 on source: 413 non-test <h1> in apps/web with comments stripped, 411 on a heading-recipe class (H1.* or h1Class); the 2 exceptions are deliberate (app/pitch .pitch-h1 clamp, app/global-error.tsx renders without globals.css). __tests__/h1-rule.du05.test.ts 21/21 passes. Live h1 count behind /priest and /admin login not measured; the rule test pins one H1.portal h1 each in source."
  },
  {
   "key": "F196",
@@ -2741,7 +2741,7 @@
   "title": "The display typeface is effectively homepage-only — 6 of 10 screens render zero Cabinet Grotesk",
   "state": "owner",
   "commit": "",
-  "note": "OWNER: licence Cabinet Grotesk (or pick an alternative), drop the woff2 under apps/web/public/fonts and declare it with next/font/local. The hierarchy then appe"
+  "note": "[2026-10-06 status] DU-06: font licensing decision still with the owner. | OWNER: licence Cabinet Grotesk (or pick an alternative), drop the woff2 under apps/web/public/fonts and declare it with next/font/local. The hierarchy then appe"
  },
  {
   "key": "F197",
@@ -3049,7 +3049,7 @@
   "title": "Auth access token persisted in localStorage (poojly_session/poojly_user) — any XSS yields full account + API takeover as that user",
   "state": "partial",
   "commit": "",
-  "note": "[2026-10-04] Triage: not a small fix. 99 web files send Bearer from the stored token, 9 touch poojly_session, 21 use credentials:include. The API already sets the httpOnly cookie, so this is the large auth-context migration in the ledger plan.\n\nMIGRATION PLAN for the remaining work, in order, none of it in this lane: (1) with the cookie now settable locally, verify end-to-end that authenticateUser's ex"
+  "note": "[2026-10-06 status] SEC-02: still partial per the 2026-10-04 triage (99 web files read the stored token); no change since. | [2026-10-04] Triage: not a small fix. 99 web files send Bearer from the stored token, 9 touch poojly_session, 21 use credentials:include. The API already sets the httpOnly cookie, so this is the large auth-context migration in the ledger plan.\n\nMIGRATION PLAN for the remaining work, in order, none of it in this lane: (1) with the cookie now settable locally, verify end-to-end that authenticateUser's ex"
  },
  {
   "key": "F219",
@@ -3105,7 +3105,7 @@
   "title": "80G receipt issued for a donee with no 80G registration and no PAN — receipt asserts Section 80G eligibility unconditionally",
   "state": "owner",
   "commit": "1645e4da",
-  "note": "OWNER: the 80G(5) registration number and the donee PAN are legal facts only the founder holds; without them no receipt can honestly assert Section 80"
+  "note": "[2026-10-06 status] LEG-02: still blocked on the 80G(5) registration number and PAN; 80G claims are gated off on the web per TC-01 work. | OWNER: the 80G(5) registration number and the donee PAN are legal facts only the founder holds; without them no receipt can honestly assert Section 80"
  },
  {
   "key": "F223",
@@ -3217,7 +3217,7 @@
   "title": "No legal entity, GSTIN or registered address anywhere — yet the platform issues a PDF titled 'DARSHYA TAX INVOICE' and adds 5% GST at checkout",
   "state": "owner",
   "commit": "wave-2026-08-15",
-  "note": "Two things, neither in this lane. (1) apps/api/src/lib/pdf-invoice.ts:195 must be retitled 'RECEIPT' -- apps/api is explicitly do-not-touch this wave. (2) OWNER"
+  "note": "[2026-10-06 status] LEG-10: still owner-blocked (legal entity, GSTIN, registered address). | Two things, neither in this lane. (1) apps/api/src/lib/pdf-invoice.ts:195 must be retitled 'RECEIPT' -- apps/api is explicitly do-not-touch this wave. (2) OWNER"
  },
  {
   "key": "F231",
@@ -3231,7 +3231,7 @@
   "title": "Grievance officer is unnamed and the site publishes two conflicting grievance SLAs",
   "state": "owner",
   "commit": "",
-  "note": "OWNER: the officer's NAME, DESIGNATION and PHONE are the substance of IT Rules 2021 Rule 3(2) and Consumer Protection (E-Commerce) Rules 2020 Rule 4(5"
+  "note": "[2026-10-06 status] LEG-11: grievance officer name, designation and phone still need the owner. | OWNER: the officer's NAME, DESIGNATION and PHONE are the substance of IT Rules 2021 Rule 3(2) and Consumer Protection (E-Commerce) Rules 2020 Rule 4(5"
  },
  {
   "key": "F232",
@@ -3553,7 +3553,7 @@
   "title": "Puja booking does not exist in the app — the Book button opens the production website, and the create-booking hook points at a 404",
   "state": "owner",
   "commit": "",
-  "note": "NO CODE CHANGE BY ME — the ledger note (\"The in-app booking flow itself is not built, and that is the whole remaining L\") is stale. It was built by a later wave, and I verified it rather than taking it on trust.\n\nWhat exists now:\n  * apps/mobile/app/(devotee)/puja-book.tsx — 946 lines: temple, date, slot and sankalp-name selection, POSTing to `${apiBase()}/api/v1/bookings/book` at :277.\n  * apps/m"
+  "note": "[2026-10-06 status] PAR-15: in-app puja booking still not built; mobile Book opens the website. Product decision, unchanged. | NO CODE CHANGE BY ME — the ledger note (\"The in-app booking flow itself is not built, and that is the whole remaining L\") is stale. It was built by a later wave, and I verified it rather than taking it on trust.\n\nWhat exists now:\n  * apps/mobile/app/(devotee)/puja-book.tsx — 946 lines: temple, date, slot and sankalp-name selection, POSTing to `${apiBase()}/api/v1/bookings/book` at :277.\n  * apps/m"
  },
  {
   "key": "F255",
@@ -3651,7 +3651,7 @@
   "title": "Provider earnings and temple payouts/bookings screens exist on web but are missing from the app; the app has no search and almost no content library",
   "state": "owner",
   "commit": "",
-  "note": "NO CODE CHANGE BY ME. The ledger note said the remaining item was \"the v1 mobile scope decision, which is what the finding actually asks for\". That document now exists — docs/mobile-v1-scope.md, 331 lines — and so does everything on the finding's \"at minimum\" list. I checked each clause rather than the note.\n\nThe finding's fix, clause by clause:\n  1. \"At minimum add the three earnings/payouts scre"
+  "note": "[2026-10-06 status] PAR-22: mobile scope decision unchanged. | NO CODE CHANGE BY ME. The ledger note said the remaining item was \"the v1 mobile scope decision, which is what the finding actually asks for\". That document now exists — docs/mobile-v1-scope.md, 331 lines — and so does everything on the finding's \"at minimum\" list. I checked each clause rather than the note.\n\nThe finding's fix, clause by clause:\n  1. \"At minimum add the three earnings/payouts scre"
  },
  {
   "key": "F262",
@@ -3763,7 +3763,7 @@
   "title": "Product cards ship 5.58 MB of unoptimised hotlinked Wikimedia images, using 19th-century paintings as product photography",
   "state": "partial",
   "commit": "",
-  "note": "[2026-10-04] Triage: srcSet, width/height, lazy loading, the Wikimedia thumbnail rewrite and the onError fallback (components/RemoteImage.tsx) are in. Open: self-host vs CDN (TASKS #203/#204, touches next.config and lib/images) and real photography. Owner decision.\n\nLANE plus OWNER. lib/images.ts and next.config.* are both on this wave's do-not-touch list, and the self-host-vs-CDN choice is TASKS.md #203/#204 awaiting the o"
+  "note": "[2026-10-06 status] CM-08: still partial per the 2026-10-04 triage; no change since. | [2026-10-04] Triage: srcSet, width/height, lazy loading, the Wikimedia thumbnail rewrite and the onError fallback (components/RemoteImage.tsx) are in. Open: self-host vs CDN (TASKS #203/#204, touches next.config and lib/images) and real photography. Owner decision.\n\nLANE plus OWNER. lib/images.ts and next.config.* are both on this wave's do-not-touch list, and the self-host-vs-CDN choice is TASKS.md #203/#204 awaiting the o"
  },
  {
   "key": "F270",
@@ -3833,7 +3833,7 @@
   "title": "Homepage is brand-first with two competing CTAs, no how-it-works, no proof video, and a cookie banner over 29% of the fold",
   "state": "owner",
   "commit": "wave-2026-08-15",
-  "note": "(1) LANE — lib/i18n/** and lib/t.ts are on the do-not-touch list and another agent is editing them this wave. (2) COMPLIANCE JUDGEMENT — deferring when a DPDP/U"
+  "note": "[2026-10-06 status] CM-13: homepage restructure still an owner/copy decision; Home IA cut shipped earlier (12 to 8 sections). | (1) LANE — lib/i18n/** and lib/t.ts are on the do-not-touch list and another agent is editing them this wave. (2) COMPLIANCE JUDGEMENT — deferring when a DPDP/U"
  },
  {
   "key": "F275",
@@ -3959,7 +3959,7 @@
   "title": "The web tier runs in Render Oregon and the API in Singapore — server-rendered API calls cross the Pacific (API-to-database does not)",
   "state": "owner",
   "commit": "",
-  "note": "PREMISE CORRECTED 2026-09-12 BY MEASUREMENT. This record was titled 'API runs in Render Oregon while the database is Supabase Tokyo — every query crosses the Pacific'. That came from render.yaml, which does not govern this service. The Render API reports the API in singapore and darshya-web in oregon; the Supabase pooler host is ap-northeast-1 (Tokyo). So API-to-database is Singapore to Tokyo, not a Pacific crossing, and the Pacific hop that remains is web (oregon) to API (singapore) on server-rendered fetches. Latency was NOT measured, so P0 -> P1 is a judgement on the corrected topology, not a measurement. Still owner-only: a Render service's region cannot be changed in place. ORIGINAL NOTE: The region change is pure infrastructure and owner-only: either recreate the Supabase project in ap-south-1 (Mumbai) and move both Render services to region: si"
+  "note": "[2026-10-06 status] SCAL-02: unchanged; API is in Singapore, web region is the open owner decision. | PREMISE CORRECTED 2026-09-12 BY MEASUREMENT. This record was titled 'API runs in Render Oregon while the database is Supabase Tokyo — every query crosses the Pacific'. That came from render.yaml, which does not govern this service. The Render API reports the API in singapore and darshya-web in oregon; the Supabase pooler host is ap-northeast-1 (Tokyo). So API-to-database is Singapore to Tokyo, not a Pacific crossing, and the Pacific hop that remains is web (oregon) to API (singapore) on server-rendered fetches. Latency was NOT measured, so P0 -> P1 is a judgement on the corrected topology, not a measurement. Still owner-only: a Render service's region cannot be changed in place. ORIGINAL NOTE: The region change is pure infrastructure and owner-only: either recreate the Supabase project in ap-south-1 (Mumbai) and move both Render services to region: si"
  },
  {
   "key": "F284",
@@ -4001,7 +4001,7 @@
   "title": "Every authenticated request in production makes a live network call to Supabase Auth",
   "state": "owner",
   "commit": "wave-2026-08-15",
-  "note": "Owner must set SUPABASE_JWT_SECRET on the Render API service (Supabase dashboard -> Settings -> API -> JWT secret). Until then supabaseJwtConfig().enabled is fa"
+  "note": "[2026-10-06 status] SCAL-05: SUPABASE_JWT_SECRET on the Render API service still an owner action. | Owner must set SUPABASE_JWT_SECRET on the Render API service (Supabase dashboard -> Settings -> API -> JWT secret). Until then supabaseJwtConfig().enabled is fa"
  },
  {
   "key": "F287",
@@ -4071,7 +4071,7 @@
   "title": "Two Render free web services, but the free tier only funds one always-on — and the budget doc says so",
   "state": "owner",
   "commit": "",
-  "note": "OWNER DECISION: which service gets the 750 free instance-hours, and whether to spend. The three options, with the numbers: (a) move the web front end "
+  "note": "[2026-10-06 status] SCAL-10: two free Render services share one 750 hour budget; owner decision unchanged (listed in TASKS.md). | OWNER DECISION: which service gets the 750 free instance-hours, and whether to spend. The three options, with the numbers: (a) move the web front end "
  },
  {
   "key": "F292",
@@ -4085,7 +4085,7 @@
   "title": "Resend's 100 emails/day is the first hard business cap you will hit — around 30 signups a day",
   "state": "owner",
   "commit": "",
-  "note": "Three owner decisions, none of them code: (1) buy the paid Resend tier ($20/mo for 50k) as a launch-day line item; (2) move digest/drip/marketing sends off Rese"
+  "note": "[2026-10-06 status] SCAL-11: Resend 100/day cap and sender-domain verification still owner actions. | Three owner decisions, none of them code: (1) buy the paid Resend tier ($20/mo for 50k) as a launch-day line item; (2) move digest/drip/marketing sends off Rese"
  },
  {
   "key": "F293",
@@ -4687,7 +4687,7 @@
   "title": "All four outbound channels are unconfigured and nothing in the product can tell you",
   "state": "owner",
   "commit": "wave-2026-08-15",
-  "note": "DISPUTED: The work done is real and the tests are honest, but the claim is marked outcome:'fixed' with an EMPTY blocked_on while two of the finding's three fix "
+  "note": "[2026-10-06 status] NOTIF-03: channels stay unconfigured until the owner sets Resend/WhatsApp/push credentials; unchanged. | DISPUTED: The work done is real and the tests are honest, but the claim is marked outcome:'fixed' with an EMPTY blocked_on while two of the finding's three fix "
  },
  {
   "key": "F336",
@@ -5119,9 +5119,9 @@
   "workflow": "scale-mindset",
   "line": 3565,
   "title": "A pandit paid through the temple booking path sees ₹0 in their own payout portal while being genuinely owed money",
-  "state": "owner",
-  "commit": "wave-hard-2026-08-21",
-  "note": "[independently verified] The finding's second half is untouched: four surfaces still report four different numbers for one pandit (/payouts/balance, /payouts/pandit/mine, the booking co"
+  "state": "fixed",
+  "commit": "ops/prod-db-task-and-backup-fix",
+  "note": "Verified 2026-10-06 from code and tests. GET /priest/payouts (apps/api/src/routes/priest.ts) merges the Commission rail with the PriestPayout rail, dedupes bookings present on both, and feeds the summary cards from the same helper as the dashboard; the temple-path mint (booking.service attach-priest) writes the Commission. 25 tests pass: priest-payouts-unified-rail.di05, priest-payouts-rail-dedupe.di05, booking.temple-path-commission, payout-balance-legacy-rail.di05. Residual, not the finding: GET /payouts/pandit/mine is legacy-rail only but no web, mobile or admin client calls it."
  },
  {
   "key": "F367",
@@ -5401,7 +5401,7 @@
   "title": "Which pages fail Core Web Vitals in production, and why — structurally",
   "state": "partial",
   "commit": "wave-2026-08-15",
-  "note": "[2026-10-04] Triage: needs a Lighthouse re-measure against production or field data (CrUX / Search Console) plus the owner decision on images.unoptimized (sharp on a 512 MB container).\n\nWas wontfix. Production is live again, so I measured instead of inferring. Everything below is my own measurement, 2026-09-01, mobile UA (Pixel 7 / Chrome 120), median of 3 for timings.\n\nA. ONE RESIDUAL CLOSED IN CODE. The triage's residual 3 was '/ and /gaushala emit zero srcset across 26 <img> tags'. The / half closed in the 2026-08-23 pass. I closed the /gaushala half: app/gaushala/page.tsx:423"
+  "note": "[2026-10-06 status] CWV-01: still partial; needs a production Lighthouse or CrUX re-measure, none run in this pass. | [2026-10-04] Triage: needs a Lighthouse re-measure against production or field data (CrUX / Search Console) plus the owner decision on images.unoptimized (sharp on a 512 MB container).\n\nWas wontfix. Production is live again, so I measured instead of inferring. Everything below is my own measurement, 2026-09-01, mobile UA (Pixel 7 / Chrome 120), median of 3 for timings.\n\nA. ONE RESIDUAL CLOSED IN CODE. The triage's residual 3 was '/ and /gaushala emit zero srcset across 26 <img> tags'. The / half closed in the 2026-08-23 pass. I closed the /gaushala half: app/gaushala/page.tsx:423"
  },
  {
   "key": "F387",
@@ -5751,7 +5751,7 @@
   "title": "The daily backup is engineered to exit 0 while producing zero bytes, and no restore has ever been recorded as tested",
   "state": "owner",
   "commit": "wave-45-2026-08-31",
-  "note": ""
+  "note": "[2026-10-06 status] OPS-02: the daily backup was failing at \"missing secrets\" (exit 7) on 2026-09-30..10-04; this PR makes it work with SUPABASE_DIRECT_URL and keep a verified 7-day artifact when no offsite store exists. Stays owner until a green run, BACKUP_S3_* and a recorded restore drill. | "
  },
  {
   "key": "F412",
@@ -5765,7 +5765,7 @@
   "title": "Backups are uploaded into the same Supabase project they are supposed to insure — one account suspension takes the database and every backup together",
   "state": "owner",
   "commit": "wave-45-2026-08-31",
-  "note": ""
+  "note": "[2026-10-06 status] OPS-03: BACKUP_S3_* (Cloudflare R2) secrets are still unset, so there is no offsite copy; with this PR the run warns instead of failing. | "
  },
  {
   "key": "F413",
@@ -5833,9 +5833,9 @@
   "workflow": "delta-completion-2026-08-20",
   "line": 0,
   "title": "The new Render suspension guard lives only on a feature branch, so its schedule will never fire",
-  "state": "owner",
-  "commit": "wave-45-final",
-  "note": "git ls-tree origin/main .github/workflows/ lists 20 files without render-hours-guard.yml, and gh workflow list --all returns the same 20 -- so no trigger is registered and it installs on merge. BUT reviewing the file surfaced a NEW defect, now fixed: it tested [ \"$susp\" != \"not_suspended\" ], so an expired RENDER_API_KEY (jq yields 'unknown') reported 'production is DOWN' for a healthy site, and th"
+  "state": "fixed",
+  "commit": "ops/prod-db-task-and-backup-fix",
+  "note": "render-hours-guard.yml is on main and green: scheduled runs 37003136832 (2026-10-02), 37118380810 (10-03), 37199739671 (10-04), 37317347016 (10-05) all concluded success in 7-10 s. Verified 2026-10-06 with gh run list."
  },
  {
   "key": "F418",
@@ -5849,7 +5849,7 @@
   "title": "All production monitoring depends on the same GitHub Actions quota that has already been exhausted once",
   "state": "owner",
   "commit": "wave-hard-2026-08-21",
-  "note": ""
+  "note": "[2026-10-06 status] OPS-09: monitoring still shares the GitHub Actions quota; unchanged. | "
  },
  {
   "key": "F419",
@@ -5877,7 +5877,7 @@
   "title": "Production database passwords remain in git history in three commits; untracking the file did not remove them and only rotation will",
   "state": "owner",
   "commit": "wave-45-2026-08-31",
-  "note": ""
+  "note": "[2026-10-06 status] OPS-11: git-history credential rotation still owner-only; unchanged. | "
  },
  {
   "key": "F421",
@@ -6115,7 +6115,7 @@
   "title": "The 80G tax-deduction promise survives on ~25 surfaces after the honesty gate was wired into only two pages — and no donee can ever qualify, because the columns that would make a receipt 80G-valid have no writer",
   "state": "partial",
   "commit": "4f3e24ca",
-  "note": "[2026-10-04] Web copy closed in #268: the two ungated 80G leftovers (/nri/ca, /for-temple-chains) are gated or removed; guard test pins it. STILL OPEN: API-rendered text is conditional on per-donee 80G data that no route writes, so it never fires today (apps/api/src/lib/email.ts:579-583, pdf-receipt.ts:114 and :190-191; eighty-g.ts:40 has its own HAS_80G = false, keep it in sync with the web flag). Needs the owner: the donee 80G registration number and PAN."
+  "note": "[2026-10-06 status] TC-01: still partial; web copy gated in #268, remaining surfaces depend on 80G registration (owner). | [2026-10-04] Web copy closed in #268: the two ungated 80G leftovers (/nri/ca, /for-temple-chains) are gated or removed; guard test pins it. STILL OPEN: API-rendered text is conditional on per-donee 80G data that no route writes, so it never fires today (apps/api/src/lib/email.ts:579-583, pdf-receipt.ts:114 and :190-191; eighty-g.ts:40 has its own HAS_80G = false, keep it in sync with the web flag). Needs the owner: the donee 80G registration number and PAN."
  },
  {
   "key": "F438",
@@ -6437,7 +6437,7 @@
   "state": "owner",
   "commit": "",
   "title": "apps/api/.env is partly corrupt — a UTF-16LE tail with duplicate keys and NUL bytes, in the file env parsing is now load-bearing on",
-  "note": "FOUND 2026-09-08. Bytes 840-1112 of apps/api/.env are a UTF-16LE tail containing two duplicate COHERE_API_KEY lines and 116 NUL bytes — the signature of a PowerShell >> or Add-Content without -Encoding utf8. The ASCII portion parses, so nothing is broken today. It matters because OPS-14 made env-file parsing load-bearing for choosing which DATABASE a maintenance script connects to: a file that resolution depends on should not carry mojibake. Rewrite it as clean UTF-8 with the duplicate removed. Do NOT do this from an agent — the file holds production credentials and is on the credential-store deny list. RE-MEASURED 2026-09-12: unchanged — 1,112 bytes, 116 NUL bytes, COHERE_API_KEY still duplicated. Moved open -> owner: the fix is a hand edit of a credential file that agents are denied by the credential-store deny list, so no agent lane can close it."
+  "note": "[2026-10-06 status] OPS-16: apps/api/.env corruption still needs the owner to fix by hand; unchanged. | FOUND 2026-09-08. Bytes 840-1112 of apps/api/.env are a UTF-16LE tail containing two duplicate COHERE_API_KEY lines and 116 NUL bytes — the signature of a PowerShell >> or Add-Content without -Encoding utf8. The ASCII portion parses, so nothing is broken today. It matters because OPS-14 made env-file parsing load-bearing for choosing which DATABASE a maintenance script connects to: a file that resolution depends on should not carry mojibake. Rewrite it as clean UTF-8 with the duplicate removed. Do NOT do this from an agent — the file holds production credentials and is on the credential-store deny list. RE-MEASURED 2026-09-12: unchanged — 1,112 bytes, 116 NUL bytes, COHERE_API_KEY still duplicated. Moved open -> owner: the fix is a hand edit of a credential file that agents are denied by the credential-store deny list, so no agent lane can close it."
  },
  {
   "key": "F461",
@@ -6479,6 +6479,6 @@
   "state": "owner",
   "commit": "",
   "title": "Production API starts with tsx from source — a dashboard Start Command overrides render.yaml, so migrate deploy never runs and dist/ is never executed",
-  "note": "MEASURED 2026-09-09 and 2026-09-12 (render-diag mode=detail). The Render dashboard Start Command for the API is `pnpm --filter @poojly/api exec tsx src/server.ts`. render.yaml declares `pnpm --filter @poojly/api start`, and apps/api/package.json's start is `prisma migrate deploy && node dist/server.js`; neither is used. (1) Migrations never run on deploy — the mechanism behind OPS-17's measurement that deploys leave the schema unmoved. With OPS-18, any push to main can ship code ahead of the schema it needs. (2) The dashboard build compiles dist/ with tsc and nothing ever runs it: production executes TypeScript through a dev transpiler on a free-plan instance. Boot time and memory cost were NOT measured. The dashboard also disagrees with render.yaml on region (singapore vs oregon) and autoDeploy (yes vs false), so render.yaml is descriptive, not authoritative, for this service. DO NOT just paste render.yaml's command into the dashboard: that switches on migrate-on-boot (a failing migration then fails the deploy) and runs `node dist/server.js`, a path production has never executed. Boot the dist build once somewhere safe first. Owner: dashboard setting."
+  "note": "[2026-10-06 status] OPS-19: dashboard Start Command still overrides render.yaml per the 2026-09-12 measurement, so migrations apply by hand; the prod-db-task workflow (this PR) is the sanctioned way to run reviewed SQL meanwhile. | MEASURED 2026-09-09 and 2026-09-12 (render-diag mode=detail). The Render dashboard Start Command for the API is `pnpm --filter @poojly/api exec tsx src/server.ts`. render.yaml declares `pnpm --filter @poojly/api start`, and apps/api/package.json's start is `prisma migrate deploy && node dist/server.js`; neither is used. (1) Migrations never run on deploy — the mechanism behind OPS-17's measurement that deploys leave the schema unmoved. With OPS-18, any push to main can ship code ahead of the schema it needs. (2) The dashboard build compiles dist/ with tsc and nothing ever runs it: production executes TypeScript through a dev transpiler on a free-plan instance. Boot time and memory cost were NOT measured. The dashboard also disagrees with render.yaml on region (singapore vs oregon) and autoDeploy (yes vs false), so render.yaml is descriptive, not authoritative, for this service. DO NOT just paste render.yaml's command into the dashboard: that switches on migrate-on-boot (a failing migration then fails the deploy) and runs `node dist/server.js`, a path production has never executed. Boot the dist build once somewhere safe first. Owner: dashboard setting."
  }
 ]
