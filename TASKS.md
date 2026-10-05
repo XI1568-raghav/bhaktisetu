@@ -44,10 +44,14 @@ All roles were tested end to end on a local stack and fixed through #279-#312. P
 - Render 750 shared free hours (two services share one account budget; Aug 2026 suspension).
 - Decisions: prasad-abroad shipping, store returns policy.
 
-**Agent follow-ups (were running at write time; check the commit history before redoing):**
-- Gate any remaining unbacked claims (shipping, refund, 80G, NRI, trust badges) behind flags instead of deleting.
-- Temple onboarding link for managers (pandit-consent roster is live: #306).
-- Final polish pass on the role portals.
+**STATE AT 2026-10-06 (supersedes the lines above):**
+- `main` = `d818f153`. PRs #279-#322 are all merged. Verified locally on that tree: api 3591, web 4593, mobile 976 tests, tsc clean in all three.
+- **NOT DEPLOYED since `31f9fe38`:** GitHub Actions is out of free minutes (jobs fail to start: "recent account payments have failed or your spending limit needs to be increased"). Deploys, PR checks, the DB-task workflow and the daily backup all run on Actions, so all are blocked until the owner sets an Actions budget (github.com/settings/billing) or deploys by hand in the Render dashboard (web first, then API: the API returns `https://darshya.online/images/...` URLs that only exist after the web deploy).
+- **AI chats were down on prod** because Groq retired `llama-3.3-70b-versatile` / `llama-3.1-8b-instant` on 2026-08-16 (`GET /api/v1/ai/health` showed `404 model_not_found`). Fixed in #319 (`openai/gpt-oss-120b` / `openai/gpt-oss-20b`, `reasoning_effort=low`). After the API deploy, confirm `/api/v1/ai/health` shows `ok:true`, then test `/astrology/chat`, `/ask-pandit`, `/ai/translate`, voice-pandit.
+- **Two prod DB changes ready, not applied** (run via `prod-db-task.yml` dry-run then apply, or paste into the Supabase SQL editor): `ops/sql/commission-default-80.sql` (pandits 70% -> 80%) and `ops/sql/seed-default-temple-offerings.sql` (5 standard pujas for each temple with none; 15 of 20 temples on prod have zero offerings). `ops/sql/verify-commission-state.sql` is read-only.
+- Local E2E stack recipe: `docs/runbooks/local-e2e-stack.md`. Demo tokens: `Authorization: Bearer demo-<role>-token`.
+- Still owner-only: Resend sender, Supabase Auth SMTP, real Rs 101 payment, Razorpay International Payments, `BACKUP_S3_*`, 80G number/PAN, legal facts (entity/GSTIN/grievance officer), credential rotation (docs/runbooks/secret-rotation.md), Render hours decision, PostHog key.
+- Agent follow-ups that were open are DONE: claims gated (#315), temple onboarding link (#314), polish (#316), copy sweep (#309), prasad India-only + wording + labels (#320), temples bookable + admin temple editor (#321).
 
 **Invariants added this round:** earnings of pandit/astrologer/wellness/temple stay held until performed/proved (`payout.service.ts`, `upcomingInr`); cash-on-delivery orders create no commission; NRI price = 2.5x puja price charged in INR, shown in USD only when the explicit `nriPricing` flag is set (`apps/api/src/lib/nri-pricing.ts` + web twin); admin refunds default to the cancellation policy amount; referral stays hidden behind `HAS_REFERRAL_CREDIT`.
 
