@@ -6,6 +6,7 @@ import { priestService, PujaStateConflictError } from '../services/priest.servic
 import { dispatchService } from '../services/dispatch.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
 import { prisma } from '../lib/prisma.js';
+import { listPendingForPriest, respondToInvite } from '../services/temple-priest-invite.service.js';
 import { presignR2Upload, r2 } from '../lib/r2.js';
 import { isDemoMode } from '../lib/supabase.js';
 import { BookingStatus, PayoutStatus, Prisma } from '@prisma/client';
@@ -577,6 +578,51 @@ export async function priestRoutes(server: FastifyInstance) {
       reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
+
+  // ─── Temple roster invitations ─────────────────────────────────────────────
+  // A temple manager can only INVITE a pandit; the pandit decides. Accepting
+  // creates the TemplePriest roster row, declining creates nothing.
+
+  // GET /temple-invites — pending invitations addressed to this pandit.
+  server.get('/temple-invites', { preHandler: priestAuth }, async (request, reply) => {
+    try {
+      const priestId = await getPriestId(request.currentUser!.id);
+      return { invites: await listPendingForPriest(priestId) };
+    } catch (err: any) {
+      request.log?.error({ err }, 'priest route failed');
+      reply.code(400).send({ error: safeErrorMessage(err) });
+    }
+  });
+
+  for (const action of ['accept', 'decline'] as const) {
+    server.post(`/temple-invites/:id/${action}`, { preHandler: priestAuth }, async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        if (!z.string().uuid().safeParse(id).success) {
+          return reply.code(404).send({ error: 'Invitation not found' });
+        }
+        const priestId = await getPriestId(request.currentUser!.id);
+        const res = await respondToInvite({ inviteId: id, priestId, accept: action === 'accept' });
+        if (res.kind === 'not_found') return reply.code(404).send({ error: 'Invitation not found' });
+        if (res.kind === 'already_answered') {
+          return reply
+            .code(409)
+            .send({ error: `You already ${res.status} this invitation.`, status: res.status });
+        }
+        return {
+          ok: true,
+          status: res.status,
+          message:
+            res.status === 'accepted'
+              ? 'You are now on this temple\'s roster.'
+              : 'Invitation declined.',
+        };
+      } catch (err: any) {
+        request.log?.error({ err }, 'priest route failed');
+        reply.code(400).send({ error: safeErrorMessage(err) });
+      }
+    });
+  }
 
   // POST /bookings/:id/pandit-cancel — pandit-side cancellation. Releases the
   // booking for re-dispatch and notifies the devotee (platform bears it).
