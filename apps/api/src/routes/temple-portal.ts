@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { BookingStatus, StreamStatus, StreamProvider } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
@@ -84,13 +84,20 @@ async function userCanEditTemple(
   hasManagerRole: boolean,
   isAdmin: boolean,
 ): Promise<boolean> {
-  void hasManagerRole; // legacy role check no longer grants access to unlinked temples
   const rows = await prisma.$queryRawUnsafe<{ org_id: string | null }[]>(
     `SELECT org_id FROM temples WHERE id = $1::uuid LIMIT 1`,
     templeId,
   );
   const orgId = rows[0]?.org_id;
-  if (!orgId) return isAdmin;
+  if (!orgId) {
+    if (isAdmin) return true;
+    // An unlinked temple is editable by the one approved manager whose profile
+    // resolves to THIS temple, and nobody else. Nothing links a temple to an
+    // org, so without this the schedule editor answered 403 to every temple's
+    // own manager. Any other manager still resolves to a different temple (or
+    // none), so guessing a slug does not help.
+    return hasManagerRole && (await resolveManagerTempleId(userId)) === templeId;
+  }
   const member = await prisma.$queryRawUnsafe<{ role: OrgRole }[]>(
     `SELECT role FROM org_members WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
     orgId,
@@ -110,7 +117,7 @@ async function resolveManagerTempleId(userId: string): Promise<string | null> {
   return (await resolveManagerTemple(userId)).templeId;
 }
 
-export type TempleLinkReason = 'linked' | 'no_temple_profile' | 'no_matching_temple';
+export type TempleLinkReason = 'linked' | 'no_temple_profile' | 'not_approved' | 'no_matching_temple';
 
 /**
  * S-06: the same resolution, but it says WHY it failed.
@@ -129,9 +136,13 @@ async function resolveManagerTemple(
 ): Promise<{ templeId: string | null; reason: TempleLinkReason }> {
   const profile = await prisma.templeProfile.findUnique({
     where: { userId },
-    select: { templeName: true },
+    select: { templeName: true, approved: true },
   });
   if (!profile) return { templeId: null, reason: 'no_temple_profile' };
+  // Anyone can sign up as a temple manager and type any temple's name into
+  // their profile. Until an admin has approved that profile the name is just a
+  // claim, so it must not open a real temple's donors, bookings or payouts.
+  if (!profile.approved) return { templeId: null, reason: 'not_approved' };
   const name = (profile.templeName ?? '').trim();
   if (!name) return { templeId: null, reason: 'no_matching_temple' };
   const temple = await prisma.temple.findFirst({
@@ -146,9 +157,21 @@ async function resolveManagerTemple(
 const TEMPLE_LINK_MESSAGE: Record<Exclude<TempleLinkReason, 'linked'>, string> = {
   no_temple_profile:
     'Your temple profile is not set up yet, so offerings cannot be attached to a temple. Complete your temple profile to start listing pujas.',
+  not_approved:
+    'Your temple profile is awaiting approval by the Darshya team. Once it is approved your temple will be linked and you can list pujas, see bookings and donations.',
   no_matching_temple:
     'Your temple profile name does not match any temple listed on Darshya, so offerings cannot be attached. Check the spelling on your profile or contact support to get your temple linked.',
 };
+
+/** 409 with the real blocker, instead of the raw "No matched Temple" string. */
+function notLinked(reply: FastifyReply, reason: TempleLinkReason) {
+  return reply.code(409).send({
+    code: 'temple_not_linked',
+    error: 'Temple not linked',
+    reason,
+    message: TEMPLE_LINK_MESSAGE[reason as Exclude<TempleLinkReason, 'linked'>],
+  });
+}
 
 export async function templePortalRoutes(server: FastifyInstance) {
   // GET /dashboard — TempleProfile + booking/donation aggregates when the
@@ -171,12 +194,13 @@ export async function templePortalRoutes(server: FastifyInstance) {
       });
     }
 
-    const matchedTemple = await prisma.temple.findFirst({
-      where: { name: profile.templeName },
-      select: { id: true },
-    });
+    // Same resolution as every other tab: approved profile, name matched case-
+    // and whitespace-tolerantly. The dashboard used to match the name exactly,
+    // so it showed zeros while the Bookings tab listed real bookings.
+    const link = await resolveManagerTemple(userId);
+    const templeId = link.templeId;
 
-    if (!matchedTemple) {
+    if (!templeId) {
       return reply.send({
         profile,
         stats: {
@@ -185,26 +209,36 @@ export async function templePortalRoutes(server: FastifyInstance) {
           totalStreams: profile.totalStreams,
         },
         recentBookings: [],
+        templeLinked: false,
+        reason: link.reason,
       });
     }
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const baseWhere = {
-      templeId: matchedTemple.id,
+      templeId,
       status: { in: [BookingStatus.confirmed, BookingStatus.completed] },
+    };
+    // "Revenue" is what the temple earns: its TemplePayout rows. A reversed row
+    // belongs to a refunded booking and is not an earning. This used to sum
+    // PujaBooking.priceAmount, the devotee's whole payment including the
+    // platform fee and the provider's share.
+    const shareWhere = {
+      templeId,
+      status: { in: ['pending', 'completed'] as ('pending' | 'completed')[] },
     };
 
     const [totalCount, monthCount, totalSum, monthSum, recent] = await Promise.all([
       prisma.pujaBooking.count({ where: baseWhere }),
       prisma.pujaBooking.count({ where: { ...baseWhere, createdAt: { gte: monthStart } } }),
-      prisma.pujaBooking.aggregate({ where: baseWhere, _sum: { priceAmount: true } }),
-      prisma.pujaBooking.aggregate({
-        where: { ...baseWhere, createdAt: { gte: monthStart } },
-        _sum: { priceAmount: true },
+      prisma.templePayout.aggregate({ where: shareWhere, _sum: { amount: true } }),
+      prisma.templePayout.aggregate({
+        where: { ...shareWhere, createdAt: { gte: monthStart } },
+        _sum: { amount: true },
       }),
       prisma.pujaBooking.findMany({
-        where: { templeId: matchedTemple.id },
+        where: { templeId },
         orderBy: { createdAt: 'desc' },
         take: 10,
         include: {
@@ -219,8 +253,8 @@ export async function templePortalRoutes(server: FastifyInstance) {
       stats: {
         totalBookings: totalCount,
         monthBookings: monthCount,
-        totalRevenueInr: Number(totalSum._sum?.priceAmount ?? 0),
-        monthRevenueInr: Number(monthSum._sum?.priceAmount ?? 0),
+        totalRevenueInr: Number(totalSum._sum?.amount ?? 0),
+        monthRevenueInr: Number(monthSum._sum?.amount ?? 0),
         totalStreams: profile.totalStreams,
       },
       recentBookings: recent.map((b) => ({
@@ -476,8 +510,9 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
+    if (!templeId) return notLinked(reply, link.reason);
     const { id } = request.params as { id: string };
     const parsed = pujaOfferingUpdateSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -505,8 +540,9 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
+    if (!templeId) return notLinked(reply, link.reason);
     const { id } = request.params as { id: string };
     const existing = await prisma.templePujaOffering.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: 'Offering not found' });
@@ -547,8 +583,9 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
+    if (!templeId) return notLinked(reply, link.reason);
     const parsed = z
       .object({ priestId: z.string().uuid(), isPrimary: z.boolean().optional() })
       .safeParse(request.body);
@@ -577,8 +614,9 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
+    if (!templeId) return notLinked(reply, link.reason);
     const { id } = request.params as { id: string };
     const existing = await prisma.templePriest.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: 'Roster entry not found' });
@@ -605,11 +643,24 @@ export async function templePortalRoutes(server: FastifyInstance) {
       status?: string; dateFrom?: string; dateTo?: string; limit?: string;
     };
     const where: Record<string, unknown> = { templeId };
-    if (status) where.status = status;
+    // A status or date the database cannot parse used to reach Prisma and come
+    // back as a 500 with a generic "something went wrong". Say what is wrong.
+    if (status) {
+      if (!(Object.values(BookingStatus) as string[]).includes(status)) {
+        return reply.code(400).send({ error: `Unknown booking status "${status}".` });
+      }
+      where.status = status;
+    }
     if (dateFrom || dateTo) {
-      where.scheduledDate = {};
-      if (dateFrom) (where.scheduledDate as Record<string, unknown>).gte = new Date(dateFrom);
-      if (dateTo) (where.scheduledDate as Record<string, unknown>).lte = new Date(dateTo);
+      const from = dateFrom ? new Date(dateFrom) : null;
+      const to = dateTo ? new Date(dateTo) : null;
+      if ((from && Number.isNaN(from.getTime())) || (to && Number.isNaN(to.getTime()))) {
+        return reply.code(400).send({ error: 'dateFrom and dateTo must be valid dates (YYYY-MM-DD).' });
+      }
+      where.scheduledDate = {
+        ...(from ? { gte: from } : {}),
+        ...(to ? { lte: to } : {}),
+      };
     }
     const bookings = await prisma.pujaBooking.findMany({
       where: where as never,
@@ -740,8 +791,9 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
+    if (!templeId) return notLinked(reply, link.reason);
     const { id } = request.params as { id: string };
     const parsed = darshanUpdateSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -776,8 +828,9 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
+    if (!templeId) return notLinked(reply, link.reason);
     const { id } = request.params as { id: string };
     const existing = await prisma.liveDarshanStream.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: 'Stream not found' });
@@ -798,8 +851,9 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) return reply.code(400).send({ error: 'No matched Temple for this manager' });
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
+    if (!templeId) return notLinked(reply, link.reason);
     const { id } = request.params as { id: string };
     const parsed = darshanStatusSchema.safeParse(request.body);
     if (!parsed.success) {
