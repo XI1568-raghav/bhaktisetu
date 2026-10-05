@@ -34,7 +34,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFileSync, readFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, statSync, unlinkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
@@ -54,6 +54,7 @@ const SCHEMA = join(HERE, '..', '..', '..', 'apps', 'api', 'prisma', 'schema.pri
 
 const ENV_KEYS = [
   'SUPABASE_DB_URL',
+  'SUPABASE_DIRECT_URL',
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_BACKUP_BUCKET',
@@ -228,6 +229,77 @@ describe('assessStoredObject — is the object actually in the store?', () => {
 
 // ── 2. not configured vs. configured-and-broken ────────────────────────────
 
+// ── 2b. only SUPABASE_DIRECT_URL exists, and no object store ───────────────
+
+describe('runBackup — the secrets this repo actually has (OPS-02, 2026-10-06)', () => {
+  const DIRECT = 'postgresql://postgres:pw@db.primaryref0000000.supabase.co:5432/postgres';
+
+  it('accepts SUPABASE_DIRECT_URL as the database URL', async () => {
+    process.env.SUPABASE_DIRECT_URL = DIRECT;
+    let dumped;
+    const deps = {
+      ...goodDeps(),
+      pgDump: async (url, out) => {
+        dumped = url;
+        await fakePgDump(GOOD_BYTES)(url, out);
+      },
+    };
+    const res = await runBackup({ deps });
+    expect(res.ok).toBe(true);
+    expect(dumped).toBe(DIRECT);
+    try { unlinkSync(res.artifactPath); } catch { /* best-effort */ }
+  });
+
+  it('prefers SUPABASE_DB_URL over SUPABASE_DIRECT_URL when both are set', async () => {
+    process.env.SUPABASE_DB_URL = DIRECT;
+    process.env.SUPABASE_DIRECT_URL = 'postgresql://other';
+    let dumped;
+    const res = await runBackup({
+      deps: {
+        ...goodDeps(),
+        pgDump: async (url, out) => {
+          dumped = url;
+          await fakePgDump(GOOD_BYTES)(url, out);
+        },
+      },
+    });
+    expect(dumped).toBe(DIRECT);
+    try { unlinkSync(res.artifactPath); } catch { /* best-effort */ }
+  });
+
+  it('with no object store: ok, NOT offsite, dump kept on disk for the artifact step', async () => {
+    process.env.SUPABASE_DIRECT_URL = DIRECT;
+    const res = await runBackup({ deps: goodDeps() });
+    expect(res.ok).toBe(true);
+    expect(res.artifactOnly).toBe(true);
+    expect(res.offsite).toBe(false);
+    expect(res.verified).toBe(false);
+    expect(res.sizeBytes).toBe(GOOD_BYTES);
+    expect(res.tocEntries).toBe(400);
+    expect(res.warning).toMatch(/artifact/);
+    expect(existsSync(res.artifactPath)).toBe(true);
+    expect(statSync(res.artifactPath).size).toBe(GOOD_BYTES);
+    unlinkSync(res.artifactPath);
+  });
+
+  it('with no object store, an undersized dump still FAILS and leaves no file behind', async () => {
+    process.env.SUPABASE_DIRECT_URL = DIRECT;
+    const res = await runBackup({ deps: { ...goodDeps(), pgDump: fakePgDump(1000) } });
+    expect(res.ok).toBe(false);
+    expect(res.stage).toBe('verify-dump');
+    expect(process.exitCode).not.toBe(0);
+  });
+
+  it('with only BACKUP_S3_* configured: valid offsite setup, dump removed after upload', async () => {
+    s3OnlyEnv();
+    const res = await runBackup({ deps: goodDeps() });
+    expect(res.ok).toBe(true);
+    expect(res.offsite).toBe(true);
+    expect(res.artifactOnly).toBeUndefined();
+    expect(res.destinations.map((d) => d.kind)).toEqual(['s3']);
+  });
+});
+
 describe('runBackup — "no credentials" and "backup failed" are different, and neither is success', () => {
   it('does NOT report ok:true when the credentials are missing', async () => {
     const res = await runBackup({ deps: goodDeps() });
@@ -236,7 +308,7 @@ describe('runBackup — "no credentials" and "backup failed" are different, and 
     // The whole finding: this used to be `ok: true`, and exit 0.
     expect(res.ok).toBe(false);
     expect(process.exitCode).not.toBe(0);
-    expect(res.missing).toContain('SUPABASE_DB_URL');
+    expect(res.missing.join(' ')).toMatch(/SUPABASE_DB_URL/);
   });
 
   it('keeps the unconfigured state distinguishable from a broken backup', async () => {

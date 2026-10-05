@@ -1,0 +1,80 @@
+name: prod-db-task
+
+# Run ONE reviewed SQL file from ops/sql/ against the production database.
+# Manual only (workflow_dispatch): ~1 runner-minute per run, zero scheduled
+# minutes. Usage and the full guard list: docs/runbooks/prod-db-task.md.
+#
+#   gh workflow run prod-db-task.yml -f file=ops/sql/<name>.sql -f mode=dry-run
+#   gh run watch
+#   gh workflow run prod-db-task.yml -f file=ops/sql/<name>.sql -f mode=apply
+#
+# Which ref runs: the one you dispatch with `--ref <branch>`; default is `main`.
+# That ref supplies BOTH this workflow's guards and the SQL file.
+#
+# Guards (all enforced by scripts/ops/prod-db-task.sh before any connection):
+#   - path must match ^ops/sql/[a-z0-9._-]+\.sql$ and exist in the checked-out ref
+#   - mode defaults to dry-run; the file runs in ONE transaction with
+#     ON_ERROR_STOP, ending ROLLBACK (dry-run) or COMMIT (apply)
+#   - `apply` is refused unless the run is on main (reviewed SQL only)
+#   - DROP TABLE / DROP DATABASE / DROP SCHEMA / TRUNCATE are refused unless
+#     allow_destructive=true
+#   - transaction control inside the file and psql meta-commands (other than
+#     \echo) are refused, so a file cannot commit a dry-run or shell out
+#   - one run at a time (concurrency group, never cancelled mid-flight), 10 min cap
+#   - the connection string is never echoed: only the host name is printed
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: 'SQL file under ops/sql/ (e.g. ops/sql/commission-default-80.sql)'
+        type: string
+        required: true
+      mode:
+        description: 'dry-run (ROLLBACK, default) or apply (COMMIT, main only)'
+        type: choice
+        options: [dry-run, apply]
+        default: dry-run
+      allow_destructive:
+        description: 'Allow DROP TABLE / DROP DATABASE / DROP SCHEMA / TRUNCATE in the file'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-db-task
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Refuse apply from anywhere but main
+        if: ${{ inputs.mode == 'apply' && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "::error::mode=apply only runs from main (this run is on ${GITHUB_REF}). Merge the SQL file first, or use mode=dry-run."
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Show the commit being run
+        run: echo "ref=${GITHUB_REF_NAME} sha=${GITHUB_SHA}"
+
+      - name: Install postgresql-client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+          psql --version
+
+      - name: Run the task
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
+          TASK_FILE: ${{ inputs.file }}
+          TASK_MODE: ${{ inputs.mode }}
+          ALLOW_DESTRUCTIVE: ${{ inputs.allow_destructive }}
+        run: bash scripts/ops/prod-db-task.sh
