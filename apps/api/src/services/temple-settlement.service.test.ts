@@ -42,13 +42,22 @@ describe('listTempleBalances', () => {
     ] as never);
     expect((await listTempleBalances())[0]!.payTo).toBeNull();
     const sql = String(prismaMock.$queryRawUnsafe.mock.calls[0]![0]);
-    expect(sql).toMatch(/'completed','video_uploaded','delivered'/);
+    expect(sql).toMatch(/\('video_uploaded','delivered'\)/);
+    expect(sql).not.toMatch(/'completed','video_uploaded'/);
   });
 });
 
 describe('recordPujaShareTransfer', () => {
   const payable = (...amounts: string[]) =>
     prismaMock.$queryRawUnsafe.mockResolvedValueOnce(amounts.map((a, i) => ({ id: `p${i}`, amount: a })) as never);
+
+  it('only treats proved bookings (video_uploaded / delivered) as payable', async () => {
+    prismaMock.$queryRawUnsafe.mockResolvedValueOnce([] as never);
+    await recordPujaShareTransfer({ templeId: T, amountInr: 1, reference: 'UTR0' });
+    const sql = String(prismaMock.$queryRawUnsafe.mock.calls[0]![0]);
+    expect(sql).toMatch(/\('video_uploaded','delivered'\)/);
+    expect(sql).not.toMatch(/'completed'/);
+  });
 
   it('settles every payable row when the amount equals their total', async () => {
     payable('100.00', '45.10');
@@ -81,11 +90,11 @@ describe('recordPujaShareTransfer', () => {
     expect(prismaMock.$executeRawUnsafe.mock.calls.some((c) => /UPDATE temple_payouts/.test(String(c[0])))).toBe(false);
   });
 
-  it('only selects rows of bookings whose puja was performed, under a per-temple lock', async () => {
+  it('only selects rows of bookings whose puja was performed and proved, under a per-temple lock', async () => {
     payable('100.00');
     prismaMock.$queryRawUnsafe.mockResolvedValueOnce([] as never);
     await recordPujaShareTransfer({ templeId: T, amountInr: 100, reference: 'UTR444' });
-    expect(String(prismaMock.$queryRawUnsafe.mock.calls[0]![0])).toMatch(/b\.status::text IN \('completed','video_uploaded','delivered'\)/);
+    expect(String(prismaMock.$queryRawUnsafe.mock.calls[0]![0])).toMatch(/b\.status::text IN \('video_uploaded','delivered'\)/);
     expect(prismaMock.$executeRawUnsafe.mock.calls.some((c) => /pg_advisory_xact_lock/.test(String(c[0])))).toBe(true);
   });
 });

@@ -23,6 +23,7 @@ interface TemplePayoutRow {
   bookingId: string;
   amount: string;
   status: string;
+  releaseStatus?: string;
   reference: string | null;
   processedAt: string | null;
   createdAt: string;
@@ -35,7 +36,8 @@ function formatINR(n: number): string {
 function TemplePayoutsContent() {
   const { session } = useAuth();
   const [rows, setRows] = useState<TemplePayoutRow[]>([]);
-  const [pendingInr, setPendingInr] = useState(0);
+  const [payableInr, setPayableInr] = useState(0);
+  const [upcomingInr, setUpcomingInr] = useState(0);
   const [paidInr, setPaidInr] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,8 @@ function TemplePayoutsContent() {
       }
       const j = await res.json();
       setRows(j.payouts ?? []);
-      setPendingInr(j.pendingInr ?? 0);
+      setPayableInr(j.payableInr ?? 0);
+      setUpcomingInr(j.upcomingInr ?? 0);
       setPaidInr(j.paidInr ?? 0);
     } catch (e) {
       setError(userFacingMessage(e, 'We could not load your payouts. Please try again.'));
@@ -77,15 +80,27 @@ function TemplePayoutsContent() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-surface-100 p-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-xs text-surface-500">Pending settlement</p>
-              <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(pendingInr)}</p>
+              <p className="text-xs text-surface-500">Ready for settlement</p>
+              <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(payableInr)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-surface-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-surface-50 rounded-lg flex items-center justify-center">
+              <Clock className="w-5 h-5 text-surface-500" />
+            </div>
+            <div>
+              <p className="text-xs text-surface-500">Upcoming</p>
+              <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(upcomingInr)}</p>
+              <p className="text-xs text-surface-400">Released once the puja is performed and its video proof is uploaded.</p>
             </div>
           </div>
         </div>
@@ -144,9 +159,13 @@ function TemplePayoutsContent() {
                     </p>
                   </div>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                    r.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                    r.status === 'completed'
+                      ? 'bg-green-100 text-green-700'
+                      : r.releaseStatus === 'upcoming'
+                        ? 'bg-surface-100 text-surface-600'
+                        : 'bg-amber-100 text-amber-700'
                   }`}>
-                    {r.status === 'completed' ? 'Settled' : 'Pending'}
+                    {r.status === 'completed' ? 'Settled' : r.releaseStatus === 'upcoming' ? 'Upcoming' : 'Ready'}
                   </span>
                 </div>
               ))}
