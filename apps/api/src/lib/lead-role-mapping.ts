@@ -42,3 +42,43 @@ export function mapLeadRoleToOnboarding(role: LeadRole): OnboardingRoleType {
 export function isLeadRole(role: string): role is LeadRole {
   return (LEAD_ROLE_VALUES as readonly string[]).includes(role);
 }
+
+/**
+ * The profile fields a lead supplied, in the shape OnboardingService reads.
+ *
+ * `lead.name` is the CONTACT PERSON. For a temple or a gaushala the
+ * organisation's own name (and deity / cow count) travels in `lead.metadata`,
+ * written by leads-self-onboard. Building the profile from `lead.name` made a
+ * temple called "Ramesh Sharma" that no Temple row could ever match.
+ */
+export function leadProfileSeed(
+  role: LeadRole,
+  lead: {
+    name?: string | null;
+    city?: string | null;
+    state?: string | null;
+    source?: string | null;
+    metadata?: unknown;
+  },
+): Record<string, unknown> {
+  const meta = (lead.metadata && typeof lead.metadata === 'object' ? lead.metadata : {}) as Record<string, unknown>;
+  const text = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+  const base = {
+    displayName: lead.name ?? undefined,
+    city: lead.city,
+    state: lead.state,
+    bio: `Converted from lead pipeline (${lead.source ?? 'unknown'}).`,
+  };
+  if (role === 'TEMPLE') {
+    return { ...base, templeName: text(meta.templeName) ?? lead.name ?? undefined, deity: text(meta.deity) };
+  }
+  if (role === 'GAUSHALA') {
+    const cows = Number(meta.cowCount);
+    return {
+      ...base,
+      gaushalaName: text(meta.gaushalaName) ?? lead.name ?? undefined,
+      totalCows: Number.isFinite(cows) && cows >= 0 ? cows : 0,
+    };
+  }
+  return { ...base, templeName: lead.name ?? undefined };
+}
