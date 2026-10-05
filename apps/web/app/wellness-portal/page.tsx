@@ -68,6 +68,8 @@ type ApiWellnessDashboard = {
   // a blank rather than invent a 0. See the EarningsCard block below.
   paidOutInr?: number | null;
   pendingPayoutInr?: number | null;
+  // Earned from sessions not yet held: not withdrawable until they run.
+  upcomingInr?: number | null;
   instructorShare?: number;
   platformRate?: number;
  };
@@ -189,6 +191,12 @@ export default function WellnessDashboard() {
  pending={unread ? null : liveStats?.pendingPayoutInr ?? null}
  thisMonth={unread ? null : liveStats?.monthEarningsInr ?? 0}
  />
+ {!unread && (liveStats?.upcomingInr ?? 0) > 0 && (
+ <p data-testid="upcoming-earnings" className="text-xs text-surface-500 -mt-2">
+ {formatCurrency(liveStats!.upcomingInr!)} earned from upcoming sessions — it becomes
+ withdrawable after the session has been held.
+ </p>
+ )}
  {!unread && liveStats?.totalEarningsInr != null && (
  <p data-testid="lifetime-earnings" className="text-xs text-surface-500 -mt-2">
  Lifetime earnings {formatCurrency(liveStats.totalEarningsInr)} — your share of every

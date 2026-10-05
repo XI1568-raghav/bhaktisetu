@@ -5,6 +5,7 @@ import { sendEmail, providerApprovedEmail, providerRejectedEmail } from '../lib/
 import { invalidateAuthUser } from '../lib/auth-cache.js';
 import { clampLimit, clampPage } from '../lib/pagination.js';
 import { assertCauseApprovable } from '../lib/cause-approval-guard.js';
+import { REVENUE_PAYMENT_WHERE, PENDING_REFUND_PAYMENT_WHERE } from '../lib/revenue-where.js';
 
 /** SCAL-09: the UserRole enum, as a set, so an unknown ?role= is a clean empty
  *  answer rather than a Prisma enum error surfaced as HTTP 500. */
@@ -174,6 +175,8 @@ interface DashboardStats {
   totalUsers: number;
   usersByRole: Record<string, number>;
   totalRevenue: number;
+  /** Captured payments on cancelled bookings, awaiting refund; excluded from totalRevenue. */
+  pendingRefundInr: number;
   pendingApprovals: number;
   activeSubscriptions: number;
   recentTransactions: Array<{
@@ -734,6 +737,7 @@ export class AdminService {
         recentTransactions,
         mtdSubscriptionAgg,
         mtdCapturedAgg,
+        pendingRefundAgg,
       ] =
         await Promise.all([
           prisma.user.count(),
@@ -773,8 +777,17 @@ export class AdminService {
           // getRevenue().totalCommissions, derived through commission-math.
           // Keeping the two clearly separate is the whole reason the ledger
           // conventions exist.
+          //
+          // Captures on a cancelled booking are owed back, so they are not
+          // revenue; see lib/revenue-where.ts.
           prisma.payment.aggregate({
-            where: { status: 'captured', createdAt: { gte: monthStart } },
+            where: { ...REVENUE_PAYMENT_WHERE, createdAt: { gte: monthStart } },
+            _sum: { amount: true },
+          }),
+          // Cancelled bookings whose payment is still captured: awaiting refund.
+          // All-time, because an unrefunded liability does not expire with the month.
+          prisma.payment.aggregate({
+            where: PENDING_REFUND_PAYMENT_WHERE,
             _sum: { amount: true },
           }),
         ]);
@@ -812,6 +825,7 @@ export class AdminService {
         totalUsers,
         usersByRole,
         totalRevenue,
+        pendingRefundInr: Number(pendingRefundAgg._sum.amount ?? 0),
         pendingApprovals:
           pendingPandits +
           pendingStores +

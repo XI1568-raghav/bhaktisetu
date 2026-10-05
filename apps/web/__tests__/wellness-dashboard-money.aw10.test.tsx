@@ -193,4 +193,25 @@ describe('AW-10 — wellness dashboard money cards', () => {
     });
     expect(screen.getByTestId('earnings-card').getAttribute('data-pending')).toBe('null');
   });
+
+  it('labels earnings from sessions not yet held as upcoming, not withdrawable', async () => {
+    const withUpcoming = {
+      ...DASHBOARD_PAYLOAD,
+      stats: { ...DASHBOARD_PAYLOAD.stats, pendingPayoutInr: 0, upcomingInr: 240 },
+    };
+    vi.stubGlobal('fetch', mockFetch(withUpcoming));
+    renderDashboard();
+    await settled();
+    await waitFor(() => {
+      expect(screen.getByTestId('upcoming-earnings')).toHaveTextContent('240');
+    });
+    expect(screen.getByTestId('upcoming-earnings')).toHaveTextContent(/after the session/i);
+  });
+
+  it('shows no upcoming line when nothing is held', async () => {
+    vi.stubGlobal('fetch', mockFetch(DASHBOARD_PAYLOAD));
+    renderDashboard();
+    await settled();
+    expect(screen.queryByTestId('upcoming-earnings')).toBeNull();
+  });
 });
