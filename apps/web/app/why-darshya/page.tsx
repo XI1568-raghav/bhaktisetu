@@ -71,11 +71,11 @@ const ROWS: Row[] = [
   },
   {
     feature: 'NRI-fair pricing',
-    darshya: '✓ One INR price for everyone, total shown first',
+    darshya: '✓ NRI price shown in USD (2.5x domestic), billed in INR, total shown first',
     sriMandir: '~ Some USD pricing, opaque',
     utsav: '~ Single global price',
     astrosage: '~ INR only (devotee converts)',
-    detail: 'We show domestic + NRI rate side-by-side at checkout with clear cost breakdown (processing fees, gaushala donation, infra).',
+    detail: 'NRI devotees see a US-dollar price that is 2.5x the domestic puja price. It is a display conversion: the order is charged in rupees and your bank converts at its own rate. Checkout breaks out the puja fee, the flat platform fee and any prasad delivery, and shows the rupee amount charged next to the dollar total.',
   },
   {
     feature: 'Pandit checks before payout',

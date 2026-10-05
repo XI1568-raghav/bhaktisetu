@@ -469,7 +469,7 @@ model TemplePujaOffering {
   pujaTypeId         String   @map("puja_type_id") @db.Uuid
   priceOverride      Decimal? @map("price_override") @db.Decimal(10, 2)
   // Temple manager–set NRI price override. When null the public puja
-  // detail falls back to PujaType.nriPrice (business rule #2: 9-10× INR).
+  // detail falls back to PujaType.nriPrice (unused for pricing; NRI price is domestic x 2.5, see lib/nri-pricing.ts).
   nriPrice           Decimal? @map("nri_price") @db.Decimal(10, 2)
   // Temple manager pins a specific priest to this puja offering. SET NULL
   // on priest deletion so the offering survives staff turnover.
