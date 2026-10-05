@@ -108,3 +108,42 @@ describe('probeAiProvider', () => {
     expect(await probeAiProvider()).toMatchObject({ provider: 'none', ok: false });
   });
 });
+
+/**
+ * Root cause measured on production 2026-10-06 via GET /ai/health:
+ * groq 404 model_not_found. Groq deprecated llama-3.1-8b-instant and
+ * llama-3.3-70b-versatile on 2026-08-16, so every AI call has failed since.
+ * Their listed replacements are openai/gpt-oss-20b and openai/gpt-oss-120b.
+ */
+describe('Groq model ids are current', () => {
+  it('uses the supported production models, not the retired llama ones', async () => {
+    const { MODELS } = await load({ GROQ_API_KEY: KEY });
+    expect(MODELS.SONNET).toBe('openai/gpt-oss-120b');
+    expect(MODELS.HAIKU).toBe('openai/gpt-oss-20b');
+  });
+
+  it('never sends a retired model id', async () => {
+    fetchMock.mockResolvedValue(groqOk('x'));
+    const { generateText } = await load({ GROQ_API_KEY: KEY });
+    await generateText({ systemPrompt: 's', userMessage: 'u' });
+    const sent = JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body));
+    expect(sent.model).not.toMatch(/llama-3/);
+  });
+
+  it('asks the reasoning models for low effort and leaves room for reasoning tokens', async () => {
+    fetchMock.mockResolvedValue(groqOk('x'));
+    const { generateText } = await load({ GROQ_API_KEY: KEY });
+    await generateText({ systemPrompt: 's', userMessage: 'u', maxTokens: 220 });
+    const sent = JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body));
+    expect(sent.reasoning_effort).toBe('low');
+    expect(sent.max_tokens).toBeGreaterThanOrEqual(1024);
+  });
+
+  it('keeps a one-token probe cheap', async () => {
+    fetchMock.mockResolvedValue(groqOk('x'));
+    const { probeAiProvider } = await load({ GROQ_API_KEY: KEY });
+    await probeAiProvider();
+    const sent = JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body));
+    expect(sent.max_tokens).toBeLessThanOrEqual(64);
+  });
+});
