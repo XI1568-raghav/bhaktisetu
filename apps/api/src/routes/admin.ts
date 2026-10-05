@@ -10,6 +10,7 @@ import { resolveProviderRole } from '../services/payout.service.js';
 // same page/limit clamp every other list route uses.
 import { clampLimit, clampPage } from '../lib/pagination.js';
 import type { Prisma } from '@prisma/client';
+import { registerAdminTempleEditor, templeFlags } from './admin-temple-editor.js';
 
 /**
  * CT-ADMIN-1 (prod, ct+admin token, 2026-09-08):
@@ -118,17 +119,6 @@ const templeCreateSchema = z.object({
 // Patch is permissive — anything in the create shape, all optional. Body
 // keys outside the create shape are dropped via strict schema below.
 const templePatchSchema = templeCreateSchema.partial();
-
-// Legacy permissive schema retained for /admin/temples/:id update echo
-// path until full PATCH wiring lands.
-const templeWriteSchema = z
-  .object({
-    name: z.string().min(2).max(200).optional(),
-    city: z.string().max(120).optional(),
-    state: z.string().max(120).optional(),
-    isVerified: z.boolean().optional(),
-  })
-  .passthrough();
 
 function slugifyTempleName(name: string): string {
   return name
@@ -417,13 +407,27 @@ export async function adminRoutes(server: FastifyInstance) {
             state: true,
             deityPrimary: true,
             isVerified: true,
+            status: true,
+            pincode: true,
+            lat: true,
+            lng: true,
             liveDarshanEnabled: true,
             createdAt: true,
+            _count: { select: { pujaOfferings: { where: { isActive: true } } } },
           },
         }),
         prisma.temple.count({ where }),
       ]);
-      return { temples, total, page: clampPage(page), limit: take };
+      return {
+        temples: temples.map(({ _count, ...t }) => ({
+          ...t,
+          activeOfferings: _count?.pujaOfferings ?? 0,
+          flags: templeFlags({ lat: t.lat, lng: t.lng, pincode: t.pincode }),
+        })),
+        total,
+        page: clampPage(page),
+        limit: take,
+      };
     } catch (err) {
       request.log.error({ err }, 'admin /temples failed');
       return reply.code(500).send({ error: 'Failed to list temples' });
@@ -474,9 +478,9 @@ export async function adminRoutes(server: FastifyInstance) {
     }
   });
 
-  server.patch('/temples/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
-    notImplemented(reply, 'Updating a temple'),
-  );
+  // GET/PATCH /temples/:id and POST /temples/:id/standard-offerings: the real
+  // temple editor (routes/admin-temple-editor.ts). PATCH used to answer 501.
+  registerAdminTempleEditor(server, adminPreHandlers);
 
   server.delete('/temples/:id', { preHandler: adminPreHandlers }, async (_request, reply) =>
     notImplemented(reply, 'Deleting a temple'),

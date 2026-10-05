@@ -119,9 +119,9 @@ export default async function TemplePujasPage({ params }: Params) {
 
       {offerings.length === 0 ? (
         <div className="rounded-lg border border-surface-200 bg-surface-50 p-6 text-center">
-          <p className="text-surface-700 mb-4">No active puja offerings yet for this temple.</p>
-          <Link href={`/temples/${slug}`} className={buttonClass('primary', 'md')}>
-            View temple page →
+          <p className="text-surface-700 mb-4">This temple&apos;s puja list is being set up. You can still book any puja from the full catalogue.</p>
+          <Link href="/pujas" className={buttonClass('primary', 'md')}>
+            Browse all pujas →
           </Link>
         </div>
       ) : (
@@ -149,7 +149,7 @@ export default async function TemplePujasPage({ params }: Params) {
                   {fmtINR(o.priceOverride || o.pujaType.basePrice)}
                 </span>
                 <Link
-                  href={`/pujas/${o.pujaType.slug}`}
+                  href={`/pujas/${o.pujaType.slug}/book?temple=${encodeURIComponent(temple.slug)}`}
                   className="text-sm font-semibold text-saffron-700 hover:underline"
                 >
                   Book now →
