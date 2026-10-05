@@ -6,6 +6,7 @@ import { Calendar, Users, Check, X, MapPin, Clock, ArrowRight } from 'lucide-rea
 
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { HAS_PACKAGE_INCLUSIONS, INCLUSIONS_ON_ENQUIRY } from '../../../lib/launch-gates';
 interface YatraPackage {
   id: string;
   slug: string;
@@ -91,7 +92,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
             <p className="mt-2 prose-body text-white/85 max-w-2xl">{pkg.short_description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-4 text-xs md:text-sm text-white/80">
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {pkg.duration_days} days</span>
-              <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {seatsLeft} of {pkg.max_group_size} seats left</span>
+              {HAS_PACKAGE_INCLUSIONS && <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {seatsLeft} of {pkg.max_group_size} seats left</span>}
               <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> from ₹{Number(pkg.price_inr).toLocaleString('en-IN')}/person</span>
             </div>
           </div>
@@ -117,7 +118,10 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
               </div>
             )}
 
-            <div className="grid sm:grid-cols-2 gap-5">
+            {/* Claim gate (2026-10-05): no hotel, meal or transport inventory is held for any package and
+                the /book page does not exist. HAS_PACKAGE_INCLUSIONS (lib/launch-gates.ts) restores it. */}
+            {HAS_PACKAGE_INCLUSIONS ? (
+<div className="grid sm:grid-cols-2 gap-5">
               <div>
                 <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Includes</h3>
                 <ul className="space-y-1.5">
@@ -141,11 +145,16 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
                 </ul>
               </div>
             </div>
+            ) : (
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                {INCLUSIONS_ON_ENQUIRY} The price shown is an indicative starting price per person.
+              </p>
+            )}
           </div>
 
           <aside className="space-y-4">
             <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-              <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--color-primary)' }}>Book this yatra</p>
+              <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--color-primary)' }}>{HAS_PACKAGE_INCLUSIONS ? 'Book this yatra' : 'Enquire about this yatra'}</p>
               <p className="text-2xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
                 ₹{Number(pkg.price_inr).toLocaleString('en-IN')}
                 <span className="text-xs font-normal ml-1.5" style={{ color: 'var(--color-text-muted)' }}>/ person</span>
@@ -167,16 +176,25 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
                 </div>
               )}
 
+              {HAS_PACKAGE_INCLUSIONS ? (
               <Link
                 href={`/yatra-packages/${pkg.slug}/book`}
                 className={buttonClass('primary', 'md', 'mt-5 w-full')}
               >
                 Reserve seat <ArrowRight className="w-4 h-4" />
               </Link>
-              {seatsLeft <= 5 && seatsLeft > 0 && (
+              ) : (
+              <a
+                href={`mailto:care@darshya.online?subject=${encodeURIComponent(`Yatra enquiry: ${pkg.name}`)}`}
+                className={buttonClass('primary', 'md', 'mt-5 w-full')}
+              >
+                Email us to enquire <ArrowRight className="w-4 h-4" />
+              </a>
+              )}
+              {HAS_PACKAGE_INCLUSIONS && seatsLeft <= 5 && seatsLeft > 0 && (
                 <p className="mt-2 text-xs text-center" style={{ color: '#dc2626' }}>Only {seatsLeft} seats left!</p>
               )}
-              {seatsLeft === 0 && (
+              {HAS_PACKAGE_INCLUSIONS && seatsLeft === 0 && (
                 <p className="mt-2 text-xs text-center" style={{ color: '#dc2626' }}>Group full — try another date</p>
               )}
             </div>

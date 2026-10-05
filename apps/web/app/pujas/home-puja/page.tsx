@@ -16,6 +16,7 @@ import {
  Sparkles,
 } from 'lucide-react';
 import { homePujaCategories } from '../../../lib/home-pujas';
+import { HAS_HOME_PUJA_INCLUSIONS } from '../../../lib/launch-gates';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -67,8 +68,9 @@ export default function HomePujaHubPage() {
  <p className="prose-lead mt-5 text-surface-500 max-w-xl leading-relaxed">
  Pandits who conduct pujas at your
  residence for any occasion — Griha Pravesh, Satyanarayan, Navratri,
- weddings, and life events. They arrive with all samagri, prasadam,
- and centuries of tradition.
+ weddings, and life events. {HAS_HOME_PUJA_INCLUSIONS
+ ? 'They arrive with all samagri, prasadam, and centuries of tradition.'
+ : 'Send a request and our coordinator calls to confirm the pandit, date, price and materials.'}
  </p>
  <div className="mt-7 flex flex-wrap gap-3">
  <a
@@ -220,8 +222,10 @@ export default function HomePujaHubPage() {
  },
  {
  n: '03',
- title: 'Pandit arrives with all samagri',
- desc: 'No shopping needed. Pandit brings the havan kund, ghee, grains, flowers — everything.',
+ title: HAS_HOME_PUJA_INCLUSIONS ? 'Pandit arrives with all samagri' : 'Coordinator confirms the details',
+ desc: HAS_HOME_PUJA_INCLUSIONS
+ ? 'No shopping needed. Pandit brings the havan kund, ghee, grains, flowers — everything.'
+ : 'Our team calls to confirm the pandit, price and what materials are brought. Nothing is charged online.',
  icon: CheckCircle,
  color: 'var(--color-tulsi-green)',
  },

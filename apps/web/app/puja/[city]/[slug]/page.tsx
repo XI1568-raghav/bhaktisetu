@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { HAS_PUJA_MATERIALS_PROMISE } from '../../../../lib/launch-gates';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CITY_PUJAS, CITY_PUJA_SLUGS, getCityPuja } from '../../../../lib/city-pujas';
@@ -147,7 +148,9 @@ export default async function CityPujaPage({ params }: Params) {
         <p className="text-surface-700 mb-3">
           <strong>Duration:</strong> approximately {cp.durationMinutes} minutes.
         </p>
-        <p className="text-surface-700 mb-3"><strong>Samagri (required offerings):</strong></p>
+        <p className="text-surface-700 mb-3">
+          <strong>{HAS_PUJA_MATERIALS_PROMISE ? 'Samagri (required offerings):' : 'Samagri traditionally used in this puja:'}</strong>
+        </p>
         <ul className="list-disc pl-6 text-surface-700 space-y-1 mb-3">
           {cp.samagri.map((s) => <li key={s}>{s}</li>)}
         </ul>
@@ -160,12 +163,12 @@ export default async function CityPujaPage({ params }: Params) {
 
       <section className="mb-8">
         <h2 className="text-2xl font-semibold text-surface-900 mb-3">
-          What\'s included in Darshya booking
+          What&rsquo;s in a Darshya booking
         </h2>
         <ul className="list-disc pl-6 text-surface-700 space-y-1">
           <li>Vedic pandit with authentic Sanskrit chanting</li>
-          <li>All samagri (offerings) — no extra shopping required</li>
-          <li>Video recording of the puja, which we aim to share within 24-48 hours</li>
+          {HAS_PUJA_MATERIALS_PROMISE && <li>All samagri (offerings) — no extra shopping required</li>}
+          <li>Video recording of the puja, delivered to your booking page after the ceremony</li>
           <li>Optional prasad delivery (flat add-on); no delivery date is promised</li>
           <li>Booking status on your booking page</li>
         </ul>

@@ -910,7 +910,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Store & Delivery',
  question: 'Can I return a product?',
  answer:
- 'Yes, within 7 days of delivery if the item is damaged, wrong, or defective. Idols and consecrated items cannot be returned once unpacked (religious reasons). Email support@darshya.online with photos.',
+ 'There is no automated return process. If an item is damaged, wrong or defective, contact support within 7 days of delivery with your order number and photos; we review each case and, where it is confirmed, arrange a replacement or a refund. Consumables and prasad are not returnable.',
  },
  {
  id: 'sd-4',

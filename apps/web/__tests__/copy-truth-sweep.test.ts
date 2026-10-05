@@ -8,6 +8,22 @@ import {
   REFUND_SETTLEMENT_BANDS,
   REFUND_SETTLEMENT_SENTENCE,
 } from '../lib/cancellation-policy';
+import {
+  HAS_ADOPTION_EXTRAS,
+  HAS_COMPANION_VETTING,
+  HAS_HOME_PUJA_INCLUSIONS,
+  HAS_PACKAGE_INCLUSIONS,
+  HAS_PUJA_MATERIALS_PROMISE,
+} from '../lib/launch-gates';
+import {
+  HOME_PUJA_MATERIALS_RE,
+  homePujaCategories,
+  homePujaFaq,
+  homePujaIncluded,
+  homePujaTierDetails,
+  marriagePricingTiers,
+  marriageTierIncludes,
+} from '../lib/home-pujas';
 
 /**
  * Copy-truth sweep (2026-10-05). Source-scan guards for statements the product
@@ -23,6 +39,11 @@ import {
  *   3. /nri-pujas and /nri make no unqualified card, country, delivery,
  *      WhatsApp or e-mail promises.
  *   4. A repo-wide ban list of unbacked superlatives / SLAs across web+mobile.
+ *   5-9. (2026-10-05, second sweep) Claims with no code behind them are gated
+ *      behind lib/launch-gates.ts flags (false today) or reworded: gaushala
+ *      adoption extras, home-puja inclusions, yatra / wellness package
+ *      inclusions, yatra companion vetting, store returns. While a flag is
+ *      false the claim must not render; flipping it restores the old copy.
  */
 const webRoot = join(__dirname, '..');
 const repoRoot = join(webRoot, '..', '..');
@@ -240,5 +261,262 @@ describe('4. repo-wide unbacked-claim ban list (web + mobile + api user strings)
     const support = web('lib/support.ts');
     expect(support).not.toMatch(/7-14 (business )?days international|International: 7-14/i);
     expect(support).toMatch(/within India only/i);
+  });
+});
+
+
+/**
+ * 5-9. Second sweep: claims with no code behind them.
+ * The gate constants are false today. The tests pin (a) that they ARE false
+ * (flipping one is a deliberate act that must update this file), and (b) that
+ * every ungated occurrence of the claim is gone from the source.
+ */
+describe('5. launch gates are closed until the feature behind each exists', () => {
+  it('all five gates are false', () => {
+    expect([
+      HAS_ADOPTION_EXTRAS,
+      HAS_HOME_PUJA_INCLUSIONS,
+      HAS_PUJA_MATERIALS_PROMISE,
+      HAS_PACKAGE_INCLUSIONS,
+      HAS_COMPANION_VETTING,
+    ]).toEqual([false, false, false, false, false]);
+  });
+
+  it('the API mirror of the gates is closed too', () => {
+    const api = read(join(repoRoot, 'apps/api/src/lib/launch-gates.ts'));
+    expect(api).toMatch(/HAS_ADOPTION_EXTRAS\s*=\s*false/);
+    expect(api).toMatch(/HAS_WELLNESS_PROGRAM_PACKAGES\s*=\s*false/);
+  });
+});
+
+describe('6. gaushala adoption extras (donor wall, certificate, updates, visits)', () => {
+  const EXTRA_LINES = [
+    'Name on gaushala donor wall',
+    'Digital seva certificate',
+    'Weekly photo & video updates',
+    'Digital certificate with cow details',
+    'Monthly health report',
+    'Framed certificate with cow photo',
+    'Premium framed certificate',
+    'Name plaque at gaushala',
+    'Annual Gau Puja invitation',
+    'Visit your cow anytime',
+  ];
+
+  /** The extras may only appear after an `extras:` key, never after `features:`. */
+  function expectExtrasParked(defs: string, quote: string) {
+    for (const line of EXTRA_LINES) {
+      const at = defs.indexOf(`${quote}${line}${quote}`);
+      if (at === -1) continue;
+      const before = defs.slice(0, at);
+      expect(before.lastIndexOf('extras:'), `${line} must sit under extras`).toBeGreaterThan(before.lastIndexOf('features:'));
+    }
+  }
+
+  it('web plan list parks the extras and renders them only as "Coming soon"', () => {
+    const src = web('app/gaushala/page.tsx');
+    expect(src).toMatch(/HAS_ADOPTION_EXTRAS/);
+    const defs = src.slice(src.indexOf('const adoptionPlanDefs'), src.indexOf('const adoptionPlans ='));
+    expect(defs.length).toBeGreaterThan(100);
+    expectExtrasParked(defs, '"');
+    expect(src).toMatch(/Coming soon:/);
+  });
+
+  it('web plan features promise only cow care and the receipt', () => {
+    const src = web('app/gaushala/page.tsx');
+    const defs = src.slice(src.indexOf('const adoptionPlanDefs'), src.indexOf('const adoptionPlans ='));
+    const featureLines = [...defs.matchAll(/features:\s*\[([^\]]*)\]/g)].map((m) => m[1]);
+    expect(featureLines).toHaveLength(4);
+    for (const f of featureLines) {
+      expect(f).toMatch(/RECEIPT_FEATURE/);
+      expect(f).not.toMatch(/certificate|wall|photo|video|visit|plaque|invitation|health report/i);
+    }
+  });
+
+  it('gaushala hero, badges and cow page do not promise updates, visits or a timeline while gated', () => {
+    const idx = web('app/gaushala/page.tsx');
+    expect(idx).toMatch(/Photo updates, certificates and visits are coming soon/);
+    expect(idx).toMatch(/label: HAS_ADOPTION_EXTRAS \? "Visit Anytime" : "Gaushala Visits"/);
+    expect(idx).toMatch(/sub: HAS_ADOPTION_EXTRAS \? "Open-door policy" : "Coming soon"/);
+    const cow = web('app/gaushala/[id]/page.tsx');
+    expect(cow).toMatch(/Photo updates from the gaushala are coming soon/);
+    expect(cow).toMatch(/LISTING_IS_SAMPLE \|\| !HAS_ADOPTION_EXTRAS/);
+  });
+
+  it('the 80G promise stays tied to the verified flag (a receipt that cannot carry it makes no tax claim)', () => {
+    expect(web('app/gaushala/page.tsx')).toMatch(/HAS_80G\s*\?\s*"80G tax receipt"/);
+    const api = stripComments(read(join(repoRoot, 'apps/api/src/services/gaushala.service.ts')));
+    expect(api).toMatch(/HAS_80G\s*\?\s*'80G tax receipt'/);
+  });
+
+  it('API plans: extras reach `features` only behind HAS_ADOPTION_EXTRAS, else `comingSoon`', () => {
+    const api = stripComments(read(join(repoRoot, 'apps/api/src/services/gaushala.service.ts')));
+    expect(api).toMatch(/HAS_ADOPTION_EXTRAS/);
+    expect(api).toMatch(/comingSoon: extras/);
+    const defs = api.slice(api.indexOf('const ADOPTION_PLAN_DEFS'), api.indexOf('const ADOPTION_PLANS:'));
+    expect(defs.length).toBeGreaterThan(100);
+    expectExtrasParked(defs, "'");
+  });
+
+  it('provider-facing and comparison copy makes no weekly-tracking or donor-photo promise', () => {
+    expect(web('app/why-darshya/page.tsx')).not.toMatch(/weekly tracking/i);
+    expect(web('app/list-gaushala/page.tsx')).not.toMatch(/Monthly photos build/i);
+    expect(read(join(repoRoot, 'apps/mobile/app/(onboard)/list-gaushala.tsx'))).not.toMatch(/Monthly photos build/i);
+  });
+});
+
+describe('7. puja inclusions (home puja samagri / prasadam, temple puja materials)', () => {
+  it('home-puja pages gate their inclusion copy and say details are confirmed on the call', () => {
+    for (const rel of [
+      'app/pujas/home-puja/page.tsx',
+      'app/pujas/home-puja/[slug]/page.tsx',
+      'app/pujas/home-puja/book/BookHomePujaClient.tsx',
+    ]) {
+      expect(web(rel), rel).toMatch(/HAS_HOME_PUJA_INCLUSIONS/);
+    }
+    const slug = web('app/pujas/home-puja/[slug]/page.tsx');
+    expect(slug).toMatch(/HOME_PUJA_CONFIRMED_ON_CALL/);
+    expect(slug).not.toMatch(/\} verified/);
+    expect(slug).not.toMatch(/Verified specialists/);
+  });
+
+  it('while gated, no home-puja category renders a samagri / prasad / idol / ghee promise', () => {
+    expect(HAS_HOME_PUJA_INCLUSIONS).toBe(false);
+    for (const cat of homePujaCategories) {
+      for (const item of homePujaIncluded(cat)) expect(item, `${cat.slug}: ${item}`).not.toMatch(HOME_PUJA_MATERIALS_RE);
+      for (const tier of ['basic', 'standard', 'premium'] as const) {
+        expect(homePujaTierDetails(cat, tier), `${cat.slug}/${tier}`).toEqual([]);
+      }
+      for (const f of homePujaFaq(cat)) expect(`${f.q} ${f.a}`, cat.slug).not.toMatch(HOME_PUJA_MATERIALS_RE);
+    }
+  });
+
+  it('the ceremony rites survive the filter (the page keeps its content)', () => {
+    for (const cat of homePujaCategories) expect(homePujaIncluded(cat).length, cat.slug).toBeGreaterThan(0);
+  });
+
+  it('while gated, no marriage tier promises samagri', () => {
+    for (const tier of marriagePricingTiers) {
+      for (const item of marriageTierIncludes(tier)) expect(item, `${tier.slug}: ${item}`).not.toMatch(HOME_PUJA_MATERIALS_RE);
+    }
+    const src = web('app/pujas/marriage/page.tsx');
+    expect(src).toMatch(/HAS_HOME_PUJA_INCLUSIONS \? 'Full samagri'/);
+    expect(src).toMatch(/confirmed by our team on the call/);
+  });
+
+  it('/pujas index cards no longer print an unqualified "Samagri included"', () => {
+    const src = web('app/pujas/(index)/page.tsx');
+    expect(src).not.toMatch(/>\s*(Full )?[Ss]amagri included\s*</);
+    expect(src).toMatch(/HAS_HOME_PUJA_INCLUSIONS \? 'Samagri included'/);
+  });
+
+  it('temple puja pages gate "Samagri included" / "materials arranged by the temple"', () => {
+    const slug = web('app/pujas/[slug]/page.tsx');
+    expect(slug).toMatch(/HAS_PUJA_MATERIALS_PROMISE && puja\.samagriIncluded/);
+    expect(slug).toMatch(/Your booking covers the puja fee, the platform fee and the optional prasad add-on/);
+    const city = web('app/puja/[city]/[slug]/page.tsx');
+    expect(city).toMatch(/HAS_PUJA_MATERIALS_PROMISE &&/);
+    expect(city).not.toContain("What\\'s included");
+    expect(city).not.toMatch(/aim to share within 24-48 hours/);
+  });
+});
+
+describe('8. yatra / wellness / yatra-packages inclusions and companions', () => {
+  it('/yatra-packages: no all-inclusive promise, seed-script text or ungated /book link', () => {
+    const list = web('app/yatra-packages/page.tsx');
+    expect(list).toMatch(/HAS_PACKAGE_INCLUSIONS/);
+    expect(list).not.toMatch(/Run the seed script/);
+    const detail = web('app/yatra-packages/[slug]/page.tsx');
+    expect(detail).toMatch(/INCLUSIONS_ON_ENQUIRY/);
+    expect(detail).toMatch(/mailto:care@darshya\.online/);
+    const at = detail.indexOf('/book`}');
+    expect(detail.slice(0, at)).toMatch(/HAS_PACKAGE_INCLUSIONS \? \(\s*<Link/);
+  });
+
+  it('/yatra and /yatra/[slug]: stay / meals / transport / guide / helicopter / add-ons are behind the gate', () => {
+    const idx = web('app/yatra/page.tsx');
+    expect(idx).toMatch(/HAS_PACKAGE_INCLUSIONS \? 'Inclusions listed per package' : 'Inclusions confirmed on enquiry'/);
+    expect(idx).toMatch(/HAS_PACKAGE_INCLUSIONS && y\.helicopterAvailable/);
+    const slug = web('app/yatra/[slug]/page.tsx');
+    expect((slug.match(/HAS_PACKAGE_INCLUSIONS && yatra\.helicopterAvailable/g) ?? []).length).toBe(2);
+    expect(slug).toMatch(/\(HAS_PACKAGE_INCLUSIONS \? pkg\.includes : \[\]\)/);
+    expect(slug).toMatch(/HAS_PACKAGE_INCLUSIONS && \(\s*<div className="flex flex-wrap gap-3 text-xs"/);
+    expect(slug).toMatch(/HAS_PACKAGE_INCLUSIONS \? 'Book' : 'Enquire about'/);
+    expect(slug).toMatch(/\{HAS_PACKAGE_INCLUSIONS && \(\s*<>\s*\n?\s*<div className="mt-8">\s*<p[^>]*>Popular add-ons/);
+  });
+
+  it('/yatra/plan: the dead "Request Advisor Quote" button and the 24-hour quote promise are gone', () => {
+    const src = web('app/yatra/plan/page.tsx');
+    expect(src).not.toMatch(/within 24 hours/);
+    expect(src).not.toMatch(/<button className=\{buttonClass\('primary', 'md', 'mt-4 w-full btn-press'\)\}>\s*Request Advisor Quote/);
+    expect(src).toMatch(/mailto:care@darshya\.online/);
+  });
+
+  it('/wellness: every certified / thousands / free-session / recorded-library / every-day claim sits inside the gate', () => {
+    const src = web('app/wellness/page.tsx');
+    expect(src).not.toMatch(/Verified instructors on Darshya/);
+    const re = /certified instructors|thousands of practitioners|first guided meditation session is free|growing library|every morning and evening/gi;
+    let hits = 0;
+    for (const m of src.matchAll(re)) {
+      hits += 1;
+      expect(src.slice(Math.max(0, m.index! - 300), m.index!), m[0]).toMatch(/HAS_PACKAGE_INCLUSIONS/);
+    }
+    expect(hits).toBeGreaterThan(0);
+  });
+
+  it('API /wellness/programs withholds certificate / workbook / recording features while gated', () => {
+    const api = stripComments(read(join(repoRoot, 'apps/api/src/routes/wellness.ts')));
+    expect(api).toMatch(/HAS_WELLNESS_PROGRAM_PACKAGES/);
+    expect(api).toMatch(/programs: filtered\.map\(publicProgram\)/);
+    expect(api).toMatch(/program: publicProgram\(program\)/);
+  });
+
+  it('yatra companions: no ID / police / first-aid / location promise outside the gate', () => {
+    expect(HAS_COMPANION_VETTING).toBe(false);
+    const comp = web('app/yatra/companion/page.tsx');
+    expect(comp).toMatch(/Companions are not yet listed/);
+    expect(comp).not.toMatch(/Tell us your dates and we will call you/);
+    // every occurrence sits after (and so inside) a HAS_COMPANION_VETTING gate
+    for (const claim of ['police verification', 'Background checked before listing', 'Location shared with family', 'first-aid', 'ID check required']) {
+      for (const m of comp.matchAll(new RegExp(claim, 'gi'))) {
+        const before = comp.slice(0, m.index!);
+        const gateAt = Math.max(before.lastIndexOf('{HAS_COMPANION_VETTING && ('), before.lastIndexOf('HAS_COMPANION_VETTING\n ?'), before.lastIndexOf('HAS_COMPANION_VETTING ?'), before.lastIndexOf('{HAS_COMPANION_VETTING\n ?'));
+        expect(gateAt, `${claim} @${m.index}`).toBeGreaterThan(-1);
+      }
+    }
+    const yatra = web('app/yatra/page.tsx');
+    expect(yatra).toMatch(/not yet listed on Darshya/);
+    expect(yatra).toMatch(/\{HAS_COMPANION_VETTING && \(\s*<div data-reveal="glow"/);
+  });
+});
+
+describe('9. store returns', () => {
+  const refunds = web('app/refunds/page.tsx');
+
+  it('/refunds promises no automated return, no 48-hour window, no free return shipping', () => {
+    expect(refunds).not.toMatch(/Returnable Items|may be returned within 7 days|we cover return shipping|contact us within 48 hours/i);
+    expect(refunds).toMatch(/contact\s+support within 7 days of delivery/i);
+    expect(refunds).toMatch(/there is no automated return\s+process/i);
+    expect(refunds).toMatch(/we review each\s+case/i);
+  });
+
+  it('terms, shipping and the support FAQ use the same 7-day, review-each-case wording', () => {
+    expect(web('app/terms/page.tsx')).not.toMatch(/may be returned within 7 days/);
+    expect(web('app/terms/page.tsx')).toMatch(/we review each case/);
+    expect(web('app/shipping/page.tsx')).not.toMatch(/within 48\s+hours/);
+    expect(web('app/shipping/page.tsx')).toMatch(/within 7\s+days of delivery/);
+    const support = web('lib/support.ts');
+    expect(support).not.toMatch(/Yes, within 7 days of delivery if the item/);
+    expect(support).toMatch(/There is no automated return process/);
+  });
+
+  it('support intake exists, so pointing people at it is backed', () => {
+    expect(readdirSync(join(webRoot, 'app/support/ticket'))).toContain('new');
+    expect(read(join(repoRoot, 'apps/api/src/routes/support.ts'))).toMatch(/server\.post\('\/tickets'/);
+  });
+
+  it('store pages no longer badge "Easy Returns"', () => {
+    expect(web('components/store/ProductDetail.tsx')).not.toMatch(/Easy Returns/);
+    expect(web('app/store/seller/[id]/page.tsx')).not.toMatch(/Easy Returns/);
   });
 });

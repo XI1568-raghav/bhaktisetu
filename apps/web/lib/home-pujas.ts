@@ -20,6 +20,8 @@
 // tiers. Nothing in this file is a claim about a person, and nothing in it
 // should be read as a verification record.
 
+import { HAS_HOME_PUJA_INCLUSIONS } from './launch-gates';
+
 export type PricingTier = {
  basic: number;
  standard: number;
@@ -761,3 +763,44 @@ export type MarriageTestimonial = {
 };
 
 export const marriageTestimonials: MarriageTestimonial[] = [];
+
+// ─── Claim gate: what a home puja includes ──────────────────────────────────
+// 2026-10-05. The home-puja wizard is a callback request — no priest offering,
+// no payment, no stock — so "pandit brings all samagri", "prasadam for N",
+// organic ghee, silver kalash, brass idol and the per-tier lists are
+// commitments nobody has made. While HAS_HOME_PUJA_INCLUSIONS is false (see
+// lib/launch-gates.ts) the pages show the rites of the ceremony only, and the
+// coordinator confirms materials, prasadam and price on the call. The data above
+// is kept so the flip is one line.
+export const HOME_PUJA_MATERIALS_RE =
+  /samagri|prasad|\bkit\b|silver|brass|idol|murti|ghee|organic|lingam|coins|donation kit|gangajal|bilva|\bwith (pure|premium)\b/i;
+
+/** The rites/steps of the ceremony, minus any material or prasadam promise. */
+export function homePujaIncluded(cat: HomePujaCategory): string[] {
+  return HAS_HOME_PUJA_INCLUSIONS
+    ? cat.included
+    : cat.included.filter((item) => !HOME_PUJA_MATERIALS_RE.test(item));
+}
+
+/** Per-tier bullet lists are held back entirely while the gate is closed. */
+export function homePujaTierDetails(cat: HomePujaCategory, tier: keyof PricingTier): string[] {
+  return HAS_HOME_PUJA_INCLUSIONS ? cat.pricingDetails[tier] : [];
+}
+
+/** FAQ entries that answer with a materials/idol/prasad promise are held back. */
+export function homePujaFaq(cat: HomePujaCategory): { q: string; a: string }[] {
+  return HAS_HOME_PUJA_INCLUSIONS
+    ? cat.faq
+    : cat.faq.filter((f) => !HOME_PUJA_MATERIALS_RE.test(`${f.q} ${f.a}`));
+}
+
+/** Marriage tier lists, minus any samagri promise, while the gate is closed. */
+export function marriageTierIncludes(tier: { includes: string[] }): string[] {
+  return HAS_HOME_PUJA_INCLUSIONS
+    ? tier.includes
+    : tier.includes.filter((item) => !HOME_PUJA_MATERIALS_RE.test(item));
+}
+
+/** One line for every place that used to say "samagri + prasadam included". */
+export const HOME_PUJA_CONFIRMED_ON_CALL =
+  'Price, samagri and prasadam are confirmed by our coordinator on the call.';

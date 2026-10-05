@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { HAS_PACKAGE_INCLUSIONS, INCLUSIONS_ON_ENQUIRY } from '../../../lib/launch-gates';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
@@ -210,7 +211,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  </div>
  ))}
  </div>
- {yatra.helicopterAvailable && (
+ {HAS_PACKAGE_INCLUSIONS && yatra.helicopterAvailable && (
  <div className="mt-5 p-3 rounded-lg" style={{ background: 'var(--color-primary-highlight)' }}>
  <div className="flex items-center gap-2 mb-1">
  <Plane className="w-3.5 h-3.5" style={{ color: 'var(--color-primary-active)' }} />
@@ -245,10 +246,12 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <div className="rounded-xl p-4" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
  <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text)' }}>{d.title}</h3>
  <p className="text-xs leading-relaxed mb-2.5" style={{ color: 'var(--color-text-muted)' }}>{d.description}</p>
+ {HAS_PACKAGE_INCLUSIONS && (
  <div className="flex flex-wrap gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {d.stay}</span>
  <span className="flex items-center gap-1"><Flame className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {d.meals}</span>
  </div>
+ )}
  {d.highlights.length > 0 && (
  <div className="mt-2.5 flex flex-wrap gap-1">
  {d.highlights.map((h) => (
@@ -281,6 +284,10 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  </div>
  </section>
 
+ {/* Claim gate (2026-10-05): the lists below describe hotels, transport and guides no supplier has confirmed.
+     HAS_PACKAGE_INCLUSIONS (lib/launch-gates.ts) brings them back. */}
+ {HAS_PACKAGE_INCLUSIONS ? (
+ <>
  {/* ═══ INCLUSIONS/EXCLUSIONS ═════════════════════════════ */}
  <section className="py-10 md:py-12" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-5">
@@ -314,6 +321,18 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  </div>
  </div>
  </section>
+
+  </>
+ ) : (
+ <section className="py-10 md:py-12" style={{ background: 'var(--color-surface)' }}>
+ <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+ <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>Inclusions</p>
+ <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+ {INCLUSIONS_ON_ENQUIRY} The prices below are indicative starting prices per person.
+ </p>
+ </div>
+ </section>
+ )}
 
  {/* ═══ PACKAGES ═══════════════════════════════════════════ */}
  <section className="py-10 md:py-14">
@@ -354,14 +373,16 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-faint)' }}>Twin sharing • Taxes extra</p>
  </div>
 
+ {HAS_PACKAGE_INCLUSIONS && (
  <div className="space-y-1.5 mb-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <div className="flex items-center gap-2"><Car className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {pkg.transport}</div>
  <div className="flex items-center gap-2"><MapPin className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {pkg.stay}</div>
  <div className="flex items-center gap-2"><Users className="w-3 h-3" style={{ color: 'var(--color-primary)' }} /> {pkg.guide}</div>
  </div>
+ )}
 
  <ul className="space-y-1.5 mb-5 flex-1">
- {pkg.includes.map((inc) => (
+ {(HAS_PACKAGE_INCLUSIONS ? pkg.includes : []).map((inc) => (
  <li key={inc} className="flex items-start gap-1.5 text-xs" style={{ color: 'var(--color-text)' }}>
  <Check className="w-3 h-3 mt-0.5 shrink-0" style={{ color: 'var(--color-status-success)' }} />
  {inc}
@@ -378,7 +399,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  border: isStandard || isPremium ? 'none' : '1px solid var(--color-primary)',
  }}
  >
- Book {pkg.name} <ArrowRight className="w-3 h-3" />
+ {HAS_PACKAGE_INCLUSIONS ? 'Book' : 'Enquire about'} {pkg.name} <ArrowRight className="w-3 h-3" />
  </Link>
  </div>
  );
@@ -386,7 +407,7 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  </div>
 
  {/* Helicopter highlight */}
- {yatra.helicopterAvailable && (
+ {HAS_PACKAGE_INCLUSIONS && yatra.helicopterAvailable && (
  <div data-reveal="glow" data-delay="3" className="mt-8 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center gap-4" style={{ background: 'linear-gradient(135deg, var(--color-art-1), var(--color-art-3))', border: '1px solid var(--color-border)' }}>
  <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--color-primary)' }}>
  <Plane className="w-5 h-5 text-white" />
@@ -405,7 +426,10 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  </div>
  )}
 
- {/* Add-ons */}
+ {/* Add-ons: no add-on is orderable or priced by any code; held back with the other inclusions. */}
+ {HAS_PACKAGE_INCLUSIONS && (
+ <>
+ 
  <div className="mt-8">
  <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text)' }}>Popular add-ons</p>
  <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -424,6 +448,8 @@ export default async function YatraDetailPage({ params }: { params: Promise<{ sl
  ))}
  </div>
  </div>
+ </>
+ )}
  </div>
  </section>
 

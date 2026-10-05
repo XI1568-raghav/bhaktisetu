@@ -13,6 +13,7 @@ export const revalidate = 3600;
 // variable, and the fix live in the header of app/temples/[slug]/page.tsx.
 // Guarded by __tests__/seo/soft-404-status.test.ts.
 
+import { HAS_PUJA_MATERIALS_PROMISE } from '../../../lib/launch-gates';
 import Link from 'next/link';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
@@ -349,7 +350,7 @@ export default async function PujaDetailPage({
  <MapPin className="h-4 w-4" />
  {puja.temples.length} temple{puja.temples.length !== 1 ? 's' : ''}
  </span>
- {puja.samagriIncluded && (
+ {HAS_PUJA_MATERIALS_PROMISE && puja.samagriIncluded && (
  <>
  <span className="text-white/40">|</span>
  <span className="flex items-center gap-1.5">
@@ -487,14 +488,16 @@ export default async function PujaDetailPage({
  )}
 
  {/* Samagri List */}
- {puja.samagriIncluded && (puja.samagriList ?? puja.samagriItems ?? []).length > 0 && (
+ {(puja.samagriList ?? puja.samagriItems ?? []).length > 0 && (
  <div className="rounded-xl border border-surface-100 bg-white p-6">
  <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold tracking-tight text-surface-800">
  <Package className="h-5 w-5 text-saffron-500" />
- Samagri (Materials Included)
+ {HAS_PUJA_MATERIALS_PROMISE ? 'Samagri (Materials Included)' : 'Samagri traditionally used'}
  </h2>
  <p className="mb-4 text-sm text-surface-500">
- All puja materials are arranged by the temple. No need to send anything separately.
+ {HAS_PUJA_MATERIALS_PROMISE
+ ? 'All puja materials are arranged by the temple. No need to send anything separately.'
+ : 'These are the materials traditionally used in this puja. Your booking covers the puja fee, the platform fee and the optional prasad add-on; it does not list materials.'}
  </p>
  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
  {(puja.samagriList ?? puja.samagriItems ?? []).map((item, i) => (
@@ -610,11 +613,13 @@ export default async function PujaDetailPage({
  label="Temples"
  value={`${puja.temples.length} temple${puja.temples.length !== 1 ? 's' : ''}`}
  />
+ {HAS_PUJA_MATERIALS_PROMISE && (
  <SidebarRow
  icon={Package}
  label="Samagri"
  value={puja.samagriIncluded ? 'Included' : 'Not included'}
  />
+ )}
  </div>
 
  <div className="mt-6 space-y-3">
