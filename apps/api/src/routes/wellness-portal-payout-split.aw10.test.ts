@@ -134,4 +134,21 @@ describe('AW-10 — wellness dashboard reports a real settled / unsettled split'
     expect(stats.pendingPayoutInr).toBe(137.5);
     await app.close();
   });
+
+  it('splits a commission whose session has not been held into upcomingInr, not pendingPayoutInr', async () => {
+    prismaMock.commission.findMany.mockResolvedValue([
+      commissionRow({ id: 'wc-1', wellnessEnrollmentId: 'enr-future', amount: 240 }),
+      commissionRow({ id: 'wc-2', wellnessEnrollmentId: 'enr-held', amount: 160 }),
+    ]);
+    prismaMock.wellnessEnrollment.findMany.mockImplementation(async (args: any) =>
+      args?.where?.id?.in
+        ? [{ id: 'enr-future' }]
+        : [{ userId: 'devotee-1', session: { priceInr: 1000 } }],
+    );
+    const app = await buildApp();
+    const stats = (await dashboard(app)).json().stats;
+    expect(stats.upcomingInr).toBe(240);
+    expect(stats.pendingPayoutInr).toBe(160);
+    await app.close();
+  });
 });

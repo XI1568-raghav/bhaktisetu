@@ -190,13 +190,61 @@ async function sumCommissionAmounts(
  */
 const LEGACY_RAIL_SCAN_CAP = 500;
 
+/** Cap on the held-wellness enrollment id read; far above any real instructor's upcoming roster. */
+const UPCOMING_WELLNESS_SCAN_CAP = 5000;
+
+/**
+ * Wellness earnings are written PENDING the moment the devotee pays
+ * (wellness-sessions.ts writeWellnessCommissionOnPaid), days before the class
+ * runs. Counting them as withdrawable let an instructor cash out and then
+ * cancel the session. A Commission is tied to its enrollment only by the bare
+ * `wellnessEnrollmentId` string (no relation, no schema change), so: find the
+ * provider's enrollments whose session has neither happened nor been marked
+ * COMPLETED, and hold the commissions keyed on them.
+ */
+async function upcomingWellnessEnrollmentIds(
+  db: Pick<typeof prisma, 'wellnessEnrollment'>,
+  providerId: string,
+): Promise<string[]> {
+  const rows = await db.wellnessEnrollment.findMany({
+    where: {
+      session: {
+        instructorId: providerId,
+        scheduledAt: { gt: new Date() },
+        status: { not: 'COMPLETED' },
+      },
+    },
+    select: { id: true },
+    take: UPCOMING_WELLNESS_SCAN_CAP,
+  });
+  return rows.map((r) => r.id);
+}
+
+/** Excludes held wellness rows; an explicit null branch because NOT IN drops NULLs in SQL. */
+function notHeldWellness(heldIds: string[]): Prisma.CommissionWhereInput {
+  return heldIds.length
+    ? { OR: [{ wellnessEnrollmentId: null }, { wellnessEnrollmentId: { notIn: heldIds } }] }
+    : {};
+}
+
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */
 export async function getPayoutBalance(providerId: string) {
+  const heldIds = await upcomingWellnessEnrollmentIds(prisma, providerId);
   const pending = await sumCommissionAmounts({
     providerId,
     status: 'PENDING',
     payoutRequestId: null,
+    ...notHeldWellness(heldIds),
   });
+  // Earned but not yet withdrawable: wellness sessions that have not been held.
+  const upcoming = heldIds.length
+    ? await sumCommissionAmounts({
+        providerId,
+        status: 'PENDING',
+        payoutRequestId: null,
+        wellnessEnrollmentId: { in: heldIds },
+      })
+    : new Prisma.Decimal(0);
 
   const paid = await sumCommissionAmounts({ providerId, status: 'PAID' });
 
@@ -286,6 +334,7 @@ export async function getPayoutBalance(providerId: string) {
   // where the value stops being money and becomes a display/API field.
   return {
     availableInr: pending.toDecimalPlaces(2).toNumber(),
+    upcomingInr: upcoming.toDecimalPlaces(2).toNumber(),
     pendingInr: inFlight.toDecimalPlaces(2).toNumber(),
     paidOutInr: paid.toDecimalPlaces(2).toNumber(),
     legacyPandit: {
@@ -383,8 +432,9 @@ export async function requestPayout(
     // payoutRequestId still being NULL. Under READ COMMITTED the loser blocks on
     // the winner's row locks, re-evaluates the predicate, matches fewer rows
     // than it selected, and throws — rolling back its own PayoutRequest.
+    const heldIds = await upcomingWellnessEnrollmentIds(tx, providerId);
     const rows = await tx.commission.findMany({
-      where: { providerId, status: 'PENDING', payoutRequestId: null },
+      where: { providerId, status: 'PENDING', payoutRequestId: null, ...notHeldWellness(heldIds) },
       select: { id: true, amount: true },
     });
     if (!rows.length) throw new Error('No withdrawable balance.');
