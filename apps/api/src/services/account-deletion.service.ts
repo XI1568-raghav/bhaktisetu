@@ -80,6 +80,7 @@ import { sendEmail } from '../lib/email.js';
 // retention branch below reads the same flag every other 80G claim in this
 // codebase is gated on rather than asserting a regime we do not operate.
 import { HAS_80G } from '../lib/eighty-g.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 // ─── Tunables ────────────────────────────────────────────────────────────────
 
@@ -713,7 +714,7 @@ export class AccountDeletionService {
       `UPDATE "users"
           SET "deletion_requested_at" = now(),
               "deletion_purge_after" = $2::timestamptz,
-              "updated_at" = now()
+              "updated_at" = ${SQL_UTC_NOW}
         WHERE "id" = $1::uuid`,
       userId,
       purgeAfter.toISOString(),
@@ -777,7 +778,7 @@ export class AccountDeletionService {
 
     await this.db.$executeRawUnsafe(
       `UPDATE "users"
-          SET "deletion_requested_at" = NULL, "deletion_purge_after" = NULL, "updated_at" = now()
+          SET "deletion_requested_at" = NULL, "deletion_purge_after" = NULL, "updated_at" = ${SQL_UTC_NOW}
         WHERE "id" = $1::uuid`,
       userId,
     );
@@ -1361,7 +1362,7 @@ export class AccountDeletionService {
       `UPDATE "users"
           SET "deleted_at" = now(),
               "deletion_purge_after" = NULL,
-              "updated_at" = now()
+              "updated_at" = ${SQL_UTC_NOW}
         WHERE "id" = $1::uuid`,
       userId,
     );
@@ -1414,7 +1415,7 @@ export class AccountDeletionService {
                 SET "aadhaar_last4" = NULL, "aadhaar_hash" = NULL,
                     "bank_account_number" = NULL, "bank_ifsc" = NULL,
                     "bank_holder_name" = NULL, "rejection_reason" = NULL,
-                    "verified" = false, "updated_at" = now()
+                    "verified" = false, "updated_at" = ${SQL_UTC_NOW}
               WHERE "user_id" = $1::uuid`
           : `DELETE FROM "provider_kyc" WHERE "user_id" = $1::uuid`,
         userId,

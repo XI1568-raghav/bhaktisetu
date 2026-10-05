@@ -8,6 +8,7 @@ import { claimRun, releaseRun } from '../lib/notification-run-log.js';
 // format is the unsubscribe endpoint's contract, and duplicating the HMAC here
 // is how mint and verify silently disagree.
 import { signDigestUnsubscribeToken } from '../routes/digest.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 /**
  * Weekly devotee digest — Sunday 9 AM IST fan-out.
@@ -550,7 +551,7 @@ export async function runWeeklyDigest(): Promise<WeeklyDigestResult> {
   try {
     await prisma.$executeRawUnsafe(
       `INSERT INTO "WeeklyDigestRun" (id, last_run_at, last_sent, last_skipped)
-       VALUES (1, NOW(), $1, $2)
+       VALUES (1, ${SQL_UTC_NOW}, $1, $2)
        ON CONFLICT (id) DO UPDATE SET last_run_at = EXCLUDED.last_run_at,
                                        last_sent = EXCLUDED.last_sent,
                                        last_skipped = EXCLUDED.last_skipped`,

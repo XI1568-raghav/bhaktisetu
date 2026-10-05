@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { isRedditConfigured, submitRedditPost } from '../lib/reddit.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 // Layer AO — auto-post APPROVED Reddit drafts.
 //
@@ -109,7 +110,7 @@ async function markPosted(id: string, postedUrl: string): Promise<void> {
   try {
     await prisma.$executeRawUnsafe(
       `UPDATE content_drafts
-          SET status = 'POSTED', posted_at = now(), posted_url = $2
+          SET status = 'POSTED', posted_at = ${SQL_UTC_NOW}, posted_url = $2
         WHERE id = $1`,
       id,
       postedUrl,

@@ -21,7 +21,7 @@
  * has committed to translating them, and a promise is not a disclosure.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { SUPPORTED_LANGUAGES, TRANSLATED_LANGUAGES } from '@poojly/shared';
 
@@ -79,13 +79,39 @@ describe('I18N-07 — the web copy of the language lists matches the platform', 
   });
 });
 
+// Ceiling for a heavily loaded full-suite run (happy-dom + dynamic import of the
+// whole profile page). Healthy runs finish in tens of ms; this only bounds a hang.
+const ASYNC_TIMEOUT = { timeout: 15_000 };
+
 describe('I18N-07 — /profile renders the disclosure, not just stores it', () => {
+  // Deterministic network: /profile fetches /users/me on mount. Left unmocked,
+  // that is a real fetch to an unreachable host, which under full-suite load
+  // outlived the 1s findBy/waitFor default and surfaced as an AbortError. Answer
+  // it immediately with the same user the auth mock reports.
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ user: { id: 'u1', fullName: 'Test User', preferredLanguage: 'gu' } }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+      ),
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('labels every untranslated option in the DOM', async () => {
     const { default: ProfilePage } = await import('../../app/profile/page');
     render(<ProfilePage />);
-    // The form is behind a load gate; the fetch fails in tests and the gate
-    // opens on the error path, which is still the form we need to inspect.
-    await waitFor(() => expect(document.querySelectorAll('option').length).toBeGreaterThan(0));
+    // The form is behind a load gate that opens once the (mocked) fetch resolves.
+    await waitFor(
+      () => expect(document.querySelectorAll('option').length).toBeGreaterThan(0),
+      ASYNC_TIMEOUT,
+    );
 
     const options = Array.from(document.querySelectorAll('option'));
     expect(options.length).toBeGreaterThanOrEqual(SUPPORTED_LANGUAGES.length);
@@ -105,6 +131,8 @@ describe('I18N-07 — /profile renders the disclosure, not just stores it', () =
   it('says once, in prose, what the control actually controls', async () => {
     const { default: ProfilePage } = await import('../../app/profile/page');
     render(<ProfilePage />);
-    expect(await screen.findByText(/language of the messages we send you/i)).toBeTruthy();
+    expect(
+      await screen.findByText(/language of the messages we send you/i, undefined, ASYNC_TIMEOUT),
+    ).toBeTruthy();
   });
 });

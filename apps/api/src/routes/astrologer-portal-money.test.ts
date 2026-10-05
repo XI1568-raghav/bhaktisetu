@@ -235,3 +235,49 @@ describe('astrologer earnings split pending into payable vs upcoming consultatio
     expect(by).toEqual({ 'c-done': 'payable', 'c-open': 'upcoming' });
   });
 });
+
+describe('astrologer earnings - ready vs requested vs upcoming are labelled apart', () => {
+  it('splits pendingInr into readyInr (unrequested) and requestedInr (inside a payout request)', async () => {
+    prismaMock.commission.findMany.mockResolvedValue([
+      commissionRow({ id: 'c-ready', amount: 300, bookingId: 'b-ready', payoutRequestId: null }),
+      commissionRow({ id: 'c-req', amount: 500, bookingId: 'b-req', payoutRequestId: 'pr-1' }),
+      commissionRow({ id: 'c-paid', amount: 200, bookingId: 'b-paid', status: 'PAID', payoutRequestId: 'pr-0' }),
+    ]);
+
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/astrologer-portal/earnings',
+      headers: { authorization: 'Bearer demo-astro' },
+    });
+    await app.close();
+
+    expect(res.statusCode).toBe(200);
+    const { summary } = res.json();
+    expect(summary.readyInr).toBe(300);
+    expect(summary.requestedInr).toBe(500);
+    // pendingInr stays the sum of both for older clients.
+    expect(summary.pendingInr).toBe(800);
+    expect(summary.paidInr).toBe(200);
+  });
+
+  it('the dashboard carries the same split', async () => {
+    prismaMock.commission.findMany.mockResolvedValue([
+      commissionRow({ id: 'c-ready', amount: 300, bookingId: 'b-ready', payoutRequestId: null }),
+      commissionRow({ id: 'c-req', amount: 500, bookingId: 'b-req', payoutRequestId: 'pr-1' }),
+    ]);
+
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/astrologer-portal/dashboard',
+      headers: { authorization: 'Bearer demo-astro' },
+    });
+    await app.close();
+
+    const { stats } = res.json();
+    expect(stats.readyInr).toBe(300);
+    expect(stats.requestedInr).toBe(500);
+    expect(stats.pendingPayoutInr).toBe(800);
+  });
+});
