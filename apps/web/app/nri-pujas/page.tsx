@@ -26,6 +26,8 @@ import {
 import { NRI_PREMIUM_IS_SELLABLE } from '../nri/plan-availability';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import { PujaPrice } from '../../components/pricing/PujaPrice';
+import { CurrencyToggle } from '../../components/pricing/CurrencyToggle';
 
 export const revalidate = 86400;
 
@@ -117,7 +119,7 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How does pricing work from abroad?',
-    a: 'There is one price for everyone: the INR price shown on each puja, plus a flat platform fee, plus a flat prasad-delivery fee if you add it. There is no separate NRI price and no surcharge for booking from abroad. The full total is shown on the booking screen before you pay. Razorpay charges that amount in INR, and your bank applies its own conversion rate and any foreign-transaction fee.',
+    a: 'NRI pricing is 2.5 times the domestic price of the same puja. The flat platform fee (₹51) and the optional prasad-delivery fee (₹150) are the same for everyone and are not multiplied. We show the amount in US dollars for convenience, but the order is created and charged in Indian Rupees through Razorpay: the booking screen shows the exact rupee amount next to the dollar figure, and your bank converts at its own rate and may add a foreign-transaction fee. International cards work where your card issuer and Razorpay allow international payments. You can switch the page back to rupees at any time.',
   },
   {
     q: 'Are the pandits verified?',
@@ -193,7 +195,7 @@ const trustSignals = [
   // foreign currencies. There is no multi-currency rail — Razorpay charges in
   // INR only, and the foreign-currency path was deleted with Stripe (RV-01).
   // Say what actually happens at checkout.
-  { icon: CreditCard, title: 'International cards, no markup', body: 'Billed in INR — full price shown upfront, no platform FX fee.' },
+  { icon: CreditCard, title: 'International cards, no markup', body: 'Shown in USD, billed in INR — the exact rupee amount is shown upfront and we add no FX fee of our own.' },
   { icon: Clock, title: CANCELLATION_BADGE_LABEL, body: `${CANCELLATION_BADGE_DESC}. Inside that window the slot is locked.` },
   HAS_80G
     ? { icon: FileText, title: '80G tax receipts', body: 'Eligible donations get 80G receipt within 7 days.' }
@@ -376,9 +378,11 @@ export default async function NRIPujasPillarPage() {
             Pujas you can book from abroad
           </h2>
           <p className="mt-2 max-w-2xl text-surface-700">
-            The price is the same from any country: the INR price below, plus a flat platform
-            fee shown on the booking screen. Your bank converts it at its own rate.
+            NRI pricing is 2.5 times the domestic price, plus a flat platform fee. Dollar
+            figures are a display conversion: the order is charged in rupees and your bank
+            converts at its own rate.
           </p>
+          <CurrencyToggle className="mt-4" />
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {catalogue.slice(0, 6).map((p) => (
               <Link
@@ -390,7 +394,7 @@ export default async function NRIPujasPillarPage() {
                   {p.name}
                 </h3>
                 <p className="mt-2 text-sm font-medium text-saffron-700">
-                  from &#8377;{Number(p.basePrice).toLocaleString('en-IN')}
+                  <PujaPrice domesticPuja={Number(p.basePrice)} part="main" prefix="from " />
                 </p>
                 <span className="mt-3 inline-flex items-center gap-1 text-xs text-saffron-700">
                   Book this puja

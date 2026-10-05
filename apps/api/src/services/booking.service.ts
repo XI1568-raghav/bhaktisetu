@@ -17,6 +17,7 @@ import { notifyUser } from '../routes/notifications.js';
 import { notifyBookingEvent, notifyVideoReady } from './booking-notify.service.js';
 import { ensureConversationForBooking } from './conversation.service.js';
 import { paymentService } from './payment.service.js';
+import { nriPujaPriceInr } from '../lib/nri-pricing.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,12 @@ export interface CreateBookingInput {
   prasadDeliveryRequested: boolean;
   prasadDeliveryAddressId?: string;
   dispatchTier?: 'instant' | 'one_hour' | 'senior' | 'scheduled';
+  /**
+   * The devotee is being quoted (and will be charged) the NRI price: puja price
+   * x NRI_PREMIUM_MULTIPLIER, still in INR. Sent by the wizard exactly when it
+   * is showing the dollar price. See lib/nri-pricing.ts.
+   */
+  nriPricing?: boolean;
 }
 
 /**
@@ -541,7 +548,14 @@ export class BookingService {
     // offering.pujaType.nriPrice`, returned in the create-order response and
     // rendered/confirmed by the client before checkout. Until that quote exists
     // in the UI, displayed price === charged price.
-    const pujaPrice = basePrice;
+    //
+    // 2026-10-05 (owner: "2-3x will work"): the premium is back, as a 2.5x INR
+    // price that the wizard displays in USD. It is applied ONLY on the explicit
+    // `nriPricing` request flag (the same flag the wizard sends when it shows
+    // the dollar price), never from the self-settable users.isNri, so the
+    // displayed price still equals the charged price. The order stays INR.
+    const domesticPujaPrice = new Prisma.Decimal(basePrice.toString());
+    const pujaPrice = data.nriPricing ? nriPujaPriceInr(domesticPujaPrice) : basePrice;
 
     // Resolve the priest's actual share. The booking may already have a priest
     // pinned (temple-pin / from-offering); when it does, read that priest's

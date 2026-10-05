@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Prisma } from '@prisma/client';
 import { prismaMock } from '../lib/__mocks__/prisma.js';
+import { nriPujaPriceInr } from '../lib/nri-pricing.js';
 
 // RV-03 / RV-10 (2026-08-10): the shared deep mock in lib/__mocks__/prisma.ts
 // predates temple_payouts and priest_puja_offerings, so neither model is on it.
@@ -45,6 +46,7 @@ import {
   writeTemplePayoutOnConfirm,
   UNPAID_HOLD_MINUTES,
   MAX_RESCHEDULES,
+  PLATFORM_FEE_INR,
 } from './booking.service.js';
 
 let service: BookingService;
@@ -313,6 +315,76 @@ describe('BookingService.createBooking', () => {
     // ~83x overcharge at the gateway that RV-01 closed.
     expect(createCall.data.currency).toBe('INR');
     expect(result.currency).toBe('INR');
+  });
+
+  // ── NRI premium (owner decision 2026-10-05: 2.5x) ─────────────────────────
+  //
+  // The premium is applied ONLY when the booking request carries the explicit
+  // `nriPricing` flag — the same flag the wizard sends when it displays the
+  // dollar price — so the amount shown is the amount charged. It is never
+  // derived from the self-settable users.isNri column.
+  describe('nriPricing (2.5x premium, still INR)', () => {
+    function arrange() {
+      prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
+      prismaMock.pujaBooking.count.mockResolvedValue(0);
+      prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1' });
+      prismaMock.userAddress.findFirst.mockResolvedValue({ id: 'addr-1' });
+      prismaMock.pujaBooking.findUnique.mockResolvedValue(null);
+      prismaMock.pujaBooking.create.mockResolvedValue({ id: 'booking-1', status: 'pending_payment' });
+    }
+    const created = () => (prismaMock.pujaBooking.create.mock.calls[0]![0] as any).data;
+
+    it('charges puja x 2.5 + the flat platform fee, in INR', async () => {
+      arrange();
+      await service.createBooking({ ...validInput, nriPricing: true });
+      // 500 x 2.5 = 1250; + 51 platform fee = 1301
+      expect(Number(created().priceAmount)).toBe(1301);
+      expect(created().currency).toBe('INR');
+    });
+
+    it('keeps the prasad fee flat (not multiplied)', async () => {
+      arrange();
+      await service.createBooking({
+        ...validInput,
+        nriPricing: true,
+        prasadDeliveryRequested: true,
+        prasadDeliveryAddressId: 'addr-1',
+      });
+      expect(Number(created().priceAmount)).toBe(1250 + 51 + 150);
+    });
+
+    it('splits 80/20 on the NRI puja price actually charged (fees excluded, as for domestic)', async () => {
+      arrange();
+      await service.createBooking({ ...validInput, nriPricing: true });
+      expect(created().priestPayout.toString()).toBe('1000'); // 80% of 1250
+      expect(created().platformCommission.toString()).toBe('250'); // 20% of 1250
+      expect(
+        created().priestPayout.add(created().platformCommission).toString(),
+      ).toBe('1250');
+    });
+
+    it('charges exactly the NRI puja price from the pricing module plus the flat fee', async () => {
+      arrange();
+      await service.createBooking({ ...validInput, nriPricing: true });
+      expect(Number(created().priceAmount)).toBe(Number(nriPujaPriceInr(500)) + PLATFORM_FEE_INR);
+    });
+
+    it('is domestic when the flag is absent or false, even for users with isNri set', async () => {
+      arrange();
+      prismaMock.user.findUnique.mockResolvedValue({ id: 'user-1', isNri: true });
+      await service.createBooking({ ...validInput, nriPricing: false });
+      expect(Number(created().priceAmount)).toBe(551);
+    });
+
+    it('applies the premium on top of a temple price override', async () => {
+      arrange();
+      prismaMock.templePujaOffering.findUnique.mockResolvedValue({
+        ...mockOffering,
+        priceOverride: 1100,
+      });
+      await service.createBooking({ ...validInput, nriPricing: true });
+      expect(Number(created().priceAmount)).toBe(2750 + 51);
+    });
   });
 
   // ── S3-07 (2026-08-11): the platform multiplier is Decimal, not float ─────

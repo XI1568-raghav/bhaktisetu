@@ -337,7 +337,7 @@ function TemplePujasPageContent() {
                   className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
                   min="0"
                   step="0.01"
-                  placeholder="9-10x domestic"
+                  placeholder="optional"
                 />
               </div>
               <div>

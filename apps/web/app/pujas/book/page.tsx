@@ -56,6 +56,12 @@ import {
  formatInr,
  pujaTotalInr,
 } from '../../../lib/puja-pricing';
+// NRI pricing (owner decision 2026-10-05): a devotee who chooses the USD view is
+// quoted — and charged — the NRI price (puja x 2.5, still an INR order). The
+// wizard tells the server with `nriPricing`, so shown === charged.
+import { formatUsd, nriPujaPriceInr, nriTotalInr, usdFromInr, usdPriceLine } from '../../../lib/nri-pricing';
+import { useDisplayCurrency } from '../../../components/pricing/useDisplayCurrency';
+import { CurrencyToggle } from '../../../components/pricing/CurrencyToggle';
 // DB-06: the real cancellation guarantee, shared with the puja detail page so
 // the badge above the Pay button and the badge on the listing cannot drift.
 import {
@@ -644,10 +650,19 @@ function PujaBookingInner() {
  return local ? `${label} (${local} your time)` : label;
  }, [slotAvailability, selectedSlot, selectedDate]);
 
+ const { currency: displayCurrency } = useDisplayCurrency();
+ const isNriPricing = displayCurrency === 'USD';
+
+ // What the devotee is charged for the puja itself, in INR: the domestic price,
+ // or the NRI price (x2.5) when the USD view is on. Flat fees are added on top.
+ const chargedPujaPrice = isNriPricing ? nriPujaPriceInr(basePrice) : basePrice;
+
  const totalPrice = useMemo(
- () => pujaTotalInr(basePrice, wantsPrasad),
- [basePrice, wantsPrasad],
+ () => (isNriPricing ? nriTotalInr(basePrice, wantsPrasad) : pujaTotalInr(basePrice, wantsPrasad)),
+ [basePrice, wantsPrasad, isNriPricing],
  );
+ // The total as the devotee reads it: INR, or "$X (charged as ₹Y; ...)".
+ const totalLabel = isNriPricing ? usdPriceLine(totalPrice) : `₹${totalPrice.toLocaleString('en-IN')}`;
 
  // CM-03: what step 0 has to be honest about. Before a temple is picked there is
  // no single price, so quote the cheapest bookable offering — the same "from"
@@ -661,23 +676,15 @@ function PujaBookingInner() {
  return prices.length > 0 ? Math.min(...prices) : Number(puja.basePrice) || 0;
  }, [selectedTemple, basePrice, puja, bookableTemples]);
 
+ const disclosurePujaPrice = isNriPricing ? nriPujaPriceInr(disclosureBasePrice) : disclosureBasePrice;
  const totalWithoutPrasad = useMemo(
- () => pujaTotalInr(disclosureBasePrice, false),
- [disclosureBasePrice],
+ () => (isNriPricing ? nriTotalInr(disclosureBasePrice, false) : pujaTotalInr(disclosureBasePrice, false)),
+ [disclosureBasePrice, isNriPricing],
  );
  const totalWithPrasad = useMemo(
- () => pujaTotalInr(disclosureBasePrice, true),
- [disclosureBasePrice],
+ () => (isNriPricing ? nriTotalInr(disclosureBasePrice, true) : pujaTotalInr(disclosureBasePrice, true)),
+ [disclosureBasePrice, isNriPricing],
  );
-
- // USD price comes straight from PujaType.nriPrice — already encodes
- // the 9-10x diaspora multiplier configured per puja type. We do not
- // add platform/prasad surcharges to NRI orders to keep the headline
- // price simple at the diaspora segment.
- const nriUsdPrice = useMemo(() => {
- if (!puja) return 0;
- return Number(puja.nriPrice || 0);
- }, [puja]);
 
  // ─── Fetch slot availability ────────────────────────────────
  useEffect(() => {
@@ -937,6 +944,7 @@ function PujaBookingInner() {
  specialInstructions: specialInstructions || undefined,
  prasadDelivery: wantsPrasad,
  deliveryAddress: wantsPrasad ? address : undefined,
+ nriPricing: isNriPricing,
  }),
  }).catch(() => null);
 
@@ -974,6 +982,18 @@ function PujaBookingInner() {
  const data = await res.json().catch(() => null);
  if (!data?.orderId || !data?.razorpayOrderId || !data?.amount) {
  setPaymentError('Booking service returned an unexpected response. Please try again.');
+ setPaymentLoading(false);
+ creatingOrderRef.current = false;
+ return;
+ }
+ // Displayed price must equal charged price. The order is minted by the
+ // server; if its amount is not the total this page showed, stop before the
+ // Razorpay sheet opens rather than ask for a different number.
+ if (Number(data.amount) !== Math.round(totalPrice * 100)) {
+ setPaymentError(
+ 'The amount for this booking changed, so checkout did not open and you have NOT been charged. ' +
+ 'Please refresh the page and try again, or email support@darshya.online.',
+ );
  setPaymentLoading(false);
  creatingOrderRef.current = false;
  return;
@@ -1643,7 +1663,9 @@ function PujaBookingInner() {
  </p>
  <div className="flex items-center justify-between">
  <span className="text-lg font-bold text-saffron-600">
- ₹{Number(price).toLocaleString('en-IN')}
+ {isNriPricing
+ ? formatUsd(usdFromInr(nriPujaPriceInr(Number(price))))
+ : `₹${Number(price).toLocaleString('en-IN')}`}
  </span>
  {/* trustScore is 0-5 (see lib/trust-score.ts). The 2026-08-03 note here
    claimed 0-100 — taken from this file's own MOCK fixtures, which used 98/96/95
@@ -1685,13 +1707,14 @@ function PujaBookingInner() {
  <IndianRupee className="h-4 w-4 text-saffron-500" />
  What you will pay
  </h2>
+ <CurrencyToggle className="mb-3" />
  <dl className="space-y-1.5 text-sm">
  <div className="flex items-center justify-between">
  <dt className="text-surface-600">
- {selectedTemple ? 'Puja fee' : 'Puja fee (from)'}
+ {isNriPricing ? 'Puja fee (NRI price)' : selectedTemple ? 'Puja fee' : 'Puja fee (from)'}
  </dt>
  <dd className="font-medium text-surface-700">
- ₹{formatInr(disclosureBasePrice)}
+ ₹{formatInr(disclosurePujaPrice)}
  </dd>
  </div>
  <div className="flex items-center justify-between">
@@ -1703,13 +1726,13 @@ function PujaBookingInner() {
  Total{selectedTemple ? '' : ' from'}
  </dt>
  <dd className="text-lg font-bold text-saffron-600">
- ₹{formatInr(totalWithoutPrasad)}
+ {isNriPricing ? usdPriceLine(totalWithoutPrasad) : `₹${formatInr(totalWithoutPrasad)}`}
  </dd>
  </div>
  </dl>
  <p className="mt-3 text-xs leading-relaxed text-surface-500">
  Prasad delivered to your home is optional and adds ₹
- {formatInr(PRASAD_DELIVERY_FEE_INR)} — ₹{formatInr(totalWithPrasad)} in total.
+ {formatInr(PRASAD_DELIVERY_FEE_INR)} — {isNriPricing ? usdPriceLine(totalWithPrasad) : `₹${formatInr(totalWithPrasad)}`} in total.
  You choose at Review &amp; Prasad. Nothing else is added at checkout.
  </p>
  </div>
@@ -2374,11 +2397,12 @@ function PujaBookingInner() {
  <IndianRupee className="h-5 w-5 text-saffron-500" />
  Price Breakdown
  </h2>
+ <CurrencyToggle className="mb-3" />
  <div className="space-y-3">
  <div className="flex justify-between text-sm">
- <span className="text-surface-600">Puja Fee</span>
+ <span className="text-surface-600">{isNriPricing ? 'Puja Fee (NRI price)' : 'Puja Fee'}</span>
  <span className="font-medium text-surface-700">
- ₹{basePrice.toLocaleString('en-IN')}
+ ₹{chargedPujaPrice.toLocaleString('en-IN')}
  </span>
  </div>
  <div className="flex justify-between text-sm">
@@ -2399,7 +2423,7 @@ function PujaBookingInner() {
  <div className="flex justify-between">
  <span className="text-base font-bold text-surface-800">Total</span>
  <span className="text-xl font-bold text-saffron-600">
- ₹{totalPrice.toLocaleString('en-IN')}
+ {totalLabel}
  </span>
  </div>
  </div>
@@ -2494,8 +2518,8 @@ function PujaBookingInner() {
  <div className="mb-6 rounded-xl bg-white p-4">
  <div className="space-y-2">
  <div className="flex justify-between text-sm">
- <span className="text-surface-600">Puja Fee</span>
- <span className="text-surface-700">₹{basePrice.toLocaleString('en-IN')}</span>
+ <span className="text-surface-600">{isNriPricing ? 'Puja Fee (NRI price)' : 'Puja Fee'}</span>
+ <span className="text-surface-700">₹{chargedPujaPrice.toLocaleString('en-IN')}</span>
  </div>
  <div className="flex justify-between text-sm">
  <span className="text-surface-600">Platform Fee</span>
@@ -2511,7 +2535,7 @@ function PujaBookingInner() {
  <div className="flex justify-between">
  <span className="font-bold text-surface-800">Total Amount</span>
  <span className="text-2xl font-bold text-saffron-600">
- ₹{totalPrice.toLocaleString('en-IN')}
+ {totalLabel}
  </span>
  </div>
  </div>
@@ -2562,7 +2586,7 @@ function PujaBookingInner() {
  ) : (
  <>
  <CreditCard className="h-5 w-5" />
- Pay ₹{totalPrice.toLocaleString('en-IN')} with Razorpay
+ Pay {isNriPricing ? `${formatUsd(usdFromInr(totalPrice))} (₹${totalPrice.toLocaleString('en-IN')})` : `₹${totalPrice.toLocaleString('en-IN')}`} with Razorpay
  </>
  )}
  </button>
