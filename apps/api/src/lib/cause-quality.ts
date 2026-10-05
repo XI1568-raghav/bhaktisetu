@@ -86,3 +86,37 @@ export function templeQuality(p: {
 }): CauseQualityResult {
   return assessCauseQuality({ name: p.templeName, description: p.description, address: p.address });
 }
+
+const REASON_TEXT: Record<CauseQualityReason, string> = {
+  name_too_short: `the name needs at least ${CAUSE_QUALITY_RULES.nameMinChars} characters`,
+  name_no_letter: 'the name must contain letters',
+  description_too_short: `the description needs at least ${CAUSE_QUALITY_RULES.descriptionMinChars} characters`,
+  description_too_few_words: `the description needs at least ${CAUSE_QUALITY_RULES.descriptionMinWords} words`,
+  address_too_short: `the address needs at least ${CAUSE_QUALITY_RULES.addressMinChars} characters (full street and city)`,
+};
+
+/** Plain-English message for a failed quality check on an edit to an approved profile. */
+export function describeQualityEditFailure(reasons: CauseQualityReason[]): string {
+  const items = Array.from(new Set(reasons.map((r) => REASON_TEXT[r])));
+  return `These changes were not saved because your profile is live and public. Please fix: ${items.join('; ')}.`;
+}
+
+/**
+ * Edit-time gate. An approved profile that would fail the bar after `updates`
+ * is applied must not be saved (and is not silently un-approved). Returns the
+ * failing reasons, or null when the edit is fine or the profile is unapproved.
+ */
+export function qualityReasonsForEdit(
+  kind: 'gaushala' | 'temple',
+  current: Record<string, unknown> & { approved?: boolean | null },
+  updates: Record<string, unknown>,
+): CauseQualityReason[] | null {
+  if (!current.approved) return null;
+  const defined = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+  const merged = { ...current, ...defined } as Record<string, string | null | undefined>;
+  const verdict =
+    kind === 'gaushala'
+      ? gaushalaQuality({ gaushalaName: merged.gaushalaName, description: merged.description, address: merged.address })
+      : templeQuality({ templeName: merged.templeName, description: merged.description, address: merged.address });
+  return verdict.ok ? null : verdict.reasons;
+}

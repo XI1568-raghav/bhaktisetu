@@ -15,6 +15,9 @@ import { H1 } from '../../../components/ui/heading-recipe';
 type RevenueData = {
   topProducts: Array<{ productId: string; name: string; unitsSold: number; revenueInr: number }>;
   totals: { todayInr: number; monthInr: number; yearInr: number };
+  // Additive split of `totals` (older API versions omit these).
+  onlinePaid?: { todayInr: number; monthInr: number; yearInr: number };
+  cashOnDelivery?: { todayInr: number; monthInr: number; yearInr: number };
 };
 
 function formatInr(n: number): string {
@@ -62,7 +65,7 @@ export default function StoreRevenuePage() {
 
   const totals = data?.totals ?? { todayInr: 0, monthInr: 0, yearInr: 0 };
   const cards = [
-    { label: "Today's Revenue", value: formatInr(totals.todayInr), icon: IndianRupee },
+    { label: "Today's Sales", value: formatInr(totals.todayInr), icon: IndianRupee },
     { label: 'This Month', value: formatInr(totals.monthInr), icon: TrendingUp },
     { label: 'This Year', value: formatInr(totals.yearInr), icon: Package },
   ];
@@ -71,7 +74,7 @@ export default function StoreRevenuePage() {
     <div className="space-y-6">
       <div>
         <h1 className={H1.portal}>Revenue</h1>
-        <p className="text-surface-500 mt-1">Your store's earnings breakdown</p>
+        <p className="text-surface-500 mt-1">Your store&apos;s sales, online and cash on delivery combined</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -85,6 +88,28 @@ export default function StoreRevenuePage() {
           </div>
         ))}
       </div>
+
+      {data?.onlinePaid && data?.cashOnDelivery && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { title: 'Online-paid sales', split: data.onlinePaid },
+            { title: 'Cash-on-delivery sales (collected by you)', split: data.cashOnDelivery },
+          ].map((s) => (
+            <div key={s.title} className="bg-white rounded-xl border border-surface-100 p-5">
+              <h2 className="text-sm font-semibold text-surface-800">{s.title}</h2>
+              <dl className="mt-3 space-y-1 text-sm">
+                <div className="flex justify-between"><dt className="text-surface-500">Today</dt><dd>{formatInr(s.split.todayInr)}</dd></div>
+                <div className="flex justify-between"><dt className="text-surface-500">This month</dt><dd>{formatInr(s.split.monthInr)}</dd></div>
+                <div className="flex justify-between"><dt className="text-surface-500">This year</dt><dd>{formatInr(s.split.yearInr)}</dd></div>
+              </dl>
+            </div>
+          ))}
+          <p className="sm:col-span-2 text-xs text-surface-500">
+            Only online-paid sales are paid out by Darshya (after the platform commission). Cash-on-delivery
+            money is collected by you directly and does not appear in payouts.
+          </p>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-surface-100 p-6">
         <h2 className="text-lg font-semibold text-surface-800 mb-4">Top Products</h2>

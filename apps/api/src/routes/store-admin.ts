@@ -417,7 +417,17 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     const storeProfileId = await resolveStoreProfileId(request.currentUser!.id);
     if (!storeProfileId) {
       return reply.send({
-        stats: { todaySales: 0, todayOrders: 0, monthSales: 0, lowStock: 0, pendingShipments: 0 },
+        stats: {
+          todaySales: 0,
+          todayOrders: 0,
+          monthSales: 0,
+          todayOnlineSales: 0,
+          todayCodSales: 0,
+          monthOnlineSales: 0,
+          monthCodSales: 0,
+          lowStock: 0,
+          pendingShipments: 0,
+        },
         recentOrders: [],
       });
     }
@@ -449,6 +459,13 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     let todaySales = 0;
     let todayOrders = 0;
     let monthSales = 0;
+    // An order with a captured payment is paid online and earns a commission
+    // row; one without is cash-on-delivery, collected by the owner, with no
+    // platform payout. Same signal writeStoreOrderCommission(requirePayment) uses.
+    let todayOnlineSales = 0;
+    let todayCodSales = 0;
+    let monthOnlineSales = 0;
+    let monthCodSales = 0;
     let pendingShipments = 0;
     const recentOrders: Array<{
       id: string;
@@ -477,6 +494,7 @@ export async function storeAdminRoutes(server: FastifyInstance) {
             status: true,
             createdAt: true,
             userId: true,
+            paymentId: true,
           },
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           take,
@@ -485,10 +503,15 @@ export async function storeAdminRoutes(server: FastifyInstance) {
       (o) => {
         const { revenue } = attributeOrderToStore(o.items, productIds);
         if (revenue === 0) return;
+        const online = Boolean(o.paymentId);
         monthSales += revenue;
+        if (online) monthOnlineSales += revenue;
+        else monthCodSales += revenue;
         if (o.createdAt >= dayStart) {
           todaySales += revenue;
           todayOrders += 1;
+          if (online) todayOnlineSales += revenue;
+          else todayCodSales += revenue;
         }
         if (o.status === 'CONFIRMED' || o.status === 'PROCESSING') pendingShipments += 1;
         if (recentOrders.length < 10) {
@@ -519,6 +542,11 @@ export async function storeAdminRoutes(server: FastifyInstance) {
         todaySales: Math.round(todaySales),
         todayOrders,
         monthSales: Math.round(monthSales),
+        // Additive split: todaySales/monthSales above stay the combined figure.
+        todayOnlineSales: Math.round(todayOnlineSales),
+        todayCodSales: Math.round(todayCodSales),
+        monthOnlineSales: Math.round(monthOnlineSales),
+        monthCodSales: Math.round(monthCodSales),
         lowStock,
         pendingShipments,
       },
@@ -582,7 +610,12 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     }
     const storeProfileId = await resolveStoreProfileId(request.currentUser!.id);
     if (!storeProfileId) {
-      return reply.send({ topProducts: [], totals: { todayInr: 0, monthInr: 0, yearInr: 0 } });
+      return reply.send({
+        topProducts: [],
+        totals: { todayInr: 0, monthInr: 0, yearInr: 0 },
+        onlinePaid: { todayInr: 0, monthInr: 0, yearInr: 0 },
+        cashOnDelivery: { todayInr: 0, monthInr: 0, yearInr: 0 },
+      });
     }
     const products = await prisma.storeProduct.findMany({
       where: { storeProfileId },
@@ -599,6 +632,8 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     let todayInr = 0;
     let monthInr = 0;
     let yearInr = 0;
+    const online = { todayInr: 0, monthInr: 0, yearInr: 0 };
+    const cod = { todayInr: 0, monthInr: 0, yearInr: 0 };
     const perProduct = new Map<string, { sold: number; revenueInr: number }>();
 
     // SCAL-04: a full year of orders, paged — see walkStoreOrders.
@@ -611,7 +646,7 @@ export async function storeAdminRoutes(server: FastifyInstance) {
             status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
             createdAt: { gte: yearStart },
           },
-          select: { id: true, items: true, createdAt: true },
+          select: { id: true, items: true, createdAt: true, paymentId: true },
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           take,
           ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -620,8 +655,16 @@ export async function storeAdminRoutes(server: FastifyInstance) {
         const { revenue, lines } = attributeOrderToStore(o.items, productIds);
         if (revenue === 0) return;
         yearInr += revenue;
-        if (o.createdAt >= monthStart) monthInr += revenue;
-        if (o.createdAt >= dayStart) todayInr += revenue;
+        const bucket = o.paymentId ? online : cod;
+        bucket.yearInr += revenue;
+        if (o.createdAt >= monthStart) {
+          monthInr += revenue;
+          bucket.monthInr += revenue;
+        }
+        if (o.createdAt >= dayStart) {
+          todayInr += revenue;
+          bucket.todayInr += revenue;
+        }
         for (const line of lines) {
           const acc = perProduct.get(line.productId) ?? { sold: 0, revenueInr: 0 };
           acc.sold += line.qty;
@@ -647,6 +690,19 @@ export async function storeAdminRoutes(server: FastifyInstance) {
         todayInr: Math.round(todayInr),
         monthInr: Math.round(monthInr),
         yearInr: Math.round(yearInr),
+      },
+      // Additive split of `totals`. Online-paid sales earn a commission row and
+      // are payable by the platform; cash-on-delivery sales were collected by the
+      // owner directly and never appear in payouts.
+      onlinePaid: {
+        todayInr: Math.round(online.todayInr),
+        monthInr: Math.round(online.monthInr),
+        yearInr: Math.round(online.yearInr),
+      },
+      cashOnDelivery: {
+        todayInr: Math.round(cod.todayInr),
+        monthInr: Math.round(cod.monthInr),
+        yearInr: Math.round(cod.yearInr),
       },
     });
   });
