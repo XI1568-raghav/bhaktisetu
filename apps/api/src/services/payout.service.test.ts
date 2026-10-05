@@ -359,6 +359,67 @@ describe('payout.service — puja earnings are held until the puja is performed'
   });
 });
 
+describe('payout.service — astrologer earnings are held until the consultation is completed', () => {
+  // Customer test 2026-10-05: the consultation Commission is written PENDING at
+  // payment, so a booked-but-unheld session was withdrawable at once.
+  function wireLedger(rows: Array<{ amount: number; bookingId?: string | null }>) {
+    commission.aggregate.mockImplementation(async (args: any) => {
+      const where = args?.where ?? {};
+      const ands = (where.AND ?? []) as Array<any>;
+      const matched = rows.filter((r) => {
+        const bid = r.bookingId ?? null;
+        if (where.bookingId?.in && !where.bookingId.in.includes(bid)) return false;
+        for (const a of ands) {
+          const or = a.OR as Array<any> | undefined;
+          if (or && !or.some((c) => (c.bookingId === null ? bid === null : bid !== null && !c.bookingId.notIn.includes(bid)))) return false;
+        }
+        return where.status ? where.status === 'PENDING' : true;
+      });
+      const sum = matched.reduce((t, r) => t.add(new Prisma.Decimal(r.amount)), new Prisma.Decimal(0));
+      return { _sum: { amount: matched.length ? sum : null } };
+    });
+  }
+  const heldRows = (ids: string[]) => $queryRawUnsafe.mockImplementation(async (sql: string) =>
+    /astrologer_consultations/.test(sql) ? ids.map((booking_id) => ({ booking_id })) : [],
+  );
+
+  it('Rs 160 on a paid but not yet completed consultation is upcoming, not available', async () => {
+    heldRows(['con-open']);
+    wireLedger([{ amount: 160, bookingId: 'con-open' }]);
+    const b = await getPayoutBalance('astro-1');
+    expect(b.availableInr).toBe(0);
+    expect(b.upcomingInr).toBe(160);
+  });
+
+  it('completed consultations and other rails stay available', async () => {
+    heldRows(['con-open']);
+    wireLedger([
+      { amount: 160, bookingId: 'con-open' },
+      { amount: 100, bookingId: 'con-done' },
+      { amount: 50, bookingId: null },
+    ]);
+    const b = await getPayoutBalance('astro-1');
+    expect(b.availableInr).toBe(150);
+    expect(b.upcomingInr).toBe(160);
+  });
+
+  it('asks only for this provider\'s unfinished consultations, with a bound parameter', async () => {
+    heldRows([]);
+    await getPayoutBalance('astro-1');
+    const call = $queryRawUnsafe.mock.calls.find((c) => /astrologer_consultations/.test(String(c[0])))!;
+    expect(String(call[0])).toMatch(/provider_id = \$1::uuid/);
+    expect(String(call[0])).toMatch(/a\.status NOT IN \('completed', 'cancelled'\)/);
+    expect(call[1]).toBe('astro-1');
+  });
+
+  it('a missing consultations table does not break the balance', async () => {
+    $queryRawUnsafe.mockRejectedValue(new Error('relation "astrologer_consultations" does not exist'));
+    wireLedger([{ amount: 100 }]);
+    const b = await getPayoutBalance('astro-1');
+    expect(b.availableInr).toBe(100);
+  });
+});
+
 describe('payout.service — KYC gating', () => {
   it('reads verified + bank presence from provider_kyc', async () => {
     $queryRawUnsafe.mockResolvedValue([{ verified: true, bank_account_number: '1234', bank_ifsc: 'HDFC0001234' }]);
