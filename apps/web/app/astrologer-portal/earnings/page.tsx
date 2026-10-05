@@ -29,6 +29,10 @@ interface EarningRow {
 interface Summary {
   totalEarningsInr: number;
   pendingInr: number;
+  /** Ready to withdraw (completed, not yet requested). Part of pendingInr. */
+  readyInr?: number;
+  /** Requested, awaiting payout (inside a payout request). Part of pendingInr. */
+  requestedInr?: number;
   /** Consultations not yet completed; excluded from pendingInr. */
   upcomingInr?: number;
   paidInr: number;
@@ -45,6 +49,9 @@ export default function AstrologerEarningsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // The API now splits pendingInr into ready + requested. `typeof` (not `??`) so
+  // an older server falls back to the single mixed figure under its old label.
+  const hasSplit = typeof summary?.readyInr === 'number';
 
   useEffect(() => {
     if (!session?.accessToken) return;
@@ -77,7 +84,7 @@ export default function AstrologerEarningsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className={`grid grid-cols-1 gap-4 ${(summary?.upcomingInr ?? 0) > 0 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
+      <div className={`grid grid-cols-1 gap-4 ${(summary?.upcomingInr ?? 0) > 0 || (summary?.requestedInr ?? 0) > 0 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
         <div className="bg-white rounded-xl border border-surface-100 p-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
@@ -97,13 +104,31 @@ export default function AstrologerEarningsPage() {
               <Clock className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-xs text-surface-500">Pending payout</p>
+              {/* Older servers send only the mixed pendingInr; keep its old label then. */}
+              <p className="text-xs text-surface-500">{hasSplit ? 'Ready to withdraw' : 'Pending payout'}</p>
               <p className="text-lg font-bold text-surface-800">
-                {loading ? '…' : formatINR(summary?.pendingInr ?? 0)}
+                {loading ? '…' : formatINR(hasSplit ? summary?.readyInr ?? 0 : summary?.pendingInr ?? 0)}
               </p>
+              {hasSplit && (
+                <p className="text-xs text-surface-400 mt-0.5">Completed and not yet requested.</p>
+              )}
             </div>
           </div>
         </div>
+        {!loading && hasSplit && (summary?.requestedInr ?? 0) > 0 && (
+          <div data-testid="earnings-requested" className="bg-white rounded-xl border border-surface-100 p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-surface-500">Requested, awaiting payout</p>
+                <p className="text-lg font-bold text-surface-800">{formatINR(summary?.requestedInr ?? 0)}</p>
+                <p className="text-xs text-surface-400 mt-0.5">Already in a payout request.</p>
+              </div>
+            </div>
+          </div>
+        )}
         {!loading && (summary?.upcomingInr ?? 0) > 0 && (
           <div data-testid="earnings-upcoming" className="bg-white rounded-xl border border-surface-100 p-5">
             <div className="flex items-center gap-3">

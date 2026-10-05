@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireAnyRole, type MarketplaceRole } from '../middlewares/auth.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 // Provider roles allowed to submit KYC. DEVOTEE intentionally excluded —
 // devotees never receive payouts, so no Aadhaar/PAN/bank should be on file
@@ -141,7 +142,7 @@ export async function providerKycRoutes(server: FastifyInstance) {
          bank_account_number, bank_ifsc, bank_holder_name,
          verified, rejection_reason, updated_at
        )
-       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, false, NULL, now())
+       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, false, NULL, ${SQL_UTC_NOW})
        ON CONFLICT (user_id) DO UPDATE SET
          aadhaar_last4 = COALESCE(EXCLUDED.aadhaar_last4, provider_kyc.aadhaar_last4),
          aadhaar_hash = COALESCE(EXCLUDED.aadhaar_hash, provider_kyc.aadhaar_hash),
@@ -151,7 +152,7 @@ export async function providerKycRoutes(server: FastifyInstance) {
          bank_holder_name = COALESCE(EXCLUDED.bank_holder_name, provider_kyc.bank_holder_name),
          verified = false,
          rejection_reason = NULL,
-         updated_at = now()`,
+         updated_at = ${SQL_UTC_NOW}`,
       userId,
       aadhaarLast4,
       aadhaarHash,

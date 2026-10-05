@@ -79,6 +79,9 @@ type ApiAstroDashboard = {
   // they are missing the cards must render an em dash, never an invented ₹0.
   paidOutInr?: number | null;
   pendingPayoutInr?: number | null;
+  // Halves of pendingPayoutInr: ready to withdraw vs already requested.
+  readyInr?: number | null;
+  requestedInr?: number | null;
   // Earned from consultations not yet completed; NOT part of pendingPayoutInr.
   upcomingInr?: number | null;
   astrologerShare?: number | null;
@@ -318,14 +321,21 @@ export default function AstrologerDashboard() {
  */}
  <EarningsCard
  totalPaid={liveStats?.paidOutInr ?? null}
- pending={liveStats?.pendingPayoutInr ?? null}
+ pending={typeof liveStats?.readyInr === 'number' ? liveStats.readyInr : liveStats?.pendingPayoutInr ?? null}
+ pendingLabel={typeof liveStats?.readyInr === 'number' ? 'Ready to withdraw' : 'Pending payout'}
  thisMonth={liveStats?.earningsMonthInr ?? ZERO_STATS.earningsThisMonth}
  />
+ {typeof liveStats?.readyInr === 'number' && (liveStats?.requestedInr ?? 0) > 0 && (
+ <p data-testid="astro-requested-inr" className="text-xs text-surface-500 -mt-2">
+ {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(liveStats!.requestedInr!)}{' '}
+ requested, awaiting payout. It is already in a payout request and is not included in Ready to withdraw.
+ </p>
+ )}
  {(liveStats?.upcomingInr ?? 0) > 0 && (
  <p data-testid="astro-upcoming-inr" className="text-xs text-surface-500 -mt-2">
  {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(liveStats!.upcomingInr!)}{' '}
  earned from upcoming consultations. It becomes payable after the consultation is completed and is not
- included in Pending payout.
+ included in {typeof liveStats?.readyInr === 'number' ? 'Ready to withdraw' : 'Pending payout'}.
  </p>
  )}
 

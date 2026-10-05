@@ -709,6 +709,14 @@ export default function PujaBookScreen() {
             </Text>
           </View>
 
+          {/* NRI honesty: this app prices in INR only (no USD pricing module).
+              Say so in one line instead of letting an international devotee
+              assume this is the price they would pay abroad. */}
+          <Text style={styles.note} testID="inr-only-note">
+            Prices here are in INR. International devotees can book on{' '}
+            {hostOf(WEB.origin)} to see USD pricing.
+          </Text>
+
           {submitError ? <Text style={styles.submitError}>{submitError}</Text> : null}
 
           <TouchableOpacity

@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 /**
  * What Darshya owes each temple, and a record of what has been sent.
@@ -165,7 +166,7 @@ export async function recordPujaShareTransfer(input: {
     );
     if (dup.length > 0) return { ok: false, code: 'duplicate_reference', owedInr: owed } as const;
     await tx.$executeRawUnsafe(
-      `UPDATE temple_payouts SET status = 'completed', reference = $2, processed_at = now()
+      `UPDATE temple_payouts SET status = 'completed', reference = $2, processed_at = ${SQL_UTC_NOW}
         WHERE id = ANY($1::uuid[])`,
       rows.map((r) => r.id),
       input.reference,

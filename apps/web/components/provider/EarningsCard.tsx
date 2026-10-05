@@ -5,6 +5,8 @@ import { IndianRupee, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 interface Props {
   totalPaid?: number | null;
   pending?: number | null;
+  /** Override when the figure is a specific slice (e.g. "Ready to withdraw"). */
+  pendingLabel?: string;
   thisMonth?: number | null;
   currency?: 'INR' | 'USD';
   loading?: boolean;
@@ -19,10 +21,10 @@ function fmt(n: number | null | undefined, currency: 'INR' | 'USD' = 'INR'): str
   }).format(n);
 }
 
-export default function EarningsCard({ totalPaid, pending, thisMonth, currency = 'INR', loading }: Props) {
+export default function EarningsCard({ totalPaid, pending, pendingLabel = 'Pending payout', thisMonth, currency = 'INR', loading }: Props) {
   const cards = [
     { label: 'Paid out', value: fmt(totalPaid, currency), icon: CheckCircle2, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
-    { label: 'Pending payout', value: fmt(pending, currency), icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: pendingLabel, value: fmt(pending, currency), icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
     { label: 'This month', value: fmt(thisMonth, currency), icon: TrendingUp, color: 'text-saffron-600', bg: 'bg-saffron-50' },
   ];
   return (

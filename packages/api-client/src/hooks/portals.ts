@@ -74,6 +74,10 @@ export interface AstrologerDashboardResponse {
     totalEarningsInr: number;
     paidOutInr: number;
     pendingPayoutInr: number;
+    /** Ready to withdraw: earned, completed, not yet in a payout request. Part of pendingPayoutInr. */
+    readyInr?: number;
+    /** Requested, awaiting payout: already inside a payout request. Part of pendingPayoutInr. */
+    requestedInr?: number;
     /** Earned from consultations not yet completed; excluded from pendingPayoutInr. */
     upcomingInr?: number;
     /** The provider's share as a fraction, e.g. 0.8. */

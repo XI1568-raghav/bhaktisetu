@@ -37,6 +37,8 @@ function emptyAstrologerLedger() {
     summary: {
       totalEarningsInr: 0,
       pendingInr: 0,
+      readyInr: 0,
+      requestedInr: 0,
       upcomingInr: 0,
       paidInr: 0,
       monthEarningsInr: 0,
@@ -142,6 +144,9 @@ async function loadAstrologerLedger(userId: string) {
         : c.status === 'PENDING'
           ? 'payable'
           : c.status.toLowerCase(),
+      // True once the row is inside a PayoutRequest: the astrologer has asked
+      // for it and is waiting to be paid (vs. ready and still unrequested).
+      requested: !!c.payoutRequestId,
       createdAt: c.createdAt,
       grossAmountInr: gross.toNumber(),
       platformCutInr: platformCut.toNumber(),
@@ -169,6 +174,12 @@ async function loadAstrologerLedger(userId: string) {
       // Pending EXCLUDING upcoming consultations (still held), which are
       // reported separately so the two never read as one payable figure.
       pendingInr: sum(live.filter((r) => r.status === 'PENDING' && r.releaseStatus !== 'upcoming')),
+      // The two halves of pendingInr, so no screen has to call a mixed figure
+      // "pending". Same definitions as GET /payouts/balance: `readyInr` is its
+      // availableInr (PENDING, not in a request, not held) and `requestedInr`
+      // its pendingInr (PENDING and already inside a payout request).
+      readyInr: sum(live.filter((r) => r.status === 'PENDING' && !r.requested && r.releaseStatus !== 'upcoming')),
+      requestedInr: sum(live.filter((r) => r.status === 'PENDING' && r.requested)),
       upcomingInr: sum(live.filter((r) => r.releaseStatus === 'upcoming')),
       paidInr: sum(live.filter((r) => r.status === 'PAID')),
       monthEarningsInr: sum(live.filter((r) => new Date(r.createdAt) >= monthStart)),
@@ -298,6 +309,8 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
         // "Pending payout" rendered as an em dash on every astrologer's screen.
         paidOutInr: ledger.summary.paidInr,
         pendingPayoutInr: ledger.summary.pendingInr,
+        readyInr: ledger.summary.readyInr,
+        requestedInr: ledger.summary.requestedInr,
         upcomingInr: ledger.summary.upcomingInr,
         astrologerShare: ledger.summary.astrologerShare,
         activeClients: upcomingSessions.length,
@@ -464,6 +477,8 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       summary: {
         totalEarningsInr: summary.totalEarningsInr,
         pendingInr: summary.pendingInr,
+        readyInr: summary.readyInr,
+        requestedInr: summary.requestedInr,
         upcomingInr: summary.upcomingInr,
         paidInr: summary.paidInr,
         astrologerShare: summary.astrologerShare,

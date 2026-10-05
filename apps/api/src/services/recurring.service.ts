@@ -15,6 +15,7 @@
 
 import { prisma } from '../lib/prisma.js';
 import { razorpay, isDemoPayment } from './payment.service.js';
+import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
 export type RecurringPlanKind = 'gau_seva' | 'wellness_batch' | 'temple_seva' | 'custom';
 
@@ -160,8 +161,8 @@ export async function createRecurringSubscription(opts: {
   }
 
   await prisma.$executeRawUnsafe(
-    `INSERT INTO recurring_subscriptions (id, user_id, plan_id, kind, amount_inr, interval, status, gaushala_id, temple_id, metadata, razorpay_subscription_id, created_at)
-     VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5, 'pending', $6, $7, $8::jsonb, $9, NOW())
+    `INSERT INTO recurring_subscriptions (id, user_id, plan_id, kind, amount_inr, interval, status, gaushala_id, temple_id, metadata, razorpay_subscription_id, created_at, updated_at)
+     VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5, 'pending', $6, $7, $8::jsonb, $9, ${SQL_UTC_NOW}, ${SQL_UTC_NOW})
      ON CONFLICT DO NOTHING`,
     opts.userId,
     plan.id,
@@ -255,7 +256,7 @@ export async function handleSubscriptionEvent(
     await ensureRecurringTable();
     const updated = Number(
       await prisma.$executeRawUnsafe(
-        `UPDATE recurring_subscriptions SET status = $1, updated_at = NOW() WHERE razorpay_subscription_id = $2`,
+        `UPDATE recurring_subscriptions SET status = $1, updated_at = ${SQL_UTC_NOW} WHERE razorpay_subscription_id = $2`,
         status,
         subId,
       ),
