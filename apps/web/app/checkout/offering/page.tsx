@@ -30,6 +30,18 @@ import {
   formatInr,
   pujaTotalInr,
 } from '../../../lib/puja-pricing';
+// NRI pricing (owner decision 2026-10-05): the USD view is the NRI price (puja
+// x 2.5, still an INR order). Same helpers and same explicit `nriPricing` flag
+// as the temple booking wizard, so what is shown equals what is charged.
+import {
+  formatUsd,
+  nriPujaPriceInr,
+  nriTotalInr,
+  usdFromInr,
+  usdPriceLine,
+} from '../../../lib/nri-pricing';
+import { useDisplayCurrency } from '../../../components/pricing/useDisplayCurrency';
+import { CurrencyToggle } from '../../../components/pricing/CurrencyToggle';
 import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -165,11 +177,10 @@ function OfferingCheckoutInner() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingNumber, setBookingNumber] = useState('');
 
-  // The INR/USD toggle was removed 2026-08-10 with the Stripe rail. It defaulted
-  // to USD for ANY browser outside Asia/Kolkata and displayed `basePrice * 9` as
-  // dollars — Rs 1,100 shown and billed as $9,900 (RV-01). Razorpay is now the
-  // only gateway and INR the only currency; NRI premium pricing returns with the
-  // PayPal rail as a server-quoted amount rendered before payment.
+  // INR/USD view. The USD view is the NRI price (x2.5), billed as an INR order;
+  // the server is told with `nriPricing` exactly when the dollar view is on.
+  const { currency: displayCurrency } = useDisplayCurrency();
+  const isNriPricing = displayCurrency === 'USD';
 
   // Prefill devotee name from the signed-in user once auth resolves.
   useEffect(() => {
@@ -232,7 +243,11 @@ function OfferingCheckoutInner() {
   // POST /bookings/from-offering charges basePrice + PLATFORM_FEE_INR (+ the
   // prasad fee when requested, which this page does not offer), so quoting
   // basePrice alone on the pay button understated the Razorpay sheet by Rs 51.
-  const totalPayableInr = pujaTotalInr(priceInr, false);
+  const chargedPujaInr = isNriPricing ? nriPujaPriceInr(priceInr) : priceInr;
+  const totalPayableInr = isNriPricing ? nriTotalInr(priceInr, false) : pujaTotalInr(priceInr, false);
+  const totalLabel = isNriPricing
+    ? usdPriceLine(totalPayableInr)
+    : `\u20B9${formatInr(totalPayableInr)}`;
   const canPay =
     !!offering &&
     !!priest &&
@@ -276,6 +291,7 @@ function OfferingCheckoutInner() {
           ],
           sankalp: sankalp.trim() || undefined,
           prasadDelivery: false,
+          nriPricing: isNriPricing,
         }),
       }).catch(() => null);
 
@@ -304,6 +320,17 @@ function OfferingCheckoutInner() {
       const orderId: string = data.orderId;
       const razorpayOrderId: string = data.razorpayOrderId;
       const amount: number = data.amount;
+
+      // Displayed price must equal charged price. If the server minted a
+      // different amount than the total on screen, stop before Razorpay opens.
+      if (Number(data.amount) !== Math.round(totalPayableInr * 100)) {
+        setPaymentError(
+          'The amount for this booking changed, so checkout did not open and you have NOT been charged. ' +
+            'Please refresh the page and try again, or email support@darshya.online.',
+        );
+        setPaymentLoading(false);
+        return;
+      }
 
       // 2. Open Razorpay checkout.
       const Razorpay = await loadRazorpayCheckout();
@@ -500,8 +527,14 @@ function OfferingCheckoutInner() {
               )}
               <div className="flex items-center gap-4 mt-3 text-sm text-surface-600">
                 <span className="inline-flex items-center gap-1 font-semibold text-surface-800">
-                  <IndianRupee className="w-3.5 h-3.5" />
-                  {formatInr(priceInr)}
+                  {isNriPricing ? (
+                    formatUsd(usdFromInr(chargedPujaInr))
+                  ) : (
+                    <>
+                      <IndianRupee className="w-3.5 h-3.5" />
+                      {formatInr(priceInr)}
+                    </>
+                  )}
                 </span>
                 <span className="inline-flex items-center gap-1 text-surface-500">
                   <Clock className="w-3.5 h-3.5" />
@@ -512,7 +545,12 @@ function OfferingCheckoutInner() {
                   above the breakdown, so on mobile the two are never co-visible.
                   Disclose the fee here rather than letting Rs 51 first appear
                   after the devotee has filled in the sankalp. */}
-              <p className="mt-1 text-xs text-surface-500">{feeDisclosureLine(priceInr)}</p>
+              <p className="mt-1 text-xs text-surface-500">
+                {isNriPricing
+                  ? `+ \u20B9${formatInr(PLATFORM_FEE_INR)} platform fee \u00B7 total ${totalLabel}`
+                  : feeDisclosureLine(priceInr)}
+              </p>
+              <CurrencyToggle className="mt-2" />
             </div>
           </div>
         </div>
@@ -650,8 +688,8 @@ function OfferingCheckoutInner() {
             appears for the first time on the Razorpay sheet. */}
         <div className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm">
           <div className="flex items-center justify-between py-1">
-            <span className="text-surface-600">Puja</span>
-            <span className="text-surface-800">&#8377;{formatInr(priceInr)}</span>
+            <span className="text-surface-600">{isNriPricing ? 'Puja (NRI price)' : 'Puja'}</span>
+            <span className="text-surface-800">&#8377;{formatInr(chargedPujaInr)}</span>
           </div>
           <div className="flex items-center justify-between py-1">
             <span className="text-surface-600">Platform fee</span>
@@ -659,7 +697,7 @@ function OfferingCheckoutInner() {
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2 font-semibold">
             <span className="text-surface-800">Total</span>
-            <span className="text-surface-900">&#8377;{formatInr(totalPayableInr)}</span>
+            <span className="text-surface-900">{totalLabel}</span>
           </div>
         </div>
 
@@ -677,7 +715,7 @@ function OfferingCheckoutInner() {
           ) : (
             <>
               <CreditCard className="w-4 h-4" />
-              Pay &#8377;{formatInr(totalPayableInr)} with Razorpay
+              Pay {isNriPricing ? `${formatUsd(usdFromInr(totalPayableInr))} (\u20B9${formatInr(totalPayableInr)})` : `\u20B9${formatInr(totalPayableInr)}`} with Razorpay
             </>
           )}
         </button>
