@@ -29,6 +29,7 @@ import {
 } from '../../lib/admin-api';
 import { userFacingMessage } from '../../lib/friendly-error';
 import WaitingBookingsCard from '../../components/admin/WaitingBookingsCard';
+import PendingRefundCard from '../../components/admin/PendingRefundCard';
 
 // ── Static label/colour maps (visual chrome — unchanged) ─────────────────────
 
@@ -467,6 +468,7 @@ export default function AdminDashboardPage() {
  {/* Quick actions */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
  <WaitingBookingsCard />
+ <PendingRefundCard amountInr={dashboard?.pendingRefundInr} />
  <Link
  href="/admin/approvals"
  className="bg-[var(--color-surface)] rounded-xl p-5 border border-[var(--color-border)] hover:border-saffron-200 transition-all group"
