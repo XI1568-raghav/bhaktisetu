@@ -9,6 +9,7 @@ export function generateStaticParams() {
 
 import { getGaushalaImage, remoteImage, remoteSrcSet, IMG_W } from "../../../lib/images";
 import { COMPANY } from "../../../lib/company";
+import { HAS_ADOPTION_EXTRAS } from "../../../lib/launch-gates";
 import {
  Heart,
  MapPin,
@@ -39,7 +40,9 @@ export async function generateMetadata({
   title: "Cow Details — Gau Seva",
   alternates: { canonical: `https://darshya.online/gaushala/${id}` },
   description:
-   "View cow details, health status, and monthly updates. Adopt this cow and receive regular photo updates.",
+   HAS_ADOPTION_EXTRAS
+    ? "View cow details, health status, and monthly updates. Adopt this cow and receive regular photo updates."
+    : "A sample gau seva listing. Contribute to cow care at an approved gaushala and receive a numbered donation receipt.",
  };
 }
 
@@ -555,7 +558,7 @@ export default async function CowDetailPage({
  <div className="mb-6 p-4 rounded-xl bg-surface-100 border border-surface-200">
  <p className="text-sm text-surface-700 leading-relaxed">
  <strong className="text-surface-900">This is a sample listing.</strong>{" "}
- {cow.name}, the gaushala named here and the updates below are
+ {cow.name} and the gaushala named here are
  illustrative — they show how gau seva works on Darshya. There is no
  adoptable-cow inventory yet, so a contribution funds cow care at an
  approved gaushala you choose on the donation page rather than
@@ -584,7 +587,7 @@ export default async function CowDetailPage({
  ) : (
  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
  <p className="text-sm font-semibold text-emerald-800 mb-3">
- {cow.name} is available for adoption! Choose a plan:
+ {LISTING_IS_SAMPLE ? "Choose a gau seva plan:" : `${cow.name} is available for adoption! Choose a plan:`}
  </p>
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
  {adoptionPlans.map((plan) => (
@@ -645,14 +648,20 @@ export default async function CowDetailPage({
  </div>
  </div>
 
- {/* Monthly Updates Timeline */}
+ {/* Monthly Updates Timeline. Gated (2026-10-05): no endpoint lets a gaushala
+     post an update, so these entries are typed-in samples. HAS_ADOPTION_EXTRAS
+     (lib/launch-gates.ts) brings the timeline back. */}
  <div className="bg-white rounded-xl border border-surface-100 shadow-sm p-6 sm:p-8">
  <h2 className="text-xl font-bold text-surface-900 mb-6 flex items-center gap-2">
  <Camera className="w-5 h-5 text-emerald-600" />
- Monthly Updates
+ {HAS_ADOPTION_EXTRAS ? "Monthly Updates" : "Photo updates"}
  </h2>
 
- {cow.monthlyUpdates.length === 0 ? (
+ {!HAS_ADOPTION_EXTRAS ? (
+ <p className="text-surface-500 text-sm">
+ Photo updates from the gaushala are coming soon.
+ </p>
+ ) : cow.monthlyUpdates.length === 0 ? (
  <p className="text-surface-500 text-sm">
  No updates available yet. Check back soon!
  </p>
@@ -720,7 +729,7 @@ export default async function CowDetailPage({
      COM-19 and no donation attaches a cow to a donor. The receipt is the
      one item on the list the product actually issues. */}
  <div className="space-y-2 mb-5">
- {(LISTING_IS_SAMPLE
+ {(LISTING_IS_SAMPLE || !HAS_ADOPTION_EXTRAS
  ? ["Numbered donation receipt PDF"]
  : [
  "Photo updates when the gaushala posts them",

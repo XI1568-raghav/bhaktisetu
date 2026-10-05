@@ -195,7 +195,7 @@ export default async function SellerProductPage({ params }: { params: Promise<Pa
               </div>
               <div className="flex items-center gap-2 bg-surface-50 rounded-lg px-3 py-2.5">
                 <RotateCcw className="w-4 h-4 text-purple-500" aria-hidden="true" />
-                <span className="text-xs font-medium text-surface-600">Easy Returns</span>
+                <span className="text-xs font-medium text-surface-600">Damaged-item support</span>
               </div>
             </div>
 

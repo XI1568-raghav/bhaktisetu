@@ -21,7 +21,9 @@ import {
  marriagePricingTiers,
  marriageCoreRites,
  marriageAddOns,
+  marriageTierIncludes,
 } from '../../../lib/home-pujas';
+import { HAS_HOME_PUJA_INCLUSIONS } from '../../../lib/launch-gates';
 import { getPublicPriests, type PriestSummary } from '../../../lib/pandit-api';
 import { remoteImage, IMG_W } from '../../../lib/images';
 import { PanditAvatar } from '../PanditAvatar';
@@ -100,7 +102,7 @@ export default async function MarriagePage() {
  // the badge now says, because it is the only part that runs.
  { icon: Shield, label: 'Pandit paid only after Aadhaar KYC' },
  { icon: Star, label: 'Muhurat matched' },
- { icon: CheckCircle, label: 'Full samagri' },
+ { icon: CheckCircle, label: HAS_HOME_PUJA_INCLUSIONS ? 'Full samagri' : 'Details confirmed on the call' },
  ].map((b) => {
  const I = b.icon;
  return (
@@ -213,7 +215,7 @@ export default async function MarriagePage() {
  </div>
 
  <ul className="space-y-3 mb-8">
- {tier.includes.map((inc) => (
+ {marriageTierIncludes(tier).map((inc) => (
  <li key={inc} className="flex gap-2.5 text-sm text-surface-600">
  <CheckCircle className="w-4 h-4 text-tulsi-green flex-shrink-0 mt-0.5" />
  <span>{inc}</span>
@@ -397,7 +399,9 @@ export default async function MarriagePage() {
  },
  {
  q: 'What does the couple need to bring?',
- a: 'Mangalsutra, rings, and any heirloom items the family wishes used. The pandit brings all samagri, havan kund, mandap items, and ghee. Premium tier coordinates flower decoration and mandap setup separately.',
+ a: HAS_HOME_PUJA_INCLUSIONS
+ ? 'Mangalsutra, rings, and any heirloom items the family wishes used. The pandit brings all samagri, havan kund, mandap items, and ghee. Premium tier coordinates flower decoration and mandap setup separately.'
+ : 'Mangalsutra, rings, and any heirloom items the family wishes used. Which materials the pandit brings, and what the family arranges, is confirmed by our team on the call.',
  },
  {
  q: 'Can the ceremony be explained in English for non-Hindi speaking guests?',

@@ -1,4 +1,5 @@
 import { HAS_80G } from '../lib/eighty-g.js';
+import { HAS_ADOPTION_EXTRAS } from '../lib/launch-gates.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,10 @@ export interface AdoptionPlan {
   price: number;
   priceLabel: string;
   currency: string;
+  /** What a contribution gets today. */
   features: string[];
+  /** Per-donor extras with no code behind them yet; shown as "coming soon" only. */
+  comingSoon: string[];
   popular: boolean;
 }
 
@@ -539,7 +543,24 @@ const COWS: Cow[] = [
   },
 ];
 
-const ADOPTION_PLANS: AdoptionPlan[] = [
+// Claim-gating (2026-10-05). What a contribution actually gets today: it goes
+// to cow care at an approved gaushala and the donor gets a numbered receipt PDF
+// (a proof of donation, not an 80G instrument unless lib/eighty-g.ts HAS_80G).
+// Everything in `extras` is a per-donor deliverable with no code behind it —
+// no donation attaches a donor to a cow, no endpoint lets a gaushala post an
+// update or issue a certificate, nothing lists a donor wall. They stay in
+// source and appear only when HAS_ADOPTION_EXTRAS flips (lib/launch-gates.ts);
+// until then they are published as `comingSoon`, never as `features`.
+const RECEIPT_FEATURE = HAS_80G
+  ? '80G tax receipt'
+  : 'Numbered donation receipt PDF (not a tax-exemption certificate)';
+
+interface AdoptionPlanDef extends Omit<AdoptionPlan, 'features' | 'comingSoon'> {
+  features: string[];
+  extras: string[];
+}
+
+const ADOPTION_PLAN_DEFS: AdoptionPlanDef[] = [
   {
     id: 'plan_daily',
     name: 'Gau Seva',
@@ -548,7 +569,8 @@ const ADOPTION_PLANS: AdoptionPlan[] = [
     price: 51,
     priceLabel: '51/day',
     currency: 'INR',
-    features: [
+    features: ['Goes towards the daily feed and care of cows at an approved gaushala', RECEIPT_FEATURE],
+    extras: [
       'Daily feeding of one cow',
       'Monthly photo update via WhatsApp',
       'Name on gaushala donor wall',
@@ -564,7 +586,8 @@ const ADOPTION_PLANS: AdoptionPlan[] = [
     price: 3000,
     priceLabel: '3,000/month',
     currency: 'INR',
-    features: [
+    features: ['Goes towards a month of cow care at an approved gaushala', RECEIPT_FEATURE],
+    extras: [
       'Full monthly care of one cow',
       'Weekly photo & video updates',
       'Visit your cow anytime',
@@ -581,23 +604,17 @@ const ADOPTION_PLANS: AdoptionPlan[] = [
     price: 30000,
     priceLabel: '30,000/year',
     currency: 'INR',
-    features: [
+    // TC-01 (P0, trust). Measured live on 2026-09-01: this list sold "80G tax
+    // receipt" while HAS_80G_VERIFIED was false and the PDF said "Proof of
+    // donation — not a tax exemption certificate". The receipt line is gated on
+    // lib/eighty-g.ts, not deleted.
+    features: ['Goes towards a year of cow care at an approved gaushala', RECEIPT_FEATURE],
+    extras: [
       'Full annual care of one cow',
       'Weekly photo & video updates',
       'Unlimited visits',
       'Framed certificate with cow photo',
       'Monthly health report',
-      // TC-01 (P0, trust). Measured live on 2026-09-01:
-      //   curl -s https://api.darshya.online/api/v1/gaushala/plans
-      // returned "80G tax receipt" twice, on a 200, while
-      // apps/web/app/gaushala/page.tsx had already gated its own copy of this
-      // same list — so the page said "Donation Receipt" and the API behind it
-      // sold a tax deduction. HAS_80G_VERIFIED is false, eightyGNumber and pan
-      // are null, and is80GEligible() (lib/pdf-receipt.ts) needs a donee 80G
-      // number AND PAN from gaushala_profiles columns no route writes, so the
-      // PDF this plan actually mints prints "Proof of donation — not a tax
-      // exemption certificate". Gated on lib/eighty-g.ts, not deleted.
-      HAS_80G ? '80G tax receipt' : 'Numbered donation receipt PDF (not a tax-exemption certificate)',
       'Festival special updates',
     ],
     popular: false,
@@ -610,15 +627,15 @@ const ADOPTION_PLANS: AdoptionPlan[] = [
     price: 225000,
     priceLabel: '2,25,000 one-time',
     currency: 'INR',
-    features: [
+    // TC-01 — same receipt gate as plan_annual; this is the tier where an
+    // overstated tax position is worth the most to the buyer.
+    features: ['Goes towards long-term cow care at an approved gaushala', RECEIPT_FEATURE],
+    extras: [
       'Lifetime care of one cow',
       'Weekly photo & video updates',
       'Unlimited visits with family',
       'Premium framed certificate',
       'Monthly health report',
-      // TC-01 — same gate as plan_annual above. This is the ₹2,25,000 tier,
-      // where the overstated tax position is worth the most to the buyer.
-      HAS_80G ? '80G tax receipt' : 'Numbered donation receipt PDF (not a tax-exemption certificate)',
       'Name plaque at gaushala',
       'Annual Gau Puja invitation',
       'Priority for new cow adoption',
@@ -626,6 +643,12 @@ const ADOPTION_PLANS: AdoptionPlan[] = [
     popular: false,
   },
 ];
+
+const ADOPTION_PLANS: AdoptionPlan[] = ADOPTION_PLAN_DEFS.map(({ extras, features, ...plan }) =>
+  HAS_ADOPTION_EXTRAS
+    ? { ...plan, features: [...features, ...extras], comingSoon: [] }
+    : { ...plan, features, comingSoon: extras },
+);
 
 // ─── In-memory adoption storage (MVP) ───────────────────────────────────────────
 

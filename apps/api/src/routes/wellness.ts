@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { HAS_WELLNESS_PROGRAM_PACKAGES } from '../lib/launch-gates.js';
 
 // ─── Static Instructor Data ─────────────────────────────────────────────────
 
@@ -380,6 +381,17 @@ const programs = [
 // endpoints at one prefix was the defect, so this one is gone rather than
 // patched. Guarded by wellness-book-endpoint-removed.test.ts.
 
+// Claim gate (2026-10-05): `features` on these fixture programmes promise
+// certificates, workbooks, recordings and libraries that nothing delivers (there
+// is no enrolment, recording or certificate code behind /programs). They are
+// withheld from responses until HAS_WELLNESS_PROGRAM_PACKAGES (lib/launch-gates.ts)
+// flips; the data stays in source.
+function publicProgram<T extends { features: string[] }>(p: T) {
+  return HAS_WELLNESS_PROGRAM_PACKAGES
+    ? { ...p, comingSoon: false }
+    : { ...p, features: [] as string[], comingSoon: true };
+}
+
 export async function wellnessRoutes(server: FastifyInstance) {
   // ─── GET /instructors ──────────────────────────────────────────────────────
   server.get('/instructors', async (request) => {
@@ -433,7 +445,7 @@ export async function wellnessRoutes(server: FastifyInstance) {
       filtered = filtered.filter((p) => p.level === level);
     }
 
-    return { programs: filtered, total: filtered.length };
+    return { programs: filtered.map(publicProgram), total: filtered.length };
   });
 
   // ─── GET /programs/:id ─────────────────────────────────────────────────────
@@ -445,6 +457,6 @@ export async function wellnessRoutes(server: FastifyInstance) {
       return reply.code(404).send({ error: 'Program not found.' });
     }
 
-    return { program };
+    return { program: publicProgram(program) };
   });
 }

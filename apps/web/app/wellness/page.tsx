@@ -16,11 +16,16 @@ import FeaturedInstructorsSection from './FeaturedInstructorsSection';
 
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_PACKAGE_INCLUSIONS } from '../../lib/launch-gates';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/wellness' },
  title: 'Yoga, Meditation & Vipassana',
  description:
- 'Discover inner peace through guided yoga, meditation, and Vipassana retreats with certified instructors on Darshya.',
+ // Claim gate (2026-10-05): no credential check backs "certified instructors";
+    // HAS_PACKAGE_INCLUSIONS (lib/launch-gates.ts) restores the wording.
+    HAS_PACKAGE_INCLUSIONS
+      ? 'Discover inner peace through guided yoga, meditation, and Vipassana retreats with certified instructors on Darshya.'
+      : 'Find yoga and meditation classes listed by instructors on Darshya, and a directory of Vipassana centres.',
 };
 
 const categories = [
@@ -30,8 +35,10 @@ const categories = [
  icon: Sun,
  color: 'var(--color-art-2)',
  description:
- 'Hatha, Vinyasa, Ashtanga, Kundalini, and Yin yoga with certified instructors. Morning and evening live sessions.',
- sessions: 'Live weekly sessions',
+ HAS_PACKAGE_INCLUSIONS
+ ? 'Hatha, Vinyasa, Ashtanga, Kundalini, and Yin yoga with certified instructors. Morning and evening live sessions.'
+ : 'Hatha, Vinyasa, Ashtanga, Kundalini, and Yin yoga. Join the live classes instructors have scheduled on Darshya.',
+ sessions: HAS_PACKAGE_INCLUSIONS ? 'Live weekly sessions' : 'See scheduled classes',
  },
  {
  title: 'Meditation',
@@ -40,7 +47,7 @@ const categories = [
  color: 'var(--color-art-1)',
  description:
  'Guided meditation, Transcendental, Mindfulness, Chakra healing, and Sound bath experiences.',
- sessions: 'Multiple weekly sessions',
+ sessions: HAS_PACKAGE_INCLUSIONS ? 'Multiple weekly sessions' : 'See scheduled classes',
  },
  {
  title: 'Vipassana',
@@ -49,7 +56,7 @@ const categories = [
  color: 'var(--color-art-3)',
  description:
  '10-day residential retreats, preparatory courses, and introductory sessions in the S.N. Goenka tradition.',
- sessions: 'Monthly retreats',
+ sessions: HAS_PACKAGE_INCLUSIONS ? 'Monthly retreats' : 'Browse centres',
  },
 ];
 
@@ -108,7 +115,9 @@ export default function WellnessPage() {
  className="mt-6 text-base leading-relaxed max-w-xl"
  style={{ color: 'var(--color-text-muted)' }}
  >
- Begin your inner journey with certified instructors. Live sessions every morning and evening, guided retreats, and a growing library of recorded practices.
+ {HAS_PACKAGE_INCLUSIONS
+ ? 'Begin your inner journey with certified instructors. Live sessions every morning and evening, guided retreats, and a growing library of recorded practices.'
+ : 'Begin your inner journey. Join the live classes instructors have scheduled on Darshya, and browse a directory of Vipassana centres. Recorded practices and retreats booked through Darshya are coming soon.'}
  </p>
 
  <div data-reveal="up" data-delay="2" className="mt-8 flex items-center gap-3 flex-wrap">
@@ -135,11 +144,15 @@ export default function WellnessPage() {
  </div>
 
  <div data-reveal="fade" data-delay="3" className="mt-10 flex items-center gap-8 text-sm" style={{ color: 'var(--color-text-muted)' }}>
- <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Certified</span> Instructors</div>
+ <div>{HAS_PACKAGE_INCLUSIONS ? <><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Certified</span> Instructors</> : <><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Approved</span> Instructors</>}</div>
  <div className="w-px h-5" style={{ background: 'var(--color-divider)' }} />
  <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Live</span> Group sessions</div>
+ {HAS_PACKAGE_INCLUSIONS && (
+ <>
  <div className="w-px h-5" style={{ background: 'var(--color-divider)' }} />
  <div><span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>1:1</span> Private bookings</div>
+ </>
+ )}
  </div>
  </div>
  </div>
@@ -241,14 +254,16 @@ export default function WellnessPage() {
  Start your practice today
  </h2>
  <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-8" style={{ color: 'var(--color-text-muted)' }}>
- Join thousands of practitioners on Darshya. Your first guided meditation session is free.
+ {HAS_PACKAGE_INCLUSIONS
+ ? 'Join thousands of practitioners on Darshya. Your first guided meditation session is free.'
+ : 'Browse the live classes instructors have scheduled, or read how each practice works.'}
  </p>
  <div data-reveal="blur" data-delay="2" className="flex items-center justify-center gap-3 flex-wrap">
  <Link
  href="/wellness/meditation"
  className={buttonClass('primary', 'md', 'btn-press')}
  >
- Free Guided Session <ArrowRight className="w-4 h-4" />
+ {HAS_PACKAGE_INCLUSIONS ? 'Free Guided Session' : 'Explore Meditation'} <ArrowRight className="w-4 h-4" />
  </Link>
  <Link
  href="/wellness/vipassana"
@@ -263,7 +278,7 @@ export default function WellnessPage() {
 
  <ApprovedProvidersStrip
  type="wellness"
- heading="Verified instructors on Darshya"
+ heading="Approved instructors on Darshya"
  subheading="Approved yoga, meditation and pranayama instructors. Each profile is reviewed before going live."
  limit={8}
  />

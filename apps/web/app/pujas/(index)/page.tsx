@@ -7,6 +7,7 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import { getDeityImage, remoteImage, remoteSrcSet, IMG_W } from "../../../lib/images";
 import { getPujaTypes, type PujaType } from "../../../lib/api";
 import { getPujaCompletionCounts } from "../../../lib/social-proof";
+import { HAS_HOME_PUJA_INCLUSIONS } from "../../../lib/launch-gates";
 import { pujaCardBlurb } from '../../../lib/puja-blurb';
 import { pujaCategoryLabel } from "../../../lib/puja-labels";
 // PF-06: the fee has to come from the same module the wizard and the detail
@@ -444,7 +445,7 @@ export default async function PujasPage({
  </span>
  <span className="flex items-center gap-1.5">
  <Sparkles className="w-3.5 h-3.5 text-saffron-600" />
- Samagri included
+ {HAS_HOME_PUJA_INCLUSIONS ? 'Samagri included' : 'Details confirmed on the call'}
  </span>
  </div>
  <div className="mt-6 inline-flex items-center gap-1 font-semibold text-saffron-700 group-hover:translate-x-0.5 transition-transform">
@@ -488,7 +489,7 @@ export default async function PujasPage({
  </span>
  <span className="flex items-center gap-1.5">
  <Sparkles className="w-3.5 h-3.5" />
- Full samagri included
+ {HAS_HOME_PUJA_INCLUSIONS ? 'Full samagri included' : 'Details confirmed on the call'}
  </span>
  </div>
  <div className="mt-6 inline-flex items-center gap-1 font-semibold group-hover:translate-x-0.5 transition-transform">

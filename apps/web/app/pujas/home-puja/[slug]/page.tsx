@@ -20,7 +20,14 @@ import {
  Languages,
  Award,
 } from 'lucide-react';
-import { homePujaCategories } from '../../../../lib/home-pujas';
+import {
+ homePujaCategories,
+ homePujaIncluded,
+ homePujaTierDetails,
+ homePujaFaq,
+ HOME_PUJA_CONFIRMED_ON_CALL,
+} from '../../../../lib/home-pujas';
+import { HAS_HOME_PUJA_INCLUSIONS } from '../../../../lib/launch-gates';
 import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api';
 import { PanditAvatar } from '../../PanditAvatar';
 
@@ -107,7 +114,7 @@ export default async function HomePujaDetail({ params }: Props) {
  </div>
  <div className="inline-flex items-center gap-2 bg-white border border-[var(--color-border)] px-3 py-2 rounded-lg text-sm text-surface-700">
  <Package className="w-4 h-4 text-temple-gold" />
- Samagri included
+ {HAS_HOME_PUJA_INCLUSIONS ? 'Samagri included' : 'Materials confirmed on the call'}
  </div>
  </div>
  </div>
@@ -121,13 +128,15 @@ export default async function HomePujaDetail({ params }: Props) {
  </span>
  <span className="text-sm text-surface-500">onwards</span>
  </div>
- <div className="text-xs text-surface-400 mb-5">All samagri + prasadam included</div>
+ <div className="text-xs text-surface-400 mb-5">
+ {HAS_HOME_PUJA_INCLUSIONS ? 'All samagri + prasadam included' : HOME_PUJA_CONFIRMED_ON_CALL}
+ </div>
 
  <div className="space-y-2 mb-5">
  {[
  { k: 'Duration', v: cat.duration },
  { k: 'Muhurat', v: cat.muhurat.split('.')[0] },
- { k: 'Pandits available', v: `${pandits.length} verified` },
+ { k: 'Pandits listed', v: `${pandits.length}` },
  ].map((r) => (
  <div key={r.k} className="flex items-start justify-between gap-3 text-sm">
  <span className="text-surface-500">{r.k}</span>
@@ -174,10 +183,10 @@ export default async function HomePujaDetail({ params }: Props) {
  <div className="bg-white border border-[var(--color-border)] rounded-xl p-6 md:p-8">
  <h3 className="text-xl font-bold text-surface-800 mb-5 flex items-center gap-2">
  <Package className="w-5 h-5 text-saffron-600" />
- What&rsquo;s included
+ {HAS_HOME_PUJA_INCLUSIONS ? 'What\u2019s included' : 'What the ceremony involves'}
  </h3>
  <ul className="space-y-3">
- {cat.included.map((item, i) => (
+ {homePujaIncluded(cat).map((item, i) => (
  <li key={i} className="flex gap-3 text-surface-600">
  <CheckCircle className="w-4.5 h-4.5 text-tulsi-green flex-shrink-0 mt-0.5" />
  <span className="text-sm">{item}</span>
@@ -211,7 +220,11 @@ export default async function HomePujaDetail({ params }: Props) {
  <h2 className="text-3xl md:text-4xl font-bold text-surface-800 tracking-tight">
  Pricing tiers
  </h2>
- <p className="mt-2 text-surface-500">Transparent pricing based on samagri quality and duration.</p>
+ <p className="mt-2 text-surface-500">
+ {HAS_HOME_PUJA_INCLUSIONS
+ ? 'Transparent pricing based on samagri quality and duration.'
+ : `Starting prices by tier. ${HOME_PUJA_CONFIRMED_ON_CALL}`}
+ </p>
  </div>
 
  <div className="grid md:grid-cols-3 gap-5">
@@ -240,7 +253,7 @@ export default async function HomePujaDetail({ params }: Props) {
  </span>
  </div>
  <ul className="space-y-3 mb-7">
- {cat.pricingDetails[tier].map((d, i) => (
+ {homePujaTierDetails(cat, tier).map((d, i) => (
  <li key={i} className="flex gap-2.5 text-sm text-surface-600">
  <CheckCircle className="w-4 h-4 text-tulsi-green flex-shrink-0 mt-0.5" />
  <span>{d}</span>
@@ -275,7 +288,7 @@ export default async function HomePujaDetail({ params }: Props) {
  <p className="mt-2 text-surface-500">
  {usingFallback
  ? `Top pandits on Darshya. Any can perform ${cat.name} at your home.`
- : `Verified specialists ready to perform ${cat.name} at your home.`}
+ : `Pandits listed on Darshya who can perform ${cat.name} at your home.`}
  </p>
  </div>
  </div>
@@ -372,7 +385,7 @@ export default async function HomePujaDetail({ params }: Props) {
  Frequently asked questions
  </h2>
  <div className="space-y-3">
- {cat.faq.map((f, i) => (
+ {homePujaFaq(cat).map((f, i) => (
  <details
  key={i}
  className="group bg-surface-100 border border-[var(--color-border)] rounded-xl overflow-hidden"

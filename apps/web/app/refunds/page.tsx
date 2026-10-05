@@ -231,28 +231,34 @@ export default function RefundsPage() {
  </RefundSection>
 
  <RefundSection title="3. Store Order Refunds">
+ {/* Claim gate (2026-10-05): this section described a returns process (a
+     returnable-items list, 7-day returns, 48-hour damage window, return-shipping
+     rules, full refund including shipping) that no code runs: there is no return
+     request, no return label and no automatic store refund. What exists is
+     support intake (/support/ticket/new and the support e-mail), where a person
+     reviews the case. The policy below says that and nothing more. */}
  <ul>
  <li>
- <strong>Returnable Items:</strong> Puja items (murtis,
- diyas, puja thalis, rudraksha), books, and non-consumable
- products may be returned within 7 days of delivery. Items
- must be unused and in original packaging.
+ <strong>Damaged, wrong or defective items:</strong> contact
+ support within 7 days of delivery. Tell us your order number and
+ attach photos. We review each case and, where it is confirmed,
+ arrange a replacement or a refund.
  </li>
  <li>
- <strong>Non-Returnable Items:</strong> Consumable items
- (incense, camphor, kumkum, haldi), prasad, and perishable
- items are non-returnable for hygiene and sanctity reasons.
+ <strong>Other returns:</strong> there is no automated return
+ process for store orders. If you changed your mind, you can still
+ write to support and we will tell you what is possible for that
+ order; we do not promise a return.
  </li>
  <li>
- <strong>Damaged or Wrong Items:</strong> If you receive a
- damaged or incorrect item, contact us within 48 hours of
- delivery with photos. We will arrange a replacement or full
- refund including shipping costs.
+ <strong>Consumables and prasad:</strong> incense, camphor, kumkum,
+ haldi, prasad and other perishable items are not returnable for
+ hygiene and sanctity reasons.
  </li>
  <li>
- <strong>Return Shipping:</strong> Return shipping costs are
- borne by the customer for change-of-mind returns. For
- damaged or wrong items, we cover return shipping.
+ <strong>How to reach us:</strong> raise a ticket at{" "}
+ <a href="/support/ticket/new">support</a> or write to{" "}
+ {COMPANY.supportEmail}.
  </li>
  </ul>
  </RefundSection>
