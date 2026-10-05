@@ -52,6 +52,7 @@ import { Analytics } from "../components/Analytics";
 import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { ReferralCapture } from "../components/ReferralCapture";
+import { HAS_REFERRAL_CREDIT } from "../lib/referral-flag";
 import { ServiceWorkerRegister } from "../components/ServiceWorkerRegister";
 import { ChannelAttribution } from "../components/ChannelAttribution";
 import { Logo } from "../components/Logo";
@@ -984,7 +985,7 @@ export default function RootLayout({
  <AdSenseScript />
  <ServiceWorkerRegister />
  <NotificationPrompt />
- <ReferralCapture />
+ {HAS_REFERRAL_CREDIT && <ReferralCapture />}
  <ChannelAttribution />
  </CartProvider>
  </AuthProvider>

@@ -4,6 +4,7 @@ import { SHLOKAS } from '../lib/shlokas';
 import { topicSlugs as freePanditTopicSlugs } from '../lib/free-pandit-topics';
 import { CITY_PUJA_SLUGS } from '../lib/city-pujas';
 import { canonicalTempleSlug } from '../lib/temple-slug';
+import { HAS_REFERRAL_CREDIT } from '../lib/referral-flag';
 import { HELP_ARTICLES, isUnreviewedTranslation } from '../lib/help-articles';
 
 const BASE_URL = 'https://darshya.online';
@@ -225,7 +226,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/support', priority: 0.5 },
     { path: '/support/faq', priority: 0.5 },
     { path: '/credits', priority: 0.3 },
-    { path: '/refer', priority: 0.7 },
+    // /refer is listed only while the referral programme is live (lib/referral-flag.ts).
+    ...(HAS_REFERRAL_CREDIT ? [{ path: '/refer', priority: 0.7 }] : []),
     { path: '/shloka-card', priority: 0.7 },
     { path: '/launch', priority: 0.6 },
     { path: '/updates', priority: 0.5 },
