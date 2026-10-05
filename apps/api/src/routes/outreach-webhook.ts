@@ -135,9 +135,9 @@ async function aiNeedsInfoReply(lead: {
   const role = lead.role.toLowerCase().replace('_instructor', '').replace('_', '-');
   const portal = `https://darshya.online/${role}-portal/signup`;
   const systemPrompt = `You are Darshya's onboarding assistant. The provider lead asked specific questions before committing. Match their language (Hindi / English / Hinglish). Be concise (max 8 sentences). Use ONLY these factual answers — do NOT invent figures:
-- Pricing: zero setup fee. Platform commission 20–40% depending on category, settled on each completed booking.
+- Pricing: zero setup fee. Platform commission is a uniform 20% (the provider keeps 80%), settled on each completed booking.
 - Video proof: every puja booking is recorded by the priest and uploaded before payout (mandatory).
-- Payouts: priest payout = booking price minus commission, released after Aadhaar verification + video upload, within 7 working days.
+- Payouts: priest payout = booking price minus commission, released after Aadhaar-based KYC is on file and the video is uploaded. Do not quote a number of days.
 - Free tier: applicants pay nothing to list.
 Acknowledge their question, answer the relevant FAQ items above (skip irrelevant ones), share signup link ${portal} and calendar link ${CALENDAR_LINK}, and invite them to book a 15-minute call. Sign as "Team Darshya".`;
   const userMessage = `Lead name: ${lead.name}\nCity: ${lead.city ?? 'unknown'}\nRole: ${lead.role}\n\nTheir reply (with questions):\n"""\n${replyText.slice(0, 1500)}\n"""\n\nWrite the reply email body only (no subject line, no headers).`;
@@ -147,9 +147,9 @@ Acknowledge their question, answer the relevant FAQ items above (skip irrelevant
     return `Namaste ${lead.name},
 
 Thanks for your questions. Quick answers:
-- Pricing: no setup fee. Platform commission is 20–40% depending on category, applied per completed booking.
+- Pricing: no setup fee. Platform commission is a uniform 20% (you keep 80%), applied per completed booking.
 - Video proof: every puja booking is recorded by the priest and uploaded before payout (mandatory on Darshya).
-- Payouts: settled within 7 working days of video upload, after Aadhaar verification.
+- Payouts: released after the video is uploaded and Aadhaar-based KYC is on file.
 
 Sign-up: ${portal}
 Book a 15-minute call: ${CALENDAR_LINK}

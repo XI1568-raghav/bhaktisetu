@@ -362,7 +362,7 @@ export async function astrologyRoutes(server: FastifyInstance) {
         return reply.code(409).send({
           code: 'ASTROLOGER_NOT_BOOKABLE',
           error:
-            'This astrologer is not available for consultation. Browse verified astrologers at /astrology/astrologers/live.',
+            'This astrologer is not available for consultation. Browse approved astrologers at /astrology/astrologers/live.',
         });
       }
 

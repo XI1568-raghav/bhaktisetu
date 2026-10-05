@@ -83,7 +83,7 @@ export default function YatraHubPage() {
  className="mt-4 prose-body leading-relaxed max-w-lg"
  style={{ color: 'var(--color-text-muted)' }}
  >
- Char Dham, 12 Jyotirlingas, Amarnath, Vaishno Devi — fully curated yatras with verified guides, comfortable stays, helicopter options and trained companions for elderly devotees.
+ Char Dham, 12 Jyotirlingas, Amarnath, Vaishno Devi — curated yatra packages with stays, helicopter options on selected routes and travel companions for elderly devotees.
  </p>
 
  <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-3 flex-wrap">
@@ -112,10 +112,10 @@ export default function YatraHubPage() {
  {/* Trust badges */}
  <div data-reveal="fade" data-delay="4" className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl">
  {[
- { icon: Shield, label: 'Verified guides' },
+ { icon: Shield, label: 'Guided itineraries' },
  { icon: Plane, label: 'Helicopter options' },
- { icon: CheckCircle2, label: 'Insurance included' },
- { icon: Clock, label: '24/7 support' },
+ { icon: CheckCircle2, label: 'Inclusions listed per package' },
+ { icon: Clock, label: 'Email support' },
  ].map((b) => (
  <div key={b.label} className="flex items-center gap-2">
  <b.icon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
@@ -307,7 +307,7 @@ export default function YatraHubPage() {
  Can&apos;t find your perfect yatra?
  </h2>
  <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
- Pick your destinations, dates and preferences — our team will craft a personalized itinerary within 24 hours.
+ Pick your destinations, dates and preferences — our team will reply by email with a personalized itinerary.
  </p>
  <Link
  href="/yatra/plan"

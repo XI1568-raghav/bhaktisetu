@@ -435,7 +435,7 @@ export default async function MarriagePage() {
  Begin your sampoorna vivaah journey
  </h2>
  <p className="mt-4 text-white/90 max-w-2xl mx-auto">
- Book now to lock in your muhurat. Our wedding coordinator will call within 2 hours to confirm rites, language, and samagri preferences.
+ Book now to lock in your muhurat. Our team will contact you to confirm rites, language, and samagri preferences.
  </p>
  <div className="mt-8 flex flex-wrap justify-center gap-3">
  <Link

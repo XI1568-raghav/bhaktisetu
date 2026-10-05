@@ -144,7 +144,7 @@ export function GiftPujaForm() {
           <div>
             <p className="font-semibold text-emerald-800">Inquiry received</p>
             <p className="mt-1 text-emerald-700">
-              Reference: <span className="font-mono">{referenceId}</span>. Our team replies within 4 hours with available pandits + dates + a secure payment link.
+              Reference: <span className="font-mono">{referenceId}</span>. Our team replies by email with available pandits, dates and a payment link; we do not promise a reply time.
             </p>
           </div>
         </div>
@@ -256,7 +256,7 @@ export function GiftPujaForm() {
         )}
       </button>
       <p className="text-xs text-surface-500 text-center">
-        Free to ask — no payment yet. We email pandit + date options + payment link within 4 hours.
+        Free to ask — no payment yet. We email pandit and date options and a payment link; we do not promise a reply time.
       </p>
     </form>
   );

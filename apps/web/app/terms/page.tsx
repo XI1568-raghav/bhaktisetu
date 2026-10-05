@@ -97,7 +97,7 @@ export default function TermsPage() {
  <h4>4.1 Nature of Service</h4>
  <p>
  Darshya acts as an intermediary platform connecting devotees
- with verified temples and priests for puja bookings. We
+ with temples and priests for puja bookings. We
  facilitate the booking, payment processing, and delivery of
  video proof. The actual ritual is performed by the temple&apos;s
  priest according to traditional Vedic procedures.
@@ -136,11 +136,12 @@ export default function TermsPage() {
 
  <h4>4.4 Prasad Delivery</h4>
  <p>
- Where a puja includes prasad delivery, we aim to deliver
- within 7&ndash;14 business days within India. Delivery timelines
- may vary based on temple location and logistics. International
- prasad delivery is subject to customs regulations in the
- destination country.
+ Prasad delivery is an optional flat add-on chosen when you
+ book a puja. We do not promise a delivery date, courier or
+ destination country for prasad. Your booking page shows a
+ tracking ID once one has been recorded. Customs duties and
+ import rules at any destination outside India are the
+ recipient&apos;s responsibility.
  </p>
  </TermsSection>
 
@@ -159,7 +160,7 @@ export default function TermsPage() {
  <ul>
  <li>
  Products listed on the Darshya store are sourced from
- verified suppliers. Product descriptions, images, and prices
+ suppliers. Product descriptions, images, and prices
  are provided as accurately as possible, but minor variations
  may occur.
  </li>
@@ -173,8 +174,9 @@ export default function TermsPage() {
  errors, stock unavailability, or suspected fraud.
  </li>
  <li>
- Shipping timelines vary by product type and delivery
- location. Estimated delivery dates are provided at checkout.
+ Store orders are delivered within India only. We do not
+ publish delivery timelines; your order page shows the status
+ and a tracking number once the courier assigns one.
  </li>
  </ul>
  </TermsSection>

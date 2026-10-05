@@ -243,12 +243,12 @@ export default function AstrologersScreen() {
   }, [query]);
 
   const subtitle = query.isLoading
-    ? 'Loading verified astrologers…'
+    ? 'Loading astrologers…'
     : errorText
       ? 'Directory unavailable'
       : astrologers.length === 0
         ? 'No astrologers listed yet'
-        : `${astrologers.length} verified · ${onlineCount} online now`;
+        : `${astrologers.length} approved · ${onlineCount} online now`;
 
   const filtered = activeSpec !== ALL || onlineOnly;
 
@@ -385,7 +385,7 @@ export default function AstrologersScreen() {
             ) : !query.isLoading ? (
               <Text style={styles.emptySubtext}>
                 No approved astrologer has gone live on Darshya so far. As soon as one is
-                verified they appear here.
+                approved they appear here.
               </Text>
             ) : null}
           </View>

@@ -75,17 +75,17 @@ function countedNoun(count: number | null, noun: string): string {
 const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 
 export const metadata: Metadata = {
-  title: 'NRI Pujas — Book a Puja from USA, UK, Canada, Australia',
+  title: 'NRI Pujas — Book a Puja at an India Temple from Abroad',
   description:
-    'Complete guide for NRIs to book authentic Hindu pujas at verified India temples. International cards billed in INR, video proof on WhatsApp' +
+    'Guide for NRIs to book Hindu pujas at India temples. Billed in INR (an international card works where your card issuer allows international payments), video proof on your booking page' +
     (HAS_80G ? ', 80G receipt eligible donations' : ', numbered donation receipts') +
-    `. ${CANCELLATION_BADGE_LABEL}. Trusted by Indian diaspora worldwide.`,
+    `. ${CANCELLATION_BADGE_LABEL}.`,
   robots: { index: false, follow: false },
   alternates: { canonical: 'https://darshya.online/nri-pujas' },
   openGraph: {
     title: 'NRI Pujas — Book from Anywhere in the World | Darshya',
     description:
-      'Step-by-step guide for booking pujas at India temples from abroad. International cards billed in INR, video proof' +
+      'Step-by-step guide for booking pujas at India temples from abroad. Billed in INR, video proof' +
       (HAS_80G ? ', 80G receipts.' : ', donation receipts.'),
     url: 'https://darshya.online/nri-pujas',
     type: 'website',
@@ -94,7 +94,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'NRI Pujas Guide | Darshya',
-    description: 'Book pujas at India temples from USA, UK, Canada, Australia.',
+    description: 'Book pujas at India temples from abroad.',
   },
 };
 
@@ -111,11 +111,11 @@ const popularTempleCities = [
 const faqs: Array<{ q: string; a: string }> = [
   {
     q: 'Can I book a puja from outside India?',
-    a: 'Yes. You can book every puja listing from abroad using an international card. Billing is in Indian Rupees through Razorpay, so your bank applies its own conversion rate. Your booking confirmation is emailed to you, and sent on WhatsApp where that is enabled for your number.',
+    a: 'Yes. You can book puja listings from abroad. Billing is in Indian Rupees through Razorpay, so your bank applies its own conversion rate, and an international card works where your card issuer allows international payments. Your booking page always shows the current status of your booking.',
   },
   {
     q: 'Will I receive video proof of my puja?',
-    a: `Video proof is mandatory on every booking. The assigned pandit uploads a 3-7 minute clip showing the sankalp (your name + gotra), the ritual, and the prasad. We aim to have the WhatsApp link with you within ${COMPANY.refunds.videoProofTargetLabel} of completion; if nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write in and a person reviews it.`,
+    a: `Video proof is mandatory on every booking. The assigned pandit uploads a video of the ritual. We aim to have it on your booking page within ${COMPANY.refunds.videoProofTargetLabel} of completion; if nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write in and a person reviews it.`,
   },
   {
     q: 'How does pricing work from abroad?',
@@ -127,13 +127,13 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'Can my parents in India also benefit?',
-    a: 'Yes. You can book a puja for any beneficiary in India. Just enter their name, gotra and date of birth at checkout. The pandit will mention them in the sankalp. Prasad can be shipped to their address (extra fee for shipping) or to yours abroad.',
+    a: 'Yes. You can book a puja for any beneficiary in India. Just enter their name, gotra and date of birth at checkout. The pandit will mention them in the sankalp. Prasad delivery is an optional flat ₹150 add-on to whichever address you enter.',
   },
   {
     q: HAS_80G ? 'Is the donation 80G tax-deductible?' : 'Can I claim a tax deduction on the donation?',
     a: HAS_80G
       ? 'Donations to temples with active 80G registration are eligible for Indian income-tax deduction. You receive a 80G receipt (DR-YYYYMMDD-XXXX) via email within 7 days. NRI status does not block 80G eligibility — anyone with an Indian PAN can claim it on Indian-sourced income.'
-      : 'Not today. You receive a numbered receipt (DR-YYYYMMDD-XXXX) by email, but it is proof of payment rather than a tax-exemption certificate: it carries no donee registration number and no donee PAN, so nothing can be claimed against it under Indian income-tax law. We will update this answer the day that registration is issued.',
+      : 'Not today. You receive a numbered receipt (DR-YYYYMMDD-XXXX), but it is proof of payment rather than a tax-exemption certificate: it carries no donee registration number and no donee PAN, so nothing can be claimed against it under Indian income-tax law. We will update this answer the day that registration is issued.',
   },
   {
     q: 'What is the cancellation policy?',
@@ -141,15 +141,15 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How long does the full process take?',
-    a: `Booking: 3 minutes online. Pandit assignment: you are notified when a pandit accepts the booking. Puja completion: 30 minutes to 4 hours depending on the ritual. Video proof: we aim for ${COMPANY.refunds.videoProofTargetLabel} after the ceremony. Prasad shipment (if ordered): 7-21 days to an address abroad.`,
+    a: `Pandit assignment: your booking page shows when a pandit accepts the booking. Video proof: we aim for ${COMPANY.refunds.videoProofTargetLabel} after the ceremony. We do not promise a prasad delivery date.`,
   },
   {
     q: 'Can I watch the puja live?',
     a: 'Not on a booking. Every puja delivers recorded video proof of the ceremony. Free live darshan streams from select temples are on the Live Darshan page, separate from your booking.',
   },
   {
-    q: 'Do you ship prasad internationally?',
-    a: 'Yes, you can add prasad delivery to a puja booking and enter an address abroad. It is a flat ₹150 add-on, the same for every destination, shown on the booking screen before you pay. Customs duties and import rules in your country are your responsibility.',
+    q: 'Can prasad be sent to an address abroad?',
+    a: 'Prasad delivery is an optional flat ₹150 add-on to a puja booking, the same for every address, shown on the booking screen before you pay. We do not promise delivery to any particular country or by any date, so if you want prasad sent outside India, write to us first. Customs duties and import rules at the destination are the recipient\'s responsibility. Store orders are delivered within India only.',
   },
 ];
 
@@ -166,13 +166,13 @@ const stepsFor = (stats: PublicStats) => [
   },
   {
     n: 3,
-    title: 'Book with an international card',
-    body: 'Razorpay accepts international cards, UPI, and net banking, billed in INR. Booking confirmed instantly with reference number BS-YYYYMMDD-XXXXX.',
+    title: 'Pay by card, billed in INR',
+    body: 'Pay through Razorpay, billed in INR. An international card works where your card issuer allows international payments; UPI and net banking are for Indian accounts. Once payment succeeds, your booking page shows the reference number BS-YYYYMMDD-XXXXX.',
   },
   {
     n: 4,
     title: 'A pandit is assigned',
-    body: 'Once a pandit accepts your booking you are notified by email and, where WhatsApp is enabled for your number, on WhatsApp. Slot times are India Standard Time (IST), the time at the temple.',
+    body: 'Your booking page always shows its status, including when a pandit accepts. Slot times are India Standard Time (IST), the time at the temple.',
   },
   {
     n: 5,
@@ -183,24 +183,24 @@ const stepsFor = (stats: PublicStats) => [
     n: 6,
     title: 'Video proof + prasad',
     body:
-      `We aim to send your video proof within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony, showing the sankalp, ritual and prasad offering. Prasad ships if ordered.` +
-      (HAS_80G ? ' 80G receipt within 7 days.' : ' Any donation you added is receipted by email.'),
+      `We aim to put your video proof on your booking page within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony. Prasad delivery is optional and no delivery date is promised.` +
+      (HAS_80G ? ' 80G receipt within 7 days.' : ' Any donation you added gets a numbered receipt.'),
   },
 ];
 
 const trustSignals = [
-  { icon: Video, title: 'Video proof mandatory', body: 'Every puja delivers a video — pandit payout is gated on upload.' },
+  { icon: Video, title: 'Video proof mandatory', body: 'Every puja delivers a video, and pandit payout is gated on upload.' },
   { icon: ShieldCheck, title: 'Aadhaar KYC before payout', body: 'A payout gate, not a credential check — no reference checks, no trust score.' },
   // CM-06: this signal used to advertise dual-currency billing and list seven
   // foreign currencies. There is no multi-currency rail — Razorpay charges in
   // INR only, and the foreign-currency path was deleted with Stripe (RV-01).
   // Say what actually happens at checkout.
-  { icon: CreditCard, title: 'International cards, no markup', body: 'Shown in USD, billed in INR — the exact rupee amount is shown upfront and we add no FX fee of our own.' },
+  { icon: CreditCard, title: 'Billed in INR', body: 'Shown in USD, billed in INR. The exact rupee amount is shown upfront and we add no FX fee of our own; an international card works where your card issuer allows international payments.' },
   { icon: Clock, title: CANCELLATION_BADGE_LABEL, body: `${CANCELLATION_BADGE_DESC}. Inside that window the slot is locked.` },
   HAS_80G
     ? { icon: FileText, title: '80G tax receipts', body: 'Eligible donations get 80G receipt within 7 days.' }
     : { icon: FileText, title: 'Numbered donation receipts', body: 'Proof of payment by email — not a tax-exemption certificate.' },
-  { icon: Globe2, title: 'Trusted by diaspora', body: 'NRIs from USA, UK, Canada, Australia, Singapore, UAE.' },
+  { icon: Globe2, title: 'Book from anywhere', body: 'Slot times are in India Standard Time, the time at the temple, so you always know when the puja happens.' },
 ];
 
 const pillarPageJsonLdFor = (steps: ReturnType<typeof stepsFor>) => ({
@@ -210,7 +210,7 @@ const pillarPageJsonLdFor = (steps: ReturnType<typeof stepsFor>) => ({
       '@type': 'WebPage',
       '@id': 'https://darshya.online/nri-pujas',
       url: 'https://darshya.online/nri-pujas',
-      name: 'NRI Pujas — Book a Puja from USA, UK, Canada, Australia',
+      name: 'NRI Pujas — Book a Puja at an India Temple from Abroad',
       description: metadata.description,
       isPartOf: { '@id': 'https://darshya.online/#website' },
       inLanguage: 'en-IN',
@@ -233,7 +233,7 @@ const pillarPageJsonLdFor = (steps: ReturnType<typeof stepsFor>) => ({
     {
       '@type': 'HowTo',
       name: 'How to book an NRI puja at an India temple from abroad',
-      description: '6-step process to book a verified puja with video proof from any country.',
+      description: '6-step process to book a puja with video proof from abroad.',
       step: steps.map((s) => ({
         '@type': 'HowToStep',
         position: s.n,
@@ -279,16 +279,16 @@ export default async function NRIPujasPillarPage() {
         <div className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <span className="inline-flex items-center gap-2 rounded-full border border-saffron-200 bg-white px-3 py-1 text-xs font-medium text-saffron-700">
             <Globe2 className="h-3.5 w-3.5" />
-            For NRIs in USA, UK, Canada, Australia, Singapore, UAE
+            For Indians living abroad
           </span>
           <h1 className={`${H1.marketing} mt-4`}>
             Book a Puja at an India Temple — from Anywhere in the World
           </h1>
           <p className="prose-lead mt-4 max-w-2xl text-surface-700">
-            The complete NRI guide to booking authentic Hindu pujas at India temples — mandatory
-            video proof on WhatsApp, international-card checkout billed in INR, and{' '}
-            {HAS_80G ? '80G tax receipts' : 'a numbered receipt for every donation'}. Prasad can be
-            delivered to an address abroad.
+            A guide to booking Hindu pujas at India temples from abroad — mandatory
+            video proof on your booking page, checkout billed in INR, and{' '}
+            {HAS_80G ? '80G tax receipts' : 'a numbered receipt for every donation'}. Prasad
+            delivery is an optional add-on.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -310,7 +310,7 @@ export default async function NRIPujasPillarPage() {
               href={NRI_PREMIUM_IS_SELLABLE ? '/nri' : '/temples'}
               className="inline-flex items-center gap-2 rounded-lg border border-saffron-300 bg-white px-5 py-3 text-sm font-medium text-saffron-700 hover:bg-saffron-50"
             >
-              {NRI_PREMIUM_IS_SELLABLE ? 'See NRI Premium tier' : 'Browse verified temples'}
+              {NRI_PREMIUM_IS_SELLABLE ? 'See NRI Premium tier' : 'Browse temples'}
             </Link>
           </div>
         </div>
@@ -346,7 +346,7 @@ export default async function NRIPujasPillarPage() {
             How booking a puja from abroad works
           </h2>
           <p className="mt-2 max-w-2xl text-surface-700">
-            Six steps, fully online. Most devotees complete the booking in under 5 minutes.
+            Six steps, fully online.
           </p>
           <ol className="mt-6 grid gap-4 md:grid-cols-2">
             {steps.map((s) => (
@@ -421,7 +421,7 @@ export default async function NRIPujasPillarPage() {
             Top India temples for NRI bookings
           </h2>
           <p className="mt-2 max-w-2xl text-surface-700">
-            Every temple is verified, has active pandit roster, and accepts international bookings.
+            Some of the temples listed on Darshya. Each temple page shows its pujas and slots.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {popularTempleCities.map((c) => (
@@ -459,15 +459,15 @@ export default async function NRIPujasPillarPage() {
             <div>
               <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-medium text-saffron-700">
                 <Star className="h-3.5 w-3.5" />
-                Most popular NRI feature
+                Gift a puja
               </span>
               <h2 className="mt-3 font-display text-2xl font-semibold text-surface-900">
                 Gift a puja to your parents in India
               </h2>
               <p className="mt-2 max-w-xl text-surface-700">
                 Send a Satyanarayan Katha for their anniversary, a Rudrabhishek on Shivratri, or a
-                birthday puja for a sibling. They receive WhatsApp confirmation and you receive the
-                video proof.
+                birthday puja for a sibling. Enter their name and gotra when you book; the video proof
+                is on your booking page.
               </p>
             </div>
             <div>
@@ -490,7 +490,7 @@ export default async function NRIPujasPillarPage() {
             NRI puja booking — frequently asked
           </h2>
           <p className="mt-2 text-surface-700">
-            Ten questions we get from devotees abroad every week.
+            Common questions from devotees abroad.
           </p>
           <div className="mt-6 space-y-3">
             {faqs.map((f) => (
@@ -517,9 +517,9 @@ export default async function NRIPujasPillarPage() {
           <div>
             <h2 className="font-display text-2xl font-semibold">Ready to book your first puja?</h2>
             <p className="mt-2 max-w-xl text-surface-200">
-              Pick from {countedNoun(stats.pujaTypeCount, 'verified pujas')} at{' '}
-              {countedNoun(stats.templeCount, 'listed temples')}. International payment, video
-              proof, WhatsApp coordination — all included.
+              Pick from {countedNoun(stats.pujaTypeCount, 'pujas')} at{' '}
+              {countedNoun(stats.templeCount, 'listed temples')}. Video proof is included with every
+              booking.
             </p>
           </div>
           <div className="flex flex-col gap-2 md:items-end">
@@ -535,7 +535,7 @@ export default async function NRIPujasPillarPage() {
               className="inline-flex items-center gap-2 text-sm text-surface-300 hover:text-white"
             >
               <Mail className="h-3.5 w-3.5" />
-              Talk to NRI concierge
+              Contact support
             </Link>
           </div>
         </div>

@@ -41,6 +41,7 @@ import {
   refundProcessedEmail,
 } from '../lib/email.js';
 import { parseSlotMinutes } from '../lib/slot-time.js';
+import { REFUND_DAYS_LABEL } from '../lib/refund-timing.js';
 import { recordNotification } from '../lib/notification-log.js';
 
 export interface BookingCtx {
@@ -175,8 +176,8 @@ function pushTextFor(event: BookingEvent, ctx: BookingCtx): { title: string; bod
       return {
         title: 'Refund processed',
         body: amount
-          ? `${amount} refunded for your ${puja} — it reaches your account in 5-7 business days.`
-          : `Refund for your ${puja} is on its way (5-7 business days).`,
+          ? `${amount} refunded for your ${puja} — it reaches your account in ${REFUND_DAYS_LABEL} (international cards can take longer).`
+          : `Refund for your ${puja} is on its way (${REFUND_DAYS_LABEL}; international cards can take longer).`,
       };
     }
   }

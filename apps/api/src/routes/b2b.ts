@@ -238,7 +238,7 @@ export async function b2bRoutes(server: FastifyInstance) {
     security: [{ apiKey: [] }],
     paths: {
       '/ping': { get: { summary: 'Auth probe' } },
-      '/temples': { get: { summary: 'List verified temples', parameters: [{ name: 'limit', in: 'query' }, { name: 'cursor', in: 'query' }] } },
+      '/temples': { get: { summary: 'List temples', parameters: [{ name: 'limit', in: 'query' }, { name: 'cursor', in: 'query' }] } },
       '/bookings': { get: { summary: 'List bookings (PII masked)', parameters: [{ name: 'since', in: 'query' }] } },
       // TC-08: this published "List verified pandits" in the B2B OpenAPI
       // document a partner integrates against. The list is filtered on

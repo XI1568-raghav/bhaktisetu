@@ -48,7 +48,6 @@ interface SubmitOk {
   packageName: string;
   priceInr: number;
   preferredDate: string;
-  coordinatorCallEtaMinutes: number;
   message: string;
 }
 
@@ -122,9 +121,8 @@ export default function AntimSanskarBookPage() {
             className="text-sm leading-relaxed mb-6"
             style={{ color: 'var(--color-text-muted)' }}
           >
-            A coordinator will call you within the next{' '}
-            {confirmation.coordinatorCallEtaMinutes} minutes. There is nothing
-            further you need to do right now.
+            A coordinator will call you. We do not promise a call-back time.
+            There is nothing further you need to do right now.
           </p>
           <div
             className="p-5 rounded-lg mb-6"
@@ -184,7 +182,7 @@ export default function AntimSanskarBookPage() {
           className={`${H1.catalogue} mb-3`}
 
         >
-          Share a few details. We will call you back within 30 minutes.
+          Share a few details. We will call you back.
         </h1>
         <p
           className="text-sm leading-relaxed mb-8"
@@ -369,7 +367,7 @@ export default function AntimSanskarBookPage() {
               }}
               role="alert"
             >
-              {error}. You can also call us directly — line is open 24x7.
+              {error}. You can also call us directly, Monday to Saturday, 9:00 AM to 7:00 PM IST.
             </div>
           )}
 
@@ -385,8 +383,8 @@ export default function AntimSanskarBookPage() {
             className="text-xs text-center"
             style={{ color: 'var(--color-text-muted)' }}
           >
-            By submitting, you understand a coordinator will call your number
-            within 30 minutes. No payment is taken now.
+            By submitting, you understand a coordinator will call your number;
+            we do not promise a call-back time. No payment is taken now.
           </p>
         </form>
       </div>

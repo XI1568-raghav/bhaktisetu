@@ -780,7 +780,7 @@ export default function BookMarriage() {
  <ul className="space-y-2 text-xs text-surface-700">
  <li className="flex gap-2">
  <CheckCircle className="w-3.5 h-3.5 text-tulsi-green flex-shrink-0 mt-0.5" />
- Coordinator calls within 2 hours
+ Our team contacts you to confirm
  </li>
  <li className="flex gap-2">
  <CheckCircle className="w-3.5 h-3.5 text-tulsi-green flex-shrink-0 mt-0.5" />

@@ -11,7 +11,7 @@ const BENEFITS = [
     body: 'Set your own price and capacity. We handle bookings, reminders and refunds.',
   },
   {
-    // "verified astrologers and pandits" carried the adjective
+    // "approved astrologers and pandits" carried the adjective
     // lib/pandit-vetting.ts gates: nothing in apps/api promotes a provider to
     // verified outside two seed scripts, so the word is withheld until the
     // check exists. See become-priest.tsx for the same correction.

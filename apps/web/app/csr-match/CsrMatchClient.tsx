@@ -156,7 +156,7 @@ export default function CsrMatchClient() {
           {submitted ? (
             <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-6 text-center">
               <p className="text-emerald-800 font-semibold">Interest registered.</p>
-              <p className="text-sm text-emerald-700 mt-2">Our CSR partnerships team will reach out within 48 hours.</p>
+              <p className="text-sm text-emerald-700 mt-2">Our CSR partnerships team will reach out; we do not promise a reply time.</p>
             </div>
           ) : (
             <form onSubmit={onSubmit} className="bg-white rounded-lg p-6 border border-saffron-200 space-y-4">

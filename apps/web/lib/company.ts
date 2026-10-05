@@ -344,5 +344,5 @@ export function csrCredentialLine(): string {
 
 /** Helper: "Free delivery above ₹499, otherwise a flat ₹49" as one sentence. */
 export function deliveryFeeLine(): string {
-  return `Free delivery on domestic orders of ₹${COMPANY.store.freeDeliveryAboveInr.toLocaleString('en-IN')} and above. Below that, a flat ₹${COMPANY.store.flatDeliveryFeeInr} applies — the same fee for every weight and every destination.`;
+  return `Free delivery on store orders of ₹${COMPANY.store.freeDeliveryAboveInr.toLocaleString('en-IN')} and above. Below that, a flat ₹${COMPANY.store.flatDeliveryFeeInr} applies — the same fee for every weight and every destination.`;
 }

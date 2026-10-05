@@ -26,7 +26,7 @@ const CARDS: ConsultCard[] = [
   {
     href: '/astrology',
     label: 'Talk to an Astrologer',
-    body: 'Live consultations with verified Vedic astrologers, from ₹15/min.',
+    body: 'Live consultations with approved Vedic astrologers, from ₹15/min.',
     cta: 'Start a call',
     Icon: Phone,
     iconBg: '#EEF2FF',

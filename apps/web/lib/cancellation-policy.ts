@@ -42,6 +42,14 @@ export const PARTIAL_REFUND_PERCENT = 75;
 /** Business days a refund takes to reach the devotee's account. */
 export const REFUND_DAYS_LABEL = '5-7 business days';
 
+/**
+ * International-card ceiling. This is a bank/gateway timing, NOT a Darshya
+ * promise, and is only ever shown with {@link REFUND_INTERNATIONAL_NOTE}. The
+ * API mirrors it as REFUND_INTERNATIONAL_CARD_LABEL in cancellation.service.ts
+ * and a web test pins the two together.
+ */
+export const REFUND_INTERNATIONAL_CARD_LABEL = 'up to 14 business days';
+
 /** Short badge label. Safe next to a Pay button — it promises only what ships. */
 export const CANCELLATION_BADGE_LABEL = `Free cancellation ${FULL_REFUND_HOURS_BEFORE}h+ before`;
 
@@ -77,16 +85,24 @@ export const CANCELLATION_POLICY_SENTENCE =
  * other page quotes `REFUND_SETTLEMENT_SENTENCE`, which is generated from it.
  */
 export const REFUND_SETTLEMENT_BANDS: ReadonlyArray<{ method: string; label: string }> = [
-  { method: 'UPI and wallets', label: '1-3 business days' },
-  { method: 'Debit and credit cards', label: REFUND_DAYS_LABEL },
-  { method: 'Net banking', label: '5-10 business days' },
-  { method: 'International cards', label: '7-14 business days' },
+  { method: 'UPI, wallets, Indian cards and net banking', label: REFUND_DAYS_LABEL },
+  { method: 'International cards', label: REFUND_INTERNATIONAL_CARD_LABEL },
 ];
+
+/**
+ * Honest framing for the international-card band. Darshya issues the refund to
+ * the gateway; how long a foreign card issuer then takes to post it is the
+ * issuer's timing, so the page says that instead of promising it.
+ */
+export const REFUND_INTERNATIONAL_NOTE =
+  `International cards can take up to 14 business days to show the refund. That timing is set by your card issuer and the payment gateway, not by Darshya.`;
 
 /**
  * The bands as one plain-text sentence. Derived, never retyped — a page that
  * quotes this cannot fall out of step with the table on /refunds.
  */
 export const REFUND_SETTLEMENT_SENTENCE =
-  `Once a refund is issued it goes back to the method you paid with: ` +
-  `${REFUND_SETTLEMENT_BANDS.map((b) => `${b.method} ${b.label}`).join(', ')}.`;
+  `Once a refund is issued it goes back to the method you paid with. ` +
+  `${REFUND_SETTLEMENT_BANDS[0]!.method}: ${REFUND_SETTLEMENT_BANDS[0]!.label}. ` +
+  `${REFUND_SETTLEMENT_BANDS[1]!.method}: ${REFUND_SETTLEMENT_BANDS[1]!.label} ` +
+  `(timing set by your card issuer, not by Darshya).`;

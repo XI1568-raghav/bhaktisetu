@@ -246,7 +246,7 @@ Book a **Vastu Shanti Puja** or **Griha Pravesh Puja** on Darshya.`,
 
 **Important:** Never wear a gemstone without consulting your birth chart.
 
-Get a **personalized gemstone recommendation** from Darshya's verified astrologers.`,
+Get a **personalized gemstone recommendation** from Darshya's approved astrologers.`,
  },
 ];
 

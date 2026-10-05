@@ -162,7 +162,7 @@ export async function providerKycRoutes(server: FastifyInstance) {
     );
 
     return reply.send({
-      message: 'KYC submitted. Verification typically completes within 2 business days.',
+      message: 'KYC submitted. Your KYC status page shows its progress; no review time is promised.',
       verified: false,
     });
   });

@@ -279,7 +279,7 @@ function BookYatraInner() {
  </div>
  <h1 className={`${H1.portal} mb-2`}>Inquiry received</h1>
  <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
- Our yatra desk will confirm hotel + transport availability for {yatra.title} and email your final invoice within 24 hours.
+ Our yatra desk will confirm hotel + transport availability for {yatra.title} and send your final invoice. We do not promise a reply time.
  </p>
  <div className="p-4 rounded-xl mb-5" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Reference ID</p>

@@ -115,7 +115,7 @@ export default async function CityPujaPage({ params }: Params) {
         </h1>
         <p className="text-base text-surface-700">
           Authentic {cp.deity} worship performed in {cp.citydisplay} by Vedic pandits.
-          Live video proof, samagri included, prasad delivered.
+          Video proof of the puja; prasad delivery is optional.
         </p>
       </header>
 
@@ -165,9 +165,9 @@ export default async function CityPujaPage({ params }: Params) {
         <ul className="list-disc pl-6 text-surface-700 space-y-1">
           <li>Vedic pandit with authentic Sanskrit chanting</li>
           <li>All samagri (offerings) — no extra shopping required</li>
-          <li>Live video recording of the puja shared within 24 hours</li>
-          <li>Prasad parcel shipped to your address within 5 working days</li>
-          <li>WhatsApp updates and post-puja sankalp document</li>
+          <li>Video recording of the puja, which we aim to share within 24-48 hours</li>
+          <li>Optional prasad delivery (flat add-on); no delivery date is promised</li>
+          <li>Booking status on your booking page</li>
         </ul>
       </section>
 
@@ -179,7 +179,7 @@ export default async function CityPujaPage({ params }: Params) {
         </p>
         <p className="text-surface-700">
           Upgrades available at checkout (additional pandits, extended japa count, in-person seating,
-          home-visit). Schedule confirmation within 24 hours of booking.
+          home-visit). Your booking page shows the schedule confirmation.
         </p>
       </section>
 

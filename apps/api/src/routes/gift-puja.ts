@@ -80,7 +80,7 @@ function inquiryHtml(referenceId: string, b: z.infer<typeof inquirySchema>): str
 <tr><td style="padding:4px 0;color:#666">Message</td><td>${escape(b.message)}</td></tr>
 <tr><td style="padding:4px 0;color:#666">Source</td><td>${escape(b.source)}</td></tr>
 </table>
-<p style="font-size:12px;color:#888;margin-top:16px">Reply within 4 hours with available pandit + dates.</p>
+<p style="font-size:12px;color:#888;margin-top:16px">Reply with available pandit + dates as soon as possible.</p>
 </div></body></html>`;
 }
 
@@ -170,7 +170,7 @@ export async function giftPujaRoutes(server: FastifyInstance) {
       html: `<p>Namaste${body.buyer.name ? ` ${escape(body.buyer.name)}` : ''},</p>
 <p>We have received your gift puja inquiry for <strong>${escape(body.recipient.name)}</strong>${body.recipient.city ? ` in ${escape(body.recipient.city)}` : ''}.</p>
 <p>Reference: <strong>${referenceId}</strong></p>
-<p>Our team will reply within 4 hours with available pandits, dates, and final pricing in your currency.</p>
+<p>Our team will reply with available pandits, dates, and the final price in INR. We do not promise a reply time.</p>
 <p>— Darshya team</p>`,
     }).catch(() => null);
 

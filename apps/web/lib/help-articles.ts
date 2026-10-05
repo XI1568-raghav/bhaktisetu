@@ -340,7 +340,7 @@ Refunds go back to the method you paid with and take ${REFUND_DAYS_LABEL} to set
 
 ${REFUND_SETTLEMENT_BANDS.map((b) => `- **${b.method}** — ${b.label}`).join("\n")}
 
-These are your bank's settlement windows, not ours. Once the refund is issued it leaves us immediately; the wait after that is the card network or bank posting it back to you.
+These are settlement windows set by your bank, card issuer and the payment gateway, not promises from Darshya. Once the refund is issued, the wait after that is the card network or bank posting it back to you; an international card can take up to 14 business days.
 
 ## What "issued" means
 

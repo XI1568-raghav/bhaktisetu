@@ -33,7 +33,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Satyanarayan Puja',
     metaTitle: 'Satyanarayan Puja in Bengaluru — Pandit Booking | Darshya',
     metaDescription:
-      'Book pandits for Satyanarayan Puja in Bengaluru. Authentic Vedic ritual with samagri, video proof, prasad delivery. Trusted across Karnataka.',
+      'Book pandits for Satyanarayan Puja in Bengaluru. Vedic ritual with samagri and video proof; prasad delivery is optional.',
     deity: 'Lord Vishnu (as Satyanarayan)',
     templeName: 'ISKCON Sri Radha Krishna Temple, Rajajinagar',
     templeContext:
@@ -57,7 +57,7 @@ export const CITY_PUJAS: CityPuja[] = [
     faqs: [
       {
         q: 'Do I need to be present in person?',
-        a: 'No. Our pandit performs the puja at a verified temple/altar in Bengaluru and you receive live video proof and prasad delivery.',
+        a: 'No. Our pandit performs the puja at a temple or altar in Bengaluru and you receive video proof; prasad delivery is an optional add-on.',
       },
       {
         q: 'What language is the puja conducted in?',
@@ -125,7 +125,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Satyanarayan Puja',
     metaTitle: 'Satyanarayan Puja in Delhi — Pandit Booking | Darshya',
     metaDescription:
-      'Book pandits for Satyanarayan Puja in Delhi NCR. Sanskrit-trained Vedic priests, samagri included, live video proof, prasad delivered.',
+      'Book pandits for Satyanarayan Puja in Delhi NCR. Sanskrit-trained Vedic priests, samagri included, video proof, optional prasad delivery.',
     deity: 'Lord Vishnu (as Satyanarayan)',
     templeName: 'Akshardham / Birla Mandir',
     templeContext:
@@ -149,7 +149,7 @@ export const CITY_PUJAS: CityPuja[] = [
     faqs: [
       {
         q: 'Do I need to be present in person?',
-        a: 'No. Our pandit performs the puja at a verified temple/altar in Delhi and you receive live video proof and prasad delivery.',
+        a: 'No. Our pandit performs the puja at a temple or altar in Delhi and you receive video proof; prasad delivery is an optional add-on.',
       },
       {
         q: 'Can the puja be done at my home?',
@@ -217,7 +217,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Venkateswara Puja',
     metaTitle: 'Venkateswara Puja in Tirupati — Pandit Booking | Darshya',
     metaDescription:
-      'Book Venkateswara puja with verified TTD-affiliated pandits in Tirupati. Govinda Govinda chanting, archana, laddu prasad. Authentic Tirumala ritual.',
+      'Book Venkateswara puja with pandits in Tirupati. Govinda Govinda chanting, archana, laddu prasad. Authentic Tirumala ritual.',
     deity: 'Lord Venkateswara (Balaji)',
     templeName: 'Sri Venkateswara Swamy Temple, Tirumala',
     templeContext:
@@ -263,7 +263,7 @@ export const CITY_PUJAS: CityPuja[] = [
     pujadisplay: 'Ganga Aarti',
     metaTitle: 'Ganga Aarti in Haridwar — Pandit Sponsorship | Darshya',
     metaDescription:
-      'Sponsor Ganga Aarti at Har-ki-Pauri, Haridwar. Pandit chants Ganga Stotram, performs diya offering on your behalf. Live video proof.',
+      'Sponsor Ganga Aarti at Har-ki-Pauri, Haridwar. Pandit chants Ganga Stotram, performs diya offering on your behalf. Video proof.',
     deity: 'Ganga Mata',
     templeName: 'Har-ki-Pauri Ghat',
     templeContext:

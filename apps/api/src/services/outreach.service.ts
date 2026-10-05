@@ -202,7 +202,7 @@ const SUBJECTS: Record<string, string> = {
   priest_followup_3day: 'Re: Darshya priest partnership',
   priest_followup_7day: 'Last reminder — Darshya priest slot',
   priest_followup_14day: 'Gentle nudge — आपकी पंडित partnership पूछताछ खुली है',
-  astrologer_first_touch: 'Darshya — verified astrologers के लिए online platform',
+  astrologer_first_touch: 'Darshya — astrologers के लिए online platform',
   astrologer_followup_3day: 'Re: Darshya astrologer partnership',
   astrologer_followup_7day: 'Last reminder — Darshya astrologer slot',
   astrologer_followup_14day: 'Gentle nudge — आपकी astrologer partnership पूछताछ खुली है',

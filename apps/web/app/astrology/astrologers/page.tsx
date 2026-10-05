@@ -28,9 +28,9 @@ import LiveAstrologersClient from './live/LiveAstrologersClient';
  */
 
 export const metadata: Metadata = {
-  title: 'Astrologers on Darshya — Verified Vedic Astrologer Directory',
+  title: 'Astrologers on Darshya — Approved Vedic Astrologer Directory',
   description:
-    'Browse every verified astrologer on Darshya. Each profile is a real, approved Vedic astrologer with live online status, per-minute rate, languages and specializations — book a consultation by chat or call.',
+    'Browse every approved astrologer on Darshya. Each profile is a real, approved Vedic astrologer with live online status, per-minute rate, languages and specializations — book a consultation by chat or call.',
   robots: { index: false, follow: true },
 };
 

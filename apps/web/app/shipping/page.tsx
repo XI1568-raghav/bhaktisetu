@@ -11,18 +11,34 @@ import {
 export const metadata: Metadata = {
  title: "Shipping & Delivery Policy",
  description:
- `Darshya's shipping and delivery policy for prasad, puja items, and store products. Free delivery on domestic orders of ₹${COMPANY.store.freeDeliveryAboveInr} and above.`,
+ `Darshya's shipping and delivery policy. Store orders are delivered within India only; prasad delivery is an optional ₹${PRASAD_DELIVERY_FEE_INR} add-on to a puja booking. Free store delivery on orders of ₹${COMPANY.store.freeDeliveryAboveInr} and above.`,
  alternates: { canonical: "https://darshya.online/shipping" },
  openGraph: {
  images: ['/images/golden-temple-og.jpg'],
  title: "Shipping & Delivery Policy | Darshya",
  description:
- "Prasad and store delivery timelines: 3-7 days within India, 7-15 days for prasad sent abroad. Tracked via India Post / Delhivery.",
+ "Store orders are delivered within India only. Prasad delivery is an optional flat add-on chosen when you book a puja. We do not promise delivery dates.",
  url: "https://darshya.online/shipping",
  type: "website",
  },
 };
 
+/**
+ * Copy-truth sweep (2026-10-05). This page used to promise DHL / FedEx / India
+ * Post / Delhivery partnerships, 3-15 day timelines, international prasad and
+ * store delivery, a Rs 40 COD fee and an email + SMS tracking message. None of
+ * it exists in the code:
+ *
+ *   - the store checkout's address country is fixed to India and the API prices
+ *     `subtotal + delivery fee` only (apps/api/src/lib/store-pricing.ts);
+ *   - a store order only ever carries a `trackingNumber` that the store owner
+ *     types in (apps/web/app/store-admin/orders), shown on /store/orders;
+ *   - prasad delivery is the `prasadDeliveryRequested` flag on a puja booking,
+ *     which adds PRASAD_DELIVERY_FEE_INR and an address id
+ *     (booking.service.ts createBooking). The only fact the booking page can
+ *     show afterwards is `prasadTrackingId`.
+ * Guarded by __tests__/copy-truth-sweep.test.ts.
+ */
 export default function ShippingPage() {
  return (
  <div className="min-h-[100dvh]" style={{ background: "var(--color-bg)" }}>
@@ -43,7 +59,7 @@ export default function ShippingPage() {
  Shipping &amp; Delivery Policy
  </h1>
  <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
- Last updated: May 2, 2026
+ Last updated: October 5, 2026
  </p>
  </div>
  </section>
@@ -53,180 +69,102 @@ export default function ShippingPage() {
  <div className="space-y-10">
  <ShippingSection title="1. Overview">
  <p>
- Darshya ships sacred prasad, puja items, books, idols, and
- wellness products across India, and puja prasad to addresses
- abroad. This Shipping Policy explains delivery
- timelines, shipping charges, tracking, and our handling of
- lost or damaged consignments.
+ Darshya delivers <strong>store orders within India only</strong>.
+ Separately, you can add prasad delivery to a puja booking. This
+ policy says exactly what each of those is today, and what we do
+ not promise.
  </p>
  </ShippingSection>
 
- <ShippingSection title="2. Delivery Timelines">
- <h4>2.1 Within India</h4>
+ <ShippingSection title="2. Store Orders (India only)">
  <ul>
  <li>
- <strong>Prasad &amp; sacred items:</strong> 3&ndash;7 business
- days from temple dispatch. Prasad is dispatched within 24
- hours of puja completion.
+ Store products are delivered to addresses in India. The store
+ checkout takes an Indian address only; we do not deliver store
+ products to other countries.
  </li>
  <li>
- <strong>Store products (idols, malas, books, decor):</strong>{" "}
- 4&ndash;7 business days within metro cities; 5&ndash;10
- business days for tier-2/3 cities and remote pin codes.
+ We do not publish delivery timelines for store orders. Your
+ order page (<em>My Orders</em>) shows its status.
  </li>
  <li>
- <strong>Festival surge:</strong> During Navaratri, Diwali,
- and major festivals, add 2&ndash;3 days to standard timelines.
- </li>
- </ul>
-
- <h4>2.2 International (puja prasad)</h4>
- <ul>
- <li>
- <strong>Prasad &amp; small parcels:</strong> 7&ndash;15
- business days, depending on destination country and customs
- clearance.
+ Once the courier assigns a tracking number, it appears on the
+ same order page. We do not name a courier in advance.
  </li>
  <li>
- Customs duties, taxes, and import fees in the destination
- country are the responsibility of the recipient.
+ <strong>Cash on Delivery</strong> is offered at store checkout
+ as a payment choice. Your order is confirmed by our team after
+ you place it.
  </li>
  </ul>
  </ShippingSection>
 
- <ShippingSection title="3. Shipping Charges">
+ <ShippingSection title="3. Prasad Delivery (puja bookings)">
  <ul>
  <li>
- <strong>Domestic delivery.</strong> {deliveryFeeLine()} The fee is
+ Prasad delivery is an <strong>optional add-on</strong> you switch
+ on while booking a puja. You enter the delivery address on the
+ booking screen.
+ </li>
+ <li>
+ It costs a flat &#8377;{PRASAD_DELIVERY_FEE_INR}, the same for
+ every address, shown on the booking screen before you pay.
+ </li>
+ <li>
+ We do not promise a delivery date, a courier or a delivery
+ country for prasad. If you want prasad sent to an address
+ outside India, write to {COMPANY.supportEmail} before you add it.
+ Any customs duties or import rules at the destination are the
+ recipient&apos;s responsibility.
+ </li>
+ <li>
+ Your booking page shows a tracking ID once one has been
+ recorded for the parcel. Until then it simply says prasad delivery
+ is part of the booking.
+ </li>
+ </ul>
+ </ShippingSection>
+
+ <ShippingSection title="4. Shipping Charges">
+ <ul>
+ <li>
+ <strong>Store delivery.</strong> {deliveryFeeLine()} The fee is
  shown in your cart before you pay.
  </li>
  <li>
  <strong>Prasad delivery</strong> as part of a puja booking
- is an optional flat &#8377;{PRASAD_DELIVERY_FEE_INR} add-on. It is the same
- for every address, in India or abroad, and is shown on the
- booking screen before you pay.
+ is the optional flat &#8377;{PRASAD_DELIVERY_FEE_INR} add-on
+ described above.
  </li>
  <li>
- <strong>International delivery</strong> is available for puja
- prasad only, at the flat fee above. Our store checkout
- currently delivers within India only; we do not ship store
- products abroad yet.
- </li>
- <li>
- <strong>Cash on Delivery (COD)</strong> is available on
- select domestic orders below &#8377;5,000 with a flat
- &#8377;40 COD handling fee.
+ Nothing else is added at checkout.
  </li>
  </ul>
  </ShippingSection>
 
- <ShippingSection title="4. Order Processing">
- <ul>
- <li>
- Orders placed before 2:00 PM IST on a business day are
- processed the same day. Orders after 2:00 PM are processed
- the next business day.
- </li>
- <li>
- Orders are not dispatched on Sundays or national holidays.
- </li>
- <li>
- You will receive an email and SMS with the tracking number
- once the parcel is handed to the courier.
- </li>
- </ul>
- </ShippingSection>
-
- <ShippingSection title="5. Courier Partners &amp; Tracking">
- <p>We ship through the following partners:</p>
- <ul>
- <li>
- <strong>India Post (Speed Post):</strong> Pan-India coverage
- including remote pin codes; tracking via{" "}
- <a
- href="https://www.indiapost.gov.in"
- target="_blank"
- rel="noopener noreferrer"
- className="underline"
- style={{ color: "var(--color-primary)" }}
- >
- indiapost.gov.in
- </a>
- .
- </li>
- <li>
- <strong>Delhivery:</strong> Express delivery within metros
- and tier-2 cities; tracking via{" "}
- <a
- href="https://www.delhivery.com/tracking"
- target="_blank"
- rel="noopener noreferrer"
- className="underline"
- style={{ color: "var(--color-primary)" }}
- >
- delhivery.com/tracking
- </a>
- .
- </li>
- <li>
- <strong>Blue Dart, DTDC, Ekart:</strong> Used selectively
- for specific regions and product categories.
- </li>
- <li>
- <strong>DHL / FedEx:</strong> International orders requiring
- expedited delivery.
- </li>
- </ul>
- <p>
- The tracking link is included in your shipment confirmation
- email and is also visible in your account under{" "}
- <em>My Orders</em>.
- </p>
- </ShippingSection>
-
- <ShippingSection title="6. Address Accuracy">
+ <ShippingSection title="5. Address Accuracy">
  <p>
  Please ensure that the shipping address, pincode, and phone
- number entered at checkout are accurate. Darshya is not
- responsible for delays or non-delivery caused by incorrect
- address information. If a parcel is returned undelivered due
- to address errors, the customer bears the re-shipping cost.
+ number you enter are accurate. Darshya is not responsible for
+ delays or non-delivery caused by incorrect address information.
  </p>
  </ShippingSection>
 
- <ShippingSection title="7. Lost, Damaged, or Delayed Shipments">
+ <ShippingSection title="6. Lost, Damaged, or Delayed Shipments">
  <ul>
  <li>
- If a parcel is marked delivered but you have not received
- it, contact us within 48 hours at support@darshya.online.
+ If a parcel is marked delivered but you have not received it,
+ or it arrives damaged, email {COMPANY.supportEmail} within 48
+ hours. For damage, include photographs of the package.
  </li>
  <li>
- If a parcel is damaged in transit, photograph the package
- before opening and email us within 48 hours of delivery. We
- will arrange a replacement or full refund (including
- shipping).
- </li>
- <li>
- A shipment is considered lost only after the courier marks
- it untraceable or 21 days have passed for domestic / 45 days
- for international without movement. We will reship or refund
- in full once a loss is confirmed.
+ We review each case and, where an item is confirmed lost or
+ damaged, arrange a replacement or a refund.
  </li>
  </ul>
  </ShippingSection>
 
- <ShippingSection title="8. International Customs &amp; Restrictions">
- <p>
- Some products (large idols, certain herbs, items containing
- sandalwood) may be restricted in specific countries. It is the
- buyer&apos;s responsibility to confirm their country&apos;s import rules
- before placing the order. If a parcel is seized or returned by
- customs, the order value (excluding shipping) will be refunded
- once the parcel is returned to our warehouse.
- </p>
- </ShippingSection>
-
- <ShippingSection title="9. Contact">
+ <ShippingSection title="7. Contact">
  <p>For shipping-related queries:</p>
  <ul>
  <li>Email: {COMPANY.supportEmail}</li>

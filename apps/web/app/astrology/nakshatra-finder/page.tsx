@@ -149,7 +149,7 @@ export default function NakshatraFinderPage() {
     <p className="mt-2 text-sm text-gray-700">
      Once you know your janma nakshatra, plug it into our other free Vedic calculators — baby
      naming, kundli milan, or full birth chart. For pandit-grade Drik panchang + dasha + remedies,
-     speak to a verified Vedic astrologer.
+     speak to a approved Vedic astrologer.
     </p>
     <div className="mt-4 flex flex-wrap justify-center gap-3">
      <Link href="/astrology/baby-name" className={buttonClass('primary', 'md')}>

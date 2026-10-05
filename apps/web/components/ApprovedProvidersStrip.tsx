@@ -179,7 +179,7 @@ export async function ApprovedProvidersStrip({
    getPriceLabel had just formatted and replaced it with a decorative
    lucide SVG. The rendered TEXT was therefore "25 / min" — the exact
    bare number the finding quotes, on the exact surface it names
-   ("Verified astrologers on Darshya" at /astrology).
+   ("Approved astrologers on Darshya" at /astrology).
 
    A glyph drawn as an icon is not a glyph anyone can read as text:
    a screen reader announces nothing for an unlabelled inline SVG, and

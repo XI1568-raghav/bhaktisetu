@@ -95,7 +95,7 @@ export default function SelfOnboardPageShell(props: SelfOnboardPageShellProps) {
             className="text-xs space-y-1.5 list-decimal list-inside"
             style={{ color: 'var(--color-text-muted, #6b6258)' }}
           >
-            <li>Our partnerships team reviews your application within 48 hours.</li>
+            <li>Our partnerships team reviews each application by hand; no review time is promised.</li>
             <li>If we are a good fit, we email you a short verification call link.</li>
             <li>Once verified, your profile goes live on Darshya and you start receiving devotees.</li>
           </ol>

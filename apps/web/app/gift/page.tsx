@@ -11,7 +11,7 @@ export const revalidate = 86400;
 export const metadata: Metadata = {
   title: 'Gift a puja to your family in India',
   description:
-    'NRIs — send a Vedic puja to your parents or relatives in India. Recipient gets WhatsApp confirmation + video proof from the temple.',
+    'NRIs — send a Vedic puja to your parents or relatives in India. Video proof of the puja appears on your booking page.',
   keywords: [
     'gift puja india',
     'send puja to parents',
@@ -52,24 +52,24 @@ const STEPS = [
   {
     n: '2',
     title: 'Add recipient details',
-    body: 'Name + WhatsApp number of the family member receiving the blessings. They will be in the sankalp.',
+    body: 'Name of the family member receiving the blessings. They will be in the sankalp.',
   },
   {
     n: '3',
     title: 'Book it yourself, or ask us',
-    body: 'Book straight from the catalogue at the listed price. If you would rather we recommended one, use the form — we reply within 4 working hours (09:00–21:00 IST).',
+    body: 'Book straight from the catalogue at the listed price. If you would rather we recommended one, use the form — we reply by email; we do not promise a reply time.',
   },
   {
     n: '4',
-    title: 'Recipient gets WhatsApp + video',
-    body: 'Recipient gets a WhatsApp confirmation once the puja is scheduled, or a call from our coordinator. Full video arrives within 24h of the puja.',
+    title: 'You get the video proof',
+    body: 'The recording appears on your booking page; we aim to upload it within 24-48 hours of the ceremony.',
   },
 ];
 
 const TRUST = [
-  { icon: ShieldCheck, label: 'Verified temples', body: 'Every puja performed by a pandit at a real temple.' },
+  { icon: ShieldCheck, label: 'At the temple', body: 'The puja is performed by a pandit at the temple you choose.' },
   { icon: Video, label: 'Video proof mandatory', body: 'Full recording of the ceremony — no exceptions.' },
-  { icon: MessageCircle, label: 'WhatsApp updates', body: 'Recipient notified before, during, and after the puja.' },
+  { icon: MessageCircle, label: 'Booking status', body: 'Your booking page always shows the current status.' },
   { icon: Globe, label: 'NRI-friendly', body: 'Book from anywhere in the world. Billing is in INR; international cards are accepted.' },
 ];
 
@@ -97,7 +97,7 @@ export default async function GiftPujaPage() {
             Gift a puja to your family in India
           </h1>
           <p className="prose-lead mt-4 text-surface-600 max-w-2xl mx-auto">
-            Your parents or relatives in India receive a WhatsApp confirmation and a full video of the ceremony — within 24 hours of completion.
+            The puja is performed in your family member's name and the video of the ceremony appears on your booking page.
           </p>
           <div className="mt-6 inline-flex items-center gap-2 text-sm text-surface-500">
             <Heart className="h-4 w-4 text-rose-500 fill-rose-500" />
@@ -167,8 +167,7 @@ export default async function GiftPujaPage() {
             <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
               <h2 className="text-xl font-bold text-surface-800 mb-1">Start your gift puja</h2>
               <p className="text-sm text-surface-500 mb-4">
-                Not sure which puja? We&apos;ll email you within 4 working hours
-                (09:00&ndash;21:00 IST) with pandits and dates. To book right now at the listed
+                Not sure which puja? We&apos;ll email you with pandits and dates; we do not promise a reply time. To book right now at the listed
                 price, use the catalogue above.
               </p>
               <GiftPujaForm />

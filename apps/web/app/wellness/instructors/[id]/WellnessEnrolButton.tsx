@@ -123,7 +123,7 @@ export default function WellnessEnrolButton({
               <div className="text-center">
                 <h3 className="text-lg font-semibold mb-2">You're on the list</h3>
                 <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  {instructorName.split(' ')[0]} or our wellness team will reach out within 24 hours to schedule your {PLAN_LABEL[plan]}.
+                  {instructorName.split(' ')[0]} or our wellness team will reach out to schedule your {PLAN_LABEL[plan]}.
                 </p>
                 <button
                   type="button"

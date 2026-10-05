@@ -198,7 +198,7 @@ export default function PrivacyPage() {
  assigned priest solely for performing the booked ritual.
  </li>
  <li>
- <strong>Delivery Partners (India Post, Delhivery, etc.):</strong>{" "}
+ <strong>Delivery Partners (couriers):</strong>{" "}
  Your shipping address is shared with logistics providers for
  prasad and store order deliveries.
  </li>

@@ -215,14 +215,14 @@ function AstrologerDetailInner() {
      </h1>
      <p className="text-sm text-surface-500 mb-6">
       We only show astrologers we can actually connect you to. Browse the
-      verified astrologers who are onboarded right now.
+      approved astrologers who are onboarded right now.
      </p>
      <div className="flex flex-col sm:flex-row gap-3 justify-center">
       <Link
        href="/astrology/astrologers/live"
        className={buttonClass('primary', 'md')}
       >
-       See verified astrologers <ArrowRight className="w-4 h-4" />
+       See approved astrologers <ArrowRight className="w-4 h-4" />
       </Link>
       <Link
        href="/astrology"
@@ -544,7 +544,7 @@ function AstrologerDetailInner() {
  href="/astrology/astrologers/live"
  className="inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-600 hover:text-saffron-700"
  >
- See verified astrologers <ArrowRight className="w-4 h-4" />
+ See approved astrologers <ArrowRight className="w-4 h-4" />
  </Link>
  </div>
 
@@ -595,7 +595,7 @@ export function ProfileLoadingShell() {
     <p className="mt-4 text-sm text-surface-400">
      Taking too long?{' '}
      <Link href="/astrology/astrologers/live" className="font-semibold text-saffron-600 underline">
-      See verified astrologers
+      See approved astrologers
      </Link>{' '}
      or go{' '}
      <Link href="/astrology" className="font-semibold text-saffron-600 underline">

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/become-astrologer' },
   title: 'Become a Darshya astrologer',
   description:
-    'Take per-minute consultations on Darshya — kundli, muhurat, gemstone and tarot. Verified astrologers only.',
+    'Take per-minute consultations on Darshya — kundli, muhurat, gemstone and tarot. Approved astrologers only.',
 };
 
 // TC-02 (P0, trust). PJ-02 stripped three unbackable promises from
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 //     neither rail is enabled. Nothing keys a payout cadence off cumulative
 //     earnings anywhere in the repo.
 //  2. "Aadhaar + qualification verified badge. Devotees pay 2-3× more for
-//     verified astrologers." AstrologerProfile has no aadhaar_verified column
+//     approved astrologers." AstrologerProfile has no aadhaar_verified column
 //     and no verified column at all — only `approved`. The Aadhaar flag lives
 //     on Priest and PanditProfile. There is nowhere to record the verification,
 //     so there is no badge, and the 2-3× premium is an invented statistic.
