@@ -17,7 +17,8 @@ import {
  Sparkles,
  Phone,
 } from 'lucide-react';
-import { homePujaCategories } from '../../../../lib/home-pujas';
+import { homePujaCategories, homePujaTierDetails, HOME_PUJA_CONFIRMED_ON_CALL } from '../../../../lib/home-pujas';
+import { HAS_HOME_PUJA_INCLUSIONS } from '../../../../lib/launch-gates';
 import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api';
 import { remoteImage, IMG_W } from '../../../../lib/images';
 import { PanditAvatar } from '../../PanditAvatar';
@@ -459,7 +460,11 @@ function BookHomePujaInner() {
  {step === 3 && (
  <div>
  <h2 className="text-xl font-bold text-surface-800 mb-1">Samagri preference</h2>
- <p className="text-sm text-surface-500 mb-6">Choose the quality tier. Pandit brings everything.</p>
+ <p className="text-sm text-surface-500 mb-6">
+ {HAS_HOME_PUJA_INCLUSIONS
+ ? 'Choose the quality tier. Pandit brings everything.'
+ : `Choose a tier as your preference. ${HOME_PUJA_CONFIRMED_ON_CALL}`}
+ </p>
 
  <div className="space-y-3">
  {(['basic', 'standard', 'premium'] as const).map((t) => (
@@ -493,7 +498,7 @@ function BookHomePujaInner() {
  )}
  </div>
  <ul className="space-y-1.5">
- {category.pricingDetails[t].map((d, i) => (
+ {homePujaTierDetails(category, t).map((d, i) => (
  <li key={i} className="flex gap-2 text-sm text-surface-600">
  <CheckCircle className="w-4 h-4 text-tulsi-green flex-shrink-0 mt-0.5" />
  <span>{d}</span>
@@ -572,7 +577,7 @@ function BookHomePujaInner() {
  <Row label="Date" value={date || '—'} />
  <Row label="Slot" value={slot ? timeSlots.find((t) => t.id === slot)?.label ?? slot : '—'} />
  <Row label="Address" value={`${address}, ${city} ${pincode}`} />
- <Row label="Samagri tier" value={<span className="capitalize">{tier}</span>} />
+ <Row label={HAS_HOME_PUJA_INCLUSIONS ? 'Samagri tier' : 'Tier preference'} value={<span className="capitalize">{tier}</span>} />
  <Row label="Host name" value={name || '—'} />
  <Row label="Phone" value={phone || '—'} />
  {gotra && <Row label="Gotra" value={gotra} />}
@@ -702,7 +707,7 @@ function BookHomePujaInner() {
  </li>
  <li className="flex gap-2">
  <CheckCircle className="w-3.5 h-3.5 text-tulsi-green flex-shrink-0 mt-0.5" />
- Pandit arrives with all samagri
+ {HAS_HOME_PUJA_INCLUSIONS ? 'Pandit arrives with all samagri' : 'Materials and price are confirmed on that call'}
  </li>
  {/* LEG-03 (F223): read "Free cancellation 24 hours before" — a full-refund
      promise at the exact hour DEFAULT_CANCEL_POLICY drops to 75%, printed
@@ -712,10 +717,12 @@ function BookHomePujaInner() {
  <CheckCircle className="w-3.5 h-3.5 text-tulsi-green flex-shrink-0 mt-0.5" />
  {CANCELLATION_BADGE_LABEL}
  </li>
+ {HAS_HOME_PUJA_INCLUSIONS && (
  <li className="flex gap-2">
  <CheckCircle className="w-3.5 h-3.5 text-tulsi-green flex-shrink-0 mt-0.5" />
  Prasadam included
  </li>
+ )}
  </ul>
  </div>
  </aside>

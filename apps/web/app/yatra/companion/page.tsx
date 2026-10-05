@@ -23,13 +23,16 @@ import { formatINR } from '../../../lib/yatra-data';
 // companions Darshya has actually recruited and vetted. The eight invented
 // profiles in lib/yatra-data.ts are no longer rendered as bookable people.
 import { publishedCompanions } from '../../../lib/companion-roster';
+import { HAS_COMPANION_VETTING } from '../../../lib/launch-gates';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/yatra/companion' },
  title: 'Travel Companions for elderly yatris',
- description: 'Register interest in a travel companion for an elderly devotee on pilgrimage. Every companion we list must clear ID, background and first-aid checks before appearing here.',
+ description: HAS_COMPANION_VETTING
+ ? 'Register interest in a travel companion for an elderly devotee on pilgrimage. Every companion we list must clear ID, background and first-aid checks before appearing here.'
+ : 'Travel companions for elderly yatris are not yet listed on Darshya. Contact us to register interest.',
 };
 
 export default function CompanionListingPage() {
@@ -52,26 +55,32 @@ export default function CompanionListingPage() {
  </div>
 
  <h1 data-reveal="cinematic" className={H1.catalogue}>
- A verified companion for every step of your{' '}
+ {HAS_COMPANION_VETTING ? 'A verified companion for every step of your' : 'Travel companions for your'}{' '}
  <span className="text-highlight" style={{ color: 'var(--color-primary)' }}>sacred journey</span>
  </h1>
 
  <p data-reveal="up" data-delay="2" className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
- A companion assists an elderly devotee with mobility, medication reminders, logistics, photos and family updates. {rosterOpen
+ {HAS_COMPANION_VETTING
+ ? <>A companion assists an elderly devotee with mobility, medication reminders, logistics, photos and family updates. {rosterOpen
  ? 'Every companion listed below has cleared ID, background and first-aid checks.'
- : 'We are recruiting the first companions now — nobody is listed until they have cleared ID, background and first-aid checks in person.'}
+ : 'We are recruiting the first companions now — nobody is listed until they have cleared ID, background and first-aid checks in person.'}</>
+ : 'Companions are not yet listed on Darshya, and nobody can be booked today. This page is where they will appear. You can contact us to register interest.'}
  </p>
 
+ {HAS_COMPANION_VETTING && (
  <div data-reveal="fade" data-delay="3" className="mt-6 flex flex-wrap items-center gap-5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
  <span className="flex items-center gap-1.5"><BadgeCheck className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> ID check required to list</span>
  <span className="flex items-center gap-1.5"><Stethoscope className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> First-aid training required</span>
  <span className="flex items-center gap-1.5"><Navigation className="w-4 h-4" style={{ color: 'var(--color-primary)' }} /> Location shared with family</span>
  </div>
+ )}
  </div>
  </div>
  </section>
 
- {/* ═══ HOW IT WORKS ═════════════════════════════════════ */}
+ {HAS_COMPANION_VETTING && (
+ <>
+{/* ═══ HOW IT WORKS ═════════════════════════════════════ */}
  <section className="py-10 md:py-14" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>How it works</p>
@@ -100,6 +109,9 @@ export default function CompanionListingPage() {
  </div>
  </section>
 
+  </>
+ )}
+
  {/* ═══ COMPANION CARDS ═════════════════════════════════ */}
  <section className="py-10 md:py-14">
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,19 +131,17 @@ export default function CompanionListingPage() {
 
  {!rosterOpen && (
  <div className="rounded-xl p-6 md:p-8 max-w-2xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
- <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text)' }}>We are still building this roster</h3>
+ <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Companions are not yet listed</h3>
  <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-muted)' }}>
- Darshya has not yet signed and vetted any travel companions, so there is nobody to show you and
- nobody to book. We will not list a name until we have met that person, checked their government ID,
- taken up references and confirmed their first-aid training. Tell us your dates and we will call you
- as soon as a companion who fits is available.
+ Darshya has not signed any travel companions yet, so there is nobody to show you and nobody to
+ book. If you would like us to get in touch when this changes, contact us with your yatra dates.
  </p>
  <div className="flex items-center gap-3 flex-wrap">
- <Link href="/yatra/plan" className={buttonClass('primary', 'md', 'btn-press')}>
- Tell us your yatra plan <ArrowRight className="w-3.5 h-3.5" />
+ <Link href="mailto:care@darshya.online?subject=Travel%20companion%20interest" className={buttonClass('primary', 'md', 'btn-press')}>
+ Email us your interest <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  <Link href="tel:+919255109400" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
- <Phone className="w-3.5 h-3.5" /> Talk to an advisor
+ <Phone className="w-3.5 h-3.5" /> Call us
  </Link>
  </div>
  </div>
@@ -234,7 +244,9 @@ export default function CompanionListingPage() {
  </div>
  </section>
 
- {/* ═══ TRUST SECTION ═══════════════════════════════════ */}
+ {HAS_COMPANION_VETTING && (
+ <>
+{/* ═══ TRUST SECTION ═══════════════════════════════════ */}
  <section className="py-12 md:py-14" style={{ background: 'var(--color-surface)' }}>
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>Why trust us</p>
@@ -313,6 +325,9 @@ export default function CompanionListingPage() {
  </div>
  </section>
 
+  </>
+ )}
+
  {/* ═══ FINAL CTA ═════════════════════════════════════════ */}
  <section className="py-12 md:py-16" style={{ background: 'linear-gradient(135deg, var(--color-primary-highlight), var(--color-surface))' }}>
  <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -323,7 +338,7 @@ export default function CompanionListingPage() {
  <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
  {rosterOpen
  ? `Companion cost starts at ${formatINR(Math.min(...companions.map((c) => c.pricePerDay)))}/day. Book along with any yatra or standalone.`
- : 'Tell us your dates and we will quote a companion as soon as one is available in your region.'}
+ : 'Companions are not yet listed. Contact us if you would like to hear when that changes.'}
  </p>
  <div className="flex items-center justify-center gap-3 flex-wrap">
  <Link href="/yatra" className={buttonClass('primary', 'md', 'btn-press')}>

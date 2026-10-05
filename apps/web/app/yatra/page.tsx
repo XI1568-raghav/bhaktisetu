@@ -21,6 +21,7 @@ import {
 import ScrollReveal from '../../components/ScrollReveal';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_COMPANION_VETTING, HAS_PACKAGE_INCLUSIONS } from '../../lib/launch-gates';
 import {
  yatras,
  formatINR,
@@ -83,7 +84,9 @@ export default function YatraHubPage() {
  className="mt-4 prose-body leading-relaxed max-w-lg"
  style={{ color: 'var(--color-text-muted)' }}
  >
- Char Dham, 12 Jyotirlingas, Amarnath, Vaishno Devi — curated yatra packages with stays, helicopter options on selected routes and travel companions for elderly devotees.
+ {HAS_PACKAGE_INCLUSIONS
+ ? 'Char Dham, 12 Jyotirlingas, Amarnath, Vaishno Devi — curated yatra packages with stays, helicopter options on selected routes and travel companions for elderly devotees.'
+ : 'Char Dham, 12 Jyotirlingas, Amarnath, Vaishno Devi — yatra itineraries with indicative prices. Send an enquiry and our team confirms what a trip includes. Nothing is charged online.'}
  </p>
 
  <div data-reveal="spring" data-delay="3" className="mt-6 flex items-center gap-3 flex-wrap">
@@ -98,7 +101,7 @@ export default function YatraHubPage() {
  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
  style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}
  >
- <Users className="w-3.5 h-3.5" /> Book Companion
+ <Users className="w-3.5 h-3.5" /> {HAS_COMPANION_VETTING ? 'Book Companion' : 'Travel companions'}
  </Link>
  <a
  href="#packages"
@@ -112,9 +115,9 @@ export default function YatraHubPage() {
  {/* Trust badges */}
  <div data-reveal="fade" data-delay="4" className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl">
  {[
- { icon: Shield, label: 'Guided itineraries' },
- { icon: Plane, label: 'Helicopter options' },
- { icon: CheckCircle2, label: 'Inclusions listed per package' },
+ { icon: Shield, label: HAS_PACKAGE_INCLUSIONS ? 'Guided itineraries' : 'Day-wise itineraries' },
+ { icon: Plane, label: HAS_PACKAGE_INCLUSIONS ? 'Helicopter options' : 'Enquiry-based booking' },
+ { icon: CheckCircle2, label: HAS_PACKAGE_INCLUSIONS ? 'Inclusions listed per package' : 'Inclusions confirmed on enquiry' },
  { icon: Clock, label: 'Email support' },
  ].map((b) => (
  <div key={b.label} className="flex items-center gap-2">
@@ -210,7 +213,7 @@ export default function YatraHubPage() {
  <div className="aspect-[16/10] relative overflow-hidden">
  <img width={640} height={400} src={y.heroImage} alt={y.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
- {y.helicopterAvailable && (
+ {HAS_PACKAGE_INCLUSIONS && y.helicopterAvailable && (
  <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-white/90 backdrop-blur text-xs font-medium px-2 py-0.5 rounded-full" style={{ color: 'var(--color-primary)' }}>
  <Plane className="w-2.5 h-2.5" /> Heli option
  </div>
@@ -271,17 +274,20 @@ export default function YatraHubPage() {
   clear before we list them. The roster itself lives in
   lib/companion-roster.ts and is empty until someone real has been signed. */}
  <p data-reveal="up" data-delay="1" className="text-sm leading-relaxed mb-5" style={{ color: 'var(--color-text-muted)' }}>
- A companion handles logistics, mobility, medication reminders, photos and family updates — so your elderly parents can focus entirely on darshan. Nobody is listed until we have met them and checked their ID, references and first-aid training.
+ {HAS_COMPANION_VETTING
+ ? 'A companion handles logistics, mobility, medication reminders, photos and family updates — so your elderly parents can focus entirely on darshan. Nobody is listed until we have met them and checked their ID, references and first-aid training.'
+ : 'Travel companions for elderly devotees are not yet listed on Darshya, and nobody can be booked today. Contact us to register interest.'}
  </p>
  <Link
  href="/yatra/companion"
  data-reveal="spring" data-delay="2"
  className={buttonClass('primary', 'md', 'btn-press')}
  >
- <Heart className="w-3.5 h-3.5" /> How companions work <ArrowRight className="w-3.5 h-3.5" />
+ <Heart className="w-3.5 h-3.5" /> {HAS_COMPANION_VETTING ? 'How companions work' : 'Companion status'} <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
- <div data-reveal="glow" data-delay="1" className="grid grid-cols-2 gap-3">
+ {HAS_COMPANION_VETTING && (
+<div data-reveal="glow" data-delay="1" className="grid grid-cols-2 gap-3">
  {[
  { icon: Shield, t: 'Background check', s: 'Required before we list anyone' },
  { icon: Heart, t: 'First-aid training', s: 'Required before we list anyone' },
@@ -295,6 +301,7 @@ export default function YatraHubPage() {
  </div>
  ))}
  </div>
+ )}
  </div>
  </div>
  </section>
@@ -307,7 +314,7 @@ export default function YatraHubPage() {
  Can&apos;t find your perfect yatra?
  </h2>
  <p data-reveal="up" data-delay="1" className="prose-body max-w-md mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
- Pick your destinations, dates and preferences — our team will reply by email with a personalized itinerary.
+ Pick your destinations, dates and preferences, then email the plan to our team to ask for a quote.
  </p>
  <Link
  href="/yatra/plan"

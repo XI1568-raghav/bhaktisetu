@@ -171,7 +171,9 @@ describe('TC-06 — /yatra/companion', () => {
     render(CompanionListingPage());
     const text = bodyText();
     expect(text).toMatch(/No companions listed yet/i);
-    expect(text).toMatch(/has not yet signed and vetted any travel companions/i);
+    // 2026-10-05: reworded with the HAS_COMPANION_VETTING gate (no vetting process exists to name).
+    expect(text).toMatch(/has not signed any travel companions yet/i);
+    expect(text).toMatch(/nobody can be booked today/i);
   });
 
   it('states verification as a listing precondition, not as work already done', () => {

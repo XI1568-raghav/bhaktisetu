@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { COMPANY } from "../../lib/company";
+import { HAS_ADOPTION_EXTRAS } from "../../lib/launch-gates";
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
 
@@ -140,7 +141,18 @@ const featuredCows = [
  },
 ];
 
-const adoptionPlans = [
+// Claim-gating (2026-10-05): `features` is what a contribution gets today (it
+// goes to cow care at an approved gaushala; the donor gets a numbered receipt).
+// `extras` are per-donor deliverables — donor wall, certificate, photo/video
+// updates, health reports, visits, plaque, Gau Puja invitation — that no code
+// backs: nothing attaches a donor to a cow, no endpoint lets a gaushala post an
+// update or issue a certificate. They are shown only when HAS_ADOPTION_EXTRAS
+// flips (lib/launch-gates.ts); until then they render as "Coming soon".
+const RECEIPT_FEATURE = HAS_80G
+ ? "80G tax receipt"
+ : "Numbered donation receipt PDF (not a tax-exemption certificate)";
+
+const adoptionPlanDefs = [
  {
  id: "plan_daily",
  name: "Gau Seva",
@@ -148,9 +160,10 @@ const adoptionPlans = [
  price: "\u20B951",
  period: "/day",
  popular: false,
- features: [
+ features: ["Goes towards the daily feed and care of cows at an approved gaushala", RECEIPT_FEATURE],
+ extras: [
  "Daily feeding of one cow",
- "Photo updates from the gaushala when available",
+ "Photo updates from the gaushala",
  "Name on gaushala donor wall",
  "Digital seva certificate",
  ],
@@ -162,7 +175,8 @@ const adoptionPlans = [
  price: "\u20B93,000",
  period: "/month",
  popular: true,
- features: [
+ features: ["Goes towards a month of cow care at an approved gaushala", RECEIPT_FEATURE],
+ extras: [
  "Full monthly care of one cow",
  "Weekly photo & video updates",
  "Visit your cow anytime",
@@ -177,7 +191,8 @@ const adoptionPlans = [
  price: "\u20B930,000",
  period: "/year",
  popular: false,
- features: [
+ features: ["Goes towards a year of cow care at an approved gaushala", RECEIPT_FEATURE],
+ extras: [
  "Full annual care of one cow",
  "Weekly photo & video updates",
  "Unlimited visits",
@@ -193,7 +208,8 @@ const adoptionPlans = [
  price: "\u20B92,25,000",
  period: "one-time",
  popular: false,
- features: [
+ features: ["Goes towards long-term cow care at an approved gaushala", RECEIPT_FEATURE],
+ extras: [
  "Lifetime care of one cow",
  "Weekly photo & video updates",
  "Unlimited visits with family",
@@ -206,6 +222,12 @@ const adoptionPlans = [
  },
 ];
 
+const adoptionPlans = adoptionPlanDefs.map(({ features, extras, ...plan }) => ({
+ ...plan,
+ features: HAS_ADOPTION_EXTRAS ? [...features, ...extras] : features,
+ comingSoon: HAS_ADOPTION_EXTRAS ? [] : extras,
+}));
+
 const faqs = [
  {
  q: "How do I know my donation is being used properly?",
@@ -214,11 +236,15 @@ const faqs = [
  // product — GaushalaProfile.verified is never written, the admin path sets
  // `approved`, and no endpoint publishes a gaushala's finances. What IS true
  // is that a gaushala is reviewed by hand before it appears in the listing.
- a: "Photo updates of your cow are posted on the cow\'s page when the gaushala provides them; we do not promise a monthly schedule or delivery by WhatsApp or email. You can also visit the gaushala anytime during visiting hours to see your cow in person. Each gaushala listed on Darshya is reviewed and approved by us before it goes live; we do not audit their books, so treat the updates and your own visit as the evidence.",
+ a: HAS_ADOPTION_EXTRAS
+ ? "Photo updates of your cow are posted on the cow\'s page when the gaushala provides them; we do not promise a monthly schedule or delivery by WhatsApp or email. You can also visit the gaushala anytime during visiting hours to see your cow in person. Each gaushala listed on Darshya is reviewed and approved by us before it goes live; we do not audit their books, so treat the updates and your own visit as the evidence."
+ : "Your contribution is receipted with a numbered PDF. Photo updates of your cow, health reports and visits are coming soon; they are not part of a contribution today. Each gaushala listed on Darshya is reviewed and approved by us before it goes live, but we do not audit their books or publish their finances.",
  },
  {
- q: "Can I visit the cow I have adopted?",
- a: "Absolutely! All our gaushala partners allow adopters to visit their cows during visiting hours. Annual and Lifetime plan adopters get unlimited family visits. We recommend calling ahead to schedule your visit.",
+ q: HAS_ADOPTION_EXTRAS ? "Can I visit the cow I have adopted?" : "Can I visit a gaushala?",
+ a: HAS_ADOPTION_EXTRAS
+ ? "Absolutely! All our gaushala partners allow adopters to visit their cows during visiting hours. Annual and Lifetime plan adopters get unlimited family visits. We recommend calling ahead to schedule your visit."
+ : "Visits are not arranged through Darshya yet; adopter visits are coming soon. Contact a gaushala directly to ask about visiting.",
  },
  {
  q: "Is my donation tax-deductible?",
@@ -238,7 +264,9 @@ const faqs = [
  },
  {
  q: "Can I gift a cow adoption to someone?",
- a: "Yes! Cow adoption makes a deeply meaningful and spiritual gift. You can gift any plan to a loved one, and they will receive a beautiful adoption certificate along with all regular updates.",
+ a: HAS_ADOPTION_EXTRAS
+ ? "Yes! Cow adoption makes a deeply meaningful and spiritual gift. You can gift any plan to a loved one, and they will receive a beautiful adoption certificate along with all regular updates."
+ : "Gifting a cow adoption, with a certificate for the recipient, is coming soon. Today a contribution is made in your own name and you receive the receipt.",
  },
  {
  q: "What breeds of cows are available for adoption?",
@@ -297,9 +325,8 @@ export default function GaushalaPage() {
  </span>
  </h1>
  <p className="prose-lead text-surface-500 leading-relaxed mb-8 max-w-2xl mx-auto">
- Support gaushalas across India. See photo
- updates of your adopted cow where the gaushala posts them, visit by arrangement, and contribute to the
- protection of India's sacred cows.
+ Support gaushalas across India. Choose a gau seva plan, get a numbered receipt for
+ every contribution, and contribute to the protection of India's sacred cows.{!HAS_ADOPTION_EXTRAS && " Photo updates, certificates and visits are coming soon."}
  </p>
  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
  <a
@@ -338,12 +365,12 @@ export default function GaushalaPage() {
  {
  icon: Camera,
  label: "Photo Updates",
- sub: "Posted by the gaushala when available",
+ sub: HAS_ADOPTION_EXTRAS ? "Posted by the gaushala when available" : "Coming soon",
  },
  {
  icon: MapPin,
- label: "Visit Anytime",
- sub: "Open-door policy",
+ label: HAS_ADOPTION_EXTRAS ? "Visit Anytime" : "Gaushala Visits",
+ sub: HAS_ADOPTION_EXTRAS ? "Open-door policy" : "Coming soon",
  },
  {
  icon: FileText,
@@ -543,6 +570,11 @@ export default function GaushalaPage() {
  </li>
  ))}
  </ul>
+ {plan.comingSoon.length > 0 && (
+ <p className="mb-6 text-xs text-surface-500">
+ Coming soon: {plan.comingSoon.join(", ").replace(/^./, (c) => c.toLowerCase())}.
+ </p>
+ )}
  {/* LC-09: was a bare <button> with no onClick inside a plain <div> —
      all four tiers dead, with no wrapping link to fall back to. The
      cow detail page already deep-links this way (app/gaushala/[id]/

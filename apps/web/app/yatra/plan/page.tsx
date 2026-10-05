@@ -431,12 +431,15 @@ export default function CustomPlanPage() {
  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>For {data.adults + data.seniors} travelers · {durationDays} days · {data.budget} tier</p>
 
  <div className="mt-4 pt-4 space-y-2 text-xs" style={{ borderTop: '1px solid var(--color-divider)' }}>
- <p style={{ color: 'var(--color-text-muted)' }}>This is a preliminary estimate. Our advisor will share a detailed quote with stays, transport and inclusions within 24 hours.</p>
+ <p style={{ color: 'var(--color-text-muted)' }}>This is a preliminary estimate generated on this page from the choices you made. It is not a quote, and it is not sent to us unless you email it. Stays, transport and inclusions are confirmed by our team when you enquire.</p>
  </div>
 
- <button className={buttonClass('primary', 'md', 'mt-4 w-full btn-press')}>
- Request Advisor Quote <ArrowRight className="w-3.5 h-3.5" />
- </button>
+ <a
+ href={`mailto:care@darshya.online?subject=${encodeURIComponent('Yatra quote request')}&body=${encodeURIComponent(`I would like a quote for a yatra.\n\nTravelers: ${data.adults + data.seniors}\nDuration: ${durationDays} days\nBudget tier: ${data.budget}\nPreliminary estimate shown on the page: ${formatINR(generated.estimate)}\n\nPlease contact me to confirm what is included.`)}`}
+ className={buttonClass('primary', 'md', 'mt-4 w-full btn-press')}
+ >
+ Email us to request a quote <ArrowRight className="w-3.5 h-3.5" />
+ </a>
  <Link href="/yatra" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg" style={{ background: 'var(--color-surface-offset)', color: 'var(--color-text)' }}>
  Or browse ready yatras
  </Link>
