@@ -60,7 +60,7 @@ describe('CT-UI-1 — /temple-portal subheading never renders bare separators', 
   });
 
   it('shows the one part it has, without a dangling comma', async () => {
-    dashboardFetch({ templeName: 'Shri Ram Mandir', templeCity: 'Ayodhya', templeState: null });
+    dashboardFetch({ templeName: 'Shri Ram Mandir', city: 'Ayodhya', state: null });
     render(<TempleDashboard />);
 
     await screen.findByText('Shri Ram Mandir');
@@ -68,7 +68,7 @@ describe('CT-UI-1 — /temple-portal subheading never renders bare separators', 
   });
 
   it('still joins city and state when both are present', async () => {
-    dashboardFetch({ templeName: 'Shri Ram Mandir', templeCity: 'Ayodhya', templeState: 'Uttar Pradesh' });
+    dashboardFetch({ templeName: 'Shri Ram Mandir', city: 'Ayodhya', state: 'Uttar Pradesh' });
     render(<TempleDashboard />);
 
     await screen.findByText('Shri Ram Mandir');
