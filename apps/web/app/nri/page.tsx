@@ -118,8 +118,8 @@ export const metadata: Metadata = {
 const benefits = [
   {
     icon: Globe2,
-    title: 'No NRI surcharge on bookings',
-    body: 'Pay domestic prices on every puja, donation, and prasad shipment. Saves $30-200 per booking depending on temple tier.',
+    title: 'One price, in INR',
+    body: 'Everyone pays the listed INR price, from any country; there is no NRI surcharge on bookings today, with or without this tier. Your bank converts at its own rate.',
   },
   {
     icon: Calendar,
@@ -146,13 +146,13 @@ const benefits = [
   {
     icon: MessageCircle,
     title: 'Unlimited AI Pandit chat',
-    body: 'No 5-message daily cap. Ask scripture questions, muhurat lookups, panchang queries — anytime, any language.',
+    body: 'No 5-message monthly cap on the free tier. Ask scripture questions, muhurat lookups, panchang queries — anytime, any language.',
   },
 ];
 
 const comparison = [
   { feature: 'AI Pandit messages', free: '5 / month', perPuja: '5 / month', nri: 'Unlimited' },
-  { feature: 'Booking surcharge', free: 'NRI 9-10× rate', perPuja: 'NRI 9-10× rate', nri: 'Domestic rate' },
+  { feature: 'Booking price', free: 'Listed INR price', perPuja: 'Listed INR price', nri: 'Listed INR price' },
   { feature: 'Priority booking window', free: 'No', perPuja: 'No', nri: '7 days early' },
   { feature: 'Weekly priest video call', free: 'No', perPuja: 'No', nri: 'Free, 30 min' },
   { feature: 'Ads', free: 'Yes', perPuja: 'Yes', nri: 'None' },

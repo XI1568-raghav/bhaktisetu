@@ -168,9 +168,10 @@ export default function PitchPage() {
             Devotee, Priest, Astrologer, Wellness, Gaushala, Yatra, Temple Admin, Platform Admin —
             each with KYC, payouts, dashboards. Not a booking widget. A two-sided market.
           </Card>
-          <Card title={HAS_80G ? '80G + INR/USD priced' : 'Receipted + INR/USD priced'}>
-            Auto-generated numbered donation receipts (DR-YYYYMMDD-XXXX){HAS_80G ? ', 80G-valid' : ' — proof of payment, not yet an 80G certificate'}. Native Razorpay. NRI pricing
-            9-10× domestic, configured per puja. Built for Indian + diaspora from day zero.
+          <Card title={HAS_80G ? '80G + INR priced' : 'Receipted + INR priced'}>
+            Auto-generated numbered donation receipts (DR-YYYYMMDD-XXXX){HAS_80G ? ', 80G-valid' : ' — proof of payment, not yet an 80G certificate'}. Native Razorpay, billed in INR (international cards accepted
+            where Razorpay enables them). NRI premium pricing is a planned tier, not live.
+            Built for Indian + diaspora from day zero.
           </Card>
         </div>
       </Slide>
@@ -244,7 +245,7 @@ export default function PitchPage() {
             <tr>
               <td>Payments</td>
               <td>Razorpay</td>
-              <td>INR + 9-10× NRI pricing native</td>
+              <td>INR billing; international cards via Razorpay</td>
             </tr>
             <tr>
               <td>Storage</td>
