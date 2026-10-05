@@ -4,6 +4,7 @@ import { BookingStatus, StreamStatus, StreamProvider } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { provedBookingIds, shareRelease } from '../lib/temple-share-release.js';
+import { getLinkedTempleId } from '../services/temple-manager-link.service.js';
 import { cancelInvite, createInvite, listInvitesForTemple } from '../services/temple-priest-invite.service.js';
 
 /**
@@ -136,6 +137,9 @@ export type TempleLinkReason = 'linked' | 'no_temple_profile' | 'not_approved' |
 async function resolveManagerTemple(
   userId: string,
 ): Promise<{ templeId: string | null; reason: TempleLinkReason }> {
+  // An admin's explicit link (temple_manager_links) wins over the name match.
+  const explicit = await getLinkedTempleId(userId);
+  if (explicit) return { templeId: explicit, reason: 'linked' };
   const profile = await prisma.templeProfile.findUnique({
     where: { userId },
     select: { templeName: true, approved: true },
@@ -162,7 +166,7 @@ const TEMPLE_LINK_MESSAGE: Record<Exclude<TempleLinkReason, 'linked'>, string> =
   not_approved:
     'Your temple profile is awaiting approval by the Darshya team. Once it is approved your temple will be linked and you can list pujas, see bookings and donations.',
   no_matching_temple:
-    'Your temple profile name does not match any temple listed on Darshya, so offerings cannot be attached. Check the spelling on your profile or contact support to get your temple linked.',
+    'Your temple profile is not connected to a public temple page on Darshya yet; the Darshya team connects it by hand, and your bookings and offerings will appear here once that is done.',
 };
 
 /** 409 with the real blocker, instead of the raw "No matched Temple" string. */
