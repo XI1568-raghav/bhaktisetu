@@ -14,6 +14,7 @@ import {
  CANCELLATION_CUTOFF_HOURS,
  PARTIAL_REFUND_PERCENT,
  REFUND_SETTLEMENT_BANDS,
+ REFUND_INTERNATIONAL_NOTE,
 } from "../../lib/cancellation-policy";
 
 /**
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
  images: ['/images/golden-temple-og.jpg'],
  title: "Refund & Cancellation Policy | Darshya",
  description:
- "Refund timelines and rules for pujas, astrology, donations, and store orders. Refunds via Razorpay in 5\u20137 business days.",
+ "Refund timelines and rules for pujas, astrology, donations, and store orders. Refunds go back to the original payment method in 5\u20137 business days; international cards can take longer.",
  url: "https://darshya.online/refunds",
  type: "website",
  },
@@ -381,8 +382,9 @@ export default function RefundsPage() {
      half of the same unbacked promise removed from the table in section
      2. Refunds are never paid as credit: no call site writes a
      `refund_to_credit` CreditLedgerEntry, so every refund lands back on
-     the payment method and only the four bands above apply. */}
+     the payment method and only the bands above apply. */}
  </ul>
+ <p>{REFUND_INTERNATIONAL_NOTE}</p>
  </RefundSection>
 
  <RefundSection title="9. How to Request a Refund">

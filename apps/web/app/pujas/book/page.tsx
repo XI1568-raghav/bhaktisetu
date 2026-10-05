@@ -2224,7 +2224,7 @@ function PujaBookingInner() {
  {wantsPrasad ? (
  <div>
  <p className="mb-4 text-sm text-surface-500">
- Sacred prasad from the temple will be delivered to your address.
+ Prasad will be sent to this address. No delivery date is promised; your booking page shows a tracking ID once one is recorded.
  <span className="ml-1 font-semibold text-saffron-600">
  +₹{formatInr(PRASAD_DELIVERY_FEE_INR)}
  </span>
@@ -2258,8 +2258,7 @@ function PujaBookingInner() {
  <p className="mt-1 text-xs text-red-500">{errors.addr_country}</p>
  ) : (
  <p className="mt-1 text-xs text-surface-400">
- Prasad ships worldwide. Payment is always taken in INR — your bank
- applies its own conversion rate.
+ Payment is always taken in INR — your bank applies its own conversion rate. We do not promise prasad delivery to every country; for an address outside India, write to support first.
  </p>
  )}
  </div>
@@ -2560,7 +2559,7 @@ function PujaBookingInner() {
  </span>
  <span className="flex items-center gap-1 text-xs text-surface-500">
  <Video className="h-3.5 w-3.5 text-saffron-500" />
- Video Proof Guaranteed
+ Video Proof Included
  </span>
  {/* DB-06 (2026-08-12): this badge read "100% Money-Back" directly above
      the Pay button. No dissatisfaction refund exists anywhere in the API —

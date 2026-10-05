@@ -124,7 +124,7 @@ describe('DB-06 — the payment step no longer badges "100% Money-Back"', () => 
 
   it('the trust strip keeps the two claims that ARE true', () => {
     expect(wizardSrc).toContain('Secure Payment');
-    expect(wizardSrc).toContain('Video Proof Guaranteed');
+    expect(wizardSrc).toContain('Video Proof Included');
   });
 
   it('the terms checkbox states the refund ladder, not just the 24h cut-off', () => {

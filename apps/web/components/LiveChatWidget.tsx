@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MessageSquare, X, Send, LifeBuoy, Sparkles, UserCircle, ArrowRight, Bot } from 'lucide-react';
 import { findAutoReply } from '../lib/support';
+import { COMPANY } from '../lib/company';
 import { buttonClass } from './ui/button-recipe';
 
 type QuickAction = { label: string; href: string };
@@ -118,7 +119,7 @@ export function LiveChatWidget() {
  {
  id: `s-${Date.now()}`,
  author: 'system',
- body: "I'm escalating this to our human support team. Create a ticket below and we'll reply within 4 hours.",
+ body: `I'm escalating this to our human support team. Create a ticket below. Support replies ${COMPANY.supportHours.toLowerCase()}.`,
  createdAt: new Date().toISOString(),
  },
  ]);
@@ -218,7 +219,7 @@ export function LiveChatWidget() {
  </div>
  <div className="text-xs text-white/80 flex items-center gap-1">
  <span className="w-1.5 h-1.5 rounded-full bg-green-300" />
- {escalated ? 'Escalated to human agent' : 'Usually replies instantly'}
+ {escalated ? 'Escalated to support team' : 'Automated assistant'}
  </div>
  </div>
  <button
@@ -301,7 +302,7 @@ export function LiveChatWidget() {
  Talk to Human Agent
  </button>
  <p className="text-xs text-amber-800 mt-1.5 text-center">
- We&apos;ll save this conversation and a human agent will reply within 4 hours.
+ We&apos;ll save this conversation for a person on the support team. Support replies {COMPANY.supportHours.toLowerCase()}.
  </p>
  </div>
  )}

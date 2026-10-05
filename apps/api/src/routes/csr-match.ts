@@ -144,7 +144,7 @@ export async function csrMatchRoutes(server: FastifyInstance) {
       JSON.stringify(parsed.data.gaushalaFilter ?? []),
     );
     server.log.info({ name: parsed.data.name, contactEmail: parsed.data.contactEmail }, 'csr corporate enrollment');
-    return { ok: true, message: 'Enrollment received. Our team will reach out within 2 business days.' };
+    return { ok: true, message: 'Enrollment received. Our team will reach out; we do not promise a reply time.' };
   });
 
   // Authenticated dashboard view of this corporate's matches.

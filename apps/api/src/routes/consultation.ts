@@ -574,7 +574,7 @@ export async function consultationRoutes(server: FastifyInstance) {
       return reply.code(409).send({
         code: 'ASTROLOGER_NOT_BOOKABLE',
         error:
-          'This astrologer is not available for booking. Browse verified astrologers at /astrology/astrologers/live.',
+          'This astrologer is not available for booking. Browse approved astrologers at /astrology/astrologers/live.',
       });
     }
     const p = await prisma.astrologerProfile.findUnique({ where: { id: astrologerId } });

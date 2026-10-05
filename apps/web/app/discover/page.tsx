@@ -129,7 +129,7 @@ const GROUPS: DiscoverGroup[] = [
       { label: 'Today’s Panchang', href: '/today', description: 'Day-of-week deity, current mantra, today’s tithi and the next upcoming festival.' },
       { label: 'Hindu Calendar 2026', href: '/calendar', description: 'Month-by-month festival calendar with fasting flags and bookable-puja CTAs.' },
       { label: 'Shloka Cards', href: '/shloka-card', description: 'Shareable WhatsApp / X / FB cards from any shloka — three starter presets.' },
-      { label: 'Gift a Puja', href: '/gift', description: `NRI senders gift a puja to family in India with WhatsApp delivery and a ${RECEIPT_NOUN}.` },
+      { label: 'Gift a Puja', href: '/gift', description: `NRI senders gift a puja to family in India, with video proof on the booking page and a ${RECEIPT_NOUN}.` },
       { label: 'FAQs', href: '/faqs', description: '~20 questions across booking, darshan, refunds, NRI lane and yatra packages.' },
       { label: 'Why Darshya', href: '/why-darshya', description: '14-row honest comparison vs Sri Mandir, Utsav and AstroSage.' },
       { label: 'Kundli Matchmaking', href: '/matchmaking', description: 'Free Ashtakoot 36-point Guna Milan with optional pandit consult.' },

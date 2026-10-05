@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { REFUND_DAYS_LABEL, REFUND_INTERNATIONAL_CARD_LABEL } from './refund-timing.js';
 
 /**
  * Single source of truth for transactional email.
@@ -430,11 +431,12 @@ export function refundProcessedEmail(params: {
       <strong>Temple:</strong> ${esc(templeName)}<br>
       <strong>Booking:</strong> ${esc(bookingNumber)}</p>
       <p>The amount has been returned to the payment method you used. Banks typically take
-      5-7 business days to post it to your statement.</p>
-      <p style="font-size:12px;color:#999;">If you do not see it after 7 business days, reply to this
+      ${REFUND_DAYS_LABEL} to post it to your statement. International cards can take
+      ${REFUND_INTERNATIONAL_CARD_LABEL}, which is set by your card issuer and not by Darshya.</p>
+      <p style="font-size:12px;color:#999;">If you do not see it after that, reply to this
       email with your booking number and we will trace it with the payment gateway.</p>
     `),
-    text: `Namaste ${devoteeName}, your refund is on its way.\n\n${amountText}Puja: ${pujaName}\nTemple: ${templeName}\nBooking: ${bookingNumber}\n\nThe amount has been returned to your original payment method. Banks typically take 5-7 business days to post it.`,
+    text: `Namaste ${devoteeName}, your refund is on its way.\n\n${amountText}Puja: ${pujaName}\nTemple: ${templeName}\nBooking: ${bookingNumber}\n\nThe amount has been returned to your original payment method. Banks typically take ${REFUND_DAYS_LABEL} to post it; international cards can take ${REFUND_INTERNATIONAL_CARD_LABEL} (set by your card issuer, not by Darshya).`,
   };
 }
 

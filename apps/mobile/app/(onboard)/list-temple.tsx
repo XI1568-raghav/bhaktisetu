@@ -3,7 +3,7 @@ import { HAS_80G } from '../../lib/eighty-g';
 
 const BENEFITS = [
   {
-    title: 'Live darshan to 10,000+ devotees',
+    title: 'Take live darshan online',
     body: 'Stream daily aarti and special pujas to a verified devotee audience across India and the diaspora.',
   },
   {
@@ -27,7 +27,7 @@ export default function ListTempleScreen() {
     <OnboardScreen
       role="TEMPLE"
       eyebrow="For Temple Trusts"
-      title="Reach 10,000+ devotees on Darshya"
+      title="List your temple on Darshya"
       subtitle={`List your temple in minutes. Take live darshan, puja bookings and ${HAS_80G ? '80G donations' : 'donations'} online — with transparent payouts.`}
       benefits={BENEFITS}
       ctaLabel="Apply to list my temple"

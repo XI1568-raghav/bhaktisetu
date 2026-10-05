@@ -221,8 +221,8 @@ export default function YatraDetailScreen() {
             <Text style={styles.cardBody}>
               This is a curated destination, so tier, dates, pickup city, traveller details and
               add-ons are all part of the request. The full booking flow collects them and sends
-              one request to the yatra desk, which confirms availability and emails your invoice
-              within 24 hours.
+              one request to the yatra desk, which confirms availability and sends your invoice;
+              no reply time is promised.
             </Text>
             {/*
               PAR-18 replaced a wa.me placeholder here with an inline one-shot

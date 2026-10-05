@@ -179,8 +179,8 @@ function ProviderKycContent() {
  </h1>
  <p className="text-sm text-surface-500">
  Submit your Aadhaar, PAN, and bank details. KYC is required before
- we can release your first payout. Verification typically completes
- within 2 business days.
+ we can release your first payout. The status shown here
+ updates as it is reviewed; no review time is promised.
  </p>
  </div>
 

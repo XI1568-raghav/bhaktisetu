@@ -58,11 +58,11 @@ export const FAQ_GROUPS: FaqGroup[] = [
     faqs: [
       {
         q: 'How do I book a puja online on Darshya?',
-        a: `Pick a puja from our /pujas catalogue, choose a pandit and temple, enter the sankalp details (your name, gotra, intent), pick a date, and pay. You'll receive a booking number (format BS-YYYYMMDD-XXXXX), a WhatsApp confirmation, and video proof of the puja, which we aim to upload within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony.`,
+        a: `Pick a puja from our /pujas catalogue, choose a pandit and temple, enter the sankalp details (your name, gotra, intent), pick a date, and pay. You'll receive a booking number (format BS-YYYYMMDD-XXXXX), a booking page that always shows the current status, and video proof of the puja, which we aim to upload within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony.`,
       },
       {
         q: 'What is video proof and is it mandatory?',
-        a: `Video proof is a 5-10 minute recording showing the pandit performing your puja with your sankalp named aloud. It is mandatory for every puja booking on Darshya. We aim to upload it to your account within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony, and it stays downloadable for 90 days. If nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write to ${COMPANY.supportEmail} — a person reviews it and the refund is full where the pandit is at fault.`,
+        a: `Video proof is a recording of the pandit performing your puja. It is mandatory for every puja booking on Darshya. We aim to upload it to your account within ${COMPANY.refunds.videoProofTargetLabel} of the ceremony, and it stays downloadable for 90 days. If nothing has arrived ${COMPANY.refunds.missingVideoEscalationHours} hours after your slot, write to ${COMPANY.supportEmail} — a person reviews it and the refund is full where the pandit is at fault.`,
       },
       {
         q: 'Can I cancel or reschedule a puja booking?',
@@ -70,7 +70,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: 'Will I receive prasad at my home address?',
-        a: 'Yes, prasad delivery is included with most puja packages. We use registered postal courier and delivery takes 5-10 working days within India and 10-20 days for NRI addresses. Prasad consists of consecrated items like sacred thread, kumkum, vibhuti, sweets, or a coconut depending on the puja type.',
+        a: 'Prasad delivery is an optional flat ₹150 add-on that you switch on while booking, with the address you enter there. It is not included in the puja price, and we do not promise a delivery date, courier or destination country. Your booking page shows a tracking ID once one is recorded.',
       },
       {
         // TC-08 — the previous answer published a four-step vetting process
@@ -142,11 +142,11 @@ export const FAQ_GROUPS: FaqGroup[] = [
           },
       {
         q: 'What payment methods do you accept?',
-        a: 'Domestic India: UPI (all apps), credit/debit cards (Visa/Mastercard/RuPay), net banking, wallets (Paytm, PhonePe, Amazon Pay). NRI users: international credit cards where your card issuer and Razorpay allow international payments, billed in INR. We do not accept cash on delivery or cheques.',
+        a: 'Domestic India: UPI (all apps), credit/debit cards (Visa/Mastercard/RuPay), net banking, wallets (Paytm, PhonePe, Amazon Pay). NRI users: international credit cards where your card issuer and Razorpay allow international payments, billed in INR. Cash on Delivery is offered only at store checkout, not for puja bookings; we do not accept cheques.',
       },
       {
         q: 'How long do refunds take?',
-        a: `${REFUND_SETTLEMENT_SENTENCE} You receive an email and WhatsApp notification when the refund is initiated. These are the same bands published on our Refund Policy page — we do not quote a different timeline anywhere.`,
+        a: `${REFUND_SETTLEMENT_SENTENCE} Your booking page shows the status of the refund. These are the same bands published on our Refund Policy page — we do not quote a different timeline anywhere.`,
       },
     ],
   },
@@ -157,11 +157,11 @@ export const FAQ_GROUPS: FaqGroup[] = [
     faqs: [
       {
         q: 'I live abroad — can I book a puja for my family in India?',
-        a: 'Yes, this is one of our most popular use cases. You book online from anywhere, your family in India can attend in person if they wish, or the entire puja can be conducted with only your sankalp recited by the pandit. Video proof is delivered to you via WhatsApp/email regardless of location.',
+        a: 'Yes, this is one of our most popular use cases. You book online from anywhere, your family in India can attend in person if they wish, or the entire puja can be conducted with only your sankalp recited by the pandit. Video proof is posted to your booking page regardless of location.',
       },
       {
         q: 'Can I gift a puja to someone in India?',
-        a: 'Yes, our Gift Puja feature lets you (NRI sender) pay for a puja and have video proof + WhatsApp confirmation sent to a recipient in India. The recipient receives the sankalp in their name. Available at /gift on our site.',
+        a: 'Yes, our Gift Puja feature lets you (NRI sender) pay for a puja and name a recipient in India. The sankalp is recited in the recipient\'s name and the video proof appears on your booking page. Available at /gift on our site.',
       },
       // TC-03 / TC-04 / TC-13 — this answer sold nri_premium_yearly at ₹5,000
       // a year with all six of its benefits, every one of which carries
@@ -189,7 +189,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     faqs: [
       {
         q: 'Do you book full yatra packages (hotel + transport + temple darshan)?',
-        a: 'Yes, our yatra desk handles end-to-end pilgrimage planning — Char Dham, 12 Jyotirlinga, Sapta Puri, Pancha Bhoota and custom itineraries. We coordinate hotels (verified ratings), transport (private cab/bus), VIP darshan slots where available, and meals. Inquiry-only model: submit at /yatra/{slug}/book and our team responds within 24 hours.',
+        a: 'Yes, our yatra desk handles end-to-end pilgrimage planning — Char Dham, 12 Jyotirlinga, Sapta Puri, Pancha Bhoota and custom itineraries. We coordinate hotels, transport (private cab/bus), VIP darshan slots where available, and meals. Inquiry-only model: submit at /yatra/{slug}/book and our team replies by email.',
       },
       {
         q: 'What is the best time for Char Dham yatra?',

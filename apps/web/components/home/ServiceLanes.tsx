@@ -85,7 +85,7 @@ const BOOKED_LANES: Lane[] = [
     icon: Sparkles,
     accent: 'indigo',
     title: 'Talk to an astrologer',
-    blurb: 'Kundli, muhurat, dosha remedies — with a verified Vedic astrologer, one to one.',
+    blurb: 'Kundli, muhurat, dosha remedies — with a approved Vedic astrologer, one to one.',
     meta: 'From ₹15/min',
     href: '/astrology',
   },

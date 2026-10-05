@@ -57,7 +57,7 @@ export const metadata: Metadata = {
  // TC-08: "Verified pandits" and a "Verified Indian Temples" title named a
  // vetting step nothing performs — the temple list is filtered on
  // isActive, and Priest.isVerified has no writer outside prisma/seed.ts.
- "Book authentic pujas at renowned temples across India. Video proof of every ceremony, live video streaming, worldwide prasad delivery to your doorstep, and international cards billed in INR. Choose from a curated catalogue of sacred Hindu rituals.",
+ "Book authentic pujas at renowned temples across India. Video proof of every ceremony (recorded, not streamed live), optional prasad delivery, and payment billed in INR. Choose from a curated catalogue of sacred Hindu rituals.",
 };
 
 // DB-04 / PF-02 (2026-08-12): these four lists used to be rendered into

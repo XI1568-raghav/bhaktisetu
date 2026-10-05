@@ -692,7 +692,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Avoid for new beginnings — aparahna is for ancestral karma settlement', 'Avoid for weddings or auspicious life-cycle samskaras'],
     spiritualSignificance: 'Aparahna means later-half-day. Classical Hindu calendar divides daylight into five parts; the afternoon segment three hours after noon is considered the time when the pitru-loka (ancestor realm) is most receptive to offerings from descendants. All shraddha karma is mandated by Manusmriti and Yajnavalkya Smriti to occur during aparahna for the offering to actually reach the ancestors.',
     howToCalculate: 'Per local solar noon, count 3-5 hours forward. Apps display per-city. Pitru Paksha (Bhadrapad Krishna Paksha, ~Sep-Oct) is the most active 16-day window. Within each day of Pitru Paksha, the aparahna kal is when the family priest conducts the tarpana ceremony.',
-    modernApplication: 'NRI families particularly value aparahna timing because it falls in the afternoon IST — convenient for live-streaming pind daan ceremonies from Gaya or Kashi to families in US (early morning) and UK (late morning). Darshya shraddha booking workflow defaults to aparahna scheduling and offers IST live-stream to NRI family members.',
+    modernApplication: 'NRI families particularly value aparahna timing because it falls in the afternoon IST — convenient for families in the US (early morning) and UK (late morning) for ceremonies at Gaya or Kashi. Darshya delivers a recording of a booked ceremony after it ends; it does not live-stream bookings.',
   },
   {
     slug: 'abhijit-nakshatra-muhurat',
@@ -737,7 +737,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Inauspicious activities — Pradosh amplifies karma', 'Bhadra overlap'],
     spiritualSignificance: 'Pradosh literally means twilight + ruler — the time when Shiva and Parvati grant audience to devotees. Per Shiva Mahapurana, all who worship Shiva at Pradosh window receive the equivalent of one full year of Shiva worship. Recommended for Sade Sati relief, marital harmony, and removal of family curses. Particularly potent on Soma Pradosh (Monday) and Shani Pradosh (Saturday) variants.',
     howToCalculate: 'Identify Trayodashi tithi in panchang. Pradosh begins 1.5 hours after local sunset and continues for 1.5 hours. Apps display per-city. Special variants: Soma Pradosh (Monday Trayodashi), Bhauma Pradosh (Tuesday), Shani Pradosh (Saturday) — each carries amplified benefit for specific life issues.',
-    modernApplication: 'NRI Hindu families particularly value Pradosh because it falls in convenient afternoon/evening IST — convenient for live-streaming Rudrabhishek from Kashi or Mahabaleshwar to US/UK morning. Darshya Pradosh booking workflow displays the precise 1.5hr window for the user\'s city.',
+    modernApplication: 'NRI Hindu families particularly value Pradosh because it falls in convenient afternoon/evening IST — convenient for US/UK morning, with a Rudrabhishek at Kashi or Mahabaleshwar recorded for you. Darshya Pradosh booking workflow displays the precise 1.5hr window for the user\'s city.',
   },
   {
     slug: 'ekadashi-muhurat',
@@ -767,7 +767,7 @@ export const MUHURATS: Muhurat[] = [
     avoid: ['Major auspicious life events during the actual transit hour (only)', 'Beginning new business ventures during Kshaya Sankranti (declining sun)', 'Eating non-vegetarian food during Sankranti window'],
     spiritualSignificance: 'Sankranti literally means good crossing — the moment Sun enters a new zodiac sign. Considered cosmically important because the Sun has direct influence on Earth through its annual ecliptic journey. Makar Sankranti (Sun enters Capricorn, ~Jan 14) is the most celebrated, marking the start of Uttarayana (northern journey of Sun) considered the auspicious half of the year per Mahabharata.',
     howToCalculate: 'Calculate based on Sun sidereal longitude crossing zodiac sign boundary. Apps publish exact transit time per Sankranti. The window of auspiciousness extends 30 ghatikas (12 hours) before and 30 ghatikas after for charity + bathing.',
-    modernApplication: 'Makar Sankranti drives 50M+ pilgrim bathings at Ganga, Yamuna, Godavari, and Kapilatheertham annually. Darshya features per-Sankranti livestream from major sacred bathing ghats (Prayagraj Triveni Sangam, Haridwar Har-ki-Pauri) for NRI families who cannot physically attend.',
+    modernApplication: 'Makar Sankranti drives 50M+ pilgrim bathings at Ganga, Yamuna, Godavari, and Kapilatheertham annually. NRI families who cannot attend can book a puja on their behalf; a recording follows the ceremony.',
   },
   {
     slug: 'amavasya-muhurat',

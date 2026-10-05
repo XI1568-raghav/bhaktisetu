@@ -239,7 +239,7 @@ export default function CompanionListingPage() {
  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
  <p data-reveal="fade" className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-primary)' }}>Why trust us</p>
  <h2 data-reveal="spring" className="text-xl sm:text-2xl font-semibold tracking-tight mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
- Family peace-of-mind guaranteed
+ What we require before a companion is listed
  </h2>
 
  <div data-reveal="up" className="grid md:grid-cols-4 gap-4">
@@ -297,8 +297,8 @@ export default function CompanionListingPage() {
  { q: 'Can I choose a specific companion?', a: rosterOpen ? 'Yes. Browse the roster, pick one who matches your language, regional familiarity and specialization, and we confirm availability with you.' : 'Not yet — no companions are listed. Tell us the language, regional familiarity and specialization you need and we will come back to you when we have matched someone.' },
  { q: 'Does the companion need separate hotel booking?', a: 'No. Companion stay is covered in their daily rate. They share accommodation arrangements made by Darshya or stay in adjacent rooms.' },
  { q: 'Can the companion administer medicines?', a: 'They can remind and assist with self-administration of prescribed oral medicines. For injections/IV, a nurse can be booked separately.' },
- { q: 'What if the companion gets sick?', a: 'We provide a backup companion within 12 hours. You never bear the cost of replacement.' },
- { q: 'Is the companion with us 24/7?', a: 'Yes. The companion shares accommodation with the group or in an adjacent room, and is on call throughout.' },
+ { q: 'What if the companion gets sick?', a: 'We will try to arrange a backup companion, but we do not promise a replacement time. Ask us about the replacement terms before you book.' },
+ { q: 'Is the companion with us throughout the yatra?', a: 'The arrangement (shared or adjacent accommodation, on-call hours) is agreed with you in writing before you book.' },
  { q: 'Can I extend the companion after the yatra?', a: 'Yes, subject to availability. We offer pre-yatra (1-2 day acclimatization in your city) and post-yatra (return help) extensions.' },
  ].map((f, i) => (
  <details key={i} className="group rounded-xl p-4 cursor-pointer" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>

@@ -179,7 +179,7 @@ export default function PitraDoshPage() {
      <div className="rounded-2xl border-2 border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
       <p className="font-serif text-lg text-gray-900">Want a pandit to confirm + customise remedies?</p>
       <p className="mt-2 text-sm text-gray-700">
-       The symptom checker gives a strong hint. A verified Vedic astrologer analyses your full kundli,
+       The symptom checker gives a strong hint. A approved Vedic astrologer analyses your full kundli,
        current dasha, and ancestral history to prescribe the exact Pitra Dosh nivaran karma for you.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-3">

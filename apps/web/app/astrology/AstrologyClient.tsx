@@ -168,7 +168,7 @@ export default function AstrologyPage() {
   (async () => {
    try {
     // DF-12: bounded, because a bare `fetch` never rejects on a stalled socket
-    // and `loadState` would sit on 'loading' — "Loading verified astrologers..."
+    // and `loadState` would sit on 'loading' — "Loading approved astrologers..."
     // forever, with the error branch below unreachable.
     const r = await astrologyFetch(`${API_BASE_URL}/astrology/astrologers/live`);
     if (!r.ok) { if (!cancelled) setLoadState('error'); return; }
@@ -321,7 +321,7 @@ export default function AstrologyPage() {
  </h1>
  <p className="prose-lead text-surface-500 max-w-2xl mx-auto mb-10 leading-relaxed">
  Get accurate predictions, personalized remedies, and spiritual guidance from
- verified astrologers. Available 24/7 via chat, call, or video.
+ astrologers listed on Darshya, by chat, call, or video. Each astrologer shows their own availability.
  </p>
 
  {/* Feature Cards */}
@@ -359,7 +359,7 @@ export default function AstrologyPage() {
  </div>
  <h3 className="text-lg font-bold text-surface-800 mb-2">Live Consultation</h3>
  <p className="text-sm text-surface-500 mb-3">
- Chat with verified astrologers for personalized guidance
+ Chat with approved astrologers for personalized guidance
  </p>
  <div className="inline-flex items-center gap-1 text-sm font-semibold text-saffron-600">
  {lowestRate !== null ? `From Rs. ${lowestRate}/min` : 'See astrologers'}{' '}
@@ -387,7 +387,7 @@ export default function AstrologyPage() {
  {loadState === 'ready'
  ? `${onlineCount} ${onlineCount === 1 ? 'astrologer' : 'astrologers'} online now`
  : loadState === 'loading'
- ? 'Loading verified astrologers...'
+ ? 'Loading approved astrologers...'
  : 'Availability unavailable'}
  </p>
  </div>
@@ -443,7 +443,7 @@ export default function AstrologyPage() {
  the old behaviour of silently rendering 15 invented astrologers. */}
  {loadState === 'loading' ? (
  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-10 text-center text-sm text-surface-500">
- Loading verified astrologers...
+ Loading approved astrologers...
  </div>
  ) : loadState === 'error' ? (
  <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
@@ -461,8 +461,8 @@ export default function AstrologyPage() {
  </p>
  <p className="mt-1 text-xs text-surface-500">
  {astrologers.length > 0
- ? 'No verified astrologer matches these filters. Try clearing them.'
- : 'Our verified astrologers are being onboarded. Use the free Kundli and horoscope tools below in the meantime.'}
+ ? 'No approved astrologer matches these filters. Try clearing them.'
+ : 'Our approved astrologers are being onboarded. Use the free Kundli and horoscope tools below in the meantime.'}
  </p>
  </div>
  ) : (
@@ -857,10 +857,10 @@ export default function AstrologyPage() {
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-12 lg:py-14">
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
  {[
- { icon: Users, value: 'Vetted', label: 'Verified Astrologers', color: 'text-saffron-600' },
- { icon: Award, value: 'Selective', label: 'Manual Onboarding', color: 'text-saffron-600' },
- { icon: Clock, value: '24/7', label: 'Available', color: 'text-saffron-600' },
- { icon: Lock, value: '100%', label: 'Private & Secure', color: 'text-saffron-600' },
+ { icon: Users, value: 'Listed', label: 'Astrologers on Darshya', color: 'text-saffron-600' },
+ { icon: Award, value: 'Manual', label: 'Profile Review', color: 'text-saffron-600' },
+ { icon: Clock, value: 'Per profile', label: 'Availability', color: 'text-saffron-600' },
+ { icon: Lock, value: 'Razorpay', label: 'Secure Payments', color: 'text-saffron-600' },
  ].map((stat) => {
  const Icon = stat.icon;
  return (

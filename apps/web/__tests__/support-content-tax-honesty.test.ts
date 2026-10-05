@@ -74,18 +74,18 @@ describe('LEG-10 — support copy does not promise a duty calculation that does 
     expect(pricing).toMatch(/subtotalInr \+ deliveryFeeInr/);
   });
 
-  it('the international-shipping FAQ no longer says duties are calculated at checkout', () => {
-    // The shipped sentence, verbatim, from the 2026-08-12 sweep.
-    expect(faq('sd-4').answer).not.toMatch(/Duties and taxes are calculated at checkout/i);
-    // and says so affirmatively rather than merely going quiet about it
-    expect(faq('sd-4').answer).toMatch(/not calculated at checkout/i);
+  it('the outside-India FAQ promises no duty calculation and no foreign store delivery', () => {
+    // Copy-truth sweep 2026-10-05: store delivery is India-only, so the answer
+    // that used to explain landed cost for 40+ countries now says no.
+    expect(faq('sd-4').answer).not.toMatch(/calculated at checkout/i);
+    expect(faq('sd-4').answer).not.toMatch(/40\+ countries/i);
+    expect(faq('sd-4').answer).toMatch(/within India only/i);
   });
 
-  it('it states plainly who pays the duty and when', () => {
+  it('it states plainly who pays customs duty on prasad sent abroad', () => {
     const answer = faq('sd-4').answer;
-    expect(answer).toMatch(/dut(y|ies)/i);
-    expect(answer).toMatch(/not included|excluded|on top of/i);
-    expect(answer).toMatch(/carrier|courier|customs/i);
+    expect(answer).toMatch(/customs duties/i);
+    expect(answer).toMatch(/recipient/i);
   });
 
   it('no answer anywhere in the FAQ claims a checkout-time duty or tax calculation', () => {

@@ -230,7 +230,7 @@ export default async function CityPage({ params }: Params) {
 
       <footer className="border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-2">
-          <strong>Booking from outside {c.name}?</strong> Darshya pandits perform pujas at the named temple on your behalf with mandatory video proof. Your prasad ships to you anywhere in India or abroad.
+          <strong>Booking from outside {c.name}?</strong> Darshya pandits perform pujas at the named temple on your behalf with mandatory video proof. Prasad delivery is an optional flat add-on; we do not promise a delivery date or destination.
         </p>
         <Link href="/city" className="text-saffron-700 hover:underline">
           ← All cities
