@@ -80,31 +80,25 @@ export function templeBookHref(
 }
 
 /**
- * COM-12 (prod sweep 2026-08-12) — whether this temple may advertise puja
- * booking at all.
+ * Whether a temple page shows its booking CTA. ALWAYS.
  *
- * 15 of the 20 seeded temples have zero active offerings (verified in the
- * database: 20 temples, 5 with an active row in temple_puja_offerings), yet
- * every temple page rendered the same "Book Puja via Darshya — Verified
- * priests, video proof, prasad delivery to your door" card. That is a booking
- * promise made to the highest-intent traffic on the site with nothing behind
- * it.
+ * COM-12 (2026-08-12) hid the CTA on temples with no active offering (15 of 20
+ * on production). Owner decision 2026-10-06 reverses that: every registered
+ * temple must have a working booking journey, and the fix is to give each one
+ * standard offerings (ops/sql/seed-default-temple-offerings.sql, and the admin
+ * "Add standard offerings" button), not to hide the way in.
  *
- * `templeBookHref` answers WHERE a booking control should point. This answers
- * the prior question — whether one should exist. Two states, no third: the API
- * confirms at least one ACTIVE offering for a temple it actually knows, or the
- * promise is not made.
+ * So the CTA is unconditional and always leads somewhere that books:
+ *   - the temple is in the API -> its temple-scoped puja list, whose every
+ *     "Book now" deep-links into the wizard with the temple preselected;
+ *   - the temple is curated-only (no API row) -> the puja catalogue.
  */
-export type TempleBookCta =
-  | { available: true; href: string }
-  | { available: false; href: null };
+export type TempleBookCta = { available: true; href: string };
 
 export function templeBookCta(
   templeSlug: string,
   apiTempleSlug: string | null,
-  offerings: readonly TempleOfferingLike[] | null | undefined,
+  _offerings?: readonly TempleOfferingLike[] | null,
 ): TempleBookCta {
-  const bookable = (offerings ?? []).filter((o) => o.isActive !== false);
-  if (!apiTempleSlug || bookable.length === 0) return { available: false, href: null };
   return { available: true, href: templeBookHref(templeSlug, apiTempleSlug, null) };
 }

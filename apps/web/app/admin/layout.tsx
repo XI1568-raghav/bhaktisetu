@@ -27,6 +27,7 @@ import {
   Banknote,
   RotateCcw,
   BadgeCheck,
+  Landmark,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
@@ -36,6 +37,7 @@ const sidebarLinks = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/approvals', label: 'Approvals', icon: ClipboardCheck },
   { href: '/admin/bookings', label: 'Bookings', icon: CalendarClock },
+  { href: '/admin/temples', label: 'Temples', icon: Landmark },
   { href: '/admin/leads', label: 'Leads', icon: Target },
   { href: '/admin/outreach', label: 'Outreach', icon: Send },
   { href: '/admin/waitlist', label: 'Waitlist', icon: ListChecks },

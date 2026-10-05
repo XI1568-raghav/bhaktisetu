@@ -689,7 +689,12 @@ function RichTemplePage({
  Book Now
  </Link>
  ) : (
- <span className="text-xs text-surface-500">Not bookable on Darshya yet</span>
+ <Link
+ href={bookHref}
+ className="text-xs font-medium text-saffron-700 hover:underline"
+ >
+ See pujas you can book here
+ </Link>
  )}
  </div>
  </article>
