@@ -55,7 +55,7 @@ All roles were tested end to end on a local stack and fixed through #279-#312. P
 - **#196 phone-OTP** — Supabase SMS provider unconfigured (MSG91/Twilio) or hide the Mobile tab.
 - **#211 admin panels** — needs a real admin account to click-verify (add owner email to API `ADMIN_EMAILS`).
 - **#205 Razorpay live key** — set in Render (currently `rzp_test_demo` fallback).
-- **#203/#204 image optimization** — hotlinked Wikimedia/Unsplash images broken, 11–15MB pages; needs self-host vs CDN decision.
+- **#203/#204 image optimization** — decided + done in `perf/self-host-images-and-cwv` (TD-09): temple/store/gaushala photos self-hosted as WebP under `apps/web/public/images/{temples,store,gaushala}` (regenerate with `scripts/self-host-images.mjs`; credits in `public/images/ATTRIBUTION.md` + EXIF). Still hotlinked: puja/deity/festival/content photos and non-primary temple gallery images. Deploy WEB before API (the API now returns `https://darshya.online/images/...`).
 - **#216 blog stub**, **#222 UX friction**, **#210 redirect regression** (needs multi-role session).
 - QA artifacts to purge from Supabase Users/DB: `qa-audit-probe@gmail.com`, `qa-audit-probe2@outlook.com`, `qa-live-session@gmail.com`, `qa-admin-probe@gmail.com`, `qa-become-probe@example.com`, booking `BS-20260805-T9CHE`, a few `/leads/self-onboard` probes.
 - Cautions: concurrent agents write to the repo (run `git status` before `git add -A`); the auto-format PostToolUse hook is disabled on purpose (legacy 1-space files).

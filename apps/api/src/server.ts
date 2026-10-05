@@ -124,6 +124,7 @@ import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-
 import { isJobQueueAvailable } from './services/job-queue.service.js';
 import { isJobQueueConfigured } from './lib/env.js';
 import { errorLocalizationPlugin } from './plugins/error-localization.js';
+import { localizeImages } from './lib/self-hosted-images.js';
 
 const server = Fastify({
   logger: {
@@ -185,6 +186,12 @@ async function bootstrap() {
     isProd: isProdEnv,
     onError: captureException,
   });
+
+  // TD-09 / CM-08: serve the self-hosted copy of every catalogue photo the seed
+  // and fixtures still name by Wikimedia/Unsplash URL (temples[].images, store
+  // product images, gaushala photos). Mapping only, never a DB write; strings
+  // not in the generated table pass through untouched.
+  server.addHook('preSerialization', async (_request, _reply, payload) => localizeImages(payload));
 
   // Security plugins
   // API serves only JSON — no HTML, no inline scripts, no embedded frames.

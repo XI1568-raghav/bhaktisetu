@@ -300,6 +300,8 @@ describe('[PERF-03] the brand faces named at the head of every stack are self-ho
     expect(faces.length, 'no @font-face rules found at all').toBeGreaterThan(0);
     const broken: string[] = [];
     for (const f of faces) {
+      // CWV-01: '<face> Fallback' is a local() metric-override face, not a download.
+      if (/ Fallback$/.test(f.family)) continue;
       expect(f.urls.length, `@font-face for '${f.family}' declares no src url`).toBeGreaterThan(0);
       for (const u of f.urls) {
         if (!u.startsWith('/')) {

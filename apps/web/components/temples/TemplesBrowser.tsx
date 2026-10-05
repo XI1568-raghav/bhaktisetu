@@ -356,8 +356,8 @@ export function TemplesBrowser({
  All temples
  </h2>
  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
- {filtered.map((t) => (
- <TempleCard key={t.slug} temple={t} />
+ {filtered.map((t, i) => (
+ <TempleCard key={t.slug} temple={t} eager={i < 3} />
  ))}
  </div>
  </section>
@@ -394,7 +394,9 @@ function handleTempleImageError(event: React.SyntheticEvent<HTMLImageElement>) {
  img.src = TEMPLE_IMAGE_FALLBACK;
 }
 
-function TempleCard({ temple }: { temple: TempleCardData }) {
+// CWV-01: the first row is the LCP candidate on /temples; lazy-loading it deferred
+// its fetch until after layout (Lighthouse "resource load delay") for no saving.
+function TempleCard({ temple, eager = false }: { temple: TempleCardData; eager?: boolean }) {
  return (
  <Link
  href={`/temples/${temple.slug}`}
@@ -406,7 +408,8 @@ function TempleCard({ temple }: { temple: TempleCardData }) {
  srcSet={remoteSrcSet(templeCardImage(temple), [IMG_W.THUMB, IMG_W.CARD])}
  sizes="(max-width: 768px) 100vw, 380px"
  alt={`${temple.name} - ${temple.city}`}
- loading="lazy"
+ loading={eager ? 'eager' : 'lazy'}
+ fetchPriority={eager ? 'high' : undefined}
  width={500}
  height={313}
  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"

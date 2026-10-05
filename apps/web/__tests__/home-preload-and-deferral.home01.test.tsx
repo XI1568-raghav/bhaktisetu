@@ -141,10 +141,11 @@ describe('[HOME-01] the only image a phone fetches at load is the cheapest candi
     expect(links.length, 'the preload this block is about has moved or multiplied').toBe(1);
     const ss = links[0]!.getAttribute('imagesrcset') ?? links[0]!.getAttribute('imageSrcSet');
     expect(ss, 'the preload carries no candidate list, so `imagesizes` is inert').toBeTruthy();
-    expect(ss!).toContain('The_Golden_Temple_of_Amrithsar_7.jpg');
+    // TD-09: the bento is the self-hosted copy of The_Golden_Temple_of_Amrithsar_7.jpg.
+    expect(ss!).toContain('/images/temples/golden-temple');
   });
 
-  it('the phone branch of `sizes` resolves to the 120px / 4,543 B candidate', async () => {
+  it('the phone branch of `sizes` resolves to the smallest (250px) self-hosted candidate', async () => {
     const doc = await homeDoc();
     const link = doc.querySelector('link[rel="preload"][as="image"]')!;
     const ss = (link.getAttribute('imagesrcset') ?? link.getAttribute('imageSrcSet'))!;
@@ -157,13 +158,14 @@ describe('[HOME-01] the only image a phone fetches at load is the cheapest candi
     for (const dpr of [1, 2, 2.625, 3]) {
       expect(
         pick(ss, 1, dpr),
-        `at DPR ${dpr} the phone preload should resolve to 120px (4,543 B). ` +
-          'Without a 120 candidate it resolves to 250px (16,790 B) — 12,247 B ' +
-          'fetched at preload priority into a `hidden md:block` box that is ' +
+        `at DPR ${dpr} the phone preload should resolve to the 250px variant. ` +
+          'The self-hosted set has no 120px file (the Commons ladder step this ' +
+          'used to hit), so 250px is the floor: a few KB fetched at preload ' +
+          'priority into a `hidden md:block` box that is ' +
           'display:none below 768px and never painted. Every other <img> on ' +
           'this page is loading="lazy", so that is the whole of a phone visit\'s ' +
           'at-load image budget.',
-      ).toBe(120);
+      ).toBe(250);
     }
   });
 
@@ -303,10 +305,10 @@ describe('[HOME-01] correction — the Live Darshan tile is NOT cheaper on a rea
    *
    * What this block prevents is the number being re-quoted as a load-time win.
    */
-  it('a DPR-1 client takes the 500px / 56,754 B candidate', async () => {
+  it('a DPR-1 client takes the 500px candidate', async () => {
     const doc = await homeDoc();
     const img = [...doc.querySelectorAll('img')].find((im) =>
-      (im.getAttribute('src') ?? '').includes('Mahakaleshwar'),
+      (im.getAttribute('src') ?? '').includes('mahakaleshwar'),
     );
     expect(img, 'the Live Darshan tile moved').toBeTruthy();
     const ss = (img!.getAttribute('srcset') ?? img!.getAttribute('srcSet'))!;
@@ -314,10 +316,10 @@ describe('[HOME-01] correction — the Live Darshan tile is NOT cheaper on a rea
     expect(pick(ss, 375, 1)).toBe(500);
   });
 
-  it('a DPR-2/2.625/3 phone still takes the 960px / 189,024 B candidate', async () => {
+  it('a DPR-2/2.625/3 phone still takes the full-size candidate', async () => {
     const doc = await homeDoc();
     const img = [...doc.querySelectorAll('img')].find((im) =>
-      (im.getAttribute('src') ?? '').includes('Mahakaleshwar'),
+      (im.getAttribute('src') ?? '').includes('mahakaleshwar'),
     )!;
     const ss = (img.getAttribute('srcset') ?? img.getAttribute('srcSet'))!;
     for (const [css, dpr] of [
@@ -328,14 +330,14 @@ describe('[HOME-01] correction — the Live Darshan tile is NOT cheaper on a rea
       expect(
         pick(ss, css, dpr),
         `${css} CSS px at DPR ${dpr} needs ${Math.round(css * dpr)} device px`,
-      ).toBe(960);
+      ).toBe(Math.max(...parseSrcSet(ss).map((c) => c.w)));
     }
   });
 
   it('the tile is below the fold and lazy, so those are scroll bytes', async () => {
     const doc = await homeDoc();
     const img = [...doc.querySelectorAll('img')].find((im) =>
-      (im.getAttribute('src') ?? '').includes('Mahakaleshwar'),
+      (im.getAttribute('src') ?? '').includes('mahakaleshwar'),
     )!;
     expect(img.getAttribute('loading')).toBe('lazy');
   });
