@@ -32,6 +32,8 @@ import { serverErrorMessage } from '../../lib/friendly-error';
 
 interface Balance {
   availableInr: number;
+  /** Wellness earnings from sessions not yet held; not withdrawable until they run. */
+  upcomingInr?: number;
   pendingInr: number;
   paidOutInr: number;
   /**
@@ -216,6 +218,13 @@ function PayoutsContent() {
             </div>
           </div>
         </div>
+
+        {(balance?.upcomingInr ?? 0) > 0 ? (
+          <p className="mt-3 text-xs text-surface-500" data-testid="upcoming-inr">
+            {money(balance?.upcomingInr)} earned from upcoming sessions. It becomes available to
+            withdraw after the session has been held.
+          </p>
+        ) : null}
 
         {/* DI-05: legacy pandit rail. Only rendered when this provider actually
             has money on it, so no other role ever sees an empty extra card. */}

@@ -28,6 +28,9 @@ const { prismaMock } = vi.hoisted(() => {
     // pre-existing case in this file assumes.
     priest: { findUnique: vi.fn() },
     priestPayout: { findMany: vi.fn() },
+    // Wellness earnings are held until the session is held: the balance asks
+    // which of the provider's enrollments are still upcoming.
+    wellnessEnrollment: { findMany: vi.fn() },
     $queryRawUnsafe: vi.fn(),
     $transaction: vi.fn(),
   };
@@ -111,6 +114,8 @@ beforeEach(() => {
   // the unified-rail ledger it was written for.
   (prismaMock as any).priest.findUnique.mockResolvedValue(null);
   (prismaMock as any).priestPayout.findMany.mockResolvedValue([]);
+  // Default: no upcoming wellness sessions, so every pre-existing case is unchanged.
+  (prismaMock as any).wellnessEnrollment.findMany.mockResolvedValue([]);
 });
 
 describe('payout.service — getPayoutBalance', () => {
@@ -155,6 +160,7 @@ describe('payout.service — getPayoutBalance', () => {
     // this case exists to pin are unchanged, and the sidecar is empty.
     expect(b).toEqual({
       availableInr: 350,
+      upcomingInr: 0,
       pendingInr: 0,
       paidOutInr: 500,
       legacyPandit: { hasLegacyRail: false, pendingInr: 0, paidOutInr: 0 },
@@ -166,6 +172,7 @@ describe('payout.service — getPayoutBalance', () => {
     const b = await getPayoutBalance('prov-none');
     expect(b).toEqual({
       availableInr: 0,
+      upcomingInr: 0,
       pendingInr: 0,
       paidOutInr: 0,
       legacyPandit: { hasLegacyRail: false, pendingInr: 0, paidOutInr: 0 },
@@ -189,6 +196,91 @@ describe('payout.service — getPayoutBalance', () => {
     expect(b.availableInr).toBe(9000);
     expect(b.paidOutInr).toBe(4000);
     expect(b.pendingInr).toBe(0); // was 4000 before the status filter
+  });
+});
+
+describe('payout.service — wellness earnings are held until the session is held', () => {
+  const wellnessEnrollment = (prismaMock as any).wellnessEnrollment as {
+    findMany: ReturnType<typeof vi.fn>;
+  };
+
+  // Ledger-aware aggregate: honours the wellnessEnrollmentId filters the way the
+  // DB would (the OR-null/notIn exclusion and the `in` upcoming filter).
+  function wireLedger(rows: Array<{ amount: number; wellnessEnrollmentId?: string | null }>) {
+    commission.aggregate.mockImplementation(async (args: any) => {
+      const where = args?.where ?? {};
+      const matched = rows.filter((r) => {
+        const eid = r.wellnessEnrollmentId ?? null;
+        if (where.wellnessEnrollmentId?.in && !where.wellnessEnrollmentId.in.includes(eid)) return false;
+        const orClause = where.OR as Array<any> | undefined;
+        if (orClause) {
+          const ok = orClause.some((c) =>
+            c.wellnessEnrollmentId === null
+              ? eid === null
+              : eid !== null && !c.wellnessEnrollmentId.notIn.includes(eid),
+          );
+          if (!ok) return false;
+        }
+        return where.status ? where.status === 'PENDING' : true;
+      });
+      const sum = matched.reduce((s, r) => s.add(new Prisma.Decimal(r.amount)), new Prisma.Decimal(0));
+      return { _sum: { amount: matched.length ? sum : null } };
+    });
+  }
+
+  it('Rs 240 from a session 3 days away is upcoming, not available', async () => {
+    wellnessEnrollment.findMany.mockResolvedValue([{ id: 'enr-future' }]);
+    wireLedger([{ amount: 240, wellnessEnrollmentId: 'enr-future' }]);
+    const b = await getPayoutBalance('instr-1');
+    expect(b.availableInr).toBe(0);
+    expect(b.upcomingInr).toBe(240);
+  });
+
+  it('only upcoming-session rows are held; held-session and other-role rows stay available', async () => {
+    wellnessEnrollment.findMany.mockResolvedValue([{ id: 'enr-future' }]);
+    wireLedger([
+      { amount: 240, wellnessEnrollmentId: 'enr-future' },
+      { amount: 160, wellnessEnrollmentId: 'enr-done' },
+      { amount: 500, wellnessEnrollmentId: null }, // puja / consultation
+    ]);
+    const b = await getPayoutBalance('instr-1');
+    expect(b.availableInr).toBe(660);
+    expect(b.upcomingInr).toBe(240);
+  });
+
+  it('asks only for this provider\'s enrollments whose session has not been held', async () => {
+    await getPayoutBalance('instr-1');
+    const arg = wellnessEnrollment.findMany.mock.calls[0]![0] as any;
+    expect(arg.where.session.instructorId).toBe('instr-1');
+    expect(arg.where.session.scheduledAt.gt).toBeInstanceOf(Date);
+    expect(arg.where.session.status).toEqual({ not: 'COMPLETED' });
+  });
+
+  it('upcomingInr is 0 and the where clause is untouched when nothing is upcoming', async () => {
+    wireLedger([{ amount: 100 }]);
+    const b = await getPayoutBalance('instr-1');
+    expect(b.upcomingInr).toBe(0);
+    expect(b.availableInr).toBe(100);
+  });
+
+  it('a payout request does not claim an upcoming-session commission', async () => {
+    $queryRawUnsafe.mockResolvedValue(VERIFIED_KYC);
+    wellnessEnrollment.findMany.mockResolvedValue([{ id: 'enr-future' }]);
+    wireLedger([{ amount: 700 }, { amount: 240, wellnessEnrollmentId: 'enr-future' }]);
+    commission.findMany.mockResolvedValueOnce([{ id: 'c1', amount: 700 }]);
+    $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
+      fn({ payoutRequest, commission, wellnessEnrollment }),
+    );
+    payoutRequest.create.mockImplementation(async ({ data }: any) => ({ id: 'pr-1', ...data }));
+    commission.updateMany.mockResolvedValue({ count: 1 });
+
+    await requestPayout('instr-1', 'WELLNESS_INSTRUCTOR');
+
+    const where = (commission.findMany.mock.calls[0]![0] as any).where;
+    expect(where.OR).toEqual([
+      { wellnessEnrollmentId: null },
+      { wellnessEnrollmentId: { notIn: ['enr-future'] } },
+    ]);
   });
 });
 
@@ -241,7 +333,7 @@ describe('payout.service — requestPayout sizing (RV-05 / RV-06)', () => {
     ]);
     commission.findMany.mockResolvedValueOnce(opts.txRows); // inside the transaction
     $transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
-      fn({ payoutRequest, commission }),
+      fn({ payoutRequest, commission, wellnessEnrollment: (prismaMock as any).wellnessEnrollment }),
     );
   }
 
@@ -406,6 +498,7 @@ describe('payout.service — requestPayout concurrency race (RV-06)', () => {
     };
 
     const txClient = (mine: string[]) => ({
+      wellnessEnrollment: { findMany: async () => [] },
       commission: {
         findMany: read,
         updateMany: async ({ where, data }: { where: Record<string, any>; data: Record<string, any> }) => {
@@ -540,7 +633,7 @@ describe('payout.service — runWeeklySettlement', () => {
     userRoleAssignment.findMany.mockResolvedValue([{ role: 'ASTROLOGER' }]);
     payoutRequest.create.mockResolvedValue({ id: 'pr-new', providerId: 'prov-astro', amount: new Prisma.Decimal('9000.00') });
     commission.updateMany.mockResolvedValue({ count: 1 });
-    $transaction.mockImplementation(async (fn: any) => fn({ commission, payoutRequest }));
+    $transaction.mockImplementation(async (fn: any) => fn({ commission, payoutRequest, wellnessEnrollment: (prismaMock as any).wellnessEnrollment }));
 
     const out = await runWeeklySettlement();
 

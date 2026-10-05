@@ -49,10 +49,10 @@ export const __testing = { mineQuerySchema, isUuid };
  * wellness earnings.
  */
 async function loadInstructorPayoutSplit(userId: string) {
-  if (!isUuid(userId)) return { paidOutInr: 0, pendingPayoutInr: 0 };
+  if (!isUuid(userId)) return { paidOutInr: 0, pendingPayoutInr: 0, upcomingInr: 0 };
   const rows = await prisma.commission.findMany({
     where: { providerId: userId, wellnessEnrollmentId: { not: null } },
-    select: { amount: true, status: true },
+    select: { amount: true, status: true, wellnessEnrollmentId: true },
     take: 500,
   });
   const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -61,7 +61,34 @@ async function loadInstructorPayoutSplit(userId: string) {
   const live = rows.filter((r) => r.status !== 'REVERSED');
   const sumOf = (status: string) =>
     round2(live.filter((r) => r.status === status).reduce((s, r) => s + Number(r.amount), 0));
-  return { paidOutInr: sumOf('PAID'), pendingPayoutInr: sumOf('PENDING') };
+  // A PENDING row whose session has not been held yet is earned but not
+  // withdrawable (payout.service holds it the same way), so it is reported as
+  // `upcomingInr` and kept out of `pendingPayoutInr`.
+  const pendingIds = live
+    .filter((r) => r.status === 'PENDING' && r.wellnessEnrollmentId)
+    .map((r) => r.wellnessEnrollmentId as string);
+  const upcoming = pendingIds.length
+    ? await prisma.wellnessEnrollment.findMany({
+        where: {
+          id: { in: pendingIds },
+          session: { scheduledAt: { gt: new Date() }, status: { not: 'COMPLETED' } },
+        },
+        select: { id: true },
+        take: 500,
+      })
+    : [];
+  const upcomingSet = new Set(upcoming.map((e) => e.id));
+  const pendingOf = (held: boolean) =>
+    round2(
+      live
+        .filter(
+          (r) =>
+            r.status === 'PENDING' &&
+            upcomingSet.has(r.wellnessEnrollmentId as string) === held,
+        )
+        .reduce((s, r) => s + Number(r.amount), 0),
+    );
+  return { paidOutInr: sumOf('PAID'), pendingPayoutInr: pendingOf(false), upcomingInr: pendingOf(true) };
 }
 
 type WellnessSessionRow = {
@@ -159,6 +186,8 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
         // "Paid out" — only `paidOutInr` describes money that actually moved.
         paidOutInr: payoutSplit.paidOutInr,
         pendingPayoutInr: payoutSplit.pendingPayoutInr,
+        // Earned from sessions that have not been held yet: not withdrawable.
+        upcomingInr: payoutSplit.upcomingInr,
         instructorShare: share,
         platformRate,
       },
