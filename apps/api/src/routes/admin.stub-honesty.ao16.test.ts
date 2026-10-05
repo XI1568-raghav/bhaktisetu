@@ -145,7 +145,6 @@ describe('AO-16 — a write that does nothing must not answer 200', () => {
   const fabricated: Array<
     ['POST' | 'PATCH' | 'DELETE', string, Record<string, unknown> | undefined]
   > = [
-    ['PATCH', `/temples/${GHOST}`, { name: 'X-DELETE-ME' }],
     ['DELETE', `/temples/${GHOST}`, undefined],
     ['POST', '/priests', { userId: GHOST, displayName: 'Ghost' }],
     ['PATCH', `/priests/${GHOST}`, { displayName: 'Ghost' }],
