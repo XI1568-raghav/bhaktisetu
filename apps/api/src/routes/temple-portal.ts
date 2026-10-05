@@ -279,8 +279,16 @@ export async function templePortalRoutes(server: FastifyInstance) {
       // every temple in the system by guessing slugs.
       const hasManager = hasTempleManagerRole(request);
       const slug = request.query.slug;
-      if (!slug) return reply.code(400).send({ error: 'slug required' });
-      const temple = await prisma.temple.findUnique({ where: { slug }, select: { id: true, slug: true, name: true, timingInfo: true } });
+      // No slug: a manager gets their OWN temple (same resolution as the
+      // dashboard), so the schedule page needs no typed ?slug=.
+      let ownTempleId: string | null = null;
+      if (!slug) {
+        if (!hasManager) return reply.code(400).send({ error: 'slug required' });
+        const link = await resolveManagerTemple(request.currentUser!.id);
+        if (!link.templeId) return notLinked(reply, link.reason);
+        ownTempleId = link.templeId;
+      }
+      const temple = await prisma.temple.findUnique({ where: ownTempleId ? { id: ownTempleId } : { slug: slug! }, select: { id: true, slug: true, name: true, timingInfo: true } });
       if (!temple) return reply.code(404).send({ error: 'Temple not found' });
       const allowed = await userCanEditTemple(temple.id, request.currentUser!.id, hasManager, request.currentUser!.roles.includes('ADMIN'));
       if (!allowed) {

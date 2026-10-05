@@ -7,14 +7,13 @@ import { useAuth } from '../../../lib/auth-context';
 import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { API_BASE_URL } from '../../../lib/api-config';
 
 /**
  * Temple manager schedule self-edit. Mirrors /admin/temples/[slug] from Layer K3
- * but scoped to the temple this user manages (currently passed via ?slug=...).
- *
- * Once Temple has a manager relation in schema, the slug resolves via
- * request.currentUser. Today: pick from dropdown of temples user can manage,
- * defaulting to query param.
+ * but scoped to the temple this user manages. With no ?slug= the API resolves
+ * the manager's own temple (same approved-profile name match as the dashboard)
+ * and returns its slug, which the save call then uses.
  */
 
 type TimingsForm = {
@@ -29,25 +28,41 @@ export default function TempleScheduleEditor() {
   const { session } = useAuth();
   const token = session?.accessToken;
   const [slug, setSlug] = useState<string | null>(null);
+  const [templeName, setTempleName] = useState<string | null>(null);
+  const [blocker, setBlocker] = useState<string | null>(null);
   const [form, setForm] = useState<TimingsForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<number, string>>({});
 
   useEffect(() => {
+    if (!token) return;
     const params = new URLSearchParams(window.location.search);
-    const s = params.get('slug') || (typeof window !== 'undefined' ? window.localStorage.getItem('temple_portal_slug') : null);
-    if (s) setSlug(s);
-  }, []);
-
-  useEffect(() => {
-    if (!slug) return;
-    fetch(`/api/v1/temple-portal/schedule?slug=${encodeURIComponent(slug)}`, {
-      credentials: 'include',
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    })
-      .then((r) => r.ok ? r.json() : Promise.reject(r))
-      .then((data) => {
+    const typed = params.get('slug');
+    const qs = typed ? `?slug=${encodeURIComponent(typed)}` : '';
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`${API_BASE_URL}/temple-portal/schedule${qs}`, {
+          credentials: 'include',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (r.status === 409) {
+          const body = await r.json().catch(() => null);
+          if (!cancelled) {
+            setBlocker(
+              typeof body?.message === 'string'
+                ? body.message
+                : 'Your temple is not linked to a listed temple yet.',
+            );
+          }
+          return;
+        }
+        if (!r.ok) throw new Error('load failed');
+        const data = await r.json();
+        if (cancelled) return;
+        setSlug(typeof data?.slug === 'string' ? data.slug : typed);
+        setTempleName(typeof data?.name === 'string' ? data.name : null);
         const ti = data?.timingInfo ?? {};
         const rh = ti.regularHours && typeof ti.regularHours === 'object' ? ti.regularHours : {};
         setForm({
@@ -55,9 +70,14 @@ export default function TempleScheduleEditor() {
           specialDays: ti.specialDays ?? '',
           regularHours: Object.entries(rh).map(([k, v]) => ({ key: k, value: String(v) })),
         });
-      })
-      .catch(() => setToast('Failed to load schedule. You may not manage this temple.'));
-  }, [slug]);
+      } catch {
+        if (!cancelled) setToast('Failed to load schedule. You may not manage this temple.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   function updateRow(i: number, patch: Partial<{ key: string; value: string }>) {
     if (!form) return;
@@ -94,7 +114,7 @@ export default function TempleScheduleEditor() {
     try {
       const regularHours: Record<string, string> = {};
       for (const r of form.regularHours) regularHours[r.key.trim()] = r.value.trim();
-      const res = await fetch(`/api/v1/temple-portal/schedule?slug=${encodeURIComponent(slug)}`, {
+      const res = await fetch(`${API_BASE_URL}/temple-portal/schedule?slug=${encodeURIComponent(slug)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: {
@@ -127,9 +147,11 @@ export default function TempleScheduleEditor() {
       <h1 className={`${H1.portal} mb-1`}>Aarti & Darshan Schedule</h1>
       <p className="text-sm text-surface-500 mb-6">Edit live darshan windows. Devotees see "Live" / "Next Aarti" badges based on these timings.</p>
 
-      {!slug && (
+      {templeName && <p className="text-sm font-medium text-surface-700 mb-4">{templeName}</p>}
+
+      {blocker && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          No temple selected. Add <code>?slug=&lt;your-temple&gt;</code> to the URL.
+          {blocker}
         </div>
       )}
 
