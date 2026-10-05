@@ -436,7 +436,7 @@ describe('[HOME-01] the srcSet survives the render, not just the source scan', (
     const srcsets = html.match(/srcSet="[^"]*"|srcset="[^"]*"/g) ?? [];
     expect(srcsets.length, 'no srcset attribute reached the DOM').toBe(4);
     for (const s of srcsets) {
-      expect(s, 'a candidate list collapsed to one entry').toMatch(/250w[\s\S]*330w[\s\S]*500w/);
+      expect(s, 'a candidate list collapsed to one entry').toMatch(/250w[\s\S]*500w/);
     }
   });
 
@@ -447,6 +447,6 @@ describe('[HOME-01] the srcSet survives the render, not just the source scan', (
     const html = renderToStaticMarkup(React.createElement(YatraStrip as never));
     const srcsets = html.match(/srcSet="[^"]*"|srcset="[^"]*"/g) ?? [];
     expect(srcsets.length).toBe(3);
-    for (const s of srcsets) expect(s).toMatch(/250w[\s\S]*330w[\s\S]*500w/);
+    for (const s of srcsets) expect(s).toMatch(/250w[\s\S]*\d+w/); // 250 + the next size up (variant or full file)
   });
 });

@@ -88,12 +88,12 @@ describe('resizeImage', () => {
 describe('getTempleHero / getTempleThumbnail / getTempleGallery', () => {
   it('returns a temple hero URL', () => {
     const url = getTempleHero('kashi-vishwanath');
-    expect(url).toContain('Kashi_Vishwanath');
+    expect(url).toContain('/images/temples/kashi-vishwanath');
   });
 
   it('returns the fallback image for an unknown slug', () => {
     const url = getTempleHero('not-a-real-temple');
-    expect(url).toContain('upload.wikimedia.org');
+    expect(url).toContain('/images/temples/kashi-vishwanath');
   });
 
   it('returns gallery images for known temples', () => {
@@ -107,7 +107,7 @@ describe('getTempleHero / getTempleThumbnail / getTempleGallery', () => {
 
   it('thumbnail uses an 800-step ladder width', () => {
     const url = getTempleThumbnail('siddhivinayak');
-    expect(url).toMatch(/(500|960|1280)px-/);
+    expect(url).toMatch(/\/images\/temples\/siddhivinayak(-500)?\.webp$/);
   });
 });
 
@@ -129,11 +129,11 @@ describe('getImage / getDeityImage / getPujaImage / getProductImage', () => {
   });
 
   it('returns a product image for known store slug', () => {
-    expect(getProductImage('brass-puja-thali')).toContain('Hindu_pooja_thali');
+    expect(getProductImage('brass-puja-thali')).toContain('/images/store/prod_001');
   });
 
   it('returns hero image for given page', () => {
-    expect(getHeroImage('home')).toContain('Kashi_Vishwanath');
+    expect(getHeroImage('home')).toContain('/images/temples/');
   });
 
   it('returns festival image', () => {

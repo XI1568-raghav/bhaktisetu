@@ -90,6 +90,20 @@ function rastersOnDisk(dir = PUBLIC, out: string[] = []): string[] {
  */
 function metadataText(rel: string): string {
   const buf = readFileSync(path.join(PUBLIC, rel));
+  if (/\.webp$/i.test(rel)) {
+    // WebP keeps EXIF/XMP as RIFF chunks AFTER the bitstream, so the 8 KB head
+    // scan below cannot see them. Read the metadata chunks themselves (never
+    // the compressed VP8 payload, which is where a random byte run could pass).
+    let out = '';
+    let off = 12;
+    while (off + 8 <= buf.length) {
+      const id = buf.toString('latin1', off, off + 4);
+      const len = buf.readUInt32LE(off + 4);
+      if (id === 'EXIF' || id === 'XMP ') out += buf.toString('utf8', off + 8, off + 8 + len) + '\n';
+      off += 8 + len + (len % 2);
+    }
+    return out;
+  }
   return buf.subarray(0, 8192).toString('latin1');
 }
 
