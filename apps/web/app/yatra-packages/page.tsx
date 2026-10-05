@@ -2,15 +2,20 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Calendar, Users, MapPin, ArrowRight } from 'lucide-react';
 import { H1 } from '../../components/ui/heading-recipe';
+import { HAS_PACKAGE_INCLUSIONS } from '../../lib/launch-gates';
 
 export const metadata: Metadata = {
   title: 'Yatra Packages — Curated Pilgrimage Tours',
-  description: 'Book curated multi-day pilgrimage tours operated by Darshya. Vaishno Devi, Tirupati, Char Dham, Shirdi, Kashi, Dwarka-Somnath. All-inclusive with hotel + transport + pandit.',
+  // Claim gate (2026-10-05): "all-inclusive with hotel + transport + pandit" has no
+  // confirmed inventory behind it. HAS_PACKAGE_INCLUSIONS (lib/launch-gates.ts).
+  description: HAS_PACKAGE_INCLUSIONS
+    ? 'Book curated multi-day pilgrimage tours operated by Darshya. Vaishno Devi, Tirupati, Char Dham, Shirdi, Kashi, Dwarka-Somnath. All-inclusive with hotel + transport + pandit.'
+    : 'Pilgrimage tour itineraries with indicative prices: Vaishno Devi, Tirupati, Char Dham, Shirdi, Kashi, Dwarka-Somnath. Online booking is coming soon; enquire to confirm what a trip includes.',
   alternates: { canonical: 'https://darshya.online/yatra-packages' },
   openGraph: {
     images: ['/images/golden-temple-og.jpg'],
     title: 'Yatra Packages — Darshya',
-    description: 'All-inclusive curated pilgrimage tours.',
+    description: HAS_PACKAGE_INCLUSIONS ? 'All-inclusive curated pilgrimage tours.' : 'Pilgrimage tour itineraries. Booking coming soon.',
     url: 'https://darshya.online/yatra-packages',
     type: 'website',
   },
@@ -54,7 +59,9 @@ export default async function YatraPackagesPage() {
             Curated Yatra Packages
           </h1>
           <p className="mt-4 prose-body leading-relaxed max-w-2xl" style={{ color: 'var(--color-text-muted)' }}>
-            Multi-day all-inclusive pilgrimage tours operated by Darshya. Hotel, transport, pandit + meals included. Limited group sizes for personal experience.
+            {HAS_PACKAGE_INCLUSIONS
+              ? 'Multi-day all-inclusive pilgrimage tours operated by Darshya. Hotel, transport, pandit + meals included. Limited group sizes for personal experience.'
+              : 'Multi-day pilgrimage tour itineraries with indicative per-person prices. Online booking is coming soon: email us to enquire, and our team confirms what a trip includes. Nothing is held or charged until then.'}
           </p>
         </div>
       </section>
@@ -64,7 +71,7 @@ export default async function YatraPackagesPage() {
           {packages.length === 0 ? (
             <div className="rounded-xl p-8 text-center" style={{ background: 'var(--color-surface)', border: '1px dashed var(--color-border)' }}>
               <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                No yatra packages currently available. Run the seed script to populate.
+                Yatra packages are coming soon. In the meantime, see the yatra itineraries at /yatra or email care@darshya.online.
               </p>
             </div>
           ) : (
@@ -92,7 +99,7 @@ export default async function YatraPackagesPage() {
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-center gap-3 text-xs mb-2" style={{ color: 'var(--color-text-muted)' }}>
                         <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {pkg.duration_days} days</span>
-                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {seatsLeft} seats</span>
+                        {HAS_PACKAGE_INCLUSIONS && <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {seatsLeft} seats</span>}
                       </div>
                       <p className="text-xs leading-relaxed line-clamp-3" style={{ color: 'var(--color-text-muted)' }}>
                         {pkg.short_description}

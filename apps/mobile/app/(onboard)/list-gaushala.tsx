@@ -17,8 +17,8 @@ const BENEFITS = [
     body: 'Submit your registration certificate once. A Darshya reviewer approves the listing before donors can see it.',
   },
   {
-    title: 'Cow-count + photo proof',
-    body: 'Show the cows your donors are feeding. Monthly photos build long-term donor loyalty.',
+    title: 'Cow-count + photos',
+    body: 'Record the cows in your care on your profile. Photo updates for donors are coming soon.',
   },
   {
     title: 'Recurring monthly seva',

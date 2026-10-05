@@ -154,8 +154,8 @@ export default function ShippingPage() {
  <ul>
  <li>
  If a parcel is marked delivered but you have not received it,
- or it arrives damaged, email {COMPANY.supportEmail} within 48
- hours. For damage, include photographs of the package.
+ or it arrives damaged, email {COMPANY.supportEmail} within 7
+ days of delivery. For damage, include photographs of the package.
  </li>
  <li>
  We review each case and, where an item is confirmed lost or

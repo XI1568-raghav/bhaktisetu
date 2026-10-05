@@ -105,11 +105,11 @@ const ROWS: Row[] = [
   },
   {
     feature: 'Gaushala seva integration',
-    darshya: '✓ Direct, weekly tracking',
+    darshya: '✓ Donate to approved gaushalas, with a receipt',
     sriMandir: '✗',
     utsav: '✗',
     astrosage: '✗',
-    detail: 'Sponsor cow feed/medical with photo updates. Book from anywhere; billed in INR.',
+    detail: 'Contribute to cow care at an approved gaushala from anywhere; billed in INR. Photo updates are coming soon.',
   },
   {
     feature: 'Free Vedic content (shlokas, aarti, chalisa, mantras)',

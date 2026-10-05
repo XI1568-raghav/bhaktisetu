@@ -245,9 +245,10 @@ export default function TermsPage() {
  If the pandit or temple cancels, you are refunded in full.
  </li>
  <li>
- Store orders may be returned within 7 days of delivery for
- eligible items. Consumable items (prasad, incense, etc.)
- are non-returnable.
+ For store orders, contact support within 7 days of delivery if
+ an item is damaged, wrong or defective; we review each case.
+ There is no automated return process, and consumable items
+ (prasad, incense, etc.) are non-returnable.
  </li>
  </ul>
  </TermsSection>
