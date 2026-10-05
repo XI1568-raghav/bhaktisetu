@@ -14,7 +14,7 @@
 
 - API prefix `/api/v1/*`. Shared client `packages/api-client`. Shared types `packages/shared`.
 - Auth: JWT access + refresh. Web → cookies; mobile → expo-secure-store.
-- Money: `Decimal(10,2)` → `formatPrice` → INR + USD. NRI 9-10× domestic.
+- Money: `Decimal(10,2)` → `formatPrice` → INR + USD. NRI 2-3× domestic (2.5×), shown in USD, always charged as an INR order.
 - Booking #: `BS-YYYYMMDD-XXXXX`. 80G: `DR-YYYYMMDD-XXXX`.
 - Roles (`UserRoleAssignment.isPrimary`): devotee, pandit, store_owner, astrologer, wellness_instructor, gaushala_manager, temple_manager, admin. Web↔API bridge: web `priest` ↔ API `pandit`.
 
@@ -29,7 +29,7 @@
 ## Business rules (immutable)
 
 1. Video proof MANDATORY for puja bookings.
-2. NRI pricing 9-10× domestic.
+2. NRI pricing 2-3× domestic (2.5×). Shown in USD, charged as an INR Razorpay order; fees are not multiplied. Config: `apps/api/src/lib/nri-pricing.ts` + `apps/web/lib/nri-pricing.ts`.
 3. Platform commission 20-40% per temple.
 4. Priest payout = price − commission, gated on Aadhaar.
 5. Cancellation up to 24h before scheduled time.

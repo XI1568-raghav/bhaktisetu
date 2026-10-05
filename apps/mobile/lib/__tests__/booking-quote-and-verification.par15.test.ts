@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import {
   PLATFORM_FEE_INR,
@@ -439,12 +439,31 @@ describe('PAR-15 — the catalogue card quotes only what is charged', () => {
 // ─── the API contract this all rests on ─────────────────────────────────────
 
 describe('PAR-15 — the assumption about NRI pricing is still true', () => {
-  it('booking.service.ts charges basePrice to everyone', () => {
-    // The day this stops being true, the catalogue may quote an NRI price
-    // again — and this test is where that is noticed.
+  it('booking.service.ts charges basePrice unless the request explicitly asks for NRI pricing', () => {
+    // The mobile app quotes the domestic price and never sends `nriPricing`, so
+    // what it shows is what is charged. The premium is applied only for the
+    // explicit flag the web wizard sends, never inferred from the self-settable
+    // user.isNri. If either changes, this is where the mobile quote is re-checked.
     const api = path.resolve(MOBILE, '../../api/src/services/booking.service.ts');
     const src = readFileSync(api, 'utf8');
-    expect(src).toMatch(/const pujaPrice = basePrice;/);
+    expect(src).toMatch(/const pujaPrice = data\.nriPricing \? nriPujaPriceInr\(domesticPujaPrice\) : basePrice;/);
     expect(src).not.toMatch(/const pujaPrice = user\.isNri/);
+  });
+
+  it('the mobile app does not send the NRI pricing flag', () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.name === '__tests__' || e.name === 'node_modules'
+          ? []
+          : e.isDirectory()
+            ? walk(path.join(dir, e.name))
+            : /\.(ts|tsx)$/.test(e.name)
+              ? [path.join(dir, e.name)]
+              : [],
+      );
+    const offenders = [...walk(MOBILE), ...walk(path.resolve(MOBILE, '../app'))].filter((f) =>
+      /nriPricing/.test(readFileSync(f, 'utf8')),
+    );
+    expect(offenders).toEqual([]);
   });
 });

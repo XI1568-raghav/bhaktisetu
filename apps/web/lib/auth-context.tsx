@@ -49,6 +49,8 @@ export interface AuthUser {
  subscriptionTier: string;
  isNewUser?: boolean;
  role: UserRole;
+ /** Self-declared 'I live outside India' flag (users.isNri). Optional: only present once /auth/me has been read. */
+ isNri?: boolean;
  /** Display name for analytics identity (PostHog identify). Optional — populated when available. */
  displayName?: string;
 }
@@ -1124,6 +1126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  preferredLanguage: data.user.preferredLanguage,
  subscriptionTier: data.user.subscriptionTier,
  role: data.user.role ? fromApiRole(data.user.role) : (user?.role || 'devotee'),
+ isNri: data.user.isNri === true,
  };
  setUser(updatedUser);
  persistSession(session, updatedUser);

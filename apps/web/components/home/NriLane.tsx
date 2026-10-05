@@ -6,7 +6,7 @@ import { buttonClass } from '../ui/button-recipe';
  * The NRI band.
  *
  * WHY IT GETS ITS OWN SECTION RATHER THAN A CARD IN ServiceLanes. NRI pricing is
- * 9-10x domestic (PROJECT_CONTEXT.md, business rule 2), which makes this the
+ * 2.5x domestic (PROJECT_CONTEXT.md, business rule 2), which makes this the
  * highest-margin lane in the product by a wide margin — and it is the one lane
  * whose objection is completely different from every other. A devotee in
  * Bengaluru is deciding whether to trust a stranger with a ritual. A devotee in

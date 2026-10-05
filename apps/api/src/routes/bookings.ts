@@ -909,6 +909,10 @@ const createOrderBodySchema = z
     sankalp: z.string().optional(),
     specialInstructions: z.string().optional(),
     prasadDelivery: z.boolean().optional().default(false),
+    // NRI pricing (2026-10-05): true exactly when the wizard is showing the
+    // dollar price. The charge is then puja x 2.5 (+ flat fees) in INR — see
+    // lib/nri-pricing.ts. Never inferred from the self-settable users.isNri.
+    nriPricing: z.boolean().optional().default(false),
     // CM-06: country-aware, shared with the web form. Was India-only.
     deliveryAddress: deliveryAddressSchema.optional(),
   })
@@ -2074,6 +2078,7 @@ export async function bookingRoutes(server: FastifyInstance) {
           specialInstructions: body.specialInstructions,
           prasadDeliveryRequested: body.prasadDelivery && !!prasadAddressId,
           prasadDeliveryAddressId: prasadAddressId,
+          nriPricing: body.nriPricing,
         });
 
         // OPS-05: recorded BEFORE the gateway order is opened, deliberately.
