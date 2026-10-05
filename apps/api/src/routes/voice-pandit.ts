@@ -2,7 +2,7 @@
  * R-Q3-E-001 — Voice AI Pandit v1
  *
  * POST /api/v1/voice-pandit/turn
- * Pipeline: Whisper STT (Groq whisper-large-v3-turbo) → Groq Llama-3.3-70b LLM
+ * Pipeline: Whisper STT (Groq whisper-large-v3-turbo) → Groq gpt-oss-120b LLM
  * → ElevenLabs Turbo v2.5 TTS. Returns base64 mp3 + transcript + latency_ms.
  *
  * Env-or-noop: if GROQ_API_KEY or ELEVENLABS_API_KEY absent, returns a stub
@@ -25,7 +25,7 @@ const ELEVENLABS_BASE = 'https://api.elevenlabs.io/v1';
 
 // Defaults match spec — operator may override via env without redeploy.
 const STT_MODEL = process.env.VOICE_PANDIT_STT_MODEL || 'whisper-large-v3-turbo';
-const LLM_MODEL = process.env.VOICE_PANDIT_LLM_MODEL || 'llama-3.3-70b-versatile';
+const LLM_MODEL = process.env.VOICE_PANDIT_LLM_MODEL || 'openai/gpt-oss-120b';
 const TTS_MODEL = process.env.VOICE_PANDIT_TTS_MODEL || 'eleven_turbo_v2_5';
 // Sarah (en-IN-ish) + a multilingual voice for hi-IN. Operator can swap.
 const TTS_VOICE_EN = process.env.VOICE_PANDIT_TTS_VOICE_EN || 'EXAVITQu4vr4xnSDxMaL';
@@ -129,7 +129,9 @@ async function llmReply(
     body: JSON.stringify({
       model: LLM_MODEL,
       temperature: 0.4,
-      max_tokens: 220,
+      // gpt-oss reasons first and reasoning tokens count against max_tokens.
+      reasoning_effort: 'low',
+      max_tokens: 1024,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: redactedTranscript },
