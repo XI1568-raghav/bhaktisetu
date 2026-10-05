@@ -86,6 +86,8 @@ export type DashboardResponse = {
   totalUsers: number;
   usersByRole: Record<string, number>;
   totalRevenue: number;
+  /** Captured money on cancelled bookings awaiting refund (not in totalRevenue). */
+  pendingRefundInr?: number;
   pendingApprovals: number;
   activeSubscriptions: number;
   recentTransactions: Array<{
