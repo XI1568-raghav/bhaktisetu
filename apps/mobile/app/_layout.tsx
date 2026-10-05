@@ -14,6 +14,7 @@ import { initSentryMobile } from '../lib/sentry';
 import { usePushNotifications } from '../lib/push-notifications';
 import { useDeepLinkRouter } from '../lib/deep-link';
 import { apiBase } from '../lib/api';
+import { currentAcceptLanguage } from '../lib/language';
 
 function PushRegister() {
   usePushNotifications();
@@ -65,6 +66,8 @@ initApiClient({
   baseUrl: apiBase(),
   getAuthToken: getStoredAccessToken,
   timeout: 30_000,
+  // The API answers in English unless the request carries Accept-Language.
+  getAcceptLanguage: currentAcceptLanguage,
   // P0-8b: clear token + route to login on 401. Delegates to the module-level
   // ref in lib/auth-context (single-flight latch) so the provider's signOut is
   // invoked once even under concurrent 401s.
