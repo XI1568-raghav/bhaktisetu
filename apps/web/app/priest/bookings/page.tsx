@@ -364,6 +364,17 @@ function PriestBookingsInner() {
  </div>
  );
  case 'in_progress':
+ if (!booking.videoProofUrl?.trim()) {
+ return (
+ <Link
+ href={`/priest/bookings/view?id=${booking.id}`}
+ className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-xs font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+ >
+ <Video className="w-3.5 h-3.5" />
+ Upload video proof
+ </Link>
+ );
+ }
  return (
  <button
  onClick={(e) => { e.preventDefault(); handleAction(booking.id, 'complete'); }}
