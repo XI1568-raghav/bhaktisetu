@@ -642,8 +642,11 @@ async function fireAndForgetPostConfirmSideEffects(
       });
       if (b) {
         await notifyDevotee('confirmed', buildBookingCtx(b as never));
+        // A temple offering's "Assigned Priest" routes the booking to that
+        // pandit instead of the open pool; any miss leaves it in the pool.
+        const pinned = await dispatchService.assignPinnedPriest(bookingId);
         const tier = (b as { dispatchTier?: string }).dispatchTier;
-        if (tier && tier !== 'scheduled') {
+        if (!pinned.assigned && tier && tier !== 'scheduled') {
           await dispatchService.broadcast(bookingId, tier as 'instant' | 'one_hour' | 'senior');
         }
       }

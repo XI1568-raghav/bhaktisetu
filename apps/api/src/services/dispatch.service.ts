@@ -451,6 +451,105 @@ export class DispatchService {
   }
 
   /**
+   * Route a freshly PAID booking to the pandit pinned on its temple puja
+   * offering ("Assigned Priest" in the temple portal), instead of the open pool.
+   *
+   * Called once, right after payment capture confirms the booking. It assigns
+   * only when everything holds: the booking is still `confirmed` with no pandit,
+   * the offering names a pandit, that pandit is verified and active, and is free
+   * at that date and slot (same advisory lock + conflict check as `accept`).
+   * In every other case it does nothing and the booking stays in the open pool
+   * exactly as before, so a booking can never be stranded by this. It never
+   * throws for the same reason. If the pandit later releases the booking the
+   * existing reject path returns it to the open pool.
+   */
+  async assignPinnedPriest(
+    bookingId: string,
+  ): Promise<{ assigned: true; priestId: string } | { assigned: false; reason: string }> {
+    try {
+      const booking = await prisma.pujaBooking.findUnique({
+        where: { id: bookingId },
+        select: {
+          id: true,
+          status: true,
+          priestId: true,
+          templePujaOfferingId: true,
+          scheduledDate: true,
+          scheduledTimeSlot: true,
+        },
+      });
+      if (!booking || booking.status !== 'confirmed' || booking.priestId) {
+        return { assigned: false, reason: 'not_open' };
+      }
+      if (!booking.templePujaOfferingId) return { assigned: false, reason: 'no_pinned_priest' };
+
+      const offering = await prisma.templePujaOffering.findUnique({
+        where: { id: booking.templePujaOfferingId },
+        select: { assignedPriestId: true },
+      });
+      const priestId = offering?.assignedPriestId ?? null;
+      if (!priestId) return { assigned: false, reason: 'no_pinned_priest' };
+
+      const priest = await prisma.priest.findUnique({
+        where: { id: priestId },
+        select: { id: true, isVerified: true, status: true },
+      });
+      if (!priest || !priest.isVerified || priest.status !== 'active') {
+        return { assigned: false, reason: 'priest_not_eligible' };
+      }
+
+      let mintOutcome = 'no-provider-on-booking';
+      const outcome = await prisma.$transaction(async (tx) => {
+        // Lock first: same key space as accept() and the other priestId writers.
+        await lockPriestSlot(tx, priestSlotKey(priestId, booking.scheduledDate, booking.scheduledTimeSlot));
+
+        const conflict = await tx.pujaBooking.findFirst({
+          where: {
+            priestId,
+            scheduledDate: booking.scheduledDate,
+            scheduledTimeSlot: booking.scheduledTimeSlot,
+            id: { not: bookingId },
+            ...activeSlotHoldWhere(),
+          },
+          select: { id: true },
+        });
+        if (conflict) return 'priest_busy' as const;
+
+        const assigned = await tx.pujaBooking.update({
+          where: { id: bookingId, status: 'confirmed', priestId: null },
+          data: { priestId, status: 'priest_assigned', assignedVia: 'temple_pin', offerExpiresAt: null },
+          select: { id: true, priestId: true, priceAmount: true, priestPayout: true },
+        });
+        // Same mint as accept(): this write bypasses updateBookingStatus.
+        mintOutcome = await mintProviderEarningForBooking(tx, assigned);
+        return 'assigned' as const;
+      });
+      if (outcome !== 'assigned') return { assigned: false, reason: outcome };
+
+      await recordProviderEarningMinted({
+        bookingId,
+        outcome: mintOutcome,
+        rail: 'temple-pinned-priest',
+        actorType: 'system',
+      });
+      const b = await prisma.pujaBooking.findUnique({
+        where: { id: bookingId },
+        include: {
+          pujaType: { select: { name: true } },
+          temple: { select: { name: true } },
+          user: { select: { id: true, fullName: true, phone: true } },
+          priest: { select: { displayName: true } },
+        },
+      });
+      if (b) void notifyDevotee('assigned', buildBookingCtx(b as never)).catch(() => undefined);
+      return { assigned: true, priestId };
+    } catch (err) {
+      console.warn('[dispatch] pinned-priest routing failed; booking stays in the open pool:', err);
+      return { assigned: false, reason: 'error' };
+    }
+  }
+
+  /**
    * Record a decline and refresh the priest's acceptance rate. If every open
    * offer on the booking is now resolved with no winner, the next cron sweep
    * will rebroadcast/escalate.
