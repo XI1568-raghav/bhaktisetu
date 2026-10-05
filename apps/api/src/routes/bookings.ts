@@ -23,6 +23,7 @@ import { hoursUntilSlot } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 import { REFUND_INTERNATIONAL_CARD_LABEL } from '../lib/refund-timing.js';
 import { platformRateOf } from '../lib/commission-math.js';
+import { chargedPujaPriceInr } from '../lib/nri-pricing.js';
 // OPS-05: the durable money trail. `recordMoneyEvent` never throws, never
 // rejects and never joins the caller's transaction, so every call is safe to
 // `void` — a logging failure must not fail a real booking. Record AFTER the
@@ -941,6 +942,11 @@ const fromOfferingBodySchema = z
     // "forces the NRI/USD path", which is an invitation to wire it back into
     // the order currency; that path was RV-01 and is gone.
     currency: z.enum(['INR', 'USD']).optional(),
+    // NRI pricing (2026-10-05): true exactly when the checkout page is showing
+    // the dollar price. Same explicit flag as /create-order; the charge is then
+    // puja x 2.5 (+ flat fees) in INR. Never inferred from users.isNri, and
+    // never from the legacy `currency` hint above.
+    nriPricing: z.boolean().optional().default(false),
     // CM-06: country-aware, shared with the web form. Was India-only.
     deliveryAddress: deliveryAddressSchema.optional(),
   })
@@ -2149,7 +2155,8 @@ export async function bookingRoutes(server: FastifyInstance) {
   // priestPujaOfferingId FK (migration 20260520020000) so the priest portal
   // + admin can read it back without parsing JSON markers.
   //
-  // Pricing: INR via Razorpay for everyone. The NRI branch that used to sit
+  // Pricing: INR via Razorpay for everyone; the optional `nriPricing` flag
+  // applies the 2.5x NRI puja price (see lib/nri-pricing.ts). The old NRI branch that used to sit
   // here — "bill in USD via Stripe at basePrice * 9" — was RV-01, the P0 that
   // charged NRI devotees 83.5× by applying a price-level multiplier as if it
   // were an FX rate. It is deleted, not disabled (Batch 1, 2026-08-10): Stripe
@@ -2159,12 +2166,7 @@ export async function bookingRoutes(server: FastifyInstance) {
   //
   // Body schema is `fromOfferingBodySchema` at module scope (exported through
   // `__testing`); the slot-capacity rules it pairs with are enforced at step 6.
-  // NRI multiplier for priest-offering pricing. Business rule #2 (NRI
-  // pricing 9-10× domestic) — we pick 9x as the lower bound; temple-side
-  // offerings already use PujaType.nriPrice which is set explicitly.
-  // (An NRI price multiplier lived here. Removed 2026-08-10 with the Stripe/USD
-  // path — it was being applied as if it were an FX rate. NRI premium pricing
-  // returns with the PayPal rail as a server-quoted amount the client renders.)
+  // (No multiplier constant here: the 2.5x NRI rule lives in lib/nri-pricing.ts.)
 
   server.post(
     '/from-offering',
@@ -2255,15 +2257,13 @@ export async function bookingRoutes(server: FastifyInstance) {
         // 9-10x domestic", a PRICE-LEVEL rule) with an FX conversion.
         //
         // Stripe is removed (PayPal via Razorpay replaces it). We deliberately
-        // do NOT re-apply the 9x here: the web checkout displays `basePrice`,
-        // and applying a server-side multiplier the UI cannot see would charge
-        // an NRI devotee Rs 9,900 against a Rs 1,100 quote — a worse failure
-        // than the one being fixed. Displayed price MUST equal charged price.
+        // do NOT re-apply the 9x here; a server-side multiplier the UI cannot
+        // see would charge an NRI devotee Rs 9,900 against a Rs 1,100 quote.
+        // Displayed price MUST equal charged price.
         //
-        // NRI premium pricing is re-introduced with the PayPal rail, as an
-        // explicit server-quoted amount the client renders before payment.
-        // `body.currency` is still accepted (older clients post 'USD') but is
-        // now only an NRI hint for analytics — it never changes the amount.
+        // NRI premium pricing is back as the explicit `nriPricing` flag (see
+        // `pujaPrice` below). `body.currency` is still accepted (older clients
+        // post 'USD') but is only an analytics hint — it never changes the amount.
         //
         // FEES (2026-08-11). This path set `priceAmount = basePrice` while
         // accepting `prasadDelivery` and a full delivery address, and persisting
@@ -2277,22 +2277,23 @@ export async function bookingRoutes(server: FastifyInstance) {
         // are imported from booking.service, which documents them as the single
         // source of truth for the amounts.
         //
-        // The 80/20 split stays on `basePrice` ONLY — the fees are platform
+        // The 80/20 split stays on the puja price ONLY — the fees are platform
         // revenue / prasad pass-through, not part of the pandit's earned split.
         //
-        // ⚠ "Displayed price MUST equal charged price" (above) still holds and
-        // is now a SHIP BLOCKER on this path: apps/web/app/checkout/offering/
-        // page.tsx renders `offering.basePrice` alone, so it must render the
-        // `priceBreakdown` this endpoint returns (base + Rs 51 + Rs 150) before
-        // this goes live — exactly the breakdown the temple wizard already
-        // shows. A Rs 51 surprise at the Razorpay sheet is nothing like RV-01's
-        // 83.5x, but it is the same class of defect and must not ship.
-        const basePrice = new Prisma.Decimal(offering.basePrice.toString());
+        // "Displayed price MUST equal charged price" (above) still holds:
+        // apps/web/app/checkout/offering/page.tsx renders the same total
+        // (puja + Rs 51, USD or INR view) and refuses to open Razorpay when the
+        // order amount differs.
+        // NRI pricing (2026-10-05) returns as the explicit `nriPricing` request
+        // flag the page sends exactly when it is displaying the dollar price
+        // (same contract as /create-order): puja x 2.5, still an INR order,
+        // flat fees NOT multiplied, 80/20 on the puja price actually charged.
+        const pujaPrice = chargedPujaPriceInr(offering.basePrice.toString(), body.nriPricing);
         const platformFee = new Prisma.Decimal(PLATFORM_FEE_INR);
         const prasadFee = body.prasadDelivery
           ? new Prisma.Decimal(PRASAD_DELIVERY_FEE_INR)
           : new Prisma.Decimal(0);
-        const priceAmount = basePrice.add(platformFee).add(prasadFee);
+        const priceAmount = pujaPrice.add(platformFee).add(prasadFee);
         const currency = 'INR';
         // Honour the pandit's own commissionRate (their share); default 80/20
         // (booking revamp take-rate cut — see booking.service DEFAULT_PRIEST_SHARE).
@@ -2300,7 +2301,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         // is 0.19999999999999996, and money is never JS float here.
         const share = resolvePriestShare(offering.priest.commissionRate);
         const { priestPayout: priestPayoutAmount, platformCommission } = splitPujaPrice(
-          basePrice,
+          pujaPrice,
           share,
         );
 
@@ -2486,19 +2487,14 @@ export async function bookingRoutes(server: FastifyInstance) {
         // devotees), so there is no second gateway and no currency branch to
         // get wrong.
         //
-        // The charged amount is `offering.basePrice` + the Rs 51 platform fee +
-        // the Rs 150 prasad-delivery fee when requested, all in INR. There is NO
-        // NRI multiplier anywhere on this path.
-        //
-        // This comment previously read "NRI bookings are priced 9x in INR above
-        // and charged here exactly like a domestic booking" — false, and the
-        // most dangerous kind of false: it sits directly on the Razorpay call
-        // and tells a maintainer a 9x multiplier is already applied upstream.
-        // The natural repair when NRI pricing returns is to "restore" it here,
-        // which recreates RV-01 — the P0 that billed Rs 1,100 as $9,900. NRI
-        // premium pricing returns as a SERVER-QUOTED amount on the PayPal rail,
-        // rendered by the client before payment; never as a multiplier applied
-        // behind a quote the UI has already shown.
+        // The charged amount is the puja price (`offering.basePrice`, or x2.5
+        // rounded to Rs 10 when the page sent `nriPricing: true`) + the Rs 51
+        // platform fee + the Rs 150 prasad-delivery fee when requested, all in
+        // INR. The multiplier is applied once, above, from the explicit request
+        // flag the page sends only while it is showing the dollar price, so the
+        // order amount always equals the quote on screen. Do not apply it again
+        // here, and never from users.isNri or the legacy `currency` hint (RV-01
+        // was a multiplier applied behind a quote the UI had not shown).
         const order = await paymentService.createRazorpayOrder(booking.id, userId);
 
         return reply.status(201).send({
@@ -2509,13 +2505,13 @@ export async function bookingRoutes(server: FastifyInstance) {
           amount: order.amount,
           currency: order.currency,
           razorpayKeyId: order.razorpayKeyId,
-          // Displayed price MUST equal charged price. The pandit-direct checkout
-          // page renders `offering.basePrice`, so the fees this path now
-          // collects are itemised here for the client to show — the same
+          // Displayed price MUST equal charged price. `basePriceInr` is the puja
+          // price actually charged (NRI-priced when the flag was sent); the
+          // fees this path collects are itemised here for the client to show — the same
           // breakdown apps/web/app/pujas/book/page.tsx already renders on the
           // temple path (base + Rs 51 + Rs 150).
           priceBreakdown: {
-            basePriceInr: basePrice.toString(),
+            basePriceInr: pujaPrice.toString(),
             platformFeeInr: platformFee.toString(),
             prasadDeliveryFeeInr: prasadFee.toString(),
             totalInr: priceAmount.toString(),
