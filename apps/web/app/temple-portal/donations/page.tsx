@@ -36,6 +36,12 @@ function formatDateTime(iso: string): string {
   });
 }
 
+const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
+  paid: { label: 'Received', cls: 'bg-green-100 text-green-700' },
+  created: { label: 'Payment not completed', cls: 'bg-amber-100 text-amber-700' },
+  failed: { label: 'Payment failed', cls: 'bg-red-100 text-red-700' },
+};
+
 // ─── Component ──────────────────────────────────────────────────
 
 export default function TempleDonationsPage() {
@@ -69,19 +75,20 @@ export default function TempleDonationsPage() {
     const term = search.trim().toLowerCase();
     if (!term) return true;
     return (
-      d.donorName.toLowerCase().includes(term) ||
-      d.receipt.toLowerCase().includes(term)
+      d.donor.toLowerCase().includes(term) ||
+      (d.receiptNumber ?? '').toLowerCase().includes(term)
     );
   });
 
+  // Only a captured payment is money the temple received. The API also returns
+  // checkouts that were opened and abandoned (`created`) and failed payments.
+  const paid = donations.filter((d) => d.status === 'paid');
   const todayIso = new Date().toISOString().split('T')[0];
-  const totalAmount = donations.reduce(
-    (sum, d) => sum + parseFloat(d.amount ?? '0'),
-    0,
-  );
-  const todayAmount = donations
-    .filter((d) => d.createdAt.startsWith(todayIso ?? ''))
-    .reduce((sum, d) => sum + parseFloat(d.amount ?? '0'), 0);
+  const totalAmount = paid.reduce((sum, d) => sum + d.amountInr, 0);
+  const todayAmount = paid
+    .filter((d) => (d.paidAt ?? d.createdAt).startsWith(todayIso ?? ''))
+    .reduce((sum, d) => sum + d.amountInr, 0);
+  const donorCount = new Set(paid.map((d) => d.email ?? d.donor)).size;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -89,7 +96,12 @@ export default function TempleDonationsPage() {
         <div>
           <h1 className={H1.portal}>Donations</h1>
           <p className="text-surface-500 mt-1">
-            Track and manage temple donations
+            Donations devotees have made to your temple.
+          </p>
+          <p className="prose-meta text-surface-500 mt-1 max-w-xl">
+            Donations are collected by Darshya first and sent on to your temple by bank
+            transfer. Only completed payments are counted below; transfers to your temple are
+            recorded by the Darshya team and are not shown here yet.
           </p>
         </div>
         <button
@@ -137,7 +149,7 @@ export default function TempleDonationsPage() {
           icon={<TrendingUp className="w-5 h-5 text-saffron-600" />}
           bg="bg-saffron-50"
           label="Total Donors"
-          value={loading && donations.length === 0 ? null : String(donations.length)}
+          value={loading && donations.length === 0 ? null : String(donorCount)}
         />
       </div>
 
@@ -166,28 +178,27 @@ export default function TempleDonationsPage() {
         <div className="flex flex-col items-center justify-center rounded-xl border border-surface-100 bg-white py-16">
           <Heart className="w-12 h-12 text-surface-300 mb-4" />
           <h3 className="text-lg font-semibold text-surface-700">
-            No donations yet
+            {donations.length === 0 ? 'No donations yet' : 'No donations match your search'}
           </h3>
-          <p className="prose-meta text-surface-500 mt-1 max-w-md text-center">
-            Temple donations will appear here once the donation flow is enabled
-            for your temple. Devotees will be able to give via the temple
-            details page.
-          </p>
+          {donations.length === 0 && (
+            <p className="prose-meta text-surface-500 mt-1 max-w-md text-center">
+              Donations made to your temple appear here as devotees complete payment.
+            </p>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-surface-100 overflow-hidden">
           <div className="hidden lg:grid grid-cols-12 gap-4 px-5 py-3 bg-surface-50 text-xs font-semibold text-surface-500 uppercase tracking-wider border-b border-surface-100">
             <div className="col-span-3">Donor</div>
             <div className="col-span-2">Amount</div>
-            <div className="col-span-2">Purpose</div>
-            <div className="col-span-2">Payment</div>
-            <div className="col-span-2">Date</div>
-            <div className="col-span-1">Receipt</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-3">Date</div>
+            <div className="col-span-2">Receipt</div>
           </div>
 
           <div className="divide-y divide-surface-50">
             {filtered.map((donation) => {
-              const amountNum = parseFloat(donation.amount ?? '0');
+              const status = STATUS_LABEL[donation.status] ?? STATUS_LABEL.created!;
               return (
                 <div
                   key={donation.id}
@@ -197,45 +208,28 @@ export default function TempleDonationsPage() {
                   <div className="hidden lg:grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-3 flex items-center gap-3">
                       <div className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center shrink-0">
-                        {donation.isAnonymous ? (
-                          <Heart className="w-4 h-4 text-red-400" />
-                        ) : (
-                          <User className="w-4 h-4 text-red-400" />
-                        )}
+                        <User className="w-4 h-4 text-red-400" />
                       </div>
-                      <span
-                        className={`text-sm font-medium ${
-                          donation.isAnonymous
-                            ? 'text-surface-400 italic'
-                            : 'text-surface-800'
-                        }`}
-                      >
-                        {donation.donorName}
-                      </span>
+                      <span className="text-sm font-medium text-surface-800">{donation.donor}</span>
                     </div>
                     <div className="col-span-2">
                       <p className="text-sm font-bold text-surface-800">
-                        {formatCurrency(amountNum)}
+                        {formatCurrency(donation.amountInr)}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface-100 text-surface-600">
-                        {donation.purpose}
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${status.cls}`}>
+                        {status.label}
                       </span>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-3">
                       <p className="text-xs text-surface-500">
-                        {donation.paymentMethod}
+                        {formatDateTime(donation.paidAt ?? donation.createdAt)}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-xs text-surface-500">
-                        {formatDateTime(donation.createdAt)}
-                      </p>
-                    </div>
-                    <div className="col-span-1">
                       <p className="text-xs text-surface-400 font-mono truncate">
-                        {donation.receipt}
+                        {donation.receiptNumber ?? '—'}
                       </p>
                     </div>
                   </div>
@@ -248,28 +242,19 @@ export default function TempleDonationsPage() {
                           <Heart className="w-4 h-4 text-red-400" />
                         </div>
                         <div>
-                          <p
-                            className={`text-sm font-medium ${
-                              donation.isAnonymous
-                                ? 'text-surface-400 italic'
-                                : 'text-surface-800'
-                            }`}
-                          >
-                            {donation.donorName}
-                          </p>
-                          <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-surface-100 text-surface-600">
-                            {donation.purpose}
+                          <p className="text-sm font-medium text-surface-800">{donation.donor}</p>
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${status.cls}`}>
+                            {status.label}
                           </span>
                         </div>
                       </div>
                       <p className="text-sm font-bold text-surface-800">
-                        {formatCurrency(amountNum)}
+                        {formatCurrency(donation.amountInr)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-surface-400">
-                      <span>{donation.paymentMethod}</span>
-                      <span>{formatDateTime(donation.createdAt)}</span>
-                      <span className="font-mono">{donation.receipt}</span>
+                      <span>{formatDateTime(donation.paidAt ?? donation.createdAt)}</span>
+                      <span className="font-mono">{donation.receiptNumber ?? '—'}</span>
                     </div>
                   </div>
                 </div>
