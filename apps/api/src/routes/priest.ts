@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
-import { priestService } from '../services/priest.service.js';
+import { priestService, PujaStateConflictError } from '../services/priest.service.js';
 import { dispatchService } from '../services/dispatch.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
 import { prisma } from '../lib/prisma.js';
@@ -602,6 +602,7 @@ export async function priestRoutes(server: FastifyInstance) {
       const booking = await priestService.startPuja(id, priestId);
       return { message: 'Puja started.', booking };
     } catch (err: any) {
+      if (err instanceof PujaStateConflictError) return reply.code(409).send({ error: safeErrorMessage(err) });
       request.log?.error({ err }, 'priest route failed');
       reply.code(400).send({ error: safeErrorMessage(err) });
     }
@@ -616,6 +617,7 @@ export async function priestRoutes(server: FastifyInstance) {
       const booking = await priestService.completePuja(id, priestId);
       return { message: 'Puja completed.', booking };
     } catch (err: any) {
+      if (err instanceof PujaStateConflictError) return reply.code(409).send({ error: safeErrorMessage(err) });
       request.log?.error({ err }, 'priest route failed');
       reply.code(400).send({ error: safeErrorMessage(err) });
     }
