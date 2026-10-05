@@ -65,6 +65,7 @@ describe('temple-portal — offering creation surfaces the real blocker (S-06)',
   it('reports the profile-exists-but-unmatched case separately', async () => {
     prismaMock.templeProfile.findUnique.mockResolvedValue({
       templeName: 'Shree Siddhivinayak Temple',
+      approved: true,
     } as any);
     const app = makeApp();
     const res = await app.inject({
@@ -76,7 +77,7 @@ describe('temple-portal — offering creation surfaces the real blocker (S-06)',
   });
 
   it('confirms the link when a Temple matches', async () => {
-    prismaMock.templeProfile.findUnique.mockResolvedValue({ templeName: 'Somnath' } as any);
+    prismaMock.templeProfile.findUnique.mockResolvedValue({ templeName: 'Somnath', approved: true } as any);
     prismaMock.temple.findFirst.mockResolvedValue({ id: 'temple-1' } as any);
     const app = makeApp();
     const res = await app.inject({
@@ -90,6 +91,7 @@ describe('temple-portal — offering creation surfaces the real blocker (S-06)',
   it('matches the Temple case-insensitively and ignores stray whitespace', async () => {
     prismaMock.templeProfile.findUnique.mockResolvedValue({
       templeName: '  somnath temple  ',
+      approved: true,
     } as any);
     prismaMock.temple.findFirst.mockResolvedValue({ id: 'temple-1' } as any);
     const app = makeApp();
@@ -119,7 +121,7 @@ describe('temple-portal — offering creation surfaces the real blocker (S-06)',
   });
 
   it('creates the offering with its slots once a Temple is linked', async () => {
-    prismaMock.templeProfile.findUnique.mockResolvedValue({ templeName: 'Somnath' } as any);
+    prismaMock.templeProfile.findUnique.mockResolvedValue({ templeName: 'Somnath', approved: true } as any);
     prismaMock.temple.findFirst.mockResolvedValue({ id: 'temple-1' } as any);
     prismaMock.templePujaOffering.create.mockImplementation(async (args: any) => ({
       id: 'off-1',

@@ -54,7 +54,9 @@ type ApiBooking = {
 };
 
 type ApiDashboard = {
- profile: { templeName?: string | null; templeCity?: string | null; templeState?: string | null } | null;
+ profile: { templeName?: string | null; city?: string | null; state?: string | null } | null;
+ templeLinked?: boolean;
+ reason?: 'no_temple_profile' | 'not_approved' | 'no_matching_temple';
  stats: {
   totalBookings: number;
   monthBookings: number;
@@ -113,8 +115,17 @@ export default function TempleDashboard() {
  const liveStats = api?.stats;
  const liveBookings: ApiBooking[] = api?.recentBookings ?? [];
  const templeName = api?.profile?.templeName ?? 'My Temple';
- const templeCity = api?.profile?.templeCity ?? '';
- const templeState = api?.profile?.templeState ?? '';
+ const templeCity = api?.profile?.city ?? '';
+ const templeState = api?.profile?.state ?? '';
+ // Say why the numbers are zero when the account is not linked to a temple yet.
+ const linkNotice =
+  api?.templeLinked === false
+   ? api.reason === 'not_approved'
+    ? 'Your temple profile is awaiting approval by the Darshya team. Bookings, donations and payouts appear here once it is approved and linked to your temple.'
+    : api.reason === 'no_matching_temple'
+     ? 'Your temple profile name does not match any temple listed on Darshya, so no bookings can be shown. Check the spelling on your profile or contact support.'
+     : 'Complete your temple profile to start receiving bookings and donations.'
+   : null;
  // CT-UI-1: join only the parts that exist — a bare ", ·" rendered for an
  // account with no temple profile yet.
  const templePlace = [templeCity, templeState].filter(Boolean).join(', ');
@@ -126,8 +137,8 @@ export default function TempleDashboard() {
  const statCards = [
    { label: 'Total Bookings', value: unread ? '—' : (liveStats?.totalBookings ?? 0).toLocaleString('en-IN'), icon: Flame, color: 'text-saffron-600', bg: 'bg-saffron-50' },
    { label: 'Bookings This Month', value: unread ? '—' : (liveStats?.monthBookings ?? 0).toLocaleString('en-IN'), icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
-   { label: 'Revenue This Month', value: unread ? '—' : formatCurrency(liveStats?.monthRevenueInr ?? 0), icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
-   { label: 'Total Revenue', value: unread ? '—' : formatCurrency(liveStats?.totalRevenueInr ?? 0), icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50' },
+   { label: 'Temple share this month', value: unread ? '—' : formatCurrency(liveStats?.monthRevenueInr ?? 0), icon: TrendingUp, color: 'text-tulsi-green', bg: 'bg-tulsi-green-light/20' },
+   { label: 'Total temple share', value: unread ? '—' : formatCurrency(liveStats?.totalRevenueInr ?? 0), icon: IndianRupee, color: 'text-red-500', bg: 'bg-red-50' },
  ];
 
  return (
@@ -149,6 +160,12 @@ export default function TempleDashboard() {
  onRetry={() => { void load(); }}
  className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
  />
+ )}
+
+ {linkNotice && (
+ <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+ {linkNotice}
+ </div>
  )}
 
  <MyProviderProfileCard role="TEMPLE_MANAGER" onboardingSlug="temple_manager" publicListingType="temple" />
