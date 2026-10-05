@@ -6,6 +6,7 @@ vi.mock('./booking.service.js', () => ({
   BookingService: vi.fn().mockImplementation(() => ({ updateBookingStatus: vi.fn(), uploadVideoProof: vi.fn() })),
 }));
 
+import { Prisma } from '@prisma/client';
 import { PriestService } from './priest.service.js';
 
 /**
@@ -52,6 +53,7 @@ describe('PriestService.getOpenRequests', () => {
         scheduledDate: new Date('2026-10-08T00:00:00Z'),
         scheduledTimeSlot: '07:00',
         devoteeNames: [{ name: 'Arjun Sharma', gotra: 'Kashyap' }, { name: 'Meera' }],
+        priestPayout: new Prisma.Decimal('2400.00'),
         pujaType: { name: 'Hanuman Chalisa Path' },
         temple: { name: 'Kashi Vishwanath Temple', city: 'Varanasi', state: 'Uttar Pradesh' },
       },
@@ -72,6 +74,7 @@ describe('PriestService.getOpenRequests', () => {
         scheduledDate: new Date('2026-10-08T00:00:00Z'),
         scheduledTimeSlot: '07:00',
         devoteeCount: 2,
+        priestEarningInr: 2400,
         pujaName: 'Hanuman Chalisa Path',
         templeName: 'Kashi Vishwanath Temple',
         city: 'Varanasi',
@@ -92,13 +95,13 @@ describe('PriestService.getOpenRequests', () => {
     expect(json).not.toMatch(/Arjun|Kashyap/);
   });
 
-  it('asks the database for the minimum fields only (no names, no address, no money)', async () => {
+  it('asks the database for the minimum fields only (no names, no address, only the pandit earning)', async () => {
     prismaMock.priest.findUnique.mockResolvedValue(verified);
     prismaMock.pujaBooking.findMany.mockResolvedValue([]);
     await service.getOpenRequests('priest-1');
     const select = (prismaMock.pujaBooking.findMany.mock.calls[0]![0] as any).select;
     expect(Object.keys(select).sort()).toEqual(
-      ['bookingNumber', 'devoteeNames', 'id', 'pujaType', 'scheduledDate', 'scheduledTimeSlot', 'temple'].sort(),
+      ['bookingNumber', 'devoteeNames', 'id', 'priestPayout', 'pujaType', 'scheduledDate', 'scheduledTimeSlot', 'temple'].sort(),
     );
   });
 });

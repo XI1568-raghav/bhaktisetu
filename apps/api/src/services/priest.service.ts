@@ -6,6 +6,16 @@ import { notifyDevotee, buildBookingCtx } from './booking-notify.service.js';
 import { mintProviderEarningForBooking } from './provider-earning-mint.js';
 // OPS-05 — the durable money trail. Post-commit only; never inside a tx.
 import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
+import { pujaStartLockedMessage, pujaStartUnlockAt } from '../lib/puja-start-window.js';
+
+/** A request that is valid but not allowed yet (or any more); the route sends it as 409. */
+export class PujaStateConflictError extends Error {
+  readonly statusCode = 409;
+  constructor(message: string) {
+    super(message);
+    this.name = 'PujaStateConflictError';
+  }
+}
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -27,13 +37,18 @@ export const PRIEST_BOOKING_VIEWS = {
 
 export type PriestBookingView = keyof typeof PRIEST_BOOKING_VIEWS;
 
-/** A paid, unassigned booking as an approved pandit sees it. No devotee identity, no money. */
+/**
+ * A paid, unassigned booking as an approved pandit sees it. No devotee identity
+ * and no devotee-side price; `priestEarningInr` is the pandit's own take-home.
+ */
 export interface OpenRequest {
   id: string;
   bookingNumber: string | null;
   scheduledDate: Date;
   scheduledTimeSlot: string | null;
   devoteeCount: number;
+  /** What this pandit is paid for the booking: the stored Commission.amount (puja fee x pandit share, platform fee excluded). */
+  priestEarningInr: number;
   pujaName: string;
   templeName: string;
   city: string;
@@ -330,7 +345,16 @@ export class PriestService {
 
     const { priestId: _assigned, ...rest } = booking;
     void _assigned;
-    return { ok: true, booking: rest };
+    // The page disables Start from these instead of letting the click fail.
+    const startLockedMessage = pujaStartLockedMessage(rest.scheduledDate, rest.scheduledTimeSlot);
+    return {
+      ok: true,
+      booking: {
+        ...rest,
+        startUnlocksAt: pujaStartUnlockAt(rest.scheduledDate, rest.scheduledTimeSlot).toISOString(),
+        startLockedMessage,
+      },
+    };
   }
 
   /**
@@ -346,9 +370,10 @@ export class PriestService {
    * waited on a pandit who could not see it.
    *
    * Only an approved, active pandit gets a list. It carries the minimum needed
-   * to decide (puja, temple, date, slot, how many devotees) and deliberately
-   * no devotee names, gotras, sankalp, address or money: those are released to
-   * the pandit who accepts, not to every approved pandit on the platform.
+   * to decide (puja, temple, date, slot, how many devotees, what the pandit
+   * earns) and deliberately no devotee names, gotras, sankalp, address or
+   * devotee-side price: those are released to the pandit who accepts, not to
+   * every approved pandit on the platform.
    */
   async getOpenRequests(priestId: string, limit = 50) {
     const priest = await prisma.priest.findUnique({
@@ -372,6 +397,7 @@ export class PriestService {
         scheduledDate: true,
         scheduledTimeSlot: true,
         devoteeNames: true,
+        priestPayout: true,
         pujaType: { select: { name: true } },
         temple: { select: { name: true, city: true, state: true } },
       },
@@ -385,6 +411,9 @@ export class PriestService {
         scheduledDate: r.scheduledDate,
         scheduledTimeSlot: r.scheduledTimeSlot,
         devoteeCount: Array.isArray(r.devoteeNames) ? r.devoteeNames.length : 0,
+        // `priestPayout` is exactly what acceptBooking mints into Commission.amount
+        // (puja fee x pandit share, platform fee excluded); Decimal until the last step.
+        priestEarningInr: new Prisma.Decimal(r.priestPayout ?? 0).toDecimalPlaces(2).toNumber(),
         pujaName: r.pujaType?.name ?? 'Puja',
         templeName: r.temple?.name ?? 'Temple',
         city: r.temple?.city ?? '',
@@ -653,7 +682,7 @@ export class PriestService {
   async startPuja(bookingId: string, priestId: string) {
     const booking = await prisma.pujaBooking.findUnique({
       where: { id: bookingId },
-      select: { id: true, status: true, priestId: true },
+      select: { id: true, status: true, priestId: true, scheduledDate: true, scheduledTimeSlot: true },
     });
 
     if (!booking) {
@@ -663,6 +692,10 @@ export class PriestService {
     if (booking.priestId !== priestId) {
       throw new Error('You are not assigned to this booking.');
     }
+
+    // Starting early makes the earning payable for a puja that has not happened.
+    const locked = pujaStartLockedMessage(booking.scheduledDate, booking.scheduledTimeSlot);
+    if (locked) throw new PujaStateConflictError(locked);
 
     return this.bookingService.updateBookingStatus(bookingId, 'in_progress');
   }
@@ -682,6 +715,10 @@ export class PriestService {
 
     if (booking.priestId !== priestId) {
       throw new Error('You are not assigned to this booking.');
+    }
+
+    if (booking.status !== 'in_progress') {
+      throw new PujaStateConflictError('Start the puja before marking it complete.');
     }
 
     return this.bookingService.updateBookingStatus(bookingId, 'completed');
