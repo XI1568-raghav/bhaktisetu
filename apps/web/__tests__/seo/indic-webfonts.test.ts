@@ -24,9 +24,10 @@
  * four scripts is reachable from all three. A face that is downloaded but not
  * reachable fails here exactly as loudly as one that is missing.
  *
- * next/font/google is the required delivery mechanism: it fetches the woff2 at
- * BUILD time and self-hosts it under /_next/static, so there is no runtime
- * request to fonts.googleapis.com. That distinction is load-bearing here —
+ * next/font/local with woff2 vendored in app/fonts is the required delivery
+ * mechanism (it replaced next/font/google on 2026-10-05 because the build-time
+ * Google download flaked in CI): the woff2 is emitted under /_next/static, so
+ * there is no runtime request to fonts.googleapis.com and no build-time one. That distinction is load-bearing here —
  * PERF-03 removed a CDN stylesheet (api.fontshare.com) that had started
  * answering 200 with a comment and zero @font-face rules, silently un-styling
  * the whole site.
@@ -61,10 +62,11 @@ const globalsSrc = stripCss(fs.readFileSync(GLOBALS, 'utf8'));
 /* ── what app/layout.tsx loads ────────────────────────────────────────────── */
 
 interface LoadedFace {
-  /** The next/font/google export, e.g. `Noto_Sans_Tamil`. */
+  /** The const the face is bound to in layout.tsx, e.g. `notoSansTamil`. */
   family: string;
   /** The CSS custom property it publishes, if any. */
   variable: string | null;
+  /** Scripts the vendored woff2 covers, derived from its file name. */
   subsets: string[];
   preload: boolean | null;
   /** Verbatim entries next/font appends after the family (see below). */
@@ -72,52 +74,62 @@ interface LoadedFace {
 }
 
 /**
- * Parse `const x = Family({ … });` calls whose callee was imported from
- * `next/font/google`. Brace-matched rather than regexed end-to-end so a nested
- * array or object inside the options cannot truncate the match.
+ * Which script a vendored woff2 covers. The files are the Google Fonts subset
+ * files, named `<Family>[-<subset>]-var.woff2`; a Noto Sans <Script> family
+ * covers that script, and a `-latin-` file covers latin.
+ */
+function subsetsForFile(file: string): string[] {
+  const base = path.basename(file).toLowerCase();
+  const out: string[] = [];
+  for (const script of ['devanagari', 'tamil', 'telugu', 'bengali']) {
+    if (base.includes(script)) out.push(script);
+  }
+  if (base.includes('-latin-')) out.push('latin');
+  return out;
+}
+
+/**
+ * Parse `const x = localFont({ ... });` calls (next/font/local, self-hosted
+ * woff2 under app/fonts). Brace-matched rather than regexed end-to-end so a
+ * nested array or object inside the options cannot truncate the match.
  */
 function parseLoadedFaces(src: string): LoadedFace[] {
-  const importMatch = /import\s*\{([^}]*)\}\s*from\s*["']next\/font\/google["']/.exec(src);
-  if (!importMatch) return [];
-  const imported = importMatch[1]!
-    .split(',')
-    .map((s) => s.trim().split(/\s+as\s+/)[0]!.trim())
-    .filter(Boolean);
+  if (!/import\s+localFont\s+from\s*["']next\/font\/local["']/.test(src)) return [];
 
   const faces: LoadedFace[] = [];
-  for (const family of imported) {
-    const call = new RegExp(`\\b${family}\\s*\\(\\s*\\{`, 'g');
-    let m: RegExpExecArray | null;
-    while ((m = call.exec(src))) {
-      const open = src.indexOf('{', m.index);
-      let depth = 0;
-      let end = open;
-      for (let i = open; i < src.length; i++) {
-        if (src[i] === '{') depth++;
-        else if (src[i] === '}') {
-          depth--;
-          if (depth === 0) {
-            end = i;
-            break;
-          }
+  const call = /const\s+(\w+)\s*=\s*localFont\s*\(\s*\{/g;
+  let m: RegExpExecArray | null;
+  while ((m = call.exec(src))) {
+    const family = m[1]!;
+    const open = src.indexOf('{', m.index + m[0].length - 1);
+    let depth = 0;
+    let end = open;
+    for (let i = open; i < src.length; i++) {
+      if (src[i] === '{') depth++;
+      else if (src[i] === '}') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
         }
       }
-      const opts = src.slice(open, end + 1);
-      const list = (key: string): string[] => {
-        const lm = new RegExp(`${key}\\s*:\\s*\\[([^\\]]*)\\]`).exec(opts);
-        if (!lm) return [];
-        return [...lm[1]!.matchAll(/["']([^"']+)["']/g)].map((x) => x[1]!);
-      };
-      const variable = /variable\s*:\s*["'](--[\w-]+)["']/.exec(opts)?.[1] ?? null;
-      const preloadRaw = /preload\s*:\s*(true|false)/.exec(opts)?.[1];
-      faces.push({
-        family,
-        variable,
-        subsets: list('subsets'),
-        preload: preloadRaw === undefined ? null : preloadRaw === 'true',
-        fallback: list('fallback'),
-      });
     }
+    const opts = src.slice(open, end + 1);
+    const list = (key: string): string[] => {
+      const lm = new RegExp(`${key}\\s*:\\s*\\[([^\\]]*)\\]`).exec(opts);
+      if (!lm) return [];
+      return [...lm[1]!.matchAll(/["']([^"']+)["']/g)].map((x) => x[1]!);
+    };
+    const variable = /variable\s*:\s*["'](--[\w-]+)["']/.exec(opts)?.[1] ?? null;
+    const preloadRaw = /preload\s*:\s*(true|false)/.exec(opts)?.[1];
+    const srcFile = /src\s*:\s*["']([^"']+)["']/.exec(opts)?.[1] ?? '';
+    faces.push({
+      family,
+      variable,
+      subsets: subsetsForFile(srcFile),
+      preload: preloadRaw === undefined ? null : preloadRaw === 'true',
+      fallback: list('fallback'),
+    });
   }
   return faces;
 }
@@ -200,10 +212,14 @@ function facesForScript(script: string): LoadedFace[] {
 const INHERITED_STACKS = ['--font-body', '--font-display', '--font-serif'];
 
 describe('[I-06/I18N-06] every advertised script has a self-hosted webfont', () => {
-  it('app/layout.tsx loads its faces through next/font/google, not a CDN stylesheet', () => {
-    expect(FACES.length, 'no next/font/google faces parsed out of app/layout.tsx').toBeGreaterThan(
+  it('app/layout.tsx loads its faces through next/font/local, not a CDN stylesheet or next/font/google', () => {
+    expect(FACES.length, 'no next/font/local faces parsed out of app/layout.tsx').toBeGreaterThan(
       0,
     );
+    expect(
+      layoutSrc.includes('next/font/google'),
+      'the build-time Google Fonts download flakes in CI; vendor the woff2 in app/fonts',
+    ).toBe(false);
     for (const host of ['fonts.googleapis.com', 'fonts.gstatic.com', 'api.fontshare.com']) {
       expect(
         layoutSrc.includes(host),
@@ -212,11 +228,11 @@ describe('[I-06/I18N-06] every advertised script has a self-hosted webfont', () 
     }
   });
 
-  it.each(INDIC_SCRIPTS)('a downloaded face declares the %s subset', (script) => {
+  it.each(INDIC_SCRIPTS)('a vendored face covers the %s script', (script) => {
     const covering = facesForScript(script).map((f) => f.family);
     expect(
       covering,
-      `no next/font family in app/layout.tsx declares subsets: ['${script}'], so every ` +
+      `no next/font family in app/layout.tsx vendors a ${script} woff2, so every ` +
         `${script} glyph on the site paints in whatever the OS happens to ship`,
     ).not.toEqual([]);
   });

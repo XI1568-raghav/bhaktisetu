@@ -1,13 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { TITLE_TEMPLATE } from "../lib/seo/title-template";
-import {
- Noto_Sans,
- Noto_Sans_Devanagari,
- Noto_Sans_Tamil,
- Noto_Sans_Telugu,
- Noto_Sans_Bengali,
- Crimson_Pro,
-} from "next/font/google";
+import localFont from "next/font/local";
 import { t } from "../lib/t";
 import { footerDonateLink } from "../lib/footer-donate-link";
 import { blogFooterLinks } from "../lib/footer-blog-link";
@@ -112,7 +105,7 @@ import "./globals.css";
  * the same waste PERF-03 recorded ("201.9 KB of font bytes, rendered in Arial
  * anyway").
  *
- * WEIGHTS: the three new families are declared with no `weight`, which selects
+ * WEIGHTS: the three new families are declared as the full 100-900 range, i.e.
  * the variable font — one file covering 100-900 instead of four static cuts.
  *
  * Scope is deliberately the four scripts lib/i18n/locales.ts advertises
@@ -120,6 +113,17 @@ import "./globals.css";
  * Kannada, Malayalam and Gurmukhi are accepted by the DB enum but the web has
  * no destination for them (locales.ts collapses them to English), so loading
  * their faces would be bytes for a page that does not exist.
+ */
+
+/*
+ * SELF-HOSTED (2026-10-05, ci/cut-actions-minutes): these faces used to come from
+ * next/font/google, which downloads from fonts.googleapis.com during `next build`.
+ * That intermittently failed in CI with `TypeError: Cannot read properties of
+ * null (reading '1')` after every test had passed, forcing ~8 min reruns against
+ * the 2,000 min/mo Actions cap. The same woff2 files (SIL OFL 1.1, variable
+ * fonts, same subsets as before) are vendored in app/fonts/ and loaded through
+ * next/font/local, so the build needs no network and the emitted CSS variables,
+ * families, weight ranges, display, preload and fallback chains are unchanged.
  */
 
 /*
@@ -131,11 +135,13 @@ import "./globals.css";
  * fails if either one stops reaching all four scripts, which is the guard that
  * a shared constant would otherwise have provided.
  */
-const notoSans = Noto_Sans({
- subsets: ["latin"],
- weight: ["300", "400", "500", "600", "700"],
+const notoSans = localFont({
+ src: "./fonts/NotoSans-latin-var.woff2",
+ weight: "300 700",
+ style: "normal",
  variable: "--font-noto-sans",
  display: "swap",
+ adjustFontFallback: "Arial",
  fallback: [
   "var(--font-noto-devanagari)",
   "var(--font-noto-tamil)",
@@ -144,40 +150,49 @@ const notoSans = Noto_Sans({
  ],
 });
 
-const notoSansDevanagari = Noto_Sans_Devanagari({
- subsets: ["devanagari"],
- weight: ["400", "500", "600", "700"],
+const notoSansDevanagari = localFont({
+ src: "./fonts/NotoSansDevanagari-var.woff2",
+ weight: "400 700",
+ style: "normal",
  variable: "--font-noto-devanagari",
  display: "swap",
  preload: false,
 });
 
-const notoSansTamil = Noto_Sans_Tamil({
- subsets: ["tamil"],
+const notoSansTamil = localFont({
+ src: "./fonts/NotoSansTamil-var.woff2",
+ weight: "100 900",
+ style: "normal",
  variable: "--font-noto-tamil",
  display: "swap",
  preload: false,
 });
 
-const notoSansTelugu = Noto_Sans_Telugu({
- subsets: ["telugu"],
+const notoSansTelugu = localFont({
+ src: "./fonts/NotoSansTelugu-var.woff2",
+ weight: "100 900",
+ style: "normal",
  variable: "--font-noto-telugu",
  display: "swap",
  preload: false,
 });
 
-const notoSansBengali = Noto_Sans_Bengali({
- subsets: ["bengali"],
+const notoSansBengali = localFont({
+ src: "./fonts/NotoSansBengali-var.woff2",
+ weight: "100 900",
+ style: "normal",
  variable: "--font-noto-bengali",
  display: "swap",
  preload: false,
 });
 
-const crimsonPro = Crimson_Pro({
- subsets: ["latin"],
- weight: ["400", "500", "600", "700"],
+const crimsonPro = localFont({
+ src: "./fonts/CrimsonPro-latin-var.woff2",
+ weight: "400 700",
+ style: "normal",
  variable: "--font-reader-serif",
  display: "swap",
+ adjustFontFallback: "Times New Roman",
  fallback: [
   "var(--font-noto-devanagari)",
   "var(--font-noto-tamil)",

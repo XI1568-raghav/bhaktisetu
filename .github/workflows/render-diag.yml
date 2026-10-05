@@ -191,23 +191,41 @@ jobs:
           did=$(echo "$r" | jq -r '.id // .deploy.id // empty')
           echo "deployId=$did  response: $(echo "$r" | jq -c '{id:.id, status:.status}')"
           [ -n "$did" ] || { echo "FAIL no deploy id"; echo "$r" | jq .; exit 1; }
-          echo "=== poll deploy to live (up to ~15min) ==="
-          for i in $(seq 1 45); do
-            st=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID/deploys/$did" | jq -r '.status // "unknown"')
-            echo "  [$i/45] $st"
+          # Wasted-minutes fix 2026-10-05 (GitHub Actions bills wall time while
+          # this step sleeps; ~109 min were measured in 5 days). Changes:
+          #  * exits the instant the deploy is `live` (it already did) and now
+          #    FAILS on timeout instead of silently falling through to curls
+          #    against a deploy that never went live;
+          #  * hard cap 14 min of polling (was 15, and the timeout was silent),
+          #    10s interval so we leave within 10s of going live (was 20s);
+          #  * the warm-up loop is 3 tries x <=30s (was 5 x 75s + 20s sleeps =
+          #    up to ~8 min): Render only reports `live` after its health check
+          #    passes, so the service is already warm.
+          # Behaviour the runbook relies on is unchanged: same inputs, same
+          # PASS live / FAIL <status> lines, same final route probes.
+          echo "=== poll deploy to live (cap 14min) ==="
+          deadline=$(( $(date +%s) + 840 ))
+          st="unknown"
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            st=$(curl -s --max-time 15 -H "$A" "https://api.render.com/v1/services/$SID/deploys/$did" | jq -r '.status // "unknown"')
+            echo "  $(date -u +%H:%M:%S) $st"
             case "$st" in
               live) echo "PASS live"; break ;;
               build_failed|update_failed|pre_deploy_failed|canceled|deactivated) echo "FAIL $st"; exit 1 ;;
             esac
-            sleep 20
+            sleep 10
           done
-          echo "=== curl the service URL (warm: retry on cold start) ==="
+          if [ "$st" != "live" ]; then
+            echo "FAIL timeout: deploy $did still '$st' after 14min (it may still finish on Render; check the dashboard before re-triggering)"
+            exit 1
+          fi
+          echo "=== curl the service URL (3 quick tries) ==="
           url=$(curl -s -H "$A" "https://api.render.com/v1/services/$SID" | jq -r '.serviceDetails.url')
-          for i in 1 2 3 4 5; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 75 "$url/" || echo 000)
-            echo "  warm $i: $code"; [ "$code" = "200" ] && break; sleep 20
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$url/" || echo 000)
+            echo "  warm $i: $code"; [ "$code" = "200" ] && break; sleep 10
           done
           echo "=== prerendered route + sitemap + asset ==="
-          curl -s -o /dev/null -w "/jyotirlinga/somnath %{http_code}\n" --max-time 60 "$url/jyotirlinga/somnath"
-          curl -s -o /dev/null -w "/sitemap.xml %{http_code}\n" --max-time 60 "$url/sitemap.xml"
-          curl -s -o /dev/null -w "/api/orchestrator-status %{http_code}\n" --max-time 60 "$url/api/orchestrator-status"
+          curl -s -o /dev/null -w "/jyotirlinga/somnath %{http_code}\n" --max-time 30 "$url/jyotirlinga/somnath"
+          curl -s -o /dev/null -w "/sitemap.xml %{http_code}\n" --max-time 30 "$url/sitemap.xml"
+          curl -s -o /dev/null -w "/api/orchestrator-status %{http_code}\n" --max-time 30 "$url/api/orchestrator-status"
