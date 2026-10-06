@@ -20,11 +20,10 @@
 --     requires it); verify it in /admin/temples.
 --
 -- Usage: prints the would-add count, inserts, then prints what was added.
--- For a dry run, replace COMMIT with ROLLBACK.
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ops/sql/seed-default-temple-offerings.sql
---
--- Must be run by hand against production by the owner. It is NOT run by CI or
--- on deploy.
+-- No transaction control in this file: run it through the prod-db-task workflow
+-- (dry-run first, then apply), which wraps it in BEGIN ... ROLLBACK/COMMIT, or
+-- paste it into the Supabase SQL editor (which runs it as one transaction).
+-- It is NOT run by CI or on deploy.
 
 \echo 'Rows that would be added (temples with zero offerings x standard pujas in the catalogue):'
 SELECT count(*) AS would_add
@@ -33,8 +32,6 @@ CROSS JOIN puja_types p
 WHERE p.slug IN ('hanuman-chalisa-path','ganesh-puja','lakshmi-puja','rudrabhishek','satyanarayan-katha')
   AND p.is_active
   AND NOT EXISTS (SELECT 1 FROM temple_puja_offerings o WHERE o.temple_id = t.id);
-
-BEGIN;
 
 WITH inserted AS (
   INSERT INTO temple_puja_offerings
@@ -53,4 +50,3 @@ WITH inserted AS (
 )
 SELECT count(*) AS rows_added, count(DISTINCT temple_id) AS temples_made_bookable FROM inserted;
 
-COMMIT;
