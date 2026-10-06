@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import {
  marriagePricingTiers,
- marriageAddOns,
+ marriageAddOnList,
  marriageTypes,
 } from '../../../../lib/home-pujas';
 import { getPublicPriests, type PriestSummary } from '../../../../lib/pandit-api';
@@ -76,6 +76,7 @@ export default function BookMarriage() {
  const [ceremonyType, setCeremonyType] = useState('hindu-vivah');
  const [tier, setTier] = useState('traditional');
  const [addOns, setAddOns] = useState<string[]>([]);
+ const addOnOptions = marriageAddOnList();
 
  // Step 3 — pandit, from the real directory
  const [panditId, setPanditId] = useState('');
@@ -364,12 +365,13 @@ export default function BookMarriage() {
  </div>
  </div>
 
+ {addOnOptions.length > 0 && (
  <div>
  <label className="block text-sm font-medium text-surface-700 mb-2">
  Add-ons <span className="text-surface-400 font-normal">(₹2,500 each)</span>
  </label>
  <div className="grid sm:grid-cols-2 gap-2">
- {marriageAddOns.map((a) => (
+ {addOnOptions.map((a) => (
  <label
  key={a}
  className={`flex items-start gap-2 p-3 rounded-lg border cursor-pointer transition-all text-sm ${
@@ -389,6 +391,7 @@ export default function BookMarriage() {
  ))}
  </div>
  </div>
+ )}
  </div>
  )}
 

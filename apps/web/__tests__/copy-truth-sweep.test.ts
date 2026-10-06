@@ -592,4 +592,11 @@ describe('10. weddings, marriage tiers, sample instructors, gated adoption (2026
     expect(src).not.toMatch(/marriageAddOns\.map/);
     expect(src).not.toMatch(/: 'Yes\. Traditional and Grand tiers include English narration/);
   });
+
+  it('the marriage booking wizard offers only the gated add-on list, not the raw one', () => {
+    const book = web('app/pujas/marriage/book/page.tsx');
+    expect(book).toMatch(/marriageAddOnList\(\)/);
+    expect(book).not.toMatch(/marriageAddOns\b/);
+    expect(marriageAddOnList()).not.toContain('Destination wedding travel');
+  });
 });
