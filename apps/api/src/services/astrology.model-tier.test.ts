@@ -34,4 +34,10 @@ describe('askAstrologer model tier', () => {
     expect(sys).toMatch(/Simha/);
     expect(sys).toMatch(/सिंह/);
   });
+
+  it('forbids inventing house placements when no chart is supplied', async () => {
+    await astrologyService.askAstrologer('What does my Leo sign say about career?');
+    const sys = String(generateText.mock.calls[0]![0].systemPrompt);
+    expect(sys).toMatch(/never state house placements/);
+  });
 });

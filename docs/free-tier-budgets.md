@@ -71,7 +71,7 @@
 | `commitlint.yml`                                                | **every PR, no paths filter** (the one gate never skipped). +~5s/run 2026-08-21 for the OPS-11 secret scan | ~0.6               | ~20               | ~12              |
 | `ai-review.yml`                                                 | PR, paths-filtered (`apps/**`, `packages/**`, `.github/workflows/**`, `scripts/agents/**`) | ~2                 | ~15               | ~30              |
 | `e2e.yml`                                                       | **Sun weekly + manual only** (PR trigger removed 2026-07-10)                   | ~15                | 4                 | ~60              |
-| `agents-health.yml`                                             | every 12h                                                                      | ~3                 | 60                | 180              |
+| `agents-health.yml`                                             | daily 06:00 UTC (was every 12h until 2026-10-06)                               | ~3                 | 30                | 90               |
 | `agents-daily.yml`                                              | daily 03:30 UTC (6 producing agents; 6 paused 2026-07-17 — see header comment) | ~2                 | 30                | 60               |
 | `agents-weekly.yml`                                             | Mon 04:00 UTC (20 agents)                                                      | ~10                | 4                 | 40               |
 | `lighthouse-weekly.yml`                                         | **cron KILLED 2026-05-28** → manual only                                       | ~12                | 0                 | 0                |
