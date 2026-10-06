@@ -1215,7 +1215,7 @@
   "title": "/temples takes ~37s to settle \u2014 the flagship browse page is effectively unusable on a first visit",
   "state": "owner",
   "commit": "",
-  "note": "[2026-10-06 status] TD-01: dominated by Render free-tier cold start; owner cost decision, unchanged. | OWNER COST DECISION, unchanged. The larger part of the measured 37.5s is Render free-tier cold start on BOTH the web and API services \u2014 the audit itse"
+  "note": "[2026-10-06 measured] Render was warm throughout the Lighthouse runs (TTFB 0.2-0.8s); the 37s cold start was not reproduced. Still an owner cost decision (free-tier sleep). | PRIOR: [2026-10-06 status] TD-01: dominated by Render free-tier cold start; owner cost decision, unchanged. | OWNER COST DECISION, unchanged. The larger part of the measured 37.5s is Render free-tier cold start on BOTH the web and API services \u2014 the audit itse"
  },
  {
   "key": "F088",
@@ -1325,9 +1325,9 @@
   "workflow": "prod-clickthrough",
   "line": 592,
   "title": "Temple photography is hotlinked from upload.wikimedia.org rather than self-hosted",
-  "state": "owner",
+  "state": "fixed",
   "commit": "",
-  "note": "[2026-10-06 status] TD-09: image self-hosting still an owner cost decision, unchanged. | OWNER: mirroring ~30 temple photographs into Supabase storage or an image CDN. Same block as COM-18 \u2014 downloading and redistributing third-party binaries, a CC-"
+  "note": "[2026-10-06 closed] All catalogue, deity, puja, festival and content photos are now self-hosted as WebP under apps/web/public/images (68 earlier + 25 in this PR; public/images 8.8 MB, budget 12 MB). Licence gate kept: 1 file (Priest_performing_Homa.jpg, GFDL) stays hotlinked and is listed in ATTRIBUTION.md. Remaining upload.wikimedia.org strings in code are the hotlink fallbacks. | PRIOR: [2026-10-06 status] TD-09: image self-hosting still an owner cost decision, unchanged. | OWNER: mirroring ~30 temple photographs into Supabase storage or an image CDN. Same block as COM-18 \u2014 downloading and redistributing third-party binaries, a CC-"
  },
  {
   "key": "F096",
@@ -3761,9 +3761,9 @@
   "workflow": "scale-mindset",
   "line": 2969,
   "title": "Product cards ship 5.58 MB of unoptimised hotlinked Wikimedia images, using 19th-century paintings as product photography",
-  "state": "partial",
+  "state": "fixed",
   "commit": "",
-  "note": "[2026-10-06 status] CM-08: still partial per the 2026-10-04 triage; no change since. | [2026-10-04] Triage: srcSet, width/height, lazy loading, the Wikimedia thumbnail rewrite and the onError fallback (components/RemoteImage.tsx) are in. Open: self-host vs CDN (TASKS #203/#204, touches next.config and lib/images) and real photography. Owner decision.\n\nLANE plus OWNER. lib/images.ts and next.config.* are both on this wave's do-not-touch list, and the self-host-vs-CDN choice is TASKS.md #203/#204 awaiting the o"
+  "note": "[2026-10-06 closed] Same change as TD-09: the product/catalogue images that shipped 5.58 MB of hotlinked Wikimedia files are self-hosted with 250/500px variants; see docs/perf/cwv-production-2026-10-06.md for the production measurement. | PRIOR: [2026-10-06 status] CM-08: still partial per the 2026-10-04 triage; no change since. | [2026-10-04] Triage: srcSet, width/height, lazy loading, the Wikimedia thumbnail rewrite and the onError fallback (components/RemoteImage.tsx) are in. Open: self-host vs CDN (TASKS #203/#204, touches next.config a"
  },
  {
   "key": "F270",
@@ -5401,7 +5401,7 @@
   "title": "Which pages fail Core Web Vitals in production, and why \u2014 structurally",
   "state": "partial",
   "commit": "wave-2026-08-15",
-  "note": "[2026-10-06 status] CWV-01: still partial; needs a production Lighthouse or CrUX re-measure, none run in this pass. | [2026-10-04] Triage: needs a Lighthouse re-measure against production or field data (CrUX / Search Console) plus the owner decision on images.unoptimized (sharp on a 512 MB container).\n\nWas wontfix. Production is live again, so I measured instead of inferring. Everything below is my own measurement, 2026-09-01, mobile UA (Pixel 7 / Chrome 120), median of 3 for timings.\n\nA. ONE RESIDUAL CLOSED IN CODE. The triage's residual 3 was '/ and /gaushala emit zero srcset across 26 <img> tags'. The / half closed in the 2026-08-23 pass. I closed the /gaushala half: app/gaushala/page.tsx:423"
+  "note": "[2026-10-06 measured] Production Lighthouse (mobile, simulated, 3 runs each, medians): / LCP 3.1s score 67 (was ~5.0s); /temples LCP 6.7s; /pujas 3.8s score 84; /astrology 6.9s; /temples/badrinath 3.8s. Still partial: /temples and /astrology LCP remain over 2.5s. Code fixes ranked in docs/perf/cwv-production-2026-10-06.md (stream the first temple cards outside Suspense, render-blocking CSS/fonts, JS weight). | PRIOR: [2026-10-06 status] CWV-01: still partial; needs a production Lighthouse or CrUX re-measure, none run in this pass. | [2026-10-04] Triage: needs a Lighthouse re-measure against production or field data (CrUX / Search Console) plus the owner decision on images.unoptimized (sharp on a 512 MB container"
  },
  {
   "key": "F387",
