@@ -281,13 +281,13 @@ describe('[HOME-01] no homepage image ships without a candidate list', () => {
   });
 
   it('the Aarti Thali thumbnail offers the 120 px step and does NOT offer 500', () => {
-    const aarti = rows.flatMap((r) => r.imgs).find((i) => /Aarti_Thali/.test(i.src));
+    const aarti = rows.flatMap((r) => r.imgs).find((i) => /aarti-thali/i.test(i.src));
     expect(aarti, 'the Aarti Thali thumbnail moved').toBeTruthy();
     expect(aarti!.sizes, 'a srcSet without sizes makes the browser assume 100vw').toBeTruthy();
     // Measured 2026-08-23: 120 px = 5,144 B, 250 px = 15,277 B, and the painted
     // slot is ~190 CSS px desktop / ~112 phone. Offering 500 would repeat the
     // Live Darshan mistake — see (c) in the header.
-    const el = rows.flatMap((r) => r.imgs).find((i) => /Aarti_Thali/.test(i.src))!;
-    expect(el.src, 'the 1x-desktop candidate should still be 250').toMatch(/250px-/);
+    const el = rows.flatMap((r) => r.imgs).find((i) => /aarti-thali/i.test(i.src))!;
+    expect(el.src, 'the 1x-desktop candidate should still be 250').toMatch(/-250\.webp$/);
   });
 });

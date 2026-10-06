@@ -107,6 +107,6 @@ describe('[CM-08] every store SKU has its own picture', () => {
      * Sunderkand wrong. */
     const sunderkand = getProductImage('sunderkand-book', IMG_W.CARD);
     expect(sunderkand).not.toContain('Hanuman_Chalisa');
-    expect(sunderkand).toContain('Ramcharitmanas_book');
+    expect(sunderkand).toContain('/images/content/ramcharitmanas-book');
   });
 });
