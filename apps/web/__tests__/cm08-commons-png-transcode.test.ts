@@ -112,6 +112,8 @@ describe('CM-08 — Commons PNG thumbnails are re-encoded by Commons itself', ()
     expect(seen.length).toBeGreaterThan(0);
     for (const url of seen) {
       const out = wikiThumb(url, IMG_W.CARD);
+      // Self-hosted (TD-09) PNGs are re-encoded to WebP at build time, never sent as PNG.
+      if (out.startsWith('/images/') && out.endsWith('.webp')) continue;
       const isSvgDerived = /\.svg\.png$/i.test(url);
       if (isSvgDerived) {
         expect(out.endsWith('.svg.png')).toBe(true);

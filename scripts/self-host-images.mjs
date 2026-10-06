@@ -52,19 +52,29 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const FREE = /^(CC0|CC[ -]BY|Public domain|PD|Attribution|Copyrighted free use)/i;
 const strip = (s) => (s ?? '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 
+// Wikimedia rate-limits aggressively: one request at a time, back off 30/60/120 s on 429, then give up.
+const BACKOFF = [30000, 60000, 120000];
 async function getJson(url) {
-  const r = await fetch(url, { headers: { 'User-Agent': UA } });
-  if (!r.ok) throw new Error(`${r.status} ${url}`);
-  return r.json();
+  for (let attempt = 0; ; attempt++) {
+    const r = await fetch(url, { headers: { 'User-Agent': UA } });
+    if (r.status === 429 && attempt < BACKOFF.length) {
+      console.log(`  429 metadata, waiting ${BACKOFF[attempt]}ms`);
+      await sleep(BACKOFF[attempt]);
+      continue;
+    }
+    if (!r.ok) throw new Error(`${r.status} ${url}`);
+    return r.json();
+  }
 }
 
 async function download(url, cacheName) {
   const f = path.join(CACHE, cacheName);
   if (fs.existsSync(f)) return fs.readFileSync(f);
-  for (let attempt = 0; attempt < 6; attempt++) {
+  for (let attempt = 0; attempt <= BACKOFF.length; attempt++) {
     const r = await fetch(url, { headers: { 'User-Agent': UA } });
     if (r.status === 429 || r.status >= 500) {
-      const wait = (Number(r.headers.get('retry-after')) || 5 * (attempt + 1)) * 1000;
+      const wait = BACKOFF[attempt] ?? 0;
+      if (!wait) break;
       console.log(`  ${r.status} ${cacheName}, waiting ${wait}ms`);
       await sleep(wait);
       continue;
@@ -72,7 +82,7 @@ async function download(url, cacheName) {
     if (!r.ok) throw new Error(`${r.status} ${url}`);
     const buf = Buffer.from(await r.arrayBuffer());
     fs.writeFileSync(f, buf);
-    await sleep(1200);
+    await sleep(2000);
     return buf;
   }
   throw new Error(`gave up ${url}`);
@@ -117,9 +127,13 @@ for (let i = 0; i < commons.length; i += 40) {
     meta.set(from.replace(/^File:/, ''), p.imageinfo[0]);
     meta.set(p.title.replace(/^File:/, ''), p.imageinfo[0]);
   }
-  await sleep(500);
+  await sleep(2500);
 }
 
+// Incremental: a source whose WebP is already on disk and in the generated
+// data keeps its encoded bytes (no re-download, no Wikimedia traffic beyond
+// the licence metadata above); only new sources are fetched and encoded.
+const prior = await import(path.join(root, 'apps/web/lib/self-hosted-images.data.ts'));
 const manifest = { commons: {}, unsplash: {} };
 const files = [];
 const attribution = [];
@@ -132,6 +146,25 @@ for (const s of sources) {
   try {
     let buf;
     let attr;
+    const prev = s.kind === 'commons' ? prior.SELF_HOSTED_COMMONS[s.file] : prior.SELF_HOSTED_UNSPLASH[s.id];
+    if (prev && fs.existsSync(dest)) {
+      let a;
+      if (s.kind === 'commons') {
+        const info = meta.get(s.file) ?? meta.get(s.file.replace(/_/g, ' '));
+        if (!info) throw new Error('not found on Commons');
+        const em = info.extmetadata ?? {};
+        a = { dest: s.dest, source: info.descriptionurl, author: strip(em.Artist?.value) || 'unknown (see source page)', licence: strip(em.LicenseShortName?.value) || strip(em.UsageTerms?.value), licenceUrl: strip(em.LicenseUrl?.value) };
+        manifest.commons[s.file] = prev;
+      } else {
+        a = { dest: s.dest, source: `https://images.unsplash.com/${s.id}`, author: 'Unsplash contributor (photographer not recoverable from the image URL)', licence: 'Unsplash License', licenceUrl: 'https://unsplash.com/license' };
+        manifest.unsplash[s.id] = prev;
+      }
+      const paths = new Set([prev.path, ...(prev.variants ?? []).map((v) => v.path)]);
+      for (const f of prior.SELF_HOSTED_FILES) if (paths.has(f.path)) files.push(f);
+      for (const p2 of paths) total += fs.statSync(path.join(OUT, p2.replace(/^\/images\//, ''))).size;
+      attribution.push({ ...a, bytes: fs.statSync(dest).size, width: prev.width, height: prev.height });
+      continue;
+    }
     if (s.kind === 'commons') {
       const info = meta.get(s.file) ?? meta.get(s.file.replace(/_/g, ' '));
       if (!info) throw new Error('not found on Commons');

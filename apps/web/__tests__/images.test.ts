@@ -117,15 +117,15 @@ describe('getImage / getDeityImage / getPujaImage / getProductImage', () => {
   });
 
   it('returns deity portrait by slug', () => {
-    expect(getDeityImage('lord-shiva')).toContain('Bangalore_Shiva');
+    expect(getDeityImage('lord-shiva')).toContain('/images/content/bangalore-shiva');
   });
 
   it('returns square deity variant when requested', () => {
-    expect(getDeityImage('lord-ganesha', 'square')).toContain('Ganesha');
+    expect(getDeityImage('lord-ganesha', 'square')).toContain('/images/content/ganesha-basohli');
   });
 
   it('returns a puja image for known slug', () => {
-    expect(getPujaImage('rudrabhishek')).toContain('Abhisheka');
+    expect(getPujaImage('rudrabhishek')).toContain('/images/content/from-abhisheka-to-panchamrutha');
   });
 
   it('returns a product image for known store slug', () => {
@@ -137,11 +137,11 @@ describe('getImage / getDeityImage / getPujaImage / getProductImage', () => {
   });
 
   it('returns festival image', () => {
-    expect(getFestivalImage('diwali')).toContain('Rangoli');
+    expect(getFestivalImage('diwali')).toContain('/images/content/the-rangoli-of-lights');
   });
 
   it('returns content image with thumbnail variant', () => {
-    expect(getContentImage('aarti', 'thumbnail')).toContain('Aarti_Thali');
+    expect(getContentImage('aarti', 'thumbnail')).toContain('/images/content/1-aarti-thali-prayer-plate-india');
   });
 
   it('returns astrologer image cycling through pool', () => {

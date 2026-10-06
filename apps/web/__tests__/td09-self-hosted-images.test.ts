@@ -30,19 +30,19 @@ describe('TD-09 — self-hosted catalogue photography', () => {
 
   it('every file is under /images and is WebP (RIFF....WEBP)', () => {
     for (const e of entries) {
-      expect(e.path).toMatch(/^\/images\/(temples|store|gaushala)\/[a-z0-9_-]+\.webp$/);
+      expect(e.path).toMatch(/^\/images\/(temples|store|gaushala|content)\/[a-z0-9_-]+\.webp$/);
       const head = readFileSync(path.join(PUBLIC, e.path)).subarray(0, 12);
       expect(head.toString('latin1', 0, 4)).toBe('RIFF');
       expect(head.toString('latin1', 8, 12)).toBe('WEBP');
     }
   });
 
-  it('the added weight stays inside the budget (~6 MB)', () => {
-    const bytes = ['temples', 'store', 'gaushala'].reduce(
+  it('the added weight stays inside the budget (~12 MB)', () => {
+    const bytes = ['temples', 'store', 'gaushala', 'content'].reduce(
       (n, d) => n + sizeOf(path.join(PUBLIC, 'images', d)),
       0,
     );
-    expect(bytes).toBeLessThan(6.5 * 1024 * 1024);
+    expect(bytes).toBeLessThan(12 * 1024 * 1024);
     expect(bytes).toBeGreaterThan(1024 * 1024);
   });
 
