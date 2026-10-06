@@ -3,6 +3,11 @@
 Repo `XI1568-raghav/bhaktisetu`. `main` = see `git log -1`; production runs `31f9fe38` until the deploy below is done.
 Read with: `TASKS.md` ("STATE AT 2026-10-06"), `docs/handoff.md` (2026-10-06 block), `docs/runbooks/local-e2e-stack.md`, `docs/runbooks/prod-db-task.md`.
 
+## 00. Update 2026-10-06 (morning IST): manual deploys done
+The owner deployed BOTH Render services by hand (web then API) at the then-latest main (includes #279-#323). Verified live by curl: `/api/v1/ai/health` ok (Groq now on gpt-oss), `/astrology/ask` returns source `llm`, `/ai/chat` streams, `/ai/translate` works, self-hosted images return 200 (`/images/temples/badrinath.webp`), "Adopt a Cow" title gone, new admin routes answer 401 (deployed).
+NOT yet live: #325 (astrology chat uses the larger model; the 20b model mislabelled Leo as कर्क) merged after that deploy: needs one more API deploy. The two prod SQL files are NOT applied (temples still show 0 offerings: `/api/v1/temples/badrinath-uttarakhand/pujas`): run `ops/sql/commission-default-80.sql` then `ops/sql/seed-default-temple-offerings.sql` in the Supabase SQL editor (or via prod-db-task once Actions works), then re-check the offerings count.
+Cloud-environment capability checks (Postgres install, reaching prod, `gh` login) could not be run from the owner's laptop session: the cloud session must run them itself first.
+
 ## 0. The one blocker
 GitHub Actions has no free minutes and no budget (jobs fail to start with "recent account payments have failed or your spending limit needs to be increased"). Deploys, PR checks, `prod-db-task.yml` and `db-backup.yml` all run on Actions. Everything else is merged. Unblock: owner sets an Actions budget at github.com/settings/billing (about $10 covers ~1,250 Linux minutes), or deploys by hand in the Render dashboard.
 Render is deliberately manual-deploy only (`autoDeploy: false`): merging never deploys. Deploy order this time: WEB first (`darshya-web`, srv-d970l2ks728c738fc33g), then API (`bhaktisetu`, srv-d7mc2n8sfn5c73dfce0g), because the API now returns `https://darshya.online/images/...` URLs that only exist after the web deploy.

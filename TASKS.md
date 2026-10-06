@@ -44,7 +44,7 @@ All roles were tested end to end on a local stack and fixed through #279-#312. P
 - Render 750 shared free hours (two services share one account budget; Aug 2026 suspension).
 - Decisions: prasad-abroad shipping, store returns policy.
 
-**STATE AT 2026-10-06 (supersedes the lines above):**
+**STATE AT 2026-10-06 (supersedes the lines above). LATEST: owner manually deployed web + API (all of #279-#323 live and verified); #325 (astrology larger model) and the two prod SQL files are still pending: see `docs/golive-status.md` section 00.**
 - `main` = `d818f153`. PRs #279-#322 are all merged. Verified locally on that tree: api 3591, web 4593, mobile 976 tests, tsc clean in all three.
 - **NOT DEPLOYED since `31f9fe38`:** GitHub Actions is out of free minutes (jobs fail to start: "recent account payments have failed or your spending limit needs to be increased"). Deploys, PR checks, the DB-task workflow and the daily backup all run on Actions, so all are blocked until the owner sets an Actions budget (github.com/settings/billing) or deploys by hand in the Render dashboard (web first, then API: the API returns `https://darshya.online/images/...` URLs that only exist after the web deploy).
 - **AI chats were down on prod** because Groq retired `llama-3.3-70b-versatile` / `llama-3.1-8b-instant` on 2026-08-16 (`GET /api/v1/ai/health` showed `404 model_not_found`). Fixed in #319 (`openai/gpt-oss-120b` / `openai/gpt-oss-20b`, `reasoning_effort=low`). After the API deploy, confirm `/api/v1/ai/health` shows `ok:true`, then test `/astrology/chat`, `/ask-pandit`, `/ai/translate`, voice-pandit.
