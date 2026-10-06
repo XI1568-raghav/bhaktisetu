@@ -3,15 +3,15 @@
 Source: `prod-sweep-raw-2026-08-12.md` — 388 findings, 32 agents, 4 workflows.
 Update with `node docs/audit/ledger.mjs set <key> <state> <commit> <note>`.
 
-## Closed: 426 of 463 (92.0%)
+## Closed: 429 of 463 (92.7%)
 
 | Severity | Total | Fixed | Partial | Owner | Open |
 |---|---:|---:|---:|---:|---:|
-| P0 | 74 | 66 | 2 | 6 | 0 |
+| P0 | 74 | 67 | 2 | 5 | 0 |
 | P1 | 184 | 170 | 1 | 13 | 0 |
-| P2 | 148 | 138 | 0 | 10 | 0 |
+| P2 | 148 | 140 | 0 | 8 | 0 |
 | P3 | 57 | 52 | 1 | 4 | 0 |
-| **All** | **463** | **426** | **4** | **33** | **0** |
+| **All** | **463** | **429** | **4** | **30** | **0** |
 
 ## Closed and partial
 
@@ -54,7 +54,7 @@ PREMISE RE-VERIFIED AGAINST LIVE PROD (I tried to  |
 
 DELIVERED-MARKUP PROOF: ran  |
 | F033 | P1 | COM-11 | commerce-temple-gaushala | fixed | wave-triage26-2026-08-24 | Same owner decision as COM-01 — one catalogue, one keyspace, and a handle column on StoreProduct so the seller PDP can live under /store/[handle] inst |
-| F034 | P2 | COM-12 | commerce-temple-gaushala | owner | — | [2026-10-06 status] COM-12: left open on purpose until the temples PR lands; re-check the 15 empty temples afterwards. | OWNER, business content not code: 15 of the 20 seeded temples still return {"pujas":[]} — akshardham-delhi, badrinath-uttarakhand, dagdusheth-pune, meenakshi-ma |
+| F034 | P2 | COM-12 | commerce-temple-gaushala | fixed | — | [2026-10-06 closed] Seed applied through prod-db-task (run after #327): 75 rows, 15 temples. Verified live: all 20 temples return 5 offerings from /api/v1/temples/<slug>/pujas and the temple page shows Book Puja. Prod end-to-end booking was proved on the local stack (#321); no live-payment booking made. | PRIOR: [2026-10-06 status] COM-12: left open on purpose until the temples PR lands; re-check the 15 empty temples afterwards. | OWNER, business content not code: 15 of the 20 seeded temples still return {"pujas":[]} — akshardham-delhi, badrinath-uttarakhand, dagdusheth-pune, meenakshi-ma |
 | F035 | P2 | COM-13 | commerce-temple-gaushala | fixed | — | already_fixed · Closed by an earlier wave; no change made. git show HEAD:apps/web/app/store/page.tsx:221-225 st |
 | F036 | P2 | COM-14 | commerce-temple-gaushala | fixed | — | verified: Change is real. apps/web/app/wellness/page.tsx no longer contains the featuredInstructors literal array (verif |
 | F037 | P2 | COM-15 | commerce-temple-gaushala | fixed | — | verified: Fully verified. The diff deletes the POST /book handler, the 14-row `sessions` fixture array and the in-memory |
@@ -64,7 +64,7 @@ DELIVERED-MARKUP PROOF: ran  |
 | F041 | P3 | COM-19 | commerce-temple-gaushala | fixed | — | verified: Attribution clean: `git diff 55c3acfe -- apps/api/src/routes/gaushala.ts` shows the removal (13+/47-) — the routes were  |
 | F042 | P0 | PM-01 | pricing-market | fixed | 1645e4da | already_fixed · Same defect as PM-04b, filed as P0 under the first heading: the `$` prefix on puja.nriPrice at  |
 | F043 | P0 | PM-02 | pricing-market | fixed | — | already_fixed · Closed by the earlier pass, verified not re-broken. apps/web/lib/pricing.ts:50-58: the `Plan` i |
-| F044 | P0 | PM-03 | pricing-market | owner | 1645e4da | [2026-10-06 status] PM-03: repo fix and schema default are already 0.80 (seed fixed too); prod default/rows are applied by ops/sql/commission-default-80.sql through the prod-db-task workflow (this PR) once merged: dry-run, then apply, then verify-commission-state.sql. Stays owner until that apply is confirmed. | DEPLOY/OPS: run `prisma migrate deploy` against local and prod (per docs/handoff, migrations do not auto-apply on Render deploy), then redeploy the API so Prism |
+| F044 | P0 | PM-03 | pricing-market | fixed | 1645e4da | [2026-10-06 closed] prod-db-task verify-commission-state (dry-run): priests.commission_rate default 0.80, 4 of 4 priests at 0.80, none at 0.70; store_profiles default 0.20 and the one store at 0.2000. The take is uniform 20% platform / 80% provider. | PRIOR: [2026-10-06 status] PM-03: repo fix and schema default are already 0.80 (seed fixed too); prod default/rows are applied by ops/sql/commission-default-80.sql through the prod-db-task workflow (this PR) once merged: dry-run, then apply, then verify-commission-state.sql. Stays owner until that apply is confirmed. | DEPLOY/OPS: run `prisma migrate deploy` against local and prod (per docs/handoff, migr |
 | F045 | P1 | PM-04 | pricing-market | fixed | — | verified: New work is real and is the missing half. subscription.service.ts:292-312 now takes a 4th SubscriptionActivationEvidence |
 | F046 | P1 | PM-05 | pricing-market | fixed | — | verified: Substance independently verified against the live API and the real build output; two evidence inaccuracies not |
 | F047 | P1 | PM-06 | pricing-market | fixed | — | already_fixed · Does not reproduce. The dated bank SLA ('processed every Monday … within 2-3 business days') is |
@@ -131,7 +131,7 @@ DELIVERED-MARKUP PROOF: ran  |
 | F108 | P2 | PF-13 | pandit-fulfilment | fixed | — | verified: Ledger note is the verifier's own SCOPE OVER-CLAIM dispute, which named the enum+clamp as the pre-existing (real) half.  |
 | F109 | P2 | PF-14 | pandit-fulfilment | fixed | — | verified: Change is real end to end. priest.service.ts:127-128 selects isOnDuty/lastSeenAt, :209-210 returns `priest.isO |
 | F110 | P2 | PF-15 | pandit-fulfilment | fixed | — | verified: Ledger note is the verifier's dispute confirming the error/empty split was already real and its tests already non-vacuou |
-| F111 | P2 | PF-16 | pandit-fulfilment | owner | — | [2026-10-06 status] PF-16: schema default and seed.ts are 0.80 in the repo; prod rows still on 0.70 are fixed by ops/sql/commission-default-80.sql (this PR), pending a maintainer dry-run and apply. | (1) apps/api/prisma/seed.ts:934 still hardcodes `commissionRate: 0.70` on every seeded priest — so running db:seed after the migration silently re-cre |
+| F111 | P2 | PF-16 | pandit-fulfilment | fixed | — | [2026-10-06 closed] prod-db-task verify-commission-state (dry-run): priests default 0.80 and all 4 priests at 0.80, none on 0.70. | PRIOR: [2026-10-06 status] PF-16: schema default and seed.ts are 0.80 in the repo; prod rows still on 0.70 are fixed by ops/sql/commission-default-80.sql (this PR), pending a maintainer dry-run and apply. | (1) apps/api/prisma/seed.ts:934 still hardcodes `commissionRate: 0.70` on every seeded priest — so running db:seed after the migration silently re-cre |
 | F112 | P3 | PF-17 | pandit-fulfilment | fixed | — | verified: 27+/8- in the 55c3acfe diff on priest/bookings/page.tsx. Revert → 4 failed / 7 passed (one more red than the claimed 3,  |
 | F113 | P3 | PF-18 | pandit-fulfilment | fixed | — | verified: 72+/7- in the 55c3acfe diff. Revert → 7 failed / 4 passed. Every element of the claim is in the source: the `failed` chi |
 | F114 | P3 | PF-19 | pandit-fulfilment | fixed | wave-36-2026-08-28 | Which payout rail is canonical for pandits. The two rails are deliberately mutually exclusive and picking one moves real money, so per instruction I did not gue |

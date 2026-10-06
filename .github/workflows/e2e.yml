@@ -20,8 +20,9 @@ name: E2E (Playwright)
 
 on:
   schedule:
-    # Weekly Sun 04:00 UTC. Catches prod regression independent of pushes.
-    - cron: '0 4 * * 0'
+    # 1st and 15th, 04:00 UTC (was weekly; ~25 min/run, cut 2026-10-06 to protect
+    # the Actions quota). Catches prod regression independent of pushes.
+    - cron: '0 4 1,15 * *'
   workflow_dispatch:
     inputs:
       base_url:

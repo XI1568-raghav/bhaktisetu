@@ -20,13 +20,14 @@ name: Agent fleet - health smoke (12h)
 # `HEALTH_HEARTBEAT_URL` secret, and when that secret is unset the job summary
 # says so on every run rather than staying quietly unarmed.
 #
-# Free tier: ~3 min/run × 2/day × 30 = 180 min/month (was 360 at 6h). The steps
+# Free tier: ~3 min/run × 1/day × 30 = 90 min/month (was 180 at 12h, 360 at 6h;
+# cut to daily 2026-10-06 when the Actions quota ran out mid-month). The steps
 # added on 2026-08-20 (heartbeat ping, issue filing) are seconds and do not move
 # that number. See docs/free-tier-budgets.md.
 
 on:
   schedule:
-    - cron: '0 */12 * * *'
+    - cron: '0 6 * * *'
   workflow_dispatch: {}
 
 jobs:
