@@ -829,6 +829,357 @@ export const SELF_HOSTED_COMMONS: Readonly<Record<string, SelfHostedEntry>> = {
         "width": 500
       }
     ]
+  },
+  "Gayatri_japa.jpg": {
+    "path": "/images/content/gayatri-japa.webp",
+    "width": 960,
+    "height": 1279,
+    "variants": [
+      {
+        "path": "/images/content/gayatri-japa-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/gayatri-japa-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Bangalore_Shiva.jpg": {
+    "path": "/images/content/bangalore-shiva.webp",
+    "width": 960,
+    "height": 720,
+    "variants": [
+      {
+        "path": "/images/content/bangalore-shiva-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/bangalore-shiva-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg": {
+    "path": "/images/content/ganesha-basohli-miniature-circa-1730-dubost-p73.webp",
+    "width": 694,
+    "height": 947,
+    "variants": [
+      {
+        "path": "/images/content/ganesha-basohli-miniature-circa-1730-dubost-p73-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/ganesha-basohli-miniature-circa-1730-dubost-p73-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Krishna_Holds_Up_Mount_Govardhan_(MET_70694)_cropped.png": {
+    "path": "/images/content/krishna-holds-up-mount-govardhan-met-70694-cropped.webp",
+    "width": 612,
+    "height": 894,
+    "variants": [
+      {
+        "path": "/images/content/krishna-holds-up-mount-govardhan-met-70694-cropped-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/krishna-holds-up-mount-govardhan-met-70694-cropped-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg": {
+    "path": "/images/content/raja-ravi-varma-goddess-lakshmi-1896.webp",
+    "width": 816,
+    "height": 1155,
+    "variants": [
+      {
+        "path": "/images/content/raja-ravi-varma-goddess-lakshmi-1896-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/raja-ravi-varma-goddess-lakshmi-1896-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "StandingHanumanCholaDynasty11thCentury.jpg": {
+    "path": "/images/content/standinghanumancholadynasty11thcentury.webp",
+    "width": 960,
+    "height": 1445,
+    "variants": [
+      {
+        "path": "/images/content/standinghanumancholadynasty11thcentury-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/standinghanumancholadynasty11thcentury-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Vishnu_from_Gita_Govinda.jpg": {
+    "path": "/images/content/vishnu-from-gita-govinda.webp",
+    "width": 694,
+    "height": 884,
+    "variants": [
+      {
+        "path": "/images/content/vishnu-from-gita-govinda-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/vishnu-from-gita-govinda-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Mahishasura-Mardini_Durga.jpg": {
+    "path": "/images/content/mahishasura-mardini-durga.webp",
+    "width": 464,
+    "height": 720,
+    "variants": [
+      {
+        "path": "/images/content/mahishasura-mardini-durga-250.webp",
+        "width": 250
+      }
+    ]
+  },
+  "Lord_Rama_with_arrows.jpg": {
+    "path": "/images/content/lord-rama-with-arrows.webp",
+    "width": 502,
+    "height": 738,
+    "variants": [
+      {
+        "path": "/images/content/lord-rama-with-arrows-250.webp",
+        "width": 250
+      }
+    ]
+  },
+  "Saraswati.jpg": {
+    "path": "/images/content/saraswati.webp",
+    "width": 786,
+    "height": 1271,
+    "variants": [
+      {
+        "path": "/images/content/saraswati-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/saraswati-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Surya_with_Adityas_and_attendants.jpg": {
+    "path": "/images/content/surya-with-adityas-and-attendants.webp",
+    "width": 960,
+    "height": 1445,
+    "variants": [
+      {
+        "path": "/images/content/surya-with-adityas-and-attendants-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/surya-with-adityas-and-attendants-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "From_Abhisheka_To_Panchamrutha.jpg": {
+    "path": "/images/content/from-abhisheka-to-panchamrutha.webp",
+    "width": 694,
+    "height": 1037,
+    "variants": [
+      {
+        "path": "/images/content/from-abhisheka-to-panchamrutha-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/from-abhisheka-to-panchamrutha-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "(1)_Aarti_Thali,_Prayer_Plate_India.jpg": {
+    "path": "/images/content/1-aarti-thali-prayer-plate-india.webp",
+    "width": 960,
+    "height": 640,
+    "variants": [
+      {
+        "path": "/images/content/1-aarti-thali-prayer-plate-india-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/1-aarti-thali-prayer-plate-india-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "GHANTI.jpg": {
+    "path": "/images/content/ghanti.webp",
+    "width": 816,
+    "height": 476,
+    "variants": [
+      {
+        "path": "/images/content/ghanti-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/ghanti-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Ramcharitmanas_book.jpg": {
+    "path": "/images/content/ramcharitmanas-book.webp",
+    "width": 960,
+    "height": 639,
+    "variants": [
+      {
+        "path": "/images/content/ramcharitmanas-book-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/ramcharitmanas-book-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Navaratri_Bajan.jpg": {
+    "path": "/images/content/navaratri-bajan.webp",
+    "width": 800,
+    "height": 492,
+    "variants": [
+      {
+        "path": "/images/content/navaratri-bajan-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/navaratri-bajan-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg": {
+    "path": "/images/content/1-sannyasi-in-yoga-meditation-on-the-ganges-rishikesh-croppe.webp",
+    "width": 502,
+    "height": 680,
+    "variants": [
+      {
+        "path": "/images/content/1-sannyasi-in-yoga-meditation-on-the-ganges-rishikesh-croppe-250.webp",
+        "width": 250
+      }
+    ]
+  },
+  "The_Rangoli_of_Lights.jpg": {
+    "path": "/images/content/the-rangoli-of-lights.webp",
+    "width": 960,
+    "height": 756,
+    "variants": [
+      {
+        "path": "/images/content/the-rangoli-of-lights-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/the-rangoli-of-lights-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Holi_Festival_of_Colors.jpg": {
+    "path": "/images/content/holi-festival-of-colors.webp",
+    "width": 960,
+    "height": 640,
+    "variants": [
+      {
+        "path": "/images/content/holi-festival-of-colors-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/holi-festival-of-colors-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Shardiya_Navratri_Festival_in_Pune_2020.jpg": {
+    "path": "/images/content/shardiya-navratri-festival-in-pune-2020.webp",
+    "width": 590,
+    "height": 443,
+    "variants": [
+      {
+        "path": "/images/content/shardiya-navratri-festival-in-pune-2020-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/shardiya-navratri-festival-in-pune-2020-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "Khairathabad_Vinayakudu_2021.jpg": {
+    "path": "/images/content/khairathabad-vinayakudu-2021.webp",
+    "width": 427,
+    "height": 569,
+    "variants": [
+      {
+        "path": "/images/content/khairathabad-vinayakudu-2021-250.webp",
+        "width": 250
+      }
+    ]
+  },
+  "02_Mahashivratree_festival.JPG": {
+    "path": "/images/content/02-mahashivratree-festival.webp",
+    "width": 502,
+    "height": 669,
+    "variants": [
+      {
+        "path": "/images/content/02-mahashivratree-festival-250.webp",
+        "width": 250
+      }
+    ]
+  },
+  "Yesoda-krishna.jpg": {
+    "path": "/images/content/yesoda-krishna.webp",
+    "width": 489,
+    "height": 596,
+    "variants": [
+      {
+        "path": "/images/content/yesoda-krishna-250.webp",
+        "width": 250
+      }
+    ]
+  },
+  "Rakhi_1.JPG": {
+    "path": "/images/content/rakhi-1.webp",
+    "width": 960,
+    "height": 640,
+    "variants": [
+      {
+        "path": "/images/content/rakhi-1-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/rakhi-1-500.webp",
+        "width": 500
+      }
+    ]
+  },
+  "JanakpurChhathParvaFestival.jpg": {
+    "path": "/images/content/janakpurchhathparvafestival.webp",
+    "width": 694,
+    "height": 390,
+    "variants": [
+      {
+        "path": "/images/content/janakpurchhathparvafestival-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/content/janakpurchhathparvafestival-500.webp",
+        "width": 500
+      }
+    ]
   }
 };
 export const SELF_HOSTED_UNSPLASH: Readonly<Record<string, SelfHostedEntry>> = {
@@ -2183,6 +2534,420 @@ export const SELF_HOSTED_FILES: ReadonlyArray<{ path: string; origin: 'commons' 
   {
     "path": "/images/gaushala/photo-1-500.webp",
     "origin": "unsplash",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/gayatri-japa.webp",
+    "origin": "commons",
+    "commonsFile": "Gayatri_japa.jpg",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/gayatri-japa-250.webp",
+    "origin": "commons",
+    "commonsFile": "Gayatri_japa.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/gayatri-japa-500.webp",
+    "origin": "commons",
+    "commonsFile": "Gayatri_japa.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/bangalore-shiva.webp",
+    "origin": "commons",
+    "commonsFile": "Bangalore_Shiva.jpg",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/bangalore-shiva-250.webp",
+    "origin": "commons",
+    "commonsFile": "Bangalore_Shiva.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/bangalore-shiva-500.webp",
+    "origin": "commons",
+    "commonsFile": "Bangalore_Shiva.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ganesha-basohli-miniature-circa-1730-dubost-p73.webp",
+    "origin": "commons",
+    "commonsFile": "Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg",
+    "modification": "resized to 694px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ganesha-basohli-miniature-circa-1730-dubost-p73-250.webp",
+    "origin": "commons",
+    "commonsFile": "Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ganesha-basohli-miniature-circa-1730-dubost-p73-500.webp",
+    "origin": "commons",
+    "commonsFile": "Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/krishna-holds-up-mount-govardhan-met-70694-cropped.webp",
+    "origin": "commons",
+    "commonsFile": "Krishna_Holds_Up_Mount_Govardhan_(MET_70694)_cropped.png",
+    "modification": "resized to 612px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/krishna-holds-up-mount-govardhan-met-70694-cropped-250.webp",
+    "origin": "commons",
+    "commonsFile": "Krishna_Holds_Up_Mount_Govardhan_(MET_70694)_cropped.png",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/krishna-holds-up-mount-govardhan-met-70694-cropped-500.webp",
+    "origin": "commons",
+    "commonsFile": "Krishna_Holds_Up_Mount_Govardhan_(MET_70694)_cropped.png",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/raja-ravi-varma-goddess-lakshmi-1896.webp",
+    "origin": "commons",
+    "commonsFile": "Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg",
+    "modification": "resized to 816px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/raja-ravi-varma-goddess-lakshmi-1896-250.webp",
+    "origin": "commons",
+    "commonsFile": "Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/raja-ravi-varma-goddess-lakshmi-1896-500.webp",
+    "origin": "commons",
+    "commonsFile": "Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/standinghanumancholadynasty11thcentury.webp",
+    "origin": "commons",
+    "commonsFile": "StandingHanumanCholaDynasty11thCentury.jpg",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/standinghanumancholadynasty11thcentury-250.webp",
+    "origin": "commons",
+    "commonsFile": "StandingHanumanCholaDynasty11thCentury.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/standinghanumancholadynasty11thcentury-500.webp",
+    "origin": "commons",
+    "commonsFile": "StandingHanumanCholaDynasty11thCentury.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/vishnu-from-gita-govinda.webp",
+    "origin": "commons",
+    "commonsFile": "Vishnu_from_Gita_Govinda.jpg",
+    "modification": "resized to 694px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/vishnu-from-gita-govinda-250.webp",
+    "origin": "commons",
+    "commonsFile": "Vishnu_from_Gita_Govinda.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/vishnu-from-gita-govinda-500.webp",
+    "origin": "commons",
+    "commonsFile": "Vishnu_from_Gita_Govinda.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/mahishasura-mardini-durga.webp",
+    "origin": "commons",
+    "commonsFile": "Mahishasura-Mardini_Durga.jpg",
+    "modification": "resized to 464px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/mahishasura-mardini-durga-250.webp",
+    "origin": "commons",
+    "commonsFile": "Mahishasura-Mardini_Durga.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/lord-rama-with-arrows.webp",
+    "origin": "commons",
+    "commonsFile": "Lord_Rama_with_arrows.jpg",
+    "modification": "resized to 502px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/lord-rama-with-arrows-250.webp",
+    "origin": "commons",
+    "commonsFile": "Lord_Rama_with_arrows.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/saraswati.webp",
+    "origin": "commons",
+    "commonsFile": "Saraswati.jpg",
+    "modification": "resized to 786px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/saraswati-250.webp",
+    "origin": "commons",
+    "commonsFile": "Saraswati.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/saraswati-500.webp",
+    "origin": "commons",
+    "commonsFile": "Saraswati.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/surya-with-adityas-and-attendants.webp",
+    "origin": "commons",
+    "commonsFile": "Surya_with_Adityas_and_attendants.jpg",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/surya-with-adityas-and-attendants-250.webp",
+    "origin": "commons",
+    "commonsFile": "Surya_with_Adityas_and_attendants.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/surya-with-adityas-and-attendants-500.webp",
+    "origin": "commons",
+    "commonsFile": "Surya_with_Adityas_and_attendants.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/from-abhisheka-to-panchamrutha.webp",
+    "origin": "commons",
+    "commonsFile": "From_Abhisheka_To_Panchamrutha.jpg",
+    "modification": "resized to 694px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/from-abhisheka-to-panchamrutha-250.webp",
+    "origin": "commons",
+    "commonsFile": "From_Abhisheka_To_Panchamrutha.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/from-abhisheka-to-panchamrutha-500.webp",
+    "origin": "commons",
+    "commonsFile": "From_Abhisheka_To_Panchamrutha.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/1-aarti-thali-prayer-plate-india.webp",
+    "origin": "commons",
+    "commonsFile": "(1)_Aarti_Thali,_Prayer_Plate_India.jpg",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/1-aarti-thali-prayer-plate-india-250.webp",
+    "origin": "commons",
+    "commonsFile": "(1)_Aarti_Thali,_Prayer_Plate_India.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/1-aarti-thali-prayer-plate-india-500.webp",
+    "origin": "commons",
+    "commonsFile": "(1)_Aarti_Thali,_Prayer_Plate_India.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ghanti.webp",
+    "origin": "commons",
+    "commonsFile": "GHANTI.jpg",
+    "modification": "resized to 816px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ghanti-250.webp",
+    "origin": "commons",
+    "commonsFile": "GHANTI.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ghanti-500.webp",
+    "origin": "commons",
+    "commonsFile": "GHANTI.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ramcharitmanas-book.webp",
+    "origin": "commons",
+    "commonsFile": "Ramcharitmanas_book.jpg",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ramcharitmanas-book-250.webp",
+    "origin": "commons",
+    "commonsFile": "Ramcharitmanas_book.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/ramcharitmanas-book-500.webp",
+    "origin": "commons",
+    "commonsFile": "Ramcharitmanas_book.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/navaratri-bajan.webp",
+    "origin": "commons",
+    "commonsFile": "Navaratri_Bajan.jpg",
+    "modification": "resized to 800px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/navaratri-bajan-250.webp",
+    "origin": "commons",
+    "commonsFile": "Navaratri_Bajan.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/navaratri-bajan-500.webp",
+    "origin": "commons",
+    "commonsFile": "Navaratri_Bajan.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/1-sannyasi-in-yoga-meditation-on-the-ganges-rishikesh-croppe.webp",
+    "origin": "commons",
+    "commonsFile": "1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg",
+    "modification": "resized to 502px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/1-sannyasi-in-yoga-meditation-on-the-ganges-rishikesh-croppe-250.webp",
+    "origin": "commons",
+    "commonsFile": "1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/the-rangoli-of-lights.webp",
+    "origin": "commons",
+    "commonsFile": "The_Rangoli_of_Lights.jpg",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/the-rangoli-of-lights-250.webp",
+    "origin": "commons",
+    "commonsFile": "The_Rangoli_of_Lights.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/the-rangoli-of-lights-500.webp",
+    "origin": "commons",
+    "commonsFile": "The_Rangoli_of_Lights.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/holi-festival-of-colors.webp",
+    "origin": "commons",
+    "commonsFile": "Holi_Festival_of_Colors.jpg",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/holi-festival-of-colors-250.webp",
+    "origin": "commons",
+    "commonsFile": "Holi_Festival_of_Colors.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/holi-festival-of-colors-500.webp",
+    "origin": "commons",
+    "commonsFile": "Holi_Festival_of_Colors.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/shardiya-navratri-festival-in-pune-2020.webp",
+    "origin": "commons",
+    "commonsFile": "Shardiya_Navratri_Festival_in_Pune_2020.jpg",
+    "modification": "resized to 590px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/shardiya-navratri-festival-in-pune-2020-250.webp",
+    "origin": "commons",
+    "commonsFile": "Shardiya_Navratri_Festival_in_Pune_2020.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/shardiya-navratri-festival-in-pune-2020-500.webp",
+    "origin": "commons",
+    "commonsFile": "Shardiya_Navratri_Festival_in_Pune_2020.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/khairathabad-vinayakudu-2021.webp",
+    "origin": "commons",
+    "commonsFile": "Khairathabad_Vinayakudu_2021.jpg",
+    "modification": "resized to 427px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/khairathabad-vinayakudu-2021-250.webp",
+    "origin": "commons",
+    "commonsFile": "Khairathabad_Vinayakudu_2021.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/02-mahashivratree-festival.webp",
+    "origin": "commons",
+    "commonsFile": "02_Mahashivratree_festival.JPG",
+    "modification": "resized to 502px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/02-mahashivratree-festival-250.webp",
+    "origin": "commons",
+    "commonsFile": "02_Mahashivratree_festival.JPG",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/yesoda-krishna.webp",
+    "origin": "commons",
+    "commonsFile": "Yesoda-krishna.jpg",
+    "modification": "resized to 489px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/yesoda-krishna-250.webp",
+    "origin": "commons",
+    "commonsFile": "Yesoda-krishna.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/rakhi-1.webp",
+    "origin": "commons",
+    "commonsFile": "Rakhi_1.JPG",
+    "modification": "resized to 960px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/rakhi-1-250.webp",
+    "origin": "commons",
+    "commonsFile": "Rakhi_1.JPG",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/rakhi-1-500.webp",
+    "origin": "commons",
+    "commonsFile": "Rakhi_1.JPG",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/janakpurchhathparvafestival.webp",
+    "origin": "commons",
+    "commonsFile": "JanakpurChhathParvaFestival.jpg",
+    "modification": "resized to 694px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/janakpurchhathparvafestival-250.webp",
+    "origin": "commons",
+    "commonsFile": "JanakpurChhathParvaFestival.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/content/janakpurchhathparvafestival-500.webp",
+    "origin": "commons",
+    "commonsFile": "JanakpurChhathParvaFestival.jpg",
     "modification": "resized to 500px wide and re-encoded as WebP"
   }
 ];
