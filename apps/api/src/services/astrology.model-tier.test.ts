@@ -40,4 +40,10 @@ describe('askAstrologer model tier', () => {
     const sys = String(generateText.mock.calls[0]![0].systemPrompt);
     expect(sys).toMatch(/never state house placements/);
   });
+
+  it('bans house numbers entirely when no chart is supplied', async () => {
+    await astrologyService.askAstrologer('What does my Leo sign say about career?');
+    const sys = String(generateText.mock.calls[0]![0].systemPrompt);
+    expect(sys).toMatch(/Do not use house numbers at all/);
+  });
 });

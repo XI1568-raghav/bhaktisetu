@@ -3,15 +3,15 @@
 Source: `prod-sweep-raw-2026-08-12.md` — 388 findings, 32 agents, 4 workflows.
 Update with `node docs/audit/ledger.mjs set <key> <state> <commit> <note>`.
 
-## Closed: 429 of 463 (92.7%)
+## Closed: 431 of 463 (93.1%)
 
 | Severity | Total | Fixed | Partial | Owner | Open |
 |---|---:|---:|---:|---:|---:|
 | P0 | 74 | 67 | 2 | 5 | 0 |
-| P1 | 184 | 170 | 1 | 13 | 0 |
+| P1 | 184 | 171 | 0 | 13 | 0 |
 | P2 | 148 | 140 | 0 | 8 | 0 |
-| P3 | 57 | 52 | 1 | 4 | 0 |
-| **All** | **463** | **429** | **4** | **30** | **0** |
+| P3 | 57 | 53 | 1 | 3 | 0 |
+| **All** | **463** | **431** | **3** | **29** | **0** |
 
 ## Closed and partial
 
@@ -107,7 +107,7 @@ DELIVERED-MARKUP PROOF: ran  |
 | F084 | P3 | HN-11 | home-nav | fixed | ops/prod-db-task-and-backup-fix | Verified 2026-10-06 against production: curl -s https://darshya.online/ | grep -c 'href="/blog"' = 0 (footer present: /privacy link count 1), /blog is not in sitemap.xml (0 hits). The link is gated by apps/web/lib/footer-blog-link.ts. /blog itself still answers 200 with an honest "First essays loading" waitlist stub, so nothing advertises an empty shell any more. |
 | F085 | P3 | HN-12 | home-nav | fixed | — | verified: All four min-h-[44px] min-w-[44px] additions are in the diff and are the agent's (layout.tsx brand link, GlobalSearch co |
 | F086 | P3 | HN-13 | home-nav | fixed | — | triage-verified: already dead — GurukulPortalClient:39 renders a real <Link href="/auth/login">; only polish remains |
-| F087 | P1 | TD-01 | temples-darshan | owner | — | [2026-10-06 status] TD-01: dominated by Render free-tier cold start; owner cost decision, unchanged. | OWNER COST DECISION, unchanged. The larger part of the measured 37.5s is Render free-tier cold start on BOTH the web and API services — the audit itse |
+| F087 | P1 | TD-01 | temples-darshan | owner | — | [2026-10-06 measured] Render was warm throughout the Lighthouse runs (TTFB 0.2-0.8s); the 37s cold start was not reproduced. Still an owner cost decision (free-tier sleep). | PRIOR: [2026-10-06 status] TD-01: dominated by Render free-tier cold start; owner cost decision, unchanged. | OWNER COST DECISION, unchanged. The larger part of the measured 37.5s is Render free-tier cold start on BOTH the web and API services — the audit itse |
 | F088 | P1 | TD-02 | temples-darshan | fixed | — | verified: Fix is real and the data behind it holds up. The hand-written fallbackScheduleTable with three literal `status |
 | F089 | P2 | TD-03 | temples-darshan | fixed | — | verified: apps/web/lib/temple-grid.ts is a genuinely new untracked file; page.tsx dedupe wiring is in the 55c3acfe diff. Deleting  |
 | F090 | P2 | TD-04 | temples-darshan | fixed | — | verified: app/live/page.tsx is new; the not-found.tsx metadata export is in the 55c3acfe diff (13 added). Whole-revert red is only |
@@ -115,7 +115,7 @@ DELIVERED-MARKUP PROOF: ran  |
 | F092 | P3 | TD-06 | temples-darshan | fixed | — | triage-verified: already dead — /panchang:33 and /calendar:12 titles no longer carry the suffix; surviving "| Darshya" literals are inside openGraph/twitter where the template does not apply |
 | F093 | P2 | TD-07 | temples-darshan | fixed | — | verified: ConsentGate.tsx is new; DeferredClientWidgets.tsx (+10) and StickyAartiCta.tsx (bottom-6 → bottom-24) are both in the 55 |
 | F094 | P3 | TD-08 | temples-darshan | fixed | — | verified: panchang/page.tsx is in the 55c3acfe diff (24 changed). Revert → 4 failed / 1 passed. Assertions match JSX attributes on |
-| F095 | P3 | TD-09 | temples-darshan | owner | — | [2026-10-06 status] TD-09: image self-hosting still an owner cost decision, unchanged. | OWNER: mirroring ~30 temple photographs into Supabase storage or an image CDN. Same block as COM-18 — downloading and redistributing third-party binaries, a CC- |
+| F095 | P3 | TD-09 | temples-darshan | fixed | — | [2026-10-06 closed] All catalogue, deity, puja, festival and content photos are now self-hosted as WebP under apps/web/public/images (68 earlier + 25 in this PR; public/images 8.8 MB, budget 12 MB). Licence gate kept: 1 file (Priest_performing_Homa.jpg, GFDL) stays hotlinked and is listed in ATTRIBUTION.md. Remaining upload.wikimedia.org strings in code are the hotlink fallbacks. | PRIOR: [2026-10-06 status] TD-09: image self-hosting still an owner cost decision, unchanged. | OWNER: mirroring ~30 temple photographs into Supabase storage or an image CDN. Same block as COM-18 — downloading and redistributing third-party binaries, a CC- |
 | F096 | P0 | PF-01 | pandit-fulfilment | fixed | 1645e4da |  |
 | F097 | P0 | PF-02 | pandit-fulfilment | fixed | 1645e4da |  |
 | F098 | P0 | PF-03 | pandit-fulfilment | fixed | 1645e4da |  |
@@ -298,9 +298,7 @@ The finding's fix, clause by clause:
 | F266 | P0 | CM-05 | customer-mindset | fixed | — | real completions only via existing popular endpoint; threshold 3; cannot fabricate (13 tests) |
 | F267 | P0 | CM-06 | customer-mindset | fixed | — | shared delivery-address validator (55 countries); US/UK/UAE bookings 201 at identical INR; foreign-currency copy corrected |
 | F268 | P1 | CM-07 | customer-mindset | fixed | — | verified: Change is real and matches the finding. apps/web/app/gift/page.tsx is now `export default async function` feed |
-| F269 | P1 | CM-08 | customer-mindset | partial | — | [2026-10-06 status] CM-08: still partial per the 2026-10-04 triage; no change since. | [2026-10-04] Triage: srcSet, width/height, lazy loading, the Wikimedia thumbnail rewrite and the onError fallback (components/RemoteImage.tsx) are in. Open: self-host vs CDN (TASKS #203/#204, touches next.config and lib/images) and real photography. Owner decision.
-
-LANE plus OWNER. lib/images.ts and next.config.* are both on this wave's do-not-touch list, and the self-host-vs-CDN choice is TASKS.md #203/#204 awaiting the o |
+| F269 | P1 | CM-08 | customer-mindset | fixed | — | [2026-10-06 closed] Same change as TD-09: the product/catalogue images that shipped 5.58 MB of hotlinked Wikimedia files are self-hosted with 250/500px variants; see docs/perf/cwv-production-2026-10-06.md for the production measurement. | PRIOR: [2026-10-06 status] CM-08: still partial per the 2026-10-04 triage; no change since. | [2026-10-04] Triage: srcSet, width/height, lazy loading, the Wikimedia thumbnail rewrite and the onError fallback (components/RemoteImage.tsx) are in. Open: self-host vs CDN (TASKS #203/#204, touches next.config a |
 | F270 | P1 | CM-09 | customer-mindset | fixed | — | verified: Verified in apps/web/app/pujas/page.tsx:641-643: card container is now `<Link key={puja.id} href={`/pujas/${pu |
 | F271 | P1 | CM-10 | customer-mindset | fixed | wave-45-final | apps/web/lib/puja-blurb.ts exists and is a real sentence-boundary implementation (CARD_BLURB_MAX 140, HERO_BLURB_MAX 220, whitespace collapse, sentence split, word-boundary fallback with a single ellipsis) — not a slice. All four call sites are wired and the clamps are actually gone: apps/web/app/pujas/page.tsx:749-750 renders {pujaCardBlurb(puja.description)} in a <p className='text-sm text-surfa |
 | F272 | P1 | CM-11 | customer-mindset | fixed | — | verified: Independently confirmed. The prior note's complaint was that the fix was INERT IN PRODUCTION and its test validated a pa |
@@ -421,11 +419,7 @@ apps/web/app is outside this lane. lib/friendly-error.ts already exists and is t
 BOTH TITLE CLAUSES CLOSED, evidence clause partly closed. Verified on production 2026-09-08: width/height present on / (0 of 8 missing, was 11 of 15), /pujas (0 of 10, was 10 of 10) and /temples/[slug] (0 of 10); the 404 is 116,976 B raw / 18,194 wire against the title's 200 KB floor. The heavy-HTML clause buried in the evidence had got WORSE and is now cut: /aarti 616,628 B with 326 inline <svg> (117,569 B of literal SVG, roughly double in the RSC payload where every quote escapes to four bytes) -> <symbol> sprite plus <use>; /chants 419,824 B and the WORST-compressing page on the site at 66,955 gzip, because its weight is unique prose that does not compress while /aarti's is 300 near-identical icons that gzip to nearly nothing -> bounded in code, since line-clamp is a PAINT instruction and hides bytes already on the wire; /calendar 382,166 B -> description bounded in both places it appears. Guarded structurally by __tests__/perf04-heavy-document-guards.test.ts. RESIDUAL: the 404 still renders <nav>, <footer> and 41 RSC flight pushes — the prescribed minimal standalone page is only part done (inline <svg> 100+ -> 26). |
 | F384 | P2 | PERF-05 | seo-perf-budget | fixed | wave-2026-08-15 |  |
 | F385 | P2 | SEO-09 | seo-perf-budget | fixed | verify-wave-2026-08-19 | [unverified — wave stopped early]  |
-| F386 | P0 | CWV-01 | seo-perf-budget | partial | wave-2026-08-15 | [2026-10-06 status] CWV-01: still partial; needs a production Lighthouse or CrUX re-measure, none run in this pass. | [2026-10-04] Triage: needs a Lighthouse re-measure against production or field data (CrUX / Search Console) plus the owner decision on images.unoptimized (sharp on a 512 MB container).
-
-Was wontfix. Production is live again, so I measured instead of inferring. Everything below is my own measurement, 2026-09-01, mobile UA (Pixel 7 / Chrome 120), median of 3 for timings.
-
-A. ONE RESIDUAL CLOSED IN CODE. The triage's residual 3 was '/ and /gaushala emit zero srcset across 26 <img> tags'. The / half closed in the 2026-08-23 pass. I closed the /gaushala half: app/gaushala/page.tsx:423 |
+| F386 | P0 | CWV-01 | seo-perf-budget | partial | wave-2026-08-15 | [2026-10-06 measured] Production Lighthouse (mobile, simulated, 3 runs each, medians): / LCP 3.1s score 67 (was ~5.0s); /temples LCP 6.7s; /pujas 3.8s score 84; /astrology 6.9s; /temples/badrinath 3.8s. Still partial: /temples and /astrology LCP remain over 2.5s. Code fixes ranked in docs/perf/cwv-production-2026-10-06.md (stream the first temple cards outside Suspense, render-blocking CSS/fonts, JS weight). | PRIOR: [2026-10-06 status] CWV-01: still partial; needs a production Lighthouse or CrUX re-measure, none run in this pass. | [2026-10-04] Triage: needs a Lighthouse re-measure against production or field data (CrUX / Search Console) plus the owner decision on images.unoptimized (sharp on a 512 MB container |
 | F387 | P2 | HOME-01 | seo-perf-budget | fixed | wave-2026-08-15 | [2026-10-04] Premise inverted by PERF-01: below-fold images 13,886 KB -> 777 KB, all lazy; .defer-paint on 7 sections; home page 12 -> 8 sections; the home-*.home01 guard tests pass. Remaining TBT work belongs to CWV-01. |
 | F388 | P3 | SEO-10 | seo-perf-budget | fixed | — | triage-verified: dead by cascade — its own fix says "no change needed once SEO-02 is fixed", and SEO-02 is fixed (robots.ts no longer disallows /_next/) |
 | F389 | P0 | PAY-01 | payments-integrity | fixed | wave-2026-08-21 |  |

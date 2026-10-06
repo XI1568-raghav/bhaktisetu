@@ -487,5 +487,161 @@
   "kind": "unsplash",
   "id": "photo-1516467508483-a7212febe31a",
   "maxW": 960
+ },
+ {
+  "dest": "content/gayatri-japa.webp",
+  "kind": "commons",
+  "file": "Gayatri_japa.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/bangalore-shiva.webp",
+  "kind": "commons",
+  "file": "Bangalore_Shiva.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/ganesha-basohli-miniature-circa-1730-dubost-p73.webp",
+  "kind": "commons",
+  "file": "Ganesha_Basohli_miniature_***REMOVED***.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/krishna-holds-up-mount-govardhan-met-70694-cropped.webp",
+  "kind": "commons",
+  "file": "Krishna_Holds_Up_Mount_Govardhan_(MET_70694)_cropped.png",
+  "maxW": 960
+ },
+ {
+  "dest": "content/raja-ravi-varma-goddess-lakshmi-1896.webp",
+  "kind": "commons",
+  "file": "Raja_Ravi_Varma,_Goddess_Lakshmi,_1896.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/standinghanumancholadynasty11thcentury.webp",
+  "kind": "commons",
+  "file": "StandingHanumanCholaDynasty11thCentury.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/vishnu-from-gita-govinda.webp",
+  "kind": "commons",
+  "file": "Vishnu_from_Gita_Govinda.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/mahishasura-mardini-durga.webp",
+  "kind": "commons",
+  "file": "Mahishasura-Mardini_Durga.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/lord-rama-with-arrows.webp",
+  "kind": "commons",
+  "file": "Lord_Rama_with_arrows.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/saraswati.webp",
+  "kind": "commons",
+  "file": "Saraswati.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/surya-with-adityas-and-attendants.webp",
+  "kind": "commons",
+  "file": "Surya_with_Adityas_and_attendants.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/from-abhisheka-to-panchamrutha.webp",
+  "kind": "commons",
+  "file": "From_Abhisheka_To_Panchamrutha.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/priest-performing-homa.webp",
+  "kind": "commons",
+  "file": "Priest_performing_Homa.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/1-aarti-thali-prayer-plate-india.webp",
+  "kind": "commons",
+  "file": "(1)_Aarti_Thali,_Prayer_Plate_India.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/ghanti.webp",
+  "kind": "commons",
+  "file": "GHANTI.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/ramcharitmanas-book.webp",
+  "kind": "commons",
+  "file": "Ramcharitmanas_book.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/navaratri-bajan.webp",
+  "kind": "commons",
+  "file": "Navaratri_Bajan.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/1-sannyasi-in-yoga-meditation-on-the-ganges-rishikesh-croppe.webp",
+  "kind": "commons",
+  "file": "1_Sannyasi_in_yoga_meditation_on_the_Ganges,_Rishikesh_cropped.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/the-rangoli-of-lights.webp",
+  "kind": "commons",
+  "file": "The_Rangoli_of_Lights.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/holi-festival-of-colors.webp",
+  "kind": "commons",
+  "file": "Holi_Festival_of_Colors.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/shardiya-navratri-festival-in-pune-2020.webp",
+  "kind": "commons",
+  "file": "Shardiya_Navratri_Festival_in_Pune_2020.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/khairathabad-vinayakudu-2021.webp",
+  "kind": "commons",
+  "file": "Khairathabad_Vinayakudu_2021.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/02-mahashivratree-festival.webp",
+  "kind": "commons",
+  "file": "02_Mahashivratree_festival.JPG",
+  "maxW": 960
+ },
+ {
+  "dest": "content/yesoda-krishna.webp",
+  "kind": "commons",
+  "file": "Yesoda-krishna.jpg",
+  "maxW": 960
+ },
+ {
+  "dest": "content/rakhi-1.webp",
+  "kind": "commons",
+  "file": "Rakhi_1.JPG",
+  "maxW": 960
+ },
+ {
+  "dest": "content/janakpurchhathparvafestival.webp",
+  "kind": "commons",
+  "file": "JanakpurChhathParvaFestival.jpg",
+  "maxW": 960
  }
 ]
