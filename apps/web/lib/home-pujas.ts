@@ -802,7 +802,7 @@ export function homePujaFaq(cat: HomePujaCategory): { q: string; a: string }[] {
  * themselves are listed; the coordinator confirms the rest on the call.
  */
 export const MARRIAGE_UNBACKED_SERVICE_RE =
-  /\blive\b|photograph|narration|multilingual|consultation|coordinat|satyanarayan|engagement|mehendi|roka|griha pravesh|ganesh puja/i;
+  /\blive\b|photograph|narration|multilingual|consultation|coordinat|satyanarayan|engagement|mehendi|roka|griha pravesh|ganesh puja|travel/i;
 
 /** Marriage tier lists, minus any samagri or service promise, while the gate is closed. */
 export function marriageTierIncludes(tier: { includes: string[] }): string[] {
