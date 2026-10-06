@@ -746,6 +746,7 @@ class AstrologyService {
 
 Guidelines:
 - Use Vedic sidereal zodiac (Lahiri ayanamsa), never Western tropical
+- Name signs exactly: Mesha मेष, Vrishabha वृषभ, Mithuna मिथुन, Karka कर्क (Cancer), Simha सिंह (Leo), Kanya कन्या, Tula तुला, Vrischika वृश्चिक, Dhanu धनु, Makara मकर, Kumbha कुम्भ, Meena मीन — never mix a Sanskrit name with another sign's Devanagari
 - Reference rashis, nakshatras, Vimshottari dashas, yogas, doshas by Sanskrit name
 - When a computed chart block is provided below, anchor every claim in those values
 - Suggest traditional remedies: beej mantras, gemstones, pujas, donations, charity (daan)
@@ -767,7 +768,8 @@ Guidelines:
         systemPrompt,
         userMessage: message,
         maxTokens: 1024,
-        model: MODELS.HAIKU,
+        // Chart-grounded Jyotish needs the larger tier: the small one mislabelled Leo as कर्क.
+        model: MODELS.SONNET,
       });
       return {
         response,
