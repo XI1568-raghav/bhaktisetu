@@ -605,6 +605,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       if (!parsed.success) {
         return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
       }
+      if (parsed.data.refundType === 'partial' && parsed.data.amountInr === undefined) {
+        return reply.code(400).send({ error: 'amountInr is required for partial refunds' });
+      }
       try {
         const exists = await prisma.pujaBooking.findUnique({
           where: { id: bookingId },
@@ -645,6 +648,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         request.log.info({ bookingId, refundId: result.refundId, skipped: result.skipped }, 'admin refund approved');
         return { ok: true, refund: result };
       } catch (err) {
+        // A non-UUID id makes Prisma throw P2023 (malformed column value): that is
+        // a "no such booking", not a server fault.
+        if ((err as { code?: string })?.code === 'P2023') return reply.code(404).send({ error: 'Booking not found' });
         request.log.error({ err, bookingId }, 'admin refund approve failed');
         return reply.code(500).send({ error: 'Failed to approve refund' });
       }
@@ -698,6 +704,7 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         request.log.info({ bookingId, reason: parsed.data.reason }, 'admin refund rejected');
         return { booking: updated };
       } catch (err) {
+        if ((err as { code?: string })?.code === 'P2023') return reply.code(404).send({ error: 'Booking not found' });
         request.log.error({ err, bookingId }, 'admin refund reject failed');
         return reply.code(500).send({ error: 'Failed to reject refund' });
       }

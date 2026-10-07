@@ -473,7 +473,9 @@ function BookingsContent() {
  const canCancel =
  isUpcoming(booking) &&
  booking.status !== 'in_progress' &&
- booking.status !== 'cancelled';
+ booking.status !== 'cancelled' &&
+ // A refunded booking is already cancelled and paid back; the API 409s a cancel.
+ booking.status !== 'refunded';
 
  return (
  <div
