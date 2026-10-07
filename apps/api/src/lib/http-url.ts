@@ -24,6 +24,6 @@ export function httpUrl(field: string, max = 2000) {
 
 /** Same rule as `httpUrl`, but trims surrounding whitespace first. */
 export function httpUrlSchema(field: string, max = 2000) {
-  const message = `${field} must be a full URL starting with http:// or https://`;
+  const message = `${field} must be a valid http:// or https:// URL`;
   return z.string().trim().max(max).refine(isHttpUrl, message);
 }
