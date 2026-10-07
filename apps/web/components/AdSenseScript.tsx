@@ -14,7 +14,7 @@ export default function AdSenseScript() {
   <Script
    id="google-adsense-loader"
    async
-   strategy="afterInteractive"
+   strategy="lazyOnload"
    src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(
     client,
    )}`}

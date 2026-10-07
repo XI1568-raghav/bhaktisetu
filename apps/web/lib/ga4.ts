@@ -19,12 +19,12 @@ export function GA4Script(): ReactElement | null {
     null,
     createElement(Script, {
       id: 'ga4-loader',
-      strategy: 'afterInteractive',
+      strategy: 'lazyOnload',
       src: `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`,
     }),
     createElement(Script, {
       id: 'ga4-init',
-      strategy: 'afterInteractive',
+      strategy: 'lazyOnload',
       dangerouslySetInnerHTML: {
         __html: `
           window.dataLayer = window.dataLayer || [];

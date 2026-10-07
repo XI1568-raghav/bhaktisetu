@@ -34,7 +34,7 @@ export function MetaPixelScript(): ReactElement | null {
     null,
     createElement(Script, {
       id: 'meta-pixel-init',
-      strategy: 'afterInteractive',
+      strategy: 'lazyOnload',
       dangerouslySetInnerHTML: { __html: init },
     }),
     // Meta requires a <noscript> <img> fallback so non-JS visitors still ping.

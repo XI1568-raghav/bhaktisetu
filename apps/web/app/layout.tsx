@@ -43,7 +43,6 @@ import OnboardingTrigger from "../components/OnboardingTrigger";
 import { ListYourBusinessDropdown } from "../components/ListYourBusinessDropdown";
 import { Analytics } from "../components/Analytics";
 import { CloudflareAnalytics } from "../components/CloudflareAnalytics";
-import { NotificationPrompt } from "../components/NotificationPrompt";
 import { ReferralCapture } from "../components/ReferralCapture";
 import { HAS_REFERRAL_CREDIT } from "../lib/referral-flag";
 import { ServiceWorkerRegister } from "../components/ServiceWorkerRegister";
@@ -116,6 +115,17 @@ import "./globals.css";
  */
 
 /*
+ * UNICODE-RANGE ON THE INDIC FACES (perf, 2026-10-07). next/font/local emits
+ * @font-face with no unicode-range. Every body stack ends in the four Indic
+ * faces as fallbacks, so ANY glyph the Latin Noto Sans lacks (the rupee sign
+ * U+20B9, arrows, check marks) made the browser walk the whole chain and fetch
+ * all four files (about 400 KB) on pages with no Indic text. Each face is now
+ * limited to its own script block; the rupee sign stays on Devanagari, which is
+ * the face that actually carries it, exactly as before. Crimson Pro (reader
+ * serif only) no longer preloads on every route either; it loads when used.
+ */
+
+/*
  * SELF-HOSTED (2026-10-05, ci/cut-actions-minutes): these faces used to come from
  * next/font/google, which downloads from fonts.googleapis.com during `next build`.
  * That intermittently failed in CI with `TypeError: Cannot read properties of
@@ -157,6 +167,7 @@ const notoSansDevanagari = localFont({
  variable: "--font-noto-devanagari",
  display: "swap",
  preload: false,
+ declarations: [{ prop: "unicode-range", value: "U+0900-097F, U+1CD0-1CFF, U+200C-200D, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF" }],
 });
 
 const notoSansTamil = localFont({
@@ -166,6 +177,7 @@ const notoSansTamil = localFont({
  variable: "--font-noto-tamil",
  display: "swap",
  preload: false,
+ declarations: [{ prop: "unicode-range", value: "U+0B80-0BFF, U+1CDA" }],
 });
 
 const notoSansTelugu = localFont({
@@ -175,6 +187,7 @@ const notoSansTelugu = localFont({
  variable: "--font-noto-telugu",
  display: "swap",
  preload: false,
+ declarations: [{ prop: "unicode-range", value: "U+0C00-0C7F, U+1CDA" }],
 });
 
 const notoSansBengali = localFont({
@@ -184,6 +197,7 @@ const notoSansBengali = localFont({
  variable: "--font-noto-bengali",
  display: "swap",
  preload: false,
+ declarations: [{ prop: "unicode-range", value: "U+0980-09FF, U+1CD0-1CFF" }],
 });
 
 const crimsonPro = localFont({
@@ -192,6 +206,7 @@ const crimsonPro = localFont({
  style: "normal",
  variable: "--font-reader-serif",
  display: "swap",
+ preload: false,
  adjustFontFallback: "Times New Roman",
  fallback: [
   "var(--font-noto-devanagari)",
@@ -999,7 +1014,6 @@ export default function RootLayout({
  <SentryProvider />
  <AdSenseScript />
  <ServiceWorkerRegister />
- <NotificationPrompt />
  {HAS_REFERRAL_CREDIT && <ReferralCapture />}
  <ChannelAttribution />
  </CartProvider>

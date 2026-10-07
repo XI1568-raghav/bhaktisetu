@@ -134,7 +134,7 @@ export const COMMONS_INTRINSIC_WIDTH: Readonly<Record<string, number>> = {
  'Vishnu_from_Gita_Govinda.jpg': 1112,
  'Goshala-ISKCON.jpg': 1280,
  'The_Hindu_Goddess_Shri_Lakshmi_LACMA_M.87.210_(1_of_2).jpg': 1325,
- 'Priest_performing_Homa.jpg': 1363,
+ 'Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg': 4608,
  'Lord_Rama_with_arrows.jpg': 1366,
  'GHANTI.jpg': 1463,
  'JanakpurChhathParvaFestival.jpg': 1600,
@@ -625,7 +625,7 @@ export const IMAGES = {
  pujas: {
  'rudrabhishek': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/From_Abhisheka_To_Panchamrutha.jpg/1280px-From_Abhisheka_To_Panchamrutha.jpg'),
  'abhishek': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/From_Abhisheka_To_Panchamrutha.jpg/1280px-From_Abhisheka_To_Panchamrutha.jpg'),
- 'havan': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Priest_performing_Homa.jpg/1280px-Priest_performing_Homa.jpg'),
+ 'havan': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg/1280px-Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg'),
  'ganesh-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/6/64/Ganesha_Basohli_miniature_circa_1730_Dubost_p73.jpg'),
  'satyanarayan-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/e/ef/Vishnu_from_Gita_Govinda.jpg'),
  'navgraha-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Surya_with_Adityas_and_attendants.jpg/1280px-Surya_with_Adityas_and_attendants.jpg'),
@@ -638,7 +638,7 @@ export const IMAGES = {
  'griha-pravesh': wiki('https://upload.wikimedia.org/wikipedia/commons/4/43/%281%29_Aarti_Thali%2C_Prayer_Plate_India.jpg'),
  'navaratri-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/6/65/Mahishasura-Mardini_Durga.jpg'),
  'vastu-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/4/43/%281%29_Aarti_Thali%2C_Prayer_Plate_India.jpg'),
- 'pitru-dosh-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Priest_performing_Homa.jpg/1280px-Priest_performing_Homa.jpg'),
+ 'pitru-dosh-puja': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg/1280px-Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg'),
  },
 
  // ── Store / E-commerce Products ────────────────────────────
@@ -757,7 +757,7 @@ export const IMAGES = {
  content: wiki('https://upload.wikimedia.org/wikipedia/commons/4/43/%281%29_Aarti_Thali%2C_Prayer_Plate_India.jpg'),
  gaushala: u('photo-1516467508483-a7212febe31a', 1600, 700),
  panchang: wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Surya_with_Adityas_and_attendants.jpg/1280px-Surya_with_Adityas_and_attendants.jpg'),
- 'ask-pandit': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Priest_performing_Homa.jpg/1280px-Priest_performing_Homa.jpg'),
+ 'ask-pandit': wiki('https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg/1280px-Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg'),
  },
 
  // ── Astrologers / Pandits (stock portraits) ────────────────

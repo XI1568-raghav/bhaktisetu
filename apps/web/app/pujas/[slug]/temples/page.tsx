@@ -7,6 +7,7 @@ import { H1 } from '../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buttonClass } from '../../../../components/ui/button-recipe';
+import { canonicalTempleSlug } from '../../../../lib/temple-slug';
 import {
   canPublishTrustScore,
   canPublishTrustScoreMethodology,
@@ -173,7 +174,7 @@ export default async function PujaTemplesPage({ params }: Params) {
       '@type': 'ListItem',
       position: i + 1,
       name: o.templeName,
-      url: `https://darshya.online/temples/${o.templeSlug}`,
+      url: `https://darshya.online/temples/${canonicalTempleSlug(o.templeSlug)}`,
     })),
   };
 
@@ -260,7 +261,7 @@ export default async function PujaTemplesPage({ params }: Params) {
                   {fmtINR(o.priceOverride || puja.basePrice)}
                 </span>
                 <Link
-                  href={`/temples/${o.templeSlug}`}
+                  href={`/temples/${canonicalTempleSlug(o.templeSlug)}`}
                   className="text-sm font-semibold text-saffron-700 hover:underline"
                 >
                   View temple →
