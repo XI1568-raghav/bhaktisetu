@@ -489,6 +489,7 @@
   "maxW": 960
  },
  {
+<<<<<<< HEAD
   "dest": "content/gayatri-japa.webp",
   "kind": "commons",
   "file": "Gayatri_japa.jpg",
@@ -643,5 +644,11 @@
   "kind": "commons",
   "file": "JanakpurChhathParvaFestival.jpg",
   "maxW": 960
+=======
+  "dest": "pujas/homa.webp",
+  "kind": "commons",
+  "file": "Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg",
+  "maxW": 1280
+>>>>>>> b8abcf2 (perf(web): self-host a free-licence homa photo)
  }
 ]
