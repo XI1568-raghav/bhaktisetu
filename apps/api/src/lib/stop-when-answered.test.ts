@@ -134,3 +134,31 @@ describe('guard answers must stop the handler', () => {
     expect(await pass({} as FastifyRequest, reply)).toBeUndefined();
   });
 });
+
+describe('stopWhenAnswered keeps the hook\'s `this`', () => {
+  it('forwards `this` (Fastify binds the server; @fastify/otel reads it when SENTRY_DSN is set)', async () => {
+    const seen: unknown[] = [];
+    const hook = async function (this: unknown) {
+      seen.push(this);
+    };
+    const wrapped = stopWhenAnswered(hook);
+    const instance = { name: 'fastify-instance' };
+    const reply = { statusCode: 200 };
+    await (wrapped as unknown as (this: unknown, req: unknown, rep: unknown) => Promise<unknown>).call(instance, {}, reply);
+    expect(seen[0]).toBe(instance);
+  });
+
+  it('still hands the reply back when the hook answered 4xx, with `this` intact', async () => {
+    let boundThis: unknown;
+    const hook = async function (this: unknown, _req: unknown, rep: { statusCode: number }) {
+      boundThis = this;
+      rep.statusCode = 401;
+    };
+    const wrapped = stopWhenAnswered(hook as never);
+    const instance = {};
+    const reply = { statusCode: 200 };
+    const out = await (wrapped as unknown as (this: unknown, req: unknown, rep: unknown) => Promise<unknown>).call(instance, {}, reply);
+    expect(boundThis).toBe(instance);
+    expect(out).toBe(reply);
+  });
+});
