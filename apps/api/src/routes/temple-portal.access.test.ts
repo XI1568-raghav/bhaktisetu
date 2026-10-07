@@ -115,6 +115,16 @@ describe('dashboard', () => {
     expect(where.name).toEqual({ equals: 'somnath temple', mode: 'insensitive' });
   });
 
+  it('counts bookings in every live status, not only confirmed/completed (role pass 2026-10-07)', async () => {
+    await get('/dashboard');
+    const statuses = (prismaMock.pujaBooking.count.mock.calls[0]?.[0] as any).where.status.in;
+    for (const s of ['confirmed', 'priest_assigned', 'in_progress', 'completed', 'video_uploaded', 'delivered']) {
+      expect(statuses).toContain(s);
+    }
+    expect(statuses).not.toContain('cancelled');
+    expect(statuses).not.toContain('pending_payment');
+  });
+
   it('reports the temple share, not the devotee gross, as revenue', async () => {
     prismaMock.templePayout.findMany.mockResolvedValue([
       { bookingId: 'b1', amount: '100', status: 'completed', createdAt: new Date() },
@@ -175,5 +185,73 @@ describe('bookings list filters', () => {
   it('answers 400, not 500, for an unreadable date', async () => {
     const res = await get('/bookings?dateFrom=garbage');
     expect(res.statusCode).toBe(400);
+  });
+});
+
+// Role pass 2026-10-07 (providers).
+describe('offerings: malformed ids, roster consent, darshan link state', () => {
+  const OFFERING = '11111111-1111-4111-8111-111111111111';
+  const PRIEST = '22222222-2222-4222-8222-222222222222';
+  const send = (method: 'PATCH' | 'DELETE' | 'POST', url: string, payload?: unknown) =>
+    makeApp().inject({
+      method,
+      url: `/api/v1/temple-portal${url}`,
+      headers: { authorization: 'Bearer demo-temple' },
+      ...(payload === undefined ? {} : { payload: payload as object }),
+    });
+
+  beforeEach(() => {
+    (prismaMock as any).templePriest = { findFirst: vi.fn().mockResolvedValue(null) };
+    prismaMock.templeProfile.findUnique.mockResolvedValue({ templeName: 'Somnath Temple', approved: true } as any);
+    prismaMock.temple.findFirst.mockResolvedValue({ id: 'temple-1' } as any);
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue({
+      id: OFFERING,
+      templeId: 'temple-1',
+      assignedPriestId: null,
+    } as any);
+  });
+
+  it('a malformed :id is 404, not a 500 from Prisma', async () => {
+    for (const [m, u] of [
+      ['PATCH', '/pujas/not-a-uuid'],
+      ['DELETE', '/pujas/not-a-uuid'],
+      ['DELETE', '/priests/not-a-uuid'],
+      ['PATCH', '/darshan/not-a-uuid'],
+    ] as const) {
+      const res = await send(m, u, m === 'DELETE' ? undefined : { isActive: true });
+      expect(res.statusCode).toBe(404);
+    }
+    expect(prismaMock.templePujaOffering.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('refuses to pin a priest who is not on the roster (no consent, and no FK 500 for unknown ids)', async () => {
+    const res = await send('PATCH', `/pujas/${OFFERING}`, { assignedPriestId: PRIEST });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().code).toBe('priest_not_on_roster');
+    expect(prismaMock.templePujaOffering.update).not.toHaveBeenCalled();
+  });
+
+  it('pins a priest who accepted (is on the roster)', async () => {
+    (prismaMock as any).templePriest.findFirst.mockResolvedValue({ id: 'roster-1' });
+    prismaMock.templePujaOffering.update.mockResolvedValue({ id: OFFERING, templeId: 'temple-1', assignedPriestId: PRIEST } as any);
+    const res = await send('PATCH', `/pujas/${OFFERING}`, { assignedPriestId: PRIEST });
+    expect(res.statusCode).toBe(200);
+    expect((prismaMock as any).templePriest.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { templeId: 'temple-1', priestId: PRIEST } }),
+    );
+  });
+
+  it('un-pinning (null) needs no roster lookup', async () => {
+    prismaMock.templePujaOffering.update.mockResolvedValue({ id: OFFERING, templeId: 'temple-1', assignedPriestId: null } as any);
+    const res = await send('PATCH', `/pujas/${OFFERING}`, { assignedPriestId: null });
+    expect(res.statusCode).toBe(200);
+    expect((prismaMock as any).templePriest.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('POST /darshan from an unapproved manager is the specific 409, like every other write', async () => {
+    prismaMock.templeProfile.findUnique.mockResolvedValue({ templeName: 'Somnath Temple', approved: false } as any);
+    const res = await send('POST', '/darshan', { streamKey: 'k', playbackUrl: 'https://x.example/a.m3u8' });
+    expect(res.statusCode).toBe(409);
+    expect(res.json()).toMatchObject({ code: 'temple_not_linked', reason: 'not_approved' });
   });
 });

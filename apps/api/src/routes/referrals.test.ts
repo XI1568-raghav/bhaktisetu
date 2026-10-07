@@ -174,6 +174,7 @@ describe('POST /api/v1/referrals/reward', () => {
       rewardLedgerId: null,
     });
     // Wallet path: no idempotency hit + transaction credits referrer.
+    prismaMock.pujaBooking.findFirst.mockResolvedValueOnce({ id: 'paid-booking' });
     prismaMock.creditLedgerEntry.findUnique.mockResolvedValueOnce(null);
     prismaMock.userCredit.upsert.mockResolvedValueOnce({
       id: 'credit-pandit-1',
@@ -208,6 +209,32 @@ describe('POST /api/v1/referrals/reward', () => {
         }),
       }),
     );
+    await app.close();
+  });
+
+  it('refuses to reward a booking that is not the referee\'s paid booking (no free credit)', async () => {
+    prismaMock.referralClaim.findUnique.mockResolvedValueOnce({
+      id: '00000000-0000-0000-0000-000000000001',
+      status: 'signed_up',
+      referrerId: DEMO_PANDIT.id,
+      refereeId: DEMO_DEVOTEE.id,
+      rewardLedgerId: null,
+    });
+    prismaMock.pujaBooking.findFirst.mockResolvedValueOnce(null);
+
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/referrals/reward',
+      headers: { authorization: 'Bearer demo-devotee', 'content-type': 'application/json' },
+      payload: JSON.stringify({
+        claimId: '00000000-0000-0000-0000-000000000001',
+        bookingId: '11111111-1111-4111-8111-111111111111',
+      }),
+    });
+    expect(res.statusCode).toBe(409);
+    expect(prismaMock.userCredit.upsert).not.toHaveBeenCalled();
+    expect(prismaMock.referralClaim.update).not.toHaveBeenCalled();
     await app.close();
   });
 
@@ -259,6 +286,7 @@ describe('POST /api/v1/referrals/reward', () => {
       refereeId: DEMO_DEVOTEE.id,
       rewardLedgerId: null,
     });
+    prismaMock.pujaBooking.findFirst.mockResolvedValueOnce({ id: 'paid-booking' });
     prismaMock.creditLedgerEntry.findUnique.mockResolvedValueOnce(null);
     prismaMock.userCredit.upsert.mockResolvedValueOnce({
       id: 'credit-pandit-2',

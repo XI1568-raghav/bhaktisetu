@@ -60,6 +60,7 @@ import { PostHogScript } from "../lib/posthog";
 import { SITE_OPEN_GRAPH, SITE_TWITTER } from "../lib/site-metadata";
 import { organizationJsonLd, webSiteJsonLd } from "../lib/jsonld";
 import Link from "next/link";
+import { FooterLanguageLinks } from "../components/FooterLanguageLinks";
 import "./globals.css";
 
 /*
@@ -126,6 +127,21 @@ import "./globals.css";
  */
 
 /*
+ * ON-DEMAND INDIC FONTS (perf, 2026-10-07). Two things used to pull all four
+ * Indic files (~400 KB) onto every English page despite unicode-range:
+ *  1. The footer "Read in:" links rendered हिन्दी / தமிழ் / తెలుగు / বাংলা in the
+ *     first HTML. They are now components/FooterLanguageLinks, which renders
+ *     Latin names and swaps in the native scripts on first hover, focus or
+ *     touch, so the glyphs (and so the fonts) are only requested then.
+ *  2. The rupee sign U+20B9 was in the Devanagari unicode-range because no
+ *     Latin face carries it, so every price fetched the 121 KB Devanagari
+ *     file. public/fonts/NotoSans-rupee.woff2 (1 KB, U+20B9 cut from the same
+ *     Noto Sans Devanagari file; @font-face RupeeSign in globals.css) now
+ *     draws it, first in the fallback list of the two Latin families. The
+ *     Devanagari range no longer includes U+20B9.
+ */
+
+/*
  * SELF-HOSTED (2026-10-05, ci/cut-actions-minutes): these faces used to come from
  * next/font/google, which downloads from fonts.googleapis.com during `next build`.
  * That intermittently failed in CI with `TypeError: Cannot read properties of
@@ -153,6 +169,7 @@ const notoSans = localFont({
  display: "swap",
  adjustFontFallback: "Arial",
  fallback: [
+  "RupeeSign",
   "var(--font-noto-devanagari)",
   "var(--font-noto-tamil)",
   "var(--font-noto-telugu)",
@@ -167,7 +184,7 @@ const notoSansDevanagari = localFont({
  variable: "--font-noto-devanagari",
  display: "swap",
  preload: false,
- declarations: [{ prop: "unicode-range", value: "U+0900-097F, U+1CD0-1CFF, U+200C-200D, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF" }],
+ declarations: [{ prop: "unicode-range", value: "U+0900-097F, U+1CD0-1CFF, U+200C-200D, U+25CC, U+A830-A839, U+A8E0-A8FF" }],
 });
 
 const notoSansTamil = localFont({
@@ -209,6 +226,7 @@ const crimsonPro = localFont({
  preload: false,
  adjustFontFallback: "Times New Roman",
  fallback: [
+  "RupeeSign",
   "var(--font-noto-devanagari)",
   "var(--font-noto-tamil)",
   "var(--font-noto-telugu)",
@@ -973,12 +991,7 @@ export default function RootLayout({
      and the guard keeps working for the browser-level prefetches it can
      still see. */}
  <span className="text-surface-600">Read in:</span>
- <Link prefetch={false} href="/?lang=en" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="en">English</Link>
- <Link prefetch={false} href="/hi" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="hi" lang="hi">हिन्दी</Link>
- <Link prefetch={false} href="/ta" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="ta" lang="ta">தமிழ்</Link>
- <Link prefetch={false} href="/te" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="te" lang="te">తెలుగు</Link>
- <Link prefetch={false} href="/bn" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="bn" lang="bn">বাংলা</Link>
- <Link prefetch={false} href="/mr" className="tap-safe hover:text-saffron-400 transition-colors" hrefLang="mr" lang="mr">मराठी</Link>
+ <FooterLanguageLinks />
  </div>
  {/* I18N-01: these six links advertise a localized product on every page.
  Until the copy exists, say so where the visitor actually is. */}

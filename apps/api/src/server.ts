@@ -125,6 +125,7 @@ import { isJobQueueAvailable } from './services/job-queue.service.js';
 import { isJobQueueConfigured } from './lib/env.js';
 import { errorLocalizationPlugin } from './plugins/error-localization.js';
 import { localizeImages } from './lib/self-hosted-images.js';
+import { wrapRouteGuards } from './lib/stop-when-answered.js';
 
 const server = Fastify({
   logger: {
@@ -191,7 +192,16 @@ async function bootstrap() {
   // and fixtures still name by Wikimedia/Unsplash URL (temples[].images, store
   // product images, gaushala photos). Mapping only, never a DB write; strings
   // not in the generated table pass through untouched.
-  server.addHook('preSerialization', async (_request, _reply, payload) => localizeImages(payload));
+  // Callback style on purpose: an async preSerialization hook defers the write of
+  // every reply by a tick, which is what let a guard's 403 be followed by the
+  // handler running (see lib/stop-when-answered.ts). This mapping is synchronous.
+  server.addHook('preSerialization', (_request, _reply, payload, done) => {
+    try {
+      done(null, localizeImages(payload));
+    } catch (err) {
+      done(err as Error);
+    }
+  });
 
   // Security plugins
   // API serves only JSON — no HTML, no inline scripts, no embedded frames.
@@ -247,6 +257,13 @@ async function bootstrap() {
   // and "fixed" by moving its registration before the plugin. That fix was real
   // and is still required; the matching was independently broken, and a
   // registration-order fix could never have surfaced it.
+  // A guard that answers 401/403 must also STOP the handler. See
+  // lib/stop-when-answered.ts: without this, any async serialization hook lets
+  // the handler run behind a 403 (a non-admin could execute admin mutations).
+  server.addHook('onRoute', (routeOpts) => {
+    wrapRouteGuards(routeOpts as Parameters<typeof wrapRouteGuards>[0]);
+  });
+
   server.addHook('onRoute', (routeOpts) => {
     const existing = (routeOpts.config as { rateLimit?: unknown } | undefined)?.rateLimit;
     if (existing) return;

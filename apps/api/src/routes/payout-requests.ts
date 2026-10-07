@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { safeErrorMessage } from './priest.js';
 import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
 import {
   getPayoutBalance,
@@ -67,7 +68,10 @@ export async function payoutRequestRoutes(server: FastifyInstance) {
         payout: { id: request0.id, amount: request0.amount.toString(), status: request0.status },
       });
     } catch (err) {
-      return reply.code(400).send({ error: err instanceof Error ? err.message : 'Could not request payout' });
+      // The service throws plain sentences for refusals; anything else (a Prisma
+      // fault) used to be echoed with the source path and SQL. Log it, hide it.
+      request.log.error({ err }, 'payout request failed');
+      return reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 

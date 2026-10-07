@@ -53,7 +53,7 @@ async function complete(reference?: string) {
   const app = await buildApp();
   const res = await app.inject({
     method: 'POST',
-    url: '/api/v1/admin/bookings/payout-requests/pr-1/process',
+    url: '/api/v1/admin/bookings/payout-requests/11111111-1111-4111-8111-111111111111/process',
     headers: { authorization: 'Bearer demo-admin', 'content-type': 'application/json' },
     payload: JSON.stringify({ action: 'complete', reference }),
   });
@@ -73,7 +73,7 @@ describe('DI-10 — the second Complete says it changed nothing', () => {
   it('reports alreadyCompleted:false and the processing timestamp on the first call', async () => {
     const processedAt = new Date('2026-08-12T09:00:00.000Z');
     processPayout.mockResolvedValue({
-      id: 'pr-1',
+      id: '11111111-1111-4111-8111-111111111111',
       status: 'completed',
       processedAt,
       reference: 'UTR123',
@@ -90,7 +90,7 @@ describe('DI-10 — the second Complete says it changed nothing', () => {
   it('reports alreadyCompleted:true on a repeat, carrying when and under which reference', async () => {
     const processedAt = new Date('2026-08-12T09:00:00.000Z');
     processPayout.mockResolvedValue({
-      id: 'pr-1',
+      id: '11111111-1111-4111-8111-111111111111',
       status: 'completed',
       processedAt,
       reference: 'UTR123',

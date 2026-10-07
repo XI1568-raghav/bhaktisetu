@@ -229,6 +229,18 @@ export async function referralsRoutes(server: FastifyInstance) {
         return reply.code(409).send({ error: 'claim_voided' });
       }
 
+      // The reward is for a PAID booking made by the referee. bookingId used to
+      // be taken on trust (any UUID credited the referrer, found in the
+      // 2026-10-07 devotee role pass), so a second account could mint credit
+      // for free. Same shape as the other money guards: owner + captured payment.
+      const paidBooking = await prisma.pujaBooking.findFirst({
+        where: { id: bookingId, userId: caller.id, payments: { some: { status: 'captured' } } },
+        select: { id: true },
+      });
+      if (!paidBooking) {
+        return reply.code(409).send({ error: 'booking_not_paid' });
+      }
+
       // Credit referrer wallet first; only flip claim status on success.
       const { WalletService } = await import('../services/wallet.service.js');
       const wallet = new WalletService(prisma);

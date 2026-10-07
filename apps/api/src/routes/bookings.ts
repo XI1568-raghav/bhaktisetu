@@ -123,7 +123,12 @@ const createBookingSchema = z.object({
 // The server already stamps it in booking.service.uploadVideoProof, so no
 // legitimate client ever needs to send it.
 const VIDEO_PROOF_FIELDS = z.object({
-  videoProofUrl: z.string().url().max(2000).optional(),
+  videoProofUrl: z
+    .string()
+    .url()
+    .max(2000)
+    .refine((u) => /^https?:\/\//i.test(u), 'videoProofUrl must start with http:// or https://')
+    .optional(),
 }).strict();
 
 // No user-mutable fields for these transitions — strict empty object rejects
