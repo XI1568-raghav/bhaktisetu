@@ -489,7 +489,8 @@ describe('RESP-09 / RESP-11 — the targets the CSS floor cannot reach', () => {
   });
 
   it('the footer language switcher does too (six 18px links on one row)', () => {
-    const layout = read('app/layout.tsx');
+    // The links live in components/FooterLanguageLinks.tsx (native scripts load on demand).
+    const layout = read('components/FooterLanguageLinks.tsx');
     // Scoped to the switcher: the <head> also emits six alternate <link>s.
     const langs = [...layout.matchAll(/<Link[^>]*hrefLang="(en|hi|ta|te|bn|mr)"/g)];
     expect(langs.length).toBe(6);

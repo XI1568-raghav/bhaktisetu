@@ -106,6 +106,19 @@
   font-display: swap;
 }
 
+/* Rupee sign only (U+20B9), 1 KB, cut from Noto Sans Devanagari. No Latin face
+   in the stack has the glyph, so without this every price fetched the 121 KB
+   Devanagari file. Named in the fallback of the two Latin next/font families in
+   app/layout.tsx. Fetched only when a rupee sign is actually on the page. */
+@font-face {
+  font-family: RupeeSign;
+  src: url('/fonts/NotoSans-rupee.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+20B9;
+}
+
 /* CWV-01 — metric-matched fallbacks. The CLS audit on prod (2026-10-06)
    blames CabinetGrotesk-Bold.woff2 for 0.077 of the page's shift: the h1 is
    laid out in the fallback face and re-flows when the real one swaps in. These
