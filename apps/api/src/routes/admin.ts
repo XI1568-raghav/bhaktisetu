@@ -43,7 +43,8 @@ function isUuid(value: string | null | undefined): value is string {
 const userQuerySchema = z.object({
   role: z.string().optional(),
   status: z.string().optional(),
-  search: z.string().optional(),
+  // A NUL byte is not storable in Postgres text; it used to reach the query and 500.
+  search: z.string().refine((v) => !v.includes('\u0000'), 'search contains an invalid character').optional(),
   page: z.string().optional(),
   limit: z.string().optional(),
 });

@@ -645,6 +645,12 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         request.log.info({ bookingId, refundId: result.refundId, skipped: result.skipped }, 'admin refund approved');
         return { ok: true, refund: result };
       } catch (err) {
+        // Role pass 2026-10-07: pujaBooking.id is a uuid column. A malformed id raises
+        // P2023 from Prisma and used to answer 500; an id that cannot be a uuid cannot
+        // match a booking, so it is a miss.
+        if ((err as { code?: unknown } | null)?.code === 'P2023') {
+          return reply.code(404).send({ error: 'Booking not found' });
+        }
         request.log.error({ err, bookingId }, 'admin refund approve failed');
         return reply.code(500).send({ error: 'Failed to approve refund' });
       }
@@ -698,6 +704,12 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         request.log.info({ bookingId, reason: parsed.data.reason }, 'admin refund rejected');
         return { booking: updated };
       } catch (err) {
+        // Role pass 2026-10-07: pujaBooking.id is a uuid column. A malformed id raises
+        // P2023 from Prisma and used to answer 500; an id that cannot be a uuid cannot
+        // match a booking, so it is a miss.
+        if ((err as { code?: unknown } | null)?.code === 'P2023') {
+          return reply.code(404).send({ error: 'Booking not found' });
+        }
         request.log.error({ err, bookingId }, 'admin refund reject failed');
         return reply.code(500).send({ error: 'Failed to reject refund' });
       }

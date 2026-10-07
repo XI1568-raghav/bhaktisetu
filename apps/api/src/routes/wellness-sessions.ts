@@ -542,6 +542,17 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         return reply.code(409).send({ error: 'Session has already completed' });
       }
 
+      // Role pass 2026-10-07: nobody pays an instructor an admin has not
+      // approved (the astrologer booking path has the same gate). Without it a
+      // self-created, unvetted profile could sell classes the moment it listed one.
+      const instructorProfile = await prisma.wellnessProfile.findUnique({
+        where: { userId: session.instructorId },
+        select: { approved: true },
+      });
+      if (!instructorProfile?.approved) {
+        return reply.code(409).send({ error: 'This instructor is not yet approved to take bookings.' });
+      }
+
       const userId = request.currentUser!.id;
 
       // Reuse an existing PENDING_PAYMENT enrollment if present (idempotent retry).

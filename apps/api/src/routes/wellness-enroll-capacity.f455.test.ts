@@ -142,6 +142,8 @@ beforeEach(() => {
     fn(prismaMock),
   );
   prismaMock.$queryRawUnsafe.mockResolvedValue([]);
+  // Role pass 2026-10-07: enrolment requires an approved instructor profile.
+  prismaMock.wellnessProfile.findUnique.mockResolvedValue({ approved: true } as never);
 });
 
 afterEach(() => {
@@ -570,5 +572,23 @@ describe('F455 — a full session is refused before any Razorpay order is minted
     };
     expect(createArgs.data.razorpayOrderId).toBe('order_live_f455');
     expect(createArgs.data.status).toBe('PENDING_PAYMENT');
+  });
+});
+
+describe('role pass 2026-10-07 — nobody pays an unapproved instructor', () => {
+  beforeEach(() => {
+    prismaMock.wellnessSession.findUnique.mockResolvedValue(sessionRow());
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(null);
+    prismaMock.wellnessEnrollment.count.mockResolvedValue(0);
+  });
+
+  it.each([{ approved: false }, null])('refuses 409 before any order or enrolment for profile %j', async (profile) => {
+    prismaMock.wellnessProfile.findUnique.mockResolvedValue(profile as never);
+    const app = await buildApp();
+    const res = await enroll(app);
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error).toMatch(/not yet approved/i);
+    expect(ordersCreate).not.toHaveBeenCalled();
+    expect(prismaMock.wellnessEnrollment.create).not.toHaveBeenCalled();
   });
 });
