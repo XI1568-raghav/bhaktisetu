@@ -90,6 +90,27 @@ describe('POST /admin/bookings/refunds/:id/approve with refundType "policy"', ()
     expect(processRefund.mock.calls[0]![0].amountInr).toBe(376.5);
   });
 
+  it('with NO refundType the default is the policy amount, never the full price', async () => {
+    const res = await call('POST', '/refunds/bk-1/approve', { reason: 'Devotee cancellation' });
+    expect(res.statusCode).toBe(200);
+    expect(computePolicyRefund).toHaveBeenCalledTimes(1);
+    const arg = processRefund.mock.calls[0]![0];
+    expect(arg.refundType).toBe('partial');
+    expect(arg.amountInr).toBe(376.5);
+  });
+
+  it('with an empty body the default is still the policy amount', async () => {
+    await call('POST', '/refunds/bk-1/approve', {});
+    expect(processRefund.mock.calls[0]![0]).toMatchObject({ refundType: 'partial', amountInr: 376.5 });
+  });
+
+  it('with NO refundType and nothing owed by the policy, refuses and moves no money', async () => {
+    computePolicyRefund.mockResolvedValue({ ...QUOTE, refundAmountInr: 0, feeAmountInr: 502, refundFraction: 0, tierLabel: 'No refund' });
+    const res = await call('POST', '/refunds/bk-1/approve', {});
+    expect(res.statusCode).toBe(400);
+    expect(processRefund).not.toHaveBeenCalled();
+  });
+
   it('full and partial work exactly as before', async () => {
     await call('POST', '/refunds/bk-1/approve', { refundType: 'full' });
     expect(processRefund.mock.calls[0]![0].refundType).toBe('full');

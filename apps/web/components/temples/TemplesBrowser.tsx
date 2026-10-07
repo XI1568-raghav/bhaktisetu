@@ -366,7 +366,7 @@ export function TemplesBrowser({
  </h2>
  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
  {filtered.map((t, i) => (
- <TempleCard key={t.slug} temple={t} eager={i < 3} />
+ <TempleCard key={t.slug} temple={t} index={i} />
  ))}
  </div>
  </section>
@@ -405,11 +405,18 @@ function handleTempleImageError(event: React.SyntheticEvent<HTMLImageElement>) {
 
 // CWV-01: the first row is the LCP candidate on /temples; lazy-loading it deferred
 // its fetch until after layout (Lighthouse "resource load delay") for no saving.
-function TempleCard({ temple, eager = false }: { temple: TempleCardData; eager?: boolean }) {
+function TempleCard({ temple, index = 0 }: { temple: TempleCardData; index?: number }) {
+ // Only the first card is the LCP image on a phone (one column, and the hero pushes it to the
+ // fold); the next two share its row on desktop, so they load eagerly but do not compete for
+ // `high` priority. Everything past the first row skips layout and paint until it scrolls near
+ // (content-visibility), which took the ~1.1 s style/layout slice of the first load off the
+ // main thread; `auto 420px` is the card's measured height and is remembered once rendered.
+ const eager = index < 3;
+ const offscreen = index >= 3 ? ' [content-visibility:auto] [contain-intrinsic-size:auto_420px]' : '';
  return (
  <Link
  href={`/temples/${temple.slug}`}
- className="group overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-warm-md"
+ className={`group overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-warm-md${offscreen}`}
  >
  <div className="relative aspect-[16/10] bg-gradient-to-br from-orange-100 to-amber-50">
  <img
@@ -418,7 +425,7 @@ function TempleCard({ temple, eager = false }: { temple: TempleCardData; eager?:
  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 380px"
  alt={`${temple.name} - ${temple.city}`}
  loading={eager ? 'eager' : 'lazy'}
- fetchPriority={eager ? 'high' : undefined}
+ fetchPriority={index === 0 ? 'high' : undefined}
  width={500}
  height={313}
  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"

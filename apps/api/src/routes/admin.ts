@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { httpUrl } from '../lib/http-url.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { adminService, UnsupportedUserStatusError } from '../services/admin.service.js';
 import { prisma } from '../lib/prisma.js';
@@ -112,7 +113,7 @@ const templeCreateSchema = z.object({
   lng: z.number().min(-180).max(180),
   phone: z.string().max(40).optional(),
   email: z.string().email().optional(),
-  websiteUrl: z.string().url().max(500).optional(),
+  websiteUrl: httpUrl('websiteUrl', 500).optional(),
   isVerified: z.boolean().optional(),
   status: z.enum(TEMPLE_STATUSES).optional(),
 });

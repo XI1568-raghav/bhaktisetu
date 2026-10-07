@@ -1,3 +1,4 @@
+import { TOO_EARLY_TO_COMPLETE, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
 import { FastifyInstance } from 'fastify';
 import {
   ASTROLOGER_PLATFORM_RATE,
@@ -1098,6 +1099,15 @@ export async function consultationRoutes(server: FastifyInstance) {
     }
     if (row.status !== 'confirmed') {
       return reply.code(409).send({ error: `Cannot complete a ${row.status} consultation.` });
+    }
+    // Completion releases the astrologer's held earning, so a booked slot must have
+    // started first. Admin may force-complete (remediation). An on-demand
+    // consultation has no scheduled_at and is not gated.
+    if (!isAdmin && row.scheduled_at) {
+      const early = tooEarlyToCompleteMessage(new Date(row.scheduled_at), 'consultation');
+      if (early) {
+        return reply.code(409).send({ error: early, code: TOO_EARLY_TO_COMPLETE });
+      }
     }
     await prisma.$executeRawUnsafe(
       `UPDATE astrologer_consultations SET status = 'completed' WHERE id = $1::uuid;`,
