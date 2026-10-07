@@ -25,8 +25,15 @@ const WRAPPED = Symbol.for('darshya.stopWhenAnswered');
 
 export function stopWhenAnswered<H extends AsyncHook>(hook: H): H {
   if ((hook as unknown as Record<symbol, unknown>)[WRAPPED]) return hook;
-  const wrapped = async function (request: FastifyRequest, reply: FastifyReply) {
-    const result = await hook(request, reply);
+  // `this` must reach the wrapped hook: Fastify calls hooks with the server instance as
+  // `this`, and observability wrappers (@fastify/otel, active whenever SENTRY_DSN is set)
+  // read it. Dropping it threw on every denied request in production (2026-10-07).
+  const wrapped = async function (this: unknown, request: FastifyRequest, reply: FastifyReply) {
+    const result = await (hook as (this: unknown, req: FastifyRequest, rep: FastifyReply) => unknown).call(
+      this,
+      request,
+      reply,
+    );
     if (typeof reply.statusCode === 'number' && reply.statusCode >= 400) return reply;
     return result;
   };
