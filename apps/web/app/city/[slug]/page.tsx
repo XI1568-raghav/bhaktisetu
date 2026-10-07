@@ -10,6 +10,7 @@ import { getCity, CITIES } from '../../../lib/cities';
 import { getTemples } from '../../../lib/api';
 import { getDeity } from '../../../lib/deities';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { canonicalTempleSlug } from '../../../lib/temple-slug';
 
 export const dynamicParams = false;
 export const revalidate = 3600;
@@ -120,7 +121,7 @@ export default async function CityPage({ params }: Params) {
                 <h3 className="text-lg font-semibold text-surface-900 mb-1">{t.name}</h3>
                 <p className="text-xs text-surface-500 mb-2">{t.city}, {t.state}</p>
                 <Link
-                  href={`/temples/${t.slug}`}
+                  href={`/temples/${canonicalTempleSlug(t.slug)}`}
                   className="text-sm font-semibold text-saffron-700 hover:underline"
                 >
                   View temple →

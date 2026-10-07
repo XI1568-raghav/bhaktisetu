@@ -44,6 +44,7 @@ import AdSlot from '../../../components/AdSlot';
 import { getTempleHero } from '../../../lib/images';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { canonicalTempleSlug } from '../../../lib/temple-slug';
 import {
  currentAartiState,
  getScheduleForTemple,
@@ -692,7 +693,7 @@ export default async function DarshanDetailPage({
  ) : null;
  })()}
  <a
- href={`/temples/${stream.temple.slug}`}
+ href={`/temples/${canonicalTempleSlug(stream.temple.slug)}`}
  className="inline-flex items-center gap-1.5 text-sm text-saffron-400 font-semibold hover:text-saffron-300 transition-colors"
  >
  Temple Page
@@ -864,7 +865,7 @@ export default async function DarshanDetailPage({
  </div>
  </div>
  <a
- href={`/temples/${stream.temple.slug}`}
+ href={`/temples/${canonicalTempleSlug(stream.temple.slug)}`}
  className="mt-5 flex items-center justify-center gap-1.5 w-full py-2.5 bg-saffron-600 text-white font-medium text-sm rounded-lg hover:bg-saffron-700 transition-colors"
  >
  View Temple Details
@@ -934,7 +935,7 @@ export default async function DarshanDetailPage({
  pandits with video proof.
  </p>
  <a
- href={`/temples/${stream.temple.slug}`}
+ href={`/temples/${canonicalTempleSlug(stream.temple.slug)}`}
  className="block w-full py-2.5 bg-white text-saffron-700 font-semibold text-sm rounded-xl hover:bg-saffron-50 transition-colors text-center"
  >
  Browse Pujas
