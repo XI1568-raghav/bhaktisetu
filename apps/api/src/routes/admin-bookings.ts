@@ -605,6 +605,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       if (!parsed.success) {
         return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
       }
+      if (parsed.data.refundType === 'partial' && parsed.data.amountInr === undefined) {
+        return reply.code(400).send({ error: 'amountInr is required for partial refunds' });
+      }
       try {
         const exists = await prisma.pujaBooking.findUnique({
           where: { id: bookingId },

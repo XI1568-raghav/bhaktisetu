@@ -128,6 +128,17 @@ describe('DB-03 — a pending_payment booking can be paid for', () => {
   });
 });
 
+describe('role pass 2026-10-07 — no Cancel on a refunded booking', () => {
+  it('a refunded upcoming row has no Cancel button, a confirmed one does', async () => {
+    mockList([listRow(7, 'refunded'), listRow(8, 'confirmed')]);
+    renderWithQuery(<BookingsPage />);
+    await screen.findByText('Puja 7');
+    await screen.findByText('Puja 8');
+
+    expect(screen.getAllByRole('button', { name: /^cancel$/i })).toHaveLength(1);
+  });
+});
+
 // ─── /bookings/pay: the resume page ──────────────────────────────────────────
 
 const PENDING_DETAIL = {

@@ -1603,7 +1603,9 @@ export class BookingService {
         case 'completed':
           return { status: { in: COMPLETED_BOOKING_STATUSES } };
         case 'cancelled':
-          return { status: 'cancelled' };
+          // A fully refunded cancellation is status 'refunded': it must stay in
+          // the Cancelled tab instead of vanishing from every tab but All.
+          return { status: { in: ['cancelled', 'refunded'] } };
         default:
           return null;
       }
