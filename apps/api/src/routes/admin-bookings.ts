@@ -620,10 +620,13 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         });
         if (!exists) return reply.code(404).send({ error: 'Booking not found' });
 
-        let refundType: 'full' | 'partial' = parsed.data.refundType === 'partial' ? 'partial' : 'full';
-        let amountInr = parsed.data.refundType === 'partial' ? parsed.data.amountInr : undefined;
+        // Invariant (TASKS.md 2026-10-05): admin refunds default to the cancellation-policy
+        // amount. Only an explicit `full` or `partial` overrides it.
+        const requestedType = parsed.data.refundType ?? 'policy';
+        let refundType: 'full' | 'partial' = requestedType === 'partial' ? 'partial' : 'full';
+        let amountInr = requestedType === 'partial' ? parsed.data.amountInr : undefined;
         let reason = parsed.data.reason ?? 'Admin-approved refund';
-        if (parsed.data.refundType === 'policy') {
+        if (requestedType === 'policy') {
           // The amount is computed here, never taken from the page.
           const quote = await computePolicyRefund(exists);
           if (quote.refundAmountInr <= 0) {

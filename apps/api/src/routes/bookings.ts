@@ -1,3 +1,4 @@
+import { TOO_EARLY_TO_COMPLETE, pujaScheduledInstant, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { BookingStatus, Prisma } from '@prisma/client';
@@ -1254,6 +1255,23 @@ export async function bookingRoutes(server: FastifyInstance) {
           return reply
             .status(proofGate.status)
             .send({ error: proofGate.error, message: proofGate.message });
+        }
+
+        // Completing releases the pandit's held earning, so only an admin may do
+        // it before the slot has started (admin keeps it for remediation).
+        if (
+          !isAdmin &&
+          (body.status === 'completed' || body.status === 'video_uploaded')
+        ) {
+          const early = tooEarlyToCompleteMessage(
+            pujaScheduledInstant(booking.scheduledDate, booking.scheduledTimeSlot),
+            'puja',
+          );
+          if (early) {
+            return reply
+              .status(409)
+              .send({ error: 'Conflict', code: TOO_EARLY_TO_COMPLETE, message: early });
+          }
         }
 
         // RV-17: land the admin's reassignment for real, BEFORE the status

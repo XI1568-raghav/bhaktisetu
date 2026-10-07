@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { httpUrl } from '../lib/http-url.js';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
@@ -60,7 +61,7 @@ const importBodySchema = z.object({
     email: z.string().optional(),
     whatsappNumber: z.string().optional(),
     source: z.string(),
-    sourceUrl: z.string().optional(),
+    sourceUrl: httpUrl('sourceUrl').optional(),
     metadata: z.record(z.unknown()).optional(),
   })),
 });
