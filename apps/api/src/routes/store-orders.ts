@@ -38,6 +38,11 @@ const shippingAddressSchema = z.object({
   pincode: z.string().min(1),
   country: z.string().default('India'),
   phone: z.string().nullish(),
+}).refine((a) => ['', 'IN', 'INDIA'].includes(a.country.trim().toUpperCase()), {
+  // Role pass 2026-10-07: the copy (support FAQ, /nri-pujas) promises store
+  // orders ship within India only, but the API charged an order for a US address.
+  path: ['country'],
+  message: 'Store orders are delivered within India only. Use an Indian delivery address.',
 });
 
 const createOrderSchema = z.object({
@@ -203,7 +208,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     const lookupIds = productIds.filter((id) => UUID_RE.test(id));
     const products = lookupIds.length
       ? await prisma.storeProduct.findMany({
-          where: { id: { in: lookupIds } },
+          where: { id: { in: lookupIds }, storeProfile: { approved: true } },
           select: { id: true, price: true, stock: true, isActive: true, storeProfileId: true },
         })
       : [];

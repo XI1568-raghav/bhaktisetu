@@ -25,7 +25,7 @@ import { prisma } from '../lib/prisma.js';
 async function loadLiveCatalogue(limit = 200): Promise<Product[]> {
   try {
     const rows = await prisma.storeProduct.findMany({
-      where: { isActive: true, stock: { gt: 0 } },
+      where: { isActive: true, stock: { gt: 0 }, storeProfile: { approved: true } },
       include: { storeProfile: { select: { storeName: true } } },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -49,7 +49,7 @@ async function loadLiveCatalogue(limit = 200): Promise<Product[]> {
 async function loadLiveProductById(id: string): Promise<Product | undefined> {
   try {
     const row = await prisma.storeProduct.findFirst({
-      where: { id, isActive: true, stock: { gt: 0 } },
+      where: { id, isActive: true, stock: { gt: 0 }, storeProfile: { approved: true } },
       include: { storeProfile: { select: { storeName: true } } },
     });
     return row ? presentLiveProduct(row) : undefined;
@@ -83,6 +83,10 @@ export async function storeRoutes(server: FastifyInstance) {
       where: {
         isActive: true,
         stock: { gt: 0 },
+        // Role pass 2026-10-07: a self-created store stays unapproved until a
+        // human reviews it (store-admin PUT /profile), so its products are not
+        // on the public shelf and cannot be bought yet.
+        storeProfile: { approved: true },
         ...(category ? { category: { equals: category, mode: 'insensitive' as const } } : {}),
         ...(q ? { name: { contains: q, mode: 'insensitive' as const } } : {}),
       },

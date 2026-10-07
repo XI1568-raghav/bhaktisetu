@@ -125,11 +125,38 @@ const payoutsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
+// PATCH /priest/profile had no validation at all: `{"displayName":""}` blanked the
+// pandit's public name (puja pages, receipts, the temple roster), and any string
+// was accepted as avatarUrl/languages. Unknown keys are stripped, not rejected,
+// so older clients that send extra fields keep working.
+const priestProfileUpdateSchema = z.object({
+  displayName: z.string().trim().min(2, 'displayName must be at least 2 characters').max(120).optional(),
+  bio: z.string().max(2000).optional(),
+  languages: z.array(z.string().trim().min(1).max(40)).max(15).optional(),
+  specializations: z.array(z.string().trim().min(1).max(80)).max(20).optional(),
+  experienceYears: z.coerce.number().int().min(0).max(80).optional(),
+  avatarUrl: z
+    .string()
+    .trim()
+    .url()
+    .max(1000)
+    .refine((u) => /^https?:\/\//i.test(u), 'avatarUrl must start with http:// or https://')
+    .optional(),
+});
+
 const videoProofBodySchema = z.object({
   // PF-06: `"  "` and `"not-a-url-at-all"` were both persisted verbatim as the
   // booking's video proof, then permanently blocked delivery. Mirrors the
   // `z.string().url()` gate the PATCH /bookings/:id proof field already uses.
-  videoUrl: z.string().trim().url().max(2000),
+  // `.url()` alone accepts any scheme: `javascript:alert(1)` and `file:///etc/x`
+  // were stored as "proof" and rendered as the devotee's/admin's link. Only a
+  // web link can be a recording.
+  videoUrl: z
+    .string()
+    .trim()
+    .url()
+    .max(2000)
+    .refine((u) => /^https?:\/\//i.test(u), 'videoUrl must start with http:// or https://'),
 });
 
 /* ─── DI-05, the read half: /priest/payouts must see BOTH payout rails ───────
@@ -1028,14 +1055,14 @@ export async function priestRoutes(server: FastifyInstance) {
 
   server.patch('/profile', { preHandler: priestAuth }, async (request, reply) => {
     try {
-      const body = request.body as {
-        displayName?: string;
-        bio?: string;
-        languages?: string[];
-        specializations?: string[];
-        experienceYears?: number;
-        avatarUrl?: string;
-      };
+      const parsed = priestProfileUpdateSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({
+          error: parsed.error.issues[0]?.message ?? 'Invalid profile',
+          details: parsed.error.flatten(),
+        });
+      }
+      const body = parsed.data;
 
       const priestId = await getPriestId(request.currentUser!.id);
       const updated = await priestService.updateProfile(priestId, body);

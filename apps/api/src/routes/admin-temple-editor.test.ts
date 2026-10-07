@@ -173,6 +173,21 @@ describe('PATCH /admin/temples/:id', () => {
     expect(arg.data).toMatchObject({ isVerified: false, status: 'pending_review' });
   });
 
+  it('refuses to move an already-verified temple back to 0,0 or a blank pincode', async () => {
+    const VERIFIED = { ...PENDING, pincode: '122001', lat: 28.46, lng: 77.03, isVerified: true, status: 'active' };
+    prismaMock.temple.findUnique.mockResolvedValue(VERIFIED as never);
+    const a = await call('PATCH', `/temples/${ID}`, { lat: 0, lng: 0 });
+    expect(a.statusCode).toBe(400);
+    expect(a.json().flags).toEqual(['coordinates_missing']);
+    const b = await call('PATCH', `/temples/${ID}`, { pincode: '12ab' });
+    expect(b.statusCode).toBe(400);
+    expect(prismaMock.temple.update).not.toHaveBeenCalled();
+    // Un-verifying in the same PATCH is the sanctioned way to park it.
+    prismaMock.temple.update.mockResolvedValue(PENDING as never);
+    const c = await call('PATCH', `/temples/${ID}`, { lat: 0, lng: 0, isVerified: false });
+    expect(c.statusCode).toBe(200);
+  });
+
   it('a plain edit does not touch verification fields', async () => {
     prismaMock.temple.findUnique.mockResolvedValue(PENDING as never);
     prismaMock.temple.update.mockResolvedValue({ ...PENDING, name: 'Renamed Temple' } as never);

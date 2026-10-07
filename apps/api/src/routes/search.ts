@@ -98,6 +98,7 @@ export async function searchRoutes(server: FastifyInstance) {
             { category: { contains: trimmed, mode: 'insensitive' } },
           ],
           isActive: true,
+          storeProfile: { approved: true },
         },
         take: cap,
         select: {

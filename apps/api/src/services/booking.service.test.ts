@@ -1891,7 +1891,7 @@ describe('BookingService.getUserBookings — view filters and honest counts', ()
   function viewOf(args: any): 'all' | 'upcoming' | 'completed' | 'cancelled' {
     const p = args?.where?.AND?.[0];
     if (!p) return 'all';
-    if (p.status === 'cancelled') return 'cancelled';
+    if (p.status?.in?.includes('cancelled')) return 'cancelled';
     if (p.status?.in) return 'completed';
     return 'upcoming';
   }
@@ -1944,7 +1944,7 @@ describe('BookingService.getUserBookings — view filters and honest counts', ()
     const result = await service.getUserBookings('user-1', { view: 'cancelled' });
 
     const where = prismaMock.pujaBooking.findMany.mock.calls[0]![0]!.where as any;
-    expect(where.AND[0].status).toBe('cancelled');
+    expect(where.AND[0].status).toEqual({ in: ['cancelled', 'refunded'] });
     // `total` paginates the ACTIVE view, not the whole table.
     expect(result.total).toBe(1);
     expect(result.counts.all).toBe(81);
@@ -2030,7 +2030,7 @@ describe('BookingService.getUserBookings — DB-03: unpaid holds are not Upcomin
   function viewOf(args: any): 'all' | 'upcoming' | 'completed' | 'cancelled' {
     const p = args?.where?.AND?.[0];
     if (!p) return 'all';
-    if (p.status === 'cancelled') return 'cancelled';
+    if (p.status?.in?.includes('cancelled')) return 'cancelled';
     if (p.status?.in) return 'completed';
     return 'upcoming';
   }
