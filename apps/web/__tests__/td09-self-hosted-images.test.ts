@@ -30,7 +30,7 @@ describe('TD-09 — self-hosted catalogue photography', () => {
 
   it('every file is under /images and is WebP (RIFF....WEBP)', () => {
     for (const e of entries) {
-      expect(e.path).toMatch(/^\/images\/(temples|store|gaushala)\/[a-z0-9_-]+\.webp$/);
+      expect(e.path).toMatch(/^\/images\/(temples|store|gaushala|pujas)\/[a-z0-9_-]+\.webp$/);
       const head = readFileSync(path.join(PUBLIC, e.path)).subarray(0, 12);
       expect(head.toString('latin1', 0, 4)).toBe('RIFF');
       expect(head.toString('latin1', 8, 12)).toBe('WEBP');

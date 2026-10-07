@@ -487,5 +487,11 @@
   "kind": "unsplash",
   "id": "photo-1516467508483-a7212febe31a",
   "maxW": 960
+ },
+ {
+  "dest": "pujas/homa.webp",
+  "kind": "commons",
+  "file": "Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg",
+  "maxW": 1280
  }
 ]
