@@ -193,6 +193,49 @@ describe('PriestService.completePuja', () => {
     expect(res.status).toBe('video_uploaded');
   });
 
+  it('refuses to complete before the slot has started, with 409 too_early_to_complete (video proof or not)', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'bk-1',
+      status: 'in_progress',
+      priestId: 'priest-1',
+      videoProofUrl: 'https://r2/video.mp4',
+      scheduledDate: new Date('2999-01-01T00:00:00Z'),
+      scheduledTimeSlot: '18:00',
+    });
+    const err = await service.completePuja('bk-1', 'priest-1').catch((e) => e);
+    expect(err.statusCode).toBe(409);
+    expect(err.code).toBe('too_early_to_complete');
+    expect(err.message).toMatch(/cannot be marked complete before it starts, at 6:00 PM IST/);
+    expect(updateBookingStatusMock).not.toHaveBeenCalled();
+  });
+
+  it('completes once the slot (IST) has passed, and still needs the video proof', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'bk-1',
+      status: 'in_progress',
+      priestId: 'priest-1',
+      videoProofUrl: '',
+      scheduledDate: new Date('2020-01-01T00:00:00Z'),
+      scheduledTimeSlot: '18:00',
+    });
+    const noProof = await service.completePuja('bk-1', 'priest-1').catch((e) => e);
+    expect(noProof.message).toBe('Upload the video proof before marking this puja complete.');
+
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'bk-1',
+      status: 'in_progress',
+      priestId: 'priest-1',
+      videoProofUrl: 'https://r2/video.mp4',
+      scheduledDate: new Date('2020-01-01T00:00:00Z'),
+      scheduledTimeSlot: '18:00',
+    });
+    updateBookingStatusMock
+      .mockResolvedValueOnce({ id: 'bk-1', status: 'completed' })
+      .mockResolvedValueOnce({ id: 'bk-1', status: 'video_uploaded' });
+    const res = await service.completePuja('bk-1', 'priest-1');
+    expect(res.status).toBe('video_uploaded');
+  });
+
   it('a booking left in completed WITH proof (legacy / half-finished) is finished, never stuck', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue({
       id: 'bk-1',
