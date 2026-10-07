@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { REVENUE_PAYMENT_WHERE } from '../lib/revenue-where.js';
+import { sumOffPaymentRevenue } from '../lib/off-payment-revenue.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
 /**
@@ -203,6 +204,13 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
       _sum: { amount: true },
     }).catch(() => null);
 
+    // Consultations + wellness write no Payment row; add them from their own
+    // tables (see lib/off-payment-revenue.ts for the formula).
+    const [offMrr, offGmv] = await Promise.all([
+      sumOffPaymentRevenue(prisma, { since: since30 }),
+      sumOffPaymentRevenue(prisma),
+    ]);
+
     // Distinct paying users.
     //
     // SCAL-04 (2026-08-13): this was `payment.findMany({ select: { userId },
@@ -272,8 +280,8 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
     ];
 
     return reply.send({
-      mrrPaise: decToPaise(mrr?._sum?.amount ?? null),
-      gmvCumulativePaise: decToPaise(gmv?._sum?.amount ?? null),
+      mrrPaise: decToPaise(mrr?._sum?.amount ?? null) + decToPaise(offMrr.totalInr),
+      gmvCumulativePaise: decToPaise(gmv?._sum?.amount ?? null) + decToPaise(offGmv.totalInr),
       paidUsers,
       nriMixPct,
       signupsThisWeek,
@@ -326,7 +334,7 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
     // AO-14: an INDIA day, matching the en-IN dates /admin renders one tab away.
     const sinceToday = startOfDayIst(new Date());
 
-    const [todayPayments, todayBookings, todaySignups, mrrAgg, gmvAgg] = await Promise.all([
+    const [todayPayments, todayBookings, todaySignups, mrrAgg, gmvAgg, offToday, offMrr, offGmv] = await Promise.all([
       prisma.payment.aggregate({
         _count: { _all: true },
         _sum: { amount: true },
@@ -342,6 +350,9 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
         _sum: { amount: true },
         where: REVENUE_PAYMENT_WHERE,
       }).catch(() => null),
+      sumOffPaymentRevenue(prisma, { since: sinceToday }),
+      sumOffPaymentRevenue(prisma, { since: since30 }),
+      sumOffPaymentRevenue(prisma),
     ]);
 
     return reply.send({
@@ -351,13 +362,13 @@ export async function adminMetricsRoutes(server: FastifyInstance) {
         // a UTC figure again.
         date: dayKeyIst(new Date()),
         timezone: 'Asia/Kolkata',
-        gmvPaise: decToPaise(todayPayments?._sum?.amount ?? null),
+        gmvPaise: decToPaise(todayPayments?._sum?.amount ?? null) + decToPaise(offToday.totalInr),
         successfulPayments: todayPayments?._count?._all ?? 0,
         bookings: todayBookings,
         signups: todaySignups,
       },
-      mrrPaise: decToPaise(mrrAgg?._sum?.amount ?? null),
-      gmvCumulativePaise: decToPaise(gmvAgg?._sum?.amount ?? null),
+      mrrPaise: decToPaise(mrrAgg?._sum?.amount ?? null) + decToPaise(offMrr.totalInr),
+      gmvCumulativePaise: decToPaise(gmvAgg?._sum?.amount ?? null) + decToPaise(offGmv.totalInr),
       generatedAt: new Date().toISOString(),
     });
   });

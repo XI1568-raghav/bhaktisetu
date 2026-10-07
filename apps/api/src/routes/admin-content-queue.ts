@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { httpUrl } from '../lib/http-url.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import {
   listDrafts,
@@ -19,7 +20,7 @@ import { isRedditConfigured } from '../lib/reddit.js';
 
 const updateBodySchema = z.object({
   status: z.enum(['APPROVED', 'POSTED', 'REJECTED']),
-  postedUrl: z.string().url().optional(),
+  postedUrl: httpUrl('postedUrl').optional(),
   rejectedReason: z.string().max(500).optional(),
   body: z.string().max(20_000).optional(),
   title: z.string().max(500).optional(),

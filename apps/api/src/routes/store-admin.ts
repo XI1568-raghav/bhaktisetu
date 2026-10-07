@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { httpUrl } from '../lib/http-url.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
@@ -14,7 +15,7 @@ const productCreateSchema = z.object({
   name: z.string().min(2).max(200),
   description: z.string().max(5000).optional(),
   price: z.number().nonnegative(),
-  imageUrl: z.string().url().max(1000).optional(),
+  imageUrl: httpUrl('imageUrl', 1000).optional(),
   category: z.string().max(80).optional(),
   stock: z.number().int().min(0).max(1_000_000).optional(),
   sku: z.string().max(120).optional(),
