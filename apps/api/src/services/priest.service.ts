@@ -6,12 +6,13 @@ import { notifyDevotee, buildBookingCtx } from './booking-notify.service.js';
 import { mintProviderEarningForBooking } from './provider-earning-mint.js';
 // OPS-05 — the durable money trail. Post-commit only; never inside a tx.
 import { recordProviderEarningMinted } from '../lib/audit-money-callsites.js';
+import { TOO_EARLY_TO_COMPLETE, pujaScheduledInstant, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
 import { pujaStartLockedMessage, pujaStartUnlockAt } from '../lib/puja-start-window.js';
 
 /** A request that is valid but not allowed yet (or any more); the route sends it as 409. */
 export class PujaStateConflictError extends Error {
   readonly statusCode = 409;
-  constructor(message: string) {
+  constructor(message: string, readonly code?: string) {
     super(message);
     this.name = 'PujaStateConflictError';
   }
@@ -706,7 +707,14 @@ export class PriestService {
   async completePuja(bookingId: string, priestId: string) {
     const booking = await prisma.pujaBooking.findUnique({
       where: { id: bookingId },
-      select: { id: true, status: true, priestId: true, videoProofUrl: true },
+      select: {
+        id: true,
+        status: true,
+        priestId: true,
+        videoProofUrl: true,
+        scheduledDate: true,
+        scheduledTimeSlot: true,
+      },
     });
 
     if (!booking) {
@@ -715,6 +723,16 @@ export class PriestService {
 
     if (booking.priestId !== priestId) {
       throw new Error('You are not assigned to this booking.');
+    }
+
+    // The start gate opens 2 h before the slot, so Start-then-Complete could still
+    // release the earning up to 2 h early. Completion waits for the slot itself.
+    if (booking.scheduledDate) {
+      const early = tooEarlyToCompleteMessage(
+        pujaScheduledInstant(booking.scheduledDate, booking.scheduledTimeSlot),
+        'puja',
+      );
+      if (early) throw new PujaStateConflictError(early, TOO_EARLY_TO_COMPLETE);
     }
 
     // `completed` with proof already on file is a booking whose second hop

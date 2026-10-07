@@ -3,6 +3,16 @@ import { prismaMock } from '../lib/__mocks__/prisma.js';
 
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
+// The programme switch is false in production (lib/referral-flag.ts). These tests cover the
+// ownership/payment checks inside /reward for when it is turned on, so the flag is mocked true
+// by default; the "flag off" block at the end flips it back.
+const flag = vi.hoisted(() => ({ on: true }));
+vi.mock('../lib/referral-flag.js', () => ({
+  get HAS_REFERRAL_CREDIT() {
+    return flag.on;
+  },
+}));
+
 import Fastify from 'fastify';
 import { referralsRoutes } from './referrals.js';
 
@@ -43,6 +53,7 @@ async function buildApp() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  flag.on = true;
   // Default: demo token → devotee. Override per-test.
   prismaMock.user.findUnique.mockImplementation(async (args: { where: { email?: string } }) => {
     if (args.where.email === 'devotee@demo.com') return DEMO_DEVOTEE;
@@ -332,6 +343,46 @@ describe('POST /api/v1/referrals/reward', () => {
     expect(prismaMock.userCredit.upsert).toHaveBeenCalledTimes(1);
     // And the claim was NOT updated again (no second status flip).
     expect(prismaMock.referralClaim.update).toHaveBeenCalledTimes(1);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/referrals/reward while HAS_REFERRAL_CREDIT is false', () => {
+  it('answers 404 referral_credit_unavailable and never reads a claim or touches the wallet', async () => {
+    flag.on = false;
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/referrals/reward',
+      headers: { authorization: 'Bearer demo-devotee', 'content-type': 'application/json' },
+      payload: JSON.stringify({
+        claimId: '11111111-1111-4111-8111-111111111111',
+        bookingId: '22222222-2222-4222-8222-222222222222',
+      }),
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toMatchObject({ code: 'referral_credit_unavailable' });
+    expect(prismaMock.referralClaim.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.userCredit.upsert).not.toHaveBeenCalled();
+    expect(prismaMock.referralClaim.update).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it('still answers 401 without a token (the gate sits behind auth)', async () => {
+    flag.on = false;
+    const app = await buildApp();
+    const res = await app.inject({ method: 'POST', url: '/api/v1/referrals/reward', payload: {} });
+    expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('keeps GET /me working so stored referral data is untouched', async () => {
+    flag.on = false;
+    prismaMock.referralCode.upsert.mockResolvedValueOnce({ code: 'ABC1234', createdAt: new Date('2026-06-12T00:00:00Z') });
+    prismaMock.referralClaim.count.mockResolvedValue(0);
+    const app = await buildApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/referrals/me', headers: { authorization: 'Bearer demo-devotee' } });
+    expect(res.statusCode).toBe(200);
     await app.close();
   });
 });

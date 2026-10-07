@@ -9,6 +9,7 @@ import { prisma } from '../lib/prisma.js';
 import { listPendingForPriest, respondToInvite } from '../services/temple-priest-invite.service.js';
 import { presignR2Upload, r2 } from '../lib/r2.js';
 import { isDemoMode } from '../lib/supabase.js';
+import { httpUrlSchema } from '../lib/http-url.js';
 import { BookingStatus, PayoutStatus, Prisma } from '@prisma/client';
 
 // Zod gates for the pandit-owned puja offering CRUD. Hoisted to module
@@ -135,13 +136,7 @@ const priestProfileUpdateSchema = z.object({
   languages: z.array(z.string().trim().min(1).max(40)).max(15).optional(),
   specializations: z.array(z.string().trim().min(1).max(80)).max(20).optional(),
   experienceYears: z.coerce.number().int().min(0).max(80).optional(),
-  avatarUrl: z
-    .string()
-    .trim()
-    .url()
-    .max(1000)
-    .refine((u) => /^https?:\/\//i.test(u), 'avatarUrl must start with http:// or https://')
-    .optional(),
+  avatarUrl: httpUrlSchema('avatarUrl', 1000).optional(),
 });
 
 const videoProofBodySchema = z.object({
@@ -151,12 +146,7 @@ const videoProofBodySchema = z.object({
   // `.url()` alone accepts any scheme: `javascript:alert(1)` and `file:///etc/x`
   // were stored as "proof" and rendered as the devotee's/admin's link. Only a
   // web link can be a recording.
-  videoUrl: z
-    .string()
-    .trim()
-    .url()
-    .max(2000)
-    .refine((u) => /^https?:\/\//i.test(u), 'videoUrl must start with http:// or https://'),
+  videoUrl: httpUrlSchema('videoUrl'),
 });
 
 /* ─── DI-05, the read half: /priest/payouts must see BOTH payout rails ───────
@@ -690,7 +680,7 @@ export async function priestRoutes(server: FastifyInstance) {
       const booking = await priestService.completePuja(id, priestId);
       return { message: 'Puja completed.', booking };
     } catch (err: any) {
-      if (err instanceof PujaStateConflictError) return reply.code(409).send({ error: safeErrorMessage(err) });
+      if (err instanceof PujaStateConflictError) return reply.code(409).send({ error: safeErrorMessage(err), ...(err.code ? { code: err.code } : {}) });
       request.log?.error({ err }, 'priest route failed');
       reply.code(400).send({ error: safeErrorMessage(err) });
     }

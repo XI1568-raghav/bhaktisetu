@@ -53,6 +53,14 @@ function richToCard(t: TempleDetailRich): TempleCardData {
  };
 }
 
+const DESCRIPTION_MAX = 180;
+function clipDescription(text: string): string {
+ if (!text || text.length <= DESCRIPTION_MAX) return text;
+ const cut = text.slice(0, DESCRIPTION_MAX);
+ const at = cut.lastIndexOf(' ');
+ return `${cut.slice(0, at > 120 ? at : DESCRIPTION_MAX).replace(/[\s,;:.\u2014-]+$/, '')}\u2026`;
+}
+
 // API images come back as either string[] or {url}[] depending on transform layer.
 function firstImageUrl(images: unknown): string | null {
  if (!Array.isArray(images) || images.length === 0) return null;
@@ -224,7 +232,10 @@ async function TemplesData() {
  // of 22 temples" with no filter applied. There is no pagination UI here —
  // every card is already on screen — so `merged.length` is the only total the
  // user can verify by counting.
- return <TemplesBrowser temples={merged} total={merged.length} />;
+ // The card shows two clamped lines of description, so shipping the full essay for every temple
+ // only inflates the HTML and the RSC payload that is serialised a second time next to it.
+ const slim = merged.map((c) => ({ ...c, description: clipDescription(c.description) }));
+ return <TemplesBrowser temples={slim} total={merged.length} />;
 }
 
 export default function TemplesPage() {

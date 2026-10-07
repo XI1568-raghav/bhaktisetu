@@ -6,6 +6,7 @@ import { invalidateAuthUser } from '../lib/auth-cache.js';
 import { clampLimit, clampPage } from '../lib/pagination.js';
 import { assertCauseApprovable } from '../lib/cause-approval-guard.js';
 import { REVENUE_PAYMENT_WHERE, PENDING_REFUND_PAYMENT_WHERE } from '../lib/revenue-where.js';
+import { sumOffPaymentRevenue } from '../lib/off-payment-revenue.js';
 
 /** SCAL-09: the UserRole enum, as a set, so an unknown ?role= is a clean empty
  *  answer rather than a Prisma enum error surfaced as HTTP 500. */
@@ -738,6 +739,7 @@ export class AdminService {
         mtdSubscriptionAgg,
         mtdCapturedAgg,
         pendingRefundAgg,
+        mtdOffPayment,
       ] =
         await Promise.all([
           prisma.user.count(),
@@ -790,6 +792,10 @@ export class AdminService {
             where: PENDING_REFUND_PAYMENT_WHERE,
             _sum: { amount: true },
           }),
+          // Paid consultations + wellness enrolments write no Payment row, so
+          // they are added from their own tables (lib/off-payment-revenue.ts
+          // states the formula and why it cannot double count).
+          sumOffPaymentRevenue(prisma, { since: monthStart }),
         ]);
 
       const usersByRole: Record<string, number> = {};
@@ -801,7 +807,9 @@ export class AdminService {
       // subscription charges. Both halves, one number, same basis as
       // /admin/metrics — so /admin, /admin/revenue and /admin/reports agree.
       const totalRevenue =
-        Number(mtdCapturedAgg._sum.amount ?? 0) + Number(mtdSubscriptionAgg._sum.amount ?? 0);
+        Number(mtdCapturedAgg._sum.amount ?? 0) +
+        Number(mtdSubscriptionAgg._sum.amount ?? 0) +
+        mtdOffPayment.totalInr;
       const transactions = recentTransactions;
 
       // Count pending approvals across all profile types

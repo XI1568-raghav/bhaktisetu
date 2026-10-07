@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { httpUrl } from '../lib/http-url.js';
 import { BookingStatus, StreamStatus, StreamProvider } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
@@ -44,7 +45,7 @@ const STREAM_STATUS_PATCH = ['scheduled', 'live', 'ended'] as const;
 
 const darshanCreateSchema = z.object({
   streamKey: z.string().min(1).max(200),
-  playbackUrl: z.string().url().max(1000),
+  playbackUrl: httpUrl('playbackUrl', 1000),
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
   cameraLocation: z.string().max(200).optional(),

@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { httpUrl } from '../lib/http-url.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
@@ -25,7 +26,7 @@ const createSchema = z.object({
   city: z.string().min(2).max(80),
   state: z.string().min(2).max(80),
   country: z.string().min(2).max(2).default('IN'),
-  websiteUrl: z.string().url().optional(),
+  websiteUrl: httpUrl('websiteUrl').optional(),
   contactEmail: z.string().email(),
   contactPhone: z.string().optional(),
   tradition: z.string().min(2).max(80),
