@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { buttonClass } from '../ui/button-recipe';
 import { H1 } from '../ui/heading-recipe';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import {
  MapPin,
  Star,
@@ -101,8 +100,6 @@ export function TemplesBrowser({
  // unreachable from here regardless of what a caller passes.
  const total = Math.max(totalProp, temples.length);
 
- const searchParams = useSearchParams();
-
  // LC-12: the URL is the shareable copy of this state, and it used to never be
  // written. The old effect called `router.replace()`, which in the App Router
  // is a NAVIGATION: every chip click and every debounced keystroke fired
@@ -117,9 +114,13 @@ export function TemplesBrowser({
  // so the server has nothing to contribute. The native History API — which the
  // App Router has synced with usePathname/useSearchParams since 14.1 — writes
  // the URL with no request at all.
- const [filters, setFilters] = useState<TempleFilters>(() =>
-  parseTempleFilters(new URLSearchParams(searchParams?.toString() ?? ''))
- );
+ // CWV: useSearchParams() here made Next bail the whole page out to client-side
+ // rendering at build time (BAILOUT_TO_CLIENT_SIDE_RENDERING), so the prerendered
+ // HTML held only the skeleton and the LCP card image was discovered after the JS
+ // bundle ran. The first render now uses the default filters, which is what the
+ // server can know, and the URL's filters are applied right after mount (the same
+ // window.location read the popstate handler below already uses).
+ const [filters, setFilters] = useState<TempleFilters>(DEFAULT_TEMPLE_FILTERS);
  // Raw text in the box. `filters.q` is the debounced, committed copy that the
  // filtering and the URL both read, so typing doesn't re-filter 200+ temples
  // (or rewrite the URL) on every keystroke.
@@ -142,6 +143,14 @@ export function TemplesBrowser({
   // entry per keystroke.
   if (mode === 'push') window.history.pushState(null, '', url);
   else window.history.replaceState(null, '', url);
+ }, []);
+
+ useEffect(() => {
+  const initial = parseTempleFilters(new URLSearchParams(window.location.search));
+  if (buildTempleQuery(initial) === buildTempleQuery(DEFAULT_TEMPLE_FILTERS)) return;
+  filtersRef.current = initial;
+  setFilters(initial);
+  setSearch(initial.q);
  }, []);
 
  // 200ms debounce: raw input -> committed filter + URL.
@@ -406,7 +415,7 @@ function TempleCard({ temple, eager = false }: { temple: TempleCardData; eager?:
  <img
  src={remoteImage(templeCardImage(temple), IMG_W.CARD)}
  srcSet={remoteSrcSet(templeCardImage(temple), [IMG_W.THUMB, IMG_W.CARD])}
- sizes="(max-width: 768px) 100vw, 380px"
+ sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 380px"
  alt={`${temple.name} - ${temple.city}`}
  loading={eager ? 'eager' : 'lazy'}
  fetchPriority={eager ? 'high' : undefined}

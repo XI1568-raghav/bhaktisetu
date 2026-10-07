@@ -307,7 +307,12 @@ describe('[I-06/I18N-06] the Indic faces cost nothing on the pages that never us
 
   it('the Latin faces still preload — they paint above the fold on every page', () => {
     const latin = FACES.filter(
-      (f) => f.subsets.includes('latin') && !INDIC_SCRIPTS.some((s) => f.subsets.includes(s)),
+      (f) =>
+        f.subsets.includes('latin') &&
+        !INDIC_SCRIPTS.some((s) => f.subsets.includes(s)) &&
+        // Crimson Pro is the reader serif only (never above the fold on a
+        // normal route); it opted out of preload on purpose (perf 2026-10-07).
+        f.variable !== '--font-reader-serif',
     );
     expect(latin.length).toBeGreaterThan(0);
     for (const f of latin) {

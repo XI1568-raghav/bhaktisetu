@@ -126,7 +126,7 @@ export const COMMONS_CREDITS: readonly CommonsCredit[] = [
 
   // ── Pujas / rituals / content ───────────────────────────────
   { subject: 'Abhisheka (Rudrabhishek)', file: 'From_Abhisheka_To_Panchamrutha.jpg', author: 'Harsha K R', license: 'CC BY-SA 2.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0', attributionRequired: true },
-  { subject: 'Priest performing Homa (Havan)', file: 'Priest_performing_Homa.jpg', author: 'Arumuga Manivelu', license: 'GFDL', licenseUrl: 'http://www.gnu.org/copyleft/fdl.html', attributionRequired: true },
+  { subject: 'Homa (Yajna) at a village home', file: 'Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg', author: 'Prititunna', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0', attributionRequired: true },
   { subject: 'Aarti Thali (Prayer Plate)', file: '(1)_Aarti_Thali,_Prayer_Plate_India.jpg', author: 'Pramal', license: 'CC BY 2.0', licenseUrl: 'https://creativecommons.org/licenses/by/2.0', attributionRequired: true },
   { subject: 'Gayatri Japa (Mantra)', file: 'Gayatri_japa.jpg', author: 'Mrs. S. C. Belnos', license: 'Public domain', licenseUrl: '', attributionRequired: false },
   { subject: 'Navaratri Bhajan', file: 'Navaratri_Bajan.jpg', author: 'Bootervijay', license: 'CC BY-SA 3.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0', attributionRequired: true },

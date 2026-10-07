@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../lib/api-config';
 import { astrologyFetch } from '../../lib/astrologer-fetch';
 import {
@@ -123,16 +122,21 @@ const sortOptions = [
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function AstrologyPage() {
- const searchParams = useSearchParams();
-
  const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
  const [horoscopes] = useState<DailyHoroscope[]>(fallbackHoroscopes);
 
  // LC-12: the four list controls below are the shareable identity of this page
  // — "online Vastu astrologers, cheapest first" is a query people type into
  // Google — and none of them used to reach the URL. See lib/astrology-filters.
+ //
+ // PERF (2026-10-07): this used to call useSearchParams(), which makes React
+ // bail the WHOLE component (hero, H1, lead paragraph) out of the prerendered
+ // HTML into the Suspense fallback, so the LCP paragraph only existed after
+ // hydration (Lighthouse: 6.9 s LCP, 2.1 s element render delay, text LCP). The
+ // filters only drive the astrologer list, which loads client-side anyway, so
+ // the URL is now read once after mount instead and the hero ships in the HTML.
  const [filters, setFilters] = useState<AstrologyFilters>(() =>
-  parseAstrologyFilters(new URLSearchParams(searchParams?.toString() ?? ''))
+  parseAstrologyFilters(new URLSearchParams(''))
  );
  const { spec: activeFilter, sort: sortBy, rashi: selectedRashi, online: showOnlineOnly } = filters;
 
@@ -140,6 +144,13 @@ export default function AstrologyPage() {
  // taking them as a dependency (and without doing history side effects inside
  // a setState updater, which React re-invokes).
  const filtersRef = useRef(filters);
+
+ useEffect(() => {
+  const fromUrl = parseAstrologyFilters(new URLSearchParams(window.location.search));
+  if (buildAstrologyQuery(fromUrl) === buildAstrologyQuery(filtersRef.current)) return;
+  filtersRef.current = fromUrl;
+  setFilters(fromUrl);
+ }, []);
 
  // AW-02 (2026-08-12, P0): this fetched `/astrology/astrologers?limit=100` —
  // the 15-row in-memory MOCK fixture — and seeded state with a hardcoded copy
