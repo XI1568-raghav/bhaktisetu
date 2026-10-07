@@ -226,7 +226,7 @@ export default function AstrologyPage() {
     <Link href="/astrology/astrologers/live" className={buttonClass('primary', 'md')}>
      See Live Astrologers
     </Link>
-    <Link href="/ask-pandit" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
+    <Link href="/ask-pandit" prefetch={false} className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">
      Ask a Pandit Live
     </Link>
     <Link href="/free-pandit-advice" className="rounded-full border border-saffron-300 bg-white px-5 py-2 text-sm font-semibold text-saffron-700 hover:bg-saffron-50">

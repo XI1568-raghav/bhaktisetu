@@ -33,6 +33,13 @@ const HeaderScrollShadow = dynamic(() => import('./HeaderScrollShadow'), {
  loading: () => null,
 });
 
+// Perf (2026-10-07): web-push prompt. Renders nothing until a signed-in user is
+// eligible, so it never needs to be in the root layout's initial bundle.
+const NotificationPrompt = dynamic(
+ () => import('./NotificationPrompt').then((m) => m.NotificationPrompt),
+ { ssr: false, loading: () => null },
+);
+
 // R-Q3-L-002 (2026-06-14): GDPR / UK DPA cookie banner.
 // EU/UK consent CMP, reject-all parity per ICO. Re-prompts every 12 months.
 const CookieBanner = dynamic(() => import('./CookieBanner'), {
@@ -61,6 +68,7 @@ export function DeferredClientWidgets() {
  </ConsentGate>
  <HeaderScrollShadow />
  <CookieBanner />
+ <NotificationPrompt />
  </>
  );
 }
