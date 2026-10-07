@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { HAS_REFERRAL_CREDIT } from '../lib/referral-flag.js';
 
 // Referral system (added 2026-05-27).
 //
@@ -197,6 +198,15 @@ export async function referralsRoutes(server: FastifyInstance) {
   // Auth: requires authenticated user who must be either the referee (self-trigger
   // post-booking) or admin role. Plain user can only reward their own referee link.
   server.post('/reward', { preHandler: [authenticateUser] }, async (req, reply) => {
+    // Switched off while referral credit cannot be spent (see lib/referral-flag.ts).
+    if (!HAS_REFERRAL_CREDIT) {
+      return reply.code(404).send({
+        error: 'referral_credit_unavailable',
+        code: 'referral_credit_unavailable',
+        // A message keeps the error-localization plugin from replacing `code` with NOT_FOUND.
+        message: 'Referral rewards are not available yet.',
+      });
+    }
     const parsed = rewardSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });

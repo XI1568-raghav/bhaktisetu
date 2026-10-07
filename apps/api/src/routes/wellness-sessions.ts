@@ -1,3 +1,4 @@
+import { TOO_EARLY_TO_COMPLETE, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
 import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { z } from 'zod';
@@ -5,6 +6,7 @@ import Razorpay from 'razorpay';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
+import { httpUrlSchema } from '../lib/http-url.js';
 import { sendEmail } from '../lib/email.js';
 
 /**
@@ -233,7 +235,7 @@ const updateSessionSchema = z.object({
 });
 
 const updateRoomSchema = z.object({
-  roomUrl: z.string().url(),
+  roomUrl: httpUrlSchema('roomUrl'),
 });
 
 const verifyEnrollmentSchema = z.object({
@@ -418,6 +420,31 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       const userId = request.currentUser!.id;
       if (session.instructorId !== userId && !isAdmin(request)) {
         return reply.code(403).send({ error: 'Only the instructor can edit this session' });
+      }
+      // Completing a session releases the instructor's held earnings (payout.service
+      // holds them until the class has happened or is COMPLETED), so the scheduled start
+      // must have passed. Moving the start into the past would release them the same way.
+      // Admin keeps both for remediation; CANCELLED clean-up may still back-date.
+      if (!isAdmin(request)) {
+        const effectiveStart = body.data.scheduledAt ? new Date(body.data.scheduledAt) : session.scheduledAt;
+        if (body.data.status === 'COMPLETED' && session.status !== 'COMPLETED') {
+          const early = tooEarlyToCompleteMessage(effectiveStart, 'session');
+          if (early) {
+            return reply.code(409).send({ error: early, code: TOO_EARLY_TO_COMPLETE });
+          }
+        }
+        const finalStatus = body.data.status ?? session.status;
+        if (
+          body.data.scheduledAt &&
+          effectiveStart.getTime() < Date.now() &&
+          effectiveStart.getTime() < session.scheduledAt.getTime() &&
+          finalStatus !== 'CANCELLED'
+        ) {
+          return reply.code(409).send({
+            error: 'A session cannot be moved to a time that has already passed.',
+            code: 'scheduled_in_past',
+          });
+        }
       }
       const data: Record<string, unknown> = {};
       if (body.data.title !== undefined) data.title = body.data.title;
