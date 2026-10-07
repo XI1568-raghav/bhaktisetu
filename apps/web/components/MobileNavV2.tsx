@@ -342,6 +342,7 @@ export function MobileNavV2() {
           <div className="sticky bottom-0 z-10 px-4 py-3 bg-[#faf9f6] border-t border-surface-200/60">
             <Link
               href="/ask-pandit"
+              prefetch={false}
               onClick={close}
               className={buttonClass('primary', 'md', 'w-full btn-press')}
             >

@@ -1180,6 +1180,21 @@ export const SELF_HOSTED_COMMONS: Readonly<Record<string, SelfHostedEntry>> = {
         "width": 500
       }
     ]
+  },
+  "Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg": {
+    "path": "/images/pujas/homa.webp",
+    "width": 925,
+    "height": 694,
+    "variants": [
+      {
+        "path": "/images/pujas/homa-250.webp",
+        "width": 250
+      },
+      {
+        "path": "/images/pujas/homa-500.webp",
+        "width": 500
+      }
+    ]
   }
 };
 export const SELF_HOSTED_UNSPLASH: Readonly<Record<string, SelfHostedEntry>> = {
@@ -2948,6 +2963,24 @@ export const SELF_HOSTED_FILES: ReadonlyArray<{ path: string; origin: 'commons' 
     "path": "/images/content/janakpurchhathparvafestival-500.webp",
     "origin": "commons",
     "commonsFile": "JanakpurChhathParvaFestival.jpg",
+    "modification": "resized to 500px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/pujas/homa.webp",
+    "origin": "commons",
+    "commonsFile": "Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg",
+    "modification": "resized to 925px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/pujas/homa-250.webp",
+    "origin": "commons",
+    "commonsFile": "Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg",
+    "modification": "resized to 250px wide and re-encoded as WebP"
+  },
+  {
+    "path": "/images/pujas/homa-500.webp",
+    "origin": "commons",
+    "commonsFile": "Homa_or_Yajna_at_a_rural_village_home_during_puja.jpg",
     "modification": "resized to 500px wide and re-encoded as WebP"
   }
 ];

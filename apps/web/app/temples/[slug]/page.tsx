@@ -420,7 +420,7 @@ function RichTemplePage({
  <img
  src={heroImg}
  srcSet={remoteSrcSet(heroImg, [IMG_W.CARD, IMG_W.WIDE, IMG_W.HERO])}
- sizes="100vw"
+ sizes="(max-width: 768px) 280px, 100vw"
  width={1280}
  height={560}
  loading="eager"

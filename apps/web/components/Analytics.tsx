@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { afterLoad } from '../lib/after-load';
 // Window.posthog type comes from lib/posthog.ts (single source of truth).
 
 export function Analytics() {
@@ -12,28 +13,33 @@ export function Analytics() {
   );
 }
 
+function loadPostHog() {
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!key || window.posthog) return;
+  // Align with lib/posthog.ts EU default — avoids double-init split across 2 PostHog projects.
+  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com';
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = `${host}/static/array.js`;
+  s.onload = () => {
+    window.posthog?.init(key, {
+      api_host: host,
+      capture_pageview: false,
+      capture_pageleave: true,
+      autocapture: true,
+      persistence: 'localStorage+cookie',
+    });
+  };
+  document.head.appendChild(s);
+}
+
 function AnalyticsInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (!key || window.posthog) return;
-    // Align with lib/posthog.ts EU default — avoids double-init split across 2 PostHog projects.
-    const host = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com';
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = `${host}/static/array.js`;
-    s.onload = () => {
-      window.posthog?.init(key, {
-        api_host: host,
-        capture_pageview: false,
-        capture_pageleave: true,
-        autocapture: true,
-        persistence: 'localStorage+cookie',
-      });
-    };
-    document.head.appendChild(s);
+    // Perf: inject the PostHog loader after window load + idle, not at hydration.
+    return afterLoad(loadPostHog);
   }, []);
 
   useEffect(() => {
