@@ -5401,7 +5401,7 @@
   "title": "Which pages fail Core Web Vitals in production, and why \u2014 structurally",
   "state": "partial",
   "commit": "wave-2026-08-15",
-  "note": "[2026-10-06 measured] Production Lighthouse (mobile, simulated, 3 runs each, medians): / LCP 3.1s score 67 (was ~5.0s); /temples LCP 6.7s; /pujas 3.8s score 84; /astrology 6.9s; /temples/badrinath 3.8s. Still partial: /temples and /astrology LCP remain over 2.5s. Code fixes ranked in docs/perf/cwv-production-2026-10-06.md (stream the first temple cards outside Suspense, render-blocking CSS/fonts, JS weight). | PRIOR: [2026-10-06 status] CWV-01: still partial; needs a production Lighthouse or CrUX re-measure, none run in this pass. | [2026-10-04] Triage: needs a Lighthouse re-measure against production or field data (CrUX / Search Console) plus the owner decision on images.unoptimized (sharp on a 512 MB container"
+  "note": "[2026-10-07 fixes in PR] Four fixes pending deploy, on top of the 2026-10-06 measurement: /temples list now in the prerendered HTML (useSearchParams removed from TemplesBrowser); /astrology hero in the initial HTML (same cause, AstrologyClient); Indic webfonts get unicode-range so they no longer download on every page; GA4, Meta Pixel, PostHog, AdSense and Sentry load after window load. Local before/after Lighthouse in the PR body. Stays partial until the post-deploy production re-measure. | PRIOR: [2026-10-06 measured] Production Lighthouse (mobile, simulated, 3 runs each, medians): / LCP 3.1s score 67 (was ~5.0s); /temples LCP 6.7s; /pujas 3.8s score 84; /astrology 6.9s; /temples/badrinath 3.8s. Still partial: /temples and /astrology LCP remain over 2.5s. Code fixes ranked in docs/perf/cwv-p"
  },
  {
   "key": "F387",
