@@ -52,6 +52,7 @@ import {
   runWeeklySettlement,
   resolveProviderRole,
   resolveProviderRoleForUser,
+  unfinishedConsultationIds,
   listPayoutRequests,
   PAYOUT_CONCURRENT_REQUEST_ERROR,
 } from './payout.service.js';
@@ -406,10 +407,23 @@ describe('payout.service — astrologer earnings are held until the consultation
   it('asks only for this provider\'s unfinished consultations, with a bound parameter', async () => {
     heldRows([]);
     await getPayoutBalance('astro-1');
-    const call = $queryRawUnsafe.mock.calls.find((c) => /astrologer_consultations/.test(String(c[0])))!;
+    const call = $queryRawUnsafe.mock.calls.find((c) => /JOIN astrologer_consultations/.test(String(c[0])))!;
     expect(String(call[0])).toMatch(/provider_id = \$1::uuid/);
     expect(String(call[0])).toMatch(/a\.status NOT IN \('completed', 'cancelled'\)/);
     expect(call[1]).toBe('astro-1');
+  });
+
+  it('a missing table is probed for, never joined: a failed join aborts the payout transaction (25P02)', async () => {
+    // Role pass 2026-10-07: on a database where the lazily created table did not
+    // exist, the join threw inside requestPayout's $transaction, the catch
+    // swallowed it, and the next statement died with "current transaction is
+    // aborted" — every payout request failed.
+    $queryRawUnsafe.mockImplementation(async (sql: string) =>
+      /to_regclass/.test(sql) ? [{ present: false }] : [],
+    );
+    const ids = await unfinishedConsultationIds({ $queryRawUnsafe } as never, 'astro-1');
+    expect(ids).toEqual([]);
+    expect($queryRawUnsafe.mock.calls.some((c) => /JOIN astrologer_consultations/.test(String(c[0])))).toBe(false);
   });
 
   it('a missing consultations table does not break the balance', async () => {

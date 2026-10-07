@@ -3,6 +3,7 @@ import { supabaseAdmin, isDemoMode } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { getCachedAuth, setCachedAuth } from '../lib/auth-cache.js';
 import { inspectSupabaseJwt } from '../lib/supabase-jwt.js';
+import { stopWhenAnswered } from '../lib/stop-when-answered.js';
 import {
   AUTH_REASON_HEADER,
   AUTH_REASON_BODY_FIELD,
@@ -196,7 +197,13 @@ function denyUnauthenticated(
  * Fastify preHandler hook that verifies the JWT with Supabase
  * and attaches the authenticated user from Prisma to the request.
  */
-export async function authenticateUser(
+// stopWhenAnswered: a 401 sent from this hook must also stop the route handler
+// (see lib/stop-when-answered.ts). server.ts wraps route-level guards globally,
+// but plugin-level `addHook('preHandler', authenticateUser)` bypasses that, so
+// the guard carries the fix itself.
+export const authenticateUser = stopWhenAnswered(authenticateUserInner);
+
+async function authenticateUserInner(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
@@ -538,7 +545,7 @@ export async function authenticateUser(
  * Supports legacy roles ('priest', 'admin') and new marketplace roles.
  */
 export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
-  return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  return stopWhenAnswered(async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
     // authenticateUser must run first
     if (!request.currentUser) {
       denyUnauthenticated(reply, 'no_credentials', 'Authentication required.');
@@ -608,14 +615,14 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
       });
       return;
     }
-  };
+  });
 }
 
 /**
  * Factory for a preHandler hook that checks if the user has ANY of the given roles.
  */
 export function requireAnyRole(...roles: MarketplaceRole[]) {
-  return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  return stopWhenAnswered(async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
     if (!request.currentUser) {
       denyUnauthenticated(reply, 'no_credentials', 'Authentication required.');
       return;
@@ -631,7 +638,7 @@ export function requireAnyRole(...roles: MarketplaceRole[]) {
       });
       return;
     }
-  };
+  });
 }
 
 /**

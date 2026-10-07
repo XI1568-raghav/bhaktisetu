@@ -260,6 +260,14 @@ export async function unfinishedConsultationIds(
   providerId: string,
 ): Promise<string[]> {
   try {
+    // A failed statement inside `requestPayout`'s transaction aborts it (Postgres
+    // 25P02), so the catch below cannot recover: the NEXT read in the tx dies and
+    // the payout request returned a 400 carrying Prisma internals. Probe for the
+    // lazily created table first instead of letting the join fail.
+    const probe = await db.$queryRawUnsafe<Array<{ present?: unknown }>>(
+      `SELECT to_regclass('public.astrologer_consultations') IS NOT NULL AS present`,
+    );
+    if (Array.isArray(probe) && probe[0] && probe[0].present === false) return [];
     const rows = await db.$queryRawUnsafe<Array<{ booking_id?: unknown }>>(
       `SELECT c.booking_id FROM commissions c
          JOIN astrologer_consultations a ON a.id::text = c.booking_id

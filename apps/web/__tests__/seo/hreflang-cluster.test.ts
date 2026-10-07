@@ -89,7 +89,7 @@ describe('[I18N-08] the root layout emits no page-agnostic hreflang cluster', ()
     // six supported locales; that claim now rests entirely on the switcher, so
     // prove the switcher is still there rather than letting it pass vacuously.
     const advertised = new Set(
-      [...layoutSrc.matchAll(/<Link[^>]*hrefLang="([a-z-]+)"/g)].map((m) => m[1]!),
+      [...(layoutSrc + stripComments(fs.readFileSync(path.join(WEB, 'components/FooterLanguageLinks.tsx'), 'utf8'))).matchAll(/<Link[^>]*hrefLang="([a-z-]+)"/g)].map((m) => m[1]!),
     );
     expect([...advertised].sort()).toEqual([...SUPPORTED_LOCALES].sort());
   });

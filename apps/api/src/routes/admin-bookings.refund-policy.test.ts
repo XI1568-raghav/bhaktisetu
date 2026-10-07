@@ -98,3 +98,18 @@ describe('POST /admin/bookings/refunds/:id/approve with refundType "policy"', ()
     expect(processRefund.mock.calls[1]![0]).toMatchObject({ refundType: 'partial', amountInr: 100 });
   });
 });
+
+describe('role pass 2026-10-07: malformed refund requests are 4xx, never 5xx', () => {
+  it('a partial refund without amountInr is a 400 and moves no money', async () => {
+    const res = await call('POST', '/refunds/bk-1/approve', { refundType: 'partial' });
+    expect(res.statusCode).toBe(400);
+    expect(processRefund).not.toHaveBeenCalled();
+  });
+
+  it('a malformed booking id (Prisma P2023) is a 404, not a 500', async () => {
+    prismaMock.pujaBooking.findUnique.mockRejectedValue(Object.assign(new Error('Inconsistent column data'), { code: 'P2023' }));
+    const res = await call('POST', '/refunds/not-a-uuid/approve', {});
+    expect(res.statusCode).toBe(404);
+    expect(processRefund).not.toHaveBeenCalled();
+  });
+});

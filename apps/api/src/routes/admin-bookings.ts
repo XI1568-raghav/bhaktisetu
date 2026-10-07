@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { BookingStatus, Prisma } from '@prisma/client';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { safeErrorMessage } from './priest.js';
 import { processRefund, computePolicyRefund } from '../services/refund.service.js';
 import {
   listPayoutRequests,
@@ -504,6 +505,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
   });
   server.post('/payout-requests/:id/process', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!z.string().uuid().safeParse(id).success) {
+      return reply.code(404).send({ error: 'Payout request not found.' });
+    }
     const parsed = processPayoutSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
@@ -538,8 +542,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to process payout';
-      if (msg.includes('not found')) return reply.code(404).send({ error: msg });
-      return reply.code(400).send({ error: msg });
+      if (msg.includes('not found') && !msg.includes('\n')) return reply.code(404).send({ error: msg });
+      request.log.error({ err }, 'process payout failed');
+      return reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 
@@ -605,6 +610,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       if (!parsed.success) {
         return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
       }
+      if (parsed.data.refundType === 'partial' && parsed.data.amountInr === undefined) {
+        return reply.code(400).send({ error: 'amountInr is required for partial refunds' });
+      }
       try {
         const exists = await prisma.pujaBooking.findUnique({
           where: { id: bookingId },
@@ -645,6 +653,12 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         request.log.info({ bookingId, refundId: result.refundId, skipped: result.skipped }, 'admin refund approved');
         return { ok: true, refund: result };
       } catch (err) {
+        // Role pass 2026-10-07: pujaBooking.id is a uuid column. A malformed id raises
+        // P2023 from Prisma and used to answer 500; an id that cannot be a uuid cannot
+        // match a booking, so it is a miss.
+        if ((err as { code?: unknown } | null)?.code === 'P2023') {
+          return reply.code(404).send({ error: 'Booking not found' });
+        }
         request.log.error({ err, bookingId }, 'admin refund approve failed');
         return reply.code(500).send({ error: 'Failed to approve refund' });
       }
@@ -698,6 +712,12 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         request.log.info({ bookingId, reason: parsed.data.reason }, 'admin refund rejected');
         return { booking: updated };
       } catch (err) {
+        // Role pass 2026-10-07: pujaBooking.id is a uuid column. A malformed id raises
+        // P2023 from Prisma and used to answer 500; an id that cannot be a uuid cannot
+        // match a booking, so it is a miss.
+        if ((err as { code?: unknown } | null)?.code === 'P2023') {
+          return reply.code(404).send({ error: 'Booking not found' });
+        }
         request.log.error({ err, bookingId }, 'admin refund reject failed');
         return reply.code(500).send({ error: 'Failed to reject refund' });
       }

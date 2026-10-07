@@ -195,7 +195,9 @@ describe('I-08 / I18N-04 — the redirect can only ever target a page that exist
   });
 
   it('the root layout advertises exactly the locales this module can serve', () => {
-    const layout = fs.readFileSync(path.join(process.cwd(), 'app', 'layout.tsx'), 'utf8');
+    const layout =
+      fs.readFileSync(path.join(process.cwd(), 'app', 'layout.tsx'), 'utf8') +
+      fs.readFileSync(path.join(process.cwd(), 'components', 'FooterLanguageLinks.tsx'), 'utf8');
 
     // Every hreflang the layout emits — the footer "Read in:" switcher and the
     // <link rel="alternate"> block both use it. 'x-default' is not a language
@@ -210,7 +212,9 @@ describe('I-08 / I18N-04 — the redirect can only ever target a page that exist
   it('renders each language under the same native name this module declares', () => {
     // locales.ts:52-54 says the native names live there "so the list, the
     // parser and the labels cannot drift apart". This is that claim, checked.
-    const layout = fs.readFileSync(path.join(process.cwd(), 'app', 'layout.tsx'), 'utf8');
+    const layout =
+      fs.readFileSync(path.join(process.cwd(), 'app', 'layout.tsx'), 'utf8') +
+      fs.readFileSync(path.join(process.cwd(), 'components', 'FooterLanguageLinks.tsx'), 'utf8');
 
     for (const locale of SUPPORTED_LOCALES) {
       if (locale === DEFAULT_LOCALE) continue;
