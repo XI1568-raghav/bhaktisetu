@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { BookingStatus, Prisma } from '@prisma/client';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { safeErrorMessage } from './priest.js';
 import { processRefund, computePolicyRefund } from '../services/refund.service.js';
 import {
   listPayoutRequests,
@@ -504,6 +505,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
   });
   server.post('/payout-requests/:id/process', { preHandler: adminPreHandlers }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!z.string().uuid().safeParse(id).success) {
+      return reply.code(404).send({ error: 'Payout request not found.' });
+    }
     const parsed = processPayoutSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
@@ -538,8 +542,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to process payout';
-      if (msg.includes('not found')) return reply.code(404).send({ error: msg });
-      return reply.code(400).send({ error: msg });
+      if (msg.includes('not found') && !msg.includes('\n')) return reply.code(404).send({ error: msg });
+      request.log.error({ err }, 'process payout failed');
+      return reply.code(400).send({ error: safeErrorMessage(err) });
     }
   });
 

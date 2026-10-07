@@ -51,6 +51,7 @@ export async function gaushalaVolunteersRoutes(server: FastifyInstance) {
  const gaushalaUserId = await requireGaushalaManager(request, reply);
  if (!gaushalaUserId) return;
  const { id } = request.params as { id: string };
+ if (!z.string().uuid().safeParse(id).success) return reply.code(404).send({ error: 'Volunteer not found' });
  const parsed = updateSchema.safeParse(request.body);
  if (!parsed.success) {
  return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
@@ -65,6 +66,7 @@ export async function gaushalaVolunteersRoutes(server: FastifyInstance) {
  const gaushalaUserId = await requireGaushalaManager(request, reply);
  if (!gaushalaUserId) return;
  const { id } = request.params as { id: string };
+ if (!z.string().uuid().safeParse(id).success) return reply.code(404).send({ error: 'Volunteer not found' });
  const existing = await prisma.volunteer.findFirst({ where: { id, gaushalaId: gaushalaUserId } });
  if (!existing) return reply.code(404).send({ error: 'Volunteer not found' });
  await prisma.volunteer.delete({ where: { id } });

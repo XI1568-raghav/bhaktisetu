@@ -3,6 +3,7 @@ import { supabaseAdmin, isDemoMode } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { getCachedAuth, setCachedAuth } from '../lib/auth-cache.js';
 import { inspectSupabaseJwt } from '../lib/supabase-jwt.js';
+import { stopWhenAnswered } from '../lib/stop-when-answered.js';
 import {
   AUTH_REASON_HEADER,
   AUTH_REASON_BODY_FIELD,
@@ -196,18 +197,13 @@ function denyUnauthenticated(
  * Fastify preHandler hook that verifies the JWT with Supabase
  * and attaches the authenticated user from Prisma to the request.
  */
-export async function authenticateUser(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<FastifyReply | void> {
-  await authenticateUserImpl(request, reply);
-  // Role pass 2026-10-07 (P0): an async preHandler that replies must `return reply`.
-  // Otherwise Fastify runs the next hook and then the route HANDLER while the
-  // 401/403 is still in flight, so a denied request still executed its side effects.
-  if (!request.currentUser) return reply;
-}
+// stopWhenAnswered: a 401 sent from this hook must also stop the route handler
+// (see lib/stop-when-answered.ts). server.ts wraps route-level guards globally,
+// but plugin-level `addHook('preHandler', authenticateUser)` bypasses that, so
+// the guard carries the fix itself.
+export const authenticateUser = stopWhenAnswered(authenticateUserInner);
 
-async function authenticateUserImpl(
+async function authenticateUserInner(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
@@ -549,11 +545,11 @@ async function authenticateUserImpl(
  * Supports legacy roles ('priest', 'admin') and new marketplace roles.
  */
 export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
-  return async function (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | void> {
+  return stopWhenAnswered(async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
     // authenticateUser must run first
     if (!request.currentUser) {
       denyUnauthenticated(reply, 'no_credentials', 'Authentication required.');
-      return reply;
+      return;
     }
 
     const userRoles = request.currentUser.roles ?? [];
@@ -573,10 +569,11 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
       // as "Inconsistent column data: Error creating UUID, ...".)
       const userId = request.currentUser.id;
       if (userId.startsWith('demo-') || userId.startsWith('anon-')) {
-        return reply.code(403).send({
+        reply.code(403).send({
           error: 'Forbidden',
           message: 'This route requires an active priest account.',
         });
+        return;
       }
 
       const priest = await prisma.priest.findUnique({
@@ -584,10 +581,11 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
       });
 
       if (!priest || priest.status !== 'active') {
-        return reply.code(403).send({
+        reply.code(403).send({
           error: 'Forbidden',
           message: 'This route requires an active priest account.',
         });
+        return;
       }
       return;
     }
@@ -602,42 +600,45 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
 
       if (userEmail && adminEmails.includes(userEmail)) return;
 
-      return reply.code(403).send({
+      reply.code(403).send({
         error: 'Forbidden',
         message: 'This route requires admin privileges.',
       });
+      return;
     }
 
     // Marketplace role check
     if (!userRoles.includes(role)) {
-      return reply.code(403).send({
+      reply.code(403).send({
         error: 'Forbidden',
         message: `This route requires the ${role} role.`,
       });
+      return;
     }
-  };
+  });
 }
 
 /**
  * Factory for a preHandler hook that checks if the user has ANY of the given roles.
  */
 export function requireAnyRole(...roles: MarketplaceRole[]) {
-  return async function (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | void> {
+  return stopWhenAnswered(async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
     if (!request.currentUser) {
       denyUnauthenticated(reply, 'no_credentials', 'Authentication required.');
-      return reply;
+      return;
     }
 
     const userRoles = request.currentUser.roles ?? [];
     const hasRole = roles.some((r) => userRoles.includes(r));
 
     if (!hasRole) {
-      return reply.code(403).send({
+      reply.code(403).send({
         error: 'Forbidden',
         message: `This route requires one of: ${roles.join(', ')}`,
       });
+      return;
     }
-  };
+  });
 }
 
 /**

@@ -254,6 +254,14 @@ describe('PF-06 — POST /priest/bookings/:id/video validates the URL', () => {
     expect(uploadVideoProofMock).not.toHaveBeenCalled();
   });
 
+  it('rejects non-web schemes: javascript:, file:, data: are not recordings (role pass 2026-10-07)', async () => {
+    for (const videoUrl of ['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,<b>x</b>']) {
+      const res = await call('POST', `/bookings/${BOOKING_ID}/video`, { videoUrl });
+      expect(res.statusCode).toBe(400);
+    }
+    expect(uploadVideoProofMock).not.toHaveBeenCalled();
+  });
+
   it('accepts a real URL and forwards it trimmed', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(
       { id: BOOKING_ID, status: 'completed', priestId: PRIEST_ID } as never,
@@ -268,6 +276,30 @@ describe('PF-06 — POST /priest/bookings/:id/video validates the URL', () => {
       PRIEST_ID,
       'https://cdn.darshya.online/proof.mp4',
     );
+  });
+});
+
+describe('PATCH /priest/profile validates its body (role pass 2026-10-07)', () => {
+  it('refuses to blank the public display name or store a non-web avatar', async () => {
+    for (const payload of [
+      { displayName: '' },
+      { displayName: ' ' },
+      { avatarUrl: 'javascript:alert(1)' },
+      { experienceYears: -3 },
+      { languages: 'Hindi' },
+    ]) {
+      const res = await call('PATCH', '/profile', payload as Record<string, unknown>);
+      expect(res.statusCode).toBe(400);
+    }
+    expect(prismaMock.priest.update).not.toHaveBeenCalled();
+  });
+
+  it('saves a valid edit', async () => {
+    prismaMock.priest.update.mockResolvedValue({ id: PRIEST_ID, displayName: 'Pt Ramesh' } as never);
+    const res = await call('PATCH', '/profile', { displayName: ' Pt Ramesh ', experienceYears: 9, languages: ['Hindi'] });
+    expect(res.statusCode).toBe(200);
+    const arg = prismaMock.priest.update.mock.calls[0]![0] as { data: Record<string, unknown> };
+    expect(arg.data).toMatchObject({ displayName: 'Pt Ramesh', experienceYears: 9, languages: ['Hindi'] });
   });
 });
 

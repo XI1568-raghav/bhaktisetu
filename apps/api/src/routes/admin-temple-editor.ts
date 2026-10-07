@@ -126,7 +126,12 @@ export function registerAdminTempleEditor(
       // Verifying is the act that lets devotees book, so it requires a real
       // location. A temple left at 0,0 or with a broken pincode cannot be
       // verified, but the same PATCH may fix the fields and verify at once.
-      if (patch.isVerified === true) {
+      // The same holds for editing the location of a temple that is ALREADY
+      // verified: moving it back to 0,0 or blanking the pincode while it stays
+      // bookable was accepted (role pass 2026-10-07). Un-verify it first.
+      const touchesLocation =
+        patch.lat !== undefined || patch.lng !== undefined || patch.pincode !== undefined;
+      if (patch.isVerified === true || (merged.isVerified === true && patch.isVerified !== false && touchesLocation)) {
         const problems = templeFlags(merged);
         if (problems.length > 0) {
           return reply.code(400).send({

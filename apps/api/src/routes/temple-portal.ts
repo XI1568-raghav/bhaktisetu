@@ -182,7 +182,34 @@ function notLinked(reply: FastifyReply, reason: TempleLinkReason) {
 /** Upper bound on TemplePayout rows read for the dashboard's released/upcoming split. */
 const DASHBOARD_SHARE_SCAN_CAP = 5000;
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A manager may only pin a priest who is on THIS temple's roster, i.e. one who
+ * accepted the invitation. Pinning is what auto-assigns bookings to that pandit
+ * (dispatch.service pinned-priest path), so without this check a manager could
+ * put any pandit's name on their offerings without the pandit ever consenting.
+ * Returns an error string, or null when the id may be used.
+ */
+async function pinnedPriestError(templeId: string, priestId: string | null | undefined): Promise<string | null> {
+  if (!priestId) return null;
+  const onRoster = await prisma.templePriest.findFirst({
+    where: { templeId, priestId },
+    select: { id: true },
+  });
+  return onRoster ? null : 'That priest is not on your temple roster. Invite them first; they must accept before you can assign them.';
+}
+
 export async function templePortalRoutes(server: FastifyInstance) {
+  // Every `:id` in this file is a UUID column. A malformed one reached Prisma and
+  // came back as a 500; it can only ever be "not found".
+  server.addHook('preValidation', async (request, reply) => {
+    const id = (request.params as { id?: unknown } | undefined)?.id;
+    if (typeof id === 'string' && !UUID_RE.test(id)) {
+      return reply.code(404).send({ error: 'Not found' });
+    }
+  });
+
   // GET /dashboard — TempleProfile + booking/donation aggregates when the
   // marketplace temple-profile is linkable to a real Temple row by name match
   // (no FK exists today — see schema.prisma:779-797). Falls back to zeros if
@@ -229,9 +256,22 @@ export async function templePortalRoutes(server: FastifyInstance) {
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Every paid, live booking. This listed only confirmed + completed, so the
+    // count fell to 0 the moment a pandit accepted (priest_assigned) and stayed
+    // there through in_progress, video_uploaded and delivered, while the Bookings
+    // tab listed them all.
     const baseWhere = {
       templeId,
-      status: { in: [BookingStatus.confirmed, BookingStatus.completed] },
+      status: {
+        in: [
+          BookingStatus.confirmed,
+          BookingStatus.priest_assigned,
+          BookingStatus.in_progress,
+          BookingStatus.completed,
+          BookingStatus.video_uploaded,
+          BookingStatus.delivered,
+        ],
+      },
     };
     // "Revenue" is what the temple earns: its TemplePayout rows. A reversed row
     // belongs to a refunded booking and is not an earning. This used to sum
@@ -542,6 +582,8 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
     }
+    const pinErr = await pinnedPriestError(templeId, parsed.data.assignedPriestId);
+    if (pinErr) return reply.code(409).send({ code: 'priest_not_on_roster', error: pinErr });
     try {
       const offering = await prisma.templePujaOffering.create({
         data: {
@@ -582,6 +624,11 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!existing) return reply.code(404).send({ error: 'Offering not found' });
     if (existing.templeId !== templeId) {
       return reply.code(403).send({ error: 'You do not own this offering.' });
+    }
+    // Un-pinning (null) and re-saving the priest already pinned are always fine.
+    if (parsed.data.assignedPriestId && parsed.data.assignedPriestId !== existing.assignedPriestId) {
+      const pinErr = await pinnedPriestError(templeId, parsed.data.assignedPriestId);
+      if (pinErr) return reply.code(409).send({ code: 'priest_not_on_roster', error: pinErr });
     }
     const data: Record<string, unknown> = {};
     if (parsed.data.pujaTypeId !== undefined) data.pujaTypeId = parsed.data.pujaTypeId;
@@ -839,10 +886,9 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (!roles.includes('TEMPLE_MANAGER')) {
       return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
     }
-    const templeId = await resolveManagerTempleId(request.currentUser!.id);
-    if (!templeId) {
-      return reply.code(400).send({ error: 'No matched Temple for this manager' });
-    }
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    const templeId = link.templeId;
+    if (!templeId) return notLinked(reply, link.reason);
     const parsed = darshanCreateSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
