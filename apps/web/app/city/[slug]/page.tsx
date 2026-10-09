@@ -11,6 +11,8 @@ import { getTemples } from '../../../lib/api';
 import { getDeity } from '../../../lib/deities';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { canonicalTempleSlug } from '../../../lib/temple-slug';
+import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
+import { resolveContentPujas, pujaLinkLabel, BROWSE_PUJAS_HREF } from '../../../lib/puja-link';
 
 export const dynamicParams = false;
 export const revalidate = 3600;
@@ -49,6 +51,7 @@ export default async function CityPage({ params }: Params) {
   // Tolerant API lookup — page still useful for SEO even if API is asleep.
   const templesRes = await getTemples({ city: c.name, limit: 12 }).catch(() => null);
   const apiTemples = templesRes?.data || [];
+  const bookablePujas = resolveContentPujas(c.popularPujas, await getCatalogueSlugs());
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -157,15 +160,20 @@ export default async function CityPage({ params }: Params) {
         <h2 className="text-xl font-bold text-surface-900 mb-4">
           Popular pujas {c.name} devotees book
         </h2>
+        {bookablePujas.length === 0 && (
+          <Link href={BROWSE_PUJAS_HREF} className="text-sm font-semibold text-saffron-700 hover:underline">
+            Browse all pujas →
+          </Link>
+        )}
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {c.popularPujas.map((slug) => (
+          {bookablePujas.map((slug) => (
             <li key={slug}>
               <Link
                 href={`/pujas/${slug}`}
                 className="block rounded-lg border border-surface-200 bg-white p-4 hover:border-saffron-300 hover:shadow-sm transition"
               >
                 <span className="text-sm font-semibold text-surface-900 capitalize">
-                  {slug.replace(/-/g, ' ')}
+                  {pujaLinkLabel(slug)}
                 </span>
                 <p className="text-xs text-saffron-700 mt-1">Book now →</p>
               </Link>

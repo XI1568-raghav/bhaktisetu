@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 
 
 // Canonical astrologer profile lives at /astrology/view?id=… for historical
@@ -12,5 +12,5 @@ export default async function AstrologerByIdRedirect({
  params: Promise<{ id: string }>;
 }) {
  const { id } = await params;
- redirect(`/astrology/view?id=${encodeURIComponent(id)}`);
+ permanentRedirect(`/astrology/view?id=${encodeURIComponent(id)}`);
 }

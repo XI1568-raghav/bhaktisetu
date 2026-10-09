@@ -39,6 +39,10 @@ const CITY_COORDS: Record<string, { lat: number; lon: number }> = {
  madurai: { lat: 9.9252, lon: 78.1198 },
  rameswaram: { lat: 9.2876, lon: 79.3129 },
  gaya: { lat: 24.7914, lon: 84.9994 },
+ bhopal: { lat: 23.2599, lon: 77.4126 },
+ indore: { lat: 22.7196, lon: 75.8577 },
+ nagpur: { lat: 21.1458, lon: 79.0882 },
+ patna: { lat: 25.5941, lon: 85.1376 },
 };
 
 export function generateStaticParams() {
