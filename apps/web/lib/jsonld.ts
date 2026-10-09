@@ -40,10 +40,13 @@ export const organizationJsonLd = {
     'https://www.facebook.com/darshya.online',
     'https://www.youtube.com/@darshya',
     'https://www.linkedin.com/company/darshya',
-    'https://github.com/darshya-online',
   ],
   foundingDate: '2026-01',
-  founder: { '@type': 'Person', name: 'Darshya Founder' },
+  // The two founders named on /about.
+  founder: [
+    { '@type': 'Person', name: 'Raghav Sindhwani' },
+    { '@type': 'Person', name: 'Atishey Jain' },
+  ],
   alternateName: ['Darshya App', 'Darshya Online', 'darshya.online'],
   knowsAbout: [
     'Hindu puja booking',

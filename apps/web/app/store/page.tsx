@@ -29,23 +29,23 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
- title: "Store",
+ title: "Puja Samagri and Spiritual Store Online",
  description:
- "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits. Free delivery on orders above Rs 499.",
+ "Browse puja samagri, idols, rudraksha, incense and other spiritual essentials from Indian sellers, and order online.",
  alternates: { canonical: "https://darshya.online/store" },
  openGraph: {
-   title: "Store | Darshya",
+   title: "Puja Samagri and Spiritual Store Online | Darshya",
    description:
-   "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits.",
+   "Browse puja samagri, idols, rudraksha, incense and other spiritual essentials from Indian sellers, and order online.",
    url: "https://darshya.online/store",
    type: "website",
    images: ["/og/default.png"],
  },
  twitter: {
    card: "summary_large_image",
-   title: "Store | Darshya",
+   title: "Puja Samagri and Spiritual Store Online | Darshya",
    description:
-   "Shop for authentic puja samagri, brass idols, rudraksha, incense, and spiritual essentials. Blessed by temple pandits.",
+   "Browse puja samagri, idols, rudraksha, incense and other spiritual essentials from Indian sellers, and order online.",
    images: ["/og/default.png"],
  },
 };

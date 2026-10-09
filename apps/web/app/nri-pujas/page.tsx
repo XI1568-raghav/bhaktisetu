@@ -80,7 +80,6 @@ export const metadata: Metadata = {
     'Guide for NRIs to book Hindu pujas at India temples. Billed in INR (an international card works where your card issuer allows international payments), video proof on your booking page' +
     (HAS_80G ? ', 80G receipt eligible donations' : ', numbered donation receipts') +
     `. ${CANCELLATION_BADGE_LABEL}.`,
-  robots: { index: false, follow: false },
   alternates: { canonical: 'https://darshya.online/nri-pujas' },
   openGraph: {
     title: 'NRI Pujas — Book from Anywhere in the World | Darshya',

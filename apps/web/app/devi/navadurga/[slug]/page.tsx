@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { getNavadurga, NAVADURGA } from '../../../../lib/navadurga';
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { EnrichedAbout } from '../../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../../lib/enrich';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -201,6 +203,7 @@ export default async function NavadurgaFormPage({ params }: { params: Promise<{ 
       </div>
      </div>
     </section>
+<EnrichedAbout name={form.name} data={ENRICHMENT.navadurga[form.slug]} />
    </main>
   </>
  );

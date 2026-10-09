@@ -9,6 +9,8 @@ import { canonicalDarshanaUrl } from '../../../lib/darshanas';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
@@ -191,6 +193,7 @@ export default async function HinduPhilosophyDetailPage({
           <span />
         )}
       </nav>
+<EnrichedAbout name={p.name} data={ENRICHMENT.philosophies[p.slug]} />
       {detailCta({
         routePrefix: 'hindu-philosophies',
         subject: p.name,

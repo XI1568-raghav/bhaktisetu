@@ -15,6 +15,8 @@ import {
 } from '../../../lib/festivals';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -242,6 +244,7 @@ export default async function FestivalPage({ params }: Params) {
         </div>
       </section>
 
+<EnrichedAbout name={f.name} data={ENRICHMENT.festivals[f.slug]} />
       <footer className="border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-2">
           <strong>Note:</strong> Dates are approximate per the {festivalYear(f.date2026)} lunar calendar. Tithis vary slightly by region — confirm with{' '}

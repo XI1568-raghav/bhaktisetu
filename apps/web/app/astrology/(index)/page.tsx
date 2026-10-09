@@ -12,7 +12,7 @@ export const metadata: Metadata = {
  alternates: { canonical: 'https://darshya.online/astrology' },
  title: 'Vedic Astrology — Kundli, Dosha & Daily Horoscope',
  description:
- 'Free Vedic astrology suite: Kundli (birth chart), Kundli Milan (Ashtakoot 36-point match), Numerology, Baby Name by Nakshatra, Janma Nakshatra Finder, Vimshottari Dasha 120-year timeline, Manglik Dosh check, Sade Sati Saturn-transit check, Choghadiya muhurat, Rahu Kalam / Yamaganda / Gulika daily inauspicious windows, Hora planetary hour, Kaal Sarp Dosh detector (12 Kalsarpa Yoga types), Shubh Muhurat finder for marriage / griha pravesh / vehicle / business / 8 more life events, Vastu Shastra 8-direction room placement scorer, Lal Kitab Farman Finder mapping 12 life problems to 9 grahas with 108 house-by-house household remedies, Pitra Dosha symptom-checker with 5 dosh types + 18 ancestral-karma remedies (Pind Daan / Narayan Nagbali / Pitru Paksha tarpan), Pancha Pakshi Shastra Tamil Siddhar 5-bird astrology (Vulture / Owl / Crow / Cock / Peacock) with per-Pakshi mantra + remedy + lucky days + compatibility. Plus pandits for consults.',
+ 'Free Vedic astrology tools: Kundli birth chart, Kundli Milan match-making, Manglik and Sade Sati checks, Rahu Kalam, Choghadiya and daily horoscope.',
 };
 
 const FREE_TOOLS = [

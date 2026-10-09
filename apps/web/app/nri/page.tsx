@@ -503,6 +503,12 @@ export default function NriPremiumLanding() {
               </Link>
             )}
             <Link
+              href="/nri-pujas"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-saffron-800/40 hover:bg-saffron-800/60 text-white font-medium rounded-lg border border-saffron-400/30 transition-all"
+            >
+              Book pujas from abroad
+            </Link>
+            <Link
               href="/pricing"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-saffron-800/40 hover:bg-saffron-800/60 text-white font-medium rounded-lg border border-saffron-400/30 transition-all"
             >

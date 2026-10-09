@@ -4,6 +4,8 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SAPTA_MATHRUKA, SAPTA_MATHRUKA_SLUGS, getSaptaMathrukaBySlug } from '../../../lib/sapta-mathruka';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -153,6 +155,7 @@ export default async function MathrukaPage({ params }: Props) {
         </p>
       </section>
 
+<EnrichedAbout name={m.name} data={ENRICHMENT.matruka[m.slug]} />
       <nav className="mt-12 grid grid-cols-2 gap-3 border-t border-gray-200 pt-6 text-sm">
         {prev ? (
           <Link href={`/sapta-mathruka/${prev.slug}`} className="rounded-xl border border-gray-200 p-3 hover:bg-gray-50">

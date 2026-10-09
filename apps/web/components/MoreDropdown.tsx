@@ -14,6 +14,7 @@ import {
 
 const moreLinks = [
   { href: '/nri', label: 'NRI Premium', icon: Globe2 },
+  { href: '/nri-pujas', label: 'NRI Pujas', icon: Globe2 },
   { href: '/yatra', label: 'Yatra', icon: Mountain },
   { href: '/panchang', label: 'Panchang', icon: Calendar },
   { href: '/gaushala', label: 'Gau Seva', icon: Heart },

@@ -6,6 +6,8 @@ import { PANCHA_BHOOTA, getPanchaBhootaBySlug } from '../../../lib/pancha-bhoota
 import { detailCta } from '../../../lib/detail-route-cta';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
@@ -191,6 +193,7 @@ export default async function PanchaBhootaDetailPage({ params }: { params: Promi
           </Link>
         </div>
       </section>
+<EnrichedAbout name={t.templeName} data={ENRICHMENT.bhoota[t.slug]} />
       {detailCta({
         routePrefix: 'pancha-bhoota',
         subject: t.templeName,

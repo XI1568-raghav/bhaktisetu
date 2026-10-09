@@ -6,6 +6,8 @@ import { VEDIC_MONTHS, getVedicMonthBySlug } from '../../../lib/vedic-months';
 import { detailCta } from '../../../lib/detail-route-cta';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
@@ -153,6 +155,7 @@ export default async function MasaDetailPage({ params }: { params: Promise<{ slu
           </Link>
         </div>
       </section>
+<EnrichedAbout name={month.name} data={ENRICHMENT.masas[month.slug]} />
       {detailCta({
         routePrefix: 'masa',
         subject: month.name,

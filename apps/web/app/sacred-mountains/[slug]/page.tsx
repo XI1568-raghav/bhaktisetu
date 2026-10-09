@@ -7,6 +7,8 @@ import { getSacredMountain, SACRED_MOUNTAINS } from '../../../lib/sacred-mountai
 import { formatNumber } from '../../../lib/format-locale';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
@@ -188,6 +190,7 @@ export default async function SacredMountainPage({ params }: Props) {
           <div />
         )}
       </nav>
+<EnrichedAbout name={m.name} data={ENRICHMENT.mountains[m.slug]} />
       {detailCta({
         routePrefix: 'sacred-mountains',
         subject: m.name,
