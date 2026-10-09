@@ -6,6 +6,8 @@ import { notFound } from 'next/navigation';
 import { PANCHANG_YOGAS } from '../../../../lib/panchang-yogas';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../../lib/detail-route-cta';
+import { EnrichedAbout } from '../../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../../lib/enrich';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -147,6 +149,7 @@ export default async function YogaDetailPage({ params }: { params: Promise<{ slu
      </p>
     </div>
 
+<EnrichedAbout name={`${y.name} Yoga`} data={ENRICHMENT.yogas[y.slug]} />
     {detailCta({ routePrefix: 'panchang/yoga', subject: `${y.name} Yoga` })}
    </main>
   </>

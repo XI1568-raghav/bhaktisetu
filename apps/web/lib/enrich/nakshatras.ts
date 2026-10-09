@@ -28,7 +28,7 @@ export const ENRICH_NAKSHATRAS: EnrichmentSet = {
     about: [
       "Krittika straddles two signs, running from the last third of Aries into the first part of Taurus. Western astronomers usually identify its stars with the Pleiades, the compact cluster that is easy to spot on winter evenings. The word is connected with the root meaning to cut, which is why the symbol is a razor or a flame, an edge that divides and a fire that clarifies.",
       "Agni, the fire god and the messenger who carries offerings to the other deities, is its ruler, and the Sun is its planetary lord. A famous Puranic account says that six Krittika women nursed the infant Kartikeya, the war god also called Skanda or Murugan, and this is how he received the name Karttikeya. In Tamil Nadu the Karthigai Deepam lamp festival is observed on the day when the Moon is in Krittika during the month of Karthigai.",
-      "Krittika has a Rakshasa gana in the data used here, a label that classical texts apply descriptively to temperament and not as a moral verdict. For muhurat work it is placed in the mixed group, traditionally regarded as fit for fire-related and cutting tasks such as cooking, metalwork or ritual burning of offerings. The syllables commonly listed for naming are A, I, U and E, with some lists giving Ee and Ay variants, so confirm with the family priest.",
+      "Krittika has a Rakshasa gana in some classical lists, a label that classical texts apply descriptively to temperament and not as a moral verdict. For muhurat work it is placed in the mixed group, traditionally regarded as fit for fire-related and cutting tasks such as cooking, metalwork or ritual burning of offerings. The syllables commonly listed for naming are A, I, U and E, with some lists giving Ee and Ay variants, so confirm with the family priest.",
     ],
     faqs: [
       { q: "Which stars make up Krittika?", a: "Tradition links Krittika with the Pleiades cluster. The Sanskrit name is related to cutting, which gives the razor and flame symbols." },
@@ -176,7 +176,7 @@ export const ENRICH_NAKSHATRAS: EnrichmentSet = {
   'vishakha': {
     about: [
       "Vishakha is the sixteenth nakshatra and straddles Libra and Scorpio, moving at 3 degrees 20 minutes into the latter. The name suggests having branches or forks, and it is often linked with a paired star group. The symbol is a triumphal archway or a potter's wheel, two pictures of something decorated to mark a passing or shaped through patient turning. The Vedic month of Vaishakha is named for the full moon occurring near it.",
-      "The deity is the joint figure Indra-Agni. Indra is the thunderbolt-wielding king of the gods and Agni is the sacrificial fire, and the Rigveda has hymns dedicated to the two together as allies. Jupiter is the planetary lord, and the gana is Rakshasa in the data, a descriptive classical label. Kartikeya has the epithet Vishakha, and some traditions connect the nakshatra to him. Buddha Purnima is also observed on the Vaishakha full moon.",
+      "The deity is the joint figure Indra-Agni. Indra is the thunderbolt-wielding king of the gods and Agni is the sacrificial fire, and the Rigveda has hymns dedicated to the two together as allies. Jupiter is the planetary lord, and the gana is Rakshasa in some lists, a descriptive classical label. Kartikeya has the epithet Vishakha, and some traditions connect the nakshatra to him. Buddha Purnima is also observed on the Vaishakha full moon.",
       "For muhurat selection Vishakha is placed in the mixed group with Krittika, a category traditionally considered suitable for ordinary tasks and for combined or compound work. Naming syllables commonly listed for the four padas are Ti, Tu, Te and To. The first three padas lie in Libra and the last in Scorpio, so the pada is read with the sign. Do not treat any such correspondences as personal predictions.",
     ],
     faqs: [
@@ -256,7 +256,7 @@ export const ENRICH_NAKSHATRAS: EnrichmentSet = {
   'dhanishta': {
     about: [
       "Dhanishta is the twenty-third nakshatra, running from the end of Capricorn into Aquarius. Some texts call it Shravishtha. The name relates to wealth or to being the most famous, and the symbol is a drum, joined in some lists by a flute. Four stars in the little constellation Delphinus are the usual physical match, a cluster that looks like a small kite or rhombus.",
-      "The deity is the group of eight Vasus, elemental gods in the Mahabharata who include Dyaus and Agni. The epic tells how the Vasus were cursed to be born on earth, and how Bhishma is remembered as the eighth of them. Mars is the planetary lord and the gana is Rakshasa as per the data. The drum symbol makes it the nakshatra of rhythm in the Indian system.",
+      "The deity is the group of eight Vasus, elemental gods in the Mahabharata who include Dyaus and Agni. The epic tells how the Vasus were cursed to be born on earth, and how Bhishma is remembered as the eighth of them. Mars is the planetary lord and the gana is Rakshasa in many classical lists. The drum symbol makes it the nakshatra of rhythm in the Indian system.",
       "In the muhurat scheme Dhanishta is a movable nakshatra. It is also the first of the final five, the group often called panchaka, which spans the second half of Dhanishta through Revati. Some traditions advise caution about certain activities, such as building a roof or cremation planning, during panchaka, though communities differ widely on how strictly to apply it. Naming syllables commonly listed for the four padas are Ga, Gi, Gu and Ge.",
     ],
     faqs: [
@@ -308,7 +308,7 @@ export const ENRICH_NAKSHATRAS: EnrichmentSet = {
     faqs: [
       { q: "Why is Revati the last nakshatra?", a: "The sequence of twenty-seven ends at the 30 degree mark of Pisces, which is where Revati finishes. Counting then restarts with Ashwini in Aries." },
       { q: "Who is Pushan, the deity of Revati?", a: "Pushan is a Vedic god who guides travellers and protects flocks. Mercury is the planetary lord of Revati." },
-      { q: "What are the symbols of Revati?", a: "A fish and a drum are the symbols given in the data." },
+      { q: "What are the symbols of Revati?", a: "A fish and a drum are the traditional symbols." },
     ],
   },
 };

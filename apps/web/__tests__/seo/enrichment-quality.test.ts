@@ -6,6 +6,13 @@ import { TITHIS } from '../../lib/tithis';
 import { CITIES } from '../../lib/cities';
 import { NAKSHATRAS } from '../../lib/nakshatras';
 import { EKADASHIS } from '../../lib/ekadashis';
+import { SHAKTI_PEETHS } from '../../lib/shakti-peeths';
+import { PANCHANG_YOGAS } from '../../lib/panchang-yogas';
+import { PANCHANG_KARANAS } from '../../lib/panchang-karanas';
+import { SHLOKAS } from '../../lib/shlokas';
+import { VEDIC_MONTHS } from '../../lib/vedic-months';
+import { SAMSKARAS } from '../../lib/samskaras';
+import { RUDRAKSHAS } from '../../lib/rudrakshas';
 
 // Some data sets list a slug twice; the page serves the first match, so one
 // enrichment record per distinct slug is correct.
@@ -17,6 +24,13 @@ const SLUGS = {
   cities: uniq(CITIES.map((c) => c.slug)),
   nakshatras: uniq(NAKSHATRAS.map((n) => n.slug)),
   ekadashis: uniq(EKADASHIS.map((e) => e.slug)),
+  shaktipeeths: uniq(SHAKTI_PEETHS.map((e) => e.slug)),
+  yogas: uniq(PANCHANG_YOGAS.map((e) => e.slug)),
+  karanas: uniq(PANCHANG_KARANAS.map((e) => e.slug)),
+  shlokas: uniq(SHLOKAS.map((e) => e.slug)),
+  masas: uniq(VEDIC_MONTHS.map((e) => e.slug)),
+  samskaras: uniq(SAMSKARAS.map((e) => e.slug)),
+  rudrakshas: uniq(RUDRAKSHAS.map((e) => e.slug)),
 } as const;
 
 // Claims the product cannot back, plus filler that signals unreviewed text.
@@ -25,6 +39,9 @@ const BANNED = [
   /tamper-proof/i, /samagri (is )?(included|provided)/i, /free delivery/i, /guarantee/i,
   /blessed by (our|temple)/i, /\bMAU\b/, /\bTODO\b/, /lorem ipsum/i, /as an ai/i,
   /\bwe (will|can) (book|arrange|send)\b/i, /\bour (pandits|priests)\b/i,
+  // Internal framing must never leak into public prose.
+  /\b(the|our|this|in the|from the) (data|dataset|catalogue|catalog|database)\b/i, /\bthe data's\b/i,
+  /\b(this|the) (page|entry|record|listing)\b/i, /\bsource (data|field)\b/i,
 ];
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean);

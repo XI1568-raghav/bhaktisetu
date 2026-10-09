@@ -6,6 +6,8 @@ import { notFound } from 'next/navigation';
 import { PANCHANG_KARANAS } from '../../../../lib/panchang-karanas';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../../lib/detail-route-cta';
+import { EnrichedAbout } from '../../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../../lib/enrich';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -149,6 +151,7 @@ export default async function KaranaDetailPage({ params }: { params: Promise<{ s
      </p>
     </div>
 
+<EnrichedAbout name={`${k.name} Karana`} data={ENRICHMENT.karanas[k.slug]} />
     {detailCta({ routePrefix: 'panchang/karana', subject: `${k.name} Karana` })}
    </main>
   </>

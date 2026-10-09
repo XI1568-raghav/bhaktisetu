@@ -21,3 +21,21 @@ for an entry with no text.
 
 ## Data issue found
 `lib/deities.ts` lists some slugs twice (e.g. krishna, jagannath, rama) with differing details; the page serves the first match.
+
+---
+
+# Wave B (added 2026-10-09)
+
+Sets: shakti peeths (51), shlokas (54), panchang yogas (27), karanas (11), masas (12), samskaras (16), rudrakshas (18).
+Sets are removable one by one: empty `ENRICH_*` in `apps/web/lib/enrich/<set>.ts`.
+A test now also bans internal-framing phrases ("the data", "this page", "the catalogue") in this text.
+
+## Highest risk
+- Shakti peeths: lists of 51 differ across texts; local legends (Tarapith/Bamakhepa, Srisailam, Harsiddhi, Kanyakumari, Vakreshwar); sites outside India described only factually; Ramgiri is described as identified with the Chitrakoot tradition.
+- Shlokas: attributions where the source is loose (Sarve Bhavantu, Tvameva Mata, Hanuman Stuti); Sanskrit word glosses; Shankara authorship notes; the Oppenheimer and LIC-motto mentions (from memory).
+- Yogas: Sanskrit name meanings are hedged glosses; Shiva yoga (deity Mitra), Indra yoga (deity Pitr), Brahma yoga (deity Ashvini Kumars) have deities differing from the name; rewrites now say "almanacs"/"tradition" in places.
+- Karanas: fixed-karana positions (Kintughna in the first half of Shukla Pratipada); word meanings hedged.
+- Masas: month-to-nakshatra names, Amanta/Purnimanta placement of Pitru Paksha, Karwa Chauth, Maha Shivaratri, Diwali.
+- Samskaras: regional wedding customs; antyeshti and garbhadhana wording (needs a respectful read); pumsavana.
+- Rudrakshas: origin legends are folk accounts; no health or outcome claims by design; "sawar means rider" gloss.
+- Tithis: the three tithis labelled "bhadra" in lib/tithis.ts; text says classifications differ.

@@ -196,7 +196,7 @@ export const ENRICH_TITHIS: EnrichmentSet = {
   'shukla-pratipada': {
     about: [
       "Shukla Pratipada is the first day of the bright fortnight, the morning after the new moon, when the sliver of light is just beginning its climb. Everything in traditional reckoning treats this as a threshold: the month has turned, the moon is returning, and the household is invited to do something worth doing.",
-      "Agni and Brahma share lordship in this entry, fire and creation side by side, and the tithi is of the nanda class, the joyful group. Fire provides the image of a first spark; Brahma provides the idea of a world being set going. In this way the day is understood as a start, not just a date. Chaitra's Shukla Pratipada in particular is when Gudi Padwa, Ugadi and Cheti Chand are celebrated by different communities.",
+      "Agni and Brahma share lordship here, fire and creation side by side, and the tithi is of the nanda class, the joyful group. Fire provides the image of a first spark; Brahma provides the idea of a world being set going. In this way the day is understood as a start, not just a date. Chaitra's Shukla Pratipada in particular is when Gudi Padwa, Ugadi and Cheti Chand are celebrated by different communities.",
       "A related event is the start of Navratri, when a pot, called a kalash, is installed and sprouted barley or similar seeds are sown as a sign of renewed life. Households traditionally clean the home, wash early and eat a light meal. Though the day holds importance for the Hindu year in many regions, other communities begin their year at different times, so the details of what is observed depend on the calendar and community.",
     ],
     faqs: [
@@ -232,7 +232,7 @@ export const ENRICH_TITHIS: EnrichmentSet = {
   'krishna-tritiya': {
     about: [
       "Krishna Tritiya is the third day of the waning moon, when the disc is still large but thinning each evening. The mood is softer than on its bright-half twin, and traditional calendars put its emphasis on household matters instead of grand beginnings.",
-      "Gauri presides in this entry as well, and the day is a jaya tithi, so victory in its classical sense still colours the day, though with a family flavour. In the month of Bhadrapada the dark-half Tritiya hosts Kajari Teej, a monsoon festival kept mainly in parts of northern and central India, where women fast for their families, sing seasonal songs and worship a local goddess.",
+      "Gauri presides here as well, and the day is a jaya tithi, so victory in its classical sense still colours the day, though with a family flavour. In the month of Bhadrapada the dark-half Tritiya hosts Kajari Teej, a monsoon festival kept mainly in parts of northern and central India, where women fast for their families, sing seasonal songs and worship a local goddess.",
       "Beyond that festival, the day is considered suitable for repairs, small chores, visits to elders and the settling of disagreements. Starting a long journey or a new venture is usually put off until the moon waxes. Observance is informal in most places: a lamp, a short prayer to Gauri or Parvati and a modest meal are enough in many households. Practices differ from village to village, so learn them from relatives or a local temple.",
     ],
     faqs: [
@@ -268,7 +268,7 @@ export const ENRICH_TITHIS: EnrichmentSet = {
   'shukla-panchami': {
     about: [
       "Shukla Panchami is the fifth day of the waxing moon, and in the Hindu year it carries two well-known festivals that could hardly differ more. One is Vasant Panchami in Magha, the welcome of spring and the day of Saraswati. The other is Nag Panchami in Shravan, when snakes are venerated during the rainy season.",
-      "The data for this entry lists Saraswati and the Naga deities as presiding, and gives the day the bhadra label, although many almanacs place the fifth tithi in the purna group, so readers may meet both versions. What is consistent is the theme: knowledge and creative skill on one side, and respect for living power in nature on the other. In traditional households, children were often given their first letters on the spring Panchami.",
+      "Saraswati and the Naga deities are named as presiding, and some almanacs give the day the bhadra label, although many place the fifth tithi in the purna group, so readers may meet both versions. What is consistent is the theme: knowledge and creative skill on one side, and respect for living power in nature on the other. In traditional households, children were often given their first letters on the spring Panchami.",
       "Practices are simple. For Saraswati, people dress in yellow, place books, pens and instruments before the image and offer yellow sweets. For the Nagas, milk is poured at snake shrines or anthills, and some communities refrain from digging that day. Other Panchamis, such as Rishi Panchami and Bhishma Panchami, are observed in the bright half too. Regional differences are strong, so rely on community tradition for precise rites.",
     ],
     faqs: [
@@ -280,7 +280,7 @@ export const ENRICH_TITHIS: EnrichmentSet = {
   'shukla-ashtami': {
     about: [
       "Shukla Ashtami is the eighth day of the waxing moon, the bright-half Ashtami at which the moon appears as a half disc. It is above all the day of the goddess. During the nine nights of Navratri, in both spring and autumn, the eighth is the peak, called Maha Ashtami, when worship of Durga reaches its fullest form.",
-      "As a jaya tithi it carries the idea of victory, and its deities in this entry are Durga and Shiva. The central image is Durga's triumph over the buffalo demon Mahishasura, told in the Devi Mahatmya and retold in countless local versions. At many temples the moment between Ashtami and Navami is honoured with a special rite, called Sandhi puja, and young girls are fed and honoured as living forms of the goddess.",
+      "As a jaya tithi it carries the idea of victory, and its deities are Durga and Shiva. The central image is Durga's triumph over the buffalo demon Mahishasura, told in the Devi Mahatmya and retold in countless local versions. At many temples the moment between Ashtami and Navami is honoured with a special rite, called Sandhi puja, and young girls are fed and honoured as living forms of the goddess.",
       "The same tithi also hosts Radha Ashtami in Bhadrapada, the birthday celebration of Radha, and Bhishma Ashtami in Magha. Note that Krishna's own birth festival belongs to the other fortnight, the dark-half Ashtami. A day of fasting and red flowers is typical for the goddess observances, with the meal of semolina halwa, chickpeas and puris often served to girls. Customs vary, so follow your own tradition.",
     ],
     faqs: [
@@ -304,7 +304,7 @@ export const ENRICH_TITHIS: EnrichmentSet = {
   'shukla-navami': {
     about: [
       "Shukla Navami is the ninth day of the growing moon, close to the full-moon end of the bright fortnight. In the spring month of Chaitra it is Rama Navami, believed to be the day of Rama's birth at midday, and in the two Navratris it is Maha Navami, the last day of goddess worship before the tenth.",
-      "Its category is rikta, so ordinary almanacs counsel against launching worldly projects, yet the data recognises that devotion to Rama overrides this. The pairing of Durga and Rama in the entry reflects a real theme in the tradition: in some accounts Rama honoured the goddess before his battle with Ravana, which is why the ninth day of the autumn festival has strong Rama associations in parts of India.",
+      "Its category is rikta, so ordinary almanacs counsel against launching worldly projects, yet tradition recognises that devotion to Rama overrides this. The pairing of Durga and Rama on this day reflects a real theme in the tradition: in some accounts Rama honoured the goddess before his battle with Ravana, which is why the ninth day of the autumn festival has strong Rama associations in parts of India.",
       "On Rama Navami temples often hold a noon ceremony, a cradle rite and readings of the Ramcharitmanas or the Sundara Kanda. On Maha Navami havans and the veneration of young girls conclude the festival. A third Navami, Akshaya Navami in Kartik, is marked by worship under the amla tree. Fasting rules differ widely between households, so use a trusted local source for specifics.",
     ],
     faqs: [
@@ -316,7 +316,7 @@ export const ENRICH_TITHIS: EnrichmentSet = {
   'shukla-ekadashi': {
     about: [
       "Shukla Ekadashi is the eleventh day of the waxing moon, the bright-half Ekadashi. Each month's version carries its own name and story, which is one reason devotees keep a list of the twelve. A year of bright-half Ekadashis offers a miniature tour of Vishnu's devotional calendar, from rain-season sleep to autumn awakening.",
-      "The entry here lists the bhadra class, whereas many sources file the eleventh tithi under nanda, so you may find either. The deity is not in doubt: it is Vishnu. Among the best-known occasions are Devshayani in Ashadha, when Vishnu is said to rest for four months, Prabodhini or Devuthani in Kartik, when he wakes and wedding season reopens, and Vaikuntha Ekadashi, when temple gates to his abode are thrown open in southern shrines.",
+      "Some almanacs list the bhadra class, whereas many file the eleventh tithi under nanda, so classifications differ and you may find either. The deity is not in doubt: it is Vishnu. Among the best-known occasions are Devshayani in Ashadha, when Vishnu is said to rest for four months, Prabodhini or Devuthani in Kartik, when he wakes and wedding season reopens, and Vaikuntha Ekadashi, when temple gates to his abode are thrown open in southern shrines.",
       "The fast is usually grain-free, and many people eat only fruit, milk and nuts, while the strictest take no water on Nirjala Ekadashi. Vishnu Sahasranama recitation and tulsi worship are common companions. The fast is ended the next morning. Because of the number of local names and rules, including slightly different Vaishnava and Smarta dates, people consult an almanac for their own tradition. Anyone with health concerns should moderate the fast.",
     ],
     faqs: [
@@ -328,7 +328,7 @@ export const ENRICH_TITHIS: EnrichmentSet = {
   'krishna-ekadashi': {
     about: [
       "Krishna Ekadashi is the eleventh day of the waning moon, equal in status to the bright-half Ekadashi even though the moon is fading. Those who keep the vow do not treat the dark half as a lesser cousin; the rule is to observe both, and the unbroken rhythm of twice a month is the point.",
-      "Vishnu presides, and as in the neighbouring entry the data labels the tithi bhadra, though other sources may use the nanda label. The dark-half Ekadashis have their own names and tales. Utpanna Ekadashi is credited with the origin of the vow. Aja Ekadashi is linked to the redemption of King Harishchandra, and Indira Ekadashi, which falls in the ancestor fortnight, is traditionally kept for the benefit of forefathers. Vijaya and Saphala are named for victory and success.",
+      "Vishnu presides, and as with the waxing-half Ekadashi, some almanacs label the tithi bhadra, though others use the nanda label. The dark-half Ekadashis have their own names and tales. Utpanna Ekadashi is credited with the origin of the vow. Aja Ekadashi is linked to the redemption of King Harishchandra, and Indira Ekadashi, which falls in the ancestor fortnight, is traditionally kept for the benefit of forefathers. Vijaya and Saphala are named for victory and success.",
       "The observance mirrors that of the bright half: grains are left out, hymns to Vishnu are sung and the fast is broken on Dwadashi. Reading the Bhagavata Purana is a favoured activity. Because the dark-half calendar varies in its month-naming between north Indian and south Indian systems, the same Ekadashi may carry different month labels in different regions, so check which system your almanac uses.",
     ],
     faqs: [
@@ -352,7 +352,7 @@ export const ENRICH_TITHIS: EnrichmentSet = {
   'krishna-chaturdashi': {
     about: [
       "Krishna Chaturdashi is the fourteenth day of the waning moon, the final dark night before the new moon, when only the slimmest sliver of light is left before dawn. Its reputation is serious and austere, and it is the tithi most closely connected to Shiva's night worship.",
-      "Rikta in the classical scheme and ruled by Rudra and Kali in this entry, it is the monthly Shivaratri, kept with a vigil that runs into the midnight hour. The yearly high point is Maha Shivaratri in Phalguna, which traditional accounts link to Shiva's marriage and to his role as the cosmic dancer. The fast is often absolute, with four watches of the night each marked by an abhishekam, and the fast is ended the next morning.",
+      "Rikta in the classical scheme and ruled by Rudra and Kali, it is the monthly Shivaratri, kept with a vigil that runs into the midnight hour. The yearly high point is Maha Shivaratri in Phalguna, which traditional accounts link to Shiva's marriage and to his role as the cosmic dancer. The fast is often absolute, with four watches of the night each marked by an abhishekam, and the fast is ended the next morning.",
       "The tithi has a lighter side as well. In Kartik the dark-half Chaturdashi before Diwali is Narak Chaturdashi, when people bathe early with oil and light lamps, and Bengal celebrates Kali around the same dark night. Because rikta days carry cautions for ordinary activities, almanacs suggest delaying weddings and long trips until the bright fortnight. Traditions differ by region and sect, so a priest or elder from your lineage should guide the rites.",
     ],
     faqs: [

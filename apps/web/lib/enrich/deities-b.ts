@@ -243,7 +243,7 @@ export const ENRICH_DEITIES_B: EnrichmentSet = {
   },
   chitragupta: {
     about: [
-      "Chitragupta is the divine scribe who keeps the account of every living being's deeds. In the Puranic picture of the afterlife, he works in the court of Yama, the lord of death, and reads out the record of good and bad actions when a soul is judged. The Garuda Purana and other texts refer to him by this role. He is usually shown holding a pen and a ledger or scroll, and sits near Yama.",
+      "Chitragupta is the divine scribe who keeps the account of every living being's deeds. In the Puranic picture of the afterlife, he works in the court of Yama, the lord of death, and reads out the good and bad actions when a soul is judged. The Garuda Purana and other texts refer to him by this role. He is usually shown holding a pen and a ledger or scroll, and sits near Yama.",
       "According to a tradition from the Padma Purana, he emerged from the body of Brahma after a long period of meditation, and the name is explained as hidden or secret picture, referring to the unseen record of karma. The Kayastha community, whose traditional occupation was writing and record-keeping, honours him as its patron deity and ancestor. Not all accounts of his origin agree with one another.",
       "Chitragupta Puja is held on Yama Dwitiya, the second day after Diwali, which is also the day of Bhai Dooj. Writers, accountants and clerks traditionally place their pens, inkpots and account books before his image, and write his name and a short prayer on paper. The ritual stresses honest accounts and a sense of accountability. His simple mantra begins with ॐ चित्रगुप्ताय नमः.",
     ],
@@ -303,7 +303,7 @@ export const ENRICH_DEITIES_B: EnrichmentSet = {
   },
   yama: {
     about: [
-      "Yama is the lord of the dead and the first mortal, according to the Rig Veda, to travel the path to the world of ancestors. Later texts make him the judge of souls and call him Dharmaraja, the king of righteousness. He is the son of Surya and Saranyu and the brother of the river Yamuna. He rides a buffalo and carries a noose and a staff, and Chitragupta keeps the record from which he decides each case, as described in the Garuda Purana.",
+      "Yama is the lord of the dead and the first mortal, according to the Rig Veda, to travel the path to the world of ancestors. Later texts make him the judge of souls and call him Dharmaraja, the king of righteousness. He is the son of Surya and Saranyu and the brother of the river Yamuna. He rides a buffalo and carries a noose and a staff, and Chitragupta keeps the ledger from which he decides each case, as described in the Garuda Purana.",
       "Yama also appears as a teacher. In the Katha Upanishad, the young Nachiketa visits his house and obtains from him the knowledge of the Self after refusing every lesser gift. The story of Savitri, who followed Yama and won her husband Satyavan back by her wisdom, is another well loved narrative. These tales show Yama as exacting but fair.",
       "He is remembered during Pitru Paksha, when families offer water and rice balls to their ancestors, and on Naraka Chaturdashi, when a lamp is lit for him at the door. Bhai Dooj, also called Yama Dwitiya, recalls the visit of Yama to his sister Yamuna. Many families chant ॐ यमाय नमः on those days. His worship is mostly about remembering mortality and honouring ancestors.",
     ],
