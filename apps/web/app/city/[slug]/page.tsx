@@ -11,6 +11,7 @@ import { getTemples } from '../../../lib/api';
 import { getDeity } from '../../../lib/deities';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { canonicalTempleSlug } from '../../../lib/temple-slug';
+import { CITY_PUJAS } from '../../../lib/city-pujas';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 import { resolveContentPujas, pujaLinkLabel, BROWSE_PUJAS_HREF } from '../../../lib/puja-link';
 
@@ -51,6 +52,7 @@ export default async function CityPage({ params }: Params) {
   // Tolerant API lookup — page still useful for SEO even if API is asleep.
   const templesRes = await getTemples({ city: c.name, limit: 12 }).catch(() => null);
   const apiTemples = templesRes?.data || [];
+  const cityGuides = CITY_PUJAS.filter((x) => x.city === c.slug);
   const bookablePujas = resolveContentPujas(c.popularPujas, await getCatalogueSlugs());
 
   const jsonLd = {
@@ -181,6 +183,21 @@ export default async function CityPage({ params }: Params) {
           ))}
         </ul>
       </section>
+
+      {cityGuides.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-surface-900 mb-4">Puja guides for {c.name}</h2>
+          <ul className="flex flex-wrap gap-3">
+            {cityGuides.map((g) => (
+              <li key={g.puja}>
+                <Link href={`/puja/${g.city}/${g.puja}`} className="text-saffron-700 underline hover:text-saffron-900">
+                  {g.pujadisplay} in {g.citydisplay}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="mb-10">
         <h2 className="text-xl font-bold text-surface-900 mb-4">

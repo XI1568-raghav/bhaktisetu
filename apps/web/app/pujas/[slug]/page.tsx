@@ -55,8 +55,9 @@ import { CurrencyToggle } from '../../../components/pricing/CurrencyToggle';
 import {
  CANCELLATION_BADGE_LABEL,
  CANCELLATION_BADGE_DESC,
+ CANCELLATION_POLICY_SENTENCE,
 } from '../../../lib/cancellation-policy';
-import { pujaOffersJsonLd } from '../../../lib/jsonld';
+import { pujaOffersJsonLd, breadcrumbJsonLd } from '../../../lib/jsonld';
 import { getPujaCompletionCounts } from '../../../lib/social-proof';
 import PujaShareButton from '../../../components/puja/PujaShareButton';
 import { pujaCardBlurb, HERO_BLURB_MAX } from '../../../lib/puja-blurb';
@@ -280,11 +281,54 @@ export default async function PujaDetailPage({
  offers: pujaOffersJsonLd(puja),
  };
 
+ // Every answer restates something the booking flow already enforces; no
+ // outcome, rating or credential claims (see the honesty tests).
+ const faqs = [
+   {
+     q: `How do I book ${puja.name} online?`,
+     a: `Choose a temple, a date and a time slot on this page, then pay online. Your booking and its status stay on your booking page.`,
+   },
+   {
+     q: `Will I get a video of the ${puja.name}?`,
+     a: 'Yes. Video proof is mandatory for every puja booking, and the recording is delivered to you after the ceremony.',
+   },
+   {
+     q: `Can I cancel or reschedule a ${puja.name} booking?`,
+     a: CANCELLATION_POLICY_SENTENCE,
+   },
+   {
+     q: `Can I book ${puja.name} from outside India?`,
+     a: 'Yes. Bookings are billed in INR; an international card works where your card issuer allows international payments.',
+   },
+ ];
+ const faqJsonLd = {
+   '@context': 'https://schema.org',
+   '@type': 'FAQPage',
+   mainEntity: faqs.map((f) => ({
+     '@type': 'Question',
+     name: f.q,
+     acceptedAnswer: { '@type': 'Answer', text: f.a },
+   })),
+ };
+ const crumbJsonLd = breadcrumbJsonLd([
+   { name: 'Home', url: 'https://darshya.online/' },
+   { name: 'Pujas', url: 'https://darshya.online/pujas' },
+   { name: puja.name, url: `https://darshya.online/pujas/${puja.slug}` },
+ ]);
+
  return (
  <div className="min-h-[100dvh] bg-surface-50">
  <script
  type="application/ld+json"
  dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+ />
+ <script
+ type="application/ld+json"
+ dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbJsonLd) }}
+ />
+ <script
+ type="application/ld+json"
+ dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
  />
  {/* Breadcrumb */}
  <div className="border-b border-surface-100 bg-white">
@@ -638,6 +682,23 @@ export default async function PujaDetailPage({
  </Link>
  </div>
  </div>
+
+ <section className="rounded-xl border border-surface-100 bg-white p-6">
+ <h2 className="mb-3 text-lg font-semibold text-surface-800">{puja.name}: common questions</h2>
+ <dl className="space-y-4">
+ {faqs.map((f) => (
+ <div key={f.q}>
+ <dt className="text-sm font-semibold text-surface-700">{f.q}</dt>
+ <dd className="mt-1 text-sm text-surface-600">{f.a}</dd>
+ </div>
+ ))}
+ </dl>
+ <p className="mt-4 text-sm text-surface-500">
+ See also: <Link href="/muhurat" className="text-saffron-700 hover:underline">auspicious dates (muhurat)</Link>,{' '}
+ <Link href="/festival" className="text-saffron-700 hover:underline">festival calendar</Link>,{' '}
+ <Link href="/nri-pujas" className="text-saffron-700 hover:underline">booking from abroad</Link>.
+ </p>
+ </section>
 
  {/* FAQ-style info */}
  <div className="rounded-xl border border-surface-100 bg-white p-6">
