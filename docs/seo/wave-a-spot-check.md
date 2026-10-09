@@ -39,3 +39,25 @@ A test now also bans internal-framing phrases ("the data", "this page", "the cat
 - Samskaras: regional wedding customs; antyeshti and garbhadhana wording (needs a respectful read); pumsavana.
 - Rudrakshas: origin legends are folk accounts; no health or outcome claims by design; "sawar means rider" gloss.
 - Tithis: the three tithis labelled "bhadra" in lib/tithis.ts; text says classifications differ.
+
+---
+
+# Wave C (added 2026-10-09)
+
+Sets: puranas (18), jyotirlingas (12), sacred mountains (10), navadurga (9), ashta lakshmi (8), sapta matrika (7),
+dwadasha adityas (12), pancha bhoota temples (5), hindu philosophies (10), sacred trees (12), sacred rivers (10).
+Each set is removable by emptying its `ENRICH_*` object in `apps/web/lib/enrich/<set>.ts`.
+Not done (already 170+ words per page or different page shape): chants, upanishads, muhurats, aartis, chalisas, vrats,
+tirthas, yatra pages, gita/ramayana/mahabharata chapter pages, vipassana centres, rashi profiles.
+
+## Highest risk
+- Jyotirlingas: rival claimants named for Vaidyanath (Parli/Baijnath), Nageshwar (Aundha/Jageshwar), Bhimashankar; Grishneshwar story details; Rameshwar customs.
+- Mountains: Mahendragiri lists Parashurama's pupils; Vindhya/Narmada source wording; Meru-bead custom; Palani/Bogar link.
+- Puranas: Adi Purana for Brahma; Garuda and Shiva Purana details beyond the fields; Skanda verse count wording.
+- Navadurga: the verse naming the nine forms is placed in the Devi Kavacha (hedged); Devi Purana / Siddhidatri claim; Katyayani and the Bhagavata Purana.
+- Ashta Lakshmi: list variants (Dhairya/Veera, Jaya/Vijaya, Vidya naming); Veera Lakshmi and Vijayanagara link.
+- Adityas: lists of twelve vary; several fields in the source data look dubious (Vivasvan beeja mantra, a "6th century" date, some temple attributions) - consider fixing `lib/dwadasha-aditya.ts`.
+- Philosophies: Mimamsa/Dvaita simplifications; Advaita dating avoided.
+- Pancha Bhoota: Srikalahasti Kannappa and Rahu-Ketu rites; Jambukeshwarar and Chidambaram legends.
+- Rivers: Brahmaputra's mythic parentage; Sindhu/Jhulelal line; Pushkaram cycles.
+- Trees: Palash and coconut origin legends flagged as legend; no medicinal or planting claims by design.

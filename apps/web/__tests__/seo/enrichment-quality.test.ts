@@ -13,6 +13,17 @@ import { SHLOKAS } from '../../lib/shlokas';
 import { VEDIC_MONTHS } from '../../lib/vedic-months';
 import { SAMSKARAS } from '../../lib/samskaras';
 import { RUDRAKSHAS } from '../../lib/rudrakshas';
+import { PURANAS } from '../../lib/puranas';
+import { ASHTA_LAKSHMIS } from '../../lib/ashta-lakshmi';
+import { DWADASHA_ADITYAS } from '../../lib/dwadasha-aditya';
+import { SACRED_MOUNTAINS } from '../../lib/sacred-mountains';
+import { JYOTIRLINGAS } from '../../lib/jyotirlingas';
+import { NAVADURGA } from '../../lib/navadurga';
+import { HINDU_PHILOSOPHIES } from '../../lib/hindu-philosophies';
+import { SAPTA_MATHRUKA } from '../../lib/sapta-mathruka';
+import { SACRED_TREES } from '../../lib/sacred-trees';
+import { SACRED_RIVERS } from '../../lib/sacred-rivers';
+import { PANCHA_BHOOTA } from '../../lib/pancha-bhoota';
 
 // Some data sets list a slug twice; the page serves the first match, so one
 // enrichment record per distinct slug is correct.
@@ -31,6 +42,17 @@ const SLUGS = {
   masas: uniq(VEDIC_MONTHS.map((e) => e.slug)),
   samskaras: uniq(SAMSKARAS.map((e) => e.slug)),
   rudrakshas: uniq(RUDRAKSHAS.map((e) => e.slug)),
+  puranas: uniq(PURANAS.map((x) => x.slug)),
+  ashtalakshmi: uniq(ASHTA_LAKSHMIS.map((x) => x.slug)),
+  adityas: uniq(DWADASHA_ADITYAS.map((x) => x.slug)),
+  mountains: uniq(SACRED_MOUNTAINS.map((x) => x.slug)),
+  jyotirlingas: uniq(JYOTIRLINGAS.map((x) => x.slug)),
+  navadurga: uniq(NAVADURGA.map((x) => x.slug)),
+  philosophies: uniq(HINDU_PHILOSOPHIES.map((x) => x.slug)),
+  matruka: uniq(SAPTA_MATHRUKA.map((x) => x.slug)),
+  trees: uniq(SACRED_TREES.map((x) => x.slug)),
+  rivers: uniq(SACRED_RIVERS.map((x) => x.slug)),
+  bhoota: uniq(PANCHA_BHOOTA.map((x) => x.slug)),
 } as const;
 
 // Claims the product cannot back, plus filler that signals unreviewed text.
