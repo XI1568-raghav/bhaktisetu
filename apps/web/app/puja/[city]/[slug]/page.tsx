@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: cp.metaTitle,
+      title: `${cp.metaTitle} | Darshya`,
       description: cp.metaDescription,
       url: canonical,
       type: 'website',

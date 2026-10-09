@@ -180,7 +180,15 @@ export default function FaqPage() {
   // CM-15: the fallback was an empty min-h-[100dvh] div — one blank viewport
   // baked into the prerendered HTML for every cold visitor.
   return (
-      <Suspense fallback={<RouteFallback label="Loading help centre…" className="min-h-[100dvh] bg-[#faf7f0]" />}>
+      <Suspense
+      fallback={
+        <>
+          {/* The prerendered HTML bakes this fallback in, so the page's one h1 must live here too. */}
+          <h1 className={`${H1.catalogue} sr-only`}>Frequently asked questions</h1>
+          <RouteFallback label="Loading help centre…" className="min-h-[100dvh] bg-[#faf7f0]" />
+        </>
+      }
+    >
       <FaqContent />
     </Suspense>
   );
