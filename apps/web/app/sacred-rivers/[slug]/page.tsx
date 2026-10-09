@@ -8,6 +8,8 @@ import { getTirtha } from '../../../lib/tirthas';
 import { formatNumber } from '../../../lib/format-locale';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
@@ -183,6 +185,7 @@ export default async function SacredRiverPage({ params }: Props) {
           </Link>
         ) : <span />}
       </nav>
+<EnrichedAbout name={r.name} data={ENRICHMENT.rivers[r.slug]} />
       {detailCta({
         routePrefix: 'sacred-rivers',
         subject: r.name,

@@ -80,6 +80,7 @@ import {
  type TempleDetailRich,
 } from '../../../lib/temple-details';
 import { canonicalTempleSlug } from '../../../lib/temple-slug';
+import { breadcrumbJsonLd } from '../../../lib/jsonld';
 import { resolveApiTemple } from '../../../lib/temple-resolve';
 import { matchTempleOffering, templeBookHref } from '../../../lib/temple-booking';
 import TempleBookPujaCta from '../../../components/temple/TempleBookPujaCta';
@@ -334,11 +335,22 @@ export default async function TempleDetailPage({
   // PujaBooking rows that `lib/reviews.ts` already reads, with the true
   // ratingCount from that route's `total` — not from trustScore.
  };
+ const crumbLd = breadcrumbJsonLd([
+  { name: 'Home', url: 'https://darshya.online/' },
+  { name: 'Temples', url: 'https://darshya.online/temples' },
+  { name: ldName || 'Temple', url: `https://darshya.online/temples/${slug}` },
+ ]);
  const ldScript = (
-  <script
-   type="application/ld+json"
-   dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
-  />
+  <>
+   <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+   />
+   <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbLd) }}
+   />
+  </>
  );
 
  const analyticsName = rich?.name ?? apiTemple?.name ?? slug;

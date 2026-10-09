@@ -184,6 +184,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/yatra/plan', priority: 0.6 },
     { path: '/panchang', priority: 0.7 },
     { path: '/weddings', priority: 0.9 },
+    { path: '/pujas/home-puja', priority: 0.9 },
+    { path: '/pujas/marriage', priority: 0.9 },
+    { path: '/antim-sanskar', priority: 0.8 },
+    { path: '/pandits', priority: 0.8 },
     { path: '/weddings/muhurat', priority: 0.8 },
     { path: '/weddings/packages', priority: 0.8 },
     { path: '/weddings/inquiry', priority: 0.6 },
@@ -268,7 +272,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/hindu-symbols', priority: 0.9 },
     { path: '/sacred-mountains', priority: 0.9 },
     { path: '/bhakti-saint', priority: 0.9 },
-    { path: '/feed.xml', priority: 0.3 },
   ];
 
   const bookSlugs = ['bhagavad-gita', 'ramayana', 'upanishads'];
@@ -328,6 +331,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
   ]);
+
+  // Home-puja category pages (static data, each page renders for its slug).
+  const { homePujaCategories } = await import('../lib/home-pujas');
+  const homePujaEntries = homePujaCategories.map((c) => ({
+    url: `${BASE_URL}/pujas/home-puja/${c.slug}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
 
   const yatraEntries = yatraSlugs.map((slug) => ({
     url: `${BASE_URL}/yatra/${slug}`,
@@ -958,6 +970,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...secondaryEntries,
     ...templeEntries,
     ...pujaEntries,
+    ...homePujaEntries,
     ...yatraEntries,
     ...yatraDestEntries,
     ...deityEntries,

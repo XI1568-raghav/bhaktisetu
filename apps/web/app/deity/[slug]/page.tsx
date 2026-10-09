@@ -22,6 +22,8 @@ import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import { getMantrasForDeity } from '../../../lib/deity-mantras';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { withEightyG } from '../../../lib/eighty-g';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 3600;
 export const dynamicParams = false;
@@ -228,6 +230,7 @@ export default async function DeityPage({ params }: Params) {
         </div>
       </section>
 
+<EnrichedAbout name={d.name} data={ENRICHMENT.deities[d.slug]} />
       <footer className="border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-2">
           <strong>Why Darshya?</strong> Every {d.name} puja booking includes mandatory video proof of the ceremony{withEightyG(', an 80G donation receipt where the donee is registered,')} and a pandit whose payout is gated on Aadhaar-based KYC — a payout gate, not an independent credential check.

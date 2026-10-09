@@ -4,6 +4,8 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ASHTA_LAKSHMIS, ASHTA_LAKSHMI_SLUGS, getAshtaLakshmiBySlug } from '../../../lib/ashta-lakshmi';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -163,6 +165,7 @@ export default async function AshtaLakshmiPage({ params }: Props) {
         </p>
       </section>
 
+<EnrichedAbout name={l.name} data={ENRICHMENT.ashtalakshmi[l.slug]} />
       <nav className="mt-12 grid grid-cols-2 gap-3 border-t border-gray-200 pt-6 text-sm">
         {prev ? (
           <Link href={`/ashta-lakshmi/${prev.slug}`} className="rounded-xl border border-gray-200 p-3 hover:bg-gray-50">

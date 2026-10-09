@@ -4,6 +4,8 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getRudraksha, RUDRAKSHAS } from '../../../lib/rudrakshas';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
@@ -155,6 +157,7 @@ export default async function RudrakshaDetailPage({ params }: Props) {
         </p>
       </section>
 
+<EnrichedAbout name={r.name} data={ENRICHMENT.rudrakshas[r.slug]} />
       <nav className="mt-12 grid grid-cols-2 gap-3 border-t border-gray-200 pt-6 text-sm">
         {prev ? (
           <Link href={`/rudraksha/${prev.slug}`} className="rounded-xl border border-gray-200 p-3 hover:bg-gray-50">
