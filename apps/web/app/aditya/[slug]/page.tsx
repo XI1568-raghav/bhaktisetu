@@ -4,6 +4,8 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DWADASHA_ADITYAS, DWADASHA_ADITYA_SLUGS, getDwadashaAdityaBySlug } from '../../../lib/dwadasha-aditya';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -147,6 +149,7 @@ export default async function AdityaPage({ params }: Props) {
         </p>
       </section>
 
+<EnrichedAbout name={a.name} data={ENRICHMENT.adityas[a.slug]} />
       <nav className="mt-12 grid grid-cols-2 gap-3 border-t border-gray-200 pt-6 text-sm">
         {prev ? (
           <Link href={`/aditya/${prev.slug}`} className="rounded-xl border border-gray-200 p-3 hover:bg-gray-50">

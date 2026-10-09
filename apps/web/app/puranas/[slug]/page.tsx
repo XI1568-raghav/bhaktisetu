@@ -7,6 +7,8 @@ import { PURANAS, puranaSlugs, getPurana } from '../../../lib/puranas';
 import { formatNumber } from '../../../lib/format-locale';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -151,6 +153,7 @@ export default async function PuranaPage({ params }: { params: Promise<{ slug: s
           ))}
         </div>
       </section>
+<EnrichedAbout name={p.name} data={ENRICHMENT.puranas[p.slug]} />
       {detailCta({
         routePrefix: 'puranas',
         subject: p.name,

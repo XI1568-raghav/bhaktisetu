@@ -31,7 +31,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Bengaluru',
     puja: 'satyanarayan-puja',
     pujadisplay: 'Satyanarayan Puja',
-    metaTitle: 'Satyanarayan Puja in Bengaluru — Pandit Booking | Darshya',
+    metaTitle: 'Satyanarayan Puja in Bengaluru — Pandit Booking',
     metaDescription:
       'Book pandits for Satyanarayan Puja in Bengaluru. Vedic ritual with samagri and video proof; prasad delivery is optional.',
     deity: 'Lord Vishnu (as Satyanarayan)',
@@ -77,7 +77,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Mumbai',
     puja: 'griha-pravesh',
     pujadisplay: 'Griha Pravesh',
-    metaTitle: 'Griha Pravesh in Mumbai — Pandit Booking | Darshya',
+    metaTitle: 'Griha Pravesh in Mumbai — Pandit Booking',
     metaDescription:
       'Book Griha Pravesh puja in Mumbai with Vedic pandits. Vastu shanti, navagraha, agni hotra. Authentic ritual with video proof.',
     deity: 'Ganesha, Vastu Purusha, Navagraha',
@@ -123,7 +123,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Delhi',
     puja: 'satyanarayan-puja',
     pujadisplay: 'Satyanarayan Puja',
-    metaTitle: 'Satyanarayan Puja in Delhi — Pandit Booking | Darshya',
+    metaTitle: 'Satyanarayan Puja in Delhi — Pandit Booking',
     metaDescription:
       'Book pandits for Satyanarayan Puja in Delhi NCR. Sanskrit-trained Vedic priests, samagri included, video proof, optional prasad delivery.',
     deity: 'Lord Vishnu (as Satyanarayan)',
@@ -169,7 +169,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Varanasi',
     puja: 'rudrabhishek',
     pujadisplay: 'Rudrabhishek',
-    metaTitle: 'Rudrabhishek in Varanasi — Pandit Booking | Darshya',
+    metaTitle: 'Rudrabhishek in Varanasi — Pandit Booking',
     metaDescription:
       'Book Rudrabhishek at Kashi Vishwanath, Varanasi. Vedic pandits chant Rudra Suktam with abhishek of panchamrit on the Shivling. Video proof.',
     deity: 'Lord Shiva (as Rudra)',
@@ -215,7 +215,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Tirupati',
     puja: 'venkateswara-puja',
     pujadisplay: 'Venkateswara Puja',
-    metaTitle: 'Venkateswara Puja in Tirupati — Pandit Booking | Darshya',
+    metaTitle: 'Venkateswara Puja in Tirupati — Pandit Booking',
     metaDescription:
       'Book Venkateswara puja with pandits in Tirupati. Govinda Govinda chanting, archana, laddu prasad. Authentic Tirumala ritual.',
     deity: 'Lord Venkateswara (Balaji)',
@@ -261,7 +261,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Haridwar',
     puja: 'ganga-aarti',
     pujadisplay: 'Ganga Aarti',
-    metaTitle: 'Ganga Aarti in Haridwar — Pandit Sponsorship | Darshya',
+    metaTitle: 'Ganga Aarti in Haridwar — Pandit Sponsorship',
     metaDescription:
       'Sponsor Ganga Aarti at Har-ki-Pauri, Haridwar. Pandit chants Ganga Stotram, performs diya offering on your behalf. Video proof.',
     deity: 'Ganga Mata',
@@ -307,7 +307,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Ujjain',
     puja: 'mahakaleshwar-bhasma-aarti',
     pujadisplay: 'Mahakaleshwar Bhasma Aarti',
-    metaTitle: 'Mahakaleshwar Bhasma Aarti, Ujjain — Booking | Darshya',
+    metaTitle: 'Mahakaleshwar Bhasma Aarti, Ujjain — Booking',
     metaDescription:
       'Book Mahakaleshwar Bhasma Aarti seva in Ujjain. The pre-dawn 4 AM ritual where sacred ash is offered to the Jyotirlinga. Pandit coordination.',
     deity: 'Lord Mahakaleshwar (Shiva, Lord of Time)',
@@ -353,7 +353,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Ayodhya',
     puja: 'ram-puja',
     pujadisplay: 'Ram Puja',
-    metaTitle: 'Ram Puja in Ayodhya — Pandit Booking | Darshya',
+    metaTitle: 'Ram Puja in Ayodhya — Pandit Booking',
     metaDescription:
       'Book Ram Puja at Ayodhya Ram Janmabhoomi with Vedic pandits. Sundarkand path, Ramraksha stotra, archana at Sri Ram Mandir. Video proof.',
     deity: 'Lord Sri Ram, Sita, Lakshman, Hanuman',
@@ -399,7 +399,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Vrindavan',
     puja: 'krishna-puja',
     pujadisplay: 'Krishna Puja',
-    metaTitle: 'Krishna Puja in Vrindavan — Pandit Booking | Darshya',
+    metaTitle: 'Krishna Puja in Vrindavan — Pandit Booking',
     metaDescription:
       'Book Krishna puja in Vrindavan at Banke Bihari, ISKCON, or Radha Raman. Pandits, abhishek with panchamrit, makhan-mishri prasad. Video proof.',
     deity: 'Lord Krishna (as Banke Bihari/Radha-Krishna)',
@@ -445,7 +445,7 @@ export const CITY_PUJAS: CityPuja[] = [
     citydisplay: 'Kashi',
     puja: 'maha-mrityunjaya',
     pujadisplay: 'Maha Mrityunjaya Japa',
-    metaTitle: 'Maha Mrityunjaya in Kashi — Pandit Booking | Darshya',
+    metaTitle: 'Maha Mrityunjaya in Kashi — Pandit Booking',
     metaDescription:
       'Book Maha Mrityunjaya Mantra japa in Kashi. 1.25 lakh chants by Vedic pandits at Kashi Vishwanath. Healing, longevity, liberation. Video proof.',
     deity: 'Lord Shiva (as Mrityunjaya — Conqueror of Death)',

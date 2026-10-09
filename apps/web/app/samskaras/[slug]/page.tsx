@@ -7,6 +7,8 @@ import { SAMSKARAS, samskaraSlugs, getSamskara, STAGE_LABELS } from '../../../li
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -168,6 +170,7 @@ export default async function SamskaraPage({ params }: { params: Promise<{ slug:
           ))}
         </div>
       </section>
+<EnrichedAbout name={s.name} data={ENRICHMENT.samskaras[s.slug]} />
       {detailCta({
         routePrefix: 'samskaras',
         subject: s.name,

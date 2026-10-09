@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { render, screen } from '@testing-library/react';
@@ -131,6 +131,10 @@ describe('HN-11 — /blog itself is gated out of navigation, not removed', () =>
   });
 
   it('renders an honest empty state for a direct visitor', async () => {
+    // Posts are published in-bundle now; the empty state is what a visitor sees
+    // when none are, so force that case.
+    vi.resetModules();
+    vi.doMock('../content/blog/published', () => ({ PUBLISHED_POSTS: [] }));
     const { default: BlogPage } = await import('../app/blog/page');
     const ui = await BlogPage();
     render(ui);

@@ -21,6 +21,9 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
+
+// These tests exercise the GitHub-fed path with nothing published in-bundle.
+vi.mock('../content/blog/published', () => ({ PUBLISHED_POSTS: [] }));
 import { listBlogPosts } from '../lib/blog-posts';
 
 afterEach(() => {

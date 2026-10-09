@@ -3,7 +3,10 @@ import { HAS_PUJA_MATERIALS_PROMISE } from '../../../../lib/launch-gates';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CITY_PUJAS, CITY_PUJA_SLUGS, getCityPuja } from '../../../../lib/city-pujas';
+import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { getCatalogueSlugs } from '../../../../lib/puja-catalogue';
+import { resolveContentPujas } from '../../../../lib/puja-link';
 
 // NOTE: no `runtime = 'edge'` — forbidden under @opennextjs/cloudflare (Node
 // runtime only, via nodejs_compat). revalidate=86400 keeps ISR (daily regen);
@@ -39,7 +42,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: cp.metaTitle,
+      title: `${cp.metaTitle} | Darshya`,
       description: cp.metaDescription,
       url: canonical,
       type: 'website',
@@ -78,6 +81,17 @@ export default async function CityPujaPage({ params }: Params) {
     },
   };
 
+  const bookableSlug = resolveContentPujas([cp.puja], await getCatalogueSlugs())[0];
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: cp.faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
+
   const breadcrumbLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -100,6 +114,11 @@ export default async function CityPujaPage({ params }: Params) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
+
       <nav aria-label="Breadcrumb" className="text-sm text-surface-600 mb-4">
         <Link href="/" className="hover:text-saffron-700">Home</Link>
         <span className="mx-2">›</span>
@@ -112,12 +131,24 @@ export default async function CityPujaPage({ params }: Params) {
 
       <header className="mb-6">
         <h1 className={`${H1.catalogue} mb-3`}>
-          {cp.pujadisplay} in {cp.citydisplay} — Book Pandits | Darshya
+          {cp.pujadisplay} in {cp.citydisplay}: Book Online
         </h1>
         <p className="text-base text-surface-700">
-          Authentic {cp.deity} worship performed in {cp.citydisplay} by Vedic pandits.
+          {cp.deity} worship, booked online for {cp.citydisplay}.
           Video proof of the puja; prasad delivery is optional.
         </p>
+        {bookableSlug ? (
+          <Link
+            href={`/pujas/${bookableSlug}`}
+            className={buttonClass('primary', 'md', 'mt-4 inline-flex')}
+          >
+            Book {cp.pujadisplay}
+          </Link>
+        ) : (
+          <Link href="/pujas" className="mt-4 inline-block text-sm font-semibold text-saffron-700 underline">
+            Browse all pujas
+          </Link>
+        )}
       </header>
 
       <figure className="mb-6">
@@ -139,8 +170,8 @@ export default async function CityPujaPage({ params }: Params) {
         <h2 className="text-2xl font-semibold text-surface-900 mb-3">
           Why perform it in {cp.citydisplay}?
         </h2>
-        <p className="text-surface-700">{cp.templeContext} The puja is conducted at{' '}
-          <strong>{cp.templeName}</strong> by our affiliated Vedic pandits.</p>
+        <p className="text-surface-700">{cp.templeContext} A well-known temple for this puja in{' '}
+          {cp.citydisplay} is <strong>{cp.templeName}</strong>.</p>
       </section>
 
       <section className="mb-8">
@@ -166,7 +197,7 @@ export default async function CityPujaPage({ params }: Params) {
           What&rsquo;s in a Darshya booking
         </h2>
         <ul className="list-disc pl-6 text-surface-700 space-y-1">
-          <li>Vedic pandit with authentic Sanskrit chanting</li>
+          <li>A pandit performs the puja</li>
           {HAS_PUJA_MATERIALS_PROMISE && <li>All samagri (offerings) — no extra shopping required</li>}
           <li>Video recording of the puja, delivered to your booking page after the ceremony</li>
           <li>Optional prasad delivery (flat add-on); no delivery date is promised</li>
@@ -181,8 +212,7 @@ export default async function CityPujaPage({ params }: Params) {
           ${cp.priceUsd} (NRI / international)
         </p>
         <p className="text-surface-700">
-          Upgrades available at checkout (additional pandits, extended japa count, in-person seating,
-          home-visit). Your booking page shows the schedule confirmation.
+          Optional upgrades are shown at checkout where available. Your booking page shows the schedule confirmation.
         </p>
       </section>
 
@@ -207,8 +237,8 @@ export default async function CityPujaPage({ params }: Params) {
             </Link>
           </li>
           <li>
-            <Link href={`/temples/${cp.city}`} className="text-indigo-700 underline hover:text-indigo-900">
-              {cp.templeName}
+            <Link href={`/city/${cp.city}`} className="text-indigo-700 underline hover:text-indigo-900">
+              Temples and pujas in {cp.citydisplay}
             </Link>
           </li>
           <li>
