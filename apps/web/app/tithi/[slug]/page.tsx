@@ -6,6 +6,8 @@ import { TITHIS, getTithiBySlug } from '../../../lib/tithis';
 import { detailCta } from '../../../lib/detail-route-cta';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
@@ -171,6 +173,7 @@ export default async function TithiDetailPage({ params }: { params: Promise<{ sl
           )}
         </div>
       </section>
+<EnrichedAbout name={tithi.name} data={ENRICHMENT.tithis[tithi.slug]} />
       {detailCta({
         routePrefix: 'tithi',
         subject: tithi.name,

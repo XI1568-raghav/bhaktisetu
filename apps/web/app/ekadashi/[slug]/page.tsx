@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { getEkadashi, EKADASHIS } from '../../../lib/ekadashis';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 const BASE_URL = 'https://darshya.online';
 
@@ -169,6 +171,7 @@ export default async function EkadashiDetailPage({ params }: { params: Promise<{
      </div>
     </section>
 
+<EnrichedAbout name={e.name} data={ENRICHMENT.ekadashis[e.slug]} />
     <section className="mx-auto max-w-4xl px-4 pb-12 sm:px-6">
      <div className="rounded-2xl border-2 border-saffron-300 bg-gradient-to-br from-saffron-50 to-amber-50 p-6 text-center">
       <p className="font-serif text-lg text-gray-900">Want {e.name} vrata guided by a qualified pandit?</p>

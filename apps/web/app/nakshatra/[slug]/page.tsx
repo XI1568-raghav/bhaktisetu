@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { NAKSHATRAS, nakshatraSlugs, getNakshatra } from '../../../lib/nakshatras';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -205,6 +207,7 @@ export default async function NakshatraDetail({
         </Link>
       </section>
 
+<EnrichedAbout name={n.name} data={ENRICHMENT.nakshatras[n.slug]} />
       <nav className="flex items-center justify-between gap-3 pt-6 border-t border-surface-200">
         {prev ? (
           <Link

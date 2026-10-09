@@ -14,6 +14,8 @@ import { canonicalTempleSlug } from '../../../lib/temple-slug';
 import { CITY_PUJAS } from '../../../lib/city-pujas';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 import { resolveContentPujas, pujaLinkLabel, BROWSE_PUJAS_HREF } from '../../../lib/puja-link';
+import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
+import { ENRICHMENT } from '../../../lib/enrich';
 
 export const dynamicParams = false;
 export const revalidate = 3600;
@@ -254,6 +256,7 @@ export default async function CityPage({ params }: Params) {
         </div>
       </section>
 
+<EnrichedAbout name={c.name} data={ENRICHMENT.cities[c.slug]} />
       <footer className="border-t border-surface-200 pt-6 text-sm text-surface-600">
         <p className="mb-2">
           <strong>Booking from outside {c.name}?</strong> Darshya pandits perform pujas at the named temple on your behalf with mandatory video proof. Prasad delivery is an optional flat add-on; we do not promise a delivery date or destination.
