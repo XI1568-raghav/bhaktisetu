@@ -542,6 +542,34 @@ describe('PaymentService.processRefund — RV-12 partial refunds + cancellation 
     razorpayRefundMock.mockResolvedValue({ id: 'rfnd_test_1' });
   });
 
+  // Opening a Razorpay order is where the devotee's checkout died with the
+  // generic "Failed to create booking order": the SDK rejects with a plain
+  // object that has no `message`. It must surface as a typed, safe error and
+  // must not leave a half-written Payment row.
+  it('turns a gateway rejection into a PaymentGatewayError that hides the gateway text', async () => {
+    const service = await loadLiveService();
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'b1', bookingNumber: 'BS-20261011-0KSXU', userId: 'u1', status: 'pending_payment',
+      priceAmount: new Prisma.Decimal(1151), currency: 'INR',
+    } as never);
+    prismaMock.payment.findFirst.mockResolvedValue(null as never);
+    razorpayOrderCreateMock.mockRejectedValue({ statusCode: 401, error: { code: 'BAD_REQUEST_ERROR', description: 'Authentication failed' } });
+
+    const err = await service.createRazorpayOrder('b1', 'u1').catch((e: unknown) => e);
+
+    expect((err as Error).name).toBe('PaymentGatewayError');
+    expect((err as { code: string }).code).toBe('PAYMENT_GATEWAY_UNAVAILABLE');
+    expect((err as Error).message).toMatch(/booking is saved and nothing has been charged/);
+    expect((err as Error).message).not.toMatch(/Authentication|401/);
+    expect(prismaMock.payment.create).not.toHaveBeenCalled();
+    // the operator log carries the gateway's own reason, and no key material
+    const logged = errSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(logged).toMatch(/Authentication failed/);
+    expect(logged).not.toMatch(/rzp_live_unit_test|secret_unit_test/);
+    errSpy.mockRestore();
+  });
+
   // ── Ledger reversal on refund (2026-08-12, P0) ──────────────────────────
   //
   // There are TWO refund rails. refund.service reversed the provider ledger
