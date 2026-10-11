@@ -16,7 +16,7 @@ import {
   DEVOTEE_CANCEL_CUTOFF_HOURS,
   devoteeCancelAllowed as cancellationAllowed,
 } from '../services/cancellation.service.js';
-import { paymentService } from '../services/payment.service.js';
+import { paymentService, PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
@@ -2144,7 +2144,24 @@ export async function bookingRoutes(server: FastifyInstance) {
         // 4. Create the Razorpay order. In demo mode (no RAZORPAY_KEY_ID)
         // payment.service returns a synthetic order_demo_* id and the web
         // page falls back to its demo-payment button.
-        const order = await paymentService.createRazorpayOrder(booking.id, userId);
+        let order: Awaited<ReturnType<typeof paymentService.createRazorpayOrder>>;
+        try {
+          order = await paymentService.createRazorpayOrder(booking.id, userId);
+        } catch (gatewayError) {
+          // The booking row exists (pending_payment) and the gateway refused the
+          // order. Answer 503 with the booking's identity so the wizard can send
+          // the devotee to /bookings/pay instead of a dead end, and re-trying
+          // the same request reuses this hold rather than minting a second one.
+          if (gatewayError instanceof PaymentGatewayError) {
+            return reply.status(503).send({
+              error: PAYMENT_GATEWAY_USER_MESSAGE,
+              code: gatewayError.code,
+              bookingId: booking.id,
+              bookingNumber: booking.bookingNumber,
+            });
+          }
+          throw gatewayError;
+        }
 
         return reply.status(201).send({
           orderId: booking.id,

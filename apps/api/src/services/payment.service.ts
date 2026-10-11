@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE, describeGatewayFailure } from '../lib/payment-gateway-error.js';
+export { PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE, describeGatewayFailure };
 import { platformRateOf } from '../lib/commission-math.js';
 import { writeTemplePayoutOnConfirm } from './temple-payout.service.js';
 // P0 #S-04 (2026-07-09): the store path never wrote commissions, so store
@@ -814,16 +816,26 @@ export class PaymentService {
     // 2. Create Razorpay order (amount in paise)
     const amountInPaise = Math.round(Number(booking.priceAmount) * 100);
 
-    const razorpayOrder = await razorpay.orders.create({
-      amount: amountInPaise,
-      currency: booking.currency,
-      receipt: booking.bookingNumber,
-      notes: {
-        bookingId: booking.id,
-        bookingNumber: booking.bookingNumber,
-        userId,
-      },
-    });
+    let razorpayOrder: { id: string };
+    try {
+      razorpayOrder = await razorpay.orders.create({
+        amount: amountInPaise,
+        currency: booking.currency,
+        receipt: booking.bookingNumber,
+        notes: {
+          bookingId: booking.id,
+          bookingNumber: booking.bookingNumber,
+          userId,
+        },
+      });
+    } catch (err) {
+      const f = describeGatewayFailure(err);
+      console.error(
+        '[payment.service] razorpay.orders.create failed',
+        JSON.stringify({ bookingNumber: booking.bookingNumber, amountInPaise, currency: booking.currency, gatewayStatus: f.status, gatewayCode: f.code, gatewayReason: f.reason }),
+      );
+      throw new PaymentGatewayError(PAYMENT_GATEWAY_USER_MESSAGE, f.status, f.code, f.reason);
+    }
 
     // 3. Persist Payment record
     const payment = await prisma.payment.create({
