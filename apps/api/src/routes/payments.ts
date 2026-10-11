@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import crypto from 'node:crypto';
-import { paymentService } from '../services/payment.service.js';
+import { paymentService, PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE } from '../services/payment.service.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { checkAndRecord } from '../lib/webhook-idempotency.js';
 
@@ -56,6 +56,9 @@ export async function paymentRoutes(server: FastifyInstance) {
         }
         if (error.message?.includes('not authorized')) {
           return reply.status(403).send({ error: error.message });
+        }
+        if (error instanceof PaymentGatewayError) {
+          return reply.status(503).send({ error: PAYMENT_GATEWAY_USER_MESSAGE, code: error.code, bookingId: (request.body as { bookingId?: string } | undefined)?.bookingId });
         }
         server.log.error(error, 'Failed to create payment order');
         return reply.status(400).send({

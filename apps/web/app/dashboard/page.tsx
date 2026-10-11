@@ -23,6 +23,7 @@ import AuthGuard from '../../components/AuthGuard';
 import PujaRecommendationWidget from '../../components/PujaRecommendationWidget';
 import DevoteeTodaySection from '../../components/dashboard/DevoteeTodaySection';
 import { useAuth } from '../../lib/auth-context';
+import { PendingBookingActions } from '../../components/bookings/PendingBookingActions';
 import {
  API_BASE_URL,
  DATA_FETCH_TIMEOUT_MS,
@@ -355,6 +356,7 @@ function DashboardContent() {
  </p>
  )}
  <p className="text-xs text-surface-400 mt-1">#{booking.bookingNumber}</p>
+ <PendingBookingActions bookingId={booking.id} status={booking.status} />
  </div>
  ))}
  </div>

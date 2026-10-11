@@ -537,6 +537,9 @@ function PujaBookingInner() {
  // Step 4 / Success
  const [paymentLoading, setPaymentLoading] = useState(false);
  const [paymentError, setPaymentError] = useState('');
+ // Set when the gateway refused to open an order AFTER the booking row was
+ // written: the booking exists and can be paid from /bookings/pay.
+ const [savedBookingId, setSavedBookingId] = useState('');
  const [bookingSuccess, setBookingSuccess] = useState(false);
  // P0 #PBO-16 (2026-07-09): in-flight create-order guard. paymentLoading is
  // state (async re-render) so a rapid double-click before the spinner paints
@@ -903,6 +906,7 @@ function PujaBookingInner() {
 
  setPaymentLoading(true);
  setPaymentError('');
+ setSavedBookingId('');
 
  try {
  // Step 1: Create order on backend. If this fails (network, 4xx, 5xx,
@@ -962,6 +966,11 @@ function PujaBookingInner() {
  )
  : 'Network error reaching the booking service. Check your connection and try again.';
  setPaymentError(message);
+ // The gateway refused after the booking was saved: say so and offer to pay it.
+ if (apiErrorCode(failureBody) === 'PAYMENT_GATEWAY_UNAVAILABLE') {
+ const savedId = (failureBody as { bookingId?: unknown } | null)?.bookingId;
+ if (typeof savedId === 'string' && savedId) setSavedBookingId(savedId);
+ }
  setPaymentLoading(false);
  creatingOrderRef.current = false;
  // A slot that filled up is recoverable IN PAGE: drop the dead slot, send
@@ -2516,8 +2525,16 @@ function PujaBookingInner() {
  <div className="mb-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
  <div>
- <p className="font-medium">Payment Failed</p>
+ <p className="font-medium">{savedBookingId ? 'We could not open the payment page' : 'Payment Failed'}</p>
  <p>{paymentError}</p>
+ {savedBookingId && (
+ <a
+ href={`/bookings/pay?id=${encodeURIComponent(savedBookingId)}`}
+ className="mt-2 inline-block font-semibold text-red-800 underline"
+ >
+ Try payment again for this booking
+ </a>
+ )}
  </div>
  </div>
  )}
