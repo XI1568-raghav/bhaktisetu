@@ -31,7 +31,7 @@ const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 export const metadata: Metadata = {
   title: 'Canada NRI — Live Puja Booking & Darshan from India',
   description:
-    'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at temples in India. Live darshan, donation receipts. Canadian cards are accepted and billed in INR; NRI pricing is 2.5x the domestic price.',
+    'Built for Indo-Canadian devotees in Toronto, Vancouver, Brampton, Mississauga, Surrey, Calgary. Book pujas at temples in India. Live darshan, donation receipts. Billed in INR (UPI, Indian cards, net banking); NRI pricing is 2.5x the domestic price.',
   alternates: {
     canonical: 'https://darshya.online/nri/ca',
     languages: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Canada NRI — Darshya',
     description:
-      'Indo-Canadian devotional super-app. Pujas at India temples, live darshan, AI Pandit. Canadian cards billed in INR.',
+      'Indo-Canadian devotional super-app. Pujas at India temples, live darshan, AI Pandit. Billed in INR.',
     url: 'https://darshya.online/nri/ca',
     type: 'website',
     locale: 'en_CA',
@@ -137,7 +137,7 @@ const founderFaqs = [
   },
   {
     q: 'Is checkout in CAD?',
-    a: 'A native CAD rail is on the roadmap. Today Canadian cards are accepted through Razorpay and billed in INR, so your bank applies its own conversion rate and any foreign-transaction fee.',
+    a: 'A native CAD rail is on the roadmap. Today bookings are billed in INR and paid with UPI, an Indian card or net banking. Cards issued outside India and PayPal are coming soon.',
   },
   {
     q: 'Are these temples real?',
@@ -155,7 +155,7 @@ const founderFaqs = [
   },
   {
     q: 'When does this go live for payments?',
-    a: 'A native CAD rail is an open activation gate (U2). This page goes live first to seed organic discovery + Toronto/Vancouver SEO; in the meantime Canadian cards can already book, billed in INR.',
+    a: 'A native CAD rail is an open activation gate (U2). This page goes live first to seed organic discovery + Toronto/Vancouver SEO; in the meantime bookings are billed in INR (UPI, Indian cards, net banking).',
   },
 ];
 

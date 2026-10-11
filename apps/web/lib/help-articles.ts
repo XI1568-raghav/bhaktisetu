@@ -124,7 +124,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
 2. **Pick a temple** from the list — every temple shows its trust score and location. We do not publish pandit credentials: no credential verification, reference check or probation runs today, and a pandit is paid only once Aadhaar-based KYC is on file, which is a payout gate rather than a public credential check.
 3. **Choose date & time** that fits the auspicious window for your puja (we show muhurat suggestions).
 4. **Fill sankalp** — your full name, gotra (lineage), and the intent (e.g., health, prosperity, ancestral blessing).
-5. **Pay securely** via Razorpay. International cards are accepted; billing is in INR.
+5. **Pay securely** via Razorpay. Pay in INR with UPI, an Indian card or net banking; cards issued outside India and PayPal are coming soon.
 6. **Receive confirmation** by email and WhatsApp with your booking number (format: BS-YYYYMMDD-XXXXX).
 7. **Video proof** is uploaded within ${VIDEO_PROOF_HOURS} hours of the ritual completing.
 

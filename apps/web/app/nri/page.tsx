@@ -119,7 +119,7 @@ const benefits = [
   {
     icon: Globe2,
     title: 'NRI price: shown in USD, billed in INR',
-    body: 'Booking as an NRI costs 2.5 times the domestic price of the same puja, with or without this tier. The price is shown in US dollars next to the exact rupee amount; the order itself is charged in rupees and your bank converts at its own rate.',
+    body: 'Booking as an NRI costs 2.5 times the domestic price of the same puja, with or without this tier. The price is shown in US dollars next to the exact rupee amount; the order itself is charged in rupees and paid with UPI, an Indian card or net banking. Cards issued outside India and PayPal are coming soon.',
   },
   {
     icon: Calendar,
@@ -234,8 +234,8 @@ const faqs = [
   {
     q: 'What about taxes?',
     a: HAS_80G
-      ? 'The subscription is billed in INR and is not tax-deductible in your country (it is a service, not a donation). Your card issuer may add a foreign-transaction fee. Donations made through Darshya remain 80G-eligible in India separately.'
-      : 'The subscription is billed in INR and is not tax-deductible in your country (it is a service, not a donation). Your card issuer may add a foreign-transaction fee. Donations are separate, but they are not deductible either today: Darshya does not hold a Section 80G registration, so the receipt you get is proof of payment rather than a tax instrument. We will say so here the day the registration is issued.',
+      ? 'The subscription is billed in INR and is not tax-deductible in your country (it is a service, not a donation). Donations made through Darshya remain 80G-eligible in India separately.'
+      : 'The subscription is billed in INR and is not tax-deductible in your country (it is a service, not a donation). Donations are separate, but they are not deductible either today: Darshya does not hold a Section 80G registration, so the receipt you get is proof of payment rather than a tax instrument. We will say so here the day the registration is issued.',
   },
   {
     q: 'Do I need to be NRI to subscribe?',

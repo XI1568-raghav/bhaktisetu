@@ -128,7 +128,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     faqs: [
       {
         q: 'Is NRI pricing different from Indian pricing?',
-        a: "Yes. Booking as an NRI costs 2.5 times the domestic price of the same puja. The flat platform fee and the optional prasad-delivery fee are the same for everyone and are not multiplied. We show the NRI price in US dollars, but Razorpay charges the order in INR, and the booking screen shows the exact rupee amount next to the dollar figure. Your bank applies its own conversion rate and any foreign-transaction fee. You can switch any page back to rupees.",
+        a: "Yes. Booking as an NRI costs 2.5 times the domestic price of the same puja. The flat platform fee and the optional prasad-delivery fee are the same for everyone and are not multiplied. We show the NRI price in US dollars, but Razorpay charges the order in INR, and the booking screen shows the exact rupee amount next to the dollar figure. You pay with UPI, an Indian card or net banking; cards issued outside India and PayPal are coming soon. You can switch any page back to rupees.",
       },
       // TC-01 — gated on the same owner flag as every other 80G surface.
       HAS_80G
@@ -142,7 +142,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
           },
       {
         q: 'What payment methods do you accept?',
-        a: 'Domestic India: UPI (all apps), credit/debit cards (Visa/Mastercard/RuPay), net banking, wallets (Paytm, PhonePe, Amazon Pay). NRI users: international credit cards where your card issuer and Razorpay allow international payments, billed in INR. Cash on Delivery is offered only at store checkout, not for puja bookings; we do not accept cheques.',
+        a: 'Domestic India: UPI (all apps), credit/debit cards (Visa/Mastercard/RuPay), net banking, wallets (Paytm, PhonePe, Amazon Pay). NRI users: the same methods, billed in INR (cards issued outside India and PayPal are coming soon). Cash on Delivery is offered only at store checkout, not for puja bookings; we do not accept cheques.',
       },
       {
         q: 'How long do refunds take?',

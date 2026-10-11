@@ -189,9 +189,9 @@ export default function TermsPage() {
  </li>
  <li>
  Accepted payment methods include UPI, debit cards, credit
- cards, net banking, and digital wallets. International cards
- are accepted and billed in INR; your bank applies its own
- conversion rate and any foreign-transaction fee.
+ cards, net banking, and digital wallets. Payments are billed in
+ INR. Cards issued outside India are not accepted at the
+ moment.
  </li>
  <li>
  Platform commission is a uniform <strong>20%</strong> of the

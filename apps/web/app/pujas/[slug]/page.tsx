@@ -298,7 +298,7 @@ export default async function PujaDetailPage({
    },
    {
      q: `Can I book ${puja.name} from outside India?`,
-     a: 'Yes. Bookings are billed in INR; an international card works where your card issuer allows international payments.',
+     a: 'Yes, if you can pay in Indian rupees with UPI, an Indian card or net banking. Cards issued outside India and PayPal are coming soon.',
    },
  ];
  const faqJsonLd = {
