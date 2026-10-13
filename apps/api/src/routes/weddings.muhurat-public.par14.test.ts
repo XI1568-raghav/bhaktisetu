@@ -156,7 +156,7 @@ describe('PAR-14 — POST /weddings/muhurat is reachable signed out', () => {
 describe('PAR-14 — the compute loop is capped by rate, per IP', () => {
   it('serves 10 anonymous requests then 429s the 11th from the same IP', async () => {
     const { app } = await buildApp({ withLimiter: true });
-    const ip = { 'cf-connecting-ip': '203.0.113.7' };
+    const ip = { 'cf-connecting-ip': '203.0.113.7', 'x-forwarded-for': '173.245.48.9' };
 
     const codes: number[] = [];
     for (let i = 0; i < 11; i += 1) {
@@ -171,12 +171,12 @@ describe('PAR-14 — the compute loop is capped by rate, per IP', () => {
 
   it('buckets by IP, so one flooder does not lock out every other visitor', async () => {
     const { app } = await buildApp({ withLimiter: true });
-    const flooder = { 'cf-connecting-ip': '203.0.113.7' };
+    const flooder = { 'cf-connecting-ip': '203.0.113.7', 'x-forwarded-for': '173.245.48.9' };
 
     for (let i = 0; i < 11; i += 1) await post(app, flooder);
     expect((await post(app, flooder)).statusCode).toBe(429);
 
-    const bystander = await post(app, { 'cf-connecting-ip': '198.51.100.4' });
+    const bystander = await post(app, { 'cf-connecting-ip': '198.51.100.4', 'x-forwarded-for': '173.245.48.9' });
     expect(bystander.statusCode).toBe(200);
 
     await app.close();

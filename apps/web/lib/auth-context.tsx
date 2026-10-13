@@ -999,9 +999,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  };
  }
 
- const result = await readJsonBody<{ session?: AuthSession; user?: AuthUser }>(res);
- if (!result?.session || !result?.user) {
+ const result = await readJsonBody<{ session?: AuthSession | null; user?: AuthUser }>(res);
+ if (!result?.user) {
  return { success: false, message: UNREADABLE_RESPONSE_MESSAGE };
+ }
+ // Email confirmation ON: the account exists but there is no session yet. That
+ // is a success the signup page already knows how to present (no accessToken),
+ // not an unreadable reply.
+ if (!result.session) {
+ return { success: true, message: 'Account created. Please confirm your email to sign in.' };
  }
 
  const newSession: AuthSession = result.session;

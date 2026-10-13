@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { SQL_UTC_NOW } from '../lib/sql-time.js';
 
@@ -38,6 +39,7 @@ type RatingRow = {
 
 export async function ratingRoutes(server: FastifyInstance) {
   server.addHook('preHandler', authenticateUser);
+  server.addHook('preHandler', uuidParamGuard('conversationId', 'userId'));
 
   // Devotee writes a rating. Idempotent: re-posting overwrites prior
   // value (devotee may revise within the conversation).

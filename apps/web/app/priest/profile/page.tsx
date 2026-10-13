@@ -28,6 +28,7 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import AuthGuard from '../../../components/AuthGuard';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { UserFacingError, userFacingMessage } from '../../../lib/friendly-error';
+import { placeLabel } from '../../../lib/place-label';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -486,7 +487,7 @@ function PriestProfilePageContent() {
  </div>
  <div className="flex-1 min-w-0">
  <p className="text-sm font-medium text-surface-800">{temple.name}</p>
- <p className="text-xs text-surface-500">{temple.city}, {temple.state}</p>
+ <p className="text-xs text-surface-500">{placeLabel(temple.city, temple.state)}</p>
  </div>
  {temple.isPrimary && (
  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-saffron-100 text-saffron-700">

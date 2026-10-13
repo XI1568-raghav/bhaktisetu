@@ -15,7 +15,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
-import { fetchWithBudget, isNetworkFailure, type FetchBudgetError } from '../../lib/fetch-budget';
+import { isNetworkFailure, type FetchBudgetError } from '../../lib/fetch-budget';
 import {
   selectPujaBookingDetail,
   resolveSlotAvailability,
@@ -40,6 +40,7 @@ import {
 import { webOrigin, hostOf } from '../../lib/web-origin';
 import { formatInr } from '../../lib/api-contracts';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { authedFetch } from '../../lib/authed-fetch';
 
 /**
  * PAR-15 — booking a puja, in the app.
@@ -145,7 +146,7 @@ export default function PujaBookScreen() {
     }
     (async () => {
       try {
-        const res = await fetchWithBudget(
+        const res = await authedFetch(
           `${apiBase()}/api/v1/pujas/types/${encodeURIComponent(slug)}`,
         );
         const body: unknown = await res.json().catch(() => null);
@@ -193,7 +194,7 @@ export default function PujaBookScreen() {
       try {
         // The `templeId` query name is a legacy misnomer — the handler resolves
         // an OFFERING id first (bookings.ts:1807), which is what we send.
-        const res = await fetchWithBudget(
+        const res = await authedFetch(
           `${apiBase()}/api/v1/bookings/slots?templeId=${encodeURIComponent(
             offering.offeringId,
           )}&date=${encodeURIComponent(date)}`,
@@ -275,7 +276,7 @@ export default function PujaBookScreen() {
 
     setSubmitting(true);
     try {
-      const res = await fetchWithBudget(`${apiBase()}/api/v1/bookings/book`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/bookings/book`, {
         method: 'POST',
         // PAR-15 (3). The recoverable failures on this screen — SLOT_UNAVAILABLE
         // and TEMPLE_NOT_VERIFIED — are the two the API translates, and the

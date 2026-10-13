@@ -55,4 +55,24 @@ describe('POST /onboarding/provider — pandit payload', () => {
     expect(res.statusCode).toBe(400);
     expect(upsertProviderProfile).not.toHaveBeenCalled();
   });
+
+  it('rejects a document key that climbs out of the caller\'s own prefix', async () => {
+    const res = await post({
+      experience: 3, pricePerPuja: 500,
+      aadhaarDocKey: 'kyc-document/user-uuid-1/../victim-id/1-a.pdf',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(upsertProviderProfile).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-http photoUrl (javascript: was stored as the avatar)', async () => {
+    const res = await post({ experience: 3, pricePerPuja: 500, photoUrl: 'javascript:alert(1)' });
+    expect(res.statusCode).toBe(400);
+    expect(upsertProviderProfile).not.toHaveBeenCalled();
+  });
+
+  it('still accepts an https photoUrl', async () => {
+    const res = await post({ experience: 3, pricePerPuja: 500, photoUrl: 'https://cdn.example.com/p.png' });
+    expect(res.statusCode).toBe(200);
+  });
 });

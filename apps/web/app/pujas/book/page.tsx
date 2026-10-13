@@ -90,6 +90,7 @@ import {
 } from '../../../lib/delivery-address';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { placeLabel } from '../../../lib/place-label';
 
 // PostHog never throws on capture, but its singleton may not be initialised
 // in preview/demo (no NEXT_PUBLIC_POSTHOG_KEY). We gate every call on
@@ -1665,7 +1666,7 @@ function PujaBookingInner() {
  </div>
  <p className="mb-2 flex items-center gap-1 text-xs text-surface-500">
  <MapPin className="h-3 w-3" />
- {temple.templeCity}, {temple.templeState}
+ {placeLabel(temple.templeCity, temple.templeState)}
  </p>
  <div className="flex items-center justify-between">
  <span className="text-lg font-bold text-saffron-600">
@@ -2189,7 +2190,7 @@ function PujaBookingInner() {
  label="Location"
  value={
  selectedTemple
- ? `${selectedTemple.templeCity}, ${selectedTemple.templeState}`
+ ? placeLabel(selectedTemple.templeCity, selectedTemple.templeState) || '-'
  : '-'
  }
  />

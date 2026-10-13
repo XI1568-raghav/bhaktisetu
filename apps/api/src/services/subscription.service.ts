@@ -1,4 +1,5 @@
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
@@ -602,7 +603,7 @@ export class SubscriptionService {
       shortUrl = null;
       status = 'created';
     } else {
-      const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+      const rzp = withGatewayTimeout(new Razorpay({ key_id: keyId, key_secret: keySecret }));
       const subRes = await (rzp as unknown as {
         subscriptions: {
           create: (opts: Record<string, unknown>) => Promise<{
@@ -717,7 +718,7 @@ export class SubscriptionService {
 
     if (rzpSubId && !isDemo) {
       try {
-        const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+        const rzp = withGatewayTimeout(new Razorpay({ key_id: keyId, key_secret: keySecret }));
         await (rzp as unknown as {
           subscriptions: { cancel: (id: string, cancelAtCycleEnd?: 0 | 1) => Promise<unknown> };
         }).subscriptions.cancel(rzpSubId, 1);

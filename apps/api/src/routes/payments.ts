@@ -3,7 +3,7 @@ import { z } from 'zod';
 import crypto from 'node:crypto';
 import { paymentService, PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE } from '../services/payment.service.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
-import { checkAndRecord } from '../lib/webhook-idempotency.js';
+import { checkAndRecord, forgetEvent } from '../lib/webhook-idempotency.js';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────────
 
@@ -133,6 +133,12 @@ export async function paymentRoutes(server: FastifyInstance) {
         }
         if (error.message?.includes('PENDING')) {
           return reply.status(409).send({ error: error.message });
+        }
+        if (error instanceof PaymentGatewayError) {
+          return reply.status(503).send({
+            error: 'We could not open the payment page right now. Your order is saved and nothing has been charged. Please try again in a few minutes.',
+            code: error.code,
+          });
         }
         server.log.error(error, 'Failed to create store-order payment');
         return reply.status(400).send({
@@ -294,9 +300,18 @@ export async function paymentRoutes(server: FastifyInstance) {
           });
         }
         server.log.error(error, 'Failed to process webhook');
-        // Always return 200 to Razorpay to prevent retries for server errors
-        // that aren't signature-related
-        return reply.status(200).send({
+        // QA 2026-10-13: the dedupe row is written BEFORE processing, so a
+        // transient failure (DB blip) used to answer 200 and leave the row
+        // behind: Razorpay never retried, and a manual redelivery was dropped as
+        // a "duplicate" - a captured payment silently never confirmed. Release
+        // the row and answer 500 so Razorpay's own retry (up to 24h) lands.
+        const evId = (request.headers['x-razorpay-event-id'] as string | undefined) ?? '';
+        const rb = (request as unknown as { rawBody?: string }).rawBody;
+        await forgetEvent(
+          'razorpay',
+          evId || crypto.createHash('sha256').update(rb ?? JSON.stringify(request.body ?? {})).digest('hex'),
+        );
+        return reply.status(500).send({
           handled: false,
           error: 'Internal processing error',
         });

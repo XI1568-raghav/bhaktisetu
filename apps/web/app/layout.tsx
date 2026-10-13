@@ -990,7 +990,6 @@ export default function RootLayout({
      A locale switch is a click. Nothing is lost by not speculating on it,
      and the guard keeps working for the browser-level prefetches it can
      still see. */}
- <span className="text-surface-600">Read in:</span>
  <FooterLanguageLinks />
  </div>
  {/* I18N-01: these six links advertise a localized product on every page.

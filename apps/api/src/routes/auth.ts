@@ -1,9 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { createSupabaseClient } from '../lib/supabase.js';
+import { createSupabaseClient, supabaseAdmin } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
+import { isAuthUpstreamDown, AUTH_UNAVAILABLE_BODY } from '../lib/auth-upstream.js';
 
 // Tighter rate limit for unauthenticated credential/OTP endpoints — the
 // global 100/min is too generous for OTP-spam and credential-stuffing.
@@ -110,24 +111,26 @@ const googleSyncSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().max(254, 'Invalid email address').email('Invalid email address'),
+  password: z.string().min(1, 'Password is required').max(256, 'Password is too long'),
 });
 
 const signupSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().max(254, 'Invalid email address').email('Invalid email address'),
   // 8 chars minimum + at least one letter and one digit. Long enough to
   // resist trivial brute force, simple enough to remember without a
   // password manager. Special-character requirements are skipped on
   // purpose: NIST 800-63B says they don't help and harm UX.
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
+    // 72 is bcrypt's input limit (GoTrue rejects longer); fail here with a clear message.
+    .max(72, 'Password must be at most 72 characters')
     .regex(/[A-Za-z]/, 'Password must contain at least one letter')
     .regex(/[0-9]/, 'Password must contain at least one digit'),
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().optional(),
+  fullName: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be at most 100 characters'),
+  phone: z.string().max(20, 'Phone number is too long').optional(),
   role: z.enum(['devotee', 'pandit', 'store_owner', 'astrologer', 'wellness_instructor', 'gaushala_manager', 'temple_manager']).optional().default('devotee'),
-  city: z.string().optional(),
+  city: z.string().max(100, 'City is too long').optional(),
 });
 
 // ─── Demo accounts registry (in-memory fallback when DB unavailable) ─────────
@@ -275,6 +278,27 @@ function bucketOk(map: Map<string, Bucket>, key: string, max: number): boolean {
   return true;
 }
 
+// Wrong-code attempts per phone. A 6-digit code is only 10^6 wide, so the per-IP
+// limit alone is not enough: a rotating-IP attacker gets unlimited guesses at one
+// number. Five misses burns the window for that phone; a correct code resets it.
+const OTP_VERIFY_FAIL_MAX = 5;
+const otpVerifyFails = new Map<string, Bucket>();
+function otpVerifyLocked(phone: string): boolean {
+  const b = otpVerifyFails.get(phone);
+  if (!b) return false;
+  if (Date.now() - b.windowStart > AUTH_RATE_WINDOW_MS) { otpVerifyFails.delete(phone); return false; }
+  return b.count >= OTP_VERIFY_FAIL_MAX;
+}
+function noteOtpVerifyFailure(phone: string): void {
+  const b = otpVerifyFails.get(phone);
+  if (!b || Date.now() - b.windowStart > AUTH_RATE_WINDOW_MS) otpVerifyFails.set(phone, { count: 1, windowStart: Date.now() });
+  else b.count += 1;
+}
+function isUpstreamRateLimited(error: unknown): boolean {
+  const e = error as { status?: number; code?: string } | null;
+  return !!e && (e.status === 429 || /rate_limit/.test(e.code ?? ''));
+}
+
 // ─── Session-cookie helpers ────────────────────────────────────────────────────
 // P1 #4 — additive HttpOnly cookies alongside the JSON Bearer response.
 // Mobile keeps reading the JSON body; web transitions to cookies. Both flows
@@ -291,6 +315,8 @@ const REFRESH_COOKIE = 'darshya_refresh';
 const SESSION_TTL_SECONDS = 60 * 60;                 // 1 hour
 const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;        // 7 days
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
+// Mirrors GoTrue's GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL (default 10s).
+const REFRESH_REUSE_WINDOW_MS = Number(process.env.REFRESH_REUSE_WINDOW_SEC ?? 10) * 1000;
 
 /**
  * SEC-02, prerequisite — the flags every auth cookie carries.
@@ -453,6 +479,13 @@ export async function authRoutes(server: FastifyInstance) {
 
     if (error) {
       request.log.error(error, 'Supabase signInWithOtp failed');
+      if (isAuthUpstreamDown(error)) return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
+      if (isUpstreamRateLimited(error)) {
+        return reply.code(429).send({
+          error: 'TooManyRequests',
+          message: error.message || 'Too many OTP requests. Please wait a minute and try again.',
+        });
+      }
       return reply.code(400).send({
         error: 'OTP Error',
         message: error.message || 'Failed to send OTP. Please try again.',
@@ -483,6 +516,12 @@ export async function authRoutes(server: FastifyInstance) {
 
     const phone = normalizePhone(parseResult.data.phone);
     const { token } = parseResult.data;
+    if (otpVerifyLocked(phone)) {
+      return reply.code(429).send({
+        error: 'TooManyRequests',
+        message: 'Too many incorrect codes for this number. Request a new OTP in 15 minutes.',
+      });
+    }
     const supabase = createSupabaseClient();
 
     const { data, error } = await supabase.auth.verifyOtp({
@@ -491,8 +530,19 @@ export async function authRoutes(server: FastifyInstance) {
       type: 'sms',
     });
 
+    if (error && isAuthUpstreamDown(error)) {
+      request.log.error(error, 'Supabase verifyOtp unreachable');
+      return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
+    }
     if (error || !data.session) {
       request.log.error(error, 'Supabase verifyOtp failed');
+      if (isUpstreamRateLimited(error)) {
+        return reply.code(429).send({
+          error: 'TooManyRequests',
+          message: 'Too many attempts. Please wait a few minutes and try again.',
+        });
+      }
+      noteOtpVerifyFailure(phone);
       return reply.code(400).send({
         error: 'Verification Error',
         message: error?.message || 'Invalid or expired OTP. Please try again.',
@@ -500,6 +550,7 @@ export async function authRoutes(server: FastifyInstance) {
     }
 
     const { session, user: supabaseUser } = data;
+    otpVerifyFails.delete(phone);
 
     // Upsert user in Prisma database (create on first login)
     let dbUser;
@@ -524,12 +575,27 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
+    // AUTH-08: same suspension gate as /login and /google/sync; the OTP door had none.
+    if (dbUser.blocked) {
+      return reply.code(403).send({
+        error: 'Forbidden',
+        message: dbUser.blockedReason
+          ? `Account suspended: ${dbUser.blockedReason}`
+          : 'This account has been suspended.',
+      });
+    }
+
     const role = await getPrimaryRoleForUser(dbUser.id, dbUser.email);
 
     // A-009: cover this freshly-minted refresh token with the replay ledger.
     // Keyed on the Supabase auth user id, matching what /refresh and /logout
     // write — a phone-first user's Prisma id differs from their Supabase id.
     await seedRefreshTokenJti(request, session.refresh_token, supabaseUser?.id);
+
+    // The web keeps no JS-readable token (SEC-02): the httpOnly cookies are what
+    // bring this browser back on the next load. Without them an OTP sign-in
+    // lasted exactly until the first reload.
+    setAuthCookies(reply, session.access_token, session.refresh_token);
 
     return reply.code(200).send({
       success: true,
@@ -599,14 +665,21 @@ export async function authRoutes(server: FastifyInstance) {
     let replayDetected = false;
     let knownUserId: string | null = null;
     try {
-      const existing = await prisma.$queryRawUnsafe<Array<{ user_id: string; used_at: Date | null; expires_at: Date }>>(
-        `SELECT user_id, used_at, expires_at FROM refresh_token_jtis WHERE jti = $1 LIMIT 1`,
+      const existing = await prisma.$queryRawUnsafe<Array<{ user_id: string; used_at: Date | null; expires_at: Date; used_age_ms: number | null }>>(
+        `SELECT user_id, used_at, expires_at,
+                (EXTRACT(EPOCH FROM (now() - used_at)) * 1000)::float8 AS used_age_ms
+           FROM refresh_token_jtis WHERE jti = $1 LIMIT 1`,
         jti,
       );
       const row = existing[0];
       if (row) {
         knownUserId = row.user_id;
-        if (row.used_at !== null) {
+        // Two tabs (or a retry after a dropped response) present the same token
+        // within seconds of each other. GoTrue tolerates that for its refresh
+        // reuse interval and answers with the already-minted child token, so a
+        // used JTI inside that window is a race, not a theft: let Supabase decide.
+        // Only a reuse OUTSIDE the window revokes the family.
+        if (row.used_at !== null && !(row.used_age_ms !== null && row.used_age_ms >= 0 && row.used_age_ms <= REFRESH_REUSE_WINDOW_MS)) {
           replayDetected = true;
         }
         if (new Date(row.expires_at).getTime() < Date.now()) {
@@ -619,9 +692,10 @@ export async function authRoutes(server: FastifyInstance) {
 
     if (replayDetected && knownUserId) {
       // Family-wide revoke — mark all of this user's JTIs as used.
+      // Backdated on purpose: a revoke stamp inside the reuse window would read as a harmless race.
       try {
         await prisma.$executeRawUnsafe(
-          `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+          `UPDATE refresh_token_jtis SET used_at = now() - interval '1 hour' WHERE user_id = $1::uuid AND used_at IS NULL`,
           knownUserId,
         );
       } catch (err) {
@@ -639,11 +713,36 @@ export async function authRoutes(server: FastifyInstance) {
       refresh_token: refreshToken,
     });
 
+    // A 401 here makes every client sign the user out; an outage is not a verdict.
+    if (error && isAuthUpstreamDown(error)) {
+      return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
+    }
     if (error || !data.session) {
       return reply.code(401).send({
         error: 'Refresh Error',
         message: error?.message || 'Failed to refresh session. Please log in again.',
       });
+    }
+
+    // A suspended account must not keep minting sessions. Every API call it makes
+    // is refused anyway, but a live refresh loop keeps a Supabase session (and the
+    // web's "session expired" sign-in loop) alive for someone who has been cut off.
+    try {
+      const refreshedUser = await prisma.user.findUnique({
+        where: { id: data.session.user.id },
+        select: { blocked: true, blockedReason: true },
+      });
+      if (refreshedUser?.blocked) {
+        clearAuthCookies(reply);
+        return reply.code(403).send({
+          error: 'Forbidden',
+          message: refreshedUser.blockedReason
+            ? `Account suspended: ${refreshedUser.blockedReason}`
+            : 'This account has been suspended.',
+        });
+      }
+    } catch (err) {
+      request.log.warn({ err }, 'refresh: blocked-user check failed; allowing refresh');
     }
 
     // Mark old JTI used + insert new JTI for the new refresh token.
@@ -856,19 +955,33 @@ export async function authRoutes(server: FastifyInstance) {
     } else if (typeof accessToken === 'string') {
       // Supabase JWT path: call signOut + best-effort revoke any JTIs for the user.
       const supabase = createSupabaseClient(accessToken);
-      if (scope === 'global') {
-        const { error } = await supabase.auth.signOut();
+      // Resolve the user BEFORE signing out: once GoTrue drops the session its
+      // access token stops resolving and there would be no id to revoke by.
+      let userId: string | undefined;
+      try {
+        const claims = await supabase.auth.getUser(accessToken);
+        userId = claims.data?.user?.id;
+      } catch (err) {
+        request.log.warn({ err }, 'logout user lookup failed (non-critical)');
+      }
+      // `supabase.auth.signOut()` on a client built with a Bearer header is a
+      // silent no-op: supabase-js signs out the client's OWN in-memory session,
+      // and this server-side client never holds one, so no request reached
+      // GoTrue and the refresh token stayed valid there after "sign out". The
+      // admin call takes the user's JWT and sends the scoped logout for real.
+      try {
+        const { error } = await supabaseAdmin.auth.admin.signOut(accessToken, scope);
         if (error) {
           request.log.warn(error, 'Supabase signOut error (non-critical)');
         }
+      } catch (err) {
+        request.log.warn({ err }, 'Supabase signOut threw (non-critical)');
       }
-      // Best-effort: revoke active JTIs for this user from extracted sub claim.
+      // Best-effort: revoke active JTIs for this user from the resolved id.
       try {
-        const claims = await supabase.auth.getUser(accessToken);
-        const userId = claims.data?.user?.id;
         if (userId && scope === 'global') {
           await prisma.$executeRawUnsafe(
-            `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+            `UPDATE refresh_token_jtis SET used_at = now() - interval '1 hour' WHERE user_id = $1::uuid AND used_at IS NULL`,
             userId,
           );
           // AUTH-11: a password user may ALSO hold a magic-link session on
@@ -1078,6 +1191,19 @@ export async function authRoutes(server: FastifyInstance) {
         password,
       });
 
+      if (authError && isAuthUpstreamDown(authError)) {
+        request.log.error({ err: authError, event: 'login_auth_unreachable' }, 'sign-in could not reach auth');
+        return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
+      }
+      // GoTrue only answers email_not_confirmed AFTER the password checked out,
+      // so naming it leaks nothing — and without it a correct password reads as
+      // "Invalid email or password" with no hint that the inbox is the fix.
+      if (authError && (authError as { code?: string }).code === 'email_not_confirmed') {
+        return reply.code(403).send({
+          error: 'EmailNotConfirmed',
+          message: 'Please confirm your email address before signing in. Check your inbox for the confirmation link.',
+        });
+      }
       if (authError || !authData.session) {
         return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email or password' });
       }
@@ -1210,6 +1336,19 @@ export async function authRoutes(server: FastifyInstance) {
         password,
       });
 
+      if (authError && isAuthUpstreamDown(authError)) {
+        request.log.error({ err: authError, event: 'signup_auth_unreachable' }, 'signup could not reach auth');
+        return reply.code(503).send({
+          error: 'ServiceUnavailable',
+          message: 'Sign-up is temporarily unavailable. Please try again in a moment.',
+        });
+      }
+      if (authError && ((authError as { code?: string }).code === 'user_already_exists' || /already registered/i.test(authError.message))) {
+        return reply.code(409).send({
+          error: 'Conflict',
+          message: 'An account with this email already exists',
+        });
+      }
       if (authError) {
         return reply.code(400).send({
           error: 'SignupFailed',
@@ -1337,6 +1476,8 @@ export async function authRoutes(server: FastifyInstance) {
       // token is minted by /login, which seeds it there.
       if (authData.session) {
         await seedRefreshTokenJti(request, authData.session.refresh_token, authData.session.user?.id);
+        // Same cookies /login issues — a signed-up user must survive a reload.
+        setAuthCookies(reply, authData.session.access_token, authData.session.refresh_token);
       }
 
       // A-015 (2026-08-10): first-admin bootstrap. `admin` is not in the signup
@@ -1522,6 +1663,8 @@ export async function authRoutes(server: FastifyInstance) {
       // A-009: the Google refresh token reaches our /refresh endpoint like any
       // other, so it needs a ledger row to fall under the family-revoke net.
       await seedRefreshTokenJti(request, refreshToken, supaUser.id);
+
+      setAuthCookies(reply, accessToken, refreshToken);
 
       return reply.send({
         session: {

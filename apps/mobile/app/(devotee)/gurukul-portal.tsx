@@ -17,8 +17,9 @@ import { router } from 'expo-router';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { apiBase } from '../../lib/api';
-import { fetchWithBudget, readErrorMessage, failureMessage } from '../../lib/fetch-budget';
+import { readErrorMessage, failureMessage } from '../../lib/fetch-budget';
 import { applicationStatusLabel } from '../../lib/enum-labels';
+import { authedFetch } from '../../lib/authed-fetch';
 
 /**
  * The gurukul owner's console, reached from Profile.
@@ -99,8 +100,8 @@ export default function GurukulPortalScreen() {
     try {
       const headers = { Authorization: `Bearer ${session.accessToken}` };
       const [gRes, aRes] = await Promise.all([
-        fetchWithBudget(`${apiBase()}/api/v1/gurukuls/mine/list`, { headers }),
-        fetchWithBudget(`${apiBase()}/api/v1/gurukul-portal/applications`, { headers }),
+        authedFetch(`${apiBase()}/api/v1/gurukuls/mine/list`, { headers }),
+        authedFetch(`${apiBase()}/api/v1/gurukul-portal/applications`, { headers }),
       ]);
       if (!gRes.ok) throw new Error(await readErrorMessage(gRes, `Gurukuls: HTTP ${gRes.status}`));
       if (!aRes.ok) {
@@ -133,7 +134,7 @@ export default function GurukulPortalScreen() {
     if (!session?.accessToken) return;
     setBusyId(id);
     try {
-      const res = await fetchWithBudget(
+      const res = await authedFetch(
         `${apiBase()}/api/v1/gurukul-portal/applications/${id}`,
         {
           method: 'PATCH',

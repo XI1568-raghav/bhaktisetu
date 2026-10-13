@@ -34,7 +34,7 @@
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { apiFetch, apiBase } from './api';
-import { fetchWithBudget } from './fetch-budget';
+import { authedFetch } from './authed-fetch';
 
 export const wellnessKeys = {
   /** Shared by the hub, the catalogue and both instructor screens. */
@@ -81,7 +81,7 @@ export function useWellnessClass(
     queryKey: wellnessKeys.class(id ?? ''),
     enabled: typeof id === 'string' && id.length > 0,
     queryFn: async () => {
-      const res = await fetchWithBudget(`${apiBase()}/api/v1/wellness/sessions/${encodeURIComponent(id!)}`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/wellness/sessions/${encodeURIComponent(id!)}`, {
         headers: authHeaders(token),
       });
       if (res.status === 404) throw new Error('This class could not be found.');
@@ -98,7 +98,7 @@ export function useMyWellnessEnrolments(token: string | undefined, options?: Raw
     queryKey: wellnessKeys.myEnrolments,
     enabled: typeof token === 'string' && token.length > 0,
     queryFn: async () => {
-      const res = await fetchWithBudget(`${apiBase()}/api/v1/wellness/enrollments/mine`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/wellness/enrollments/mine`, {
         headers: authHeaders(token),
       });
       if (!res.ok) throw new Error(`We couldn't load your classes (${res.status}).`);
@@ -118,7 +118,7 @@ export async function postWellnessEnrol(
   sessionId: string,
   token: string | undefined,
 ): Promise<{ status: number; body: unknown }> {
-  const res = await fetchWithBudget(
+  const res = await authedFetch(
     `${apiBase()}/api/v1/wellness/sessions/${encodeURIComponent(sessionId)}/enroll`,
     {
       method: 'POST',

@@ -96,6 +96,7 @@ async function fetchOrderPayments(
     const res = await fetch(`${RAZORPAY_BASE}/orders/${encodeURIComponent(orderId)}/payments`, {
       method: 'GET',
       headers: { authorization: auth, 'content-type': 'application/json' },
+      signal: AbortSignal.timeout(Number(process.env.RAZORPAY_TIMEOUT_MS) || 15_000),
     });
     if (!res.ok) return null;
     const json = (await res.json().catch(() => null)) as { items?: unknown } | null;

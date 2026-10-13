@@ -17,12 +17,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCart, useUserAddresses, useRemoveCartItem, storeQueryKeys } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
-import { fetchWithBudget, isNetworkFailure, type FetchBudgetError } from '../../lib/fetch-budget';
+import { isNetworkFailure, type FetchBudgetError } from '../../lib/fetch-budget';
 import { webOrigin, hostOf } from '../../lib/web-origin';
 import { IN_APP_WEB_ROUTE } from '../../lib/in-app-web';
 import { selectCart, selectAddresses, formatInr, type AddressRow } from '../../lib/api-contracts';
 import { computeStoreOrderTotals, orderLinesFor } from './cart';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { authedFetch } from '../../lib/authed-fetch';
 
 /**
  * Store checkout — the screen that was missing, and the reason no store order
@@ -239,7 +240,7 @@ export default function CheckoutScreen() {
       idempotencyKeyRef.current = `mob-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
     }
     try {
-      const res = await fetchWithBudget(`${apiBase()}/api/v1/store/orders`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/store/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

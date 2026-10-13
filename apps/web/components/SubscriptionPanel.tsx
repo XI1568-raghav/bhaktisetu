@@ -106,7 +106,7 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  setActionPlanId(plan.id);
  try {
  if (plan.priceMonthly <= 0) {
- const claimed = await subscribeToFreePlan(session?.accessToken, plan.id);
+ const claimed = await subscribeToFreePlan(session?.accessToken, plan.id, role);
  if (!claimed) {
  setActionError(
  'We could not confirm the plan change with our server. Please reload and check your current plan before trying again.',

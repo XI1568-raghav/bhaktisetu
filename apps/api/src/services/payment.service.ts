@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE, describeGatewayFailure } from '../lib/payment-gateway-error.js';
@@ -42,6 +43,7 @@ import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { isUniqueViolation } from './wallet.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
 // the booking webhook path never reaches them; these helpers let
 // processWebhookEvent resolve + finalize a donation when no Payment matches.
@@ -80,7 +82,7 @@ async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
     await sendEmail({
       to: booking.user.email,
       subject: `Darshya payment receipt — ${booking.bookingNumber}`,
-      html: `<p>Namaste ${booking.user.fullName},</p><p>Your payment receipt for booking <strong>${booking.bookingNumber}</strong> is attached.</p>`,
+      html: `<p>Namaste ${esc(booking.user.fullName)},</p><p>Your payment receipt for booking <strong>${esc(booking.bookingNumber)}</strong> is attached.</p>`,
       text: `Payment receipt for booking ${booking.bookingNumber} attached.`,
       attachments: [
         { filename: `receipt-${booking.bookingNumber}.pdf`, content: pdf },
@@ -266,11 +268,28 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
     const items: Item[] = Array.isArray(order.items)
       ? (order.items as unknown as Item[])
       : [];
+    // QA 2026-10-13: order.items stores {productId, qty, priceAtPurchase} with no
+    // name, so the receipt's description column printed the product's UUID; and
+    // the delivery fee (part of totalAmountInr) was not itemised, so the lines did
+    // not add up to the printed total. Resolve names, and add the fee as its own line.
+    const ids = items.map((it) => it.productId).filter((id): id is string => typeof id === 'string');
+    let named: Array<{ id: string; name: string }> = [];
+    if (ids.length) {
+      try {
+        named = (await prisma.storeProduct.findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })) ?? [];
+      } catch {
+        named = [];
+      }
+    }
+    const nameById = new Map(named.map((p) => [p.id, p.name]));
     const lineItems = items.map((it) => ({
-      name: typeof it.name === 'string' ? it.name : (it.productId ?? 'Item'),
+      name: typeof it.name === 'string' ? it.name : (nameById.get(it.productId ?? '') ?? 'Store item'),
       qty: Number(it.qty ?? 1),
       priceInr: Number(it.priceAtPurchase ?? 0),
     }));
+    const itemsSubtotal = lineItems.reduce((a, l) => a + l.qty * l.priceInr, 0);
+    const feeInr = Math.round((Number(order.totalAmountInr) - itemsSubtotal) * 100) / 100;
+    if (feeInr > 0) lineItems.push({ name: 'Delivery & handling', qty: 1, priceInr: feeInr });
     const addr = order.shippingAddress as unknown as Addr;
     const addrStr = [
       addr?.fullName, addr?.line1, addr?.line2, addr?.city,
@@ -288,7 +307,7 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
     await sendEmail({
       to: order.user.email,
       subject: `Darshya payment receipt — ${order.orderNumber}`,
-      html: `<p>Namaste ${order.user.fullName},</p><p>Your payment receipt for order <strong>${order.orderNumber}</strong> is attached.</p>`,
+      html: `<p>Namaste ${esc(order.user.fullName)},</p><p>Your payment receipt for order <strong>${esc(order.orderNumber)}</strong> is attached.</p>`,
       text: `Payment receipt for order ${order.orderNumber} attached.`,
       attachments: [
         { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
@@ -692,7 +711,7 @@ const razorpay = isDemoPayment
         return () => ({ id: 'demo' });
       },
     }) as unknown as Razorpay)
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 // Exported for the recurring-subscription mandate flow (razorpay.subscriptions
 // .create) so that feature shares the single demo/live client instead of
@@ -992,6 +1011,12 @@ export class PaymentService {
     // hour later arrives HERE, into a slot that may already have been resold.
     // Read before the transaction so it never runs inside one.
     const oversold = shouldConfirm ? await slotOversoldNote(payment.booking) : null;
+    // QA 2026-10-13: money for a booking that was cancelled while the checkout
+    // was still open. The gateway really took it, so the capture is recorded,
+    // but the booking must not silently stay cancelled with nobody owed a
+    // refund: flag it for the admin queue and tell the devotee plainly.
+    const paidAfterCancel =
+      payment.booking.status === 'cancelled' || payment.booking.status === 'refunded';
     // OPS-05: carried OUT of the transaction so the mint can be recorded after
     // it commits. Nothing may be logged from inside — a failed audit INSERT in
     // the caller's tx aborts it in Postgres and rolls back the capture.
@@ -1016,7 +1041,15 @@ export class PaymentService {
                   needsAdminReview: 'slot-capacity',
                 },
               }
-            : {}),
+            : paidAfterCancel
+              ? {
+                  metadata: {
+                    ...((payment.metadata as Record<string, unknown>) ?? {}),
+                    paidAfterCancelAt: new Date().toISOString(),
+                    needsAdminReview: 'paid-after-cancel',
+                  },
+                }
+              : {}),
         },
       });
       if (shouldConfirm) {
@@ -1034,6 +1067,17 @@ export class PaymentService {
         await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
       }
     });
+
+    if (paidAfterCancel) {
+      console.error(
+        '[payment.service] paid_after_cancel',
+        JSON.stringify({ bookingId: payment.booking!.id, paymentId: payment.id, gatewayOrderId: razorpayOrderId }),
+      );
+      throw new Error(
+        'Your payment was received, but this booking had already been cancelled. ' +
+          'We have flagged it for a full refund. You do not need to pay again.',
+      );
+    }
 
     if (oversold) {
       // Same marker string the webhook rail emits, so one grep
@@ -1178,16 +1222,26 @@ export class PaymentService {
     }
 
     const amountInPaise = Math.round(Number(order.totalAmountInr) * 100);
-    const razorpayOrder = await razorpay.orders.create({
-      amount: amountInPaise,
-      currency: 'INR',
-      receipt: order.orderNumber,
-      notes: {
-        storeOrderId: order.id,
-        orderNumber: order.orderNumber,
-        userId,
-      },
-    });
+    let razorpayOrder: { id: string };
+    try {
+      razorpayOrder = await razorpay.orders.create({
+        amount: amountInPaise,
+        currency: 'INR',
+        receipt: order.orderNumber,
+        notes: {
+          storeOrderId: order.id,
+          orderNumber: order.orderNumber,
+          userId,
+        },
+      });
+    } catch (err) {
+      const f = describeGatewayFailure(err);
+      console.error(
+        '[payment.service] razorpay.orders.create failed (store)',
+        JSON.stringify({ orderNumber: order.orderNumber, gatewayStatus: f.status, gatewayCode: f.code, gatewayReason: f.reason }),
+      );
+      throw new PaymentGatewayError(PAYMENT_GATEWAY_USER_MESSAGE, f.status, f.code, f.reason);
+    }
 
     const payment = await prisma.payment.create({
       data: {
@@ -1569,6 +1623,33 @@ export class PaymentService {
           },
         });
 
+        // QA 2026-10-13: a signed capture whose amount differs from the order we
+        // opened (a Rs 1 capture against a Rs 1,151 booking) used to confirm the
+        // booking and mint the provider's full earning. Razorpay itself charges
+        // exactly the order amount, so a mismatch means a wrong/forged event or a
+        // reconciliation problem: record the capture for the admin queue, confirm
+        // nothing, and let the operator decide.
+        if (payment && paymentEntity.amount != null) {
+          const expectedPaise = Math.round(Number(payment.amount) * 100);
+          if (Number(paymentEntity.amount) !== expectedPaise) {
+            console.error(
+              '[payment][amount-mismatch] webhook capture refused',
+              JSON.stringify({ paymentId: payment.id, orderId: paymentEntity.order_id, expectedPaise, gotPaise: paymentEntity.amount }),
+            );
+            await prisma.payment.update({
+              where: { id: payment.id },
+              data: {
+                metadata: {
+                  ...((payment.metadata as Record<string, unknown>) ?? {}),
+                  needsAdminReview: 'amount-mismatch',
+                  amountMismatch: { expectedPaise, gotPaise: Number(paymentEntity.amount), gatewayPaymentId: paymentEntity.id ?? null },
+                },
+              },
+            });
+            return { handled: false, event };
+          }
+        }
+
         if (payment) {
           const storeOrder =
             (payment as { storeOrders?: StoreOrderConfirmRow[] }).storeOrders?.[0] ?? null;
@@ -1816,6 +1897,21 @@ export class PaymentService {
           // client-verify leaves money captured but the donation stuck
           // 'created' with no receipt. Idempotent via finalizeDonationReceipt.
           const donation = await findDonationByOrderId(paymentEntity.order_id);
+          if (
+            donation &&
+            donation.status !== 'paid' &&
+            paymentEntity.amount != null &&
+            Math.round(Number(donation.amount_inr) * 100) !== Number(paymentEntity.amount)
+          ) {
+            // Same refusal as the booking rail: a capture that is not for the
+            // amount we opened must not mint a receipt (an 80G receipt for the
+            // wrong rupee figure is a tax document).
+            console.error(
+              '[payment][amount-mismatch] donation webhook capture refused',
+              JSON.stringify({ donationId: donation.id, orderId: paymentEntity.order_id, gotPaise: paymentEntity.amount }),
+            );
+            return { handled: false, event };
+          }
           if (donation && donation.status !== 'paid') {
             await finalizeDonationReceipt(donation, paymentEntity.id, undefined);
           } else if (!donation) {
@@ -1839,9 +1935,25 @@ export class PaymentService {
                 paymentEntity.order_id,
               );
               if (row) {
+                if (
+                  paymentEntity.amount != null &&
+                  Math.round(Number(row.amount_inr) * 100) !== Number(paymentEntity.amount)
+                ) {
+                  console.error(
+                    '[payment][amount-mismatch] consultation webhook capture refused',
+                    JSON.stringify({ consultationId: row.id, gotPaise: paymentEntity.amount }),
+                  );
+                  return { handled: false, event };
+                }
                 await consult.finalizeConsultationPaymentFromWebhook(
                   row,
                   paymentEntity.id,
+                );
+              } else {
+                const wellness = await import('../routes/wellness-sessions.js');
+                await wellness.finalizeWellnessEnrollmentFromWebhook(
+                  paymentEntity.order_id,
+                  paymentEntity.amount ?? null,
                 );
               }
             } catch (err) {
@@ -1862,6 +1974,16 @@ export class PaymentService {
         const payment = await prisma.payment.findFirst({
           where: { gatewayOrderId: paymentEntity.order_id },
         });
+
+        // QA 2026-10-13: a devotee may attempt the same order several times and
+        // Razorpay does not order webhook delivery. A `payment.failed` for an
+        // earlier attempt arriving after the successful capture used to flip the
+        // captured Payment to 'failed' and overwrite its gateway payment id, so
+        // the refund rail then found "no captured payment" for money we hold.
+        const settled = ['captured', 'refunded', 'partially_refunded'];
+        if (payment && settled.includes(payment.status)) {
+          return { handled: true, event, duplicate: true };
+        }
 
         if (payment) {
           await prisma.payment.update({

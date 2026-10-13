@@ -61,6 +61,7 @@ describe('store orders — India-only delivery', () => {
       ...args.data,
     }));
     prismaMock.storeProduct.update.mockResolvedValue({} as any);
+    prismaMock.storeProduct.updateMany.mockResolvedValue({ count: 1 } as any);
     mockProduct(500);
   });
 

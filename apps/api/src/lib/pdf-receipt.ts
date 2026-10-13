@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { pdfSafe } from './pdf-safe-text.js';
 
 /**
  * Generates an 80G tax receipt PDF for gaushala donations. Uses pdf-lib
@@ -85,7 +86,9 @@ function amountInWords(amount: number): string {
   return parts.join(' ').trim() + ' Rupees Only';
 }
 
-export async function generate80GReceipt(data: ReceiptData): Promise<Buffer> {
+export async function generate80GReceipt(input: ReceiptData): Promise<Buffer> {
+  // Helvetica is WinAnsi-only; see pdf-safe-text.ts (Devanagari names used to throw).
+  const data = pdfSafe(input);
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([595, 842]); // A4
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -128,7 +131,7 @@ export async function generate80GReceipt(data: ReceiptData): Promise<Buffer> {
   y -= 22;
   page.drawText('Received from', { x: left, y, size: 9, font, color: MUTED });
   y -= 14;
-  page.drawText(data.donorName, { x: left, y, size: 12, font: fontBold, color: TEXT });
+  page.drawText(clip(data.donorName, 64), { x: left, y, size: 12, font: fontBold, color: TEXT });
   if (data.donorPan) {
     y -= 14;
     page.drawText(`PAN: ${data.donorPan}`, { x: left, y, size: 10, font, color: TEXT });
@@ -141,7 +144,8 @@ export async function generate80GReceipt(data: ReceiptData): Promise<Buffer> {
       y -= 12;
     }
   }
-  y -= 4;
+  // The email line used to sit 4pt under the name/PAN line and overprinted it.
+  y -= data.donorAddress ? 4 : 16;
   page.drawText(`Email: ${data.donorEmail}`, { x: left, y, size: 10, font, color: MUTED });
 
   // Amount
@@ -164,7 +168,7 @@ export async function generate80GReceipt(data: ReceiptData): Promise<Buffer> {
   y -= 22;
   page.drawText('Donee organisation', { x: left, y, size: 9, font, color: MUTED });
   y -= 14;
-  page.drawText(data.gaushalaName, { x: left, y, size: 12, font: fontBold, color: TEXT });
+  page.drawText(clip(data.gaushalaName, 64), { x: left, y, size: 12, font: fontBold, color: TEXT });
   if (data.gaushala80GNumber) {
     y -= 14;
     page.drawText(`80G Registration: ${data.gaushala80GNumber}`, { x: left, y, size: 10, font, color: TEXT });
@@ -225,6 +229,11 @@ export async function generate80GReceipt(data: ReceiptData): Promise<Buffer> {
 
   const bytes = await pdf.save();
   return Buffer.from(bytes);
+}
+
+/** A name wider than the page ran off the A4 edge; clip it instead. */
+function clip(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 3)}...` : text;
 }
 
 function wrap(text: string, maxChars: number): string[] {

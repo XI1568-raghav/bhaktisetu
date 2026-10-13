@@ -108,7 +108,7 @@ export default function MahavidyasPage() {
     <section className="mx-auto max-w-5xl px-4 pt-10 sm:px-6">
      <nav className="text-xs text-gray-600">
       <Link href="/" className="hover:text-saffron-700">Home</Link> ·{' '}
-      <Link href="/devi" className="hover:text-saffron-700">Devi</Link> ·{' '}
+      <Link href="/deity" className="hover:text-saffron-700">Devi</Link> ·{' '}
       <span className="text-gray-900">Dasa Mahavidya</span>
      </nav>
 

@@ -231,11 +231,26 @@ export default function StoreAdminDashboard() {
        const ordersRes = await fetch(`${API_BASE_URL}/store/orders`, { headers });
        if (!ordersRes.ok) throw new Error(`Orders ${ordersRes.status}`);
        const ordersJson = await ordersRes.json();
-       const orders: StoreOrderApi[] = Array.isArray(ordersJson)
+       // GET /store/orders answers { data: [...] } with totalAmountInr / UPPERCASE status;
+       // this used to read only a bare array or `.orders`, so the dashboard showed 0 orders.
+       const rawOrders: any[] = Array.isArray(ordersJson)
          ? ordersJson
-         : Array.isArray(ordersJson?.orders)
-           ? ordersJson.orders
-           : [];
+         : Array.isArray(ordersJson?.data)
+           ? ordersJson.data
+           : Array.isArray(ordersJson?.orders)
+             ? ordersJson.orders
+             : [];
+       const orders: StoreOrderApi[] = rawOrders.map((o) => ({
+         ...o,
+         totalAmount: Number(o.totalAmount ?? o.totalAmountInr) || 0,
+         status: String(o.status ?? 'PENDING').toUpperCase() as StoreOrderStatus,
+         customerName: o.customerName ?? o.shippingAddress?.fullName,
+         itemsSummary:
+           o.itemsSummary ??
+           (Array.isArray(o.items)
+             ? o.items.map((i: any) => `${i.name ?? 'Item'} x${i.quantity ?? i.qty ?? 1}`).join(', ')
+             : undefined),
+       }));
 
        const agg = aggregateFromOrders(orders);
 

@@ -82,7 +82,7 @@ export default function NewTicketPage() {
  setSubmitting(true);
  try {
  const created = await createTicket(session?.accessToken, parsed.data);
- router.push(`/support/tickets/${created.id}`);
+ router.push(`/support/tickets/view?id=${created.id}`);
  } catch (err) {
  // Network/offline fallback: persist locally so the user doesn't lose work.
  const id = formatTicketId();
@@ -125,7 +125,7 @@ export default function NewTicketPage() {
  ' — saved locally.',
  );
  setSubmitting(false);
- setTimeout(() => router.push(`/support/tickets/${id}`), 600);
+ setTimeout(() => router.push(`/support/tickets/view?id=${id}`), 600);
  }
  };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '../../../lib/api-config';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RouteFallback from '../../../components/ui/RouteFallback';
@@ -7,7 +8,7 @@ import RouteFallback from '../../../components/ui/RouteFallback';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { userFacingMessage } from '../../../lib/friendly-error';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
+
 
 interface Stats {
   rank: number;
@@ -44,7 +45,7 @@ function WelcomeContent() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(`${API_URL}/api/v1/waitlist/stats?code=${encodeURIComponent(code)}`, {
+        const res = await fetch(`${API_BASE_URL}/waitlist/stats?code=${encodeURIComponent(code)}`, {
           cache: 'no-store',
         });
         if (!res.ok) {

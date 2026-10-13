@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { useAuth } from "../../../lib/auth-context";
-import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
 
 interface PlanStatus {
   plan: "free" | "pro" | "enterprise";
@@ -14,7 +14,8 @@ interface PlanStatus {
   atLimit: boolean;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// Prefix-safe: API_BASE_URL already ends in /api/v1 whatever NEXT_PUBLIC_API_URL holds.
+const API = API_BASE_URL;
 
 const TIERS = [
   { id: "free", name: "Free", price: "₹0", limit: "1 temple", features: ["Basic dashboard", "1 admin"] },
@@ -54,7 +55,7 @@ function OrgSettingsContent() {
     if (!orgId) return;
     if (authLoading) return;
     fetchWithTimeout(
-      `${API}/api/v1/orgs/${orgId}/plan-status`,
+      `${API}/orgs/${orgId}/plan-status`,
       {
         headers: {
           // Present only while a session still carries a JS-readable token

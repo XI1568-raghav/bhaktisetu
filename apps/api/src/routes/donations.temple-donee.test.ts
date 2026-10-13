@@ -84,6 +84,15 @@ describe('temple donations name a donee that exists and can be paid', () => {
     expect(donationInsert()).toBeUndefined();
   });
 
+  it('accepts a temple whose approved manager is attached by an admin link, not by name', async () => {
+    prismaMock.templeProfile.findFirst.mockResolvedValue(null);
+    prismaMock.$queryRawUnsafe.mockResolvedValue([{ ok: 1 }] as any);
+    const res = await donate();
+    expect(res.statusCode).toBe(200);
+    expect(donationInsert()).toBeDefined();
+    prismaMock.$queryRawUnsafe.mockReset();
+  });
+
   it('refuses an unverified temple even if a profile claims its name', async () => {
     prismaMock.temple.findUnique.mockResolvedValue({ id: TEMPLE_ID, name: 'QA Sheetla Mata Mandir', isVerified: false } as any);
     const res = await donate();

@@ -6,8 +6,16 @@ import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 import { writeStoreOrderCommission } from '../services/store-commission.service.js';
 import { computeStoreOrderTotals } from '../lib/store-pricing.js';
+import {
+  customerCancelStoreOrder,
+  refundStoreOrder,
+  rejectStoreOrderRefund,
+  listPendingStoreRefunds,
+  releaseOrderHolds,
+} from '../services/store-order-refund.service.js';
 
 /**
  * Persisted store order endpoints. The product/SKU catalogue still lives
@@ -35,7 +43,8 @@ const shippingAddressSchema = z.object({
   line2: z.string().nullish(),
   city: z.string().min(1),
   state: z.string().min(1),
-  pincode: z.string().min(1),
+  // QA 2026-10-13: Indian PIN = exactly 6 digits (the shipping rule is India-only, enforced below).
+  pincode: z.string().trim().regex(/^\d{6}$/, 'Enter a valid 6-digit Indian pincode.'),
   country: z.string().default('India'),
   phone: z.string().nullish(),
 }).refine((a) => ['', 'IN', 'INDIA'].includes(a.country.trim().toUpperCase()), {
@@ -70,6 +79,12 @@ const updateStatusSchema = z.object({
 });
 
 const orderIdParams = z.object({ id: z.string().uuid() });
+
+class OutOfStockError extends Error {
+  constructor(readonly productId: string) {
+    super(`Insufficient stock for ${productId}`);
+  }
+}
 
 function nextOrderNumber(): string {
   const d = new Date();
@@ -215,6 +230,10 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     const productById = new Map(products.map((p) => [p.id, p]));
     const serverItems: { productId: string; qty: number; priceAtPurchase: number; name?: string }[] = [];
     let serverTotal = 0;
+    // The same product can appear on several lines. Stock must be checked
+    // against the SUM of those lines, not each line alone — two lines of 3
+    // against a stock of 5 each passed `stock < qty` and drove stock to -1.
+    const wantedByProduct = new Map<string, number>();
     // P0 #S-11 (2026-07-09): capture the owning store for the order. A cart
     // must be single-store (mixed-store carts are unsupported) — reject if
     // items belong to different stores.
@@ -252,8 +271,10 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       if (!product.isActive) {
         return reply.code(409).send({ error: `Product no longer available: ${it.productId}` });
       }
-      if (product.stock < it.qty) {
-        return reply.code(409).send({ error: `Insufficient stock for ${it.productId} (have ${product.stock}, want ${it.qty})` });
+      const wanted = (wantedByProduct.get(it.productId) ?? 0) + it.qty;
+      wantedByProduct.set(it.productId, wanted);
+      if (product.stock < wanted) {
+        return reply.code(409).send({ error: `Insufficient stock for ${it.productId} (have ${product.stock}, want ${wanted})` });
       }
       if (product.storeProfileId) {
         if (orderStoreProfileId && orderStoreProfileId !== product.storeProfileId) {
@@ -319,14 +340,23 @@ export async function storeOrderRoutes(server: FastifyInstance) {
           statusHistory: initialHistory,
         },
       });
-      for (const it of serverItems) {
-        await tx.storeProduct.update({
-          where: { id: it.productId },
-          data: { stock: { decrement: it.qty } },
+      for (const [productId, qty] of wantedByProduct) {
+        // Conditional decrement: the stock read above is outside this
+        // transaction, so a concurrent order can have taken the last unit.
+        const dec = await tx.storeProduct.updateMany({
+          where: { id: productId, stock: { gte: qty } },
+          data: { stock: { decrement: qty } },
         });
+        if (dec.count !== 1) throw new OutOfStockError(productId);
       }
       return created;
+    }).catch((err) => {
+      if (err instanceof OutOfStockError) return err;
+      throw err;
     });
+    if (order instanceof OutOfStockError) {
+      return reply.code(409).send({ error: `Insufficient stock for ${order.productId}` });
+    }
     return reply.code(201).send({ data: serializeOrder(order) });
   });
 
@@ -447,10 +477,10 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       // payment-confirm override, not this generic endpoint.
       const ALLOWED_TRANSITIONS: Record<string, string[]> = {
         PENDING: ['CONFIRMED', 'CANCELLED'],
-        CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED'],
-        PROCESSING: ['SHIPPED', 'CANCELLED'],
-        SHIPPED: ['DELIVERED'],
-        DELIVERED: [],
+        CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED', 'REFUNDED'],
+        PROCESSING: ['SHIPPED', 'CANCELLED', 'REFUNDED'],
+        SHIPPED: ['DELIVERED', 'REFUNDED'],
+        DELIVERED: ['REFUNDED'],
         CANCELLED: [],
         REFUNDED: [],
       };
@@ -461,6 +491,22 @@ export async function storeOrderRoutes(server: FastifyInstance) {
           .send({ error: `Cannot transition order from ${order.status} to ${body.data.status}.` });
       }
 
+      // QA 2026-10-13: marking a paid online order REFUNDED here moved no money and then
+      // made the refund endpoint report "already refunded". The refund has to go through
+      // POST /orders/:id/refund (admin), which executes it.
+      if (body.data.status === 'REFUNDED' && order.paymentId) {
+        const pay = await prisma.payment.findUnique({
+          where: { id: order.paymentId },
+          select: { status: true },
+        });
+        if (pay && (pay.status === 'captured' || pay.status === 'partially_refunded')) {
+          return reply.code(409).send({
+            error: 'This order was paid online. Use the refund action (POST /orders/:id/refund) so the money is actually returned.',
+            code: 'use_refund_endpoint',
+          });
+        }
+      }
+
       const adminId = request.currentUser!.id;
       const historyEntry = {
         status: body.data.status,
@@ -469,13 +515,22 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         note: body.data.note ?? null,
       };
       const existingHistory = Array.isArray(order.statusHistory) ? order.statusHistory : [];
-      const updated = await prisma.storeOrder.update({
-        where: { id: order.id },
-        data: {
-          status: body.data.status,
-          trackingNumber: body.data.trackingNumber ?? order.trackingNumber,
-          statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
-        },
+      const toStatus = body.data.status;
+      const updated = await prisma.$transaction(async (tx) => {
+        const row = await tx.storeOrder.update({
+          where: { id: order.id },
+          data: {
+            status: toStatus,
+            trackingNumber: body.data.trackingNumber ?? order.trackingNumber,
+            statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
+          },
+        });
+        if (toStatus === 'CANCELLED' || toStatus === 'REFUNDED') {
+          // The owner's earning on an order that will not be fulfilled must not
+          // stay withdrawable; a cancelled order's units go back on the shelf.
+          await releaseOrderHolds(tx, order, toStatus);
+        }
+        return row;
       });
       // Store-owner revamp: write the Commission row when a COD/manual order is
       // confirmed (the Razorpay-verify path wrote it; COD/manual leaked).
@@ -488,6 +543,102 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       return reply.send({ data: serializeOrder(updated) });
     }
   );
+
+  // POST /orders/:id/cancel - the customer cancels their own order before it ships.
+  // Restocks, reverses the owner's pending commission and, for an order paid online,
+  // queues a refund for admin approval. Idempotent.
+  server.post('/orders/:id/cancel', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const params = orderIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
+    const body = z.object({ reason: z.string().trim().max(200).optional() }).safeParse(request.body ?? {});
+    if (!body.success) return reply.code(400).send({ error: 'Invalid request body' });
+    const order = await prisma.storeOrder.findUnique({
+      where: { id: params.data.id },
+      select: { id: true, userId: true },
+    });
+    if (!order) return reply.code(404).send({ error: 'Order not found' });
+    if (order.userId !== request.currentUser!.id) {
+      return reply.code(403).send({ error: 'Not authorized to cancel this order' });
+    }
+    const result = await customerCancelStoreOrder({
+      orderId: order.id,
+      userId: request.currentUser!.id,
+      reason: body.data.reason,
+    });
+    if (!result) return reply.code(404).send({ error: 'Order not found' });
+    if (result.outcome === 'blocked') {
+      return reply.code(409).send({ error: result.blockedReason, code: 'order_not_cancellable', status: result.status });
+    }
+    return reply.send({
+      cancelled: true,
+      alreadyCancelled: result.outcome === 'already',
+      status: result.status,
+      refundOwedInr: result.refundOwedInr,
+      refundStatus: result.paid && result.outcome === 'cancelled' ? 'pending_admin_approval' : 'none',
+      commissionReversed: result.commissionReversed,
+      note: result.paid && result.outcome === 'cancelled'
+        ? 'Order cancelled. Your refund will be processed within 5-7 business days.'
+        : 'Order cancelled.',
+    });
+  });
+
+  // GET /orders/refunds/pending - admin queue: cancelled orders paid online, not yet refunded.
+  server.get('/orders/refunds/pending', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!isAdmin(request)) return reply.code(403).send({ error: 'Admin role required' });
+    const orders = await listPendingStoreRefunds();
+    return reply.send({ data: orders.map((o) => serializeOrder(o)) });
+  });
+
+  // POST /orders/:id/refund - admin approves a refund for a PAID store order.
+  // refundType 'policy' (default): full refund only for an order cancelled before
+  // shipping; 'full' refunds any state explicitly. Partial refunds are not offered.
+  server.post('/orders/:id/refund', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!isAdmin(request)) return reply.code(403).send({ error: 'Admin role required' });
+    const params = orderIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
+    const body = z
+      .object({
+        reason: z.string().trim().max(500).optional(),
+        refundType: z.enum(['policy', 'full']).optional(),
+      })
+      .strict()
+      .safeParse(request.body ?? {});
+    if (!body.success) {
+      return reply.code(400).send({ error: 'Invalid request body', details: body.error.flatten() });
+    }
+    const result = await refundStoreOrder({
+      orderId: params.data.id,
+      adminId: request.currentUser!.id,
+      mode: body.data.refundType ?? 'policy',
+      reason: body.data.reason,
+    });
+    if (!result) return reply.code(404).send({ error: 'Order not found' });
+    if (!result.ok) {
+      return reply.code(result.httpStatus).send({ error: result.error, code: result.code });
+    }
+    return reply.send({ ok: true, refund: result });
+  });
+
+  // POST /orders/:id/refund/reject - admin declines a refund request, with a reason.
+  server.post('/orders/:id/refund/reject', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!isAdmin(request)) return reply.code(403).send({ error: 'Admin role required' });
+    const params = orderIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
+    const body = z.object({ reason: z.string().trim().min(3).max(500) }).safeParse(request.body ?? {});
+    if (!body.success) {
+      return reply.code(400).send({ error: 'A reason is required to reject a refund.' });
+    }
+    const result = await rejectStoreOrderRefund({
+      orderId: params.data.id,
+      adminId: request.currentUser!.id,
+      reason: body.data.reason,
+    });
+    if (!result) return reply.code(404).send({ error: 'Order not found' });
+    if (result.httpStatus !== 200) {
+      return reply.code(result.httpStatus).send({ error: result.error, code: result.code });
+    }
+    return reply.send({ ok: true });
+  });
 
   // POST /orders/:id/payment-confirm — flip PENDING → CONFIRMED and send invoice.
   // Admin-only manual override for QA / fulfilment ops. In production this
@@ -574,7 +725,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
           await sendEmail({
             to: order.user.email,
             subject: `Darshya payment receipt — ${order.orderNumber}`,
-            html: `<p>Namaste ${order.user.fullName},</p><p>Your payment receipt for order <strong>${order.orderNumber}</strong> is attached.</p>`,
+            html: `<p>Namaste ${esc(order.user.fullName)},</p><p>Your payment receipt for order <strong>${esc(order.orderNumber)}</strong> is attached.</p>`,
             text: `Payment receipt for order ${order.orderNumber} attached.`,
             attachments: [
               { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
@@ -589,3 +740,5 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     }
   );
 }
+
+export const __testing = { shippingAddressSchema };

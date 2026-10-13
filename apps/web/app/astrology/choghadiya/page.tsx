@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import ChoghadiyaClient from './ChoghadiyaClient';
+import { ClientOnly } from '../../../components/ClientOnly';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
@@ -110,7 +111,7 @@ export default function ChoghadiyaPage() {
     </p>
    </header>
 
-   <ChoghadiyaClient />
+   <ClientOnly fallback={<div className="min-h-[24rem]" aria-busy="true" />}><ChoghadiyaClient /></ClientOnly>
 
    <section className="mt-12">
     <h2 className="font-serif text-2xl text-gray-900">The 7 choghadiya types at a glance</h2>

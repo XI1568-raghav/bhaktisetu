@@ -44,7 +44,10 @@ export default function MyTicketsPage() {
  (async () => {
  try {
  const data = await listTickets(session?.accessToken);
- if (!cancelled) setTickets(data);
+ if (!cancelled) {
+ setTickets(data);
+ setError(null);
+ }
  } catch (err) {
  // Fall back to localStorage so offline / demo flows still render.
  if (!cancelled) {
@@ -162,7 +165,7 @@ export default function MyTicketsPage() {
  {filtered.map((t) => (
  <tr key={t.id} className="border-b border-surface-100 last:border-0 hover:bg-amber-50/40 transition-colors">
  <td className="px-4 py-3.5">
- <Link href={`/support/tickets/${t.id}`} className="block">
+ <Link href={`/support/tickets/view?id=${t.id}`} className="block">
  <div className="font-mono text-xs text-saffron-700">{t.id}</div>
  <div className="font-medium text-surface-900 mt-0.5 line-clamp-1">{t.subject}</div>
  </Link>
@@ -183,7 +186,7 @@ export default function MyTicketsPage() {
  </td>
  <td className="px-4 py-3.5">
  <Link
- href={`/support/tickets/${t.id}`}
+ href={`/support/tickets/view?id=${t.id}`}
  className="text-surface-400 hover:text-saffron-700"
  aria-label="Open"
  >

@@ -50,6 +50,7 @@ import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { bookingStatusLabel } from '../../lib/enum-labels';
+import { authedFetch } from '../../lib/authed-fetch';
 
 // ─── Views ──────────────────────────────────────────────────────────────────
 
@@ -182,7 +183,7 @@ export default function PriestBookings() {
     // unavailable')` here would become the sentence that screen shows, because
     // whichever fetcher runs first owns the cached error.
     queryFn: async () => {
-      const res = await fetch(`${apiBase()}/api/v1/priest/offers`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/priest/offers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -229,7 +230,7 @@ export default function PriestBookings() {
     setBusyId(id);
     setActionError(null);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/priest/bookings/${id}/${action}`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/priest/bookings/${id}/${action}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });

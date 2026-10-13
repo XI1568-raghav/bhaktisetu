@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import ShubhMuhuratClient from './ShubhMuhuratClient';
+import { ClientOnly } from '../../../components/ClientOnly';
 import { EVENT_OPTIONS } from '../../../lib/shubh-muhurat';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
@@ -107,7 +108,7 @@ export default function ShubhMuhuratPage() {
    </header>
 
    <div className="mt-8">
-    <ShubhMuhuratClient />
+    <ClientOnly fallback={<div className="min-h-[24rem]" aria-busy="true" />}><ShubhMuhuratClient /></ClientOnly>
    </div>
 
    <section className="mt-12">

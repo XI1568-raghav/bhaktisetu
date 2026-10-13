@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 
 /**
@@ -219,7 +220,7 @@ export async function marketplaceAdminRoutes(server: FastifyInstance) {
     return { keys: rows };
   });
 
-  server.delete<{ Params: { id: string } }>('/keys/:id', { preHandler: adminPreHandlers }, async (request) => {
+  server.delete<{ Params: { id: string } }>('/keys/:id', { preHandler: [...adminPreHandlers, uuidParamGuard('id')] }, async (request) => {
     await prisma.$executeRawUnsafe(
       `UPDATE marketplace_api_keys SET is_active = false, revoked_at = now() WHERE id = $1::uuid`,
       request.params.id,

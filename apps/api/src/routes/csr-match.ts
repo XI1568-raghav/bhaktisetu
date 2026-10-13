@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 
 /**
@@ -180,7 +181,7 @@ export async function csrMatchRoutes(server: FastifyInstance) {
 
   server.post<{ Params: { id: string }; Body: { is_active: boolean } }>(
     '/admin/:id/active',
-    { preHandler: adminPreHandlers },
+    { preHandler: [...adminPreHandlers, uuidParamGuard('id')] },
     async (request) => {
       await prisma.$executeRawUnsafe(
         `UPDATE csr_corporate_accounts SET is_active = $1 WHERE id = $2::uuid`,

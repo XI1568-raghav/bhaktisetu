@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { httpUrlSchema } from '../lib/http-url.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { onboardingService } from '../services/onboarding.service.js';
 
@@ -35,8 +36,18 @@ const blankToUndefined = (v: unknown) => (v === null || v === '' ? undefined : v
 const optionalShortString = (max: number) =>
   z.preprocess(blankToUndefined, z.string().trim().max(max).optional());
 
-const photoUrlSchema = z.preprocess(blankToUndefined, z.string().url().max(1000).optional());
-const docKeySchema = z.preprocess(blankToUndefined, z.string().max(300).optional());
+const photoUrlSchema = z.preprocess(blankToUndefined, httpUrlSchema('photoUrl', 1000).optional());
+// Keys are server-minted `kyc-document/<uid>/<ts>-<hex>.<ext>`; refuse path tricks
+// (`..`, backslashes, empty segments) so a key can never be steered at another object.
+const docKeySchema = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .max(300)
+    .regex(/^[A-Za-z0-9_-]+(\/[A-Za-z0-9._-]+)+$/, 'Invalid document reference')
+    .refine((k) => !k.split('/').some((seg) => seg === '.' || seg === '..' || seg === ''), 'Invalid document reference')
+    .optional(),
+);
 
 const stringArray = (maxItems: number, maxLen: number) =>
   z.array(z.string().trim().min(1).max(maxLen)).max(maxItems);

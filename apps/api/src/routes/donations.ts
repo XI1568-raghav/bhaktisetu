@@ -19,7 +19,9 @@ import { resolveGaushalaDonee } from '../lib/gaushala-donee.js';
 // (raw INSERT, no Payment), so NOTHING in the payment-side wiring reached them.
 import { MONEY_EVENTS, recordMoneyEvent, type MoneyActorType } from '../lib/audit-money.js';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { SQL_UTC_NOW } from '../lib/sql-time.js';
+import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
 
 assertNotProductionDemo('routes/donations');
 
@@ -46,7 +48,7 @@ const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
 
 const razorpay = isDemoPayment
   ? null
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 // Donations live in the `donations` table. Raw SQL is used because the
 // generated Prisma client may lag schema changes when the dll is locked
@@ -88,8 +90,10 @@ async function ensureGaushalaTaxFields() {
 }
 
 function nextReceiptNumber(): string {
-  const d = new Date();
-  const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
+  // QA 2026-10-13: the date in the number must be the date printed on the
+  // receipt, and that is the Indian date. The server runs in UTC, so between
+  // 18:30 and 24:00 UTC (00:00-05:30 IST) the number said yesterday.
+  const ymd = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
   const rand = crypto.randomBytes(2).toString('hex').toUpperCase();
   return `DR-${ymd}-${rand}`;
 }
@@ -170,7 +174,7 @@ export async function finalizeDonationReceipt(
 
   const receiptNumber = nextReceiptNumber();
   const donationDate = new Date().toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'long', year: 'numeric',
+    day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata',
   });
 
   // ── DI-09 (F455): `AND status <> 'paid'` is what makes this a CLAIM ─────────
@@ -385,12 +389,28 @@ const verifyDonationSchema = z.object({
  * for it. TempleProfile has no FK to Temple; the portal links them by name
  * (case- and whitespace-tolerant), so this does too.
  */
-async function templeHasApprovedManager(templeName: string): Promise<boolean> {
+async function templeHasApprovedManager(templeName: string, templeId?: string): Promise<boolean> {
   const profile = await prisma.templeProfile.findFirst({
     where: { approved: true, templeName: { equals: templeName.trim(), mode: 'insensitive' } },
     select: { userId: true },
   });
-  return !!profile;
+  if (profile) return true;
+  // An admin's explicit link (temple_manager_links) outranks the name match in
+  // the temple portal, so a linked manager with an approved profile whose
+  // typed name differs from the Temple row IS the temple's payee. Ignoring the
+  // link refused donations for a temple whose portal would have shown them.
+  if (!templeId) return false;
+  try {
+    const rows = await prisma.$queryRawUnsafe<{ ok: number }[]>(
+      `SELECT 1 AS ok FROM temple_manager_links l
+         JOIN temple_profiles p ON p.user_id = l.manager_user_id AND p.approved = true
+        WHERE l.temple_id = $1::uuid LIMIT 1`,
+      templeId,
+    );
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 export async function donationRoutes(server: FastifyInstance) {
@@ -410,11 +430,27 @@ export async function donationRoutes(server: FastifyInstance) {
         take: 500,
       });
       const names = [...new Set(profiles.map((p) => (p.templeName ?? '').trim()).filter(Boolean))];
-      if (names.length === 0) return { temples: [] };
+      // QA 2026-10-13: create-order also accepts a temple an admin LINKED to an approved
+      // manager profile (temple_manager_links), whatever name that profile typed. The
+      // list the form offers has to be the same set, or a payable temple is invisible.
+      let linkedIds: string[] = [];
+      try {
+        const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(
+          `SELECT DISTINCT l.temple_id::text AS id FROM temple_manager_links l
+             JOIN temple_profiles p ON p.user_id = l.manager_user_id AND p.approved = true`,
+        );
+        linkedIds = Array.isArray(rows) ? rows.map((r) => r.id) : [];
+      } catch {
+        // table absent on an unmigrated database: name matches alone
+      }
+      if (names.length === 0 && linkedIds.length === 0) return { temples: [] };
       const temples = await prisma.temple.findMany({
         where: {
           isVerified: true,
-          OR: names.map((name) => ({ name: { equals: name, mode: 'insensitive' as const } })),
+          OR: [
+            ...names.map((name) => ({ name: { equals: name, mode: 'insensitive' as const } })),
+            ...(linkedIds.length ? [{ id: { in: linkedIds } }] : []),
+          ],
         },
         select: { id: true, name: true, city: true, state: true, deityPrimary: true, description: true, images: true },
         orderBy: { name: 'asc' },
@@ -479,7 +515,7 @@ export async function donationRoutes(server: FastifyInstance) {
           message: 'We could not find that temple. Please choose a temple from the list.',
         });
       }
-      const manager = temple.isVerified ? await templeHasApprovedManager(temple.name) : false;
+      const manager = temple.isVerified ? await templeHasApprovedManager(temple.name, temple.id) : false;
       if (!manager) {
         return reply.code(400).send({
           code: 'temple_not_onboarded',
@@ -490,22 +526,74 @@ export async function donationRoutes(server: FastifyInstance) {
       }
     }
 
+    // QA 2026-10-13: idempotency. The mobile app opens an order and then the web form
+    // opened a SECOND one for the same donor, donee and amount, leaving an orphan
+    // 'created' row. A still-open order for the same (user, donee, amount) created
+    // within the last 15 minutes is reused: same donationId, same gateway order.
+    // Changing the PAN / dedication on the reused row keeps the receipt truthful.
+    const doneeColumn = kind === 'temple' ? 'temple_id' : 'gaushala_id';
+    const doneeCast = kind === 'temple' ? '$2::uuid' : '$2';
+    try {
+      const open = await prisma.$queryRawUnsafe<{ id: string; razorpay_order_id: string }[]>(
+        `SELECT id, razorpay_order_id FROM donations
+          WHERE user_id = $1::uuid AND ${doneeColumn} = ${doneeCast} AND status = 'created'
+            AND amount_inr = $3 AND created_at > (${SQL_UTC_NOW} - interval '15 minutes')
+          ORDER BY created_at DESC LIMIT 1`,
+        userId,
+        kind === 'temple' ? templeId : doneeGaushalaId,
+        amount,
+      );
+      const reuse = Array.isArray(open) ? open[0] : undefined;
+      if (reuse?.id && reuse.razorpay_order_id) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE donations SET donor_pan = COALESCE($2, donor_pan), dedication = COALESCE($3, dedication) WHERE id = $1 AND status = 'created'`,
+          reuse.id,
+          parsed.data.donorPan ?? null,
+          parsed.data.dedication ?? null,
+        );
+        return reply.send({
+          donationId: reuse.id,
+          razorpayOrderId: reuse.razorpay_order_id,
+          amount: Math.round(amount * 100),
+          currency: 'INR',
+          keyId: razorpayKeyId || 'rzp_test_demo',
+          isDemoPayment,
+          reused: true,
+        });
+      }
+    } catch (err) {
+      // A failed lookup must never block a donation: fall through to a fresh order.
+      server.log.warn({ err }, 'donation open-order lookup failed');
+    }
+
     const donationId = `don_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 
     let razorpayOrderId: string;
     if (razorpay) {
-      const order = await razorpay.orders.create({
-        amount: Math.round(amount * 100), // paise
-        currency: 'INR',
-        receipt: donationId,
-        notes: {
-          causeKind: kind,
-          ...(kind === 'temple' ? { templeId: templeId! } : { gaushalaId: doneeGaushalaId! }),
-          planId: planId ?? '',
-          userId,
-        },
-      });
-      razorpayOrderId = order.id;
+      try {
+        const order = await razorpay.orders.create({
+          amount: Math.round(amount * 100), // paise
+          currency: 'INR',
+          receipt: donationId,
+          notes: {
+            causeKind: kind,
+            ...(kind === 'temple' ? { templeId: templeId! } : { gaushalaId: doneeGaushalaId! }),
+            planId: planId ?? '',
+            userId,
+          },
+        });
+        razorpayOrderId = order.id;
+      } catch (err) {
+        // Razorpay rejects with a plain `{ statusCode: 401, ... }` object when
+        // its credentials are refused. Left to the global handler that 401
+        // became "Please sign in to continue" for a signed-in donor.
+        const f = describeGatewayFailure(err);
+        server.log.error({ gatewayStatus: f.status, gatewayCode: f.code, gatewayReason: f.reason }, 'razorpay.orders.create failed (donation)');
+        return reply.code(503).send({
+          error: 'We could not open the payment page right now. Nothing has been charged. Please try again in a few minutes.',
+          code: 'PAYMENT_GATEWAY_UNAVAILABLE',
+        });
+      }
     } else {
       razorpayOrderId = `order_demo_${Date.now()}`;
     }
@@ -642,7 +730,10 @@ export async function donationRoutes(server: FastifyInstance) {
         expBuf.length === sigBuf.length && crypto.timingSafeEqual(expBuf, sigBuf);
       if (!sigOk) {
         await prisma.$executeRawUnsafe(
-          `UPDATE donations SET status = 'failed' WHERE id = $1`,
+          // QA 2026-10-13: never demote a donation that is already paid (the donor
+          // can re-post a bad signature after success) - that stripped the 80G
+          // receipt's backing status while the receipt number stayed issued.
+          `UPDATE donations SET status = 'failed' WHERE id = $1 AND status <> 'paid'`,
           donation.id,
         );
         // OPS-05: this write destroys the only evidence of the attempt — the

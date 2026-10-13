@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import RahuKalamClient from './RahuKalamClient';
+import { ClientOnly } from '../../../components/ClientOnly';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
@@ -139,7 +140,7 @@ export default function RahuKalamPage() {
    </header>
 
    <div className="mt-8">
-    <RahuKalamClient />
+    <ClientOnly fallback={<div className="min-h-[24rem]" aria-busy="true" />}><RahuKalamClient /></ClientOnly>
    </div>
 
    <section className="mt-12">

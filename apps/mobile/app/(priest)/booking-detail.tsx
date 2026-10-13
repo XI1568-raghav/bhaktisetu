@@ -38,6 +38,7 @@ import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { bookingStatusLabel } from '../../lib/enum-labels';
+import { authedFetch } from '../../lib/authed-fetch';
 
 // ─── Types (the real `assignedBookingSelect` shape) ─────────────────────────
 
@@ -185,7 +186,7 @@ export default function PriestBookingDetail() {
     queryKey: ['priest', 'bookings', bookingId],
     enabled: !!token && !!bookingId,
     queryFn: async () => {
-      const res = await fetch(`${apiBase()}/api/v1/priest/bookings/${bookingId}`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/priest/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json().catch(() => null);
@@ -234,7 +235,7 @@ export default function PriestBookingDetail() {
     setBusy(action);
     setActionError(null);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/priest/bookings/${booking.id}/${action}`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/priest/bookings/${booking.id}/${action}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -293,7 +294,7 @@ export default function PriestBookingDetail() {
     }
     setBusy('video');
     try {
-      const res = await fetch(`${apiBase()}/api/v1/priest/bookings/${booking.id}/video`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/priest/bookings/${booking.id}/video`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -324,7 +325,7 @@ export default function PriestBookingDetail() {
     setBusy('deliver');
     setActionError(null);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/bookings/${booking.id}`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/bookings/${booking.id}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,

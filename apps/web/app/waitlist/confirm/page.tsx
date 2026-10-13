@@ -1,7 +1,8 @@
+import { API_BASE_URL } from '../../../lib/api-config';
 import { redirect } from 'next/navigation';
 
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
+
 
 interface ConfirmPageProps {
   searchParams: Promise<{ code?: string }>;
@@ -20,7 +21,7 @@ export default async function WaitlistConfirmPage({ searchParams }: ConfirmPageP
   }
 
   try {
-    const res = await fetch(`${API_URL}/api/v1/waitlist/confirm?code=${encodeURIComponent(code)}`, {
+    const res = await fetch(`${API_BASE_URL}/waitlist/confirm?code=${encodeURIComponent(code)}`, {
       method: 'GET',
       redirect: 'manual',
       cache: 'no-store',

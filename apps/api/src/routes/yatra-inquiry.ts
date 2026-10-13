@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { randomBytes } from 'node:crypto';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
@@ -27,7 +28,7 @@ const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || '';
 const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
 const razorpay = isDemoPayment
   ? null
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 const travelerSchema = z.object({
   name: z.string().max(120),

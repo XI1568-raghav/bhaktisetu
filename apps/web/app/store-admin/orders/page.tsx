@@ -17,6 +17,7 @@ import {
  History,
  X,
 } from 'lucide-react';
+import { addressText } from '../../../lib/address-text';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { useAuth } from '../../../lib/auth-context';
 import { UserFacingError, serverErrorMessage, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
@@ -134,7 +135,7 @@ function normalizeOrder(raw: any): Order {
  const items: OrderItem[] = itemsSrc.map((it: any) => ({
    name: it.name || it.productName || 'Item',
    quantity: Number(it.quantity) || 1,
-   price: Number(it.price) || Number(it.unitPrice) || 0,
+   price: Number(it.price) || Number(it.unitPrice) || Number(it.priceAtPurchase) || 0,
  }));
  const historySrc = Array.isArray(raw.statusHistory) ? raw.statusHistory : [];
  const statusHistory: StatusHistoryEntry[] = historySrc.map((h: any) => ({
@@ -149,7 +150,7 @@ function normalizeOrder(raw: any): Order {
    orderNumber: raw.orderNumber || raw.orderId || raw.id,
    customerName: raw.customerName || raw.customer || 'Customer',
    customerPhone: raw.customerPhone || raw.phone || '',
-   shippingAddress: raw.shippingAddress || raw.address || '',
+   shippingAddress: addressText(raw.shippingAddress || raw.address),
    items,
    totalAmount: Number(raw.totalAmount ?? raw.total) || 0,
    status,

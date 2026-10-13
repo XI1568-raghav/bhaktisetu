@@ -340,10 +340,18 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     }
     const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
     if (!existing) {
+      // QA 2026-10-13 (mirrors gaushala S-08): no placeholder name on a public profile.
+      if (!parsed.data.displayName?.trim()) {
+        return reply.code(400).send({
+          code: 'display_name_required',
+          error: 'Display name required',
+          message: 'Enter your name as devotees should see it to create your astrologer profile.',
+        });
+      }
       const profile = await prisma.astrologerProfile.create({
         data: {
           userId,
-          displayName: parsed.data.displayName ?? 'Astrologer',
+          displayName: parsed.data.displayName.trim(),
           specialties: parsed.data.specialties ?? [],
           languages: parsed.data.languages ?? [],
           experience: parsed.data.experience ?? 0,
@@ -385,20 +393,13 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     }
     const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
     if (!existing) {
-      // Mirror PATCH /profile's auto-create behaviour so a fresh astrologer
-      // can set availability before completing profile onboarding.
-      const profile = await prisma.astrologerProfile.create({
-        data: {
-          userId,
-          displayName: 'Astrologer',
-          specialties: [],
-          languages: [],
-          experience: 0,
-          pricePerMinute: 10,
-          availability: parsed.data.availability as object,
-        },
+      // QA 2026-10-13: this used to auto-create a profile named 'Astrologer'. A profile
+      // needs a real name, which only PATCH /profile collects.
+      return reply.code(409).send({
+        code: 'display_name_required',
+        error: 'Create your astrologer profile first',
+        message: 'Save your profile (with your display name) before setting availability.',
       });
-      return reply.send({ availability: profile.availability });
     }
     const profile = await prisma.astrologerProfile.update({
       where: { userId },

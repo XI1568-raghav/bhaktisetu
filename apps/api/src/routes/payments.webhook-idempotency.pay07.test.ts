@@ -8,7 +8,7 @@ vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 const { checkAndRecord } = vi.hoisted(() => ({
   checkAndRecord: vi.fn(async () => ({ alreadyProcessed: false })),
 }));
-vi.mock('../lib/webhook-idempotency.js', () => ({ checkAndRecord }));
+vi.mock('../lib/webhook-idempotency.js', () => ({ checkAndRecord, forgetEvent: vi.fn(async () => undefined) }));
 
 import { paymentRoutes } from './payments.js';
 

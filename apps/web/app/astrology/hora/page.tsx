@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import HoraClient from './HoraClient';
+import { ClientOnly } from '../../../components/ClientOnly';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
 export const revalidate = 86400;
@@ -116,7 +117,7 @@ export default function HoraPage() {
    </header>
 
    <div className="mt-8">
-    <HoraClient />
+    <ClientOnly fallback={<div className="min-h-[24rem]" aria-busy="true" />}><HoraClient /></ClientOnly>
    </div>
 
    <section className="mt-12">

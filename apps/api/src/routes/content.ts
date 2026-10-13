@@ -1,5 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { contentService } from '../services/content.service.js';
+import { authenticateUser } from '../middlewares/auth.js';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function contentRoutes(server: FastifyInstance) {
   // GET / - List content with filters (articles, mantras, stories, aarti, chalisa, etc.)
@@ -98,8 +101,12 @@ export async function contentRoutes(server: FastifyInstance) {
   });
 
   // POST /:id/like - Like/unlike a content item
-  server.post('/:id/like', async (request, reply) => {
+  // Signed-in only: it used to be anonymous, so anyone could inflate a count in a loop.
+  server.post('/:id/like', { preHandler: [authenticateUser] }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!UUID_RE.test(id)) {
+      return reply.status(404).send({ error: 'Content not found' });
+    }
     // TODO: toggle like for current user on content item (requires auth)
     // For now, just increment the like count
     try {
@@ -116,6 +123,9 @@ export async function contentRoutes(server: FastifyInstance) {
         totalLikes: item.likeCount,
       };
     } catch (error) {
+      if ((error as { code?: string }).code === 'P2025') {
+        return reply.status(404).send({ error: 'Content not found' });
+      }
       server.log.error(error, 'Failed to like content');
       return reply.status(500).send({ error: 'Failed to like content' });
     }

@@ -49,6 +49,7 @@ type ApiBooking = {
  devotee: string;
  pujaName: string;
  scheduledDate: string;
+ scheduledTimeSlot?: string | null;
  priceInr: number;
  status: string;
 };
@@ -244,7 +245,7 @@ export default function TempleDashboard() {
       <div className="flex items-center gap-2 text-xs text-surface-400">
        <span>{b.devotee}</span>
        <span>&middot;</span>
-       <span>{d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} {d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+       <span>{d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' })}{b.scheduledTimeSlot ? ` · ${b.scheduledTimeSlot}` : ''}</span>
       </div>
      </div>
      <div className="text-right shrink-0">

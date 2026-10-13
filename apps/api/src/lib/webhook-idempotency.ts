@@ -76,6 +76,24 @@ export async function checkAndRecord(
   return { alreadyProcessed: inserted.length === 0 };
 }
 
+/**
+ * Undo `checkAndRecord` for an event whose processing FAILED, so Razorpay's
+ * retry of the same event id is processed instead of being dismissed as a
+ * duplicate. Never throws.
+ */
+export async function forgetEvent(provider: WebhookProvider, eventId: string): Promise<void> {
+  if (!eventId) return;
+  try {
+    await prisma.$executeRawUnsafe(
+      `DELETE FROM webhook_replay WHERE provider = $1 AND event_id = $2`,
+      provider,
+      eventId,
+    );
+  } catch {
+    // best effort — the reconcile job is the backstop
+  }
+}
+
 export interface SweepResult {
   deleted: number;
   skipped?: boolean;

@@ -101,6 +101,24 @@ export const __testing = {
   PAYOUT_SCAN_MIN,
 };
 
+const PAID_AFTER_CANCEL_LABEL = 'Full refund - payment arrived after the booking was cancelled';
+
+/** payment.service stamps metadata.needsAdminReview = 'paid-after-cancel' on such a capture. */
+function isPaidAfterCancelPayment(p: { status?: unknown; metadata?: unknown }): boolean {
+  if (p.status !== 'captured' && p.status !== 'authorized' && p.status !== 'partially_refunded') return false;
+  const m = p.metadata as { needsAdminReview?: unknown } | null | undefined;
+  return m?.needsAdminReview === 'paid-after-cancel';
+}
+
+async function bookingIsPaidAfterCancel(bookingId: string): Promise<boolean> {
+  const rows = await prisma.payment.findMany({
+    where: { bookingId, status: { in: ['captured', 'partially_refunded'] } },
+    select: { status: true, metadata: true },
+    take: 10,
+  });
+  return Array.isArray(rows) && rows.some(isPaidAfterCancelPayment);
+}
+
 export async function adminBookingsRoutes(server: FastifyInstance) {
   const adminPreHandlers = [authenticateUser, requireRole('admin')];
 
@@ -563,7 +581,7 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
           pujaType: { select: { name: true, slug: true } },
           temple: { select: { name: true, slug: true, city: true } },
           user: { select: { fullName: true, phone: true } },
-          payments: { select: { id: true, status: true, amount: true } },
+          payments: { select: { id: true, status: true, amount: true, metadata: true } },
         },
       });
       const pending = bookings.filter((b) =>
@@ -574,6 +592,15 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       const withQuote = await Promise.all(
         pending.map(async (b) => {
           try {
+            // QA 2026-10-13: money that arrived AFTER the cancellation bought no service,
+            // so the quote is the whole amount, not the ladder tier at the cancel time.
+            if (b.payments.some(isPaidAfterCancelPayment)) {
+              const price = Number(b.priceAmount);
+              return {
+                ...b,
+                policyQuote: { refundAmountInr: price, feeAmountInr: 0, refundFraction: 1, tierLabel: PAID_AFTER_CANCEL_LABEL },
+              };
+            }
             return { ...b, policyQuote: await computePolicyRefund(b) };
           } catch (err) {
             request.log.warn({ err, bookingId: b.id }, 'policy quote failed');
@@ -605,6 +632,9 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         reason: z.string().max(500).optional(),
         refundType: z.enum(['full', 'partial', 'policy']).optional(),
         amountInr: z.number().positive().optional(),
+        // QA 2026-10-13: refunding a booking that was never cancelled refunds a service
+        // that may still be going ahead. Refused unless the admin says so explicitly.
+        confirmNotCancelled: z.boolean().optional(),
       });
       const parsed = approveBodySchema.safeParse(request.body ?? {});
       if (!parsed.success) {
@@ -616,9 +646,20 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
       try {
         const exists = await prisma.pujaBooking.findUnique({
           where: { id: bookingId },
-          select: { id: true, scheduledDate: true, scheduledTimeSlot: true, priceAmount: true, cancelledAt: true },
+          select: { id: true, status: true, scheduledDate: true, scheduledTimeSlot: true, priceAmount: true, cancelledAt: true },
         });
         if (!exists) return reply.code(404).send({ error: 'Booking not found' });
+        if (
+          exists.status !== undefined &&
+          exists.status !== 'cancelled' &&
+          exists.status !== 'refunded' &&
+          parsed.data.confirmNotCancelled !== true
+        ) {
+          return reply.code(409).send({
+            error: `This booking is ${String(exists.status).replace(/_/g, ' ')}, not cancelled. Refunding it refunds a service that may still happen. Cancel it first, or resend with confirmNotCancelled: true.`,
+            code: 'booking_not_cancelled',
+          });
+        }
 
         // Invariant (TASKS.md 2026-10-05): admin refunds default to the cancellation-policy
         // amount. Only an explicit `full` or `partial` overrides it.
@@ -626,7 +667,12 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
         let refundType: 'full' | 'partial' = requestedType === 'partial' ? 'partial' : 'full';
         let amountInr = requestedType === 'partial' ? parsed.data.amountInr : undefined;
         let reason = parsed.data.reason ?? 'Admin-approved refund';
-        if (requestedType === 'policy') {
+        if (requestedType === 'policy' && (await bookingIsPaidAfterCancel(bookingId))) {
+          // Paid after the cancellation: no service was ever delivered - full refund.
+          refundType = 'full';
+          amountInr = undefined;
+          reason = `${reason} [${PAID_AFTER_CANCEL_LABEL}]`.slice(0, 250);
+        } else if (requestedType === 'policy') {
           // The amount is computed here, never taken from the page.
           const quote = await computePolicyRefund(exists);
           if (quote.refundAmountInr <= 0) {

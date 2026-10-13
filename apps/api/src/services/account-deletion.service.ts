@@ -570,8 +570,8 @@ export class AccountDeletionService {
 
     const rows = (await this.db.$queryRawUnsafe(
       `INSERT INTO "account_deletion_requests"
-         ("user_id", "status", "code_hash", "code_expires_at", "code_attempts", "channel", "reason")
-       VALUES ($1::uuid, 'pending_confirmation', $2, $3::timestamptz, 0, $4, $5)
+         ("id", "user_id", "status", "code_hash", "code_expires_at", "code_attempts", "channel", "reason")
+       VALUES (gen_random_uuid(), $1::uuid, 'pending_confirmation', $2, $3::timestamptz, 0, $4, $5)
        RETURNING "id"`,
       userId,
       codeHash,

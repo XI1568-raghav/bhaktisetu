@@ -119,18 +119,18 @@ function selectCalendarEntries(payload: unknown, feed: Feed): CalendarEntry[] {
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 /** `20 Sep` on two lines in the date chip. */
 function dayOf(iso: string): string {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? '' : String(d.getDate());
+  return Number.isNaN(d.getTime()) ? '' : String(d.getUTCDate());
 }
 
 function monthOf(iso: string): string {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-IN', { month: 'short' });
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-IN', { month: 'short', timeZone: 'UTC' });
 }
 
 /** Month headings, in the order the server sent the rows (already ascending). */
@@ -140,7 +140,7 @@ function groupByMonth(entries: CalendarEntry[]): { title: string; data: Calendar
     const d = new Date(e.date);
     const title = Number.isNaN(d.getTime())
       ? 'Upcoming'
-      : d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      : d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const last = sections[sections.length - 1];
     if (last && last.title === title) last.data.push(e);
     else sections.push({ title, data: [e] });

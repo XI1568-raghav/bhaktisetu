@@ -344,6 +344,7 @@ export async function templePortalRoutes(server: FastifyInstance) {
         devotee: b.user.fullName ?? 'Devotee',
         pujaName: b.pujaType.name,
         scheduledDate: b.scheduledDate,
+        scheduledTimeSlot: b.scheduledTimeSlot,
         priceInr: Number(b.priceAmount),
         status: b.status,
       })),
