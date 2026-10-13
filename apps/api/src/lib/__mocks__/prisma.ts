@@ -50,6 +50,7 @@ export const prismaMock = {
     findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     count: vi.fn(),
     groupBy: vi.fn(),
     aggregate: vi.fn(),
@@ -328,6 +329,7 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     // Present so a test can ASSERT IT IS NEVER CALLED. Store products are soft
     // deleted (`deletedAt`) because `reviews.product_id` is ON DELETE CASCADE —
     // a real delete destroys buyers' reviews. Without the spy the assertion

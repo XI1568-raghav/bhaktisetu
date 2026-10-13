@@ -236,7 +236,7 @@ export async function magicLinkRoutes(server: FastifyInstance) {
   // ── POST /request ──────────────────────────────────────────────────────
   server.post('/request', sensitiveAuthRateLimit, async (request, reply) => {
     const body = (request.body ?? {}) as { email?: string };
-    const email = (body.email ?? '').trim().toLowerCase();
+    const email = (typeof body.email === 'string' ? body.email : '').trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return reply.code(400).send({ error: 'Valid email required' });
     }
@@ -285,7 +285,7 @@ export async function magicLinkRoutes(server: FastifyInstance) {
   // ── POST /verify ───────────────────────────────────────────────────────
   server.post('/verify', sensitiveAuthRateLimit, async (request, reply) => {
     const body = (request.body ?? {}) as { token?: string };
-    const token = (body.token ?? '').trim();
+    const token = (typeof body.token === 'string' ? body.token : '').trim();
     const verified = verifyToken(token);
     if (!verified) {
       return reply.code(400).send({ error: 'Invalid or expired sign-in link' });

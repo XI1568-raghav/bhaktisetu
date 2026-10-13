@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { sendEmail } from '../lib/email.js';
 
@@ -314,7 +315,7 @@ export async function orgsRoutes(server: FastifyInstance) {
   // ── DELETE /orgs/:id/members/:userId ───────────────────────────────
   server.delete<{ Params: { id: string; userId: string } }>(
     '/:id/members/:userId',
-    { preHandler: [requireOrgRole('ADMIN')] },
+    { preHandler: [uuidParamGuard('id', 'userId'), requireOrgRole('ADMIN')] },
     async (request, reply) => {
       const { id: orgId, userId: targetUserId } = request.params;
 

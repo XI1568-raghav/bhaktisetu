@@ -14,7 +14,8 @@ import { authenticateUser } from '../middlewares/auth.js';
 const productCreateSchema = z.object({
   name: z.string().min(2).max(200),
   description: z.string().max(5000).optional(),
-  price: z.number().nonnegative(),
+  // Decimal(10,2) overflows above 99,999,999.99; the cap keeps that a 400, not a 500.
+  price: z.number().nonnegative().max(10_000_000),
   imageUrl: httpUrl('imageUrl', 1000).optional(),
   category: z.string().max(80).optional(),
   stock: z.number().int().min(0).max(1_000_000).optional(),

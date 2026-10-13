@@ -18,6 +18,7 @@ import {
 } from '../services/cancellation.service.js';
 import { paymentService, PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
 import { hoursUntilSlot } from '../lib/slot-time.js';
@@ -1841,7 +1842,7 @@ export async function bookingRoutes(server: FastifyInstance) {
   // GET /:id/video - Get video proof URL
   server.get(
     '/:id/video',
-    { preHandler: [authenticateUser] },
+    { preHandler: [authenticateUser, uuidParamGuard('id')] },
     async (request, reply) => {
       try {
         const { id } = paramsWithId.parse(request.params);

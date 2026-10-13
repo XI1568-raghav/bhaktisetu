@@ -91,3 +91,11 @@ describe('store-admin product — update payload', () => {
     expect(productUpdateSchema.safeParse({ price: '250' }).success).toBe(false);
   });
 });
+
+describe('store-admin product — price ceiling', () => {
+  it('rejects a price that would overflow Decimal(10,2) instead of 500ing', () => {
+    expect(productCreateSchema.safeParse({ name: 'Diya', price: 99999999999 }).success).toBe(false);
+    expect(productUpdateSchema.safeParse({ price: 99999999999 }).success).toBe(false);
+    expect(productCreateSchema.safeParse({ name: 'Diya', price: 10_000_000 }).success).toBe(true);
+  });
+});

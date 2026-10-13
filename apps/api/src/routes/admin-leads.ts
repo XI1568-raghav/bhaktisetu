@@ -4,6 +4,7 @@ import { httpUrl } from '../lib/http-url.js';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { runDailyOps } from '../jobs/master-cron.js';
 import { sendEmail } from '../lib/email.js';
 import { onboardingService } from '../services/onboarding.service.js';
@@ -670,7 +671,7 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
   // Detail endpoint for the drawer — full lead + recent OutreachLog history.
   server.get<{ Params: { id: string } }>(
     '/leads/:id',
-    { preHandler: adminPreHandlers },
+    { preHandler: [...adminPreHandlers, uuidParamGuard('id')] },
     async (request, reply) => {
       const lead = leadModel();
       if (!lead) {

@@ -5,6 +5,7 @@ import { httpUrl } from '../lib/http-url.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { adminService, UnsupportedUserStatusError } from '../services/admin.service.js';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { CauseQualityError } from '../lib/cause-quality.js';
 import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
 import { resolveProviderRole } from '../services/payout.service.js';
@@ -345,7 +346,7 @@ export async function adminRoutes(server: FastifyInstance) {
   // ─── GET /onboarding-documents/:userId — signed links to a provider's ID uploads ─
   // Aadhaar / certificate files live in a private bucket; links expire in 10 min.
 
-  server.get('/onboarding-documents/:userId', { preHandler: adminPreHandlers }, async (request, reply) => {
+  server.get('/onboarding-documents/:userId', { preHandler: [...adminPreHandlers, uuidParamGuard('userId')] }, async (request, reply) => {
     const { userId } = request.params as { userId: string };
     try {
       const rows = await prisma.onboardingStep.findMany({ where: { userId, step: 4 }, take: 10 });

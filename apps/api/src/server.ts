@@ -126,6 +126,7 @@ import { isJobQueueConfigured } from './lib/env.js';
 import { errorLocalizationPlugin } from './plugins/error-localization.js';
 import { localizeImages } from './lib/self-hosted-images.js';
 import { wrapRouteGuards } from './lib/stop-when-answered.js';
+import { registerNulByteGuard } from './lib/nul-guard.js';
 
 const server = Fastify({
   logger: {
@@ -202,6 +203,8 @@ async function bootstrap() {
       done(err as Error);
     }
   });
+
+  registerNulByteGuard(server);
 
   // Security plugins
   // API serves only JSON — no HTML, no inline scripts, no embedded frames.

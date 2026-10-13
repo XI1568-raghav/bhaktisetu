@@ -71,6 +71,12 @@ const updateStatusSchema = z.object({
 
 const orderIdParams = z.object({ id: z.string().uuid() });
 
+class OutOfStockError extends Error {
+  constructor(readonly productId: string) {
+    super(`Insufficient stock for ${productId}`);
+  }
+}
+
 function nextOrderNumber(): string {
   const d = new Date();
   const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
@@ -215,6 +221,10 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     const productById = new Map(products.map((p) => [p.id, p]));
     const serverItems: { productId: string; qty: number; priceAtPurchase: number; name?: string }[] = [];
     let serverTotal = 0;
+    // The same product can appear on several lines. Stock must be checked
+    // against the SUM of those lines, not each line alone — two lines of 3
+    // against a stock of 5 each passed `stock < qty` and drove stock to -1.
+    const wantedByProduct = new Map<string, number>();
     // P0 #S-11 (2026-07-09): capture the owning store for the order. A cart
     // must be single-store (mixed-store carts are unsupported) — reject if
     // items belong to different stores.
@@ -252,8 +262,10 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       if (!product.isActive) {
         return reply.code(409).send({ error: `Product no longer available: ${it.productId}` });
       }
-      if (product.stock < it.qty) {
-        return reply.code(409).send({ error: `Insufficient stock for ${it.productId} (have ${product.stock}, want ${it.qty})` });
+      const wanted = (wantedByProduct.get(it.productId) ?? 0) + it.qty;
+      wantedByProduct.set(it.productId, wanted);
+      if (product.stock < wanted) {
+        return reply.code(409).send({ error: `Insufficient stock for ${it.productId} (have ${product.stock}, want ${wanted})` });
       }
       if (product.storeProfileId) {
         if (orderStoreProfileId && orderStoreProfileId !== product.storeProfileId) {
@@ -319,14 +331,23 @@ export async function storeOrderRoutes(server: FastifyInstance) {
           statusHistory: initialHistory,
         },
       });
-      for (const it of serverItems) {
-        await tx.storeProduct.update({
-          where: { id: it.productId },
-          data: { stock: { decrement: it.qty } },
+      for (const [productId, qty] of wantedByProduct) {
+        // Conditional decrement: the stock read above is outside this
+        // transaction, so a concurrent order can have taken the last unit.
+        const dec = await tx.storeProduct.updateMany({
+          where: { id: productId, stock: { gte: qty } },
+          data: { stock: { decrement: qty } },
         });
+        if (dec.count !== 1) throw new OutOfStockError(productId);
       }
       return created;
+    }).catch((err) => {
+      if (err instanceof OutOfStockError) return err;
+      throw err;
     });
+    if (order instanceof OutOfStockError) {
+      return reply.code(409).send({ error: `Insufficient stock for ${order.productId}` });
+    }
     return reply.code(201).send({ data: serializeOrder(order) });
   });
 
@@ -447,10 +468,10 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       // payment-confirm override, not this generic endpoint.
       const ALLOWED_TRANSITIONS: Record<string, string[]> = {
         PENDING: ['CONFIRMED', 'CANCELLED'],
-        CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED'],
-        PROCESSING: ['SHIPPED', 'CANCELLED'],
-        SHIPPED: ['DELIVERED'],
-        DELIVERED: [],
+        CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED', 'REFUNDED'],
+        PROCESSING: ['SHIPPED', 'CANCELLED', 'REFUNDED'],
+        SHIPPED: ['DELIVERED', 'REFUNDED'],
+        DELIVERED: ['REFUNDED'],
         CANCELLED: [],
         REFUNDED: [],
       };
@@ -469,13 +490,43 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         note: body.data.note ?? null,
       };
       const existingHistory = Array.isArray(order.statusHistory) ? order.statusHistory : [];
-      const updated = await prisma.storeOrder.update({
-        where: { id: order.id },
-        data: {
-          status: body.data.status,
-          trackingNumber: body.data.trackingNumber ?? order.trackingNumber,
-          statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
-        },
+      const toStatus = body.data.status;
+      const updated = await prisma.$transaction(async (tx) => {
+        const row = await tx.storeOrder.update({
+          where: { id: order.id },
+          data: {
+            status: toStatus,
+            trackingNumber: body.data.trackingNumber ?? order.trackingNumber,
+            statusHistory: [...existingHistory, historyEntry] as Prisma.InputJsonValue[],
+          },
+        });
+        if (toStatus === 'CANCELLED' || toStatus === 'REFUNDED') {
+          // The owner's earning on an order that will not be fulfilled must not
+          // stay withdrawable.
+          await tx.commission.updateMany({
+            where: { storeOrderId: order.id, status: 'PENDING' },
+            data: { status: 'REVERSED' },
+          });
+        }
+        if (toStatus === 'CANCELLED') {
+          // Order creation decremented stock; a cancelled order never ships, so
+          // the units go back on the shelf (they stayed gone before this).
+          const lines = Array.isArray(order.items) ? (order.items as any[]) : [];
+          const qtyByProduct = new Map<string, number>();
+          for (const it of lines) {
+            if (typeof it?.productId !== 'string') continue;
+            qtyByProduct.set(it.productId, (qtyByProduct.get(it.productId) ?? 0) + Number(it.qty ?? 0));
+          }
+          for (const [productId, qty] of qtyByProduct) {
+            if (qty > 0) {
+              await tx.storeProduct.updateMany({
+                where: { id: productId, deletedAt: null },
+                data: { stock: { increment: qty } },
+              });
+            }
+          }
+        }
+        return row;
       });
       // Store-owner revamp: write the Commission row when a COD/manual order is
       // confirmed (the Razorpay-verify path wrote it; COD/manual leaked).
