@@ -16,6 +16,7 @@ import { getDonatableTemples, getApprovedProviders } from '../../lib/api';
 import DonationForm from '../../components/DonationForm';
 import { COMPANY } from '../../lib/company';
 import { H1 } from '../../components/ui/heading-recipe';
+import { placeLabel } from '../../lib/place-label';
 
 /**
  * COM-02 (prod sweep 2026-08-12): the hero badge read "Tax-deductible (80G)"
@@ -247,7 +248,7 @@ export default async function DonationsLandingPage({
                   key={t.id}
                   imageUrl={img}
                   title={t.name}
-                  location={`${t.city ?? ''}${t.state ? ', ' + t.state : ''}`}
+                  location={placeLabel(t.city, t.state)}
                   description={(t.description ?? '').slice(0, 100)}
                   meta={t.deityPrimary ?? 'Temple'}
                   donateHref={`/donations?causeId=${encodeURIComponent(t.id)}&causeKind=temple&causeName=${encodeURIComponent(t.name)}${planQuery}`}

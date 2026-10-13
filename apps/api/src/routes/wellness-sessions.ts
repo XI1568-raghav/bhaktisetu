@@ -3,11 +3,18 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { httpUrlSchema } from '../lib/http-url.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
+import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
+import {
+  cancelWellnessEnrollment,
+  cancelWellnessSessionEnrollments,
+} from '../services/wellness-cancellation.service.js';
 
 /**
  * Persisted wellness sessions — instructors schedule live yoga/meditation/etc
@@ -26,7 +33,7 @@ const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
 
 const razorpay = isDemoPayment
   ? null
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 /**
  * ─── F455 / DI-09 limb 3 (2026-09-09): the enrolment capacity ceiling ────────
@@ -213,7 +220,7 @@ const createSessionSchema = z.object({
     }),
   durationMinutes: z.number().int().positive().max(600),
   capacity: z.number().int().positive().max(10000),
-  priceInr: z.number().nonnegative(),
+  priceInr: z.number().nonnegative().max(1_000_000),
   // Wellness revamp: free daily satsang / donation-model sessions are the
   // top-of-funnel per research (Isha/AoL satsang are free/donation). isFree
   // marks a session free so the public catalog can show a "Free" badge and the
@@ -230,7 +237,7 @@ const updateSessionSchema = z.object({
   scheduledAt: z.string().datetime().optional(),
   durationMinutes: z.number().int().positive().max(600).optional(),
   capacity: z.number().int().positive().max(10000).optional(),
-  priceInr: z.number().nonnegative().optional(),
+  priceInr: z.number().nonnegative().max(1_000_000).optional(),
   status: z.enum(['SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED']).optional(),
 });
 
@@ -256,9 +263,9 @@ async function writeWellnessCommissionOnPaid(enrollmentId: string): Promise<void
   try {
     const existing = await prisma.commission.findFirst({
       where: { wellnessEnrollmentId: enrollmentId },
-      select: { id: true },
+      select: { id: true, status: true, payoutRequestId: true },
     });
-    if (existing) return;
+    if (existing && (existing.status === 'PAID' || existing.payoutRequestId)) return;
 
     const enrollment = await prisma.wellnessEnrollment.findUnique({
       where: { id: enrollmentId },
@@ -276,6 +283,18 @@ async function writeWellnessCommissionOnPaid(enrollmentId: string): Promise<void
       ? WELLNESS_PLATFORM_COMMISSION
       : 0.20;
     const instructorShare = Math.round(price * (1 - platformRate) * 100) / 100;
+
+    // QA 2026-10-13: a devotee who cancelled (commission REVERSED or reduced) and then enrolled and
+    // paid again re-uses the same enrolment row, and the UNIQUE key below would make
+    // the new payment mint nothing - the instructor taught a paid class for Rs 0.
+    // Re-open the reversed row at the full share instead.
+    if (existing) {
+      await prisma.commission.updateMany({
+        where: { id: existing.id, status: { in: ['REVERSED', 'PENDING'] }, payoutRequestId: null },
+        data: { status: 'PENDING', amount: instructorShare, percentage: platformRate },
+      });
+      return;
+    }
 
     // DI-06 (F367): ON CONFLICT DO NOTHING against UNIQUE
     // `commissions_wellness_enrollment_id_key` (migration 20260824000000), so a
@@ -455,8 +474,31 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       if (body.data.capacity !== undefined) data.capacity = body.data.capacity;
       if (body.data.priceInr !== undefined) data.priceInr = body.data.priceInr;
       if (body.data.status !== undefined) data.status = body.data.status;
+      // QA 2026-10-13: a COMPLETED class has been delivered and its earnings released;
+      // cancelling it would have to claw money back. Refuse rather than half-refund.
+      if (body.data.status === 'CANCELLED' && session.status === 'COMPLETED') {
+        return reply.code(409).send({
+          error: 'A completed session cannot be cancelled.',
+          code: 'session_already_completed',
+        });
+      }
       const updated = await prisma.wellnessSession.update({ where: { id: session.id }, data });
-      return reply.send({ data: serializeSession(updated) });
+      // Cancelling a session refunds every paid enrolment (intent), reverses the
+      // instructor's held earnings, releases unpaid seats and notifies devotees. It
+      // also runs when the session was ALREADY cancelled, so a sweep that died midway
+      // can be completed by repeating the PATCH (each enrolment settles once).
+      let cancellation: Awaited<ReturnType<typeof cancelWellnessSessionEnrollments>> | undefined;
+      if (body.data.status === 'CANCELLED') {
+        cancellation = await cancelWellnessSessionEnrollments({
+          sessionId: session.id,
+          actorType: isAdmin(request) && session.instructorId !== userId ? 'admin' : 'provider',
+          actorId: userId,
+        });
+      }
+      return reply.send({
+        data: serializeSession(updated),
+        ...(cancellation ? { cancellation } : {}),
+      });
     }
   );
 
@@ -472,6 +514,17 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       const userId = request.currentUser!.id;
       if (session.instructorId !== userId && !isAdmin(request)) {
         return reply.code(403).send({ error: 'Only the instructor can delete this session' });
+      }
+      // Deleting a session with money attached erased the devotees' paid
+      // enrolments (and their audit trail) with no refund. Cancel it instead.
+      const paidCount = await prisma.wellnessEnrollment.count({
+        where: { sessionId: session.id, status: { in: ['PAID', 'ATTENDED'] } },
+      });
+      if (paidCount > 0 && Number(session.priceInr) > 0) {
+        return reply.code(409).send({
+          error: 'This session has paid enrolments. Cancel it (status CANCELLED) so devotees can be refunded instead of deleting it.',
+          code: 'session_has_paid_enrolments',
+        });
       }
       // Cascade-clean enrollments first so we don't hit FK constraints.
       await prisma.wellnessEnrollment.deleteMany({ where: { sessionId: session.id } });
@@ -568,6 +621,15 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       if (session.status === 'COMPLETED') {
         return reply.code(409).send({ error: 'Session has already completed' });
       }
+      // A SCHEDULED class whose start has passed is over or underway without the
+      // instructor opening it; taking money for it sold a seat to nothing. A
+      // LIVE class (the instructor opened the room) still takes late joiners.
+      if (session.status !== 'LIVE' && session.scheduledAt.getTime() <= Date.now()) {
+        return reply.code(409).send({
+          error: 'This session has already started and is closed for enrolment.',
+          code: 'session_started',
+        });
+      }
 
       // Role pass 2026-10-07: nobody pays an instructor an admin has not
       // approved (the astrologer booking path has the same gate). Without it a
@@ -648,12 +710,21 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
 
       let razorpayOrderId: string;
       if (razorpay && amountPaise > 0) {
-        const order = await razorpay.orders.create({
-          amount: amountPaise,
-          currency: 'INR',
-          notes: { sessionId: session.id, userId },
-        });
-        razorpayOrderId = order.id;
+        try {
+          const order = await razorpay.orders.create({
+            amount: amountPaise,
+            currency: 'INR',
+            notes: { sessionId: session.id, userId },
+          });
+          razorpayOrderId = order.id;
+        } catch (err) {
+          const f = describeGatewayFailure(err);
+          server.log.error({ gatewayStatus: f.status, gatewayCode: f.code, gatewayReason: f.reason }, 'razorpay.orders.create failed (wellness)');
+          return reply.code(503).send({
+            error: 'We could not open the payment page right now. Nothing has been charged. Please try again in a few minutes.',
+            code: 'PAYMENT_GATEWAY_UNAVAILABLE',
+          });
+        }
       } else {
         razorpayOrderId = `order_demo_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
       }
@@ -820,6 +891,19 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         }
       }
 
+      // QA 2026-10-13: a correctly signed verify used to flip ANY enrolment to
+      // PAID - including a CANCELLED/REFUNDED one (resurrecting a seat whose money
+      // went back) and an ATTENDED one. Only PENDING_PAYMENT moves to PAID; PAID /
+      // ATTENDED replays are the same idempotent success.
+      if (enrollment.status === 'PAID' || enrollment.status === 'ATTENDED') {
+        return reply.send({ data: enrollment });
+      }
+      if (enrollment.status !== 'PENDING_PAYMENT') {
+        return reply.code(409).send({
+          error: `This enrolment is ${enrollment.status.toLowerCase()} and can no longer be paid. Please enrol again.`,
+        });
+      }
+
       const updated = await prisma.wellnessEnrollment.update({
         where: { id: enrollment.id },
         data: { status: 'PAID' },
@@ -859,7 +943,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
           await sendEmail({
             to: detail.user.email,
             subject: `Darshya payment receipt — ${detail.session.title}`,
-            html: `<p>Namaste ${detail.user.fullName},</p><p>Your payment receipt for <strong>${detail.session.title}</strong> is attached.</p>`,
+            html: `<p>Namaste ${esc(detail.user.fullName)},</p><p>Your payment receipt for <strong>${esc(detail.session.title)}</strong> is attached.</p>`,
             text: `Payment receipt for ${detail.session.title} attached.`,
             attachments: [
               { filename: `receipt-wellness-${detail.session.id.slice(0, 8)}.pdf`, content: pdf },
@@ -871,6 +955,154 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       })();
 
       return reply.send({ data: updated });
+    }
+  );
+
+  // POST /enrollments/:id/cancel — the devotee cancels their own enrolment.
+  // Unpaid: the seat is released. Paid: refunded per the booking ladder (full at
+  // 48h+, 75% at 24-48h, refused inside 24h), the instructor's earning reversed or
+  // reduced, a money-audit row written. Idempotent: a repeat is a 200 no-op.
+  server.post(
+    '/enrollments/:id/cancel',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      const params = enrollmentIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid enrollment id' });
+      const reasonBody = z
+        .object({ reason: z.string().trim().max(200).optional() })
+        .safeParse(request.body ?? {});
+      if (!reasonBody.success) return reply.code(400).send({ error: 'Invalid request body' });
+      const owner = await prisma.wellnessEnrollment.findUnique({
+        where: { id: params.data.id },
+        select: { userId: true },
+      });
+      if (!owner) return reply.code(404).send({ error: 'Enrollment not found' });
+      const userId = request.currentUser!.id;
+      if (owner.userId !== userId && !isAdmin(request)) {
+        return reply.code(403).send({ error: 'Not authorized to cancel this enrollment' });
+      }
+      const result = await cancelWellnessEnrollment({
+        enrollmentId: params.data.id,
+        actorType: owner.userId === userId ? 'devotee' : 'admin',
+        actorId: userId,
+        reason: reasonBody.data.reason,
+      });
+      if (!result) return reply.code(404).send({ error: 'Enrollment not found' });
+      if (result.outcome === 'blocked') {
+        return reply.code(409).send({ error: result.blockedReason, code: result.blockedCode });
+      }
+      return reply.send({
+        cancelled: true,
+        alreadyCancelled: result.outcome === 'already',
+        enrollmentId: result.enrollmentId,
+        status: result.status,
+        refundOwedInr: result.refundOwedInr,
+        refundFraction: result.refundFraction,
+        tierLabel: result.tierLabel,
+        commissionReversed: result.commissionReversed,
+        commissionReduced: result.commissionReduced,
+        note:
+          result.refundOwedInr > 0
+            ? 'Cancellation accepted. Your refund will be processed within 5-7 business days.'
+            : 'Cancellation accepted.',
+      });
+    }
+  );
+
+  // GET /sessions/:id/enrollments — roster for the session's instructor (and admin).
+  server.get(
+    '/sessions/:id/enrollments',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      const params = sessionIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid session id' });
+      const session = await prisma.wellnessSession.findUnique({
+        where: { id: params.data.id },
+        select: { id: true, instructorId: true },
+      });
+      if (!session) return reply.code(404).send({ error: 'Session not found' });
+      if (session.instructorId !== request.currentUser!.id && !isAdmin(request)) {
+        return reply.code(403).send({ error: 'Only the instructor can view the roster' });
+      }
+      const rows = await prisma.wellnessEnrollment.findMany({
+        where: { sessionId: session.id, status: { in: ['PAID', 'ATTENDED'] } },
+        orderBy: { enrolledAt: 'asc' },
+        take: 500,
+        select: {
+          id: true,
+          status: true,
+          enrolledAt: true,
+          attendedAt: true,
+          user: { select: { id: true, fullName: true } },
+        },
+      });
+      return reply.send({ data: rows });
+    }
+  );
+
+  // POST /enrollments/:id/attendance — the instructor marks a paid learner ATTENDED.
+  // Only once the class has started (or is LIVE/COMPLETED). Attendance does not move
+  // money: the instructor's held earning becomes withdrawable by the existing rule
+  // (class start passed or session COMPLETED), and `earningsReleased` reports that.
+  server.post(
+    '/enrollments/:id/attendance',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      const params = enrollmentIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid enrollment id' });
+      const enrollment = await prisma.wellnessEnrollment.findUnique({
+        where: { id: params.data.id },
+        select: {
+          id: true,
+          status: true,
+          attendedAt: true,
+          session: { select: { id: true, instructorId: true, scheduledAt: true, status: true } },
+        },
+      });
+      if (!enrollment) return reply.code(404).send({ error: 'Enrollment not found' });
+      const userId = request.currentUser!.id;
+      if (enrollment.session.instructorId !== userId && !isAdmin(request)) {
+        return reply.code(403).send({ error: 'Only the instructor can mark attendance' });
+      }
+      const sess = enrollment.session;
+      const started =
+        sess.scheduledAt.getTime() <= Date.now() || sess.status === 'LIVE' || sess.status === 'COMPLETED';
+      const earningsReleased = sess.scheduledAt.getTime() <= Date.now() || sess.status === 'COMPLETED';
+      if (enrollment.status === 'ATTENDED') {
+        return reply.send({
+          data: { id: enrollment.id, status: 'ATTENDED', attendedAt: enrollment.attendedAt },
+          alreadyMarked: true,
+          earningsReleased,
+        });
+      }
+      if (enrollment.status !== 'PAID') {
+        return reply.code(409).send({
+          error: `Attendance can only be marked for a paid enrolment (this one is ${enrollment.status.toLowerCase().replace('_', ' ')}).`,
+          code: 'enrollment_not_paid',
+        });
+      }
+      if (sess.status === 'CANCELLED') {
+        return reply.code(409).send({ error: 'This session was cancelled.', code: 'session_cancelled' });
+      }
+      if (!started && !isAdmin(request)) {
+        return reply.code(409).send({
+          error: 'Attendance can be marked once the class has started.',
+          code: 'session_not_started',
+        });
+      }
+      const claimed = await prisma.wellnessEnrollment.updateMany({
+        where: { id: enrollment.id, status: 'PAID' },
+        data: { status: 'ATTENDED', attendedAt: new Date() },
+      });
+      if (claimed.count !== 1) {
+        // Lost a race with a cancel or a concurrent mark: report the truth.
+        return reply.code(409).send({ error: 'This enrolment changed; refresh and try again.', code: 'enrollment_changed' });
+      }
+      const fresh = await prisma.wellnessEnrollment.findUnique({
+        where: { id: enrollment.id },
+        select: { id: true, status: true, attendedAt: true },
+      });
+      return reply.send({ data: fresh, earningsReleased });
     }
   );
 
@@ -902,4 +1134,37 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       return reply.send({ data: serializeSession(updated) });
     }
   );
+}
+
+
+/**
+ * QA 2026-10-13: webhook backstop for wellness enrolments. Wellness writes no
+ * Payment row, so a learner who paid and closed the tab before /verify was never
+ * confirmed (money captured, enrolment stuck PENDING_PAYMENT, no room link, no
+ * instructor earning). Called from the Razorpay `payment.captured` handler once
+ * no Payment / donation / consultation owns the order. Idempotent: only a
+ * PENDING_PAYMENT row moves, and only when the captured amount equals the price.
+ */
+export async function finalizeWellnessEnrollmentFromWebhook(
+  razorpayOrderId: string,
+  capturedPaise: number | null,
+): Promise<{ handled: boolean; reason?: string }> {
+  if (!razorpayOrderId) return { handled: false, reason: 'no-order' };
+  const enrollment = await prisma.wellnessEnrollment.findFirst({
+    where: { razorpayOrderId },
+    include: { session: { select: { priceInr: true } } },
+  });
+  if (!enrollment) return { handled: false, reason: 'no-enrollment' };
+  if (enrollment.status !== 'PENDING_PAYMENT') return { handled: false, reason: 'not-pending' };
+  if (capturedPaise != null && Math.round(Number(enrollment.session.priceInr) * 100) !== Number(capturedPaise)) {
+    console.error('[wellness-sessions][amount-mismatch] webhook capture refused', enrollment.id);
+    return { handled: false, reason: 'amount-mismatch' };
+  }
+  const claimed = await prisma.wellnessEnrollment.updateMany({
+    where: { id: enrollment.id, status: 'PENDING_PAYMENT' },
+    data: { status: 'PAID' },
+  });
+  if (claimed.count < 1) return { handled: false, reason: 'raced' };
+  await writeWellnessCommissionOnPaid(enrollment.id);
+  return { handled: true };
 }

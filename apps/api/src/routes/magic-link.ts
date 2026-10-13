@@ -236,7 +236,7 @@ export async function magicLinkRoutes(server: FastifyInstance) {
   // ── POST /request ──────────────────────────────────────────────────────
   server.post('/request', sensitiveAuthRateLimit, async (request, reply) => {
     const body = (request.body ?? {}) as { email?: string };
-    const email = (body.email ?? '').trim().toLowerCase();
+    const email = (typeof body.email === 'string' ? body.email : '').trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return reply.code(400).send({ error: 'Valid email required' });
     }
@@ -267,8 +267,14 @@ export async function magicLinkRoutes(server: FastifyInstance) {
     });
 
     if (result.skipped) {
-      // No Resend key configured — return the link in the response so
-      // local / demo environments can still test the flow.
+      // No Resend key configured. Handing the sign-in link back in the response
+      // is a local-testing convenience ONLY: /request is unauthenticated, so in
+      // production a missing key would let anyone request a victim's address
+      // (admins included) and read back a working session link.
+      if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_TOKENS !== 'true') {
+        server.log.error({ email }, 'magic-link: email delivery not configured; refusing to expose the link');
+        return reply.code(503).send({ error: 'Could not send email' });
+      }
       return reply.send({
         ok: true,
         devLink: linkUrl,
@@ -285,7 +291,7 @@ export async function magicLinkRoutes(server: FastifyInstance) {
   // ── POST /verify ───────────────────────────────────────────────────────
   server.post('/verify', sensitiveAuthRateLimit, async (request, reply) => {
     const body = (request.body ?? {}) as { token?: string };
-    const token = (body.token ?? '').trim();
+    const token = (typeof body.token === 'string' ? body.token : '').trim();
     const verified = verifyToken(token);
     if (!verified) {
       return reply.code(400).send({ error: 'Invalid or expired sign-in link' });

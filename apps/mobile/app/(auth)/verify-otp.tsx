@@ -87,7 +87,12 @@ export default function VerifyOtpScreen() {
       style={styles.flex}
     >
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <TouchableOpacity style={styles.back} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.back}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
           <Ionicons name="arrow-back" size={24} color={colors.stone[700]} />
         </TouchableOpacity>
 
@@ -119,7 +124,12 @@ export default function VerifyOtpScreen() {
 
         {busy ? <ActivityIndicator color={colors.saffron[600]} /> : null}
 
-        <TouchableOpacity onPress={resend} disabled={resendIn > 0}>
+        <TouchableOpacity
+          onPress={resend}
+          disabled={resendIn > 0}
+          accessibilityRole="button"
+          accessibilityLabel={resendIn > 0 ? `Resend code in ${resendIn} seconds` : 'Resend code'}
+        >
           <Text style={[styles.resendText, resendIn > 0 && styles.resendDisabled]}>
             {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
           </Text>

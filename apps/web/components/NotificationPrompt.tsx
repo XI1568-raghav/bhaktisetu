@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Bell, BellOff, X } from 'lucide-react';
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../lib/api-config';
 import { useAuth } from '../lib/auth-context';
+import { getStoredConsent } from './CookieBanner';
 
 import { buttonClass } from '../components/ui/button-recipe';
 import { userFacingMessage, UserFacingError } from '../lib/friendly-error';
@@ -22,6 +23,7 @@ import { userFacingMessage, UserFacingError } from '../lib/friendly-error';
 
 const DISMISS_KEY = 'darshya_push_dismissed_at';
 const DISMISS_DAYS = 7;
+const CONSENT_CHANGED_EVENT = 'darshya:consent-changed';
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
@@ -75,9 +77,20 @@ export function NotificationPrompt() {
     if (Notification.permission === 'denied') return;
     if (!isAuthenticated) return;
     if (isDismissed()) return;
-    // Brief delay so we don't slam the user on first paint
-    const t = window.setTimeout(() => setState('prompt'), 4000);
-    return () => window.clearTimeout(t);
+    // Do not stack on top of the cookie banner (at 390px banner + prompt + bottom
+    // nav covered half the screen): wait until a consent choice exists.
+    let timer: number | undefined;
+    const arm = () => {
+      if (timer !== undefined) return;
+      // Brief delay so we don't slam the user on first paint
+      timer = window.setTimeout(() => setState('prompt'), 4000);
+    };
+    if (getStoredConsent()) arm();
+    window.addEventListener(CONSENT_CHANGED_EVENT, arm);
+    return () => {
+      window.removeEventListener(CONSENT_CHANGED_EVENT, arm);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
     // Re-run when the session settles: auth-context resolves asynchronously
     // (it may have to revive from the cookie first), so on a signed-in browser
     // the first pass through this effect legitimately sees `false`.

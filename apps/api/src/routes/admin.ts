@@ -5,6 +5,7 @@ import { httpUrl } from '../lib/http-url.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { adminService, UnsupportedUserStatusError } from '../services/admin.service.js';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { CauseQualityError } from '../lib/cause-quality.js';
 import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
 import { resolveProviderRole } from '../services/payout.service.js';
@@ -13,6 +14,7 @@ import { resolveProviderRole } from '../services/payout.service.js';
 import { clampLimit, clampPage } from '../lib/pagination.js';
 import type { Prisma } from '@prisma/client';
 import { registerAdminTempleEditor, templeFlags } from './admin-temple-editor.js';
+import { hiddenReviewIds, hideReview, unhideReview } from '../lib/review-moderation.js';
 
 /**
  * CT-ADMIN-1 (prod, ct+admin token, 2026-09-08):
@@ -271,6 +273,19 @@ export async function adminRoutes(server: FastifyInstance) {
       return reply.code(404).send({ error: 'User not found' });
     }
 
+    // An admin who blocks their own account, or drops ADMIN from their own roles,
+    // locks themselves out of this very panel (and the last admin out of the product).
+    if (
+      id === request.currentUser?.id &&
+      (parsed.data.blocked === true ||
+        (parsed.data.roles !== undefined && !parsed.data.roles.includes('ADMIN')))
+    ) {
+      return reply.code(400).send({
+        error: 'Cannot lock yourself out',
+        message: 'You cannot block your own account or remove your own admin role. Ask another admin.',
+      });
+    }
+
     let result;
     try {
       result = await adminService.updateUser(id, parsed.data);
@@ -345,7 +360,7 @@ export async function adminRoutes(server: FastifyInstance) {
   // ─── GET /onboarding-documents/:userId — signed links to a provider's ID uploads ─
   // Aadhaar / certificate files live in a private bucket; links expire in 10 min.
 
-  server.get('/onboarding-documents/:userId', { preHandler: adminPreHandlers }, async (request, reply) => {
+  server.get('/onboarding-documents/:userId', { preHandler: [...adminPreHandlers, uuidParamGuard('userId')] }, async (request, reply) => {
     const { userId } = request.params as { userId: string };
     try {
       const rows = await prisma.onboardingStep.findMany({ where: { userId, step: 4 }, take: 10 });
@@ -463,7 +478,7 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.post('/temples', { preHandler: adminPreHandlers }, async (request, reply) => {
     const body = validateBody(templeCreateSchema, request.body, reply);
-    if (!body) return;
+    if (!body) return reply;
     const slug = body.slug ?? slugifyTempleName(body.name);
     if (!slug) {
       return reply
@@ -597,7 +612,7 @@ export async function adminRoutes(server: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const body = validateBody(priestCommissionSchema, request.body, reply);
-      if (!body) return;
+      if (!body) return reply;
 
       const share = body.commissionRate;
       // (0,1] is exactly the band resolvePriestShare trusts; anything outside
@@ -1053,9 +1068,6 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   // ─── Ratings moderation ───────────────────────────────────────────────────
-  // The Review model is schema-locked: there is no isHidden column. Until a
-  // migration adds one, the "Hide rating" action is a no-op that we log so
-  // ops sees the moderator intent. The list endpoint still works.
   const ratingsQuerySchema = z.object({
     stars: z.string().optional(),
     providerId: z.string().optional(),
@@ -1082,6 +1094,7 @@ export async function adminRoutes(server: FastifyInstance) {
       prisma.review.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: pageSize }),
       prisma.review.count({ where }),
     ]);
+    const hiddenIds = new Set(await hiddenReviewIds());
     return {
       data: rows.map((r) => ({
         id: r.id,
@@ -1091,8 +1104,7 @@ export async function adminRoutes(server: FastifyInstance) {
         rating: r.rating,
         comment: r.comment,
         createdAt: r.createdAt,
-        // isHidden column not in schema yet — always false until migration.
-        isHidden: false,
+        isHidden: hiddenIds.has(r.id),
       })),
       page,
       pageSize,
@@ -1100,19 +1112,35 @@ export async function adminRoutes(server: FastifyInstance) {
     };
   });
 
+  // Hiding goes through lib/review-moderation (a lazily-created side table): the
+  // reviews table has no isHidden column and adding one would break every review
+  // query until an owner applied a migration. Hidden reviews drop out of public lists
+  // and recomputed averages (provider.service, store, priest readers).
+  const reviewIdParams = z.object({ id: z.string().uuid() });
+  const hideBodySchema = z.object({ reason: z.string().trim().max(500).optional() });
+
   server.post('/ratings/:id/hide', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    // Schema-locked: no isHidden column on reviews. We log the moderator
-    // intent so ops can act manually until the migration lands.
-    server.log.warn(
-      { reviewId: id, moderator: request.currentUser?.id },
-      'Admin attempted to hide rating but isHidden column is not in schema. Skipped.',
-    );
-    return reply.send({
-      ok: false,
-      skipped: true,
-      reason: 'Review.isHidden column not present in current schema. Logged moderator intent.',
-    });
+    const params = reviewIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid rating id' });
+    const body = hideBodySchema.safeParse(request.body ?? {});
+    if (!body.success) return reply.code(400).send({ error: 'Invalid request body' });
+    const review = await prisma.review.findUnique({ where: { id: params.data.id }, select: { id: true } });
+    if (!review) return reply.code(404).send({ error: 'Rating not found' });
+    try {
+      const r = await hideReview(review.id, request.currentUser?.id ?? null, body.data.reason ?? null);
+      server.log.info({ reviewId: review.id, moderator: request.currentUser?.id, changed: r.changed }, 'admin hid rating');
+      return reply.send({ ok: true, hidden: true, alreadyHidden: !r.changed });
+    } catch (err) {
+      server.log.error({ err, reviewId: review.id }, 'hide rating failed');
+      return reply.code(500).send({ ok: false, error: 'Could not hide this rating. Please try again.' });
+    }
+  });
+
+  server.post('/ratings/:id/unhide', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const params = reviewIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid rating id' });
+    const r = await unhideReview(params.data.id);
+    return reply.send({ ok: true, hidden: false, wasHidden: r.changed });
   });
 }
 

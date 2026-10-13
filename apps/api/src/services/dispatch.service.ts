@@ -402,6 +402,15 @@ export class DispatchService {
         where: { bookingId, state: 'sent', id: { not: offer.id } },
         data: { state: 'superseded', respondedAt: now },
       });
+      // QA 2026-10-13: the status check above is a read, and the slot lock is
+      // per-pandit, so two different pandits accepting the same broadcast at
+      // once both passed it and the later write silently took the booking. The
+      // winner is whoever flips the still-unassigned row.
+      const claim = await tx.pujaBooking.updateMany({
+        where: { id: bookingId, status: 'confirmed', priestId: null },
+        data: { priestId, status: 'priest_assigned', assignedVia: 'broadcast', offerExpiresAt: null },
+      });
+      if (claim.count === 0) throw new Error('This booking has already been assigned.');
       const assigned = await tx.pujaBooking.update({
         where: { id: bookingId },
         data: { priestId, status: 'priest_assigned', assignedVia: 'broadcast', offerExpiresAt: null },

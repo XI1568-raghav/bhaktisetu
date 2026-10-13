@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { notifyUser } from './notifications.js';
 
@@ -102,6 +103,7 @@ async function devoteeHasPaidRelationship(
 
 export async function conversationRoutes(server: FastifyInstance) {
   server.addHook('preHandler', authenticateUser);
+  server.addHook('preHandler', uuidParamGuard('id', 'callId'));
 
   // ── List my conversations ─────────────────────────────────────────
   server.get('/', async (request: FastifyRequest, reply: FastifyReply) => {

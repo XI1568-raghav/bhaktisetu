@@ -87,6 +87,21 @@ describe('magic-link /request — validation + rate limit (P1-1)', () => {
     await app.close();
   });
 
+  it('never returns the sign-in link in production when email is skipped', async () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.ALLOW_DEMO_TOKENS;
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/magic-link/request',
+      payload: { email: 'victim@example.com' },
+    });
+    expect(res.statusCode).toBe(503);
+    expect(res.body).not.toContain('devLink');
+    expect(res.body).not.toContain('/auth/verify');
+    await app.close();
+  });
+
   it('returns 429 after exceeding the 10/min sensitive-auth rate limit', async () => {
     const app = await buildApp();
     let lastStatus = 0;

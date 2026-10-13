@@ -6,8 +6,8 @@ import { router } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
-import { fetchWithBudget } from '../../lib/fetch-budget';
 import { selectLessonProgress, badgeLabel, type LessonProgress } from '../../lib/lesson-progress';
+import { authedFetch } from '../../lib/authed-fetch';
 
 interface Lesson {
   id: string;
@@ -60,7 +60,7 @@ export default function LearnSanskritScreen() {
     let cancelled = false;
     // `fetchWithBudget`, not a bare `fetch`: a stalled socket left this screen
     // spinning forever with no error (the LIVE P0 class in TASKS.md).
-    fetchWithBudget(`${apiBase()}/api/v1/lessons`, {
+    authedFetch(`${apiBase()}/api/v1/lessons`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))

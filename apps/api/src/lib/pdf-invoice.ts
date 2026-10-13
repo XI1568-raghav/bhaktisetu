@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { pdfSafe } from './pdf-safe-text.js';
 
 /**
  * Payment-receipt generator covering the four paid product surfaces of
@@ -187,7 +188,9 @@ function referenceFor(input: InvoiceInput): string {
   }
 }
 
-export async function generateInvoice(input: InvoiceInput): Promise<Buffer> {
+export async function generateInvoice(rawInput: InvoiceInput): Promise<Buffer> {
+  // Helvetica is WinAnsi-only; see pdf-safe-text.ts (Devanagari names used to throw).
+  const input = pdfSafe(rawInput);
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([595, 842]); // A4
   const font = await pdf.embedFont(StandardFonts.Helvetica);

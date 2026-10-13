@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { notHiddenReviewWhere } from '../lib/review-moderation.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import {
   storeService,
@@ -288,6 +289,7 @@ export async function storeRoutes(server: FastifyInstance) {
       : [];
     const reviews = await prisma.review.findMany({
       where: {
+        ...(await notHiddenReviewWhere()),
         OR: [
           { providerId: userId, providerType: 'STORE' },
           ...(productIds.length > 0 ? [{ productId: { in: productIds } }] : []),

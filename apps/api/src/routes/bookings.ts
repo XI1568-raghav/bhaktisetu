@@ -18,9 +18,10 @@ import {
 } from '../services/cancellation.service.js';
 import { paymentService, PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
-import { hoursUntilSlot } from '../lib/slot-time.js';
+import { hoursUntilSlot, parseSlotMinutes, resolveSlotInstant } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 import { REFUND_INTERNATIONAL_CARD_LABEL } from '../lib/refund-timing.js';
 import { platformRateOf } from '../lib/commission-math.js';
@@ -1841,7 +1842,7 @@ export async function bookingRoutes(server: FastifyInstance) {
   // GET /:id/video - Get video proof URL
   server.get(
     '/:id/video',
-    { preHandler: [authenticateUser] },
+    { preHandler: [authenticateUser, uuidParamGuard('id')] },
     async (request, reply) => {
       try {
         const { id } = paramsWithId.parse(request.params);
@@ -1939,6 +1940,24 @@ export async function bookingRoutes(server: FastifyInstance) {
         // a client that ignores the new flag must not keep printing a number
         // the product will not honour.
         const allowed = cancellationAllowed(quote.hoursUntilSlot, booking.status);
+        // QA 2026-10-13: an UNPAID booking has no money to give back, so no refund
+        // tier applies. Cancelling it is free and always allowed; the quote must not
+        // print a "75% refund" for a payment that never happened.
+        if (booking.status === 'pending_payment') {
+          return {
+            bookingId: id,
+            cancellationAllowed: true,
+            cancellationCutoffHours: DEVOTEE_CANCEL_CUTOFF_HOURS,
+            unpaid: true,
+            refundFraction: 0,
+            refundAmountInr: 0,
+            feeAmountInr: 0,
+            tierLabel: 'Nothing was charged for this booking, so there is nothing to refund. Cancelling it is free.',
+            hoursUntilSlot: quote.hoursUntilSlot,
+            refundDaysLabel: policy.refundDaysLabel,
+            refundInternationalCardLabel: REFUND_INTERNATIONAL_CARD_LABEL,
+          };
+        }
         return {
           bookingId: id,
           cancellationAllowed: allowed,
@@ -2374,6 +2393,16 @@ export async function bookingRoutes(server: FastifyInstance) {
         if (slotTimes.length > 0 && !slotTimes.includes(body.scheduledTime)) {
           return reply.status(409).send({
             error: `Slot ${body.scheduledTime} is not offered. Available slots: ${slotTimes.join(', ')}.`,
+          });
+        }
+
+        if (
+          parseSlotMinutes(body.scheduledTime) !== null &&
+          resolveSlotInstant(scheduledDate, body.scheduledTime).getTime() <= Date.now()
+        ) {
+          return reply.status(409).send({
+            error: `Slot ${body.scheduledTime} has already passed. Please choose a later time.`,
+            code: 'SLOT_UNAVAILABLE',
           });
         }
 

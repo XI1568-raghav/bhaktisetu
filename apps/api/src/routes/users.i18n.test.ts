@@ -189,7 +189,7 @@ describe('I-04 — the other error exits of this route file', () => {
     const app = await buildApp();
     const res = await app.inject({
       method: 'DELETE',
-      url: '/api/v1/users/me/addresses/abc',
+      url: '/api/v1/users/me/addresses/00000000-0000-4000-8000-000000000001',
       headers: { 'accept-language': 'hi' },
     });
     await app.close();

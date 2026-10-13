@@ -9,8 +9,10 @@ const { supaSignOut, getUser } = vi.hoisted(() => ({
 }));
 
 vi.mock('../lib/supabase.js', () => ({
-  createSupabaseClient: () => ({ auth: { signOut: supaSignOut, getUser } }),
-  supabaseAdmin: { auth: { getUser: vi.fn() } },
+  createSupabaseClient: () => ({ auth: { getUser } }),
+  // The scoped GoTrue logout goes through the admin client; `auth.signOut()` on a
+  // server-side client holds no session and never reaches GoTrue.
+  supabaseAdmin: { auth: { getUser: vi.fn(), admin: { signOut: supaSignOut } } },
   isDemoMode: false,
 }));
 
@@ -72,7 +74,7 @@ describe('AUTH-09 — logout scope is a decision, and global is the default', ()
     });
 
     expect(res.statusCode).toBe(200);
-    expect(supaSignOut).toHaveBeenCalled();
+    expect(supaSignOut).toHaveBeenCalledWith('a-supabase-jwt', 'global');
     expect(
       sqlIssued().some((q) => /UPDATE refresh_token_jtis SET used_at .* user_id/i.test(q)),
     ).toBe(true);
@@ -88,10 +90,23 @@ describe('AUTH-09 — logout scope is a decision, and global is the default', ()
     });
 
     expect(res.statusCode).toBe(200);
+    // This device's session must really end upstream (it used to be skipped for
+    // local scope, leaving the refresh token alive), and only this device's.
+    expect(supaSignOut).toHaveBeenCalledWith('a-supabase-jwt', 'local');
     // The family-wide revoke is what reaches the phone; it must not run.
     expect(
       sqlIssued().some((q) => /UPDATE refresh_token_jtis SET used_at .* user_id/i.test(q)),
     ).toBe(false);
+    await app.close();
+  });
+
+  it('resolves the user BEFORE signing out, since a dead session no longer resolves', async () => {
+    const order: string[] = [];
+    getUser.mockImplementation(async () => { order.push('getUser'); return { data: { user: { id: USER_ID } } }; });
+    supaSignOut.mockImplementation(async () => { order.push('signOut'); return { error: null }; });
+    const app = makeApp();
+    await app.inject({ method: 'POST', url: '/api/v1/auth/logout', payload: { accessToken: 'a-supabase-jwt' } });
+    expect(order).toEqual(['getUser', 'signOut']);
     await app.close();
   });
 

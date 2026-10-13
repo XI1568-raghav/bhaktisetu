@@ -63,6 +63,7 @@ import PujaShareButton from '../../../components/puja/PujaShareButton';
 import { pujaCardBlurb, HERO_BLURB_MAX } from '../../../lib/puja-blurb';
 import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import PujaSocialProof from '../../../components/PujaSocialProof';
+import { placeLabel } from '../../../lib/place-label';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -588,7 +589,7 @@ export default async function PujaDetailPage({
  </div>
  <p className="mb-2 flex items-center gap-1 text-sm text-surface-500">
  <MapPin className="h-3.5 w-3.5" />
- {temple.templeCity}, {temple.templeState}
+ {placeLabel(temple.templeCity, temple.templeState)}
  </p>
  <div className="flex flex-wrap items-center gap-2 text-xs text-surface-400">
  {/* TC-07: this pill rendered a filled amber star beside "4.9/5" on every

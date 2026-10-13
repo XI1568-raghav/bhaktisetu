@@ -6,13 +6,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
-import { fetchWithBudget, readErrorMessage, failureMessage } from '../../lib/fetch-budget';
+import { readErrorMessage, failureMessage } from '../../lib/fetch-budget';
 import {
   buildGurukulApplication,
   effectiveApplicantType,
   guardianRequired,
   GurukulApplicationError,
 } from '../../lib/gurukul-application';
+import { authedFetch } from '../../lib/authed-fetch';
 
 type ApplicantType = 'self' | 'parent';
 
@@ -92,7 +93,7 @@ export default function GurukulApplyScreen() {
 
     setSubmitting(true);
     try {
-      const res = await fetchWithBudget(`${apiBase()}/api/v1/gurukul-applications`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/gurukul-applications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}` },
         body: JSON.stringify(payload),

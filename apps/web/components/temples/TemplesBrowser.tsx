@@ -19,6 +19,7 @@ import {
  X,
 } from 'lucide-react';
 import { getTempleHero, getDeityImage, remoteImage, remoteSrcSet, IMG_W } from '../../lib/images';
+import { placeLabel } from '../../lib/place-label';
 import {
  ALL_STATES,
  DEFAULT_TEMPLE_FILTERS,
@@ -477,7 +478,7 @@ function TempleCard({ temple, index = 0 }: { temple: TempleCardData; index?: num
  </h3>
  <p className="mb-2 flex items-center gap-1 text-sm text-surface-500">
  <MapPin className="h-3.5 w-3.5 shrink-0" />
- {temple.city}, {temple.state}
+ {placeLabel(temple.city, temple.state)}
  </p>
  <p className="mb-3 line-clamp-2 text-sm text-surface-600">{temple.description}</p>
 

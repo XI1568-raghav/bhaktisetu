@@ -160,3 +160,27 @@ describe('DI-05 mintProviderEarningForBooking', () => {
     expect(outcome).not.toBe('minted');
   });
 });
+
+describe('re-attaching a pandit after the first one released the booking', () => {
+  it('re-points the REVERSED row at the replacement pandit (booking_id is unique)', async () => {
+    const tx = makeTx();
+    (tx.commission as any).update = vi.fn().mockResolvedValue({});
+    tx.commission.findFirst.mockResolvedValue({ id: 'cm-old', status: 'REVERSED' });
+
+    const outcome = await mintProviderEarningForBooking(tx, BOOKING);
+
+    expect(outcome).toBe('minted');
+    expect(tx.commission.createMany).not.toHaveBeenCalled();
+    const args = (tx.commission as any).update.mock.calls[0][0];
+    expect(args.where).toEqual({ id: 'cm-old' });
+    expect(args.data.providerId).toBe('user-pandit-1');
+    expect(args.data.status).toBe('PENDING');
+    expect(new Prisma.Decimal(args.data.amount).toString()).toBe('770');
+  });
+
+  it('still refuses when a LIVE commission already owns the booking', async () => {
+    const tx = makeTx();
+    tx.commission.findFirst.mockResolvedValue({ id: 'cm-live', status: 'PENDING' });
+    expect(await mintProviderEarningForBooking(tx, BOOKING)).toBe('already-on-unified-rail');
+  });
+});

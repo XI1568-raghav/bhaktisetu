@@ -16,6 +16,7 @@ import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 import { resolveContentPujas, pujaLinkLabel, BROWSE_PUJAS_HREF } from '../../../lib/puja-link';
 import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
 import { ENRICHMENT } from '../../../lib/enrich';
+import { placeLabel } from '../../../lib/place-label';
 
 export const dynamicParams = false;
 export const revalidate = 3600;
@@ -126,7 +127,7 @@ export default async function CityPage({ params }: Params) {
                 className="rounded-xl border border-surface-200 bg-white p-5 hover:shadow-sm transition-shadow"
               >
                 <h3 className="text-lg font-semibold text-surface-900 mb-1">{t.name}</h3>
-                <p className="text-xs text-surface-500 mb-2">{t.city}, {t.state}</p>
+                <p className="text-xs text-surface-500 mb-2">{placeLabel(t.city, t.state)}</p>
                 <Link
                   href={`/temples/${canonicalTempleSlug(t.slug)}`}
                   className="text-sm font-semibold text-saffron-700 hover:underline"

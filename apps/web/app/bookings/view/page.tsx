@@ -1229,6 +1229,9 @@ function BookingDetailContent() {
  {[1, 2, 3, 4, 5].map((star) => (
  <button
  key={star}
+ type="button"
+ aria-label={`${star} star${star === 1 ? '' : 's'}`}
+ aria-pressed={reviewRating === star}
  onClick={() => setReviewRating(star)}
  onMouseEnter={() => setReviewHover(star)}
  onMouseLeave={() => setReviewHover(0)}

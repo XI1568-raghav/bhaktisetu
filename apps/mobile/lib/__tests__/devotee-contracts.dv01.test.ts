@@ -425,9 +425,10 @@ describe('DV-01 fetch budget — the infinite-spinner P0 on hand-rolled fetches'
       // `fetchWithBudget(` ends in `Budget(`, so a bare call is one whose
       // `fetch(` is not preceded by `With`.
       expect(src, `${screen} still calls a bare fetch`).not.toMatch(
-        /(?<!With)[Ff]etch\(\s*`?\$\{apiBase/,
+        /(?<!With)(?<!authed)[Ff]etch\(\s*`?\$\{apiBase/,
       );
-      expect(src, `${screen} does not import the budget`).toContain('fetchWithBudget');
+      // authedFetch (lib/authed-fetch.ts) is fetchWithBudget + the 401 refresh.
+      expect(src, `${screen} does not import the budget`).toMatch(/fetchWithBudget|authedFetch/);
     }
   });
 });

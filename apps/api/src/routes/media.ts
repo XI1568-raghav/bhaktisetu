@@ -61,9 +61,9 @@ export async function mediaRoutes(server: FastifyInstance) {
         error: `Unsupported contentType. Allowed: ${Object.keys(TYPE_POLICY).join(', ')}.`,
       });
     }
-    // Derive the extension from the type policy (trusted), but allow a client
-    // override as long as it sanitizes to a short alphanumeric token.
-    const ext = (body.ext ?? policy.ext).replace(/[^a-z0-9]/gi, '').slice(0, 6) || policy.ext;
+    // The extension comes from the type policy only. A client-supplied `ext`
+    // used to be honoured, which let an `image/png` upload be keyed `.html`.
+    const ext = policy.ext;
 
     if (!r2.enabled) {
       return reply.code(503).send({
@@ -85,7 +85,7 @@ export async function mediaRoutes(server: FastifyInstance) {
 
     const result = await presignR2Upload({ key, contentType, expiresInSec: 600, private: isPrivate });
     if (!result) {
-      return reply.code(500).send({ error: 'Failed to generate upload URL' });
+      return reply.code(503).send({ error: 'File storage is temporarily unavailable. Please try again in a moment.' });
     }
 
     return reply.send({

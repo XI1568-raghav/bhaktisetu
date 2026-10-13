@@ -90,14 +90,15 @@ export async function adminDonationsExportRoutes(server: FastifyInstance) {
           `SELECT d.receipt_number,
                   u.full_name AS donor_name,
                   u.email     AS donor_email,
-                  NULL::text  AS donor_pan,
-                  gp.gaushala_name AS donee_name,
+                  d.donor_pan   AS donor_pan,
+                  COALESCE(gp.gaushala_name, t.name) AS donee_name,
                   d.amount_inr::text AS amount_inr,
                   d.paid_at,
-                  d.gaushala_id
+                  COALESCE(d.gaushala_id, d.temple_id::text) AS gaushala_id
              FROM donations d
              LEFT JOIN users u             ON u.id = d.user_id
              LEFT JOIN gaushala_profiles gp ON gp.user_id::text = d.gaushala_id
+             LEFT JOIN temples t           ON t.id = d.temple_id
             WHERE d.status = 'paid'
               AND d.paid_at IS NOT NULL
               AND d.paid_at >= $1

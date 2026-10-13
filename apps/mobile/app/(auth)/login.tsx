@@ -112,6 +112,9 @@ export default function LoginScreen() {
               <TouchableOpacity
                 style={[styles.tab, tab === 'email' && styles.tabActive]}
                 onPress={() => setTab('email')}
+                accessibilityRole="tab"
+                accessibilityLabel="Sign in with email"
+                accessibilityState={{ selected: tab === 'email' }}
               >
                 <Ionicons
                   name="mail-outline"
@@ -125,6 +128,9 @@ export default function LoginScreen() {
               <TouchableOpacity
                 style={[styles.tab, tab === 'phone' && styles.tabActive]}
                 onPress={() => setTab('phone')}
+                accessibilityRole="tab"
+                accessibilityLabel="Sign in with phone OTP"
+                accessibilityState={{ selected: tab === 'phone' }}
               >
                 <Ionicons
                   name="phone-portrait-outline"
@@ -165,6 +171,9 @@ export default function LoginScreen() {
                   style={[styles.primaryBtn, busy && styles.btnDisabled]}
                   onPress={handleEmailLogin}
                   disabled={busy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign in"
+                  accessibilityState={{ disabled: busy, busy }}
                 >
                   {busy ? (
                     <ActivityIndicator color={colors.white} />
@@ -180,6 +189,8 @@ export default function LoginScreen() {
                 <TouchableOpacity
                   style={styles.forgotLink}
                   onPress={() => router.push('/(auth)/forgot-password')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Forgot password"
                   disabled={busy}
                 >
                   <Text style={styles.forgotLinkText}>Forgot password?</Text>
@@ -227,6 +238,9 @@ export default function LoginScreen() {
                   style={[styles.primaryBtn, busy && styles.btnDisabled]}
                   onPress={handlePhoneSubmit}
                   disabled={busy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Send OTP"
+                  accessibilityState={{ disabled: busy, busy }}
                 >
                   {busy ? (
                     <ActivityIndicator color={colors.white} />
@@ -244,6 +258,8 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={styles.footerLink}
             onPress={() => router.push('/(auth)/signup' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Create a new account"
           >
             <Text style={styles.footerText}>
               New to Darshya? <Text style={styles.footerTextBold}>Create account</Text>

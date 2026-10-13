@@ -121,8 +121,17 @@ export async function gaushalaCowsRoutes(server: FastifyInstance) {
  if (rejectUnstorableCowId(id, reply)) return;
  const existing = await prisma.cow.findFirst({ where: { id, gaushalaId: gaushalaUserId } });
  if (!existing) return reply.code(404).send({ error: 'Cow not found' });
+ try {
  const cow = await prisma.cow.update({ where: { id }, data: parsed.data });
  return reply.send({ cow });
+ } catch (e: any) {
+ // Renaming a tag onto another of this gaushala's cows violates
+ // @@unique([gaushalaId, tagNumber]); POST already answers this as 409.
+ if (e?.code === 'P2002') {
+ return reply.code(409).send({ error: 'Tag number already exists' });
+ }
+ throw e;
+ }
  });
 
  // Delete cow

@@ -46,16 +46,46 @@ const enabled = r2Enabled || supabaseEnabled;
 // bucket: on Supabase they use a separate non-public bucket (created on first
 // use) and are only readable through short-lived signed URLs.
 const supabasePrivateBucket = process.env.STORAGE_PRIVATE_BUCKET ?? 'darshya-private';
+
+// A signed upload URL takes whatever bytes and Content-Type the holder sends; the
+// type/size checks made when the URL is issued are advisory only. The bucket is
+// the one place Supabase actually enforces them, so pin them there.
+const PRIVATE_DOC_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+const MEDIA_MIME = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'audio/mpeg', 'audio/wav', 'audio/webm',
+  'video/mp4', 'video/webm', 'video/quicktime',
+  'application/pdf',
+];
 let privateBucketReady: Promise<void> | null = null;
 function ensurePrivateBucket(): Promise<void> {
   privateBucketReady ??= (async () => {
-    const { error } = await supabaseAdmin.storage.createBucket(supabasePrivateBucket, { public: false });
+    const options = { public: false, fileSizeLimit: '10MB', allowedMimeTypes: PRIVATE_DOC_MIME };
+    const { error } = await supabaseAdmin.storage.createBucket(supabasePrivateBucket, options);
     if (error && !/already exists|duplicate/i.test(error.message)) {
       privateBucketReady = null;
       throw new Error(error.message);
     }
+    if (error) {
+      // Created by an earlier release without limits: bring it up to policy.
+      const upd = await supabaseAdmin.storage.updateBucket(supabasePrivateBucket, options);
+      if (upd.error) console.warn('[storage] could not apply private-bucket policy:', upd.error.message);
+    }
   })();
   return privateBucketReady;
+}
+let mediaBucketPolicy: Promise<void> | null = null;
+function ensureMediaBucketPolicy(): Promise<void> {
+  if (process.env.STORAGE_ENFORCE_MEDIA_POLICY === 'off') return Promise.resolve();
+  mediaBucketPolicy ??= (async () => {
+    try {
+      const upd = await supabaseAdmin.storage.updateBucket(supabaseBucket, { public: true, allowedMimeTypes: MEDIA_MIME });
+      if (upd.error) console.warn('[storage] could not apply media-bucket policy:', upd.error.message);
+    } catch (err) {
+      console.warn('[storage] media-bucket policy skipped:', err instanceof Error ? err.message : err);
+    }
+  })();
+  return mediaBucketPolicy;
 }
 
 const r2Client = r2Enabled
@@ -196,6 +226,7 @@ export async function presignR2Upload(params: {
     if (error || !data) return null;
     return { uploadUrl: data.signedUrl, publicUrl: '', backend: 'supabase' };
   }
+  await ensureMediaBucketPolicy();
   const { data, error } = await supabaseAdmin.storage
     .from(supabaseBucket)
     .createSignedUploadUrl(params.key);
@@ -237,3 +268,31 @@ export const r2 = {
     ? `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/${supabaseBucket}`
     : null,
 };
+
+/**
+ * Is the object behind a URL we minted a real recording?
+ *
+ * A signed upload URL accepts ANY bytes with ANY Content-Type (the type and size
+ * checked at presign time are advisory), so a zero-byte file or an HTML page can
+ * be PUT and then submitted as "video proof" — the proof that releases the
+ * pandit's earnings. For URLs that point at our own public storage, HEAD the
+ * object and require a non-trivial video. External links (Drive, YouTube) are
+ * not ours to inspect and pass through.
+ */
+export async function inspectOwnVideoUrl(
+  url: string,
+): Promise<{ ok: true } | { ok: false; reason: 'missing' | 'empty' | 'not_video' | 'unreachable' }> {
+  const base = r2.publicBaseUrl;
+  if (!base || !url.startsWith(base.replace(/\/$/, '') + '/')) return { ok: true };
+  try {
+    const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return { ok: false, reason: res.status >= 500 ? 'unreachable' : 'missing' };
+    const len = Number(res.headers.get('content-length') ?? '0');
+    if (!Number.isFinite(len) || len < MIN_VIDEO_BYTES) return { ok: false, reason: 'empty' };
+    if (!(res.headers.get('content-type') ?? '').toLowerCase().startsWith('video/')) return { ok: false, reason: 'not_video' };
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: 'unreachable' };
+  }
+}
+const MIN_VIDEO_BYTES = 1024;

@@ -67,10 +67,10 @@ type StoreOrderStatus = (typeof STORE_ORDER_STATUSES)[number];
 const ALLOWED_TRANSITIONS: Readonly<Record<StoreOrderStatus, StoreOrderStatus[]>> =
   Object.freeze({
     PENDING: ['CONFIRMED', 'CANCELLED'],
-    CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED'],
-    PROCESSING: ['SHIPPED', 'CANCELLED'],
-    SHIPPED: ['DELIVERED'],
-    DELIVERED: [],
+    CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED', 'REFUNDED'],
+    PROCESSING: ['SHIPPED', 'CANCELLED', 'REFUNDED'],
+    SHIPPED: ['DELIVERED', 'REFUNDED'],
+    DELIVERED: ['REFUNDED'],
     CANCELLED: [],
     REFUNDED: [],
   });

@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
-import { clientIp, rateLimitKey } from './rate-limit-key.js';
+import { clientIp, isCloudflareEdgeIp, rateLimitKey } from './rate-limit-key.js';
+
+const CF_HOP = '173.245.48.9';
 
 // R-Q2-E-013 — API rate limiting per-user + per-IP
 // SCAL-01 — the partition was broken; these tests now prove it isn't.
@@ -100,8 +102,8 @@ describe('rate-limit key derivation (SCAL-01)', () => {
   });
 
   it('separates anonymous callers behind a proxy via CF-Connecting-IP', () => {
-    const a = rateLimitKey(asReq({ 'cf-connecting-ip': '1.1.1.1' }, '10.0.0.1'));
-    const b = rateLimitKey(asReq({ 'cf-connecting-ip': '2.2.2.2' }, '10.0.0.1'));
+    const a = rateLimitKey(asReq({ 'cf-connecting-ip': '1.1.1.1', 'x-forwarded-for': CF_HOP }, '10.0.0.1'));
+    const b = rateLimitKey(asReq({ 'cf-connecting-ip': '2.2.2.2', 'x-forwarded-for': CF_HOP }, '10.0.0.1'));
     expect(a).toBe('ip:1.1.1.1');
     expect(b).toBe('ip:2.2.2.2');
   });
@@ -109,6 +111,46 @@ describe('rate-limit key derivation (SCAL-01)', () => {
   it('ignores client-supplied X-Forwarded-For — it is forgeable', () => {
     // Honouring raw XFF would let one caller mint unlimited buckets.
     expect(clientIp(asReq({ 'x-forwarded-for': '9.9.9.9' }, '10.0.0.1'))).toBe('10.0.0.1');
+  });
+
+  it('ignores CF-Connecting-IP when the request did not come through Cloudflare (direct origin hit)', () => {
+    const rotate = (ip: string) => clientIp(asReq({ 'cf-connecting-ip': ip }, '10.0.0.1'));
+    expect(rotate('1.1.1.1')).toBe('10.0.0.1');
+    expect(rotate('2.2.2.2')).toBe('10.0.0.1');
+    // A forged XFF whose LAST hop is not Cloudflare (Render appends the real peer) does not help.
+    expect(clientIp(asReq({ 'cf-connecting-ip': '1.1.1.1', 'x-forwarded-for': '173.245.48.9, 198.51.100.9' }, '10.0.0.1'))).toBe('10.0.0.1');
+  });
+
+  it('honours CF-Connecting-IP when the last XFF hop is a Cloudflare edge', () => {
+    expect(clientIp(asReq({ 'cf-connecting-ip': '1.1.1.1', 'x-forwarded-for': '9.9.9.9, 104.16.5.5' }, '10.0.0.1'))).toBe('1.1.1.1');
+    expect(isCloudflareEdgeIp('2606:4700::1')).toBe(true);
+    expect(isCloudflareEdgeIp('8.8.8.8')).toBe(false);
+  });
+
+  it('RATE_LIMIT_TRUST_CF_HEADER=true restores unconditional trust (rollback lever)', () => {
+    process.env.RATE_LIMIT_TRUST_CF_HEADER = 'true';
+    try {
+      expect(clientIp(asReq({ 'cf-connecting-ip': '1.1.1.1' }, '10.0.0.1'))).toBe('1.1.1.1');
+    } finally {
+      delete process.env.RATE_LIMIT_TRUST_CF_HEADER;
+    }
+  });
+
+  it('with CF_ORIGIN_SECRET set, only the shared-secret header proves Cloudflare', () => {
+    process.env.CF_ORIGIN_SECRET = 's3cret';
+    try {
+      expect(clientIp(asReq({ 'cf-connecting-ip': '1.1.1.1', 'x-forwarded-for': CF_HOP }, '10.0.0.1'))).toBe('10.0.0.1');
+      expect(clientIp(asReq({ 'cf-connecting-ip': '1.1.1.1', 'x-origin-secret': 's3cret' }, '10.0.0.1'))).toBe('1.1.1.1');
+    } finally {
+      delete process.env.CF_ORIGIN_SECRET;
+    }
+  });
+
+  it('keys /auth/* by IP even when a rotating Bearer token is sent', () => {
+    const a = rateLimitKey({ ...asReq({ authorization: 'Bearer junk1' }, '10.0.0.1'), url: '/api/v1/auth/login' });
+    const b = rateLimitKey({ ...asReq({ authorization: 'Bearer junk2' }, '10.0.0.1'), url: '/api/v1/auth/login?x=1' });
+    expect(a).toBe('ip:10.0.0.1');
+    expect(b).toBe(a);
   });
 
   it('treats a blank Authorization header as anonymous, not as a shared bucket', () => {
@@ -158,8 +200,8 @@ describe('rate-limit enforcement (R-Q2-E-013)', () => {
 
   it('anonymous callers behind the proxy get independent buckets', async () => {
     app = await buildApp({ max: 2 });
-    const one = { 'cf-connecting-ip': '1.1.1.1' };
-    const two = { 'cf-connecting-ip': '2.2.2.2' };
+    const one = { 'cf-connecting-ip': '1.1.1.1', 'x-forwarded-for': CF_HOP };
+    const two = { 'cf-connecting-ip': '2.2.2.2', 'x-forwarded-for': CF_HOP };
     expect((await ping(one)).statusCode).toBe(200);
     expect((await ping(one)).statusCode).toBe(200);
     expect((await ping(one)).statusCode).toBe(429);

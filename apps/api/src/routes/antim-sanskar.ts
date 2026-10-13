@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { sendOpsAlert } from '../lib/alert.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
 /**
@@ -175,10 +176,10 @@ function familyEmailHtml(params: {
 }): string {
   return `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#fbf7f1;color:#3d2e1f;margin:0;padding:0;">
 <div style="max-width:560px;margin:24px auto;padding:32px 28px;background:#fff;border-radius:12px;">
-<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Namaste ${params.contactName},</p>
+<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Namaste ${esc(params.contactName)},</p>
 <p style="font-size:14px;line-height:1.7;margin:0 0 12px;">We have received your request and our coordinator will call you. We cannot promise a call-back time. There is nothing further you need to do right now.</p>
-<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Reference number: <strong>${params.bookingNumber}</strong></p>
-<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Package: ${params.packageName} — to be settled on-site after the rites are complete.</p>
+<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Reference number: <strong>${esc(params.bookingNumber)}</strong></p>
+<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Package: ${esc(params.packageName)} — to be settled on-site after the rites are complete.</p>
 <p style="font-size:14px;line-height:1.7;margin:0 0 12px;">If you need to reach us before the call, our 24-hour coordinator line is in the WhatsApp message we just sent.</p>
 <p style="font-size:14px;line-height:1.7;margin:24px 0 0;">Om shanti.<br>Darshya</p>
 </div></body></html>`;

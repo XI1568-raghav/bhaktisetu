@@ -172,6 +172,11 @@ describe('SEC-02 — components/NotificationPrompt.tsx', () => {
     // httpOnly cookie fails that probe and was never prompted, even though the
     // app knows perfectly well who they are.
     window.localStorage.removeItem('poojly_session');
+    // The prompt now waits for a cookie-consent choice so it never stacks on the banner.
+    window.localStorage.setItem(
+      'darshya_cookie_consent_v1',
+      JSON.stringify({ version: 1, acceptedAt: new Date().toISOString() }),
+    );
     stubPushEnv();
     vi.useFakeTimers();
     render(<NotificationPrompt />);

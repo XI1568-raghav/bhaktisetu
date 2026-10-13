@@ -372,10 +372,20 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
     }
     const existing = await prisma.wellnessProfile.findUnique({ where: { userId } });
     if (!existing) {
+      // QA 2026-10-13 (mirrors gaushala S-08): a placeholder name ('Instructor') put a
+      // name nobody chose on the public directory and on receipts. The instructor
+      // supplies the real name or the profile is not created.
+      if (!parsed.data.displayName?.trim()) {
+        return reply.code(400).send({
+          code: 'display_name_required',
+          error: 'Display name required',
+          message: 'Enter your name as students should see it to create your instructor profile.',
+        });
+      }
       const profile = await prisma.wellnessProfile.create({
         data: {
           userId,
-          displayName: parsed.data.displayName ?? 'Instructor',
+          displayName: parsed.data.displayName.trim(),
           specialties: parsed.data.specialties ?? [],
           certifications: parsed.data.certifications ?? [],
           experience: parsed.data.experience ?? 0,

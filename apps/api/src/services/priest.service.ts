@@ -501,6 +501,22 @@ export class PriestService {
     // the assignment is durable — recordMoneyEvent takes no `tx` on purpose.
     let mintOutcome = 'no-provider-on-booking';
     const updated = await prisma.$transaction(async (tx) => {
+      // QA 2026-10-13: the checks above are a read; two pandits tapping Accept
+      // together both passed them, both got "accepted", and the earning was
+      // minted for whoever wrote first while the booking ended up with the
+      // other. Claim the booking atomically: only the row that is still
+      // unassigned (or already ours) and still open can be written.
+      const claim = await tx.pujaBooking.updateMany({
+        where: {
+          id: bookingId,
+          status: { in: ['confirmed', 'priest_assigned'] },
+          OR: [{ priestId: null }, { priestId }],
+        },
+        data: { priestId, status: 'priest_assigned' },
+      });
+      if (claim.count === 0) {
+        throw new Error('This booking was just taken by another pandit.');
+      }
       const row = await tx.pujaBooking.update({
         where: { id: bookingId },
         data: {

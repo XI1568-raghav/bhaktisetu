@@ -60,10 +60,24 @@ function getDisplayName(role: Props['role'], p: ProviderProfile): string {
  }
 }
 
+// Only the listings whose public page is keyed by this profile's own id. The
+// old `/${type}/${profile.id}` pointed pandit/wellness/temple at pages keyed by
+// a different id (Priest id, instructor fixture id, temple slug) and
+// astrologer/gaushala at routes that do not exist, so every "View public
+// profile" button was a 404. Those three get no button until the portal knows
+// the right id.
+function publicProfileHref(type: Props['publicListingType'], id?: string | null): string | null {
+ if (!type || !id) return null;
+ if (type === 'astrologer') return `/astrology/${id}`;
+ if (type === 'gaushala') return `/gaushala/profile/${id}`;
+ return null;
+}
+
 export default function MyProviderProfileCard({ role, onboardingSlug, publicListingType }: Props) {
  const { session } = useAuth();
  const token = session?.accessToken;
  const [profile, setProfile] = useState<ProviderProfile | null>(null);
+ const publicHref = publicProfileHref(publicListingType, profile?.id);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  // RES-06 (2026-08-12): "no profile" and "we could not READ the profile" are
@@ -234,9 +248,9 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  <Pencil className="w-3 h-3" />
  Edit profile
  </Link>
- {approved && publicListingType && profile.id && (
+ {approved && publicHref && (
  <Link
- href={`/${publicListingType === 'pandit' ? 'pandits' : publicListingType}/${profile.id}`}
+ href={publicHref}
  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-saffron-700 bg-saffron-50 border border-saffron-200 rounded-md hover:bg-saffron-100"
  >
  <ExternalLink className="w-3 h-3" />

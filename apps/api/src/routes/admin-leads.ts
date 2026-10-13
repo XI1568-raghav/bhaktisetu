@@ -4,8 +4,10 @@ import { httpUrl } from '../lib/http-url.js';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { runDailyOps } from '../jobs/master-cron.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 import { onboardingService } from '../services/onboarding.service.js';
 import { mapLeadRoleToOnboarding, isLeadRole, leadProfileSeed } from '../lib/lead-role-mapping.js';
 import { signToken, ONBOARDING_TOKEN_TTL_MIN } from './magic-link.js';
@@ -641,20 +643,20 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
               await sendEmail({
                 to: existing.email,
                 subject: `Next step for your Darshya ${roleLabel} listing`,
-                html: `<p>Namaste ${existing.name},</p><p>Thank you for applying to join Darshya as a <strong>${roleLabel}</strong>.</p>${gateStep}${parsed.data.reason ? `<p>Note from our team: ${parsed.data.reason}</p>` : ''}<p>— Darshya partnerships team</p>`,
+                html: `<p>Namaste ${esc(existing.name)},</p><p>Thank you for applying to join Darshya as a <strong>${roleLabel}</strong>.</p>${gateStep}${parsed.data.reason ? `<p>Note from our team: ${esc(parsed.data.reason)}</p>` : ''}<p>— Darshya partnerships team</p>`,
               }).catch(() => null);
               return { lead: updated, provisionedUserId, profileApproved };
             }
             await sendEmail({
               to: existing.email,
               subject: `You're verified on Darshya as a ${roleLabel}`,
-              html: `<p>Namaste ${existing.name},</p><p>Your application to join Darshya as a <strong>${roleLabel}</strong> has been approved.</p>${nextStep}${parsed.data.reason ? `<p>Note from our team: ${parsed.data.reason}</p>` : ''}<p>— Darshya partnerships team</p>`,
+              html: `<p>Namaste ${esc(existing.name)},</p><p>Your application to join Darshya as a <strong>${roleLabel}</strong> has been approved.</p>${nextStep}${parsed.data.reason ? `<p>Note from our team: ${esc(parsed.data.reason)}</p>` : ''}<p>— Darshya partnerships team</p>`,
             }).catch(() => null);
           } else if (isReject) {
             await sendEmail({
               to: existing.email,
               subject: `Update on your Darshya ${roleLabel} application`,
-              html: `<p>Namaste ${existing.name},</p><p>Thank you for your interest in joining Darshya. After review, we are unable to onboard your application at this time.</p>${parsed.data.reason ? `<p>${parsed.data.reason}</p>` : ''}<p>You may reapply once the gaps below are addressed. Reach us at partnerships@darshya.online for clarification.</p><p>— Darshya partnerships team</p>`,
+              html: `<p>Namaste ${esc(existing.name)},</p><p>Thank you for your interest in joining Darshya. After review, we are unable to onboard your application at this time.</p>${parsed.data.reason ? `<p>${esc(parsed.data.reason)}</p>` : ''}<p>You may reapply once the gaps below are addressed. Reach us at partnerships@darshya.online for clarification.</p><p>— Darshya partnerships team</p>`,
             }).catch(() => null);
           }
         }
@@ -670,7 +672,7 @@ export async function adminLeadsRoutes(server: FastifyInstance) {
   // Detail endpoint for the drawer — full lead + recent OutreachLog history.
   server.get<{ Params: { id: string } }>(
     '/leads/:id',
-    { preHandler: adminPreHandlers },
+    { preHandler: [...adminPreHandlers, uuidParamGuard('id')] },
     async (request, reply) => {
       const lead = leadModel();
       if (!lead) {

@@ -112,7 +112,7 @@ function formatDate(dateStr: string): string {
 }
 
 function formatTime(time: string): string {
- const parts = time.split(':').map(Number);
+ const parts = (time.match(/^\d{1,2}:\d{2}/)?.[0] ?? time).split(':').map(Number); // tolerate ranges like "06:00-08:00"
  const h = parts[0] ?? 0;
  const m = parts[1] ?? 0;
  const ampm = h >= 12 ? 'PM' : 'AM';

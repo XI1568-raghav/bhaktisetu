@@ -86,8 +86,9 @@ export interface MintableBooking {
  */
 export interface MintTxClient {
   commission: {
-    findFirst(args: unknown): Promise<{ id: string } | null>;
+    findFirst(args: unknown): Promise<{ id: string; status?: string } | null>;
     create(args: unknown): Promise<unknown>;
+    update(args: unknown): Promise<unknown>;
     /**
      * DI-06 (F367): the mint writes through `createMany({ skipDuplicates })`
      * so the UNIQUE index on `commissions.booking_id` resolves a race inside
@@ -119,9 +120,16 @@ export async function mintProviderEarningForBooking(
   // re-minting alongside it would resurrect an earning an admin voided.
   const alreadyOwned = await tx.commission.findFirst({
     where: { bookingId: booking.id },
-    select: { id: true },
+    select: { id: true, status: true },
   });
-  if (alreadyOwned) return 'already-on-unified-rail';
+  // QA 2026-10-13: a row voided because the FIRST pandit released the booking
+  // (priest.service.rejectBooking / pandit-cancel REVERSE it) used to block the
+  // replacement pandit for good, so he did the puja and was owed nothing: the
+  // booking_id UNIQUE index forbids a second row and this guard bailed on the
+  // first. A REVERSED row on a booking that is being attached to a pandit again
+  // (so it is not cancelled/refunded) is re-pointed at the new pandit below.
+  const revivableId = alreadyOwned?.status === 'REVERSED' ? alreadyOwned.id : null;
+  if (alreadyOwned && !revivableId) return 'already-on-unified-rail';
 
   // Guard 2 — legacy rail. The mirror of payment.service.createPriestPayout's
   // `unifiedLedgerRow` check. Without this the two rails are only ONE-WAY
@@ -147,6 +155,19 @@ export async function mintProviderEarningForBooking(
 
   const price = new Prisma.Decimal(booking.priceAmount as Prisma.Decimal);
   const providerEarning = new Prisma.Decimal((booking.priestPayout ?? 0) as Prisma.Decimal);
+
+  if (revivableId) {
+    await tx.commission.update({
+      where: { id: revivableId },
+      data: {
+        providerId: priestUser.userId,
+        amount: providerEarning,
+        percentage: platformRateOf(price.sub(providerEarning), price),
+        status: 'PENDING',
+      },
+    });
+    return 'minted';
+  }
 
   // DI-06 (F367): ON CONFLICT DO NOTHING behind the four guards above, so the
   // UNIQUE index `commissions_booking_id_key` (migration 20260824000000) closes

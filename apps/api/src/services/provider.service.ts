@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { notHiddenReviewWhere } from '../lib/review-moderation.js';
 import { CauseQualityError, gaushalaQuality, qualityReasonsForEdit, templeQuality } from '../lib/cause-quality.js';
 
 /** Upper bound on approved cause profiles scanned per list call (quality filter runs in memory). */
@@ -244,6 +245,7 @@ export class ProviderService {
       };
       const agg = await prisma.review.aggregate({
         where: {
+          ...(await notHiddenReviewWhere()),
           providerId: id,
           providerType: providerTypeMap[type] as 'PANDIT' | 'STORE' | 'ASTROLOGER' | 'WELLNESS' | 'GAUSHALA' | 'TEMPLE',
         },
@@ -281,7 +283,7 @@ export class ProviderService {
       };
 
       const reviews = await prisma.review.findMany({
-        where: { providerId: id, providerType: providerTypeMap[type] as 'PANDIT' | 'STORE' | 'ASTROLOGER' | 'WELLNESS' | 'GAUSHALA' | 'TEMPLE' },
+        where: { ...(await notHiddenReviewWhere()), providerId: id, providerType: providerTypeMap[type] as 'PANDIT' | 'STORE' | 'ASTROLOGER' | 'WELLNESS' | 'GAUSHALA' | 'TEMPLE' },
         orderBy: { createdAt: 'desc' },
         take: 10,
       });

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { buttonClass } from '../../components/ui/button-recipe';
 import { H1 } from '../../components/ui/heading-recipe';
 import { useAuth } from "../../lib/auth-context";
-import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../lib/api-config";
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../lib/api-config";
 import { userFacingMessage, UserFacingError, serverErrorMessage } from '../../lib/friendly-error';
 
 interface Org {
@@ -16,7 +16,8 @@ interface Org {
   role: "OWNER" | "ADMIN" | "MEMBER";
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// Prefix-safe: API_BASE_URL already ends in /api/v1 whatever NEXT_PUBLIC_API_URL holds.
+const API = API_BASE_URL;
 
 /**
  * SEC-02 step 3 — this file used to hand-build its own Bearer by reading
@@ -64,7 +65,7 @@ export default function OrgHubPage() {
   async function load() {
     setLoading(true);
     try {
-      const r = await orgFetch("/api/v1/orgs/my");
+      const r = await orgFetch("/orgs/my");
       const j = await r.json();
       setOrgs(j.orgs ?? []);
     } catch (e) {
@@ -89,7 +90,7 @@ export default function OrgHubPage() {
     setCreating(true);
     setError(null);
     try {
-      const r = await orgFetch("/api/v1/orgs", {
+      const r = await orgFetch("/orgs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, plan: "free" }),

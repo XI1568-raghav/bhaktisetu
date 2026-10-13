@@ -50,6 +50,7 @@ export const prismaMock = {
     findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     count: vi.fn(),
     groupBy: vi.fn(),
     aggregate: vi.fn(),
@@ -166,6 +167,8 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    // Cancel / attendance claim the enrolment's status with a conditional updateMany. Additive.
+    updateMany: vi.fn(),
     count: vi.fn(),
     // AO-15: admin.service.getReports aggregates the popular-services card
     // through groupBy. Additive — nothing that already stubbed this model
@@ -256,6 +259,9 @@ export const prismaMock = {
   review: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
+    // Admin rating moderation (hide/unhide) looks the review up and lists with a count. Additive.
+    findUnique: vi.fn(),
+    count: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     aggregate: vi.fn(),
@@ -320,6 +326,8 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    // Customer cancel claims the order's status with a conditional updateMany. Additive.
+    updateMany: vi.fn(),
     count: vi.fn(),
   },
   storeProduct: {
@@ -328,6 +336,7 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     // Present so a test can ASSERT IT IS NEVER CALLED. Store products are soft
     // deleted (`deletedAt`) because `reviews.product_id` is ON DELETE CASCADE —
     // a real delete destroys buyers' reviews. Without the spy the assertion

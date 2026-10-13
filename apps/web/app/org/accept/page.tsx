@@ -4,10 +4,11 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { H1 } from '../../../components/ui/heading-recipe';
 import { useAuth } from "../../../lib/auth-context";
-import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
 import { userFacingMessage, serverErrorMessage } from '../../../lib/friendly-error';
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// Prefix-safe: API_BASE_URL already ends in /api/v1 whatever NEXT_PUBLIC_API_URL holds.
+const API = API_BASE_URL;
 
 /**
  * SEC-02 step 3 — this file used to hand-build its own Bearer by reading
@@ -46,7 +47,7 @@ function AcceptInner() {
     (async () => {
       try {
         const r = await fetchWithTimeout(
-          `${API}/api/v1/orgs/accept-invite?token=${encodeURIComponent(token)}`,
+          `${API}/orgs/accept-invite?token=${encodeURIComponent(token)}`,
           {
             method: "POST",
             headers: {

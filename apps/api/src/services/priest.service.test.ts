@@ -378,3 +378,22 @@ describe('PriestService.getPayoutHistory', () => {
     expect(call.where).toEqual({ priestId: 'priest-1', status: 'pending' });
   });
 });
+
+describe('PriestService.acceptBooking — lost race', () => {
+  it('refuses, and mints nothing, when another pandit claimed the booking first', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: true, status: 'active' });
+    prismaMock.pujaBooking.findUnique.mockResolvedValue({
+      id: 'bk-1',
+      status: 'confirmed',
+      priestId: null,
+      scheduledDate: new Date('2026-12-25'),
+      scheduledTimeSlot: '10:00',
+    });
+    prismaMock.pujaBooking.findFirst.mockResolvedValue(null);
+    prismaMock.pujaBooking.updateMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(service.acceptBooking('bk-1', 'priest-1')).rejects.toThrow(/just taken by another pandit/);
+    expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
+    expect(prismaMock.commission.createMany).not.toHaveBeenCalled();
+  });
+});

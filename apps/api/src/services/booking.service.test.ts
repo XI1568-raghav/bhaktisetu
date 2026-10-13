@@ -112,6 +112,9 @@ describe('BookingService.createBooking', () => {
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
+    // The 10:00 IST slot must still be ahead: pin the clock to 00:30 UTC (06:00 IST).
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 30));
 
     prismaMock.templePujaOffering.findUnique.mockResolvedValue(mockOffering);
     prismaMock.pujaBooking.count.mockResolvedValue(0);
@@ -2684,3 +2687,21 @@ describe('BookingService.escalateStaleBookings', () => {
     warn.mockRestore();
   });
 });
+
+describe('createBooking — same-day slot already started', () => {
+  it('refuses a slot whose IST start time has passed', async () => {
+    const day = new Date().toISOString().slice(0, 10);
+    prismaMock.templePujaOffering.findUnique.mockResolvedValue({
+      id: 'o1', templeId: 't1', pujaTypeId: 'p1', isActive: true, availableSlots: ['00:01'],
+      maxBookingsPerSlot: 5, temple: { isVerified: true }, pujaType: { basePrice: 1000, nriPrice: 2500 },
+    } as never);
+    await expect(
+      new BookingService().createBooking({
+        userId: 'u1', templeId: 't1', pujaTypeId: 'p1', templePujaOfferingId: 'o1',
+        scheduledDate: day, scheduledTimeSlot: '00:01', devoteeNames: [{ name: 'A' }],
+      } as never),
+    ).rejects.toThrow(/Invalid time slot|past|passed/);
+  });
+});
+
+afterEach(() => { vi.useRealTimers(); });

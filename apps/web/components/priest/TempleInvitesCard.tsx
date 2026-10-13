@@ -36,6 +36,13 @@ export default function TempleInvitesCard() {
         { headers: { Authorization: `Bearer ${token}` } },
         DATA_FETCH_TIMEOUT_MS,
       );
+      // 403 = the pandit profile is still pending approval: there is nothing to
+      // show yet, and that is not a failure worth a banner.
+      if (res.status === 403) {
+        setInvites([]);
+        setLoadFailed(false);
+        return;
+      }
       if (!res.ok) throw new Error('bad status');
       const data = (await res.json()) as { invites?: TempleInvite[] };
       setInvites(data.invites ?? []);

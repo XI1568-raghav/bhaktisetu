@@ -10,6 +10,8 @@ import * as SecureStore from 'expo-secure-store';
 import { setCurrentLanguage } from './language';
 import { api, ApiClientError, type AuthSession, type AuthUser, type UserRole } from '@poojly/api-client';
 import { toApiSignupRole } from './signup-contract';
+import { refreshSessionOnce } from './session-refresh';
+import { authFailureMessage } from './auth-errors';
 
 // ─── Demo accounts (mirror of apps/web/lib/auth-context.tsx) ─────────────────
 //
@@ -339,21 +341,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // If token is expired or about to expire, try refresh
         const now = Math.floor(Date.now() / 1000);
         if (storedSession.expiresAt && storedSession.expiresAt < now + 60) {
-          try {
-            const refreshed = await api.post<{ success: boolean; session: AuthSession }>(
-              '/api/v1/auth/refresh',
-              { refreshToken: storedSession.refreshToken },
-              { noAuth: true }
-            );
-            if (refreshed.success && refreshed.session) {
-              setSession(refreshed.session);
-              setUser(storedUser);
-              await persistSession(refreshed.session, storedUser);
-            } else {
-              await persistSession(null, null);
-            }
-          } catch {
+          const outcome = await refreshSessionOnce(storedSession.refreshToken, api.post);
+          if (cancelled) return;
+          if (outcome.kind === 'refreshed') {
+            setSession(outcome.session);
+            setUser(storedUser);
+            await persistSession(outcome.session, storedUser);
+          } else if (outcome.kind === 'rejected') {
             await persistSession(null, null);
+          } else {
+            // Offline or the auth provider is down: keep the user signed in;
+            // the first call that 401s retries the refresh.
+            setSession(storedSession);
+            setUser(storedUser);
           }
         } else {
           setSession(storedSession);
@@ -380,7 +380,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       return { success: data.success, message: data.message };
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to send OTP';
+      const message = authFailureMessage(err, 'Failed to send OTP');
       return { success: false, message };
     }
   }, []);
@@ -406,7 +406,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isNewUser: newUser.isNewUser,
         };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Verification failed';
+        const message = authFailureMessage(err, 'Verification failed');
         return { success: false, message };
       }
     },
@@ -444,8 +444,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // advertised a demo credential to any user who hit a non-Error
         // rejection — the same class as the `admin@demo.com` chip already
         // removed from the login screen.
-        const message =
-          err instanceof Error ? err.message : 'Invalid email or password.';
+        const message = authFailureMessage(err, 'Invalid email or password.');
         return { success: false, message };
       }
     },
@@ -500,10 +499,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // still works with no backend, exactly like the demo sign-in above,
         // and it says which mode it is in. Production reports the failure.
         if (!DEMO_ENABLED) {
-          const message =
-            err instanceof ApiClientError || err instanceof Error
-              ? err.message
-              : 'Could not create your account. Please try again.';
+          const message = authFailureMessage(err, 'Could not create your account. Please try again.');
           return { success: false, message };
         }
 
@@ -545,8 +541,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // single signOut + navigate to login. Set on mount, cleared on unmount.
   // (Declared after `signOut` so the ref is in scope.)
   useEffect(() => {
-    setOnAuthExpired(() => {
-      void signOut();
+    setOnAuthExpired(async () => {
+      const stored = await loadStored<AuthSession>(STORAGE_KEYS.SESSION);
+      // Demo / missing session: nothing to refresh.
+      if (!stored || stored.accessToken.startsWith('demo-')) {
+        await signOut();
+        return;
+      }
+      const outcome = await refreshSessionOnce(stored.refreshToken, api.post);
+      if (outcome.kind === 'refreshed') {
+        setSession(outcome.session);
+        await storeJson(STORAGE_KEYS.SESSION, outcome.session);
+      } else if (outcome.kind === 'rejected') {
+        await signOut();
+      }
     });
     return () => {
       setOnAuthExpired(null);
@@ -578,12 +586,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(updatedUser);
         await persistSession(session, updatedUser);
       }
-    } catch (err) {
-      if (err instanceof ApiClientError && err.statusCode === 401) {
-        await signOut();
-      }
+    } catch {
+      // A 401 is handled once by onUnauthorised (refresh, then sign out only if
+      // the server rejects the refresh token). Signing out here as well would
+      // undo a successful refresh; a 503 or timeout must not sign anyone out.
     }
-  }, [session, user?.role, persistSession, signOut]);
+  }, [session, user?.role, persistSession]);
 
   const value: AuthContextValue = {
     user,

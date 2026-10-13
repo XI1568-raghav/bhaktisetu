@@ -68,6 +68,7 @@ describe('store orders — server-side delivery fee (COM-06/S-09)', () => {
       ...args.data,
     }));
     prismaMock.storeProduct.update.mockResolvedValue({} as any);
+    prismaMock.storeProduct.updateMany.mockResolvedValue({ count: 1 } as any);
   });
 
   it('adds the ₹49 delivery fee to the persisted total on a sub-₹499 basket', async () => {

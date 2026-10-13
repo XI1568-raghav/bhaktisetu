@@ -9,6 +9,7 @@ import { z } from 'zod';
 import crypto from 'node:crypto';
 import { randomBytes } from 'node:crypto';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
@@ -43,7 +44,7 @@ const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
 
 const razorpay = isDemoPayment
   ? null
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 async function ensureConsultationTables() {
   await prisma.$executeRawUnsafe(`
@@ -725,7 +726,10 @@ export async function consultationRoutes(server: FastifyInstance) {
     if (row.user_id !== userId) {
       return reply.code(403).send({ error: 'Not authorized for this consultation.' });
     }
-    if (row.status === 'confirmed') {
+    // A completed consultation replayed through verify was rewritten back to
+    // 'confirmed' (and its paid_at/room re-minted). Treat it as the same
+    // idempotent success as a confirmed one.
+    if (row.status === 'confirmed' || row.status === 'completed') {
       // Idempotent — return existing room.
       return reply.send({
         verified: true,
@@ -1135,7 +1139,15 @@ export async function consultationRoutes(server: FastifyInstance) {
     // so an astrologer opening their own session's detail/success URL got 403.
     const callerId = request.currentUser!.id;
     const isOwner = row.user_id === callerId;
-    const isAssignedAstrologer = row.astrologer_id === callerId;
+    let isAssignedAstrologer = row.astrologer_id === callerId;
+    // /book stores the AstrologerProfile.id, not the User id, so the user-id
+    // comparison alone 403'd every real astrologer on their own consultation.
+    if (!isOwner && !isAssignedAstrologer) {
+      const profile = await prisma.astrologerProfile
+        .findUnique({ where: { userId: callerId }, select: { id: true } })
+        .catch(() => null);
+      isAssignedAstrologer = !!profile && profile.id === row.astrologer_id;
+    }
     const isAdmin = (request.currentUser!.roles ?? []).includes('ADMIN');
     if (!isOwner && !isAssignedAstrologer && !isAdmin) {
       return reply.code(403).send({ error: 'Not authorized.' });

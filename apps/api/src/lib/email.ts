@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { esc } from './html-escape.js';
 import { REFUND_DAYS_LABEL, REFUND_INTERNATIONAL_CARD_LABEL } from './refund-timing.js';
 
 /**
@@ -299,13 +300,7 @@ export function magicLinkEmail(linkUrl: string): { subject: string; html: string
  * predate this helper and are left as-is deliberately (changing them is a
  * separate, wider change).
  */
-function esc(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+export { esc };
 
 /**
  * RV-18 (2026-08-10): this template was DEAD CODE — it had exactly one

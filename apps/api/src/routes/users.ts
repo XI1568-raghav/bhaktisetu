@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import {
   clearPreferredLanguageCache,
@@ -272,7 +273,7 @@ export async function userRoutes(server: FastifyInstance) {
    * PATCH /me/addresses/:id
    * Updates an existing address (verifies ownership).
    */
-  server.patch<{ Params: { id: string } }>('/me/addresses/:id', async (request, reply) => {
+  server.patch<{ Params: { id: string } }>('/me/addresses/:id', { preHandler: [uuidParamGuard('id')] }, async (request, reply) => {
     const userId = request.currentUser!.id;
     const { id: addressId } = request.params;
 
@@ -329,7 +330,7 @@ export async function userRoutes(server: FastifyInstance) {
    * DELETE /me/addresses/:id
    * Deletes an address (verifies ownership).
    */
-  server.delete<{ Params: { id: string } }>('/me/addresses/:id', async (request, reply) => {
+  server.delete<{ Params: { id: string } }>('/me/addresses/:id', { preHandler: [uuidParamGuard('id')] }, async (request, reply) => {
     const userId = request.currentUser!.id;
     const { id: addressId } = request.params;
 
