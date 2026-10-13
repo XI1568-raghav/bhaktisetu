@@ -33,6 +33,7 @@ import { useAuth } from './auth-context';
 import { apiBase } from './api';
 import { serverSentence } from './provider-queries';
 import { currentAcceptLanguage } from './language';
+import { authedFetch } from './authed-fetch';
 
 export const portalQueryKeys = {
   templeDashboard: ['temple-portal', 'dashboard'] as const,
@@ -218,7 +219,7 @@ export function useRequestPayout() {
   const token = session?.accessToken ?? '';
   return useMutation<unknown, Error, { method: 'upi' | 'bank' }>({
     mutationFn: async (vars) => {
-      const res = await fetch(`${apiBase()}/api/v1/payouts/request`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/payouts/request`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

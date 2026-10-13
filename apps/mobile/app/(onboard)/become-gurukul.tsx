@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { apiBase } from '../../lib/api';
-import { fetchWithBudget, readErrorMessage, failureMessage } from '../../lib/fetch-budget';
+import { readErrorMessage, failureMessage } from '../../lib/fetch-budget';
+import { authedFetch } from '../../lib/authed-fetch';
 
 const TRADITIONS = ['Advaita', 'Vishishtadvaita', 'Dvaita', 'Smarta', 'Shaiva', 'Shakta', 'Vaishnava'] as const;
 const MODES = ['residential', 'online', 'hybrid'] as const;
@@ -132,7 +133,7 @@ export default function BecomeGurukulScreen() {
       // span forever with no error — the infinite-spinner P0 in TASKS.md, of
       // which this screen was one instance. `fetchWithBudget` arms an
       // AbortController AND races a 20s deadline; see lib/fetch-budget.ts.
-      const res = await fetchWithBudget(`${apiBase()}/api/v1/gurukuls`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/gurukuls`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

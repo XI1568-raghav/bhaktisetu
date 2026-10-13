@@ -44,6 +44,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
+import { authedFetch } from '../../lib/authed-fetch';
 
 // ─── Types (the real `GET /priest/offers` shape) ────────────────────────────
 
@@ -148,7 +149,7 @@ export default function PriestOffers() {
     refetchInterval: 30_000,
     staleTime: 0,
     queryFn: async () => {
-      const res = await fetch(`${apiBase()}/api/v1/priest/offers`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/priest/offers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -180,7 +181,7 @@ export default function PriestOffers() {
       // request makes Fastify reject it before the handler runs
       // (FST_ERR_CTP_EMPTY_JSON_BODY) — the exact bug that once 400'd every
       // button in the web portal.
-      const res = await fetch(`${apiBase()}/api/v1/priest/offers/${bookingId}/${action}`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/priest/offers/${bookingId}/${action}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

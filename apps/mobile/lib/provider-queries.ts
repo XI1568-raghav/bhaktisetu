@@ -34,6 +34,7 @@ import {
 import { useAuth } from './auth-context';
 import { apiBase } from './api';
 import { currentAcceptLanguage } from './language';
+import { authedFetch } from './authed-fetch';
 
 /** Fastify's error envelope on every route below is `{ error: "<sentence>" }`. */
 export function serverSentence(payload: unknown): string {
@@ -53,7 +54,7 @@ async function authedJson(
   token: string,
   init?: RequestInit,
 ): Promise<unknown> {
-  const res = await fetch(`${apiBase()}${path}`, {
+  const res = await authedFetch(`${apiBase()}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${token}`,

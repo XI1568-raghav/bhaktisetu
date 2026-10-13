@@ -6,7 +6,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../lib/auth-context';
 import { apiBase } from '../../lib/api';
-import { fetchWithBudget, readErrorMessage, failureMessage } from '../../lib/fetch-budget';
+import { readErrorMessage, failureMessage } from '../../lib/fetch-budget';
+import { authedFetch } from '../../lib/authed-fetch';
 
 interface QuizQ { q: string; options: string[]; correct: number; explanation?: string }
 interface Lesson {
@@ -101,7 +102,7 @@ export default function LessonScreen() {
       // The score is passed in rather than read off state because `answers`
       // has not re-rendered yet when `nextQuestion` calls this — the old code
       // posted the score from BEFORE the last answer was recorded.
-      const res = await fetchWithBudget(`${apiBase()}/api/v1/lessons/complete`, {
+      const res = await authedFetch(`${apiBase()}/api/v1/lessons/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ lessonId: lesson!.id, score: finalScore }),
