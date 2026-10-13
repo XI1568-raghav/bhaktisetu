@@ -694,6 +694,17 @@ const razorpay = isDemoPayment
     }) as unknown as Razorpay)
   : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
 
+// QA 2026-10-13: the SDK's axios instance has NO timeout. A Razorpay stall
+// (measured against a stub that accepts and never answers) hung every
+// create-order/refund request until the platform proxy cut it, holding a DB
+// connection's worth of work open and showing the devotee a spinner forever.
+// A bounded wait turns it into the same friendly 503 as any other gateway failure.
+if (!isDemoPayment) {
+  const gatewayTimeoutMs = Number(process.env.RAZORPAY_TIMEOUT_MS) || 15_000;
+  const rq = (razorpay as unknown as { api?: { rq?: { defaults: { timeout?: number } } } }).api?.rq;
+  if (rq) rq.defaults.timeout = gatewayTimeoutMs;
+}
+
 // Exported for the recurring-subscription mandate flow (razorpay.subscriptions
 // .create) so that feature shares the single demo/live client instead of
 // re-instantiating with its own env parsing. Demo-mode proxy returns synthetic
@@ -1604,6 +1615,33 @@ export class PaymentService {
           },
         });
 
+        // QA 2026-10-13: a signed capture whose amount differs from the order we
+        // opened (a Rs 1 capture against a Rs 1,151 booking) used to confirm the
+        // booking and mint the provider's full earning. Razorpay itself charges
+        // exactly the order amount, so a mismatch means a wrong/forged event or a
+        // reconciliation problem: record the capture for the admin queue, confirm
+        // nothing, and let the operator decide.
+        if (payment && paymentEntity.amount != null) {
+          const expectedPaise = Math.round(Number(payment.amount) * 100);
+          if (Number(paymentEntity.amount) !== expectedPaise) {
+            console.error(
+              '[payment][amount-mismatch] webhook capture refused',
+              JSON.stringify({ paymentId: payment.id, orderId: paymentEntity.order_id, expectedPaise, gotPaise: paymentEntity.amount }),
+            );
+            await prisma.payment.update({
+              where: { id: payment.id },
+              data: {
+                metadata: {
+                  ...((payment.metadata as Record<string, unknown>) ?? {}),
+                  needsAdminReview: 'amount-mismatch',
+                  amountMismatch: { expectedPaise, gotPaise: Number(paymentEntity.amount), gatewayPaymentId: paymentEntity.id ?? null },
+                },
+              },
+            });
+            return { handled: false, event };
+          }
+        }
+
         if (payment) {
           const storeOrder =
             (payment as { storeOrders?: StoreOrderConfirmRow[] }).storeOrders?.[0] ?? null;
@@ -1897,6 +1935,16 @@ export class PaymentService {
         const payment = await prisma.payment.findFirst({
           where: { gatewayOrderId: paymentEntity.order_id },
         });
+
+        // QA 2026-10-13: a devotee may attempt the same order several times and
+        // Razorpay does not order webhook delivery. A `payment.failed` for an
+        // earlier attempt arriving after the successful capture used to flip the
+        // captured Payment to 'failed' and overwrite its gateway payment id, so
+        // the refund rail then found "no captured payment" for money we hold.
+        const settled = ['captured', 'refunded', 'partially_refunded'];
+        if (payment && settled.includes(payment.status)) {
+          return { handled: true, event, duplicate: true };
+        }
 
         if (payment) {
           await prisma.payment.update({

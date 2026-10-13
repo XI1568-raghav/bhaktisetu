@@ -289,6 +289,11 @@ async function bootstrap() {
     timeWindow: globalWindow,
     allowList: (req) => SKIP_RATE_LIMIT_PATHS.has(req.url.split('?')[0] ?? ''),
     keyGenerator: (req) => rateLimitKey(req),
+    errorResponseBuilder: (_req, ctx) => {
+      const retryAfterSeconds = Math.max(1, Math.ceil(ctx.ttl / 1000));
+      const message = `Too many requests. Please wait ${retryAfterSeconds} seconds and try again.`;
+      return Object.assign(new Error(message), { name: 'RateLimited', statusCode: 429, retryAfterSeconds });
+    },
     onExceeded: (req) => {
       // Log the resolved client IP and the bucket that filled. req.ip alone is
       // the Cloudflare/Render proxy on every line, which tells you nothing

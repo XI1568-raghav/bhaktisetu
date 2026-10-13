@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 /** The subset of a Fastify request this needs. Keeps the module test-friendly. */
 export interface RateLimitKeyRequest {
   ip: string;
+  url?: string;
   headers: Record<string, string | string[] | undefined>;
 }
 
@@ -26,17 +27,60 @@ function header(req: RateLimitKeyRequest, name: string): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+// Cloudflare's published edge ranges (https://www.cloudflare.com/ips/). They change
+// roughly never; a stale list fails SAFE (an unlisted edge IP just means the header is
+// ignored and the caller falls into the shared proxy bucket).
+const CF_V4: Array<[number, number]> = [
+  '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18',
+  '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17',
+  '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+].map((c) => {
+  const [ip, bits] = c.split('/') as [string, string];
+  const n = ip.split('.').reduce((a, o) => a * 256 + Number(o), 0);
+  const size = 2 ** (32 - Number(bits));
+  return [n, n + size - 1] as [number, number];
+});
+const CF_V6_PREFIXES = ['2400:cb00:', '2606:4700:', '2803:f800:', '2405:b500:', '2405:8100:', '2a06:98c0:', '2c0f:f248:'];
+
+export function isCloudflareEdgeIp(raw: string): boolean {
+  const ip = raw.trim().replace(/^::ffff:/i, '');
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+    const n = ip.split('.').reduce((a, o) => a * 256 + Number(o), 0);
+    return CF_V4.some(([lo, hi]) => n >= lo && n <= hi);
+  }
+  const lower = ip.toLowerCase();
+  return CF_V6_PREFIXES.some((p) => lower.startsWith(p));
+}
+
+/**
+ * Was this request really forwarded by Cloudflare?
+ *
+ * The API origin (the Render `onrender.com` hostname) is publicly reachable
+ * without Cloudflare, so `CF-Connecting-IP` is only a trustworthy claim when the
+ * request provably came through a Cloudflare edge. Two proofs, either suffices:
+ *  1. `CF_ORIGIN_SECRET` is set and the request carries it in `x-origin-secret`
+ *     (owner adds a Cloudflare Transform Rule that sets that request header).
+ *  2. The LAST `X-Forwarded-For` hop is a Cloudflare edge IP. Render's load
+ *     balancer appends the address of the peer it accepted the connection from,
+ *     so a direct caller cannot make that entry a Cloudflare address.
+ */
+export function viaCloudflare(req: RateLimitKeyRequest): boolean {
+  const secret = process.env.CF_ORIGIN_SECRET;
+  if (secret) return header(req, 'x-origin-secret') === secret;
+  const xff = header(req, 'x-forwarded-for');
+  const last = xff?.split(',').pop();
+  return !!last && isCloudflareEdgeIp(last);
+}
+
 /**
  * The true client IP.
  *
- * Only `CF-Connecting-IP` is trusted: Cloudflare fronts every production
- * hostname and overwrites that header on ingress, so an outside caller cannot
- * forge it. Raw `X-Forwarded-For` is deliberately NOT trusted — `trustProxy`
- * is off, and honouring a client-supplied XFF would let anyone mint unlimited
- * buckets by rotating the header, which is a worse failure than sharing one.
+ * `CF-Connecting-IP` is honoured ONLY when `viaCloudflare` holds; otherwise
+ * anyone hitting the origin directly could rotate it to mint unlimited
+ * buckets. Raw `X-Forwarded-For` is never used as the client address.
  */
 export function clientIp(req: RateLimitKeyRequest): string {
-  return header(req, 'cf-connecting-ip') ?? req.ip;
+  return (viaCloudflare(req) ? header(req, 'cf-connecting-ip') : undefined) ?? req.ip;
 }
 
 /**
@@ -54,6 +98,12 @@ export function clientIp(req: RateLimitKeyRequest): string {
  * gets its own bucket and is still rejected by the preHandler a moment later.
  */
 export function rateLimitKey(req: RateLimitKeyRequest): string {
+  // Pre-authentication endpoints (login, signup, OTP, reset) are brute-force targets, and
+  // the credential header is attacker-chosen there: rotating a junk `Authorization: Bearer x`
+  // would mint a fresh bucket per request. Always partition them by client IP.
+  const path = (req.url ?? '').split('?')[0] ?? '';
+  if (/^(\/api\/v1)?\/auth(\/|$)/.test(path)) return `ip:${clientIp(req)}`;
+
   const bearer = header(req, 'authorization');
   if (bearer?.toLowerCase().startsWith('bearer ')) {
     const token = bearer.slice(7).trim();

@@ -481,13 +481,27 @@ export function fetchBooking(id: string): Promise<unknown> {
   );
 }
 
-/** `2026-09-02T00:00:00.000Z` -> `2 Sep 2026`. Unparseable input passes through. */
+/** A calendar DATE the API serialises at UTC midnight (`scheduledDate`, festival dates). */
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}(T00:00:00(\.0+)?Z)?$/;
+
+/**
+ * `2026-09-02T00:00:00.000Z` -> `2 Sep 2026`. Unparseable input passes through.
+ *
+ * A date-only value is read in UTC, not in the device's zone: a devotee west of
+ * UTC (the NRI audience) would otherwise see a puja booked for the 15th on the
+ * 14th. Real instants (`createdAt`) still render in the device's zone.
+ */
 export function formatDate(value: unknown): string {
   const s = str(value);
   if (!s) return '';
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    ...(DATE_ONLY_RE.test(s) ? { timeZone: 'UTC' } : {}),
+  });
 }
 
 /** Date + time for a message or activity line. */

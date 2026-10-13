@@ -98,6 +98,8 @@ export default function SignupScreen() {
             onPress={() =>
               step === 'role' ? router.back() : setStep('role')
             }
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <Ionicons name="arrow-back" size={24} color={colors.stone[700]} />
           </TouchableOpacity>
@@ -112,6 +114,8 @@ export default function SignupScreen() {
                     key={opt.role}
                     style={styles.roleCard}
                     onPress={() => pickRole(opt.role)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Sign up as ${opt.label ?? opt.role}`}
                   >
                     <View style={styles.roleIcon}>
                       <Ionicons name={opt.icon} size={28} color={colors.saffron[600]} />
@@ -179,6 +183,9 @@ export default function SignupScreen() {
                 style={[styles.primaryBtn, busy && styles.btnDisabled]}
                 onPress={handleSubmit}
                 disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel="Create account"
+                accessibilityState={{ disabled: busy, busy }}
               >
                 {busy ? (
                   <ActivityIndicator color={colors.white} />
@@ -192,6 +199,8 @@ export default function SignupScreen() {
           <TouchableOpacity
             style={styles.footerLink}
             onPress={() => router.replace('/(auth)/login' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Already have an account? Sign in"
           >
             <Text style={styles.footerText}>
               Already have an account?{' '}

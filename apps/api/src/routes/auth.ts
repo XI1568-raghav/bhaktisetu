@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { createSupabaseClient } from '../lib/supabase.js';
+import { createSupabaseClient, supabaseAdmin } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
@@ -111,24 +111,26 @@ const googleSyncSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().max(254, 'Invalid email address').email('Invalid email address'),
+  password: z.string().min(1, 'Password is required').max(256, 'Password is too long'),
 });
 
 const signupSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().max(254, 'Invalid email address').email('Invalid email address'),
   // 8 chars minimum + at least one letter and one digit. Long enough to
   // resist trivial brute force, simple enough to remember without a
   // password manager. Special-character requirements are skipped on
   // purpose: NIST 800-63B says they don't help and harm UX.
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
+    // 72 is bcrypt's input limit (GoTrue rejects longer); fail here with a clear message.
+    .max(72, 'Password must be at most 72 characters')
     .regex(/[A-Za-z]/, 'Password must contain at least one letter')
     .regex(/[0-9]/, 'Password must contain at least one digit'),
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().optional(),
+  fullName: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be at most 100 characters'),
+  phone: z.string().max(20, 'Phone number is too long').optional(),
   role: z.enum(['devotee', 'pandit', 'store_owner', 'astrologer', 'wellness_instructor', 'gaushala_manager', 'temple_manager']).optional().default('devotee'),
-  city: z.string().optional(),
+  city: z.string().max(100, 'City is too long').optional(),
 });
 
 // ─── Demo accounts registry (in-memory fallback when DB unavailable) ─────────
@@ -292,6 +294,8 @@ const REFRESH_COOKIE = 'darshya_refresh';
 const SESSION_TTL_SECONDS = 60 * 60;                 // 1 hour
 const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;        // 7 days
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
+// Mirrors GoTrue's GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL (default 10s).
+const REFRESH_REUSE_WINDOW_MS = Number(process.env.REFRESH_REUSE_WINDOW_SEC ?? 10) * 1000;
 
 /**
  * SEC-02, prerequisite — the flags every auth cookie carries.
@@ -605,14 +609,21 @@ export async function authRoutes(server: FastifyInstance) {
     let replayDetected = false;
     let knownUserId: string | null = null;
     try {
-      const existing = await prisma.$queryRawUnsafe<Array<{ user_id: string; used_at: Date | null; expires_at: Date }>>(
-        `SELECT user_id, used_at, expires_at FROM refresh_token_jtis WHERE jti = $1 LIMIT 1`,
+      const existing = await prisma.$queryRawUnsafe<Array<{ user_id: string; used_at: Date | null; expires_at: Date; used_age_ms: number | null }>>(
+        `SELECT user_id, used_at, expires_at,
+                (EXTRACT(EPOCH FROM (now() - used_at)) * 1000)::float8 AS used_age_ms
+           FROM refresh_token_jtis WHERE jti = $1 LIMIT 1`,
         jti,
       );
       const row = existing[0];
       if (row) {
         knownUserId = row.user_id;
-        if (row.used_at !== null) {
+        // Two tabs (or a retry after a dropped response) present the same token
+        // within seconds of each other. GoTrue tolerates that for its refresh
+        // reuse interval and answers with the already-minted child token, so a
+        // used JTI inside that window is a race, not a theft: let Supabase decide.
+        // Only a reuse OUTSIDE the window revokes the family.
+        if (row.used_at !== null && !(row.used_age_ms !== null && row.used_age_ms >= 0 && row.used_age_ms <= REFRESH_REUSE_WINDOW_MS)) {
           replayDetected = true;
         }
         if (new Date(row.expires_at).getTime() < Date.now()) {
@@ -625,9 +636,10 @@ export async function authRoutes(server: FastifyInstance) {
 
     if (replayDetected && knownUserId) {
       // Family-wide revoke — mark all of this user's JTIs as used.
+      // Backdated on purpose: a revoke stamp inside the reuse window would read as a harmless race.
       try {
         await prisma.$executeRawUnsafe(
-          `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+          `UPDATE refresh_token_jtis SET used_at = now() - interval '1 hour' WHERE user_id = $1::uuid AND used_at IS NULL`,
           knownUserId,
         );
       } catch (err) {
@@ -866,19 +878,33 @@ export async function authRoutes(server: FastifyInstance) {
     } else if (typeof accessToken === 'string') {
       // Supabase JWT path: call signOut + best-effort revoke any JTIs for the user.
       const supabase = createSupabaseClient(accessToken);
-      if (scope === 'global') {
-        const { error } = await supabase.auth.signOut();
+      // Resolve the user BEFORE signing out: once GoTrue drops the session its
+      // access token stops resolving and there would be no id to revoke by.
+      let userId: string | undefined;
+      try {
+        const claims = await supabase.auth.getUser(accessToken);
+        userId = claims.data?.user?.id;
+      } catch (err) {
+        request.log.warn({ err }, 'logout user lookup failed (non-critical)');
+      }
+      // `supabase.auth.signOut()` on a client built with a Bearer header is a
+      // silent no-op: supabase-js signs out the client's OWN in-memory session,
+      // and this server-side client never holds one, so no request reached
+      // GoTrue and the refresh token stayed valid there after "sign out". The
+      // admin call takes the user's JWT and sends the scoped logout for real.
+      try {
+        const { error } = await supabaseAdmin.auth.admin.signOut(accessToken, scope);
         if (error) {
           request.log.warn(error, 'Supabase signOut error (non-critical)');
         }
+      } catch (err) {
+        request.log.warn({ err }, 'Supabase signOut threw (non-critical)');
       }
-      // Best-effort: revoke active JTIs for this user from extracted sub claim.
+      // Best-effort: revoke active JTIs for this user from the resolved id.
       try {
-        const claims = await supabase.auth.getUser(accessToken);
-        const userId = claims.data?.user?.id;
         if (userId && scope === 'global') {
           await prisma.$executeRawUnsafe(
-            `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+            `UPDATE refresh_token_jtis SET used_at = now() - interval '1 hour' WHERE user_id = $1::uuid AND used_at IS NULL`,
             userId,
           );
           // AUTH-11: a password user may ALSO hold a magic-link session on
@@ -1092,6 +1118,15 @@ export async function authRoutes(server: FastifyInstance) {
         request.log.error({ err: authError, event: 'login_auth_unreachable' }, 'sign-in could not reach auth');
         return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
       }
+      // GoTrue only answers email_not_confirmed AFTER the password checked out,
+      // so naming it leaks nothing — and without it a correct password reads as
+      // "Invalid email or password" with no hint that the inbox is the fix.
+      if (authError && (authError as { code?: string }).code === 'email_not_confirmed') {
+        return reply.code(403).send({
+          error: 'EmailNotConfirmed',
+          message: 'Please confirm your email address before signing in. Check your inbox for the confirmation link.',
+        });
+      }
       if (authError || !authData.session) {
         return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email or password' });
       }
@@ -1229,6 +1264,12 @@ export async function authRoutes(server: FastifyInstance) {
         return reply.code(503).send({
           error: 'ServiceUnavailable',
           message: 'Sign-up is temporarily unavailable. Please try again in a moment.',
+        });
+      }
+      if (authError && ((authError as { code?: string }).code === 'user_already_exists' || /already registered/i.test(authError.message))) {
+        return reply.code(409).send({
+          error: 'Conflict',
+          message: 'An account with this email already exists',
         });
       }
       if (authError) {
