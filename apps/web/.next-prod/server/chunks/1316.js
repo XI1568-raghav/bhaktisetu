@@ -1,1 +1,0 @@
-"use strict";exports.id=1316,exports.ids=[1316],exports.modules={1316:(a,b,c)=>{c.d(b,{JR:()=>d});let d=function(){let a="http://localhost:4000/api/v1";return a.endsWith("/api/v1")?a:`${a.replace(/\/$/,"")}/api/v1`}()}};
