@@ -655,7 +655,7 @@ export class AdminService {
                   if (existing.status === 'inactive') {
                     await prisma.priest.update({
                       where: { id: existing.id },
-                      data: { status: 'active', verificationStatus: 'approved' },
+                      data: { status: 'active' },
                     });
                   }
                 } else {
@@ -670,8 +670,10 @@ export class AdminService {
                         languages: pp.languages ?? [],
                         experienceYears: pp.experience ?? 0,
                         bio: pp.bio ?? null,
-                        isVerified: true,
-                        verificationStatus: 'approved',
+                        // Mirrors the updateMany above: the admin's decision, not a
+                        // literal. verificationStatus stays at its default — TC-08
+                        // forbids any route from minting a vetting verdict.
+                        isVerified: updates.approved,
                         status: 'active',
                       },
                     });

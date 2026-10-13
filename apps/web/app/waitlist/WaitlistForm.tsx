@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '../../lib/api-config';
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +12,7 @@ interface WaitlistFormProps {
   deities: string[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
+
 
 export default function WaitlistForm({ initialRef, cities, deities }: WaitlistFormProps) {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function WaitlistForm({ initialRef, cities, deities }: WaitlistFo
     if (ref) payload.referredByCode = ref;
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/waitlist`, {
+      const res = await fetch(`${API_BASE_URL}/waitlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -340,11 +340,12 @@ export async function getMySubscription(
 export async function subscribeToFreePlan(
   token: string | undefined,
   planId: string,
+  role: ProviderRole | string,
 ): Promise<MarketplaceSubscription | null> {
   const res = await fetchWithTimeout(`${API_BASE_URL}/subscriptions/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
-    body: JSON.stringify({ planId }),
+    body: JSON.stringify({ planId, role: toApiPlanRole(String(role)) }),
   }, DATA_FETCH_TIMEOUT_MS);
   const json = await asJson<unknown>(res);
   return unwrapSub(json);

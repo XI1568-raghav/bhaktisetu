@@ -1,10 +1,11 @@
 'use client';
 
+import { API_BASE_URL } from '../lib/api-config';
 import { useState, FormEvent, ReactNode } from 'react';
 
 import { buttonClass } from '../components/ui/button-recipe';
 import { userFacingMessage, serverErrorMessage } from '../lib/friendly-error';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.darshya.online';
+
 
 export type OnboardRole =
   | 'TEMPLE'
@@ -50,7 +51,7 @@ export default function SelfOnboardForm({ role, ctaLabel, extraFields }: SelfOnb
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/leads/self-onboard`, {
+      const res = await fetch(`${API_BASE_URL}/leads/self-onboard`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
