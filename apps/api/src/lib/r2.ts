@@ -1,5 +1,5 @@
 import { supabaseAdmin } from './supabase.js';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
@@ -41,6 +41,22 @@ const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE
 const supabaseEnabled = !!(supabaseUrl && process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 const enabled = r2Enabled || supabaseEnabled;
+
+// Sensitive uploads (Aadhaar / certificates) never go in the public media
+// bucket: on Supabase they use a separate non-public bucket (created on first
+// use) and are only readable through short-lived signed URLs.
+const supabasePrivateBucket = process.env.STORAGE_PRIVATE_BUCKET ?? 'darshya-private';
+let privateBucketReady: Promise<void> | null = null;
+function ensurePrivateBucket(): Promise<void> {
+  privateBucketReady ??= (async () => {
+    const { error } = await supabaseAdmin.storage.createBucket(supabasePrivateBucket, { public: false });
+    if (error && !/already exists|duplicate/i.test(error.message)) {
+      privateBucketReady = null;
+      throw new Error(error.message);
+    }
+  })();
+  return privateBucketReady;
+}
 
 const r2Client = r2Enabled
   ? new S3Client({
@@ -109,12 +125,18 @@ export async function uploadToR2(params: {
 /**
  * Generate a signed URL for reading a private object.
  */
-export async function presignR2Url(key: string, expiresInSec = 3600): Promise<string | null> {
+export async function presignR2Url(
+  key: string,
+  expiresInSec = 3600,
+  opts: { private?: boolean } = {},
+): Promise<string | null> {
   if (r2Enabled && r2Client) {
     try {
       return await getSignedUrl(
         r2Client,
-        new PutObjectCommand({ Bucket: R2_BUCKET, Key: key }),
+        opts.private
+          ? new GetObjectCommand({ Bucket: R2_BUCKET, Key: key })
+          : new PutObjectCommand({ Bucket: R2_BUCKET, Key: key }),
         { expiresIn: expiresInSec }
       );
     } catch {
@@ -123,7 +145,7 @@ export async function presignR2Url(key: string, expiresInSec = 3600): Promise<st
   }
   if (!supabaseEnabled) return null;
   const { data, error } = await supabaseAdmin.storage
-    .from(supabaseBucket)
+    .from(opts.private ? supabasePrivateBucket : supabaseBucket)
     .createSignedUrl(key, expiresInSec);
   if (error || !data) return null;
   return data.signedUrl;
@@ -141,6 +163,7 @@ export async function presignR2Upload(params: {
   key: string;
   contentType: string;
   expiresInSec?: number;
+  private?: boolean;
 }): Promise<{ uploadUrl: string; publicUrl: string; backend: 'r2' | 'supabase' } | null> {
   const expiresIn = params.expiresInSec ?? 300;
   if (r2Enabled && r2Client) {
@@ -154,13 +177,25 @@ export async function presignR2Upload(params: {
         }),
         { expiresIn }
       );
-      return { uploadUrl, publicUrl: r2PublicUrl(params.key), backend: 'r2' };
+      return { uploadUrl, publicUrl: params.private ? '' : r2PublicUrl(params.key), backend: 'r2' };
     } catch {
       return null;
     }
   }
   if (!supabaseEnabled) return null;
   void expiresIn;
+  if (params.private) {
+    try {
+      await ensurePrivateBucket();
+    } catch {
+      return null;
+    }
+    const { data, error } = await supabaseAdmin.storage
+      .from(supabasePrivateBucket)
+      .createSignedUploadUrl(params.key);
+    if (error || !data) return null;
+    return { uploadUrl: data.signedUrl, publicUrl: '', backend: 'supabase' };
+  }
   const { data, error } = await supabaseAdmin.storage
     .from(supabaseBucket)
     .createSignedUploadUrl(params.key);

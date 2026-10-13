@@ -70,7 +70,7 @@ const TRUST = [
   { icon: ShieldCheck, label: 'At the temple', body: 'The puja is performed by a pandit at the temple you choose.' },
   { icon: Video, label: 'Video proof mandatory', body: 'Full recording of the ceremony — no exceptions.' },
   { icon: MessageCircle, label: 'Booking status', body: 'Your booking page always shows the current status.' },
-  { icon: Globe, label: 'NRI-friendly', body: 'Book from anywhere in the world. Billing is in INR; international cards are accepted.' },
+  { icon: Globe, label: 'NRI-friendly', body: 'Book from anywhere in the world. Billing is in INR (UPI, Indian cards, net banking).' },
 ];
 
 export default async function GiftPujaPage() {
@@ -112,7 +112,7 @@ export default async function GiftPujaPage() {
             Pick a puja &mdash; prices shown upfront
           </h2>
           <p className="text-sm text-surface-600 mb-4">
-            Billed in INR; international cards are accepted. A platform fee is shown on the
+            Billed in INR (UPI, Indian cards, net banking). A platform fee is shown on the
             booking screen before you enter any details.
           </p>
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

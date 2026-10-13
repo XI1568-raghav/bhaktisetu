@@ -28,8 +28,15 @@ const submitSchema = z.object({
 // ("Unnamed", "Unnamed Gaushala", price 500) and dropped certifications
 // from wellness profiles entirely. These schemas surface the gaps as 400s
 // instead of writing junk rows that admins later have to clean up.
+// The onboarding form sends `null` for fields the user left blank; treat null
+// and '' the same as absent instead of failing the whole submission (the cause
+// of the "Invalid request body. Required: { role, data }" on Submit for Approval).
+const blankToUndefined = (v: unknown) => (v === null || v === '' ? undefined : v);
 const optionalShortString = (max: number) =>
-  z.string().trim().max(max).optional().or(z.literal('').transform(() => undefined));
+  z.preprocess(blankToUndefined, z.string().trim().max(max).optional());
+
+const photoUrlSchema = z.preprocess(blankToUndefined, z.string().url().max(1000).optional());
+const docKeySchema = z.preprocess(blankToUndefined, z.string().max(300).optional());
 
 const stringArray = (maxItems: number, maxLen: number) =>
   z.array(z.string().trim().min(1).max(maxLen)).max(maxItems);
@@ -44,16 +51,21 @@ const panditDataSchema = z.object({
   city: optionalShortString(80),
   state: optionalShortString(80),
   pricePerPuja: z.coerce.number().int().min(100, 'pricePerPuja must be at least ₹100').max(100000),
+  photoUrl: photoUrlSchema,
+  aadhaarDocKey: docKeySchema,
+  certificateDocKey: docKeySchema,
 });
 
 const storeOwnerDataSchema = z.object({
   storeName: z.string().trim().min(2, 'storeName is required').max(200),
-  gstNumber: z
-    .string()
-    .trim()
-    .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9][Z][0-9A-Z]$/, 'Invalid GSTIN format')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
+  gstNumber: z.preprocess(
+    blankToUndefined,
+    z
+      .string()
+      .trim()
+      .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9][Z][0-9A-Z]$/, 'Invalid GSTIN format')
+      .optional(),
+  ),
   address: optionalShortString(500),
   city: optionalShortString(80),
   state: optionalShortString(80),
@@ -67,6 +79,7 @@ const astrologerDataSchema = z.object({
   languages: stringArray(15, 40).default([]),
   bio: optionalShortString(2000),
   pricePerMinute: z.coerce.number().int().min(1).max(10000),
+  photoUrl: photoUrlSchema,
 });
 
 const wellnessDataSchema = z.object({
@@ -76,6 +89,7 @@ const wellnessDataSchema = z.object({
   experience: z.coerce.number().int().min(0).max(80),
   bio: optionalShortString(2000),
   pricePerSession: z.coerce.number().int().min(100).max(100000),
+  photoUrl: photoUrlSchema,
 });
 
 const gaushalaDataSchema = z.object({
@@ -246,6 +260,15 @@ export async function onboardingRoutes(server: FastifyInstance) {
         demoMode: true,
         role: parsed.data.role,
       });
+    }
+
+    // Uploaded identity documents must be the caller's own private objects.
+    const pd = parsed.data.data as { aadhaarDocKey?: string; certificateDocKey?: string };
+    const ownPrefix = `kyc-document/${userId.replace(/[^a-z0-9-]/gi, '')}/`;
+    for (const k of [pd.aadhaarDocKey, pd.certificateDocKey]) {
+      if (k && !k.startsWith(ownPrefix)) {
+        return reply.code(400).send({ error: 'Invalid document reference. Please upload the file again.' });
+      }
     }
 
     try {

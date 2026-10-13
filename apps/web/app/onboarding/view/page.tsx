@@ -48,14 +48,18 @@ function projectOnboardingData(role: string, d: Record<string, unknown>): Record
  switch (role) {
  case 'priest':
  return {
- templeName: str(d.templeName) ?? str(d.organization),
+ displayName: str(d.displayName),
+ templeName: str(d.templeName) ?? str(d.templesServed) ?? str(d.organization),
  experience: num(d.experience ?? d.experienceYears),
- specialties: arr(d.specialties),
+ specialties: arr(d.specialties ?? d.pujasOffered),
  languages: arr(d.languages),
  city: str(d.city),
  state: str(d.state),
  bio: str(d.bio),
- pricePerPuja: num(d.pricePerPuja, 500),
+ pricePerPuja: num(d.pricePerPuja ?? d.basePricePerPuja, 500),
+ photoUrl: str(d.photoUrl),
+ aadhaarDocKey: str(d.aadhaarDocKey),
+ certificateDocKey: str(d.certificateDocKey),
  };
  case 'store_owner':
  return {
@@ -73,6 +77,7 @@ function projectOnboardingData(role: string, d: Record<string, unknown>): Record
  experience: num(d.experience ?? d.experienceYears),
  languages: arr(d.languages),
  bio: str(d.bio),
+ photoUrl: str(d.photoUrl),
  pricePerMinute: num(d.pricePerMinute, 10),
  };
  case 'wellness_instructor':
@@ -86,6 +91,7 @@ function projectOnboardingData(role: string, d: Record<string, unknown>): Record
  : []),
  experience: num(d.experience ?? d.experienceYears),
  bio: str(d.bio),
+ photoUrl: str(d.photoUrl),
  pricePerSession: num(d.pricePerSession, 500),
  };
  case 'gaushala_manager':
@@ -326,15 +332,110 @@ function ChipSelect({
  );
 }
 
-function FileUploadPlaceholder({ label }: { label: string }) {
+const UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+
+// Direct-to-storage upload: ask the API for a presigned PUT url, send the file
+// there, and hand the resulting reference (public URL for photos, a private
+// storage key for ID documents) back to the form.
+function FileUpload({
+ label,
+ kind,
+ token,
+ value,
+ fileName,
+ onChange,
+ allowPdf = false,
+}: {
+ label: string;
+ kind: 'profile-photo' | 'kyc-document';
+ token: string | undefined;
+ value: string;
+ fileName: string;
+ onChange: (ref: string, fileName: string) => void;
+ allowPdf?: boolean;
+}) {
+ const [busy, setBusy] = useState(false);
+ const [error, setError] = useState<string | null>(null);
+ const types = allowPdf ? ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'] : ['image/png', 'image/jpeg', 'image/webp'];
+ const hint = allowPdf ? 'PNG, JPG or PDF up to 5MB' : 'PNG or JPG up to 5MB';
+
+ const handleFile = async (file: File | undefined) => {
+ if (!file) return;
+ setError(null);
+ if (!types.includes(file.type)) {
+ setError(`Unsupported file type. Please choose ${hint.replace(' up to 5MB', '')}.`);
+ return;
+ }
+ if (file.size > UPLOAD_MAX_BYTES) {
+ setError('That file is larger than 5MB. Please choose a smaller one.');
+ return;
+ }
+ if (!token) {
+ setError('Please sign in again to upload files.');
+ return;
+ }
+ setBusy(true);
+ try {
+ const presign = await fetch(`${API_BASE_URL}/media/upload-url`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+ body: JSON.stringify({ kind, contentType: file.type }),
+ });
+ if (!presign.ok) {
+ const txt = await presign.text().catch(() => '');
+ throw new UserFacingError(serverErrorText(txt, 'Could not start the upload. Please try again.'), presign.status);
+ }
+ const info = (await presign.json()) as { uploadUrl: string; key: string; publicUrl: string | null; headers?: Record<string, string> };
+ const put = await fetch(info.uploadUrl, {
+ method: 'PUT',
+ headers: info.headers ?? { 'Content-Type': file.type },
+ body: file,
+ });
+ if (!put.ok) throw new Error('upload failed');
+ onChange(kind === 'kyc-document' ? info.key : (info.publicUrl ?? ''), file.name);
+ } catch (err) {
+ setError(userFacingMessage(err, 'Upload failed. Please check your connection and try again.'));
+ } finally {
+ setBusy(false);
+ }
+ };
+
  return (
  <div className="mb-4">
  <label className="block text-sm font-medium text-surface-700 mb-1.5">{label}</label>
- <div className="border-2 border-dashed border-surface-200 rounded-xl p-6 text-center hover:border-saffron-300 transition-colors cursor-pointer">
+ <label className="block border-2 border-dashed border-surface-200 rounded-xl p-6 text-center hover:border-saffron-300 transition-colors cursor-pointer">
+ <input
+ type="file"
+ accept={types.join(',')}
+ className="sr-only"
+ disabled={busy}
+ onChange={(e) => {
+ void handleFile(e.target.files?.[0]);
+ e.target.value = '';
+ }}
+ />
+ {busy ? (
+ <Loader2 className="w-8 h-8 mx-auto text-saffron-500 mb-2 animate-spin" />
+ ) : value ? (
+ <CheckCircle2 className="w-8 h-8 mx-auto text-green-600 mb-2" />
+ ) : (
  <Upload className="w-8 h-8 mx-auto text-surface-300 mb-2" />
- <p className="text-sm text-surface-500">Click to upload or drag and drop</p>
- <p className="text-xs text-surface-400 mt-1">PNG, JPG up to 5MB</p>
- </div>
+ )}
+ <p className="text-sm text-surface-500">
+ {busy ? 'Uploading...' : value ? `Uploaded${fileName ? `: ${fileName}` : ''}. Click to replace.` : 'Click to upload'}
+ </p>
+ <p className="text-xs text-surface-400 mt-1">{hint}</p>
+ </label>
+ {value && !busy && (
+ <button type="button" onClick={() => onChange('', '')} className="mt-1 text-xs text-surface-500 underline">
+ Remove
+ </button>
+ )}
+ {error && (
+ <p role="alert" className="mt-2 text-sm text-red-600">
+ {error}
+ </p>
+ )}
  </div>
  );
 }
@@ -535,7 +636,10 @@ function OnboardingInner() {
  setSubmitError(null);
 
  const backendRole = BACKEND_ROLE[role];
- const payload = projectOnboardingData(role, data);
+ // Blank optional fields are left out rather than sent as null.
+ const payload = Object.fromEntries(
+ Object.entries(projectOnboardingData(role, data)).filter(([, v]) => v !== null && v !== undefined),
+ );
  const token = session?.accessToken;
 
  if (!token) {
@@ -642,7 +746,7 @@ function OnboardingInner() {
  return (
  <>
  <FormInput id="displayName" label="Display Name" placeholder="e.g. Pandit Ramesh Sharma" value={getString('displayName')} onChange={(v) => updateData('displayName', v)} icon={User} />
- <FileUploadPlaceholder label="Profile Photo" />
+ <FileUpload label="Profile Photo" kind="profile-photo" token={session?.accessToken} value={getString('photoUrl')} fileName={getString('photoName')} onChange={(r, n) => { updateData('photoUrl', r); updateData('photoName', n); }} />
  <FormInput id="bio" label="Bio" placeholder="Tell devotees about yourself, your training, and your spiritual journey..." value={getString('bio')} onChange={(v) => updateData('bio', v)} multiline />
  <FormInput id="city" label="City" placeholder="e.g. Varanasi" value={getString('city')} onChange={(v) => updateData('city', v)} icon={MapPin} />
  </>
@@ -670,8 +774,8 @@ function OnboardingInner() {
  case 3:
  return (
  <>
- <FileUploadPlaceholder label="Aadhaar Card (Front & Back)" />
- <FileUploadPlaceholder label="Priesthood Certificate / Qualification" />
+ <FileUpload label="Aadhaar Card (Front & Back)" kind="kyc-document" allowPdf token={session?.accessToken} value={getString('aadhaarDocKey')} fileName={getString('aadhaarDocName')} onChange={(r, n) => { updateData('aadhaarDocKey', r); updateData('aadhaarDocName', n); }} />
+ <FileUpload label="Priesthood Certificate / Qualification" kind="kyc-document" allowPdf token={session?.accessToken} value={getString('certificateDocKey')} fileName={getString('certificateDocName')} onChange={(r, n) => { updateData('certificateDocKey', r); updateData('certificateDocName', n); }} />
  <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
  <p className="text-sm text-blue-800 font-medium">Why verification?</p>
  <p className="text-xs text-blue-700 mt-1">
@@ -725,7 +829,6 @@ function OnboardingInner() {
  return (
  <>
  <FormInput id="storeName" label="Store Name" placeholder="e.g. Shri Ganesh Puja Store" value={getString('storeName')} onChange={(v) => updateData('storeName', v)} icon={Building2} />
- <FileUploadPlaceholder label="Store Logo" />
  <FormInput id="storeDescription" label="Store Description" placeholder="Tell customers about your store and what you sell..." value={getString('storeDescription')} onChange={(v) => updateData('storeDescription', v)} multiline />
  <FormInput id="gstNumber" label="GST Number" placeholder="e.g. 22AAAAA0000A1Z5" value={getString('gstNumber')} onChange={(v) => updateData('gstNumber', v)} icon={FileText} optional />
  </>
@@ -856,7 +959,7 @@ function OnboardingInner() {
  return (
  <>
  <FormInput id="displayName" label="Display Name" placeholder="e.g. Jyotishi Suresh Kumar" value={getString('displayName')} onChange={(v) => updateData('displayName', v)} icon={User} />
- <FileUploadPlaceholder label="Profile Photo" />
+ <FileUpload label="Profile Photo" kind="profile-photo" token={session?.accessToken} value={getString('photoUrl')} fileName={getString('photoName')} onChange={(r, n) => { updateData('photoUrl', r); updateData('photoName', n); }} />
  <FormInput id="bio" label="Bio" placeholder="Share your background, training, and approach to astrology..." value={getString('bio')} onChange={(v) => updateData('bio', v)} multiline />
  <div className="mb-4">
  <label className="block text-sm font-medium text-surface-700 mb-2">Languages</label>
@@ -909,7 +1012,7 @@ function OnboardingInner() {
  return (
  <>
  <FormInput id="displayName" label="Display Name" placeholder="e.g. Yoga Guru Ananya" value={getString('displayName')} onChange={(v) => updateData('displayName', v)} icon={User} />
- <FileUploadPlaceholder label="Profile Photo" />
+ <FileUpload label="Profile Photo" kind="profile-photo" token={session?.accessToken} value={getString('photoUrl')} fileName={getString('photoName')} onChange={(r, n) => { updateData('photoUrl', r); updateData('photoName', n); }} />
  <FormInput id="bio" label="Bio" placeholder="Share your wellness journey and teaching philosophy..." value={getString('bio')} onChange={(v) => updateData('bio', v)} multiline />
  <FormInput id="certifications" label="Certifications" placeholder="e.g. RYT-200, Vipassana Teacher Training" value={getString('certifications')} onChange={(v) => updateData('certifications', v)} icon={Star} />
  </>
@@ -991,7 +1094,6 @@ function OnboardingInner() {
  />
  <FormInput id="orgLocation" label="Location" placeholder="Full address" value={getString('orgLocation')} onChange={(v) => updateData('orgLocation', v)} icon={MapPin} />
  <FormInput id="orgCity" label="City" placeholder="e.g. Mathura" value={getString('orgCity')} onChange={(v) => updateData('orgCity', v)} icon={MapPin} />
- <FileUploadPlaceholder label="Organization Photos" />
  <FormInput id="orgDescription" label="Description" placeholder={`Tell visitors about your ${isTemple ? 'temple' : 'gaushala'}...`} value={getString('orgDescription')} onChange={(v) => updateData('orgDescription', v)} multiline />
  </>
  );
