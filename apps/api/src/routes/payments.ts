@@ -134,6 +134,12 @@ export async function paymentRoutes(server: FastifyInstance) {
         if (error.message?.includes('PENDING')) {
           return reply.status(409).send({ error: error.message });
         }
+        if (error instanceof PaymentGatewayError) {
+          return reply.status(503).send({
+            error: 'We could not open the payment page right now. Your order is saved and nothing has been charged. Please try again in a few minutes.',
+            code: error.code,
+          });
+        }
         server.log.error(error, 'Failed to create store-order payment');
         return reply.status(400).send({
           error: error.message || 'Failed to create store-order payment',

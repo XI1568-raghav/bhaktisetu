@@ -20,6 +20,7 @@ import { resolveGaushalaDonee } from '../lib/gaushala-donee.js';
 import { MONEY_EVENTS, recordMoneyEvent, type MoneyActorType } from '../lib/audit-money.js';
 import Razorpay from 'razorpay';
 import { SQL_UTC_NOW } from '../lib/sql-time.js';
+import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
 
 assertNotProductionDemo('routes/donations');
 
@@ -494,18 +495,30 @@ export async function donationRoutes(server: FastifyInstance) {
 
     let razorpayOrderId: string;
     if (razorpay) {
-      const order = await razorpay.orders.create({
-        amount: Math.round(amount * 100), // paise
-        currency: 'INR',
-        receipt: donationId,
-        notes: {
-          causeKind: kind,
-          ...(kind === 'temple' ? { templeId: templeId! } : { gaushalaId: doneeGaushalaId! }),
-          planId: planId ?? '',
-          userId,
-        },
-      });
-      razorpayOrderId = order.id;
+      try {
+        const order = await razorpay.orders.create({
+          amount: Math.round(amount * 100), // paise
+          currency: 'INR',
+          receipt: donationId,
+          notes: {
+            causeKind: kind,
+            ...(kind === 'temple' ? { templeId: templeId! } : { gaushalaId: doneeGaushalaId! }),
+            planId: planId ?? '',
+            userId,
+          },
+        });
+        razorpayOrderId = order.id;
+      } catch (err) {
+        // Razorpay rejects with a plain `{ statusCode: 401, ... }` object when
+        // its credentials are refused. Left to the global handler that 401
+        // became "Please sign in to continue" for a signed-in donor.
+        const f = describeGatewayFailure(err);
+        server.log.error({ gatewayStatus: f.status, gatewayCode: f.code, gatewayReason: f.reason }, 'razorpay.orders.create failed (donation)');
+        return reply.code(503).send({
+          error: 'We could not open the payment page right now. Nothing has been charged. Please try again in a few minutes.',
+          code: 'PAYMENT_GATEWAY_UNAVAILABLE',
+        });
+      }
     } else {
       razorpayOrderId = `order_demo_${Date.now()}`;
     }

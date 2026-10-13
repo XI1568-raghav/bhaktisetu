@@ -8,6 +8,7 @@ import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { httpUrlSchema } from '../lib/http-url.js';
 import { sendEmail } from '../lib/email.js';
+import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
 
 /**
  * Persisted wellness sessions — instructors schedule live yoga/meditation/etc
@@ -648,12 +649,21 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
 
       let razorpayOrderId: string;
       if (razorpay && amountPaise > 0) {
-        const order = await razorpay.orders.create({
-          amount: amountPaise,
-          currency: 'INR',
-          notes: { sessionId: session.id, userId },
-        });
-        razorpayOrderId = order.id;
+        try {
+          const order = await razorpay.orders.create({
+            amount: amountPaise,
+            currency: 'INR',
+            notes: { sessionId: session.id, userId },
+          });
+          razorpayOrderId = order.id;
+        } catch (err) {
+          const f = describeGatewayFailure(err);
+          server.log.error({ gatewayStatus: f.status, gatewayCode: f.code, gatewayReason: f.reason }, 'razorpay.orders.create failed (wellness)');
+          return reply.code(503).send({
+            error: 'We could not open the payment page right now. Nothing has been charged. Please try again in a few minutes.',
+            code: 'PAYMENT_GATEWAY_UNAVAILABLE',
+          });
+        }
       } else {
         razorpayOrderId = `order_demo_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
       }

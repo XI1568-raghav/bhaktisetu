@@ -1178,16 +1178,26 @@ export class PaymentService {
     }
 
     const amountInPaise = Math.round(Number(order.totalAmountInr) * 100);
-    const razorpayOrder = await razorpay.orders.create({
-      amount: amountInPaise,
-      currency: 'INR',
-      receipt: order.orderNumber,
-      notes: {
-        storeOrderId: order.id,
-        orderNumber: order.orderNumber,
-        userId,
-      },
-    });
+    let razorpayOrder: { id: string };
+    try {
+      razorpayOrder = await razorpay.orders.create({
+        amount: amountInPaise,
+        currency: 'INR',
+        receipt: order.orderNumber,
+        notes: {
+          storeOrderId: order.id,
+          orderNumber: order.orderNumber,
+          userId,
+        },
+      });
+    } catch (err) {
+      const f = describeGatewayFailure(err);
+      console.error(
+        '[payment.service] razorpay.orders.create failed (store)',
+        JSON.stringify({ orderNumber: order.orderNumber, gatewayStatus: f.status, gatewayCode: f.code, gatewayReason: f.reason }),
+      );
+      throw new PaymentGatewayError(PAYMENT_GATEWAY_USER_MESSAGE, f.status, f.code, f.reason);
+    }
 
     const payment = await prisma.payment.create({
       data: {
