@@ -92,3 +92,12 @@ To test magic-link locally without Resend:
 - Leave `RESEND_API_KEY` unset
 - POST to `/auth/magic-link/request` — response includes `devLink`
 - Open `devLink` in browser to complete the flow
+
+## Rate limiting and gateway timeout (added 2026-10-13)
+
+| Var | Default | Behaviour |
+|---|---|---|
+| `CF_ORIGIN_SECRET` | unset | Optional. When set, `CF-Connecting-IP` is trusted ONLY on requests carrying `x-origin-secret: <this value>`. Owner action: add a Cloudflare Transform Rule (Rules > Transform Rules > Modify Request Header) that sets that header on `api.darshya.online`. Without it the API falls back to proving Cloudflare from the last `X-Forwarded-For` hop being a Cloudflare edge IP. |
+| `RATE_LIMIT_TRUST_CF_HEADER` | unset | Rollback lever: `true` trusts `CF-Connecting-IP` unconditionally (the pre-2026-10-13 behaviour). Use it if the API log shows `CF-Connecting-IP ignored` for real production traffic. |
+| `RATE_LIMIT_IP_CEILING` | `RATE_LIMIT_MAX * 12` | Per-client-IP cap per minute regardless of credential; stops `Authorization: Bearer <random>` bucket minting. |
+| `RAZORPAY_TIMEOUT_MS` | `15000` | Timeout on every Razorpay SDK call and the reconcile fetch. A stalled gateway answers the friendly 503 instead of hanging. |
