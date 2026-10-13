@@ -152,7 +152,7 @@ function gatewayFailureMessage(status: number | null): string {
   return GATEWAY_REJECTED;
 }
 
-async function callRazorpayRefund(
+export async function callRazorpayRefund(
   paymentId: string,
   amountInPaise: number,
   notes: Record<string, string>
