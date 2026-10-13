@@ -188,6 +188,8 @@ const nextConfig: NextConfig = {
   // prod. `standalone` produces a self-contained server.js + minimal deps so
   // the Docker image runs `node server.js` directly. See apps/web/Dockerfile.
   output: 'standalone',
+  // QA/dev only: build into a separate dir so a prod build does not clobber a running `next dev`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   transpilePackages: ['@poojly/ui', '@poojly/shared', '@poojly/api-client'],
   typescript: {
     // pnpm hoists @types/react@18 (mobile) alongside @types/react@19 (web),
