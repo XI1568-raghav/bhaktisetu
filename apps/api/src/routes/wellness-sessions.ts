@@ -11,6 +11,10 @@ import { httpUrlSchema } from '../lib/http-url.js';
 import { sendEmail } from '../lib/email.js';
 import { esc } from '../lib/html-escape.js';
 import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
+import {
+  cancelWellnessEnrollment,
+  cancelWellnessSessionEnrollments,
+} from '../services/wellness-cancellation.service.js';
 
 /**
  * Persisted wellness sessions — instructors schedule live yoga/meditation/etc
@@ -458,8 +462,31 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       if (body.data.capacity !== undefined) data.capacity = body.data.capacity;
       if (body.data.priceInr !== undefined) data.priceInr = body.data.priceInr;
       if (body.data.status !== undefined) data.status = body.data.status;
+      // QA 2026-10-13: a COMPLETED class has been delivered and its earnings released;
+      // cancelling it would have to claw money back. Refuse rather than half-refund.
+      if (body.data.status === 'CANCELLED' && session.status === 'COMPLETED') {
+        return reply.code(409).send({
+          error: 'A completed session cannot be cancelled.',
+          code: 'session_already_completed',
+        });
+      }
       const updated = await prisma.wellnessSession.update({ where: { id: session.id }, data });
-      return reply.send({ data: serializeSession(updated) });
+      // Cancelling a session refunds every paid enrolment (intent), reverses the
+      // instructor's held earnings, releases unpaid seats and notifies devotees. It
+      // also runs when the session was ALREADY cancelled, so a sweep that died midway
+      // can be completed by repeating the PATCH (each enrolment settles once).
+      let cancellation: Awaited<ReturnType<typeof cancelWellnessSessionEnrollments>> | undefined;
+      if (body.data.status === 'CANCELLED') {
+        cancellation = await cancelWellnessSessionEnrollments({
+          sessionId: session.id,
+          actorType: isAdmin(request) && session.instructorId !== userId ? 'admin' : 'provider',
+          actorId: userId,
+        });
+      }
+      return reply.send({
+        data: serializeSession(updated),
+        ...(cancellation ? { cancellation } : {}),
+      });
     }
   );
 
@@ -916,6 +943,154 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       })();
 
       return reply.send({ data: updated });
+    }
+  );
+
+  // POST /enrollments/:id/cancel — the devotee cancels their own enrolment.
+  // Unpaid: the seat is released. Paid: refunded per the booking ladder (full at
+  // 48h+, 75% at 24-48h, refused inside 24h), the instructor's earning reversed or
+  // reduced, a money-audit row written. Idempotent: a repeat is a 200 no-op.
+  server.post(
+    '/enrollments/:id/cancel',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      const params = enrollmentIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid enrollment id' });
+      const reasonBody = z
+        .object({ reason: z.string().trim().max(200).optional() })
+        .safeParse(request.body ?? {});
+      if (!reasonBody.success) return reply.code(400).send({ error: 'Invalid request body' });
+      const owner = await prisma.wellnessEnrollment.findUnique({
+        where: { id: params.data.id },
+        select: { userId: true },
+      });
+      if (!owner) return reply.code(404).send({ error: 'Enrollment not found' });
+      const userId = request.currentUser!.id;
+      if (owner.userId !== userId && !isAdmin(request)) {
+        return reply.code(403).send({ error: 'Not authorized to cancel this enrollment' });
+      }
+      const result = await cancelWellnessEnrollment({
+        enrollmentId: params.data.id,
+        actorType: owner.userId === userId ? 'devotee' : 'admin',
+        actorId: userId,
+        reason: reasonBody.data.reason,
+      });
+      if (!result) return reply.code(404).send({ error: 'Enrollment not found' });
+      if (result.outcome === 'blocked') {
+        return reply.code(409).send({ error: result.blockedReason, code: result.blockedCode });
+      }
+      return reply.send({
+        cancelled: true,
+        alreadyCancelled: result.outcome === 'already',
+        enrollmentId: result.enrollmentId,
+        status: result.status,
+        refundOwedInr: result.refundOwedInr,
+        refundFraction: result.refundFraction,
+        tierLabel: result.tierLabel,
+        commissionReversed: result.commissionReversed,
+        commissionReduced: result.commissionReduced,
+        note:
+          result.refundOwedInr > 0
+            ? 'Cancellation accepted. Your refund will be processed within 5-7 business days.'
+            : 'Cancellation accepted.',
+      });
+    }
+  );
+
+  // GET /sessions/:id/enrollments — roster for the session's instructor (and admin).
+  server.get(
+    '/sessions/:id/enrollments',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      const params = sessionIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid session id' });
+      const session = await prisma.wellnessSession.findUnique({
+        where: { id: params.data.id },
+        select: { id: true, instructorId: true },
+      });
+      if (!session) return reply.code(404).send({ error: 'Session not found' });
+      if (session.instructorId !== request.currentUser!.id && !isAdmin(request)) {
+        return reply.code(403).send({ error: 'Only the instructor can view the roster' });
+      }
+      const rows = await prisma.wellnessEnrollment.findMany({
+        where: { sessionId: session.id, status: { in: ['PAID', 'ATTENDED'] } },
+        orderBy: { enrolledAt: 'asc' },
+        take: 500,
+        select: {
+          id: true,
+          status: true,
+          enrolledAt: true,
+          attendedAt: true,
+          user: { select: { id: true, fullName: true } },
+        },
+      });
+      return reply.send({ data: rows });
+    }
+  );
+
+  // POST /enrollments/:id/attendance — the instructor marks a paid learner ATTENDED.
+  // Only once the class has started (or is LIVE/COMPLETED). Attendance does not move
+  // money: the instructor's held earning becomes withdrawable by the existing rule
+  // (class start passed or session COMPLETED), and `earningsReleased` reports that.
+  server.post(
+    '/enrollments/:id/attendance',
+    { preHandler: [authenticateUser] },
+    async (request, reply) => {
+      const params = enrollmentIdParams.safeParse(request.params);
+      if (!params.success) return reply.code(400).send({ error: 'Invalid enrollment id' });
+      const enrollment = await prisma.wellnessEnrollment.findUnique({
+        where: { id: params.data.id },
+        select: {
+          id: true,
+          status: true,
+          attendedAt: true,
+          session: { select: { id: true, instructorId: true, scheduledAt: true, status: true } },
+        },
+      });
+      if (!enrollment) return reply.code(404).send({ error: 'Enrollment not found' });
+      const userId = request.currentUser!.id;
+      if (enrollment.session.instructorId !== userId && !isAdmin(request)) {
+        return reply.code(403).send({ error: 'Only the instructor can mark attendance' });
+      }
+      const sess = enrollment.session;
+      const started =
+        sess.scheduledAt.getTime() <= Date.now() || sess.status === 'LIVE' || sess.status === 'COMPLETED';
+      const earningsReleased = sess.scheduledAt.getTime() <= Date.now() || sess.status === 'COMPLETED';
+      if (enrollment.status === 'ATTENDED') {
+        return reply.send({
+          data: { id: enrollment.id, status: 'ATTENDED', attendedAt: enrollment.attendedAt },
+          alreadyMarked: true,
+          earningsReleased,
+        });
+      }
+      if (enrollment.status !== 'PAID') {
+        return reply.code(409).send({
+          error: `Attendance can only be marked for a paid enrolment (this one is ${enrollment.status.toLowerCase().replace('_', ' ')}).`,
+          code: 'enrollment_not_paid',
+        });
+      }
+      if (sess.status === 'CANCELLED') {
+        return reply.code(409).send({ error: 'This session was cancelled.', code: 'session_cancelled' });
+      }
+      if (!started && !isAdmin(request)) {
+        return reply.code(409).send({
+          error: 'Attendance can be marked once the class has started.',
+          code: 'session_not_started',
+        });
+      }
+      const claimed = await prisma.wellnessEnrollment.updateMany({
+        where: { id: enrollment.id, status: 'PAID' },
+        data: { status: 'ATTENDED', attendedAt: new Date() },
+      });
+      if (claimed.count !== 1) {
+        // Lost a race with a cancel or a concurrent mark: report the truth.
+        return reply.code(409).send({ error: 'This enrolment changed; refresh and try again.', code: 'enrollment_changed' });
+      }
+      const fresh = await prisma.wellnessEnrollment.findUnique({
+        where: { id: enrollment.id },
+        select: { id: true, status: true, attendedAt: true },
+      });
+      return reply.send({ data: fresh, earningsReleased });
     }
   );
 
