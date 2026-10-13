@@ -108,6 +108,18 @@ const CHANNEL_BY_SLUG: Record<string, string> = {
  * almost always title their broadcasts that way. If found, prefer the live
  * entry videoId over live_stream. Otherwise fall back to latest non-live VOD.
  */
+async function isEmbeddable(videoId: string): Promise<boolean> {
+ try {
+   const r = await fetch(
+     `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}`,
+     { next: { revalidate: 300 }, signal: AbortSignal.timeout(4000) },
+   );
+   return r.ok;
+ } catch {
+   return false;
+ }
+}
+
 async function resolveLivePlaybackUrl(channelId: string): Promise<string | null> {
  try {
    const xml = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
@@ -121,9 +133,23 @@ async function resolveLivePlaybackUrl(channelId: string): Promise<string | null>
    // Empty feed → channel has no public videos. Don't render a broken iframe.
    if (entries.length === 0) return null;
 
-   const liveEntry = entries.find(([, , title]) => /\b(live|लाइव|थेट|प्रसारण)\b/i.test(title!));
-   const pick = liveEntry ?? entries[0]!;
-   const videoId = pick[1]!;
+   // Live-looking titles first, then newest. A removed/private/non-embeddable
+   // upload still sits in the RSS feed and renders "Video unavailable" inside
+   // the iframe, so each candidate is checked with the public oEmbed endpoint
+   // (200 = playable in an embed) and the first playable one wins.
+   const isLiveTitle = (t: string) => /\b(live|लाइव|थेट|प्रसारण)\b/i.test(t);
+   const ordered = [
+     ...entries.filter(([, , t]) => isLiveTitle(t!)),
+     ...entries.filter(([, , t]) => !isLiveTitle(t!)),
+   ].slice(0, 6);
+   let videoId: string | null = null;
+   for (const [, id] of ordered) {
+     if (await isEmbeddable(id!)) {
+       videoId = id!;
+       break;
+     }
+   }
+   if (!videoId) return null;
    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&rel=0`;
  } catch {
    return null;

@@ -167,7 +167,7 @@ export default function UpgradeScreen() {
                 <Text style={styles.priceMain}>₹5,000</Text>
                 <Text style={styles.priceUnit}>/year</Text>
               </View>
-              <Text style={styles.priceCompare}>Billed in INR • international cards accepted</Text>
+              <Text style={styles.priceCompare}>Billed in INR • UPI, Indian cards, net banking</Text>
             </>
           ) : (
             <Text style={styles.priceCompare}>Not currently sold</Text>

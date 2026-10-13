@@ -65,7 +65,7 @@ export default function NriLaneAbTest({ slot }: Props) {
                     billing options. Razorpay is the only rail and it is
                     INR-only, so those were a promise checkout could not keep.
                     The honest sentence already existed on /gift. */}
-                Gift a puja from abroad — billed in INR, international cards accepted
+                Gift a puja from abroad — billed in INR (UPI, Indian cards, net banking)
               </p>
               <p
                 className="text-xs mt-0.5 leading-snug"

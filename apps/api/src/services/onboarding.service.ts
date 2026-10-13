@@ -223,9 +223,31 @@ export class OnboardingService {
     await this.setPrimaryRole(userId, role);
 
     await this.createProviderProfile(userId, role, data);
+    await this.saveUploads(userId, role, data);
 
     const profileId = await this.fetchProfileId(userId, role);
     return { role, profileId };
+  }
+
+  // Profile photo -> the account avatar; identity documents -> the private
+  // storage keys kept on the verification step row (read back by admins through
+  // short-lived signed URLs, never public).
+  private async saveUploads(userId: string, role: RoleType, data: Record<string, unknown>): Promise<void> {
+    const photoUrl = typeof data.photoUrl === 'string' && data.photoUrl ? data.photoUrl : null;
+    if (photoUrl) {
+      await prisma.user.update({ where: { id: userId }, data: { avatarUrl: photoUrl } });
+    }
+    const aadhaarKey = typeof data.aadhaarDocKey === 'string' && data.aadhaarDocKey ? data.aadhaarDocKey : null;
+    const certificateKey =
+      typeof data.certificateDocKey === 'string' && data.certificateDocKey ? data.certificateDocKey : null;
+    if (aadhaarKey || certificateKey) {
+      const docs = { aadhaarKey, certificateKey };
+      await prisma.onboardingStep.upsert({
+        where: { userId_role_step: { userId, role, step: 4 } },
+        update: { data: docs },
+        create: { userId, role, step: 4, completed: false, data: docs },
+      });
+    }
   }
 
   /**

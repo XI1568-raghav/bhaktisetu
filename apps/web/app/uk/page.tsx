@@ -83,7 +83,7 @@ const BENEFITS = [
   {
     icon: PoundSterling,
     title: 'Book with a UK card',
-    body: 'UK cards accepted through Razorpay. Billing is in INR today — a native GBP rail is on the roadmap.'
+    body: 'Billing is in INR (UPI, Indian cards, net banking). UK cards and a native GBP rail are coming soon.'
   },
   {
     icon: Globe2,
@@ -332,8 +332,7 @@ export default async function UkLaunchPage() {
           )}
           <p className="mt-4 text-xs text-surface-500">
             Reference FX: £1 ≈ ₹{FX_INR_PER_GBP} (spot, 2026-06-15), reviewed quarterly. You are
-            billed in INR, so the exact £ amount depends on your card issuer's rate and any
-            foreign-transaction fee on the day. A ₹{PLATFORM_FEE_INR} platform fee is added at
+            billed in INR, so the £ figures are for reference. A ₹{PLATFORM_FEE_INR} platform fee is added at
             checkout.
           </p>
         </div>

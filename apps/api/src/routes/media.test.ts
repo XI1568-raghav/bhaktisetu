@@ -116,3 +116,30 @@ describe('media upload-url — content-type allowlist + kind sanitization (P1-5)
     expect(presignR2Upload).not.toHaveBeenCalled();
   });
 });
+
+describe('media upload-url — private identity documents', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('presigns a kyc-document upload privately and returns no public url', async () => {
+    const res = await inject({ kind: 'kyc-document', contentType: 'application/pdf' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.publicUrl).toBeNull();
+    expect(body.key).toMatch(/^kyc-document\/user-uuid-1\//);
+    expect(vi.mocked(presignR2Upload).mock.calls[0]![0]).toMatchObject({ private: true });
+  });
+
+  it('rejects video for a kyc-document', async () => {
+    const res = await inject({ kind: 'kyc-document', contentType: 'video/mp4' });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('keeps profile photos on the public path', async () => {
+    const res = await inject({ kind: 'profile-photo', contentType: 'image/png' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().publicUrl).toContain('https://cdn.test/');
+    expect(vi.mocked(presignR2Upload).mock.calls[0]![0]).toMatchObject({ private: false });
+  });
+});

@@ -169,8 +169,8 @@ export default function PitchPage() {
             each with KYC, payouts, dashboards. Not a booking widget. A two-sided market.
           </Card>
           <Card title={HAS_80G ? '80G + INR priced' : 'Receipted + INR priced'}>
-            Auto-generated numbered donation receipts (DR-YYYYMMDD-XXXX){HAS_80G ? ', 80G-valid' : ' — proof of payment, not yet an 80G certificate'}. Native Razorpay, billed in INR (international cards accepted
-            where Razorpay enables them). NRI bookings are priced at 2.5x domestic, shown in USD and charged in INR.
+            Auto-generated numbered donation receipts (DR-YYYYMMDD-XXXX){HAS_80G ? ', 80G-valid' : ' — proof of payment, not yet an 80G certificate'}. Native Razorpay, billed in INR (UPI, Indian cards, net banking; foreign cards
+            and PayPal coming soon). NRI bookings are priced at 2.5x domestic, shown in USD and charged in INR.
             Built for Indian + diaspora from day zero.
           </Card>
         </div>
@@ -245,7 +245,7 @@ export default function PitchPage() {
             <tr>
               <td>Payments</td>
               <td>Razorpay</td>
-              <td>INR billing; international cards via Razorpay</td>
+              <td>INR billing via Razorpay (UPI, Indian cards, net banking)</td>
             </tr>
             <tr>
               <td>Storage</td>

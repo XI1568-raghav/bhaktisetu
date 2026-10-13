@@ -5,11 +5,11 @@
  *
  * Owner decision (2026-10-05): NRI devotees pay 2.5x the domestic puja price.
  *
- * WHAT IS REALLY CHARGED. Razorpay orders are INR only; an international card
- * pays an INR order. So the NRI amount is an INR amount (domestic puja price x
+ * WHAT IS REALLY CHARGED. Razorpay orders are INR only (foreign cards are not
+ * enabled on this account; PayPal needs a dollar order that is not built yet). So the NRI amount is an INR amount (domestic puja price x
  * 2.5, rounded to NRI_ROUND_STEP_INR, plus the same flat platform and prasad
  * fees as everyone). The dollar figure is only a DISPLAY conversion of that INR
- * amount at USD_INR_RATE — the bank converts at its own rate. The wizard tells
+ * amount at USD_INR_RATE. The wizard tells
  * the server it is showing the NRI price with `nriPricing: true`, and the
  * server computes the same INR amount (apps/api createBooking), so the amount
  * shown equals the amount charged.
@@ -54,11 +54,11 @@ export function formatUsd(usd: number): string {
 }
 
 /**
- * "$33 (charged as ₹2,801; your bank converts at its own rate)". The INR figure
+ * "$33 (charged as ₹2,801; the dollar figure is for reference)". The INR figure
  * in the parentheses is the exact amount the order is created for.
  */
 export function usdPriceLine(chargedInr: number): string {
-  return `${formatUsd(usdFromInr(chargedInr))} (charged as ₹${formatInr(chargedInr)}; your bank converts at its own rate)`;
+  return `${formatUsd(usdFromInr(chargedInr))} (charged as ₹${formatInr(chargedInr)}; the dollar figure is for reference)`;
 }
 
 // ─── Which currency to show ────────────────────────────────────────────────

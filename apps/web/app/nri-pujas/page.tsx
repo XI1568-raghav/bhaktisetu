@@ -77,7 +77,7 @@ const HAS_80G = COMPANY.donationLegal.HAS_80G_VERIFIED;
 export const metadata: Metadata = {
   title: 'NRI Pujas — Book a Puja at an India Temple from Abroad',
   description:
-    'Guide for NRIs to book Hindu pujas at India temples. Billed in INR (an international card works where your card issuer allows international payments), video proof on your booking page' +
+    'Guide for NRIs to book Hindu pujas at India temples. Billed in INR (UPI, Indian cards and net banking; foreign cards and PayPal coming soon), video proof on your booking page' +
     (HAS_80G ? ', 80G receipt eligible donations' : ', numbered donation receipts') +
     `. ${CANCELLATION_BADGE_LABEL}.`,
   alternates: { canonical: 'https://darshya.online/nri-pujas' },
@@ -110,7 +110,7 @@ const popularTempleCities = [
 const faqs: Array<{ q: string; a: string }> = [
   {
     q: 'Can I book a puja from outside India?',
-    a: 'Yes. You can book puja listings from abroad. Billing is in Indian Rupees through Razorpay, so your bank applies its own conversion rate, and an international card works where your card issuer allows international payments. Your booking page always shows the current status of your booking.',
+    a: 'Yes. You can book puja listings from abroad. Billing is in Indian Rupees through Razorpay, so you pay with UPI, an Indian card or net banking. Cards issued outside India and PayPal are coming soon. Your booking page always shows the current status of your booking.',
   },
   {
     q: 'Will I receive video proof of my puja?',
@@ -118,7 +118,7 @@ const faqs: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How does pricing work from abroad?',
-    a: 'NRI pricing is 2.5 times the domestic price of the same puja. The flat platform fee (₹51) and the optional prasad-delivery fee (₹150) are the same for everyone and are not multiplied. We show the amount in US dollars for convenience, but the order is created and charged in Indian Rupees through Razorpay: the booking screen shows the exact rupee amount next to the dollar figure, and your bank converts at its own rate and may add a foreign-transaction fee. International cards work where your card issuer and Razorpay allow international payments. You can switch the page back to rupees at any time.',
+    a: 'NRI pricing is 2.5 times the domestic price of the same puja. The flat platform fee (₹51) and the optional prasad-delivery fee (₹150) are the same for everyone and are not multiplied. We show the amount in US dollars for convenience, but the order is created and charged in Indian Rupees through Razorpay: the booking screen shows the exact rupee amount next to the dollar figure, and you pay with UPI, an Indian card or net banking. Cards issued outside India and PayPal are coming soon. You can switch the page back to rupees at any time.',
   },
   {
     q: 'Are the pandits verified?',
@@ -166,7 +166,7 @@ const stepsFor = (stats: PublicStats) => [
   {
     n: 3,
     title: 'Pay by card, billed in INR',
-    body: 'Pay through Razorpay, billed in INR. An international card works where your card issuer allows international payments; UPI and net banking are for Indian accounts. Once payment succeeds, your booking page shows the reference number BS-YYYYMMDD-XXXXX.',
+    body: 'Pay through Razorpay, billed in INR, with UPI, an Indian card or net banking. Cards issued outside India and PayPal are coming soon. Once payment succeeds, your booking page shows the reference number BS-YYYYMMDD-XXXXX.',
   },
   {
     n: 4,
@@ -194,7 +194,7 @@ const trustSignals = [
   // foreign currencies. There is no multi-currency rail — Razorpay charges in
   // INR only, and the foreign-currency path was deleted with Stripe (RV-01).
   // Say what actually happens at checkout.
-  { icon: CreditCard, title: 'Billed in INR', body: 'Shown in USD, billed in INR. The exact rupee amount is shown upfront and we add no FX fee of our own; an international card works where your card issuer allows international payments.' },
+  { icon: CreditCard, title: 'Billed in INR', body: 'Shown in USD, billed in INR. The exact rupee amount is shown upfront and we add no FX fee of our own. Pay with UPI, an Indian card or net banking; cards issued outside India are not accepted at the moment.' },
   { icon: Clock, title: CANCELLATION_BADGE_LABEL, body: `${CANCELLATION_BADGE_DESC}. Inside that window the slot is locked.` },
   HAS_80G
     ? { icon: FileText, title: '80G tax receipts', body: 'Eligible donations get 80G receipt within 7 days.' }
@@ -378,8 +378,7 @@ export default async function NRIPujasPillarPage() {
           </h2>
           <p className="mt-2 max-w-2xl text-surface-700">
             NRI pricing is 2.5 times the domestic price, plus a flat platform fee. Dollar
-            figures are a display conversion: the order is charged in rupees and your bank
-            converts at its own rate.
+            figures are a display conversion for reference: the order is charged in rupees.
           </p>
           <CurrencyToggle className="mt-4" />
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

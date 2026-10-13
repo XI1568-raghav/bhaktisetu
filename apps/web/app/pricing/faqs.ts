@@ -101,7 +101,7 @@ export const PRICING_FAQS: PricingFaq[] = [
  {
  question: "What payment methods do you accept?",
  answer:
- "We accept UPI, credit/debit cards, net banking, and wallets via Razorpay. International cards are accepted too — billing is in INR.",
+ "We accept UPI, credit/debit cards, net banking, and wallets via Razorpay. Billing is in INR. Cards issued outside India and PayPal are coming soon.",
  },
  {
  // PM-02b: the old answer said premium devotee features "may be introduced

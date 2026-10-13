@@ -75,7 +75,7 @@ const ROWS: Row[] = [
     sriMandir: '~ Some USD pricing, opaque',
     utsav: '~ Single global price',
     astrosage: '~ INR only (devotee converts)',
-    detail: 'NRI devotees see a US-dollar price that is 2.5x the domestic puja price. It is a display conversion: the order is charged in rupees and your bank converts at its own rate. Checkout breaks out the puja fee, the flat platform fee and any prasad delivery, and shows the rupee amount charged next to the dollar total.',
+    detail: 'NRI devotees see a US-dollar price that is 2.5x the domestic puja price. It is a display conversion: the order is charged in rupees and paid with UPI, an Indian card or net banking. Checkout breaks out the puja fee, the flat platform fee and any prasad delivery, and shows the rupee amount charged next to the dollar total.',
   },
   {
     feature: 'Pandit checks before payout',
