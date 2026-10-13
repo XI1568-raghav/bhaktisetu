@@ -70,7 +70,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'delhi/satyanarayan-puja',
     heroAlt: 'Satyanarayan Puja in Bengaluru — Vishnu altar with banana leaves',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'mumbai',
@@ -116,7 +116,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'ayodhya/ram-puja',
     heroAlt: 'Griha Pravesh ritual in Mumbai — kalash and toran at home entrance',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'delhi',
@@ -162,7 +162,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'bengaluru/satyanarayan-puja',
     heroAlt: 'Satyanarayan Puja in Delhi — Vishnu altar with panchamrit',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'varanasi',
@@ -208,7 +208,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'kashi/maha-mrityunjaya',
     heroAlt: 'Rudrabhishek at Kashi Vishwanath, Varanasi — Shivling with bilva patra',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'tirupati',
@@ -254,7 +254,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'vrindavan/krishna-puja',
     heroAlt: 'Venkateswara Puja at Tirumala, Tirupati — Balaji altar',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'haridwar',
@@ -300,7 +300,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'ujjain/mahakaleshwar-bhasma-aarti',
     heroAlt: 'Ganga Aarti at Har-ki-Pauri Ghat, Haridwar — multi-wick diyas at sunset',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'ujjain',
@@ -346,7 +346,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'varanasi/rudrabhishek',
     heroAlt: 'Mahakaleshwar Bhasma Aarti at Ujjain Jyotirlinga at 4 AM',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'ayodhya',
@@ -392,7 +392,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'vrindavan/krishna-puja',
     heroAlt: 'Ram Puja at Sri Ram Janmabhoomi Mandir, Ayodhya',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'vrindavan',
@@ -438,7 +438,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'tirupati/venkateswara-puja',
     heroAlt: 'Krishna Puja at Banke Bihari Mandir, Vrindavan',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
   {
     city: 'kashi',
@@ -484,7 +484,7 @@ export const CITY_PUJAS: CityPuja[] = [
     ],
     relatedSlug: 'varanasi/rudrabhishek',
     heroAlt: 'Maha Mrityunjaya Japa at Kashi Vishwanath — pandits with rudraksha mala',
-    heroSrc: '/og/default',
+    heroSrc: '/og/default.png',
   },
 ];
 

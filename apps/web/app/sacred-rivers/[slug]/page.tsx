@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSacredRiver, SACRED_RIVERS, sacredRiverSlugs } from '../../../lib/sacred-rivers';
 import { getTirtha } from '../../../lib/tirthas';
+import { getDeity } from '../../../lib/deities';
 import { formatNumber } from '../../../lib/format-locale';
 // CI-05: every encyclopedia detail page ends somewhere a devotee can act.
 import { detailCta } from '../../../lib/detail-route-cta';
@@ -98,7 +99,7 @@ export default async function SacredRiverPage({ params }: Props) {
         <p className="mt-1 font-serif text-xl text-gray-700">{r.sanskrit}</p>
         <p className="mt-3 text-base text-gray-700">
           <strong>Presiding goddess:</strong>{' '}
-          {r.goddessSlug ? (
+          {r.goddessSlug && getDeity(r.goddessSlug) ? (
             <Link href={`/deity/${r.goddessSlug}`} className="text-saffron-700 underline">{r.goddessName}</Link>
           ) : (
             <span>{r.goddessName}</span>
