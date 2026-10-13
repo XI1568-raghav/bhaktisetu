@@ -135,7 +135,7 @@ function normalizeOrder(raw: any): Order {
  const items: OrderItem[] = itemsSrc.map((it: any) => ({
    name: it.name || it.productName || 'Item',
    quantity: Number(it.quantity) || 1,
-   price: Number(it.price) || Number(it.unitPrice) || 0,
+   price: Number(it.price) || Number(it.unitPrice) || Number(it.priceAtPurchase) || 0,
  }));
  const historySrc = Array.isArray(raw.statusHistory) ? raw.statusHistory : [];
  const statusHistory: StatusHistoryEntry[] = historySrc.map((h: any) => ({

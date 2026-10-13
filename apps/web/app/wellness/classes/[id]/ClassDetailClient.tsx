@@ -139,6 +139,9 @@ export default function ClassDetailClient() {
         method: 'POST',
         headers: authHeaders(),
         credentials: 'include',
+        // authHeaders() sets Content-Type: application/json; Fastify answers an empty body
+        // under that type with 400, so enrolment never started.
+        body: '{}',
       });
       if (res.status === 401) {
         // AW-07 (2026-08-14): this page tells the devotee "You'll be asked to

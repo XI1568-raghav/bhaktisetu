@@ -74,7 +74,7 @@ function TemplePujasPageContent() {
   const [formPrice, setFormPrice] = useState('');
   const [formNriPrice, setFormNriPrice] = useState('');
   const [formPriestId, setFormPriestId] = useState('');
-  const [formMaxBookings, setFormMaxBookings] = useState('1');
+  const [formMaxBookings, setFormMaxBookings] = useState('5');
   // Temple revamp: the API accepted availableSlots (the daily time slots a
   // devotee can book) but the form never collected them — every offering was
   // created with an empty slot list, so nothing was bookable. Add a slot editor.
@@ -125,7 +125,7 @@ function TemplePujasPageContent() {
     setFormPrice('');
     setFormNriPrice('');
     setFormPriestId('');
-    setFormMaxBookings('1');
+    setFormMaxBookings('5');
     setFormSlots('');
     setEditingId(null);
     setShowForm(false);
@@ -156,7 +156,7 @@ function TemplePujasPageContent() {
       priceOverride: formPrice ? Number(formPrice) : null,
       nriPrice: formNriPrice ? Number(formNriPrice) : null,
       assignedPriestId: formPriestId || null,
-      maxBookingsPerSlot: Number(formMaxBookings) || 1,
+      maxBookingsPerSlot: Number(formMaxBookings) || 5,
       // Parse the comma/space-separated slot editor into the availableSlots
       // string array the booking slot-picker consumes (e.g. "06:00, 10:00").
       availableSlots: formSlots

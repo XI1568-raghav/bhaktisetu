@@ -307,7 +307,8 @@ function CheckoutContent() {
  }
  const rzpRes = await fetch(
  `${API_BASE_URL}/payments/store-orders/${storeOrderId}/razorpay`,
- { method: 'POST', headers: authHeaders, credentials: 'include' },
+ // Content-Type is JSON, and Fastify rejects an empty body under that type (400).
+ { method: 'POST', headers: authHeaders, credentials: 'include', body: '{}' },
  );
  if (!rzpRes.ok) {
  const txt = await rzpRes.text().catch(() => '');

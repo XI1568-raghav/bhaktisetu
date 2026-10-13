@@ -38,9 +38,9 @@ describe('authedFetch', () => {
     expect(r.status).toBe(200);
     expect(onUnauthorised).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    const retryHeaders = new Headers(fetchMock.mock.calls[1][1].headers);
+    const retryHeaders = new Headers(fetchMock.mock.calls[1]![1].headers);
     expect(retryHeaders.get('Authorization')).toBe('Bearer new');
-    expect(fetchMock.mock.calls[1][1].method).toBe('PATCH');
+    expect(fetchMock.mock.calls[1]![1].method).toBe('PATCH');
   });
 
   it('returns the 401 when the token did not change (refresh rejected/unavailable)', async () => {
