@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { pdfSafe } from './pdf-safe-text.js';
+import { HAS_80G } from './eighty-g.js';
 
 /**
  * Generates an 80G tax receipt PDF for gaushala donations. Uses pdf-lib
@@ -32,6 +33,12 @@ export interface ReceiptData {
   gaushala80GNumber?: string;
   gaushalaPan?: string;
   gaushalaAddress?: string;
+  /**
+   * Platform-level 80G flag. Defaults to `HAS_80G` (lib/eighty-g.ts, false until
+   * the Section 80G(5) certificate is on file). Exposed so tests can exercise
+   * both states; production callers leave it unset.
+   */
+  companyHas80G?: boolean;
 }
 
 /**
@@ -53,8 +60,12 @@ export interface ReceiptData {
 export function is80GEligible(data: {
   gaushala80GNumber?: string | undefined;
   gaushalaPan?: string | undefined;
+  companyHas80G?: boolean | undefined;
 }): boolean {
-  return !!(data.gaushala80GNumber?.trim() && data.gaushalaPan?.trim());
+  // Three facts, or no claim: the donee's registration, the donee's PAN, and the
+  // platform-level flag (HAS_80G). Donee numbers on file never override the flag.
+  const company = data.companyHas80G ?? HAS_80G;
+  return !!(company && data.gaushala80GNumber?.trim() && data.gaushalaPan?.trim());
 }
 
 const SAFFRON = rgb(0.918, 0.345, 0.047); // matches brand #EA580C
@@ -169,11 +180,11 @@ export async function generate80GReceipt(input: ReceiptData): Promise<Buffer> {
   page.drawText('Donee organisation', { x: left, y, size: 9, font, color: MUTED });
   y -= 14;
   page.drawText(clip(data.gaushalaName, 64), { x: left, y, size: 12, font: fontBold, color: TEXT });
-  if (data.gaushala80GNumber) {
+  if (eligible80G && data.gaushala80GNumber) {
     y -= 14;
     page.drawText(`80G Registration: ${data.gaushala80GNumber}`, { x: left, y, size: 10, font, color: TEXT });
   }
-  if (data.gaushalaPan) {
+  if (eligible80G && data.gaushalaPan) {
     y -= 14;
     page.drawText(`PAN: ${data.gaushalaPan}`, { x: left, y, size: 10, font, color: TEXT });
   }
@@ -200,11 +211,11 @@ export async function generate80GReceipt(input: ReceiptData): Promise<Buffer> {
       x: left, y, size: 9, font, color: MUTED,
     });
   } else {
-    page.drawText('This receipt is not valid for a Section 80G deduction: the donee organisation', {
+    page.drawText('This receipt is not valid for a Section 80G deduction: the donee and Darshya', {
       x: left, y, size: 9, font, color: MUTED,
     });
     y -= 12;
-    page.drawText('has no 80G registration number and PAN on record with Darshya.', {
+    page.drawText('do not both have a confirmed 80G registration and PAN on record.', {
       x: left, y, size: 9, font, color: MUTED,
     });
     y -= 12;

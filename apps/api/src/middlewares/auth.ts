@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { getCachedAuth, setCachedAuth } from '../lib/auth-cache.js';
 import { inspectSupabaseJwt } from '../lib/supabase-jwt.js';
 import { stopWhenAnswered } from '../lib/stop-when-answered.js';
+import { isTokenRevoked } from '../lib/token-revocation.js';
 import {
   AUTH_REASON_HEADER,
   AUTH_REASON_BODY_FIELD,
@@ -389,6 +390,13 @@ async function authenticateUserInner(
     // user the moment it blocks them or changes their roles.
     const cachedAuth = getCachedAuth(token);
     if (cachedAuth) {
+      // Logout-all / password reset / block / deletion write a cutoff that the
+      // 60 s identity cache must not outlive (lib/token-revocation.ts: one read
+      // per user per 30 s, fails open).
+      if (await isTokenRevoked(cachedAuth.id, token)) {
+        denyUnauthenticated(reply, 'session_revoked', 'Session revoked. Please sign in again.');
+        return;
+      }
       request.currentUser = { ...cachedAuth, roles: [...cachedAuth.roles] } as AuthUser;
       return;
     }
@@ -475,6 +483,14 @@ async function authenticateUserInner(
     }
 
     if (rejectIfBlocked(dbUser, reply)) return;
+
+    // Token revocation: a token minted before this user's logout-all / password
+    // reset / block cutoff (or belonging to a signed-out session) is dead even
+    // though its signature and `exp` are still good.
+    if (await isTokenRevoked(dbUser.id, token)) {
+      denyUnauthenticated(reply, 'session_revoked', 'Session revoked. Please sign in again.');
+      return;
+    }
 
     // Fetch user roles
     let roles: MarketplaceRole[] = ['DEVOTEE'];

@@ -45,6 +45,12 @@ interface SendEmailParams {
   attachments?: { filename: string; content: Buffer | string }[];
   /** Defaults to `transactional` — an unlabelled mail is never yielded. */
   kind?: EmailKind;
+  /**
+   * Resend `Idempotency-Key`: the same key within 24h returns the original
+   * response instead of sending again. The email outbox sets it so an inline
+   * send that timed out but was delivered is never duplicated by its retry.
+   */
+  idempotencyKey?: string;
 }
 
 interface SendEmailResult {
@@ -224,7 +230,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
 
   quota.attempted += 1;
   try {
-    const { data, error } = await resend.emails.send({
+    const payload = {
       from: FROM_EMAIL,
       to: params.to,
       subject: params.subject,
@@ -232,7 +238,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       text: params.text,
       replyTo: REPLY_TO,
       attachments: params.attachments,
-    });
+    };
+    const { data, error } = params.idempotencyKey
+      ? await resend.emails.send(payload, { idempotencyKey: params.idempotencyKey })
+      : await resend.emails.send(payload);
     if (error) {
       quota.failed += 1;
       const rateLimited = looksRateLimited(error as { message?: string; name?: string });

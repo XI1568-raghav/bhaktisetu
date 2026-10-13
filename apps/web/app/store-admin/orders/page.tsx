@@ -23,6 +23,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { UserFacingError, serverErrorMessage, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { filterOrders, statusTabCounts } from '../../../lib/store-admin-orders';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { composeShippedNote } from '../../../lib/store-order-cancel';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -197,6 +198,7 @@ export default function StoreAdminOrdersPage() {
    nextStatus: OrderStatus;
    note: string;
    trackingNumber?: string;
+   courier?: string;
  } | null>(null);
 
  const pushToast = useCallback((kind: ToastMsg['kind'], text: string) => {
@@ -267,7 +269,8 @@ export default function StoreAdminOrdersPage() {
         res.status,
        );
      }
-     const updated = normalizeOrder(await res.json());
+     const updatedJson = await res.json();
+     const updated = normalizeOrder(updatedJson?.data ?? updatedJson);
      setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
      pushToast(
        'success',
@@ -570,6 +573,21 @@ export default function StoreAdminOrdersPage() {
                }
                className="w-full mt-1 px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-300"
                placeholder="e.g. SR123456789IN"
+               data-testid="ship-tracking"
+             />
+             <label className="text-xs font-medium text-surface-500 mt-3 block">
+               Courier (optional)
+             </label>
+             <input
+               type="text"
+               value={notePromptState.courier ?? ''}
+               maxLength={60}
+               onChange={(e) =>
+                 setNotePromptState({ ...notePromptState, courier: e.target.value })
+               }
+               className="w-full mt-1 px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 focus:border-saffron-300"
+               placeholder="e.g. India Post, Delhivery"
+               data-testid="ship-courier"
              />
            </>
          )}
@@ -586,7 +604,12 @@ export default function StoreAdminOrdersPage() {
              onClick={() => {
                const s = notePromptState;
                setNotePromptState(null);
-               commitStatusChange(s.order, s.nextStatus, s.note, s.trackingNumber);
+               commitStatusChange(
+                 s.order,
+                 s.nextStatus,
+                 s.nextStatus === 'SHIPPED' ? composeShippedNote(s.note, s.courier ?? '') : s.note,
+                 s.trackingNumber?.trim() || undefined,
+               );
              }}
              className="px-4 py-2 rounded-lg text-sm font-medium bg-saffron-600 text-white hover:bg-saffron-700"
            >

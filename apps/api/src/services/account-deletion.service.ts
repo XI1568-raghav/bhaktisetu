@@ -73,6 +73,8 @@
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { supabaseAdmin, isDemoMode } from '../lib/supabase.js';
+import { invalidateAuthUser } from '../lib/auth-cache.js';
+import { revokeUserTokens } from '../lib/token-revocation.js';
 import { sendWhatsappTemplate, whatsapp } from '../lib/whatsapp.js';
 import { sendEmail } from '../lib/email.js';
 // TC-01's honesty gate. Retaining a donor's PAN is only defensible while a
@@ -881,6 +883,11 @@ export class AccountDeletionService {
     if (!supabase.deleted && !supabase.skipped) {
       warnings.push(`supabase_auth: ${supabase.reason ?? 'unknown error'}`);
     }
+
+    // Access tokens already issued verify offline until their `exp`; the
+    // tombstone's `blocked` flag alone does not reach a cached session.
+    invalidateAuthUser(userId);
+    await revokeUserTokens(userId);
 
     await this.db.$executeRawUnsafe(
       `UPDATE "account_deletion_requests"
