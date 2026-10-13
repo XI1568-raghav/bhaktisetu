@@ -477,7 +477,7 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.post('/temples', { preHandler: adminPreHandlers }, async (request, reply) => {
     const body = validateBody(templeCreateSchema, request.body, reply);
-    if (!body) return;
+    if (!body) return reply;
     const slug = body.slug ?? slugifyTempleName(body.name);
     if (!slug) {
       return reply
@@ -611,7 +611,7 @@ export async function adminRoutes(server: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const body = validateBody(priestCommissionSchema, request.body, reply);
-      if (!body) return;
+      if (!body) return reply;
 
       const share = body.commissionRate;
       // (0,1] is exactly the band resolvePriestShare trusts; anything outside
