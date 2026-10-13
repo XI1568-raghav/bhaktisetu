@@ -25,6 +25,7 @@ import { API_BASE_URL } from '../../../../lib/api-config';
 import VideoProofUpload from '../../../../components/provider/VideoProofUpload';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { UserFacingError, userFacingMessage, serverErrorText } from '../../../../lib/friendly-error';
+import { placeLabel } from '../../../../lib/place-label';
 
 interface BookingDetail {
  id: string;
@@ -344,7 +345,7 @@ function PriestBookingDetailInner() {
  <MapPin className="w-4 h-4 text-surface-400 mt-0.5" />
  <div>
  <p className="text-sm font-medium text-surface-800">{booking.temple.name}</p>
- <p className="text-xs text-surface-500">{booking.temple.city}, {booking.temple.state}</p>
+ <p className="text-xs text-surface-500">{placeLabel(booking.temple.city, booking.temple.state)}</p>
  </div>
  </div>
  <div className="flex items-start gap-3">

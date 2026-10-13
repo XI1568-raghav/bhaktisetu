@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { canonicalTempleSlug } from '../../../../lib/temple-slug';
+import { placeLabel } from '../../../../lib/place-label';
 import {
   canPublishTrustScore,
   canPublishTrustScoreMethodology,
@@ -237,7 +238,7 @@ export default async function PujaTemplesPage({ params }: Params) {
             >
               <div className="flex items-center justify-between mb-2 gap-3">
                 <span className="text-xs uppercase tracking-wider text-saffron-700 font-semibold">
-                  {o.templeCity}, {o.templeState}
+                  {placeLabel(o.templeCity, o.templeState)}
                 </span>
                 {o.isVerified ? (
                   <span className="text-xs text-emerald-700 font-semibold">✓ Verified</span>

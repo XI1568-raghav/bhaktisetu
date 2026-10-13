@@ -36,6 +36,7 @@ import AuthGuard from '../../components/AuthGuard';
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
 import { withIst } from '../../lib/slot-zone';
+import { placeLabel } from '../../lib/place-label';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -503,7 +504,7 @@ function BookingsContent() {
  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-surface-500">
  <span className="flex items-center gap-1">
  <MapPin className="h-3.5 w-3.5" />
- {booking.templeName}, {booking.templeCity}
+ {placeLabel(booking.templeName, booking.templeCity)}
  </span>
  <span className="flex items-center gap-1">
  <Calendar className="h-3.5 w-3.5" />

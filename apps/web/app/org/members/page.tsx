@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { useAuth } from "../../../lib/auth-context";
-import { DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
+import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from "../../../lib/api-config";
 import { serverErrorMessage } from '../../../lib/friendly-error';
 
 interface Member {
@@ -17,7 +17,8 @@ interface Member {
   joined_at: string;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// Prefix-safe: API_BASE_URL already ends in /api/v1 whatever NEXT_PUBLIC_API_URL holds.
+const API = API_BASE_URL;
 
 /**
  * SEC-02 step 3 — this file used to hand-build its own Bearer by reading
@@ -67,7 +68,7 @@ function OrgMembersContent() {
     if (!orgId) return;
     setLoading(true);
     try {
-      const r = await orgFetch(`/api/v1/orgs/${orgId}/members`);
+      const r = await orgFetch(`/orgs/${orgId}/members`);
       const j = await r.json();
       setMembers(j.members ?? []);
     } finally {
@@ -89,7 +90,7 @@ function OrgMembersContent() {
     e.preventDefault();
     if (!orgId) return;
     setMsg(null);
-    const r = await orgFetch(`/api/v1/orgs/${orgId}/invite`, {
+    const r = await orgFetch(`/orgs/${orgId}/invite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, role }),
@@ -105,7 +106,7 @@ function OrgMembersContent() {
 
   async function changeRole(userId: string, newRole: "OWNER" | "ADMIN" | "MEMBER") {
     if (!orgId) return;
-    await orgFetch(`/api/v1/orgs/${orgId}/members/${userId}/role`, {
+    await orgFetch(`/orgs/${orgId}/members/${userId}/role`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: newRole }),
@@ -116,7 +117,7 @@ function OrgMembersContent() {
   async function remove(userId: string) {
     if (!orgId) return;
     if (!confirm("Remove this member?")) return;
-    await orgFetch(`/api/v1/orgs/${orgId}/members/${userId}`, {
+    await orgFetch(`/orgs/${orgId}/members/${userId}`, {
       method: "DELETE",
     });
     load();

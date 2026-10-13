@@ -1940,6 +1940,24 @@ export async function bookingRoutes(server: FastifyInstance) {
         // a client that ignores the new flag must not keep printing a number
         // the product will not honour.
         const allowed = cancellationAllowed(quote.hoursUntilSlot, booking.status);
+        // QA 2026-10-13: an UNPAID booking has no money to give back, so no refund
+        // tier applies. Cancelling it is free and always allowed; the quote must not
+        // print a "75% refund" for a payment that never happened.
+        if (booking.status === 'pending_payment') {
+          return {
+            bookingId: id,
+            cancellationAllowed: true,
+            cancellationCutoffHours: DEVOTEE_CANCEL_CUTOFF_HOURS,
+            unpaid: true,
+            refundFraction: 0,
+            refundAmountInr: 0,
+            feeAmountInr: 0,
+            tierLabel: 'Nothing was charged for this booking, so there is nothing to refund. Cancelling it is free.',
+            hoursUntilSlot: quote.hoursUntilSlot,
+            refundDaysLabel: policy.refundDaysLabel,
+            refundInternationalCardLabel: REFUND_INTERNATIONAL_CARD_LABEL,
+          };
+        }
         return {
           bookingId: id,
           cancellationAllowed: allowed,

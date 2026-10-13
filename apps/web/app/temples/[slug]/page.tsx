@@ -90,6 +90,7 @@ import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-
 import TempleHeartShareButtons from '../../../components/TempleHeartShareButtons';
 import AnalyticsEvent from '../../../components/AnalyticsEvent';
 import { TEMPLE_DETAILS } from '../../../lib/temple-details';
+import { placeLabel } from '../../../lib/place-label';
 
 export function generateStaticParams() {
   const fallback = [
@@ -176,7 +177,7 @@ export async function generateMetadata({
  }
 
  const name = rich?.name ?? fallback?.name ?? 'Temple';
- const location = rich ? `${rich.location}, ${rich.state}` : `${fallback?.city ?? ''}, ${fallback?.state ?? ''}`;
+ const location = rich ? placeLabel(rich.location, rich.state) : placeLabel(fallback?.city, fallback?.state);
  const deity = rich?.deity ?? fallback?.deityPrimary ?? 'Devotees';
  const description =
    rich?.significance?.slice(0, 200) ??
@@ -963,7 +964,7 @@ function RichTemplePage({
  </div>
  <div className="mt-1 flex items-center gap-1 text-xs text-surface-500">
  <MapPin className="h-3 w-3" />
- {t.location}, {t.state}
+ {placeLabel(t.location, t.state)}
  </div>
  </div>
  </Link>
@@ -1033,7 +1034,7 @@ function RichTemplePage({
  <h3 className="mb-4 font-semibold text-surface-800">At a Glance</h3>
  <dl className="space-y-3 text-sm">
  <Row label="Deity" value={rich.deity} />
- <Row label="Location" value={`${rich.location}, ${rich.state}`} />
+ <Row label="Location" value={placeLabel(rich.location, rich.state)} />
  {rich.isJyotirlinga && <Row label="Type" value="Jyotirlinga" />}
  {rich.isShaktiPeetha && <Row label="Also" value="Shakti Peetha" />}
  <Row label="Pujas" value={`${rich.pujasOffered.length} offered`} />
@@ -1096,7 +1097,7 @@ function SimpleTemplePage({
  <p lang={scriptLang(temple.nameLocal)} className="mt-1 text-lg font-serif text-white/80">{temple.nameLocal}</p>
  )}
  <p className="mt-2 flex items-center gap-2 text-white/90">
- <MapPin className="h-4 w-4" /> {temple.city}, {temple.state}
+ <MapPin className="h-4 w-4" /> {placeLabel(temple.city, temple.state)}
  </p>
  </div>
  </section>
