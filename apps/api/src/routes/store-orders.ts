@@ -36,7 +36,8 @@ const shippingAddressSchema = z.object({
   line2: z.string().nullish(),
   city: z.string().min(1),
   state: z.string().min(1),
-  pincode: z.string().min(1),
+  // QA 2026-10-13: Indian PIN = exactly 6 digits (the shipping rule is India-only, enforced below).
+  pincode: z.string().trim().regex(/^\d{6}$/, 'Enter a valid 6-digit Indian pincode.'),
   country: z.string().default('India'),
   phone: z.string().nullish(),
 }).refine((a) => ['', 'IN', 'INDIA'].includes(a.country.trim().toUpperCase()), {
