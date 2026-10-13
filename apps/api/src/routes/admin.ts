@@ -5,6 +5,8 @@ import { httpUrl } from '../lib/http-url.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { adminService, UnsupportedUserStatusError } from '../services/admin.service.js';
 import { prisma } from '../lib/prisma.js';
+import { revokeUserTokens } from '../lib/token-revocation.js';
+import { invalidateAuthUser } from '../lib/auth-cache.js';
 import { uuidParamGuard } from '../lib/uuid.js';
 import { CauseQualityError } from '../lib/cause-quality.js';
 import { commissionGross, commissionPlatformCut } from '../lib/commission-math.js';
@@ -308,6 +310,37 @@ export async function adminRoutes(server: FastifyInstance) {
     }
 
     return result;
+  });
+
+  // ─── POST /users/:id/force-logout — end every session of one user ──────────
+  //
+  // Revokes the access tokens already issued (they verify offline, so nothing
+  // else would stop them before their `exp`), the magic-link sessions and the
+  // API-managed refresh ledger. The account is NOT blocked: signing in again works.
+  server.post('/users/:id/force-logout', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!isUuid(id)) return reply.code(404).send({ error: 'User not found' });
+    const exists = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) return reply.code(404).send({ error: 'User not found' });
+    const revoked = await revokeUserTokens(id);
+    invalidateAuthUser(id);
+    const sideEffects: string[] = [];
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE email_sessions SET revoked_at = now() WHERE user_id = $1::uuid AND revoked_at IS NULL`,
+        id,
+      );
+    } catch { sideEffects.push('email_sessions'); }
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE refresh_token_jtis SET used_at = now() - interval '1 hour' WHERE user_id = $1::uuid AND used_at IS NULL`,
+        id,
+      );
+    } catch { sideEffects.push('refresh_token_jtis'); }
+    if (!revoked) {
+      return reply.code(503).send({ error: 'Could not record the revocation. Try again.' });
+    }
+    return { message: 'User signed out everywhere', userId: id, skipped: sideEffects };
   });
 
   // ─── GET /dashboard — Platform stats ────────────────────────────────────────

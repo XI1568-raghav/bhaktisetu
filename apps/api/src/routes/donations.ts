@@ -7,6 +7,9 @@ import { sendEmail, donationReceiptEmail } from '../lib/email.js';
 import { generate80GReceipt, is80GEligible } from '../lib/pdf-receipt.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
 import { resolveGaushalaDonee } from '../lib/gaushala-donee.js';
+import { deliverOrQueue, type OutboxMail } from '../lib/email-outbox.js';
+import { readDoneeTax } from '../lib/donee-tax.js';
+import { donorContactMap, saveDonorContact } from '../lib/donation-contact.js';
 // OPS-05: the durable money trail. `recordMoneyEvent` never throws and never
 // joins a caller's transaction, so every call here is `void`-safe.
 //
@@ -89,6 +92,134 @@ async function ensureGaushalaTaxFields() {
   );
 }
 
+interface DoneeContext {
+  doneeName: string;
+  doneeAddress: string | undefined;
+  /** Donee PAN + 80G registration, null when none is on file. */
+  taxFields: GaushalaTaxRow | null;
+}
+
+/**
+ * Who the money went to, and the tax identifiers on file for them. Gaushalas keep
+ * them on gaushala_profiles, temples on temples (donee-tax.ts); both are read with
+ * raw SQL that tolerates the columns being absent.
+ */
+async function loadDoneeContext(donation: DonationRow): Promise<DoneeContext> {
+  const isTempleDonation = !!donation.temple_id;
+  const temple = isTempleDonation
+    ? await prisma.temple.findUnique({
+        where: { id: donation.temple_id! },
+        select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true },
+      }).catch(() => null)
+    : null;
+  const gaushalaProfile = !isTempleDonation
+    ? await prisma.gaushalaProfile.findFirst({
+        where: { userId: donation.gaushala_id ?? undefined },
+      }).catch(() => null)
+    : null;
+  let taxFields: GaushalaTaxRow | null = null;
+  if (gaushalaProfile && donation.gaushala_id) {
+    const taxRows = await prisma.$queryRawUnsafe<GaushalaTaxRow[]>(
+      `SELECT pan, regn_80g FROM gaushala_profiles WHERE user_id = $1::uuid LIMIT 1;`,
+      donation.gaushala_id,
+    ).catch(() => [] as GaushalaTaxRow[]);
+    taxFields = taxRows[0] ?? null;
+  } else if (temple) {
+    // Honest equivalent for temples: the same pair of facts, from temples.pan /
+    // temples.regn_80g. Empty until the temple manager or an admin enters them.
+    const t = await readDoneeTax('temple', temple.id);
+    taxFields = { pan: t.pan, regn_80g: t.regn80g };
+  }
+  const doneeName = isTempleDonation
+    ? (temple?.name ?? 'Darshya Temple')
+    : (gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network');
+  const doneeAddress = isTempleDonation && temple
+    ? `${temple.addressLine}, ${temple.city}, ${temple.state} ${temple.pincode}`
+    : gaushalaProfile?.address ?? undefined;
+  return { doneeName, doneeAddress, taxFields };
+}
+
+function istDate(d: Date): string {
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata',
+  });
+}
+
+/** The covering email for a receipt, using the same 80G predicate as the PDF. */
+function receiptEmail(args: {
+  to: string;
+  donorName: string;
+  amountInr: number;
+  doneeName: string;
+  receiptNumber: string;
+  donationDate: string;
+  taxFields: GaushalaTaxRow | null;
+  pdf: Buffer;
+}): OutboxMail {
+  const tpl = donationReceiptEmail({
+    donorName: args.donorName,
+    amount: `₹${args.amountInr.toLocaleString('en-IN')}`,
+    gaushalaName: args.doneeName,
+    receiptNumber: args.receiptNumber,
+    date: args.donationDate,
+    // COM-02: one source of truth for the 80G claim — the same predicate
+    // the PDF uses: donee registration AND donee PAN AND the platform flag.
+    is80G: is80GEligible({
+      gaushala80GNumber: args.taxFields?.regn_80g ?? undefined,
+      gaushalaPan: args.taxFields?.pan ?? undefined,
+    }),
+  });
+  return {
+    to: args.to,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+    attachments: [
+      { filename: `Darshya-Donation-Receipt-${args.receiptNumber}.pdf`, content: args.pdf },
+    ],
+  };
+}
+
+/**
+ * Regenerate the receipt email for an already-paid donation from its id alone
+ * (no PDF is stored). Used by the email-outbox retry job. null = nothing to send.
+ */
+export async function buildDonationReceiptMail(donationId: string): Promise<OutboxMail | null> {
+  const rows = await prisma.$queryRawUnsafe<DonationRow[]>(
+    `SELECT id, user_id, gaushala_id, temple_id, amount_inr, razorpay_order_id,
+            razorpay_payment_id, receipt_number, status, donor_pan, dedication, created_at, paid_at
+       FROM donations WHERE id = $1 LIMIT 1`,
+    donationId,
+  );
+  const donation = Array.isArray(rows) ? rows[0] : undefined;
+  if (!donation || donation.status !== 'paid' || !donation.receipt_number) return null;
+  const user = await prisma.user.findUnique({ where: { id: donation.user_id } });
+  if (!user?.email) return null;
+  const { doneeName, doneeAddress, taxFields } = await loadDoneeContext(donation);
+  const contact = (await donorContactMap([donation.id])).get(donation.id);
+  const donorName = contact?.name ?? user.fullName ?? 'Devotee';
+  const amountInr = Number(donation.amount_inr);
+  const donationDate = istDate(donation.paid_at ? new Date(donation.paid_at) : new Date());
+  const pdf = await generate80GReceipt({
+    donorName,
+    donorEmail: user.email,
+    amountInr,
+    donationDate,
+    receiptNumber: donation.receipt_number,
+    paymentMode: 'UPI',
+    paymentReference: donation.razorpay_payment_id ?? undefined,
+    donorPan: donation.donor_pan ?? undefined,
+    gaushalaName: doneeName,
+    gaushala80GNumber: taxFields?.regn_80g ?? undefined,
+    gaushalaPan: taxFields?.pan ?? undefined,
+    gaushalaAddress: doneeAddress ?? undefined,
+  });
+  return receiptEmail({
+    to: user.email, donorName, amountInr, doneeName,
+    receiptNumber: donation.receipt_number, donationDate, taxFields, pdf,
+  });
+}
+
 function nextReceiptNumber(): string {
   // QA 2026-10-13: the date in the number must be the date printed on the
   // receipt, and that is the Indian date. The server runs in UTC, so between
@@ -146,36 +277,10 @@ export async function finalizeDonationReceipt(
   // Entity resolution (PBO-2): temple vs gaushala donee.
   const user = await prisma.user.findUnique({ where: { id: donation.user_id } });
   const isTempleDonation = !!donation.temple_id;
-  const temple = isTempleDonation
-    ? await prisma.temple.findUnique({
-        where: { id: donation.temple_id! },
-        select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true },
-      }).catch(() => null)
-    : null;
-  const gaushalaProfile = !isTempleDonation
-    ? await prisma.gaushalaProfile.findFirst({
-        where: { userId: donation.gaushala_id ?? undefined },
-      }).catch(() => null)
-    : null;
-  let taxFields: GaushalaTaxRow | null = null;
-  if (gaushalaProfile && donation.gaushala_id) {
-    const taxRows = await prisma.$queryRawUnsafe<GaushalaTaxRow[]>(
-      `SELECT pan, regn_80g FROM gaushala_profiles WHERE user_id = $1::uuid LIMIT 1;`,
-      donation.gaushala_id,
-    ).catch(() => [] as GaushalaTaxRow[]);
-    taxFields = taxRows[0] ?? null;
-  }
-  const doneeName = isTempleDonation
-    ? (temple?.name ?? 'Darshya Temple')
-    : (gaushalaProfile?.gaushalaName ?? 'Darshya Gaushala Network');
-  const doneeAddress = isTempleDonation && temple
-    ? `${temple.addressLine}, ${temple.city}, ${temple.state} ${temple.pincode}`
-    : gaushalaProfile?.address;
+  const { doneeName, doneeAddress, taxFields } = await loadDoneeContext(donation);
 
   const receiptNumber = nextReceiptNumber();
-  const donationDate = new Date().toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata',
-  });
+  const donationDate = istDate(new Date());
 
   // ── DI-09 (F455): `AND status <> 'paid'` is what makes this a CLAIM ─────────
   //
@@ -273,10 +378,15 @@ export async function finalizeDonationReceipt(
     },
   });
 
+  // The name the donor typed on the form (when they gave one) is the name on
+  // their tax receipt; the account name is the fallback.
+  const contact = (await donorContactMap([donation.id])).get(donation.id);
+  const donorName = contact?.name ?? user?.fullName ?? 'Devotee';
+
   let pdfBuffer: Buffer | null = null;
   try {
     pdfBuffer = await generate80GReceipt({
-      donorName: user?.fullName ?? 'Devotee',
+      donorName,
       donorEmail: user?.email ?? '',
       amountInr,
       donationDate,
@@ -296,29 +406,15 @@ export async function finalizeDonationReceipt(
 
   if (user?.email && pdfBuffer) {
     try {
-      const tpl = donationReceiptEmail({
-        donorName: user.fullName ?? 'Devotee',
-        amount: `₹${amountInr.toLocaleString('en-IN')}`,
-        gaushalaName: doneeName,
-        receiptNumber,
-        date: donationDate,
-        // COM-02: one source of truth for the 80G claim — the same predicate
-        // the PDF uses. Both are false today for every donee (regn_80g / pan
-        // are written nowhere), and the temple branch never loads them at all.
-        is80G: is80GEligible({
-          gaushala80GNumber: taxFields?.regn_80g ?? undefined,
-          gaushalaPan: taxFields?.pan ?? undefined,
+      // Inline attempt with a short timeout; on failure the mail is recorded in
+      // email_outbox and the retry job regenerates it from the donation id.
+      const sent = await deliverOrQueue(
+        receiptEmail({
+          to: user.email, donorName, amountInr, doneeName, receiptNumber, donationDate, taxFields, pdf: pdfBuffer,
         }),
-      });
-      await sendEmail({
-        to: user.email,
-        subject: tpl.subject,
-        html: tpl.html,
-        text: tpl.text,
-        attachments: [
-          { filename: `Darshya-Donation-Receipt-${receiptNumber}.pdf`, content: pdfBuffer },
-        ],
-      });
+        { kind: 'donation_receipt', refId: donation.id },
+      );
+      if (sent.queued) logger.warn({ donationId: donation.id, error: sent.error }, 'Donation receipt email queued for retry');
     } catch (err) {
       logger.error({ err }, 'Failed to email donation receipt');
     }
@@ -368,6 +464,11 @@ const createOrderSchema = z.object({
   // the optional dedication. Previously accepted by the form but dropped here.
   donorPan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Invalid PAN format').optional(),
   dedication: z.string().max(200).optional(),
+  // The donor's own details as typed on the form (not the paying account's). The
+  // recipient's portal shows these; the account name / email remain the fallback.
+  donorName: z.string().trim().min(1).max(120).optional(),
+  donorEmail: z.string().trim().email().max(200).optional(),
+  donorPhone: z.string().trim().regex(/^\+?[0-9]{10,13}$/, 'Invalid phone number').optional(),
 }).refine(
   (d) => {
     const kind = d.causeKind ?? 'gaushala';
@@ -551,6 +652,9 @@ export async function donationRoutes(server: FastifyInstance) {
           parsed.data.donorPan ?? null,
           parsed.data.dedication ?? null,
         );
+        await saveDonorContact(reuse.id, {
+          name: parsed.data.donorName, email: parsed.data.donorEmail, phone: parsed.data.donorPhone,
+        });
         return reply.send({
           donationId: reuse.id,
           razorpayOrderId: reuse.razorpay_order_id,
@@ -627,6 +731,10 @@ export async function donationRoutes(server: FastifyInstance) {
         parsed.data.dedication ?? null,
       );
     }
+
+    await saveDonorContact(donationId, {
+      name: parsed.data.donorName, email: parsed.data.donorEmail, phone: parsed.data.donorPhone,
+    });
 
     // OPS-05: the order is open and the donation row exists owing money. This
     // is the donation rail's equivalent of `PAYMENT_INITIATED` in

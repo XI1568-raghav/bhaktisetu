@@ -24,12 +24,22 @@ import {
  updateWellnessSession,
  deleteWellnessSession,
  setWellnessSessionRoom,
+ getSessionRoster,
+ markEnrolmentAttended,
+ cancelWellnessSessionWithRefunds,
+ WellnessApiError,
+ type WellnessRosterRow,
  type WellnessSession,
  type WellnessSessionType,
  type WellnessSessionStatus,
 } from '../../../lib/wellness-api';
 import { DateTimeInput } from '../../../components/ui/DateInput';
 import { H1 } from '../../../components/ui/heading-recipe';
+import {
+ describeAttendanceError,
+ describeSessionCancelled,
+ summariseSessionCancel,
+} from '../../../lib/wellness-cancel';
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -120,6 +130,90 @@ function WellnessSessionsPageContent() {
  const [roomEditId, setRoomEditId] = useState<string | null>(null);
  const [roomUrlInput, setRoomUrlInput] = useState('');
  const [roomSaving, setRoomSaving] = useState(false);
+
+ // Roster + attendance (the endpoints existed with no UI).
+ const [rosterOpenId, setRosterOpenId] = useState<string | null>(null);
+ const [roster, setRoster] = useState<WellnessRosterRow[] | null>(null);
+ const [rosterError, setRosterError] = useState<string | null>(null);
+ const [rosterLoading, setRosterLoading] = useState(false);
+ const [attendBusyId, setAttendBusyId] = useState<string | null>(null);
+ const [rosterNote, setRosterNote] = useState<string | null>(null);
+
+ // Cancel-whole-session confirmation: needs the paid count first.
+ const [cancelId, setCancelId] = useState<string | null>(null);
+ const [cancelRoster, setCancelRoster] = useState<WellnessRosterRow[] | null>(null);
+ const [cancelRosterError, setCancelRosterError] = useState<string | null>(null);
+ const [notice, setNotice] = useState<string | null>(null);
+
+ async function openRoster(id: string) {
+  if (!token) return;
+  if (rosterOpenId === id) {
+   setRosterOpenId(null);
+   return;
+  }
+  setRosterOpenId(id);
+  setRoster(null);
+  setRosterError(null);
+  setRosterNote(null);
+  setRosterLoading(true);
+  try {
+   setRoster(await getSessionRoster(token, id));
+  } catch (err) {
+   setRosterError(userFacingMessage(err, 'We could not load the roster. Please try again.'));
+  } finally {
+   setRosterLoading(false);
+  }
+ }
+
+ async function handleAttend(enrollmentId: string) {
+  if (!token) return;
+  setAttendBusyId(enrollmentId);
+  setRosterNote(null);
+  try {
+   await markEnrolmentAttended(token, enrollmentId);
+   setRoster((rows) =>
+    rows ? rows.map((r) => (r.id === enrollmentId ? { ...r, status: 'ATTENDED', attendedAt: new Date().toISOString() } : r)) : rows,
+   );
+  } catch (err) {
+   setRosterNote(
+    err instanceof WellnessApiError
+     ? describeAttendanceError(err.status, err.body)
+     : 'We could not mark attendance just now. Please try again.',
+   );
+  } finally {
+   setAttendBusyId(null);
+  }
+ }
+
+ async function openCancelSession(id: string) {
+  if (!token) return;
+  setCancelId(id);
+  setCancelRoster(null);
+  setCancelRosterError(null);
+  setNotice(null);
+  try {
+   setCancelRoster(await getSessionRoster(token, id));
+  } catch (err) {
+   setCancelRosterError(userFacingMessage(err, 'We could not check how many learners have paid.'));
+  }
+ }
+
+ async function confirmCancelSession(s: WellnessSession) {
+  if (!token) return;
+  setBusyId(s.id);
+  setError(null);
+  try {
+   const { session: updated, cancellation } = await cancelWellnessSessionWithRefunds(token, s.id);
+   setSessions((arr) => arr.map((x) => (x.id === s.id ? { ...x, ...updated } : x)));
+   setNotice(describeSessionCancelled(cancellation));
+   setCancelId(null);
+   if (rosterOpenId === s.id) setRosterOpenId(null);
+  } catch (err) {
+   setError(userFacingMessage(err, 'We could not cancel that session. Please try again.'));
+  } finally {
+   setBusyId(null);
+  }
+ }
 
  const load = useCallback(async () => {
   if (!token) return;
@@ -229,7 +323,12 @@ function WellnessSessionsPageContent() {
 
  async function handleToggleStatus(s: WellnessSession) {
   if (!token) return;
-  // Cycle: SCHEDULED → CANCELLED → SCHEDULED. Others are read-only verbs.
+  // Cancelling goes through the confirm panel (it refunds paid learners).
+  if (s.status !== 'CANCELLED') {
+   void openCancelSession(s.id);
+   return;
+  }
+  // Reactivate: CANCELLED → SCHEDULED.
   const next: WellnessSessionStatus = s.status === 'CANCELLED' ? 'SCHEDULED' : 'CANCELLED';
   setBusyId(s.id);
   setError(null);
@@ -296,6 +395,12 @@ function WellnessSessionsPageContent() {
      >
       Retry
      </button>
+    </div>
+   )}
+
+   {notice && (
+    <div role="status" data-testid="session-cancel-notice" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+     {notice}
     </div>
    )}
 
@@ -537,6 +642,76 @@ function WellnessSessionsPageContent() {
             </button>
            )}
           </div>
+          <div className="mt-2">
+           <button
+            onClick={() => void openRoster(s.id)}
+            data-testid={`roster-toggle-${s.id}`}
+            className="text-xs font-medium inline-flex items-center gap-1 text-emerald-700"
+           >
+            <Users className="w-3 h-3" />
+            {rosterOpenId === s.id ? 'Hide roster' : 'View roster'}
+           </button>
+          </div>
+          {rosterOpenId === s.id && (
+           <div className="mt-2 rounded-lg border border-surface-100 bg-surface-50 p-3" data-testid="roster-panel">
+            {rosterLoading ? (
+             <p className="text-xs text-surface-500">Loading roster…</p>
+            ) : rosterError ? (
+             <p role="alert" className="text-xs text-red-700">{rosterError}</p>
+            ) : !roster || roster.length === 0 ? (
+             <p className="text-xs text-surface-500">No paid learners yet.</p>
+            ) : (
+             <ul className="divide-y divide-surface-100">
+              {roster.map((r) => (
+               <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                <span className="text-surface-800">{r.user.fullName ?? 'Learner'}</span>
+                {r.status === 'ATTENDED' ? (
+                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Attended</span>
+                ) : (
+                 <button
+                  onClick={() => void handleAttend(r.id)}
+                  disabled={attendBusyId === r.id}
+                  data-testid={`attend-${r.id}`}
+                  className="px-3 py-1.5 text-xs font-medium bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 disabled:opacity-50"
+                 >
+                  {attendBusyId === r.id ? 'Saving…' : 'Mark attended'}
+                 </button>
+                )}
+               </li>
+              ))}
+             </ul>
+            )}
+            {rosterNote && <p role="alert" data-testid="roster-note" className="mt-2 text-xs text-red-700">{rosterNote}</p>}
+           </div>
+          )}
+          {cancelId === s.id && (() => {
+           const sum = cancelRoster ? summariseSessionCancel(cancelRoster, s.priceInr) : null;
+           return (
+            <div role="alertdialog" aria-label="Confirm session cancellation" data-testid="session-cancel-confirm" className="mt-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+             <p className="font-medium">Cancel this session?</p>
+             <p className="mt-1" data-testid="session-cancel-summary">
+              {cancelRosterError ?? (sum ? sum.message : 'Checking enrolments…')}
+             </p>
+             <div className="mt-3 flex flex-wrap gap-2">
+              <button
+               onClick={() => void confirmCancelSession(s)}
+               disabled={disabled || (!sum && !cancelRosterError)}
+               data-testid="session-cancel-yes"
+               className="px-4 py-2 text-xs font-medium bg-red-700 text-white rounded-lg hover:bg-red-800 disabled:opacity-50"
+              >
+               {disabled ? 'Cancelling…' : 'Yes, cancel session'}
+              </button>
+              <button
+               onClick={() => setCancelId(null)}
+               disabled={disabled}
+               className="px-4 py-2 text-xs font-medium border border-red-200 bg-white text-red-800 rounded-lg hover:bg-red-100"
+              >
+               Keep session
+              </button>
+             </div>
+            </div>
+           );
+          })()}
          </div>
          <div className="flex items-center gap-2 shrink-0">
           <button

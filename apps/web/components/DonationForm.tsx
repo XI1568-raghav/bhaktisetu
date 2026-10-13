@@ -269,6 +269,11 @@ export default function DonationForm({
             ? { causeKind: 'temple' as const, templeId: causeId }
             : { causeKind: 'gaushala' as const, gaushalaId: causeId }),
           amountInr: amountNumber,
+          // The donor's own name / email / phone, so the recipient's portal shows
+          // who gave rather than the account that paid.
+          ...(donorName.trim() ? { donorName: donorName.trim() } : {}),
+          ...(EMAIL_REGEX.test(donorEmail.trim()) ? { donorEmail: donorEmail.trim() } : {}),
+          ...(PHONE_REGEX.test(donorPhone.trim()) ? { donorPhone: donorPhone.trim() } : {}),
           ...(donorPan.trim() ? { donorPan: donorPan.trim().toUpperCase() } : {}),
           ...(dedication.trim() ? { dedication: dedication.trim() } : {}),
         }),

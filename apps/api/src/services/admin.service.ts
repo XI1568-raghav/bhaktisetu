@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { commissionPlatformCut } from '../lib/commission-math.js';
 import { sendEmail, providerApprovedEmail, providerRejectedEmail } from '../lib/email.js';
 import { invalidateAuthUser } from '../lib/auth-cache.js';
+import { revokeUserTokens } from '../lib/token-revocation.js';
 import { clampLimit, clampPage } from '../lib/pagination.js';
 import { assertCauseApprovable } from '../lib/cause-approval-guard.js';
 import { REVENUE_PAYMENT_WHERE, PENDING_REFUND_PAYMENT_WHERE } from '../lib/revenue-where.js';
@@ -751,6 +752,9 @@ export class AdminService {
       // failure AO-01 just removed. Roles are cached in the same entry, so an
       // approval/role change evicts too.
       invalidateAuthUser(id);
+      // Blocking also kills the access tokens already issued (they are verified
+      // offline and would otherwise live to their `exp` on other containers).
+      if (updates.blocked === true) await revokeUserTokens(id);
 
       return { message: 'User updated', userId: id, blocked: updates.blocked };
     } catch (err) {

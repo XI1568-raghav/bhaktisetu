@@ -158,3 +158,99 @@ export async function setWellnessSessionRoom(
   const body = (await res.json()) as { data: WellnessSession };
   return body.data;
 }
+
+// ─── Cancellation + roster + attendance ─────────────────────────────────────
+// Backed by routes/wellness-sessions.ts. The cancel and attendance endpoints
+// answer 409 with a machine `code`; callers map those to copy in
+// lib/wellness-cancel.ts, so these helpers throw a typed error carrying both.
+
+export class WellnessApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly body: { error?: string; code?: string } | null,
+  ) {
+    super(message);
+    this.name = 'WellnessApiError';
+  }
+}
+
+async function jsonOrNull(res: Response): Promise<Record<string, unknown> | null> {
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+export interface WellnessRosterRow {
+  id: string;
+  status: 'PAID' | 'ATTENDED' | string;
+  enrolledAt: string;
+  attendedAt: string | null;
+  user: { id: string; fullName: string | null };
+}
+
+export async function getSessionRoster(
+  token: string | undefined,
+  sessionId: string,
+): Promise<WellnessRosterRow[]> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/sessions/${sessionId}/enrollments`, {
+    headers: authHeaders(token),
+  }, DATA_FETCH_TIMEOUT_MS);
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load the roster'), res.status);
+  const body = (await res.json()) as { data: WellnessRosterRow[] };
+  return body.data ?? [];
+}
+
+export async function markEnrolmentAttended(
+  token: string | undefined,
+  enrollmentId: string,
+): Promise<{ earningsReleased?: boolean }> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/enrollments/${enrollmentId}/attendance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: '{}',
+  }, DATA_FETCH_TIMEOUT_MS);
+  const body = await jsonOrNull(res);
+  if (!res.ok) {
+    throw new WellnessApiError('attendance failed', res.status, body as { error?: string; code?: string } | null);
+  }
+  return { earningsReleased: (body as { earningsReleased?: boolean } | null)?.earningsReleased };
+}
+
+export async function cancelWellnessEnrolment(
+  token: string | undefined,
+  enrollmentId: string,
+): Promise<import('./wellness-cancel').EnrolmentCancelResponse> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/enrollments/${enrollmentId}/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: '{}',
+  }, DATA_FETCH_TIMEOUT_MS);
+  const body = await jsonOrNull(res);
+  if (!res.ok) {
+    throw new WellnessApiError('cancel failed', res.status, body as { error?: string; code?: string } | null);
+  }
+  return (body ?? {}) as import('./wellness-cancel').EnrolmentCancelResponse;
+}
+
+export async function cancelWellnessSessionWithRefunds(
+  token: string | undefined,
+  id: string,
+): Promise<{ session: WellnessSession; cancellation?: { released?: number; refunded?: number; refundOwedInr?: number } }> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/wellness/sessions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: JSON.stringify({ status: 'CANCELLED' }),
+  }, DATA_FETCH_TIMEOUT_MS);
+  const body = await jsonOrNull(res);
+  if (!res.ok) {
+    throw new UserFacingError(
+      serverErrorMessage(body, 'We could not cancel that session. Please try again.'),
+      res.status,
+    );
+  }
+  const b = body as { data: WellnessSession; cancellation?: { released?: number; refunded?: number; refundOwedInr?: number } };
+  return { session: b.data, cancellation: b.cancellation };
+}

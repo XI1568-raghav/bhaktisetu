@@ -2,6 +2,9 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { createSupabaseClient, supabaseAdmin } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
+import { revokeUserTokens, tokenClaims } from '../lib/token-revocation.js';
+import { inspectSupabaseJwt } from '../lib/supabase-jwt.js';
+import { invalidateAuthUser } from '../lib/auth-cache.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
 import { isAuthUpstreamDown, AUTH_UNAVAILABLE_BODY } from '../lib/auth-upstream.js';
@@ -976,6 +979,21 @@ export async function authRoutes(server: FastifyInstance) {
         }
       } catch (err) {
         request.log.warn({ err }, 'Supabase signOut threw (non-critical)');
+      }
+      // The token verified offline (SCAL-05) stays good until its own `exp`
+      // unless the API itself refuses it, so write the revocation here: global
+      // = every token issued before now; local = only this session's tokens,
+      // and only when the token names its session (otherwise a device logout
+      // would sign the user out everywhere).
+      if (!userId) {
+        const inspected = inspectSupabaseJwt(accessToken, process.env.SUPABASE_JWT_SECRET);
+        if (inspected.ok) userId = inspected.token.id;
+      }
+      if (userId) {
+        const sessionId = tokenClaims(accessToken).sessionId;
+        if (scope === 'global') await revokeUserTokens(userId);
+        else if (sessionId) await revokeUserTokens(userId, { sessionId });
+        invalidateAuthUser(userId);
       }
       // Best-effort: revoke active JTIs for this user from the resolved id.
       try {

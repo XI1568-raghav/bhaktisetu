@@ -84,8 +84,15 @@ describe('COM-02 — the 80G assertion is derived from the donee data, never ass
     expect(is80GEligible({ gaushalaPan: 'AAATS1234Q' })).toBe(false);
     expect(is80GEligible({ gaushala80GNumber: '   ', gaushalaPan: '   ' })).toBe(false);
     expect(
-      is80GEligible({ gaushala80GNumber: 'AAATS1234QF20214', gaushalaPan: 'AAATS1234Q' }),
+      is80GEligible({ gaushala80GNumber: 'AAATS1234QF20214', gaushalaPan: 'AAATS1234Q', companyHas80G: true }),
     ).toBe(true);
+    // The platform flag (HAS_80G, false today) outranks donee data on file.
+    expect(
+      is80GEligible({ gaushala80GNumber: 'AAATS1234QF20214', gaushalaPan: 'AAATS1234Q' }),
+    ).toBe(false);
+    expect(
+      is80GEligible({ gaushala80GNumber: 'AAATS1234QF20214', gaushalaPan: 'AAATS1234Q', companyHas80G: false }),
+    ).toBe(false);
   });
 
   it('prints no 80G claim when the donee has neither registration nor PAN (today: every donee)', async () => {
@@ -104,13 +111,26 @@ describe('COM-02 — the 80G assertion is derived from the donee data, never ass
     expect(text).not.toContain(CLAIM);
   });
 
-  it('prints the 80G claim once both facts are on file', async () => {
+  it('prints no claim and no registration block when both donee facts exist but the platform flag is off', async () => {
     const text = await textOf({
       ...BASE,
       gaushala80GNumber: 'AAATS1234QF20214',
       gaushalaPan: 'AAATS1234Q',
     });
+    expect(text).not.toContain(CLAIM);
+    expect(text).not.toContain('80G Registration');
+    expect(text).toContain(DISCLAIMER);
+  });
+
+  it('prints the 80G claim once both facts are on file', async () => {
+    const text = await textOf({
+      ...BASE,
+      gaushala80GNumber: 'AAATS1234QF20214',
+      gaushalaPan: 'AAATS1234Q',
+      companyHas80G: true,
+    });
     expect(text).toContain(CLAIM);
+    expect(text).toContain('80G Registration: AAATS1234QF20214');
     expect(text).not.toContain(DISCLAIMER);
   });
 

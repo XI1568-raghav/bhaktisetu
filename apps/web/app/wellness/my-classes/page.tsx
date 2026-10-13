@@ -32,6 +32,7 @@ import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { formatClassPrice, formatClassWhen } from '../classes/WellnessClassesClient';
+import CancelEnrolment from '../../../components/wellness/CancelEnrolment';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -221,6 +222,16 @@ function MyClassesList() {
                       </Link>
                     )}
                   </div>
+                  {e.session.status !== 'CANCELLED' ? (
+                    <CancelEnrolment
+                      token={token}
+                      enrollmentId={e.id}
+                      status={e.status}
+                      priceInr={e.session.priceInr}
+                      scheduledAt={e.session.scheduledAt}
+                      onCancelled={() => void load()}
+                    />
+                  ) : null}
                 </div>
               );
             })}
