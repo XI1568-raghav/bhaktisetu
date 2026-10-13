@@ -273,11 +273,14 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
     // the delivery fee (part of totalAmountInr) was not itemised, so the lines did
     // not add up to the printed total. Resolve names, and add the fee as its own line.
     const ids = items.map((it) => it.productId).filter((id): id is string => typeof id === 'string');
-    const named = ids.length
-      ? await prisma.storeProduct
-          .findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })
-          .catch(() => [] as Array<{ id: string; name: string }>)
-      : [];
+    let named: Array<{ id: string; name: string }> = [];
+    if (ids.length) {
+      try {
+        named = (await prisma.storeProduct.findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })) ?? [];
+      } catch {
+        named = [];
+      }
+    }
     const nameById = new Map(named.map((p) => [p.id, p.name]));
     const lineItems = items.map((it) => ({
       name: typeof it.name === 'string' ? it.name : (nameById.get(it.productId ?? '') ?? 'Store item'),
