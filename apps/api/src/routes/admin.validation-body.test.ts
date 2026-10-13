@@ -10,6 +10,7 @@ vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
 import Fastify from 'fastify';
 import { adminRoutes } from './admin.js';
+import { errorLocalizationPlugin } from '../plugins/error-localization.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -26,6 +27,8 @@ describe('admin validateBody failures carry an error body', () => {
     ['PATCH', '/api/v1/admin/priests/80744ebd-f175-4b08-aa7a-30ea57ead7b7/commission-rate'],
   ])('%s %s', async (method, url) => {
     const app = Fastify({ logger: false });
+    // The real server installs this async onSend hook; without it inject() hides the bug.
+    await errorLocalizationPlugin(app, { isProd: false, onError: () => {} });
     await app.register(async (i) => { await adminRoutes(i); }, { prefix: '/api/v1/admin' });
     const res = await app.inject({ method: method as 'POST', url, headers: { authorization: 'Bearer demo-admin' }, payload: {} });
     await app.close();
