@@ -3,11 +3,13 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { httpUrlSchema } from '../lib/http-url.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
 
 /**
@@ -27,7 +29,7 @@ const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
 
 const razorpay = isDemoPayment
   ? null
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 /**
  * ─── F455 / DI-09 limb 3 (2026-09-09): the enrolment capacity ceiling ────────
@@ -850,6 +852,19 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         }
       }
 
+      // QA 2026-10-13: a correctly signed verify used to flip ANY enrolment to
+      // PAID - including a CANCELLED/REFUNDED one (resurrecting a seat whose money
+      // went back) and an ATTENDED one. Only PENDING_PAYMENT moves to PAID; PAID /
+      // ATTENDED replays are the same idempotent success.
+      if (enrollment.status === 'PAID' || enrollment.status === 'ATTENDED') {
+        return reply.send({ data: enrollment });
+      }
+      if (enrollment.status !== 'PENDING_PAYMENT') {
+        return reply.code(409).send({
+          error: `This enrolment is ${enrollment.status.toLowerCase()} and can no longer be paid. Please enrol again.`,
+        });
+      }
+
       const updated = await prisma.wellnessEnrollment.update({
         where: { id: enrollment.id },
         data: { status: 'PAID' },
@@ -889,7 +904,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
           await sendEmail({
             to: detail.user.email,
             subject: `Darshya payment receipt — ${detail.session.title}`,
-            html: `<p>Namaste ${detail.user.fullName},</p><p>Your payment receipt for <strong>${detail.session.title}</strong> is attached.</p>`,
+            html: `<p>Namaste ${esc(detail.user.fullName)},</p><p>Your payment receipt for <strong>${esc(detail.session.title)}</strong> is attached.</p>`,
             text: `Payment receipt for ${detail.session.title} attached.`,
             attachments: [
               { filename: `receipt-wellness-${detail.session.id.slice(0, 8)}.pdf`, content: pdf },
@@ -932,4 +947,37 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       return reply.send({ data: serializeSession(updated) });
     }
   );
+}
+
+
+/**
+ * QA 2026-10-13: webhook backstop for wellness enrolments. Wellness writes no
+ * Payment row, so a learner who paid and closed the tab before /verify was never
+ * confirmed (money captured, enrolment stuck PENDING_PAYMENT, no room link, no
+ * instructor earning). Called from the Razorpay `payment.captured` handler once
+ * no Payment / donation / consultation owns the order. Idempotent: only a
+ * PENDING_PAYMENT row moves, and only when the captured amount equals the price.
+ */
+export async function finalizeWellnessEnrollmentFromWebhook(
+  razorpayOrderId: string,
+  capturedPaise: number | null,
+): Promise<{ handled: boolean; reason?: string }> {
+  if (!razorpayOrderId) return { handled: false, reason: 'no-order' };
+  const enrollment = await prisma.wellnessEnrollment.findFirst({
+    where: { razorpayOrderId },
+    include: { session: { select: { priceInr: true } } },
+  });
+  if (!enrollment) return { handled: false, reason: 'no-enrollment' };
+  if (enrollment.status !== 'PENDING_PAYMENT') return { handled: false, reason: 'not-pending' };
+  if (capturedPaise != null && Math.round(Number(enrollment.session.priceInr) * 100) !== Number(capturedPaise)) {
+    console.error('[wellness-sessions][amount-mismatch] webhook capture refused', enrollment.id);
+    return { handled: false, reason: 'amount-mismatch' };
+  }
+  const claimed = await prisma.wellnessEnrollment.updateMany({
+    where: { id: enrollment.id, status: 'PENDING_PAYMENT' },
+    data: { status: 'PAID' },
+  });
+  if (claimed.count < 1) return { handled: false, reason: 'raced' };
+  await writeWellnessCommissionOnPaid(enrollment.id);
+  return { handled: true };
 }

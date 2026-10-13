@@ -19,6 +19,7 @@ import { resolveGaushalaDonee } from '../lib/gaushala-donee.js';
 // (raw INSERT, no Payment), so NOTHING in the payment-side wiring reached them.
 import { MONEY_EVENTS, recordMoneyEvent, type MoneyActorType } from '../lib/audit-money.js';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { SQL_UTC_NOW } from '../lib/sql-time.js';
 import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
 
@@ -47,7 +48,7 @@ const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
 
 const razorpay = isDemoPayment
   ? null
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 // Donations live in the `donations` table. Raw SQL is used because the
 // generated Prisma client may lag schema changes when the dll is locked
@@ -89,8 +90,10 @@ async function ensureGaushalaTaxFields() {
 }
 
 function nextReceiptNumber(): string {
-  const d = new Date();
-  const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
+  // QA 2026-10-13: the date in the number must be the date printed on the
+  // receipt, and that is the Indian date. The server runs in UTC, so between
+  // 18:30 and 24:00 UTC (00:00-05:30 IST) the number said yesterday.
+  const ymd = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
   const rand = crypto.randomBytes(2).toString('hex').toUpperCase();
   return `DR-${ymd}-${rand}`;
 }
@@ -171,7 +174,7 @@ export async function finalizeDonationReceipt(
 
   const receiptNumber = nextReceiptNumber();
   const donationDate = new Date().toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'long', year: 'numeric',
+    day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata',
   });
 
   // ── DI-09 (F455): `AND status <> 'paid'` is what makes this a CLAIM ─────────
@@ -671,7 +674,10 @@ export async function donationRoutes(server: FastifyInstance) {
         expBuf.length === sigBuf.length && crypto.timingSafeEqual(expBuf, sigBuf);
       if (!sigOk) {
         await prisma.$executeRawUnsafe(
-          `UPDATE donations SET status = 'failed' WHERE id = $1`,
+          // QA 2026-10-13: never demote a donation that is already paid (the donor
+          // can re-post a bad signature after success) - that stripped the 80G
+          // receipt's backing status while the receipt number stayed issued.
+          `UPDATE donations SET status = 'failed' WHERE id = $1 AND status <> 'paid'`,
           donation.id,
         );
         // OPS-05: this write destroys the only evidence of the attempt — the

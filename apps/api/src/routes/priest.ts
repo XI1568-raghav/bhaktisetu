@@ -7,7 +7,7 @@ import { dispatchService } from '../services/dispatch.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
 import { prisma } from '../lib/prisma.js';
 import { listPendingForPriest, respondToInvite } from '../services/temple-priest-invite.service.js';
-import { presignR2Upload, r2 } from '../lib/r2.js';
+import { inspectOwnVideoUrl, presignR2Upload, r2 } from '../lib/r2.js';
 import { isDemoMode } from '../lib/supabase.js';
 import { httpUrlSchema } from '../lib/http-url.js';
 import { BookingStatus, PayoutStatus, Prisma } from '@prisma/client';
@@ -728,7 +728,9 @@ export async function priestRoutes(server: FastifyInstance) {
           });
         }
 
-        const ext = (body.ext ?? contentType.split('/')[1] ?? 'mp4').replace(/[^a-z0-9]/gi, '').slice(0, 6);
+        // Extension is derived from the allow-listed type, never from the client
+        // (`ext: 'html'` on a video/mp4 request used to mint an `.html` key).
+        const ext = contentType === 'video/quicktime' ? 'mov' : contentType === 'video/webm' ? 'webm' : 'mp4';
         const rand = randomBytes(6).toString('hex');
         const key = `booking-proofs/${id}/${Date.now()}-${rand}.${ext}`;
 
@@ -744,7 +746,7 @@ export async function priestRoutes(server: FastifyInstance) {
           return reply.code(503).send(STORAGE_UNCONFIGURED);
         }
         if (!signed) {
-          return reply.code(500).send({ error: 'Failed to generate upload URL' });
+          return reply.code(503).send({ error: 'File storage is temporarily unavailable. Please try again in a moment.' });
         }
 
         return reply.send({
@@ -778,6 +780,21 @@ export async function priestRoutes(server: FastifyInstance) {
         });
       }
       const videoUrl = parsed.data.videoUrl;
+
+      const stored = await inspectOwnVideoUrl(videoUrl);
+      if (!stored.ok) {
+        if (stored.reason === 'unreachable') {
+          return reply.code(503).send({ error: 'We could not check the uploaded video right now. Please try again in a moment.' });
+        }
+        return reply.code(400).send({
+          error:
+            stored.reason === 'not_video'
+              ? 'The uploaded file is not a video. Please upload an MP4, WebM or MOV recording.'
+              : stored.reason === 'empty'
+              ? 'The uploaded video file is empty. Please upload the recording again.'
+              : 'The uploaded video could not be found. Please upload it again.',
+        });
+      }
 
       const priestId = await getPriestId(request.currentUser!.id);
       const result = await priestService.uploadVideoProof(id, priestId, videoUrl);

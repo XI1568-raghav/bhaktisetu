@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 import {
   reverseBookingLedger,
@@ -206,8 +207,8 @@ function refundSuccessEmail(params: {
     html: `<!DOCTYPE html><html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#fbf7f1;padding:24px;">
 <div style="max-width:560px;margin:0 auto;background:#fff;padding:32px;border-radius:12px;">
 <h2 style="color:#ea580c;margin:0 0 16px;">Darshya</h2>
-<h3>Namaste ${devoteeName}, your ${label.toLowerCase()} is on the way</h3>
-<p>${label} of <strong>${amount}</strong> for your <strong>${pujaName}</strong> booking at <strong>${templeName}</strong> has been processed.</p>
+<h3>Namaste ${esc(devoteeName)}, your ${label.toLowerCase()} is on the way</h3>
+<p>${label} of <strong>${amount}</strong> for your <strong>${esc(pujaName)}</strong> booking at <strong>${esc(templeName)}</strong> has been processed.</p>
 <p><strong>Booking #:</strong> ${bookingNumber}<br>
 <strong>Refund reference:</strong> ${refundId}</p>
 <p>The amount will appear on your original payment method in ${REFUND_DAYS_LABEL}. International cards can take ${REFUND_INTERNATIONAL_CARD_LABEL}, which is set by your card issuer and not by Darshya. If you don't see it after that, please reply to this email.</p>
@@ -350,7 +351,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     // attempts made on their behalf.
     void recordMoneyEvent({
       eventType: MONEY_EVENTS.REFUND_FAILED,
-      actorType: initiatedBy === 'system' ? 'system' : 'admin',
+      actorType: initiatedBy === 'system' || initiatedBy === 'cron' ? 'system' : 'admin',
       subjectType: 'payment',
       subjectId: captured.id,
       bookingId,
@@ -379,7 +380,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   // precedes this one, so there is nothing to record "after".
   void recordMoneyEvent({
     eventType: MONEY_EVENTS.REFUND_INITIATED,
-    actorType: initiatedBy === 'system' ? 'system' : 'admin',
+    actorType: initiatedBy === 'system' || initiatedBy === 'cron' ? 'system' : 'admin',
     subjectType: 'payment',
     subjectId: captured.id,
     bookingId,
@@ -523,7 +524,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   // commits. `statusBefore` is the pre-image read at the top of this function.
   void recordMoneyEvent({
     eventType: MONEY_EVENTS.REFUND_COMPLETED,
-    actorType: initiatedBy === 'system' ? 'system' : 'admin',
+    actorType: initiatedBy === 'system' || initiatedBy === 'cron' ? 'system' : 'admin',
     subjectType: 'payment',
     subjectId: captured.id,
     bookingId,
@@ -561,7 +562,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     bookingId,
     rail: 'auto-refund',
     reason,
-    actorType: initiatedBy === 'system' ? 'system' : 'admin',
+    actorType: initiatedBy === 'system' || initiatedBy === 'cron' ? 'system' : 'admin',
     paymentId: captured.id,
     // Full path keeps the historical figure (rupees returned); the partial path
     // falls through to the emitter's default, which is the claw-back — on a

@@ -278,6 +278,27 @@ function bucketOk(map: Map<string, Bucket>, key: string, max: number): boolean {
   return true;
 }
 
+// Wrong-code attempts per phone. A 6-digit code is only 10^6 wide, so the per-IP
+// limit alone is not enough: a rotating-IP attacker gets unlimited guesses at one
+// number. Five misses burns the window for that phone; a correct code resets it.
+const OTP_VERIFY_FAIL_MAX = 5;
+const otpVerifyFails = new Map<string, Bucket>();
+function otpVerifyLocked(phone: string): boolean {
+  const b = otpVerifyFails.get(phone);
+  if (!b) return false;
+  if (Date.now() - b.windowStart > AUTH_RATE_WINDOW_MS) { otpVerifyFails.delete(phone); return false; }
+  return b.count >= OTP_VERIFY_FAIL_MAX;
+}
+function noteOtpVerifyFailure(phone: string): void {
+  const b = otpVerifyFails.get(phone);
+  if (!b || Date.now() - b.windowStart > AUTH_RATE_WINDOW_MS) otpVerifyFails.set(phone, { count: 1, windowStart: Date.now() });
+  else b.count += 1;
+}
+function isUpstreamRateLimited(error: unknown): boolean {
+  const e = error as { status?: number; code?: string } | null;
+  return !!e && (e.status === 429 || /rate_limit/.test(e.code ?? ''));
+}
+
 // ─── Session-cookie helpers ────────────────────────────────────────────────────
 // P1 #4 — additive HttpOnly cookies alongside the JSON Bearer response.
 // Mobile keeps reading the JSON body; web transitions to cookies. Both flows
@@ -459,6 +480,12 @@ export async function authRoutes(server: FastifyInstance) {
     if (error) {
       request.log.error(error, 'Supabase signInWithOtp failed');
       if (isAuthUpstreamDown(error)) return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
+      if (isUpstreamRateLimited(error)) {
+        return reply.code(429).send({
+          error: 'TooManyRequests',
+          message: error.message || 'Too many OTP requests. Please wait a minute and try again.',
+        });
+      }
       return reply.code(400).send({
         error: 'OTP Error',
         message: error.message || 'Failed to send OTP. Please try again.',
@@ -489,6 +516,12 @@ export async function authRoutes(server: FastifyInstance) {
 
     const phone = normalizePhone(parseResult.data.phone);
     const { token } = parseResult.data;
+    if (otpVerifyLocked(phone)) {
+      return reply.code(429).send({
+        error: 'TooManyRequests',
+        message: 'Too many incorrect codes for this number. Request a new OTP in 15 minutes.',
+      });
+    }
     const supabase = createSupabaseClient();
 
     const { data, error } = await supabase.auth.verifyOtp({
@@ -503,6 +536,13 @@ export async function authRoutes(server: FastifyInstance) {
     }
     if (error || !data.session) {
       request.log.error(error, 'Supabase verifyOtp failed');
+      if (isUpstreamRateLimited(error)) {
+        return reply.code(429).send({
+          error: 'TooManyRequests',
+          message: 'Too many attempts. Please wait a few minutes and try again.',
+        });
+      }
+      noteOtpVerifyFailure(phone);
       return reply.code(400).send({
         error: 'Verification Error',
         message: error?.message || 'Invalid or expired OTP. Please try again.',
@@ -510,6 +550,7 @@ export async function authRoutes(server: FastifyInstance) {
     }
 
     const { session, user: supabaseUser } = data;
+    otpVerifyFails.delete(phone);
 
     // Upsert user in Prisma database (create on first login)
     let dbUser;
@@ -534,12 +575,27 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
+    // AUTH-08: same suspension gate as /login and /google/sync; the OTP door had none.
+    if (dbUser.blocked) {
+      return reply.code(403).send({
+        error: 'Forbidden',
+        message: dbUser.blockedReason
+          ? `Account suspended: ${dbUser.blockedReason}`
+          : 'This account has been suspended.',
+      });
+    }
+
     const role = await getPrimaryRoleForUser(dbUser.id, dbUser.email);
 
     // A-009: cover this freshly-minted refresh token with the replay ledger.
     // Keyed on the Supabase auth user id, matching what /refresh and /logout
     // write — a phone-first user's Prisma id differs from their Supabase id.
     await seedRefreshTokenJti(request, session.refresh_token, supabaseUser?.id);
+
+    // The web keeps no JS-readable token (SEC-02): the httpOnly cookies are what
+    // bring this browser back on the next load. Without them an OTP sign-in
+    // lasted exactly until the first reload.
+    setAuthCookies(reply, session.access_token, session.refresh_token);
 
     return reply.code(200).send({
       success: true,
@@ -666,6 +722,27 @@ export async function authRoutes(server: FastifyInstance) {
         error: 'Refresh Error',
         message: error?.message || 'Failed to refresh session. Please log in again.',
       });
+    }
+
+    // A suspended account must not keep minting sessions. Every API call it makes
+    // is refused anyway, but a live refresh loop keeps a Supabase session (and the
+    // web's "session expired" sign-in loop) alive for someone who has been cut off.
+    try {
+      const refreshedUser = await prisma.user.findUnique({
+        where: { id: data.session.user.id },
+        select: { blocked: true, blockedReason: true },
+      });
+      if (refreshedUser?.blocked) {
+        clearAuthCookies(reply);
+        return reply.code(403).send({
+          error: 'Forbidden',
+          message: refreshedUser.blockedReason
+            ? `Account suspended: ${refreshedUser.blockedReason}`
+            : 'This account has been suspended.',
+        });
+      }
+    } catch (err) {
+      request.log.warn({ err }, 'refresh: blocked-user check failed; allowing refresh');
     }
 
     // Mark old JTI used + insert new JTI for the new refresh token.
@@ -1399,6 +1476,8 @@ export async function authRoutes(server: FastifyInstance) {
       // token is minted by /login, which seeds it there.
       if (authData.session) {
         await seedRefreshTokenJti(request, authData.session.refresh_token, authData.session.user?.id);
+        // Same cookies /login issues — a signed-up user must survive a reload.
+        setAuthCookies(reply, authData.session.access_token, authData.session.refresh_token);
       }
 
       // A-015 (2026-08-10): first-admin bootstrap. `admin` is not in the signup
@@ -1584,6 +1663,8 @@ export async function authRoutes(server: FastifyInstance) {
       // A-009: the Google refresh token reaches our /refresh endpoint like any
       // other, so it needs a ledger row to fall under the family-revoke net.
       await seedRefreshTokenJti(request, refreshToken, supaUser.id);
+
+      setAuthCookies(reply, accessToken, refreshToken);
 
       return reply.send({
         session: {

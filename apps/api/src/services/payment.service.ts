@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE, describeGatewayFailure } from '../lib/payment-gateway-error.js';
@@ -42,6 +43,7 @@ import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { isUniqueViolation } from './wallet.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
 // the booking webhook path never reaches them; these helpers let
 // processWebhookEvent resolve + finalize a donation when no Payment matches.
@@ -80,7 +82,7 @@ async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
     await sendEmail({
       to: booking.user.email,
       subject: `Darshya payment receipt — ${booking.bookingNumber}`,
-      html: `<p>Namaste ${booking.user.fullName},</p><p>Your payment receipt for booking <strong>${booking.bookingNumber}</strong> is attached.</p>`,
+      html: `<p>Namaste ${esc(booking.user.fullName)},</p><p>Your payment receipt for booking <strong>${esc(booking.bookingNumber)}</strong> is attached.</p>`,
       text: `Payment receipt for booking ${booking.bookingNumber} attached.`,
       attachments: [
         { filename: `receipt-${booking.bookingNumber}.pdf`, content: pdf },
@@ -266,11 +268,25 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
     const items: Item[] = Array.isArray(order.items)
       ? (order.items as unknown as Item[])
       : [];
+    // QA 2026-10-13: order.items stores {productId, qty, priceAtPurchase} with no
+    // name, so the receipt's description column printed the product's UUID; and
+    // the delivery fee (part of totalAmountInr) was not itemised, so the lines did
+    // not add up to the printed total. Resolve names, and add the fee as its own line.
+    const ids = items.map((it) => it.productId).filter((id): id is string => typeof id === 'string');
+    const named = ids.length
+      ? await prisma.storeProduct
+          .findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })
+          .catch(() => [] as Array<{ id: string; name: string }>)
+      : [];
+    const nameById = new Map(named.map((p) => [p.id, p.name]));
     const lineItems = items.map((it) => ({
-      name: typeof it.name === 'string' ? it.name : (it.productId ?? 'Item'),
+      name: typeof it.name === 'string' ? it.name : (nameById.get(it.productId ?? '') ?? 'Store item'),
       qty: Number(it.qty ?? 1),
       priceInr: Number(it.priceAtPurchase ?? 0),
     }));
+    const itemsSubtotal = lineItems.reduce((a, l) => a + l.qty * l.priceInr, 0);
+    const feeInr = Math.round((Number(order.totalAmountInr) - itemsSubtotal) * 100) / 100;
+    if (feeInr > 0) lineItems.push({ name: 'Delivery & handling', qty: 1, priceInr: feeInr });
     const addr = order.shippingAddress as unknown as Addr;
     const addrStr = [
       addr?.fullName, addr?.line1, addr?.line2, addr?.city,
@@ -288,7 +304,7 @@ async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
     await sendEmail({
       to: order.user.email,
       subject: `Darshya payment receipt — ${order.orderNumber}`,
-      html: `<p>Namaste ${order.user.fullName},</p><p>Your payment receipt for order <strong>${order.orderNumber}</strong> is attached.</p>`,
+      html: `<p>Namaste ${esc(order.user.fullName)},</p><p>Your payment receipt for order <strong>${esc(order.orderNumber)}</strong> is attached.</p>`,
       text: `Payment receipt for order ${order.orderNumber} attached.`,
       attachments: [
         { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
@@ -692,18 +708,7 @@ const razorpay = isDemoPayment
         return () => ({ id: 'demo' });
       },
     }) as unknown as Razorpay)
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
-
-// QA 2026-10-13: the SDK's axios instance has NO timeout. A Razorpay stall
-// (measured against a stub that accepts and never answers) hung every
-// create-order/refund request until the platform proxy cut it, holding a DB
-// connection's worth of work open and showing the devotee a spinner forever.
-// A bounded wait turns it into the same friendly 503 as any other gateway failure.
-if (!isDemoPayment) {
-  const gatewayTimeoutMs = Number(process.env.RAZORPAY_TIMEOUT_MS) || 15_000;
-  const rq = (razorpay as unknown as { api?: { rq?: { defaults: { timeout?: number } } } }).api?.rq;
-  if (rq) rq.defaults.timeout = gatewayTimeoutMs;
-}
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 // Exported for the recurring-subscription mandate flow (razorpay.subscriptions
 // .create) so that feature shares the single demo/live client instead of
@@ -1889,6 +1894,21 @@ export class PaymentService {
           // client-verify leaves money captured but the donation stuck
           // 'created' with no receipt. Idempotent via finalizeDonationReceipt.
           const donation = await findDonationByOrderId(paymentEntity.order_id);
+          if (
+            donation &&
+            donation.status !== 'paid' &&
+            paymentEntity.amount != null &&
+            Math.round(Number(donation.amount_inr) * 100) !== Number(paymentEntity.amount)
+          ) {
+            // Same refusal as the booking rail: a capture that is not for the
+            // amount we opened must not mint a receipt (an 80G receipt for the
+            // wrong rupee figure is a tax document).
+            console.error(
+              '[payment][amount-mismatch] donation webhook capture refused',
+              JSON.stringify({ donationId: donation.id, orderId: paymentEntity.order_id, gotPaise: paymentEntity.amount }),
+            );
+            return { handled: false, event };
+          }
           if (donation && donation.status !== 'paid') {
             await finalizeDonationReceipt(donation, paymentEntity.id, undefined);
           } else if (!donation) {
@@ -1912,9 +1932,25 @@ export class PaymentService {
                 paymentEntity.order_id,
               );
               if (row) {
+                if (
+                  paymentEntity.amount != null &&
+                  Math.round(Number(row.amount_inr) * 100) !== Number(paymentEntity.amount)
+                ) {
+                  console.error(
+                    '[payment][amount-mismatch] consultation webhook capture refused',
+                    JSON.stringify({ consultationId: row.id, gotPaise: paymentEntity.amount }),
+                  );
+                  return { handled: false, event };
+                }
                 await consult.finalizeConsultationPaymentFromWebhook(
                   row,
                   paymentEntity.id,
+                );
+              } else {
+                const wellness = await import('../routes/wellness-sessions.js');
+                await wellness.finalizeWellnessEnrollmentFromWebhook(
+                  paymentEntity.order_id,
+                  paymentEntity.amount ?? null,
                 );
               }
             } catch (err) {

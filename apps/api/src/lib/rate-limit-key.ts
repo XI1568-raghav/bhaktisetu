@@ -65,6 +65,9 @@ export function isCloudflareEdgeIp(raw: string): boolean {
  *     so a direct caller cannot make that entry a Cloudflare address.
  */
 export function viaCloudflare(req: RateLimitKeyRequest): boolean {
+  // Escape hatch (no code change needed): restore the pre-2026-10-13 behaviour of
+  // trusting the header unconditionally, should the proof below ever misfire in prod.
+  if (process.env.RATE_LIMIT_TRUST_CF_HEADER === 'true') return true;
   const secret = process.env.CF_ORIGIN_SECRET;
   if (secret) return header(req, 'x-origin-secret') === secret;
   const xff = header(req, 'x-forwarded-for');

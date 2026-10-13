@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 import { writeStoreOrderCommission } from '../services/store-commission.service.js';
 import { computeStoreOrderTotals } from '../lib/store-pricing.js';
 
@@ -625,7 +626,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
           await sendEmail({
             to: order.user.email,
             subject: `Darshya payment receipt — ${order.orderNumber}`,
-            html: `<p>Namaste ${order.user.fullName},</p><p>Your payment receipt for order <strong>${order.orderNumber}</strong> is attached.</p>`,
+            html: `<p>Namaste ${esc(order.user.fullName)},</p><p>Your payment receipt for order <strong>${esc(order.orderNumber)}</strong> is attached.</p>`,
             text: `Payment receipt for order ${order.orderNumber} attached.`,
             attachments: [
               { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },

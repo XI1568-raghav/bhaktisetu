@@ -13,7 +13,8 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
-import { clientIp, rateLimitKey } from './lib/rate-limit-key.js';
+import { clientIp, rateLimitKey, viaCloudflare } from './lib/rate-limit-key.js';
+import { createIpCeiling } from './lib/ip-ceiling.js';
 import { resolveRateLimitPolicy } from './lib/rate-limit-policy.js';
 import { resolveCorsOrigins } from './lib/cors-origins.js';
 import { startOpsScheduler, getSchedulerStatus } from './jobs/scheduler.js';
@@ -303,6 +304,34 @@ async function bootstrap() {
         'rate_limit_exceeded',
       );
     },
+  });
+  // Credential-rotation backstop: the per-credential bucket above trusts an
+  // unverified bearer string, so `Authorization: Bearer <random>` mints a fresh
+  // bucket per request. Cap each client IP at a multiple of the normal limit
+  // regardless of credential (lib/ip-ceiling.ts). RATE_LIMIT_IP_CEILING overrides.
+  let lastCfWarn = 0;
+  const ipCeiling = createIpCeiling(Number(process.env.RATE_LIMIT_IP_CEILING) || globalMax * 12);
+  server.addHook('onRequest', async (req, reply) => {
+    if (SKIP_RATE_LIMIT_PATHS.has(req.url.split('?')[0] ?? '')) return;
+    // Visibility for the strict CF-Connecting-IP rule (lib/rate-limit-key.ts): if the
+    // header arrives but the Cloudflare proof fails, say so (at most once a minute)
+    // so a misfire on the real Render path is seen in the logs, not as a mystery
+    // shared bucket. RATE_LIMIT_TRUST_CF_HEADER=true restores the old behaviour.
+    if (req.headers['cf-connecting-ip'] && !viaCloudflare(req) && Date.now() - lastCfWarn > 60_000) {
+      lastCfWarn = Date.now();
+      server.log.warn(
+        { xff: req.headers['x-forwarded-for'], peer: req.ip },
+        'rate-limit: CF-Connecting-IP ignored (request not provably via Cloudflare)',
+      );
+    }
+    const r = ipCeiling(clientIp(req));
+    if (r.limited) {
+      reply.header('retry-after', String(r.retryAfterSeconds));
+      return reply.code(429).send({
+        error: 'RateLimited',
+        message: `Too many requests. Please wait ${r.retryAfterSeconds} seconds and try again.`,
+      });
+    }
   });
   // Per-route raw body access. Opt-in only — routes that need it pass
   // `{ config: { rawBody: true } }` (e.g. payment webhooks where the

@@ -9,6 +9,7 @@ import { z } from 'zod';
 import crypto from 'node:crypto';
 import { randomBytes } from 'node:crypto';
 import Razorpay from 'razorpay';
+import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
@@ -43,7 +44,7 @@ const isDemoPayment = !razorpayKeyId || razorpayKeyId === 'rzp_test_demo';
 
 const razorpay = isDemoPayment
   ? null
-  : new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+  : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
 async function ensureConsultationTables() {
   await prisma.$executeRawUnsafe(`

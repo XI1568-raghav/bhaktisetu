@@ -110,6 +110,12 @@ describe('media upload-url — content-type allowlist + kind sanitization (P1-5)
     expect(body.key.includes('/')).toBe(false || body.key.split('/').length === 3); // kind/user/file only
   });
 
+  it('ignores a client-supplied ext entirely — the type policy decides the extension', async () => {
+    const res = await inject({ kind: 'profile-photo', contentType: 'image/png', ext: 'html' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().key.endsWith('.png')).toBe(true);
+  });
+
   it('401 when unauthenticated (preHandler blocks)', async () => {
     const res = await inject({ kind: 'profile-photo', contentType: 'image/png' }, false);
     expect(res.statusCode).toBe(401);

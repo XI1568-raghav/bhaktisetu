@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
+import { esc } from '../lib/html-escape.js';
 import { MuhuratInputSchema, findWeddingMuhurats } from '../lib/muhurat.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
@@ -108,7 +109,7 @@ export async function weddingRoutes(server: FastifyInstance) {
       await sendEmail({
         to: b.email,
         subject: 'Darshya Weddings — we have your details',
-        html: `<p>Namaste ${b.fullName},</p><p>Thank you for reaching out to Darshya Weddings. Our wedding concierge will contact you within 24 hours to discuss your ${b.package ?? 'wedding'} plan.</p><p>You can also browse muhurat dates while you wait: <a href="https://darshya.online/weddings/muhurat">darshya.online/weddings/muhurat</a></p><p>— Team Darshya</p>`,
+        html: `<p>Namaste ${esc(b.fullName)},</p><p>Thank you for reaching out to Darshya Weddings. Our wedding concierge will contact you within 24 hours to discuss your ${esc(b.package ?? 'wedding')} plan.</p><p>You can also browse muhurat dates while you wait: <a href="https://darshya.online/weddings/muhurat">darshya.online/weddings/muhurat</a></p><p>— Team Darshya</p>`,
       }).catch(() => undefined);
 
       const adminEmails = (process.env.ADMIN_EMAILS ?? '')

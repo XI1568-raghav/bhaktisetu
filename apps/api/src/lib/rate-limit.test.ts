@@ -127,6 +127,15 @@ describe('rate-limit key derivation (SCAL-01)', () => {
     expect(isCloudflareEdgeIp('8.8.8.8')).toBe(false);
   });
 
+  it('RATE_LIMIT_TRUST_CF_HEADER=true restores unconditional trust (rollback lever)', () => {
+    process.env.RATE_LIMIT_TRUST_CF_HEADER = 'true';
+    try {
+      expect(clientIp(asReq({ 'cf-connecting-ip': '1.1.1.1' }, '10.0.0.1'))).toBe('1.1.1.1');
+    } finally {
+      delete process.env.RATE_LIMIT_TRUST_CF_HEADER;
+    }
+  });
+
   it('with CF_ORIGIN_SECRET set, only the shared-secret header proves Cloudflare', () => {
     process.env.CF_ORIGIN_SECRET = 's3cret';
     try {
