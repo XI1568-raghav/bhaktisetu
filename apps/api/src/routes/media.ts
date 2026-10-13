@@ -20,7 +20,7 @@ import { randomBytes } from 'node:crypto';
 // `../x` escaped the intended key prefix. Mirror the priest.ts video-upload
 // pattern: a fixed type allowlist, a fixed kind enum, a per-type size cap, and
 // a sanitized kind segment so the R2 key can never leave its prefix.
-const ALLOWED_KINDS = new Set(['puja-proof', 'profile-photo', 'temple-image', 'audio']);
+const ALLOWED_KINDS = new Set(['puja-proof', 'profile-photo', 'temple-image', 'audio', 'kyc-document']);
 
 const TYPE_POLICY = {
   'image/jpeg': { ext: 'jpg', maxSizeMb: 10 },
@@ -40,7 +40,7 @@ type AllowedContentType = keyof typeof TYPE_POLICY;
 export async function mediaRoutes(server: FastifyInstance) {
   server.post('/upload-url', { preHandler: [authenticateUser] }, async (request, reply) => {
     const body = (request.body ?? {}) as {
-      kind?: 'puja-proof' | 'profile-photo' | 'temple-image' | 'audio';
+      kind?: 'puja-proof' | 'profile-photo' | 'temple-image' | 'audio' | 'kyc-document';
       contentType?: string;
       ext?: string;
     };
@@ -77,7 +77,13 @@ export async function mediaRoutes(server: FastifyInstance) {
     const id = randomBytes(8).toString('hex');
     const key = `${safeKind}/${safeUserId}/${Date.now()}-${id}.${ext}`;
 
-    const result = await presignR2Upload({ key, contentType, expiresInSec: 600 });
+    // Identity documents: images or PDF only, stored privately, no public URL.
+    const isPrivate = kind === 'kyc-document';
+    if (isPrivate && !contentType.startsWith('image/') && contentType !== 'application/pdf') {
+      return reply.code(400).send({ error: 'Documents must be an image (PNG, JPG, WebP) or a PDF.' });
+    }
+
+    const result = await presignR2Upload({ key, contentType, expiresInSec: 600, private: isPrivate });
     if (!result) {
       return reply.code(500).send({ error: 'Failed to generate upload URL' });
     }
@@ -85,7 +91,7 @@ export async function mediaRoutes(server: FastifyInstance) {
     return reply.send({
       uploadUrl: result.uploadUrl,
       key,
-      publicUrl: result.publicUrl ?? publicUrlFor(key),
+      publicUrl: isPrivate ? null : result.publicUrl ?? publicUrlFor(key),
       backend: result.backend,
       expiresIn: 600,
       method: 'PUT',

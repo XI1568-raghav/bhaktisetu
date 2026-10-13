@@ -65,7 +65,7 @@ describe('the amount shown equals the amount the API charges', () => {
   it('the dollar line carries the exact INR figure that is charged', () => {
     const total = nriTotalInr(1100, false); // 2801
     const line = usdPriceLine(total);
-    expect(line).toBe(`$${usdFromInr(total)} (charged as ₹2,801; your bank converts at its own rate)`);
+    expect(line).toBe(`$${usdFromInr(total)} (charged as ₹2,801; the dollar figure is for reference)`);
   });
 });
 

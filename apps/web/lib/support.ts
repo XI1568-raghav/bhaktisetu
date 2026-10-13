@@ -769,7 +769,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Getting Started',
  question: 'Does Darshya work outside India?',
  answer:
- 'Yes, you can book pujas from abroad. NRI pricing is 2.5x the domestic price, shown in USD and charged in INR through Razorpay; an international card works where your card issuer allows international payments. Store orders are delivered within India only, and we do not promise prasad delivery dates.',
+ 'Yes, you can book pujas from abroad. NRI pricing is 2.5x the domestic price, shown in USD and charged in INR through Razorpay, so you pay with UPI, an Indian card or net banking; cards issued outside India and PayPal are coming soon. Store orders are delivered within India only, and we do not promise prasad delivery dates.',
  },
  {
  id: 'gs-5',
@@ -802,7 +802,7 @@ export const FAQ_ITEMS: FaqItem[] = [
  section: 'Bookings & Payments',
  question: 'What payment methods are accepted?',
  answer:
- 'For India: UPI, net banking, all major cards, wallets (Paytm, PhonePe, GPay). International Visa, Mastercard and Amex cards are accepted too, billed in INR. No cash-on-delivery for bookings.',
+ 'For India: UPI, net banking, all major cards, wallets (Paytm, PhonePe, GPay). Cards issued outside India and PayPal are coming soon; billing is in INR. No cash-on-delivery for bookings.',
  },
  {
  id: 'bp-4',

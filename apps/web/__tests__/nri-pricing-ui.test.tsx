@@ -46,7 +46,7 @@ describe('PujaPrice', () => {
     const charged = nriTotalInr(1100, false); // 2801
     expect(container.textContent).toContain(`$${usdFromInr(charged)}`);
     expect(container.textContent).toContain('charged as ₹2,801');
-    expect(container.textContent).toContain('your bank converts at its own rate');
+    expect(container.textContent).toContain('the dollar figure is for reference');
   });
 
   it('a remembered INR choice beats a non-India timezone', async () => {

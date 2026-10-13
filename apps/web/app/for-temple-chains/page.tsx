@@ -93,7 +93,7 @@ const CUSTOMER_TYPES = [
   {
     title: 'Diaspora temple federations',
     examples: 'Hindu Federation Canada, BAPS USA, UK Hindu Council',
-    body: 'Member-temple donor management in INR, with international cards accepted.',
+    body: 'Member-temple donor management in INR.',
   },
 ];
 
