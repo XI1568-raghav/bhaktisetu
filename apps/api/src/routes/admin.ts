@@ -272,6 +272,19 @@ export async function adminRoutes(server: FastifyInstance) {
       return reply.code(404).send({ error: 'User not found' });
     }
 
+    // An admin who blocks their own account, or drops ADMIN from their own roles,
+    // locks themselves out of this very panel (and the last admin out of the product).
+    if (
+      id === request.currentUser?.id &&
+      (parsed.data.blocked === true ||
+        (parsed.data.roles !== undefined && !parsed.data.roles.includes('ADMIN')))
+    ) {
+      return reply.code(400).send({
+        error: 'Cannot lock yourself out',
+        message: 'You cannot block your own account or remove your own admin role. Ask another admin.',
+      });
+    }
+
     let result;
     try {
       result = await adminService.updateUser(id, parsed.data);

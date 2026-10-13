@@ -4,6 +4,7 @@ import { createSupabaseClient } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
+import { isAuthUpstreamDown, AUTH_UNAVAILABLE_BODY } from '../lib/auth-upstream.js';
 
 // Tighter rate limit for unauthenticated credential/OTP endpoints — the
 // global 100/min is too generous for OTP-spam and credential-stuffing.
@@ -453,6 +454,7 @@ export async function authRoutes(server: FastifyInstance) {
 
     if (error) {
       request.log.error(error, 'Supabase signInWithOtp failed');
+      if (isAuthUpstreamDown(error)) return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
       return reply.code(400).send({
         error: 'OTP Error',
         message: error.message || 'Failed to send OTP. Please try again.',
@@ -491,6 +493,10 @@ export async function authRoutes(server: FastifyInstance) {
       type: 'sms',
     });
 
+    if (error && isAuthUpstreamDown(error)) {
+      request.log.error(error, 'Supabase verifyOtp unreachable');
+      return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
+    }
     if (error || !data.session) {
       request.log.error(error, 'Supabase verifyOtp failed');
       return reply.code(400).send({
@@ -639,6 +645,10 @@ export async function authRoutes(server: FastifyInstance) {
       refresh_token: refreshToken,
     });
 
+    // A 401 here makes every client sign the user out; an outage is not a verdict.
+    if (error && isAuthUpstreamDown(error)) {
+      return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
+    }
     if (error || !data.session) {
       return reply.code(401).send({
         error: 'Refresh Error',
@@ -1078,6 +1088,10 @@ export async function authRoutes(server: FastifyInstance) {
         password,
       });
 
+      if (authError && isAuthUpstreamDown(authError)) {
+        request.log.error({ err: authError, event: 'login_auth_unreachable' }, 'sign-in could not reach auth');
+        return reply.code(503).send(AUTH_UNAVAILABLE_BODY);
+      }
       if (authError || !authData.session) {
         return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid email or password' });
       }
@@ -1210,6 +1224,13 @@ export async function authRoutes(server: FastifyInstance) {
         password,
       });
 
+      if (authError && isAuthUpstreamDown(authError)) {
+        request.log.error({ err: authError, event: 'signup_auth_unreachable' }, 'signup could not reach auth');
+        return reply.code(503).send({
+          error: 'ServiceUnavailable',
+          message: 'Sign-up is temporarily unavailable. Please try again in a moment.',
+        });
+      }
       if (authError) {
         return reply.code(400).send({
           error: 'SignupFailed',

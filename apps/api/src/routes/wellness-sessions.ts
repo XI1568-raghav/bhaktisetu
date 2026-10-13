@@ -214,7 +214,7 @@ const createSessionSchema = z.object({
     }),
   durationMinutes: z.number().int().positive().max(600),
   capacity: z.number().int().positive().max(10000),
-  priceInr: z.number().nonnegative(),
+  priceInr: z.number().nonnegative().max(1_000_000),
   // Wellness revamp: free daily satsang / donation-model sessions are the
   // top-of-funnel per research (Isha/AoL satsang are free/donation). isFree
   // marks a session free so the public catalog can show a "Free" badge and the
@@ -231,7 +231,7 @@ const updateSessionSchema = z.object({
   scheduledAt: z.string().datetime().optional(),
   durationMinutes: z.number().int().positive().max(600).optional(),
   capacity: z.number().int().positive().max(10000).optional(),
-  priceInr: z.number().nonnegative().optional(),
+  priceInr: z.number().nonnegative().max(1_000_000).optional(),
   status: z.enum(['SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED']).optional(),
 });
 
@@ -474,6 +474,17 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       if (session.instructorId !== userId && !isAdmin(request)) {
         return reply.code(403).send({ error: 'Only the instructor can delete this session' });
       }
+      // Deleting a session with money attached erased the devotees' paid
+      // enrolments (and their audit trail) with no refund. Cancel it instead.
+      const paidCount = await prisma.wellnessEnrollment.count({
+        where: { sessionId: session.id, status: { in: ['PAID', 'ATTENDED'] } },
+      });
+      if (paidCount > 0 && Number(session.priceInr) > 0) {
+        return reply.code(409).send({
+          error: 'This session has paid enrolments. Cancel it (status CANCELLED) so devotees can be refunded instead of deleting it.',
+          code: 'session_has_paid_enrolments',
+        });
+      }
       // Cascade-clean enrollments first so we don't hit FK constraints.
       await prisma.wellnessEnrollment.deleteMany({ where: { sessionId: session.id } });
       await prisma.wellnessSession.delete({ where: { id: session.id } });
@@ -568,6 +579,15 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       }
       if (session.status === 'COMPLETED') {
         return reply.code(409).send({ error: 'Session has already completed' });
+      }
+      // A SCHEDULED class whose start has passed is over or underway without the
+      // instructor opening it; taking money for it sold a seat to nothing. A
+      // LIVE class (the instructor opened the room) still takes late joiners.
+      if (session.status !== 'LIVE' && session.scheduledAt.getTime() <= Date.now()) {
+        return reply.code(409).send({
+          error: 'This session has already started and is closed for enrolment.',
+          code: 'session_started',
+        });
       }
 
       // Role pass 2026-10-07: nobody pays an instructor an admin has not

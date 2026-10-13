@@ -18,6 +18,7 @@ import { notifyBookingEvent, notifyVideoReady } from './booking-notify.service.j
 import { ensureConversationForBooking } from './conversation.service.js';
 import { paymentService } from './payment.service.js';
 import { nriPujaPriceInr } from '../lib/nri-pricing.js';
+import { parseSlotMinutes, resolveSlotInstant } from '../lib/slot-time.js';
 import { prasadAddressProblem } from '@poojly/shared';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -490,6 +491,16 @@ export class BookingService {
       throw new Error(
         `Invalid time slot "${data.scheduledTimeSlot}". Available slots: ${availableSlots.join(', ')}`,
       );
+    }
+
+    // 2b. A same-day booking for a slot that has already started is not a
+    // booking (QA 2026-10-13: a 06:00 slot was sold at 20:10 IST). Slots are
+    // IST; unreadable labels are left to the whitelist above.
+    if (
+      parseSlotMinutes(data.scheduledTimeSlot) !== null &&
+      resolveSlotInstant(new Date(data.scheduledDate), data.scheduledTimeSlot).getTime() <= Date.now()
+    ) {
+      throw new Error(`Invalid time slot "${data.scheduledTimeSlot}": that time has already passed.`);
     }
 
     // 3. Cheap pre-check on slot availability so an already-full slot fails

@@ -386,12 +386,28 @@ const verifyDonationSchema = z.object({
  * for it. TempleProfile has no FK to Temple; the portal links them by name
  * (case- and whitespace-tolerant), so this does too.
  */
-async function templeHasApprovedManager(templeName: string): Promise<boolean> {
+async function templeHasApprovedManager(templeName: string, templeId?: string): Promise<boolean> {
   const profile = await prisma.templeProfile.findFirst({
     where: { approved: true, templeName: { equals: templeName.trim(), mode: 'insensitive' } },
     select: { userId: true },
   });
-  return !!profile;
+  if (profile) return true;
+  // An admin's explicit link (temple_manager_links) outranks the name match in
+  // the temple portal, so a linked manager with an approved profile whose
+  // typed name differs from the Temple row IS the temple's payee. Ignoring the
+  // link refused donations for a temple whose portal would have shown them.
+  if (!templeId) return false;
+  try {
+    const rows = await prisma.$queryRawUnsafe<{ ok: number }[]>(
+      `SELECT 1 AS ok FROM temple_manager_links l
+         JOIN temple_profiles p ON p.user_id = l.manager_user_id AND p.approved = true
+        WHERE l.temple_id = $1::uuid LIMIT 1`,
+      templeId,
+    );
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 export async function donationRoutes(server: FastifyInstance) {
@@ -480,7 +496,7 @@ export async function donationRoutes(server: FastifyInstance) {
           message: 'We could not find that temple. Please choose a temple from the list.',
         });
       }
-      const manager = temple.isVerified ? await templeHasApprovedManager(temple.name) : false;
+      const manager = temple.isVerified ? await templeHasApprovedManager(temple.name, temple.id) : false;
       if (!manager) {
         return reply.code(400).send({
           code: 'temple_not_onboarded',

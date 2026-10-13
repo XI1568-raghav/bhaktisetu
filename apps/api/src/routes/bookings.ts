@@ -21,7 +21,7 @@ import { prisma } from '../lib/prisma.js';
 import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
-import { hoursUntilSlot } from '../lib/slot-time.js';
+import { hoursUntilSlot, parseSlotMinutes, resolveSlotInstant } from '../lib/slot-time.js';
 import { REFUND_REQUESTED_MARKER } from '../lib/refund-marker.js';
 import { REFUND_INTERNATIONAL_CARD_LABEL } from '../lib/refund-timing.js';
 import { platformRateOf } from '../lib/commission-math.js';
@@ -2375,6 +2375,16 @@ export async function bookingRoutes(server: FastifyInstance) {
         if (slotTimes.length > 0 && !slotTimes.includes(body.scheduledTime)) {
           return reply.status(409).send({
             error: `Slot ${body.scheduledTime} is not offered. Available slots: ${slotTimes.join(', ')}.`,
+          });
+        }
+
+        if (
+          parseSlotMinutes(body.scheduledTime) !== null &&
+          resolveSlotInstant(scheduledDate, body.scheduledTime).getTime() <= Date.now()
+        ) {
+          return reply.status(409).send({
+            error: `Slot ${body.scheduledTime} has already passed. Please choose a later time.`,
+            code: 'SLOT_UNAVAILABLE',
           });
         }
 

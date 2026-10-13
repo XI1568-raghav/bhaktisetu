@@ -992,6 +992,12 @@ export class PaymentService {
     // hour later arrives HERE, into a slot that may already have been resold.
     // Read before the transaction so it never runs inside one.
     const oversold = shouldConfirm ? await slotOversoldNote(payment.booking) : null;
+    // QA 2026-10-13: money for a booking that was cancelled while the checkout
+    // was still open. The gateway really took it, so the capture is recorded,
+    // but the booking must not silently stay cancelled with nobody owed a
+    // refund: flag it for the admin queue and tell the devotee plainly.
+    const paidAfterCancel =
+      payment.booking.status === 'cancelled' || payment.booking.status === 'refunded';
     // OPS-05: carried OUT of the transaction so the mint can be recorded after
     // it commits. Nothing may be logged from inside — a failed audit INSERT in
     // the caller's tx aborts it in Postgres and rolls back the capture.
@@ -1016,7 +1022,15 @@ export class PaymentService {
                   needsAdminReview: 'slot-capacity',
                 },
               }
-            : {}),
+            : paidAfterCancel
+              ? {
+                  metadata: {
+                    ...((payment.metadata as Record<string, unknown>) ?? {}),
+                    paidAfterCancelAt: new Date().toISOString(),
+                    needsAdminReview: 'paid-after-cancel',
+                  },
+                }
+              : {}),
         },
       });
       if (shouldConfirm) {
@@ -1034,6 +1048,17 @@ export class PaymentService {
         await writeTemplePayoutOnConfirm(payment.booking!.id, tx);
       }
     });
+
+    if (paidAfterCancel) {
+      console.error(
+        '[payment.service] paid_after_cancel',
+        JSON.stringify({ bookingId: payment.booking!.id, paymentId: payment.id, gatewayOrderId: razorpayOrderId }),
+      );
+      throw new Error(
+        'Your payment was received, but this booking had already been cancelled. ' +
+          'We have flagged it for a full refund. You do not need to pay again.',
+      );
+    }
 
     if (oversold) {
       // Same marker string the webhook rail emits, so one grep
