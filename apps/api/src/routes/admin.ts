@@ -1,3 +1,4 @@
+import { presignR2Url } from '../lib/r2.js';
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { httpUrl } from '../lib/http-url.js';
@@ -338,6 +339,30 @@ export async function adminRoutes(server: FastifyInstance) {
     } catch (err) {
       request.log.error({ err }, 'admin /pending-approvals failed');
       return reply.code(500).send({ error: 'Failed to load pending approvals' });
+    }
+  });
+
+  // ─── GET /onboarding-documents/:userId — signed links to a provider's ID uploads ─
+  // Aadhaar / certificate files live in a private bucket; links expire in 10 min.
+
+  server.get('/onboarding-documents/:userId', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const { userId } = request.params as { userId: string };
+    try {
+      const rows = await prisma.onboardingStep.findMany({ where: { userId, step: 4 }, take: 10 });
+      const out: { role: string; aadhaarUrl: string | null; certificateUrl: string | null }[] = [];
+      for (const row of rows) {
+        const d = (row.data ?? {}) as { aadhaarKey?: string | null; certificateKey?: string | null };
+        if (!d.aadhaarKey && !d.certificateKey) continue;
+        out.push({
+          role: row.role,
+          aadhaarUrl: d.aadhaarKey ? await presignR2Url(d.aadhaarKey, 600, { private: true }) : null,
+          certificateUrl: d.certificateKey ? await presignR2Url(d.certificateKey, 600, { private: true }) : null,
+        });
+      }
+      return { documents: out };
+    } catch (err) {
+      request.log.error({ err }, 'admin /onboarding-documents failed');
+      return reply.code(500).send({ error: 'Failed to load documents' });
     }
   });
 
