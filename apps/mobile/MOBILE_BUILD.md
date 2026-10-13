@@ -37,6 +37,17 @@ pnpm run build:android:preview
 
 The `preview` profile builds a signed APK (not an AAB) with `EXPO_PUBLIC_API_URL=https://api.darshya.online`. Share the download URL with testers — no Play Store needed.
 
+### `development` profile needs an API URL
+
+`eas.json` deliberately sets no `EXPO_PUBLIC_API_URL` for the `development` profile (it is a per-developer
+value, and a build without one fails loudly at the first API call instead of silently using localhost).
+Provide it without committing anything:
+
+- local `npx expo start`: put `EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:4000` in `apps/mobile/.env` (see `.env.example`;
+  a device cannot reach `localhost`). Android emulator: `http://10.0.2.2:4000`.
+- EAS cloud dev build: `eas env:create --environment development --name EXPO_PUBLIC_API_URL --value <url> --visibility plaintext`
+  (the URL is public in the bundle anyway; never put secrets in `EXPO_PUBLIC_*`).
+
 ## Build iOS (requires Apple Developer account $99/yr for TestFlight)
 
 ```bash

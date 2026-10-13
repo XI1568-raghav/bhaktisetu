@@ -9,6 +9,13 @@ import { sendEmail } from '../lib/email.js';
 import { esc } from '../lib/html-escape.js';
 import { writeStoreOrderCommission } from '../services/store-commission.service.js';
 import { computeStoreOrderTotals } from '../lib/store-pricing.js';
+import {
+  customerCancelStoreOrder,
+  refundStoreOrder,
+  rejectStoreOrderRefund,
+  listPendingStoreRefunds,
+  releaseOrderHolds,
+} from '../services/store-order-refund.service.js';
 
 /**
  * Persisted store order endpoints. The product/SKU catalogue still lives
@@ -484,6 +491,22 @@ export async function storeOrderRoutes(server: FastifyInstance) {
           .send({ error: `Cannot transition order from ${order.status} to ${body.data.status}.` });
       }
 
+      // QA 2026-10-13: marking a paid online order REFUNDED here moved no money and then
+      // made the refund endpoint report "already refunded". The refund has to go through
+      // POST /orders/:id/refund (admin), which executes it.
+      if (body.data.status === 'REFUNDED' && order.paymentId) {
+        const pay = await prisma.payment.findUnique({
+          where: { id: order.paymentId },
+          select: { status: true },
+        });
+        if (pay && (pay.status === 'captured' || pay.status === 'partially_refunded')) {
+          return reply.code(409).send({
+            error: 'This order was paid online. Use the refund action (POST /orders/:id/refund) so the money is actually returned.',
+            code: 'use_refund_endpoint',
+          });
+        }
+      }
+
       const adminId = request.currentUser!.id;
       const historyEntry = {
         status: body.data.status,
@@ -504,29 +527,8 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         });
         if (toStatus === 'CANCELLED' || toStatus === 'REFUNDED') {
           // The owner's earning on an order that will not be fulfilled must not
-          // stay withdrawable.
-          await tx.commission.updateMany({
-            where: { storeOrderId: order.id, status: 'PENDING' },
-            data: { status: 'REVERSED' },
-          });
-        }
-        if (toStatus === 'CANCELLED') {
-          // Order creation decremented stock; a cancelled order never ships, so
-          // the units go back on the shelf (they stayed gone before this).
-          const lines = Array.isArray(order.items) ? (order.items as any[]) : [];
-          const qtyByProduct = new Map<string, number>();
-          for (const it of lines) {
-            if (typeof it?.productId !== 'string') continue;
-            qtyByProduct.set(it.productId, (qtyByProduct.get(it.productId) ?? 0) + Number(it.qty ?? 0));
-          }
-          for (const [productId, qty] of qtyByProduct) {
-            if (qty > 0) {
-              await tx.storeProduct.updateMany({
-                where: { id: productId, deletedAt: null },
-                data: { stock: { increment: qty } },
-              });
-            }
-          }
+          // stay withdrawable; a cancelled order's units go back on the shelf.
+          await releaseOrderHolds(tx, order, toStatus);
         }
         return row;
       });
@@ -541,6 +543,102 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       return reply.send({ data: serializeOrder(updated) });
     }
   );
+
+  // POST /orders/:id/cancel - the customer cancels their own order before it ships.
+  // Restocks, reverses the owner's pending commission and, for an order paid online,
+  // queues a refund for admin approval. Idempotent.
+  server.post('/orders/:id/cancel', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const params = orderIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
+    const body = z.object({ reason: z.string().trim().max(200).optional() }).safeParse(request.body ?? {});
+    if (!body.success) return reply.code(400).send({ error: 'Invalid request body' });
+    const order = await prisma.storeOrder.findUnique({
+      where: { id: params.data.id },
+      select: { id: true, userId: true },
+    });
+    if (!order) return reply.code(404).send({ error: 'Order not found' });
+    if (order.userId !== request.currentUser!.id) {
+      return reply.code(403).send({ error: 'Not authorized to cancel this order' });
+    }
+    const result = await customerCancelStoreOrder({
+      orderId: order.id,
+      userId: request.currentUser!.id,
+      reason: body.data.reason,
+    });
+    if (!result) return reply.code(404).send({ error: 'Order not found' });
+    if (result.outcome === 'blocked') {
+      return reply.code(409).send({ error: result.blockedReason, code: 'order_not_cancellable', status: result.status });
+    }
+    return reply.send({
+      cancelled: true,
+      alreadyCancelled: result.outcome === 'already',
+      status: result.status,
+      refundOwedInr: result.refundOwedInr,
+      refundStatus: result.paid && result.outcome === 'cancelled' ? 'pending_admin_approval' : 'none',
+      commissionReversed: result.commissionReversed,
+      note: result.paid && result.outcome === 'cancelled'
+        ? 'Order cancelled. Your refund will be processed within 5-7 business days.'
+        : 'Order cancelled.',
+    });
+  });
+
+  // GET /orders/refunds/pending - admin queue: cancelled orders paid online, not yet refunded.
+  server.get('/orders/refunds/pending', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!isAdmin(request)) return reply.code(403).send({ error: 'Admin role required' });
+    const orders = await listPendingStoreRefunds();
+    return reply.send({ data: orders.map((o) => serializeOrder(o)) });
+  });
+
+  // POST /orders/:id/refund - admin approves a refund for a PAID store order.
+  // refundType 'policy' (default): full refund only for an order cancelled before
+  // shipping; 'full' refunds any state explicitly. Partial refunds are not offered.
+  server.post('/orders/:id/refund', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!isAdmin(request)) return reply.code(403).send({ error: 'Admin role required' });
+    const params = orderIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
+    const body = z
+      .object({
+        reason: z.string().trim().max(500).optional(),
+        refundType: z.enum(['policy', 'full']).optional(),
+      })
+      .strict()
+      .safeParse(request.body ?? {});
+    if (!body.success) {
+      return reply.code(400).send({ error: 'Invalid request body', details: body.error.flatten() });
+    }
+    const result = await refundStoreOrder({
+      orderId: params.data.id,
+      adminId: request.currentUser!.id,
+      mode: body.data.refundType ?? 'policy',
+      reason: body.data.reason,
+    });
+    if (!result) return reply.code(404).send({ error: 'Order not found' });
+    if (!result.ok) {
+      return reply.code(result.httpStatus).send({ error: result.error, code: result.code });
+    }
+    return reply.send({ ok: true, refund: result });
+  });
+
+  // POST /orders/:id/refund/reject - admin declines a refund request, with a reason.
+  server.post('/orders/:id/refund/reject', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!isAdmin(request)) return reply.code(403).send({ error: 'Admin role required' });
+    const params = orderIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid order id' });
+    const body = z.object({ reason: z.string().trim().min(3).max(500) }).safeParse(request.body ?? {});
+    if (!body.success) {
+      return reply.code(400).send({ error: 'A reason is required to reject a refund.' });
+    }
+    const result = await rejectStoreOrderRefund({
+      orderId: params.data.id,
+      adminId: request.currentUser!.id,
+      reason: body.data.reason,
+    });
+    if (!result) return reply.code(404).send({ error: 'Order not found' });
+    if (result.httpStatus !== 200) {
+      return reply.code(result.httpStatus).send({ error: result.error, code: result.code });
+    }
+    return reply.send({ ok: true });
+  });
 
   // POST /orders/:id/payment-confirm — flip PENDING → CONFIRMED and send invoice.
   // Admin-only manual override for QA / fulfilment ops. In production this
@@ -642,3 +740,5 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     }
   );
 }
+
+export const __testing = { shippingAddressSchema };

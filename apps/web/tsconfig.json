@@ -15,11 +15,12 @@
     "allowJs": true
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    ".next/types/**/*.ts",
     "lib/i18n/*.json",
-    ".next/types/**/*.ts"
+    "next-env.d.ts",
+    ".next-prod/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
