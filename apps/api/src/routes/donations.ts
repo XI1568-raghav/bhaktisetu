@@ -430,11 +430,27 @@ export async function donationRoutes(server: FastifyInstance) {
         take: 500,
       });
       const names = [...new Set(profiles.map((p) => (p.templeName ?? '').trim()).filter(Boolean))];
-      if (names.length === 0) return { temples: [] };
+      // QA 2026-10-13: create-order also accepts a temple an admin LINKED to an approved
+      // manager profile (temple_manager_links), whatever name that profile typed. The
+      // list the form offers has to be the same set, or a payable temple is invisible.
+      let linkedIds: string[] = [];
+      try {
+        const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(
+          `SELECT DISTINCT l.temple_id::text AS id FROM temple_manager_links l
+             JOIN temple_profiles p ON p.user_id = l.manager_user_id AND p.approved = true`,
+        );
+        linkedIds = Array.isArray(rows) ? rows.map((r) => r.id) : [];
+      } catch {
+        // table absent on an unmigrated database: name matches alone
+      }
+      if (names.length === 0 && linkedIds.length === 0) return { temples: [] };
       const temples = await prisma.temple.findMany({
         where: {
           isVerified: true,
-          OR: names.map((name) => ({ name: { equals: name, mode: 'insensitive' as const } })),
+          OR: [
+            ...names.map((name) => ({ name: { equals: name, mode: 'insensitive' as const } })),
+            ...(linkedIds.length ? [{ id: { in: linkedIds } }] : []),
+          ],
         },
         select: { id: true, name: true, city: true, state: true, deityPrimary: true, description: true, images: true },
         orderBy: { name: 'asc' },
@@ -508,6 +524,46 @@ export async function donationRoutes(server: FastifyInstance) {
             'This temple is not yet onboarded to receive donations through Darshya. Please choose a temple that is listed on the donations page.',
         });
       }
+    }
+
+    // QA 2026-10-13: idempotency. The mobile app opens an order and then the web form
+    // opened a SECOND one for the same donor, donee and amount, leaving an orphan
+    // 'created' row. A still-open order for the same (user, donee, amount) created
+    // within the last 15 minutes is reused: same donationId, same gateway order.
+    // Changing the PAN / dedication on the reused row keeps the receipt truthful.
+    const doneeColumn = kind === 'temple' ? 'temple_id' : 'gaushala_id';
+    const doneeCast = kind === 'temple' ? '$2::uuid' : '$2';
+    try {
+      const open = await prisma.$queryRawUnsafe<{ id: string; razorpay_order_id: string }[]>(
+        `SELECT id, razorpay_order_id FROM donations
+          WHERE user_id = $1::uuid AND ${doneeColumn} = ${doneeCast} AND status = 'created'
+            AND amount_inr = $3 AND created_at > (${SQL_UTC_NOW} - interval '15 minutes')
+          ORDER BY created_at DESC LIMIT 1`,
+        userId,
+        kind === 'temple' ? templeId : doneeGaushalaId,
+        amount,
+      );
+      const reuse = Array.isArray(open) ? open[0] : undefined;
+      if (reuse?.id && reuse.razorpay_order_id) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE donations SET donor_pan = COALESCE($2, donor_pan), dedication = COALESCE($3, dedication) WHERE id = $1 AND status = 'created'`,
+          reuse.id,
+          parsed.data.donorPan ?? null,
+          parsed.data.dedication ?? null,
+        );
+        return reply.send({
+          donationId: reuse.id,
+          razorpayOrderId: reuse.razorpay_order_id,
+          amount: Math.round(amount * 100),
+          currency: 'INR',
+          keyId: razorpayKeyId || 'rzp_test_demo',
+          isDemoPayment,
+          reused: true,
+        });
+      }
+    } catch (err) {
+      // A failed lookup must never block a donation: fall through to a fresh order.
+      server.log.warn({ err }, 'donation open-order lookup failed');
     }
 
     const donationId = `don_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;

@@ -168,6 +168,7 @@ export async function cancelWellnessEnrollment(opts: {
       const commissions = await tx.commission.findMany({
         where: { wellnessEnrollmentId: row.id },
         select: { id: true, amount: true, status: true, payoutRequestId: true },
+        take: 10,
       });
       for (const c2 of commissions) {
         if (c2.status !== 'PENDING' || c2.payoutRequestId) {
@@ -190,7 +191,10 @@ export async function cancelWellnessEnrollment(opts: {
     return { ...base, outcome: 'already', tierLabel: 'Already cancelled' };
   }
 
-  // Audit AFTER commit (lib/audit-money contract). Neither call can throw.
+  // Audit AFTER commit (lib/audit-money contract). Neither call can throw. The key carries the
+  // gateway order id because a cancelled enrolment re-uses its row when the devotee enrols
+  // again, so the row id alone would swallow the second cancellation's trail.
+  const auditKey = `${row.id}:${row.razorpayOrderId ?? 'noorder'}`;
   if (wasPaid && price > 0) {
     await recordMoneyEvent({
       eventType: MONEY_EVENTS.REFUND_INITIATED,
@@ -204,7 +208,7 @@ export async function cancelWellnessEnrollment(opts: {
       gatewayOrderId: row.razorpayOrderId,
       statusBefore: row.status,
       statusAfter: 'CANCELLED',
-      idempotencyKey: row.id,
+      idempotencyKey: auditKey,
       note: `${note} - ${tierLabel}`,
       metadata: {
         rail: 'wellness-cancel',
@@ -225,7 +229,7 @@ export async function cancelWellnessEnrollment(opts: {
         amount: refundOwedInr,
         currency: 'INR',
         statusAfter: settled > 0 && reversed + reduced === 0 ? 'blocked' : fraction >= 1 ? 'reversed' : 'reduced',
-        idempotencyKey: row.id,
+        idempotencyKey: auditKey,
         note,
         metadata: {
           rail: 'wellness-cancel',
@@ -322,7 +326,7 @@ export async function cancelWellnessSessionEnrollments(opts: {
   let refunded = 0;
   let refundOwedInr = 0;
   let ledgerManualReview = 0;
-  for (const r of rows) {
+  for (const r of rows ?? []) {
     try {
       const res = await cancelWellnessEnrollment({
         enrollmentId: r.id,

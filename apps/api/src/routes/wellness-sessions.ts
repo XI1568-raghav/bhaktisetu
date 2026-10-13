@@ -263,9 +263,9 @@ async function writeWellnessCommissionOnPaid(enrollmentId: string): Promise<void
   try {
     const existing = await prisma.commission.findFirst({
       where: { wellnessEnrollmentId: enrollmentId },
-      select: { id: true },
+      select: { id: true, status: true, payoutRequestId: true },
     });
-    if (existing) return;
+    if (existing && (existing.status === 'PAID' || existing.payoutRequestId)) return;
 
     const enrollment = await prisma.wellnessEnrollment.findUnique({
       where: { id: enrollmentId },
@@ -283,6 +283,18 @@ async function writeWellnessCommissionOnPaid(enrollmentId: string): Promise<void
       ? WELLNESS_PLATFORM_COMMISSION
       : 0.20;
     const instructorShare = Math.round(price * (1 - platformRate) * 100) / 100;
+
+    // QA 2026-10-13: a devotee who cancelled (commission REVERSED or reduced) and then enrolled and
+    // paid again re-uses the same enrolment row, and the UNIQUE key below would make
+    // the new payment mint nothing - the instructor taught a paid class for Rs 0.
+    // Re-open the reversed row at the full share instead.
+    if (existing) {
+      await prisma.commission.updateMany({
+        where: { id: existing.id, status: { in: ['REVERSED', 'PENDING'] }, payoutRequestId: null },
+        data: { status: 'PENDING', amount: instructorShare, percentage: platformRate },
+      });
+      return;
+    }
 
     // DI-06 (F367): ON CONFLICT DO NOTHING against UNIQUE
     // `commissions_wellness_enrollment_id_key` (migration 20260824000000), so a

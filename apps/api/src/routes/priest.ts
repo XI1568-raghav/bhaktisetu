@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { notHiddenReviewWhere } from '../lib/review-moderation.js';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
@@ -1104,7 +1105,7 @@ export async function priestRoutes(server: FastifyInstance) {
 
       const [rows, ratedBookings] = await Promise.all([
         prisma.review.findMany({
-          where: { providerId: userId, providerType: 'PANDIT' },
+          where: { ...(await notHiddenReviewWhere()), providerId: userId, providerType: 'PANDIT' },
           orderBy: { createdAt: 'desc' },
           take: REVIEW_PAGE,
         }),

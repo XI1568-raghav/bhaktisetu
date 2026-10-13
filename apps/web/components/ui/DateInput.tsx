@@ -264,7 +264,9 @@ export function DateInput({
             {rejected.reason === 'unparseable'
               ? `“${rejected.attempted}” isn’t a date we could read. Use DD/MM/YYYY.`
               : `“${rejected.attempted}” is outside the dates this booking accepts${
-                  minYear === maxYear ? ` (${minYear})` : ` (${minYear}–${maxYear})`
+                  min && max
+                    ? ` (${formatForDisplay(min)} to ${formatForDisplay(max)})`
+                    : minYear === maxYear ? ` (${minYear})` : ` (${minYear}–${maxYear})`
                 }.`}
           </p>
         )}

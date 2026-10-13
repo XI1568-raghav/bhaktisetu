@@ -75,6 +75,12 @@ describe('DB-10 — a refused date says so instead of vanishing', () => {
     expect(alert.textContent).toMatch(/outside the dates/i);
   });
 
+  it('a bounded window names the accepted dates, not just the year', () => {
+    render(<DateInput value="" onChange={() => {}} min="2026-10-14" max="2026-11-13" label="Date" />);
+    typeAndBlur(screen.getByLabelText('Date'), '25/12/2026');
+    expect(screen.getByRole('alert').textContent).toContain('14/10/2026 to 13/11/2026');
+  });
+
   it('an unparseable date gets a different, format-specific message', () => {
     render(<DateInput value="" onChange={() => {}} label="Date" />);
     typeAndBlur(screen.getByLabelText('Date'), 'not a date');

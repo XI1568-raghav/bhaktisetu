@@ -14,6 +14,7 @@ import { resolveProviderRole } from '../services/payout.service.js';
 import { clampLimit, clampPage } from '../lib/pagination.js';
 import type { Prisma } from '@prisma/client';
 import { registerAdminTempleEditor, templeFlags } from './admin-temple-editor.js';
+import { hiddenReviewIds, hideReview, unhideReview } from '../lib/review-moderation.js';
 
 /**
  * CT-ADMIN-1 (prod, ct+admin token, 2026-09-08):
@@ -1067,9 +1068,6 @@ export async function adminRoutes(server: FastifyInstance) {
   });
 
   // ─── Ratings moderation ───────────────────────────────────────────────────
-  // The Review model is schema-locked: there is no isHidden column. Until a
-  // migration adds one, the "Hide rating" action is a no-op that we log so
-  // ops sees the moderator intent. The list endpoint still works.
   const ratingsQuerySchema = z.object({
     stars: z.string().optional(),
     providerId: z.string().optional(),
@@ -1096,6 +1094,7 @@ export async function adminRoutes(server: FastifyInstance) {
       prisma.review.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: pageSize }),
       prisma.review.count({ where }),
     ]);
+    const hiddenIds = new Set(await hiddenReviewIds());
     return {
       data: rows.map((r) => ({
         id: r.id,
@@ -1105,8 +1104,7 @@ export async function adminRoutes(server: FastifyInstance) {
         rating: r.rating,
         comment: r.comment,
         createdAt: r.createdAt,
-        // isHidden column not in schema yet — always false until migration.
-        isHidden: false,
+        isHidden: hiddenIds.has(r.id),
       })),
       page,
       pageSize,
@@ -1114,19 +1112,35 @@ export async function adminRoutes(server: FastifyInstance) {
     };
   });
 
+  // Hiding goes through lib/review-moderation (a lazily-created side table): the
+  // reviews table has no isHidden column and adding one would break every review
+  // query until an owner applied a migration. Hidden reviews drop out of public lists
+  // and recomputed averages (provider.service, store, priest readers).
+  const reviewIdParams = z.object({ id: z.string().uuid() });
+  const hideBodySchema = z.object({ reason: z.string().trim().max(500).optional() });
+
   server.post('/ratings/:id/hide', { preHandler: adminPreHandlers }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    // Schema-locked: no isHidden column on reviews. We log the moderator
-    // intent so ops can act manually until the migration lands.
-    server.log.warn(
-      { reviewId: id, moderator: request.currentUser?.id },
-      'Admin attempted to hide rating but isHidden column is not in schema. Skipped.',
-    );
-    return reply.send({
-      ok: false,
-      skipped: true,
-      reason: 'Review.isHidden column not present in current schema. Logged moderator intent.',
-    });
+    const params = reviewIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid rating id' });
+    const body = hideBodySchema.safeParse(request.body ?? {});
+    if (!body.success) return reply.code(400).send({ error: 'Invalid request body' });
+    const review = await prisma.review.findUnique({ where: { id: params.data.id }, select: { id: true } });
+    if (!review) return reply.code(404).send({ error: 'Rating not found' });
+    try {
+      const r = await hideReview(review.id, request.currentUser?.id ?? null, body.data.reason ?? null);
+      server.log.info({ reviewId: review.id, moderator: request.currentUser?.id, changed: r.changed }, 'admin hid rating');
+      return reply.send({ ok: true, hidden: true, alreadyHidden: !r.changed });
+    } catch (err) {
+      server.log.error({ err, reviewId: review.id }, 'hide rating failed');
+      return reply.code(500).send({ ok: false, error: 'Could not hide this rating. Please try again.' });
+    }
+  });
+
+  server.post('/ratings/:id/unhide', { preHandler: adminPreHandlers }, async (request, reply) => {
+    const params = reviewIdParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: 'Invalid rating id' });
+    const r = await unhideReview(params.data.id);
+    return reply.send({ ok: true, hidden: false, wasHidden: r.changed });
   });
 }
 

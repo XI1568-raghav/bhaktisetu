@@ -167,6 +167,8 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    // Cancel / attendance claim the enrolment's status with a conditional updateMany. Additive.
+    updateMany: vi.fn(),
     count: vi.fn(),
     // AO-15: admin.service.getReports aggregates the popular-services card
     // through groupBy. Additive — nothing that already stubbed this model
@@ -257,6 +259,9 @@ export const prismaMock = {
   review: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
+    // Admin rating moderation (hide/unhide) looks the review up and lists with a count. Additive.
+    findUnique: vi.fn(),
+    count: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     aggregate: vi.fn(),
@@ -321,6 +326,8 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    // Customer cancel claims the order's status with a conditional updateMany. Additive.
+    updateMany: vi.fn(),
     count: vi.fn(),
   },
   storeProduct: {
