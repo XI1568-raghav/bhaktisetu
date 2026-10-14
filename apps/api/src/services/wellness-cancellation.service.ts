@@ -208,7 +208,22 @@ export async function executeWellnessRefund(opts: {
         } as never,
       },
     })
-    .catch((err) => console.error('[wellness-refund] refund sent but payment row not updated', payment.id, err));
+    .catch(async (err) => {
+      console.error('[wellness-refund] refund sent but payment row not updated', payment.id, err);
+      // Last resort: stamp the gateway refund id on the in-flight marker so a later retry sees the
+      // money already left and never re-sends it.
+      await prisma.payment
+        .updateMany({
+          where: { id: payment.id },
+          data: {
+            metadata: {
+              ...meta,
+              wellnessRefundInflight: { amount: remaining, at: new Date().toISOString(), refundId: refund.id },
+            } as never,
+          },
+        })
+        .catch((e) => console.error('[wellness-refund] could not stamp refund id', payment.id, refund.id, e));
+    });
   await safeAudit({
     eventType: MONEY_EVENTS.REFUND_COMPLETED,
     actorType: opts.actorType,

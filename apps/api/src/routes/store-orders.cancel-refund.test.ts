@@ -131,6 +131,28 @@ describe('POST /orders/:id/cancel (customer)', () => {
   });
 });
 
+describe('customer order list and cancel wording', () => {
+  it('GET /orders returns paymentStatus from the joined payment (null when none)', async () => {
+    prismaMock.storeOrder.findMany.mockResolvedValue([
+      order({ payment: { status: 'captured' } }),
+      order({ id: 'o2', paymentId: null, payment: null }),
+    ] as any);
+    prismaMock.storeProduct.findMany.mockResolvedValue([{ id: PRODUCT_ID, name: 'Diya' }] as any);
+    const res = await call('GET', '/orders', 'demo-devotee');
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data.map((o: any) => o.paymentStatus)).toEqual(['captured', null]);
+    expect((prismaMock.storeOrder.findMany.mock.calls[0]![0] as any).include.payment).toEqual({ select: { status: true } });
+  });
+
+  it('cancel of a paid order says the refund goes to the team for approval, not instant', async () => {
+    const res = await call('POST', `/orders/${ORDER_ID}/cancel`, 'demo-devotee', {});
+    expect(res.json().note).toBe('Order cancelled. Your refund request has been sent to our team for approval; it is not refunded instantly.');
+    prismaMock.storeOrder.findUnique.mockResolvedValue(order({ status: 'PENDING', paymentId: null }) as any);
+    const unpaid = await call('POST', `/orders/${ORDER_ID}/cancel`, 'demo-devotee', {});
+    expect(unpaid.json().note).toBe('Order cancelled.');
+  });
+});
+
 describe('POST /orders/:id/refund (admin)', () => {
   it('default (policy) refunds a CANCELLED paid order in full through the gateway and unwinds the books', async () => {
     prismaMock.storeOrder.findUnique.mockResolvedValue(order({ status: 'CANCELLED' }) as any);
