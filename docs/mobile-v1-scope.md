@@ -228,11 +228,19 @@ root cause as the checkout exclusion in §1. Documented in the code.
 
 ### 5.3 Session-dropping hand-offs (PAR-22 C, open)
 
-**29 `Linking.openURL` occurrences** exist in `apps/mobile` outside the tests:
-**20 real invocations**, plus **9 places the function is passed as a value** to a
+**30 `Linking.openURL` occurrences** exist in `apps/mobile` outside the tests:
+**21 real invocations**, plus **9 places the function is passed as a value** to a
 helper that calls it, spread across 22 files. They fall into three groups, and
 only the first is a defect.
 
+>
+> **Recounted after private proof storage.** 29 / 20 / 9 became 30 / 21 / 9 across
+> the same 22 files. `(priest)/booking-detail.tsx` had one invocation (the proof
+> link); it now has two, because a legacy `http(s)` proof opens as-is and a
+> private object key first fetches a short-lived signed URL from
+> `GET /bookings/:id/video`. Both are a deliberate hand-off to the system player
+> for a video, not a converted in-app flow.
+>
 >
 > **Recounted after the devotional-library hand-off landed.** 28 / 20 / 8 across
 > 21 files became 29 / 20 / 9 across 22 files. The one addition is a VALUE
