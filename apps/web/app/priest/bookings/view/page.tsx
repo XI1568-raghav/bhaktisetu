@@ -22,6 +22,8 @@ import {
 import { useAuth } from '../../../../lib/auth-context';
 import { priestBreakdown } from '../../../../lib/priest-breakdown';
 import { API_BASE_URL } from '../../../../lib/api-config';
+import { isProofKey } from '../../../../lib/proof-video';
+import ProofLink from '../../../../components/provider/ProofLink';
 import VideoProofUpload from '../../../../components/provider/VideoProofUpload';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { UserFacingError, userFacingMessage, serverErrorText } from '../../../../lib/friendly-error';
@@ -211,10 +213,11 @@ function PriestBookingDetailInner() {
  if (!booking) return;
  const trimmed = url.trim();
  setActionError(null);
+ const isKey = isProofKey(trimmed);
  try {
  // Same shape the API now enforces — fail here rather than storing a
- // value that permanently blocks delivery.
- new URL(trimmed);
+ // value that permanently blocks delivery. A private object key is not a URL.
+ if (!isKey) new URL(trimmed);
  } catch {
  const msg = 'That does not look like a valid link. Paste the full https:// URL of the recording.';
  setActionError(msg);
@@ -226,7 +229,7 @@ function PriestBookingDetailInner() {
  Authorization: `Bearer ${session?.accessToken ?? ''}`,
  'Content-Type': 'application/json',
  },
- body: JSON.stringify({ videoUrl: trimmed }),
+ body: JSON.stringify(isKey ? { videoKey: trimmed } : { videoUrl: trimmed }),
  });
  if (!res.ok) {
  const body = await res.text().catch(() => '');
@@ -436,15 +439,10 @@ function PriestBookingDetailInner() {
   : 'Step 1: upload the video proof of the puja. Step 2: mark the puja complete.'}
  </p>
  {booking.videoProofUrl?.trim() && (
- <a
- href={booking.videoProofUrl}
- target="_blank"
- rel="noopener noreferrer"
- className="flex items-center gap-2 text-sm text-saffron-600 hover:text-saffron-700"
- >
+ <ProofLink bookingId={booking.id} stored={booking.videoProofUrl} token={session?.accessToken} className="flex items-center gap-2 text-sm text-saffron-600 hover:text-saffron-700">
  <ExternalLink className="w-4 h-4" />
  View uploaded video
- </a>
+ </ProofLink>
  )}
  {replacingProof || !booking.videoProofUrl?.trim() ? (
  <VideoProofUpload
@@ -499,15 +497,10 @@ function PriestBookingDetailInner() {
  <span className="font-semibold text-sm">Video Proof Uploaded</span>
  </div>
  {booking.videoProofUrl && (
- <a
- href={booking.videoProofUrl}
- target="_blank"
- rel="noopener noreferrer"
- className="flex items-center gap-2 text-sm text-saffron-600 hover:text-saffron-700"
- >
+ <ProofLink bookingId={booking.id} stored={booking.videoProofUrl} token={session?.accessToken} className="flex items-center gap-2 text-sm text-saffron-600 hover:text-saffron-700">
  <ExternalLink className="w-4 h-4" />
  View uploaded video
- </a>
+ </ProofLink>
  )}
  <div className="bg-surface-100 rounded-xl aspect-video flex items-center justify-center">
  <div className="text-center">

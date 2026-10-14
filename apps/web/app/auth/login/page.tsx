@@ -20,6 +20,7 @@ import {
 import { useAuth, getRoleDashboardPath } from '../../../lib/auth-context';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
 import { userFacingMessage } from '../../../lib/friendly-error';
+import { suspendedLoginMessage } from '../../../lib/suspended-notice';
 
 // P0-1 (2026-07-17): open-redirect guard. /auth/callback already validated
 // ?redirect= (root-relative or same-origin only) but /auth/login did not — a
@@ -98,6 +99,12 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // ?suspended=1 (set when the API refused a blocked account): say so instead of a silent sign-out.
+  const [suspendedNotice, setSuspendedNotice] = useState<string | null>(null);
+  useEffect(() => {
+    setSuspendedNotice(suspendedLoginMessage(window.location.search));
+  }, []);
 
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
@@ -349,6 +356,11 @@ export default function LoginPage() {
       {/* Form body */}
       <div className="px-6 py-4 sm:py-6">
         {/* Error message */}
+        {suspendedNotice && !error && (
+          <div role="alert" data-testid="suspended-notice" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {suspendedNotice}
+          </div>
+        )}
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}

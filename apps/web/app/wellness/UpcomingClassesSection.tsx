@@ -149,7 +149,7 @@ export default function UpcomingClassesSection({ limit = 6 }: { limit?: number }
                     </span>
                   </div>
                   <p className="sr-only">
-                    <Users className="w-3 h-3" /> {c.capacity} seats
+                    <Users className="w-3 h-3" /> {c.capacity} {c.capacity === 1 ? "seat" : "seats"}
                   </p>
                 </Link>
               );

@@ -85,7 +85,7 @@ export function describeEnrolmentCancelled(r: EnrolmentCancelResponse): string {
   if (r.alreadyCancelled) return 'This enrolment was already cancelled.';
   const owed = Number(r.refundOwedInr ?? 0);
   if (owed > 0) {
-    return `Enrolment cancelled. Refund of ${formatInr(owed)} (${r.tierLabel ?? 'per policy'}) will be processed in ${REFUND_DAYS_LABEL}.`;
+    return `Enrolment cancelled. Refund of ${formatInr(owed)} will be processed in ${REFUND_DAYS_LABEL}. Tier: ${r.tierLabel ?? 'per policy'}.`;
   }
   return 'Enrolment cancelled. Nothing was charged, so there is no refund.';
 }

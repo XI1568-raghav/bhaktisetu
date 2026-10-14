@@ -56,6 +56,8 @@ import {
 } from '../users-api';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { userFacingMessage } from '../../../../lib/friendly-error';
+import BlockUserDialog from '../../../../components/admin/BlockUserDialog';
+import { blockUpdates } from '../../../../lib/admin-block';
 
 const roleLabels: Record<string, string> = {
   DEVOTEE: 'Devotee',
@@ -200,6 +202,7 @@ function AdminUserDetailContent() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [showBlock, setShowBlock] = useState(false);
 
   const load = useCallback(async (): Promise<AdminUserDetail | null> => {
     const fresh = await fetchAdminUser(token, userId);
@@ -436,9 +439,9 @@ function AdminUserDetailContent() {
               type="button"
               disabled={busy !== null}
               onClick={() =>
-                runAction(
+                blocked ? runAction(
                   'block',
-                  { blocked: !blocked },
+                  { blocked: false },
                   (fresh) => (fresh.blocked === true) === !blocked,
                   blocked
                     ? 'Unblocked — the server confirms this account can sign in again.'
@@ -446,7 +449,7 @@ function AdminUserDetailContent() {
                   blocked
                     ? 'The server accepted the unblock but the account still reads as blocked.'
                     : 'The server accepted the block but the account still reads as active. It can still sign in and take bookings — do not treat this user as blocked.',
-                )
+                ) : setShowBlock(true)
               }
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-surface-100 text-surface-700 text-xs font-medium rounded-lg hover:bg-surface-200 disabled:opacity-60 transition-colors"
             >
@@ -459,6 +462,24 @@ function AdminUserDetailContent() {
             </button>
           </div>
         </div>
+
+        {showBlock && (
+          <BlockUserDialog
+            userLabel={user.fullName || user.email || 'this account'}
+            busy={busy !== null}
+            onCancel={() => setShowBlock(false)}
+            onConfirm={(reason) => {
+              setShowBlock(false);
+              void runAction(
+                'block',
+                blockUpdates(reason),
+                (fresh) => fresh.blocked === true,
+                'Blocked — the server confirms this account is now blocked.',
+                'The server accepted the block but the account still reads as active. It can still sign in and take bookings — do not treat this user as blocked.',
+              );
+            }}
+          />
+        )}
 
         {blocked && (
           <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

@@ -127,3 +127,19 @@ export async function postWellnessEnrol(
   );
   return { status: res.status, body: await readJson(res) };
 }
+
+/** POST /api/v1/wellness/enrollments/:id/cancel. Status and body are returned verbatim. */
+export async function postWellnessCancel(
+  enrollmentId: string,
+  token: string | undefined,
+): Promise<{ status: number; body: unknown }> {
+  const res = await authedFetch(
+    `${apiBase()}/api/v1/wellness/enrollments/${encodeURIComponent(enrollmentId)}/cancel`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+      body: '{}',
+    },
+  );
+  return { status: res.status, body: await readJson(res) };
+}

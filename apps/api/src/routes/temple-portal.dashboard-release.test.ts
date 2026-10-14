@@ -112,4 +112,25 @@ describe('GET /temple-portal/dashboard: released vs upcoming share', () => {
     expect(stats.releasedInr).toBe(0);
     expect(stats.upcomingInr).toBe(25);
   });
+  it('returns scheduledTimeSlot (not a stale field name) on recentBookings', async () => {
+    prismaMock.templePayout.findMany.mockResolvedValue([] as any);
+    prismaMock.pujaBooking.findMany.mockImplementation(async (args: any) =>
+      args?.where?.id?.in
+        ? []
+        : [
+            {
+              id: 'b9',
+              bookingNumber: 'BS-20261013-AAAAA',
+              user: { fullName: 'Asha' },
+              pujaType: { name: 'Rudrabhishek' },
+              scheduledDate: new Date('2026-10-20'),
+              scheduledTimeSlot: '06:00-08:00',
+              priceAmount: { toString: () => '501' },
+              status: 'confirmed',
+            },
+          ],
+    );
+    const body = await dashboard();
+    expect(body.recentBookings[0]).toMatchObject({ id: 'b9', scheduledTimeSlot: '06:00-08:00', priceInr: 501 });
+  });
 });

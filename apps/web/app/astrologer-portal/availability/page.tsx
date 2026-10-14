@@ -8,6 +8,7 @@ import {
  Clock,
  AlertCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { userFacingMessage } from '../../../lib/friendly-error';
@@ -183,7 +184,17 @@ function AstrologerAvailabilityPageContent() {
    {error && (
     <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-     <div className="flex-1">{error}</div>
+     <div className="flex-1">
+      {error}
+      {/display name|profile/i.test(error) && (
+       <>
+        {' '}
+        <Link href="/astrologer-portal/profile" className="font-medium underline">
+         Go to your profile
+        </Link>
+       </>
+      )}
+     </div>
      <button
       onClick={() => void load()}
       className="ml-2 text-xs font-medium text-red-700 underline hover:no-underline"

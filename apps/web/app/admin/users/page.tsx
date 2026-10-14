@@ -21,6 +21,8 @@ import {
   type AdminUserRecord,
 } from './users-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import BlockUserDialog from '../../../components/admin/BlockUserDialog';
+import { blockUpdates } from '../../../lib/admin-block';
 import { userFacingMessage } from '../../../lib/friendly-error';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -255,9 +257,16 @@ function AdminUsersPageContent() {
      return { ok: true };
    });
 
- const handleToggleBlock = (userId: string, currentStatus: UserStatus) => {
+ // Blocking asks first (with an optional reason); unblocking does not.
+ const [blockTarget, setBlockTarget] = useState<{ id: string; label: string } | null>(null);
+ const handleToggleBlock = (userId: string, currentStatus: UserStatus, reason?: string) => {
    const nextBlocked = currentStatus !== 'blocked';
-   return applyAndVerify(userId, 'block', { blocked: nextBlocked }, (row) => {
+   if (nextBlocked && reason === undefined) {
+     const u = users.find((x) => x.id === userId);
+     setBlockTarget({ id: userId, label: u?.name || u?.email || 'this account' });
+     return;
+   }
+   return applyAndVerify(userId, 'block', nextBlocked ? blockUpdates(reason ?? '') : { blocked: false }, (row) => {
      if (row && (row.blocked === true) === nextBlocked) return { ok: true };
      return {
        ok: false,
@@ -285,6 +294,19 @@ function AdminUsersPageContent() {
  <h1 className={H1.portal}>User Management</h1>
  <p className="text-sm text-surface-500 mt-0.5">Manage all platform users across roles</p>
  </div>
+
+ {blockTarget && (
+   <BlockUserDialog
+     userLabel={blockTarget.label}
+     busy={actionLoading === blockTarget.id + '-block'}
+     onCancel={() => setBlockTarget(null)}
+     onConfirm={(reason) => {
+       const t = blockTarget;
+       setBlockTarget(null);
+       void handleToggleBlock(t.id, 'active', reason);
+     }}
+   />
+ )}
 
  {error && (
    <div role="alert" className="flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

@@ -1,4 +1,5 @@
 import type { AuthSession } from '@poojly/api-client';
+import { isSuspendedError } from './suspended';
 
 /**
  * What a /auth/refresh attempt means for the stored session.
@@ -11,7 +12,7 @@ import type { AuthSession } from '@poojly/api-client';
  */
 export type RefreshOutcome =
   | { kind: 'refreshed'; session: AuthSession }
-  | { kind: 'rejected' }
+  | { kind: 'rejected'; suspendedMessage?: string }
   | { kind: 'unavailable' };
 
 type Post = (
@@ -37,6 +38,9 @@ export async function refreshSession(
     }
     return { kind: 'unavailable' };
   } catch (err) {
+    if (isSuspendedError(err)) {
+      return { kind: 'rejected', suspendedMessage: String((err as { message?: unknown }).message) };
+    }
     return isSessionVerdict(err) ? { kind: 'rejected' } : { kind: 'unavailable' };
   }
 }

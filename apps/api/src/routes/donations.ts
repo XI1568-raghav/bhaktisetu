@@ -22,7 +22,9 @@ import { donorContactMap, saveDonorContact } from '../lib/donation-contact.js';
 // (raw INSERT, no Payment), so NOTHING in the payment-side wiring reached them.
 import { MONEY_EVENTS, recordMoneyEvent, type MoneyActorType } from '../lib/audit-money.js';
 import Razorpay from 'razorpay';
+import { withAdvisoryLock } from '../lib/advisory-lock.js';
 import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
+import { checkGatewayPayment } from '../lib/razorpay-payment-check.js';
 import { SQL_UTC_NOW } from '../lib/sql-time.js';
 import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
 
@@ -627,6 +629,10 @@ export async function donationRoutes(server: FastifyInstance) {
       }
     }
 
+    // Two truly simultaneous create-orders used to both miss the reuse lookup and
+    // both insert. Serialise the lookup -> order -> insert section per
+    // (donor, donee, amount) with an advisory lock.
+    return withAdvisoryLock(`donation-order:${userId}:${kind === 'temple' ? templeId : doneeGaushalaId}:${amount}`, async () => {
     // QA 2026-10-13: idempotency. The mobile app opens an order and then the web form
     // opened a SECOND one for the same donor, donee and amount, leaving an orphan
     // 'created' row. A still-open order for the same (user, donee, amount) created
@@ -774,6 +780,7 @@ export async function donationRoutes(server: FastifyInstance) {
       keyId: razorpayKeyId || 'rzp_test_demo',
       isDemoPayment,
     });
+    });
   });
 
   // ── Verify payment ──────────────────────────────────────────────────
@@ -873,6 +880,43 @@ export async function donationRoutes(server: FastifyInstance) {
           metadata: { rail: 'donations/verify', reason: 'signature-mismatch' },
         });
         return reply.code(400).send({ error: 'Invalid payment signature' });
+      }
+
+      // Slice L: the signature proves the pair is genuine, not WHAT was paid. Ask the gateway.
+      // Mismatch -> never confirm, flag for admin review. Fetch failure -> trust the signature, log.
+      if (donation.status !== 'paid') {
+        const chk = await checkGatewayPayment(razorpay as never, {
+          paymentId: body.razorpay_payment_id,
+          orderId: donation.razorpay_order_id,
+          amountInr,
+        });
+        if (chk.verdict === 'mismatch') {
+          console.error('[donations][amount-mismatch] verify refused', JSON.stringify({ donationId: donation.id, reason: chk.reason }));
+          await recordMoneyEvent({
+            eventType: MONEY_EVENTS.PAYMENT_FAILED,
+            actorType: 'devotee',
+            actorId: request.currentUser?.id ?? null,
+            subjectType: 'donation',
+            subjectId: donation.id,
+            amount: donation.amount_inr,
+            currency: 'INR',
+            gateway: 'razorpay',
+            gatewayOrderId: donation.razorpay_order_id,
+            gatewayPaymentId: body.razorpay_payment_id,
+            statusBefore: donation.status,
+            statusAfter: donation.status,
+            idempotencyKey: `${donation.id}:${body.razorpay_payment_id}:gateway-check`,
+            note: `donation verify refused: ${chk.reason}`,
+            metadata: { rail: 'donations/verify', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
+          });
+          return reply.code(409).send({
+            error: 'We could not confirm this payment with the payment gateway. Our team has been notified and will review it; you will not be charged twice.',
+            code: 'payment_needs_review',
+          });
+        }
+        if (chk.verdict === 'unavailable') {
+          console.warn('[donations] gateway payment check unavailable, using signature result', chk.reason);
+        }
       }
     }
 

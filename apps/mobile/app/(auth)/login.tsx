@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
+import { peekSuspendedNotice, subscribeSuspendedNotice } from '../../lib/suspended';
 import { getRoleDashboardPath } from '../../lib/role-paths';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
@@ -50,6 +51,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState(__DEV__ ? 'demo123' : '');
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
+  const [suspendedNotice, setNotice] = useState<string | null>(peekSuspendedNotice());
+  useEffect(() => subscribeSuspendedNotice(setNotice), []);
 
   async function handleEmailLogin() {
     if (!email.trim() || !password) {
@@ -106,6 +109,12 @@ export default function LoginScreen() {
             <Text style={styles.brand}>🕉 Darshya</Text>
             <Text style={styles.tagline}>Your devotional companion</Text>
           </View>
+
+          {suspendedNotice ? (
+            <View style={styles.suspendedBox} accessibilityRole="alert">
+              <Text style={styles.suspendedText}>{suspendedNotice}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.card}>
             <View style={styles.tabs}>
@@ -272,6 +281,15 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  suspendedBox: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  suspendedText: { color: '#b91c1c', fontSize: 14 },
   flex: { flex: 1, backgroundColor: colors.saffron[50] },
   scroll: {
     flexGrow: 1,

@@ -10,6 +10,9 @@ import crypto from 'node:crypto';
 import { randomBytes } from 'node:crypto';
 import Razorpay from 'razorpay';
 import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
+import { checkGatewayPayment } from '../lib/razorpay-payment-check.js';
+import { sendEmail, consultationCancelledEmail } from '../lib/email.js';
+import { ensureConsultationRefundColumns, refundConsultation } from '../services/consultation-refund.service.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
@@ -76,6 +79,7 @@ async function ensureConsultationTables() {
   await prisma.$executeRawUnsafe(
     `CREATE INDEX IF NOT EXISTS astrologer_consultations_status_idx ON astrologer_consultations (status);`,
   );
+  await ensureConsultationRefundColumns();
 }
 
 type ConsultationRow = {
@@ -95,6 +99,8 @@ type ConsultationRow = {
   status: string;
   created_at: Date;
   paid_at: Date | null;
+  refund_status?: string | null;
+  refund_id?: string | null;
 };
 
 function nextConsultRef(): string {
@@ -756,6 +762,46 @@ export async function consultationRoutes(server: FastifyInstance) {
       if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
         return reply.code(400).send({ error: 'Invalid payment signature.' });
       }
+      // Slice L: signature proves the pair is genuine, not the amount. Ask the gateway.
+      const chk = await checkGatewayPayment(razorpay as never, {
+        paymentId: razorpay_payment_id,
+        orderId: row.razorpay_order_id,
+        amountInr: Number(row.amount_inr),
+        currency: row.currency,
+      });
+      if (chk.verdict === 'mismatch') {
+        console.error('[consultation][amount-mismatch] verify refused', JSON.stringify({ consultationId: row.id, reason: chk.reason }));
+        await prisma.$executeRawUnsafe(
+          `UPDATE astrologer_consultations SET status = 'payment_review', razorpay_payment_id = $1
+            WHERE id = $2::uuid AND status = 'pending_payment';`,
+          razorpay_payment_id,
+          consultationId,
+        );
+        await recordMoneyEvent({
+          eventType: MONEY_EVENTS.PAYMENT_FAILED,
+          actorType: 'devotee',
+          actorId: userId,
+          subjectType: 'consultation',
+          subjectId: consultationId,
+          amount: row.amount_inr,
+          currency: row.currency ?? 'INR',
+          gateway: 'razorpay',
+          gatewayOrderId: row.razorpay_order_id,
+          gatewayPaymentId: razorpay_payment_id,
+          statusBefore: row.status,
+          statusAfter: 'payment_review',
+          idempotencyKey: `${consultationId}:${razorpay_payment_id}:gateway-check`,
+          note: `consultation verify refused: ${chk.reason}`,
+          metadata: { rail: 'consultation-verify-payment', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
+        });
+        return reply.code(409).send({
+          error: 'We could not confirm this payment with the payment gateway. Our team has been notified and will review it.',
+          code: 'payment_needs_review',
+        });
+      }
+      if (chk.verdict === 'unavailable') {
+        server.log.warn({ reason: chk.reason }, '[consultation] gateway payment check unavailable, using signature result');
+      }
     }
 
     // Mint a fresh Jitsi room and flip status.
@@ -902,7 +948,17 @@ export async function consultationRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'Not authorized.' });
     }
     if (row.status === 'cancelled') {
-      return reply.send({ cancelled: true, refundEligible: false, alreadyCancelled: true });
+      // A refund the gateway refused earlier is retried by repeating the cancel.
+      const retried =
+        row.refund_status === 'failed'
+          ? await refundConsultation(row, { type: 'devotee', id: request.currentUser!.id }, `consultation refund retry (${row.reference})`)
+          : null;
+      return reply.send({
+        cancelled: true,
+        refundEligible: false,
+        alreadyCancelled: true,
+        ...(retried ? { refundExecution: retried.execution } : {}),
+      });
     }
     if (row.status === 'completed') {
       return reply.code(409).send({ error: 'Consultation already completed.' });
@@ -1026,6 +1082,18 @@ export async function consultationRoutes(server: FastifyInstance) {
       });
     }
 
+    // Slice L: actually send the money back (full amount, by the policy above). Never throws.
+    let refundExecution: 'gateway' | 'retry' | 'manual' | 'none' = 'none';
+    if (refundEligible && row.status === 'confirmed') {
+      try {
+        const ex = await refundConsultation(row, { type: 'devotee', id: request.currentUser!.id }, cancelReason);
+        refundExecution = ex.execution;
+      } catch (err) {
+        refundExecution = 'retry';
+        server.log.error({ err }, '[consultation] gateway refund threw');
+      }
+    }
+
     if (reversal.alreadySettled > 0) {
       // Money has left or is mid-transfer — a refund handler must not claw it
       // back silently. Greppable by `consultation_ledger_manual_review`.
@@ -1041,6 +1109,24 @@ export async function consultationRoutes(server: FastifyInstance) {
       );
     }
 
+    // Slice L: cancellation email to the devotee (best effort).
+    void (async () => {
+      const u = await prisma.user.findUnique({
+        where: { id: row.user_id },
+        select: { email: true, fullName: true },
+      });
+      if (!u?.email) return;
+      await sendEmail({
+        to: u.email,
+        ...consultationCancelledEmail({
+          devoteeName: u.fullName ?? 'Devotee',
+          reference: row.reference,
+          astrologerName: row.astrologer_name,
+          refundEligible: refundEligible && row.status === 'confirmed',
+        }),
+      });
+    })().catch(() => undefined);
+
     return reply.send({
       cancelled: true,
       refundEligible,
@@ -1048,8 +1134,11 @@ export async function consultationRoutes(server: FastifyInstance) {
       reference: row.reference,
       commissionReversed: reversal.reversedCommissions,
       ledgerManualReview: reversal.alreadySettled,
+      refundExecution,
       note: refundEligible
-        ? 'Cancellation accepted. Refund will be processed within 5-7 business days.'
+        ? refundExecution === 'retry'
+          ? 'Cancellation accepted. The refund could not be sent yet; repeat this request to retry.'
+          : 'Cancellation accepted. Refund will be processed within 5-7 business days.'
         : 'Cancellation accepted. Refund not eligible — past the 24-hour cancellation window.',
     });
   });
@@ -1251,6 +1340,27 @@ export async function consultationRoutes(server: FastifyInstance) {
       });
     },
   );
+
+  // ─── POST /admin/:id/refund ─────────────────────────────────────────────
+  // Admin queue action (slice L): retry the gateway refund of a CANCELLED, paid
+  // consultation whose refund the gateway refused (refund_status = 'failed'; /admin/all
+  // lists the column). Idempotent: a refunded row is a no-op, 'sending' is not re-sent.
+  server.post('/admin/:id/refund', { preHandler: [authenticateUser, requireRole('admin')] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return reply.code(400).send({ error: 'Invalid consultation id.' });
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations WHERE id = $1::uuid LIMIT 1;`,
+      id,
+    );
+    const row = rows[0];
+    if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
+    if (row.status !== 'cancelled') {
+      return reply.code(409).send({ error: 'Only a cancelled consultation can be refunded.' });
+    }
+    const ex = await refundConsultation(row, { type: 'admin', id: request.currentUser!.id }, `consultation refund by admin (${row.reference})`);
+    return reply.send({ consultationId: row.id, refundExecution: ex.execution, refundId: ex.refundId ?? null });
+  });
 
   // ─── GET /admin/all ─────────────────────────────────────────────────────
   // ADMIN-only LIST across all AstrologerConsultation rows. Powers the

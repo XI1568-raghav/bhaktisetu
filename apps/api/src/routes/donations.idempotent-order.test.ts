@@ -149,3 +149,39 @@ describe('GET /donations/temples includes admin-linked temples', () => {
     expect(res.json().temples).toHaveLength(1);
   });
 });
+
+describe('POST /donations/create-order: simultaneous calls', () => {
+  it('serialises on an advisory lock, so parallel identical requests create ONE row', async () => {
+    // Emulate Postgres: advisory xact locks queue same-key transactions, and an
+    // INSERT is visible to the lookup of the next lock holder.
+    const rows: { id: string; order: string }[] = [];
+    let tail: Promise<unknown> = Promise.resolve();
+    prismaMock.$transaction.mockImplementation((fn: any) => {
+      const run = tail.then(() => fn(prismaMock));
+      tail = run.catch(() => undefined);
+      return run;
+    });
+    prismaMock.$queryRawUnsafe.mockImplementation(async (sql: string) => {
+      if (String(sql).includes('pg_advisory_xact_lock')) return [];
+      if (lookup(sql)) {
+        await new Promise((r) => setTimeout(r, 5));
+        return rows.slice(0, 1).map((r) => ({ id: r.id, razorpay_order_id: r.order }));
+      }
+      return [];
+    });
+    prismaMock.$executeRawUnsafe.mockImplementation(async (sql: string, ...args: any[]) => {
+      if (String(sql).includes('INSERT INTO donations')) {
+        await new Promise((r) => setTimeout(r, 5));
+        rows.push({ id: args[0], order: args[4] });
+      }
+      return 1;
+    });
+
+    const res = await Promise.all([donate(), donate(), donate(), donate()]);
+    expect(res.every((r) => r.statusCode === 200)).toBe(true);
+    expect(rows).toHaveLength(1);
+    expect(new Set(res.map((r) => r.json().donationId)).size).toBe(1);
+    expect(res.filter((r) => r.json().reused).length).toBe(3);
+    expect(prismaMock.$queryRawUnsafe.mock.calls.some((c: any[]) => String(c[0]).includes('pg_advisory_xact_lock'))).toBe(true);
+  });
+});
