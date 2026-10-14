@@ -35,6 +35,7 @@
  */
 
 import { API_BASE_URL, fetchWithTimeout } from './api-config';
+import { isSuspendedBody } from './suspended-notice';
 
 /**
  * The token-free profile key. Legacy `poojly_*` naming is load-bearing —
@@ -108,6 +109,16 @@ function looksLikeSession(value: unknown): value is RevivedSession {
  * Never throws — an unreachable API on a cold Render dyno must degrade to
  * "signed out", not to an unhandled rejection during mount.
  */
+async function suspendedBodyOf(res: Response): Promise<unknown> {
+  if (res.status !== 403) return undefined;
+  try {
+    const body = await res.json();
+    return isSuspendedBody(res.status, body) ? body : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function reviveSupabaseSessionFromCookie(): Promise<ReviveResult> {
   try {
     const res = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
@@ -116,7 +127,7 @@ async function reviveSupabaseSessionFromCookie(): Promise<ReviveResult> {
       credentials: 'include',
       body: '{}',
     });
-    if (!res.ok) return { session: null, apiAnswered: true };
+    if (!res.ok) return { session: null, apiAnswered: true, suspendedBody: await suspendedBodyOf(res) };
     const data = await res.json();
     return looksLikeSession(data?.session)
       ? { session: data.session as RevivedSession, apiAnswered: true }
@@ -158,7 +169,7 @@ async function reviveEmailSessionResult(): Promise<ReviveResult> {
       credentials: 'include',
       body: '{}',
     });
-    if (!res.ok) return { session: null, apiAnswered: true };
+    if (!res.ok) return { session: null, apiAnswered: true, suspendedBody: await suspendedBodyOf(res) };
     const data = await res.json();
     return looksLikeSession(data?.session)
       ? { session: data.session as RevivedSession, apiAnswered: true }
@@ -210,6 +221,8 @@ export async function reviveSessionFromCookie(): Promise<RevivedSession | null> 
  */
 export interface ReviveResult {
   session: RevivedSession | null;
+  /** The API refused with 403 "suspended": the body, so the caller can show the notice. */
+  suspendedBody?: unknown;
   /** An HTTP response came back. False means transport failure — unknown. */
   apiAnswered: boolean;
 }
@@ -217,7 +230,12 @@ export interface ReviveResult {
 export async function reviveSessionFromCookieResult(): Promise<ReviveResult> {
   const supabase = await reviveSupabaseSessionFromCookie();
   if (supabase.session) return supabase;
+  if (supabase.suspendedBody !== undefined) return supabase;
   const email = await reviveEmailSessionResult();
   if (email.session) return email;
-  return { session: null, apiAnswered: supabase.apiAnswered && email.apiAnswered };
+  return {
+    session: null,
+    apiAnswered: supabase.apiAnswered && email.apiAnswered,
+    suspendedBody: email.suspendedBody,
+  };
 }

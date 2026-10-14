@@ -12,7 +12,7 @@ import Razorpay from 'razorpay';
 import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { checkGatewayPayment } from '../lib/razorpay-payment-check.js';
 import { sendEmail, consultationCancelledEmail } from '../lib/email.js';
-import { ensureConsultationRefundColumns, refundConsultation } from '../services/consultation-refund.service.js';
+import { ensureConsultationRefundColumns, isRefundRetryable, refundConsultation } from '../services/consultation-refund.service.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
@@ -101,6 +101,7 @@ type ConsultationRow = {
   paid_at: Date | null;
   refund_status?: string | null;
   refund_id?: string | null;
+  refund_started_at?: Date | string | null;
 };
 
 function nextConsultRef(): string {
@@ -950,7 +951,7 @@ export async function consultationRoutes(server: FastifyInstance) {
     if (row.status === 'cancelled') {
       // A refund the gateway refused earlier is retried by repeating the cancel.
       const retried =
-        row.refund_status === 'failed'
+        isRefundRetryable(row)
           ? await refundConsultation(row, { type: 'devotee', id: request.currentUser!.id }, `consultation refund retry (${row.reference})`)
           : null;
       return reply.send({
@@ -1344,7 +1345,8 @@ export async function consultationRoutes(server: FastifyInstance) {
   // ─── POST /admin/:id/refund ─────────────────────────────────────────────
   // Admin queue action (slice L): retry the gateway refund of a CANCELLED, paid
   // consultation whose refund the gateway refused (refund_status = 'failed'; /admin/all
-  // lists the column). Idempotent: a refunded row is a no-op, 'sending' is not re-sent.
+  // lists the column). Idempotent: a refunded row is a no-op, a FRESH 'sending' is not re-sent, a stale one
+  // (no refund id, older than CONSULTATION_REFUND_STALE_MIN) is retried like 'failed'.
   server.post('/admin/:id/refund', { preHandler: [authenticateUser, requireRole('admin')] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     if (!/^[0-9a-f-]{36}$/i.test(id)) return reply.code(400).send({ error: 'Invalid consultation id.' });
@@ -1360,6 +1362,50 @@ export async function consultationRoutes(server: FastifyInstance) {
     }
     const ex = await refundConsultation(row, { type: 'admin', id: request.currentUser!.id }, `consultation refund by admin (${row.reference})`);
     return reply.send({ consultationId: row.id, refundExecution: ex.execution, refundId: ex.refundId ?? null });
+  });
+
+  // ─── GET /admin/stuck-refunds ───────────────────────────────────────────
+  // Cancelled, paid consultations whose refund is 'failed' or 'sending' (with `retryable` per
+  // isRefundRetryable), plus wellness Payment rows with an owed / in-flight refund marker.
+  server.get('/admin/stuck-refunds', { preHandler: [authenticateUser, requireRole('admin')] }, async (_request, reply) => {
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations
+        WHERE status = 'cancelled' AND paid_at IS NOT NULL AND refund_status IN ('failed','sending')
+        ORDER BY created_at DESC LIMIT 200;`,
+    );
+    const consultations = rows.map((r) => ({
+      id: r.id,
+      reference: r.reference,
+      amountInr: Number(r.amount_inr),
+      refundStatus: r.refund_status ?? null,
+      refundId: r.refund_id ?? null,
+      refundStartedAt: r.refund_started_at ?? null,
+      retryable: isRefundRetryable(r),
+    }));
+    const wellness = await prisma
+      .$queryRawUnsafe<Array<{ id: string; amount: unknown; refund_amount: unknown; metadata: unknown }>>(
+        `SELECT id, amount, refund_amount, metadata FROM payments
+          WHERE metadata->>'rail' = 'wellness'
+            AND (COALESCE(NULLIF(metadata->>'wellnessRefundOwedInr','')::numeric, 0) > 0
+                 OR jsonb_typeof(metadata->'wellnessRefundInflight') = 'object')
+          ORDER BY created_at DESC LIMIT 200;`,
+      )
+      .catch(() => []);
+    return reply.send({
+      consultations,
+      wellness: wellness.map((p) => {
+        const m = (p.metadata ?? {}) as Record<string, any>;
+        return {
+          paymentId: p.id,
+          enrollmentId: m.wellnessEnrollmentId ?? null,
+          amountInr: Number(p.amount),
+          refundedInr: Number(p.refund_amount ?? 0),
+          owedInr: Number(m.wellnessRefundOwedInr ?? 0),
+          inflight: m.wellnessRefundInflight ?? null,
+        };
+      }),
+    });
   });
 
   // ─── GET /admin/all ─────────────────────────────────────────────────────

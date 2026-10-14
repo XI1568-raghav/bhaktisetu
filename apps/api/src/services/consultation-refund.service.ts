@@ -30,12 +30,25 @@ export interface ConsultationRefundRow {
   razorpay_payment_id: string | null;
   paid_at: Date | null;
   refund_status?: string | null;
+  refund_id?: string | null;
+  refund_started_at?: Date | string | null;
+}
+
+/** A 'sending' reservation with no refund id older than this is a crashed caller, not an in-flight one. */
+export const CONSULTATION_REFUND_STALE_MIN = 10;
+
+/** True when a retry (cancel repeat or admin) may send: 'failed', or 'sending' that went stale without a refund id. */
+export function isRefundRetryable(row: Pick<ConsultationRefundRow, 'refund_status' | 'refund_id' | 'refund_started_at'>, nowMs = Date.now()): boolean {
+  if (row.refund_status === 'failed') return true;
+  if (row.refund_status !== 'sending' || row.refund_id) return false;
+  const started = row.refund_started_at ? new Date(row.refund_started_at).getTime() : 0;
+  return !(nowMs - started < CONSULTATION_REFUND_STALE_MIN * 60_000);
 }
 
 export async function ensureConsultationRefundColumns(): Promise<void> {
   try {
     await prisma.$executeRawUnsafe(
-      `ALTER TABLE astrologer_consultations ADD COLUMN IF NOT EXISTS refund_status TEXT, ADD COLUMN IF NOT EXISTS refund_id TEXT;`,
+      `ALTER TABLE astrologer_consultations ADD COLUMN IF NOT EXISTS refund_status TEXT, ADD COLUMN IF NOT EXISTS refund_id TEXT, ADD COLUMN IF NOT EXISTS refund_started_at TIMESTAMPTZ;`,
     );
   } catch {
     // tolerated: the refund then degrades to the manual fallback
@@ -58,13 +71,27 @@ export async function refundConsultation(
   try {
     reserved = Number(
       await prisma.$executeRawUnsafe(
-        `UPDATE astrologer_consultations SET refund_status = 'sending'
-          WHERE id = $1::uuid AND (refund_status IS NULL OR refund_status = 'failed');`,
+        `UPDATE astrologer_consultations SET refund_status = 'sending', refund_started_at = now()
+          WHERE id = $1::uuid AND refund_id IS NULL AND (
+            refund_status IS NULL OR refund_status = 'failed'
+            OR (refund_status = 'sending' AND (refund_started_at IS NULL OR refund_started_at < now() - ($2::int * interval '1 minute'))));`,
         row.id,
+        CONSULTATION_REFUND_STALE_MIN,
       ),
     );
   } catch {
-    return { execution: 'manual' }; // columns not there yet
+    try {
+      // refund_started_at column not there yet: legacy reservation (a stuck 'sending' stays manual).
+      reserved = Number(
+        await prisma.$executeRawUnsafe(
+          `UPDATE astrologer_consultations SET refund_status = 'sending'
+            WHERE id = $1::uuid AND (refund_status IS NULL OR refund_status = 'failed');`,
+          row.id,
+        ),
+      );
+    } catch {
+      return { execution: 'manual' }; // columns not there yet
+    }
   }
   if (reserved !== 1) return { execution: 'gateway' }; // sent already, or another caller is sending it
 

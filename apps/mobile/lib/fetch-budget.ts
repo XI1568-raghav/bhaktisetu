@@ -33,6 +33,7 @@
  */
 
 import { currentAcceptLanguage } from './language';
+import { notifyIfSuspended } from './suspended';
 
 /** Matches `API_TIMEOUT_MS` in lib/api.ts and `ACCOUNT_REQUEST_TIMEOUT_MS`. */
 export const FETCH_BUDGET_MS = 20_000;
@@ -104,7 +105,9 @@ export async function fetchWithBudget(
   })();
 
   try {
-    return await Promise.race([attempt, deadline]);
+    const res = await Promise.race([attempt, deadline]);
+    await notifyIfSuspended(res);
+    return res;
   } finally {
     if (timer) clearTimeout(timer);
   }

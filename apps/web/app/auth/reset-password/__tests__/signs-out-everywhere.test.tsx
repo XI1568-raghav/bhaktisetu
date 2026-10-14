@@ -90,6 +90,19 @@ describe('AUTH-11 — the password reset actually ends the API session', () => {
     expect(logout!.init.method).toBe('POST');
   });
 
+  it('sends the session token with scope=global so a cookie-less browser still signs out other devices', async () => {
+    const calls = installFetchSpy();
+    await arriveWithRecoveryLink();
+    await submitNewPassword();
+
+    await waitFor(() => expect(screen.getByText(/password updated/i)).toBeTruthy());
+    const logout = calls.find((c) => c.url.includes('/auth/logout'));
+    expect(JSON.parse(String(logout!.init.body))).toEqual({
+      accessToken: 'recovery-token',
+      scope: 'global',
+    });
+  });
+
   it('still clears the local stores and the Supabase session', async () => {
     localStorage.setItem('poojly_session', JSON.stringify({ accessToken: 'x' }));
     localStorage.setItem('poojly_user', JSON.stringify({ id: 'u1' }));

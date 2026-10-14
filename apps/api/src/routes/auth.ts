@@ -1675,7 +1675,8 @@ export async function authRoutes(server: FastifyInstance) {
         update: {
           // Refresh display fields on every login so a Google avatar/name change reflects.
           fullName,
-          avatarUrl,
+          // Only overwrite when the provider supplied one; never null out a user-set avatar.
+          ...(avatarUrl ? { avatarUrl } : {}),
         },
         // phone is nullable per schema (20260428_phone_nullable migration).
         create: {

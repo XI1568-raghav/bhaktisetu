@@ -113,10 +113,23 @@ export interface DeliverResult {
   error?: string;
 }
 
+/**
+ * dedupe_key = one LOGICAL mail. A failed send that finds its row already there:
+ *   pending / sending -> no-op (a retry is already coming);
+ *   sent  -> no-op inside this window (the same mail really went; Resend's idempotency key also
+ *            lasts 24h), re-opened after it (a genuine resend that failed must not be dropped);
+ *   dead  -> always re-opened (retries were exhausted; a new attempt is a new chance).
+ */
+export const SENT_DEDUPE_WINDOW_HOURS = 24;
+
 async function enqueue(spec: OutboxSpec, mail: OutboxMail, key: string, error: string): Promise<boolean> {
   const sql = `INSERT INTO email_outbox (dedupe_key, kind, ref_id, to_email, subject, attempts, next_attempt_at, last_error, status)
        VALUES ($1, $2, $3, $4, $5, 1, now() + ($6 || ' minutes')::interval, $7, 'pending')
-       ON CONFLICT (dedupe_key) DO NOTHING`;
+       ON CONFLICT (dedupe_key) DO UPDATE
+         SET status = 'pending', attempts = 1, next_attempt_at = EXCLUDED.next_attempt_at,
+             last_error = EXCLUDED.last_error, sent_at = NULL, updated_at = now()
+       WHERE email_outbox.status = 'dead'
+          OR (email_outbox.status = 'sent' AND email_outbox.sent_at < now() - interval '${SENT_DEDUPE_WINDOW_HOURS} hours')`;
   const args = [key, spec.kind, spec.refId, mail.to, mail.subject, String(backoffMinutes(1)), error.slice(0, 500)];
   try {
     await prisma.$executeRawUnsafe(sql, ...args);

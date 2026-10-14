@@ -57,6 +57,13 @@ interface Entry {
 
 const cache = new Map<string, Entry>();
 const inflight = new Map<string, Promise<RevocationState | null>>();
+/**
+ * Bumped by every revoke (before and after its write). A lookup remembers the value it started
+ * under and discards its result if the value moved: otherwise a read that began before the
+ * revocation committed could re-store the pre-revocation state for a whole cache window.
+ * Global, not per user: a spurious discard only costs one extra read.
+ */
+let generation = 0;
 const stats = { lookups: 0, cacheHits: 0, failOpen: 0 };
 
 const CREATE_SQL = `CREATE TABLE IF NOT EXISTS "auth_token_revocations" (
@@ -101,25 +108,34 @@ async function loadState(userId: string): Promise<RevocationState | null> {
   }
   let pending = inflight.get(userId);
   if (!pending) {
-    pending = (async () => {
+    let mine: Promise<RevocationState | null> | undefined;
+    mine = (async () => {
       try {
-        const state = await readState(userId);
-        remember(userId, state, ttl);
-        return state;
-      } catch (err) {
-        if (isMissingTable(err)) {
-          const state = { cutoffMs: null, sessions: new Set<string>() };
-          remember(userId, state, ttl);
+        for (let attempt = 0; ; attempt++) {
+          const startedAt = generation;
+          let state: RevocationState;
+          try {
+            state = await readState(userId);
+          } catch (err) {
+            if (!isMissingTable(err)) throw err;
+            state = { cutoffMs: null, sessions: new Set<string>() };
+          }
+          // A revoke ran while we were reading: this snapshot may predate it. Never store it.
+          if (generation !== startedAt && attempt < 2) continue;
+          if (generation === startedAt) remember(userId, state, ttl);
           return state;
         }
+      } catch {
         // Fail OPEN. Remember the failure briefly so an outage is not retried per request.
         stats.failOpen += 1;
         remember(userId, { cutoffMs: null, sessions: new Set() }, Math.min(ttl || FAIL_OPEN_CACHE_MS, FAIL_OPEN_CACHE_MS));
         return null;
       } finally {
-        inflight.delete(userId);
+        // A revoke may already have replaced this entry with a newer lookup: leave that one alone.
+        if (inflight.get(userId) === mine) inflight.delete(userId);
       }
     })();
+    pending = mine;
     inflight.set(userId, pending);
   }
   return pending;
@@ -198,6 +214,9 @@ export async function revokeUserTokens(
 ): Promise<boolean> {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) return false;
   const sid = opts.sessionId ?? '';
+  generation += 1;
+  cache.delete(userId);
+  inflight.delete(userId);
   const upsert = () =>
     prisma.$executeRawUnsafe(
       `INSERT INTO "auth_token_revocations" ("user_id","session_id","valid_after")
@@ -226,6 +245,7 @@ export async function revokeUserTokens(
   } catch {
     return false;
   } finally {
+    generation += 1;
     cache.delete(userId);
     inflight.delete(userId);
   }

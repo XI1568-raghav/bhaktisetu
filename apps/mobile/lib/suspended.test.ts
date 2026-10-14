@@ -49,3 +49,18 @@ describe('mobile enrolment cancel', () => {
     expect(describeCancelOutcome(409, { code: 'cancellation_window_closed' }).message).toMatch(/less than 24 hours/);
   });
 });
+
+describe('notifyIfSuspended (fetches that bypass the api-client)', () => {
+  it('announces a 403 whose body says suspended, and ignores other 403s', async () => {
+    const { registerSuspendedHandler, notifyIfSuspended } = await import('./suspended');
+    const seen: string[] = [];
+    registerSuspendedHandler((m) => seen.push(m));
+    const mk = (status: number, body: unknown) =>
+      new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+    await notifyIfSuspended(mk(403, { error: 'Forbidden', message: 'Account suspended: fraud' }));
+    await notifyIfSuspended(mk(403, { error: 'Forbidden', message: 'Not allowed' }));
+    await notifyIfSuspended(mk(500, { message: 'Account suspended' }));
+    expect(seen).toEqual(['Account suspended: fraud']);
+    registerSuspendedHandler(null);
+  });
+});

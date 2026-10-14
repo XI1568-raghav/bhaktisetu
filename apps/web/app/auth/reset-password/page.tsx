@@ -138,11 +138,21 @@ export default function ResetPasswordPage() {
   // session from the cookie, and best-effort: the password HAS changed by this
   // point, and a failed logout must not present as a failed reset.
   try {
+   // Send the live (recovery) access token explicitly with scope=global. A user
+   // who arrives from the emailed link on a browser with no darshya_session
+   // cookie would otherwise get a 400 here and every OTHER device would stay
+   // signed in on the old password.
+   let accessToken: string | undefined;
+   try {
+    accessToken = (await supabase.auth.getSession()).data.session?.access_token;
+   } catch {
+    accessToken = undefined;
+   }
    await fetchWithTimeout(`${API_BASE_URL}/auth/logout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: '{}',
+    body: JSON.stringify(accessToken ? { accessToken, scope: 'global' } : { scope: 'global' }),
    });
   } catch {
    /* best-effort — the local stores are cleared below regardless */

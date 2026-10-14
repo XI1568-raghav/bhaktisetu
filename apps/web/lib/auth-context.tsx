@@ -624,6 +624,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  setSession(outcome.session as AuthSession);
  setUser(revivedUser);
  persistProfileOnly(revivedUser);
+ } else if ('suspendedBody' in outcome && outcome.suspendedBody !== undefined) {
+ // The cookie revive was refused because the account is suspended: say so
+ // instead of a silent sign-out.
+ persistSession(null, null);
+ window.location.assign(suspendedLoginHref(suspensionReason(outcome.suspendedBody)));
+ return;
  } else if (outcome.apiAnswered) {
  // The marker outlived the cookie. Clear it: middleware.ts gates every
  // portal on its mere presence, so leaving it behind keeps handing a

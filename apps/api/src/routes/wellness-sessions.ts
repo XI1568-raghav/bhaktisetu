@@ -11,6 +11,8 @@ import { httpUrlSchema } from '../lib/http-url.js';
 import { sendEmail } from '../lib/email.js';
 import { esc } from '../lib/html-escape.js';
 import { recordWellnessPayment } from '../lib/wellness-payment.js';
+import { checkGatewayPayment } from '../lib/razorpay-payment-check.js';
+import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
 import {
   cancelWellnessEnrollment,
@@ -890,6 +892,48 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         if (!sigOk) {
           return reply.code(400).send({ error: 'Invalid payment signature' });
         }
+
+        // The signature proves the pair is genuine, not WHAT was paid. Ask the gateway (same
+        // fail-safe rule as donations/consultations): mismatch -> not confirmed + admin review;
+        // fetch failure -> fall back to the signature result and log. Only an unpaid row needs it.
+        if (enrollment.status === 'PENDING_PAYMENT') {
+          const sess = await prisma.wellnessSession.findUnique({
+            where: { id: enrollment.sessionId },
+            select: { priceInr: true },
+          });
+          const chk = await checkGatewayPayment(razorpay as never, {
+            paymentId: razorpayPaymentId,
+            orderId: enrollment.razorpayOrderId,
+            amountInr: Number(sess?.priceInr ?? 0),
+          });
+          if (chk.verdict === 'mismatch') {
+            console.error('[wellness-sessions][amount-mismatch] verify refused', JSON.stringify({ enrollmentId: enrollment.id, reason: chk.reason }));
+            await recordMoneyEvent({
+              eventType: MONEY_EVENTS.PAYMENT_FAILED,
+              actorType: 'devotee',
+              actorId: userId,
+              subjectType: 'wellness_enrollment',
+              subjectId: enrollment.id,
+              amount: Number(sess?.priceInr ?? 0),
+              currency: 'INR',
+              gateway: 'razorpay',
+              gatewayOrderId: enrollment.razorpayOrderId,
+              gatewayPaymentId: razorpayPaymentId,
+              statusBefore: enrollment.status,
+              statusAfter: enrollment.status,
+              idempotencyKey: `${enrollment.id}:${razorpayPaymentId}:gateway-check`,
+              note: `wellness verify refused: ${chk.reason}`,
+              metadata: { rail: 'wellness/verify', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
+            });
+            return reply.code(409).send({
+              error: 'We could not confirm this payment with the payment gateway. Our team has been notified and will review it; you will not be charged twice.',
+              code: 'payment_needs_review',
+            });
+          }
+          if (chk.verdict === 'unavailable') {
+            console.warn('[wellness-sessions] gateway payment check unavailable, using signature result', chk.reason);
+          }
+        }
       }
 
       // QA 2026-10-13: a correctly signed verify used to flip ANY enrolment to
@@ -1179,6 +1223,35 @@ export async function finalizeWellnessEnrollmentFromWebhook(
   if (capturedPaise != null && Math.round(Number(enrollment.session.priceInr) * 100) !== Number(capturedPaise)) {
     console.error('[wellness-sessions][amount-mismatch] webhook capture refused', enrollment.id);
     return { handled: false, reason: 'amount-mismatch' };
+  }
+  if (gatewayPaymentId && razorpay) {
+    const chk = await checkGatewayPayment(razorpay as never, {
+      paymentId: gatewayPaymentId,
+      orderId: razorpayOrderId,
+      amountInr: Number(enrollment.session.priceInr),
+    });
+    if (chk.verdict === 'mismatch') {
+      console.error('[wellness-sessions][amount-mismatch] webhook gateway check refused', enrollment.id, chk.reason);
+      await recordMoneyEvent({
+        eventType: MONEY_EVENTS.PAYMENT_FAILED,
+        actorType: 'system',
+        actorId: null,
+        subjectType: 'wellness_enrollment',
+        subjectId: enrollment.id,
+        amount: Number(enrollment.session.priceInr),
+        currency: 'INR',
+        gateway: 'razorpay',
+        gatewayOrderId: razorpayOrderId,
+        gatewayPaymentId,
+        idempotencyKey: `${enrollment.id}:${gatewayPaymentId}:gateway-check`,
+        note: `wellness webhook capture refused: ${chk.reason}`,
+        metadata: { rail: 'wellness/webhook', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
+      });
+      return { handled: false, reason: 'amount-mismatch' };
+    }
+    if (chk.verdict === 'unavailable') {
+      console.warn('[wellness-sessions] webhook gateway check unavailable, using the signed payload', chk.reason);
+    }
   }
   const claimed = await prisma.wellnessEnrollment.updateMany({
     where: { id: enrollment.id, status: 'PENDING_PAYMENT' },

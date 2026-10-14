@@ -11,6 +11,8 @@ import {
   resolveProviderRole,
 } from '../services/payout.service.js';
 import { SQL_UTC_NOW } from '../lib/sql-time.js';
+import { deleteProofObject } from '../lib/r2.js';
+import { isLegacyProofUrl, proofKeyBookingId } from '../lib/booking-proof.js';
 
 // Admin bookings + payouts + refunds ops dashboards.
 //
@@ -827,6 +829,16 @@ export async function adminBookingsRoutes(server: FastifyInstance) {
           { bookingId, reason: parsed.data.reason },
           'admin flagged video proof as invalid'
         );
+        // Best-effort: drop the stored private object too. Never blocks the flag.
+        const storedKey = booking.videoProofUrl;
+        if (!isLegacyProofUrl(storedKey) && proofKeyBookingId(storedKey) === bookingId.toLowerCase()) {
+          try {
+            const removed = await deleteProofObject(storedKey);
+            if (!removed) request.log.warn({ bookingId, storedKey }, 'flagged proof object was not deleted');
+          } catch (delErr) {
+            request.log.warn({ err: delErr, bookingId, storedKey }, 'flagged proof object delete threw');
+          }
+        }
         return { booking: updated };
       } catch (err) {
         request.log.error({ err, bookingId }, 'admin video flag failed');
