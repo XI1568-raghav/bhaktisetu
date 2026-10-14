@@ -13,6 +13,7 @@ import { proofKeyBookingId } from '../lib/booking-proof.js';
 import { videoMaxBytes, videoMaxMb, videoTooLargeMessage } from '../lib/upload-limits.js';
 import { isDemoMode } from '../lib/supabase.js';
 import { httpUrlSchema } from '../lib/http-url.js';
+import { inspectOwnPhoto, attachFailureMessage } from '../lib/upload-inspect.js';
 import { BookingStatus, PayoutStatus, Prisma } from '@prisma/client';
 
 // Zod gates for the pandit-owned puja offering CRUD. Hoisted to module
@@ -1105,6 +1106,14 @@ export async function priestRoutes(server: FastifyInstance) {
         });
       }
       const body = parsed.data;
+
+      if (body.avatarUrl) {
+        const r = await inspectOwnPhoto(body.avatarUrl);
+        if (!r.ok) {
+          const f = attachFailureMessage(r, 'photo');
+          return reply.code(f.status).send({ error: f.error });
+        }
+      }
 
       const priestId = await getPriestId(request.currentUser!.id);
       const updated = await priestService.updateProfile(priestId, body);

@@ -5,6 +5,7 @@
 // generic network error to users. __DEV__ allows the simulator/local Expo Go
 // flow to keep using a localhost dev server when no env is configured.
 import { currentAcceptLanguage } from './language';
+import { notifyIfSuspended } from './suspended';
 
 declare const __DEV__: boolean;
 
@@ -177,7 +178,10 @@ async function send<T>(
     throw new ApiNetworkError(isAbort(err));
   }
 
-  if (!res.ok) throw new ApiError(res.status, await messageFor(res));
+  if (!res.ok) {
+    await notifyIfSuspended(res);
+    throw new ApiError(res.status, await messageFor(res));
+  }
 
   try {
     return (await res.json()) as T;

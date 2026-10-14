@@ -40,3 +40,25 @@ export function subscribeSuspendedNotice(fn: (n: string | null) => void): () => 
     listeners.delete(fn);
   };
 }
+
+let suspendedHandler: ((message: string) => void) | null = null;
+
+/** The auth layer registers its sign-out-with-notice hook here (leaf module: no import cycle). */
+export function registerSuspendedHandler(fn: ((message: string) => void) | null): void {
+  suspendedHandler = fn;
+}
+
+/**
+ * For fetches that bypass the shared api-client: a 403 whose body says
+ * "suspended" triggers the same sign-out-with-notice. Never throws; reads a clone.
+ */
+export async function notifyIfSuspended(res: Response): Promise<void> {
+  if (res.status !== 403 || !suspendedHandler) return;
+  try {
+    const body = (await res.clone().json()) as { message?: unknown; error?: unknown };
+    const text = [body?.message, body?.error].find((v) => isSuspendedMessage(v));
+    if (typeof text === 'string') suspendedHandler(text);
+  } catch {
+    /* not JSON: nothing to announce */
+  }
+}

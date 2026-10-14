@@ -78,6 +78,18 @@ interface EnrollmentRow {
   user: { fullName: string | null; email: string | null };
 }
 
+/** A reservation with no refund id older than this is treated as a crashed caller and re-sent. */
+export const WELLNESS_REFUND_STALE_MS = 10 * 60_000;
+
+/** The audit write must never strand or fail a refund that has already moved money. */
+async function safeAudit(ev: Parameters<typeof recordMoneyEvent>[0]) {
+  try {
+    await recordMoneyEvent(ev);
+  } catch (err) {
+    console.error('[wellness-refund] audit write failed (refund flow continues)', err);
+  }
+}
+
 type RefundExecution = NonNullable<WellnessCancelResult['refundExecution']>;
 
 /**
@@ -109,14 +121,35 @@ export async function executeWellnessRefund(opts: {
   const prior = payment.refundAmount != null ? Number(payment.refundAmount) : null;
   const priorN = prior ?? 0;
   const meta = (payment.metadata as Record<string, unknown> | null) ?? {};
-  // What this enrolment's cancellation still has to send: the owed figure minus whatever the
-  // gateway already returned, never more than the capture still holds.
-  const remaining = round2(Math.min(opts.owedInr - priorN, paid - priorN));
-  if (remaining <= 0) return { execution: 'gateway', refundedInr: 0 };
+  // In-flight reservation marker: written in the SAME compare-and-set as the refundAmount bump, so a
+  // crash between the reservation and the gateway call leaves evidence a later retry can act on.
+  const inflight = meta.wellnessRefundInflight as { amount?: number; at?: string; refundId?: string } | null | undefined;
+  const inflightAmt = inflight && Number(inflight.amount) > 0 ? round2(Number(inflight.amount)) : 0;
+  let baseline = prior; // value refundAmount returns to if the gateway refuses
+  let remaining: number;
+  if (inflightAmt > 0) {
+    const ageMs = Date.now() - (inflight?.at ? Date.parse(inflight.at) : 0);
+    // Fresh reservation (another caller is mid-call) or one that already has a refund id: never re-send.
+    if (inflight?.refundId || !(ageMs > WELLNESS_REFUND_STALE_MS)) return { execution: 'retry', refundedInr: 0 };
+    baseline = round2(priorN - inflightAmt) > 0 ? round2(priorN - inflightAmt) : null;
+    remaining = inflightAmt;
+  } else {
+    // What this enrolment's cancellation still has to send: the owed figure minus whatever the
+    // gateway already returned, never more than the capture still holds.
+    remaining = round2(Math.min(opts.owedInr - priorN, paid - priorN));
+    if (remaining <= 0) return { execution: 'gateway', refundedInr: 0 };
+  }
+  const reservedTotal = inflightAmt > 0 ? priorN : round2(priorN + remaining);
 
   const reserved = await prisma.payment.updateMany({
     where: { id: payment.id, refundAmount: prior },
-    data: { refundAmount: round2(priorN + remaining) },
+    data: {
+      refundAmount: reservedTotal,
+      metadata: {
+        ...meta,
+        wellnessRefundInflight: { amount: remaining, at: new Date().toISOString() },
+      } as never,
+    },
   });
   if (reserved.count !== 1) return { execution: 'gateway', refundedInr: 0 }; // another caller owns it
 
@@ -127,11 +160,12 @@ export async function executeWellnessRefund(opts: {
   if (refund.error || !refund.id) {
     await prisma.payment
       .updateMany({
-        where: { id: payment.id, refundAmount: round2(priorN + remaining) },
+        where: { id: payment.id, refundAmount: reservedTotal },
         data: {
-          refundAmount: prior,
+          refundAmount: baseline,
           metadata: {
             ...meta,
+            wellnessRefundInflight: null,
             wellnessRefundOwedInr: opts.owedInr,
             refundFailureReason: refund.error?.description ?? 'gateway refused the refund',
             refundFailedAt: new Date().toISOString(),
@@ -139,7 +173,7 @@ export async function executeWellnessRefund(opts: {
         },
       })
       .catch(() => undefined);
-    await recordMoneyEvent({
+    await safeAudit({
       eventType: MONEY_EVENTS.REFUND_FAILED,
       actorType: opts.actorType === 'system' ? 'system' : opts.actorType,
       actorId: opts.actorId,
@@ -156,7 +190,7 @@ export async function executeWellnessRefund(opts: {
     return { execution: 'retry', refundedInr: 0 };
   }
 
-  const total = round2(priorN + remaining);
+  const total = reservedTotal;
   await prisma.payment
     .update({
       where: { id: payment.id },
@@ -166,6 +200,7 @@ export async function executeWellnessRefund(opts: {
         metadata: {
           ...meta,
           wellnessRefundOwedInr: null,
+          wellnessRefundInflight: null,
           refundId: refund.id,
           refundIds: appendRefundId(meta, refund.id),
           refundedAt: new Date().toISOString(),
@@ -174,7 +209,7 @@ export async function executeWellnessRefund(opts: {
       },
     })
     .catch((err) => console.error('[wellness-refund] refund sent but payment row not updated', payment.id, err));
-  await recordMoneyEvent({
+  await safeAudit({
     eventType: MONEY_EVENTS.REFUND_COMPLETED,
     actorType: opts.actorType,
     actorId: opts.actorId,
@@ -200,7 +235,8 @@ export async function executeWellnessRefund(opts: {
 async function retryPendingRefund(row: EnrollmentRow, actorType: WellnessCancelActor, actorId: string | null) {
   if (!row.paymentId) return null;
   const payment = await prisma.payment.findUnique({ where: { id: row.paymentId } }).catch(() => null);
-  const owed = Number((payment?.metadata as { wellnessRefundOwedInr?: unknown } | null)?.wellnessRefundOwedInr ?? 0);
+  const pm = payment?.metadata as { wellnessRefundOwedInr?: unknown; wellnessRefundInflight?: { amount?: unknown } | null } | null;
+  const owed = Number(pm?.wellnessRefundOwedInr ?? 0) || Number(pm?.wellnessRefundInflight?.amount ?? 0);
   if (!payment || !(owed > 0)) return null;
   return executeWellnessRefund({
     enrollmentId: row.id,

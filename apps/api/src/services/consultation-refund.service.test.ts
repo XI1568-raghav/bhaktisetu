@@ -7,7 +7,7 @@ vi.mock('./refund.service.js', () => ({ callRazorpayRefund: refundMock }));
 const auditSpy = vi.hoisted(() => vi.fn(async (_i: unknown) => ({ ok: true, wrote: true })));
 vi.mock('../lib/audit-money.js', async (orig) => ({ ...(await orig<typeof import('../lib/audit-money.js')>()), recordMoneyEvent: auditSpy }));
 
-import { refundConsultation } from './consultation-refund.service.js';
+import { refundConsultation, isRefundRetryable } from './consultation-refund.service.js';
 
 const row = (o: Record<string, unknown> = {}) => ({
   id: 'c1', reference: 'AC-1', amount_inr: '500', currency: 'INR',
@@ -48,5 +48,24 @@ describe('refundConsultation', () => {
     prismaMock.$executeRawUnsafe.mockRejectedValue(new Error('column "refund_status" does not exist'));
     expect((await refundConsultation(row(), actor, 'n')).execution).toBe('manual');
     expect(refundMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('stuck "sending" reservations', () => {
+  const old = new Date(Date.now() - 60 * 60_000);
+  it('isRefundRetryable: stale sending without refund id yes; fresh or with refund id no; failed yes', () => {
+    expect(isRefundRetryable({ refund_status: 'sending', refund_id: null, refund_started_at: old })).toBe(true);
+    expect(isRefundRetryable({ refund_status: 'sending', refund_id: null, refund_started_at: null })).toBe(true);
+    expect(isRefundRetryable({ refund_status: 'sending', refund_id: null, refund_started_at: new Date() })).toBe(false);
+    expect(isRefundRetryable({ refund_status: 'sending', refund_id: 'rfnd_x', refund_started_at: old })).toBe(false);
+    expect(isRefundRetryable({ refund_status: 'failed' })).toBe(true);
+    expect(isRefundRetryable({ refund_status: 'refunded' })).toBe(false);
+  });
+  it('reservation SQL takes over only a stale sending row and never one with a refund id', async () => {
+    refundMock.mockResolvedValue({ id: 'rfnd_7' });
+    expect((await refundConsultation(row({ refund_status: 'sending', refund_started_at: old }), actor, 'n')).refundId).toBe('rfnd_7');
+    const sql = String(prismaMock.$executeRawUnsafe.mock.calls[0]![0]);
+    expect(sql).toContain('refund_id IS NULL');
+    expect(sql).toMatch(/refund_status = 'sending' AND \(refund_started_at IS NULL OR refund_started_at </);
   });
 });

@@ -11,7 +11,7 @@ import { setCurrentLanguage } from './language';
 import { api, ApiClientError, type AuthSession, type AuthUser, type UserRole } from '@poojly/api-client';
 import { toApiSignupRole } from './signup-contract';
 import { refreshSessionOnce } from './session-refresh';
-import { setSuspendedNotice } from './suspended';
+import { setSuspendedNotice, registerSuspendedHandler } from './suspended';
 import { authFailureMessage } from './auth-errors';
 
 // ─── Demo accounts (mirror of apps/web/lib/auth-context.tsx) ─────────────────
@@ -233,6 +233,8 @@ export function onSuspendedMobile(message: string): void {
     suspendedInProgress = false;
   });
 }
+
+registerSuspendedHandler(onSuspendedMobile);
 
 let authExpiredInProgress: Promise<void> | null = null;
 

@@ -67,7 +67,11 @@ describe('deliverOrQueue (inline attempt)', () => {
     expect(r.queued).toBe(true);
     const ins = insertCalls();
     expect(ins).toHaveLength(1);
-    expect(String(ins[0]![0])).toMatch(/ON CONFLICT \(dedupe_key\) DO NOTHING/);
+    const sql = String(ins[0]![0]);
+    expect(sql).toMatch(/ON CONFLICT \(dedupe_key\) DO UPDATE/);
+    // re-open only a dead row, or a sent one older than the dedupe window; never pending/sending
+    expect(sql).toMatch(/WHERE email_outbox\.status = 'dead'\s+OR \(email_outbox\.status = 'sent' AND email_outbox\.sent_at < now\(\) - interval '24 hours'\)/);
+    expect(sql).not.toMatch(/'pending'\s*OR|status = 'pending' AND email_outbox/);
     expect(ins[0]!.slice(1, 6)).toEqual([outbox.dedupeKeyFor(SPEC, MAIL), 'donation_receipt', 'don_1', 'd@example.test', 'Receipt']);
   });
 
