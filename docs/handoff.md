@@ -3638,3 +3638,12 @@ All roles were tested end to end on a local stack and fixed through #279-#312. P
 
 **Invariants added this round:** earnings of pandit/astrologer/wellness/temple stay held until performed/proved (`payout.service.ts`, `upcomingInr`); cash-on-delivery orders create no commission; NRI price = 2.5x puja price charged in INR, shown in USD only when the explicit `nriPricing` flag is set (`apps/api/src/lib/nri-pricing.ts` + web twin); admin refunds default to the cancellation policy amount; referral stays hidden behind `HAS_REFERRAL_CREDIT`.
 
+
+## 2026-10-14 slice J (receipts, donations, ratings) - OWNER ACTIONS
+
+Migrations do not auto-apply on deploy (see TASKS.md). Apply by hand, then redeploy the API:
+`cd apps/api && DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy` (confirm with `migrate status`).
+- `20261013000000_review_moderation`: creates `review_moderation` (admin hide-rating). Until applied the API creates it lazily on the first hide (needs CREATE TABLE rights).
+- `20261013010000_donee_tax_and_email_outbox`: `temples.pan/regn_80g`, `gaushala_profiles.pan/regn_80g`, `donations.donor_name/email/phone`, table `email_outbox`. All additive/nullable; the API tolerates every one being absent.
+- Receipts print the 80G block only when donee 80G number AND PAN exist AND `HAS_80G` (`apps/api/src/lib/eighty-g.ts`, false) is true. Entering numbers (`PUT /temple-portal/tax-info`, `PUT /gaushala-portal/tax-info`, `PUT /admin/temples/:id/tax-info`) never flips that by itself.
+- Failed receipt/booking emails are retried by the `emailOutbox` step of `runDailyOps` (8 tries, backoff 1m..12h, then `dead`). Inspect: `SELECT status,count(*) FROM email_outbox GROUP BY 1`.
