@@ -8,7 +8,9 @@ import { dispatchService } from '../services/dispatch.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
 import { prisma } from '../lib/prisma.js';
 import { listPendingForPriest, respondToInvite } from '../services/temple-priest-invite.service.js';
-import { inspectOwnVideoUrl, presignR2Upload, r2 } from '../lib/r2.js';
+import { inspectOwnVideoUrl, inspectProofObject, presignProofUpload, r2 } from '../lib/r2.js';
+import { proofKeyBookingId } from '../lib/booking-proof.js';
+import { videoMaxBytes, videoMaxMb, videoTooLargeMessage } from '../lib/upload-limits.js';
 import { isDemoMode } from '../lib/supabase.js';
 import { httpUrlSchema } from '../lib/http-url.js';
 import { BookingStatus, PayoutStatus, Prisma } from '@prisma/client';
@@ -98,7 +100,6 @@ export const __testing = {
   },
 };
 
-const MAX_VIDEO_MB = 200;
 const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 
 // Pagination clamp — without this, an attacker (or a buggy client) can
@@ -147,7 +148,12 @@ const videoProofBodySchema = z.object({
   // `.url()` alone accepts any scheme: `javascript:alert(1)` and `file:///etc/x`
   // were stored as "proof" and rendered as the devotee's/admin's link. Only a
   // web link can be a recording.
-  videoUrl: httpUrlSchema('videoUrl'),
+  videoUrl: httpUrlSchema('videoUrl').optional(),
+  // Object key returned by the signed-url route (private storage). Exactly one of
+  // videoKey / videoUrl (an external link) is accepted.
+  videoKey: z.string().min(1).max(300).optional(),
+}).refine((b) => Boolean(b.videoUrl) !== Boolean(b.videoKey), {
+  message: 'Send either videoKey (uploaded file) or videoUrl (external link).',
 });
 
 /* ─── DI-05, the read half: /priest/payouts must see BOTH payout rails ───────
@@ -692,8 +698,8 @@ export async function priestRoutes(server: FastifyInstance) {
   // Returns a presigned PUT URL the priest's browser uses to upload the
   // proof video directly to R2 (or Supabase Storage fallback). Auth gates
   // ensure only the assigned priest of this booking can request a URL.
-  // 5-minute expiry, 200 MB cap (enforced client-side; backend enforces
-  // type allowlist). Idempotent — repeated calls just return fresh URLs.
+  // 5-minute expiry. Objects land in the PRIVATE proof bucket; the size cap
+  // (lib/upload-limits) is enforced by the bucket and re-checked on submit. Idempotent — repeated calls just return fresh URLs.
 
   server.post(
     '/bookings/:id/video-proof/signed-url',
@@ -739,9 +745,9 @@ export async function priestRoutes(server: FastifyInstance) {
         // a 400 carrying an internal TypeError. The generic catch below maps
         // everything to 400, which is how the pandit ended up reading
         // "supabaseAdmin.storage.from is not a function".
-        let signed: Awaited<ReturnType<typeof presignR2Upload>>;
+        let signed: Awaited<ReturnType<typeof presignProofUpload>>;
         try {
-          signed = await presignR2Upload({ key, contentType, expiresInSec: 300 });
+          signed = await presignProofUpload({ key, contentType, expiresInSec: 300 });
         } catch (storageErr) {
           request.log.error({ err: storageErr }, 'video-proof presign failed');
           return reply.code(503).send(STORAGE_UNCONFIGURED);
@@ -752,13 +758,16 @@ export async function priestRoutes(server: FastifyInstance) {
 
         return reply.send({
           uploadUrl: signed.uploadUrl,
-          publicUrl: signed.publicUrl,
+          publicUrl: null,
+          private: true,
           backend: signed.backend,
           key,
+          videoKey: key,
           expiresIn: 300,
           method: 'PUT',
           headers: { 'Content-Type': contentType },
-          maxSizeMb: MAX_VIDEO_MB,
+          maxSizeMb: videoMaxMb(),
+          maxSizeBytes: videoMaxBytes(),
         });
       } catch (err: any) {
         request.log?.error({ err }, 'priest route failed');
@@ -780,9 +789,34 @@ export async function priestRoutes(server: FastifyInstance) {
           details: parsed.error.flatten(),
         });
       }
-      const videoUrl = parsed.data.videoUrl;
+      let videoUrl: string;
+      if (parsed.data.videoKey) {
+        const key = parsed.data.videoKey;
+        // The key must be one this booking's signed-url route minted.
+        if (proofKeyBookingId(key) !== id.toLowerCase()) {
+          return reply.code(400).send({ error: 'That uploaded video does not belong to this booking. Please upload it again.' });
+        }
+        const found = await inspectProofObject(key);
+        if (!found.ok) {
+          if (found.reason === 'unreachable') {
+            return reply.code(503).send({ error: 'We could not check the uploaded video right now. Please try again in a moment.' });
+          }
+          if (found.reason === 'too_large') return reply.code(413).send({ error: videoTooLargeMessage(), maxSizeMb: videoMaxMb() });
+          return reply.code(400).send({
+            error:
+              found.reason === 'not_video'
+                ? 'The uploaded file is not a video. Please upload an MP4, WebM or MOV recording.'
+                : found.reason === 'empty'
+                ? 'The uploaded video file is empty. Please upload the recording again.'
+                : 'The uploaded video could not be found. Please upload it again.',
+          });
+        }
+        videoUrl = key;
+      } else {
+        videoUrl = parsed.data.videoUrl!;
+      }
 
-      const stored = await inspectOwnVideoUrl(videoUrl);
+      const stored = parsed.data.videoKey ? ({ ok: true } as const) : await inspectOwnVideoUrl(videoUrl);
       if (!stored.ok) {
         if (stored.reason === 'unreachable') {
           return reply.code(503).send({ error: 'We could not check the uploaded video right now. Please try again in a moment.' });

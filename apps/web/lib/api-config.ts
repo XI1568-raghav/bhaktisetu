@@ -1,3 +1,4 @@
+import { announceSuspended, isSuspendedBody, suspensionReason } from './suspended-notice';
 /**
  * API base URL for the Fastify backend.
  *
@@ -170,6 +171,17 @@ export async function fetchWithTimeout(
   res = await fetch(input, { credentials: 'include', ...init, signal: controller.signal });
  } finally {
   clearTimeout(timer);
+ }
+ // A blocked account is refused with 403 "suspended" on every call. Tell the auth
+ // layer once so it can sign out WITH the reason instead of failing silently.
+ // Sign-in endpoints are skipped: the login form shows that answer itself.
+ if (res.status === 403 && typeof window !== 'undefined' && !String(input).includes('/auth/')) {
+  try {
+   const body = await res.clone().json();
+   if (isSuspendedBody(403, body)) announceSuspended(suspensionReason(body));
+  } catch {
+   /* not JSON: nothing to announce */
+  }
  }
  return withBodyDeadline(res, controller, deadlineAt);
 }

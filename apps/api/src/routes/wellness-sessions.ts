@@ -10,6 +10,7 @@ import { generateInvoice } from '../lib/pdf-invoice.js';
 import { httpUrlSchema } from '../lib/http-url.js';
 import { sendEmail } from '../lib/email.js';
 import { esc } from '../lib/html-escape.js';
+import { recordWellnessPayment } from '../lib/wellness-payment.js';
 import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
 import {
   cancelWellnessEnrollment,
@@ -912,6 +913,21 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       // P0 #wp-03: record the instructor's payout ledger entry (fire-and-forget).
       void writeWellnessCommissionOnPaid(updated.id);
 
+      // Slice L: keep the gateway payment id so a cancel can refund through the gateway.
+      void (async () => {
+        const sess = await prisma.wellnessSession.findUnique({
+          where: { id: enrollment.sessionId },
+          select: { priceInr: true },
+        });
+        await recordWellnessPayment({
+          enrollmentId: enrollment.id,
+          userId: enrollment.userId,
+          amountInr: Number(sess?.priceInr ?? 0),
+          razorpayOrderId: enrollment.razorpayOrderId,
+          razorpayPaymentId: body.data.razorpayPaymentId,
+        });
+      })().catch(() => undefined);
+
       // Best-effort payment receipt — failure here must NOT block the PAID flip.
       void (async () => {
         try {
@@ -1001,9 +1017,12 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         tierLabel: result.tierLabel,
         commissionReversed: result.commissionReversed,
         commissionReduced: result.commissionReduced,
+        refundExecution: result.refundExecution ?? 'none',
         note:
           result.refundOwedInr > 0
-            ? 'Cancellation accepted. Your refund will be processed within 5-7 business days.'
+            ? result.refundExecution === 'retry'
+              ? 'Cancellation accepted. The refund could not be sent yet; it will be retried (repeat this request to retry now).'
+              : 'Cancellation accepted. Your refund will be processed within 5-7 business days.'
             : 'Cancellation accepted.',
       });
     }
@@ -1148,6 +1167,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
 export async function finalizeWellnessEnrollmentFromWebhook(
   razorpayOrderId: string,
   capturedPaise: number | null,
+  gatewayPaymentId?: string | null,
 ): Promise<{ handled: boolean; reason?: string }> {
   if (!razorpayOrderId) return { handled: false, reason: 'no-order' };
   const enrollment = await prisma.wellnessEnrollment.findFirst({
@@ -1166,5 +1186,12 @@ export async function finalizeWellnessEnrollmentFromWebhook(
   });
   if (claimed.count < 1) return { handled: false, reason: 'raced' };
   await writeWellnessCommissionOnPaid(enrollment.id);
+  await recordWellnessPayment({
+    enrollmentId: enrollment.id,
+    userId: enrollment.userId,
+    amountInr: Number(enrollment.session.priceInr),
+    razorpayOrderId,
+    razorpayPaymentId: gatewayPaymentId ?? null,
+  });
   return { handled: true };
 }

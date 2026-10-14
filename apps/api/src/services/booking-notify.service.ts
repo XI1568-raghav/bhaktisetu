@@ -34,6 +34,7 @@
 import { sendWhatsappTemplate, sendWhatsappText } from '../lib/whatsapp.js';
 import { notifyUser } from '../routes/notifications.js';
 import { prisma } from '../lib/prisma.js';
+import { deliverOrQueue } from '../lib/email-outbox.js';
 import {
   sendEmail,
   bookingConfirmationEmail,

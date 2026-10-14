@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { esc } from '../lib/html-escape.js';
 import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
+import { appendRefundId, callRazorpayRefund } from './refund.service.js';
 import {
   DEFAULT_CANCEL_POLICY,
   DEVOTEE_CANCEL_CUTOFF_HOURS,
@@ -14,11 +15,11 @@ import {
  * who PATCHed a session to CANCELLED left every PAID enrolment paid, every
  * instructor commission PENDING and withdrawable, and nobody told.
  *
- * Refund execution is a RECORDED INTENT, not a gateway call: a wellness
- * enrolment stores only its Razorpay ORDER id (no payment id, no Payment row),
- * so there is nothing to POST a refund against. The obligation is written to the
- * money audit trail (REFUND_INITIATED) and the response, exactly like the
- * astrologer-consultation cancel; ops pays it out from the Razorpay dashboard.
+ * Refund execution (slice L): verify/webhook now link a captured Payment row to the
+ * enrolment (lib/wellness-payment.ts), so the refund goes to the gateway through the same
+ * callRazorpayRefund the bookings use. Enrolments paid before that have no payment id and
+ * fall back to a RECORDED INTENT (REFUND_INITIATED, execution 'manual-intent'): ops pays
+ * those from the Razorpay dashboard.
  *
  * Ledger rules (TASKS.md invariants): Commission.amount is the PROVIDER's earning.
  * Only unclaimed rows (PENDING, not inside a PayoutRequest) are touched; a row
@@ -39,6 +40,13 @@ export interface WellnessCancelResult {
   commissionReversed: number;
   commissionReduced: number;
   ledgerManualReview: number;
+  /**
+   * How the refund was (or will be) paid: 'gateway' = sent to Razorpay now, 'retry' = the
+   * gateway refused and the SAME cancel call can be repeated safely, 'manual' = no payment
+   * id on file (old enrolment), ops pays it out, 'none' = nothing owed.
+   */
+  refundExecution?: 'gateway' | 'retry' | 'manual' | 'none';
+  refundId?: string;
   blockedReason?: string;
   blockedCode?: string;
 }
@@ -58,6 +66,7 @@ interface EnrollmentRow {
   userId: string;
   status: string;
   razorpayOrderId: string | null;
+  paymentId?: string | null;
   session: {
     id: string;
     title: string;
@@ -69,6 +78,140 @@ interface EnrollmentRow {
   user: { fullName: string | null; email: string | null };
 }
 
+type RefundExecution = NonNullable<WellnessCancelResult['refundExecution']>;
+
+/**
+ * Pay `owedInr` back through the gateway against the Payment linked to the enrolment.
+ * Idempotent: `Payment.refundAmount` is the CUMULATIVE total refunded and is RESERVED with a
+ * compare-and-set before the gateway call, so two concurrent callers cannot both send it, and
+ * a repeat after success finds nothing left to refund. A gateway failure releases the
+ * reservation and leaves `metadata.wellnessRefundOwedInr` so the cancel can be repeated.
+ */
+export async function executeWellnessRefund(opts: {
+  enrollmentId: string;
+  paymentId: string | null | undefined;
+  owedInr: number;
+  actorType: 'devotee' | 'admin' | 'provider' | 'system';
+  actorId: string | null;
+  note: string;
+}): Promise<{ execution: RefundExecution; refundId?: string; refundedInr: number }> {
+  if (!(opts.owedInr > 0)) return { execution: 'none', refundedInr: 0 };
+  if (!opts.paymentId) return { execution: 'manual', refundedInr: 0 };
+  let payment;
+  try {
+    payment = await prisma.payment.findUnique({ where: { id: opts.paymentId } });
+  } catch {
+    return { execution: 'manual', refundedInr: 0 };
+  }
+  if (!payment || !payment.gatewayPaymentId) return { execution: 'manual', refundedInr: 0 };
+
+  const paid = Number(payment.amount);
+  const prior = payment.refundAmount != null ? Number(payment.refundAmount) : null;
+  const priorN = prior ?? 0;
+  const meta = (payment.metadata as Record<string, unknown> | null) ?? {};
+  // What this enrolment's cancellation still has to send: the owed figure minus whatever the
+  // gateway already returned, never more than the capture still holds.
+  const remaining = round2(Math.min(opts.owedInr - priorN, paid - priorN));
+  if (remaining <= 0) return { execution: 'gateway', refundedInr: 0 };
+
+  const reserved = await prisma.payment.updateMany({
+    where: { id: payment.id, refundAmount: prior },
+    data: { refundAmount: round2(priorN + remaining) },
+  });
+  if (reserved.count !== 1) return { execution: 'gateway', refundedInr: 0 }; // another caller owns it
+
+  const refund = await callRazorpayRefund(payment.gatewayPaymentId, Math.round(remaining * 100), {
+    wellnessEnrollmentId: opts.enrollmentId,
+    reason: opts.note.slice(0, 250),
+  });
+  if (refund.error || !refund.id) {
+    await prisma.payment
+      .updateMany({
+        where: { id: payment.id, refundAmount: round2(priorN + remaining) },
+        data: {
+          refundAmount: prior,
+          metadata: {
+            ...meta,
+            wellnessRefundOwedInr: opts.owedInr,
+            refundFailureReason: refund.error?.description ?? 'gateway refused the refund',
+            refundFailedAt: new Date().toISOString(),
+          } as never,
+        },
+      })
+      .catch(() => undefined);
+    await recordMoneyEvent({
+      eventType: MONEY_EVENTS.REFUND_FAILED,
+      actorType: opts.actorType === 'system' ? 'system' : opts.actorType,
+      actorId: opts.actorId,
+      subjectType: 'wellness_enrollment',
+      subjectId: opts.enrollmentId,
+      paymentId: payment.id,
+      amount: remaining,
+      currency: 'INR',
+      gateway: 'razorpay',
+      gatewayPaymentId: payment.gatewayPaymentId,
+      note: refund.error?.description ?? 'gateway refused the refund',
+      metadata: { rail: 'wellness-cancel', retryable: true },
+    });
+    return { execution: 'retry', refundedInr: 0 };
+  }
+
+  const total = round2(priorN + remaining);
+  await prisma.payment
+    .update({
+      where: { id: payment.id },
+      data: {
+        status: total >= paid ? 'refunded' : 'partially_refunded',
+        refundAmount: total,
+        metadata: {
+          ...meta,
+          wellnessRefundOwedInr: null,
+          refundId: refund.id,
+          refundIds: appendRefundId(meta, refund.id),
+          refundedAt: new Date().toISOString(),
+          refundReason: opts.note.slice(0, 250),
+        } as never,
+      },
+    })
+    .catch((err) => console.error('[wellness-refund] refund sent but payment row not updated', payment.id, err));
+  await recordMoneyEvent({
+    eventType: MONEY_EVENTS.REFUND_COMPLETED,
+    actorType: opts.actorType,
+    actorId: opts.actorId,
+    subjectType: 'wellness_enrollment',
+    subjectId: opts.enrollmentId,
+    paymentId: payment.id,
+    amount: remaining,
+    currency: 'INR',
+    gateway: 'razorpay',
+    gatewayPaymentId: payment.gatewayPaymentId,
+    gatewayRefundId: refund.id,
+    idempotencyKey: refund.id,
+    note: opts.note,
+    metadata: { rail: 'wellness-cancel', cumulativeRefundedInr: total },
+  });
+  return { execution: 'gateway', refundId: refund.id, refundedInr: remaining };
+}
+
+/**
+ * Retry a refund the gateway refused earlier (the enrolment is already CANCELLED). Safe to
+ * call repeatedly; does nothing unless a failed refund left `wellnessRefundOwedInr` behind.
+ */
+async function retryPendingRefund(row: EnrollmentRow, actorType: WellnessCancelActor, actorId: string | null) {
+  if (!row.paymentId) return null;
+  const payment = await prisma.payment.findUnique({ where: { id: row.paymentId } }).catch(() => null);
+  const owed = Number((payment?.metadata as { wellnessRefundOwedInr?: unknown } | null)?.wellnessRefundOwedInr ?? 0);
+  if (!payment || !(owed > 0)) return null;
+  return executeWellnessRefund({
+    enrollmentId: row.id,
+    paymentId: row.paymentId,
+    owedInr: owed,
+    actorType,
+    actorId,
+    note: 'wellness refund retry',
+  });
+}
+
 async function loadEnrollment(enrollmentId: string): Promise<EnrollmentRow | null> {
   return (await prisma.wellnessEnrollment.findUnique({
     where: { id: enrollmentId },
@@ -77,6 +220,7 @@ async function loadEnrollment(enrollmentId: string): Promise<EnrollmentRow | nul
       userId: true,
       status: true,
       razorpayOrderId: true,
+      paymentId: true,
       session: {
         select: { id: true, title: true, scheduledAt: true, priceInr: true, status: true, instructorId: true },
       },
@@ -114,7 +258,13 @@ export async function cancelWellnessEnrollment(opts: {
   };
 
   if (row.status === 'CANCELLED' || row.status === 'REFUNDED') {
-    return { ...base, outcome: 'already', tierLabel: 'Already cancelled' };
+    const retried = await retryPendingRefund(row, opts.actorType, opts.actorId).catch(() => null);
+    return {
+      ...base,
+      outcome: 'already',
+      tierLabel: 'Already cancelled',
+      ...(retried ? { refundExecution: retried.execution, refundId: retried.refundId } : {}),
+    };
   }
   if (row.status === 'ATTENDED') {
     return {
@@ -212,7 +362,7 @@ export async function cancelWellnessEnrollment(opts: {
       note: `${note} - ${tierLabel}`,
       metadata: {
         rail: 'wellness-cancel',
-        execution: 'manual-intent',
+        execution: row.paymentId ? 'gateway' : 'manual-intent',
         sessionId: row.session.id,
         fraction,
         priceInr: price,
@@ -251,6 +401,26 @@ export async function cancelWellnessEnrollment(opts: {
     }
   }
 
+  let refundExecution: RefundExecution = 'none';
+  let refundId: string | undefined;
+  if (wasPaid && price > 0 && refundOwedInr > 0) {
+    try {
+      const ex = await executeWellnessRefund({
+        enrollmentId: row.id,
+        paymentId: row.paymentId,
+        owedInr: refundOwedInr,
+        actorType: opts.actorType,
+        actorId: opts.actorId,
+        note: `${note} - ${tierLabel}`,
+      });
+      refundExecution = ex.execution;
+      refundId = ex.refundId;
+    } catch (err) {
+      refundExecution = 'retry';
+      console.error('[wellness-refund] unexpected failure', row.id, err);
+    }
+  }
+
   void notifyCancelled(row, refundOwedInr, tierLabel, !!opts.instructorFault).catch(() => undefined);
 
   return {
@@ -263,6 +433,8 @@ export async function cancelWellnessEnrollment(opts: {
     commissionReversed: reversed,
     commissionReduced: reduced,
     ledgerManualReview: settled,
+    refundExecution,
+    ...(refundId ? { refundId } : {}),
   };
 }
 

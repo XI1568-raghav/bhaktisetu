@@ -56,6 +56,8 @@ export const prismaMock = {
     aggregate: vi.fn(),
   },
   payment: {
+    // Slice L: compare-and-set refund reservation. ADDED only.
+    updateMany: vi.fn(),
     findUnique: vi.fn(),
     findMany: vi.fn(),
     findFirst: vi.fn(),
