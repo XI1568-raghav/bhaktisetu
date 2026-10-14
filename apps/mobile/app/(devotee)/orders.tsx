@@ -15,6 +15,7 @@ import { useStoreOrders } from '@poojly/api-client';
 import { useAuth } from '../../lib/auth-context';
 import { formatInr, toNumber } from '../../lib/api-contracts';
 import { humanizeEnum } from '../../lib/enum-labels';
+import { storeOrderTotalLabel } from '../../lib/store-order-payment';
 import { colors, spacing, fontSize, borderRadius } from '../../lib/theme';
 
 /**
@@ -60,6 +61,7 @@ interface StoreOrderVM {
   subtotalInr: number | null;
   deliveryFeeInr: number | null;
   trackingNumber: string | null;
+  paymentStatus: string | null;
   items: OrderItemVM[];
 }
 
@@ -97,6 +99,7 @@ export function selectStoreOrders(payload: unknown): StoreOrderVM[] {
         subtotalInr: toNumber(row.subtotalInr),
         deliveryFeeInr: toNumber(row.deliveryFeeInr),
         trackingNumber: str(row.trackingNumber),
+        paymentStatus: str(row.paymentStatus),
         items,
       };
     })
@@ -179,7 +182,7 @@ function OrderCard({ order }: { order: StoreOrderVM }) {
       )}
       <View style={styles.itemRow}>
         <Text style={styles.totalLabel}>
-          {order.status === 'PENDING' ? 'Total due' : 'Total'}
+          {storeOrderTotalLabel(order.status, order.paymentStatus)}
         </Text>
         <Text style={styles.totalValue}>
           {order.totalInr === null ? '—' : formatInr(order.totalInr)}

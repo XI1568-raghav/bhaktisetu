@@ -751,6 +751,12 @@ export async function priestRoutes(server: FastifyInstance) {
           signed = await presignProofUpload({ key, contentType, expiresInSec: 300 });
         } catch (storageErr) {
           request.log.error({ err: storageErr }, 'video-proof presign failed');
+          if ((storageErr as { code?: string } | null)?.code === 'PROOF_BUCKET_UNCONFIGURED') {
+            return reply.code(503).send({
+              error: 'Video proof storage is not configured.',
+              message: 'Set R2_PRIVATE_BUCKET to a private R2 bucket.',
+            });
+          }
           return reply.code(503).send(STORAGE_UNCONFIGURED);
         }
         if (!signed) {
