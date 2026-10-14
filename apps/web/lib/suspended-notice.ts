@@ -62,3 +62,35 @@ export function redirectToSuspendedLogin(reason: string | null): void {
 export function isSuspendedRedirectPending(): boolean {
   return suspendedRedirectPending;
 }
+
+const GUARD_FLAG = '__darshyaSuspendedFetchGuard';
+
+/**
+ * Most pages call the API with a bare `fetch` (not `fetchWithTimeout`), so a blocked account's 403
+ * "suspended" answer was swallowed as an ordinary error and the user stayed on a half-working page.
+ * Wrap `window.fetch` once so EVERY response from the API is checked. Only calls aimed at `apiBase`
+ * are inspected, and `/auth/` is skipped because the sign-in forms show that answer themselves.
+ * The caller's Response is returned untouched (the body is read from a clone).
+ */
+export function installSuspendedFetchGuard(apiBase: string): void {
+  if (typeof window === 'undefined' || !apiBase) return;
+  const w = window as unknown as Record<string, unknown>;
+  if (w[GUARD_FLAG]) return;
+  w[GUARD_FLAG] = true;
+  const original = window.fetch.bind(window);
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const res = await original(input, init);
+    if (res.status === 403) {
+      try {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url.startsWith(apiBase) && !url.includes('/auth/')) {
+          const body = await res.clone().json();
+          if (isSuspendedBody(403, body)) announceSuspended(suspensionReason(body));
+        }
+      } catch {
+        /* not JSON or unreadable: nothing to announce */
+      }
+    }
+    return res;
+  };
+}
